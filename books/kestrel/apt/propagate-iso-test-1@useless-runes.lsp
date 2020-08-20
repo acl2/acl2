@@ -20,7 +20,7 @@
 (INT10-OF-ADD-INT10
      (247 7 (:REWRITE MOD-X-Y-=-X . 4))
      (182 7 (:REWRITE MOD-ZERO . 3))
-     (127 7 (:REWRITE MOD-ZERO . 4))
+     (134 7 (:REWRITE MOD-ZERO . 4))
      (102 16 (:REWRITE |(* y x)|))
      (101 1 (:REWRITE CANCEL-MOD-+))
      (100 7 (:REWRITE DEFAULT-MOD-RATIO))
@@ -90,6 +90,7 @@
      (8 8
         (:REWRITE NORMALIZE-TERMS-SUCH-AS-A/A+B-+-B/A+B))
      (8 8 (:REWRITE NORMALIZE-ADDENDS))
+     (7 7 (:REWRITE SYMBOL-EQUALITY-CHEAP))
      (7 7
         (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-=-0))
      (7 7
@@ -159,10 +160,10 @@
      (1 1 (:REWRITE |(< x (+ c/d y))|))
      (1 1 (:REWRITE |(+ c (+ d x))|)))
 (ADD-INT10-COMM
-     (90450 184 (:LINEAR MOD-BOUNDS-1))
-     (77265 51 (:REWRITE MOD-X-Y-=-X-Y . 1))
-     (39135 51 (:REWRITE MOD-X-Y-=-X+Y . 1))
-     (37172 124 (:REWRITE |(equal (+ (- c) x) y)|))
+     (90615 184 (:LINEAR MOD-BOUNDS-1))
+     (77400 51 (:REWRITE MOD-X-Y-=-X-Y . 1))
+     (39195 51 (:REWRITE MOD-X-Y-=-X+Y . 1))
+     (37247 124 (:REWRITE |(equal (+ (- c) x) y)|))
      (14384 186 (:REWRITE CANCEL-MOD-+))
      (7539 186 (:REWRITE MOD-X-Y-=-X . 4))
      (7400 186 (:REWRITE MOD-X-Y-=-X-Y . 2))
@@ -188,9 +189,9 @@
      (5781 5781
            (:TYPE-PRESCRIPTION NOT-INTEGERP-1A))
      (4917 186 (:REWRITE MOD-ZERO . 3))
+     (4746 186 (:REWRITE MOD-ZERO . 4))
      (4650 4650
            (:REWRITE NORMALIZE-FACTORS-GATHER-EXPONENTS))
-     (4575 186 (:REWRITE MOD-ZERO . 4))
      (4216 496 (:REWRITE |(* (- x) y)|))
      (4087 1167
            (:TYPE-PRESCRIPTION MOD-POSITIVE . 2))
@@ -311,6 +312,7 @@
      (204 204 (:REWRITE DEFAULT-MOD-2))
      (204 204 (:REWRITE DEFAULT-MOD-1))
      (204 204 (:META META-RATIONALP-CORRECT))
+     (201 201 (:REWRITE SYMBOL-EQUALITY-CHEAP))
      (186 186 (:REWRITE |(mod x (- y))| . 3))
      (186 186 (:REWRITE |(mod x (- y))| . 2))
      (186 186 (:REWRITE |(mod x (- y))| . 1))
@@ -862,6 +864,7 @@
    (18 9
        (:REWRITE PREFER-POSITIVE-ADDENDS-EQUAL))
    (10 10 (:TYPE-PRESCRIPTION MEMBERP))
+   (9 9 (:REWRITE SYMBOL-EQUALITY-CHEAP))
    (9 9
       (:REWRITE REDUCE-MULTIPLICATIVE-CONSTANT-EQUAL))
    (9 9
@@ -920,6 +923,7 @@
    (18 9
        (:REWRITE PREFER-POSITIVE-ADDENDS-EQUAL))
    (10 10 (:TYPE-PRESCRIPTION MEMBERP))
+   (9 9 (:REWRITE SYMBOL-EQUALITY-CHEAP))
    (9 9
       (:REWRITE REDUCE-MULTIPLICATIVE-CONSTANT-EQUAL))
    (9 9
@@ -1083,7 +1087,7 @@
            (:TYPE-PRESCRIPTION NOT-INTEGERP-2B))
      (1111 1111
            (:TYPE-PRESCRIPTION NOT-INTEGERP-1B))
-     (1049 77 (:REWRITE MOD-ZERO . 4))
+     (1102 77 (:REWRITE MOD-ZERO . 4))
      (894 582 (:REWRITE DEFAULT-PLUS-1))
      (818 818
           (:TYPE-PRESCRIPTION NOT-INTEGERP-4A))
@@ -1179,6 +1183,7 @@
      (61 61 (:TYPE-PRESCRIPTION INTEGERP-MOD-2))
      (59 59 (:REWRITE |(< (+ c/d x) y)|))
      (56 56 (:REWRITE |(< (+ (- c) x) y)|))
+     (53 53 (:REWRITE SYMBOL-EQUALITY-CHEAP))
      (53 53
          (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-=-0))
      (53 53
@@ -1264,9 +1269,9 @@
          (:REWRITE NORMALIZE-FACTORS-GATHER-EXPONENTS))
      (41 3 (:REWRITE INTEGERP-+-REDUCE-CONSTANT))
      (40 8 (:REWRITE DEFAULT-MINUS))
+     (37 3 (:REWRITE MOD-ZERO . 4))
      (36 8 (:REWRITE |(- (* c x))|))
-     (36 3 (:REWRITE MOD-ZERO . 4))
-     (20 2
+     (21 2
          (:REWRITE REDUCE-ADDITIVE-CONSTANT-EQUAL))
      (16 16 (:REWRITE THE-FLOOR-BELOW))
      (16 16 (:REWRITE THE-FLOOR-ABOVE))
@@ -1343,6 +1348,7 @@
      (2 2
         (:REWRITE |(mod (* x (/ y)) z) not rewriting-goal-literal|))
      (2 2 (:REWRITE |(< x (+ c/d y))|))
+     (1 1 (:REWRITE SYMBOL-EQUALITY-CHEAP))
      (1 1 (:REWRITE SIMPLIFY-SUMS-EQUAL))
      (1 1
         (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-EQUAL))
@@ -1369,6 +1375,7 @@
                    (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-EQUAL))
                 (6 2
                    (:REWRITE PREFER-POSITIVE-ADDENDS-EQUAL))
+                (2 2 (:REWRITE SYMBOL-EQUALITY-CHEAP))
                 (2 2
                    (:REWRITE REDUCE-MULTIPLICATIVE-CONSTANT-EQUAL))
                 (2 2

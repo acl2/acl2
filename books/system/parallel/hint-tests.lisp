@@ -167,9 +167,10 @@
 (set-override-hints
  '((append '(:no-thanks t) keyword-alist)))
 
-(must-fail
- (make-event (er-progn (set-waterfall-parallelism nil)
-                       (value '(value-triple nil)))))
+; Matt K. mod: This failed until the change on August 16, 2020, that allows
+; (set-waterfall-parallelism nil) to succeed even with override-hints in place.
+(make-event (er-progn (set-waterfall-parallelism nil)
+                      (value '(value-triple nil))))
 
 (set-override-hints nil)
 

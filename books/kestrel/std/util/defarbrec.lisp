@@ -11,10 +11,12 @@
 (in-package "ACL2")
 
 (include-book "kestrel/error-checking/ensure-value-is-boolean" :dir :system)
+(include-book "kestrel/error-checking/ensure-value-is-not-in-list" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-symbol-list" :dir :system)
 (include-book "kestrel/event-macros/cw-event" :dir :system)
 (include-book "kestrel/event-macros/make-event-terse" :dir :system)
+(include-book "kestrel/event-macros/proof-preparation" :dir :system)
 (include-book "kestrel/event-macros/restore-output" :dir :system)
 (include-book "kestrel/std/system/fresh-logical-name-with-dollars-suffix" :dir :system)
 (include-book "kestrel/std/system/pseudo-event-form-listp" :dir :system)
@@ -355,7 +357,7 @@
                   fn$))
        ((er &) (defarbrec-process-update-names-aux
                  symbols fn$ x1...xn$ ctx state))
-       ((er &) (ensure-not-member-of-list$
+       ((er &) (ensure-value-is-not-in-list$
                 fn$
                 symbols
                 (if (= 1 (len symbols))
@@ -478,15 +480,15 @@
                 symbol-rewrite fn$
                 fn-description symbol-rewrite-description
                 t nil))
-       ((er &) (ensure-not-member-of-list$
+       ((er &) (ensure-value-is-not-in-list$
                 symbol update-names$
                 update-names$-description symbol-description
                 t nil))
-       ((er &) (ensure-not-member-of-list$
+       ((er &) (ensure-value-is-not-in-list$
                 symbol-witness update-names$
                 update-names$-description symbol-witness-description
                 t nil))
-       ((er &) (ensure-not-member-of-list$
+       ((er &) (ensure-value-is-not-in-list$
                 symbol-rewrite update-names$
                 update-names$-description symbol-rewrite-description
                 t nil)))
@@ -520,7 +522,7 @@
                 (msg "the name ~x0 of the function to generate" fn$)
                 description
                 t nil))
-       ((er &) (ensure-not-member-of-list$
+       ((er &) (ensure-value-is-not-in-list$
                 symbol
                 update-names$
                 (if (= 1 (len update-names$))
@@ -1340,8 +1342,7 @@
                      (logic)
                      (set-ignore-ok t)
                      (set-irrelevant-formals-ok t)
-                     (set-default-hints nil)
-                     (set-override-hints nil)
+                     (evmac-prepare-proofs)
                      ,@local-update-fns
                      ,@exported-update-fns
                      ,update-fns-lemma

@@ -769,9 +769,14 @@
      and the so-wrapped items are put into an @(tsee xdoc::ul).")
    (xdoc::p
     "We also provide some named constants for certain common items,
-     like the @('state') variable.")
+     like the @('state') variable.
+     We also provide some functions for certain common kinds of items,
+     like the user inputs to the event macro.")
    (xdoc::p
     "If there are no items, the list is omitted altogether.")
+   (xdoc::p
+    "This macro also provide a @(':default-parent') option,
+     which is @('nil') by default and is passed to @(tsee defxdoc+).")
    (xdoc::@def "xdoc::evmac-topic-implementation"))
 
   (define xdoc::evmac-topic-implementation-li-wrap ((items true-listp))
@@ -780,7 +785,7 @@
           (t (cons `(xdoc::li ,(car items))
                    (xdoc::evmac-topic-implementation-li-wrap (cdr items))))))
 
-  (defmacro xdoc::evmac-topic-implementation (macro &key items)
+  (defmacro xdoc::evmac-topic-implementation (macro &key items default-parent)
     (declare (xargs :guard (symbolp macro)))
     (b* ((macro-name (string-downcase (symbol-name macro)))
          (macro-ref (concatenate 'string "@(tsee " macro-name ")"))
@@ -806,22 +811,25 @@
          :parents (,parent-topic)
          :short ,short
          ,@(and long (list :long long))
-         :order-subtopics t))))
+         :order-subtopics t
+         :default-parent ,default-parent)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  (defconst xdoc::*evmac-topic-implementation-item-state*
+    (xdoc::&& "@('state') is the ACL2 "
+              (xdoc::seetopic "acl2::state" "state")
+              "."))
 
-(defconst xdoc::*evmac-topic-implementation-item-state*
-  (xdoc::&& "@('state') is the ACL2 "
-            (xdoc::seetopic "acl2::state" "state")
-            "."))
+  (defconst xdoc::*evmac-topic-implementation-item-wrld*
+    (xdoc::&& "@('wrld') is the ACL2 "
+              (xdoc::seetopic "acl2::world" "world")
+              "."))
 
-(defconst xdoc::*evmac-topic-implementation-item-wrld*
-  (xdoc::&& "@('wrld') is the ACL2 "
-            (xdoc::seetopic "acl2::world" "world")
-            "."))
+  (defconst xdoc::*evmac-topic-implementation-item-ctx*
+    "@('ctx') is the context used for errors.")
 
-(defconst xdoc::*evmac-topic-implementation-item-ctx*
-  "@('ctx') is the context used for errors.")
+  (define xdoc::evmac-topic-implementation-item-input ((name stringp)
+                                                       (macro stringp))
+    (xdoc::&& "@('" name "') is the homonymous input to @('" macro "').")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -886,7 +894,8 @@
 (defmacro+ xdoc::evmac-topic-event-generation (macro
                                                &key
                                                some-local-p
-                                               some-local-nonlocal-p)
+                                               some-local-nonlocal-p
+                                               some-nonlocal-p)
   :short "Generate an XDOC topic for the event generation
           that is part of the implementation of an event macro."
   :long
@@ -896,10 +905,13 @@
     An event macro may generate some events both locally and non-locally,
     where the local variant has proof hints and the non-local variant does not;
     in this case, the @(':some-local-nonlocal-p') argument must be @('t').
+    An event macro may generate some events only non-locally;
+    in this case the @(':some-nonlocal-p') argument must be @('t').
     These arguments are used to customize the generated @(':long').")
   (declare (xargs :guard (and (symbolp macro)
                               (booleanp some-local-p)
-                              (booleanp some-local-nonlocal-p))))
+                              (booleanp some-local-nonlocal-p)
+                              (booleanp some-nonlocal-p))))
   (b* ((macro-name (string-downcase (symbol-name macro)))
        (macro-ref (concatenate 'string "@(tsee " macro-name ")"))
        (this-topic (add-suffix macro "-EVENT-GENERATION"))
@@ -912,14 +924,14 @@
         (and some-local-nonlocal-p
              '((xdoc::p
                 "Some events are generated in two slightly different variants:
-                   one that is local to the generated "
+                 one that is local to the generated "
                 (xdoc::seetopic "acl2::encapsulate" "@(tsee encapsulate)")
                 ", and one that is exported from the "
                 (xdoc::seetopic "acl2::encapsulate" "@(tsee encapsulate)")
                 ". Proof hints are in the former but not in the latter,
-                   thus keeping the ACL2 history ``clean'';
-                   some proof hints may refer to events
-                   that are generated only locally to the "
+                 thus keeping the ACL2 history ``clean'';
+                 some proof hints may refer to events
+                 that are generated only locally to the "
                 (xdoc::seetopic "acl2::encapsulate" "@(tsee encapsulate)")
                 "."))))
        (para-local?
@@ -928,17 +940,26 @@
                 "Some events are generated only locally to the generated "
                 (xdoc::seetopic "acl2::encapsulate" "@(tsee encapsulate)")
                 ". These are auxiliary events
-                   needed to introduce the non-local (i.e. exported) events,
-                   but whose presence in the ACL2 history is no longer needed
-                   once the exported events have been introduced.
-                   These only-local events have generated fresh names.
-                   In contrast, exported events have names
-                   that are user-controlled, directly or indirectly."))))
+                 needed to introduce the non-local (i.e. exported) events,
+                 but whose presence in the ACL2 history is no longer needed
+                 once the exported events have been introduced.
+                 These only-local events have generated fresh names.
+                 In contrast, exported events have names
+                 that are user-controlled, directly or indirectly."))))
+       (para-nonlocal?
+        (and some-nonlocal-p
+             '((xdoc::p
+                "Some events are generated only non-locally to the generated "
+                (xdoc::seetopic "acl2::encapsulate" "@(tsee encapsulate)")
+                ", i.e. they are exported,
+                 without local counterparts."))))
        (long? (and (or some-local-nonlocal-p
-                       some-local-p)
+                       some-local-p
+                       some-nonlocal-p)
                    `(xdoc::topstring
                      ,@para-local-nonlocal?
-                     ,@para-local?))))
+                     ,@para-local?
+                     ,@para-nonlocal?))))
     `(defxdoc+ ,this-topic
        :parents (,parent-topic)
        :short ,short

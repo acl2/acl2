@@ -24,9 +24,11 @@
 (include-book "ethereum/top")
 (include-book "fty/top")
 (include-book "java/top")
+(include-book "json/top")
 (include-book "prime-fields/top")
 (include-book "simpl-imp/top")
 (include-book "soft/top")
+(include-book "solidity/top")
 (include-book "std/top")
 (include-book "utilities/top")
 

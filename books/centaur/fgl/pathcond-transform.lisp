@@ -207,6 +207,21 @@
                  :in-theory (disable nbalist-lookup-of-nth-n)))))
 
 
+(local (defthm nbalist-boundp-of-nth-n
+         (implies (and (nbalistp x)
+                       (< (nfix n) (len x)))
+                  (nbalist-boundp (car (nth n x)) x))
+         :hints(("Goal" :in-theory (enable nbalist-boundp nbalistp nth hons-assoc-equal)
+                 :induct (nth n x)))))
+
+(local (defthm nbalist-boundp-of-nth-n-fix
+         (implies (and (< (nfix n) (len (nbalist-fix x))))
+                  (nbalist-boundp (car (nth n (nbalist-fix x))) x))
+         :hints(("Goal" :use ((:instance nbalist-boundp-of-nth-n
+                               (x (nbalist-fix x))))
+                 :in-theory (disable nbalist-boundp-of-nth-n)))))
+
+
 
 (local (defthm nthcdr-under-iff-when-true-listp
          (implies (true-listp x)
@@ -273,14 +288,23 @@
 
 
                                  
-(defthm aignet-pathcond-eval-when-nbalist-lookup-0
-  (implies (nbalist-lookup 0 nbalist)
+(defthm aignet-pathcond-eval-when-nbalist-boundp-0
+  (implies (nbalist-boundp 0 nbalist)
            (equal (aignet-pathcond-eval aignet nbalist invals regvals) nil))
-  :hints(("Goal" :in-theory (enable nbalist-lookup 
+  :hints(("Goal" :in-theory (enable nbalist-boundp
                                     nbalist-to-cube
                                     aignet-bfr-eval-cube
                                     aignet-bfr-eval
                                     hons-assoc-equal))))
+
+;; (defthm aignet-pathcond-eval-when-nbalist-lookup-0
+;;   (implies (nbalist-lookup 0 nbalist)
+;;            (equal (aignet-pathcond-eval aignet nbalist invals regvals) nil))
+;;   :hints(("Goal" :in-theory (enable nbalist-boundp
+;;                                     nbalist-to-cube
+;;                                     aignet-bfr-eval-cube
+;;                                     aignet-bfr-eval
+;;                                     hons-assoc-equal))))
     
 
 (define aignet-pathcond-assume-list (bfrs aignet aignet-pathcond)
@@ -814,7 +838,7 @@
   ///
   (defret logicman-pathcond-eval-checkpoints!-of-<fn>
     (implies (and ;; (not contra)
-                  (bfr-litarr-correct-p (aignet::nbalist-to-cube (pathcond-aignet pathcond))
+                  (bfr-litarr-correct-p (aignet::nbalist-to-cube (nth *pathcond-aignet* pathcond))
                                         env litarr logicman2 logicman)
                   (lbfr-mode-is :aignet logicman)
                   (lbfr-mode-is :aignet logicman2)
@@ -875,16 +899,16 @@
 
   (defret logicman-pathcond-p-of-<fn>
     (implies (and (fgl::bfr-litarr-p (aignet::nbalist-to-cube (nth *pathcond-aignet* pathcond))
-                                     litarr bound)
-                  (equal bound (bfrstate->bound (logicman->bfrstate logicman2)))
+                                     litarr
+                                     (bfrstate->bound (logicman->bfrstate logicman2)))
                   (lbfr-mode-is :aignet logicman2))
              (logicman-pathcond-p new-pathcond logicman2))
     :hints(("Goal" :in-theory (enable bfr-pathcond-p))))
 
   (defret bounded-pathcond-p-of-<fn>
     (implies (and (fgl::bfr-litarr-p (aignet::nbalist-to-cube (nth *pathcond-aignet* pathcond))
-                                     litarr bound)
-                  (equal bound (bfrstate->bound (logicman->bfrstate logicman2)))
+                                     litarr
+                                     (bfrstate->bound (logicman->bfrstate logicman2)))
                   (lbfr-mode-is :aignet logicman2))
              (aignet::bounded-pathcond-p
               (nth *pathcond-aignet* new-pathcond)

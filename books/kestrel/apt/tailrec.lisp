@@ -11,10 +11,12 @@
 (in-package "APT")
 
 (include-book "kestrel/error-checking/ensure-value-is-boolean" :dir :system)
+(include-book "kestrel/error-checking/ensure-value-is-not-in-list" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
 (include-book "kestrel/event-macros/applicability-conditions" :dir :system)
 (include-book "kestrel/event-macros/input-processing" :dir :system)
 (include-book "kestrel/event-macros/intro-macros" :dir :system)
+(include-book "kestrel/event-macros/proof-preparation" :dir :system)
 (include-book "kestrel/event-macros/restore-output" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
 (include-book "kestrel/std/system/fresh-logical-name-with-dollars-suffix" :dir :system)
@@ -657,7 +659,7 @@
                      but ~x0 is not a legal variable name."
                     accumulator))
          (x1...xn (formals+ old$ (w state)))
-         ((er &) (ensure-not-member-of-list$
+         ((er &) (ensure-value-is-not-in-list$
                   accumulator
                   x1...xn
                   (msg "one of the formal arguments ~&0 of ~x1" x1...xn old$)
@@ -793,67 +795,67 @@
                           "The :NEW-ENABLE input" t nil))
        ((er a) (tailrec-process-accumulator accumulator old$ r ctx state))
        ((er wrapper-enable$)
-        (process-wrapper-enable wrapper-enable
-                                wrapper-enable-present
-                                wrapper
-                                ctx
-                                state))
+        (process-input-wrapper-enable wrapper-enable
+                                      wrapper-enable-present
+                                      wrapper
+                                      ctx
+                                      state))
        ((er (list old-to-new-name$ names-to-avoid))
-        (process-old-to-new-name old-to-new-name
-                                 old-to-new-name-present
-                                 old$
-                                 new-name$
-                                 names-to-avoid
-                                 ctx
-                                 state))
+        (process-input-old-to-new-name old-to-new-name
+                                       old-to-new-name-present
+                                       old$
+                                       new-name$
+                                       names-to-avoid
+                                       ctx
+                                       state))
        ((er old-to-new-enable$)
-        (process-old-to-new-enable old-to-new-enable
-                                   old-to-new-enable-present
-                                   ctx
-                                   state))
+        (process-input-old-to-new-enable old-to-new-enable
+                                         old-to-new-enable-present
+                                         ctx
+                                         state))
        ((er (list new-to-old-name$ names-to-avoid))
-        (process-new-to-old-name new-to-old-name
-                                 new-to-old-name-present
-                                 old$
-                                 new-name$
-                                 names-to-avoid
-                                 ctx
-                                 state))
+        (process-input-new-to-old-name new-to-old-name
+                                       new-to-old-name-present
+                                       old$
+                                       new-name$
+                                       names-to-avoid
+                                       ctx
+                                       state))
        ((er new-to-old-enable$)
-        (process-new-to-old-enable new-to-old-enable
-                                   new-to-old-enable-present
-                                   ctx
-                                   state))
+        (process-input-new-to-old-enable new-to-old-enable
+                                         new-to-old-enable-present
+                                         ctx
+                                         state))
        ((er (list old-to-wrapper-name$ names-to-avoid))
-        (process-old-to-wrapper-name old-to-wrapper-name
-                                     old-to-wrapper-name-present
-                                     wrapper
-                                     old$
-                                     wrapper-name$
-                                     names-to-avoid
-                                     ctx
-                                     state))
+        (process-input-old-to-wrapper-name old-to-wrapper-name
+                                           old-to-wrapper-name-present
+                                           wrapper
+                                           old$
+                                           wrapper-name$
+                                           names-to-avoid
+                                           ctx
+                                           state))
        ((er old-to-wrapper-enable$)
-        (process-old-to-wrapper-enable old-to-wrapper-enable
-                                       old-to-wrapper-enable-present
-                                       wrapper
-                                       ctx
-                                       state))
+        (process-input-old-to-wrapper-enable old-to-wrapper-enable
+                                             old-to-wrapper-enable-present
+                                             wrapper
+                                             ctx
+                                             state))
        ((er (list wrapper-to-old-name$ names-to-avoid))
-        (process-wrapper-to-old-name wrapper-to-old-name
-                                     wrapper-to-old-name-present
-                                     wrapper
-                                     old$
-                                     wrapper-name$
-                                     names-to-avoid
-                                     ctx
-                                     state))
+        (process-input-wrapper-to-old-name wrapper-to-old-name
+                                           wrapper-to-old-name-present
+                                           wrapper
+                                           old$
+                                           wrapper-name$
+                                           names-to-avoid
+                                           ctx
+                                           state))
        ((er wrapper-to-old-enable$)
-        (process-wrapper-to-old-enable wrapper-to-old-enable
-                                       wrapper-to-old-enable-present
-                                       wrapper
-                                       ctx
-                                       state))
+        (process-input-wrapper-to-old-enable wrapper-to-old-enable
+                                             wrapper-to-old-enable-present
+                                             wrapper
+                                             ctx
+                                             state))
        ((when (and old-to-new-enable$
                    new-to-old-enable$))
         (er-soft+ ctx t nil
@@ -2563,8 +2565,7 @@
           (set-ignore-ok t)
           (set-irrelevant-formals-ok t)
           ,@appcond-thm-events
-          (set-default-hints nil)
-          (set-override-hints nil)
+          (evmac-prepare-proofs)
           ,old-unnorm-event
           ,@(and domain-of-old-name?
                  (list domain-of-old-event?))

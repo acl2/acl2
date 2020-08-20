@@ -1129,3 +1129,461 @@
                          (x (comparable-mergesort x))
                          (y (comparable-insertsort x))))
            :in-theory (disable compare-equiv-elts-of-unequal-lists))))
+
+(defthm subsetp-of-comparable-merge-1
+  (implies (and (subsetp-equal x z)
+                (subsetp-equal y z))
+           (subsetp-equal (comparable-merge x y)
+                          z))
+  :hints (("goal" :in-theory (enable comparable-merge))))
+
+(defun-sk compare<-total ()
+  (forall (x y)
+          (implies (and (not (compare< x y))
+                        (not (equal x y)))
+                   (compare< y x)))
+  :rewrite :direct)
+
+(encapsulate
+  ()
+
+  (local (include-book "std/lists/sets" :dir :system))
+
+  (defthm no-duplicatesp-equal-of-remove-duplicates-equal
+    (no-duplicatesp-equal (remove-duplicates-equal x)))
+
+  (local (in-theory (enable nth take)))
+
+  (local
+   (defthm member-equal-nth
+     (implies (< (nfix n) (len l))
+              (member-equal (nth n l) l))))
+
+  (local
+   (defthm subsetp-of-comparable-mergesort
+     (subsetp-equal (comparable-mergesort x) x)
+     :hints(("Goal" :in-theory (e/d (comparable-mergesort
+                                     floor-bounded-by-/)
+                                    (len))))))
+
+  (local
+   (defthmd comparable-mergesort-is-identity-under-set-equiv-lemma-2
+     (implies (not (zp n))
+              (equal (take n x) (append (take (- n 1) x)
+                                        (list (nth (- n 1) x)))))))
+
+  (local
+   (defthmd comparable-mergesort-is-identity-under-set-equiv-lemma-3
+     (iff (member-equal x lst)
+          (not (zp (duplicity x lst))))))
+
+  (local (include-book "std/basic/inductions" :dir :system))
+
+  (local
+   (defthmd
+     comparable-mergesort-is-identity-under-set-equiv-lemma-1
+     (implies (<= (nfix n) (len x))
+              (subsetp-equal (take n x)
+                             (comparable-mergesort x)))
+     :hints (("goal" :induct (dec-induct n)
+              :expand ((:with comparable-mergesort-is-identity-under-set-equiv-lemma-3
+                              (member-equal (nth (+ -1 n) x)
+                                            (comparable-mergesort x)))
+                       (:with comparable-mergesort-is-identity-under-set-equiv-lemma-2
+                              (take n x)))))))
+
+  (defthm
+    comparable-mergesort-is-identity-under-set-equiv
+    (set-equiv (comparable-mergesort x) x)
+    :hints (("goal" :in-theory (enable set-equiv)
+             :use (:instance comparable-mergesort-is-identity-under-set-equiv-lemma-1
+                             (n (len x))))))
+  (local
+   (defthm
+     common-sort-for-perms-lemma-1
+     (implies (and (comparable-orderedp l)
+                   (compare< x (car l))
+                   (compare<-negation-transitive)
+                   (compare<-strict))
+              (not
+               (member-equal x l)))
+     :hints (("goal" :in-theory (enable comparable-orderedp member-equal)))))
+
+  (local
+   (defthmd
+     common-sort-for-perms-lemma-2
+     (implies (and (comparable-orderedp l)
+                   (member-equal x l)
+                   (compare< x (nth n l))
+                   (compare<-negation-transitive)
+                   (compare<-strict))
+              (member-equal x (take n l)))
+     :hints (("goal" :in-theory (enable comparable-orderedp member-equal)))))
+
+  (local
+   (defthm common-sort-for-perms-lemma-3
+     (implies (and (no-duplicatesp-equal l)
+                   (< (nfix n) (len l)))
+              (not (member-equal (nth n l) (take n l))))
+     :hints (("goal" :in-theory (e/d (member-equal) (member-equal-nth))
+              :induct (nth n l))
+             ("subgoal *1/3" :use (:instance (:rewrite member-equal-nth)
+                                             (l (cdr l))
+                                             (n (+ -1 n)))))))
+
+  (local
+   (defthm
+     common-sort-for-perms-lemma-5
+     (implies
+      (and
+       (equal (take (+ -1 n)
+                    (comparable-insertsort (remove-duplicates-equal x)))
+              (take (+ -1 n)
+                    (comparable-insertsort (remove-duplicates-equal y))))
+       (compare< (mv-nth 1
+                         (compare<-negation-transitive-witness))
+                 (mv-nth 2
+                         (compare<-negation-transitive-witness)))
+       (not (compare< (compare<-strict-witness)
+                      (compare<-strict-witness)))
+       (set-equiv x y)
+       (<= n (len (remove-duplicates-equal x))))
+      (not
+       (member-equal (nth (+ -1 n)
+                          (comparable-insertsort (remove-duplicates-equal y)))
+                     (take (+ -1 n)
+                           (comparable-insertsort (remove-duplicates-equal x))))))
+     :hints
+     (("goal"
+       :do-not-induct t
+       :in-theory (e/d
+                   ((:definition compare<-negation-transitive)
+                    (:definition compare<-strict))
+                   ((:rewrite common-sort-for-perms-lemma-3)))
+       :use (:instance (:rewrite common-sort-for-perms-lemma-3)
+                       (l (comparable-mergesort (remove-duplicates-equal y)))
+                       (n (+ -1 n)))))))
+
+  (local
+   (defthm
+     common-sort-for-perms-lemma-6
+     (implies
+      (and
+       (not (zp n))
+       (compare< (mv-nth 1
+                         (compare<-negation-transitive-witness))
+                 (mv-nth 2
+                         (compare<-negation-transitive-witness)))
+       (not (compare< (compare<-strict-witness)
+                      (compare<-strict-witness)))
+       (set-equiv x y)
+       (<= n (len (remove-duplicates-equal x))))
+      (member-equal (nth (+ -1 n)
+                         (comparable-insertsort (remove-duplicates-equal y)))
+                    x))
+     :hints
+     (("goal"
+       :do-not-induct t
+       :in-theory (e/d
+                   ((:definition compare<-negation-transitive)
+                    (:definition compare<-strict))
+                   ((:rewrite member-equal-nth)))
+       :use (:instance (:rewrite member-equal-nth)
+                       (l (comparable-mergesort (remove-duplicates-equal y)))
+                       (n (+ -1 n)))))))
+
+  (local
+   (defthm
+     common-sort-for-perms-lemma-4
+     (implies
+      (and
+       (not (compare< (compare<-strict-witness)
+                      (compare<-strict-witness)))
+       (not (zp n))
+       (equal (take (+ -1 n)
+                    (comparable-mergesort (remove-duplicates-equal x)))
+              (take (+ -1 n)
+                    (comparable-mergesort (remove-duplicates-equal y))))
+       (compare< (mv-nth 1
+                         (compare<-negation-transitive-witness))
+                 (mv-nth 2
+                         (compare<-negation-transitive-witness)))
+       (set-equiv x y)
+       (<= n (len (remove-duplicates-equal x))))
+      (not (compare< (nth (+ -1 n)
+                          (comparable-mergesort (remove-duplicates-equal y)))
+                     (nth (+ -1 n)
+                          (comparable-mergesort (remove-duplicates-equal x))))))
+     :hints
+     (("goal"
+       :do-not-induct t
+       :in-theory (e/d
+                   ((:definition compare<-negation-transitive)
+                    (:definition compare<-strict)))
+       :use (:instance
+             (:rewrite common-sort-for-perms-lemma-2)
+             (l (comparable-mergesort (remove-duplicates-equal x)))
+             (n (+ -1 n))
+             (x (nth (+ -1 n)
+                     (comparable-mergesort (remove-duplicates-equal y)))))))))
+
+  (local
+   (defthm
+     common-sort-for-perms-lemma-8
+     (implies
+      (and
+       (compare< (mv-nth 0
+                         (compare<-negation-transitive-witness))
+                 (mv-nth 1
+                         (compare<-negation-transitive-witness)))
+       (not (compare< (compare<-strict-witness)
+                      (compare<-strict-witness)))
+       (<= n (len (remove-duplicates-equal x))))
+      (not
+       (member-equal (nth (+ -1 n)
+                          (comparable-insertsort (remove-duplicates-equal x)))
+                     (take (+ -1 n)
+                           (comparable-insertsort (remove-duplicates-equal x))))))
+     :hints
+     (("goal"
+       :in-theory (e/d
+                   ((:definition compare<-negation-transitive)
+                    (:definition compare<-strict))
+                   ((:rewrite common-sort-for-perms-lemma-3)))
+       :use (:instance
+             (:rewrite common-sort-for-perms-lemma-3)
+             (l (comparable-mergesort (remove-duplicates-equal x)))
+             (n (+ -1 n)))))))
+
+  (local
+   (defthm
+     common-sort-for-perms-lemma-9
+     (implies
+      (and
+       (not (zp n))
+       (compare< (mv-nth 0
+                         (compare<-negation-transitive-witness))
+                 (mv-nth 1
+                         (compare<-negation-transitive-witness)))
+       (not (compare< (compare<-strict-witness)
+                      (compare<-strict-witness)))
+       (<= n (len (remove-duplicates-equal x))))
+      (member-equal (nth (+ -1 n)
+                         (comparable-insertsort (remove-duplicates-equal x)))
+                    x))
+     :hints
+     (("goal"
+       :do-not-induct t
+       :in-theory (e/d
+                   ((:definition compare<-negation-transitive)
+                    (:definition compare<-strict))
+                   ((:rewrite member-equal-nth)))
+       :use (:instance (:rewrite member-equal-nth)
+                       (l (comparable-mergesort (remove-duplicates-equal x)))
+                       (n (+ -1 n)))))))
+
+  (local
+   (defthm
+     common-sort-for-perms-lemma-10
+     (implies
+      (and
+       (not (zp n))
+       (compare< (mv-nth 0
+                         (compare<-negation-transitive-witness))
+                 (mv-nth 1
+                         (compare<-negation-transitive-witness)))
+       (not (compare< (compare<-strict-witness)
+                      (compare<-strict-witness)))
+       (<= n (len (remove-duplicates-equal x))))
+      (member-equal (nth (+ -1 n)
+                         (comparable-mergesort (remove-duplicates-equal x)))
+                    x))
+     :hints
+     (("goal"
+       :in-theory (e/d
+                   ((:definition compare<-negation-transitive)
+                    (:definition compare<-strict)))
+       :use
+       (:instance
+        (:rewrite comparable-mergesort-is-identity-under-set-equiv-lemma-3)
+        (lst (remove-duplicates-equal x))
+        (x (nth (+ -1 n)
+                (comparable-mergesort (remove-duplicates-equal x)))))))))
+
+  (local
+   (defthm
+     common-sort-for-perms-lemma-7
+     (implies
+      (and (not (< (len (remove-duplicates-equal x)) n))
+           (not (zp n))
+           (equal (take (+ -1 n)
+                        (comparable-mergesort (remove-duplicates-equal x)))
+                  (take (+ -1 n)
+                        (comparable-mergesort (remove-duplicates-equal y))))
+           (compare< (mv-nth 0
+                             (compare<-negation-transitive-witness))
+                     (mv-nth 1
+                             (compare<-negation-transitive-witness)))
+           (not (compare< (compare<-strict-witness)
+                          (compare<-strict-witness)))
+           (set-equiv x y))
+      (not
+       (compare< (nth (+ -1 n)
+                      (comparable-mergesort (remove-duplicates-equal x)))
+                 (nth (+ -1 n)
+                      (comparable-mergesort (remove-duplicates-equal y))))))
+     :hints
+     (("goal"
+       :do-not-induct t
+       :in-theory (e/d
+                   ((:definition compare<-negation-transitive)
+                    (:definition compare<-strict)))
+       :use (:instance
+             (:rewrite common-sort-for-perms-lemma-2)
+             (l (comparable-mergesort (remove-duplicates-equal y)))
+             (n (+ -1 n))
+             (x (nth (+ -1 n)
+                     (comparable-mergesort (remove-duplicates-equal x)))))))))
+
+  (local
+   (defthm
+     common-sort-for-perms-lemma-12
+     (implies
+      (and
+       (not (compare< (mv-nth 0
+                              (compare<-negation-transitive-witness))
+                      (mv-nth 2
+                              (compare<-negation-transitive-witness))))
+       (not (compare< (compare<-strict-witness)
+                      (compare<-strict-witness)))
+       (<= n (len (remove-duplicates-equal x))))
+      (not
+       (member-equal (nth (+ -1 n)
+                          (comparable-insertsort (remove-duplicates-equal x)))
+                     (take (+ -1 n)
+                           (comparable-insertsort (remove-duplicates-equal x))))))
+     :hints
+     (("goal"
+       :do-not-induct t
+       :in-theory (e/d
+                   ((:definition compare<-negation-transitive)
+                    (:definition compare<-strict))
+                   ((:rewrite common-sort-for-perms-lemma-3)))
+       :use (:instance
+             (:rewrite common-sort-for-perms-lemma-3)
+             (l (comparable-mergesort (remove-duplicates-equal x)))
+             (n (+ -1 n)))))))
+
+  (local
+   (defthm
+     common-sort-for-perms-lemma-13
+     (implies
+      (and
+       (not (zp n))
+       (not (compare< (mv-nth 0
+                              (compare<-negation-transitive-witness))
+                      (mv-nth 2
+                              (compare<-negation-transitive-witness))))
+       (not (compare< (compare<-strict-witness)
+                      (compare<-strict-witness)))
+       (<= n (len (remove-duplicates-equal x))))
+      (member-equal (nth (+ -1 n)
+                         (comparable-insertsort (remove-duplicates-equal x)))
+                    x))
+     :hints
+     (("goal"
+       :in-theory (e/d
+                   ((:definition compare<-negation-transitive)
+                    (:definition compare<-strict))
+                   ((:rewrite member-equal-nth)))
+       :use (:instance (:rewrite member-equal-nth)
+                       (l (comparable-mergesort (remove-duplicates-equal x)))
+                       (n (+ -1 n)))))))
+
+  (local
+   (defthm
+     common-sort-for-perms-lemma-11
+     (implies
+      (and
+       (not (zp n))
+       (equal (take (+ -1 n)
+                    (comparable-mergesort (remove-duplicates-equal x)))
+              (take (+ -1 n)
+                    (comparable-mergesort (remove-duplicates-equal y))))
+       (not (compare< (mv-nth 0
+                              (compare<-negation-transitive-witness))
+                      (mv-nth 2
+                              (compare<-negation-transitive-witness))))
+       (not (compare< (compare<-strict-witness)
+                      (compare<-strict-witness)))
+       (set-equiv x y)
+       (<= n (len (remove-duplicates-equal x))))
+      (not (compare< (nth (+ -1 n)
+                          (comparable-mergesort (remove-duplicates-equal x)))
+                     (nth (+ -1 n)
+                          (comparable-mergesort (remove-duplicates-equal y))))))
+     :hints
+     (("goal"
+       :in-theory (e/d
+                   ((:definition compare<-negation-transitive)
+                    (:definition compare<-strict)))
+       :use (:instance
+             (:rewrite common-sort-for-perms-lemma-2)
+             (l (comparable-mergesort (remove-duplicates-equal y)))
+             (n (+ -1 n))
+             (x (nth (+ -1 n)
+                     (comparable-mergesort (remove-duplicates-equal x)))))))))
+
+  (local
+   (defthmd
+     common-sort-for-perms-lemma-14
+     (implies (and (compare<-total)
+                   (compare<-negation-transitive)
+                   (compare<-strict)
+                   (set-equiv x y)
+                   (<= (nfix n)
+                       (len (remove-duplicates-equal x))))
+              (equal (take n
+                           (comparable-mergesort (remove-duplicates-equal x)))
+                     (take n
+                           (comparable-mergesort (remove-duplicates-equal y)))))
+     :hints
+     (("goal"
+       :induct (dec-induct n)
+       :in-theory (e/d
+                   (comparable-mergesort-is-identity-under-set-equiv-lemma-2
+                    (:definition compare<-negation-transitive)
+                    (:definition compare<-strict))
+                   (compare<-total-necc
+                    comparable-mergesort-equals-comparable-insertsort))
+       :restrict
+       ((comparable-mergesort-is-identity-under-set-equiv-lemma-2
+         ((n n)
+          (x (comparable-mergesort (remove-duplicates-equal x))))
+         ((n n)
+          (x (comparable-mergesort (remove-duplicates-equal y)))))))
+      ("subgoal *1/2"
+       :use (:instance
+             compare<-total-necc
+             (x (nth (+ -1 n)
+                     (comparable-mergesort (remove-duplicates-equal y))))
+             (y (nth (+ -1 n)
+                     (comparable-mergesort (remove-duplicates-equal x)))))))))
+
+  (defthm
+    common-sort-for-perms
+    (implies (and (compare<-negation-transitive)
+                  (compare<-strict)
+                  (compare<-total)
+                  (set-equiv x y))
+             (equal (comparable-mergesort (remove-duplicates-equal x))
+                    (comparable-mergesort (remove-duplicates-equal y))))
+    :hints
+    (("goal"
+      :do-not-induct t
+      :in-theory (e/d (take-of-len-free)
+                      (comparable-mergesort-equals-comparable-insertsort
+                       set-equiv-implies-equal-len-remove-duplicates-equal))
+      :use ((:instance common-sort-for-perms-lemma-14
+                       (n (len (remove-duplicates-equal x))))
+            set-equiv-implies-equal-len-remove-duplicates-equal)))))

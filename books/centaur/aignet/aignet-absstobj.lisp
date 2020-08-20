@@ -264,7 +264,7 @@
      (forall n
              (implies (< (nfix n) (aignet$a::num-outs aigneta))
                       (lit-equiv (nth n (nth aignet$c::*outsi* aignetc))
-                                 (fanin :co (lookup-stype n (po-stype) aigneta)))))
+                                 (fanin 0 (lookup-stype n (po-stype) aigneta)))))
      :rewrite :direct)
 
    (in-theory (disable po-fanins-correct))
@@ -813,8 +813,8 @@
    (local (defthm id->phase-when-gate
             (implies (equal (ctype (stype (car (lookup-id id aignet)))) (gate-ctype))
                      (equal (id-phase id aignet)
-                            (b* ((f0 (fanin :gate0 (lookup-id id aignet)))
-                                 (f1 (fanin :gate1 (lookup-id id aignet))))
+                            (b* ((f0 (fanin 0 (lookup-id id aignet)))
+                                 (f1 (fanin 1 (lookup-id id aignet))))
                               (if (eql 1 (regp (stype (car (lookup-id id aignet)))))
                                   (b-xor (b-xor (lit->neg f0)
                                                 (id-phase (lit->var f0) aignet))
@@ -969,7 +969,7 @@
 (defmacro id->slot (id slot a)
   (cond ((eql slot 1) `(id->slot1 ,id ,a))
         ((eql slot 0) `(id->slot0 ,id ,a))
-        (t `(id->slot-fn ,id ,a))))
+        (t `(id->slot-fn ,id ,slot ,a))))
 
 
 (define id->type ((id natp) aignet)
@@ -994,14 +994,14 @@
   :guard (and (id-existsp id aignet)
               (eql (id->type id aignet) (gate-type)))
   :enabled t
-  (mbe :logic (non-exec (fanin :gate0 (lookup-id id aignet)))
+  (mbe :logic (non-exec (fanin 0 (lookup-id id aignet)))
        :exec (snode->fanin^ (id->slot0 id aignet))))
 
 (define gate-id->fanin1 ((id natp) aignet)
   :guard (and (id-existsp id aignet)
               (eql (id->type id aignet) (gate-type)))
   :enabled t
-  (mbe :logic (non-exec (fanin :gate1 (lookup-id id aignet)))
+  (mbe :logic (non-exec (fanin 1 (lookup-id id aignet)))
        :exec (snode->fanin^ (id->slot1 id aignet))))
 
 (define regnum->nxst ((reg natp) aignet)
@@ -1108,6 +1108,8 @@
 
 
 (defstobj-clone aignet2 aignet :suffix "2")
+(defstobj-clone aignet3 aignet :suffix "3")
+(defstobj-clone aignet-tmp aignet :suffix "-TMP")
 
 
 (define num-gates (aignet)
@@ -1475,7 +1477,7 @@ register number of a PI/register node (@('snode->ionum')).</p>")
 
 (defxdoc outnum->fanin
   :short "@(call outnum->fanin) gets the fanin literal of primary output number @('n')."
-  :long "<p>Logically this is @('(fanin :co (lookup-stype n :po aignet))').</p>
+  :long "<p>Logically this is @('(fanin 0 (lookup-stype n :po aignet))').</p>
   <p>In the execution this is a stobj array lookup in the outputs array.</p>
 
   @(def aignet$a::outnum->fanin)")
@@ -1518,7 +1520,7 @@ register number of a PI/register node (@('snode->ionum')).</p>")
   :long "<p>Logically this is just</p>
 
   @({
-      (fanin :gate0 (lookup-id id aignet))
+      (fanin 0 (lookup-id id aignet))
   })
 
   <p>The @(see fanin) function ensures that the literal returned is a valid
@@ -1536,7 +1538,7 @@ register number of a PI/register node (@('snode->ionum')).</p>")
   :long "<p>Logically this is just</p>
 
   @({
-      (fanin :gate1 (lookup-id id aignet))
+      (fanin 1 (lookup-id id aignet))
   })
 
   <p>The @(see fanin) function ensures that the literal returned is a valid

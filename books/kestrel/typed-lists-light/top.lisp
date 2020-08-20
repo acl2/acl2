@@ -10,5 +10,6 @@
 
 (in-package "ACL2")
 
+(include-book "character-listp")
 (include-book "all-true-listp")
 (include-book "items-have-len")

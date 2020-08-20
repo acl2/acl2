@@ -21,15 +21,4 @@
   :val (symbol-listp x)
   :true-listp t
   :keyp-of-nil t
-  :valp-of-nil t
-  ///
-
-  (defthm symbol-listp-of-cdr-of-assoc-equal-when-symbol-symbollist-alistp
-    (implies (symbol-symbollist-alistp alist)
-             (symbol-listp (cdr (assoc-equal key alist)))))
-
-  (defthm symbol-symbollist-alistp-of-put-assoc-equal
-    (implies (symbol-symbollist-alistp alist)
-             (equal (symbol-symbollist-alistp (put-assoc-equal key val alist))
-                    (and (symbolp key)
-                         (symbol-listp val))))))
+  :valp-of-nil t)

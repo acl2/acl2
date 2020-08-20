@@ -434,50 +434,11 @@
                        (if (consp (assoc-equal x alist))
                            (list (assoc-equal x alist)) nil))))
 
-(defthm
-  set-equiv-cons-remove-1
-  (implies (member-equal x l)
-           (set-equiv (cons x (remove-equal x l))
-                      l))
-  :hints
-  (("goal"
-    :induct (remove-equal x l)
-    :in-theory (disable (:rewrite commutativity-2-of-append-under-set-equiv)))
-   ("subgoal *1/3"
-    :use (:instance (:rewrite commutativity-2-of-append-under-set-equiv)
-                    (z (remove-equal x (cdr l)))
-                    (y (list (car l)))
-                    (x (list x))))))
-
-(defthm
-  set-equiv-of-append-of-cons-1
-  (set-equiv (append x (cons y z))
-             (cons y (append x z)))
-  :hints
-  (("goal" :in-theory (disable commutativity-2-of-append-under-set-equiv)
-    :use (:instance commutativity-2-of-append-under-set-equiv
-                    (y (list y))))))
-
-(defthmd set-equiv-of-cons-of-remove-1
-  (set-equiv (cons x (remove-equal x y))
-             (cons x y))
-  :hints (("goal" :in-theory (disable set-equiv-of-append-of-cons-1)
-           :induct (remove-equal x y))
-          ("subgoal *1/3" :use ((:instance set-equiv-of-append-of-cons-1
-                                           (x (list x))
-                                           (y (car y))
-                                           (z (remove-equal x (cdr y))))
-                                (:instance set-equiv-of-append-of-cons-1
-                                           (x (list x))
-                                           (y (car y))
-                                           (z (cdr y)))))))
-
 (defthmd cons-equal-under-set-equiv-1
   (iff (set-equiv (cons x y1) (cons x y2))
        (set-equiv (remove-equal x y1)
                   (remove-equal x y2)))
-  :instructions ((in-theory (enable set-equiv-of-cons-of-remove-1))
-                 (:= (cons x y2)
+  :instructions ((:= (cons x y2)
                      (cons x (remove-equal x y2))
                      :equiv set-equiv)
                  (:= (cons x y1)
@@ -1272,10 +1233,35 @@
      (dir-ent-directory-p dir-ent-set-first-cluster-file-size)
      (logbitp)))))
 
+(def-listfix-rule nth-of-element-list-fix
+  (equal (nth n (element-list-fix x))
+         (if (< (nfix n) (len x))
+             (element-fix (nth n x))
+           nil)))
+
+(def-listp-rule list-equiv-refines-element-list-equiv
+  (implies (and (list-equiv x y)
+                (not (element-list-final-cdr-p t)))
+           (element-list-equiv x y))
+  :hints (("Goal" :induct (fast-list-equiv x y)
+           :in-theory (enable fast-list-equiv)))
+  :name list-equiv-refines-element-list-equiv
+  :requirement (not true-listp)
+  :body
+  (implies (list-equiv x y)
+           (element-list-equiv x y))
+  :inst-rule-classes :refinement)
+
+(def-listfix-rule
+  prefixp-of-element-list-fix
+  (implies (prefixp x y)
+           (prefixp (element-list-fix x)
+                    (element-list-fix y)))
+  :hints (("goal" :in-theory (enable prefixp))))
+
 (fty::deflist fat32-filename-list
               :elt-type fat32-filename      ;; required, must have a known fixing function
-              :true-listp t
-              )
+              :true-listp t)
 
 ;; The fact that we're having to insert this indicates that deflist should have
 ;; an option to make it come up disabled.
@@ -1799,6 +1785,12 @@
            (hifat-no-dups-p (m1-file->contents (cdr (car hifat-file-alist)))))
   :hints (("goal" :in-theory (enable hifat-no-dups-p))))
 
+(defthm no-duplicatesp-of-strip-cars-when-hifat-no-dups-p
+  (implies (and (hifat-no-dups-p fs)
+                (m1-file-alist-p fs))
+           (no-duplicatesp-equal (strip-cars fs)))
+  :hints (("goal" :in-theory (enable hifat-no-dups-p))))
+
 (defun hifat-file-alist-fix (hifat-file-alist)
   (declare (xargs :guard (and (m1-file-alist-p hifat-file-alist)
                               (hifat-no-dups-p hifat-file-alist))
@@ -1895,9 +1887,19 @@
   (mv-let (file error-code)
     (hifat-find-file fs path)
     (and (m1-file-p file)
-         (integerp error-code)))
+         (natp error-code)))
   :hints (("goal" :induct (hifat-find-file fs path)
-           :in-theory (enable hifat-find-file))))
+           :in-theory (enable hifat-find-file)))
+  :rule-classes
+  ((:rewrite
+    :corollary
+    (mv-let (file error-code)
+      (hifat-find-file fs path)
+      (and (m1-file-p file)
+           (integerp error-code))))
+   (:linear
+    :corollary
+    (<= 0 (mv-nth 1 (hifat-find-file fs path))))))
 
 (defthmd hifat-find-file-of-fat32-filename-list-fix
   (equal
@@ -1933,13 +1935,6 @@
     ((atom x) (hifat-find-file fs y))
     (t (hifat-find-file fs x))))
   :hints (("goal" :in-theory (enable hifat-find-file))))
-
-(defthm
-  m1-file-alist-p-of-put-assoc-equal
-  (implies
-   (m1-file-alist-p alist)
-   (equal (m1-file-alist-p (put-assoc-equal name val alist))
-          (and (fat32-filename-p name) (m1-file-p val)))))
 
 (defund
   hifat-place-file
@@ -2786,7 +2781,7 @@
 ;;                                                      CHARACTER-LIST))) ))
 
 (defun fat32-path-to-path (string-list)
-  ;; (declare (xargs :guard (string-listp string-list)))
+  (declare (xargs :guard (fat32-filename-list-p string-list)))
   (if (atom string-list)
       nil
     (append (fat32-name-to-name (coerce (car string-list) 'list))

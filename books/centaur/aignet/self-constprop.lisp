@@ -174,9 +174,9 @@
                     (acl2::b-xor (lit-eval child1 in-vals reg-vals aignet)
                                  (lit-eval child2 in-vals reg-vals aignet))))
     :hints (("goal" :expand ((id-eval id in-vals reg-vals aignet)
-                             (id-eval (lit-id (fanin :gate0 (lookup-id id aignet)))
+                             (id-eval (lit-id (fanin 0 (lookup-id id aignet)))
                                       in-vals reg-vals aignet)
-                             (id-eval (lit-id (fanin :gate1 (lookup-id id aignet)))
+                             (id-eval (lit-id (fanin 1 (lookup-id id aignet)))
                                       in-vals reg-vals aignet))
              :in-theory (enable lit-eval eval-and-of-lits eval-xor-of-lits))
             (and stable-under-simplificationp
@@ -1240,9 +1240,9 @@
            (implies (and (equal (stype (car (lookup-id (lit->var lit) aignet))) :and)
                          (equal (lit->neg lit) 0))
                     (equal (lit-eval lit invals regvals aignet)
-                           (b-and (lit-eval (fanin :gate0 (lookup-id (lit->var lit) aignet))
+                           (b-and (lit-eval (fanin 0 (lookup-id (lit->var lit) aignet))
                                              invals regvals aignet)
-                                  (lit-eval (fanin :gate1 (lookup-id (lit->var lit) aignet))
+                                  (lit-eval (fanin 1 (lookup-id (lit->var lit) aignet))
                                              invals regvals aignet))))
            :hints(("Goal" :in-theory (enable lit-eval id-eval eval-and-of-lits)))))
 

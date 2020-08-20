@@ -38,6 +38,8 @@
 (include-book "defsort/defsort" :dir :system)
 (include-book "centaur/aignet/levels" :dir :system)
 (include-book "count")
+(include-book "supergate")
+(include-book "literal-sort-aignet")
 (local (include-book "centaur/satlink/cnf-basics" :dir :system))
 (local (include-book "std/lists/resize-list" :dir :system ))
 (local (include-book "centaur/aignet/bit-lemmas" :dir :system))
@@ -83,122 +85,10 @@
   :tag :balance-config)
 
 
-(defsection aignet-eval-conjunction
-
-  (local (defthm aignet-eval-conjunction-when-member
-           (implies (And (member lit lits)
-                         (equal (lit-eval lit invals regvals aignet) 0))
-                    (equal (aignet-eval-conjunction lits invals regvals aignet) 0))
-           :hints(("Goal" :in-theory (enable member aignet-eval-conjunction)))))
-
-  (local (defthm aignet-eval-conjunction-of-subset
-           (implies (and (subsetp lits1 lits2)
-                         (equal 1 (aignet-eval-conjunction lits2 invals regvals aignet)))
-                    (equal (aignet-eval-conjunction lits1 invals regvals aignet) 1))
-           :hints(("Goal" :in-theory (enable subsetp aignet-eval-conjunction)))))
-
-  (defcong acl2::set-equiv equal (aignet-eval-conjunction lits invals regvals aignet) 1
-    :hints(("Goal" :in-theory (enable acl2::set-equiv)
-            :cases ((equal 1 (aignet-eval-conjunction lits invals regvals aignet)))))))
-
-(define aignet-eval-parity ((lits lit-listp) invals regvals aignet)
-  :guard (and (aignet-lit-listp lits aignet)
-              (<= (num-ins aignet) (bits-length invals))
-              (<= (num-regs aignet) (bits-length regvals)))
-  :returns (res bitp)
-  (if (atom lits)
-      0
-    (b-xor (lit-eval (car lits) invals regvals aignet)
-           (aignet-eval-parity (cdr lits) invals regvals aignet)))
-  ///
-  (defthm aignet-eval-parity-preserved-by-extension
-    (implies (and (aignet-extension-binding)
-                  (aignet-lit-listp lits orig))
-             (equal (aignet-eval-parity lits invals regvals new)
-                    (aignet-eval-parity lits invals regvals orig)))))
 
 
-
-(defcong acl2::set-equiv equal (aignet-lit-listp lits aignet) 1
-  :hints (("goal" :use ((:instance (:functional-instance
-                                    acl2::element-list-p-set-equiv-congruence
-                                    (acl2::element-list-final-cdr-p (lambda (x) t))
-                                    (acl2::element-p (lambda (x) (aignet-litp x aignet)))
-                                    (acl2::element-example (lambda () 0))
-                                    (acl2::element-list-p (lambda (x) (aignet-lit-listp x aignet))))
-                         (x lits) (y lits-equiv)))
-           :do-not-induct t)))
                     
 
-(defsection literal-sort
-  (acl2::defsort literal-sort (x)
-    :compare< <
-    :comparablep litp)
-
-  (defthm literal-sort-list-p-when-lit-listp
-    (implies (lit-listp x)
-             (literal-sort-list-p x))
-    :hints(("Goal" :in-theory (enable literal-sort-list-p))))
-
-
-
-  (defthm set-equiv-of-literal-sort-insert
-    (acl2::set-equiv (literal-sort-insert x y)
-                     (cons x y))
-    :hints(("Goal" :in-theory (enable literal-sort-insert)
-            :induct t)
-           (acl2::set-reasoning)))
-
-  (defthm set-equiv-of-literal-sort
-    (acl2::set-equiv (literal-sort-insertsort x) x)
-    :hints(("Goal" :in-theory (enable literal-sort-insertsort))))
-
-
-
-
-  (defthm lit-listp-of-literal-sort-insert
-    (implies (and (litp x) (lit-listp y))
-             (lit-listp (literal-sort-insert x y)))
-    :hints(("Goal" :in-theory (enable literal-sort-insert))))
-
-  (defthm lit-listp-of-literal-sort-insertsort
-    (implies (lit-listp x)
-             (lit-listp (literal-sort-insertsort x)))
-    :hints(("Goal" :in-theory (enable literal-sort-insertsort))))
-
-  ;; (defthm aignet-lit-listp-of-literal-sort-insert
-  ;;   (implies (and (aignet-litp x aignet) (aignet-lit-listp y aignet))
-  ;;            (aignet-lit-listp (literal-sort-insert x y) aignet))
-  ;;   :hints(("Goal" :in-theory (enable literal-sort-insert))))
-
-  ;; (defthm aignet-lit-listp-of-literal-sort-insertsort
-  ;;   (implies (aignet-lit-listp x aignet)
-  ;;            (aignet-lit-listp (literal-sort-insertsort x) aignet))
-  ;;   :hints(("Goal" :in-theory (enable literal-sort-insertsort))))
-
-  (defthm len-of-literal-sort-insert
-    (equal (len (literal-sort-insert x y))
-           (+ 1 (len y)))
-    :hints(("Goal" :in-theory (enable literal-sort-insert))))
-
-
-  (defthm aignet-eval-parity-of-literal-sort-insert
-    (equal (aignet-eval-parity (literal-sort-insert x y) invals regvals aignet)
-           (aignet-eval-parity (cons x y) invals regvals aignet))
-    :hints(("Goal" :in-theory (enable aignet-eval-parity literal-sort-insert )
-            :induct (literal-sort-insert x y))))
-
-  (defthm aignet-eval-parity-of-literal-sort-insertsort
-    (equal (aignet-eval-parity (literal-sort-insertsort x) invals regvals aignet)
-           (aignet-eval-parity x invals regvals aignet))
-    :hints(("Goal" :in-theory (enable aignet-eval-parity literal-sort-insertsort )
-            :induct (literal-sort-insertsort x))))
-
-  (defthm aignet-lit-listp-of-literal-sort-insertsort
-    (implies (aignet-lit-listp lits aignet)
-             (aignet-lit-listp (literal-sort-insertsort lits) aignet))))
-
-(defstobj-clone levels u32arr :prefix "LEVELS-")
 
 
 (defsection levels-sort
@@ -1212,116 +1102,7 @@
                   (not (equal (stype-fix stype) (xor-stype))))
              (equal (stype-count stype new-aignet2) (stype-count stype aignet2)))))
 
-(define lit-collect-superxor ((lit litp)
-                              top
-                              (limit natp)
-                              (superxor lit-listp)
-                              aignet-refcounts aignet)
-  :guard (and (< (lit-id lit) (u32-length aignet-refcounts))
-              (fanin-litp lit aignet)
-              (true-listp superxor))
-  :measure (lit-id lit)
-  :verify-guards nil
-  :returns (mv (res lit-listp :hyp (and (lit-listp superxor) (litp lit)))
-               (rem-limit natp :rule-classes :type-prescription))
-  (b* ((lit (lit-fix lit))
-       (superxor (lit-list-fix superxor))
-       ((when (or (int= (lit-neg lit) 1)
-                  (not (int= (id->type (lit-id lit) aignet) (gate-type)))
-                  (int= (id->regp (lit-id lit) aignet) 0) ;; and
-                  (and (not top) (< 1 (get-u32 (lit-id lit) aignet-refcounts)))
-                  (zp limit)))
-        (mv (cons lit superxor)
-            (if (zp limit) 0 (1- limit))))
-       ((mv superxor limit)
-        (lit-collect-superxor (gate-id->fanin0 (lit-id lit) aignet)
-                              nil limit superxor aignet-refcounts aignet)))
-    (lit-collect-superxor (gate-id->fanin1 (lit-id lit) aignet)
-                          nil limit superxor aignet-refcounts aignet))
-  ///
-  ;; (defthm true-listp-of-collect-superxor
-  ;;   (implies (true-listp superxor)
-  ;;            (true-listp (lit-collect-superxor lit top use-muxes superxor
-  ;;                                               aignet-refcounts aignet)))
-  ;;   :hints (("goal" :induct (lit-collect-superxor lit top use-muxes superxor
-  ;;                                                  aignet-refcounts aignet)
-  ;;            :do-not-induct t
-  ;;            :in-theory (enable (:induction lit-collect-superxor))
-  ;;            :expand ((:free (top use-muxes)
-  ;;                      (lit-collect-superxor lit top use-muxes superxor
-  ;;                                             aignet-refcounts aignet))))))
-  (local (defthm lit-listp-true-listp
-           (implies (lit-listp x) (true-listp x))))
-  (verify-guards lit-collect-superxor)
-  (defret aignet-lit-listp-of-collect-superxor
-    (implies (and (aignet-litp lit aignet)
-                  (aignet-lit-listp superxor aignet))
-             (aignet-lit-listp res
-              aignet))
-    :hints (("goal" :induct <call>
-             :do-not-induct t
-             :in-theory (disable (:definition lit-collect-superxor))
-             :expand ((:free (top) <call>)))))
 
-  (defret collect-superxor-correct
-    (equal (aignet-eval-parity res invals regvals aignet)
-           (acl2::b-xor (lit-eval lit invals regvals aignet)
-                        (aignet-eval-parity superxor invals regvals aignet)))
-    :hints (("goal" :induct <call>
-             :do-not-induct t
-             :in-theory (e/d (eval-xor-of-lits)
-                             ((:definition lit-collect-superxor)))
-             :expand ((:free (top) <call>)))
-            (and stable-under-simplificationp
-                 '(:expand ((lit-eval lit invals regvals aignet)
-                            (aignet-eval-parity (cons lit superxor) invals regvals aignet)
-                            (id-eval (lit-id lit) invals regvals aignet))))))
-
-  
-
-  (local (in-theory (disable lookup-id-out-of-bounds
-                             lookup-id-in-bounds-when-positive
-                             member
-                             (:d lit-collect-superxor))))
-
-  (defretd lits-max-id-val-of-lit-collect-superxor
-    (<= (lits-max-id-val res)
-        (max (lit-id lit) (lits-max-id-val superxor)))
-    :hints(("Goal" :in-theory (enable lits-max-id-val)
-            :induct <call>
-            :expand ((:free (top) <call>)))))
-
-  (defret superxor-decr-top
-    (implies (and (int= (id->type id aignet) (gate-type))
-                  (eql (id->regp id aignet) 1)
-                  (not (zp limit)))
-             (< (lits-max-id-val
-                 (mv-nth 0 (lit-collect-superxor
-                            (mk-lit id 0)
-                            t limit nil aignet-refcounts aignet)))
-                (nfix id)))
-    :hints (("goal" :expand ((:free (use-muxes)
-                              (lit-collect-superxor
-                               (mk-lit id 0)
-                               t limit nil aignet-refcounts aignet)))
-             :use ((:instance lits-max-id-val-of-lit-collect-superxor
-                    (lit (gate-id->fanin0 id aignet))
-                    (top nil)
-                    (superxor nil))
-                   (:instance lits-max-id-val-of-lit-collect-superxor
-                    (lit (gate-id->fanin1 id aignet))
-                    (top nil)
-                    (superxor (mv-nth 0 (lit-collect-superxor
-                                          (gate-id->fanin0 id aignet)
-                                          nil limit nil aignet-refcounts aignet)))
-                    (limit  (mv-nth 1 (lit-collect-superxor
-                                       (gate-id->fanin0 id aignet)
-                                       nil limit nil aignet-refcounts aignet)))))
-             :in-theory (e/d () (lits-max-id-val-of-lit-collect-superxor
-                                 lit-collect-superxor)))
-            (and stable-under-simplificationp
-                 '(:in-theory (enable id-is-mux))))
-    :rule-classes (:rewrite :linear)))
 
 
 
@@ -1647,7 +1428,7 @@
   (forall n
           (implies (< (nfix n) (num-outs aignet))
                    (b* ((out-suffix (lookup-stype n :po aignet)))
-                     (equal (nth (lit-id (fanin :co out-suffix))
+                     (equal (nth (lit-id (fanin 0 out-suffix))
                                  mark)
                             1))))
   :rewrite :direct)
@@ -1809,7 +1590,7 @@
   (defret output-fanin-marked-of-aignet-balance-outs
     (implies (and (<= (nfix n) (nfix m))
                   (< (nfix m) (num-outs aignet)))
-             (equal (nth (lit-id (fanin :co (lookup-stype m :po aignet))) new-mark) 1)))
+             (equal (nth (lit-id (fanin 0 (lookup-stype m :po aignet))) new-mark) 1)))
 
   (defret aignet-output-fanins-marked-of-aignet-balance-outs
     (implies (zp n)
@@ -2042,7 +1823,7 @@
 ;;                                    (id-eval (+ 1 (nfix n) (fanin-count suff)) invals regvals aignet))
 ;;                                   (aignet-copy-outs-from-fanins-iter (+ 1 (nfix n)) aignet copy aignet2)
 ;;                                   (:free (x)
-;;                                    (lit-eval (fanin :co x)
+;;                                    (lit-eval (fanin 0 x)
 ;;                                              invals regvals aignet))))))))
 
   

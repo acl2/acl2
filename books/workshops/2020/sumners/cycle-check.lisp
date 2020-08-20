@@ -10,6 +10,14 @@
 (include-book "centaur/fty/top" :dir :system)
 (include-book "centaur/misc/fast-alist-pop" :dir :system)
 
+; Matt K. mod: On 8/16/2020, there were three successive failed attempts to
+; certify this book in ACL2(p) with waterfall-parallelism enabled.  All
+; failures seemed to be abrupt, and had no explanation.  An attempt to LD this
+; file then succeeded; nevertheless, it seems simplest to disable
+; waterfall-parallelism at this time to avoid ACL2(p) regression failures.
+; Perhaps someone will look into this if it's important.
+(set-waterfall-parallelism nil)
+
 (set-slow-alist-action :break)
 
 (defmacro nats-o (&rest x)
@@ -54,7 +62,7 @@
   :fix   ord-tag-fix
   :equiv ord-tag-equiv
   :define t)
-  
+
 ;;;;
 
 (define ord-p (x)
@@ -131,7 +139,7 @@
   :fix   w-ord-fix
   :equiv w-ord-equiv
   :define t)
-  
+
 (fty::deflist arcs
   :elt-type node-p
   :true-listp t)
@@ -173,9 +181,9 @@
   :val-type w-ord-lst-p
   :short "a mapping from nodes in a graph to a w-ord list defining a well-order"
   :true-listp t)
-               
+
 (defmacro make-alist-thms (al-type val-type)
-  `(progn 
+  `(progn
      (defthm ,(intern-in-package-of-symbol
                (str::cat (symbol-name al-type) "-IS-ALISTP")
                al-type)
@@ -256,11 +264,11 @@
   (fast-alist-pop x))
 
 (encapsulate
- (((check-ord-arc * * *) => * 
+ (((check-ord-arc * * *) => *
    :formals (src dst ord)
    :guard (and (node-p src) (node-p dst) (ord-p ord))))
- 
- (local 
+
+ (local
   (define check-ord-arc ((src node-p) (dst node-p) (ord ord-p))
     :enabled t
     (declare (ignore src dst ord))
@@ -326,7 +334,7 @@
   :short "returns the inverted graph for input graph"
   :returns (r graph-p)
   (graph-invert* g (graph-empty-dom g)))
-  
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; GRAPH computing mapped graph
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -553,7 +561,7 @@
 ;;   2) (eq dfs-type :anchor)
 ;;      returns an updated nmap in r where the cdr is the "anchor" which reached this node
 ;;      and has the property that at every point in the generated nmap, all nodes x reachable
-;;      from (caar r) satisfy (assoc x (cdr r)). accumulator is not used in this case and 
+;;      from (caar r) satisfy (assoc x (cdr r)). accumulator is not used in this case and
 ;;      will be :top in all calls..
 ;;
 ;;   3) (eq dfs-type :enumerate)
@@ -626,7 +634,7 @@
            (is-valid-bad-cyc (cdr path) ords :dec dec :inc inc
                              :r (cons (caar path) r))))))
 
-(define graph-dfs-top ((arcs arcs-p) (top node-p) (g graph-p) 
+(define graph-dfs-top ((arcs arcs-p) (top node-p) (g graph-p)
                        (acc natp)    (r nmap-p)   (v nmap-p)
                        (stk nmap-p)  dfs-type)
   :guard (or (eq dfs-type :enumerate)
@@ -654,8 +662,8 @@
            (n-g (graph-get n g))
            (n-r (nmap-get n r)))
         (if (or (not n-g) n-r (nmap-get n v))
-            (b* ((acc (if (and n-g n-r) 
-                          (upd-acc dfs-type (nfix (cdr n-r)) acc) 
+            (b* ((acc (if (and n-g n-r)
+                          (upd-acc dfs-type (nfix (cdr n-r)) acc)
                         acc)))
               (graph-dfs-top (rest arcs) top g acc r v stk dfs-type))
           (b* ((v (nmap-set n t v))
@@ -807,7 +815,7 @@
   :returns (r arcs-p)
   :verify-guards nil
   (cond ((null x) ())
-        ((atom x) 
+        ((atom x)
          (raise "ill-formed arcs specifier input:~x0" x))
         (t (arcs-add (car x)
                      (arcs-make (cdr x))))))
@@ -856,7 +864,7 @@
        (graph-make '((0 1 2)
                      (1 3)
                      (2 3)
-                     (3 1 2))))     
+                     (3 1 2))))
      (defconst *g4*
        (graph-make '((0 1 2)
                      (1 0)
@@ -991,14 +999,14 @@
          ((when cyc)    (fast-alist-free-on-exit g
                           (mv (list :valid ord cyc) ())))
          ((unless ord)  (fast-alist-free-on-exit g
-                          (mv (raise "internal error: should not get no order chosen here!") 
+                          (mv (raise "internal error: should not get no order chosen here!")
                               nil)))
          (sub           (graph-cut-ord g ord))
          ((mv err r)    (chk-well-order sub (remove-ord ord ords)
                                         :lst? nil :scc? nil))
          ((when err)    (mv err ()))
          ;; Ok, we have failed to find a pure cycle which demonstrates failure,
-         ;; so, we will resort to reporting a weaker cycle 
+         ;; so, we will resort to reporting a weaker cycle
          ((when no-ord) (b* (((mv cyc g) (graph-any-cycle g ords)))
                           (fast-alist-free-on-exit g
                             (mv (list :weak? ord cyc) nil))))
@@ -1067,7 +1075,7 @@
        (cond ((< a b) :<<)
              ((>= (+ a b) 5) nil)
              (t t)))))
-  
+
   (local (defattach check-ord-arc chk-arc-tst))
 
   (make-asserts

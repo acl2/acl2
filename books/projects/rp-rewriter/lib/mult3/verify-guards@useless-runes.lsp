@@ -1,0 +1,808 @@
+(RP::EX-FROM-RP-LOOSE-OF-EX-FROM-RP)
+(RP::EX-FROM-RP-AND-COUNT-C-1
+     (736 46 (:DEFINITION RP::EX-FROM-RP))
+     (506 46 (:REWRITE RP::NOT-INCLUDE-RP))
+     (368 46 (:DEFINITION RP::INCLUDE-FNC))
+     (249 249 (:REWRITE DEFAULT-CDR))
+     (205 197 (:REWRITE DEFAULT-CAR))
+     (138 138
+          (:TYPE-PRESCRIPTION RP::INCLUDE-FNC))
+     (108 9 (:DEFINITION RP::COUNT-C-LST))
+     (92 92
+         (:TYPE-PRESCRIPTION RP::INCLUDE-FNC-SUBTERMS))
+     (68 14 (:REWRITE O-P-O-INFP-CAR))
+     (48 24 (:REWRITE DEFAULT-+-2))
+     (46 46
+         (:TYPE-PRESCRIPTION RP::IS-RP$INLINE))
+     (45 9 (:REWRITE COMMUTATIVITY-OF-+))
+     (42 24 (:REWRITE DEFAULT-+-1))
+     (26 14 (:REWRITE O-P-DEF-O-FINP-1))
+     (20 5
+         (:REWRITE RP::QUOTEP-TERM-WITH-EX-FROM-RP))
+     (12 12 (:TYPE-PRESCRIPTION O-FINP))
+     (5 5 (:TYPE-PRESCRIPTION QUOTEP))
+     (5 5 (:REWRITE FN-CHECK-DEF-NOT-QUOTE)))
+(RP::EX-FROM-RP-AND-COUNT-C-1-REVERSE
+     (736 46 (:DEFINITION RP::EX-FROM-RP))
+     (506 46 (:REWRITE RP::NOT-INCLUDE-RP))
+     (368 46 (:DEFINITION RP::INCLUDE-FNC))
+     (249 249 (:REWRITE DEFAULT-CDR))
+     (205 197 (:REWRITE DEFAULT-CAR))
+     (138 138
+          (:TYPE-PRESCRIPTION RP::INCLUDE-FNC))
+     (108 9 (:DEFINITION RP::COUNT-C-LST))
+     (92 92
+         (:TYPE-PRESCRIPTION RP::INCLUDE-FNC-SUBTERMS))
+     (68 14 (:REWRITE O-P-O-INFP-CAR))
+     (48 24 (:REWRITE DEFAULT-+-2))
+     (46 46
+         (:TYPE-PRESCRIPTION RP::IS-RP$INLINE))
+     (45 9 (:REWRITE COMMUTATIVITY-OF-+))
+     (42 24 (:REWRITE DEFAULT-+-1))
+     (26 14 (:REWRITE O-P-DEF-O-FINP-1))
+     (20 5
+         (:REWRITE RP::QUOTEP-TERM-WITH-EX-FROM-RP))
+     (12 12 (:TYPE-PRESCRIPTION O-FINP))
+     (5 5 (:TYPE-PRESCRIPTION QUOTEP))
+     (5 5 (:REWRITE FN-CHECK-DEF-NOT-QUOTE)))
+(RP::EX-FROM-RP-AND-COUNT-C-2
+     (44 4 (:REWRITE RP::NOT-INCLUDE-RP))
+     (32 4 (:DEFINITION RP::INCLUDE-FNC))
+     (12 12 (:TYPE-PRESCRIPTION RP::INCLUDE-FNC))
+     (12 12 (:REWRITE DEFAULT-CDR))
+     (12 12 (:REWRITE DEFAULT-CAR))
+     (8 8
+        (:TYPE-PRESCRIPTION RP::INCLUDE-FNC-SUBTERMS))
+     (8 4 (:DEFINITION QUOTEP)))
+(RP::COUNT-C-WHEN-RP-EQUAL-LEMMA
+     (11 1 (:REWRITE RP::NOT-INCLUDE-RP))
+     (8 1 (:DEFINITION RP::INCLUDE-FNC))
+     (4 4 (:REWRITE DEFAULT-CAR))
+     (3 3 (:TYPE-PRESCRIPTION RP::INCLUDE-FNC))
+     (2 2
+        (:TYPE-PRESCRIPTION RP::INCLUDE-FNC-SUBTERMS))
+     (2 1 (:DEFINITION QUOTEP))
+     (1 1 (:REWRITE DEFAULT-CDR)))
+(RP::MEASURE-LEMMA-OF-COUGH-DUPLICATES
+     (10016 457 (:DEFINITION RP::EX-FROM-RP))
+     (6379 457 (:REWRITE RP::NOT-INCLUDE-RP))
+     (5581 4229 (:REWRITE DEFAULT-CDR))
+     (5008 457 (:DEFINITION RP::INCLUDE-FNC))
+     (2704 676 (:REWRITE O-P-O-INFP-CAR))
+     (2290 1165 (:REWRITE DEFAULT-+-2))
+     (2212 1165 (:REWRITE DEFAULT-+-1))
+     (1371 1371
+           (:TYPE-PRESCRIPTION RP::INCLUDE-FNC))
+     (914 914
+          (:TYPE-PRESCRIPTION RP::INCLUDE-FNC-SUBTERMS))
+     (914 457 (:DEFINITION QUOTEP))
+     (676 676 (:REWRITE O-P-DEF-O-FINP-1))
+     (457 457
+          (:TYPE-PRESCRIPTION RP::IS-RP$INLINE))
+     (403 179 (:REWRITE DEFAULT-<-2))
+     (398 179 (:REWRITE DEFAULT-<-1))
+     (260 260 (:REWRITE FN-CHECK-DEF-NOT-QUOTE))
+     (176 176
+          (:REWRITE RP::EX-FROM-RP-AND-COUNT-C-2))
+     (130 130
+          (:REWRITE RP::RP-EQUAL-SUBTERMS-REFLEXIVE))
+     (34 34 (:REWRITE FOLD-CONSTS-IN-+)))
+(RP::EX-FROM-RP-LOOSE-OF-CONS
+     (22 1 (:REWRITE RP::NOT-INCLUDE-RP))
+     (20 1 (:DEFINITION RP::INCLUDE-FNC))
+     (9 1
+        (:DEFINITION RP::INCLUDE-FNC-SUBTERMS))
+     (6 6
+        (:TYPE-PRESCRIPTION RP::INCLUDE-FNC-SUBTERMS))
+     (4 4 (:TYPE-PRESCRIPTION RP::INCLUDE-FNC))
+     (4 4 (:REWRITE DEFAULT-CAR))
+     (3 1 (:DEFINITION QUOTEP))
+     (2 2 (:REWRITE DEFAULT-CDR))
+     (1 1 (:REWRITE CDR-CONS)))
+(RP::COUNT-C-WHEN-C-INSTANCE (78 78 (:REWRITE DEFAULT-CDR))
+                             (72 12 (:REWRITE O-P-O-INFP-CAR))
+                             (49 37 (:REWRITE DEFAULT-CAR))
+                             (36 12 (:REWRITE O-P-DEF-O-FINP-1))
+                             (24 24 (:TYPE-PRESCRIPTION O-FINP))
+                             (10 5 (:REWRITE DEFAULT-+-2))
+                             (8 8
+                                (:REWRITE RP::EX-FROM-RP-AND-COUNT-C-2))
+                             (5 5 (:REWRITE DEFAULT-+-1)))
+(RP::COUNT-C-WHEN-QUOTED (3 3 (:REWRITE DEFAULT-CAR))
+                         (1 1
+                            (:REWRITE RP::EX-FROM-RP-AND-COUNT-C-2)))
+(RP::LOCAL-MEASURE-LEMMA-2
+     (67 19 (:REWRITE DEFAULT-<-2))
+     (67 19 (:REWRITE DEFAULT-<-1))
+     (64 32
+         (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
+     (32 32
+         (:REWRITE RATIONAL-LISTP-IMPLIES-RATIONALP))
+     (32 32
+         (:REWRITE ACL2-NUMBER-LISTP-IMPLIES-ACL2-NUMBERP)))
+(RP::LOCAL-MEASURE-LEMMA-4)
+(RP::COUNT-C-LST-WHEN-NOT-CONP)
+(RP::MEASURE-LEMMA-OF-SWAP-C-LSTS
+     (2215 1148 (:REWRITE DEFAULT-+-2))
+     (1954 1148 (:REWRITE DEFAULT-+-1))
+     (1460 266 (:REWRITE O-P-O-INFP-CAR))
+     (1426 670 (:REWRITE DEFAULT-CDR))
+     (1148 177 (:REWRITE RP::LTE-AND-GTE-IMPLIES))
+     (1054 67 (:REWRITE RP::LTE-CHAIN-SMART))
+     (662 266 (:REWRITE O-P-DEF-O-FINP-1))
+     (435 435
+          (:REWRITE RP::LOCAL-MEASURE-LEMMA-2))
+     (435 145 (:REWRITE RP::LT-TO-GT))
+     (404 404 (:LINEAR LEN-WHEN-PREFIXP))
+     (396 396 (:TYPE-PRESCRIPTION O-FINP))
+     (206 206
+          (:REWRITE LEN-MEMBER-EQUAL-LOOP$-AS))
+     (202 202 (:LINEAR BOUNDS-POSITION-EQUAL-AC))
+     (202 202 (:LINEAR BOUNDS-POSITION-EQUAL))
+     (173 173 (:TYPE-PRESCRIPTION RP::LT))
+     (160 32
+          (:REWRITE APPLY$-BADGEP-PROPERTIES . 1))
+     (96 32 (:DEFINITION APPLY$-BADGEP))
+     (64 32 (:DEFINITION WEAK-APPLY$-BADGE-P))
+     (52 52 (:REWRITE FN-CHECK-DEF-NOT-QUOTE))
+     (49 49 (:REWRITE RP::LOCAL-MEASURE-LEMMA-4))
+     (34 34
+         (:REWRITE INTEGER-LISTP-IMPLIES-INTEGERP))
+     (32 32 (:TYPE-PRESCRIPTION APPLY$-BADGEP))
+     (1 1 (:REWRITE RP::GE-CHAIN-SMART)))
+(RP::MEASURE-LEMMA-OF-S-SUM-MERGE-AUX
+     (255 126 (:REWRITE DEFAULT-+-2))
+     (250 126 (:REWRITE DEFAULT-+-1))
+     (87 87 (:REWRITE DEFAULT-CAR))
+     (72 72 (:REWRITE DEFAULT-CDR))
+     (33 11 (:REWRITE DEFAULT-<-1))
+     (24 11 (:REWRITE DEFAULT-<-2))
+     (8 8 (:REWRITE FOLD-CONSTS-IN-+))
+     (6 6
+        (:REWRITE RP::EX-FROM-RP-AND-COUNT-C-2)))
+(RP::LOCAL-MEASURE-LEMMA-5
+     (12 6
+         (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
+     (12 3 (:REWRITE DEFAULT-<-2))
+     (12 3 (:REWRITE DEFAULT-<-1))
+     (6 6
+        (:REWRITE RATIONAL-LISTP-IMPLIES-RATIONALP))
+     (6 6
+        (:REWRITE ACL2-NUMBER-LISTP-IMPLIES-ACL2-NUMBERP)))
+(RP::LOCAL-MEASURE-LEMMA-6 (27 13 (:REWRITE DEFAULT-+-2))
+                           (27 13 (:REWRITE DEFAULT-+-1))
+                           (8 8
+                              (:REWRITE RP::COUNT-C-LST-WHEN-NOT-CONP))
+                           (6 6 (:REWRITE DEFAULT-CAR))
+                           (5 5 (:REWRITE DEFAULT-CDR))
+                           (4 1 (:REWRITE DEFAULT-<-1))
+                           (3 1 (:REWRITE DEFAULT-<-2))
+                           (2 2
+                              (:REWRITE RP::EX-FROM-RP-AND-COUNT-C-2))
+                           (1 1 (:REWRITE RP::LOCAL-MEASURE-LEMMA-2))
+                           (1 1 (:REWRITE FOLD-CONSTS-IN-+)))
+(RP::DUMMY-LEMMA1 (10 6 (:REWRITE RP::LOCAL-MEASURE-LEMMA-2))
+                  (6 6 (:REWRITE DEFAULT-<-2))
+                  (6 6 (:REWRITE DEFAULT-<-1))
+                  (2 2
+                     (:REWRITE INTEGER-LISTP-IMPLIES-INTEGERP))
+                  (2 2 (:REWRITE DEFAULT-+-2))
+                  (2 2 (:REWRITE DEFAULT-+-1)))
+(RP::DUMMY-LEMMA2 (39 19 (:REWRITE DEFAULT-+-2))
+                  (35 19 (:REWRITE DEFAULT-+-1))
+                  (10 4 (:REWRITE DEFAULT-<-2))
+                  (8 5
+                     (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
+                  (6 4 (:REWRITE DEFAULT-<-1))
+                  (5 5
+                     (:REWRITE RP::EX-FROM-RP-AND-COUNT-C-2))
+                  (5 5 (:REWRITE DEFAULT-CAR))
+                  (5 5
+                     (:REWRITE RP::COUNT-C-LST-WHEN-NOT-CONP))
+                  (5 5
+                     (:REWRITE ACL2-NUMBER-LISTP-IMPLIES-ACL2-NUMBERP))
+                  (4 4 (:REWRITE RP::LOCAL-MEASURE-LEMMA-2))
+                  (4 4 (:REWRITE DEFAULT-CDR))
+                  (3 3
+                     (:REWRITE RATIONAL-LISTP-IMPLIES-RATIONALP))
+                  (3 3 (:REWRITE FOLD-CONSTS-IN-+)))
+(RP::DUMMY-LEMMA3)
+(RP::DUMMY-LEMMA4)
+(RP::DUMMY-LEMMA-5 (41 18 (:REWRITE DEFAULT-+-1))
+                   (30 18 (:REWRITE DEFAULT-+-2))
+                   (24 14
+                       (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
+                   (14 14
+                       (:REWRITE ACL2-NUMBER-LISTP-IMPLIES-ACL2-NUMBERP))
+                   (10 10
+                       (:REWRITE RATIONAL-LISTP-IMPLIES-RATIONALP))
+                   (6 6 (:REWRITE RP::LOCAL-MEASURE-LEMMA-2))
+                   (6 6 (:REWRITE DEFAULT-<-2))
+                   (6 6 (:REWRITE DEFAULT-<-1))
+                   (5 5 (:REWRITE FOLD-CONSTS-IN-+)))
+(RP::EXPAND-COUNT-C-LST-WHEN-CONSP
+     (6 3 (:REWRITE DEFAULT-+-2))
+     (6 3 (:REWRITE DEFAULT-+-1))
+     (3 3
+        (:REWRITE RP::COUNT-C-LST-WHEN-NOT-CONP))
+     (2 2
+        (:REWRITE RP::EX-FROM-RP-AND-COUNT-C-2))
+     (2 2 (:REWRITE DEFAULT-CDR))
+     (2 2 (:REWRITE DEFAULT-CAR)))
+(RP::COUNT-C-OF-QUOTED (82 2 (:DEFINITION RP::COUNT-C))
+                       (24 4 (:REWRITE O-P-O-INFP-CAR))
+                       (18 18 (:REWRITE DEFAULT-CDR))
+                       (14 14 (:REWRITE DEFAULT-CAR))
+                       (12 4 (:REWRITE O-P-DEF-O-FINP-1))
+                       (12 2 (:DEFINITION RP::EX-FROM-RP))
+                       (10 2 (:REWRITE RP::NOT-INCLUDE-RP))
+                       (8 8 (:TYPE-PRESCRIPTION O-FINP))
+                       (8 4 (:DEFINITION QUOTEP))
+                       (6 2 (:DEFINITION RP::INCLUDE-FNC))
+                       (4 4
+                          (:REWRITE RP::COUNT-C-LST-WHEN-NOT-CONP))
+                       (4 2 (:REWRITE O-INFP->NEQ-0))
+                       (4 2 (:REWRITE DEFAULT-+-2))
+                       (2 2
+                          (:TYPE-PRESCRIPTION RP::SINGLE-S-P$INLINE))
+                       (2 2
+                          (:TYPE-PRESCRIPTION RP::SINGLE-C-P$INLINE))
+                       (2 2 (:TYPE-PRESCRIPTION RP::INCLUDE-FNC))
+                       (2 2 (:TYPE-PRESCRIPTION RP::COUNT-C-LST))
+                       (2 2 (:REWRITE FN-CHECK-DEF-NOT-QUOTE))
+                       (2 2
+                          (:REWRITE RP::EX-FROM-RP-AND-COUNT-C-2))
+                       (2 2 (:REWRITE DEFAULT-+-1)))
+(RP::DUMMY-LEMMA-6)
+(RP::DUMMY-LEMMA-7 (47 27 (:REWRITE DEFAULT-+-1))
+                   (38 27 (:REWRITE DEFAULT-+-2))
+                   (22 12
+                       (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
+                   (12 12
+                       (:REWRITE ACL2-NUMBER-LISTP-IMPLIES-ACL2-NUMBERP))
+                   (10 10
+                       (:REWRITE RATIONAL-LISTP-IMPLIES-RATIONALP))
+                   (10 10 (:REWRITE RP::LOCAL-MEASURE-LEMMA-2))
+                   (10 10 (:REWRITE DEFAULT-<-2))
+                   (10 10 (:REWRITE DEFAULT-<-1))
+                   (8 8 (:REWRITE FOLD-CONSTS-IN-+)))
+(RP::COUNT-C-GET-C-ARGS-1 (196 196 (:REWRITE DEFAULT-CDR))
+                          (80 5 (:DEFINITION RP::EX-FROM-RP))
+                          (73 73 (:REWRITE DEFAULT-CAR))
+                          (55 5 (:REWRITE RP::NOT-INCLUDE-RP))
+                          (40 5 (:DEFINITION RP::INCLUDE-FNC))
+                          (20 4
+                              (:REWRITE APPLY$-BADGEP-PROPERTIES . 1))
+                          (15 15 (:TYPE-PRESCRIPTION RP::INCLUDE-FNC))
+                          (12 4 (:DEFINITION APPLY$-BADGEP))
+                          (10 10
+                              (:TYPE-PRESCRIPTION RP::INCLUDE-FNC-SUBTERMS))
+                          (10 5 (:DEFINITION QUOTEP))
+                          (8 4 (:DEFINITION WEAK-APPLY$-BADGE-P))
+                          (8 2 (:REWRITE O-P-O-INFP-CAR))
+                          (5 5 (:TYPE-PRESCRIPTION RP::IS-RP$INLINE))
+                          (4 4 (:TYPE-PRESCRIPTION O-P))
+                          (4 4 (:TYPE-PRESCRIPTION APPLY$-BADGEP))
+                          (4 4
+                             (:REWRITE INTEGER-LISTP-IMPLIES-INTEGERP))
+                          (4 2 (:REWRITE DEFAULT-+-2))
+                          (4 2 (:REWRITE RP::COUNT-C-OF-QUOTED))
+                          (2 2 (:REWRITE O-P-DEF-O-FINP-1))
+                          (2 2
+                             (:REWRITE RP::EXPAND-COUNT-C-LST-WHEN-CONSP))
+                          (2 2
+                             (:REWRITE RP::EX-FROM-RP-AND-COUNT-C-2))
+                          (2 2 (:REWRITE DEFAULT-+-1))
+                          (2 2
+                             (:REWRITE RP::COUNT-C-LST-WHEN-NOT-CONP))
+                          (1 1 (:REWRITE FN-CHECK-DEF-NOT-QUOTE)))
+(RP::C-SUM-MERGE-NIL-LEMMA (56 9 (:REWRITE RP::LTE-AND-GTE-IMPLIES))
+                           (21 18 (:REWRITE DEFAULT-CAR))
+                           (20 1 (:DEFINITION NFIX))
+                           (19 19 (:REWRITE RP::LOCAL-MEASURE-LEMMA-2))
+                           (18 15 (:REWRITE DEFAULT-CDR))
+                           (15 5 (:REWRITE RP::LT-TO-GT))
+                           (15 3 (:DEFINITION LEN))
+                           (8 2 (:REWRITE O-P-O-INFP-CAR))
+                           (6 6 (:REWRITE RP::LOCAL-MEASURE-LEMMA-5))
+                           (6 3 (:REWRITE DEFAULT-+-2))
+                           (5 5 (:TYPE-PRESCRIPTION RP::LT))
+                           (4 4 (:TYPE-PRESCRIPTION O-P))
+                           (4 4 (:REWRITE RP::LTE-CHAIN-SMART))
+                           (3 3 (:REWRITE LEN-MEMBER-EQUAL-LOOP$-AS))
+                           (3 3 (:REWRITE DEFAULT-+-1))
+                           (2 2 (:REWRITE O-P-DEF-O-FINP-1))
+                           (1 1 (:REWRITE RP::GE-CHAIN-SMART))
+                           (1 1 (:REWRITE FN-CHECK-DEF-NOT-QUOTE)))
+(RP::DUMMY-LEMMA-8 (8 3 (:REWRITE DEFAULT-+-2))
+                   (7 5
+                      (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
+                   (5 5
+                      (:REWRITE ACL2-NUMBER-LISTP-IMPLIES-ACL2-NUMBERP))
+                   (5 3 (:REWRITE DEFAULT-+-1))
+                   (5 2 (:REWRITE DEFAULT-<-2))
+                   (4 2 (:REWRITE DEFAULT-<-1))
+                   (2 2
+                      (:REWRITE RATIONAL-LISTP-IMPLIES-RATIONALP))
+                   (2 2 (:REWRITE RP::LOCAL-MEASURE-LEMMA-2)))
+(RP::DUMMY-LEMMA-9)
+(RP::DUMMY-LEMMA-10 (51 36 (:REWRITE DEFAULT-+-2))
+                    (51 36 (:REWRITE DEFAULT-+-1))
+                    (20 13
+                        (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
+                    (13 13
+                        (:REWRITE ACL2-NUMBER-LISTP-IMPLIES-ACL2-NUMBERP))
+                    (12 12 (:REWRITE RP::LOCAL-MEASURE-LEMMA-2))
+                    (12 12 (:REWRITE DEFAULT-<-2))
+                    (12 12 (:REWRITE DEFAULT-<-1))
+                    (8 8 (:REWRITE FOLD-CONSTS-IN-+))
+                    (7 7
+                       (:REWRITE RATIONAL-LISTP-IMPLIES-RATIONALP)))
+(RP::DUMMY-LEMMA-11)
+(RP::DUMMY-LEMMA-13 (12 2 (:REWRITE RP::LTE-AND-GTE-IMPLIES))
+                    (11 1 (:REWRITE RP::NOT-INCLUDE-RP))
+                    (8 8 (:REWRITE DEFAULT-CAR))
+                    (8 1 (:DEFINITION RP::INCLUDE-FNC))
+                    (7 7 (:REWRITE DEFAULT-CDR))
+                    (6 1 (:REWRITE O-P-O-INFP-CAR))
+                    (4 4
+                       (:REWRITE RP::REWRITING-POSITIVE-LTE-GTE-GT-LT))
+                    (3 3 (:TYPE-PRESCRIPTION RP::INCLUDE-FNC))
+                    (3 3 (:REWRITE RP::LOCAL-MEASURE-LEMMA-2))
+                    (3 3
+                       (:REWRITE RP::EXPAND-COUNT-C-LST-WHEN-CONSP))
+                    (3 3
+                       (:REWRITE RP::COUNT-C-LST-WHEN-NOT-CONP))
+                    (3 1 (:REWRITE O-P-DEF-O-FINP-1))
+                    (3 1 (:REWRITE RP::LT-TO-GT))
+                    (2 2 (:TYPE-PRESCRIPTION O-FINP))
+                    (2 2
+                       (:TYPE-PRESCRIPTION RP::INCLUDE-FNC-SUBTERMS))
+                    (1 1 (:TYPE-PRESCRIPTION RP::LT))
+                    (1 1 (:REWRITE RP::LTE-CHAIN-SMART))
+                    (1 1 (:REWRITE RP::LOCAL-MEASURE-LEMMA-5))
+                    (1 1
+                       (:REWRITE RP::EX-FROM-RP-AND-COUNT-C-2))
+                    (1 1 (:REWRITE RP::COUNT-C-OF-QUOTED)))
+(RP::COUNT-C-OF-EX-FROM-RP
+     (6400 542
+           (:DEFINITION RP::INCLUDE-FNC-SUBTERMS))
+     (5588 1114 (:REWRITE O-P-O-INFP-CAR))
+     (2820 2820
+           (:TYPE-PRESCRIPTION RP::INCLUDE-FNC-SUBTERMS))
+     (2270 1102 (:REWRITE O-P-DEF-O-FINP-1))
+     (1168 1168 (:TYPE-PRESCRIPTION O-FINP))
+     (1073 385
+           (:REWRITE RP::ATOM-RP-TERMP-IS-SYMBOLP))
+     (1000 1000 (:REWRITE FN-CHECK-DEF-NOT-QUOTE))
+     (699 352 (:REWRITE DEFAULT-+-2))
+     (420 352 (:REWRITE DEFAULT-+-1))
+     (385 385
+          (:REWRITE SYMBOL-LISTP-IMPLIES-SYMBOLP))
+     (381 381
+          (:REWRITE RP::EX-FROM-RP-AND-COUNT-C-2))
+     (303 51
+          (:REWRITE RP::QUOTEP-TERM-WITH-EX-FROM-RP))
+     (120 8
+          (:LINEAR APPLY$-BADGEP-PROPERTIES . 1))
+     (104 8 (:DEFINITION APPLY$-BADGEP))
+     (80 8 (:DEFINITION WEAK-APPLY$-BADGE-P))
+     (51 51 (:TYPE-PRESCRIPTION QUOTEP))
+     (8 8 (:TYPE-PRESCRIPTION APPLY$-BADGEP))
+     (5 5 (:REWRITE FOLD-CONSTS-IN-+)))
+(RP::COUNT-C-FOR-A-LIST-ARG
+     (2960 185 (:DEFINITION RP::EX-FROM-RP))
+     (2035 185 (:REWRITE RP::NOT-INCLUDE-RP))
+     (1480 185 (:DEFINITION RP::INCLUDE-FNC))
+     (924 924 (:REWRITE DEFAULT-CDR))
+     (705 689 (:REWRITE DEFAULT-CAR))
+     (555 555
+          (:TYPE-PRESCRIPTION RP::INCLUDE-FNC))
+     (370 370
+          (:TYPE-PRESCRIPTION RP::INCLUDE-FNC-SUBTERMS))
+     (185 185
+          (:TYPE-PRESCRIPTION RP::IS-RP$INLINE))
+     (66 66
+         (:REWRITE RP::EXPAND-COUNT-C-LST-WHEN-CONSP))
+     (56 14 (:REWRITE O-P-O-INFP-CAR))
+     (28 14 (:REWRITE O-INFP->NEQ-0))
+     (14 14 (:REWRITE O-P-DEF-O-FINP-1))
+     (6 3 (:REWRITE DEFAULT-+-2))
+     (5 5 (:REWRITE FN-CHECK-DEF-NOT-QUOTE))
+     (4 1
+        (:REWRITE RP::QUOTEP-TERM-WITH-EX-FROM-RP))
+     (3 3 (:REWRITE DEFAULT-+-1))
+     (1 1 (:TYPE-PRESCRIPTION QUOTEP))
+     (1 1
+        (:REWRITE RP::EX-FROM-RP-AND-COUNT-C-2))
+     (1 1 (:REWRITE RP::COUNT-C-OF-QUOTED)))
+(RP::COUNT-C-WHEN-ATOM (2 1 (:REWRITE O-INFP->NEQ-0))
+                       (1 1
+                          (:REWRITE RP::EX-FROM-RP-AND-COUNT-C-2))
+                       (1 1 (:REWRITE RP::COUNT-C-OF-QUOTED)))
+(RP::MEASURE-LEMMA-LIGHT-COMPRESS-S-C-AUX-LEMMA
+     (72 3 (:DEFINITION RP::EX-FROM-RP))
+     (66 54 (:REWRITE DEFAULT-CDR))
+     (45 3 (:REWRITE RP::NOT-INCLUDE-RP))
+     (36 3 (:DEFINITION RP::INCLUDE-FNC))
+     (33 33 (:REWRITE DEFAULT-CAR))
+     (24 6 (:REWRITE O-P-O-INFP-CAR))
+     (9 9 (:TYPE-PRESCRIPTION RP::INCLUDE-FNC))
+     (6 6
+        (:TYPE-PRESCRIPTION RP::INCLUDE-FNC-SUBTERMS))
+     (6 6 (:REWRITE O-P-DEF-O-FINP-1))
+     (6 3 (:DEFINITION QUOTEP))
+     (3 3
+        (:TYPE-PRESCRIPTION RP::IS-RP$INLINE)))
+(RP::MEASURE-LEMMA-LIGHT-COMPRESS-S-C-AUX
+     (750 585 (:REWRITE DEFAULT-CAR))
+     (317 74 (:REWRITE O-P-O-INFP-CAR))
+     (146 76
+          (:REWRITE RP::COUNT-C-LST-WHEN-NOT-CONP))
+     (113 65 (:REWRITE O-P-DEF-O-FINP-1))
+     (96 52 (:REWRITE DEFAULT-+-2))
+     (96 14
+         (:REWRITE RP::QUOTEP-TERM-WITH-EX-FROM-RP))
+     (68 52 (:REWRITE DEFAULT-+-1))
+     (53 22 (:REWRITE RP::COUNT-C-OF-QUOTED))
+     (48 48 (:TYPE-PRESCRIPTION O-FINP))
+     (18 18
+         (:REWRITE RP::EX-FROM-RP-AND-COUNT-C-2))
+     (14 14 (:TYPE-PRESCRIPTION QUOTEP))
+     (14 14 (:REWRITE FN-CHECK-DEF-NOT-QUOTE)))
+(RP::MEASURE-LEMMA-LIGHT-COMPRESS-S-C
+     (9710 412 (:DEFINITION RP::EX-FROM-RP))
+     (5882 412 (:REWRITE RP::NOT-INCLUDE-RP))
+     (4646 412 (:DEFINITION RP::INCLUDE-FNC))
+     (2165 1680 (:REWRITE DEFAULT-CAR))
+     (1236 1236
+           (:TYPE-PRESCRIPTION RP::INCLUDE-FNC))
+     (824 824
+          (:TYPE-PRESCRIPTION RP::INCLUDE-FNC-SUBTERMS))
+     (412 412
+          (:TYPE-PRESCRIPTION RP::IS-RP$INLINE))
+     (374 87 (:REWRITE O-P-O-INFP-CAR))
+     (136 32 (:REWRITE RP::COUNT-C-OF-QUOTED))
+     (117 85 (:REWRITE O-P-DEF-O-FINP-1))
+     (70 14
+         (:REWRITE RP::QUOTEP-TERM-WITH-EX-FROM-RP))
+     (32 32 (:TYPE-PRESCRIPTION O-FINP))
+     (32 32
+         (:REWRITE RP::EX-FROM-RP-AND-COUNT-C-2))
+     (28 15 (:REWRITE DEFAULT-+-2))
+     (17 15 (:REWRITE DEFAULT-+-1))
+     (5 5 (:REWRITE FN-CHECK-DEF-NOT-QUOTE))
+     (3 3
+        (:TYPE-PRESCRIPTION RP::LIGHT-COMPRESS-S-C)))
+(RP::DUMMY-LEMMA-14 (8 4
+                       (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
+                    (4 4
+                       (:REWRITE RATIONAL-LISTP-IMPLIES-RATIONALP))
+                    (4 4 (:REWRITE DEFAULT-+-2))
+                    (4 4 (:REWRITE DEFAULT-+-1))
+                    (4 4
+                       (:REWRITE ACL2-NUMBER-LISTP-IMPLIES-ACL2-NUMBERP)))
+(RP::MEASURE-LEMMA-DECOMPRESS-S-C
+     (29830 29398 (:REWRITE DEFAULT-CDR))
+     (19063 1146 (:DEFINITION RP::EX-FROM-RP))
+     (12917 1146 (:REWRITE RP::NOT-INCLUDE-RP))
+     (10547 10399 (:REWRITE DEFAULT-CAR))
+     (9479 1146 (:DEFINITION RP::INCLUDE-FNC))
+     (3438 3438
+           (:TYPE-PRESCRIPTION RP::INCLUDE-FNC))
+     (3351 864 (:REWRITE O-P-O-INFP-CAR))
+     (2292 2292
+           (:TYPE-PRESCRIPTION RP::INCLUDE-FNC-SUBTERMS))
+     (1624 371
+           (:REWRITE RP::QUOTEP-TERM-WITH-EX-FROM-RP))
+     (1468 88 (:REWRITE ZP-OPEN))
+     (1173 69 (:REWRITE RP::RW->-TO-GT))
+     (1146 1146
+           (:TYPE-PRESCRIPTION RP::IS-RP$INLINE))
+     (881 444
+          (:REWRITE RP::COUNT-C-FOR-A-LIST-ARG))
+     (829 829 (:REWRITE O-P-DEF-O-FINP-1))
+     (828 138 (:REWRITE RP::LTE-AND-GTE-IMPLIES))
+     (741 444 (:REWRITE RP::COUNT-C-OF-QUOTED))
+     (518 373 (:REWRITE DEFAULT-+-2))
+     (426 426
+          (:REWRITE RP::EX-FROM-RP-AND-COUNT-C-2))
+     (414 138 (:REWRITE FOLD-CONSTS-IN-+))
+     (387 373 (:REWRITE DEFAULT-+-1))
+     (371 371 (:TYPE-PRESCRIPTION QUOTEP))
+     (371 371 (:REWRITE FN-CHECK-DEF-NOT-QUOTE))
+     (345 345 (:TYPE-PRESCRIPTION RP::GT))
+     (276 276
+          (:REWRITE RP::REWRITING-POSITIVE-LTE-GTE-GT-LT))
+     (276 276
+          (:REWRITE RP::LOCAL-MEASURE-LEMMA-2))
+     (207 69 (:REWRITE RP::LT-TO-GT))
+     (120 24 (:DEFINITION APPLY$-BADGEP))
+     (119 119
+          (:TYPE-PRESCRIPTION RP::COUNT-C-LST))
+     (108 12
+          (:LINEAR APPLY$-BADGEP-PROPERTIES . 1))
+     (72 24 (:DEFINITION WEAK-APPLY$-BADGE-P))
+     (69 69 (:TYPE-PRESCRIPTION RP::LT))
+     (69 69 (:REWRITE RP::LTE-CHAIN-SMART))
+     (69 69 (:REWRITE RP::LOCAL-MEASURE-LEMMA-5))
+     (60 12
+         (:LINEAR APPLY$-BADGEP-PROPERTIES . 2))
+     (24 24 (:TYPE-PRESCRIPTION APPLY$-BADGEP))
+     (14 7 (:REWRITE O-INFP->NEQ-0)))
+(RP::DUMMY-LEMMA-15 (12 12 (:REWRITE DEFAULT-CDR))
+                    (12 2 (:REWRITE O-P-O-INFP-CAR))
+                    (11 1 (:REWRITE RP::NOT-INCLUDE-RP))
+                    (9 9 (:REWRITE DEFAULT-CAR))
+                    (8 1 (:DEFINITION RP::INCLUDE-FNC))
+                    (6 2 (:REWRITE O-P-DEF-O-FINP-1))
+                    (4 4 (:TYPE-PRESCRIPTION O-FINP))
+                    (4 4
+                       (:REWRITE RP::EXPAND-COUNT-C-LST-WHEN-CONSP))
+                    (4 4
+                       (:REWRITE RP::COUNT-C-LST-WHEN-NOT-CONP))
+                    (3 3 (:TYPE-PRESCRIPTION RP::INCLUDE-FNC))
+                    (2 2
+                       (:TYPE-PRESCRIPTION RP::INCLUDE-FNC-SUBTERMS))
+                    (2 1 (:REWRITE DEFAULT-+-2))
+                    (1 1
+                       (:REWRITE RP::EX-FROM-RP-AND-COUNT-C-2))
+                    (1 1 (:REWRITE DEFAULT-+-1))
+                    (1 1 (:REWRITE RP::COUNT-C-OF-QUOTED)))
+(RP::DUMMY-LEMMA-16 (175 175 (:REWRITE DEFAULT-CDR))
+                    (46 42 (:REWRITE DEFAULT-CAR))
+                    (44 4 (:REWRITE RP::NOT-INCLUDE-RP))
+                    (32 4 (:DEFINITION RP::INCLUDE-FNC))
+                    (15 8 (:REWRITE DEFAULT-+-2))
+                    (12 12 (:TYPE-PRESCRIPTION RP::INCLUDE-FNC))
+                    (12 3 (:REWRITE O-P-O-INFP-CAR))
+                    (9 8 (:REWRITE DEFAULT-+-1))
+                    (8 8
+                       (:TYPE-PRESCRIPTION RP::INCLUDE-FNC-SUBTERMS))
+                    (8 4 (:DEFINITION QUOTEP))
+                    (7 6 (:REWRITE RP::COUNT-C-OF-QUOTED))
+                    (6 6
+                       (:REWRITE RP::EX-FROM-RP-AND-COUNT-C-2))
+                    (4 4
+                       (:REWRITE RP::COUNT-C-LST-WHEN-NOT-CONP))
+                    (3 3 (:REWRITE O-P-DEF-O-FINP-1)))
+(RP::DUMMY-LEMMA-17)
+(RP::MEASURE-LEMMA-C-PATTERN2-REDUCE
+     (15566 173 (:DEFINITION RP::COUNT-C))
+     (10210 9570 (:REWRITE DEFAULT-CDR))
+     (3960 3224 (:REWRITE DEFAULT-CAR))
+     (3084 148 (:DEFINITION RP::COUNT-C-LST))
+     (2965 536 (:REWRITE O-P-O-INFP-CAR))
+     (1357 536 (:REWRITE O-P-DEF-O-FINP-1))
+     (994 502 (:REWRITE DEFAULT-+-2))
+     (861 346 (:DEFINITION QUOTEP))
+     (808 502 (:REWRITE DEFAULT-+-1))
+     (776 776 (:TYPE-PRESCRIPTION O-FINP))
+     (688 173
+          (:REWRITE RP::QUOTEP-TERM-WITH-EX-FROM-RP))
+     (510 325 (:REWRITE RP::COUNT-C-OF-QUOTED))
+     (356 356
+          (:TYPE-PRESCRIPTION RP::PP-SUM-MERGE))
+     (296 30 (:DEFINITION APPLY$-BADGEP))
+     (243 18
+          (:LINEAR APPLY$-BADGEP-PROPERTIES . 2))
+     (173 173
+          (:TYPE-PRESCRIPTION RP::SINGLE-S-P$INLINE))
+     (173 173
+          (:TYPE-PRESCRIPTION RP::SINGLE-C-P$INLINE))
+     (173 173 (:TYPE-PRESCRIPTION QUOTEP))
+     (173 173 (:REWRITE FN-CHECK-DEF-NOT-QUOTE))
+     (173 173
+          (:REWRITE RP::EX-FROM-RP-AND-COUNT-C-2))
+     (165 165
+          (:REWRITE RP::LOCAL-MEASURE-LEMMA-5))
+     (133 18
+          (:LINEAR APPLY$-BADGEP-PROPERTIES . 1))
+     (120 30 (:DEFINITION WEAK-APPLY$-BADGE-P))
+     (102 3 (:DEFINITION NATP))
+     (54 54 (:TYPE-PRESCRIPTION APPLY$-BADGEP))
+     (54 10 (:REWRITE RP::LTE-AND-GTE-IMPLIES))
+     (36 6 (:REWRITE O-INFP->NEQ-0))
+     (18 6 (:REWRITE O-FIRST-EXPT-O-INFP))
+     (15 5 (:REWRITE RP::LT-TO-GT))
+     (12 6 (:REWRITE O-FIRST-EXPT-DEF-O-FINP))
+     (12 3
+         (:REWRITE APPLY$-BADGEP-PROPERTIES . 2))
+     (6 3
+        (:REWRITE APPLY$-BADGEP-PROPERTIES . 1))
+     (5 5 (:TYPE-PRESCRIPTION RP::LT))
+     (4 4 (:REWRITE RP::GE-CHAIN-SMART))
+     (3 3 (:REWRITE RP::LTE-CHAIN-SMART))
+     (3 3
+        (:REWRITE INTEGER-LISTP-IMPLIES-INTEGERP)))
+(RP::MEASURE-LEMMA-CREATE-C-INSTANCE
+     (1173 1107 (:REWRITE DEFAULT-CDR))
+     (494 412 (:REWRITE DEFAULT-CAR))
+     (186 93 (:REWRITE DEFAULT-+-2))
+     (164 28 (:REWRITE O-P-O-INFP-CAR))
+     (146 68 (:REWRITE RP::DUMMY-LEMMA-15))
+     (146 68 (:REWRITE RP::COUNT-C-OF-QUOTED))
+     (108 54 (:REWRITE DEFAULT-<-1))
+     (107 107
+          (:REWRITE RP::LOCAL-MEASURE-LEMMA-2))
+     (93 93 (:REWRITE DEFAULT-+-1))
+     (80 28 (:REWRITE O-P-DEF-O-FINP-1))
+     (68 68
+         (:REWRITE RP::EX-FROM-RP-AND-COUNT-C-2))
+     (68 54 (:REWRITE DEFAULT-<-2))
+     (52 52 (:TYPE-PRESCRIPTION O-FINP))
+     (29 29
+         (:REWRITE RP::EXPAND-COUNT-C-LST-WHEN-CONSP))
+     (26 26 (:REWRITE FN-CHECK-DEF-NOT-QUOTE)))
+(RP::MEASURE-LEMMA-CREATE-C-INSTANCE-2
+     (27 6 (:REWRITE RP::DUMMY-LEMMA-15))
+     (27 6 (:REWRITE RP::COUNT-C-OF-QUOTED))
+     (18 12 (:REWRITE DEFAULT-CAR))
+     (10 5 (:REWRITE DEFAULT-<-2))
+     (10 5 (:REWRITE DEFAULT-<-1))
+     (6 6
+        (:REWRITE RP::EX-FROM-RP-AND-COUNT-C-2))
+     (6 3 (:REWRITE DEFAULT-+-2))
+     (5 5 (:REWRITE RP::LOCAL-MEASURE-LEMMA-2))
+     (3 3 (:REWRITE DEFAULT-+-1)))
+(RP::CREATE-LIST-INSTANCE-MEASURE-LEMMA
+     (3 3
+        (:REWRITE RP::EXPAND-COUNT-C-LST-WHEN-CONSP))
+     (3 3 (:REWRITE DEFAULT-CAR))
+     (3 3
+        (:REWRITE RP::COUNT-C-LST-WHEN-NOT-CONP))
+     (2 1 (:REWRITE RP::COUNT-C-OF-QUOTED))
+     (1 1
+        (:REWRITE RP::EX-FROM-RP-AND-COUNT-C-2))
+     (1 1 (:REWRITE DEFAULT-CDR)))
+(RP::MEASURE-LEMMA-CREATE-C-INSTANCE-3
+     (24 6 (:REWRITE RP::DUMMY-LEMMA-15))
+     (24 6 (:REWRITE RP::COUNT-C-OF-QUOTED))
+     (12 6 (:REWRITE DEFAULT-CAR))
+     (12 6 (:REWRITE DEFAULT-<-2))
+     (12 6 (:REWRITE DEFAULT-<-1))
+     (12 6 (:REWRITE DEFAULT-+-2))
+     (6 6
+        (:REWRITE RP::EXPAND-COUNT-C-LST-WHEN-CONSP))
+     (6 6
+        (:REWRITE RP::EX-FROM-RP-AND-COUNT-C-2))
+     (6 6 (:REWRITE DEFAULT-+-1))
+     (6 6
+        (:REWRITE RP::COUNT-C-LST-WHEN-NOT-CONP)))
+(RP::FLAG-LEMMA-FOR-MEASURE-LEMMA-OF-C-SUM-MERGE
+     (1916 1452 (:REWRITE DEFAULT-CAR))
+     (1654 762 (:REWRITE DEFAULT-+-2))
+     (1508 762 (:REWRITE DEFAULT-+-1))
+     (1159 381 (:REWRITE RP::DUMMY-LEMMA-15))
+     (1077 277 (:REWRITE RP::LT-TO-GT))
+     (768 213 (:REWRITE RP::LTE-CHAIN-SMART))
+     (560 140 (:REWRITE O-P-O-INFP-CAR))
+     (557 557 (:REWRITE DEFAULT-CDR))
+     (412 412
+          (:REWRITE RP::LOCAL-MEASURE-LEMMA-5))
+     (380 380
+          (:REWRITE RP::EX-FROM-RP-AND-COUNT-C-2))
+     (295 295 (:TYPE-PRESCRIPTION RP::LT))
+     (140 140 (:REWRITE O-P-DEF-O-FINP-1))
+     (30 30 (:REWRITE FN-CHECK-DEF-NOT-QUOTE)))
+(RP::MEASURE-LEMMA-OF-SINGLE-C-TRY-MERGE)
+(RP::MEASURE-LEMMA-OF-C-SUM-MERGE-LST-AUX)
+(RP::MEASURE-LEMMA-OF-C-SUM-MERGE-LST)
+(RP::MEASURE-LEMMA-OF-C-SUM-MERGE-LST-LST)
+(RP::MEASURE-LEMMA-OF-C-SUM-MERGE)
+(RP::MEASURE-LEMMA-OF-C-SUM-MERGE-AUX)
+(RP::C-SUM-MERGE-FN
+     (202 8 (:REWRITE RP::DUMMY-LEMMA-15))
+     (163 71 (:REWRITE DEFAULT-PLUS-2))
+     (145 71 (:REWRITE DEFAULT-PLUS-1))
+     (109 13
+          (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-EQUAL))
+     (96 16 (:REWRITE ACL2-NUMBERP-X))
+     (90 90
+         (:REWRITE RP::MEASURE-LEMMA-OF-SINGLE-C-TRY-MERGE))
+     (78 24
+         (:REWRITE RP::COUNT-C-LST-WHEN-NOT-CONP))
+     (73 8 (:REWRITE RP::COUNT-C-OF-QUOTED))
+     (52 20 (:REWRITE DEFAULT-CAR))
+     (40 8 (:REWRITE RATIONALP-X))
+     (30 6
+         (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<))
+     (30 6 (:REWRITE PREFER-POSITIVE-ADDENDS-<))
+     (29 13
+         (:REWRITE PREFER-POSITIVE-ADDENDS-EQUAL))
+     (28 28
+         (:REWRITE NORMALIZE-TERMS-SUCH-AS-A/A+B-+-B/A+B))
+     (21 6 (:REWRITE DEFAULT-LESS-THAN-1))
+     (16 16
+         (:REWRITE ACL2-NUMBER-LISTP-IMPLIES-ACL2-NUMBERP))
+     (16 4 (:REWRITE O-P-O-INFP-CAR))
+     (15 6 (:REWRITE DEFAULT-LESS-THAN-2))
+     (13 13 (:REWRITE SIMPLIFY-SUMS-EQUAL))
+     (13 13
+         (:REWRITE REDUCE-MULTIPLICATIVE-CONSTANT-EQUAL))
+     (13 13
+         (:REWRITE REDUCE-ADDITIVE-CONSTANT-EQUAL))
+     (13 13
+         (:REWRITE EQUAL-OF-PREDICATES-REWRITE))
+     (13 13 (:REWRITE |(equal c (/ x))|))
+     (13 13 (:REWRITE |(equal c (- x))|))
+     (13 13 (:REWRITE |(equal (/ x) c)|))
+     (13 13 (:REWRITE |(equal (/ x) (/ y))|))
+     (13 13 (:REWRITE |(equal (- x) c)|))
+     (13 13 (:REWRITE |(equal (- x) (- y))|))
+     (12 6 (:TYPE-PRESCRIPTION BUBBLE-DOWN))
+     (8 8 (:TYPE-PRESCRIPTION O-P))
+     (8 8 (:REWRITE REDUCE-RATIONALP-+))
+     (8 8 (:REWRITE REDUCE-RATIONALP-*))
+     (8 8 (:REWRITE REDUCE-INTEGERP-+))
+     (8 8 (:REWRITE RATIONALP-MINUS-X))
+     (8 8
+        (:REWRITE RATIONAL-LISTP-IMPLIES-RATIONALP))
+     (8 8 (:REWRITE INTEGERP-MINUS-X))
+     (8 8
+        (:REWRITE INTEGER-LISTP-IMPLIES-INTEGERP))
+     (8 8
+        (:REWRITE RP::EX-FROM-RP-AND-COUNT-C-2))
+     (8 8 (:META META-RATIONALP-CORRECT))
+     (8 8 (:META META-INTEGERP-CORRECT))
+     (6 6 (:REWRITE THE-FLOOR-BELOW))
+     (6 6 (:REWRITE THE-FLOOR-ABOVE))
+     (6 6 (:REWRITE REMOVE-WEAK-INEQUALITIES))
+     (6 6 (:REWRITE REMOVE-STRICT-INEQUALITIES))
+     (6 6
+        (:REWRITE REDUCE-RATIONAL-MULTIPLICATIVE-CONSTANT-<))
+     (6 6
+        (:REWRITE REDUCE-MULTIPLICATIVE-CONSTANT-<))
+     (6 6 (:REWRITE REDUCE-ADDITIVE-CONSTANT-<))
+     (6 6 (:REWRITE INTEGERP-<-CONSTANT))
+     (6 6 (:REWRITE DEFAULT-CDR))
+     (6 6 (:REWRITE CONSTANT-<-INTEGERP))
+     (6 6
+        (:REWRITE |(< c (/ x)) positive c --- present in goal|))
+     (6 6
+        (:REWRITE |(< c (/ x)) positive c --- obj t or nil|))
+     (6 6
+        (:REWRITE |(< c (/ x)) negative c --- present in goal|))
+     (6 6
+        (:REWRITE |(< c (/ x)) negative c --- obj t or nil|))
+     (6 6 (:REWRITE |(< c (- x))|))
+     (6 6
+        (:REWRITE |(< (/ x) c) positive c --- present in goal|))
+     (6 6
+        (:REWRITE |(< (/ x) c) positive c --- obj t or nil|))
+     (6 6
+        (:REWRITE |(< (/ x) c) negative c --- present in goal|))
+     (6 6
+        (:REWRITE |(< (/ x) c) negative c --- obj t or nil|))
+     (6 6 (:REWRITE |(< (/ x) (/ y))|))
+     (6 6 (:REWRITE |(< (- x) c)|))
+     (6 6 (:REWRITE |(< (- x) (- y))|))
+     (6 6 (:REWRITE |(< (+ c/d x) y)|))
+     (6 6 (:REWRITE |(< (+ (- c) x) y)|))
+     (6 6 (:REWRITE |(+ c (+ d x))|))
+     (4 4 (:REWRITE O-P-DEF-O-FINP-1))
+     (3 3 (:REWRITE FOLD-CONSTS-IN-+))
+     (3 3 (:REWRITE |(< y (+ (- c) x))|))
+     (3 3 (:REWRITE |(< x (+ c/d y))|))
+     (1 1 (:REWRITE FN-CHECK-DEF-NOT-QUOTE)))
+(RP::S-OF-S-FIX-LST-FN)
+(RP::S-OF-S-FIX
+ (1
+   1
+   (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-NONPOSITIVE-BASE-ODD-EXPONENT))
+ (1
+  1
+  (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-NONPOSITIVE-BASE-EVEN-EXPONENT))
+ (1 1
+    (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-NEGATIVE-BASE-ODD-EXPONENT))
+ (1 1
+    (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-NEGATIVE-BASE-EVEN-EXPONENT))
+ (1 1
+    (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE-B))
+ (1 1
+    (:TYPE-PRESCRIPTION EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE-A)))
+(RP::NEW-SUM-MERGE-AUX)
+(RP::NEW-SUM-MERGE)
+(RP::C-SPEC-META-AUX)
+(RP::S-SPEC-META-AUX)
+(RP::S-C-SPEC-META)

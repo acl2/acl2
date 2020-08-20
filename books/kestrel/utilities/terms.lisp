@@ -514,6 +514,11 @@
   (equal (lambda-free-termsp (true-list-fix terms))
          (lambda-free-termsp terms)))
 
+(defthmd lambda-free-termsp-when-symbol-listp
+  (implies (symbol-listp terms)
+           (lambda-free-termsp terms))
+  :hints (("Goal" :in-theory (enable lambda-free-termsp))))
+
 
 ;; (thm
 ;;  (implies (natp n)

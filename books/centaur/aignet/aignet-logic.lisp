@@ -596,6 +596,8 @@ This bit is set for @(':reg'), @(':nxst'), and @('xor') nodes, so this returns 1
   number, not a @(see sequential-type) keyword, and where @('reg-bit') is a
   @(see bitp) such as from @(see regp).</p>
 
+  <p>An @(':otherwise') keyword can be provided to cover all the cases not mentioned.</p>
+
   <p>Alternately, you can combine:</p>
 
   <ul>
@@ -639,7 +641,7 @@ This bit is set for @(':reg'), @(':nxst'), and @('xor') nodes, so this returns 1
           (er hard? 'aignet-case "Syntax error: arguments after typecode [ ~
                                   reg-bit ] must be a keyword value list."))
          (keys (keyword-value-keys keyvals))
-         (bad-keys (set-difference-eq keys '(:pi :reg :nxst :po :and :xor :in :ci :out :co :gate :const)))
+         (bad-keys (set-difference-eq keys '(:pi :reg :nxst :po :and :xor :in :ci :out :co :gate :const :otherwise)))
          ((when bad-keys)
           (er hard? 'aignet-case "Unrecognized keys: ~x0" bad-keys))
          ((when (and reg-bit-skippedp
@@ -672,32 +674,61 @@ This bit is set for @(':reg'), @(':nxst'), and @('xor') nodes, so this returns 1
                      (or (member :and keys)
                          (member :xor keys))))
           (er hard? 'aignet-case "Cant have both a :gate and an :and or :xor entry."))
+         (complete
+          ;; Note: don't count outputs toward completeness because much of the
+          ;; time we'll be dealing with a type extracted from a fanout node.
+          (and (or (member :gate keys)
+                   (and (member :xor keys)
+                        (member :and keys)))
+               (or (member :ci keys)
+                   (member :in keys)
+                   (and (member :pi keys)
+                        (member :reg keys)))
+               (member :const keys)))
+         ((when (and (not complete)
+                     (not (member :otherwise keys))))
+          (er hard? 'aignet-case "Must at least have all fanout node types ~
+                                  covered if there is no :otherwise case."))
          (reg-bit (and (not reg-bit-skippedp) (car args))))
-    `(case (the (unsigned-byte 2) ,type)
-       (,(gate-type) ,(if (member :gate keyvals)
-                          (cadr (assoc-keyword :gate keyvals))
-                        `(if (int= 1 (the bit ,reg-bit))
-                             ,(cadr (assoc-keyword :xor keyvals))
-                           ,(cadr (assoc-keyword :and keyvals)))))
-       (,(in-type)   ,(if (assoc-keyword :ci keyvals)
-                          (cadr (assoc-keyword :ci keyvals))
-                        (if (assoc-keyword :in keyvals)
-                            (cadr (assoc-keyword :in keyvals))
-                          `(if (int= 1 (the bit ,reg-bit))
-                               ,(cadr (assoc-keyword :reg keyvals))
-                             ,(cadr (assoc-keyword :pi keyvals))))))
-       ,@(and (or (assoc-keyword :co keyvals)
-                  (assoc-keyword :out keyvals)
-                  (assoc-keyword :nxst keyvals)
-                  (assoc-keyword :po keyvals))
-              `((,(out-type)  ,(if (assoc-keyword :co keyvals)
-                                   (cadr (assoc-keyword :co keyvals))
-                                 (if (assoc-keyword :out keyvals)
-                                     (cadr (assoc-keyword :out keyvals))
+      `(case (the (unsigned-byte 2) ,type)
+         ,@(and (or (not (member :otherwise keys))
+                    (member :gate keys)
+                    (member :xor keys)
+                    (member :and keys))
+                `((,(gate-type) ,(if (member :gate keyvals)
+                                     (cadr (assoc-keyword :gate keyvals))
                                    `(if (int= 1 (the bit ,reg-bit))
-                                        ,(cadr (assoc-keyword :nxst keyvals))
-                                      ,(cadr (assoc-keyword :po keyvals))))))))
-       (otherwise    ,(cadr (assoc-keyword :const keyvals)))))))
+                                        ,(cadr (assoc-keyword :xor keyvals))
+                                      ,(cadr (assoc-keyword :and keyvals)))))))
+         ,@(and (or (not (member :otherwise keys))
+                    (member :ci keys)
+                    (member :in keys)
+                    (member :reg keys))
+                `((,(in-type)   ,(if (member :ci keys)
+                                     (cadr (assoc-keyword :ci keyvals))
+                                   (if (member :in keys)
+                                       (cadr (assoc-keyword :in keyvals))
+                                     `(if (int= 1 (the bit ,reg-bit))
+                                          ,(cadr (assoc-keyword :reg keyvals))
+                                        ,(cadr (assoc-keyword :pi keyvals))))))))
+         ,@(and (or (member :co keys)
+                    (member :out keys)
+                    (member :nxst keys)
+                    (member :po keys))
+                `((,(out-type)  ,(if (assoc-keyword :co keyvals)
+                                     (cadr (assoc-keyword :co keyvals))
+                                   (if (assoc-keyword :out keyvals)
+                                       (cadr (assoc-keyword :out keyvals))
+                                     `(if (int= 1 (the bit ,reg-bit))
+                                          ,(cadr (assoc-keyword :nxst keyvals))
+                                        ,(cadr (assoc-keyword :po keyvals))))))))
+         ;; If the type keyword list is complete, then use OTHERWISE for the const case
+         ,@(and (member :const keys)
+                (if complete
+                    `((otherwise ,(cadr (assoc-keyword :const keyvals))))
+                  `((,(const-type) ,(cadr (assoc-keyword :const keyvals))))))
+         ,@(and (member :otherwise keys)
+                `((otherwise    ,(cadr (assoc-keyword :otherwise keyvals)))))))))
 
 
 (defsection network
@@ -1681,7 +1712,8 @@ suffix.</p>"
            :gate (let ((f0 (gate-node->fanin0 (car aignet)))
                        (f1 (gate-node->fanin1 (car aignet))))
                    (and (aignet-litp f0 (cdr aignet))
-                        (aignet-litp f1 (cdr aignet)))))
+                        (aignet-litp f1 (cdr aignet))))
+           :otherwise nil)
          (aignet-nodes-ok (cdr aignet))))
   ///
   (fty::deffixequiv aignet-nodes-ok
@@ -1857,31 +1889,31 @@ suffix.</p>"
 
 
 
-(defenum fanin-type-p (:gate0 :gate1 :co)
-  :short "Kinds of fanins that may be extracted from nodes."
-  :parents (fanin)
-  :long "<p>The function @(see fanin) uses a fanin-type argument to determine which fanin to fetch from the network.  The possible values are:</p>
-<ul>
-<li>@(':co'), the unique fanin from a combinational output node</li>
-<li>@(':gate0'), the first fanin from a gate node</li>
-<li>@(':gate1'), the second fanin from a gate node.</li>
-</ul>")
+;; (defenum fanin-type-p (:gate0 :gate1 :co)
+;;   :short "Kinds of fanins that may be extracted from nodes."
+;;   :parents (fanin)
+;;   :long "<p>The function @(see fanin) uses a fanin-type argument to determine which fanin to fetch from the network.  The possible values are:</p>
+;; <ul>
+;; <li>@(':co'), the unique fanin from a combinational output node</li>
+;; <li>@(':gate0'), the first fanin from a gate node</li>
+;; <li>@(':gate1'), the second fanin from a gate node.</li>
+;; </ul>")
 
 
-(define fanin ((type fanin-type-p)
+(define fanin ((which bitp)
                (aignet node-listp))
   :guard (and (consp aignet)
-              (if (eq type :co)
-                  (eq (ctype (stype (car aignet))) :output)
-                (eq (ctype (stype (car aignet))) :gate)))
+              (or (eq (ctype (stype (car aignet))) :output)
+                  (eq (ctype (stype (car aignet))) :gate)))
   :returns (lit litp :rule-classes :type-prescription)
-  :short "@(call fanin) gets the specified kind of fanin from the first node of
+  :short "@(call fanin) gets the specified fanin from the first node of
           the input network and fixes it to be a valid fanin literal of the rest
           of the network."
-  (aignet-lit-fix (case (fanin-type-fix type)
-                    (:gate0 (gate-node->fanin0 (car aignet)))
-                    (:gate1 (gate-node->fanin1 (car aignet)))
-                    (otherwise (co-node->fanin (car aignet))))
+  (aignet-lit-fix (if (eq (ctype (stype (car aignet))) :output)
+                      (co-node->fanin (car aignet))
+                    (if (bit->bool which)
+                        (gate-node->fanin1 (car aignet))
+                      (gate-node->fanin0 (car aignet))))
                   (cdr aignet))
   ///
   (defret fanin-id-lte-fanin-count
@@ -1906,11 +1938,12 @@ suffix.</p>"
              (aignet-litp lit new)))
 
   (defthm fanin-of-cons
-    (equal (fanin type (cons node aignet))
-           (aignet-lit-fix (case (fanin-type-fix type)
-                             (:gate0 (gate-node->fanin0 node))
-                             (:gate1 (gate-node->fanin1 node))
-                             (otherwise (co-node->fanin node)))
+    (equal (fanin which (cons node aignet))
+           (aignet-lit-fix (if (eq (ctype (stype node)) :output)
+                               (co-node->fanin node)
+                             (if (bit->bool which)
+                                 (gate-node->fanin1 node)
+                               (gate-node->fanin0 node)))
                            aignet))))
 
 
@@ -1924,7 +1957,7 @@ suffix.</p>"
 ;;           been set yet."
 ;;   (if (and (consp aignet)
 ;;            (equal (ctype (stype (car aignet))) :output))
-;;       (fanin :co aignet)
+;;       (fanin 0 aignet)
 ;;     (make-lit (fanin-count aignet) 0))
 ;;   ///
   
@@ -1953,12 +1986,12 @@ suffix.</p>"
 ;;   (defthm fanin-if-co-of-cons
 ;;     (equal (fanin-if-co (cons node aignet))
 ;;            (if (equal (ctype (stype node)) :output)
-;;                (fanin :co (cons node aignet))
+;;                (fanin 0 (cons node aignet))
 ;;              (make-lit (+ 1 (fanin-count aignet)) 0))))
 
 ;;   (defret fanin-if-co-when-output
 ;;     (implies (equal (ctype (stype (car aignet))) :output)
-;;              (equal lit (fanin :co aignet)))))
+;;              (equal lit (fanin 0 aignet)))))
 
 (local (defthm fanin-count-of-append
          (equal (fanin-count (append a b))
@@ -2063,7 +2096,7 @@ suffix.</p>"
   :returns (outputs node-listp)
   (if (zp n) ;; (- (stype-count :po aignet) (nfix n)))
       nil
-    (cons (po-node (fanin :co (lookup-stype (1- n) :po aignet)))
+    (cons (po-node (fanin 0 (lookup-stype (1- n) :po aignet)))
           (aignet-outputs-aux (1- n) aignet)))
   ///
   (defret fanin-count-of-aignet-outputs-aux
@@ -2113,7 +2146,7 @@ suffix.</p>"
   (defret car-of-aignet-outputs-aux
     (implies (posp n)
              (equal (car outputs)
-                    (po-node (fanin :co (lookup-stype (1- (nfix n)) :po aignet))))))
+                    (po-node (fanin 0 (lookup-stype (1- (nfix n)) :po aignet))))))
 
   (defret consp-of-aignet-outputs-aux
     (equal (consp outputs)
@@ -2174,7 +2207,7 @@ suffix.</p>"
   (defret car-of-aignet-outputs
     (implies (posp (stype-count :po aignet))
              (equal (car outputs)
-                    (po-node (fanin :co (lookup-stype (1- (stype-count :po aignet)) :po aignet))))))
+                    (po-node (fanin 0 (lookup-stype (1- (stype-count :po aignet)) :po aignet))))))
 
   (defret consp-of-aignet-outputs
     (equal (consp outputs)
@@ -2401,8 +2434,8 @@ suffix.</p>"
            (aignet-fanins (lookup-stype n :pi aignet))))
 
   (defret po-fanin-of-aignet-norm
-    (equal (fanin :co (lookup-stype n :po norm))
-           (fanin :co (lookup-stype n :po aignet)))
+    (equal (fanin 0 (lookup-stype n :po norm))
+           (fanin 0 (lookup-stype n :po aignet)))
     :hints (("goal" :cases ((< (nfix n) (stype-count :po aignet)))
              :in-theory (enable fanin
                                 aignet-lit-fix
@@ -2458,7 +2491,7 @@ suffix.</p>"
   (fty::deffixcong aignet-equiv equal (stype-count :reg (lookup-id n x)) x
     :basename reg-count-of-lookup-id)
   (fty::deffixcong aignet-equiv equal (lookup-reg->nxst n x) x)
-  (fty::deffixcong aignet-equiv equal (fanin :co (lookup-stype n :po x)) x
+  (fty::deffixcong aignet-equiv equal (fanin 0 (lookup-stype n :po x)) x
     :basename po-fanin)
   (fty::deffixcong aignet-equiv equal (stype-count :reg x) x
     :basename reg-count)

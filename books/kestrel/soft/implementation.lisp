@@ -17,6 +17,7 @@
 (include-book "kestrel/std/system/definedp" :dir :system)
 (include-book "kestrel/std/system/defun-sk-queries" :dir :system)
 (include-book "kestrel/std/system/function-symbol-listp" :dir :system)
+(include-book "kestrel/std/system/fundef-enabledp" :dir :system)
 (include-book "kestrel/std/system/guard-verified-p" :dir :system)
 (include-book "kestrel/std/system/irecursivep" :dir :system)
 (include-book "kestrel/std/system/measure" :dir :system)
@@ -635,6 +636,20 @@
 
   (defmacro acl2::defun2 (&rest args)
     `(defun2 ,@args)))
+
+(defsection defund2-implementation
+  :short "Implementation of @(tsee defund2)."
+  :long
+  "@(def defund2)
+   @(def acl2::defund2)"
+
+  (defmacro defund2 (sofun &rest rest)
+    `(progn
+       (defund ,sofun ,@rest)
+       (defsoft ,sofun)))
+
+  (defmacro acl2::defund2 (&rest args)
+    `(defund2 ,@args)))
 
 (defsection defchoose2-implementation
   :short "Implementation of @(tsee defchoose2)."
@@ -1325,7 +1340,8 @@
    (xdoc::p
     "Also return the function variables that the new function depends on.")
    (xdoc::p
-    "Only the @(':verify-guards') and @(':print') options may be present.")
+    "Only the @(':verify-guards'), @(':enable'), and @(':print') options
+     may be present.")
    (xdoc::p
     "We add @('fun') to the table of second-order functions
      iff it is second-order.")
@@ -1335,10 +1351,10 @@
      to ensure that the recursive calls are properly transformed."))
   (b* ((wrld (w state))
        ((unless (subsetp (evens options)
-                         '(:verify-guards :print)))
+                         '(:verify-guards :enable :print)))
         (er-soft+ ctx t nil
                   "Only the input keywords ~
-                   :VERIFY-GUARDS and :PRINT are allowed, ~
+                   :VERIFY-GUARDS, :ENABLE, and :PRINT are allowed, ~
                    because ~x0 is a plain second-order function."
                   sofun))
        (verify-guards (let ((verify-guards-option
@@ -1346,6 +1362,10 @@
                         (if verify-guards-option
                             (cadr verify-guards-option)
                           (guard-verified-p sofun wrld))))
+       (enable (let ((enable-option (assoc-keyword :enable options)))
+                 (if enable-option
+                     (cadr enable-option)
+                   (fundef-enabledp sofun state))))
        (sofun-body (ubody sofun wrld))
        (sofun-measure (if (recursivep sofun nil wrld)
                           (measure sofun wrld)
@@ -1385,11 +1405,15 @@
                                  :verify-guards ,verify-guards
                             ,@measure))
                  ,fun-body))
+       (disable-event?
+        (if enable
+            nil
+          `((in-theory (disable ,fun)))))
        (table-event?
         (if funvars
             `((table second-order-functions ',fun ',funvars))
           nil)))
-    (value (list `(,defun-event ,@table-event?)
+    (value (list `(,defun-event ,@disable-event? ,@table-event?)
                  result
                  funvars))))
 
@@ -1482,6 +1506,8 @@
     "Also return the function variables that the new function depends on.")
    (xdoc::p
     "Only the
+     @(':verify-guards'),
+     @(':enable'),
      @(':skolem-name'),
      @(':thm-name'),
      @(':rewrite'),
@@ -1494,6 +1520,7 @@
   (b* ((wrld (w state))
        ((unless (subsetp (evens options)
                          '(:verify-guards
+                           :enable
                            :skolem-name
                            :thm-name
                            :rewrite
@@ -1502,6 +1529,7 @@
         (er-soft+ ctx t nil
                   "Only the input keywords ~
                    :VERIFY-GUARDS, ~
+                   :ENABLE, ~
                    :SKOLEM-NAME, ~
                    :THM-NAME,  ~
                    :REWRITE, ~
@@ -1510,6 +1538,10 @@
                    are allowed, ~
                    because ~x0 is a quantifier second-order function."
                   sofun))
+       (enable (let ((enable-option (assoc-keyword :enable options)))
+                 (if enable-option
+                     (cadr enable-option)
+                   (fundef-enabledp sofun state))))
        (verify-guards (let ((verify-guards-option
                              (assoc-keyword :verify-guards options)))
                         (if verify-guards-option
@@ -1575,6 +1607,15 @@
                  ,formals
                  ,body
                  ,@rest))
+       (disable-event?
+        (if enable
+            nil
+          (let ((rwrule (if thm-name
+                            (cadr thm-name)
+                          (if (eq quant 'forall)
+                              (add-suffix fun "-NECC")
+                            (add-suffix fun "-SUFF")))))
+            `((in-theory (disable ,fun ,rwrule))))))
        (table-event?
         (if funvars
             `((table second-order-functions ',fun ',funvars))
@@ -1586,7 +1627,7 @@
                             (er-soft+
                              (cons 'defun-inst ',fun) t nil "~@0" err-msg?)
                           (value '(value-triple :invisible)))))))
-    (value (list `(,defun-sk-event ,@table-event? ,check-event)
+    (value (list `(,defun-sk-event ,@disable-event? ,@table-event? ,check-event)
                  result
                  funvars))))
 

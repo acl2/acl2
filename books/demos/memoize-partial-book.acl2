@@ -1,0 +1,13 @@
+(include-book "tools/run-script" :dir :system)
+; There is no need to see proofs for this test.
+(set-inhibit-output-lst '(prove proof-tree))
+(run-script "memoize-partial")
+
+; Help dependency scanner.
+#||
+(depends-on "memoize-partial-input.lsp")
+(depends-on "memoize-partial-log.txt")
+(include-book "std/testing/must-fail" :dir :system)
+||#
+
+; cert-flags: ? t :ttags :all

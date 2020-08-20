@@ -13,7 +13,10 @@
 (include-book "parteval")
 
 (include-book "std/testing/assert-bang" :dir :system)
-(include-book "std/testing/eval" :dir :system)
+(include-book "std/testing/must-be-redundant" :dir :system)
+(include-book "std/testing/must-fail" :dir :system)
+(include-book "std/testing/must-fail-local" :dir :system)
+(include-book "std/testing/must-succeed-star" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

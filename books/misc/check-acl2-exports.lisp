@@ -210,6 +210,7 @@
     COLLECT$+
     SUM$
     SUM$+
+    MEMOIZE-PARTIAL
   ))
 
 (defconst *special-ops*

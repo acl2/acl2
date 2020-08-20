@@ -109,7 +109,7 @@
                                  (aignet aignet$a::aignet-well-formedp))
   :guard (< out (aignet$a::num-outs aignet))
   :enabled t
-  (fanin :co (lookup-stype out :po aignet)))
+  (fanin 0 (lookup-stype out :po aignet)))
 
 (define aignet$a::id-existsp ((id natp) (aignet aignet$a::aignet-well-formedp))
   :enabled t
@@ -135,14 +135,14 @@
 ;;   :guard (and (aignet$a::id-existsp id aignet)
 ;;               (eql (aignet$a::id->type id aignet) (gate-type)))
 ;;   :enabled t
-;;   (fanin :gate0 (lookup-id id aignet)))
+;;   (fanin 0 (lookup-id id aignet)))
 
 ;; (define aignet$a::gate-id->fanin1 ((id natp)
 ;;                                    (aignet aignet$a::aignet-well-formedp))
 ;;   :guard (and (aignet$a::id-existsp id aignet)
 ;;               (eql (aignet$a::id->type id aignet) (gate-type)))
 ;;   :enabled t
-;;   (fanin :gate1 (lookup-id id aignet)))
+;;   (fanin 1 (lookup-id id aignet)))
 
 ;; (define aignet$a::ci-id->ionum ((id natp) (aignet aignet$a::aignet-well-formedp))
 ;;   :guard (and (aignet$a::id-existsp id aignet)
@@ -257,10 +257,10 @@
               (nfix id) 0)
     (let ((suff (lookup-id id aignet)))
       (case (stype (car suff))
-        (:and (b-and (lit-phase (fanin :gate0 suff) aignet)
-                     (lit-phase (fanin :gate1 suff) aignet)))
-        (:xor (b-xor (lit-phase (fanin :gate0 suff) aignet)
-                     (lit-phase (fanin :gate1 suff) aignet)))
+        (:and (b-and (lit-phase (fanin 0 suff) aignet)
+                     (lit-phase (fanin 1 suff) aignet)))
+        (:xor (b-xor (lit-phase (fanin 0 suff) aignet)
+                     (lit-phase (fanin 1 suff) aignet)))
         (t 0))))
   ///
 
@@ -467,12 +467,12 @@
                        (stype-count :reg (cdr suff))))
       (:and  (mk-snode (gate-type) 0
                       (id-phase id aignet)
-                      (fanin :gate0 suff)
-                      (fanin :gate1 suff)))
+                      (fanin 0 suff)
+                      (fanin 1 suff)))
       (:xor  (mk-snode (gate-type) 1
                        (id-phase id aignet)
-                       (fanin :gate0 suff)
-                       (fanin :gate1 suff)))
+                       (fanin 0 suff)
+                       (fanin 1 suff)))
       (t ;; :const
        (mk-snode (const-type) 0 0 0 0))))
   ///
@@ -501,9 +501,9 @@
   (defthm snode->fanin-of-gate-slot
     (implies (equal (ctype (stype (car (lookup-id id aignet)))) :gate)
              (and (equal (snode->fanin (mv-nth 0 (id-slots id aignet)))
-                         (fanin :gate0 (lookup-id id aignet)))
+                         (fanin 0 (lookup-id id aignet)))
                   (equal (snode->fanin (mv-nth 1 (id-slots id aignet)))
-                         (fanin :gate1 (lookup-id id aignet))))))
+                         (fanin 1 (lookup-id id aignet))))))
 
   (defthm snode->ionum-of-input
     (implies (equal (ctype (stype (car (lookup-id id aignet)))) :input)
@@ -538,7 +538,7 @@
   (local (defthm unsigned-byte-30-of-fanin
            (implies (< (fanin-count aignet) #x1fffffff)
                     (unsigned-byte-p 30 (fanin ftype (lookup-id id aignet))))
-           :hints(("Goal" :in-theory (enable fanin)))))
+           :hints(("Goal" :in-theory (e/d (fanin) (unsigned-byte-p))))))
 
   (local (defthm unsigned-byte-30-of-lookup-reg->nxst
            (implies (< (fanin-count aignet) #x1fffffff)

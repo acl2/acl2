@@ -140,6 +140,7 @@
 (include-book "std/basic/inductions" :dir :system)
 (include-book "std/io/unsound-read" :dir :system)
 (include-book "std/bitsets/top" :dir :system)
+(include-book "std/util/defretgen" :dir :system)
 
 (include-book "std/strings/top" :dir :system)
 (include-book "std/strings/base64" :dir :system)

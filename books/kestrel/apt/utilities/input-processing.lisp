@@ -13,6 +13,7 @@
 (include-book "defaults-table")
 
 (include-book "kestrel/error-checking/ensure-value-is-boolean" :dir :system)
+(include-book "kestrel/error-checking/ensure-value-is-not-in-list" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
@@ -75,7 +76,8 @@
             (er-soft+ ctx t nil
                       "The name ~x0 specified by :NEW-NAME ~
                        must be distinct form the names ~&1 ~
-                       that are also being generated.")))
+                       that are also being generated."
+                      new-name names-to-avoid)))
         (value (list new-name
                      (cons new-name names-to-avoid)))))))
 
@@ -154,7 +156,8 @@
                      (er-soft+ ctx t nil
                                "The name ~x0 specified by :WRAPPER-NAME ~
                                 must be distinct form the names ~&1 ~
-                                that are also being generated."))
+                                that are also being generated."
+                               wrapper-name names-to-avoid))
                     ((mv new-name$ names-to-avoid)
                      (next-fresh-numbered-name base
                                                (1+ index)
@@ -177,7 +180,8 @@
                      (er-soft+ ctx t nil
                                "The name ~x0 specified by :NEW-NAME ~
                                 must be distinct form the names ~&1 ~
-                                that are also being generated."))
+                                that are also being generated."
+                               new-name names-to-avoid))
                     ((mv wrapper-name$ names-to-avoid)
                      (next-fresh-numbered-name base
                                                (1+ index)
@@ -208,12 +212,14 @@
                      (er-soft+ ctx t nil
                                "The name ~x0 specified by :NEW-NAME ~
                                 must be distinct form the names ~&1 ~
-                                that are also being generated."))
+                                that are also being generated."
+                               new-name names-to-avoid))
                     ((when (member-eq wrapper-name names-to-avoid))
                      (er-soft+ ctx t nil
                                "The name ~x0 specified by :WRAPPER-NAME ~
                                 must be distinct form the names ~&1 ~
-                                that are also being generated."))
+                                that are also being generated."
+                               wrapper-name names-to-avoid))
                     ((when (eq new-name wrapper-name))
                      (er-soft+ ctx t nil
                                "The name ~x0 specified by :NEW-NAME ~
@@ -251,13 +257,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define process-old-to-new-name (old-to-new-name
-                                 (old-to-new-name-present booleanp)
-                                 (old symbolp)
-                                 (new symbolp)
-                                 (names-to-avoid symbol-listp)
-                                 ctx
-                                 state)
+(define process-input-old-to-new-name (old-to-new-name
+                                       (old-to-new-name-present booleanp)
+                                       (old symbolp)
+                                       (new symbolp)
+                                       (names-to-avoid symbol-listp)
+                                       ctx
+                                       state)
   :returns (mv erp
                (result "A list @('(old-to-new updated-names-to-avoid)')
                         satisfying
@@ -280,7 +286,7 @@
      If also explained there, if this input is absent,
      it is taken from the APT defaults table.")
    (xdoc::p
-    "This utility processed the @(':old-to-new-name') input
+    "This utility processes the @(':old-to-new-name') input
      of an APT transformation,
      validating that the input specifies a valid name
      for the new theorem.
@@ -324,7 +330,7 @@
         (er-soft+ ctx t nil
                   "~@0 must be a valid fresh theorem name.  ~@1"
                   description error-msg?))
-       ((er &) (ensure-not-member-of-list$
+       ((er &) (ensure-value-is-not-in-list$
                 name
                 names-to-avoid
                 (msg "among the names ~x0 of other events ~
@@ -337,13 +343,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define process-new-to-old-name (new-to-old-name
-                                 (new-to-old-name-present booleanp)
-                                 (old symbolp)
-                                 (new symbolp)
-                                 (names-to-avoid symbol-listp)
-                                 ctx
-                                 state)
+(define process-input-new-to-old-name (new-to-old-name
+                                       (new-to-old-name-present booleanp)
+                                       (old symbolp)
+                                       (new symbolp)
+                                       (names-to-avoid symbol-listp)
+                                       ctx
+                                       state)
   :returns (mv erp
                (result "A list @('(new-to-old updated-names-to-avoid)')
                         satisfying
@@ -353,7 +359,7 @@
   :short "Process the @(':new-to-old-name') input of an APT transformation."
   :long
   (xdoc::topstring-p
-   "This is quite analogous to @(tsee process-old-to-new-name),
+   "This is quite analogous to @(tsee process-input-old-to-new-name),
     but for the @(':new-to-old-name') input of an APT transformation.")
   (b* ((wrld (w state))
        ((er &) (if new-to-old-name-present
@@ -385,7 +391,7 @@
         (er-soft+ ctx t nil
                   "~@0 must be a valid fresh theorem name.  ~@1"
                   description error-msg?))
-       ((er &) (ensure-not-member-of-list$
+       ((er &) (ensure-value-is-not-in-list$
                 name
                 names-to-avoid
                 (msg "among the names ~x0 of other events ~
@@ -398,10 +404,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define process-old-to-new-enable (old-to-new-enable
-                                   (old-to-new-enable-present booleanp)
-                                   ctx
-                                   state)
+(define process-input-old-to-new-enable (old-to-new-enable
+                                         (old-to-new-enable-present booleanp)
+                                         ctx
+                                         state)
   :returns (mv erp (processed-old-to-new-enable booleanp) state)
   :short "Process the @(':old-to-new-enable') input of an APT transformation."
   :long
@@ -430,15 +436,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define process-new-to-old-enable (new-to-old-enable
-                                   (new-to-old-enable-present booleanp)
-                                   ctx
-                                   state)
+(define process-input-new-to-old-enable (new-to-old-enable
+                                         (new-to-old-enable-present booleanp)
+                                         ctx
+                                         state)
   :returns (mv erp (processed-new-to-old-enable booleanp) state)
   :short "Process the @(':new-to-old-enable') input of an APT transformation."
   :long
   (xdoc::topstring-p
-   "This is quite analogous to @(tsee process-old-to-new-enable),
+   "This is quite analogous to @(tsee process-input-old-to-new-enable),
     but for the @(':new-to-old-enable') input of an APT transformation.")
   (if new-to-old-enable-present
       (b* (((er &) (ensure-value-is-boolean$ new-to-old-enable
@@ -451,14 +457,133 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define process-old-to-wrapper-name (old-to-wrapper-name
-                                     (old-to-wrapper-name-present booleanp)
-                                     (gen-wrapper booleanp)
-                                     (old symbolp)
-                                     (wrapper symbolp)
-                                     (names-to-avoid symbol-listp)
-                                     ctx
-                                     state)
+(define process-input-old-if-new-name (old-if-new-name
+                                       (old-if-new-name-present booleanp)
+                                       (old symbolp)
+                                       (new symbolp)
+                                       (names-to-avoid symbol-listp)
+                                       ctx
+                                       state)
+  :returns (mv erp
+               (result "A list @('(old-if-new updated-names-to-avoid)')
+                        satisfying
+                        @('(typed-tuplep symbolp symbol-listp result)').")
+               state)
+  :mode :program
+  :short "Process the @(':old-if-new-name') input of an APT transformation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The APT transformations that use this utility
+     have an input @(':old-if-new-name')
+     that specifies the name of the generated theorem
+     asserting that the old function is implied by the new function.
+     This input must be either a symbol to use directly as the theorem name
+     (in which case the symbol must not be a keyword),
+     or a keyword used as a separator
+     between the names of the old and new functions
+     as expained in @(tsee set-default-input-old-if-new-name).
+     If also explained there, if this input is absent,
+     it is taken from the APT defaults table.")
+   (xdoc::p
+    "This utility processes the @(':old-if-new-name') input
+     of an APT transformation,
+     validating that the input specifies a valid name
+     for the new theorem.
+     The @('names-to-avoid') parameter contains names of other events
+     that are generated by the transformation but do not yet exist:
+     they are used to ensure that the name of this theorem
+     is distinct from them;
+     this theorem's name is added to the list, which is also returned.")
+   (xdoc::p
+    "The caller of this utility must set
+     the parameter @('old-if-new-name-present') to @('t')
+     iff the @(':old-if-new-name') input is present.
+     If this is @('nil'), the parameter @('old-if-new-name') is ignored."))
+  (b* ((wrld (w state))
+       ((er &) (if old-if-new-name-present
+                   (ensure-value-is-symbol$ old-if-new-name
+                                            "The :OLD-IF-NEW-NAME input"
+                                            t
+                                            nil)
+                 (value nil)))
+       (name (if (or (not old-if-new-name-present)
+                     (keywordp old-if-new-name))
+                 (b* ((kwd (if old-if-new-name-present
+                               old-if-new-name
+                             (get-default-input-old-if-new-name wrld))))
+                   (intern-in-package-of-symbol
+                    (concatenate 'string
+                                 (symbol-name old)
+                                 (symbol-name kwd)
+                                 (symbol-name new))
+                    new))
+               old-if-new-name))
+       (description (msg "The name ~x0 of the theorem ~
+                          that rewrites the old function ~x1 ~
+                          in terms of the new function ~x2, ~
+                          specified (perhaps by default) ~
+                          by the :OLD-IF-NEW-NAME input ~x3,"
+                         name old new old-if-new-name))
+       (error-msg? (fresh-namep-msg-weak name nil wrld))
+       ((when error-msg?)
+        (er-soft+ ctx t nil
+                  "~@0 must be a valid fresh theorem name.  ~@1"
+                  description error-msg?))
+       ((er &) (ensure-value-is-not-in-list$
+                name
+                names-to-avoid
+                (msg "among the names ~x0 of other events ~
+                      generated by this transformation"
+                     names-to-avoid)
+                description
+                t
+                nil)))
+    (value (list name (cons name names-to-avoid)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define process-input-old-if-new-enable (old-if-new-enable
+                                         (old-if-new-enable-present booleanp)
+                                         ctx
+                                         state)
+  :returns (mv erp (processed-old-if-new-enable booleanp) state)
+  :short "Process the @(':old-if-new-enable') input of an APT transformation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The APT transformations that use this utility
+     have an @(':old-if-new-enable') input
+     that specifies whether to enable or not
+     asserting that the old function is implied by the new function.
+     This must be a boolean.
+     If absent, it is taken from the APT defaults table;
+     see @(tsee set-default-input-old-if-new-enable).")
+   (xdoc::p
+    "The caller of this utility must set
+     the parameter @('old-if-new-enable-present') to @('t')
+     iff the @(':old-if-new-enable') input is present.
+     If this is @('nil'), the parameter @('old-if-new-enable') is ignored."))
+  (if old-if-new-enable-present
+      (b* (((er &) (ensure-value-is-boolean$ old-if-new-enable
+                                             "The :OLD-IF-NEW-ENABLE input"
+                                             t
+                                             nil)))
+        (value old-if-new-enable))
+    (value (get-default-input-old-if-new-enable (w state))))
+  :prepwork ((local (in-theory (enable acl2::ensure-value-is-boolean)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define process-input-old-to-wrapper-name (old-to-wrapper-name
+                                           (old-to-wrapper-name-present
+                                            booleanp)
+                                           (gen-wrapper booleanp)
+                                           (old symbolp)
+                                           (wrapper symbolp)
+                                           (names-to-avoid symbol-listp)
+                                           ctx
+                                           state)
   :returns (mv erp
                (result "A list @('(old-to-wrapper updated-names-to-avoid)')
                         satisfying
@@ -468,7 +593,7 @@
   :short "Process the @(':old-to-wrapper-name') input of an APT transformation."
   :long
   (xdoc::topstring-p
-   "This is quite analogous to @(tsee process-old-to-new-name),
+   "This is quite analogous to @(tsee process-input-old-to-new-name),
     but for the @(':old-to-wrapper-name') input of an APT transformation.
     The @('gen-wrapper') parameter is @('t') iff the wrapper is generated,
     i.e. if the @(':wrapper') input of the transformation is @('t').
@@ -504,7 +629,7 @@
             (er-soft+ ctx t nil
                       "~@0 must be a valid fresh theorem name.  ~@1"
                       description error-msg?))
-           ((er &) (ensure-not-member-of-list$
+           ((er &) (ensure-value-is-not-in-list$
                     name
                     names-to-avoid
                     (msg "among the names ~x0 of other events ~
@@ -524,14 +649,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define process-wrapper-to-old-name (wrapper-to-old-name
-                                     (wrapper-to-old-name-present booleanp)
-                                     (gen-wrapper booleanp)
-                                     (old symbolp)
-                                     (wrapper symbolp)
-                                     (names-to-avoid symbol-listp)
-                                     ctx
-                                     state)
+(define process-input-wrapper-to-old-name (wrapper-to-old-name
+                                           (wrapper-to-old-name-present
+                                            booleanp)
+                                           (gen-wrapper booleanp)
+                                           (old symbolp)
+                                           (wrapper symbolp)
+                                           (names-to-avoid symbol-listp)
+                                           ctx
+                                           state)
   :returns (mv erp
                (result "A list @('(wrapper-to-old updated-names-to-avoid)')
                         satisfying
@@ -541,7 +667,7 @@
   :short "Process the @(':wrapper-to-old-name') input of an APT transformation."
   :long
   (xdoc::topstring-p
-   "This is quite analogous to @(tsee process-old-to-wrapper-name),
+   "This is quite analogous to @(tsee process-input-old-to-wrapper-name),
     but for the @(':wrapper-to-old-name') input of an APT transformation.")
   (if gen-wrapper
       (b* ((wrld (w state))
@@ -574,7 +700,7 @@
             (er-soft+ ctx t nil
                       "~@0 must be a valid fresh theorem name.  ~@1"
                       description error-msg?))
-           ((er &) (ensure-not-member-of-list$
+           ((er &) (ensure-value-is-not-in-list$
                     name
                     names-to-avoid
                     (msg "among the names ~x0 of other events ~
@@ -594,17 +720,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define process-old-to-wrapper-enable (old-to-wrapper-enable
-                                       (old-to-wrapper-enable-present booleanp)
-                                       (gen-wrapper booleanp)
-                                       ctx
-                                       state)
+(define process-input-old-to-wrapper-enable (old-to-wrapper-enable
+                                             (old-to-wrapper-enable-present
+                                              booleanp)
+                                             (gen-wrapper booleanp)
+                                             ctx
+                                             state)
   :returns (mv erp (processed-old-to-wrapper-enable booleanp) state)
   :short "Process the @(':old-to-wrapper-enable') input of
           an APT transformation."
   :long
   (xdoc::topstring-p
-   "This is quite analogous to @(tsee process-old-to-new-enable),
+   "This is quite analogous to @(tsee process-input-old-to-new-enable),
     but for the @(':old-to-wrapper-enable') input of an APT transformation.
     The @('gen-wrapper') parameter is @('t') iff the wrapper is generated,
     i.e. if the @(':wrapper') input of the transformation is @('t').
@@ -629,17 +756,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define process-wrapper-to-old-enable (wrapper-to-old-enable
-                                       (wrapper-to-old-enable-present booleanp)
-                                       (gen-wrapper booleanp)
-                                       ctx
-                                       state)
+(define process-input-wrapper-to-old-enable (wrapper-to-old-enable
+                                             (wrapper-to-old-enable-present
+                                              booleanp)
+                                             (gen-wrapper booleanp)
+                                             ctx
+                                             state)
   :returns (mv erp (processed-wrapper-to-old-enable booleanp) state)
   :short "Process the @(':wrapper-to-old-enable') input of
           an APT transformation."
   :long
   (xdoc::topstring-p
-   "This is quite analogous to @(tsee process-old-to-wrapper-name),
+   "This is quite analogous to @(tsee process-input-old-to-wrapper-name),
     but for the @(':wrapper-to-old-name') input of an APT transformation.")
   (if gen-wrapper
       (if wrapper-to-old-enable-present
@@ -661,11 +789,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define process-wrapper-enable (wrapper-enable
-                                (wrapper-enable-present booleanp)
-                                (gen-wrapper booleanp)
-                                ctx
-                                state)
+(define process-input-wrapper-enable (wrapper-enable
+                                      (wrapper-enable-present booleanp)
+                                      (gen-wrapper booleanp)
+                                      ctx
+                                      state)
   :returns (mv erp (processed-wrapper-enable booleanp) state)
   :short "Process the @(':wrapper-enable') input of an APT transformation."
   :long

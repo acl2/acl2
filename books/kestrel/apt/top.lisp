@@ -18,6 +18,9 @@
 (include-book "casesplit")
 (include-book "casesplit-doc")
 
+(include-book "divconq")
+(include-book "divconq-doc")
+
 (include-book "expdata")
 (include-book "expdata-doc")
 

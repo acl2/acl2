@@ -147,10 +147,30 @@
   (defretd bfr-litarr-p-by-witness
     (implies (acl2::rewriting-positive-literal `(bfr-litarr-p ,bfrs ,litarr ,bfrstate-bound))
              (equal (bfr-litarr-p bfrs litarr bfrstate-bound)
-                    (implies (member bfr bfrs)
+                    ;; (implies (member bfr bfrs)
                              (bfr-p (bfr-map bfr litarr)
-                                    (bfrstate (bfrmode :aignet) bfrstate-bound)))))
-    :hints(("Goal" :in-theory (enable bfr-litarr-p)))))
+                                    (bfrstate (bfrmode :aignet) bfrstate-bound))))
+    :hints(("Goal" :in-theory (enable bfr-litarr-p))))
+
+  (defretd bfr-litarr-p-when-witness
+    (implies (bfr-p (bfr-map bfr litarr)
+                    (bfrstate (bfrmode :aignet) bfrstate-bound))
+             (bfr-litarr-p bfrs litarr bfrstate-bound))
+    :hints(("Goal" :in-theory (enable bfr-litarr-p))))
+
+  (defret bfr-litarr-p-witness-is-member
+    (implies (not (bfr-litarr-p bfrs litarr bfrstate-bound))
+             (member-equal bfr bfrs))
+    :hints(("Goal" :in-theory (enable bfr-litarr-p))))
+
+  ;; (defretd bfr-litarr-p-by-witness
+  ;;   (implies (acl2::rewriting-positive-literal `(bfr-litarr-p ,bfrs ,litarr ,bfrstate-bound))
+  ;;            (equal (bfr-litarr-p bfrs litarr bfrstate-bound)
+  ;;                   (implies (member bfr bfrs)
+  ;;                            (bfr-p (bfr-map bfr litarr)
+  ;;                                   (bfrstate (bfrmode :aignet) bfrstate-bound)))))
+  ;;   :hints(("Goal" :in-theory (enable bfr-litarr-p))))
+  )
 
 
 (defstobj-clone logicman2 logicman :suffix "2")
@@ -426,6 +446,9 @@
            :hints (("goal" :use ((:instance bfrstate-fix-redef (x bfrstate)))
                     :in-theory (disable bfrstate-fix-redef)))))
 
+  (local (include-book "tools/trivial-ancestors-check" :dir :system))
+  (local (acl2::use-trivial-ancestors-check))
+
   (defret bfr-litarr-p-of-<fn>
     (implies (and (bfrs-markedp bfrs bitarr)
                   (lbfr-mode-is :aignet)
@@ -433,15 +456,18 @@
                   (<= (len bitarr) (aignet::num-fanins (logicman->aignet logicman)))
                   (equal bound (bfrstate->bound (logicman->bfrstate new-logicman))))
              (bfr-litarr-p bfrs new-litarr bound))
-    :hints(("Goal" :in-theory (e/d (bfr-litarr-p-by-witness
-                                    bfrs-markedp-necc)
+    :hints(("Goal" :in-theory (e/d (bfrs-markedp-necc)
                                    (<fn>))
+            :use ((:instance bfr-litarr-p-when-witness
+                   (litarr new-litarr)
+                   (bfrstate-bound bound)))
             :do-not-induct t)))
 
 
   (defret litarr-length-of-<fn>
-    (equal (len new-litarr)
-           (len bitarr)))
+    (implies (<= (len bitarr) (+ 1 (aignet::fanin-count (logicman->aignet logicman))))
+             (equal (len new-litarr)
+                    (+ 1 (aignet::fanin-count (logicman->aignet logicman))))))
 
 
 

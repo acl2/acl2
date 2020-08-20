@@ -9,8 +9,6 @@
           (:TYPE-PRESCRIPTION NOT-INTEGERP-2B))
      (828 828
           (:TYPE-PRESCRIPTION NOT-INTEGERP-1B))
-     (552 10 (:REWRITE DEFAULT-FLOOR-RATIO))
-     (314 64 (:REWRITE DEFAULT-PLUS-2))
      (306 34 (:TYPE-PRESCRIPTION FLOOR-ZERO . 2))
      (306 34
           (:TYPE-PRESCRIPTION FLOOR-POSITIVE . 1))
@@ -20,17 +18,8 @@
           (:TYPE-PRESCRIPTION FLOOR-NONNEGATIVE . 1))
      (306 34
           (:TYPE-PRESCRIPTION FLOOR-NEGATIVE . 1))
-     (266 134 (:REWRITE DEFAULT-TIMES-2))
-     (230 64 (:REWRITE DEFAULT-PLUS-1))
-     (192 192
-          (:TYPE-PRESCRIPTION NOT-INTEGERP-3A))
-     (192 192
-          (:TYPE-PRESCRIPTION NOT-INTEGERP-2A))
-     (192 192
-          (:TYPE-PRESCRIPTION NOT-INTEGERP-1A))
-     (192 2 (:REWRITE |(* (if a b c) x)|))
-     (176 4 (:REWRITE |(floor (+ x r) i)|))
-     (170 134 (:REWRITE DEFAULT-TIMES-1))
+     (220 6 (:REWRITE DEFAULT-FLOOR-RATIO))
+     (182 37 (:REWRITE DEFAULT-PLUS-2))
      (170 34 (:TYPE-PRESCRIPTION FLOOR-ZERO . 3))
      (170 34 (:TYPE-PRESCRIPTION FLOOR-ZERO . 1))
      (170 34
@@ -49,72 +38,81 @@
           (:TYPE-PRESCRIPTION FLOOR-NEGATIVE . 3))
      (170 34
           (:TYPE-PRESCRIPTION FLOOR-NEGATIVE . 2))
-     (112 112
-          (:REWRITE NORMALIZE-FACTORS-GATHER-EXPONENTS))
-     (106 32 (:REWRITE REDUCE-INTEGERP-+))
-     (106 32 (:META META-INTEGERP-CORRECT))
+     (166 78 (:REWRITE DEFAULT-TIMES-2))
+     (138 37 (:REWRITE DEFAULT-PLUS-1))
+     (118 118
+          (:TYPE-PRESCRIPTION NOT-INTEGERP-3A))
+     (118 118
+          (:TYPE-PRESCRIPTION NOT-INTEGERP-2A))
+     (118 118
+          (:TYPE-PRESCRIPTION NOT-INTEGERP-1A))
+     (100 22 (:REWRITE REDUCE-INTEGERP-+))
+     (100 22 (:META META-INTEGERP-CORRECT))
+     (96 78 (:REWRITE DEFAULT-TIMES-1))
      (66 2 (:LINEAR LINEAR-FLOOR-BOUNDS-3))
+     (64 64
+         (:REWRITE NORMALIZE-FACTORS-GATHER-EXPONENTS))
      (56 2 (:LINEAR LINEAR-FLOOR-BOUNDS-2))
-     (52 2 (:REWRITE SUM-IS-EVEN . 2))
-     (48 48
+     (50 2 (:REWRITE |(floor (+ x r) i)|))
+     (30 30
          (:REWRITE NORMALIZE-TERMS-SUCH-AS-A/A+B-+-B/A+B))
-     (48 48 (:REWRITE NORMALIZE-ADDENDS))
-     (32 32 (:REWRITE INTEGERP-MINUS-X))
-     (32 32
+     (30 30 (:REWRITE NORMALIZE-ADDENDS))
+     (22 22 (:REWRITE INTEGERP-MINUS-X))
+     (22 22
          (:REWRITE INTEGER-LISTP-IMPLIES-INTEGERP))
-     (30 10 (:REWRITE DEFAULT-FLOOR-1))
-     (16 16 (:REWRITE FOLD-CONSTS-IN-+))
-     (16 16 (:REWRITE |(+ c (+ d x))|))
-     (10 10 (:REWRITE DEFAULT-FLOOR-2))
-     (10 4
-         (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<))
-     (10 4 (:REWRITE PREFER-POSITIVE-ADDENDS-<))
-     (10 4 (:REWRITE DEFAULT-LESS-THAN-1))
-     (8 8 (:REWRITE |(floor x 2)| . 2))
-     (4 4 (:REWRITE THE-FLOOR-BELOW))
-     (4 4 (:REWRITE THE-FLOOR-ABOVE))
-     (4 4
-        (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-<-0-RATIONAL-REMAINDER))
-     (4 4
-        (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-<-0-RATIONAL-COMMON))
-     (4 4 (:REWRITE SIMPLIFY-SUMS-<))
-     (4 4 (:REWRITE REMOVE-WEAK-INEQUALITIES))
-     (4 4 (:REWRITE REMOVE-STRICT-INEQUALITIES))
-     (4 4
-        (:REWRITE REDUCE-RATIONAL-MULTIPLICATIVE-CONSTANT-<))
-     (4 4
-        (:REWRITE REDUCE-MULTIPLICATIVE-CONSTANT-<))
-     (4 4 (:REWRITE REDUCE-ADDITIVE-CONSTANT-<))
-     (4 4 (:REWRITE INTEGERP-<-CONSTANT))
-     (4 4 (:REWRITE DEFAULT-LESS-THAN-2))
-     (4 4 (:REWRITE CONSTANT-<-INTEGERP))
-     (4 4
-        (:REWRITE |(< c (/ x)) positive c --- present in goal|))
-     (4 4
-        (:REWRITE |(< c (/ x)) positive c --- obj t or nil|))
-     (4 4
-        (:REWRITE |(< c (/ x)) negative c --- present in goal|))
-     (4 4
-        (:REWRITE |(< c (/ x)) negative c --- obj t or nil|))
-     (4 4 (:REWRITE |(< c (- x))|))
-     (4 4
-        (:REWRITE |(< (/ x) c) positive c --- present in goal|))
-     (4 4
-        (:REWRITE |(< (/ x) c) positive c --- obj t or nil|))
-     (4 4
-        (:REWRITE |(< (/ x) c) negative c --- present in goal|))
-     (4 4
-        (:REWRITE |(< (/ x) c) negative c --- obj t or nil|))
-     (4 4 (:REWRITE |(< (/ x) 0)|))
-     (4 4 (:REWRITE |(< (/ x) (/ y))|))
-     (4 4 (:REWRITE |(< (- x) c)|))
-     (4 4 (:REWRITE |(< (- x) (- y))|))
-     (4 4 (:REWRITE |(< (* x y) 0)|))
+     (16 6 (:REWRITE DEFAULT-FLOOR-1))
+     (12 12 (:REWRITE FOLD-CONSTS-IN-+))
+     (12 12 (:REWRITE |(+ c (+ d x))|))
+     (6 6 (:REWRITE DEFAULT-FLOOR-2))
+     (6 6 (:REWRITE |(floor x 2)| . 2))
+     (3 1
+        (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<))
+     (3 1 (:REWRITE PREFER-POSITIVE-ADDENDS-<))
+     (3 1 (:REWRITE DEFAULT-LESS-THAN-1))
      (2 2 (:REWRITE INTEGERP-+-REDUCE-CONSTANT))
-     (2 2 (:REWRITE |(< (+ c/d x) y)|))
-     (2 2 (:REWRITE |(< (+ (- c) x) y)|)))
-(RP::S-TO-ADDER-M2 (390 12 (:REWRITE DEFAULT-MOD-RATIO))
-                   (280 17 (:REWRITE |(* y x)|))
+     (1 1 (:REWRITE THE-FLOOR-BELOW))
+     (1 1 (:REWRITE THE-FLOOR-ABOVE))
+     (1 1
+        (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-<-0-RATIONAL-REMAINDER))
+     (1 1
+        (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-<-0-RATIONAL-COMMON))
+     (1 1 (:REWRITE SIMPLIFY-SUMS-<))
+     (1 1 (:REWRITE REMOVE-WEAK-INEQUALITIES))
+     (1 1 (:REWRITE REMOVE-STRICT-INEQUALITIES))
+     (1 1
+        (:REWRITE REDUCE-RATIONAL-MULTIPLICATIVE-CONSTANT-<))
+     (1 1
+        (:REWRITE REDUCE-MULTIPLICATIVE-CONSTANT-<))
+     (1 1 (:REWRITE REDUCE-ADDITIVE-CONSTANT-<))
+     (1 1 (:REWRITE INTEGERP-<-CONSTANT))
+     (1 1 (:REWRITE DEFAULT-LESS-THAN-2))
+     (1 1 (:REWRITE CONSTANT-<-INTEGERP))
+     (1 1
+        (:REWRITE |(< c (/ x)) positive c --- present in goal|))
+     (1 1
+        (:REWRITE |(< c (/ x)) positive c --- obj t or nil|))
+     (1 1
+        (:REWRITE |(< c (/ x)) negative c --- present in goal|))
+     (1 1
+        (:REWRITE |(< c (/ x)) negative c --- obj t or nil|))
+     (1 1 (:REWRITE |(< c (- x))|))
+     (1 1
+        (:REWRITE |(< (/ x) c) positive c --- present in goal|))
+     (1 1
+        (:REWRITE |(< (/ x) c) positive c --- obj t or nil|))
+     (1 1
+        (:REWRITE |(< (/ x) c) negative c --- present in goal|))
+     (1 1
+        (:REWRITE |(< (/ x) c) negative c --- obj t or nil|))
+     (1 1 (:REWRITE |(< (/ x) 0)|))
+     (1 1 (:REWRITE |(< (/ x) (/ y))|))
+     (1 1 (:REWRITE |(< (- x) c)|))
+     (1 1 (:REWRITE |(< (- x) (- y))|))
+     (1 1 (:REWRITE |(< (+ c/d x) y)|))
+     (1 1 (:REWRITE |(< (+ (- c) x) y)|))
+     (1 1 (:REWRITE |(< (* x y) 0)|)))
+(RP::S-TO-ADDER-M2 (258 8 (:REWRITE DEFAULT-MOD-RATIO))
+                   (214 11 (:REWRITE |(* y x)|))
                    (187 187
                         (:TYPE-PRESCRIPTION NOT-INTEGERP-3B))
                    (187 187
@@ -128,19 +126,18 @@
                    (185 37
                         (:TYPE-PRESCRIPTION MOD-NEGATIVE . 2))
                    (161 3 (:LINEAR MOD-BOUNDS-3))
-                   (146 85 (:REWRITE DEFAULT-TIMES-2))
-                   (142 142
+                   (126 64 (:REWRITE DEFAULT-TIMES-2))
+                   (123 123
                         (:TYPE-PRESCRIPTION NOT-INTEGERP-3A))
-                   (142 142
+                   (123 123
                         (:TYPE-PRESCRIPTION NOT-INTEGERP-2A))
-                   (142 142
+                   (123 123
                         (:TYPE-PRESCRIPTION NOT-INTEGERP-1A))
-                   (120 5 (:REWRITE SUM-IS-EVEN . 2))
-                   (110 26 (:REWRITE DEFAULT-PLUS-2))
-                   (109 85 (:REWRITE DEFAULT-TIMES-1))
-                   (106 26 (:REWRITE DEFAULT-PLUS-1))
-                   (76 2 (:REWRITE |(* (if a b c) x)|))
-                   (66 66
+                   (105 5 (:REWRITE SUM-IS-EVEN . 2))
+                   (92 18 (:REWRITE DEFAULT-PLUS-2))
+                   (92 18 (:REWRITE DEFAULT-PLUS-1))
+                   (80 64 (:REWRITE DEFAULT-TIMES-1))
+                   (53 53
                        (:REWRITE NORMALIZE-FACTORS-GATHER-EXPONENTS))
                    (38 6 (:LINEAR MOD-BOUNDS-2))
                    (37 37 (:TYPE-PRESCRIPTION MOD-ZERO . 3))
@@ -150,17 +147,17 @@
                    (37 37
                        (:TYPE-PRESCRIPTION MOD-NEGATIVE . 1))
                    (37 37 (:TYPE-PRESCRIPTION INTEGERP-MOD-2))
-                   (28 28 (:REWRITE REDUCE-INTEGERP-+))
-                   (28 28 (:REWRITE INTEGERP-MINUS-X))
-                   (28 28
+                   (23 23 (:REWRITE REDUCE-INTEGERP-+))
+                   (23 23 (:REWRITE INTEGERP-MINUS-X))
+                   (23 23
                        (:REWRITE INTEGER-LISTP-IMPLIES-INTEGERP))
-                   (28 28 (:META META-INTEGERP-CORRECT))
-                   (28 12 (:REWRITE DEFAULT-MOD-1))
-                   (13 13
+                   (23 23 (:META META-INTEGERP-CORRECT))
+                   (20 8 (:REWRITE DEFAULT-MOD-1))
+                   (11 11
                        (:REWRITE NORMALIZE-TERMS-SUCH-AS-A/A+B-+-B/A+B))
-                   (13 13 (:REWRITE NORMALIZE-ADDENDS))
-                   (12 12 (:REWRITE DEFAULT-MOD-2))
-                   (10 10 (:REWRITE |(mod x 2)| . 2))
+                   (11 11 (:REWRITE NORMALIZE-ADDENDS))
+                   (8 8 (:REWRITE DEFAULT-MOD-2))
+                   (8 8 (:REWRITE |(mod x 2)| . 2))
                    (1 1
                       (:REWRITE INTEGERP-+-REDUCE-CONSTANT)))
 (RP::S-SPEC-TO-ADDER-M2 (187 187

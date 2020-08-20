@@ -6954,7 +6954,8 @@
 
 (defconst *xargs-keywords*
 
-; Keep this in sync with :doc xargs.
+; Keep this in sync with :doc xargs.  Also, if you add to this list, consider
+; modifying memoize-partial-declare accordingly.
 
   '(:guard :guard-hints :guard-debug :guard-simplify
            :hints :measure :measure-debug
@@ -10468,7 +10469,9 @@
 ; "real" value of the function is a list of items extracted from lst during the
 ; checking.  These items are:
 
-;    names     - the names of the fns in the clique
+;    names     - the names of the fns in the clique, in order (as that order is
+;                expected by partial-functions-table-guard; see
+;                partial-functions-table-guard-msg)
 ;    arglists  - their formals
 ;    docs      - their documentation strings
 ;    pairs     - the (section-symbol . citations) pairs parsed from docs
@@ -10821,25 +10824,33 @@
 ; if loop$-recursion is nil.
 
                      (putprop (car names) 'loop$-recursion T wrld6)
-                     wrld6))
+                   wrld6))
+                (lambda$-alist-wrld6a
+                 (global-val 'lambda$-alist wrld6a))
+                (new-lambda$-alist-pairs (access lambda-info
+                                                 lambda-info
+                                                 :new-lambda$-alist-pairs))
                 (wrld6b
-                 (global-set 'lambda$-alist
-                             (union-equal
-                              (access lambda-info
-                                      lambda-info
-                                      :new-lambda$-alist-pairs)
-                              (global-val 'lambda$-alist
-                                          wrld6a))
-                             wrld6a))
+                 (if (subsetp-equal new-lambda$-alist-pairs
+                                    lambda$-alist-wrld6a)
+                     wrld6a
+                   (global-set 'lambda$-alist
+                               (union-equal new-lambda$-alist-pairs
+                                            lambda$-alist-wrld6a)
+                               wrld6a)))
+                (loop$-alist-wrld6b
+                 (global-val 'loop$-alist wrld6b))
+                (new-loop$-alist-pairs (access lambda-info
+                                               lambda-info
+                                               :new-loop$-alist-pairs))
                 (wrld6c
-                 (global-set 'loop$-alist
-                             (union-equal
-                              (access lambda-info
-                                      lambda-info
-                                      :new-loop$-alist-pairs)
-                              (global-val 'loop$-alist
-                                          wrld6b))
-                             wrld6b)))
+                 (if (subsetp-equal new-loop$-alist-pairs
+                                    loop$-alist-wrld6b)
+                     wrld6b
+                   (global-set 'loop$-alist
+                               (union-equal new-loop$-alist-pairs
+                                            loop$-alist-wrld6b)
+                               wrld6b))))
            (er-progn
             (update-w big-mutrec wrld6c)
             (er-let*
@@ -11616,7 +11627,7 @@
              (pprogn
               (fms "Macro ~x0~|~
                     Macro Args:  ~y1~|~
-                    Guard:       ~Q23~|~~%"
+                    Guard:       ~Q23~|~%"
                    (list (cons #\0 name)
                          (cons #\1 args)
                          (cons #\2 guard)

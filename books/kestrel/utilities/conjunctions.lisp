@@ -34,10 +34,10 @@
 (defund add-conjunct-to-item (conjunct item)
   (declare (xargs :guard t))
   (if (or (equal conjunct *t*)
-          (equal conjunct 't))
+          (eq conjunct 't))
       item
     (if (or (equal item *t*)
-            (equal item 't))
+            (eq item 't))
         conjunct
       (if (and (call-of 'and item)
                (true-listp item) ;for the guard proof

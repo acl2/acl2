@@ -18127,6 +18127,24 @@
   (st$c . logic-exec-pairs)
   t)
 
+(defun cltl-def-memoize-partial (fn total wrld)
+
+; Fn and total and function symbols, where we expect that with respect to the
+; Essay on Memoization with Partial Functions (Memoize-partial), fn plays the
+; role of the Common Lisp function fn1 to be used for computing the limiting
+; value of the ACL2 function (with a "limit" or "clock" argument), fn0-limit.
+; Thus, we are supporting an event (memoize fn :total total) or
+; (memoize-partial (... (fn total ...) ...) ...).  This function returns the
+; definition of total associated with fn in the table, partial-functions-table,
+; or nil if there is no associated definition.
+
+  (let* ((recp (getpropc total 'recursivep nil wrld))
+         (table-key (car recp))
+         (tuples (cdr (assoc-eq table-key
+                                (table-alist 'partial-functions-table wrld))))
+         (tuple (assoc-eq fn tuples)))
+    (car (last tuple))))
+
 (defun table-cltl-cmd (name key val op ctx wrld)
 
 ; WARNING: For the case that name is 'memoize-table, keep this in sync with
@@ -18186,12 +18204,15 @@
                                          (not (eq condition-fn t))
                                          (cltl-def-from-name condition-fn
                                                              wrld)))
-                     (condition (or (eq condition-fn t) ; hence t
-                                    (car (last condition-def))))) ; maybe nil
+                     (condition (or (eq condition-fn t)          ; hence t
+                                    (car (last condition-def)))) ; maybe nil
+                     (total (cdr (assoc-eq :total val))))
                 `(memoize ,key ; fn
                           ,condition
                           ,(cdr (assoc-eq :inline val))
-                          ,(cltl-def-from-name key wrld) ; cl-defun
+                          ,(if total
+                               (cltl-def-memoize-partial key total wrld)
+                             (cltl-def-from-name key wrld)) ; cl-defun
                           ,(getpropc key 'formals t wrld) ; formals
                           ,(getpropc key 'stobjs-in t wrld) ; stobjs-in
                           ,(getpropc key 'stobjs-out t

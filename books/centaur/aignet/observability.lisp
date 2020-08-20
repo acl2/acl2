@@ -34,7 +34,9 @@
 (include-book "centaur/aignet/prune" :dir :system)
 (include-book "centaur/aignet/ipasir" :dir :system)
 (include-book "transform-utils")
+(include-book "transform-stub")
 (include-book "count")
+(include-book "supergate-construction")
 
 (local (include-book "centaur/satlink/cnf-basics" :dir :system))
 (local (include-book "centaur/aignet/cnf" :dir :system))
@@ -43,6 +45,8 @@
 (local (include-book "tools/trivial-ancestors-check" :dir :system))
 (local (include-book "std/lists/take" :dir :system))
 (local (include-book "std/lists/nthcdr" :dir :system))
+(local (include-book "std/lists/repeat" :dir :system))
+
 
 (local (in-theory (disable nth update-nth nfix ifix (tau-system)
                            resize-list
@@ -459,6 +463,281 @@
          (<= (* (numerator config.min-ratio) (lnfix lit-size))
              (* (denominator config.min-ratio) (lnfix full-size))))))
 
+(local (defthm aignet-lit-listp-implies-lits-max-id-val-bound
+         (implies (aignet-lit-listp x aignet)
+                  (<= (lits-max-id-val x) (fanin-count aignet)))
+         :hints(("Goal" :in-theory (enable lits-max-id-val aignet-idp)))
+         :rule-classes :forward-chaining))
+
+(local #!satlink
+       (fty::deflist lit-list :pred lit-listp :elt-type litp :true-listp t
+         :parents (litp)
+         :short "List of literals"))
+
+(local
+ (defthm nth-of-lit-eval-list
+   (bit-equiv (nth n (lit-eval-list lits invals regvals aignet))
+              (lit-eval (nth n lits) invals regvals aignet))
+   :hints(("Goal" :in-theory (enable nth lit-eval-list)))))
+
+(define observability-fix-hyps/concls ((hyps lit-listp)
+                                       (concls lit-listp)
+                                       (aignet)
+                                       (copy)
+                                       (gatesimp gatesimp-p)
+                                       (strash)
+                                       (aignet2)
+                                       (state))
+  
+  :guard (and (<= (num-fanins aignet) (lits-length copy))
+              (aignet-copies-in-bounds copy aignet2)
+              (aignet-lit-listp hyps aignet)
+              (aignet-lit-listp concls aignet)
+              (<= (num-ins aignet) (num-ins aignet2))
+              (<= (num-regs aignet) (num-regs aignet2)))
+  :returns (mv (hyp-copy litp)
+               (new-hyps lit-listp)
+               (new-concls lit-listp)
+               new-copy new-strash new-aignet2 new-state)
+  :guard-hints ((and stable-under-simplificationp
+                     '(:in-theory (enable aignet-idp)
+                       :do-not-induct t)))
+  (b* (((mv copy strash aignet2)
+        (b* (((acl2::local-stobjs mark)
+              (mv mark copy strash aignet2))
+             (mark (resize-bits (num-fanins aignet) mark))
+             ;; (litarr (resize-lits (+ 1 (lit-id hyp)) litarr))
+             ((mv mark copy strash aignet2)
+              (aignet-copy-dfs-list hyps aignet mark copy strash gatesimp aignet2)))
+          (mv mark copy strash aignet2)))
+       (hyp-copies (lit-list-copies hyps copy))
+       ((mv hyp-copy strash aignet2)
+        (aignet-hash-and-supergate hyp-copies gatesimp strash aignet2))
+       ((mv ?status copy strash aignet2 state)
+        (observability-fix-input-copies hyp-copy aignet copy strash aignet2 state))
+       ((when (eq status :unsat))
+        (mv 0 
+            hyp-copies
+            (make-list (len concls) :initial-element 0)
+            copy strash aignet2 state))
+       ((mv copy strash aignet2)
+        (b* (((acl2::local-stobjs mark)
+              (mv mark copy strash aignet2))
+             (mark (resize-bits (num-fanins aignet) mark)))
+          (aignet-copy-dfs-list concls aignet mark copy strash gatesimp aignet2)))
+       (concl-copies (lit-list-copies concls copy)))
+    (mv hyp-copy hyp-copies concl-copies copy strash aignet2 state))
+  ///
+  
+  (local (acl2::use-trivial-ancestors-check))
+
+  (defret aignet-extension-of-<fn>
+    (aignet-extension-p new-aignet2 aignet2)
+    :hints ('(:expand (<call>))))
+
+  (defret stype-counts-of-<fn>
+    (implies (and (not (equal (stype-fix stype) (and-stype)))
+                  (not (equal (stype-fix stype) (xor-stype))))
+             (equal (stype-count stype new-aignet2)
+                    (stype-count stype aignet2)))
+    :hints ('(:expand (<call>))))
+
+  (defret copy-length-of-<fn>
+    (implies (and (<= (num-fanins aignet) (len copy))
+                  (aignet-lit-listp hyps aignet)
+                  (aignet-lit-listp concls aignet))
+             (equal (len new-copy) (len copy))))
+
+
+  ;; (local (defthm aignet-idp-when-lte-max-fanin
+  ;;          (implies (<= (nfix n) (max-fanin aignet))
+  ;;                   (aignet-idp n aignet))
+  ;;          :hints(("Goal" :in-theory (enable aignet-idp)))))
+
+  (local (in-theory (disable bound-when-aignet-idp)))
+
+  (local (defthm len-of-update-nth-lit
+           (implies (< (nfix n) (len x))
+                    (equal (len (update-nth-lit n val x))
+                           (len x)))
+           :hints(("Goal" :in-theory (enable update-nth-lit)))))
+
+  ;; (defret copy-size-of-<fn>
+  ;;   (implies (and (<= (num-fanins aignet) (len copy))
+  ;;                 (< (lit-id hyp) (num-fanins aignet))
+  ;;                 (< (lit-id concl) (num-fanins aignet)))
+  ;;            (equal (len new-copy) (len copy)))
+  ;;   :hints ('(:expand (<call>))))
+
+  (defret copies-in-bounds-of-<fn>
+    (implies (and (aignet-copies-in-bounds copy aignet2)
+                  (aignet-lit-listp hyps aignet)
+                  (aignet-lit-listp concls aignet)
+                  (<= (num-ins aignet) (num-ins aignet2))
+                  (<= (num-regs aignet) (num-regs aignet2)))
+             (and (aignet-copies-in-bounds new-copy new-aignet2)
+                  (aignet-litp hyp-copy new-aignet2)
+                  (aignet-lit-listp new-hyps new-aignet2)
+                  (aignet-lit-listp new-concls new-aignet2)))
+    :hints ('(:expand (<call>))))
+  
+  (local (defthm id-eval-of-input
+           (implies (equal (ctype (stype (car (lookup-id n aignet)))) :input)
+                    (equal (id-eval n invals regvals aignet)
+                           (if (eql 1 (regp (stype (car (lookup-id n aignet)))))
+                               (bfix (nth (stype-count :reg (cdr (lookup-id n aignet))) regvals))
+                             (bfix (nth (stype-count :pi (cdr (lookup-id n aignet))) invals)))))
+           :hints (("goal" :expand ((id-eval n invals regvals aignet))))))
+
+  (defthm dfs-copy-onto-invar-of-empty-mark
+    (dfs-copy-onto-invar aignet (resize-list nil n 0) copy aignet2)
+    :hints(("Goal" :in-theory (enable dfs-copy-onto-invar))))
+
+  (local (defthm b-xor-id-eval-equals-lit-eval
+           (equal (b-xor (lit->neg x)
+                         (id-eval (lit->var x) invals regvals aignet))
+                  (lit-eval x invals regvals aignet))
+           :hints(("Goal" :in-theory (enable lit-eval)))))
+
+  (local (defun search-matching-lit (pat clause alist)
+           (b* (((when (atom clause)) nil)
+                ((mv ok subst) (acl2::simple-one-way-unify pat (car clause) alist)))
+             (if ok
+                 subst
+               (search-matching-lit pat (cdr clause) alist)))))
+
+  (defret new-concls-len-of-<fn>
+    (equal (len new-concls)
+           (len concls)))
+
+  (defret new-hyps-len-of-<fn>
+    (equal (len new-hyps)
+           (len hyps)))
+  
+  (local (defthm len-<-0
+           (equal (< 0 (len x))
+                  (consp x))))
+  (local (defthm equal-of-consp-by-equal-of-len
+           (implies (equal (len x) (len y))
+                    (equal (equal (consp x) (consp y)) t))))
+
+  (defret new-concls-consp-of-<fn>
+    (equal (consp new-concls)
+           (consp concls)))
+
+  (defret new-hyps-consp-of-<fn>
+    (equal (consp new-hyps)
+           (consp hyps)))
+
+  (defret hyp-eval-of-<fn>
+    (implies (and (aignet-copies-in-bounds copy aignet2)
+                  ;; (aignet-litp hyp aignet)
+                  ;; (aignet-lit-listp concls aignet)
+                  (aignet-lit-listp hyps aignet)
+                  (<= (num-ins aignet) (num-ins aignet2))
+                  (<= (num-regs aignet) (num-regs aignet2)))
+             (and (equal (lit-eval hyp-copy invals regvals new-aignet2)
+                         (aignet-eval-conjunction hyps
+                                                  (input-copy-values 0 invals regvals aignet copy aignet2)
+                                                  (reg-copy-values 0 invals regvals aignet copy aignet2)
+                                                  aignet))
+                  (equal (lit-eval-list new-hyps invals regvals new-aignet2)
+                         (lit-eval-list hyps
+                                        (input-copy-values 0 invals regvals aignet copy aignet2)
+                                        (reg-copy-values 0 invals regvals aignet copy aignet2)
+                                        aignet))))
+    :hints ((and stable-under-simplificationp
+                 (let ((subst (search-matching-lit '(not (equal (mv-nth '0 (observability-fix-input-copies
+                                                                            lit aignet copy strash aignet2 state))
+                                                                ':unsat))
+                                                   clause
+                                                   '((aignet . aignet) (state . state)))))
+                   (and subst
+                        `(:use ((:instance observability-fix-input-copies-not-unsat-when-sat
+                                 ,@(pairlis$ (strip-cars subst)
+                                             (pairlis$ (strip-cdrs subst) nil))
+                                 (some-invals invals) (some-regvals regvals)))
+                          :in-theory (disable observability-fix-input-copies-not-unsat-when-sat)))))))
+
+
+  (defret eval-of-<fn>
+    (implies (and (aignet-copies-in-bounds copy aignet2)
+                  ;; (aignet-litp hyp aignet)
+                  (aignet-lit-listp concls aignet)
+                  (aignet-lit-listp hyps aignet)
+                  (<= (num-ins aignet) (num-ins aignet2))
+                  (<= (num-regs aignet) (num-regs aignet2))
+                  (equal (aignet-eval-conjunction
+                          hyps
+                          (input-copy-values 0 invals regvals aignet copy aignet2)
+                          (reg-copy-values 0 invals regvals aignet copy aignet2)
+                          aignet) 1))
+             (equal (lit-eval-list new-concls invals regvals new-aignet2)
+                    (lit-eval-list concls
+                                   (input-copy-values 0 invals regvals aignet copy aignet2)
+                                   (reg-copy-values 0 invals regvals aignet copy aignet2)
+                                   aignet)))
+    :hints ((and stable-under-simplificationp
+                 (let ((subst (search-matching-lit '(not (equal (mv-nth '0 (observability-fix-input-copies
+                                                                            lit aignet copy strash aignet2 state))
+                                                                ':unsat))
+                                                   clause
+                                                   '((aignet . aignet) (state . state)))))
+                   (and subst
+                        `(:use ((:instance observability-fix-input-copies-not-unsat-when-sat
+                                 ,@(pairlis$ (strip-cars subst)
+                                             (pairlis$ (strip-cdrs subst) nil))
+                                 (some-invals invals) (some-regvals regvals)))
+                          :in-theory (disable observability-fix-input-copies-not-unsat-when-sat)))))
+            ;; (and stable-under-simplificationp
+            ;;      '(:cases ((EQUAL 1
+            ;;                       (LIT-EVAL HYP
+            ;;                                 (INPUT-COPY-VALUES 0 INVALS REGVALS AIGNET COPY AIGNET2)
+            ;;                                 (REG-COPY-VALUES 0 INVALS REGVALS AIGNET COPY AIGNET2)
+            ;;                                 AIGNET)))))
+            ))
+
+  
+  (encapsulate nil
+    (local (defthm lit-eval-of-nth
+             (equal (lit-eval (nth n lits) invals regvals aignet)
+                    (bfix (nth n (lit-eval-list lits invals regvals aignet))))))
+    (local (in-theory (disable nth-of-lit-eval-list
+                               observability-fix-hyps/concls)))
+    (defret nth-hyp-eval-of-<fn>
+      (implies (and (aignet-copies-in-bounds copy aignet2)
+                    ;; (aignet-litp hyp aignet)
+                    ;; (aignet-lit-listp concls aignet)
+                    (aignet-lit-listp hyps aignet)
+                    (<= (num-ins aignet) (num-ins aignet2))
+                    (<= (num-regs aignet) (num-regs aignet2)))
+               (equal (lit-eval (nth n new-hyps) invals regvals new-aignet2)
+                      (lit-eval (nth n hyps)
+                                (input-copy-values 0 invals regvals aignet copy aignet2)
+                                (reg-copy-values 0 invals regvals aignet copy aignet2)
+                                aignet))))
+    (defret nth-concl-eval-of-<fn>
+      (implies (and (aignet-copies-in-bounds copy aignet2)
+                    ;; (aignet-litp hyp aignet)
+                    (aignet-lit-listp concls aignet)
+                    (aignet-lit-listp hyps aignet)
+                    (<= (num-ins aignet) (num-ins aignet2))
+                    (<= (num-regs aignet) (num-regs aignet2))
+                    (equal (aignet-eval-conjunction
+                            hyps
+                            (input-copy-values 0 invals regvals aignet copy aignet2)
+                            (reg-copy-values 0 invals regvals aignet copy aignet2)
+                            aignet) 1))
+               (equal (lit-eval (nth n new-concls) invals regvals new-aignet2)
+                      (lit-eval (nth n concls)
+                                (input-copy-values 0 invals regvals aignet copy aignet2)
+                                (reg-copy-values 0 invals regvals aignet copy aignet2)
+                                aignet)))))
+
+  (defret w-state-of-<fn>
+    (equal (w new-state) (w state))))
+
+
 (define observability-fix-hyp/concl ((hyp litp)
                                      (concl litp)
                                      (aignet)
@@ -476,38 +755,28 @@
                 (<= (num-regs aignet) (num-regs aignet2)))
     :returns (mv (conj litp)
                  new-copy new-strash new-aignet2 new-state)
-    :guard-hints ((and stable-under-simplificationp
-                       '(:in-theory (enable aignet-idp))))
-    (b* (((mv copy strash aignet2)
-          (b* (((acl2::local-stobjs mark)
-                (mv mark copy strash aignet2))
-               (mark (resize-bits (+ 1 (lit-id hyp)) mark))
-               ;; (litarr (resize-lits (+ 1 (lit-id hyp)) litarr))
-               ((mv mark copy strash aignet2)
-                (aignet-copy-dfs-rec (lit-id hyp) aignet mark copy strash gatesimp aignet2)))
-            (mv mark copy strash aignet2)))
-         (hyp-copy (lit-copy hyp copy))
-         ((mv ?status copy strash aignet2 state)
-          (observability-fix-input-copies hyp-copy aignet copy strash aignet2 state))
-         ((when (eq status :unsat))
-          (mv 0 copy strash aignet2 state))
-         ((mv copy strash aignet2)
-          (b* (((acl2::local-stobjs mark)
-                (mv mark copy strash aignet2))
-               (mark (resize-bits (+ 1 (lit-id concl)) mark)))
-            (aignet-copy-dfs-rec (lit-id concl) aignet mark copy strash gatesimp aignet2)))
-         (concl-copy (lit-copy concl copy))
-         ((mv and-lit strash aignet2) (aignet-hash-and hyp-copy concl-copy gatesimp strash aignet2)))
-      (mv and-lit copy strash aignet2 state))
+    :guard-hints (("goal" :use ((:instance copies-in-bounds-of-observability-fix-hyps/concls
+                                 (hyps (list hyp)) (concls (list concl))))
+                   :in-theory (disable copies-in-bounds-of-observability-fix-hyps/concls)))
+    ;; (and stable-under-simplificationp
+    ;; '(:in-theory (enable aignet-idp)
+    ;;   :do-not-induct t))
+    
+    (b* (((mv new-hyp ?hyp-copies new-concls copy strash aignet2 state)
+          (observability-fix-hyps/concls (list hyp) (list concl)
+                                         aignet copy gatesimp strash aignet2 state))
+         ((mv conj strash aignet2)
+          (aignet-hash-and new-hyp (car new-concls) gatesimp strash aignet2)))
+      (mv conj copy strash aignet2 state))
     ///
     
   (local (acl2::use-trivial-ancestors-check))
 
-  (defret aignet-extension-of-observability-fix-hyp/concl
+  (defret aignet-extension-of-<fn>
     (aignet-extension-p new-aignet2 aignet2)
     :hints ('(:expand (<call>))))
 
-  (defret stype-counts-of-observability-fix-hyp/concl
+  (defret stype-counts-of-<fn>
       (implies (and (not (equal (stype-fix stype) (and-stype)))
                   (not (equal (stype-fix stype) (xor-stype))))
                (equal (stype-count stype new-aignet2)
@@ -535,17 +804,11 @@
                            (len x)))
            :hints(("Goal" :in-theory (enable update-nth-lit)))))
 
-  (defret copy-size-of-observability-fix-hyp/concl
-      (implies (and (<= (num-fanins aignet) (len copy))
-                    (< (lit-id hyp) (num-fanins aignet))
-                    (< (lit-id concl) (num-fanins aignet)))
-               (equal (len new-copy) (len copy)))
-      :hints ('(:expand (<call>))))
 
-  (defret copies-in-bounds-of-observability-fix-hyp/concl
+  (defret copies-in-bounds-of-<fn>
     (implies (and (aignet-copies-in-bounds copy aignet2)
-                  (< (lit-id hyp) (num-fanins aignet))
-                  (< (lit-id concl) (num-fanins aignet))
+                  (aignet-litp hyp aignet)
+                  (aignet-litp concl aignet)
                   (<= (num-ins aignet) (num-ins aignet2))
                   (<= (num-regs aignet) (num-regs aignet2)))
              (and (aignet-copies-in-bounds new-copy new-aignet2)
@@ -577,13 +840,18 @@
                  subst
                (search-matching-lit pat (cdr clause) alist)))))
 
+  (local (defthm lit-eval-list-when-consp
+           (implies (consp x)
+                    (equal (lit-eval-list x invals regvals aignet)
+                           (cons (lit-eval (car x) invals regvals aignet)
+                                 (lit-eval-list (cdr x) invals regvals aignet))))
+           :hints(("Goal" :in-theory (enable lit-eval-list)))))
 
-  (defret eval-of-observability-fix-hyp/concl
+
+  (defret eval-of-<fn>
     (implies (and (aignet-copies-in-bounds copy aignet2)
-                  ;; (aignet-litp hyp aignet)
+                  (aignet-litp hyp aignet)
                   (aignet-litp concl aignet)
-                  (< (lit-id hyp) (num-fanins aignet))
-                  (< (lit-id concl) (num-fanins aignet))
                   (<= (num-ins aignet) (num-ins aignet2))
                   (<= (num-regs aignet) (num-regs aignet2)))
              (equal (lit-eval conj invals regvals new-aignet2)
@@ -595,28 +863,16 @@
                                      (input-copy-values 0 invals regvals aignet copy aignet2)
                                      (reg-copy-values 0 invals regvals aignet copy aignet2)
                                      aignet))))
-    :hints ((and stable-under-simplificationp
-                 (let ((subst (search-matching-lit '(not (equal (mv-nth '0 (observability-fix-input-copies
-                                                                            lit aignet copy strash aignet2 state))
-                                                                ':unsat))
-                                                   clause
-                                                   '((aignet . aignet) (state . state)))))
-                   (and subst
-                        `(:use ((:instance observability-fix-input-copies-not-unsat-when-sat
-                                 ,@(pairlis$ (strip-cars subst)
-                                             (pairlis$ (strip-cdrs subst) nil))
-                                 (some-invals invals) (some-regvals regvals)))
-                          :in-theory (disable observability-fix-input-copies-not-unsat-when-sat)))))
-            (and stable-under-simplificationp
-                 '(:cases ((EQUAL 1
-                                  (LIT-EVAL HYP
-                                            (INPUT-COPY-VALUES 0 INVALS REGVALS AIGNET COPY AIGNET2)
-                                            (REG-COPY-VALUES 0 INVALS REGVALS AIGNET COPY AIGNET2)
-                                            AIGNET)))))))
+    :hints (("goal" :use ((:instance eval-of-observability-fix-hyps/concls
+                           (hyps (list hyp)) (concls (list concl)))
+                          (:instance hyp-eval-of-observability-fix-hyps/concls
+                           (hyps (list hyp)) (concls (list concl))))
+             :in-theory (e/d (lit-eval-list aignet-eval-conjunction)
+                             (eval-of-observability-fix-hyps/concls
+                              hyp-eval-of-observability-fix-hyps/concls)))))
 
   (defret w-state-of-<fn>
     (equal (w new-state) (w state))))
-                                     
 
 (define observability-split-supergate-aux ((lits lit-listp)
                                            (config observability-config-p)
@@ -1260,4 +1516,94 @@ only changed in cases where @('A') des not hold:</p>
     (equal (w new-state) (w state))))
 
 
+
+(fty::defprod m-assum-n-output-observability-config
+  ((gatesimp gatesimp-p :default (default-gatesimp)
+             "Gate simplification parameters.  Warning: This transform will do
+              nothing good if hashing is turned off."))
+  :parents (observability-fix comb-transform)
+  :short "Configuration object for the @(see m-assum-n-output-observability) aignet transform."
+  :tag :m-assum-n-output-observability-config)
   
+
+
+
+(define m-assum-n-output-observability ((m natp)
+                                        (n natp)
+                                        aignet
+                                        aignet2
+                                        (config m-assum-n-output-observability-config-p)
+                                        state)
+  :guard (<= (+ m n) (num-outs aignet))
+  :returns (mv new-aignet2 new-state)
+  (declare (ignorable n))
+  (b* (((acl2::local-stobjs copy strash)
+        (mv copy strash aignet2 state))
+       ((mv copy aignet2) (init-copy-comb aignet copy aignet2))
+       (m (mbe :logic (min (nfix m) (num-outs aignet))
+               :exec m))
+       (hyps (output-lit-range 0 m aignet))
+       (concls (output-lit-range m (- (num-outs aignet) m) aignet))
+       ((mv ?hyp new-hyps new-concls copy strash aignet2 state)
+        (observability-fix-hyps/concls hyps concls aignet copy
+                                       (m-assum-n-output-observability-config->gatesimp config)
+                                       strash aignet2 state))
+       (aignet2 (aignet-add-outs new-hyps aignet2))
+       (aignet2 (aignet-add-outs new-concls aignet2)))
+    (mv copy strash aignet2 state))
+  ///
+  (defret normalize-inputs-of-<fn>
+    (implies (syntaxp (not (equal aignet2 ''nil)))
+             (equal <call>
+                    (let ((aignet2 nil)) <call>))))
+
+  (defret num-ins-of-<fn>
+    (equal (stype-count :pi new-aignet2)
+           (stype-count :pi aignet)))
+
+  (defret num-regs-of-<fn>
+    (equal (stype-count :reg new-aignet2)
+           (stype-count :reg aignet)))
+
+  (defret num-outs-of-<fn>
+    (equal (stype-count :po new-aignet2)
+           (stype-count :po aignet)))
+
+  ;; (local (defthm output-eval-of-aignet-add-outs
+  ;;          (equal (output-eval i invals regvals
+  ;;                              (aignet-add-outs lits aignet))
+  ;;                 (cond ((< (nfix i) (num-outs aignet))
+  ;;                        (output-eval i invals regvals aignet))
+  ;;                       ((< (nfix i) (+ (num-outs aignet) (len lits)))
+  ;;                        (lit-eval (nth (- (nfix i) (num-outs aignet)) lits)
+  ;;                                  invals regvals aignet))
+  ;;                       (t 0)))
+  ;;          :hints(("Goal" :in-theory (enable output-eval)))))
+
+  (defret <fn>-eval-assumptions
+    (implies (< (nfix i) (nfix m))
+             (equal (output-eval i invals regvals new-aignet2)
+                    (output-eval i invals regvals aignet)))
+    :hints(("Goal" :in-theory (enable output-eval))))
+
+  (local (in-theory (enable output-range-equiv-by-badguy)))
+
+  (local (defthm aignet-litp-of-nth
+           (implies (aignet-lit-listp lits aignet)
+                    (aignet-litp (nth n lits) aignet))
+           :hints(("Goal" :in-theory (enable nth aignet-lit-listp)))))
+
+  (defret <fn>-eval-conclusion
+    (implies (And (< (nfix i) (+ (nfix m) (nfix n)))
+                  (equal (conjoin-output-range 0 m invals regvals aignet) 1))
+             (equal (output-eval i invals regvals new-aignet2)
+                    (output-eval i invals regvals aignet)))
+    :hints(("Goal" :in-theory (enable output-eval))))
+
+  (defret w-state-of-<fn>
+    (equal (w new-state)
+           (w state)))
+
+  (defret list-of-outputs-of-<fn>
+    (equal (list new-aignet2 new-state) <call>)))
+

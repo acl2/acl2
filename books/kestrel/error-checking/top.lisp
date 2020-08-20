@@ -13,8 +13,12 @@
 (include-book "def-error-checker")
 
 (include-book "ensure-function-is-pure-if-raw")
+(include-book "ensure-symbol-is-fresh-event-name")
 (include-book "ensure-value-is-boolean")
+(include-book "ensure-value-is-in-list")
+(include-book "ensure-value-is-legal-variable-name")
 (include-book "ensure-value-is-nil")
+(include-book "ensure-value-is-not-in-list")
 (include-book "ensure-value-is-string")
 (include-book "ensure-value-is-symbol")
 (include-book "ensure-value-is-symbol-list")

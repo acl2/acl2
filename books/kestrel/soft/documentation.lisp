@@ -112,6 +112,7 @@
     "@(tsee defunvar),
      @(tsee defsoft),
      @(tsee defun2),
+     @(tsee defund2),
      @(tsee defchoose2),
      @(tsee defun-sk2),
      @(tsee define2), and
@@ -404,7 +405,7 @@
 
   :parents (soft-macros function-variables)
 
-  :short "Introduce function variable."
+  :short "Introduce a function variable."
 
   :long
 
@@ -561,7 +562,7 @@
 
   :parents (soft-macros second-order-functions)
 
-  :short "Introduce second-order function
+  :short "Introduce a second-order function
           via a second-order version of @(tsee defun)."
 
   :long
@@ -644,11 +645,49 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defxdoc defund2
+
+  :parents (soft-macros second-order-functions)
+
+  :short "Introduce a second-order function
+          via a second-order version of @(tsee defund)."
+
+  :long
+
+  (xdoc::topstring
+
+   (xdoc::h3 "General Form")
+
+   (xdoc::codeblock
+    "(defund2 sofun ...) ; same as defund")
+
+   (xdoc::h3 "Inputs")
+
+   (xdoc::p
+    "The inputs are identical to @(tsee defund).")
+
+   (xdoc::p
+    "The function @('sofun') must satisfy
+     all the requirements for @(tsee defsoft),
+     because @('defund2') generates @('(defsoft sofun)') (see below).")
+
+   (xdoc::h3 "Generated Events")
+
+   (xdoc::codeblock
+    "(defund sofun ...) ; input form with defund2 replaced by defund"
+    "(defsoft sofun)")
+
+   (xdoc::p
+    "@('sofun') is introduced as a first-order function using @(tsee defund).
+     It is also recorded as a second-order function via @(tsee defsoft).")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defxdoc defchoose2
 
   :parents (soft-macros second-order-functions)
 
-  :short "Introduce second-order function
+  :short "Introduce a second-order function
           via a second-order version of @(tsee defchoose)."
 
   :long
@@ -701,7 +740,7 @@
 
   :parents (soft-macros second-order-functions)
 
-  :short "Introduce second-order function
+  :short "Introduce a second-order function
           via a second-order version of @(tsee defun-sk)."
 
   :long
@@ -753,7 +792,7 @@
 
   :parents (soft-macros second-order-functions)
 
-  :short "Introduce second-order function
+  :short "Introduce a second-order function
           via a second-order version of @(tsee define)."
 
   :long
@@ -791,7 +830,7 @@
 
   :parents (soft-macros second-order-functions)
 
-  :short "Introduce second-order function
+  :short "Introduce a second-order function
           via a second-order version of @(tsee std::define-sk)."
 
   :long
@@ -830,7 +869,7 @@
 
   :parents (soft-macros second-order-function-instances)
 
-  :short "Introduce function by instantiating a second-order functions."
+  :short "Introduce a function by instantiating a second-order functions."
 
   :long
 
@@ -842,6 +881,7 @@
     "(defun-inst fun"
     "  (sofun (fvar1 . fun1) ... (fvarN . funN))"
     "  :verify-guards ..."
+    "  :enable ..."
     "  :skolem-name ..."
     "  :thm-name ..."
     "  :rewrite ..."
@@ -895,6 +935,18 @@
       when it is not accomplished automatically (i.e. without hints).
       (An option to supply guard verification hints
       will be added to @(tsee defun-inst).)"))
+
+   (xdoc::desc
+    "@(':enable')"
+    (xdoc::p
+     "An option to enable or disable @('fun'),
+      and the associated rewrite rule
+      if @('sofun') is a quantifier second-order-function.
+      This may be present only if @('sofun') is a "
+     (xdoc::seetopic "defsoft" "plain or quantifier second-order function")
+     ". If this flag is absent,
+      @('fun') (and the associated rewrite rule, if applicable)
+      is enabled if and only if @('sofun') is enabled."))
 
    (xdoc::desc
     "@(':skolem-name')"
@@ -1132,7 +1184,7 @@
 
   :parents (soft-macros second-order-theorems)
 
-  :short "Introduce second-order theorem."
+  :short "Introduce a second-order theorem."
 
   :long
 
@@ -1240,7 +1292,7 @@
 
   :parents (soft-macros second-order-theorem-instances)
 
-  :short "Introduce theorem by instantiating a second-order theorem."
+  :short "Introduce a theorem by instantiating a second-order theorem."
 
   :long
 
@@ -1450,12 +1502,15 @@
 
    (xdoc::p
     "Besides second-order versions of
-     @(tsee defun), @(tsee defchoose), and @(tsee defun-sk),
+     @(tsee defun),
+     @(tsee defchoose),
+     @(tsee defun-sk),
+     @(tsee define2), and
+     @(tsee define-sk2),
      we could add support for second-order versions of
-     @(tsee defund), @(tsee defun-nx), @(tsee define), @(tsee defpun),
-     and other function introduction events.
+     @(tsee defun-nx), @(tsee defpun), and other function introduction events.
      @(tsee defun-inst) would generate the same macros for instances.
-     The macros could be called @('defund2'), @('defun-nx2'), etc.")
+     The macros could be called @('defun-nx2'), @('defpun2'), etc.")
 
    (xdoc::p
     "Under some conditions, it would make sense for @(tsee defun-inst)

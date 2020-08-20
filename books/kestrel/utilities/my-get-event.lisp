@@ -65,7 +65,9 @@
   (declare (xargs :mode :program))
   (let ((event (access-event-tuple-form (get-event-tuple2 name wrld))))
     (if (not (member-eq (car event)
-                        '(defun mutual-recursion defaxiom defthm)))
+                        '(defun mutual-recursion defaxiom defthm defstobj defabsstobj
+                                defuns ;todo: handle
+                                )))
         (er hard 'my-get-event "Unxpected kind of event for ~x0: ~x1" name event)
       event)))
 

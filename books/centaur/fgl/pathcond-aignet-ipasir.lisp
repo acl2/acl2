@@ -253,13 +253,13 @@
                                   (x (make-lit id neg))))))
            :fn aignet-lit->cnf))
 
-  (defret aignet-id-has-sat-var-of-<fn>-when-nbalist-lookup
-    (implies (and (nbalist-lookup id nbalist)
+  (defret aignet-id-has-sat-var-of-<fn>-when-nbalist-boundp
+    (implies (and (nbalist-boundp id nbalist)
                   (natp id)
                   (sat-lits-wfp sat-lits aignet)
                   (bounded-pathcond-p nbalist (num-fanins aignet)))
              (aignet-id-has-sat-var id new-sat-lits))
-    :hints(("Goal" :in-theory (enable nbalist-lookup hons-assoc-equal
+    :hints(("Goal" :in-theory (enable nbalist-boundp hons-assoc-equal
                                       aignet-idp
                                       bounded-pathcond-p-redef))))
 
@@ -508,9 +508,9 @@
                               (n (1- n)) (x (cdr x))))
                        :in-theory (disable bitp-cdr-nth-when-nbalistp))))))
 
-(local (defthm nbalist-lookup-of-car-nth-exists
+(local (defthm nbalist-boundp-of-car-nth
          (implies (< (nfix n) (len (nbalist-fix x)))
-                  (nbalist-lookup (car (nth n (nbalist-fix x))) x))
+                  (nbalist-boundp (car (nth n (nbalist-fix x))) x))
          :hints (("goal" :use ((:instance nbalist-lookup-of-car-nth
                                 (x (nbalist-fix x)))
                                (:instance bitp-cdr-nth-when-nbalistp
@@ -518,10 +518,10 @@
                   :in-theory (disable nbalist-lookup-of-car-nth
                                       bitp-cdr-nth-when-nbalistp)))))
 
-(local (defthm nbalist-lookup-of-car-nth-exists-nofix
+(local (defthm nbalist-boundp-of-car-nth-nofix
          (implies (and (nbalistp x)
                        (< (nfix n) (len x)))
-                  (nbalist-lookup (car (nth n x)) x))
+                  (nbalist-boundp (car (nth n x)) x))
          :hints (("goal" :use ((:instance nbalist-lookup-of-car-nth
                                 (x (nbalist-fix x)))
                                (:instance bitp-cdr-nth-when-nbalistp

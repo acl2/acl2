@@ -14,7 +14,10 @@
 (BETA-EVAL-CONSTRAINT-7)
 (PSEUDO-TERMP-KEY)
 (POS-AC-IND)
-(POSITION-EQUAL-AC-IFF-ZERO (22 22 (:REWRITE DEFAULT-CDR))
+(POSITION-EQUAL-AC-IFF-ZERO (80 40
+                                (:TYPE-PRESCRIPTION NATP-POSITION-EQUAL-AC))
+                            (40 40 (:TYPE-PRESCRIPTION NATP))
+                            (22 22 (:REWRITE DEFAULT-CDR))
                             (14 14 (:REWRITE DEFAULT-CAR))
                             (9 5 (:REWRITE DEFAULT-+-2))
                             (6 6
@@ -24,7 +27,10 @@
                             (3 3 (:TYPE-PRESCRIPTION POS-AC-IND)))
 (BLAH)
 (POS-AC-IND2)
-(POSITION-EQUAL-AC-REDEF (50 50 (:REWRITE DEFAULT-CDR))
+(POSITION-EQUAL-AC-REDEF (198 99
+                              (:TYPE-PRESCRIPTION NATP-POSITION-EQUAL-AC))
+                         (99 99 (:TYPE-PRESCRIPTION NATP))
+                         (50 50 (:REWRITE DEFAULT-CDR))
                          (33 22 (:REWRITE DEFAULT-+-2))
                          (29 29 (:REWRITE DEFAULT-CAR))
                          (26 26
@@ -32,15 +38,19 @@
                          (25 22 (:REWRITE DEFAULT-+-1))
                          (3 3 (:TYPE-PRESCRIPTION POS-AC-IND2))
                          (3 3 (:REWRITE FOLD-CONSTS-IN-+)))
-(POSITION-EQUAL-AC-IFF-MEMBER (52 47 (:REWRITE DEFAULT-+-1))
-                              (50 50 (:REWRITE DEFAULT-CAR))
-                              (50 47 (:REWRITE DEFAULT-+-2))
-                              (43 43 (:REWRITE DEFAULT-CDR))
-                              (21 11 (:REWRITE BLAH))
-                              (16 2 (:REWRITE ASSOCIATIVITY-OF-+))
-                              (10 10
-                                  (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
-                              (7 7 (:REWRITE FOLD-CONSTS-IN-+)))
+(POSITION-EQUAL-AC-IFF-MEMBER
+     (138 69
+          (:TYPE-PRESCRIPTION NATP-POSITION-EQUAL-AC))
+     (69 69 (:TYPE-PRESCRIPTION NATP))
+     (52 47 (:REWRITE DEFAULT-+-1))
+     (50 50 (:REWRITE DEFAULT-CAR))
+     (50 47 (:REWRITE DEFAULT-+-2))
+     (43 43 (:REWRITE DEFAULT-CDR))
+     (21 11 (:REWRITE BLAH))
+     (16 2 (:REWRITE ASSOCIATIVITY-OF-+))
+     (10 10
+         (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
+     (7 7 (:REWRITE FOLD-CONSTS-IN-+)))
 (NTH-OF-POSITION-IS-ASSOC-OF-PAIRLIS
      (113 107 (:REWRITE DEFAULT-CAR))
      (59 38 (:REWRITE DEFAULT-+-2))

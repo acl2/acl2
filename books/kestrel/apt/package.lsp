@@ -137,8 +137,8 @@
                          ensure-list-no-duplicates$
                          ensure-list-subset$
                          ensure-named-formulas
-                         ensure-not-member-of-list$
                          ensure-symbol-different$
+                         ensure-symbol-is-fresh-event-name$
                          ensure-symbol-new-event-name
                          ensure-symbol-new-event-name$
                          ensure-term$
@@ -152,6 +152,9 @@
                          ensure-term-not-call-of$
                          ensure-tuple$
                          ensure-value-is-boolean$
+                         ensure-value-is-legal-variable-name$
+                         ensure-value-is-in-list$
+                         ensure-value-is-not-in-list$
                          ensure-value-is-symbol$
                          ensure-value-is-symbol-list$
                          equivalence-relationp
@@ -162,6 +165,7 @@
                          evmac-appcondp
                          evmac-input-hints-p
                          evmac-input-print-p
+                         evmac-prepare-proofs
                          evmac-process-input-hints
                          evmac-process-input-hints$
                          evmac-process-input-print
@@ -213,6 +217,7 @@
                          ibody
                          implicate
                          implicate-untranslated-terms
+                         impliez
                          impossible
                          induction-machine
                          induction-machine-for-fn

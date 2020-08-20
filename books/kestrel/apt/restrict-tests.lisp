@@ -13,7 +13,11 @@
 (include-book "restrict")
 
 (include-book "std/testing/assert-bang" :dir :system)
-(include-book "std/testing/eval" :dir :system)
+(include-book "std/testing/must-be-redundant" :dir :system)
+(include-book "std/testing/must-fail" :dir :system)
+(include-book "std/testing/must-fail-local" :dir :system)
+(include-book "std/testing/must-succeed" :dir :system)
+(include-book "std/testing/must-succeed-star" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -142,7 +146,7 @@
   (must-be-redundant
    (defun nfix{1} (x)
      (declare (xargs :guard (natp x)))
-     (if (mbt (natp x))
+     (if (mbt$ (natp x))
          (if (and (integerp x) (<= 0 x)) x 0)
        :undefined))
    (defthm nfix-~>-nfix{1} (implies (natp x) (equal (nfix x) (nfix{1} x))))))
@@ -155,7 +159,7 @@
      (declare (xargs :measure (acl2-count x)
                      :ruler-extenders :all
                      :guard (true-listp x)))
-     (if (mbt (true-listp x))
+     (if (mbt$ (true-listp x))
          (if (consp x) (+ 1 (len{1} (cdr x))) 0)
        :undefined))
    (defthm len-~>-len{1} (implies (true-listp x) (equal (len x) (len{1} x))))))
@@ -167,7 +171,7 @@
   (must-be-redundant
    (defun f{1} (x)
      (declare (xargs :guard (natp x) :verify-guards nil))
-     (if (mbt (natp x))
+     (if (mbt$ (natp x))
          x
        :undefined))
    (defthm f-~>-f{1} (implies (natp x) (equal (f x) (f{1} x))))))
@@ -180,7 +184,7 @@
    (defun f{1} (x)
      (declare (xargs :measure (acl2-count x) :ruler-extenders :all
                      :guard (natp x) :verify-guards nil))
-     (if (mbt (natp x))
+     (if (mbt$ (natp x))
          (and (not (zp x)) (f{1} (+ -1 x)))
        :undefined))
    (defthm f-~>-f{1} (implies (natp x) (equal (f x) (f{1} x)))))))

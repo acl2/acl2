@@ -331,11 +331,11 @@ output side </p>
     (tbl->aig-vars (rest tbl) :rslt (b* (((aig-var-elem el) (cdar tbl)))
                                       (elem->aig-vars el.size el.base rslt)))))
 
-(define aignet-add-outs ((lits lit-listp) aignet)
-  :guard (aignet-lit-listp lits aignet)
-  (if (endp lits) aignet
-    (b* ((aignet (aignet-add-out (first lits) aignet)))
-      (aignet-add-outs (rest lits) aignet))))
+;; (define aignet-add-outs ((lits lit-listp) aignet)
+;;   :guard (aignet-lit-listp lits aignet)
+;;   (if (endp lits) aignet
+;;     (b* ((aignet (aignet-add-out (first lits) aignet)))
+;;       (aignet-add-outs (rest lits) aignet))))
 
 (define my-rewrite-config ()
   '(:REWRITE-CONFIG (AIGNET::CUTS4-CONFIG . 10)

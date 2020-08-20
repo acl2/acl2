@@ -11,10 +11,12 @@
 (in-package "APT")
 
 (include-book "kestrel/error-checking/ensure-value-is-boolean" :dir :system)
+(include-book "kestrel/error-checking/ensure-value-is-not-in-list" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-symbol-list" :dir :system)
 (include-book "kestrel/event-macros/input-processing" :dir :system)
 (include-book "kestrel/event-macros/intro-macros" :dir :system)
+(include-book "kestrel/event-macros/proof-preparation" :dir :system)
 (include-book "kestrel/std/basic/mbt-dollar" :dir :system)
 (include-book "kestrel/std/system/apply-fn-into-ifs" :dir :system)
 (include-book "kestrel/std/system/fresh-logical-name-with-dollars-suffix" :dir :system)
@@ -1071,7 +1073,7 @@
         (er-soft+ ctx t nil
                   "~@0 must be a valid fresh theorem name. ~@1"
                   description error-msg?))
-       ((er &) (ensure-not-member-of-list$
+       ((er &) (ensure-value-is-not-in-list$
                 newp-of-new$
                 names-to-avoid
                 (msg "among the names ~x0 of other events ~
@@ -1147,21 +1149,21 @@
        ((er (list new$ names-to-avoid))
         (process-input-new-name new-name old$ nil ctx state))
        ((er (list old-to-new$ names-to-avoid))
-        (process-old-to-new-name old-to-new-name
-                                 old-to-new-name-suppliedp
-                                 old$
-                                 new$
-                                 names-to-avoid
-                                 ctx
-                                 state))
+        (process-input-old-to-new-name old-to-new-name
+                                       old-to-new-name-suppliedp
+                                       old$
+                                       new$
+                                       names-to-avoid
+                                       ctx
+                                       state))
        ((er (list new-to-old$ names-to-avoid))
-        (process-new-to-old-name new-to-old-name
-                                 new-to-old-name-suppliedp
-                                 old$
-                                 new$
-                                 names-to-avoid
-                                 ctx
-                                 state))
+        (process-input-new-to-old-name new-to-old-name
+                                       new-to-old-name-suppliedp
+                                       old$
+                                       new$
+                                       names-to-avoid
+                                       ctx
+                                       state))
        ((er (list newp-of-new$ names-to-avoid))
         (expdata-process-newp-of-new-name newp-of-new-name
                                           new$
@@ -1186,12 +1188,12 @@
                           (fundef-enabledp old$ state)
                           "The :NEW-ENABLE input"
                           t nil))
-       ((er old-to-new-enable$) (process-old-to-new-enable
+       ((er old-to-new-enable$) (process-input-old-to-new-enable
                                  old-to-new-enable
                                  old-to-new-enable-suppliedp
                                  ctx
                                  state))
-       ((er new-to-old-enable$) (process-new-to-old-enable
+       ((er new-to-old-enable$) (process-input-new-to-old-enable
                                  new-to-old-enable
                                  new-to-old-enable-suppliedp
                                  ctx
@@ -3895,8 +3897,7 @@
                              (set-irrelevant-formals-ok t)
                              ,@defsurj-events
                              ,@appcond-thm-events
-                             (set-default-hints nil)
-                             (set-override-hints nil)
+                             (evmac-prepare-proofs)
                              ,old-fn-unnorm-event
                              ,new-fn-local-event
                              ,new-fn-unnorm-event

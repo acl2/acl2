@@ -3,41 +3,41 @@
                  (1 1
                     (:REWRITE INTEGER-LISTP-IMPLIES-INTEGERP))
                  (1 1 (:META META-INTEGERP-CORRECT)))
-(RP::INTEGERP-M2-F2-D2 (46 46 (:TYPE-PRESCRIPTION NOT-INTEGERP-4B))
-                       (46 46 (:TYPE-PRESCRIPTION NOT-INTEGERP-3B))
-                       (46 46 (:TYPE-PRESCRIPTION NOT-INTEGERP-2B))
-                       (46 46 (:TYPE-PRESCRIPTION NOT-INTEGERP-1B))
-                       (18 2 (:TYPE-PRESCRIPTION FLOOR-ZERO . 2))
-                       (18 2
-                           (:TYPE-PRESCRIPTION FLOOR-POSITIVE . 1))
-                       (18 2
-                           (:TYPE-PRESCRIPTION FLOOR-NONPOSITIVE . 1))
-                       (18 2
-                           (:TYPE-PRESCRIPTION FLOOR-NONNEGATIVE . 1))
-                       (18 2
-                           (:TYPE-PRESCRIPTION FLOOR-NEGATIVE . 1))
-                       (10 2 (:TYPE-PRESCRIPTION FLOOR-ZERO . 3))
-                       (10 2 (:TYPE-PRESCRIPTION FLOOR-ZERO . 1))
-                       (10 2
-                           (:TYPE-PRESCRIPTION FLOOR-POSITIVE . 3))
-                       (10 2
-                           (:TYPE-PRESCRIPTION FLOOR-POSITIVE . 2))
-                       (10 2
-                           (:TYPE-PRESCRIPTION FLOOR-NONPOSITIVE . 3))
-                       (10 2
-                           (:TYPE-PRESCRIPTION FLOOR-NONPOSITIVE . 2))
-                       (10 2
-                           (:TYPE-PRESCRIPTION FLOOR-NONNEGATIVE . 3))
-                       (10 2
-                           (:TYPE-PRESCRIPTION FLOOR-NONNEGATIVE . 2))
-                       (10 2
-                           (:TYPE-PRESCRIPTION FLOOR-NEGATIVE . 3))
-                       (10 2
-                           (:TYPE-PRESCRIPTION FLOOR-NEGATIVE . 2))
+(RP::INTEGERP-M2-F2-D2 (25 25 (:TYPE-PRESCRIPTION NOT-INTEGERP-4B))
+                       (25 25 (:TYPE-PRESCRIPTION NOT-INTEGERP-3B))
+                       (25 25 (:TYPE-PRESCRIPTION NOT-INTEGERP-2B))
+                       (25 25 (:TYPE-PRESCRIPTION NOT-INTEGERP-1B))
+                       (9 1 (:TYPE-PRESCRIPTION FLOOR-ZERO . 2))
+                       (9 1
+                          (:TYPE-PRESCRIPTION FLOOR-POSITIVE . 1))
+                       (9 1
+                          (:TYPE-PRESCRIPTION FLOOR-NONPOSITIVE . 1))
+                       (9 1
+                          (:TYPE-PRESCRIPTION FLOOR-NONNEGATIVE . 1))
+                       (9 1
+                          (:TYPE-PRESCRIPTION FLOOR-NEGATIVE . 1))
                        (5 1 (:TYPE-PRESCRIPTION MOD-ZERO . 2))
                        (5 1 (:TYPE-PRESCRIPTION MOD-ZERO . 1))
                        (5 1 (:TYPE-PRESCRIPTION MOD-POSITIVE . 2))
                        (5 1 (:TYPE-PRESCRIPTION MOD-NEGATIVE . 2))
+                       (5 1 (:TYPE-PRESCRIPTION FLOOR-ZERO . 3))
+                       (5 1 (:TYPE-PRESCRIPTION FLOOR-ZERO . 1))
+                       (5 1
+                          (:TYPE-PRESCRIPTION FLOOR-POSITIVE . 3))
+                       (5 1
+                          (:TYPE-PRESCRIPTION FLOOR-POSITIVE . 2))
+                       (5 1
+                          (:TYPE-PRESCRIPTION FLOOR-NONPOSITIVE . 3))
+                       (5 1
+                          (:TYPE-PRESCRIPTION FLOOR-NONPOSITIVE . 2))
+                       (5 1
+                          (:TYPE-PRESCRIPTION FLOOR-NONNEGATIVE . 3))
+                       (5 1
+                          (:TYPE-PRESCRIPTION FLOOR-NONNEGATIVE . 2))
+                       (5 1
+                          (:TYPE-PRESCRIPTION FLOOR-NEGATIVE . 3))
+                       (5 1
+                          (:TYPE-PRESCRIPTION FLOOR-NEGATIVE . 2))
                        (1 1 (:TYPE-PRESCRIPTION MOD-ZERO . 3))
                        (1 1 (:TYPE-PRESCRIPTION MOD-POSITIVE . 1))
                        (1 1 (:TYPE-PRESCRIPTION MOD-NONPOSITIVE))
@@ -92,152 +92,152 @@
                           (15 15 (:TYPE-PRESCRIPTION INTEGERP-MOD-2)))
 (RP::CONSP-OF-RP-TRANS-LST)
 (RP::SUM-COMM-ORDER-AUX
-     (8785 7 (:REWRITE O<=-O-FINP-DEF))
+     (8904 8 (:REWRITE O<=-O-FINP-DEF))
      (7512 12 (:LINEAR ACL2-COUNT-OF-SUM))
-     (5869 85 (:REWRITE SIMPLIFY-SUMS-<))
-     (3990 76 (:DEFINITION INTEGER-ABS))
-     (2793 125
+     (5940 90 (:REWRITE SIMPLIFY-SUMS-<))
+     (4200 80 (:DEFINITION INTEGER-ABS))
+     (2800 132
            (:REWRITE REDUCE-ADDITIVE-CONSTANT-<))
-     (2199 693 (:REWRITE DEFAULT-PLUS-2))
-     (1951 693 (:REWRITE DEFAULT-PLUS-1))
-     (1330 38 (:REWRITE |(+ (if a b c) x)|))
-     (1178 38 (:REWRITE NUMERATOR-NEGATIVE))
-     (1102 38 (:DEFINITION LENGTH))
-     (950 38 (:DEFINITION LEN))
-     (596 410 (:REWRITE NORMALIZE-ADDENDS))
-     (570 76 (:REWRITE STR::CONSP-OF-EXPLODE))
-     (415 45 (:REWRITE RATIONALP-X))
-     (396 396
+     (2314 730 (:REWRITE DEFAULT-PLUS-2))
+     (2058 730 (:REWRITE DEFAULT-PLUS-1))
+     (1400 40 (:REWRITE |(+ (if a b c) x)|))
+     (1240 40 (:REWRITE NUMERATOR-NEGATIVE))
+     (1160 40 (:DEFINITION LENGTH))
+     (1000 40 (:DEFINITION LEN))
+     (640 430 (:REWRITE NORMALIZE-ADDENDS))
+     (600 80 (:REWRITE STR::CONSP-OF-EXPLODE))
+     (440 48 (:REWRITE RATIONALP-X))
+     (414 414
           (:REWRITE NORMALIZE-TERMS-SUCH-AS-A/A+B-+-B/A+B))
-     (380 76
+     (400 80
           (:REWRITE APPLY$-BADGEP-PROPERTIES . 1))
-     (348 234 (:REWRITE DEFAULT-CDR))
-     (342 342 (:TYPE-PRESCRIPTION NUMERATOR-ZERO))
-     (342 342
+     (366 246 (:REWRITE DEFAULT-CDR))
+     (360 360 (:TYPE-PRESCRIPTION NUMERATOR-ZERO))
+     (360 360
           (:TYPE-PRESCRIPTION NUMERATOR-POSITIVE . 2))
-     (342 342
+     (360 360
           (:TYPE-PRESCRIPTION NUMERATOR-POSITIVE . 1))
-     (342 342
+     (360 360
           (:TYPE-PRESCRIPTION NUMERATOR-NEGATIVE . 2))
-     (342 342
+     (360 360
           (:TYPE-PRESCRIPTION NUMERATOR-NEGATIVE . 1))
-     (329 125 (:REWRITE DEFAULT-LESS-THAN-1))
-     (283 11 (:REWRITE |(+ y (+ x z))|))
-     (266 76 (:REWRITE DEFAULT-MINUS))
-     (228 76 (:DEFINITION APPLY$-BADGEP))
-     (217 217 (:REWRITE DEFAULT-CAR))
-     (152 76 (:DEFINITION WEAK-APPLY$-BADGE-P))
-     (152 38 (:REWRITE O-P-O-INFP-CAR))
-     (151 125 (:REWRITE DEFAULT-LESS-THAN-2))
+     (348 132 (:REWRITE DEFAULT-LESS-THAN-1))
+     (310 12 (:REWRITE |(+ y (+ x z))|))
+     (280 80 (:REWRITE DEFAULT-MINUS))
+     (240 80 (:DEFINITION APPLY$-BADGEP))
+     (228 228 (:REWRITE DEFAULT-CAR))
+     (160 132 (:REWRITE DEFAULT-LESS-THAN-2))
+     (160 80 (:DEFINITION WEAK-APPLY$-BADGE-P))
+     (160 40 (:REWRITE O-P-O-INFP-CAR))
+     (144 48
+          (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-EQUAL))
      (144 6
           (:LINEAR ACL2-COUNT-OF-CONSP-POSITIVE))
-     (129 45
-          (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-EQUAL))
-     (125 125 (:REWRITE THE-FLOOR-BELOW))
-     (125 125 (:REWRITE THE-FLOOR-ABOVE))
-     (125 125
+     (132 132 (:REWRITE THE-FLOOR-BELOW))
+     (132 132 (:REWRITE THE-FLOOR-ABOVE))
+     (132 132
           (:REWRITE REDUCE-RATIONAL-MULTIPLICATIVE-CONSTANT-<))
-     (125 125
+     (132 132
           (:REWRITE REDUCE-MULTIPLICATIVE-CONSTANT-<))
-     (123 123 (:REWRITE REMOVE-WEAK-INEQUALITIES))
-     (123 123
+     (130 130 (:REWRITE REMOVE-WEAK-INEQUALITIES))
+     (130 130
           (:REWRITE REMOVE-STRICT-INEQUALITIES))
-     (123 123 (:REWRITE INTEGERP-<-CONSTANT))
-     (123 123 (:REWRITE CONSTANT-<-INTEGERP))
-     (123 123
+     (130 130 (:REWRITE INTEGERP-<-CONSTANT))
+     (130 130 (:REWRITE CONSTANT-<-INTEGERP))
+     (130 130
           (:REWRITE |(< c (/ x)) positive c --- present in goal|))
-     (123 123
+     (130 130
           (:REWRITE |(< c (/ x)) positive c --- obj t or nil|))
-     (123 123
+     (130 130
           (:REWRITE |(< c (/ x)) negative c --- present in goal|))
-     (123 123
+     (130 130
           (:REWRITE |(< c (/ x)) negative c --- obj t or nil|))
-     (123 123 (:REWRITE |(< c (- x))|))
-     (123 123
+     (130 130 (:REWRITE |(< c (- x))|))
+     (130 130
           (:REWRITE |(< (/ x) c) positive c --- present in goal|))
-     (123 123
+     (130 130
           (:REWRITE |(< (/ x) c) positive c --- obj t or nil|))
-     (123 123
+     (130 130
           (:REWRITE |(< (/ x) c) negative c --- present in goal|))
-     (123 123
+     (130 130
           (:REWRITE |(< (/ x) c) negative c --- obj t or nil|))
-     (123 123 (:REWRITE |(< (/ x) (/ y))|))
-     (123 123 (:REWRITE |(< (- x) c)|))
-     (123 123 (:REWRITE |(< (- x) (- y))|))
-     (121 85
+     (130 130 (:REWRITE |(< (/ x) (/ y))|))
+     (130 130 (:REWRITE |(< (- x) c)|))
+     (130 130 (:REWRITE |(< (- x) (- y))|))
+     (130 90
           (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<))
-     (121 85 (:REWRITE PREFER-POSITIVE-ADDENDS-<))
-     (114 114
+     (130 90 (:REWRITE PREFER-POSITIVE-ADDENDS-<))
+     (120 120
           (:TYPE-PRESCRIPTION STR::TRUE-LISTP-OF-EXPLODE))
-     (114 114 (:REWRITE |(< (/ x) 0)|))
-     (114 114 (:REWRITE |(< (* x y) 0)|))
-     (106 106 (:REWRITE FOLD-CONSTS-IN-+))
-     (84 14 (:REWRITE ACL2-NUMBERP-X))
-     (83 83 (:REWRITE REDUCE-INTEGERP-+))
-     (83 83 (:REWRITE INTEGERP-MINUS-X))
-     (83 83
+     (120 120 (:REWRITE |(< (/ x) 0)|))
+     (120 120 (:REWRITE |(< (* x y) 0)|))
+     (110 110 (:REWRITE FOLD-CONSTS-IN-+))
+     (96 16 (:REWRITE ACL2-NUMBERP-X))
+     (88 88 (:REWRITE REDUCE-INTEGERP-+))
+     (88 88 (:REWRITE INTEGERP-MINUS-X))
+     (88 88
          (:REWRITE INTEGER-LISTP-IMPLIES-INTEGERP))
-     (83 83 (:META META-INTEGERP-CORRECT))
-     (76 76 (:TYPE-PRESCRIPTION APPLY$-BADGEP))
-     (76 76
+     (88 88 (:META META-INTEGERP-CORRECT))
+     (80 80 (:TYPE-PRESCRIPTION APPLY$-BADGEP))
+     (80 80
          (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-<-0-RATIONAL-REMAINDER))
-     (76 76
+     (80 80
          (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-<-0-RATIONAL-COMMON))
-     (76 38
+     (80 40
          (:REWRITE STR::COERCE-TO-LIST-REMOVAL))
-     (63 21 (:DEFINITION FIX))
-     (59 45
+     (72 24 (:DEFINITION FIX))
+     (64 48
          (:REWRITE PREFER-POSITIVE-ADDENDS-EQUAL))
-     (45 45 (:REWRITE SIMPLIFY-SUMS-EQUAL))
-     (45 45 (:REWRITE REDUCE-RATIONALP-+))
-     (45 45 (:REWRITE REDUCE-RATIONALP-*))
-     (45 45
+     (48 48 (:REWRITE SIMPLIFY-SUMS-EQUAL))
+     (48 48 (:REWRITE REDUCE-RATIONALP-+))
+     (48 48 (:REWRITE REDUCE-RATIONALP-*))
+     (48 48
          (:REWRITE REDUCE-MULTIPLICATIVE-CONSTANT-EQUAL))
-     (45 45
+     (48 48
          (:REWRITE REDUCE-ADDITIVE-CONSTANT-EQUAL))
-     (45 45 (:REWRITE RATIONALP-MINUS-X))
-     (45 45
+     (48 48 (:REWRITE RATIONALP-MINUS-X))
+     (48 48
          (:REWRITE RATIONAL-LISTP-IMPLIES-RATIONALP))
-     (45 45
+     (48 48
          (:REWRITE EQUAL-OF-PREDICATES-REWRITE))
-     (45 45 (:REWRITE |(equal c (/ x))|))
-     (45 45 (:REWRITE |(equal c (- x))|))
-     (45 45 (:REWRITE |(equal (/ x) c)|))
-     (45 45 (:REWRITE |(equal (/ x) (/ y))|))
-     (45 45 (:REWRITE |(equal (- x) c)|))
-     (45 45 (:REWRITE |(equal (- x) (- y))|))
-     (45 45 (:META META-RATIONALP-CORRECT))
-     (42 14 (:TYPE-PRESCRIPTION BUBBLE-DOWN))
-     (39 7 (:REWRITE AC-<))
-     (38 38 (:TYPE-PRESCRIPTION LEN))
-     (38 38 (:REWRITE O-P-DEF-O-FINP-1))
-     (38 38 (:REWRITE LEN-MEMBER-EQUAL-LOOP$-AS))
-     (38 38 (:REWRITE INTEGERP==>NUMERATOR-=-X))
-     (38 38
+     (48 48 (:REWRITE |(equal c (/ x))|))
+     (48 48 (:REWRITE |(equal c (- x))|))
+     (48 48 (:REWRITE |(equal (/ x) c)|))
+     (48 48 (:REWRITE |(equal (/ x) (/ y))|))
+     (48 48 (:REWRITE |(equal (- x) c)|))
+     (48 48 (:REWRITE |(equal (- x) (- y))|))
+     (48 48 (:META META-RATIONALP-CORRECT))
+     (48 16 (:TYPE-PRESCRIPTION BUBBLE-DOWN))
+     (44 8 (:REWRITE AC-<))
+     (40 40 (:TYPE-PRESCRIPTION LEN))
+     (40 40 (:REWRITE O-P-DEF-O-FINP-1))
+     (40 40 (:REWRITE LEN-MEMBER-EQUAL-LOOP$-AS))
+     (40 40 (:REWRITE INTEGERP==>NUMERATOR-=-X))
+     (40 40
          (:REWRITE INTEGERP==>DENOMINATOR-=-1))
-     (38 38
+     (40 40
          (:REWRITE STR::EXPLODE-WHEN-NOT-STRINGP))
-     (38 38 (:REWRITE DEFAULT-REALPART))
-     (38 38
+     (40 40 (:REWRITE DEFAULT-REALPART))
+     (40 40
          (:REWRITE DEFAULT-RATIONAL-NUMERATOR))
-     (38 38
+     (40 40
          (:REWRITE DEFAULT-RATIONAL-DENOMINATOR))
-     (38 38 (:REWRITE DEFAULT-IMAGPART))
-     (24 12 (:REWRITE BUBBLE-DOWN-+-MATCH-1))
-     (21 7 (:REWRITE O-INFP-O-FINP-O<=))
+     (40 40 (:REWRITE DEFAULT-IMAGPART))
+     (28 14 (:REWRITE BUBBLE-DOWN-+-MATCH-1))
+     (24 8 (:REWRITE O-INFP-O-FINP-O<=))
      (18 18
          (:LINEAR MEMBER-EQUAL-ACL2-COUNT-SMALLER-3))
      (18 2 (:REWRITE BUBBLE-DOWN-+-MATCH-3))
-     (14 14
+     (16 16
          (:REWRITE ACL2-NUMBER-LISTP-IMPLIES-ACL2-NUMBERP))
-     (14 14 (:REWRITE |(+ x (- x))|))
+     (16 16 (:REWRITE |(+ x (- x))|))
      (12 12
          (:LINEAR MEMBER-EQUAL-ACL2-COUNT-SMALLER-2))
      (12 12
          (:LINEAR MEMBER-EQUAL-ACL2-COUNT-SMALLER-0))
-     (9 9 (:REWRITE |(< x (+ c/d y))|))
-     (7 7 (:REWRITE |a < b & b < c  =>  a < c|))
-     (7 7 (:REWRITE |(< y (+ (- c) x))|))
+     (10 10 (:REWRITE |(< x (+ c/d y))|))
+     (8 8 (:REWRITE |a < b & b < c  =>  a < c|))
+     (8 8 (:REWRITE |(< y (+ (- c) x))|))
      (6 6
         (:LINEAR MEMBER-EQUAL-ACL2-COUNT-SMALLER-1))
      (2 2 (:REWRITE |(< 0 (* x y))|)))
@@ -351,76 +351,78 @@
      (1 1 (:REWRITE |(equal (- x) c)|))
      (1 1 (:REWRITE |(equal (- x) (- y))|)))
 (RP::AND-LIST-IS-AND$
-     (8716 10 (:REWRITE RP::BIT-FIX-OPENER))
-     (8696 10 (:DEFINITION BITP))
-     (8152 8 (:DEFINITION APPLY$-BADGEP))
-     (6752 32
+     (11404 10 (:DEFINITION BITP))
+     (10836 16 (:DEFINITION APPLY$-BADGEP))
+     (9308 36
            (:LINEAR APPLY$-BADGEP-PROPERTIES . 1))
+     (4948 20 (:DEFINITION SUBSETP-EQUAL))
+     (4560 136 (:DEFINITION MEMBER-EQUAL))
      (3916 16
            (:REWRITE RP::RP-TERM-LISTP-IS-TRUE-LISTP))
+     (3654 318 (:REWRITE ACL2-NUMBERP-X))
      (3560 8 (:DEFINITION TRUE-LISTP))
-     (3074 258 (:REWRITE ACL2-NUMBERP-X))
+     (3527 327
+           (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-EQUAL))
      (3048 20
            (:REWRITE RP::RP-TERMP-IMPLIES-CDR-LISTP))
      (3016 12 (:DEFINITION RP::RP-TERMP))
-     (2844 238
-           (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-EQUAL))
-     (2552 8 (:DEFINITION SUBSETP-EQUAL))
-     (2448 72 (:DEFINITION MEMBER-EQUAL))
+     (2596 148 (:REWRITE RATIONALP-X))
+     (2316 48 (:REWRITE SUBSETP-REFLEXIVE-LEMMA))
      (2292 4 (:DEFINITION RP::FALIST-CONSISTENT))
-     (2216 120 (:REWRITE RATIONALP-X))
+     (2184 92
+           (:REWRITE MEMBER-EQUAL-NEWVAR-COMPONENTS-1))
      (2004 4
            (:DEFINITION RP::FALIST-CONSISTENT-AUX))
-     (1548 66
+     (1740 94
            (:REWRITE APPLY$-BADGEP-PROPERTIES . 1))
-     (1184 56
-           (:REWRITE MEMBER-EQUAL-NEWVAR-COMPONENTS-1))
-     (958 958 (:REWRITE DEFAULT-CDR))
-     (906 238
-          (:REWRITE PREFER-POSITIVE-ADDENDS-EQUAL))
+     (1182 1182 (:REWRITE DEFAULT-CDR))
+     (1056 327
+           (:REWRITE PREFER-POSITIVE-ADDENDS-EQUAL))
      (664 8 (:DEFINITION RP::RP-TERM-LISTP))
      (600 16 (:DEFINITION NATP))
+     (562 562 (:REWRITE DEFAULT-CAR))
      (528 20
           (:REWRITE RP::RP-TERMP-IMPLIES-SUBTERMS))
-     (486 486 (:REWRITE DEFAULT-CAR))
+     (464 16 (:DEFINITION WEAK-APPLY$-BADGE-P))
      (460 20 (:DEFINITION QUOTEP))
-     (294 238 (:REWRITE SIMPLIFY-SUMS-EQUAL))
-     (280 8 (:DEFINITION WEAK-APPLY$-BADGE-P))
-     (258 258
-          (:REWRITE ACL2-NUMBER-LISTP-IMPLIES-ACL2-NUMBERP))
-     (238 238
+     (389 327 (:REWRITE SIMPLIFY-SUMS-EQUAL))
+     (327 327
           (:REWRITE REDUCE-MULTIPLICATIVE-CONSTANT-EQUAL))
-     (238 238
+     (327 327
           (:REWRITE REDUCE-ADDITIVE-CONSTANT-EQUAL))
-     (238 238
+     (327 327
           (:REWRITE EQUAL-OF-PREDICATES-REWRITE))
-     (238 238 (:REWRITE |(equal c (/ x))|))
-     (238 238 (:REWRITE |(equal c (- x))|))
-     (238 238 (:REWRITE |(equal (/ x) c)|))
-     (238 238 (:REWRITE |(equal (/ x) (/ y))|))
-     (238 238 (:REWRITE |(equal (- x) c)|))
-     (238 238 (:REWRITE |(equal (- x) (- y))|))
-     (202 202 (:TYPE-PRESCRIPTION APPLY$-BADGEP))
-     (176 176 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
-     (168 168
+     (327 327 (:REWRITE |(equal c (/ x))|))
+     (327 327 (:REWRITE |(equal c (- x))|))
+     (327 327 (:REWRITE |(equal (/ x) c)|))
+     (327 327 (:REWRITE |(equal (/ x) (/ y))|))
+     (327 327 (:REWRITE |(equal (- x) c)|))
+     (327 327 (:REWRITE |(equal (- x) (- y))|))
+     (318 318
+          (:REWRITE ACL2-NUMBER-LISTP-IMPLIES-ACL2-NUMBERP))
+     (292 292 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
+     (276 276
           (:REWRITE MEMBER-EQUAL-NEWVAR-COMPONENTS-3))
-     (168 48 (:REWRITE O-P-O-INFP-CAR))
-     (160 48 (:REWRITE RP::IS-IF-RP-TERMP))
-     (138 138 (:REWRITE REDUCE-INTEGERP-+))
-     (138 138 (:REWRITE INTEGERP-MINUS-X))
-     (138 138
-          (:REWRITE INTEGER-LISTP-IMPLIES-INTEGERP))
-     (138 138 (:META META-INTEGERP-CORRECT))
-     (120 120 (:REWRITE REDUCE-RATIONALP-+))
-     (120 120 (:REWRITE REDUCE-RATIONALP-*))
-     (120 120 (:REWRITE RATIONALP-MINUS-X))
-     (120 120
-          (:REWRITE RATIONAL-LISTP-IMPLIES-RATIONALP))
-     (120 120 (:META META-RATIONALP-CORRECT))
-     (112 112
+     (258 258 (:TYPE-PRESCRIPTION APPLY$-BADGEP))
+     (236 236 (:REWRITE SUBSETP-IMPLIES-MEMBER))
+     (184 184
           (:REWRITE MEMBER-EQUAL-NEWVAR-COMPONENTS-2))
-     (104 52
+     (168 48 (:REWRITE O-P-O-INFP-CAR))
+     (166 166 (:REWRITE REDUCE-INTEGERP-+))
+     (166 166 (:REWRITE INTEGERP-MINUS-X))
+     (166 166
+          (:REWRITE INTEGER-LISTP-IMPLIES-INTEGERP))
+     (166 166 (:META META-INTEGERP-CORRECT))
+     (160 48 (:REWRITE RP::IS-IF-RP-TERMP))
+     (152 76
           (:REWRITE APPLY$-BADGEP-PROPERTIES . 2))
+     (148 148 (:REWRITE REDUCE-RATIONALP-+))
+     (148 148 (:REWRITE REDUCE-RATIONALP-*))
+     (148 148 (:REWRITE RATIONALP-MINUS-X))
+     (148 148
+          (:REWRITE RATIONAL-LISTP-IMPLIES-RATIONALP))
+     (148 148 (:META META-RATIONALP-CORRECT))
+     (136 136 (:TYPE-PRESCRIPTION SUBSETP-EQUAL))
      (80 80 (:TYPE-PRESCRIPTION O-P))
      (80 80 (:TYPE-PRESCRIPTION LEN))
      (72 8 (:DEFINITION LEN))
@@ -429,6 +431,8 @@
      (64 16 (:REWRITE RP::RP-TERMP-CADDDR))
      (56 56
          (:TYPE-PRESCRIPTION RP::RP-TERM-LISTP))
+     (48 48
+         (:REWRITE TRANSITIVITY-OF-SUBSETP-EQUAL))
      (48 48
          (:REWRITE RP::RP-TERMP-SHOULD-TERM-BE-IN-CONS-LHS))
      (48 16 (:REWRITE RP::RP-TERMP-CADR))
@@ -442,11 +446,10 @@
      (36 36
          (:TYPE-PRESCRIPTION RP::FALIST-CONSISTENT-AUX))
      (32 32 (:TYPE-PRESCRIPTION TRUE-LISTP))
-     (32 32 (:TYPE-PRESCRIPTION SUBSETP-EQUAL))
      (32 32 (:REWRITE FN-CHECK-DEF-NOT-QUOTE))
      (28 28 (:LINEAR LEN-WHEN-PREFIXP))
-     (24 24 (:REWRITE |(equal x (if a b c))|))
-     (24 24 (:REWRITE |(equal (if a b c) x)|))
+     (25 25 (:REWRITE |(equal x (if a b c))|))
+     (25 25 (:REWRITE |(equal (if a b c) x)|))
      (20 20 (:TYPE-PRESCRIPTION QUOTEP))
      (20 4
          (:REWRITE RP::ATOM-RP-TERMP-IS-SYMBOLP))
@@ -498,6 +501,8 @@
      (14 14 (:REWRITE |(< (- x) c)|))
      (14 14 (:REWRITE |(< (- x) (- y))|))
      (14 14 (:REWRITE |(< (* x y) 0)|))
+     (14 14 (:LINEAR BOUNDS-POSITION-EQUAL-AC))
+     (14 14 (:LINEAR BOUNDS-POSITION-EQUAL))
      (10 10 (:TYPE-PRESCRIPTION BITP))
      (10 10
          (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-=-0))
@@ -510,42 +515,41 @@
      (4 4
         (:REWRITE SYMBOL-LISTP-IMPLIES-SYMBOLP)))
 (RP::AND$-IS-AND-LIST
-     (220 6 (:REWRITE RP::BIT-FIX-OPENER))
-     (210 4 (:DEFINITION BITP))
-     (93 13 (:REWRITE ACL2-NUMBERP-X))
-     (75 14
+     (158 3 (:DEFINITION BITP))
+     (70 10 (:REWRITE ACL2-NUMBERP-X))
+     (62 13
          (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-EQUAL))
-     (64 14
+     (50 13
          (:REWRITE PREFER-POSITIVE-ADDENDS-EQUAL))
-     (40 8 (:REWRITE RATIONALP-X))
-     (14 14 (:REWRITE SIMPLIFY-SUMS-EQUAL))
-     (14 14
-         (:REWRITE REDUCE-MULTIPLICATIVE-CONSTANT-EQUAL))
-     (14 14
-         (:REWRITE REDUCE-ADDITIVE-CONSTANT-EQUAL))
-     (14 14
-         (:REWRITE EQUAL-OF-PREDICATES-REWRITE))
-     (14 14 (:REWRITE |(equal c (/ x))|))
-     (14 14 (:REWRITE |(equal c (- x))|))
-     (14 14 (:REWRITE |(equal (/ x) c)|))
-     (14 14 (:REWRITE |(equal (/ x) (/ y))|))
-     (14 14 (:REWRITE |(equal (- x) c)|))
-     (14 14 (:REWRITE |(equal (- x) (- y))|))
+     (30 6 (:REWRITE RATIONALP-X))
+     (13 13 (:REWRITE SIMPLIFY-SUMS-EQUAL))
      (13 13
+         (:REWRITE REDUCE-MULTIPLICATIVE-CONSTANT-EQUAL))
+     (13 13
+         (:REWRITE REDUCE-ADDITIVE-CONSTANT-EQUAL))
+     (13 13
+         (:REWRITE EQUAL-OF-PREDICATES-REWRITE))
+     (13 13 (:REWRITE |(equal c (/ x))|))
+     (13 13 (:REWRITE |(equal c (- x))|))
+     (13 13 (:REWRITE |(equal (/ x) c)|))
+     (13 13 (:REWRITE |(equal (/ x) (/ y))|))
+     (13 13 (:REWRITE |(equal (- x) c)|))
+     (13 13 (:REWRITE |(equal (- x) (- y))|))
+     (10 10
          (:REWRITE ACL2-NUMBER-LISTP-IMPLIES-ACL2-NUMBERP))
-     (8 8 (:REWRITE REDUCE-RATIONALP-+))
-     (8 8 (:REWRITE REDUCE-RATIONALP-*))
-     (8 8 (:REWRITE REDUCE-INTEGERP-+))
-     (8 8 (:REWRITE RATIONALP-MINUS-X))
-     (8 8
+     (6 6 (:REWRITE REDUCE-RATIONALP-+))
+     (6 6 (:REWRITE REDUCE-RATIONALP-*))
+     (6 6 (:REWRITE REDUCE-INTEGERP-+))
+     (6 6 (:REWRITE RATIONALP-MINUS-X))
+     (6 6
         (:REWRITE RATIONAL-LISTP-IMPLIES-RATIONALP))
-     (8 8 (:REWRITE INTEGERP-MINUS-X))
-     (8 8
+     (6 6 (:REWRITE INTEGERP-MINUS-X))
+     (6 6
         (:REWRITE INTEGER-LISTP-IMPLIES-INTEGERP))
-     (8 8 (:META META-RATIONALP-CORRECT))
-     (8 8 (:META META-INTEGERP-CORRECT))
-     (4 4 (:TYPE-PRESCRIPTION BITP))
-     (4 4
+     (6 6 (:META META-RATIONALP-CORRECT))
+     (6 6 (:META META-INTEGERP-CORRECT))
+     (3 3 (:TYPE-PRESCRIPTION BITP))
+     (3 3
         (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-=-0))
      (3 3 (:REWRITE DEFAULT-CDR))
      (2 2 (:REWRITE DEFAULT-CAR)))
@@ -684,7 +688,7 @@
      (306 34
           (:TYPE-PRESCRIPTION FLOOR-NEGATIVE . 1))
      (220 6 (:REWRITE DEFAULT-FLOOR-RATIO))
-     (196 44 (:REWRITE DEFAULT-PLUS-2))
+     (190 42 (:REWRITE DEFAULT-PLUS-2))
      (170 34 (:TYPE-PRESCRIPTION FLOOR-ZERO . 3))
      (170 34 (:TYPE-PRESCRIPTION FLOOR-ZERO . 1))
      (170 34
@@ -704,18 +708,18 @@
      (170 34
           (:TYPE-PRESCRIPTION FLOOR-NEGATIVE . 2))
      (166 78 (:REWRITE DEFAULT-TIMES-2))
-     (152 44 (:REWRITE DEFAULT-PLUS-1))
+     (148 42 (:REWRITE DEFAULT-PLUS-1))
+     (144 6 (:DEFINITION RP::SUM-LIST))
+     (126 12 (:REWRITE RP::SUM-COMM-1))
      (118 118
           (:TYPE-PRESCRIPTION NOT-INTEGERP-3A))
      (118 118
           (:TYPE-PRESCRIPTION NOT-INTEGERP-2A))
      (118 118
           (:TYPE-PRESCRIPTION NOT-INTEGERP-1A))
-     (105 27 (:REWRITE REDUCE-INTEGERP-+))
-     (105 27 (:META META-INTEGERP-CORRECT))
+     (106 28 (:REWRITE REDUCE-INTEGERP-+))
+     (106 28 (:META META-INTEGERP-CORRECT))
      (96 78 (:REWRITE DEFAULT-TIMES-1))
-     (96 4 (:DEFINITION RP::SUM-LIST))
-     (84 8 (:REWRITE RP::SUM-COMM-1))
      (66 2 (:LINEAR LINEAR-FLOOR-BOUNDS-3))
      (64 64
          (:REWRITE NORMALIZE-FACTORS-GATHER-EXPONENTS))
@@ -724,16 +728,16 @@
      (34 34
          (:REWRITE NORMALIZE-TERMS-SUCH-AS-A/A+B-+-B/A+B))
      (34 34 (:REWRITE NORMALIZE-ADDENDS))
-     (27 27 (:REWRITE INTEGERP-MINUS-X))
-     (27 27
+     (28 28 (:REWRITE INTEGERP-MINUS-X))
+     (28 28
          (:REWRITE INTEGER-LISTP-IMPLIES-INTEGERP))
      (16 6 (:REWRITE DEFAULT-FLOOR-1))
      (12 12 (:REWRITE FOLD-CONSTS-IN-+))
      (12 12 (:REWRITE |(+ c (+ d x))|))
      (6 6 (:REWRITE DEFAULT-FLOOR-2))
+     (6 6 (:REWRITE DEFAULT-CDR))
+     (6 6 (:REWRITE DEFAULT-CAR))
      (6 6 (:REWRITE |(floor x 2)| . 2))
-     (4 4 (:REWRITE DEFAULT-CDR))
-     (4 4 (:REWRITE DEFAULT-CAR))
      (3 1
         (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<))
      (3 1 (:REWRITE PREFER-POSITIVE-ADDENDS-<))
@@ -780,62 +784,7 @@
      (1 1 (:REWRITE |(< (+ c/d x) y)|))
      (1 1 (:REWRITE |(< (+ (- c) x) y)|))
      (1 1 (:REWRITE |(< (* x y) 0)|)))
-(RP::D-SUM-TO-SUM)
-(RP::D-IS-D2 (494 494
-                  (:TYPE-PRESCRIPTION NOT-INTEGERP-3B))
-             (494 494
-                  (:TYPE-PRESCRIPTION NOT-INTEGERP-2B))
-             (494 494
-                  (:TYPE-PRESCRIPTION NOT-INTEGERP-1B))
-             (180 20 (:TYPE-PRESCRIPTION FLOOR-ZERO . 2))
-             (180 20
-                  (:TYPE-PRESCRIPTION FLOOR-POSITIVE . 1))
-             (180 20
-                  (:TYPE-PRESCRIPTION FLOOR-NONPOSITIVE . 1))
-             (180 20
-                  (:TYPE-PRESCRIPTION FLOOR-NONNEGATIVE . 1))
-             (180 20
-                  (:TYPE-PRESCRIPTION FLOOR-NEGATIVE . 1))
-             (100 20 (:TYPE-PRESCRIPTION FLOOR-ZERO . 3))
-             (100 20 (:TYPE-PRESCRIPTION FLOOR-ZERO . 1))
-             (100 20
-                  (:TYPE-PRESCRIPTION FLOOR-POSITIVE . 3))
-             (100 20
-                  (:TYPE-PRESCRIPTION FLOOR-POSITIVE . 2))
-             (100 20
-                  (:TYPE-PRESCRIPTION FLOOR-NONPOSITIVE . 3))
-             (100 20
-                  (:TYPE-PRESCRIPTION FLOOR-NONPOSITIVE . 2))
-             (100 20
-                  (:TYPE-PRESCRIPTION FLOOR-NONNEGATIVE . 3))
-             (100 20
-                  (:TYPE-PRESCRIPTION FLOOR-NONNEGATIVE . 2))
-             (100 20
-                  (:TYPE-PRESCRIPTION FLOOR-NEGATIVE . 3))
-             (100 20
-                  (:TYPE-PRESCRIPTION FLOOR-NEGATIVE . 2))
-             (66 2 (:LINEAR LINEAR-FLOOR-BOUNDS-3))
-             (56 2 (:LINEAR LINEAR-FLOOR-BOUNDS-2))
-             (24 16 (:REWRITE DEFAULT-TIMES-2))
-             (24 16 (:REWRITE DEFAULT-TIMES-1))
-             (16 16 (:TYPE-PRESCRIPTION NOT-INTEGERP-3A))
-             (16 16 (:TYPE-PRESCRIPTION NOT-INTEGERP-2A))
-             (16 16 (:TYPE-PRESCRIPTION NOT-INTEGERP-1A))
-             (14 4 (:REWRITE DEFAULT-PLUS-2))
-             (14 4 (:REWRITE DEFAULT-PLUS-1))
-             (8 8
-                (:REWRITE NORMALIZE-FACTORS-GATHER-EXPONENTS))
-             (5 5 (:REWRITE REDUCE-INTEGERP-+))
-             (5 5 (:REWRITE INTEGERP-MINUS-X))
-             (5 5
-                (:REWRITE INTEGER-LISTP-IMPLIES-INTEGERP))
-             (5 5 (:META META-INTEGERP-CORRECT))
-             (4 2 (:REWRITE DEFAULT-MINUS))
-             (2 2
-                (:REWRITE NORMALIZE-TERMS-SUCH-AS-A/A+B-+-B/A+B))
-             (2 2 (:REWRITE NORMALIZE-ADDENDS)))
-(RP::S-IS-M2 (258 8 (:REWRITE DEFAULT-MOD-RATIO))
-             (214 11 (:REWRITE |(* y x)|))
+(RP::S-IS-M2 (232 8 (:REWRITE DEFAULT-MOD-RATIO))
              (187 187
                   (:TYPE-PRESCRIPTION NOT-INTEGERP-3B))
              (187 187
@@ -848,22 +797,23 @@
                   (:TYPE-PRESCRIPTION MOD-POSITIVE . 2))
              (185 37
                   (:TYPE-PRESCRIPTION MOD-NEGATIVE . 2))
-             (161 3 (:LINEAR MOD-BOUNDS-3))
+             (175 11 (:REWRITE |(* y x)|))
+             (148 3 (:LINEAR MOD-BOUNDS-3))
              (126 64 (:REWRITE DEFAULT-TIMES-2))
-             (123 123
+             (113 113
                   (:TYPE-PRESCRIPTION NOT-INTEGERP-3A))
-             (123 123
+             (113 113
                   (:TYPE-PRESCRIPTION NOT-INTEGERP-2A))
-             (123 123
+             (113 113
                   (:TYPE-PRESCRIPTION NOT-INTEGERP-1A))
              (105 5 (:REWRITE SUM-IS-EVEN . 2))
-             (100 22 (:REWRITE DEFAULT-PLUS-2))
-             (100 22 (:REWRITE DEFAULT-PLUS-1))
+             (96 4 (:DEFINITION RP::SUM-LIST))
+             (84 8 (:REWRITE RP::SUM-COMM-1))
              (80 64 (:REWRITE DEFAULT-TIMES-1))
+             (74 19 (:REWRITE DEFAULT-PLUS-2))
+             (74 19 (:REWRITE DEFAULT-PLUS-1))
              (53 53
                  (:REWRITE NORMALIZE-FACTORS-GATHER-EXPONENTS))
-             (48 2 (:DEFINITION RP::SUM-LIST))
-             (42 4 (:REWRITE RP::SUM-COMM-1))
              (38 6 (:LINEAR MOD-BOUNDS-2))
              (37 37 (:TYPE-PRESCRIPTION MOD-ZERO . 3))
              (37 37
@@ -872,19 +822,20 @@
              (37 37
                  (:TYPE-PRESCRIPTION MOD-NEGATIVE . 1))
              (37 37 (:TYPE-PRESCRIPTION INTEGERP-MOD-2))
-             (26 26 (:REWRITE REDUCE-INTEGERP-+))
-             (26 26 (:REWRITE INTEGERP-MINUS-X))
-             (26 26
+             (28 4 (:REWRITE |(+ y x)|))
+             (27 27 (:REWRITE REDUCE-INTEGERP-+))
+             (27 27 (:REWRITE INTEGERP-MINUS-X))
+             (27 27
                  (:REWRITE INTEGER-LISTP-IMPLIES-INTEGERP))
-             (26 26 (:META META-INTEGERP-CORRECT))
+             (27 27 (:META META-INTEGERP-CORRECT))
              (20 8 (:REWRITE DEFAULT-MOD-1))
-             (13 13
+             (15 15
                  (:REWRITE NORMALIZE-TERMS-SUCH-AS-A/A+B-+-B/A+B))
-             (13 13 (:REWRITE NORMALIZE-ADDENDS))
+             (15 15 (:REWRITE NORMALIZE-ADDENDS))
              (8 8 (:REWRITE DEFAULT-MOD-2))
              (8 8 (:REWRITE |(mod x 2)| . 2))
-             (2 2 (:REWRITE DEFAULT-CDR))
-             (2 2 (:REWRITE DEFAULT-CAR))
+             (4 4 (:REWRITE DEFAULT-CDR))
+             (4 4 (:REWRITE DEFAULT-CAR))
              (1 1
                 (:REWRITE INTEGERP-+-REDUCE-CONSTANT)))
 (RP::SUM-LIST-IS-SUM (43 5 (:REWRITE RP::SUM-COMM-1))
@@ -1533,6 +1484,27 @@
               (7 7 (:REWRITE NORMALIZE-ADDENDS)))
 (RP::M2-OF-M2-EXTENDED)
 (RP::SUM-OF-REPEATED-TO-TIMES2)
+(RP::TIMES2-OF-SUM (47 4
+                       (:REWRITE RP::DUMMY-SUM-CANCEL-LEMMA1))
+                   (3 2
+                      (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-EQUAL))
+                   (3 2
+                      (:REWRITE PREFER-POSITIVE-ADDENDS-EQUAL))
+                   (2 2
+                      (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-=-0))
+                   (2 2 (:REWRITE SIMPLIFY-SUMS-EQUAL))
+                   (2 2
+                      (:REWRITE REDUCE-MULTIPLICATIVE-CONSTANT-EQUAL))
+                   (2 2
+                      (:REWRITE REDUCE-ADDITIVE-CONSTANT-EQUAL))
+                   (2 2
+                      (:REWRITE EQUAL-OF-PREDICATES-REWRITE))
+                   (2 2 (:REWRITE |(equal c (/ x))|))
+                   (2 2 (:REWRITE |(equal c (- x))|))
+                   (2 2 (:REWRITE |(equal (/ x) c)|))
+                   (2 2 (:REWRITE |(equal (/ x) (/ y))|))
+                   (2 2 (:REWRITE |(equal (- x) c)|))
+                   (2 2 (:REWRITE |(equal (- x) (- y))|)))
 (RP::D2-TO-F2
      (1728 1728
            (:TYPE-PRESCRIPTION NOT-INTEGERP-3B))
@@ -2304,3 +2276,56 @@
              (7 7 (:META META-INTEGERP-CORRECT))
              (4 4 (:REWRITE DEFAULT-MOD-2))
              (4 4 (:REWRITE |(mod x 2)| . 2)))
+(RP::SUM-OF-NEGATED-ELEMENTS
+     (35 15 (:REWRITE DEFAULT-PLUS-2))
+     (32 15 (:REWRITE DEFAULT-PLUS-1))
+     (8 4 (:TYPE-PRESCRIPTION BUBBLE-DOWN))
+     (8 4 (:REWRITE DEFAULT-MINUS))
+     (3 3
+        (:REWRITE NORMALIZE-TERMS-SUCH-AS-A/A+B-+-B/A+B))
+     (2 2 (:REWRITE REDUCE-INTEGERP-+))
+     (2 2 (:REWRITE INTEGERP-MINUS-X))
+     (2 2
+        (:REWRITE INTEGER-LISTP-IMPLIES-INTEGERP))
+     (2 2 (:REWRITE |(+ c (+ d x))|))
+     (2 2 (:META META-INTEGERP-CORRECT)))
+(RP::F2-OF-TIMES2-REVERSE
+     (117 8
+          (:REWRITE RP::SUM-OF-NEGATED-ELEMENTS))
+     (57 2 (:REWRITE RP::F2-OF-BIT))
+     (54 1 (:DEFINITION BITP))
+     (47 6
+         (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-EQUAL))
+     (37 7 (:REWRITE ACL2-NUMBERP-X))
+     (15 6
+         (:REWRITE PREFER-POSITIVE-ADDENDS-EQUAL))
+     (15 3 (:REWRITE RATIONALP-X))
+     (13 6 (:REWRITE SIMPLIFY-SUMS-EQUAL))
+     (7 7
+        (:REWRITE ACL2-NUMBER-LISTP-IMPLIES-ACL2-NUMBERP))
+     (6 6
+        (:REWRITE REDUCE-MULTIPLICATIVE-CONSTANT-EQUAL))
+     (6 6
+        (:REWRITE REDUCE-ADDITIVE-CONSTANT-EQUAL))
+     (6 6
+        (:REWRITE EQUAL-OF-PREDICATES-REWRITE))
+     (6 6 (:REWRITE |(equal c (/ x))|))
+     (6 6 (:REWRITE |(equal c (- x))|))
+     (6 6 (:REWRITE |(equal (/ x) c)|))
+     (6 6 (:REWRITE |(equal (/ x) (/ y))|))
+     (6 6 (:REWRITE |(equal (- x) c)|))
+     (6 6 (:REWRITE |(equal (- x) (- y))|))
+     (3 3 (:REWRITE REDUCE-RATIONALP-+))
+     (3 3 (:REWRITE REDUCE-RATIONALP-*))
+     (3 3 (:REWRITE REDUCE-INTEGERP-+))
+     (3 3 (:REWRITE RATIONALP-MINUS-X))
+     (3 3
+        (:REWRITE RATIONAL-LISTP-IMPLIES-RATIONALP))
+     (3 3 (:REWRITE INTEGERP-MINUS-X))
+     (3 3
+        (:REWRITE INTEGER-LISTP-IMPLIES-INTEGERP))
+     (3 3 (:META META-RATIONALP-CORRECT))
+     (3 3 (:META META-INTEGERP-CORRECT))
+     (1 1 (:TYPE-PRESCRIPTION BITP))
+     (1 1
+        (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-=-0)))

@@ -44,6 +44,8 @@
                        (6 6 (:TYPE-PRESCRIPTION TRUE-LISTP))
                        (6 6 (:TYPE-PRESCRIPTION BINARY-APPEND)))
 (CONSP-OF-ASSOC-EQUAL)
+(ASSOC-EQUAL-IFF (72 69 (:REWRITE DEFAULT-CAR))
+                 (28 26 (:REWRITE DEFAULT-CDR)))
 (ASSOC-EQUAL-TYPE (49 49 (:REWRITE DEFAULT-CAR))
                   (27 5 (:DEFINITION ALISTP))
                   (22 22
