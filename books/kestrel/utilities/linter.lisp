@@ -198,26 +198,26 @@
            (not (my-prefixp ctx-chars fn-being-checked-chars)))
          ;; Suppress warning for context from assert, STATE-GLOBAL-LET*, etc:
          (not (member-eq (unquote ctx) '(ASSERT$ STATE-GLOBAL-LET*)))
-         (cw "(Context ~x0 used in ~x1 for ~x2.)~%~%" ctx fn-being-checked (ffn-symb form)))))
+         (cw "(In ~x0, context ~x1 is used in call of ~x2.)~%~%" fn-being-checked ctx (ffn-symb form)))))
 
-(defun check-keys-of-alist-wrt-format-string (string alist fn-being-checked ctx call)
+(defun check-keys-of-alist-wrt-format-string (string alist fn-being-checked call)
   (let* ((args-mentioned (args-in-format-string string)) ;these are chars
          (alist-keys (symbolic-strip-cars alist))
          (quoted-args-mentioned (enquote-list args-mentioned)))
     (prog2$ (if (not (subsetp-equal quoted-args-mentioned alist-keys))
-                (cw "(Questionable call of ~x0 detected in ~x1: ~x2. Missing args? Mentioned args are ~x3 but alist keys are ~x4)~%~%" ctx fn-being-checked call quoted-args-mentioned alist-keys)
+                (cw "(In ~x0, questionable format string use in ~x1. Missing args? Mentioned args are ~x2 but alist keys are ~x3)~%~%" fn-being-checked call quoted-args-mentioned alist-keys)
               nil)
             (if (not (subsetp-equal alist-keys quoted-args-mentioned))
-                (cw "(Questionable call of ~x0 detected in ~x1: ~x2. Extra args? Mentioned args are ~x3 but alist keys are ~x4)~%~%" ctx fn-being-checked call quoted-args-mentioned alist-keys)
+                (cw "(In ~x0, questionable format string use in ~x1. Extra args? Mentioned args are ~x2 but alist keys are ~x3)~%~%" fn-being-checked call quoted-args-mentioned alist-keys)
               nil))))
 
-(defun check-vals-of-alist-wrt-format-string (string alist fn-being-checked ctx call)
+(defun check-vals-of-alist-wrt-format-string (string alist fn-being-checked call)
   (let* ((args-mentioned (args-in-format-string string)) ;these are chars
          (max-arg-mentioned (max-val-of-chars args-mentioned))
          (alist-vals (symbolic-strip-cdrs alist))
          (len-vals (len alist-vals)))
     (if (<= len-vals max-arg-mentioned)
-        (cw "(Questionable call of ~x0 detected in ~x1: ~x2.  Not enough args given?)~%~%" ctx fn-being-checked call)
+        (cw "(In ~x0, questionable format string use in ~x1. Not enough args given?)~%~%" fn-being-checked call)
       nil)))
 
 (defun check-call-of-fmt-function (call fn-being-checked)
@@ -226,7 +226,7 @@
          (let ((string (unquote string))
                (alist (farg2 call)))
            ;; we check the vals of the alist since the keys are always the digits 0 through 9:
-           (check-vals-of-alist-wrt-format-string string alist fn-being-checked 'fmt-to-comment-window/cw call)))))
+           (check-vals-of-alist-wrt-format-string string alist fn-being-checked call)))))
 
 (defun check-call-of-hard-error (call fn-being-checked)
   (prog2$ (check-first-arg-as-ctx call fn-being-checked)
@@ -234,7 +234,7 @@
             (and (quotep string)
                  (let ((string (unquote string))
                        (alist (farg3 call)))
-                   (check-keys-of-alist-wrt-format-string string alist fn-being-checked 'hard-error call))))))
+                   (check-keys-of-alist-wrt-format-string string alist fn-being-checked call))))))
 
 (defun check-call-of-illegal (call fn-being-checked)
   (prog2$ (check-first-arg-as-ctx call fn-being-checked)
@@ -242,7 +242,7 @@
             (and (quotep string)
                  (let ((string (unquote string))
                        (alist (farg3 call)))
-                   (check-keys-of-alist-wrt-format-string string alist fn-being-checked 'illegal call))))))
+                   (check-keys-of-alist-wrt-format-string string alist fn-being-checked call))))))
 
 (defun filter-subst (subst vars)
   (if (endp subst)
@@ -377,7 +377,7 @@
                                                        (my-sublis-var-lst subst (fargs term)))
                                              fn-being-checked state)
                                (and (quote-listp (fargs term))
-                                    (cw "(Ground term ~x0 in ~x1.)~%~%" term fn-being-checked))))))))))))))
+                                    (cw "(In ~x0, ground term ~x1 is present.)~%~%" fn-being-checked term))))))))))))))
 
  (defun check-terms (terms subst fn-being-checked state)
    (declare (xargs :guard (and (true-listp terms)
