@@ -3216,7 +3216,7 @@
                             single-c-try-merge-params-correct-2
 
                             rp-term-listp)))
-          ("Subgoal *1/3"
+          ("Subgoal *1/4"
            :use ((:instance single-c-try-merge-params-correct-2
                             (x (sum (SUM-LIST (RP-EVLT (MV-NTH 2 (GET-C-ARGS SINGLE-C2))
                                                        A))
@@ -3356,8 +3356,8 @@
 (defthm
   c-sum-merge-correct-for-s
   (b* (((mv ?coughed-s ?coughed-pp-lst
-            ?c-merged-lst ?to-be-coughed-c-lst)
-        (c-sum-merge-fn c1-lst c2-lst auto-swap clean-c1-lst)))
+            ?c-merged-lst ?to-be-coughed-c-lst ?limit-reached)
+        (c-sum-merge-fn c1-lst c2-lst auto-swap clean-c1-lst limit)))
     (implies
      (and (rp-evl-meta-extract-global-facts :state state)
           (mult-formula-checks state)
@@ -3532,6 +3532,7 @@
                             include-fnc-subterms
                             c-sum-merge-correct-for-s
                             c-sum-merge-correct
+                            nfix natp
                             M2-OF-RP-EVLT-EX-FROM-RP/--)))
           ("Subgoal *1/3"
            :use ((:instance c-sum-merge-correct-for-s
@@ -3542,6 +3543,15 @@
                                                             C-LST
                                                             :LIMIT (SUM LIMIT -1))))
                             (auto-swap t)
+                            (limit (NFIX (C-SUM-MERGE-FN-STABLE
+                                          (LIST-TO-LST (CADDDR (EX-FROM-RP/-- (CAR
+                                                                               S-LST))))
+                                          (MV-NTH 1
+                                                  (S-OF-S-FIX-LST (CDR S-LST) pp-lst
+                                                                  C-LST
+                                                                  :LIMIT (SUM LIMIT
+                                                                              -1)))
+                                          t nil)))
                             (clean-c1-lst nil))))
           ("Subgoal *1/4"
            :use ((:instance c-sum-merge-correct-for-s
@@ -3552,6 +3562,15 @@
                                                             C-LST
                                                             :LIMIT (SUM LIMIT -1))))
                             (auto-swap t)
+                            (limit (NFIX (C-SUM-MERGE-FN-STABLE
+                                (LIST-TO-LST (CADDDR (EX-FROM-RP/-- (CAR
+                                                                     S-LST))))
+                                (MV-NTH 1
+                                            (S-OF-S-FIX-LST (CDR S-LST) pp-lst
+                                                            C-LST
+                                                            :LIMIT (SUM LIMIT
+                                                                        -1)))
+                                t nil)))
                             (clean-c1-lst nil))))))
 
 (defret s-of-s-fix-lst-correct-without-rest

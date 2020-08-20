@@ -47,7 +47,7 @@
 
 (include-book "adder-rules-meta")
 
-(include-book "verify-guards")
+;;(include-book "verify-guards")
 
 
 ;;(include-book "4vec-to-binary-fncs-meta")
