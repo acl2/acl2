@@ -115,8 +115,8 @@
 (add-rp-rule null)
 (add-rp-rule endp)
 (add-rp-rule eql)
-(add-rp-rule not)
-(add-rp-rule implies)
+(add-rp-rule not :outside-in t)
+(add-rp-rule implies :outside-in t)
 (add-rp-rule eq)
 (add-rp-rule eql)
 (add-rp-rule cons-equal)
@@ -125,6 +125,8 @@
 (def-rp-rule append-of-nil
   (equal (append nil x)
          x))
+
+
 
 (def-rp-rule$ t nil
   force-fail

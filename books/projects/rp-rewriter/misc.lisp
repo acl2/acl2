@@ -41,6 +41,14 @@
 (include-Book "macros")
 (include-Book "aux-functions")
 (include-Book "std/strings/cat-base" :dir :system)
+(include-Book "extract-formula")
+(include-Book "proofs/guards")
+
+(local
+ (include-Book "proofs/extract-formula-lemmas"))
+
+(local
+ (include-Book "proofs/rp-state-functions-lemmas"))
 
 (encapsulate
   nil
@@ -499,6 +507,19 @@ RP-Rewriter will throw an eligible error.</p>"
       (mv (acons (caar alist) c rest)
           state))))
 
+
+(define rp-thm-rw-fn ((term rp-termp) runes
+                      runes-outside-in
+                      (new-synps alistp)
+                      rp-state state)
+  (b* ((rp-state (rp-state-new-run rp-state))
+       (rp-state (rp-state-init-rules runes runes-outside-in new-synps rp-state state))
+       ((mv term rp-state)
+        (preprocess-then-rp-rw term rp-state state)))
+    (mv term rp-state)))
+  
+  
+
 (defmacro rp-thm (term &key
                        (untranslate 't)
                        #|(disable-opener-error 'nil)||#
@@ -539,40 +560,16 @@ RP-Rewriter will throw an eligible error.</p>"
            ((mv err term & state)
             (acl2::translate1 ',term t nil nil 'top-level (w state) state))
            (- (if err (hard-error 'rp-thm "Error translating term ~%" nil) nil))
-           (term (beta-search-reduce term 1000))
-           (- (and ,runes-outside-in (not ,runes)
-                   (cw "WARNING: You passed some values for runes-outside-in
-but did not pass anything for runes. Assigning values to any one of those
-values will cause runes to be not retrieved from the table.~%")))
-           ((mv runes runes-outside-in exc-rules)
-            ,(if runes
-                 `(mv ,runes ,runes-outside-in (get-disabled-exc-rules-from-table (table-alist 'rp-exc-rules world)))
-               '(get-enabled-rules-from-table state)))
+           (term (beta-search-reduce term 10000))
            ((mv new-synps state) (translate1-vals-in-alist ,new-synps state))
-           (rules-alist (get-rules runes state :new-synps new-synps))
-           (rules-alist-outside-in (get-rules runes-outside-in state :new-synps new-synps))
-           (rp-state (rp-state-new-run rp-state))
            (old-not-simplified-action (not-simplified-action rp-state))
            (rp-state (update-not-simplified-action ,not-simplified-action rp-state))
-           
            ((mv rw rp-state)
             (if ,time
                 (time$
-                 (rp-rw-aux term
-                            rules-alist
-                            exc-rules
-                            rules-alist-outside-in
-                            rp-state
-                            state))
-              (rp-rw-aux term
-                         rules-alist
-                         exc-rules
-                         rules-alist-outside-in
-                         rp-state
-                         state)))
+                 (rp-thm-rw-fn term ',runes ',runes-outside-in new-synps rp-state state))
+              (rp-thm-rw-fn term ',runes ',runes-outside-in new-synps rp-state state)))
            (rw (if ,untranslate (untranslate rw t (w state)) rw))
-           (- (fast-alist-free rules-alist))
-           (- (fast-alist-free rules-alist-outside-in))
            (state (fms "~p0~%"
                        (list
                         (cons #\0 rw))
