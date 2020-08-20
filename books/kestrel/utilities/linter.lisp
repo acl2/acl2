@@ -262,12 +262,13 @@
             nil))))))
 
 ;; The subst used when lambdas are encountered
+;; TODO: Track and use the context from overarching IF tests.
 (mutual-recursion
  (defun check-term (term subst fn-being-checked state)
    (declare (xargs :guard (pseudo-termp term)
                    :mode :program
                    :stobjs state))
-   (if (atom term)
+   (if (variablep term)
        nil
      (let ((fn (ffn-symb term)))
        (if (eq 'quote fn)
@@ -276,29 +277,24 @@
                              check-dcl-guardian ;used in b*?
                              ))
              nil
-           ;; TODO: Use the subst for these?
-           (if (member-eq fn '(fmt fms fmt1 fmt-to-comment-window))
-               (prog2$ (check-call-of-fmt-function term fn-being-checked)
-                       (check-terms (fargs term) subst fn-being-checked state))
-             (if (eq fn 'hard-error)
-                 (prog2$ (check-call-of-hard-error term fn-being-checked)
-                         (check-terms (fargs term) subst fn-being-checked state))
-               (if (eq fn 'illegal)
-                   (prog2$ (check-call-of-illegal term fn-being-checked)
-                           (check-terms (fargs term) subst fn-being-checked state))
-                 (if (eq 'if fn)
-                     (progn$ (check-terms (fargs term) subst fn-being-checked state)
-                             (check-call-of-if term subst fn-being-checked state))
-                   (if (consp fn) ;check for lambda
-                       (prog2$ (check-term (lambda-body fn)
+           (prog2$ (check-terms (fargs term) subst fn-being-checked state)
+                   ;; TODO: Use the subst for these?
+                   (if (member-eq fn '(fmt fms fmt1 fmt-to-comment-window))
+                       (check-call-of-fmt-function term fn-being-checked)
+                     (if (eq fn 'hard-error)
+                         (check-call-of-hard-error term fn-being-checked)
+                       (if (eq fn 'illegal)
+                           (check-call-of-illegal term fn-being-checked)
+                         (if (eq 'if fn)
+                             (check-call-of-if term subst fn-being-checked state)
+                           (if (consp fn) ;check for lambda
+                               (check-term (lambda-body fn)
                                            ;; new subst, since we are in a lambda body
                                            (pairlis$ (lambda-formals fn)
                                                      (my-sublis-var-lst subst (fargs term)))
                                            fn-being-checked state)
-                               (check-terms (fargs term) subst fn-being-checked state))
-                     (prog2$ (and (quote-listp (fargs term))
-                                  (cw "(Ground term ~x0 in ~x1.)~%~%" term fn-being-checked))
-                             (check-terms (fargs term) subst fn-being-checked state))))))))))))
+                             (and (quote-listp (fargs term))
+                                  (cw "(Ground term ~x0 in ~x1.)~%~%" term fn-being-checked)))))))))))))
 
  (defun check-terms (terms subst fn-being-checked state)
    (declare (xargs :guard (and (true-listp terms)
