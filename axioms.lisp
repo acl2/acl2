@@ -28527,6 +28527,7 @@ Lisp definition."
           (t (er hard! 'bbody
                  "Implementation error: Illegal call of bbody: the symbol ~x0 ~
                   is not a key of ~x1."
+                 fn
                  *bbody-alist*)))))
 
 (defmacro bbody (fn)

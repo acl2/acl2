@@ -2419,6 +2419,7 @@ ACL2 !>>>(TABLE
                      (CONS :MEMO-TABLE-INIT-SIZE (OR NIL *MHT-DEFAULT-SIZE*))
                      (CONS :AOKP 'NIL)
                      (CONS :STATS :DEFAULT)
+                     (CONS :TOTAL NIL)
                      (AND (NOT (EQ ':DEFAULT :DEFAULT))
                           (LIST (CONS :IDEAL-OKP ':DEFAULT)))))
 

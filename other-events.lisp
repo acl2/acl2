@@ -25027,267 +25027,6 @@
         (t
          (filter-absstobjs (cdr lst) wrld abs (cons (car lst) conc)))))
 
-(defun memoize-table-chk (key val wrld)
-
-; Although this function is generally only called with #+hons, nevertheless we
-; define it independently of #+hons so that it has the same definition in the
-; hons and non-hons versions of ACL2.
-
-; The usual table guard mechanism provides crude error messages when there is a
-; violation.  We avoid that problem by causing a hard error.  We rely on the
-; fact that illegal and hard-error return nil.
-
-; The memoize-table maps :common-lisp-compliant function symbols (to be
-; memoized or unmemoized) to nil (unmemoized) or to a non-empty alist that
-; stores relevant information, such as the condition (see memoize-form).  The
-; guard requirement then ensures that when we call the raw Lisp version of fn,
-; then since the guard for fn must hold in that case, so does the guard for
-; condition-fn.  The body of condition-fn can therefore be called in raw Lisp
-; on the arguments of any call of fn made in raw Lisp from the ACL2
-; read-eval-print loop.  This is important because the memoized function body
-; includes code from the body of condition-fn.
-
-  (let ((ctx '(table . memoize-table))
-        (str "Illegal attempt to set memoize-table:  ")
-        (memoize-table (table-alist 'memoize-table wrld))
-        (key-formals (if (symbolp key)
-                         (getpropc key 'formals t wrld)
-                       t))
-        (key-class (symbol-class key wrld))
-        (condition (and val (cdr (assoc-eq :condition-fn val))))
-        (inline (and val (cdr (assoc-eq :inline val))))
-        (aokp (and val (cdr (assoc-eq :aokp val)))))
-    (let ((result
-           (cond
-            ((eq key-formals t)
-             (er hard ctx
-                 "~@0~x1 is not a function symbol."
-                 str key))
-            ((and (or condition (cdr (assoc-eq :inline val)))
-
-; The preceding term says that we are not profiling.  Why not replace it simply
-; with condition, allowing :inline t?  Perhaps we could, but that would require
-; a bit of thought since memoization with :inline t will modify recursive
-; calls, and we would need to be sure that this replacement doesn't violate
-; syntactic restrictions.  We can think about this if someone has reason to
-; memoize with :condition nil but not :inline nil.
-
-                  (member-eq 'state (stobjs-in key wrld)))
-             (er hard ctx
-                 "~@0~x1 takes ACL2's STATE as an argument (illegal except ~
-                  for profiling)."
-                 str key))
-            ((not (booleanp aokp))
-             (er hard ctx
-                 "~@0:aokp has a non-Boolean value, ~x1."
-                 str aokp))
-            ((and (or condition (cdr (assoc-eq :inline val)))
-
-; See comment above for the case of 'state.
-
-                  (non-memoizable-stobjs (stobjs-in key wrld) wrld))
-             (mv-let
-              (abs conc)
-              (filter-absstobjs (non-memoizable-stobjs (stobjs-in key wrld)
-                                                       wrld)
-                                wrld nil nil)
-              (cond
-               ((null abs)
-                (er hard ctx
-                    "~@0~x1 has input stobj~#2~[ ~&2~/s ~&2, each~] ~
-                     introduced with :NON-MEMOIZABLE T.  See :DOC defstobj."
-                    str key conc))
-               ((null conc)
-                (er hard ctx
-                    "~@0~x1 has input abstract stobj~#2~[ ~&2~/s ~&2, each ~
-                     of~] whose corresponding concrete stobj is ~
-                     non-memoizable.  See :DOC defabsstobj."
-                    str key abs))
-               (t
-                (er hard ctx
-                    "~@0~x1 has input concrete stobj~#2~[ ~&2~/s ~&2, each~] ~
-                     introduced with :NON-MEMOIZABLE T.  ~x1 also has input ~
-                     abstract stobj~#3~[ ~&2~/s ~&3, each of~] whose ~
-                     corresponding concrete stobj is non-memoizable.  See ~
-                     :DOC defstobj."
-                    str key conc abs)))))
-            ((member-eq key *stobjs-out-invalid*)
-             (er hard ctx
-                 "~@0~x1 is a primitive without a fixed output signature."
-                 str key))
-            ((and (or condition (cdr (assoc-eq :inline val)))
-
-; See comment above for the case of 'state.
-
-                  (not (all-nils (stobjs-out key wrld))))
-             (let ((stobj (find-first-non-nil (stobjs-out key wrld))))
-               (er hard ctx
-                   "~@0~x1 returns a stobj, ~x2 (illegal except for profiling)."
-                   str key stobj)))
-            ((member-eq key *hons-primitive-fns*)
-             (er hard ctx
-                 "~@0~x1 is a HONS primitive."
-                 str key))
-            ((not (cltl-def-from-name key wrld))
-             (er hard ctx
-                 "~@0~x1 is not a defined ACL2 function."
-                 str key))
-            ((getpropc key 'constrainedp nil wrld)
-             (er hard ctx
-                 "~@0~x1 is constrained.  You may instead wish to memoize a ~
-                  caller or to memoize its attachment (see :DOC defattach)."
-                 str key))
-            ((and inline
-
-; The test below isn't right if a built-in function with raw Lisp code has been
-; promoted to logic mode after assigning state global
-; 'verify-termination-on-raw-program-okp to t.  However, that assignment may
-; only be done with a trust tag, and the documentation warns that doing this
-; promotion could be unsound.  So we don't worry about that case here.
-
-; Note that here we are disallowing inline memoization of apply$-lambdas.
-; That's fine; we essentially do our own memoization via the cl-cache.
-
-                  (if (eq key-class :program)
-                      (member-eq key *initial-program-fns-with-raw-code*)
-                    (member-eq key *initial-logic-fns-with-raw-code*)))
-             (er hard ctx
-                 "~@0The built-in function symbol ~x1 has associated raw-Lisp ~
-                  code, hence is illegal to memoize unless :RECURSIVE is nil."
-                 str key))
-            ((not (symbol-alistp val))
-             (er hard ctx
-                 "~@0Function symbol ~x1 must be associated with a ~
-                  symbol-alistp, unlike ~x2."
-                 str key val))
-            ((let ((pair (assoc-eq :memo-table-init-size val)))
-               (and pair (not (posp (cdr pair)))))
-             (er hard ctx
-                 "~@0The :memo-table-init-size must be a positive integer, ~
-                  unlike ~x1."
-                 str (cdr (assoc-eq :memo-table-init-size val))))
-            ((not (memoize-table-chk-commutative str key val ctx wrld))
-             nil) ; an error was presumably already caused
-
-; The next two checks require that we do not memoize or unmemoize a function
-; that is already memoized or unmemoized, respectively.  The function
-; maybe-push-undo-stack relies on this check.
-
-            ((and val (cdr (assoc-eq key memoize-table)))
-             (er hard ctx
-                 "~@0Function ~x1 is already memoized."
-                 str key))
-            ((and (null val) (null (cdr (assoc-eq key memoize-table))))
-             (er hard ctx
-                 "~@0Cannot unmemoize function ~x1 because it is not ~
-                  currently memoized."
-                 str key))
-            ((and (eq key-class :ideal)
-                  val ; memoize, not unmemoize
-                  (let* ((pair (assoc-eq :ideal-okp val))
-                         (okp (if pair
-                                  (cdr pair)
-                                (cdr (assoc-eq :memoize-ideal-okp
-                                               (table-alist 'acl2-defaults-table
-                                                            wrld))))))
-                    (cond ((eq okp t)
-                           nil)
-                          ((not okp)
-                           (er hard ctx
-                               "~@0The function symbol ~x1 is in :logic mode ~
-                                but has not had its guards verified.  Either ~
-                                run ~x2, or specify :IDEAL-OKP ~x3 in your ~
-                                ~x4 call, or else evaluate ~x5 or ~x6."
-                               str key 'verify-guards t 'memoize
-                               '(table acl2-defaults-table :memoize-ideal-okp t)
-                               '(table acl2-defaults-table :memoize-ideal-okp :warn)))
-                          (t ; okp is :warn
-                           (prog2$ (warning$-cw
-                                    'memoize-table-chk
-                                    "The function ~x0 to be memoized is in ~
-                                     :logic mode but has not had its guards ~
-                                     verified.  Memoization might therefore ~
-                                     not take place; see :DOC memoize."
-                                    key)
-                                   nil))))))
-
-; Finally, check conditions on the memoization condition function.
-
-            (t
-             (let ((val-formals (and condition
-                                     (if (symbolp condition)
-                                         (getpropc condition 'formals t wrld)
-                                       t)))
-                   (val-guard (and condition
-                                   (if (symbolp condition)
-                                       (getpropc condition 'guard *t* wrld)
-                                     t))))
-
-               (cond
-                ((or (eq val nil)
-                     (member-eq condition '(t nil)))
-                 t)
-                ((eq val-formals t)
-                 (er hard ctx
-                     "~@0The proposed memoization condition function, ~x1, is ~
-                      neither T, NIL, nor a function symbol known to ACL2."
-                     str condition))
-                ((not (and (symbolp condition)
-                           (or (eq key-class :program)
-                               (eq (symbol-class condition wrld)
-                                   :common-lisp-compliant))))
-                 (er hard ctx
-                     "~@0Function ~x1 cannot serve as a memoization condition ~
-                      function for function ~x2, because unlike ~x2, ~x1 is ~
-                      not common-lisp-compliant (a logic-mode function that ~
-                      has had its guards verified)."
-                     str condition key))
-                ((not (equal key-formals val-formals))
-                 (er hard ctx
-                     "~@0Function ~x1 cannot serve as a memoization condition ~
-                      function for ~x2, because the two functions have ~
-                      different formal parameter lists."
-                     str condition key))
-                ((not (equal (getpropc key 'guard *t* wrld)
-                             val-guard))
-                 (er hard ctx
-                     "~@0Function ~x1 cannot serve as a memoization condition ~
-                      function for ~x2, because the two functions have ~
-                      different guards."
-                     str condition key))
-                (t t)))))))
-      (progn$
-       (or (global-val 'hons-enabled wrld)
-           (warning$-cw (if val 'memoize 'unmemoize)
-                        "The ~#0~[un~/~]memoization request for ~x1 is being ~
-                         ignored because this ACL2 executable is not ~
-                         hons-enabled."
-                        (if val 1 0)
-                        key))
-       (and val
-            (let ((stobjs-in (stobjs-in key wrld)))
-              (cond
-               ((and condition
-                     (find-first-non-nil stobjs-in))
-                (let ((input-stobjs (collect-non-x nil stobjs-in)))
-                  (observation-cw
-                   ctx
-                   "The function ~x0 has input stobj~#1~[~/s~] ~&1.  The ~
-                    memoization table for ~x0 will be cleared whenever ~
-                    ~#2~[this stobj is~/either of these stobjs is~/any of ~
-                    these stobjs is~] updated.  Any update of a stobj may ~
-                    therefore be significantly slower, perhaps by a factor of ~
-                    5 or 10, when it is an input of a memoized function."
-                   key
-                   input-stobjs
-                   (zero-one-or-more (cdr input-stobjs)))))
-               (t nil))))
-       result))))
-
-(table memoize-table nil nil
-       :guard
-       (memoize-table-chk key val world))
-
 ; The following code supports print-gv.
 
 (defun remove-stobjs-in-by-position (lst stobjs-in)
@@ -31032,3 +30771,1203 @@
         (ec-call
          (pairlis$ (lambda-object-formals ,fn)
                    ,args))))
+
+; Essay on Memoization with Partial Functions (Memoize-partial)
+
+; A common trick is to admit a recursively-defined function by adding a
+; stack-depth argument.  Traditionally that argument often is called a "clock"
+; but we will call it a "limit".  It seems unlikely that this additional
+; argument significantly impacts performance, with one exception: it may
+; severely limit the value of memoization, because the limit argument might not
+; match a saved call that otherwise matches the current call.
+
+; We use a motivating example, with explanation following below.  A slight
+; variant of this example, as well as other examples, may be found in community
+; book books/system/tests/memoize-partial.lisp.
+
+;   (defun fib-limit (n limit)
+;     (declare (type (integer 0 *) limit))
+;     (declare (xargs :guard (integerp n)
+;                     :measure (nfix limit)))
+;     (if (zp limit)
+;         0 ; base case; any term is fine here
+;       (let ((limit (1- limit)))
+;         (if (or (= n 0) (= n 1))
+;             1
+;           (+ (fib-limit (- n 1) limit)
+;              (fib-limit (- n 2) limit))))))
+
+;   (defchoose fib-limit-change (large) (n limit)
+;     (and (natp large)
+;          (<= limit large)
+;          (not (equal (fib-limit n limit)
+;                      (fib-limit n large)))))
+
+;   (defchoose fib-limit-stable (limit) (n)
+;     (and (natp limit)
+;          (equal (fib-limit n limit)
+;                 (fib-limit n (fib-limit-change n limit)))))
+
+;   (defun fib (n)
+;     (declare (xargs :guard (let ((limit 0))
+;                              (declare (ignorable limitbound))
+;                              (integerp n))))
+;     (fib n (fib-limit-stable n)))
+
+; Then when we evaluate
+
+;   (memoize-partial fib)
+
+; we actually memoize with the call below of memoize-fn under the hood.  That
+; will happen automatically, but here we do it manually.
+
+;   :q
+
+;   (MEMOIZE-FN
+;    'FIB
+;    :CONDITION T
+;    :INLINE T
+;    :CL-DEFUN '(defun fib (n)
+;                 (flet ((fib-limit (n limit)
+;                                   (declare (ignore limit))
+;                                   (fib n)))
+;                   (declare (inline fib-limit))
+;                   (let ((limit 0))
+;                     (declare (ignorable limit))
+;                     (if (or (= n 0) (= n 1))
+;                         1
+;                       (+ (fib-limit (- n 1) limit)
+;                          (fib-limit (- n 2) limit))))))
+;    :FORMALS '(N)
+;    :STOBJS-IN '(NIL)
+;    :STOBJS-OUT '(NIL)
+;    :COMMUTATIVE NIL
+;    :FORGET NIL
+;    :MEMO-TABLE-INIT-SIZE 60
+;    :AOKP NIL)
+;   
+;   (lp)
+
+; That works:
+
+;   ACL2 !>(time$ (fib 100))
+;   ; (EV-REC *RETURN-LAST-ARG3* ...) took 
+;   ; 0.00 seconds realtime, 0.00 seconds runtime
+;   ; (7,648 bytes allocated).
+;   573147844013817084101
+;   ACL2 !>(time$ (fib 100))
+;   ; (EV-REC *RETURN-LAST-ARG3* ...) took 
+;   ; 0.00 seconds realtime, 0.00 seconds runtime
+;   ; (16 bytes allocated).
+;   573147844013817084101
+;   ACL2 !>
+
+; We have measured an increase of 14% by using flet in the definition of fib
+; when evaluating (time (fib 38)), rather than just recurring directly with
+; fib.  (The increase was 52% without the inline declaration.  And of course,
+; the time is negligible is we submit the memoize-fn form above rather than
+; just the defun that is inside it.)  But the use of flet supports the theory
+; below, in particular the correspondence between macroexpansions of the
+; original body and the body of the :CL-DEFUN argument (see above).  So it
+; seems best to live with that inefficiency rather than to eliminate flet (by
+; essentially expanding it away).  Moreover, it seems plausible that there will
+; typically be significantly more computation per call than with the example
+; above (the recursive fib function), in which case the percentage penalty may
+; drop substantially.
+
+; We now provide theory to justify the approach outlined above, ignoring
+; details that we do not consider worthy of discussion here.  In particular we
+; ignore here the straightforward extension of this theory to mutual-recursion.
+
+; Consider a guard-verified function f0-limit that is defined as follows, where
+; <base> is arbitrary.  Here we require that in the translation of <body>, the
+; occurrences of limit are exactly as the final parameter in each recursive
+; call.
+
+;   (defun f0-limit (x1 ... xk limit)
+;     (declare ...)
+;     (if (zp limit) <base> (let ((limit (1- limit))) <body>)))
+
+; The restriction can probably be relaxed somewhat, for example to allow
+; subtracting a number larger than 1.  But we expect this form to be convenient
+; in practice, hence sufficient to support.  (We also considered allowing the
+; variants zpf and 1-f of zp and 1-, respectively.  However, the witness from
+; fib-limit-stable is not guaranteed to be below any particular size.  If one
+; does try to use a stronger guard on limit, then guard verification of f0, as
+; defined below, will fail.)  The restriction of limit to the final parameter
+; of each recursive call is reminiscent of the test for irrelevant formals,
+; although the present requirement is much simpler and also sufficient here.
+
+; Now consider the following raw Lisp definition, which is based entirely on
+; the definition of f0-limit above, not on its translated body.
+
+;   (defun f1 (x1 ... xk)
+;     (flet ((f0-limit (x1 ... xk limit)
+;                      (declare (ignore limit))
+;                      (f1 x1 ... xk)))
+;       (let ((limit 0))
+;            (declare (ignorable limit))
+;            <body>)))
+
+; Below, we discuss notions "well-guarded call" and "well-guarded evaluation"
+; in raw Lisp.  These are evaluations where every function call is made on
+; arguments in its intended domain, as guaranteed by evaluation of ACL2 terms
+; involving only guard-verified functions applied (at the top level) to
+; arguments satisfying their guards.  Of course, a key claim about ACL2 is that
+; error-free evaluation with only guard-verified functions is always
+; well-guarded evaluation.  Note that the assumption of well-guarded can be
+; necessary since some ACL2 functions behave differently when their guard is
+; false; consider for example (zpf -1).  When dealing with :logic mode
+; functions, the raw Lisp versions of function definitions are only invoked in
+; well-guarded code; recall that evaluation always starts with *1* functions,
+; which only call corresponding raw Lisp functions when guards hold.
+
+; We argue below for the following
+
+;   Key Claim.
+
+;   If a well-guarded call of (f1 a1 ... ak) in raw Lisp terminates with result
+;   R, then there is a natural number L such that when we form a corresponding
+;   call (f0-limit a1 ... ak M) with any integer M >= L, the Lisp evaluation
+;   result is also R.
+
+; Fix a1, ..., ak, and suppose that (f1 a1 ... ak) evaluates in raw Lisp to a
+; result R.  Pick L as provided by the Key Claim.  Then for every integer M we
+; see that the following is a theorem, by appealing to a property that is
+; already used in the ACL2 prover: the correctness of raw Lisp evaluation for
+; ACL2 ground terms.
+
+;  (a)  (implies (<= 'L 'M)
+;                (equal (f0-limit 'a1 ... 'ak 'M)
+;                       'R)).
+
+; Now define (f0 x1 ... xk) to be the limit (if there is one) of (f0-limit x1
+; ... xk L) for natural numbers L, defined in ACL2 in analogy to how fib is
+; defined in terms of fib-limit in the example above.  (The guard on f0 will
+; bind limit to 0, as in that example, and a moment's thought should be
+; convincing that this guard is sufficient for guard verification when the
+; guard on f0 allows limit to be any natp; we say no more about that here.)
+
+; By (a), every instance of the following formula is a theorem.
+
+;  (b) (implies (and (natp limit)
+;                    (<= 'L limit))
+;               (equal (f0-limit 'a1 ... 'ak limit)
+;                      'R))
+
+; But considering how f0 is defined in terms of f0-limit (by way of defchoose
+; events), we need for (b) to be a theorem.  Is it?  That question brings us to
+; a subtle point: provability of a property for each instance does not imply
+; that the universal closure of the property is provable.  In our specific
+; instance, we have seen that (equal (f0-limit 'a1 ... 'ak limit) 'R) is
+; provable when limit is (the quotation of) L, or L+1, or L+2, or L+3, and so
+; on.  However, that alone does not imply provability of the theorem that this
+; equality holds for all values of limit >= L.  (Logicians would say that to
+; make that deduction, one needs to apply the omega-rule, which is not a
+; first-order rule of inference.  Informally, they might say that we haven't
+; proved that the equality holds for non-standard values of limit.)
+
+; We can address this subtle issue by considering the following definitions, as
+; illustrated in community book books/system/bigger-limits.lisp.  Here, (lim)
+; is introduced as a constrained zero-ary function that returns an arbitrary
+; natural number, and fib-limit2 is defined in complete analogy with fib-limit,
+; except that the "base case" for fib-limit2 says to continue with fib-limit.
+
+;   (encapsulate
+;     ((lim () t))
+;     (local (defun lim () 0))
+;     (defthm natp-lim
+;       (natp (lim))
+;       :rule-classes :type-prescription))
+;   
+;   (defun fib-limit2 (n limit)
+;     (declare (type (integer 0 *) limit))
+;     (declare (xargs :guard (integerp n)
+;                     :measure (nfix limit)))
+;     (if (zp limit)
+;         (fib-limit n (lim)) ; base case
+;       (let ((limit (1- limit)))
+;         (if (or (= n 0) (= n 1))
+;             1
+;           (+ (fib-limit2 (- n 1) limit)
+;              (fib-limit2 (- n 2) limit))))))
+
+; Our argument below for the Key Claim is agnostic about the base case, (zp
+; limit).  To be concrete, suppose f0-limit is fib-limit and f1 is the raw Lisp
+; definition supplied to memoize-fn, above.  Then just as (equal (fib-limit 'a1
+; ... 'ak 'L) 'R) is provable, so is (equal (fib-limit2 'a1 ... 'ak 'L) 'R).
+; But we can prove the following.
+
+;   (implies (and (natp limit)
+;                 (natp n))
+;            (equal (fib-limit2 n limit)
+;                   (fib-limit n (+ limit (lim)))))
+
+; By functional instantiation of lim with (lambda () (nfix lim)), we see
+; that the following is a theorem.
+
+;   (implies (natp lim)
+;            (equal (fib-limit n (+ L lim))
+;                   R))
+
+; That immediately implies provability of the formula of interest.
+
+;   (implies (and (natp limit)
+;                 (<= L limit))
+;            (equal (fib-limit n limit)
+;                   R))
+
+; It remains to argue for the Key Claim.  Suppose that a well-guarded call (f1
+; a1 ... ak) in raw Lisp terminates with result R.  We argue for the conclusion
+; of the Key Claim by strong induction on the length of the computation of the
+; call of f1.  By definition of f1, evaluation of (f1 a1 ... ak) leads to
+; evaluation of <body> where each formal xi is bound to ai, limit is bound to
+; 0, and the function symbol f0-limit is bound (as a function symbol) to
+; (lambda (x1 ... xk limit) (f1 x1 ... xk)).  Similarly, a corresponding call
+; (f0-limit a1 ... ak L), where L is a positive integer, leads to an evaluation
+; of <body> with limit bound to (1- limit) and without rebinding f0-limit.  It
+; suffices to observe that these two evaluations proceed in lockstep, giving
+; the same results along the way, for sufficiently large L.  This observation
+; follows from the inductive hypothesis, provided we do not encounter
+; evaluation of limit except in the latter case as the final parameter of each
+; call of f0-limit.  These properties are stated in the following Proposition,
+; whose truth we assert as fundamental to our use of Common Lisp in evaluating
+; ACL2 forms.
+
+; Proposition.
+
+;   Consider well-guarded Common Lisp evaluation of an ACL2 term.  Let limit be
+;   an ACL2 variable and suppose that every occurrence of limit in the ACL2
+;   translation of that term is in the last argument of calls of a specific
+;   function, f, where the last argument is indeed always limit.  Then the
+;   evaluation process never encounters a free occurrence of limit, except as
+;   the last argument of a call of f that is encountered during evaluation.
+;   (By "encountered" we mean in the usual sense for Common Lisp EVAL, which
+;   does not include diving into recursive calls, but rather uses APPLY on each
+;   of them.)
+
+; The precondition is about translated code, and is something we easily check.
+; This proposition relies on the ACL2 variable (called "limit" above) not being
+; introduced by Common Lisp macroexpansion.  We imagine, for example, that the
+; symbol CHAR-CODE-LIMIT might be introduced by Common Lisp macroexpansion.
+; But we expect any such symbol either to be fresh (courtesy of gensym,
+; gentemp, or the like) or else to belong to the list value of the ACL2
+; constant, *common-lisp-specials-and-constants*, and ACL2 does not allow such
+; symbols to be ACL2 variables.
+
+; We conclude with remarks on our high-level design for memoizing with a
+; partial function.  We preferred to minimize disruption to existing
+; memoization code.  In particular, memoization using partial functions is
+; accomplished in raw Lisp simply by modifying the call to memoize-fn to use
+; the desired executable partial function.  At the event level, memoization
+; events are unchanged except to take an additional argument, :total.  This is
+; a bit of a challenge for the mutual-recursion case, however, since in general
+; one needs to memoizize each functions in the nest in order to get
+; executability, yet the precondition for each such function involves all
+; functions in the nest.  Therefore it is natural to separate out a table event
+; (using a new table, partial-functions-table) that stores all the information
+; needed for each such memoization.  By storing all that information on a
+; single key (namely, the function symbol introduced by the first definition in
+; the mutual-recursion), we need only do all the accompanying checks once,
+; i.e., when storing the value for that key.  We do those checks in the table
+; guard, partial-functions-table-guard.  The user-level macro memoize-partial
+; is provided as a user convenience, to avoid the need to modify the
+; partial-functions-table directly.
+
+; Perhaps in the future we will install the executable partial functions at the
+; time the partial-functions-table is updated, rather than waiting for memoize
+; events.  It might be reasonable to implement this by modifying table-cltl-cmd
+; to generate defuns tuples for partial-functions-table, but we would need to
+; be careful not to install new *1* functions.
+
+; Other possible future work may include loosening the syntactic restrictions,
+; for example so that the popular DEFINE macro can be used for the :total (i.e
+; limited, clocked) function without the need to specify :no-function t.  There
+; could also be tweaks to the user interface, for example to make the output of
+; memoize-partial less verbose or to improve the error message when the limit
+; variable isn't the last formal (or, relax that restriction).
+
+(defun collect-non-redundant (events wrld)
+
+; We check that each event E in events is stored as the 'event property in
+; (cadr E).  We return the list of all E in events that do not have that
+; property.
+
+  (cond ((endp events) nil)
+        ((and (true-listp (car events))
+              (symbolp (cadr (car events)))
+              (equal (get-event (cadr (car events)) wrld)
+                     (car events)))
+         (collect-non-redundant (cdr events) wrld))
+        (t (cons (car events)
+                 (collect-non-redundant (cdr events) wrld)))))
+
+(defun remove-var-from-type-dcls (var type-dcls)
+
+; Var is a variable, and type-dcls is a list of legal type declarations with
+; the leading TYPE stripped off.  We remove var from each member of type-dcls
+; and return the list of non-empty results.
+
+  (cond ((endp type-dcls) nil)
+        (t
+         (let* ((d (car type-dcls))
+                (tp (car d))
+                (vars (remove-eq var (cdr d))))
+           (cond ((null vars)
+                  (remove-var-from-type-dcls var (cdr type-dcls)))
+                 (t
+                  (cons `(type ,tp ,@vars)
+                        (remove-var-from-type-dcls var (cdr type-dcls)))))))))
+
+(defun memoize-partial-def (fn fn-limit fn-limit-formals flet-bindings wrld)
+
+; Fn is a function to be defined nonconstructively without a limit (clock) from
+; a limited version, fn-limit (with formals fn-limit-formals), which is to be
+; supplied in the :total argument of a memoize call on fn.  Flet bindings is
+; passed in as appropriate; see the Essay on Memoization with Partial Functions
+; (Memoize-partial).
+
+; Note that the checks here are far from sufficient to allow memoization of fn
+; with :total fn-limit.  Additional checks are made before putting this
+; definition into the partial-functions-table, made by its table guard,
+; partial-functions-table-guard.
+
+  (let ((ev (cltl-def-from-name fn-limit wrld)))
+    (cond
+     ((member-eq 'state fn-limit-formals)
+      :state)
+     ((fetch-dcl-field :stobjs (butlast (cdddr ev) 1))
+      (cons :stobjs (fetch-dcl-field :stobjs (butlast (cdddr ev) 1))))
+     (t (let* ((limit (assert$ (consp fn-limit-formals)
+                               (car (last fn-limit-formals))))
+               (def
+                (case-match ev
+                  (('DEFUN !fn-limit !fn-limit-formals . &)
+                   (cdr ev))
+                  (('MUTUAL-RECURSION . defs)
+                   (let* ((def (assoc-eq fn-limit (strip-cdrs defs))))
+                     (and (equal (cadr def) fn-limit-formals)
+                          def)))
+                  (& nil))))
+          (cond
+           ((null def) :definition-not-found)
+           (t
+            (let* ((fn-limit-body (car (last ev)))
+                   (rest
+                    (case-match fn-limit-body
+                      (('IF ('ZP !limit)
+                            &
+                            ('LET ((!limit ('1- !limit)))
+                                  . rest))
+                       rest)
+                      (('COND (('ZP !limit)
+                               &)
+                              (t ('LET ((!limit ('1- !limit)))
+                                       . rest)))
+                       rest)
+
+; We do not support other macros because we have not (yet?) convinced ourselves
+; of sufficient similarity in their behaviors in Common Lisp and ACL2 (which
+; seems important; see the Essay mentioned above).
+
+                      (& nil))))
+              (and rest
+                   (let* ((fn-formals (butlast fn-limit-formals 1))
+                          (body (car (last rest)))
+                          (dcls (butlast (cddr def) 1))
+                          (type-dcls (remove-var-from-type-dcls
+                                      limit
+                                      (fetch-dcl-field 'type dcls))))
+                     `(defun ,fn ,fn-formals
+
+; We are confident about this definition, so rather than recover the ignore and
+; ignorable declarations, we simply declare all formals to be ignorable.
+
+                        (declare (ignorable ,@fn-formals))
+                        ,@(and type-dcls `((declare ,@type-dcls)))
+                        (flet ,flet-bindings
+                          (declare (inline ,fn-limit))
+                          (let ((,limit 0))
+                            (declare (ignorable ,limit))
+                            ,body)))))))))))))
+
+(defun memoize-partial-declare (fn-limit limit wrld)
+
+; We compute the declare form for the non-constructive function, fn (see
+; memoize-partial-supporting-events), to be memoized on behalf of fn-limit.
+; Thus, fn-limit is to be the :total argument of a call (memoize 'fn ...), and
+; at a higher level, a tuple (fn fn-limit ...) may be in the list of tuples
+; supplied to memoize-partial.
+
+  (let* ((ev (get-event fn-limit wrld))
+         (def
+          (case-match ev
+            (('DEFUN !fn-limit . &)
+             (cdr ev))
+            (('MUTUAL-RECURSION . defs)
+             (assoc-eq fn-limit (strip-cdrs defs)))
+            (& (er hard 'memoize-partial-declare
+                   "Implementation error: Unable to find event for the ~
+                    alleged function, ~x0"
+                   fn-limit))))
+         (dcls (butlast (cddr def) 1))
+         (type-lst (remove-var-from-type-dcls limit
+                                              (fetch-dcl-field 'type dcls)))
+         (guard (conjoin-untranslated-terms (fetch-dcl-field :guard dcls)))
+         (split-types-lst (fetch-dcl-field :split-types dcls))
+         (guard-simplify-lst (fetch-dcl-field :guard-simplify dcls)))
+    `(declare ,@type-lst
+              (xargs :guard ,(if (eq guard t)
+                                 t
+                               `(let ((,limit 0))
+                                  (declare (ignorable ,limit))
+                                  ,guard))
+                     ,@(and split-types-lst
+                            (pairlis-x1 :split-types split-types-lst))
+                     ,@(and guard-simplify-lst
+                            (pairlis-x1 :guard-simplify
+                                        guard-simplify-lst))))))
+
+(defun memoize-partial-supporting-events-1 (fn fn-limit fn-limit-change
+                                               fn-limit-stable flet-bindings
+                                               wrld)
+
+; Fn is a function to be defined nonconstructively without a limit (clock) from
+; a limited version, fn-limit, which is to be the :total argument of a
+; memoization of fn.  Here we return events to introduce fn.
+
+; We return (mv nil events tuple) upon success, where events are the desired
+; definitions and tuple will be used in the resulting memoize-partial call.  On
+; failure we return (mv msg nil nil), where msg is a message explaining the
+; failure.
+
+; Note that the checks here are far from sufficient to allow memoization of fn
+; with :total fn-limit.  Additional checks are made in the table guard for
+; partial-functions-table, partial-functions-table-guard.
+
+  (let* ((fn-limit-formals (formals fn-limit wrld))
+         (def (memoize-partial-def fn fn-limit fn-limit-formals flet-bindings
+                                   wrld)))
+    (cond
+     ((eq def :definition-not-found)
+
+; This is surprising, since by this point, partial-functions-table-guard-msg
+; has already checked that each function fn-limit being passed into the present
+; function is a member of the 'recursivep property of some function.
+
+      (mv (msg "Implementation error: Unable to find the definition of ~x0."
+               fn-limit)
+          nil nil))
+     ((eq def :state)
+      (mv (msg "STATE is among the formals of ~x0."
+               fn-limit)
+          nil nil))
+     ((eq (car def) :stobjs)
+      (mv (msg "The stobj~#0~[ ~&0 is~/s ~&0 are~] among the formals of ~x1."
+               (cdr def)
+               fn-limit)
+          nil nil))
+     ((null def) ; same as (atom def)
+      (mv (msg "The (untranslated) body of function ~x0 is not of the ~
+                appropriate form."
+               fn-limit)
+          nil nil))
+     (t
+      (let* ((limit (assert$ (consp fn-limit-formals)
+                             (car (last fn-limit-formals))))
+             (fn-formals (butlast fn-limit-formals 1))
+             (large (genvar limit "LARGE" nil fn-limit-formals)))
+        (mv nil
+            `((defchoose ,fn-limit-change (,large) ,fn-limit-formals
+                (and (natp ,large)
+                     (<= ,limit ,large)
+                     (not (equal (,fn-limit ,@fn-limit-formals)
+                                 (,fn-limit ,@fn-formals ,large)))))
+
+              (defchoose ,fn-limit-stable (,limit) ,fn-formals
+                (and (natp ,limit)
+                     (equal (,fn-limit ,@fn-limit-formals)
+                            (,fn-limit
+                             ,@fn-formals
+                             (,fn-limit-change ,@fn-limit-formals)))))
+              (defun ,fn ,fn-formals
+                ,(memoize-partial-declare fn-limit limit wrld)
+                (,fn-limit ,@fn-formals
+                           (nfix (,fn-limit-stable ,@fn-formals)))))
+            `(,fn ,fn-limit ,fn-limit-change ,fn-limit-stable ,def)))))))
+
+(defun memoize-partial-supporting-events-rec (tuples flet-bindings wrld msg
+                                                     defs table-tuples)
+
+; Each element of tuples is of the form (fn fn-limit fn-limit-change
+; fn-limit-stable . memoize-args), as returned by memoize-partial-tuples.
+; The final three arguments are all nil at the top level.
+
+  (cond ((endp tuples)
+         (mv (and msg
+                  (msg "~|~@0~|See :DOC memoize-partial.~|" msg))
+             (reverse defs)
+             (let* ((val (reverse table-tuples))
+                    (key (cadr (car val))))
+               `(table partial-functions-table ',key ',val))))
+        (t (mv-let (msg1 defs1 table-tuple)
+              (let ((tuple (car tuples)))
+                (memoize-partial-supporting-events-1
+                 (car tuple) (cadr tuple) (caddr tuple) (cadddr tuple)
+                 flet-bindings wrld))
+             (memoize-partial-supporting-events-rec
+              (cdr tuples) flet-bindings wrld
+              (cond (msg1 (cond (msg (msg "~@0~|~@1" msg msg1))
+                                (t msg1)))
+                    (t msg))
+              (revappend defs1 defs)
+              (cons table-tuple table-tuples))))))
+
+(defun flet-bindings (tuples wrld)
+  (cond ((endp tuples) nil)
+        (t (cons (let* ((tuple (car tuples))
+                        (fn (car tuple))
+                        (fn-limit (cadr tuple))
+                        (fn-limit-formals (formals fn-limit wrld))
+                        (limit (car (last fn-limit-formals)))
+                        (fn-formals (butlast fn-limit-formals 1)))
+                   `(,fn-limit ,fn-limit-formals
+                               (declare (ignore ,limit))
+                               (,fn ,@fn-formals)))
+                 (flet-bindings (cdr tuples) wrld)))))
+
+(defun memoize-partial-supporting-events (tuples wrld)
+  (memoize-partial-supporting-events-rec
+   tuples
+   (flet-bindings tuples wrld)
+   wrld nil nil nil))
+
+(defun memoize-partial-tuple-shape-p (lst)
+  (declare (xargs :guard t))
+  (cond ((atom lst) (null lst))
+        (t (let ((tuple (car lst)))
+             (and (symbolp (car tuple))
+                  (symbolp (cadr tuple))
+                  (symbolp (caddr tuple))
+                  (symbolp (cadddr tuple))
+                  (consp (cddddr tuple))
+                  (null (cdr (cddddr tuple)))
+                  (memoize-partial-tuple-shape-p (cdr lst)))))))
+
+(defun memoize-partial-translations-msg-formals (fns limit fn0 wrld)
+  (cond ((endp fns) nil)
+        (t (let* ((fn (car fns))
+                  (formals (formals fn wrld)))
+             (cond
+              ((null (cdr formals))
+               (msg "The function symbol ~x0 must have at least two formal ~
+                     parameters."
+                    fn))
+              ((eq (car (last formals)) limit)
+               (memoize-partial-translations-msg-formals (cdr fns) limit fn0
+                                                         wrld))
+              (t
+               (msg "The formal parameter lists for function symbols ~x0 and ~
+                     ~x1 have different final elements (of ~x2 and ~x3, ~
+                     respectively)."
+                    fn0 fn limit (car (last formals)))))))))
+
+(mutual-recursion
+
+; For context, see the Essay on Memoization with Partial Functions
+; (Memoize-partial), in particular the Proposition there.
+
+(defun free-exactly-in-last-arg-of-calls (limit fns-limit term)
+  (cond
+   ((eq term limit)
+    nil)
+   ((or (variablep term)
+        (fquotep term))
+    t)
+   ((flambdap (ffn-symb term))
+    (let ((posn (position limit (lambda-formals (ffn-symb term))))
+          (args (fargs term)))
+      (and (free-exactly-in-last-arg-of-calls limit fns-limit
+                                              (lambda-body (ffn-symb term)))
+           (cond
+            (posn
+
+; We recognize terms
+;   ((lambda (x0 x1 ... limit ... xk) body)
+;    (t0 t1 ... limit ... tk))
+; for which all occurrences of limit in each ti and in body are exactly as the
+; last argument of a call of a function in fns-limit.  Evaluation then works as
+; described in the Essay on Memoization with Partial Functions
+; (Memoize-partial).
+
+             (and (eq (nth posn args) limit)
+                  (free-exactly-in-last-arg-of-calls-lst
+                   limit fns-limit (take posn args) nil)
+                  (free-exactly-in-last-arg-of-calls-lst
+                   limit fns-limit (nthcdr (1+ posn) args) nil)))
+            (t (free-exactly-in-last-arg-of-calls-lst limit fns-limit args
+                                                      nil))))))
+   (t (free-exactly-in-last-arg-of-calls-lst
+       limit fns-limit (fargs term)
+       (member-eq (ffn-symb term) fns-limit)))))
+
+(defun free-exactly-in-last-arg-of-calls-lst (limit fns-limit args
+                                                    last-is-limit)
+  (cond
+   ((endp args) t)
+   ((and last-is-limit
+         (endp (cdr args)))
+    (eq (car args) limit))
+   (t (and (free-exactly-in-last-arg-of-calls limit fns-limit (car args))
+           (free-exactly-in-last-arg-of-calls-lst limit fns-limit (cdr args)
+                                                  last-is-limit)))))
+)
+
+(defun memoize-partial-translations-msg-bodies (tail fns-limit limit wrld)
+
+; The error cases below, except for the one about limit occurring free, will
+; probably never occur, because such checks are already made on the
+; untranslated bodies (see memoize-partial-supporting-events-1).  But we make
+; them here anyhow, for extra confidence in the completeness of our checks.
+
+  (cond
+   ((endp tail) nil)
+   (t
+    (let* ((fn (car tail))
+           (body (body fn nil wrld))
+           (str "Unexpected form for translated body of ~x0"))
+      (case-match body
+        (('IF ('ZP !limit)
+              &
+              (('LAMBDA (!limit . vars) body)
+               ('binary-+ ''-1 !limit)
+               . vars))
+         (declare (ignore vars))
+         (if (free-exactly-in-last-arg-of-calls limit fns-limit body)
+             (memoize-partial-translations-msg-bodies
+              (cdr tail) fns-limit limit wrld)
+           (msg "The limit variable ~x0 fails to occur free where expected in ~
+                 the body of the definition of function ~x1 (essentially, as ~
+                 the last argument of each recursive call)."
+                limit fn)))
+        (& (msg "~@0 (must be of the form (IF (ZP LIMIT) & &))."
+                (msg str fn))))))))
+
+(defun memoize-partial-translations-msg (fns-limit wrld)
+
+; Fns-limit is a non-empty list of function symbols that equals the 'recursivep
+; property in wrld of the first member of the list; thus, this list represents
+; exactly the set of functions introduced by a single mutual-recursion.  This
+; function checks criteria from the Essay on Memoization with Partial Functions
+; (Memoize-partial) about the translated bodies of the function symbols in
+; fns-limit.
+
+; If no problems are found then nil is returned.  Otherwise the return value is
+; a suitable error message.
+
+  (assert$
+   (and (all-function-symbolps fns-limit wrld)
+        (consp fns-limit))
+   (let* ((fn (car fns-limit))
+          (limit (car (last (formals fn wrld)))))
+     (or (memoize-partial-translations-msg-formals
+          fns-limit limit fn wrld)
+         (memoize-partial-translations-msg-bodies
+          fns-limit fns-limit limit wrld)))))
+
+(defun partial-functions-table-guard-msg (key val wrld)
+
+; Key is a "limit" ("clocked", "total") function, such as fib-limit in
+; community books books/system/tests/memoize-partial.lisp.  See also the Essay
+; on Memoization with Partial Functions (Memoize-partial).
+
+  (declare (xargs :guard t))
+  (cond
+   ((not (and (symbolp key)
+              (function-symbolp key wrld)))
+    (msg "The key is not a known function symbol."))
+   ((not (eq (symbol-class key wrld) :common-lisp-compliant))
+    (msg "The key is a function symbol but it is not guard-verified."))
+   ((null (cdr (formals key wrld)))
+    (msg "The key is a guard-verified function symbol but it needs at least ~
+          two formal parameters."))
+   ((not (memoize-partial-tuple-shape-p val))
+    (msg "The value is not a list of 5-tuples where each tuple consists of ~
+          four symbols followed by one more element."))
+   (t
+    (let ((fns-limit (strip-cadrs val))
+          (r (getpropc key 'recursivep nil wrld)))
+      (cond
+       ((not r)
+        (msg "The key is a non-recursive function symbol."))
+       ((not (equal fns-limit r))
+        (cond ((cdr r)
+               (msg "The strip-cadrs of the proposed value is not the list of ~
+                     function symbols, in order, defined by mutual-recursion ~
+                     with the key.  That expected list of functions is ~x0."
+                    r))
+              (t
+               (msg "The proposed value is not a one-element list containing ~
+                     the key."))))
+
+; At this point, we know that key is a guard-verified function symbol whose
+; 'recursivep property agrees with the function symbols in the cadr positions
+; of val -- hence they are also guard-verified.
+
+       (t
+        (mv-let (msg defs table-event)
+          (memoize-partial-supporting-events val wrld)
+          (declare (ignore table-event))
+          (or msg
+              (let ((bad-events (collect-non-redundant defs wrld)))
+                (cond
+                 (bad-events
+                  (msg "The following ~#0~[event is~/events are~] ~
+                        missing:~|~%~*1"
+                       bad-events
+                       (list "" "~X*2~|~%" "~X*2~|~%" "~X*2~|~%"
+                             bad-events
+                             (cons #\2 nil))))
+                 (t (memoize-partial-translations-msg fns-limit
+                                                      wrld))))))))))))
+
+(defun partial-functions-table-guard (fn val wrld)
+  (let ((msg (partial-functions-table-guard-msg fn val wrld)))
+    (cond (msg (er hard 'partial-functions-table-guard
+                   "Illegal partial-functions-table key and value (see :DOC ~
+                    memoize-partial):~|key = ~y0value  = ~y1Reason:~%~@2~|~%"
+                   fn val msg))
+          (t t))))
+
+(table partial-functions-table nil nil
+       :guard
+       (partial-functions-table-guard key val world))
+
+(defun memoize-table-chk (key val wrld)
+
+; Although this function is generally only called with #+hons, nevertheless we
+; define it independently of #+hons so that it has the same definition in the
+; hons and non-hons versions of ACL2.
+
+; The usual table guard mechanism provides crude error messages when there is a
+; violation.  We avoid that problem by causing a hard error.  We rely on the
+; fact that illegal and hard-error return nil.
+
+; The memoize-table maps :common-lisp-compliant function symbols (to be
+; memoized or unmemoized) to nil (unmemoized) or to a non-empty alist that
+; stores relevant information, such as the condition (see memoize-form).  The
+; guard requirement then ensures that when we call the raw Lisp version of fn,
+; then since the guard for fn must hold in that case, so does the guard for
+; condition-fn.  The body of condition-fn can therefore be called in raw Lisp
+; on the arguments of any call of fn made in raw Lisp from the ACL2
+; read-eval-print loop.  This is important because the memoized function body
+; includes code from the body of condition-fn.
+
+  (let* ((ctx '(table . memoize-table))
+         (str "Illegal attempt to set memoize-table:  ")
+         (memoize-table (table-alist 'memoize-table wrld))
+         (key-formals (if (symbolp key)
+                          (getpropc key 'formals t wrld)
+                        t))
+         (key-class (symbol-class key wrld))
+         (val (if (symbol-alistp val)
+                  val
+                (er hard ctx
+                    "~@0Function symbol ~x1 must be associated with a ~
+                     symbol-alistp, unlike ~x2."
+                    str key val)))
+         (condition (and val (cdr (assoc-eq :condition-fn val))))
+         (inline (and val (cdr (assoc-eq :inline val))))
+         (aokp (and val (cdr (assoc-eq :aokp val))))
+         (total (and val (cdr (assoc-eq :total val)))))
+    (let ((result
+           (cond
+            ((eq key-formals t)
+             (er hard ctx
+                 "~@0~x1 is not a function symbol."
+                 str key))
+            ((and (or condition (cdr (assoc-eq :inline val)))
+
+; The preceding term says that we are not profiling.  Why not replace it simply
+; with condition, allowing :inline t?  Perhaps we could, but that would require
+; a bit of thought since memoization with :inline t will modify recursive
+; calls, and we would need to be sure that this replacement doesn't violate
+; syntactic restrictions.  We can think about this if someone has reason to
+; memoize with :condition nil but not :inline nil.
+
+                  (member-eq 'state (stobjs-in key wrld)))
+             (er hard ctx
+                 "~@0~x1 takes ACL2's STATE as an argument (illegal except ~
+                  for profiling)."
+                 str key))
+            ((not (booleanp aokp))
+             (er hard ctx
+                 "~@0:aokp has a non-Boolean value, ~x1."
+                 str aokp))
+            ((and (or condition (cdr (assoc-eq :inline val)))
+
+; See comment above for the case of 'state.
+
+                  (non-memoizable-stobjs (stobjs-in key wrld) wrld))
+             (mv-let
+              (abs conc)
+              (filter-absstobjs (non-memoizable-stobjs (stobjs-in key wrld)
+                                                       wrld)
+                                wrld nil nil)
+              (cond
+               ((null abs)
+                (er hard ctx
+                    "~@0~x1 has input stobj~#2~[ ~&2~/s ~&2, each~] ~
+                     introduced with :NON-MEMOIZABLE T.  See :DOC defstobj."
+                    str key conc))
+               ((null conc)
+                (er hard ctx
+                    "~@0~x1 has input abstract stobj~#2~[ ~&2~/s ~&2, each ~
+                     of~] whose corresponding concrete stobj is ~
+                     non-memoizable.  See :DOC defabsstobj."
+                    str key abs))
+               (t
+                (er hard ctx
+                    "~@0~x1 has input concrete stobj~#2~[ ~&2~/s ~&2, each~] ~
+                     introduced with :NON-MEMOIZABLE T.  ~x1 also has input ~
+                     abstract stobj~#3~[ ~&2~/s ~&3, each of~] whose ~
+                     corresponding concrete stobj is non-memoizable.  See ~
+                     :DOC defstobj."
+                    str key conc abs)))))
+            ((member-eq key *stobjs-out-invalid*)
+             (er hard ctx
+                 "~@0~x1 is a primitive without a fixed output signature."
+                 str key))
+            ((and (or condition (cdr (assoc-eq :inline val)))
+
+; See comment above for the case of 'state.
+
+                  (not (all-nils (stobjs-out key wrld))))
+             (let ((stobj (find-first-non-nil (stobjs-out key wrld))))
+               (er hard ctx
+                   "~@0~x1 returns a stobj, ~x2 (illegal except for profiling)."
+                   str key stobj)))
+            ((member-eq key *hons-primitive-fns*)
+             (er hard ctx
+                 "~@0~x1 is a HONS primitive."
+                 str key))
+            ((not (cltl-def-from-name key wrld))
+             (er hard ctx
+                 "~@0~x1 is not a defined ACL2 function."
+                 str key))
+            ((getpropc key 'constrainedp nil wrld)
+             (er hard ctx
+                 "~@0~x1 is constrained.  You may instead wish to memoize a ~
+                  caller or to memoize its attachment (see :DOC defattach)."
+                 str key))
+            ((and inline
+
+; The test below isn't right if a built-in function with raw Lisp code has been
+; promoted to logic mode after assigning state global
+; 'verify-termination-on-raw-program-okp to t.  However, that assignment may
+; only be done with a trust tag, and the documentation warns that doing this
+; promotion could be unsound.  So we don't worry about that case here.
+
+; Note that here we are disallowing inline memoization of apply$-lambdas.
+; That's fine; we essentially do our own memoization via the cl-cache.
+
+                  (if (eq key-class :program)
+                      (member-eq key *initial-program-fns-with-raw-code*)
+                    (member-eq key *initial-logic-fns-with-raw-code*)))
+             (er hard ctx
+                 "~@0The built-in function symbol ~x1 has associated raw-Lisp ~
+                  code, hence is illegal to memoize unless :RECURSIVE is nil."
+                 str key))
+            ((let ((pair (assoc-eq :memo-table-init-size val)))
+               (and pair (not (posp (cdr pair)))))
+             (er hard ctx
+                 "~@0The :memo-table-init-size must be a positive integer, ~
+                  unlike ~x1."
+                 str (cdr (assoc-eq :memo-table-init-size val))))
+            ((not (memoize-table-chk-commutative str key val ctx wrld))
+             nil) ; an error was presumably already caused
+            ((and total
+                  (not (cltl-def-memoize-partial key total wrld)))
+             (er hard ctx
+                 "~@0Unable to find executable Common Lisp definition for ~x1 ~
+                  in the table, ~x2.  Presumably you are trying to use the ~
+                  :total option of memoize directly, which is not ~
+                  recommended.  See :DOC memoize-partial."
+                 str total 'partial-functions-table))
+
+; The next two checks require that we do not memoize or unmemoize a function
+; that is already memoized or unmemoized, respectively.  The function
+; maybe-push-undo-stack relies on this check.
+
+            ((and val (cdr (assoc-eq key memoize-table)))
+             (er hard ctx
+                 "~@0Function ~x1 is already memoized."
+                 str key))
+            ((and (null val) (null (cdr (assoc-eq key memoize-table))))
+             (er hard ctx
+                 "~@0Cannot unmemoize function ~x1 because it is not ~
+                  currently memoized."
+                 str key))
+            ((and (eq key-class :ideal)
+                  val ; memoize, not unmemoize
+                  (let* ((pair (assoc-eq :ideal-okp val))
+                         (okp (if pair
+                                  (cdr pair)
+                                (cdr (assoc-eq :memoize-ideal-okp
+                                               (table-alist 'acl2-defaults-table
+                                                            wrld))))))
+                    (cond ((eq okp t)
+                           nil)
+                          ((not okp)
+                           (er hard ctx
+                               "~@0The function symbol ~x1 is in :logic mode ~
+                                but has not had its guards verified.  Either ~
+                                run ~x2, or specify :IDEAL-OKP ~x3 in your ~
+                                ~x4 call, or else evaluate ~x5 or ~x6."
+                               str key 'verify-guards t 'memoize
+                               '(table acl2-defaults-table :memoize-ideal-okp t)
+                               '(table acl2-defaults-table :memoize-ideal-okp :warn)))
+                          (t ; okp is :warn
+                           (prog2$ (warning$-cw
+                                    'memoize-table-chk
+                                    "The function ~x0 to be memoized is in ~
+                                     :logic mode but has not had its guards ~
+                                     verified.  Memoization might therefore ~
+                                     not take place; see :DOC memoize."
+                                    key)
+                                   nil))))))
+
+; Finally, check conditions on the memoization condition function.
+
+            (t
+             (let ((val-formals (and condition
+                                     (if (symbolp condition)
+                                         (getpropc condition 'formals t wrld)
+                                       t)))
+                   (val-guard (and condition
+                                   (if (symbolp condition)
+                                       (getpropc condition 'guard *t* wrld)
+                                     t))))
+
+               (cond
+                ((or (eq val nil)
+                     (member-eq condition '(t nil)))
+                 t)
+                ((eq val-formals t)
+                 (er hard ctx
+                     "~@0The proposed memoization condition function, ~x1, is ~
+                      neither T, NIL, nor a function symbol known to ACL2."
+                     str condition))
+                ((not (and (symbolp condition)
+                           (or (eq key-class :program)
+                               (eq (symbol-class condition wrld)
+                                   :common-lisp-compliant))))
+                 (er hard ctx
+                     "~@0Function ~x1 cannot serve as a memoization condition ~
+                      function for function ~x2, because unlike ~x2, ~x1 is ~
+                      not common-lisp-compliant (a logic-mode function that ~
+                      has had its guards verified)."
+                     str condition key))
+                ((not (equal key-formals val-formals))
+                 (er hard ctx
+                     "~@0Function ~x1 cannot serve as a memoization condition ~
+                      function for ~x2, because the two functions have ~
+                      different formal parameter lists."
+                     str condition key))
+                ((not (equal (getpropc key 'guard *t* wrld)
+                             val-guard))
+                 (er hard ctx
+                     "~@0Function ~x1 cannot serve as a memoization condition ~
+                      function for ~x2, because the two functions have ~
+                      different guards."
+                     str condition key))
+                (t t)))))))
+      (progn$
+       (or (global-val 'hons-enabled wrld)
+           (warning$-cw (if val 'memoize 'unmemoize)
+                        "The ~#0~[un~/~]memoization request for ~x1 is being ~
+                         ignored because this ACL2 executable is not ~
+                         hons-enabled."
+                        (if val 1 0)
+                        key))
+       (and val
+            (let ((stobjs-in (stobjs-in key wrld)))
+              (cond
+               ((and condition
+                     (find-first-non-nil stobjs-in))
+                (let ((input-stobjs (collect-non-x nil stobjs-in)))
+                  (observation-cw
+                   ctx
+                   "The function ~x0 has input stobj~#1~[~/s~] ~&1.  The ~
+                    memoization table for ~x0 will be cleared whenever ~
+                    ~#2~[this stobj is~/either of these stobjs is~/any of ~
+                    these stobjs is~] updated.  Any update of a stobj may ~
+                    therefore be significantly slower, perhaps by a factor of ~
+                    5 or 10, when it is an input of a memoized function."
+                   key
+                   input-stobjs
+                   (zero-one-or-more (cdr input-stobjs)))))
+               (t nil))))
+       result))))
+
+(table memoize-table nil nil
+       :guard
+       (memoize-table-chk key val world))
+
+(defun memoize-partial-calls (tuples)
+  (declare (xargs :guard (and (symbol-alistp tuples)
+                              (true-list-listp tuples))))
+  (cond ((endp tuples) nil)
+        (t (cons `(memoize ',(caar tuples) :total ',(cadar tuples)
+                           ,@(cddddr (car tuples)))
+                 (memoize-partial-calls (cdr tuples))))))
+
+(defun memoize-partial-tuple-1 (x1 x2 ctx str fn fn-limit
+                                   change stable)
+  (declare (xargs :guard (and (keyword-value-listp x1)
+                              (keyword-value-listp x2)
+                              (stringp str))))
+  (cond ((endp x1)
+         (list* fn
+                fn-limit
+                (or change
+                    (add-suffix fn-limit "-CHANGE"))
+                (or stable
+                    (add-suffix fn-limit "-STABLE"))
+                x2))
+        ((eq (car x1) :change)
+         (cond (change (er hard ctx str
+                           (msg "The keyword :CHANGE appears more than once ~
+                                 for the tuple associated with ~x0"
+                                fn)))
+               (t (memoize-partial-tuple-1 (cddr x1) x2 ctx str fn fn-limit
+                                           (cadr x1) stable))))
+        ((eq (car x1) :stable)
+         (cond (stable (er hard ctx str
+                           (msg "The keyword :STABLE appears more than once ~
+                                 for the tuple associated with ~x0"
+                                fn)))
+               (t (memoize-partial-tuple-1 (cddr x1) x2 ctx str fn fn-limit
+                                           change (cadr x1)))))
+        (t
+         (memoize-partial-tuple-1 (cddr x1)
+                                  (list* (car x1) (cadr x1)
+                                         (if (assoc-keyword (car x1) x2)
+                                             (remove-keyword (car x1) x2)
+                                           x2))
+                                  ctx str fn fn-limit change stable))))
+
+(defun memoize-partial-tuple (tuple args ctx str)
+  (declare (xargs :guard (and (consp tuple)
+                              (consp (cdr tuple))
+                              (keyword-value-listp (cddr tuple))
+                              (keyword-value-listp args)
+                              (stringp str))))
+  (memoize-partial-tuple-1 (cddr tuple) args ctx str
+                           (car tuple) (cadr tuple)
+                           nil nil))
+
+(defun memoize-partial-tuples (tuples args ctx)
+
+; Tuples is a :total argument of a call of memoize, and args is a keyword-alist
+; to be used for memoize arguments, possibly overridden for some functions as
+; specified in tuples.  We return tuples of the form (fn fn-limit
+; fn-limit-change fn-limit-stable . memoize-args).
+
+  (declare (xargs :guard (keyword-value-listp args)))
+  (let ((str
+         "Ill-formed argument for memoize-partial: ~@0.  See :DOC ~
+          memoize-partial."))
+    (cond ((null tuples) nil)
+          ((atom tuples) (er hard ctx str
+                             "Not a null-terminated list"))
+          (t (let* ((tuple (car tuples))
+                    (tuple (if (symbolp tuple)
+                               (list tuple (add-suffix tuple "-LIMIT"))
+                             tuple)))
+               (cond ((and (<= 2 (len tuple))
+                           (symbolp (car tuple))
+                           (car tuple)
+                           (symbolp (cadr tuple))
+                           (cadr tuple)
+                           (keyword-value-listp (cddr tuple)))
+                      (cons (memoize-partial-tuple tuple args ctx str)
+                            (memoize-partial-tuples (cdr tuples) args ctx)))
+                     (t (er hard ctx str
+                            (msg "The tuple associated with ~x0 is not of the ~
+                                  form (fn fn-limit :kwd1 val1 ... :kwdn ~
+                                  valn)"
+                                 (car tuple))))))))))
+
+(defun memoize-partial-basic-checks (tuples ctx state)
+
+; These checks are made when executing memoize-partial.  But we should not rely
+; on them; they should also be made, albeit with potentially unhelpful error
+; messages, when attempting to run directly the events otherwise generated by
+; memoize-partial.
+
+  (let* ((fns (strip-cadrs tuples))
+         (wrld (w state))
+         (bad (non-function-symbols fns wrld)))
+    (cond
+     (bad (er soft ctx
+              "You must define ~&0 before submitting your memoize-partial ~
+               form.  See :DOC memoize-partial."
+              bad))
+     (t (let ((bad (collect-non-common-lisp-compliants fns wrld)))
+          (cond
+           (bad
+
+; The defchoose events are agnostic about the guard-verified status of the
+; -limit functions.  It seems simplest to insist that they are guard-verified
+; rather than declaring :ideal mode for the :total function if the -limit
+; function is :ideal.
+
+            (er soft ctx
+                "The function~#0~[ ~&0 is~/s ~&0 are~] not guard-verified.  ~
+                 See :DOC memoize-partial."
+                bad))
+           (t (value nil))))))))
+
+(defmacro memoize-partial (&whole whole tuples &rest args)
+
+; Tuples has members of the form (fn fn-limit), (fn fn-limit-change), or (fn
+; fn-limit-change fn-limit-stable).  That syntax is consistent with that of
+; (memoize fn :total fn-limit), which is treated as (memoize fn :total (list
+; fn-limit)): fn is defined nonconstructively, and a modification of fn-limit
+; is a partial function used for its execution.
+
+  (let ((ctx 'memoize-partial))
+    (cond
+      ((and (true-listp tuples)
+            (equal (length tuples) 2)
+            (equal (car tuples) 'quote))
+       (er hard ctx "The argument for memoize-partial should not be quoted.  ~
+                     Perhaps you intended that argument to be ~x0.  See :DOC ~
+                     memoize-partial."
+           (cadr tuples)))
+      ((not (keyword-value-listp args))
+       (er hard ctx "The arguments to MEMOIZE-PARTIAL after the first ~
+                     argument should be an alternating list of keywords and ~
+                     values (keyword first), which will be passed to ~
+                     MEMOIZE.  The call ~x0 is thus illegal.  See :DOC ~
+                     memoize-partial."
+           whole))
+      (t (let ((tuples (memoize-partial-tuples (if (symbolp tuples)
+                                                   (list tuples)
+                                                 tuples)
+                                               args
+                                               ctx)))
+           `(progn
+              (make-event
+               (er-progn
+                (memoize-partial-basic-checks ',tuples ',ctx state)
+                (mv-let (msg defs table-event)
+                  (memoize-partial-supporting-events ',tuples (w state))
+                  (cond (msg (er soft ',ctx "~@0" msg))
+                        (t (value (cons 'progn
+                                        (append defs
+                                                (list table-event))))))))
+               :on-behalf-of :quiet!)
+              ,@(memoize-partial-calls tuples)))))))
+

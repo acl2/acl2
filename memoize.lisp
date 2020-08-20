@@ -117,6 +117,7 @@
                      memo-table-init-size
                      aokp
                      stats
+                     total
                      ideal-okp)
 
 ; Jared Davis suggests that we consider bundling up these 13 parameters, for
@@ -141,6 +142,7 @@
                                        *mht-default-size*))
                             (cons :aokp ,aokp)
                             (cons :stats ,stats)
+                            (cons :total ,total)
                             (and (not (eq ,ideal-okp :default))
                                  (list (cons :ideal-okp ,ideal-okp)))))
               (value-triple (deref-macro-name
@@ -167,6 +169,7 @@
                (memo-table-init-size ,memo-table-init-size)
                (aokp ,aokp)
                (stats ,stats)
+               (total ,total)
                (ideal-okp ,ideal-okp))
           (cond ((not (and
                        (symbolp fn)
@@ -225,6 +228,7 @@
                                             *mht-default-size*))
                                   (cons :aokp ',aokp)
                                   (cons :stats ,stats)
+                                  (cons :total ',total)
                                   (and (not (eq ',ideal-okp :default))
                                        (list (cons :ideal-okp ',ideal-okp)))))
                     (value-triple ',fn)))))))
@@ -239,6 +243,7 @@
                                         *mht-default-size*))
                               (cons :aokp ',aokp)
                               (cons :stats ,stats)
+                              (cons :total ,total)
                               (and (not (eq ',ideal-okp :default))
                                    (list (cons :ideal-okp ',ideal-okp)))))
                 (value-triple (deref-macro-name
@@ -254,6 +259,7 @@
                       memo-table-init-size
                       aokp
                       (stats ':default)
+                      total
                       (ideal-okp ':default)
                       (verbose 't))
 
@@ -274,7 +280,7 @@
   (declare (xargs :guard (booleanp recursive))
            (ignorable condition-p condition condition-fn hints otf-flg
                       recursive commutative forget memo-table-init-size
-                      aokp stats ideal-okp verbose))
+                      aokp stats total ideal-okp verbose))
 
   #-acl2-loop-only
   `(progn (when (eql *ld-level* 0)
@@ -325,10 +331,12 @@
                                  ',memo-table-init-size
                                  ',aokp
                                  ',stats
+                                 ',total
                                  ',ideal-okp)))))
              (t (memoize-form fn condition condition-p condition-fn
                               hints otf-flg inline commutative forget
-                              memo-table-init-size aokp stats ideal-okp)))))
+                              memo-table-init-size aokp stats total
+                              ideal-okp)))))
       (cond (verbose form)
             (t `(with-output
                  :off (summary prove event)

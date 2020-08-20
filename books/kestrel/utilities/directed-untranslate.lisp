@@ -2473,7 +2473,7 @@
              (directed-untranslate-rec
               (list 'b* bindings rest)
               rest2 sterm iff-flg lflg exec-p wrld))))
-         (& (er hard 'directed-untranslate-rec
+         (& (er hard 'directed-untranslate-b*
                 "Implementation error: unexpected translation of ~x0:~|~x1."
                 uterm tterm))))
       ((eq var '&)

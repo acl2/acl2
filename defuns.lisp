@@ -6954,7 +6954,8 @@
 
 (defconst *xargs-keywords*
 
-; Keep this in sync with :doc xargs.
+; Keep this in sync with :doc xargs.  Also, if you add to this list, consider
+; modifying memoize-partial-declare accordingly.
 
   '(:guard :guard-hints :guard-debug :guard-simplify
            :hints :measure :measure-debug
@@ -10468,7 +10469,9 @@
 ; "real" value of the function is a list of items extracted from lst during the
 ; checking.  These items are:
 
-;    names     - the names of the fns in the clique
+;    names     - the names of the fns in the clique, in order (as that order is
+;                expected by partial-functions-table-guard; see
+;                partial-functions-table-guard-msg)
 ;    arglists  - their formals
 ;    docs      - their documentation strings
 ;    pairs     - the (section-symbol . citations) pairs parsed from docs
