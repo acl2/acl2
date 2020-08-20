@@ -16,6 +16,11 @@
 ;; defined in the world.  It currently checks for calls of CW with missing
 ;; arguments and calls of IF with resolvable tests.
 
+;; Usage: Include the linter first, then the books to be checked.  Then call
+;; (run-linter).  Use option :check :all to check the linter itself, any books
+;; included before the linter, and the ACL2 system.  Otherwise, such things are
+;; not checked.
+
 ;; The linter detects:
 ;;
 ;; - Uses of format strings where too few or too many values are given.
@@ -411,26 +416,35 @@
       (prog2$ (check-defun fn state)
               (check-defuns (rest fns) state)))))
 
-(defun all-defuns-in-world (wrld acc)
-  (declare (xargs; :stobjs state
-                  :mode :program))
-  (if (atom wrld)
+(defun all-defuns-in-world (wrld triple-to-stop-at acc)
+  (declare (xargs :guard (and (plist-worldp wrld)
+                              (true-listp acc))))
+  (if (endp wrld)
       (reverse acc)
-    (let* ((entry (first wrld))
-           (symb (car entry))
-           (prop (cadr entry)))
-      (if (eq prop 'unnormalized-body)
-          (all-defuns-in-world (rest wrld) (cons symb acc))
-        (all-defuns-in-world (rest wrld) acc)))))
+    (let ((triple (first wrld)))
+      (if (equal triple triple-to-stop-at)
+          (prog2$ (cw "~%Note: Not checking anything in the linter itself, any books included before the linter, or the ACL2 system itself.  To override, use linter option :check :all.~%~%")
+                  (reverse acc))
+        (let ((symb (car triple))
+              (prop (cadr triple)))
+          (if (eq prop 'unnormalized-body)
+              (all-defuns-in-world (rest wrld) triple-to-stop-at (cons symb acc))
+            (all-defuns-in-world (rest wrld) triple-to-stop-at acc)))))))
 
-(defun check-all-defuns-fn (state)
+(defun run-linter-fn (check state)
   (declare (xargs :stobjs state
+                  :guard (member-eq check '(:user :all))
                   :mode :program))
   (let* ((wrld (w state))
-         (all-defuns (all-defuns-in-world wrld nil)))
-    (prog2$ (cw "Applying linter:~%~%")
+         (triple-to-stop-at (if (eq check :user)
+                                '(end-of-linter label . t)
+                              nil))
+         (all-defuns (all-defuns-in-world wrld triple-to-stop-at nil)))
+    (prog2$ (cw "Applying linter to ~x0 defuns:~%~%" (len all-defuns))
             (check-defuns all-defuns state))))
 
 ;; Call this macro to check every defun in the current ACL2 world.
-(defmacro check-all-defuns ()
-  '(check-all-defuns-fn state))
+(defmacro run-linter (&key (check ':user))
+  `(run-linter-fn ',check state))
+
+(deflabel end-of-linter)
