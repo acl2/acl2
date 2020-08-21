@@ -238,7 +238,7 @@
       (:executable-counterpart fast-alist-free)
       (:executable-counterpart svexl-eval-wog)
       (:rewrite svexl-eval-is-svexl-eval-wog)
-      (:rewrite svexl-eval-wog-opener)
+      (:rewrite svexl-eval-wog-for-rp)
       ;;(:rewrite rp::svexl-eval-wog-opener_lambda-opener)
       (:rewrite svexl-eval-aux-wog-nil)
 
@@ -261,7 +261,7 @@
       (:executable-counterpart svex-p)
 
       (:executable-counterpart svexl-node-p)
-      (:executable-counterpart svl::svexl->node-alist$inline)
+      (:executable-counterpart svl::svexl->node-array$inline)
       (:executable-counterpart svl::svexl->top-node$inline)
     
       (:rewrite svexlist-eval-wog-nil-def)
@@ -328,12 +328,12 @@
       (:executable-counterpart sv::4vec-part-select)
       (:executable-counterpart sv::4vec-part-install)
 
-      (:rewrite svexllist-eval-wog-opener)
+      (:rewrite svexllist-eval-wog-for-rp)
       ;(:rewrite rp::svexllist-eval-wog-opener_lambda-opener)
       (:executable-counterpart svexllist->top-nodelist$inline)
-      (:executable-counterpart svexllist->node-alist$inline)
+      (:executable-counterpart svexllist->node-array$inline)
       (:executable-counterpart svexllist-p)
-      (:executable-counterpart svexl-node-alist-p)
+      (:executable-counterpart svexl-node-array-p)
       (:executable-counterpart svexl-node-p)
       (:executable-counterpart equal)
       (:executable-counterpart =)

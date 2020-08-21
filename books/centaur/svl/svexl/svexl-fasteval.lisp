@@ -38,7 +38,7 @@
                     svex-env-fastlookup-wog
                     sv::svexlist-p
                     svexl-node-p
-                    svexl-node-alist-p
+                    svexl-node-array-p
                     sv::svex-p)
                    ())))
   (local
@@ -60,18 +60,18 @@
               :in-theory (e/d (node-env-p) ()))))))
 
  (define svexl-fasteval-aux ((x svexl-node-p)
-                             (nodes-alist svexl-node-alist-p)
+                             (nodes-alist svexl-node-array-p)
                              (node-env node-env-p)
                              (env sv::svex-env-p)
                              (limit natp))
    :measure (nfix limit)
    :verify-guards nil
    :returns (mv (res sv::4vec-p :hyp (and (svexl-node-p x)
-                                          (svexl-node-alist-p nodes-alist)
+                                          (svexl-node-array-p nodes-alist)
                                           (node-env-p node-env)
                                           (sv::svex-env-p env)))
                 (new-node-env  node-env-p :hyp (and (svexl-node-p x)
-                                                    (svexl-node-alist-p nodes-alist)
+                                                    (svexl-node-array-p nodes-alist)
                                                     (node-env-p node-env)
                                                     (sv::svex-env-p env)))
                 (valid booleanp))
@@ -100,16 +100,16 @@
         (mv (sv::svex-apply x.fn args) node-env valid)))))
 
  (define svexllist-fasteval-aux ((lst svexl-nodelist-p)
-                                 (nodes-alist svexl-node-alist-p)
+                                 (nodes-alist svexl-node-array-p)
                                  (node-env node-env-p)
                                  (env sv::svex-env-p)
                                  (limit natp))
    :returns (mv (res sv::4veclist-p :hyp (and (svexl-nodelist-p lst)
-                                              (svexl-node-alist-p nodes-alist)
+                                              (svexl-node-array-p nodes-alist)
                                               (node-env-p node-env)
                                               (sv::svex-env-p env)))
                 (new-node-env  node-env-p :hyp (and (svexl-nodelist-p lst)
-                                                    (svexl-node-alist-p nodes-alist)
+                                                    (svexl-node-array-p nodes-alist)
                                                     (node-env-p node-env)
                                                     (sv::svex-env-p env)))
                 (valid booleanp))
@@ -133,15 +133,15 @@
 (define svexl-fasteval ((svexl svexl-p)
                         (env sv::svex-env-p))
   (b* (((svexl svexl) svexl)
-       (svexl.node-alist (make-fast-alist svexl.node-alist))
+       (svexl.node-array (make-fast-alist svexl.node-array))
        ((mv res node-env valid)
         (svexl-fasteval-aux svexl.top-node
-                            svexl.node-alist
+                            svexl.node-array
                             nil
                             env
                             (expt 2 50)))
        (- (fast-alist-free node-env))
-       (- (fast-alist-free svexl.node-alist)))
+       (- (fast-alist-free svexl.node-array)))
     (if valid
         res
       (progn$
@@ -154,15 +154,15 @@
 (define svexllist-fasteval ((svexllist svexllist-p)
                             (env sv::svex-env-p))
   (b* (((svexllist svexllist) svexllist)
-       (svexllist.node-alist (make-fast-alist svexllist.node-alist))
+       (svexllist.node-array (make-fast-alist svexllist.node-array))
        ((mv res node-env valid)
         (svexllist-fasteval-aux svexllist.top-nodelist
-                                svexllist.node-alist
+                                svexllist.node-array
                                 nil
                                 env
                                 (expt 2 50)))
        (- (fast-alist-free node-env))
-       (- (fast-alist-free svexllist.node-alist)))
+       (- (fast-alist-free svexllist.node-array)))
     (if valid
         res
       (progn$

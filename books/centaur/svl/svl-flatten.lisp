@@ -3475,9 +3475,9 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
  (verify-guards get-sv-submodules-fn))
 
 
-(define svex-simplify-rules-fn (state)
+(define svex-simplify-rules-fn ()
   (acl2::append-without-guard
-   (rp::get-enabled-meta-rules-from-table nil state)
+   *svex-simplify-meta-rules*
    *svex-simplify-rules*))
 
 (in-theory (disable (:e svex-simplify-rules-fn)))
@@ -3563,7 +3563,7 @@ them.
                                                  dont-flatten))
 
        (rp-state (rp::rp-state-new-run rp::rp-state))
-       (rp-state (rp::rp-state-init-rules (svex-simplify-rules-fn state) nil nil rp::rp-state state))
+       (rp-state (rp::rp-state-init-rules (svex-simplify-rules-fn) nil nil rp::rp-state state))
 
        (- (cw "Starting to flatten modules and create SVL design... ~%"))
        ((mv modules rp::rp-state)
