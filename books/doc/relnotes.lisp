@@ -491,6 +491,9 @@
     "The macro @(tsee fty::defomap) has been improved
      to generate additional theorems.")
 
+   (xdoc::p
+    "A fixtype @(tsee nat-set) of osets of natural numbers has been added.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "java::java" "Java Library"))
