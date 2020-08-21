@@ -1610,12 +1610,16 @@
        (disable-event?
         (if enable
             nil
-          (let ((rwrule (if thm-name
+          (let ((fn/defrule (cond ((eq constrain nil) fun)
+                                  ((eq constrain t) (add-suffix fun
+                                                                "-DEFINITION"))
+                                  (t constrain)))
+                (rwrule (if thm-name
                             (cadr thm-name)
                           (if (eq quant 'forall)
                               (add-suffix fun "-NECC")
                             (add-suffix fun "-SUFF")))))
-            `((in-theory (disable ,fun ,rwrule))))))
+            `((in-theory (disable ,fn/defrule ,rwrule))))))
        (table-event?
         (if funvars
             `((table second-order-functions ',fun ',funvars))
