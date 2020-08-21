@@ -328,53 +328,58 @@
   (declare (xargs :guard (pseudo-termp term)
                   :mode :program
                   :stobjs state))
-  (and (not (member-eq :equality-variants suppress))
-       (b* ((arg1 (farg1 term))
-            (arg2 (farg2 term))
-            ((mv type-set1 &)
-             (type-set arg1 nil nil type-alist (ens state) (w state) nil nil nil))
-            ((mv type-set2 &)
-             (type-set arg2 nil nil type-alist (ens state) (w state) nil nil nil))
-            ;;(decoded-ts1 (decode-type-set type-set1))
-            ;;(decoded-ts2 (decode-type-set type-set2))
-            (arg1-symbolp (ts-subsetp type-set1 *ts-symbol*))
-            (arg2-symbolp (ts-subsetp type-set2 *ts-symbol*))
-            (arg1-numberp (ts-subsetp type-set1 *ts-acl2-number*))
-            (arg2-numberp (ts-subsetp type-set2 *ts-acl2-number*))
-            (arg1-eqlablep (or arg1-symbolp
-                               arg1-numberp
-                               (ts-subsetp type-set1 *ts-character*)))
-            (arg2-eqlablep (or arg2-symbolp
-                               arg2-numberp
-                               (ts-subsetp type-set2 *ts-character*))))
-         (progn$ (if arg1-symbolp
-                     (if arg2-symbolp
-                         (cw "(In ~x0, EQUAL test ~x1 could use EQ since both arguments are known to be symbols.)~%~%"
-                             fn-being-checked orig-term arg1 arg2)
-                       (cw "(In ~x0, EQUAL test ~x1 could use EQ since ~x2 is known to be a symbol.)~%~%"
-                           fn-being-checked orig-term arg1))
-                   (if arg2-symbolp
-                       (cw "(In ~x0, EQUAL test ~x1 could use EQ since ~x2 is known to be a symbol.)~%~%"
-                           fn-being-checked orig-term arg2)
-                     nil))
-                 (and arg1-numberp
-                      arg2-numberp
-                      (cw "(In ~x0, EQUAL test ~x1 could use = since both arguments are known to be numbers.)~%~%"
-                          fn-being-checked orig-term arg1 arg2))
-                 (and (not arg1-symbolp)
-                      (not arg2-symbolp)
-                      (not (and arg1-numberp
-                                arg2-numberp))
-                      (if arg1-eqlablep
-                          (if arg2-eqlablep
-                              (cw "(In ~x0, EQUAL test ~x1 could use EQL since both arguments are known to be numbers, symbols, or characters.)~%~%"
-                                  fn-being-checked orig-term arg1 arg2)
-                            (cw "(In ~x0, EQUAL test ~x1 could use EQL since ~x2 is known to be a number, symbol, or character.)~%~%"
-                                fn-being-checked orig-term arg1))
-                        (if arg2-eqlablep
-                            (cw "(In ~x0, EQUAL test ~x1 could use EQL since ~x2 is known to be a number, symbol, or character.)~%~%"
-                                fn-being-checked orig-term arg2)
-                          nil)))))))
+  (prog2$
+   (and (not (member-eq :equal-self suppress))
+        (equal (farg1 term) (farg2 term))
+        ;; substitution may have occured, so the args of term may not actually be idential forms
+        (cw "(In ~x0, EQUAL test ~x1 compares a value with an identical value.)~%~%" fn-being-checked orig-term))
+   (and (not (member-eq :equality-variants suppress))
+        (b* ((arg1 (farg1 term))
+             (arg2 (farg2 term))
+             ((mv type-set1 &)
+              (type-set arg1 nil nil type-alist (ens state) (w state) nil nil nil))
+             ((mv type-set2 &)
+              (type-set arg2 nil nil type-alist (ens state) (w state) nil nil nil))
+             ;;(decoded-ts1 (decode-type-set type-set1))
+             ;;(decoded-ts2 (decode-type-set type-set2))
+             (arg1-symbolp (ts-subsetp type-set1 *ts-symbol*))
+             (arg2-symbolp (ts-subsetp type-set2 *ts-symbol*))
+             (arg1-numberp (ts-subsetp type-set1 *ts-acl2-number*))
+             (arg2-numberp (ts-subsetp type-set2 *ts-acl2-number*))
+             (arg1-eqlablep (or arg1-symbolp
+                                arg1-numberp
+                                (ts-subsetp type-set1 *ts-character*)))
+             (arg2-eqlablep (or arg2-symbolp
+                                arg2-numberp
+                                (ts-subsetp type-set2 *ts-character*))))
+          (progn$ (if arg1-symbolp
+                      (if arg2-symbolp
+                          (cw "(In ~x0, EQUAL test ~x1 could use EQ since both arguments are known to be symbols.)~%~%"
+                              fn-being-checked orig-term arg1 arg2)
+                        (cw "(In ~x0, EQUAL test ~x1 could use EQ since ~x2 is known to be a symbol.)~%~%"
+                            fn-being-checked orig-term arg1))
+                    (if arg2-symbolp
+                        (cw "(In ~x0, EQUAL test ~x1 could use EQ since ~x2 is known to be a symbol.)~%~%"
+                            fn-being-checked orig-term arg2)
+                      nil))
+                  (and arg1-numberp
+                       arg2-numberp
+                       (cw "(In ~x0, EQUAL test ~x1 could use = since both arguments are known to be numbers.)~%~%"
+                           fn-being-checked orig-term arg1 arg2))
+                  (and (not arg1-symbolp)
+                       (not arg2-symbolp)
+                       (not (and arg1-numberp
+                                 arg2-numberp))
+                       (if arg1-eqlablep
+                           (if arg2-eqlablep
+                               (cw "(In ~x0, EQUAL test ~x1 could use EQL since both arguments are known to be numbers, symbols, or characters.)~%~%"
+                                   fn-being-checked orig-term arg1 arg2)
+                             (cw "(In ~x0, EQUAL test ~x1 could use EQL since ~x2 is known to be a number, symbol, or character.)~%~%"
+                                 fn-being-checked orig-term arg1))
+                         (if arg2-eqlablep
+                             (cw "(In ~x0, EQUAL test ~x1 could use EQL since ~x2 is known to be a number, symbol, or character.)~%~%"
+                                 fn-being-checked orig-term arg2)
+                           nil))))))))
 
 ;; For a call of EQL, report an issue if both arguments are known to be
 ;; non-eqlable.  Also report if EQ or = could be used instead.
@@ -554,7 +559,8 @@
 
 ;todo: add support for more here
 (defconst *warning-types*
-  '(:ground-term :guard-debug :equality-variants :context :resolvable-test))
+  '(:ground-term :guard-debug :equality-variants :context :resolvable-test
+                 :equal-self))
 
 (defun run-linter-fn (check suppress state)
   (declare (xargs :stobjs state
