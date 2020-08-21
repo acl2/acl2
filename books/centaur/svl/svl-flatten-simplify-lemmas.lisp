@@ -30,6 +30,9 @@
 
 (in-package "SVL")
 
+
+
+
 (defconst *svl-flatten-simplify-lemmas*
   '(;;4vec-rsh-of-4vec-concat
     ;;4vec-rsh-of-4vec-concat-2

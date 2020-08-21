@@ -159,7 +159,7 @@
 
      svexllist-eval-is-svexllist-eval-wog
      svexl-eval-is-svexl-eval-wog
-     svexl-eval-wog-opener
+     svexl-eval-wog-for-rp
      ;;rp::svexl-eval-wog-opener_lambda-opener
      svex-env-fastlookup-wog-def
      SVEXL-EVAL-AUX-WOG-nil
