@@ -307,7 +307,7 @@
                                (cw "  Test: ~x0~%" orig-test)
                                (cw "  Type: ~x0~%" decoded-ts)
                                (cw "  Term: ~x0~%" term)
-                               (cw "  Type-alist: ~x0~%" type-alist)
+                               (cw "  Type-alist: ~x0~%" (decode-type-alist type-alist))
                                (cw "  Relevant subst: ~x0)~%~%" relevant-subst)))
                    nil)))))))
 
