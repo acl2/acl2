@@ -688,12 +688,14 @@
    (xdoc::p
     "New macros
      @('defund2'),
-     @(tsee soft::define2), and
+     @(tsee soft::define2),
+     @(tsee soft::defund-sk), and
      @(tsee soft::define-sk2)
      have been added.
      These abbreviate
      @(tsee defund),
-     @(tsee define), and
+     @(tsee define),
+     @(tsee defund-sk), and
      @(tsee std::define-sk)
      followed by @(tsee soft::defsoft),
      analogously to other macros as described above.")
