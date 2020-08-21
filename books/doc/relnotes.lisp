@@ -689,7 +689,7 @@
     "New macros
      @('defund2'),
      @(tsee soft::define2),
-     @(tsee soft::defund-sk), and
+     @(tsee soft::defund-sk2), and
      @(tsee soft::define-sk2)
      have been added.
      These abbreviate
