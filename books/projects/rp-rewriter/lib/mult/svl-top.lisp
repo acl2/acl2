@@ -566,3 +566,6 @@
          (adder-and a b))
   :hints (("Goal"
            :in-theory (e/d (adder-and) ()))))
+
+
+(bump-all-enabled-meta-rules)

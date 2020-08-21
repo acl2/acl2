@@ -363,7 +363,7 @@
         (eq vl-insouts nil)
       (and (case-match  vl-insouts
              (((name ins . outs) . rest)
-              (and (stringp name)
+              (and (sv::modname-p name)
                    (wire-list-p ins)
                    (wire-list-p outs)
                    (vl-insouts-sized-p rest)))))))

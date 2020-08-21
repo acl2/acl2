@@ -91,7 +91,6 @@
                       (acl2-numberp size)))))
      :rule-classes :forward-chaining)))
 
-
 (define is-4vec-bitnot (term)
   :progn t
   :inline t
@@ -102,7 +101,7 @@
    (defthm is-4vec-bitnot-implies-fc
      (implies (is-4vec-bitnot term)
               (case-match term
-    (('sv::4vec-bitnot &) t)))
+                (('sv::4vec-bitnot &) t)))
      :rule-classes :forward-chaining)))
 
 (define is-bits (term)
@@ -138,6 +137,21 @@
               (and (case-match orig-term (('rp ''bitp &) t))
                    (equal start 0)
                    (posp size)))
+     :rule-classes :forward-chaining)))
+
+(define is-bits-pos-start-of-a-bitp (orig-term start size)
+  :progn t
+  :inline t
+  (and (case-match orig-term (('rp ''bitp &) t))
+       (posp start)
+       (natp size))
+  ///
+  (local
+   (defthm is-bits-pos-start-of-a-bitp-implies
+     (implies (is-bits-pos-start-of-a-bitp orig-term start size)
+              (and (case-match orig-term (('rp ''bitp &) t))
+                   (posp start)
+                   (natp size)))
      :rule-classes :forward-chaining)))
 
 (define is-bitand/or/xor (term)
@@ -346,6 +360,8 @@
                  `(nil ,dont-rw1 ,dont-rw2))))
           ((is-bits-0-pos-size-of-a-bitp orig-term start size)
            (mv orig-term t))
+          ((is-bits-pos-start-of-a-bitp orig-term start size)
+           (mv ''0 t))
           (t
            (mv `(bits ,orig-term ',start ',size)
                `(nil t t t))))))
@@ -353,6 +369,7 @@
 (define bits-meta-fn-aux-can-change (val start size)
   :inline t
   (or (is-bits-0-pos-size-of-a-bitp val start size)
+      (is-bits-pos-start-of-a-bitp val start size)
       (b* ((val (rp::ex-from-rp val)))
         (or (is-bitand/or/xor val)
             (is-bits val)
@@ -479,21 +496,21 @@
 (progn
   (local
    (defthm
-    rp::rp-termp-caddddr
-    (implies (and (rp::rp-termp rp::term)
-                  (consp rp::term)
-                  (not (quotep rp::term))
-                  (consp (cdr rp::term))
-                  (consp (cddr rp::term))
-                  (consp (cdddr rp::term))
-                  (consp (cdr (cdddr rp::term))))
-             (rp::rp-termp (car (cddddr rp::term))))
-    :hints
-    (("goal"
-      :in-theory
-      (e/d (rp::rp-termp rp::is-rp
-                         rp::ex-from-rp-loose rp::is-rp-loose)
-           nil)))))
+     rp::rp-termp-caddddr
+     (implies (and (rp::rp-termp rp::term)
+                   (consp rp::term)
+                   (not (quotep rp::term))
+                   (consp (cdr rp::term))
+                   (consp (cddr rp::term))
+                   (consp (cdddr rp::term))
+                   (consp (cdr (cdddr rp::term))))
+              (rp::rp-termp (car (cddddr rp::term))))
+     :hints
+     (("goal"
+       :in-theory
+       (e/d (rp::rp-termp rp::is-rp
+                          rp::ex-from-rp-loose rp::is-rp-loose)
+            nil)))))
 
   (local
    (defthm rp-termp-concat$-meta-aux
@@ -518,6 +535,7 @@
               :do-not-induct t
               :in-theory (e/d (bits-meta-fn-aux
                                is-bits-0-pos-size-of-a-bitp
+                               is-bits-pos-start-of-a-bitp
                                natp)
                               (rp::falist-consistent))))))
 
@@ -540,20 +558,20 @@
 
 (local
  (defthm
-  rp::valid-sc-caddddr
-  (implies (and (consp rp::term)
-                (not (equal (car rp::term) 'if))
-                (not (equal (car rp::term) 'rp))
-                (not (equal (car rp::term) 'quote))
-                (consp (cdr rp::term))
-                (consp (cddr rp::term))
-                (consp (cdddr rp::term))
-                (consp (cddddr rp::term))
-                (rp::valid-sc rp::term rp::a))
-           (rp::valid-sc (car (cddddr rp::term)) rp::a))
-  :hints
-  (("goal" :in-theory (e/d (rp::ex-from-rp rp::is-if rp::is-rp)
-                           nil)))))
+   rp::valid-sc-caddddr
+   (implies (and (consp rp::term)
+                 (not (equal (car rp::term) 'if))
+                 (not (equal (car rp::term) 'rp))
+                 (not (equal (car rp::term) 'quote))
+                 (consp (cdr rp::term))
+                 (consp (cddr rp::term))
+                 (consp (cdddr rp::term))
+                 (consp (cddddr rp::term))
+                 (rp::valid-sc rp::term rp::a))
+            (rp::valid-sc (car (cddddr rp::term)) rp::a))
+   :hints
+   (("goal" :in-theory (e/d (rp::ex-from-rp rp::is-if rp::is-rp)
+                            nil)))))
 
 (local
  (defthm valid-sc-concat$-meta-aux
@@ -579,6 +597,7 @@
             :do-not-induct t
             :in-theory (e/d (bits-meta-fn-aux
                              is-bits-0-pos-size-of-a-bitp
+                             is-bits-pos-start-of-a-bitp
                              rp::is-rp rp::is-if
                              natp)
                             (rp::falist-consistent
@@ -623,6 +642,7 @@
             :do-not-induct t
             :in-theory (e/d (bits-meta-fn-aux
                              is-bits-0-pos-size-of-a-bitp
+                             is-bits-pos-start-of-a-bitp
                              natp)
                             (rp::falist-consistent))))))
 
@@ -681,17 +701,15 @@
    :hints (("Goal"
             :induct (concat$-meta-aux size term1 term2 limit)
             :do-not-induct t
-            :in-theory (e/d (concat$-meta-aux
-                             rp::is-rp rp::is-if
-                             rp-evlt-of-ex-from-rp-reverse
-                             natp)
-                            (RP::RP-EVLT-OF-EX-FROM-RP
-                             rp-trans
-                             SV::4VEC-CONCAT-OF-4VEC-FIX-LOW-NORMALIZE-CONST))))))
-
-
-
-
+            :in-theory (e/d* (concat$-meta-aux
+                              (:REWRITE
+                               RP::REGULAR-RP-EVL-OF_4VEC-CONCAT$_WHEN_BITS-OF-FORMULA-CHECKS_WITH-EX-FROM-RP)
+                              rp::is-rp rp::is-if
+                              rp-evlt-of-ex-from-rp-reverse
+                              natp)
+                             (RP::RP-EVLT-OF-EX-FROM-RP
+                              rp-trans
+                              SV::4VEC-CONCAT-OF-4VEC-FIX-LOW-NORMALIZE-CONST))))))
 
 
 
@@ -711,6 +729,23 @@
             :in-theory (e/d (rp::valid-sc-single-step
                              RP::IS-RP
                              is-bits-0-pos-size-of-a-bitp)
+                            (rp::valid-sc))))))
+
+(local
+ (defthm bits-meta-fn-aux-correct-lemma2
+   (implies
+    (and (rp-evl-meta-extract-global-facts)
+         (rp::valid-sc term a)
+         (is-bits-pos-start-of-a-bitp TERM START SIZE)
+         (bits-of-formula-checks state))
+    (equal (BITS (RP-EVL (RP-TRANS (RP::EX-FROM-RP TERM))
+                         A)
+                 start size)
+           0))
+   :hints (("Goal"
+            :in-theory (e/d (rp::valid-sc-single-step
+                             RP::IS-RP
+                             is-bits-pos-start-of-a-bitp)
                             (rp::valid-sc))))))
 
 (local
@@ -754,10 +789,10 @@
                      (:free (x) (nth 2 x))
                      (:free (x) (nth 1 x))
                      (:free (x) (nth 0 x)))
-            :in-theory (e/d (bits-meta-fn-aux
+            :in-theory (e/d* (bits-meta-fn-aux
                              IS-BITAND/OR/XOR
                              rp::is-rp rp::is-if
-;IS-BITS-0-1-OF-A-BITP
+                             rp::regular-eval-lemmas
                              rp-evlt-of-ex-from-rp-reverse
                              natp)
                             (RP::RP-EVLT-OF-EX-FROM-RP
@@ -769,7 +804,6 @@
                              RP::INCLUDE-FNC-SUBTERMS
                              NTH-0-CONS
                              SV::4VEC-CONCAT-OF-4VEC-FIX-LOW-NORMALIZE-CONST))))))
-
 
 (local
  (defthm bits-of-meta-fn-correct
@@ -872,7 +906,6 @@
            :in-theory (e/d (rp::rp-meta-valid-syntaxp)
                            (rp::rp-termp
                             rp::valid-sc)))))||#
-
 
 (rp::add-meta-rules bits-of-formula-checks
                     (list (make rp::rp-meta-rule-rec

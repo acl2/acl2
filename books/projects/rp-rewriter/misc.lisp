@@ -41,6 +41,14 @@
 (include-Book "macros")
 (include-Book "aux-functions")
 (include-Book "std/strings/cat-base" :dir :system)
+(include-Book "extract-formula")
+(include-Book "proofs/guards")
+
+(local
+ (include-Book "proofs/extract-formula-lemmas"))
+
+(local
+ (include-Book "proofs/rp-state-functions-lemmas"))
 
 (encapsulate
   nil
@@ -129,8 +137,8 @@
       (if (or (and sigs fncs openers)
               (and (or sigs fncs openers)
                    (hard-error 'lambdas-to-other-rules
-                              "something unexpected happened.... contact Mertcan Temel"
-                              nil)))
+                               "something unexpected happened.... contact Mertcan Temel"
+                               nil)))
           `(encapsulate
              ,sigs
              ,@fncs
@@ -141,57 +149,57 @@
                               ,rhs-body))
                     ,@openers)
                ,@hints)
-             (add-rp-rule ,rule-name)) 
+             (add-rp-rule ,rule-name))
         `(progn
            (defthm ,rule-name
-            ,untranslated-rule
-            ,@hints)
+             ,untranslated-rule
+             ,@hints)
            (add-rp-rule ,rule-name)))))
-    
-    ;; (case-match rule
-    ;;   (('implies p ('equal a b))
-    ;;    (b* (((mv p-sigs p-fncs p-openers p-body index)
-    ;;          (search-lambda-to-fnc rule-name 0 p))
-    ;;         ((mv b-sigs b-fncs b-openers b-body &)
-    ;;          (search-lambda-to-fnc rule-name index b)))
-    ;;      `(encapsulate
-    ;;         ,(append p-sigs b-sigs)
-    ;;         ,@(append p-fncs b-fncs)
-    ;;         ,(openers-to-rule rule-name (append p-openers b-openers))
-    ;;         (defthm ,rule-name
-    ;;           (implies ,p-body
-    ;;                    (equal ,a ,b-body))
-    ;;           ,@hints)
-    ;;         (add-rp-rule ,rule-name))))
-    ;;   (('equal a b)
-    ;;    (b* (((mv b-sigs b-fncs b-openers b-body &)
-    ;;          (search-lambda-to-fnc rule-name 0 b)))
-    ;;      `(encapsulate
-    ;;         ,b-sigs
-    ;;         ,@(append b-fncs)
-    ;;         ,(openers-to-rule rule-name b-openers)
-    ;;         (defthm ,rule-name
-    ;;           (equal ,a
-    ;;                  ,b-body)
-    ;;           ,@hints)
-    ;;         (add-rp-rule ,rule-name))))
-    ;;   (('implies p b)
-    ;;    (b* (((mv p-sigs p-fncs p-openers p-body index)
-    ;;          (search-lambda-to-fnc rule-name 0 p))
-    ;;         ((mv b-sigs b-fncs b-openers b-body &)
-    ;;          (search-lambda-to-fnc rule-name index b)))
-    ;;      `(encapsulate
-    ;;         ,(append p-sigs b-sigs)
-    ;;         ,@(append p-fncs b-fncs)
-    ;;         ,(openers-to-rule rule-name (append p-openers b-openers))
-    ;;         (defthm ,rule-name
-    ;;           (implies ,p-body
-    ;;                    ,b-body)
-    ;;           ,@hints)
-    ;;         (add-rp-rule ,rule-name))))
-    ;;   (& `(def-rp-rule ,rule-name
-    ;;         ,rule
-    ;;         ,@hints))))
+
+  ;; (case-match rule
+  ;;   (('implies p ('equal a b))
+  ;;    (b* (((mv p-sigs p-fncs p-openers p-body index)
+  ;;          (search-lambda-to-fnc rule-name 0 p))
+  ;;         ((mv b-sigs b-fncs b-openers b-body &)
+  ;;          (search-lambda-to-fnc rule-name index b)))
+  ;;      `(encapsulate
+  ;;         ,(append p-sigs b-sigs)
+  ;;         ,@(append p-fncs b-fncs)
+  ;;         ,(openers-to-rule rule-name (append p-openers b-openers))
+  ;;         (defthm ,rule-name
+  ;;           (implies ,p-body
+  ;;                    (equal ,a ,b-body))
+  ;;           ,@hints)
+  ;;         (add-rp-rule ,rule-name))))
+  ;;   (('equal a b)
+  ;;    (b* (((mv b-sigs b-fncs b-openers b-body &)
+  ;;          (search-lambda-to-fnc rule-name 0 b)))
+  ;;      `(encapsulate
+  ;;         ,b-sigs
+  ;;         ,@(append b-fncs)
+  ;;         ,(openers-to-rule rule-name b-openers)
+  ;;         (defthm ,rule-name
+  ;;           (equal ,a
+  ;;                  ,b-body)
+  ;;           ,@hints)
+  ;;         (add-rp-rule ,rule-name))))
+  ;;   (('implies p b)
+  ;;    (b* (((mv p-sigs p-fncs p-openers p-body index)
+  ;;          (search-lambda-to-fnc rule-name 0 p))
+  ;;         ((mv b-sigs b-fncs b-openers b-body &)
+  ;;          (search-lambda-to-fnc rule-name index b)))
+  ;;      `(encapsulate
+  ;;         ,(append p-sigs b-sigs)
+  ;;         ,@(append p-fncs b-fncs)
+  ;;         ,(openers-to-rule rule-name (append p-openers b-openers))
+  ;;         (defthm ,rule-name
+  ;;           (implies ,p-body
+  ;;                    ,b-body)
+  ;;           ,@hints)
+  ;;         (add-rp-rule ,rule-name))))
+  ;;   (& `(def-rp-rule ,rule-name
+  ;;         ,rule
+  ;;         ,@hints))))
 
   (defmacro defthm-lambda (rule-name rule &rest hints)
     `(make-event
@@ -205,7 +213,6 @@
              ',rule
              ',hints)
             state)))))
-
 
 (xdoc::defxdoc
  defthm-lambda
@@ -228,7 +235,7 @@
                     (let* ((a (f1 x))
                            (b (f2 x)))
                       (f4 a a b)))))
-                           
+
   ;; The above event is translated into this:
   (encapsulate
     (((foo-redef_lambda-fnc_1 * *) => *)
@@ -270,50 +277,96 @@
             (consp (car rhs))))
       (&
        nil)))
-  
+
+  (defmacro bump-rp-rule (rule-name/rune)
+    `(with-output
+       :off :all
+       :gag-mode nil
+       (make-event
+        (b* ((rule-name/rune ',rule-name/rune)
+             (rune (case-match rule-name/rune
+                     ((& . &) rule-name/rune)
+                     (& (get-rune-name rule-name/rune state))))
+             (entry (hons-assoc-equal rune (table-alist
+                                            'rp-rules (w state))))
+             (- (and (not (consp entry))
+                     (hard-error 'bump-rp-rule
+                                 "This rule is not added with add-rp-rule uet. There is
+nothing to bump!" nil)))
+             (cur-table (table-alist 'rp-rules (w state)))
+             (cur-table (remove-assoc-equal rune cur-table)))
+          `(progn
+             (table rp-rules nil ',cur-table :clear)
+             (table rp-rules ',rune ',(cdr entry)))))))
+
+  (defun bump-rp-rules-body (args)
+    (if (atom args)
+        nil
+      (cons `(bump-rp-rule ,(car args))
+            (bump-rp-rules-body (cdr args)))))
+
+  (defmacro bump-rp-rules (&rest args)
+    `(progn
+       . ,(bump-rp-rules-body args)))
+
   (defmacro add-rp-rule (rule-name &key
                                    (disabled 'nil)
                                    (beta-reduce 'nil)
                                    (hints 'nil)
-                                   )
-    `(make-event
-      (b* ((body (and ,beta-reduce
-                      (meta-extract-formula ',rule-name state)))
-           (beta-reduce (and ,beta-reduce
-                             (is-rhs-a-lambda-expression body)))
-           (new-rule-name (if beta-reduce
-                              (intern$ (str::cat (symbol-name ',rule-name)
-                                                 "-FOR-RP")
-                                       (symbol-package-name ',rule-name))
-                            ',rule-name))
-           (rest-body 
-            `(with-output
-               :off :all
-               :gag-mode nil
-               (make-event
-                (b* ((rune (get-rune-name ',new-rule-name state))
-                     (disabled ,,disabled)
-                     (- (get-rules `(,rune) state :warning :err)))
-                  `(progn
-                     (table rp-rules-inorder ',rune nil)
-                     (table rp-rules ',rune ,(not disabled))))))))
-        (if beta-reduce
-            `(progn
-               (defthm-lambda ,new-rule-name
-                 ,body
-                 :hints ,',hints)
-               (acl2::extend-pe-table ,new-rule-name
-                                      (def-rp-rule ,new-rule-name
-                                        ,body
-                                        :hints ,',hints))
-               (in-theory (disable ,new-rule-name))
-               (value-triple (cw "This rule has a lambda expression on its RHS, ~
+                                   (inside-out ':default)
+                                   (outside-in 'nil))
+    (b* ((inside-out (if (equal inside-out ':default)
+                         (not outside-in)
+                       inside-out))
+         (- (and (Not inside-out)
+                 (Not outside-in)
+                 (hard-error 'add-rp-rule
+                             "Inside-out and outside-in options cannot be nil
+at the same time. ~%" nil))))
+                        
+      `(make-event
+        (b* ((body (and ,beta-reduce
+                        (meta-extract-formula ',rule-name state)))
+             (beta-reduce (and ,beta-reduce
+                               (is-rhs-a-lambda-expression body)))
+             (new-rule-name (if beta-reduce
+                                (intern$ (str::cat (symbol-name ',rule-name)
+                                                   "-FOR-RP")
+                                         (symbol-package-name ',rule-name))
+                              ',rule-name))
+             (rest-body
+              `(with-output
+                 :off :all
+                 :gag-mode nil
+                 (make-event
+                  (b* ((rune (get-rune-name ',new-rule-name state))
+                       (disabled ,,disabled)
+                       (- (get-rules `(,rune) state :warning :err)))
+                    `(progn  
+                       (table rp-rules
+                              ',rune
+                              (cons ,(cond
+                                      ((and ,,outside-in ,,inside-out)
+                                       ':both)
+                                      (,,outside-in ':outside-in)
+                                      (t ':inside-out))
+                                    ,(not disabled)))))))))
+          (if beta-reduce
+              `(progn
+                 (defthm-lambda ,new-rule-name
+                   ,body
+                   :hints ,',hints)
+                 (acl2::extend-pe-table ,new-rule-name
+                                        (def-rp-rule ,new-rule-name
+                                          ,body
+                                          :hints ,',hints))
+                 (in-theory (disable ,new-rule-name))
+                 (value-triple (cw "This rule has a lambda expression on its RHS, ~
 and it is automatically put through rp::defthm-lambda  and a ~
 new rule is created to be used by RP-Rewriter. You can disable this by setting ~
 :beta-reduce to nil ~% The name of this rule is: ~p0 ~%" ',new-rule-name))
-               (value-triple ',new-rule-name))
-          rest-body))))
-            
+                 (value-triple ',new-rule-name))
+            rest-body)))))
 
   (defmacro def-rp-rule (rule-name rule &rest hints)
     `(progn
@@ -326,8 +379,6 @@ new rule is created to be used by RP-Rewriter. You can disable this by setting ~
        (,(if defthmd 'defthmd 'defthm)
         ,rule-name ,rule ,@hints)
        (add-rp-rule  ,rule-name :disabled ,disabled))))
-
-
 
 (encapsulate
   nil
@@ -378,33 +429,32 @@ new rule is created to be used by RP-Rewriter. You can disable this by setting ~
     (b* ((vars-to-print (set-difference$ (acl2::all-vars (pseudo-term-fix term)) do-not-print)))
       `;(progn
 ;(table rw-opener-error-rules  ',name t)
-      (def-rp-rule$ t ,disabled  
-       ,name
-       (implies (hard-error
-                 ',name
-                 ,(str::cat 
-                   (if message message
-                     (str::cat "A " (symbol-name (car term))
-                               " instance must have slipped through all of its rewrite rules."))
-"To debug, you can try using (rp::update-rp-brr t rp::rp-state) and
+      (def-rp-rule$ t ,disabled
+        ,name
+        (implies (hard-error
+                  ',name
+                  ,(str::cat
+                    (if message message
+                      (str::cat "A " (symbol-name (car term))
+                                " instance must have slipped through all of its rewrite rules."))
+                    "To debug, you can try using (rp::update-rp-brr t rp::rp-state) and
 (rp::pp-rw-stack :omit '()
                  :evisc-tuple (evisc-tuple 10 12 nil nil)
                  :frames 50). ~%"
-                   (rw-opener-error-args-string vars-to-print 0))
-                 ,(cons 'list (rw-opener-error-args-pairs vars-to-print 0)))
-                (equal
-                 ,term
-                 t))
-       :hints (("Goal"
-                ;:expand (hide ,term)
-                :in-theory '(return-last hard-error))))))
-  
+                    (rw-opener-error-args-string vars-to-print 0))
+                  ,(cons 'list (rw-opener-error-args-pairs vars-to-print 0)))
+                 (equal
+                  ,term
+                  t))
+        :hints (("Goal"
+;:expand (hide ,term)
+                 :in-theory '(return-last hard-error))))))
+
   #|(defmacro disable-opener-error-rule (rule-name)
-    `(table 'rw-opener-error-rules ',rule-name nil))||#
+  `(table 'rw-opener-error-rules ',rule-name nil))||#
 
   #|(defmacro enable-opener-error-rule (rule-name)
-    `(table 'rw-opener-error-rules ',rule-name t))||#)
-
+  `(table 'rw-opener-error-rules ',rule-name t))||#)
 
 (xdoc::defxdoc
  def-rw-opener-error
@@ -414,9 +464,9 @@ new rule is created to be used by RP-Rewriter. You can disable this by setting ~
  In cases where users want to make sure that a term of a certain pattern
  does not occur, or it is taken care of by a rewrite rule with higher
  priority. </p>
- 
+
 <code>
-@('(def-rw-opener-error 
+@('(def-rw-opener-error
   <name> ;; a unique name for the opener error rule
   <pattern> ;; a pattern to match/unify
   ;;optional keys
@@ -438,7 +488,6 @@ RP-Rewriter will throw an eligible error.</p>"
 
  :parents (rp-utilities))
 
-
 (defun translate1-vals-in-alist (alist state)
   (declare (xargs :guard (alistp alist)
                   :stobjs (state)
@@ -458,6 +507,19 @@ RP-Rewriter will throw an eligible error.</p>"
       (mv (acons (caar alist) c rest)
           state))))
 
+
+(define rp-thm-rw-fn ((term rp-termp) runes
+                      runes-outside-in
+                      (new-synps alistp)
+                      rp-state state)
+  (b* ((rp-state (rp-state-new-run rp-state))
+       (rp-state (rp-state-init-rules runes runes-outside-in new-synps rp-state state))
+       ((mv term rp-state)
+        (preprocess-then-rp-rw term rp-state state)))
+    (mv term rp-state)))
+  
+  
+
 (defmacro rp-thm (term &key
                        (untranslate 't)
                        #|(disable-opener-error 'nil)||#
@@ -467,6 +529,7 @@ RP-Rewriter will throw an eligible error.</p>"
                        (enable-rules 'nil)
                        (disable-rules 'nil)
                        (runes 'nil)
+                       (runes-outside-in 'nil)
                        (time 't)
                        (not-simplified-action ':warning))
   `(encapsulate
@@ -497,35 +560,16 @@ RP-Rewriter will throw an eligible error.</p>"
            ((mv err term & state)
             (acl2::translate1 ',term t nil nil 'top-level (w state) state))
            (- (if err (hard-error 'rp-thm "Error translating term ~%" nil) nil))
-           (term (beta-search-reduce term 1000))
-           ((mv runes exc-rules)
-            ,(if runes
-                 `(mv ,runes (get-disabled-exc-rules-from-table (table-alist 'rp-exc-rules world)))
-               '(get-enabled-rules-from-table state)))
+           (term (beta-search-reduce term 10000))
            ((mv new-synps state) (translate1-vals-in-alist ,new-synps state))
-           (rules-alist (get-rules runes state :new-synps new-synps))
-           (rp-state (rp-state-new-run rp-state))
            (old-not-simplified-action (not-simplified-action rp-state))
            (rp-state (update-not-simplified-action ,not-simplified-action rp-state))
-           (meta-rules  (make-fast-alist (create-simple-meta-rules-alist state)))
-
            ((mv rw rp-state)
             (if ,time
                 (time$
-                 (rp-rw-aux term
-                            rules-alist
-                            exc-rules
-                            meta-rules
-                            rp-state
-                            state))
-              (rp-rw-aux term
-                         rules-alist
-                         exc-rules
-                         meta-rules
-                         rp-state
-                         state)))
+                 (rp-thm-rw-fn term ',runes ',runes-outside-in new-synps rp-state state))
+              (rp-thm-rw-fn term ',runes ',runes-outside-in new-synps rp-state state)))
            (rw (if ,untranslate (untranslate rw t (w state)) rw))
-           (- (fast-alist-free meta-rules))
            (state (fms "~p0~%"
                        (list
                         (cons #\0 rw))
@@ -534,10 +578,12 @@ RP-Rewriter will throw an eligible error.</p>"
         (mv nil `(value-triple :none) state rp-state)))))
 
 (defmacro rp-cl (&key (new-synps 'nil)
-                      (runes 'nil))
+                      (runes 'nil)
+                      (RUNES-OUTSIDE-IN 'nil)) ;
   `(rp-rewriter
     clause
     (make rp-cl-hints
+          :runes-outside-in ',RUNES-OUTSIDE-IN
           :runes ',runes #|,(if rules-override
           rules-override
           `(append (let ((world (w state))) (current-theory :here))
@@ -555,7 +601,8 @@ RP-Rewriter will throw an eligible error.</p>"
                            (enable-meta-rules 'nil)
                            (enable-rules 'nil)
                            (disable-rules 'nil)
-                           (runes 'nil) ;; when nil, runes will be read from
+                           (runes 'nil)
+                           (runes-outside-in 'nil);; when nil, runes will be read from
                            ;; rp-rules table
                            )
   `(make-event
@@ -568,6 +615,7 @@ RP-Rewriter will throw an eligible error.</p>"
                            :do-not '(preprocess generalize fertilize)
                            :clause-processor
                            (rp-cl :runes ,,runes
+                                  :runes-outside-in ,,runes-outside-in
                                   :new-synps ,',new-synps))))))
       ,(if (or disable-meta-rules
                enable-meta-rules
@@ -575,11 +623,6 @@ RP-Rewriter will throw an eligible error.</p>"
                disable-rules)
            ``(encapsulate
                nil
-               ;; ,@(if ,use-opener-error-rules
-               ;;       `((local
-               ;;          (in-theory (enable . ,opener-error-rules))))
-               ;;     'nil)
-
                ,@(if ',enable-meta-rules
                      `((local
                         (enable-meta-rules ,@',enable-meta-rules)))
@@ -605,7 +648,6 @@ RP-Rewriter will throw an eligible error.</p>"
 (defmacro defthmrp (&rest rest)
   `(def-rp-thm ,@rest))
 
-
 (xdoc::defxdoc
  def-rp-thm
  :parents (rp-other-utilities)
@@ -630,8 +672,8 @@ RP-Rewriter will throw an eligible error.</p>"
                         ;; rewrite rules. Default: nil
   :enable-meta-rules (meta-fnc1 meta-fnc2 ...) ;; an unquoted list of names
                                                ;; of meta functions that users
-                                               ;; wants to enable.  
-  :disable-meta-rules (meta-fnc1 meta-fnc2 ...) ;; same as above 
+                                               ;; wants to enable.
+  :disable-meta-rules (meta-fnc1 meta-fnc2 ...) ;; same as above
   :enable-rules (append '(rule1 rule2)
                         *rules3*
                         ...) ;; List of rule-names that users wants enabled in
@@ -640,15 +682,13 @@ RP-Rewriter will throw an eligible error.</p>"
   :disable-rules <...>      ;; Same as above
   :runes '(rule1 rule2 ...) ;; When nil, the macro uses the existing rule-set of
       ;; RP-rewriter. Otherwise, it will overrride everything else regarding rules
-      ;; and use only the rules given in this list. 
+      ;; and use only the rules given in this list.
   )
 ')
 </code>
 </p>
 "
  )
-      
-
 
 (encapsulate
   nil
@@ -696,7 +736,6 @@ RP-Rewriter will throw an eligible error.</p>"
                `((,macro-name nil))
              nil)))))
 
-
 (xdoc::defxdoc
  fetch-new-events
  :short "A macro that detects the changes in the theory when a book is
@@ -707,9 +746,9 @@ RP-Rewriter will throw an eligible error.</p>"
 
 <code>
 @('
- (fetch-new-events 
+ (fetch-new-events
   <event>               ;; e.g., (include-book \"arithmetic-5\" :dir :system)
-  <macro-name>          ;; e.g., use-aritmetic-5 
+  <macro-name>          ;; e.g., use-aritmetic-5
   ;;optional key
   :disabled <disabled> ;; When non-nil, the event does not change the current
   theory. Default: nil.
@@ -724,7 +763,7 @@ disable the library as given.
 
 <code>
 @('
- (fetch-new-events 
+ (fetch-new-events
   (include-book \"arithmetic-5\" :dir :system)
   use-aritmetic-5)
 ')
@@ -747,7 +786,6 @@ rp::preserve-current-theory). This utility will work with current theory of any 
 </p>
 "
  )
-
 
 (encapsulate
   nil
@@ -773,7 +811,6 @@ rp::preserve-current-theory). This utility will work with current theory of any 
          ,(preserve-current-theory-step1 event)
          ,(preserve-current-theory-step2)))))
 
-
 (xdoc::defxdoc
  preserve-current-theory
  :short "A macro that detects the changes in the theory when a book is
@@ -782,12 +819,8 @@ rp::preserve-current-theory). This utility will work with current theory of any 
  :long "See @(see rp::fetch-new-events)"
  )
 
-
 (xdoc::defxdoc
  rp-other-utilities
  :short "Some names that are aliases to other tools"
  :parents (rp-utilities)
  )
-
-
-

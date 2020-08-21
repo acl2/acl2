@@ -114,6 +114,9 @@
 	    rp::defthmrp
 	    rp::def-rp-thm
 	    rp::add-rp-rule
+	    rp::rp-state
+	    rp::valid-rp-statep
+	    rp::valid-rp-state-syntaxp
 
             acl2::arglist
 	    acl2::value

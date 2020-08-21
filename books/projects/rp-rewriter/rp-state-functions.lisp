@@ -42,28 +42,7 @@
 
 (include-book "projects/apply/top" :dir :system)
 
-(defstobj rp-state
-  (show-used-rules-flg :type (satisfies booleanp) :initially nil)
-  (count-used-rules-flg :type (satisfies booleanp) :initially nil)
-  (rules-used :type (satisfies alistp) :initially nil)
 
-  (rp-brr :type (satisfies booleanp) :initially nil)
-  (rw-stack-size :type (satisfies integerp) :initially 0)
-  (rw-stack :type (satisfies alistp) :initially nil)
-  (rule-frame-cnts :type (satisfies alistp) :initially nil)
-
-  (rw-step-limit :type (unsigned-byte 58) :initially 100000)
-
-  (not-simplified-action :type (satisfies symbolp) :initially :error))
-
-(defund rp-state-new-run (rp-state)
-  (declare (xargs :stobjs (rp-state)))
-  (b* ((- (fast-alist-free (rules-used rp-state)))
-       (rp-state (update-rules-used nil rp-state))
-       (rp-state (update-rw-stack-size 0 rp-state))
-       (rp-state (update-rw-stack nil rp-state))
-       (rp-state (update-rule-frame-cnts nil rp-state)))
-    rp-state))
 
 (progn
   (defun rule-result-comperator (x y)
@@ -231,19 +210,21 @@ which submits an event.
 (defund rp-state-push-to-try-to-rw-stack (rule var-bindings rp-context rp-state)
   (declare (xargs :stobjs (rp-state)
                   :guard (WEAK-CUSTOM-REWRITE-RULE-P RULE)))
-  (if (rp-brr rp-state)
+  (if (and (rp-brr rp-state)
+           (not (rp-rule-metap rule)))
       (b* ((old-rw-stack (rw-stack rp-state))
            (index (rw-stack-size rp-state))
-           (new-rw-stack (acons index
-                                (list
-                                 (list ':type 'trying)
-                                 (list ':rune (rp-rune rule))
-                                 (list ':lhs (rp-lhs rule))
-                                 (list ':rhs (rp-rhs rule))
-                                 (list ':hyp (rp-hyp rule))
-                                 (list ':context rp-context)
-                                 (list ':var-bindings var-bindings))
-                                old-rw-stack))
+           (new-rw-stack
+            (acons index
+                   (list
+                    (list ':type 'trying)
+                    (list ':rune (rp-rune rule))
+                    (list ':lhs (rp-lhs rule))
+                    (list ':rhs (rp-rhs rule))
+                    (list ':hyp (rp-hyp rule))
+                    (list ':context rp-context)
+                    (list ':var-bindings var-bindings))
+                   old-rw-stack))
            (rp-state (update-rw-stack new-rw-stack rp-state))
            (rp-state (update-rw-stack-size (1+ index) rp-state)))
         (mv index rp-state))

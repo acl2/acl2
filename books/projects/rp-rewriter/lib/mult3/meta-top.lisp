@@ -47,7 +47,10 @@
 
 (include-book "adder-rules-meta")
 
-(include-book "verify-guards")
+;;(include-book "verify-guards")
+
+
+;;(include-book "4vec-to-binary-fncs-meta")
 
 ;; (defthm sort-sum-meta-valid-rp-meta-rulep
 ;;     (implies (and (rp-evl-meta-extract-global-facts :state state)
@@ -180,3 +183,6 @@
         :trig-fnc 'sort-sum
         :dont-rw t
         :valid-syntax t)))
+
+
+

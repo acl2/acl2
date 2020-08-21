@@ -81,14 +81,14 @@
 
 ;; special meta-like functions integrated into rp-rewriter.
 (defun hons-acons-meta (term)
-  (declare (xargs :guard t #|(rp-termp term)||#))
+  (declare (xargs :guard (rp-termp term)))
   ;; behaviour when hons-cons is encountered in the term
   ;; as if "hons-acons-meta" is a meta function triggered by hons-acons
   ;; this funciton stores assoc-lists in a special way in order to access the
   ;; elements in alists fast.
   (case-match term
     (('hons-acons ('quote key) val falist)
-     (b* ((falist (ex-from-rp falist)))
+     (b* ((falist (ex-from-rp$ falist)))
        (case-match falist
          (('falist ('quote fa) ra)
           (mv

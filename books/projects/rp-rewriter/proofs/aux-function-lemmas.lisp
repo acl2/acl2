@@ -485,27 +485,26 @@
   (MV-NTH 0 (GET-LAMBDA-FREE-VARS-LST SUBTERMS)))))||#
 
   #|(local
-   ;; this was used when lambda expressions were allowed
-   (defthm rp-termp-cons-car-term-subterms-lemma1
-     (implies (and (rp-termp term)
-                   (consp term)
-                   (consp (car term))
-                   (equal (len subterms)
-                          (len (cdr term)))
-;(mv-nth 0 (get-lambda-free-vars-lst subterms))
-                   #|(lambda-exp-free-listp subterms)||#
-                   (rp-term-listp subterms))
-              (rp-termp (cons (car term) subterms)))
-     :otf-flg t
-     :hints (("Goal"
-              :do-not-induct t
-              :expand ((rp-termp term)
-                       (GET-LAMBDA-FREE-VARS (CONS (CAR TERM) SUBTERMS))
-                       (is-lambda-strict (cons (car term) subterms))
-                       (IS-LAMBDA (CONS (CAR TERM) SUBTERMS)))
-              :in-theory (e/d () (get-lambda-free-vars))))))||#
+  ;; this was used when lambda expressions were allowed
+  (defthm rp-termp-cons-car-term-subterms-lemma1
+  (implies (and (rp-termp term)
+  (consp term)
+  (consp (car term))
+  (equal (len subterms)
+  (len (cdr term)))
+;(mv-nth 0 (get-lambda-free-vars-lst subterms)) ;
+  #|(lambda-exp-free-listp subterms)||#
+  (rp-term-listp subterms))
+  (rp-termp (cons (car term) subterms)))
+  :otf-flg t
+  :hints (("Goal"
+  :do-not-induct t
+  :expand ((rp-termp term)
+  (GET-LAMBDA-FREE-VARS (CONS (CAR TERM) SUBTERMS))
+  (is-lambda-strict (cons (car term) subterms))
+  (IS-LAMBDA (CONS (CAR TERM) SUBTERMS)))
+  :in-theory (e/d () (get-lambda-free-vars))))))||#
 
-  
 
   (defthm rp-termp-cons-car-term-subterms
     (implies (and (rp-termp term)
@@ -518,12 +517,12 @@
                   (force (or (not (equal (car term) 'rp))
                              (is-rp (cons (car term) subterms))))
                   (force (or (not (equal (car term) 'falist))
-                       (falist-consistent (cons (car term) subterms))))
+                             (falist-consistent (cons (car term) subterms))))
                   (rp-term-listp subterms))
              (rp-termp (cons (car term) subterms)))
     :hints (("Goal"
              :in-theory (e/d (is-rp) ())))
-     ))
+    ))
 
 (defthm rp-term-listp-append
   (implies (and (rp-term-listp lst1)
@@ -753,7 +752,8 @@
            :in-theory (e/d (is-rp) ()))))
 
 (defthmd rule-syntaxp-implies
-  (implies (rule-syntaxp rule)
+  (implies (and (rule-syntaxp rule :warning warning)
+                (not (rp-rule-metap rule)))
            (and
             (weak-custom-rewrite-rule-p rule)
             (rp-termp (rp-hyp rule))
@@ -771,6 +771,16 @@
             (not (include-fnc (rp-lhs rule) 'list))
             (not (include-fnc (rp-hyp rule) 'list))
             (not (include-fnc (rp-rhs rule) 'list))))
+  :rule-classes (:rewrite :forward-chaining)
+  :hints (("Goal" :in-theory (enable rule-syntaxp))))
+
+(defthmd rule-syntaxp-implies-2
+  (implies (and (rule-syntaxp rule :warning warning)
+                (rp-rule-metap rule))
+           (AND (SYMBOLP (RP-RULE-TRIG-FNC RULE))
+                (RP-RULE-TRIG-FNC RULE)
+                (SYMBOLP (RP-RULE-META-FNC RULE))
+                (RP-RULE-META-FNC RULE)))
   :rule-classes (:rewrite :forward-chaining)
   :hints (("Goal" :in-theory (enable rule-syntaxp))))
 
@@ -890,7 +900,6 @@
                             ex-from-rp-loose
                             is-rp-loose) ()))))||#
 
-
 (defthm rp-termp-caddr
   (implies (and (rp-termp term)
                 (consp term)
@@ -975,7 +984,6 @@
   (implies (rp-termp term)
 	   (dont-rw-syntaxp term)))
 
-
 (defthm rp-termp-ex-from-falist
   (implies (rp-termp x)
            (rp-termp (ex-from-falist x)))
@@ -984,12 +992,10 @@
            :expand (ex-from-falist x)
            :in-theory (e/d () ()))))
 
-
 (defthm is-falist-strict-to-is-falist
   (implies (rp-termp term)
            (equal (is-falist-strict term)
                   (is-falist term))))
-
 
 (defthm rp-termp-trans*-list
   (implies (and (rp-term-listp lst)
@@ -1010,7 +1016,6 @@
   :hints (("Goal"
            :in-theory (e/d (is-rp) ()))))
 
-
 (defthm-rp-trans
   (defthm rp-termp-of-rp-trans
     (implies (rp-termp term)
@@ -1025,18 +1030,26 @@
            :in-theory (e/d ()
                            ()))))
 
-
 #|(defthm-rp-trans
-  (defthm rp-trans-is-term-when-list-is-absent
-    (implies (not (include-fnc term 'list))
-             (equal (rp-trans term) term))
-    :flag rp-trans)
-  (defthm rp-trans-lst-is-lst-when-list-is-absent
-    (implies (not (include-fnc-subterms lst 'list))
-             (equal (rp-trans-lst lst) lst))
-    :flag rp-trans-lst))||#
+(defthm rp-trans-is-term-when-list-is-absent
+(implies (not (include-fnc term 'list))
+(equal (rp-trans term) term))
+:flag rp-trans)
+(defthm rp-trans-lst-is-lst-when-list-is-absent
+(implies (not (include-fnc-subterms lst 'list))
+(equal (rp-trans-lst lst) lst))
+:flag rp-trans-lst))||#
+
+(defthm rp-state-new-run-returns-rp-statep
+  (implies (rp-statep rp-state)
+           (rp-statep (rp-state-new-run rp-state)))
+  :hints (("Goal"
+           :in-theory (e/d (rp-state-new-run
+                            rp-statep)
+                           ()))))
 
 
-
-
-
+(defthm RP-TERM-LISTP-of-append
+  (implies (and (rp-term-listp lst1)
+                (rp-term-listp lst2))
+           (rp-term-listp (append lst1 lst2))))

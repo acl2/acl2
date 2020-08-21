@@ -47,6 +47,15 @@
   (include-book "arithmetic-5/top" :dir :system)
   use-arithmetic-5))
 
+
+(def-rp-rule$ t t
+  merge-adder-or-is-adder-or$
+  (equal (merge-adder-or a b)
+         (adder-or$ a b))
+  :hints (("Goal"
+           :in-theory (e/d (merge-adder-or) ()))))
+
+
 (def-rp-rule$ t t
   and$-is-adder-and$
   (equal (and$ a b)
@@ -74,13 +83,13 @@
 
 
 (def-rp-rule$ t t
-  c-res-to-adder-sum
-  (equal (c-res s-lst pp-lst c-lst)
+  s-c-res-to-adder-sum
+  (equal (s-c-res s-lst pp-lst c-lst)
          (merge-adder-sum (SUM-LIST PP-LST)
                           (SUM-LIST S-LST)
                           (SUM-LIST c-LST)))
   :hints (("Goal"
-           :in-theory (e/d (c-res
+           :in-theory (e/d (s-c-res
                             sum-is-adder-b+
                             merge-adder-sum) ()))))
 
@@ -279,7 +288,8 @@
          (adder-and a (adder-and b c)))
   :hints (("Goal"
            :in-theory (e/d (adder-and
-                            and$) ()))))
+                            and$)
+                           ()))))
 
 (def-rp-rule$ t t
   b-or-comm1
@@ -288,7 +298,8 @@
                   (adder-or a b)))
   :hints (("Goal"
            :in-theory (e/d (adder-or
-                            or$) ()))))
+                            or$)
+                           ()))))
 
 (def-rp-rule$ t t
   b-or-comm2
@@ -297,7 +308,8 @@
                   (adder-or a (adder-or b c))))
   :hints (("Goal"
            :in-theory (e/d (adder-or
-                            or$) ()))))
+                            or$)
+                           ()))))
 
 (def-rp-rule$ t t
   b-or-reorder
@@ -535,7 +547,7 @@
   c-of-same-c
   (implies (and (bitp a)
                 (bitp b))
-           (equal (f2 (sum  a b (f2 (sum a b))))
+           (equal (f2 (sum a b (f2 (sum a b))))
                   (f2 (sum a b))))
   :hints (("Goal"
            :in-theory '((:e f2)
@@ -1045,7 +1057,9 @@
 
       bit-of-adder-fncs
 
-      c-res-to-adder-sum
+      merge-adder-or-is-adder-or$
+
+      s-c-res-to-adder-sum
 
       c-to-adder-f2
       m2-of-ifix

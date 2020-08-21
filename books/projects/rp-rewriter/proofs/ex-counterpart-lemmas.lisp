@@ -37,25 +37,22 @@
 ; Mertcan Temel         <mert@utexas.edu>
 
 
-
 (in-package "RP")
 
 (include-book "../rp-rewriter")
 (include-book "aux-function-lemmas")
 (include-book "proof-functions")
-
-
+(include-book "rp-state-functions-lemmas")
 
 (defthm pseudo-termp-rp-ex-counterpart
   (implies (rp-termp term)
            (rp-termp
-            (mv-nth 0 (rp-ex-counterpart term exc-rules rp-state state))))
+            (mv-nth 0 (rp-ex-counterpart term rp-state state))))
   :hints (("Goal" :in-theory (enable rp-ex-counterpart))))
-
 
 (defthm rp-ex-counterpart-return-rp-statep
   (implies (rp-statep rp-state)
-           (rp-statep (mv-nth 1 (rp-ex-counterpart term exc-rules rp-state
+           (rp-statep (mv-nth 1 (rp-ex-counterpart term rp-state
                                                    state))))
   :hints (("Goal"
            :in-theory (e/d (rp-ex-counterpart
@@ -64,15 +61,85 @@
                             rp-stat-add-to-rules-used-ex-cnt)
                            ()))))
 
+
+(defthm rp-ex-counterpart-return-valid-rp-state-syntaxp
+  (implies (valid-rp-state-syntaxp rp-state)
+           (valid-rp-state-syntaxp (mv-nth 1 (rp-ex-counterpart term rp-state
+                                                                state))))
+  :hints (("Goal"
+           :expand (rp-ex-counterpart term rp-state
+                                      state)
+           :use ((:instance rp-ex-counterpart-return-rp-statep)
+                 (:instance valid-rp-state-syntaxp-aux-necc
+                            (key (valid-rp-state-syntaxp-aux-witness
+                                  (mv-nth 1 (rp-ex-counterpart term rp-state
+                                                               state))))))
+           :in-theory (e/d (rp-ex-counterpart
+                            INCREMENT-RW-STACK-SIZE
+                            RP-STAT-ADD-TO-RULES-USED-EX-CNT
+                            valid-rp-state-syntaxp)
+                           (rp-statep
+                            UPDATE-RW-STACK-SIZE
+                            MAGIC-EV-FNCALL-WRAPPER
+                            RW-STACK-SIZE
+                            (:REWRITE DEFAULT-CAR)
+                            (:TYPE-PRESCRIPTION RP-STATEP)
+                            (:REWRITE DEFAULT-CDR)
+                            (:TYPE-PRESCRIPTION RULE-LIST-SYNTAXP)
+                            (:REWRITE ACL2::O-P-O-INFP-CAR)
+                            (:TYPE-PRESCRIPTION O<)
+                            GET-GLOBAL
+                            GLOBAL-TABLE
+                            UPDATE-RULES-USED
+                            )))))
+
+(defthm rp-ex-counterpart-return-valid-rp-statep
+  (implies (valid-rp-statep rp-state)
+           (valid-rp-statep (mv-nth 1 (rp-ex-counterpart term rp-state
+                                                         state))))
+  :hints (("Goal"
+           :expand (rp-ex-counterpart term rp-state
+                                      state)
+           :use ((:instance valid-rp-statep-necc
+                            (key (valid-rp-statep-witness
+                                  (mv-nth 1 (rp-ex-counterpart term rp-state
+                                                               state))))))
+           :in-theory (e/d (rp-ex-counterpart
+                            valid-rp-statep
+                            INCREMENT-RW-STACK-SIZE
+                            RP-STAT-ADD-TO-RULES-USED-EX-CNT
+                            valid-rp-state-syntaxp)
+                           (rp-statep
+                            UPDATE-RW-STACK-SIZE
+                            MAGIC-EV-FNCALL-WRAPPER
+                            RW-STACK-SIZE
+                            VALID-RULESP
+                            RULES-ALIST-OUTSIDE-IN-GET
+                            RULES-ALIST-INSIDE-OUT-GET
+                            (:REWRITE DEFAULT-CAR)
+                            (:TYPE-PRESCRIPTION RP-STATEP)
+                            (:REWRITE DEFAULT-CDR)
+                            (:TYPE-PRESCRIPTION RULE-LIST-SYNTAXP)
+                            (:REWRITE ACL2::O-P-O-INFP-CAR)
+                            (:TYPE-PRESCRIPTION O<)
+                            (:DEFINITION BITP)
+                            (:DEFINITION NATP)
+                            (:DEFINITION NFIX)
+                            (:DEFINITION NOT)
+                            GET-GLOBAL
+                            GLOBAL-TABLE
+                            UPDATE-RULES-USED
+                            )))))
+
+
 (defthm valid-sc-rp-ex-counterpart
   (implies (valid-sc term a)
            (valid-sc
-            (mv-nth 0 (rp-ex-counterpart term exc-rules rp-state state))
+            (mv-nth 0 (rp-ex-counterpart term rp-state state))
             a))
   :hints (("Goal"
            :in-theory (e/d (
                             rp-ex-counterpart) ()))))
-
 
 (local
  (defthm lemma1
@@ -92,14 +159,12 @@
             :do-not-induct t
             :in-theory (e/d () ())))))
 
-
 (defthm rp-evl-of-rp-ex-counterpart
   (implies
    (and (rp-termp term)
-        (rp-evl-meta-extract-global-facts :state state)
-        (symbol-alistp exc-rules))
+        (rp-evl-meta-extract-global-facts :state state))
    (equal (rp-evlt
-           (mv-nth 0 (rp-ex-counterpart term exc-rules rp-state state)) a)
+           (mv-nth 0 (rp-ex-counterpart term  rp-state state)) a)
           (rp-evlt term a)))
   :hints (("Goal"
            :do-not-induct t
