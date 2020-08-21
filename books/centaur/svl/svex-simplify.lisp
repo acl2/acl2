@@ -997,11 +997,6 @@ adding or disabling rewrite rules. The arguments of svex-simplify are:</p>
 nil, RP-Rewriter's rule-set will be used.
 </p>
 
-<p>preloaded-rules: a special structure for rules that may be created with
-@(see svl::svex-simplify-preload). If non-nil, it will override the runes
-argument.
-</p>
-
 <p>linearize: It can be either t, nil or :auto (default value). For very big
 SVEX structures with a lot of shared structures, we may use this linearize
 option to prevent repeated rewriting of the same structure. Linearize uses
