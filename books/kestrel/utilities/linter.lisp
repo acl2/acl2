@@ -333,7 +333,7 @@
         (equal (farg1 term) (farg2 term))
         ;; substitution may have occured, so the args of term may not actually be idential forms
         (cw "(In ~x0, EQUAL test ~x1 compares a value with an identical value.)~%~%" fn-being-checked orig-term))
-   (and (not (member-eq :equality-variants suppress))
+   (and (not (member-eq :equality-variant suppress))
         (b* ((arg1 (farg1 term))
              (arg2 (farg2 term))
              ((mv type-set1 &)
@@ -385,87 +385,90 @@
 ;; non-eqlable.  Also report if EQ or = could be used instead.
 (defun check-call-of-eql (term ; let-bound vars have been replaced in this
                           orig-term
-                          type-alist fn-being-checked state)
+                          type-alist fn-being-checked suppress state)
   (declare (xargs :guard (pseudo-termp term)
                   :mode :program
                   :stobjs state))
-  (b* ((arg1 (farg1 term))
-       (arg2 (farg2 term))
-       ((mv type-set1 &)
-        (type-set arg1 nil nil type-alist (ens state) (w state) nil nil nil))
-       ((mv type-set2 &)
-        (type-set arg2 nil nil type-alist (ens state) (w state) nil nil nil))
-       ;;(decoded-ts1 (decode-type-set type-set1))
-       ;;(decoded-ts2 (decode-type-set type-set2))
-       (arg1-symbolp (ts-subsetp type-set1 *ts-symbol*))
-       (arg2-symbolp (ts-subsetp type-set2 *ts-symbol*))
-       (arg1-numberp (ts-subsetp type-set1 *ts-acl2-number*))
-       (arg2-numberp (ts-subsetp type-set2 *ts-acl2-number*))
-       (ts-eqlable (ts-union *ts-symbol*
-                             (ts-union *ts-character*
-                                       *ts-acl2-number*))))
-    (progn$ (if arg1-symbolp
-                (if arg2-symbolp
-                    (cw "(In ~x0, EQL test ~x1 could use EQ since both arguments are known to be symbols.)~%~%"
-                        fn-being-checked orig-term arg1 arg2)
-                  (cw "(In ~x0, EQL test ~x1 could use EQ since ~x2 is known to be a symbol.)~%~%"
-                      fn-being-checked orig-term arg1))
-              (if arg2-symbolp
-                  (cw "(In ~x0, EQL test ~x1 could use EQ since ~x2 is known to be a symbol.)~%~%"
-                      fn-being-checked orig-term arg2)
-                nil))
-            (and arg1-numberp
-                 arg2-numberp
-                 (cw "(In ~x0, EQL test ~x1 could use = since both arguments are known to be numbers.)~%~%"
-                     fn-being-checked orig-term arg1 arg2))
-            (and (ts-disjointp type-set1 ts-eqlable)
-                 (ts-disjointp type-set2 ts-eqlable)
-                 (cw "(In ~x0, ill-guarded call ~x1 since both ~x2 and ~x3 are not numbers, symbols, or characters.)~%~%"
-                     fn-being-checked orig-term arg1 arg2)))))
+  (and (not (member-eq :equality-variant suppress))
+       (b* ((arg1 (farg1 term))
+            (arg2 (farg2 term))
+            ((mv type-set1 &)
+             (type-set arg1 nil nil type-alist (ens state) (w state) nil nil nil))
+            ((mv type-set2 &)
+             (type-set arg2 nil nil type-alist (ens state) (w state) nil nil nil))
+            ;;(decoded-ts1 (decode-type-set type-set1))
+            ;;(decoded-ts2 (decode-type-set type-set2))
+            (arg1-symbolp (ts-subsetp type-set1 *ts-symbol*))
+            (arg2-symbolp (ts-subsetp type-set2 *ts-symbol*))
+            (arg1-numberp (ts-subsetp type-set1 *ts-acl2-number*))
+            (arg2-numberp (ts-subsetp type-set2 *ts-acl2-number*))
+            (ts-eqlable (ts-union *ts-symbol*
+                                  (ts-union *ts-character*
+                                            *ts-acl2-number*))))
+         (progn$ (if arg1-symbolp
+                     (if arg2-symbolp
+                         (cw "(In ~x0, EQL test ~x1 could use EQ since both arguments are known to be symbols.)~%~%"
+                             fn-being-checked orig-term arg1 arg2)
+                       (cw "(In ~x0, EQL test ~x1 could use EQ since ~x2 is known to be a symbol.)~%~%"
+                           fn-being-checked orig-term arg1))
+                   (if arg2-symbolp
+                       (cw "(In ~x0, EQL test ~x1 could use EQ since ~x2 is known to be a symbol.)~%~%"
+                           fn-being-checked orig-term arg2)
+                     nil))
+                 (and arg1-numberp
+                      arg2-numberp
+                      (cw "(In ~x0, EQL test ~x1 could use = since both arguments are known to be numbers.)~%~%"
+                          fn-being-checked orig-term arg1 arg2))
+                 (and (ts-disjointp type-set1 ts-eqlable)
+                      (ts-disjointp type-set2 ts-eqlable)
+                      (cw "(In ~x0, ill-guarded call ~x1 since both ~x2 and ~x3 are not numbers, symbols, or characters.)~%~%"
+                          fn-being-checked orig-term arg1 arg2))))))
 
 ;; For a call of EQ, report an issue if both arguments are known to be non-symbols.
 (defun check-call-of-eq (term ; let-bound vars have been replaced in this
                          orig-term
-                         type-alist fn-being-checked state)
+                         type-alist fn-being-checked suppress state)
   (declare (xargs :guard (pseudo-termp term)
                   :mode :program
                   :stobjs state))
-  (b* ((arg1 (farg1 term))
-       (arg2 (farg2 term))
-       ((mv type-set1 &)
-        (type-set arg1 nil nil type-alist (ens state) (w state) nil nil nil))
-       ((mv type-set2 &)
-        (type-set arg2 nil nil type-alist (ens state) (w state) nil nil nil))
-       ;;(decoded-ts1 (decode-type-set type-set1))
-       ;;(decoded-ts2 (decode-type-set type-set2))
-       )
-    (progn$ (and (ts-disjointp type-set1 *ts-symbol*)
-                 (ts-disjointp type-set2 *ts-symbol*)
-                 (cw "(In ~x0, ill-guarded call ~x1 since both ~x2 and ~x3 are not symbols.)~%~%"
-                     fn-being-checked orig-term arg1 arg2)))))
+  (and (not (member-eq :equality-variant suppress))
+       (b* ((arg1 (farg1 term))
+            (arg2 (farg2 term))
+            ((mv type-set1 &)
+             (type-set arg1 nil nil type-alist (ens state) (w state) nil nil nil))
+            ((mv type-set2 &)
+             (type-set arg2 nil nil type-alist (ens state) (w state) nil nil nil))
+            ;;(decoded-ts1 (decode-type-set type-set1))
+            ;;(decoded-ts2 (decode-type-set type-set2))
+            )
+         (progn$ (and (ts-disjointp type-set1 *ts-symbol*)
+                      (ts-disjointp type-set2 *ts-symbol*)
+                      (cw "(In ~x0, ill-guarded call ~x1 since both ~x2 and ~x3 are not symbols.)~%~%"
+                          fn-being-checked orig-term arg1 arg2))))))
 
 ;; For a call of =, report an issue if either argument is known to be a non-number.
 (defun check-call-of-= (term ; let-bound vars have been replaced in this
                         orig-term
-                        type-alist fn-being-checked state)
+                        type-alist fn-being-checked suppress state)
   (declare (xargs :guard (pseudo-termp term)
                   :mode :program
                   :stobjs state))
-  (b* ((arg1 (farg1 term))
-       (arg2 (farg2 term))
-       ((mv type-set1 &)
-        (type-set arg1 nil nil type-alist (ens state) (w state) nil nil nil))
-       ((mv type-set2 &)
-        (type-set arg2 nil nil type-alist (ens state) (w state) nil nil nil))
-       ;;(decoded-ts1 (decode-type-set type-set1))
-       ;;(decoded-ts2 (decode-type-set type-set2))
-       )
-    (progn$ (and (ts-disjointp type-set1 *ts-acl2-number*)
-                 (cw "(In ~x0, ill-guarded call ~x1 since ~x2 is not a number.)~%~%"
-                     fn-being-checked orig-term arg1))
-            (and (ts-disjointp type-set2 *ts-acl2-number*)
-                 (cw "(In ~x0, ill-guarded call ~x1 since ~x2 is not a number.)~%~%"
-                     fn-being-checked orig-term arg2)))))
+  (and (not (member-eq :equality-variant suppress))
+       (b* ((arg1 (farg1 term))
+            (arg2 (farg2 term))
+            ((mv type-set1 &)
+             (type-set arg1 nil nil type-alist (ens state) (w state) nil nil nil))
+            ((mv type-set2 &)
+             (type-set arg2 nil nil type-alist (ens state) (w state) nil nil nil))
+            ;;(decoded-ts1 (decode-type-set type-set1))
+            ;;(decoded-ts2 (decode-type-set type-set2))
+            )
+         (progn$ (and (ts-disjointp type-set1 *ts-acl2-number*)
+                      (cw "(In ~x0, ill-guarded call ~x1 since ~x2 is not a number.)~%~%"
+                          fn-being-checked orig-term arg1))
+                 (and (ts-disjointp type-set2 *ts-acl2-number*)
+                      (cw "(In ~x0, ill-guarded call ~x1 since ~x2 is not a number.)~%~%"
+                          fn-being-checked orig-term arg2))))))
 
 ;; The subst includes bindings of vars from overarching lambdas.
 ;; TODO: Track and use the context from overarching IF tests.
@@ -502,11 +505,11 @@
                        (if (eq fn 'equal)
                            (check-call-of-equal (my-sublis-var subst term) term type-alist fn-being-checked suppress state)
                          (if (eq fn 'eql)
-                             (check-call-of-eql (my-sublis-var subst term) term type-alist fn-being-checked state)
+                             (check-call-of-eql (my-sublis-var subst term) term type-alist fn-being-checked suppress state)
                            (if (eq fn 'eq)
-                               (check-call-of-eq (my-sublis-var subst term) term type-alist fn-being-checked state)
+                               (check-call-of-eq (my-sublis-var subst term) term type-alist fn-being-checked suppress state)
                              (if (eq fn '=)
-                                 (check-call-of-= (my-sublis-var subst term) term type-alist fn-being-checked state)
+                                 (check-call-of-= (my-sublis-var subst term) term type-alist fn-being-checked suppress state)
                                (if (eq fn 'hard-error)
                                    (check-call-of-hard-error term fn-being-checked suppress)
                                  (if (eq fn 'illegal)
@@ -530,41 +533,49 @@
      (prog2$ (check-term (car terms) subst type-alist fn-being-checked suppress state)
              (check-terms (cdr terms) subst type-alist fn-being-checked suppress state)))))
 
-(defun check-defun (fn suppress state)
+(defun check-defun (fn assume-guards suppress state)
   (declare (xargs :stobjs state
                   :mode :program))
-  (let* ((body (fn-body fn t (w state)))
-         ;; (formals (fn-formals fn (w state)))
-         (event (my-get-event fn (w state)))
-         (declares (and (defun-or-mutual-recursion-formp event)
-                        (get-declares-from-event fn event)))
-         (xargs (get-xargs-from-declares declares))
-         (guard-debug-res (assoc-keyword :guard-debug xargs)))
+  (b* ((body (fn-body fn t (w state)))
+       ;; (formals (fn-formals fn (w state)))
+       (event (my-get-event fn (w state)))
+       (declares (and (defun-or-mutual-recursion-formp event)
+                      (get-declares-from-event fn event)))
+       (xargs (get-xargs-from-declares declares))
+       (guard-debug-res (assoc-keyword :guard-debug xargs))
+       (guard (fn-guard fn (w state)))
+       ;; Initialize the type-alist by assuming the function's guard:
+       ((mv & & type-alist & &)
+        (if assume-guards
+            (assume-true-false guard nil nil nil nil (ens state) (w state) nil nil nil)
+          ;; Start with a type-alist of nil since we are not assuming guards:
+          (mv nil nil nil nil nil))))
     (progn$ (and (not (member-eq :guard-debug suppress))
                  guard-debug-res
                  (cw "(~x0 has a :guard-debug xarg, ~x1.)~%~%" fn (second guard-debug-res)))
             (check-term body
                         nil ;empty substitution
-                        nil ; empty type-alist
+                        type-alist
                         fn suppress state))))
 
-(defun check-defuns (fns suppress state)
+(defun check-defuns (fns assume-guards suppress state)
   (declare (xargs :stobjs state
                   :mode :program))
   (if (atom fns)
       nil
     (let* ((fn (first fns)))
-      (prog2$ (check-defun fn suppress state)
-              (check-defuns (rest fns) suppress state)))))
+      (prog2$ (check-defun fn assume-guards suppress state)
+              (check-defuns (rest fns) assume-guards suppress state)))))
 
 ;todo: add support for more here
 (defconst *warning-types*
-  '(:ground-term :guard-debug :equality-variants :context :resolvable-test
+  '(:ground-term :guard-debug :equality-variant :context :resolvable-test
                  :equal-self))
 
-(defun run-linter-fn (check suppress state)
+(defun run-linter-fn (check assume-guards suppress state)
   (declare (xargs :stobjs state
                   :guard (and (member-eq check '(:user :all))
+                              (booleanp assume-guards)
                               (subsetp-eq suppress *warning-types*))
                   :mode :program))
   (let* ((wrld (w state))
@@ -573,12 +584,13 @@
                               nil))
          (all-defuns (all-defuns-in-world wrld triple-to-stop-at nil)))
     (prog2$ (cw "Applying linter to ~x0 defuns:~%~%" (len all-defuns))
-            (check-defuns all-defuns suppress state))))
+            (check-defuns all-defuns assume-guards suppress state))))
 
 ;; Call this macro to check every defun in the current ACL2 world.
 (defmacro run-linter (&key (check ':user)             ;; either :user or :all
                            (suppress '(:ground-term :context)) ;; types of check to skip
+                           (assume-guards 't) ;; whether to assume guards when analyzing function bodies
                            )
-  `(run-linter-fn ',check ',suppress state))
+  `(run-linter-fn ',check ',assume-guards ',suppress state))
 
 (deflabel end-of-linter)
