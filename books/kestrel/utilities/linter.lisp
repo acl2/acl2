@@ -278,6 +278,17 @@
           (cons pair (filter-subst (rest subst) vars))
         (filter-subst (rest subst) vars)))))
 
+;; Recognize the translated form of mbt, possibly with not(s) wrapped around it.
+(defun possibly-negated-mbtp (term)
+  (declare (xargs :guard (pseudo-termp term)))
+  (if (variablep term)
+      nil
+    (case (ffn-symb term)
+      (not (possibly-negated-mbtp (farg1 term)))
+      (return-last (and (equal (farg1 term) ''mbe1-raw)
+                        (equal (farg2 term) ''t)))
+      (t nil))))
+
 ;; For a call of IF, report an issue if the test is known non-nil or known-nil (by type-set).
 (defun check-call-of-if (term subst type-alist fn-being-checked suppress state)
   (declare (xargs :guard (pseudo-termp term)
@@ -286,6 +297,7 @@
   (prog2$ (and (equal (farg2 term) (farg3 term))
                (cw "(In ~x0, both branches of ~x1 are the same.)~%~%" fn-being-checked term))
           (and (not (member-eq :resolvable-test suppress))
+               (not (possibly-negated-mbtp (farg1 term)))
                (let* ((orig-test (farg1 term))
                       (test (my-sublis-var subst orig-test)))
                  (mv-let (type-set ttree)
