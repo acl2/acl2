@@ -46,7 +46,7 @@
 ;; todo: remove the check since we have a guard
 (defund nat-to-string (n)
   (declare (type (integer 0 *) n))
-  (if (not (natp n))
+  (if (not (mbt (natp n))) ;drop this?:
       (prog2$ (hard-error 'nat-to-string "Argument must be a natural, but we got ~x0." (acons #\0 n nil))
               "ERROR IN NAT-TO-STRING")
     (coerce (explode-nonnegative-integer n 10 nil) 'string)))
