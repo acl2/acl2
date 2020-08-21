@@ -24,16 +24,4 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection define-sk2-implementation
-  :short "Implementation of @('define-sk2')."
-  :long
-  "@(def define-sk2)
-   @(def acl2::define-sk2)"
-
-  (defmacro define-sk2 (sofun &rest rest)
-    `(progn
-       (std::define-sk ,sofun ,@rest)
-       (defsoft ,sofun)))
-
-  (defmacro acl2::define-sk2 (&rest args)
-    `(define-sk2 ,@args)))
+(gen-macro2-of-macro std::define-sk)
