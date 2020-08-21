@@ -273,7 +273,7 @@
         (filter-subst (rest subst) vars)))))
 
 ;; For a call of IF, report an issue if the test is known non-nil or known-nil (by type-set).
-(defun check-call-of-if (term subst fn-being-checked state)
+(defun check-call-of-if (term subst type-alist fn-being-checked state)
   (declare (xargs :guard (pseudo-termp term)
                   :mode :program
                   :stobjs state))
@@ -283,7 +283,7 @@
                  (test (my-sublis-var subst orig-test))
                  )
             (mv-let (type-set ttree)
-              (type-set test nil nil nil (ens state) (w state) nil nil nil)
+              (type-set test nil nil type-alist (ens state) (w state) nil nil nil)
               (declare (ignore ttree))
               (let* ((decoded-ts (decode-type-set type-set))
                      (test-knownp (or (= *ts-nil* type-set)     ;check for nil
@@ -307,6 +307,7 @@
                                (cw "  Test: ~x0~%" orig-test)
                                (cw "  Type: ~x0~%" decoded-ts)
                                (cw "  Term: ~x0~%" term)
+                               (cw "  Type-alist: ~x0~%" type-alist)
                                (cw "  Relevant subst: ~x0)~%~%" relevant-subst)))
                    nil)))))))
 
@@ -315,16 +316,16 @@
 ;; For a call of EQUAL, report an issue if EQ, EQL, or = could be used instead.
 (defun check-call-of-equal (term ; let-bound vars have been replaced in this
                             orig-term
-                            fn-being-checked state)
+                            type-alist fn-being-checked state)
   (declare (xargs :guard (pseudo-termp term)
                   :mode :program
                   :stobjs state))
   (b* ((arg1 (farg1 term))
        (arg2 (farg2 term))
        ((mv type-set1 &)
-        (type-set arg1 nil nil nil (ens state) (w state) nil nil nil))
+        (type-set arg1 nil nil type-alist (ens state) (w state) nil nil nil))
        ((mv type-set2 &)
-        (type-set arg2 nil nil nil (ens state) (w state) nil nil nil))
+        (type-set arg2 nil nil type-alist (ens state) (w state) nil nil nil))
        ;;(decoded-ts1 (decode-type-set type-set1))
        ;;(decoded-ts2 (decode-type-set type-set2))
        (arg1-symbolp (ts-subsetp type-set1 *ts-symbol*))
@@ -370,16 +371,16 @@
 ;; non-eqlable.  Also report if EQ or = could be used instead.
 (defun check-call-of-eql (term ; let-bound vars have been replaced in this
                           orig-term
-                          fn-being-checked state)
+                          type-alist fn-being-checked state)
   (declare (xargs :guard (pseudo-termp term)
                   :mode :program
                   :stobjs state))
   (b* ((arg1 (farg1 term))
        (arg2 (farg2 term))
        ((mv type-set1 &)
-        (type-set arg1 nil nil nil (ens state) (w state) nil nil nil))
+        (type-set arg1 nil nil type-alist (ens state) (w state) nil nil nil))
        ((mv type-set2 &)
-        (type-set arg2 nil nil nil (ens state) (w state) nil nil nil))
+        (type-set arg2 nil nil type-alist (ens state) (w state) nil nil nil))
        ;;(decoded-ts1 (decode-type-set type-set1))
        ;;(decoded-ts2 (decode-type-set type-set2))
        (arg1-symbolp (ts-subsetp type-set1 *ts-symbol*))
@@ -411,16 +412,16 @@
 ;; For a call of EQ, report an issue if both arguments are known to be non-symbols.
 (defun check-call-of-eq (term ; let-bound vars have been replaced in this
                          orig-term
-                         fn-being-checked state)
+                         type-alist fn-being-checked state)
   (declare (xargs :guard (pseudo-termp term)
                   :mode :program
                   :stobjs state))
   (b* ((arg1 (farg1 term))
        (arg2 (farg2 term))
        ((mv type-set1 &)
-        (type-set arg1 nil nil nil (ens state) (w state) nil nil nil))
+        (type-set arg1 nil nil type-alist (ens state) (w state) nil nil nil))
        ((mv type-set2 &)
-        (type-set arg2 nil nil nil (ens state) (w state) nil nil nil))
+        (type-set arg2 nil nil type-alist (ens state) (w state) nil nil nil))
        ;;(decoded-ts1 (decode-type-set type-set1))
        ;;(decoded-ts2 (decode-type-set type-set2))
        )
@@ -432,16 +433,16 @@
 ;; For a call of =, report an issue if either argument is known to be a non-number.
 (defun check-call-of-= (term ; let-bound vars have been replaced in this
                         orig-term
-                        fn-being-checked state)
+                        type-alist fn-being-checked state)
   (declare (xargs :guard (pseudo-termp term)
                   :mode :program
                   :stobjs state))
   (b* ((arg1 (farg1 term))
        (arg2 (farg2 term))
        ((mv type-set1 &)
-        (type-set arg1 nil nil nil (ens state) (w state) nil nil nil))
+        (type-set arg1 nil nil type-alist (ens state) (w state) nil nil nil))
        ((mv type-set2 &)
-        (type-set arg2 nil nil nil (ens state) (w state) nil nil nil))
+        (type-set arg2 nil nil type-alist (ens state) (w state) nil nil nil))
        ;;(decoded-ts1 (decode-type-set type-set1))
        ;;(decoded-ts2 (decode-type-set type-set2))
        )
@@ -455,7 +456,7 @@
 ;; The subst includes bindings of vars from overarching lambdas.
 ;; TODO: Track and use the context from overarching IF tests.
 (mutual-recursion
- (defun check-term (term subst fn-being-checked suppress state)
+ (defun check-term (term subst type-alist fn-being-checked suppress state)
    (declare (xargs :guard (pseudo-termp term)
                    :mode :program
                    :stobjs state))
@@ -468,44 +469,54 @@
                              check-dcl-guardian ;used in b*?
                              ))
              nil
-           (prog2$ (check-terms (fargs term) subst fn-being-checked suppress state)
-                   ;; TODO: Use the subst for these?
-                   (if (member-eq fn '(fmt fms fmt1 fmt-to-comment-window))
-                       (check-call-of-fmt-function term fn-being-checked)
-                     (if (eq fn 'equal)
-                         (if (member-eq :equality-variants suppress)
-                             nil
-                           (check-call-of-equal (my-sublis-var subst term) term fn-being-checked state))
-                       (if (eq fn 'eql)
-                           (check-call-of-eql (my-sublis-var subst term) term fn-being-checked state)
-                         (if (eq fn 'eq)
-                             (check-call-of-eq (my-sublis-var subst term) term fn-being-checked state)
-                           (if (eq fn '=)
-                               (check-call-of-= (my-sublis-var subst term) term fn-being-checked state)
-                             (if (eq fn 'hard-error)
-                                 (check-call-of-hard-error term fn-being-checked)
-                               (if (eq fn 'illegal)
-                                   (check-call-of-illegal term fn-being-checked)
-                                 (if (eq 'if fn)
-                                     (check-call-of-if term subst fn-being-checked state)
+           (if (eq 'if fn)
+               (progn$ (check-term (farg1 term) subst type-alist fn-being-checked suppress state) ;; check the test
+                       (b* (((mv & & then-type-alist else-type-alist &)
+                             (assume-true-false (farg1 term) nil nil nil type-alist (ens state) (w state) nil nil nil)))
+                         (prog2$
+                          ;; check the then-branch:
+                          (if (equal (farg1 term) (farg2 term))
+                              nil ;; for (if x x y) don't check x twice.  this can come from (or x y).
+                            (check-term (farg2 term) subst then-type-alist fn-being-checked suppress state))
+                          ;; check the else-branch:
+                          (check-term (farg3 term) subst else-type-alist fn-being-checked suppress state)))
+                       (check-call-of-if term subst type-alist fn-being-checked state))
+             (prog2$ (check-terms (fargs term) subst type-alist fn-being-checked suppress state)
+                     ;; TODO: Use the subst for these?
+                     (if (member-eq fn '(fmt fms fmt1 fmt-to-comment-window))
+                         (check-call-of-fmt-function term fn-being-checked)
+                       (if (eq fn 'equal)
+                           (if (member-eq :equality-variants suppress)
+                               nil
+                             (check-call-of-equal (my-sublis-var subst term) term type-alist fn-being-checked state))
+                         (if (eq fn 'eql)
+                             (check-call-of-eql (my-sublis-var subst term) term type-alist fn-being-checked state)
+                           (if (eq fn 'eq)
+                               (check-call-of-eq (my-sublis-var subst term) term type-alist fn-being-checked state)
+                             (if (eq fn '=)
+                                 (check-call-of-= (my-sublis-var subst term) term type-alist fn-being-checked state)
+                               (if (eq fn 'hard-error)
+                                   (check-call-of-hard-error term fn-being-checked)
+                                 (if (eq fn 'illegal)
+                                     (check-call-of-illegal term fn-being-checked)
                                    (if (consp fn) ;check for lambda
                                        (check-term (lambda-body fn)
                                                    ;; new subst, since we are in a lambda body
                                                    (pairlis$ (lambda-formals fn)
                                                              (my-sublis-var-lst subst (fargs term)))
-                                                   fn-being-checked suppress state)
+                                                   type-alist fn-being-checked suppress state)
                                      (and (not (member-eq :ground-term suppress))
                                           (quote-listp (fargs term))
                                           (cw "(In ~x0, ground term ~x1 is present.)~%~%" fn-being-checked term)))))))))))))))))
 
- (defun check-terms (terms subst fn-being-checked suppress state)
+ (defun check-terms (terms subst type-alist fn-being-checked suppress state)
    (declare (xargs :guard (and (true-listp terms)
                                (pseudo-term-listp terms))
                    :stobjs state))
    (if (endp terms)
        nil
-     (prog2$ (check-term (car terms) subst fn-being-checked suppress state)
-             (check-terms (cdr terms) subst fn-being-checked suppress state)))))
+     (prog2$ (check-term (car terms) subst type-alist fn-being-checked suppress state)
+             (check-terms (cdr terms) subst type-alist fn-being-checked suppress state)))))
 
 (defun check-defun (fn suppress state)
   (declare (xargs :stobjs state
@@ -522,6 +533,7 @@
                  (cw "(~x0 has a :guard-debug xarg, ~x1.)~%~%" fn (second guard-debug-res)))
             (check-term body
                         nil ;empty substitution
+                        nil ; empty type-alist
                         fn suppress state))))
 
 (defun check-defuns (fns suppress state)
