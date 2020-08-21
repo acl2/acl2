@@ -24,4 +24,4 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(gen-macro2-of-macro defund-sk)
+(gen-macro2-of-macro acl2::defund-sk)

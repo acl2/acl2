@@ -842,6 +842,45 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defxdoc defund-sk2
+
+  :parents (soft-macros second-order-functions)
+
+  :short "Introduce a second-order function
+          via a second-order version of @(tsee acl2::defund-sk)."
+
+  :long
+
+  (xdoc::topstring
+
+   (xdoc::h3 "General Form")
+
+   (xdoc::codeblock
+    "(defund-sk2 sofun ...) ; same as defund-sk")
+
+   (xdoc::h3 "Inputs")
+
+   (xdoc::p
+    "The inputs are identical to @(tsee acl2::defund-sk).")
+
+   (xdoc::p
+    "The function @('sofun') must satisfy
+     all the requirements for @(tsee defsoft),
+     because @('defund-sk2') generates @('(defsoft sofun)') (see below).")
+
+   (xdoc::h3 "Generated Events")
+
+   (xdoc::codeblock
+    "(defund-sk sofun ...) ; input form with defund-sk2 replaced by defund-sk"
+    "(defsoft sofun)")
+
+   (xdoc::p
+    "@('sofun') is introduced as a first-order function
+     using @(tsee acl2::defund-sk).
+     It is also recorded as a second-order function via @(tsee defsoft).")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defxdoc define-sk2
 
   :parents (soft-macros second-order-functions)
