@@ -557,14 +557,14 @@
                   (list (cons #\0 rw))))))
       (mv node-new rp::rp-state)))
 
-  (define svex-simplify-linearize-aux ((svexl-node-alist svexl-node-alist-p)
+  (define svex-simplify-linearize-aux ((svexl-node-array svexl-node-array-p)
 
                                        (context)
                                        &key
                                        (state 'state)
                                        (rp::rp-state 'rp::rp-state))
-    :returns (mv (svexl-new svexl-node-alist-p :hyp (svexl-node-alist-p
-                                                     svexl-node-alist))
+    :returns (mv (svexl-new svexl-node-array-p :hyp (svexl-node-array-p
+                                                     svexl-node-array))
                  (rp::rp-state-res RP::VALID-RP-STATE-SYNTAXP :hyp (RP::VALID-RP-STATE-SYNTAXP
                                                                     rp::rp-state)))
     :verify-guards nil
@@ -576,20 +576,20 @@
       (in-theory (e/d (svexl-p)
                       (rp::rp-statep
                        rp::preprocess-then-rp-rw)))))
-    (if (atom svexl-node-alist)
+    (if (atom svexl-node-array)
         (mv nil rp::rp-state)
-      (b* ((node (cdar svexl-node-alist))
+      (b* ((node (cdar svexl-node-array))
            ((mv node rp::rp-state)
             (svexl-node-simplify node  context))
            ((mv rest rp::rp-state)
-            (svex-simplify-linearize-aux (cdr svexl-node-alist)  context)))
-        (mv (acons (caar svexl-node-alist) node rest)
+            (svex-simplify-linearize-aux (cdr svexl-node-array)  context)))
+        (mv (acons (caar svexl-node-array) node rest)
             rp::rp-state)))
     ///
     (local
      (defthm lemma1
-       (implies (svexl-node-alist-p svexl-node-alist)
-                (alistp svexl-node-alist))))
+       (implies (svexl-node-array-p svexl-node-array)
+                (alistp svexl-node-array))))
     (verify-guards svex-simplify-linearize-aux-fn))
 
   (define svex-simplify-linearize ((svex svex-p)
@@ -605,14 +605,14 @@
                  (rp::rp-state-res RP::VALID-RP-STATE-SYNTAXP :hyp (RP::VALID-RP-STATE-SYNTAXP
                                                                     rp::rp-state)))
     (b* ((svexl (svex-to-svexl svex))
-         (node-alist (svexl->node-alist svexl))
-         ((mv node-alist rp::rp-state)
-          (svex-simplify-linearize-aux node-alist  context))
+         (node-array (svexl->node-array svexl))
+         ((mv node-array rp::rp-state)
+          (svex-simplify-linearize-aux node-array  context))
          (top-node (svexl->top-node svexl))
          ((mv top-node rp::rp-state)
           (svexl-node-simplify top-node  context)))
       (mv (make-svexl
-           :node-alist node-alist
+           :node-array node-array
            :top-node top-node)
           rp::rp-state)))
 
@@ -629,14 +629,14 @@
                  (rp::rp-state-res RP::VALID-RP-STATE-SYNTAXP :hyp (RP::VALID-RP-STATE-SYNTAXP
                                                                     rp::rp-state)))
     (b* ((svexllist (svexlist-to-svexllist svexlist))
-         (node-alist (svexllist->node-alist svexllist))
+         (node-array (svexllist->node-array svexllist))
          (top-node (svexllist->top-nodelist svexllist))
-         ((mv node-alist rp::rp-state)
-          (svex-simplify-linearize-aux node-alist  context))
+         ((mv node-array rp::rp-state)
+          (svex-simplify-linearize-aux node-array  context))
          ((mv top-node rp::rp-state)
           (svexl-nodelist-simplify top-node  context)))
       (mv (make-svexllist
-           :node-alist node-alist
+           :node-array node-array
            :top-nodelist top-node)
           rp::rp-state))))
 
