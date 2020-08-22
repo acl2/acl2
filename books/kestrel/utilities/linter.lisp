@@ -292,67 +292,6 @@
                        (alist (farg3 call)))
                    (check-keys-of-alist-wrt-format-string string alist thing-being-checked call))))))
 
-(defun filter-subst (subst vars)
-  (if (endp subst)
-      nil
-    (let ((pair (first subst)))
-      (if (member-eq (car pair) vars)
-          (cons pair (filter-subst (rest subst) vars))
-        (filter-subst (rest subst) vars)))))
-
-;; Recognize the translated form of mbt, possibly with not(s) wrapped around it.
-(defun possibly-negated-mbtp (term)
-  (declare (xargs :guard (pseudo-termp term)))
-  (if (variablep term)
-      nil
-    (case (ffn-symb term)
-      (not (possibly-negated-mbtp (farg1 term)))
-      (return-last (and (equal (farg1 term) ''mbe1-raw)
-                        (equal (farg2 term) ''t)))
-      (t nil))))
-
-;; For a call of IF, report an issue if the test is known non-nil or known-nil (by type-set).
-(defun check-call-of-if (term subst type-alist thing-being-checked suppress state)
-  (declare (xargs :guard (pseudo-termp term)
-                  :mode :program
-                  :stobjs state))
-  (prog2$ (and (equal (farg2 term) (farg3 term))
-               (cw "(In ~s0, both branches of ~x1 are the same.)~%~%" (thing-being-checked-to-string thing-being-checked) term))
-          (and (not (member-eq :resolvable-test suppress))
-               (not (possibly-negated-mbtp (farg1 term)))
-               (let* ((orig-test (farg1 term))
-                      (test (my-sublis-var subst orig-test)))
-                 (mv-let (type-set ttree)
-                   (type-set test nil nil type-alist (ens state) (w state) nil nil nil)
-                   (declare (ignore ttree))
-                   (let* ((decoded-ts (decode-type-set type-set))
-                          (test-knownp (or (= *ts-nil* type-set) ;check for nil
-                                           (= 0 (logand *ts-nil* type-set)) ;check for non-nil
-                                           ))
-                          (reportp (and test-knownp
-                                        ;; Suppress calls of integerp that
-                                        ;; are known to be true since these
-                                        ;; often arise from things like
-                                        ;; (the unsigned-byte x):
-                                        ;; (not (and (eql type-set *TS-T*)
-                                        ;;           (call-of 'integerp test)))
-                                        )))
-                     (progn$ ;; (progn$ (cw "(In ~s0:~%" (thing-being-checked-to-string thing-being-checked))
-                      ;;         (cw "  Test: ~x0~%" test)
-                      ;;         (cw "  Type: ~x0)~%" decoded-ts))
-                      (if reportp
-                          (let* ((test-vars (all-vars orig-test))
-                                 (relevant-subst (filter-subst subst test-vars)))
-                            (progn$ (cw "(In ~s0, resolvable IF-test:~%" (thing-being-checked-to-string thing-being-checked))
-                                    (cw "  Test: ~x0~%" orig-test)
-                                    (cw "  Type: ~x0~%" decoded-ts)
-                                    (cw "  Term: ~x0~%" term)
-                                    (cw "  Type-alist: ~x0~%" (decode-type-alist type-alist))
-                                    (cw "  Relevant subst: ~x0)~%~%" relevant-subst)))
-                        nil))))))))
-
-;; TODO: In the functions below, also use guard information and info from overarching IFs?
-
 ;; For a call of EQUAL, report an issue if EQ, EQL, or = could be used instead.
 (defun check-call-of-equal (term ; let-bound vars have been replaced in this
                             orig-term
@@ -519,68 +458,181 @@
                        (cw "(In ~s0, ill-guarded call ~x1 since ~x2 is not a number.)~%~%"
                            (thing-being-checked-to-string thing-being-checked) orig-term arg2)))))))
 
+(defun filter-subst (subst vars)
+  (if (endp subst)
+      nil
+    (let ((pair (first subst)))
+      (if (member-eq (car pair) vars)
+          (cons pair (filter-subst (rest subst) vars))
+        (filter-subst (rest subst) vars)))))
+
+;; Recognize the translated form of mbt, possibly with not(s) wrapped around it.
+(defun possibly-negated-mbtp (term)
+  (declare (xargs :guard (pseudo-termp term)))
+  (if (variablep term)
+      nil
+    (case (ffn-symb term)
+      (not (possibly-negated-mbtp (farg1 term)))
+      (return-last (and (equal (farg1 term) ''mbe1-raw)
+                        (equal (farg2 term) ''t)))
+      (t nil))))
+
+;; Try to resolve TERM wrt SUBST, assuming the information in the TYPE-ALIST.
+;; Returns :true, :false, or nil (could not resolve).
+(defun try-to-resolve (term subst type-alist state)
+  (declare (xargs :stobjs state
+                  :mode :program))
+  (and
+   ;; It's not surprising for an MBT (or its negation), so we suppress that:
+   (not (possibly-negated-mbtp term))
+   (b* (
+        ;; Apply the subst before checking:
+        (term (my-sublis-var subst term))
+        ;; Get the type:
+        ((mv type-set &)
+         (type-set term nil nil type-alist (ens state) (w state) nil nil nil))
+        ;; (decoded-ts (decode-type-set type-set))
+        ;; (reportp (and term-knownp
+        ;;               ;; Suppress calls of integerp that
+        ;;               ;; are known to be true since these
+        ;;               ;; often arise from things like
+        ;;               ;; (the unsigned-byte x):
+        ;;               ;; (not (and (eql type-set *TS-T*)
+        ;;               ;;           (call-of 'integerp term)))
+        ;;               ))
+        )
+     (if (= *ts-nil* type-set)
+         :false
+       (if (= 0 (logand *ts-nil* type-set)) ;check for non-nil
+           :true
+         nil ; could not resolve
+         )))))
+
 ;; The subst includes bindings of vars from overarching lambdas.
 ;; TODO: Track and use the context from overarching IF tests.
 (mutual-recursion
- (defun check-term (term subst type-alist thing-being-checked suppress state)
+ ;; For a call of IF, report an issue if the test is known non-nil or known-nil (by type-set).
+ (defun check-call-of-if (term subst type-alist iff-flag thing-being-checked suppress state)
    (declare (xargs :guard (pseudo-termp term)
                    :mode :program
                    :stobjs state))
-   (if (variablep term)
-       nil
-     (let ((fn (ffn-symb term)))
-       (if (eq 'quote fn)
-           nil
-         (if (member-eq fn '(the-check ;suppress checks done for (the ...)
-                             check-dcl-guardian ;used in b*?
-                             ))
-             nil
-           (if (eq 'if fn)
-               (progn$ (check-term (farg1 term) subst type-alist thing-being-checked suppress state) ;; check the test
-                       (b* (((mv & & then-type-alist else-type-alist &)
-                             (assume-true-false (farg1 term) nil nil nil type-alist (ens state) (w state) nil nil nil)))
-                         (prog2$
-                          ;; check the then-branch:
-                          (if (equal (farg1 term) (farg2 term))
-                              nil ;; for (if x x y) don't check x twice.  this can come from (or x y).
-                            (check-term (farg2 term) subst then-type-alist thing-being-checked suppress state))
-                          ;; check the else-branch:
-                          (check-term (farg3 term) subst else-type-alist thing-being-checked suppress state)))
-                       (check-call-of-if term subst type-alist thing-being-checked suppress state))
-             (prog2$ (check-terms (fargs term) subst type-alist thing-being-checked suppress state)
-                     ;; TODO: Use the subst for these?
-                     (if (member-eq fn '(fmt fms fmt1 fmt-to-comment-window))
-                         (check-call-of-fmt-function term thing-being-checked)
-                       (if (eq fn 'equal)
-                           (check-call-of-equal (my-sublis-var subst term) term type-alist thing-being-checked suppress state)
-                         (if (eq fn 'eql)
-                             (check-call-of-eql (my-sublis-var subst term) term type-alist thing-being-checked suppress state)
-                           (if (eq fn 'eq)
-                               (check-call-of-eq (my-sublis-var subst term) term type-alist thing-being-checked suppress state)
-                             (if (eq fn '=)
-                                 (check-call-of-= (my-sublis-var subst term) term type-alist thing-being-checked suppress state)
-                               (if (eq fn 'hard-error)
-                                   (check-call-of-hard-error term thing-being-checked suppress)
-                                 (if (eq fn 'illegal)
-                                     (check-call-of-illegal term thing-being-checked suppress)
-                                   (if (consp fn) ;check for lambda
-                                       (check-term (lambda-body fn)
-                                                   ;; new subst, since we are in a lambda body
-                                                   (pairlis$ (lambda-formals fn)
-                                                             (my-sublis-var-lst subst (fargs term)))
-                                                   type-alist thing-being-checked suppress state)
-                                     (and (not (member-eq :ground-term suppress))
-                                          (quote-listp (fargs term))
-                                          (cw "(In ~s0, ground term ~x1 is present.)~%~%" (thing-being-checked-to-string thing-being-checked) term)))))))))))))))))
+   (progn$
+    (and (not (member-eq :resolvable-test suppress))
+         (let* ((test (farg1 term))
+                (res (try-to-resolve test subst type-alist state)))
+           (case res
+             (:true (progn$
+                     (cw "(In ~s0, the IF test in ~x1 is known to be true~%" (thing-being-checked-to-string thing-being-checked) term)
+                     (cw "  Type-alist: ~x0~%" (decode-type-alist type-alist))
+                     (let ((relevant-subst (filter-subst subst (all-vars test))))
+                       (if relevant-subst
+                           (cw "  Relevant substitutions ~x0)~%~%" relevant-subst)
+                         (cw ")~%~%")))))
+             (:false (progn$
+                      (cw "(In ~s0, the IF test in ~x1 is known to be false~%" (thing-being-checked-to-string thing-being-checked) term)
+                      (cw "  Type-alist: ~x0~%" (decode-type-alist type-alist))
+                      (let ((relevant-subst (filter-subst subst (all-vars test))))
+                        (if relevant-subst
+                            (cw "  Relevant substitutions ~x0)~%~%" relevant-subst)
+                          (cw ")~%~%")))))
+             (nil nil))))
+    ;; Check the test recursively:
+    (check-term (farg1 term) subst type-alist
+                nil ; we use nil here because we handle the test above
+                thing-being-checked suppress state)
+    (b* (((mv & & then-type-alist else-type-alist &)
+          (assume-true-false (farg1 term) nil nil nil type-alist (ens state) (w state) nil nil nil)))
+      (prog2$
+       ;; check the then-branch:
+       (if (equal (farg1 term) (farg2 term))
+           nil ;; for (if x x y) don't check x twice.  this can come from (or x y).
+         (if (quotep (farg2 term))
+             nil ; don't check constant if-branches (very common to implement ands or ors)
+           (check-term (farg2 term) subst then-type-alist
+                       iff-flag ; lets us catch branches that are resolvable but not constants, assuming the whole IF is in an IFF context
+                       thing-being-checked suppress state)))
+       ;; check the else-branch:
+       (if (quotep (farg3 term))
+           nil ; don't check constant if-branches (very common to implement ands or ors)
+         (check-term (farg3 term) subst else-type-alist
+                     iff-flag ; lets us catch branches that are resolvable but not constants, assuming the whole IF is in an IFF context
+                     thing-being-checked suppress state))))
+    (and (equal (farg2 term) (farg3 term))
+         (cw "(In ~s0, both branches of ~x1 are the same.)~%~%" (thing-being-checked-to-string thing-being-checked) term))))
 
- (defun check-terms (terms subst type-alist thing-being-checked suppress state)
+ ;; add constant-surprising arg...
+ (defun check-term (term subst type-alist iff-flag thing-being-checked suppress state)
+   (declare (xargs :guard (pseudo-termp term)
+                   :mode :program
+                   :stobjs state))
+   (prog2$
+    ;; If we are in an IFF context, check whether the term is known to be nil or non-nil:
+    (and (not (member-eq :resolvable-test suppress))
+         iff-flag
+         (let ((res (try-to-resolve term subst type-alist state)))
+           (case res
+             (:true
+              (progn$ (cw "(In ~s0, ~x1 is known to be true and is used in an IFF context~%" (thing-being-checked-to-string thing-being-checked) term)
+                      (cw "  Type-alist: ~x0~%" (decode-type-alist type-alist))
+                      (let ((relevant-subst (filter-subst subst (all-vars term))))
+                        (if relevant-subst
+                            (cw "  Relevant substitutions ~x0)~%~%" relevant-subst)
+                          (cw ")~%~%")))))
+             (:false
+              (progn$ (cw "(In ~s0, ~x1 is known to be false and is used in an IFF context~%" (thing-being-checked-to-string thing-being-checked) term)
+                      (cw "  Type-alist: ~x0~%" (decode-type-alist type-alist))
+                      (let ((relevant-subst (filter-subst subst (all-vars term))))
+                        (if relevant-subst
+                            (cw "  Relevant substitutions ~x0)~%~%" relevant-subst)
+                          (cw ")~%~%")))))
+             (nil nil))))
+    (if (variablep term)
+        nil
+      (let ((fn (ffn-symb term)))
+        (if (eq 'quote fn)
+            nil
+          (if (member-eq fn '(the-check ;suppress checks done for (the ...)
+                              check-dcl-guardian ;used in b*?
+                              ))
+              nil
+            (if (eq 'if fn) ; separate because we process the args differently
+                (check-call-of-if term subst type-alist iff-flag thing-being-checked suppress state)
+              (prog2$ (check-terms (fargs term) subst type-alist
+                                   nil ; iff-flag
+                                   thing-being-checked suppress state)
+                      ;; TODO: Use the subst for these?
+                      (if (member-eq fn '(fmt fms fmt1 fmt-to-comment-window))
+                          (check-call-of-fmt-function term thing-being-checked)
+                        (if (eq fn 'equal)
+                            (check-call-of-equal (my-sublis-var subst term) term type-alist thing-being-checked suppress state)
+                          (if (eq fn 'eql)
+                              (check-call-of-eql (my-sublis-var subst term) term type-alist thing-being-checked suppress state)
+                            (if (eq fn 'eq)
+                                (check-call-of-eq (my-sublis-var subst term) term type-alist thing-being-checked suppress state)
+                              (if (eq fn '=)
+                                  (check-call-of-= (my-sublis-var subst term) term type-alist thing-being-checked suppress state)
+                                (if (eq fn 'hard-error)
+                                    (check-call-of-hard-error term thing-being-checked suppress)
+                                  (if (eq fn 'illegal)
+                                      (check-call-of-illegal term thing-being-checked suppress)
+                                    (if (consp fn) ;check for lambda
+                                        (check-term (lambda-body fn)
+                                                    ;; new subst, since we are in a lambda body
+                                                    (pairlis$ (lambda-formals fn)
+                                                              (my-sublis-var-lst subst (fargs term)))
+                                                    type-alist iff-flag thing-being-checked suppress state)
+                                      (and (not (member-eq :ground-term suppress))
+                                           (quote-listp (fargs term))
+                                           (cw "(In ~s0, ground term ~x1 is present.)~%~%" (thing-being-checked-to-string thing-being-checked) term))))))))))))))))))
+
+ (defun check-terms (terms subst type-alist iff-flag thing-being-checked suppress state)
    (declare (xargs :guard (and (true-listp terms)
                                (pseudo-term-listp terms))
                    :stobjs state))
    (if (endp terms)
        nil
-     (prog2$ (check-term (car terms) subst type-alist thing-being-checked suppress state)
-             (check-terms (cdr terms) subst type-alist thing-being-checked suppress state)))))
+     (prog2$ (check-term (car terms) subst type-alist iff-flag thing-being-checked suppress state)
+             (check-terms (cdr terms) subst type-alist iff-flag thing-being-checked suppress state)))))
 
 (defun check-defun (fn assume-guards suppress state)
   (declare (xargs :stobjs state
@@ -602,9 +654,17 @@
     (progn$ (and (not (member-eq :guard-debug suppress))
                  guard-debug-res
                  (cw "(~x0 has a :guard-debug xarg, ~x1.)~%~%" fn (second guard-debug-res)))
+            (and (not (equal guard *t*)) ;; a guard of T is resolvable but uninterseting
+                 (check-term guard
+                             nil ;empty substitution
+                             nil ;type-alist
+                             t   ;iff-flag
+                             (concatenate 'string "guard of " (symbol-to-string fn))
+                             suppress state))
             (check-term body
                         nil ;empty substitution
                         type-alist
+                        nil ;iff-flag
                         fn
                         suppress state))))
 
