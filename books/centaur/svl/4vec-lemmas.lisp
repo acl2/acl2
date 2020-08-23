@@ -59,12 +59,11 @@
    integerp-ifix
    (integerp (ifix x)))
 
-
   (rp::def-rp-rule$ t nil
-   ifix-opener
-   (implies (integerp x)
-            (equal (ifix x)
-                   x)))
+                    ifix-opener
+                    (implies (integerp x)
+                             (equal (ifix x)
+                                    x)))
 
   ;; optional but may make it faster::
   (defthm ifix-opener-side-cond
@@ -155,8 +154,6 @@
                   (mod val (expt 2 size))))
   :hints (("goal"
            :in-theory (e/d (4vec-zero-ext loghead) ()))))
-
-
 
 (local
  (defthm 4vec->lower-opener
@@ -533,6 +530,76 @@
   nil
 
   (local
+   (use-arithmetic-5 nil))
+
+  (local
+   (use-ihs-logops-lemmas nil))
+
+  (local
+   (use-qr-lemmas nil))
+
+  (defthmd logior-of-loghead-same-size
+    (equal (logior (loghead x y)
+                   (loghead x z))
+           (loghead x (logior y z))))
+
+  (defthmd logior-of-logtail-same-size
+    (equal (logior (logtail x y)
+                   (logtail x z))
+           (logtail x (logior y z))))
+
+  (local
+   (defthm lemma1
+     (implies (or (equal (logior (car x) (cdr x))
+                         (logand (car x) (cdr x)))
+                  (equal (logior (logtail a (car x))
+                                 (logtail a (cdr x)))
+                         (logand (logtail a (car x))
+                                 (logtail a (cdr x)))))
+              (equal (logior (loghead b (logtail a (car x)))
+                             (loghead b (logtail a (cdr x))))
+                     (logand (loghead b (logtail a (car x)))
+                             (loghead b (logtail a (cdr x))))))
+     :hints (("goal"
+              :in-theory (e/d (logior-of-loghead-same-size
+                               logior-of-logtail-same-size)
+                              (bitops::loghead-of-logior
+                               bitops::logtail-of-logior))))))
+  
+  (defthm 4vec-part-select-of-3vec-fix
+    (implies (and (natp a)
+                  (natp b))
+             (equal (4vec-part-select a b (sv::3vec-fix x))
+                    (sv::3vec-fix (4vec-part-select a b x))))
+    :otf-flg t
+    :hints (("Goal"
+             :do-not-induct t
+             :in-theory (e/d*
+                         (4vec-part-select
+                          ;;logior-of-loghead-same-size
+                          ;;bitops::ihsext-inductions
+                          ;;bitops::ihsext-recursive-redefs
+                          SV::4VEC->UPPER
+                          SV::4VEC->LOWER
+                          4VEC-CONCAT
+                          ACL2::NEGP
+                          4VEC-RSH
+                          4VEC-SHIFT-CORE
+                          2vec
+                          SV::3VEC-FIX
+                          4VEC-ZERO-EXT
+                          ;;logior-of-logtail-same-size
+                          )
+                         (;;BITOPS::LOGHEAD-OF-LOGIOR
+                          ;;BITOPS::LOGTAIL-OF-LOGIOR
+                          ))))))
+
+
+
+(encapsulate
+  nil
+
+  (local
    (use-arithmetic-5 t))
 
   (local
@@ -704,8 +771,8 @@
     :hints (("goal"
              :use ((:instance lemma2))
              :expand ((ACL2::LOGCONS 0 (ASH TERM2 (+ -1 C-SIZE))))
-             :in-theory (e/d* (bitops::ihsext-inductions
-                               zip
+             :in-theory (e/d* (zip
+                               bitops::ihsext-inductions
                                bitops::ihsext-recursive-redefs)
                               (logapp-of-logapp-2
                                lemma2
@@ -867,9 +934,9 @@
 
 (local
  (defthm nfix-opener
-  (implies (natp x)
-           (equal (nfix x)
-                  x))))
+   (implies (natp x)
+            (equal (nfix x)
+                   x))))
 (local
  (encapsulate
    nil
@@ -2752,7 +2819,6 @@
                                (:definition integer-range-p)
                                (:rewrite default-<-1)))))))
 
-
 (local
  (define logapp$ ((size natp)
                   (a integerp)
@@ -2861,11 +2927,10 @@
                               (:REWRITE BITOPS::LOGBIT-TO-LOGBITP)
                               (:REWRITE BITOPS::LOGCAR-OF-BIT)
                               (:REWRITE
-                                    BITOPS::EXPT-2-LOWER-BOUND-BY-LOGBITP)
+                               BITOPS::EXPT-2-LOWER-BOUND-BY-LOGBITP)
                               zp
                               acl2::LOGAPP-0
                               ACL2::LOGCAR-LOGAPP))))))
-
 
 (local
  (defthm logand-of-logapp$-lemma
@@ -2873,15 +2938,15 @@
           (LOGHEAD size a))
    :hints (("Goal"
             :in-theory (e/d* (bitops::ihsext-inductions
-                             bitops::ihsext-recursive-redefs
-                             ) ())))))
+                              bitops::ihsext-recursive-redefs
+                              ) ())))))
 
 (local
  (defthmd logand-of-logapp$
    (implies (and (natp size)
-                 ;(integerp x)
-                 ;(integerp a)
-                 ;(integerp b)
+;(integerp x)
+;(integerp a)
+;(integerp b)
                  )
             (equal (LOGand x (LOGAPP$ SIZE a b))
                    (logapp size (logand (loghead size x)
@@ -4456,7 +4521,6 @@
   (rp-attach-sc logxor-to-4vec-bitxor
                 logxor-to-4vec-bitxor-side-cond))
 
-
 (progn
   (def-rp-rule$ t nil
     binary-+-to-4vec-plus
@@ -4482,31 +4546,29 @@
   (rp-attach-sc binary-+-to-4vec-plus
                 binary-+-to-4vec-plus-side-cond))
 
+(progn
+  (def-rp-rule$ t nil
+    logapp-to-4vec-concat
+    (implies (and (integerp x)
+                  (natp size)
+                  (integerp y))
+             (and (equal (logapp size x y)
+                         (sv::4vec-concat size x y))))
+    :hints (("Goal"
+             :in-theory (e/d (sv::4vec-concat)
+                             ()))))
+  (defthm logapp-to-4vec-concat-side-cond
+    (implies (and (integerp x)
+                  (natp size)
+                  (integerp y))
+             (integerp (sv::4vec-concat size x y)))
+    :rule-classes nil
+    :hints (("Goal"
+             :in-theory (e/d (sv::4vec-concat)
+                             ()))))
 
-
- (progn
-   (def-rp-rule$ t nil
-     logapp-to-4vec-concat
-     (implies (and (integerp x)
-                   (natp size)
-                   (integerp y))
-              (and (equal (logapp size x y)
-                          (sv::4vec-concat size x y))))
-     :hints (("Goal"
-              :in-theory (e/d (sv::4vec-concat)
-                              ()))))
-   (defthm logapp-to-4vec-concat-side-cond
-     (implies (and (integerp x)
-                   (natp size)
-                   (integerp y))
-              (integerp (sv::4vec-concat size x y)))
-     :rule-classes nil
-     :hints (("Goal"
-              :in-theory (e/d (sv::4vec-concat)
-                              ()))))
-
-   (rp-attach-sc logapp-to-4vec-concat
-                 logapp-to-4vec-concat-side-cond))
+  (rp-attach-sc logapp-to-4vec-concat
+                logapp-to-4vec-concat-side-cond))
 
 (def-rp-rule$ t nil
   integerp-of--

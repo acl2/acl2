@@ -42,6 +42,24 @@
   use-arithmetic-5
   :disabled t))
 
+(def-rp-rule bits-of-3vec-fix
+  (implies (and (natp a)
+                (natp b))
+           (equal (bits (sv::3vec-fix x) a b)
+                  (sv::3vec-fix (bits x a b))))
+  :otf-flg t
+  :hints (("Goal"
+           :use ((:instance 4vec-part-select-of-3vec-fix))
+           :do-not-induct t
+           :in-theory (e/d
+                       (bits
+                        ;;logior-of-logtail-same-size
+                        )
+                       (4vec-part-select-of-3vec-fix
+                        ;;BITOPS::LOGHEAD-OF-LOGIOR
+                        ;;BITOPS::LOGTAIL-OF-LOGIOR
+                        )))))
+
 (encapsulate nil
 
   ;;low priority lemmas:
@@ -1616,21 +1634,19 @@
                               convert-4vec-concat-to-4vec-concat$
                               )))))
   (defthm bits-of-bitp-size=posp-start=0
-   (implies (and (bitp val)
-                 (posp size))
-            (equal (bits val 0 size)
-                   val))
-   :hints (("Goal"
-            :in-theory (e/d (bits
-                             4VEC-PART-SELECT
-                             SV::4VEC->UPPER
-                             sv::4vec->lower
-                             4VEC-CONCAT
-                             4VEC-CONCAT$)
-                            (
-                             ))))))
-
-
+    (implies (and (bitp val)
+                  (posp size))
+             (equal (bits val 0 size)
+                    val))
+    :hints (("Goal"
+             :in-theory (e/d (bits
+                              4VEC-PART-SELECT
+                              SV::4VEC->UPPER
+                              sv::4vec->lower
+                              4VEC-CONCAT
+                              4VEC-CONCAT$)
+                             (
+                              ))))))
 
 
 
@@ -1903,12 +1919,11 @@
     bits-of-sbits-4-no-syntaxp
     bits-of-sbits-5-no-syntaxp))
 
-
 (encapsulate
   nil
   (local
    (use-arithmetic-5 t))
-  
+
   (def-rp-rule$ t nil
     logbit-to-bits
     (implies (and (natp index)
