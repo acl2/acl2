@@ -915,3 +915,64 @@
   (case-match term
     (('rp ''bitp &)
      t)))
+
+(encapsulate
+  nil
+
+  (local
+   (in-theory (disable
+              ;; +-is-SUM
+              ;; mod2-is-m2
+              ;; floor2-if-f2
+              ;; c-is-f2
+              ;; s-is-m2
+               ;; s-spec-is-m2
+               SVL::4VEC-ZERO-EXT-IS-4VEC-CONCAT
+               ;;c-spec-is-f2
+               ;;s-c-spec-is-list-m2-f2
+               ;;c-s-spec-is-list-m2-f2
+               ;;s-of-c-trig-def
+               )))
+
+  (with-output
+    :off :all
+    :gag-mode nil
+
+    (def-formula-checks
+      mult-formula-checks
+      (binary-append
+       --
+       sum-list
+       binary-and
+       and-list
+       sort-sum
+       rp::c-s-spec
+       rp::s-c-spec
+       rp::c-spec
+       rp::s-spec
+       bit-of
+       svl::bits
+       svl::4vec-bitand
+       svl::4vec-bitor
+       svl::4vec-?
+       svl::4vec-?*
+       sv::4vec-bitxor
+       svl::4vec-bitnot
+       svl::4vec-bitnot$
+       adder-b+
+       s-of-c-trig
+       binary-?
+       binary-xor
+       binary-or
+       binary-not
+       bit-fix
+       s-c-res
+       c
+       m2
+       f2
+       times2
+       s
+       pp
+       binary-sum
+       sv::3vec-fix
+       sv::4vec-fix))))
