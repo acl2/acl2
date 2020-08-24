@@ -170,3 +170,18 @@
     :rule-classes nil))
 
 (assert! (equal *test-kwd5* :short))
+
+;; Old test from defval-tests
+(defun fib (n)
+  (declare (xargs :guard (natp n)))
+  (cond ((zp n) 1)
+        ((eql n 1) 1)
+        (t (+ (fib (- n 1)) (fib (- n 2))))))
+
+(defval *defval-example-number*
+  :parents (defval)
+  :short "Example of a constant for @(see defval)."
+  :long "<p>This number is not very important.</p>"
+  (fib 5))
+
+(assert! (equal *defval-example-number* (fib 5)))
