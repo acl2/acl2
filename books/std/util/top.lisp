@@ -44,7 +44,6 @@
 (include-book "defredundant")
 (include-book "defsum")
 (include-book "defval")
-(include-book "defval-tests")
 (include-book "def-bound-theorems")
 
 (defxdoc std/util
