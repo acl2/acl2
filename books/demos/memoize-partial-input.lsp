@@ -11,8 +11,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; We introduce a function that stops when the recursion limit is reached.  Here
-; we have a fibonacci function that would terminate on negative integers
-; without that limit.
+; we have a fibonacci function that would fail to terminate on negative
+; integers without that limit.
 
 (defun fib-limit (n limit)
   (declare (type (integer 0 *) limit)
@@ -592,7 +592,7 @@ parameters.
 (mf
 #||
 Reason:
-The formal parameter lists for function symbols 
+The formal parameter lists for function symbols
 EVENLP{DIFFERENT-LIMIT-VARS}-BDD and ODDLP{DIFFERENT-LIMIT-VARS}-BDD
 have different final elements (of BOUND and BOUND2, respectively).
 ||#
@@ -1066,7 +1066,7 @@ FIB-ST-LIMIT.
 
 (mf
 #||
-ACL2 Error in MEMOIZE-PARTIAL:  STATE is among the formals of 
+ACL2 Error in MEMOIZE-PARTIAL:  STATE is among the formals of
 FIB-STATE-LIMIT.
 ||#
  (memoize-partial fib-state))

@@ -126,15 +126,6 @@ ifneq (,$(word 2, $(ACL2_WD)))
 $(error Illegal ACL2 build directory (contains a space): $(ACL2_WD)/)
 endif
 
-# ACL2 includes support for hash cons, function memoization, and
-# applicative hash tables (see :doc hons-and-memoization).  In order
-# to avoid including those features, you can try commenting out the
-# following line.  We do not claim to support such builds.  However,
-# you are welcome to try, and there is a reasonable chance that you
-# will succeed in building a usable executable.
-
-ACL2_HONS := h
-
 # The variable ACL2_REAL should be defined for the non-standard
 # version and not for the standard version.  Non-standard ACL2 images
 # will include the suffix "r", for example saved_acl2r rather than
@@ -144,18 +135,11 @@ ACL2_HONS := h
 # parallel or (for implementors only) have features :acl2-devel or
 # :write-arithmetic-goals, for special builds pertaining to
 # guard-verified functions or writing out arithmetic lemma data to
-# ~/write-arithmetic-goals.lisp.  Variable ACL2_HONS is h by default,
-# but when its value is the empty string, then suffix "c" is
-# generated, to create an ACL2(c) build -- BUT NOTE that after
-# Version_7.1, change ACL2-HONS at your own risk -- it might work, but
-# we no longer claim to support it!
+# ~/write-arithmetic-goals.lisp.
 
 # DO NOT EDIT ACL2_SUFFIX!  Edit the above-mentioned four variables instead.
 
 ACL2_SUFFIX :=
-ifeq ($(ACL2_HONS),)
-	ACL2_SUFFIX := $(ACL2_SUFFIX)c
-endif
 ifdef ACL2_PAR
 	ACL2_SUFFIX := $(ACL2_SUFFIX)p
 endif
@@ -244,9 +228,8 @@ sources := axioms.lisp memoize.lisp hons.lisp\
            defpkgs.lisp\
            apply-prim.lisp apply-constraints.lisp apply.lisp
 
-ifdef ACL2_HONS
-	sources := $(sources) hons-raw.lisp memoize-raw.lisp
-endif
+sources := $(sources) hons-raw.lisp memoize-raw.lisp
+
 ifdef ACL2_PAR
 	sources := $(sources) multi-threading-raw.lisp parallel-raw.lisp futures-raw.lisp
 endif
@@ -282,9 +265,6 @@ acl2r.lisp:
 # The various "startup" code below can be loaded as a first step in
 # building ACL2.  The first is actually always done in modern ACL2 builds.
 	@echo "" > $@
-	@if [ "$(ACL2_HONS)" != "" ] ; then \
-	echo '(or (member :hons *features*) (push :hons *features*))' >> $@ ;\
-	fi
 	@if [ "$(ACL2_COMPILER_DISABLED)" != "" ] ; then \
 	echo '(DEFPARAMETER *ACL2-COMPILER-ENABLED* NIL)' >> $@ ;\
 	fi
@@ -309,9 +289,6 @@ acl2r.lisp:
 # WARNING: The startups below should be used with care.  Don't use
 # them unless you know what you are doing!  They are not officially
 # supported.
-	@if [ "$(ACL2_HONS)" = "h_hack" ] ; then \
-	echo '(or (member :memoize-hack *features*) (push :memoize-hack *features*))' >> $@ ;\
-	fi
 	@if [ "$(ACL2_WAG)" != "" ] ; then \
 	mv -f ~/write-arithmetic-goals.lisp.old ; \
 	mv -f ~/write-arithmetic-goals.lisp ~/write-arithmetic-goals.lisp.old ; \
