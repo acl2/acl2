@@ -21,8 +21,8 @@
 
 (defun prove$-fn (term state hints otf-flg)
 
-; This function is based on thm-fn.  It returns.  It returns (value t) if the
-; proof succeeds, else (value nil).
+; This function is based on thm-fn.  It returns (value t) if the proof
+; succeeds, else (value nil).
 
   (declare (xargs :mode :program :stobjs state))
   (with-ctx-summarized
