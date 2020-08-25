@@ -858,6 +858,10 @@
      has been replaced by a line containing @('#!/usr/bin/env bash'), for
      increased portability.")
 
+   (xdoc::p
+    "The book @('tools/defttag-muffled.lisp') provides a way, using a trust
+    tag, to turn off all subsequent ``TTAG NOTE'' messages.  Use with care!!")
+
    ))
 
 (defxdoc note-8-3-books

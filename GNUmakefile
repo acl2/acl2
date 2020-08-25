@@ -279,24 +279,38 @@ acl2r:
 	$(MAKE) acl2r.lisp
 
 acl2r.lisp:
-# It might be good to remove old compiled files acl2-fns.o etc., but at
-# the moment it seems painful to deal with all possible compiled file
-# extensions.
+# The various "startup" code below can be loaded as a first step in
+# building ACL2.  The first is actually always done in modern ACL2 builds.
 	@echo "" > $@
-	@if [ "$(ACL2_REAL)" != "" ] ; then \
-	echo '(or (member :non-standard-analysis *features*) (push :non-standard-analysis *features*))' >> $@ ;\
-	fi
 	@if [ "$(ACL2_HONS)" != "" ] ; then \
 	echo '(or (member :hons *features*) (push :hons *features*))' >> $@ ;\
 	fi
-	@if [ "$(ACL2_HONS)" = "h_hack" ] ; then \
-	echo '(or (member :memoize-hack *features*) (push :memoize-hack *features*))' >> $@ ;\
+	@if [ "$(ACL2_COMPILER_DISABLED)" != "" ] ; then \
+	echo '(DEFPARAMETER *ACL2-COMPILER-ENABLED* NIL)' >> $@ ;\
 	fi
+	@if [ "$(ACL2_EGC_ON)" != "" ] ; then \
+	echo '(DEFPARAMETER *ACL2-EGC-ON* $(ACL2_EGC_ON))' >> $@ ;\
+	fi
+# The next startup is something for developers only.  It is useful
+# from time to time to check the arrangement that certain source
+# functions come up as guard-verified.  See :DOC
+# verify-guards-for-system-functions.
+	@if [ "$(ACL2_DEVEL)" != "" ] ; then \
+	echo '(or (member :acl2-devel *features*) (push :acl2-devel *features*))' >> $@ ;\
+	fi
+# WARNING: The next two startups are for building ACL2(p) and ACL2(r),
+# respectively.
 	@if [ "$(ACL2_PAR)" != "" ] ; then \
 	echo '(or (member :acl2-par *features*) (push :acl2-par *features*))' >> $@ ;\
 	fi
-	@if [ "$(ACL2_DEVEL)" != "" ] ; then \
-	echo '(or (member :acl2-devel *features*) (push :acl2-devel *features*))' >> $@ ;\
+	@if [ "$(ACL2_REAL)" != "" ] ; then \
+	echo '(or (member :non-standard-analysis *features*) (push :non-standard-analysis *features*))' >> $@ ;\
+	fi
+# WARNING: The startups below should be used with care.  Don't use
+# them unless you know what you are doing!  They are not officially
+# supported.
+	@if [ "$(ACL2_HONS)" = "h_hack" ] ; then \
+	echo '(or (member :memoize-hack *features*) (push :memoize-hack *features*))' >> $@ ;\
 	fi
 	@if [ "$(ACL2_WAG)" != "" ] ; then \
 	mv -f ~/write-arithmetic-goals.lisp.old ; \
@@ -312,14 +326,15 @@ acl2r.lisp:
 	@if [ "$(ACL2_SIZE)" != "" ] ; then \
 	echo '(or (find-package "ACL2") (#+(and gcl (not ansi-cl)) defpackage:defpackage #-(and gcl (not ansi-cl)) defpackage "ACL2" (:size $(ACL2_SIZE)) (:use)))' >> $@ ;\
 	fi
-	@if [ "$(ACL2_COMPILER_DISABLED)" != "" ] ; then \
-	echo '(DEFPARAMETER *ACL2-COMPILER-ENABLED* NIL)' >> $@ ;\
-	fi
-	@if [ "$(ACL2_EGC_ON)" != "" ] ; then \
-	echo '(DEFPARAMETER *ACL2-EGC-ON* $(ACL2_EGC_ON))' >> $@ ;\
-	fi
 	@if [ "$(ACL2_EXIT_LISP_HOOK)" != "" ] ; then \
 	echo '(DEFPARAMETER *ACL2-EXIT-LISP-HOOK* (QUOTE $(ACL2_EXIT_LISP_HOOK)))' >> $@ ;\
+	fi
+# WARNING: The startup below should be used with even more care than
+# those warned about above, since it allows you to put anything you
+# like into acl2r.lisp, whether reasonable or not!  Example:
+#   make ACL2_STARTUP_EXTRA='(push :acl2-save-unnormalized-bodies *features*)'
+	@if [ "$(ACL2_STARTUP_EXTRA)" != "" ] ; then \
+	echo '$(ACL2_STARTUP_EXTRA)' >> $@ ;\
 	fi
 
 .PHONY: chmod_image

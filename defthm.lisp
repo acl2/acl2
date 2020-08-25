@@ -2100,8 +2100,18 @@
          (lst (external-linearize xconcl ens wrld state)))
     (cond ((null lst)
            (er soft ctx
-               "No :LINEAR rule can be generated from ~x0.  See :DOC linear."
-               name))
+               "No :LINEAR rule can be generated from ~x0.  See :DOC ~
+                linear.~@1"
+               name
+               (mv-let (flg x ttree)
+                 (eval-ground-subexpressions concl ens wrld state nil)
+                 (declare (ignore flg ttree))
+                 (if (quotep x)
+                     (msg "  Note that after ground evaluation, the ~
+                           conclusion, ~x0, was treated as the constant, ~x1."
+                          (untranslate concl t wrld)
+                          (untranslate x t wrld))
+                   ""))))
           ((not (null (cdr lst)))
            (er soft ctx
                "No :LINEAR rule can be generated from ~x0 because the ~

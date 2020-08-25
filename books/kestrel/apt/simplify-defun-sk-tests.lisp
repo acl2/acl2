@@ -464,8 +464,7 @@ failure.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (deftest
-  (include-book ; newline to break possible dependency (probably unnecessary)
-   "kestrel/soft/top" :dir :system)
+  (include-book "kestrel/soft/top" :dir :system)
   (defunvar ?f1 (* *) => *)
   (defun-sk2 g1[?f1] (x y)
     (forall z

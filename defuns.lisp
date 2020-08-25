@@ -6536,14 +6536,16 @@
 
      (maybe-warn-or-error-on-non-rec-measure (car names) ctx wrld state))
     (t (value nil)))
-   (let* ((boot-strap-flg (global-val 'boot-strap-flg wrld))
+   (let* (#-acl2-save-unnormalized-bodies
+          (boot-strap-flg (global-val 'boot-strap-flg wrld))
           (wrld0 (cond (non-executablep (putprop-x-lst1 names 'non-executablep
                                                         non-executablep
                                                         wrld))
                        (t wrld)))
-          (wrld1 (if boot-strap-flg
-                     wrld0
-                   (putprop-x-lst2 names 'unnormalized-body bodies wrld0)))
+          (wrld1 (cond
+                  #-acl2-save-unnormalized-bodies
+                  (boot-strap-flg wrld0)
+                  (t (putprop-x-lst2 names 'unnormalized-body bodies wrld0))))
           (wrld2 (put-invariant-risk
                   names
                   bodies
