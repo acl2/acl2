@@ -68,10 +68,6 @@
 
   (xdoc::evmac-topic-implementation-item-input "equal-fold-enable" "divconq")
 
-  (xdoc::evmac-topic-implementation-item-input "schema" "divconq")
-
-  (xdoc::evmac-topic-implementation-item-input "schema" "divconq")
-
   "@('cdr-output') is the homonymous input to @(tsee divconq)
    when it has no type;
    otherwise, it is the variable symbol @('y')
@@ -215,16 +211,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define divconq-process-schema (schema ctx state)
+(define divconq-process-schema (schema (schema-present booleanp) ctx state)
   :returns (mv erp (nothing null) state)
   :short "Process the @(':schema') input."
   (if (eq schema :list-fold)
       (value nil)
-    (er-soft+ ctx t nil
-              "The :SCHEMA input must be :LIST-FOLD, ~
-               but it is ~x0 instead. ~
-               More schemas will be supported in the future."
-              schema)))
+    (if schema-present
+        (er-soft+ ctx t nil
+                  "The :SCHEMA input must be :LIST-FOLD, ~
+                   but it is ~x0 instead. ~
+                   More schemas will be supported in the future."
+                  schema)
+      (er-soft+ ctx t nil
+                "The :SCHEMA input must be supplied."))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -478,6 +477,7 @@
 
 (define divconq-process-inputs (old
                                 schema
+                                (schema-present booleanp)
                                 fvar-atom-name
                                 fvar-cons-name
                                 fold-name
@@ -549,7 +549,7 @@
                                                               verify-guards
                                                               ctx
                                                               state))
-       ((er &) (divconq-process-schema schema ctx state))
+       ((er &) (divconq-process-schema schema schema-present ctx state))
        ((er x0) (divconq-process-list-input list-input
                                             old
                                             inputs
@@ -1097,6 +1097,7 @@
 
 (define divconq-fn (old
                     schema
+                    (schema-present booleanp)
                     list-input
                     fvar-atom-name
                     fvar-cons-name
@@ -1150,6 +1151,7 @@
                   names-to-avoid))
         (divconq-process-inputs old
                                 schema
+                                schema-present
                                 fvar-atom-name
                                 fvar-cons-name
                                 fold-name
@@ -1217,7 +1219,7 @@
                      old
                      ;; optional inputs:
                      &key
-                     (schema ':list-fold)
+                     (schema ':irrelevant schema-present)
                      (list-input ':auto)
                      (fvar-atom-name ':auto)
                      (fvar-cons-name ':auto)
@@ -1239,6 +1241,7 @@
                      (show-only 'nil))
     `(make-event-terse (divconq-fn ',old
                                    ',schema
+                                   ',schema-present
                                    ',list-input
                                    ',fvar-atom-name
                                    ',fvar-cons-name

@@ -99,7 +99,7 @@
    (xdoc::evmac-section-form
     (xdoc::codeblock
      "(divconq old"
-     "         :schema             ; default :list-fold"
+     "         :schema             ; no default"
      "         :list-input         ; default :auto"
      "         :fvar-atom-name     ; default :auto"
      "         :fvar-cons-name     ; default :auto"
@@ -149,7 +149,7 @@
        is straighforward in the design notes)."))
 
     (xdoc::desc
-     "@(':schema') &mdash; default @(':list-fold')"
+     "@(':schema') &mdash; no default"
      (xdoc::p
       "Indicates the divide-and-conquer schema to use.")
      (xdoc::p
