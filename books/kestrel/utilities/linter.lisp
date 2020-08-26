@@ -65,6 +65,8 @@
 
 ;; TODO: Add support for supressing more kinds of reports.
 
+;; TODO: Suppress reasoning-based checks (like those involving types) on :program mode functions.
+
 (include-book "format-strings")
 (include-book "quote")
 (include-book "my-get-event")
@@ -84,7 +86,9 @@
                   (reverse acc))
         (let ((symb (car triple))
               (prop (cadr triple)))
-          (if (eq prop 'unnormalized-body)
+          (if (and (eq prop 'unnormalized-body)
+                   (fgetprop (car triple) 'unnormalized-body nil wrld) ;todo: hack: make sure the function is still defined (why does this sometimes fail?)
+                   )
               (all-defuns-in-world (rest wrld) triple-to-stop-at (cons symb acc))
             (all-defuns-in-world (rest wrld) triple-to-stop-at acc)))))))
 
