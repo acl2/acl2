@@ -328,7 +328,7 @@
           (progn$ (if arg1-symbolp
                       (if arg2-symbolp
                           (cw "(In ~s0, EQUAL test ~x1 could use EQ since both arguments are known to be symbols.)~%~%"
-                              (thing-being-checked-to-string thing-being-checked) orig-term arg1 arg2)
+                              (thing-being-checked-to-string thing-being-checked) orig-term)
                         (cw "(In ~s0, EQUAL test ~x1 could use EQ since ~x2 is known to be a symbol.)~%~%"
                             (thing-being-checked-to-string thing-being-checked) orig-term arg1))
                     (if arg2-symbolp
@@ -338,7 +338,7 @@
                   (and arg1-numberp
                        arg2-numberp
                        (cw "(In ~s0, EQUAL test ~x1 could use = since both arguments are known to be numbers.)~%~%"
-                           (thing-being-checked-to-string thing-being-checked) orig-term arg1 arg2))
+                           (thing-being-checked-to-string thing-being-checked) orig-term))
                   (and (not arg1-symbolp)
                        (not arg2-symbolp)
                        (not (and arg1-numberp
@@ -346,7 +346,7 @@
                        (if arg1-eqlablep
                            (if arg2-eqlablep
                                (cw "(In ~s0, EQUAL test ~x1 could use EQL since both arguments are known to be numbers, symbols, or characters.)~%~%"
-                                   (thing-being-checked-to-string thing-being-checked) orig-term arg1 arg2)
+                                   (thing-being-checked-to-string thing-being-checked) orig-term)
                              (cw "(In ~s0, EQUAL test ~x1 could use EQL since ~x2 is known to be a number, symbol, or character.)~%~%"
                                  (thing-being-checked-to-string thing-being-checked) orig-term arg1))
                          (if arg2-eqlablep
@@ -386,7 +386,7 @@
           (progn$ (if arg1-symbolp
                       (if arg2-symbolp
                           (cw "(In ~s0, EQL test ~x1 could use EQ since both arguments are known to be symbols.)~%~%"
-                              (thing-being-checked-to-string thing-being-checked) orig-term arg1 arg2)
+                              (thing-being-checked-to-string thing-being-checked) orig-term)
                         (cw "(In ~s0, EQL test ~x1 could use EQ since ~x2 is known to be a symbol.)~%~%"
                             (thing-being-checked-to-string thing-being-checked) orig-term arg1))
                     (if arg2-symbolp
@@ -396,7 +396,7 @@
                   (and arg1-numberp
                        arg2-numberp
                        (cw "(In ~s0, EQL test ~x1 could use = since both arguments are known to be numbers.)~%~%"
-                           (thing-being-checked-to-string thing-being-checked) orig-term arg1 arg2))
+                           (thing-being-checked-to-string thing-being-checked) orig-term))
                   (and (ts-disjointp type-set1 ts-eqlable)
                        (ts-disjointp type-set2 ts-eqlable)
                        (cw "(In ~s0, ill-guarded call ~x1 since both ~x2 and ~x3 are not numbers, symbols, or characters.)~%~%"
