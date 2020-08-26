@@ -54,7 +54,6 @@
           ;; skip over ~%, ~ followed by newline, etc:
           ((#\Space #\Newline #\% #\| #\~ #\-)
            (args-in-format-string-aux (rest (rest chars)) whole-string))
-          ;; TODO: Add support for ~#x~...
           ((#\x #\y #\@ #\* #\& #\v #\n #\N #\t #\c #\f #\F #\s #\S #\_
             #\p #\q ;; these two are deprecated
             )
