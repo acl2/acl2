@@ -60,11 +60,9 @@
            (if (endp (rest (rest chars)))
                (cw "ERROR: Bad format string: ~x0~%." whole-string) ;todo: print the context with things like this
              (let ((third-char (third chars)))
-               (if (not (member third-char '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)))
-                   (cw "ERROR: Bad format string: ~x0~%." whole-string)
-                 (add-to-set-eql third-char
-                                 (args-in-format-string-aux (rest (rest (rest chars)))
-                                                            whole-string))))))
+               (add-to-set-eql third-char
+                               (args-in-format-string-aux (rest (rest (rest chars)))
+                                                          whole-string)))))
           ((#\X #\Y
             #\P #\Q ;; these two are deprecated
             )
@@ -73,13 +71,10 @@
                (cw "ERROR: Bad format string: ~x0~%." whole-string)
              (let ((third-char (third chars))
                    (fourth-char (fourth chars)))
-               (if (or (not (member third-char '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)))
-                       (not (member fourth-char '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9))))
-                   (cw "ERROR: Bad format string: ~x0~%." whole-string)
-                 (add-to-set-eql third-char
-                                 (add-to-set-eql fourth-char
-                                                 (args-in-format-string-aux (rest (rest (rest (rest chars))))
-                                                                            whole-string)))))))
+               (add-to-set-eql third-char
+                               (add-to-set-eql fourth-char
+                                               (args-in-format-string-aux (rest (rest (rest (rest chars))))
+                                                                          whole-string))))))
           ;; special handling for ~#x~[ ... ]
           (#\# (if (or (endp (rest (rest chars)))
                        (endp (rest (rest (rest chars))))
