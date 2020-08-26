@@ -66,11 +66,11 @@
 ;; TODO: Add support for supressing more kinds of reports.
 
 (include-book "format-strings")
-(include-book "kestrel/utilities/quote" :dir :system)
-(include-book "kestrel/utilities/my-get-event" :dir :system)
-(include-book "kestrel/utilities/defun-events" :dir :system)
-(include-book "kestrel/utilities/world" :dir :system)
-(include-book "kestrel/utilities/substitution" :dir :system)
+(include-book "quote")
+(include-book "my-get-event")
+(include-book "defun-events")
+(include-book "world")
+(include-book "substitution")
 (include-book "std/strings/substrp" :dir :system)
 
 (defun all-defuns-in-world (wrld triple-to-stop-at acc)
