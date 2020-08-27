@@ -525,3 +525,8 @@
          (sv::wire-p (cdar lst))
          (wire-p (caar lst))
          (sv-wire-alist-p (cdr lst)))))
+
+
+
+(defconst *empty-state*
+  (make-svl-env))

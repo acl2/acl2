@@ -1055,9 +1055,9 @@
                                 (:TYPE-PRESCRIPTION TRUE-LISTP)
                                 (:TYPE-PRESCRIPTION O-P)
                                 (:DEFINITION NOT)
-                                (:TYPE-PRESCRIPTION SV::SVEXLIST-P)
-                                (:TYPE-PRESCRIPTION SV::SVEX-ENV-P)
-                                (:TYPE-PRESCRIPTION SV::SVEX-ALIST-P)
+                                ;; (:TYPE-PRESCRIPTION SV::SVEXLIST-P)
+                                ;; (:TYPE-PRESCRIPTION SV::SVEX-ENV-P)
+                                ;; (:TYPE-PRESCRIPTION SV::SVEX-ALIST-P)
                                 (:DEFINITION RP-TERMP)))))))
     
   

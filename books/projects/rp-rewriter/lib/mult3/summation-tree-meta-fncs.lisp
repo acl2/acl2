@@ -2823,12 +2823,15 @@
       :hints (("Goal"
                :in-theory (e/d () ())))))
 
-  (define quarternaryp-sum ((sum rp-termp))
-    :returns (res booleanp)
+  (define quarternaryp-sum ((term rp-termp))
+    :returns (mv (quarternaryp? booleanp)
+                 (bitp? booleanp))
     (b* (((mv res valid)
-          (quarternaryp-sum-aux sum)))
-      (and valid
-           (quarternaryp res)))))
+          (quarternaryp-sum-aux term)))
+      (mv (and valid
+               (quarternaryp res))
+          (and valid
+               (bitp res))))))
 
 #|(acl2::Defines
  search-for-1
@@ -2912,17 +2915,6 @@
                  pp-lst))
        (pp (create-list-instance pp-lst))
        (c (create-list-instance c-lst))
-       #|(- (and (member-equal '(-- (AND-LIST '30788473176072
-                       (LIST (BIT-OF (RP 'INTEGERP IN1) '2)
-                             (BIT-OF (RP 'INTEGERP IN1) '3)
-                             (BIT-OF (RP 'INTEGERP IN2) '2)
-                             (BIT-OF (RP 'INTEGERP IN2) '3))))
-                             pp-lst)
-               (not (cw "HERE: (clean-pp-args-cond nil c-lst): ~p0 ~%"
-                        (clean-pp-args-cond nil c-lst)))
-               (not (cw "pp-lst: ~p0 ~%" pp-lst))
-               (not (cw "pp-lst-before-clean ~p0 ~%" pp-lst-before-clean))
-               (not (cw "c-lst: ~p0 ~%" c-lst))))||#
        ((mv res-s-lst res-pp-lst res-c-lst) (create-s-instance pp c)))
     (create-s-c-res-instance res-s-lst res-pp-lst res-c-lst t)))
 
@@ -3008,17 +3000,27 @@
            (b* (((mv s pp-lst c-lst to-be-coughed-c-lst);;(mv s pp c)
                  (new-sum-merge sum))
 
-                (quarternaryp (quarternaryp-sum sum))
+                ((mv quarternaryp ?bitp) (quarternaryp-sum sum))
 
-                (s-res (s-spec-meta-aux s pp-lst c-lst))
-                (c-res (c-spec-meta-aux s pp-lst c-lst
-                                        to-be-coughed-c-lst quarternaryp))
+                (s-res (if bitp
+                           (create-s-c-res-instance (list-to-lst s)
+                                                    pp-lst
+                                                    (s-sum-merge-aux
+                                                     to-be-coughed-c-lst
+                                                     (s-sum-merge-aux
+                                                     to-be-coughed-c-lst
+                                                     c-lst))
+                                                    t)
+                           (s-spec-meta-aux s pp-lst c-lst)))
+                (c-res (if bitp ''0
+                         (c-spec-meta-aux s pp-lst c-lst
+                                        to-be-coughed-c-lst quarternaryp)))
                 (res `(cons ,s-res (cons ,c-res 'nil))))
              res))
           (('c-s-spec sum)
            (b* (((mv s pp-lst c-lst to-be-coughed-c-lst);;(mv s pp c)
                  (new-sum-merge sum))
-                (quarternaryp (quarternaryp-sum sum))
+                ((mv quarternaryp ?bitp) (quarternaryp-sum sum))
                 (s-res (s-spec-meta-aux s pp-lst c-lst))
                 (c-res (c-spec-meta-aux s pp-lst c-lst to-be-coughed-c-lst quarternaryp)))
              `(cons ,c-res (cons ,s-res 'nil))))
@@ -3029,7 +3031,7 @@
           (('c-spec sum)
            (b* (((mv s pp-lst c-lst to-be-coughed-c-lst)
                  (new-sum-merge sum))
-                (quarternaryp (quarternaryp-sum sum)))
+                ((mv quarternaryp ?bitp) (quarternaryp-sum sum)))
              (c-spec-meta-aux s pp-lst c-lst to-be-coughed-c-lst quarternaryp)))
           (& term))))
     (mv result t)))

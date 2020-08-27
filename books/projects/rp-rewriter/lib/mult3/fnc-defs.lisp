@@ -42,7 +42,7 @@
 
 (include-book "projects/rp-rewriter/top" :dir :system)
 
-(include-book "centaur/svl/bits-sbits" :dir :system)
+;;(include-book "centaur/svl/bits-sbits" :dir :system)
 
 (progn
   (define binary-sum (x y)
@@ -916,6 +916,26 @@
     (('rp ''bitp &)
      t)))
 
+(define bit-concat ((x integerp)
+                    (y integerp))
+  (logapp 1 x y))
+
+(define 2vec-adder ((x integerp)
+                    (y integerp)
+                    (carry-in integerp)
+                    (size natp))
+  (if (zp size)
+      0
+    (let ((sum (list (bit-of x 0)
+                     (bit-of y 0)
+                     carry-in)))
+      (bit-concat
+       (s-spec sum)
+       (2vec-adder (ash x -1)
+                   (ash y -1)
+                   (c-spec sum)
+                   (1- size))))))
+
 (encapsulate
   nil
 
@@ -927,7 +947,7 @@
               ;; c-is-f2
               ;; s-is-m2
                ;; s-spec-is-m2
-               SVL::4VEC-ZERO-EXT-IS-4VEC-CONCAT
+               ;;SVL::4VEC-ZERO-EXT-IS-4VEC-CONCAT
                ;;c-spec-is-f2
                ;;s-c-spec-is-list-m2-f2
                ;;c-s-spec-is-list-m2-f2
@@ -951,14 +971,14 @@
        rp::c-spec
        rp::s-spec
        bit-of
-       svl::bits
-       svl::4vec-bitand
-       svl::4vec-bitor
-       svl::4vec-?
-       svl::4vec-?*
-       sv::4vec-bitxor
-       svl::4vec-bitnot
-       svl::4vec-bitnot$
+       ;; svl::bits
+       ;; svl::4vec-bitand
+       ;; svl::4vec-bitor
+       ;; svl::4vec-?
+       ;; svl::4vec-?*
+       ;; sv::4vec-bitxor
+       ;; svl::4vec-bitnot
+       ;; svl::4vec-bitnot$
        adder-b+
        s-of-c-trig
        binary-?
@@ -974,5 +994,7 @@
        s
        pp
        binary-sum
-       sv::3vec-fix
-       sv::4vec-fix))))
+       ;;sv::3vec-fix
+       bit-concat
+       ;;sv::4vec-fix
+       ))))

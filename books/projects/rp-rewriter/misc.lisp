@@ -68,7 +68,8 @@
                            ,real-body)))
           (fnc `((local
                   (defun-nx ,fnc-name ,keys
-                    ,real-body)))))
+                    ,real-body))
+                 (disable-exc-counterpart ,fnc-name))))
        (mv (append other-signatures (list signature))
            (append other-fncs fnc)
            (append other-openers opener)
@@ -291,7 +292,7 @@
                                             'rp-rules (w state))))
              (- (and (not (consp entry))
                      (hard-error 'bump-rp-rule
-                                 "This rule is not added with add-rp-rule uet. There is
+                                 "This rule is not added with add-rp-rule There is
 nothing to bump!" nil)))
              (cur-table (table-alist 'rp-rules (w state)))
              (cur-table (remove-assoc-equal rune cur-table)))
@@ -323,7 +324,7 @@ nothing to bump!" nil)))
                  (hard-error 'add-rp-rule
                              "Inside-out and outside-in options cannot be nil
 at the same time. ~%" nil))))
-                        
+
       `(make-event
         (b* ((body (and ,beta-reduce
                         (meta-extract-formula ',rule-name state)))
@@ -337,12 +338,12 @@ at the same time. ~%" nil))))
              (rest-body
               `(with-output
                  :off :all
-                 :gag-mode nil
+                 :gag-mode nil :on error
                  (make-event
                   (b* ((rune (get-rune-name ',new-rule-name state))
                        (disabled ,,disabled)
                        (- (get-rules `(,rune) state :warning :err)))
-                    `(progn  
+                    `(progn
                        (table rp-rules
                               ',rune
                               (cons ,(cond
@@ -356,29 +357,37 @@ at the same time. ~%" nil))))
                  (defthm-lambda ,new-rule-name
                    ,body
                    :hints ,',hints)
-                 (acl2::extend-pe-table ,new-rule-name
-                                        (def-rp-rule ,new-rule-name
-                                          ,body
-                                          :hints ,',hints))
-                 (in-theory (disable ,new-rule-name))
-                 (value-triple (cw "This rule has a lambda expression on its RHS, ~
+                 (with-output :off :all :gag-mode nil :on error
+                   (progn
+                     (acl2::extend-pe-table ,new-rule-name
+                                            (def-rp-rule ,new-rule-name
+                                              ,body
+                                              :hints ,',hints))
+                     (in-theory (disable ,new-rule-name))
+                     (value-triple (cw "This rule has a lambda expression on its RHS, ~
 and it is automatically put through rp::defthm-lambda  and a ~
 new rule is created to be used by RP-Rewriter. You can disable this by setting ~
 :beta-reduce to nil ~% The name of this rule is: ~p0 ~%" ',new-rule-name))
-                 (value-triple ',new-rule-name))
+                     (value-triple ',new-rule-name))))
             rest-body)))))
 
-  (defmacro def-rp-rule (rule-name rule &rest hints)
+  (defun def-rp-rule-fn (rule-name rule hints)
     `(progn
        (defthm-lambda ,rule-name ,rule ,@hints)
        (acl2::extend-pe-table ,rule-name
-                              (def-rp-rule ,rule-name ,rule ,@hints))))
+                              (def-rp-rule ,rule-name ,rule ,@hints))
+       (value-triple ',rule-name)))
+
+  (defmacro def-rp-rule (rule-name rule &rest hints)
+    `(with-output :off :all :gag-mode nil :on error
+       ,(def-rp-rule-fn rule-name rule hints)))
 
   (defmacro def-rp-rule$ (defthmd disabled rule-name rule  &rest hints)
     `(progn
        (,(if defthmd 'defthmd 'defthm)
         ,rule-name ,rule ,@hints)
-       (add-rp-rule  ,rule-name :disabled ,disabled))))
+       (with-output :off :all :gag-mode nil :on error
+         (add-rp-rule  ,rule-name :disabled ,disabled)))))
 
 (encapsulate
   nil
@@ -507,7 +516,6 @@ RP-Rewriter will throw an eligible error.</p>"
       (mv (acons (caar alist) c rest)
           state))))
 
-
 (define rp-thm-rw-fn ((term rp-termp) runes
                       runes-outside-in
                       (new-synps alistp)
@@ -517,8 +525,6 @@ RP-Rewriter will throw an eligible error.</p>"
        ((mv term rp-state)
         (preprocess-then-rp-rw term rp-state state)))
     (mv term rp-state)))
-  
-  
 
 (defmacro rp-thm (term &key
                        (untranslate 't)

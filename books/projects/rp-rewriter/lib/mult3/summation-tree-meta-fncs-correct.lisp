@@ -4535,17 +4535,23 @@
                             rw-dir2)
                            (rw-dir1)))))
 
-(defthm quarternaryp-sum-correct
+
+
+(defret quarternaryp-sum-correct
   (implies (and (rp-evl-meta-extract-global-facts :state state)
                 (mult-formula-checks state)
                 (valid-sc term a)
-                (rp-termp term)
-                (quarternaryp-sum term))
-           (quarternaryp (sum-list (rp-evlt term a))))
+                (rp-termp term))
+           (and (implies quarternaryp?
+                         (quarternaryp (sum-list (rp-evlt term a))))
+                (implies bitp?
+                         (bitp (sum-list (rp-evlt term a))))))
+  :fn quarternaryp-sum
   :hints (("Goal"
            :use ((:instance quarternaryp-sum-aux-correct)
                  (:instance quarternaryp-sum-aux-returns-natp))
            :in-theory (e/d (quarternaryp-sum
+                            bitp
                             quarternaryp
                             rw-dir2)
                            (natp
@@ -4900,6 +4906,14 @@
                   t))
   :hints (("Goal"
            :in-theory (e/d (sum-of-repeated-to-times2) ()))))
+
+
+(defthm m2-of-bitp-lemma
+  (implies (bitp x)
+           (equal (m2 x)
+                  x))
+  :hints (("Goal"
+           :in-theory (e/d (bitp) ()))))
 
 (defret s-c-spec-meta-correct
   (implies (and (rp-evl-meta-extract-global-facts :state state)

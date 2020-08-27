@@ -652,7 +652,19 @@
                          (4vec-adder (svl::4vec-rsh 1 x)
                                      (svl::4vec-rsh 1 y)
                                      (c-spec sum)
-                                     (1- size))))))
+                                     (1- size)))))
+  ///
+  (def-rp-rule 2vec-adder-is-4vec-adder ;; for backwards compatibility
+    (implies (and (integerp x)
+                  (integerp y)
+                  (integerp carry-in)
+                  (natp size))
+             (equal (2vec-adder x y carry-in size)
+                    (4vec-adder x y carry-in size)))
+    :hints (("Goal"
+             :in-theory (e/d (2vec-adder
+                              BIT-CONCAT)
+                             ())))))
 
 (encapsulate
   nil
