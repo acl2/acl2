@@ -96,8 +96,7 @@
                        (cw "ERROR: Bad format string: ~x0~%." whole-string)
                      (add-to-set-eql third-char
                                      (args-in-format-string-aux (skip-chars-through-right-bracket chars whole-string) whole-string))))))
-          (t (er hard? 'args-in-format-string-aux "(Unexpected format directive in ~x0.)" whole-string))
-          )))))
+          (t (cw "(Unexpected format directive in ~x0 starting at ~x1.)~%" whole-string chars)))))))
 
 (defthm true-listp-of-args-in-format-string-aux
   (true-listp (args-in-format-string-aux chars whole-string))
