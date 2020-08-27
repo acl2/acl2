@@ -6,6 +6,15 @@
 
 (in-package "ACL2")
 
+(include-book "std/testing/must-fail" :dir :system)
+
+(defmacro mf (form &key (expected ':soft))
+  `(must-fail ,form
+              :expected
+              ,expected
+              :with-output-off
+              (proof-tree prove event summary proof-builder history)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Singly-recursive example
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -465,7 +474,7 @@
 
 (memoize-partial
  ((xx-worse-than* xx-worse-than-builtin-clocked
-                  :condition nil)
+                  :condition nil) ; check that this still supports evaluation
   (xx-worse-than-or-equal* xx-worse-than-or-equal-builtin-clocked)
   (basic-xx-worse-than-lst1* basic-xx-worse-than-lst1)
   (basic-xx-worse-than-lst2* basic-xx-worse-than-lst2)
@@ -494,21 +503,77 @@
                            '(perm z x))
   t))
 
+; Now repeat the tests above, except this time use :condition nil on all
+; functions.  First check though that :recursive nil doesn't work; we wouldn't
+; expect it to work, since we need the recursive calls to be executable, too.
+; Note that profile is just memoize with :condition nil :recursive nil; so we
+; can't exactly be profiling when we use memoize-partial.  Still we expect or
+; at least hope that the overhead of :condition nil by itself is still minor.
+
+(u)
+
+(with-output :off :all
+(memoize-partial
+ ((xx-worse-than* xx-worse-than-builtin-clocked
+                  :recursive nil) ; ruins support for execution
+  (xx-worse-than-or-equal* xx-worse-than-or-equal-builtin-clocked)
+  (basic-xx-worse-than-lst1* basic-xx-worse-than-lst1)
+  (basic-xx-worse-than-lst2* basic-xx-worse-than-lst2)
+  (basic-xx-worse-than* basic-xx-worse-than)
+  (some-subterm-xx-worse-than-or-equal* some-subterm-xx-worse-than-or-equal)
+  (some-subterm-xx-worse-than-or-equal-lst*
+   some-subterm-xx-worse-than-or-equal-lst)
+  (xx-worse-than-lst* xx-worse-than-lst)))
+)
+
+(mf
+ (assert-event
+  (equal (xx-worse-than* '(mem (car (del a x)) x)
+                         '(mem (car (del a x)) y))
+         nil))
+ :expected :hard)
+
+(u)
+
+; Now memoize with :condition nil for all the functions, but not :condition
+; nil, using the same three tests that succeeded above.
+
+(with-output :off :all
+(memoize-partial
+ ((xx-worse-than* xx-worse-than-builtin-clocked)
+  (xx-worse-than-or-equal* xx-worse-than-or-equal-builtin-clocked)
+  (basic-xx-worse-than-lst1* basic-xx-worse-than-lst1)
+  (basic-xx-worse-than-lst2* basic-xx-worse-than-lst2)
+  (basic-xx-worse-than* basic-xx-worse-than)
+  (some-subterm-xx-worse-than-or-equal* some-subterm-xx-worse-than-or-equal)
+  (some-subterm-xx-worse-than-or-equal-lst*
+   some-subterm-xx-worse-than-or-equal-lst)
+  (xx-worse-than-lst* xx-worse-than-lst))
+ :condition nil)
+)
+
+(assert-event
+ (equal (xx-worse-than* '(mem (car (del a x)) x)
+                        '(mem (car (del a x)) y))
+        nil))
+
+(assert-event
+ (equal
+  (xx-worse-than-or-equal* '(mem (car z) x)
+                           '(perm z y))
+  nil))
+
+(assert-event
+ (equal
+  (xx-worse-than-or-equal* '(perm (del (car z) x) (cdr z))
+                           '(perm z x))
+  t))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Failures
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; This section tests some failures.  An ideal check would include looking at
-; the output.
-
-(include-book "std/testing/must-fail" :dir :system)
-
-(defmacro mf (form &key (expected ':soft))
-  `(must-fail ,form
-              :expected
-              ,expected
-              :with-output-off
-              (proof-tree prove event summary proof-builder history)))
+; This section tests some more failures.
 
 (defun bad{wrong-form}-limit (n limit)
   (declare (type (integer 0 *) limit)

@@ -9,6 +9,37 @@ ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(PROOF-TREE))
  (PROOF-TREE)
 ACL2 !>>(IN-PACKAGE "ACL2")
  "ACL2"
+ACL2 !>>(INCLUDE-BOOK "std/testing/must-fail"
+                      :DIR :SYSTEM)
+
+Summary
+Form:  ( INCLUDE-BOOK "std/testing/must-fail" ...)
+Rules: NIL
+ "[books]/std/testing/must-fail.lisp"
+ACL2 !>>(DEFMACRO
+         MF (FORM &KEY (EXPECTED ':SOFT))
+         (CONS
+          'MUST-FAIL
+          (CONS
+           FORM
+           (CONS
+            ':EXPECTED
+            (CONS
+             EXPECTED
+             (CONS
+                ':WITH-OUTPUT-OFF
+                (CONS (CONS 'PROOF-TREE
+                            (CONS 'PROVE
+                                  (CONS 'EVENT
+                                        (CONS 'SUMMARY
+                                              (CONS 'PROOF-BUILDER
+                                                    (CONS 'HISTORY 'NIL))))))
+                      'NIL)))))))
+
+Summary
+Form:  ( DEFMACRO MF ...)
+Rules: NIL
+ MF
 ACL2 !>>(DEFUN FIB-LIMIT (N LIMIT)
                (DECLARE (TYPE (INTEGER 0 *) LIMIT)
                         (TYPE INTEGER N))
@@ -4007,37 +4038,118 @@ ACL2 !>>(ASSERT-EVENT
                                              '(PERM Z X))
                     T))
  :PASSED
-ACL2 !>>(INCLUDE-BOOK "std/testing/must-fail"
-                      :DIR :SYSTEM)
+ACL2 !>>(U)
+ V        19:x(MUTUAL-RECURSION
+                   (DEFUN XX-WORSE-THAN-BUILTIN-CLOCKED
+                          (TERM1 TERM2 CLK)
+                          ...)
+                   (DEFUN XX-WORSE-THAN-OR-EQUAL-BUILTIN-CLOCKED
+                          (TERM1 TERM2 CLK)
+                          ...)
+                   (DEFUN BASIC-XX-WORSE-THAN-LST1
+                          (ARGS1 ARGS2 CLK)
+                          ...)
+                   (DEFUN BASIC-XX-WORSE-THAN-LST2
+                          (ARGS1 ARGS2 CLK)
+                          ...)
+                   (DEFUN BASIC-XX-WORSE-THAN (TERM1 TERM2 CLK)
+                          ...)
+                   (DEFUN SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL
+                          (TERM1 TERM2 CLK)
+                          ...)
+                   (DEFUN SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST
+                          (ARGS TERM2 CLK)
+                          ...)
+                   (DEFUN XX-WORSE-THAN-LST (ARGS TERM2 CLK)
+                          ...))
+ACL2 !>>(WITH-OUTPUT
+         :OFF
+         :ALL
+         (MEMOIZE-PARTIAL
+            ((XX-WORSE-THAN* XX-WORSE-THAN-BUILTIN-CLOCKED
+                             :RECURSIVE NIL)
+             (XX-WORSE-THAN-OR-EQUAL* XX-WORSE-THAN-OR-EQUAL-BUILTIN-CLOCKED)
+             (BASIC-XX-WORSE-THAN-LST1* BASIC-XX-WORSE-THAN-LST1)
+             (BASIC-XX-WORSE-THAN-LST2* BASIC-XX-WORSE-THAN-LST2)
+             (BASIC-XX-WORSE-THAN* BASIC-XX-WORSE-THAN)
+             (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL*
+                  SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL)
+             (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST*
+                  SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST)
+             (XX-WORSE-THAN-LST* XX-WORSE-THAN-LST))))
+ XX-WORSE-THAN-LST*
+ACL2 !>>(MF (ASSERT-EVENT (EQUAL (XX-WORSE-THAN* '(MEM (CAR (DEL A X)) X)
+                                                 '(MEM (CAR (DEL A X)) Y))
+                                 NIL))
+            :EXPECTED :HARD)
+
+
+ACL2 Error in HARD-ERROR-TO-SOFT-ERROR:  ACL2 cannot ev the call of
+non-executable function XX-WORSE-THAN-BUILTIN-CLOCKED-STABLE on argument
+list:
+
+((MEM (CAR (DEL A X)) X) (MEM (CAR (DEL A X)) Y))
+
+To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
+
 
 Summary
-Form:  ( INCLUDE-BOOK "std/testing/must-fail" ...)
+Form:  ( MAKE-EVENT (QUOTE ...) ...)
 Rules: NIL
- "[books]/std/testing/must-fail.lisp"
-ACL2 !>>(DEFMACRO
-         MF (FORM &KEY (EXPECTED ':SOFT))
-         (CONS
-          'MUST-FAIL
-          (CONS
-           FORM
-           (CONS
-            ':EXPECTED
-            (CONS
-             EXPECTED
-             (CONS
-                ':WITH-OUTPUT-OFF
-                (CONS (CONS 'PROOF-TREE
-                            (CONS 'PROVE
-                                  (CONS 'EVENT
-                                        (CONS 'SUMMARY
-                                              (CONS 'PROOF-BUILDER
-                                                    (CONS 'HISTORY 'NIL))))))
-                      'NIL)))))))
-
-Summary
-Form:  ( DEFMACRO MF ...)
-Rules: NIL
- MF
+ T
+ACL2 !>>(U)
+ V        19:x(MUTUAL-RECURSION
+                   (DEFUN XX-WORSE-THAN-BUILTIN-CLOCKED
+                          (TERM1 TERM2 CLK)
+                          ...)
+                   (DEFUN XX-WORSE-THAN-OR-EQUAL-BUILTIN-CLOCKED
+                          (TERM1 TERM2 CLK)
+                          ...)
+                   (DEFUN BASIC-XX-WORSE-THAN-LST1
+                          (ARGS1 ARGS2 CLK)
+                          ...)
+                   (DEFUN BASIC-XX-WORSE-THAN-LST2
+                          (ARGS1 ARGS2 CLK)
+                          ...)
+                   (DEFUN BASIC-XX-WORSE-THAN (TERM1 TERM2 CLK)
+                          ...)
+                   (DEFUN SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL
+                          (TERM1 TERM2 CLK)
+                          ...)
+                   (DEFUN SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST
+                          (ARGS TERM2 CLK)
+                          ...)
+                   (DEFUN XX-WORSE-THAN-LST (ARGS TERM2 CLK)
+                          ...))
+ACL2 !>>(WITH-OUTPUT
+         :OFF
+         :ALL
+         (MEMOIZE-PARTIAL
+            ((XX-WORSE-THAN* XX-WORSE-THAN-BUILTIN-CLOCKED)
+             (XX-WORSE-THAN-OR-EQUAL* XX-WORSE-THAN-OR-EQUAL-BUILTIN-CLOCKED)
+             (BASIC-XX-WORSE-THAN-LST1* BASIC-XX-WORSE-THAN-LST1)
+             (BASIC-XX-WORSE-THAN-LST2* BASIC-XX-WORSE-THAN-LST2)
+             (BASIC-XX-WORSE-THAN* BASIC-XX-WORSE-THAN)
+             (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL*
+                  SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL)
+             (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST*
+                  SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST)
+             (XX-WORSE-THAN-LST* XX-WORSE-THAN-LST))
+            :CONDITION NIL))
+ XX-WORSE-THAN-LST*
+ACL2 !>>(ASSERT-EVENT (EQUAL (XX-WORSE-THAN* '(MEM (CAR (DEL A X)) X)
+                                             '(MEM (CAR (DEL A X)) Y))
+                             NIL))
+ :PASSED
+ACL2 !>>(ASSERT-EVENT (EQUAL (XX-WORSE-THAN-OR-EQUAL* '(MEM (CAR Z) X)
+                                                      '(PERM Z Y))
+                             NIL))
+ :PASSED
+ACL2 !>>(ASSERT-EVENT
+             (EQUAL (XX-WORSE-THAN-OR-EQUAL* '(PERM (DEL (CAR Z) X) (CDR Z))
+                                             '(PERM Z X))
+                    T))
+ :PASSED
 ACL2 !>>(DEFUN BAD{WRONG-FORM}-LIMIT (N LIMIT)
                (DECLARE (TYPE (INTEGER 0 *) LIMIT)
                         (TYPE (INTEGER 0 *) N)
