@@ -597,10 +597,9 @@
    (not (consp (assoc-equal key1 (remove1-equal x alist)))))
   :rule-classes (:rewrite :type-prescription))
 
-(defthmd assoc-equal-when-member-equal
+(defthm assoc-of-car-when-member
   (implies (and (member-equal x lst)
-                (consp x)
-                (not (equal (car x) nil)))
+                (or (not (equal (car x) nil)) (alistp lst)))
            (consp (assoc-equal (car x) lst))))
 
 ;; The following is redundant with the eponymous theorem in
@@ -927,10 +926,6 @@
 (defthm no-duplicatesp-of-remove
   (implies (no-duplicatesp-equal l)
            (no-duplicatesp-equal (remove-equal x l))))
-
-(defthm assoc-of-car-when-member
-  (implies (and (member-equal x lst) (alistp lst))
-           (consp (assoc-equal (car x) lst))))
 
 (encapsulate
   ()
@@ -1707,3 +1702,18 @@
   (implies (no-duplicatesp-equal x)
            (equal (remove-duplicates-equal x)
                   (true-list-fix x))))
+
+(defthm
+  not-intersectp-of-set-difference$-when-subsetp-1
+  (implies (subsetp-equal z y)
+           (not (intersectp-equal z (set-difference-equal x y))))
+  :rule-classes
+  (:rewrite
+   (:rewrite
+    :corollary (implies (subsetp-equal z y)
+                        (not (intersectp-equal (set-difference-equal x y)
+                                               z))))))
+
+(defthm subsetp-of-set-difference$
+  (subsetp-equal (set-difference-equal x y)
+                 x))

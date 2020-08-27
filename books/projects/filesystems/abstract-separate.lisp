@@ -489,34 +489,18 @@
             (abs-complete fs)))
   :hints (("goal" :in-theory (enable abs-addrs m1-file-contents-p abs-complete))))
 
-(encapsulate
-  ()
-
-  (local
-   (defthm
-     lemma
-     (implies (and (consp (car x))
-                   (not (abs-directory-file-p (cdr (car x))))
-                   (m1-file-alist-p (cdr x))
-                   (abs-file-alist-p x))
-              (m1-file-alist-p x))
-     :hints (("goal" :in-theory (enable m1-file-alist-p
-                                        abs-file-p m1-file-contents-p m1-file-p
-                                        abs-directory-file-p abs-file->contents)
-              :do-not-induct t
-              :expand (abs-file-alist-p x)))))
-
-  ;; This theorem states that an abstract filesystem tree without any body
-  ;; addresses is just a HiFAT instance.
-  (defthm
-    abs-file-alist-p-correctness-1
-    (implies (and (abs-file-alist-p x)
-                  (abs-complete x))
-             (m1-file-alist-p x))
-    :hints (("goal" :in-theory (enable abs-file-alist-p abs-addrs
-                                       abs-addrs-when-m1-file-alist-p-lemma-1
-                                       abs-complete)
-             :induct (abs-addrs x)))))
+(defthm
+  abs-file-alist-p-correctness-1
+  (implies (and (abs-file-alist-p x)
+                (abs-complete x))
+           (m1-file-alist-p x))
+  :hints (("goal" :in-theory (enable abs-file-alist-p abs-addrs
+                                     abs-addrs-when-m1-file-alist-p-lemma-1
+                                     abs-complete m1-file-alist-p
+                                     abs-file-p m1-file-contents-p m1-file-p
+                                     abs-directory-file-p abs-file->contents)
+           :induct (abs-addrs x)
+           :expand (abs-file-alist-p x))))
 
 (defthm abs-file-alist-p-of-put-assoc-equal
   (implies (abs-file-alist-p alist)
@@ -661,7 +645,7 @@
   :hints (("goal" :in-theory (enable abs-no-dups-p))))
 
 (defthm
-  abs-no-dups-p-of-remove1-assoc
+  abs-no-dups-p-of-remove1-assoc-1
   (implies
    (or
     (atom (assoc-equal name fs))
@@ -717,6 +701,12 @@
   (implies (abs-no-dups-p fs)
            (abs-no-dups-p (remove-assoc-equal x fs)))
   :hints (("goal" :in-theory (enable abs-no-dups-p))))
+
+(defthm
+  abs-no-dups-p-of-remove1-assoc-2
+  (implies (abs-no-dups-p fs)
+           (abs-no-dups-p (remove1-assoc-equal name fs)))
+  :hints (("goal" :in-theory (enable abs-no-dups-p remove1-assoc-equal))))
 
 ;; Potentially overlapping with abs-no-dups-p-when-m1-file-alist-p, which is
 ;; actually more general.
@@ -4301,31 +4291,16 @@
 ;; Probably tricky to get a refinement relationship (in the defrefinement
 ;; sense) between literally absfat-equiv and hifat-equiv. But we can still have
 ;; some kind of substitute...
-(encapsulate
-  ()
-
-  (local
-   (defthmd lemma
-     (implies (and (m1-file-alist-p abs-file-alist1)
-                   (m1-file-alist-p abs-file-alist2)
-                   (hifat-no-dups-p abs-file-alist1)
-                   (hifat-no-dups-p abs-file-alist2))
-              (equal (absfat-equiv abs-file-alist1 abs-file-alist2)
-                     (hifat-equiv abs-file-alist1 abs-file-alist2)))
-     :hints (("goal" :in-theory (enable absfat-equiv hifat-equiv abs-fs-p
-                                        absfat-subsetp-correctness-1)))))
-
-  (defthm
-    hifat-equiv-when-absfat-equiv
-    (implies (and (m1-file-alist-p (abs-fs-fix abs-file-alist1))
-                  (m1-file-alist-p (abs-fs-fix abs-file-alist2)))
-             (equal (absfat-equiv abs-file-alist1 abs-file-alist2)
-                    (hifat-equiv (abs-fs-fix abs-file-alist1)
-                                 (abs-fs-fix abs-file-alist2))))
-    :hints
-    (("goal" :use (:instance lemma
-                             (abs-file-alist1 (abs-fs-fix abs-file-alist1))
-                             (abs-file-alist2 (abs-fs-fix abs-file-alist2)))))))
+(defthm
+  hifat-equiv-when-absfat-equiv
+  (implies (and (m1-file-alist-p (abs-fs-fix abs-file-alist1))
+                (m1-file-alist-p (abs-fs-fix abs-file-alist2)))
+           (equal (absfat-equiv abs-file-alist1 abs-file-alist2)
+                  (hifat-equiv (abs-fs-fix abs-file-alist1)
+                               (abs-fs-fix abs-file-alist2))))
+  :hints
+  (("goal" :in-theory (enable absfat-equiv hifat-equiv abs-fs-p
+                              absfat-subsetp-correctness-1 abs-fs-fix))))
 
 (defund
   names-at (fs relpath)
@@ -4429,7 +4404,6 @@
     :use (:instance (:rewrite absfat-equiv-implies-set-equiv-names-at-1-lemma-3)
                     (x (fat32-filename-fix (car x-path)))))))
 
-;; The second rewrite rule of this defthm is needed...
 (defthm
   absfat-equiv-implies-set-equiv-names-at-1-lemma-5
   (implies (and (absfat-subsetp abs-file-alist1 abs-file-alist2)
@@ -4478,33 +4452,22 @@
       (abs-file-alist1 (abs-fs-fix fs-equiv))
       (abs-file-alist2 (abs-fs-fix fs)))))))
 
-(encapsulate
-  ()
-
-  (local
-   (defthmd
-     lemma
-     (implies (and (abs-fs-p fs)
-                   (prefixp (fat32-filename-list-fix x)
-                            (fat32-filename-list-fix y))
-                   (not (consp (names-at fs x))))
-              (not (consp (names-at fs y))))
-     :hints (("goal" :in-theory (e/d (names-at)
-                                     ((:rewrite member-of-remove)))
-              :induct (mv (fat32-filename-list-prefixp x y)
-                          (names-at fs x)) :expand (names-at fs y))
-             ("subgoal *1/1''" :use (:instance (:rewrite member-of-remove)
-                                               (x (strip-cars fs))
-                                               (b nil)
-                                               (a (fat32-filename-fix (car y))))))))
-
-  (defthm
-    names-at-when-prefixp
-    (implies (and (prefixp (fat32-filename-list-fix x)
-                           (fat32-filename-list-fix y))
-                  (not (consp (names-at fs x))))
-             (not (consp (names-at fs y))))
-    :hints (("goal" :use (:instance lemma (fs (abs-fs-fix fs)))))))
+(defthm
+  names-at-when-prefixp
+  (implies (and (prefixp (fat32-filename-list-fix x)
+                         (fat32-filename-list-fix y))
+                (not (consp (names-at fs x))))
+           (not (consp (names-at fs y))))
+  :hints
+  (("goal" :in-theory (e/d (names-at abs-fs-fix)
+                           ((:rewrite member-of-remove)))
+    :induct (mv (fat32-filename-list-prefixp x y)
+                (names-at fs x))
+    :expand (names-at fs y))
+   ("subgoal *1/1''" :use (:instance (:rewrite member-of-remove)
+                                     (x (strip-cars (abs-fs-fix fs)))
+                                     (b nil)
+                                     (a (fat32-filename-fix (car y)))))))
 
 (defthmd absfat-equiv-implies-set-equiv-addrs-at-1-lemma-1
   (implies (and (not (natp x))

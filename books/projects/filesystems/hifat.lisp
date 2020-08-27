@@ -1422,6 +1422,24 @@
          (m1-file-alist-p contents))
   :hints (("goal" :in-theory (enable m1-file-contents-fix))))
 
+(defthm len-of-explode-when-m1-file-contents-p-1
+  (implies (m1-file-contents-p x)
+           (< (len (explode x)) (ash 1 32)))
+  :hints (("goal" :do-not-induct t
+           :in-theory (enable m1-file-contents-p m1-file-alist-p)))
+  :rule-classes :linear)
+
+(defthm
+  len-of-explode-of-m1-file-contents-fix
+  (< (len (explode (m1-file-contents-fix x)))
+     (ash 1 32))
+  :hints
+  (("goal" :do-not-induct t
+    :in-theory (disable len-of-explode-when-m1-file-contents-p-1)
+    :use (:instance len-of-explode-when-m1-file-contents-p-1
+                    (x (m1-file-contents-fix x)))))
+  :rule-classes :linear)
+
 (fty::deffixtype m1-file-contents
                  :pred m1-file-contents-p
                  :fix m1-file-contents-fix
@@ -1501,6 +1519,16 @@
   :hints (("goal" :in-theory (enable m1-regular-file-p))))
 
 (defthm
+  m1-regular-file-p-correctness-2
+  (implies (m1-regular-file-p file)
+           (< (len (explode (m1-file->contents file)))
+              (ash 1 32)))
+  :hints (("goal" :in-theory (e/d (m1-regular-file-p m1-directory-file-p)
+                                  (m1-regular-file-p-correctness-1))
+           :use m1-regular-file-p-correctness-1))
+  :rule-classes :linear)
+
+(defthm
   m1-directory-file-p-correctness-1
   (implies (m1-directory-file-p file)
            (and (m1-file-p file)
@@ -1524,8 +1552,8 @@
 
 (defthm
   m1-directory-file-p-of-m1-file
-  (implies (m1-file-alist-p contents)
-           (m1-directory-file-p (m1-file dir-ent contents)))
+  (equal (m1-directory-file-p (m1-file dir-ent contents))
+         (m1-file-alist-p contents))
   :hints (("goal" :in-theory (enable m1-directory-file-p))))
 
 (defthm
@@ -1791,6 +1819,14 @@
            (no-duplicatesp-equal (strip-cars fs)))
   :hints (("goal" :in-theory (enable hifat-no-dups-p))))
 
+(defthm hifat-no-dups-p-of-put-assoc
+  (implies (and (m1-file-alist-p m1-file-alist)
+                (hifat-no-dups-p m1-file-alist)
+                (or (m1-regular-file-p file)
+                    (hifat-no-dups-p (m1-file->contents file))))
+           (hifat-no-dups-p (put-assoc-equal key file m1-file-alist)))
+  :hints (("goal" :in-theory (enable hifat-no-dups-p))))
+
 (defun hifat-file-alist-fix (hifat-file-alist)
   (declare (xargs :guard (and (m1-file-alist-p hifat-file-alist)
                               (hifat-no-dups-p hifat-file-alist))
@@ -1847,6 +1883,24 @@
   :hints (("goal" :in-theory (enable hifat-no-dups-p))))
 
 (verify-guards hifat-file-alist-fix)
+
+(defthmd strip-cars-of-hifat-file-alist-fix-lemma-1
+  (implies (and (case-split (not (null x)))
+                (equal (strip-cars alist)
+                       (remove-duplicates-equal l)))
+           (iff (member-equal x l)
+                (consp (assoc-equal x alist))))
+  :hints (("goal" :do-not-induct t
+           :in-theory (disable member-of-strip-cars)
+           :use member-of-strip-cars)))
+
+(defthm
+  strip-cars-of-hifat-file-alist-fix
+  (equal (strip-cars (hifat-file-alist-fix fs))
+         (remove-duplicates-equal (fat32-filename-list-fix (strip-cars fs))))
+  :hints
+  (("goal" :in-theory (enable hifat-file-alist-fix
+                              strip-cars-of-hifat-file-alist-fix-lemma-1))))
 
 ;; This function returns *ENOENT* when the root directory is asked for. There's
 ;; a simple reason: we want to return the whole file, including the directory
@@ -2049,15 +2103,6 @@
   (hifat-place-file fs path file) 3
   :hints (("goal" :in-theory (enable hifat-place-file))))
 
-;; Do not make this local, it's needed elsewhere.
-(defthm hifat-no-dups-p-of-put-assoc
-  (implies (and (m1-file-alist-p m1-file-alist)
-                (hifat-no-dups-p m1-file-alist)
-                (or (m1-regular-file-p file)
-                    (hifat-no-dups-p (m1-file->contents file))))
-           (hifat-no-dups-p (put-assoc-equal key file m1-file-alist)))
-  :hints (("goal" :in-theory (enable hifat-no-dups-p))))
-
 (defthm
   hifat-no-dups-p-of-hifat-place-file
   (implies (hifat-no-dups-p (m1-file->contents file))
@@ -2093,30 +2138,33 @@
 
 (defthm
   hifat-place-file-of-append-1
-  (implies
-   (and (zp (mv-nth 1 (hifat-find-file fs x)))
-        (m1-directory-file-p (mv-nth 0 (hifat-find-file fs x))))
-   (equal
-    (hifat-place-file fs (append x y) file)
-    (if
-        (consp y)
-        (mv
-         (mv-nth
-          0
-          (hifat-place-file
-           fs x
-           (make-m1-file
-            :contents
-            (mv-nth 0
-                    (hifat-place-file
-                     (m1-file->contents (mv-nth 0 (hifat-find-file fs x)))
-                     y file))
-            :dir-ent (m1-file->dir-ent (mv-nth 0 (hifat-find-file fs x))))))
-         (mv-nth
-          1
-          (hifat-place-file (m1-file->contents (mv-nth 0 (hifat-find-file fs x)))
-                            y file)))
-      (hifat-place-file fs x file))))
+  (equal
+   (hifat-place-file fs (append x y) file)
+   (cond
+    ((atom y) (hifat-place-file fs x file))
+    ((and (zp (mv-nth 1 (hifat-find-file fs x)))
+          (m1-directory-file-p (mv-nth 0 (hifat-find-file fs x))))
+     (mv
+      (mv-nth
+       0
+       (hifat-place-file
+        fs x
+        (make-m1-file
+         :contents
+         (mv-nth 0
+                 (hifat-place-file
+                  (m1-file->contents (mv-nth 0 (hifat-find-file fs x)))
+                  y file))
+         :dir-ent (m1-file->dir-ent (mv-nth 0 (hifat-find-file fs x))))))
+      (mv-nth
+       1
+       (hifat-place-file (m1-file->contents (mv-nth 0 (hifat-find-file fs x)))
+                         y file))))
+    ((or (zp (mv-nth 1 (hifat-find-file fs x)))
+         (consp x))
+     (mv (hifat-file-alist-fix fs)
+         *enotdir*))
+    (t (hifat-place-file fs y file))))
   :hints
   (("goal"
     :in-theory (enable hifat-place-file hifat-find-file)
@@ -2134,6 +2182,13 @@
                  y file)))))
      (append x y)
      (mv-nth 0 (hifat-find-file fs x))))))
+
+(defthmd hifat-place-file-no-change-loser
+  (implies (not (zp (mv-nth 1 (hifat-place-file fs path file))))
+           (equal (hifat-place-file fs path file)
+                  (mv (hifat-file-alist-fix fs)
+                      (mv-nth 1 (hifat-place-file fs path file)))))
+  :hints (("goal" :in-theory (enable hifat-place-file))))
 
 (defund
   hifat-remove-file (fs path)

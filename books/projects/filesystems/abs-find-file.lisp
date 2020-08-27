@@ -104,6 +104,31 @@
                   (mv (abs-file-fix nil) *enoent*)))
   :hints (("goal" :in-theory (enable abs-find-file-helper))))
 
+(defthm
+  abs-pwrite-correctness-lemma-40
+  (implies (and (abs-file-alist-p fs)
+                (consp (assoc-equal name fs))
+                (not (abs-directory-file-p (cdr (assoc-equal name fs)))))
+           (not (consp (m1-file->contents (cdr (assoc-equal name fs))))))
+  :hints (("goal" :in-theory (enable abs-file-alist-p
+                                     m1-file->contents m1-file-contents-fix
+                                     m1-file-contents-p abs-directory-file-p
+                                     abs-file->contents abs-file-p))))
+
+(defthmd
+  member-of-names-at
+  (iff
+   (member-equal x (names-at fs relpath))
+   (if
+    (consp relpath)
+    (consp
+     (assoc-equal
+      x
+      (abs-file->contents (mv-nth 0 (abs-find-file-helper fs relpath)))))
+    (consp (assoc-equal x (abs-fs-fix fs)))))
+  :hints (("goal" :in-theory (e/d (abs-find-file-helper names-at))
+           :induct (abs-find-file-helper fs relpath))))
+
 (defund
   abs-find-file (frame path)
   (declare

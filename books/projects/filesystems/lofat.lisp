@@ -12107,7 +12107,6 @@ Some (rather awful) testing forms are
         (:rewrite dir-ent-clusterchain-contents-of-lofat-remove-file-disjoint)
         (:rewrite dir-ent-clusterchain-of-lofat-remove-file-disjoint)
         (:rewrite take-of-len-free)
-        (:rewrite assoc-equal-when-member-equal)
         (:rewrite
          dir-ent-clusterchain-contents-of-lofat-remove-file-disjoint-lemma-2)
         (:rewrite dir-ent-p-when-member-equal-of-dir-ent-list-p)
@@ -12122,7 +12121,6 @@ Some (rather awful) testing forms are
         (:rewrite hifat-no-dups-p-of-cdr)
         (:rewrite free-index-list-listp-correctness-1)
         (:rewrite m1-file-alist-p-when-subsetp-equal)
-        (:rewrite hifat-subsetp-preserves-assoc-equal)
         (:linear hifat-entry-count-when-hifat-subsetp)
         (:rewrite lofat-remove-file-correctness-1-lemma-53)
         (:definition remove-assoc-equal)
@@ -26481,10 +26479,13 @@ Some (rather awful) testing forms are
                  (length (lofat-file->contents file)))))))
             root-dir-ent)))
          entry-limit))))
-     :hints (("goal" :in-theory (enable (:definition butlast)
-                                        (:definition nfix)
-                                        (:definition length)
-                                        (:definition min))))))
+     :hints (("goal" :in-theory
+              (e/d
+               ((:definition butlast)
+                (:definition nfix)
+                (:definition length)
+                (:definition min))
+               (m1-directory-file-p-of-m1-file))))))
 
   (local
    (defthm
@@ -27266,10 +27267,12 @@ Some (rather awful) testing forms are
                                       1))
            (len (explode (lofat-file->contents file))))
           (lofat-file->contents file))))))
-     :hints (("goal" :in-theory (enable (:definition butlast)
-                                        (:definition nfix)
-                                        (:definition length)
-                                        (:definition min))))))
+     :hints (("goal" :in-theory (e/d
+                                 ((:definition butlast)
+                                  (:definition nfix)
+                                  (:definition length)
+                                  (:definition min))
+                                 (m1-directory-file-p-of-m1-file))))))
 
   (local
    (defthm
