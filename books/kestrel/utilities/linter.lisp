@@ -75,22 +75,23 @@
 (include-book "substitution")
 (include-book "std/strings/substrp" :dir :system)
 
-(defun all-defuns-in-world (wrld triple-to-stop-at acc)
-  (declare (xargs :guard (and (plist-worldp wrld)
+(defun all-defuns-in-world (world triple-to-stop-at whole-world acc)
+  (declare (xargs :guard (and (plist-worldp world)
+                              (plist-worldp whole-world)
                               (true-listp acc))))
-  (if (endp wrld)
+  (if (endp world)
       (reverse acc)
-    (let ((triple (first wrld)))
+    (let ((triple (first world)))
       (if (equal triple triple-to-stop-at)
           (prog2$ (cw "~%Note: Not checking anything in the linter itself, any books included before the linter, or the ACL2 system itself.  To override, use linter option :check :all.~%~%")
                   (reverse acc))
         (let ((symb (car triple))
               (prop (cadr triple)))
           (if (and (eq prop 'unnormalized-body)
-                   (fgetprop (car triple) 'unnormalized-body nil wrld) ;todo: hack: make sure the function is still defined (why does this sometimes fail?)
+                   (fgetprop symb 'unnormalized-body nil whole-world) ;todo: hack: make sure the function is still defined (why does this sometimes fail?)
                    )
-              (all-defuns-in-world (rest wrld) triple-to-stop-at (cons symb acc))
-            (all-defuns-in-world (rest wrld) triple-to-stop-at acc)))))))
+              (all-defuns-in-world (rest world) triple-to-stop-at whole-world (cons symb acc))
+            (all-defuns-in-world (rest world) triple-to-stop-at whole-world acc)))))))
 
 ;dup
 (defun enquote-list (items)
@@ -672,39 +673,46 @@
                         fn
                         suppress state))))
 
-(defun check-defuns (fns assume-guards suppress state)
+(defun check-defuns (fns assume-guards suppress skip-fns state)
   (declare (xargs :stobjs state
+                  :guard (and ;todo: more
+                          (symbol-listp skip-fns))
                   :mode :program))
   (if (atom fns)
       nil
-    (let* ((fn (first fns)))
-      (prog2$ (check-defun fn assume-guards suppress state)
-              (check-defuns (rest fns) assume-guards suppress state)))))
+    (let* ((fn (first fns))
+           (checkp (not (member-eq fn skip-fns))))
+      (prog2$ (and checkp
+                   (progn$ (cw "Checking ~x0.~%" fn)
+                           (check-defun fn assume-guards suppress state)))
+              (check-defuns (rest fns) assume-guards suppress skip-fns state)))))
 
 ;todo: add support for more here
 (defconst *warning-types*
   '(:ground-term :guard-debug :equality-variant :context :resolvable-test
                  :equal-self))
 
-(defun run-linter-fn (check assume-guards suppress state)
+(defun run-linter-fn (check assume-guards suppress skip-fns state)
   (declare (xargs :stobjs state
                   :guard (and (member-eq check '(:user :all))
                               (booleanp assume-guards)
-                              (subsetp-eq suppress *warning-types*))
+                              (subsetp-eq suppress *warning-types*)
+                              (symbol-listp skip-fns))
                   :mode :program))
-  (let* ((wrld (w state))
+  (let* ((world (w state))
          (triple-to-stop-at (if (eq check :user)
                                 '(end-of-linter label . t)
                               nil))
-         (all-defuns (all-defuns-in-world wrld triple-to-stop-at nil)))
+         (all-defuns (all-defuns-in-world world triple-to-stop-at world nil)))
     (prog2$ (cw "Applying linter to ~x0 defuns:~%~%" (len all-defuns))
-            (check-defuns all-defuns assume-guards suppress state))))
+            (check-defuns all-defuns assume-guards suppress skip-fns state))))
 
 ;; Call this macro to check every defun in the current ACL2 world.
 (defmacro run-linter (&key (check ':user)             ;; either :user or :all
                            (suppress '(:ground-term :context)) ;; types of check to skip
                            (assume-guards 't) ;; whether to assume guards when analyzing function bodies
+                           (skip-fns 'nil) ;; functions to skip checking
                            )
-  `(run-linter-fn ',check ',assume-guards ',suppress state))
+  `(run-linter-fn ',check ',assume-guards ',suppress ',skip-fns state))
 
 (deflabel end-of-linter)
