@@ -18,7 +18,7 @@
 (include-book "kestrel/event-macros/input-processing" :dir :system)
 (include-book "kestrel/event-macros/proof-preparation" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
-(include-book "kestrel/soft/implementation" :dir :system)
+(include-book "kestrel/soft/defund-sk2" :dir :system)
 (include-book "kestrel/std/system/defun-sk-queries" :dir :system)
 (include-book "kestrel/std/system/fresh-logical-name-with-dollars-suffix" :dir :system)
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
@@ -742,27 +742,25 @@
           described in the user documentation."
   (b* ((inputs-with-car (divconq-gen-inputs-with-car inputs x0))
        (inputs-with-cdr (divconq-gen-inputs-with-cdr inputs x0))
+       (macro (if fold-enable 'soft::defun2 'soft::defund2))
        (body `(cond ((atom ,x0) (,?g ,@inputs))
                     (t (,?h ,@inputs-with-car
                             (,fold ,@inputs-with-cdr)))))
-       (event-to-print `(soft::defun2 ,fold ,inputs
-                          (declare (xargs :measure (acl2-count ,x0)))
-                          ,body))
+       (event-to-print `(,macro ,fold ,inputs
+                                (declare (xargs :measure (acl2-count ,x0)))
+                                ,body))
        (verify-guards-event? (and verify-guards
                                   `((local
                                      (verify-guards ,fold
                                        :hints (("Goal" :in-theory nil)))))))
        (local-events `((local
-                        (soft::defun2 ,fold ,inputs
-                          (declare (xargs :measure (acl2-count ,x0)
-                                          :hints (("Goal" :in-theory nil))))
-                          ,body))
+                        (,macro ,fold ,inputs
+                                (declare (xargs :measure (acl2-count ,x0)
+                                                :hints (("Goal" :in-theory nil))))
+                                ,body))
                        ,@verify-guards-event?))
-       (disable-event? (and (not fold-enable)
-                            `((in-theory (disable ,fold)))))
        (exported-events `(,event-to-print
-                          ,@(and verify-guards `((verify-guards ,fold)))
-                          ,@disable-event?)))
+                          ,@(and verify-guards `((verify-guards ,fold))))))
     (mv local-events exported-events event-to-print)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -774,28 +772,24 @@
                                   (iorel symbolp)
                                   (?g symbolp)
                                   (verify-guards booleanp))
-  :returns (mv (local-events pseudo-event-form-listp)
-               (exported-events pseudo-event-form-listp)
+  :returns (mv (local-event pseudo-event-form-listp)
+               (exported-event pseudo-event-form-listp)
                (event-to-print pseudo-event-formp))
   :short "Generate the @('spec-atom[?g]') function
           described in the user documentation."
-  (b* ((body `(forall ,inputs
+  (b* ((macro (if spec-atom-enable 'soft::defun-sk2 'soft::defund-sk2))
+       (body `(forall ,inputs
                       (impliez (atom ,x0)
                                (,iorel ,@inputs (,?g ,@inputs)))))
-       (event-to-print `(soft::defun-sk2 ,spec-atom () ,body))
+       (event-to-print `(,macro ,spec-atom () ,body))
        (verify-guards-event? (and verify-guards
                                   `((local
                                      (verify-guards ,spec-atom
                                        :hints (("Goal" :in-theory nil)))))))
        (local-events `((local ,event-to-print)
                        ,@verify-guards-event?))
-       (spec-atom-necc (add-suffix spec-atom "-NECC"))
-       (disable-event? (and (not spec-atom-enable)
-                            `((in-theory (disable ,spec-atom
-                                                  ,spec-atom-necc)))))
        (exported-events `(,event-to-print
-                          ,@(and verify-guards `((verify-guards ,spec-atom)))
-                          ,@disable-event?)))
+                          ,@(and verify-guards `((verify-guards ,spec-atom))))))
     (mv local-events exported-events event-to-print)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -815,25 +809,21 @@
           described in the user documentation."
   (b* ((inputs-with-car (divconq-gen-inputs-with-car inputs x0))
        (inputs-with-cdr (divconq-gen-inputs-with-cdr inputs x0))
+       (macro (if spec-cons-enable 'soft::defun-sk2 'soft::defund-sk2))
        (body `(forall (,@inputs ,cdr-output)
                       (impliez (and (consp ,x0)
                                     (,iorel ,@inputs-with-cdr ,cdr-output))
                                (,iorel ,@inputs
                                        (,?h ,@inputs-with-car ,cdr-output)))))
-       (event-to-print `(soft::defun-sk2 ,spec-cons () ,body))
+       (event-to-print `(,macro ,spec-cons () ,body))
        (verify-guards-event? (and verify-guards
                                   `((local
                                      (verify-guards ,spec-cons
                                        :hints (("Goal" :in-theory nil)))))))
        (local-events `((local ,event-to-print)
                        ,@verify-guards-event?))
-       (spec-cons-necc (add-suffix spec-cons "-NECC"))
-       (disable-event? (and (not spec-cons-enable)
-                            `((in-theory (disable ,spec-cons
-                                                  ,spec-cons-necc)))))
        (exported-events `(,event-to-print
-                          ,@(and verify-guards `((verify-guards ,spec-cons)))
-                          ,@disable-event?)))
+                          ,@(and verify-guards `((verify-guards ,spec-cons))))))
     (mv local-events exported-events event-to-print)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -849,23 +839,19 @@
                (event-to-print pseudo-event-formp))
   :short "Generate the @('equal[?f][fold[?g][?h]]') function
           described in the user documentation."
-  (b* ((body `(forall ,inputs
+  (b* ((macro (if equal-fold-enable 'soft::defun-sk2 'soft::defund-sk2))
+       (body `(forall ,inputs
                       (equal (,?f ,@inputs)
                              (,fold ,@inputs))))
-       (event-to-print `(soft::defun-sk2 ,equal-fold () ,body))
+       (event-to-print `(,macro ,equal-fold () ,body))
        (verify-guards-event? (and verify-guards
                                   `((local
                                      (verify-guards ,equal-fold
                                        :hints (("Goal" :in-theory nil)))))))
        (local-events `((local ,event-to-print)
                        ,@verify-guards-event?))
-       (equal-fold-necc (add-suffix equal-fold "-NECC"))
-       (disable-event? (and (not equal-fold-enable)
-                            `((in-theory (disable ,equal-fold
-                                                  ,equal-fold-necc)))))
        (exported-events `(,event-to-print
-                          ,@(and verify-guards `((verify-guards ,equal-fold)))
-                          ,@disable-event?)))
+                          ,@(and verify-guards `((verify-guards ,equal-fold))))))
     (mv local-events exported-events event-to-print)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -881,21 +867,19 @@
                (event-to-print pseudo-event-formp))
   :short "Generate the @('new') function
           described in the user documentation."
-  (b* ((body `(and (,equal-fold)
+  (b* ((macro (if new-enable 'soft::defun2 'soft::defund2))
+       (body `(and (,equal-fold)
                    (,spec-atom)
                    (,spec-cons)))
-       (event-to-print `(soft::defun2 ,new () ,body))
+       (event-to-print `(,macro ,new () ,body))
        (verify-guards-event? (and verify-guards
                                   `((local
                                      (verify-guards ,new
                                        :hints (("Goal" :in-theory nil)))))))
        (local-events `((local ,event-to-print)
                        ,@verify-guards-event?))
-       (disable-event? (and (not new-enable)
-                            `((in-theory (disable ,new)))))
        (exported-events `(,event-to-print
-                          ,@(and verify-guards `((verify-guards ,new)))
-                          ,@disable-event?)))
+                          ,@(and verify-guards `((verify-guards ,new))))))
     (mv local-events exported-events event-to-print)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
