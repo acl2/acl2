@@ -958,7 +958,7 @@
    of the function or lambda expression or term.
    This error-checking function is useful after calling
    @(tsee ensure-function/macro/lambda) (for a function or lambda expression)
-   or @(tsee ensure-term) (for a term),
+   or @(tsee ensure-value-is-untranslated-term) (for a term),
    both of which return the @(tsee stobjs-out) list,
    to handle functions and lambda expressions and terms uniformly.
    The @('description') parameter
