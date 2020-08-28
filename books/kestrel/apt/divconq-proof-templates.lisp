@@ -26,7 +26,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Generate funtions with termination and guard proofs,
+; Generate functions with termination and guard proofs,
 ; and theorems with proofs.
 
 (defmacro gen-fold-with-proofs (&key vars1 vars2)
