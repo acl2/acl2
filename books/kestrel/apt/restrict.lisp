@@ -192,8 +192,9 @@
   :mode :program
   :short "Process the @(':undefined') input."
   (b* ((wrld (w state))
-       ((er (list term stobjs-out)) (ensure-term$ undefined
-                                                  "The :UNDEFINED input" t nil))
+       ((er (list term stobjs-out))
+        (ensure-value-is-untranslated-term$ undefined
+                                            "The :UNDEFINED input" t nil))
        (description (msg "The term ~x0 that denotes the undefined value"
                          undefined))
        ((er &) (ensure-term-free-vars-subset$ term
