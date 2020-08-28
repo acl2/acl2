@@ -266,6 +266,7 @@
                          next-numbered-name
                          non-executablep
                          number-of-results
+                         nvariablep
                          on-failure
                          pack$
                          packn
