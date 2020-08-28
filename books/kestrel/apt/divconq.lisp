@@ -735,9 +735,8 @@
                              (?g symbolp)
                              (?h symbolp)
                              (verify-guards booleanp))
-  :returns (mv (local-events pseudo-event-form-listp)
-               (exported-events pseudo-event-form-listp)
-               (event-to-print pseudo-event-formp))
+  :returns (mv (local-event pseudo-event-formp)
+               (exported-event pseudo-event-formp))
   :short "Generate the @('fold[?g][?h]') function
           described in the user documentation."
   (b* ((inputs-with-car (divconq-gen-inputs-with-car inputs x0))
@@ -746,22 +745,26 @@
        (body `(cond ((atom ,x0) (,?g ,@inputs))
                     (t (,?h ,@inputs-with-car
                             (,fold ,@inputs-with-cdr)))))
-       (event-to-print `(,macro ,fold ,inputs
-                                (declare (xargs :measure (acl2-count ,x0)))
-                                ,body))
-       (verify-guards-event? (and verify-guards
-                                  `((local
-                                     (verify-guards ,fold
-                                       :hints (("Goal" :in-theory nil)))))))
-       (local-events `((local
-                        (,macro ,fold ,inputs
-                                (declare (xargs :measure (acl2-count ,x0)
-                                                :hints (("Goal" :in-theory nil))))
-                                ,body))
-                       ,@verify-guards-event?))
-       (exported-events `(,event-to-print
-                          ,@(and verify-guards `((verify-guards ,fold))))))
-    (mv local-events exported-events event-to-print)))
+       (local-event
+        `(local
+          (,macro ,fold ,inputs
+                  (declare
+                   (xargs
+                    :measure (acl2-count ,x0)
+                    :hints (("Goal" :in-theory nil))
+                    ,@(and verify-guards (list :guard t))
+                    ,@(and verify-guards
+                           '(:guard-hints (("Goal" :in-theory nil))))
+                    :verify-guards ,verify-guards))
+                  ,body)))
+       (exported-event
+        `(,macro ,fold ,inputs
+                 (declare (xargs
+                           :measure (acl2-count ,x0)
+                           ,@(and verify-guards (list :guard t))
+                           :verify-guards ,verify-guards))
+                 ,body)))
+    (mv local-event exported-event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -862,25 +865,32 @@
                             (spec-cons symbolp)
                             (equal-fold symbolp)
                             (verify-guards booleanp))
-  :returns (mv (local-events pseudo-event-form-listp)
-               (exported-events pseudo-event-form-listp)
-               (event-to-print pseudo-event-formp))
+  :returns (mv (local-event pseudo-event-formp)
+               (exported-event pseudo-event-formp))
   :short "Generate the @('new') function
           described in the user documentation."
   (b* ((macro (if new-enable 'soft::defun2 'soft::defund2))
        (body `(and (,equal-fold)
                    (,spec-atom)
                    (,spec-cons)))
-       (event-to-print `(,macro ,new () ,body))
-       (verify-guards-event? (and verify-guards
-                                  `((local
-                                     (verify-guards ,new
-                                       :hints (("Goal" :in-theory nil)))))))
-       (local-events `((local ,event-to-print)
-                       ,@verify-guards-event?))
-       (exported-events `(,event-to-print
-                          ,@(and verify-guards `((verify-guards ,new))))))
-    (mv local-events exported-events event-to-print)))
+       (local-event
+        `(local
+          (,macro ,new ()
+                  (declare
+                   (xargs
+                    ,@(and verify-guards (list :guard t))
+                    ,@(and verify-guards
+                           '(:guard-hints (("Goal" :in-theory nil))))
+                    :verify-guards ,verify-guards))
+                  ,body)))
+       (exported-event
+        `(,macro ,new ()
+                 (declare
+                  (xargs
+                   ,@(and verify-guards (list :guard t))
+                   :verify-guards ,verify-guards))
+                 ,body)))
+    (mv local-event exported-event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1003,9 +1013,8 @@
   :short "Generate the top-level event."
   (b* ((??g-event (divconq-gen-?g-fvar ?g inputs))
        (??h-event (divconq-gen-?h-fvar ?h inputs))
-       ((mv fold-local-events
-            fold-exported-events
-            fold-event-to-print)
+       ((mv fold-local-event
+            fold-exported-event)
         (divconq-gen-fold-fn fold fold-enable inputs x0 ?g ?h verify-guards))
        ((mv spec-atom-local-events
             spec-atom-exported-events
@@ -1022,9 +1031,8 @@
             equal-fold-event-to-print)
         (divconq-gen-equal-fold-fn equal-fold equal-fold-enable
                                    inputs ?f fold verify-guards))
-       ((mv new-local-events
-            new-exported-events
-            new-event-to-print)
+       ((mv new-local-event
+            new-exported-event)
         (divconq-gen-new-fn new new-enable
                             spec-atom spec-cons equal-fold verify-guards))
        ((mv fold-correct-event fold-correct &)
@@ -1039,18 +1047,18 @@
           (evmac-prepare-proofs)
           ,?g-event
           ,?h-event
-          ,@fold-local-events
+          ,fold-local-event
           ,@spec-atom-local-events
           ,@spec-cons-local-events
           ,@equal-fold-local-events
-          ,@new-local-events
+          ,new-local-event
           ,fold-correct-event
           ,old-if-new-local-event
-          ,@fold-exported-events
+          ,fold-exported-event
           ,@spec-atom-exported-events
           ,@spec-cons-exported-events
           ,@equal-fold-exported-events
-          ,@new-exported-events
+          ,new-exported-event
           ,old-if-new-exported-event))
        (encapsulate `(encapsulate () ,@encapsulate-events))
        ((when show-only)
@@ -1065,11 +1073,11 @@
                       (member-eq print '(:result :info :all))
                       `(,@(and (member-eq print '(:info :all))
                                '((cw-event "~%")))
-                        (cw-event "~x0~|" ',fold-event-to-print)
+                        (cw-event "~x0~|" ',fold-exported-event)
                         (cw-event "~x0~|" ',spec-atom-event-to-print)
                         (cw-event "~x0~|" ',spec-cons-event-to-print)
                         (cw-event "~x0~|" ',equal-fold-event-to-print)
-                        (cw-event "~x0~|" ',new-event-to-print)
+                        (cw-event "~x0~|" ',new-exported-event)
                         (cw-event "~x0~|" ',old-if-new-exported-event)))))
     `(progn
        ,encapsulate+
