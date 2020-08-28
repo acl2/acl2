@@ -410,52 +410,6 @@
       `(ensure-function/macro/lambda
         ,x ,description ,error-erp ,error-val ctx state))))
 
-(define ensure-term ((x "Value to check.")
-                     (description msgp)
-                     (error-erp "Flag to return in case of error.")
-                     (error-val "Value to return in case of error.")
-                     (ctx "Context for errors.")
-                     state)
-  :returns (mv (erp "@('nil') or @('error-erp').")
-               (val
-                "A tuple @('(term stobjs-out)')
-                 consisting of
-                 a @(tsee pseudo-termp) and
-                 a @(tsee symbol-listp)
-                 if @('erp') is @('nil'),
-                 otherwise @('error-val').")
-               state)
-  :mode :program
-  :short "Cause an error if a value is not a term."
-  :long
-  "<p>
-   If successful,
-   return the <see topic='@(url term)'>translation</see> of @('x')
-   and the @(tsee stobjs-out) list returned by @(tsee check-user-term).
-   </p>
-   <p>
-   If @(tsee check-user-term) fails,
-   the error message it returns is incorporated into a larger error message.
-   Since the message returned by @(tsee check-user-term) starts with the term,
-   it can be incorporated into the larger message
-   without capitalization concerns.
-   </p>"
-  (b* (((mv term/msg stobjs-out) (check-user-term x (w state))))
-    (if (msgp term/msg)
-        (er-soft+ ctx error-erp error-val
-                  "~@0 must be a term.  ~@1"
-                  description term/msg)
-      (value (list term/msg stobjs-out))))
-  ///
-
-  (defsection ensure-term$
-    :parents (ensure-term)
-    :short "Call @(tsee ensure-term)
-            with @('ctx') and @('state') as the last two arguments."
-    :long "@(def ensure-term$)"
-    (defmacro ensure-term$ (x description error-erp error-val)
-      `(ensure-term ,x ,description ,error-erp ,error-val ctx state))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-error-checker ensure-function-logic-mode
