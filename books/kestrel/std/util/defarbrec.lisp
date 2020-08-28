@@ -14,6 +14,7 @@
 (include-book "kestrel/error-checking/ensure-value-is-not-in-list" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-symbol-list" :dir :system)
+(include-book "kestrel/error-checking/ensure-value-is-untranslated-term" :dir :system)
 (include-book "kestrel/event-macros/cw-event" :dir :system)
 (include-book "kestrel/event-macros/make-event-terse" :dir :system)
 (include-book "kestrel/event-macros/proof-preparation" :dir :system)
@@ -583,9 +584,10 @@
    (xdoc::p
     "Note that the check that the term calls only logic-mode functions
      ensures that the term does not call the program-mode function @('fn')."))
-  (b* (((er (list term stobjs-out)) (ensure-term$ nonterminating
-                                                  "The :NONTERMINATING input"
-                                                  t nil))
+  (b* (((er (list term stobjs-out))
+        (ensure-value-is-untranslated-term$ nonterminating
+                                            "The :NONTERMINATING input"
+                                            t nil))
        (description (msg "The term ~x0 supplied as the :NONTERMINATING input"
                          nonterminating))
        ((er &) (ensure-term-free-vars-subset$ term x1...xn$ description t nil))

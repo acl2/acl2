@@ -12,6 +12,7 @@
 
 (include-book "kestrel/error-checking/ensure-value-is-boolean" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
+(include-book "kestrel/error-checking/ensure-value-is-untranslated-term" :dir :system)
 (include-book "kestrel/event-macros/applicability-conditions" :dir :system)
 (include-book "kestrel/event-macros/input-processing" :dir :system)
 (include-book "kestrel/event-macros/intro-macros" :dir :system)
@@ -150,7 +151,8 @@
   :short "Process an element of the @('conditions') input."
   (b* ((wrld (w state))
        (description (msg "The ~n0 element of the second input" (list pos)))
-       ((er (list term stobjs-out)) (ensure-term$ cond description t nil))
+       ((er (list term stobjs-out))
+        (ensure-value-is-untranslated-term$ cond description t nil))
        (description (msg "The term ~x0 that denotes the ~n1 condition"
                          cond (list pos)))
        ((er &) (ensure-term-free-vars-subset$ term

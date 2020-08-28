@@ -12,6 +12,7 @@
 
 (include-book "kestrel/error-checking/ensure-value-is-boolean" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
+(include-book "kestrel/error-checking/ensure-value-is-untranslated-term" :dir :system)
 (include-book "kestrel/event-macros/applicability-conditions" :dir :system)
 (include-book "kestrel/event-macros/input-processing" :dir :system)
 (include-book "kestrel/event-macros/intro-macros" :dir :system)
@@ -152,8 +153,9 @@
   :mode :program
   :short "Process the @('restriction') input."
   (b* ((wrld (w state))
-       ((er (list term stobjs-out)) (ensure-term$ restriction
-                                                  "The second input" t nil))
+       ((er (list term stobjs-out))
+        (ensure-value-is-untranslated-term$ restriction
+                                            "The second input" t nil))
        (description (msg "The term ~x0 that denotes the restricting predicate"
                          restriction))
        ((er &) (ensure-term-free-vars-subset$ term
@@ -190,8 +192,9 @@
   :mode :program
   :short "Process the @(':undefined') input."
   (b* ((wrld (w state))
-       ((er (list term stobjs-out)) (ensure-term$ undefined
-                                                  "The :UNDEFINED input" t nil))
+       ((er (list term stobjs-out))
+        (ensure-value-is-untranslated-term$ undefined
+                                            "The :UNDEFINED input" t nil))
        (description (msg "The term ~x0 that denotes the undefined value"
                          undefined))
        ((er &) (ensure-term-free-vars-subset$ term
