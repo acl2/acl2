@@ -45,6 +45,7 @@
                          body
                          check-numbered-name
                          check-user-lambda
+                         check-user-term
                          clausify
                          clean-up-0ary-lambdas-in-untranslated-term
                          clean-up-and-of-t-in-untranslated-term
@@ -170,7 +171,9 @@
                          evmac-process-input-hints$
                          evmac-process-input-print
                          evmac-process-input-show-only
+                         exists
                          expand-ruleset
+                         explode
                          ext-address-subterm-governors-lst
                          ext-address-subterm-governors-lst-state
                          ext-fdeposit-term
@@ -192,6 +195,7 @@
                          fn-is-fn-copy-name
                          fn-rune-nume
                          fn-ubody
+                         forall
                          formals
                          formals+
                          fquotep
@@ -218,6 +222,7 @@
                          implicate
                          implicate-untranslated-terms
                          impliez
+                         implode
                          impossible
                          induction-machine
                          induction-machine-for-fn
