@@ -936,7 +936,7 @@
                                                process of preparing to deal ~
                                                with forced assumptions.~|"
                                               (list (cons #\0 goal-name)
-                                                    (cons #\0 instr))
+                                                    (cons #\1 instr))
                                               0 nil))
                                    (io? proof-builder nil state
                                         (goals)

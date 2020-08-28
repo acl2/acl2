@@ -31493,9 +31493,9 @@
          (if (free-exactly-in-last-arg-of-calls limit fns-limit body)
              (memoize-partial-translations-msg-bodies
               (cdr tail) fns-limit limit wrld)
-           (msg "The limit variable ~x0 fails to occur free where expected in ~
-                 the body of the definition of function ~x1 (essentially, as ~
-                 the last argument of each recursive call)."
+           (msg "The limit variable ~x0 fails to occur free exactly where ~
+                 expected in the body of the definition of function ~x1 ~
+                 (essentially, as the last argument of each recursive call)."
                 limit fn)))
         (& (msg "~@0 (must be of the form (IF (ZP LIMIT) & &))."
                 (msg str fn))))))))
@@ -31615,7 +31615,10 @@
          (memoize-table (table-alist 'memoize-table wrld))
          (key-formals (if (symbolp key)
                           (getpropc key 'formals t wrld)
-                        t))
+                        (er hard ctx
+                            "~@0The first argument of memoize must be a ~
+                             symbol, unlike ~x1."
+                            str key)))
          (key-class (symbol-class key wrld))
          (val (if (symbol-alistp val)
                   val
@@ -31733,6 +31736,13 @@
                  str (cdr (assoc-eq :memo-table-init-size val))))
             ((not (memoize-table-chk-commutative str key val ctx wrld))
              nil) ; an error was presumably already caused
+            ((not (symbolp total))
+             (er hard ctx
+                 "~@0The value of the :total keyword for memoize must be a ~
+                  symbol, but ~x1 is not.  Presumably you are trying to use ~
+                  the :total option of memoize directly, which is not ~
+                  recommended.  See :DOC memoize-partial."
+                 str total))
             ((and total
                   (not (cltl-def-memoize-partial key total wrld)))
              (er hard ctx

@@ -11175,7 +11175,7 @@
 
                       *t*
                       wrld)))))))))))
-  (& (er hard 'store-signature "Unrecognized signature!" insig))))
+  (& (er hard 'store-signature "Unrecognized signature!"))))
 
 (defun intro-udf-lst1 (insigs wrld)
   (cond ((null insigs) wrld)

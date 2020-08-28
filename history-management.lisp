@@ -547,8 +547,7 @@
                 state
               (mv-let (col state)
                       (fmt1 "++++++++++++++++++++++++++++++~%"
-                            (list (cons #\0 increment))
-                            0 channel state nil)
+                            nil 0 channel state nil)
                       (declare (ignore col))
                       state))
             (format-proof-tree

@@ -11240,7 +11240,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
     (cond ((null guard)
            (illegal nil
-                    "Illegal-type."
+                    "Illegal-type: ~x0."
                     (list (cons #\0 x))))
           (t
            `(let ((var ,y))

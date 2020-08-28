@@ -9053,8 +9053,7 @@
                (cons #\2 (if (= forcing-round 0) 0 1))
                (cons #\3 forcing-round)
                (cons #\4 (if (= n0 n) 0 1))
-               (cons #\5 n0)
-               (cons #\6 (1+ forcing-round)))
+               (cons #\5 n0))
          (proofs-co state)
          state
          nil)

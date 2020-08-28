@@ -121,7 +121,8 @@
            ((fquotep lhs) "quoted constant")
            ((flambda-applicationp lhs) "LET-expression")
            (t (er hard 'interpret-term-as-rewrite-rule2
-                  "Implementation error: forgot a case.  LHS:~|~x0.")))
+                  "Implementation error: forgot a case.  LHS:~|~x0."
+                  lhs)))
      lhs))
    (t (let ((bad-synp-hyp-msg (bad-synp-hyp-msg
                                hyps (all-vars lhs) nil wrld)))
@@ -10515,9 +10516,8 @@
                                  (list (cons #\0 14)
                                        (cons #\1 (caar vals)))
                                  col chan state nil))
-                          (t (fmt1 " ~q1"
-                                   (list (cons #\0 14)
-                                         (cons #\1 (caar vals)))
+                          (t (fmt1 " ~q0"
+                                   (list (cons #\0 (caar vals)))
                                    col chan state nil)))
                     (declare (ignore col))
                     (print-info-for-rules-entry (cdr keys) (cdr vals) chan
