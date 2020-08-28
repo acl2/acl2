@@ -102,8 +102,8 @@
   "@('iorel') is the homonymous function symbol
    described in the user documentation."
 
-  "@('?f') is the function variable that @('old') depends on,
-   as described in the user documentation."
+  "@('?f') is the homonymous function symbol
+   described in the user documentation."
 
   "@('?g') is the homonymous function symbol
    described in the user documentation."
