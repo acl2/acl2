@@ -848,7 +848,7 @@
                              (:rewrite cons-of-remove-under-set-equiv-1))
          ((:rewrite abs-separate-of-frame->frame-of-collapse-this-lemma-8
                     . 2)
-          (:type-prescription abs-fs-fix-of-put-assoc-equal-lemma-3)
+          (:type-prescription abs-addrs-of-remove-assoc-lemma-1)
           (:definition member-equal)
           (:rewrite abs-addrs-when-m1-file-alist-p)
           (:rewrite abs-file-alist-p-correctness-1)
