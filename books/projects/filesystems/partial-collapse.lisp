@@ -2826,7 +2826,7 @@
     :induct (ctx-app-list x relpath frame l)
     :expand
     (:with
-     no-duplicatesp-equal-of-abs-addrs-of-abs-fs-fix
+     no-duplicatesp-of-abs-addrs-of-abs-fs-fix
      (no-duplicatesp-equal
       (abs-addrs
        (abs-fs-fix

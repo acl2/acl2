@@ -40,8 +40,6 @@
                          abs-file-alist-p-of-abs-file->contents)
                         (:rewrite member-of-abs-fs-fix-when-natp)
                         (:rewrite
-                         no-duplicatesp-equal-of-abs-addrs-of-abs-fs-fix)
-                        (:rewrite
                          m1-file-alist-p-of-intersection-equal-2)
                         (:rewrite absfat-subsetp-transitivity-lemma-5)
                         (:rewrite

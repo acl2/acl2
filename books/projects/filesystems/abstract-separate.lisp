@@ -1140,7 +1140,7 @@
 
 ;; This is a hack...
 (defthm
-  no-duplicatesp-equal-of-abs-addrs-of-abs-fs-fix-lemma-1
+  no-duplicatesp-of-abs-addrs-of-abs-fs-fix-lemma-1
   (implies (abs-file-alist-p abs-file-alist)
            (subsetp-equal (abs-addrs (abs-fs-fix abs-file-alist))
                           (abs-addrs abs-file-alist)))
@@ -1180,7 +1180,7 @@
 
 ;; The abs-file-alist-p hypothesis is required because otherwise the fixing
 ;; could introduce a lot of (duplicate) zeros.
-(defthm no-duplicatesp-equal-of-abs-addrs-of-abs-fs-fix
+(defthm no-duplicatesp-of-abs-addrs-of-abs-fs-fix
   (implies (and (abs-file-alist-p x)
                 (no-duplicatesp-equal (abs-addrs x)))
            (no-duplicatesp-equal (abs-addrs (abs-fs-fix x))))
@@ -5790,10 +5790,10 @@
   :hints
   (("goal"
     :in-theory (disable abs-addrs-of-ctx-app
-                        no-duplicatesp-equal-of-abs-addrs-of-abs-fs-fix-lemma-1)
+                        no-duplicatesp-of-abs-addrs-of-abs-fs-fix-lemma-1)
     :use
     (abs-addrs-of-ctx-app
-     (:instance no-duplicatesp-equal-of-abs-addrs-of-abs-fs-fix-lemma-1
+     (:instance no-duplicatesp-of-abs-addrs-of-abs-fs-fix-lemma-1
                 (abs-file-alist (ctx-app abs-file-alist1
                                          abs-file-alist2 x x-path))))))
   :rule-classes

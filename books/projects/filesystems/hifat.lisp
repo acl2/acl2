@@ -10,7 +10,6 @@
 (local (include-book "rtl/rel9/arithmetic/top" :dir :system))
 ;; This book happens to non-locally disable intersectp.
 (include-book "kestrel/utilities/strings/top" :dir :system)
-(include-book "std/strings/case-conversion" :dir :system)
 
 (include-book "insert-text")
 (include-book "fat32")
