@@ -4574,3 +4574,13 @@
   integerp-of--
   (implies (integerp x)
            (integerp (- x))))
+
+
+(def-rp-rule 4vec-p-of-nth
+   (implies (and (or (sv::4veclist-p lst)
+                     (integer-listp lst))
+                 (< index (len lst))
+                 (natp index))
+            (sv::4vec-p (nth index lst)))
+   :hints (("Goal"
+            :in-theory (e/d (4vec-p) ()))))

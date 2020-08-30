@@ -425,6 +425,23 @@
 (encapsulate
   nil
 
+  (local
+   (use-arithmetic-5 t))
+  (def-rp-rule 4vec-concat$-bit-and-zero
+    (implies (and (posp size)
+                  (bitp num1))
+             (equal (4vec-concat$ size num1 0)
+                    num1))
+    :hints (("Goal"
+             :in-theory (e/d (4VEC-CONCAT$
+                              4VEC-CONCAT
+                              SV::4VEC->UPPER
+                              SV::4VEC->LOWER)
+                             ())))))
+
+(encapsulate
+  nil
+
   ;; 4vec-lsh lemmas
   (progn
     ;; no syntaxp versions are used to prove lemmas but they should be disabled
@@ -1647,7 +1664,6 @@
                               4VEC-CONCAT$)
                              (
                               ))))))
-
 
 
 
