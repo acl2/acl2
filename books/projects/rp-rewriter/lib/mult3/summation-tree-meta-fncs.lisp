@@ -58,7 +58,12 @@
 
 (define negated-termp (term)
   :inline t
-  (case-match term (('-- &) t)))
+  (case-match term (('-- &) t))
+  ///
+  (defthm NEGATED-TERMP-implies
+    (implies (NEGATED-TERMP term)
+             (case-match term (('-- &) t)))
+    :rule-classes :forward-chaining))
 
 (progn
   (encapsulate
@@ -1500,9 +1505,9 @@
       (implies (rp-term-listp lst)
                (rp-term-listp (cdr lst))))))
 
-  (b* (((unless (and 
-                     (pattern3-reduce-enabled)
-                     (odd-many-ones (list-to-lst pp))))
+  (b* (((unless (and
+                 (pattern3-reduce-enabled)
+                 (odd-many-ones (list-to-lst pp))))
         (mv nil nil nil))
        (pp-lst (list-to-lst pp))
        ((unless (odd-many-ones pp-lst))
@@ -1626,8 +1631,6 @@
                nil
                nil)))))
 
-
-
 (define create-c-instance ((s-lst rp-term-listp)
                            (pp-lst rp-term-listp)
                            (c-lst rp-term-listp)
@@ -1730,135 +1733,239 @@
         (mv c2-lst c1-lst)
       (mv c1-lst c2-lst))))
 
-(acl2::defines
- count-c
- :flag-defthm-macro defthm-count-c
- :flag-local nil
- :hints (("Goal"
-          :in-theory (e/d (measure-lemmas
-                           single-c-p
-                           single-s-p)
-                          ())))
- (define count-c (term)
-   :measure (cons-count term)
+;; (acl2::defines
+;;  count-c
+;;  :flag-defthm-macro defthm-count-c
+;;  :flag-local nil
+;;  :hints (("Goal"
+;;           :in-theory (e/d (measure-lemmas
+;;                            single-c-p
+;;                            single-s-p)
+;;                           ())))
+;;  (define count-c (term)
+;;    :measure (cons-count term)
 
-   (b* ((term (ex-from-rp term)))
-     (cond
-      ((single-c-p term)
-       (let ((arg-c (car (cddddr term))))
-         (case-match arg-c
-           (('list . c-lst) (1+ (count-c-lst c-lst)))
-           (& 1))))
-      ((single-s-p term)
-       (let ((arg-c (car (cdddr term))))
-         (case-match arg-c
-           (('list . c-lst) (count-c-lst c-lst))
-           (& 0))))
-      ((or (atom term) (quotep term)) 0)
-      (t (count-c-lst (cdr term))))))
- (define count-c-lst (lst)
-   :measure (cons-count lst)
-   (if (atom lst)
-       0
-     (+ (count-c-lst (cdr lst))
-        (count-c (car lst))))))
+;;    (b* ((term (ex-from-rp term)))
+;;      (cond
+;;       ((single-c-p term)
+;;        (let ((arg-c (car (cddddr term))))
+;;          (case-match arg-c
+;;            (('list . c-lst) (1+ (count-c-lst c-lst)))
+;;            (& 1))))
+;;       ((single-s-p term)
+;;        (let ((arg-c (car (cdddr term))))
+;;          (case-match arg-c
+;;            (('list . c-lst) (count-c-lst c-lst))
+;;            (& 0))))
+;;       ((or (atom term) (quotep term)) 0)
+;;       (t (count-c-lst (cdr term))))))
+;;  (define count-c-lst (lst)
+;;    :measure (cons-count lst)
+;;    (if (atom lst)
+;;        0
+;;      (+ (count-c-lst (cdr lst))
+;;         (count-c (car lst))))))
 
-(local
- (encapsulate
-   nil
-   (defthm c-sum-merge-m-lemma1
-     (EQUAL (+ (COUNT-C-LST (MV-NTH 0 (swap-c-lsts C1-LST C2-LST cond)))
-               (COUNT-C-LST (MV-NTH 1 (swap-c-lsts C1-LST C2-LST cond))))
-            (+ (COUNT-C-LST C1-LST)
-               (COUNT-C-LST C2-LST)))
-     :hints (("Goal"
-              :in-theory (e/d (swap-c-lsts) ()))))
+;; (local
+;;  (encapsulate
+;;    nil
+;;    (defthm c-sum-merge-m-lemma1
+;;      (EQUAL (+ (COUNT-C-LST (MV-NTH 0 (swap-c-lsts C1-LST C2-LST cond)))
+;;                (COUNT-C-LST (MV-NTH 1 (swap-c-lsts C1-LST C2-LST cond))))
+;;             (+ (COUNT-C-LST C1-LST)
+;;                (COUNT-C-LST C2-LST)))
+;;      :hints (("Goal"
+;;               :in-theory (e/d (swap-c-lsts) ()))))
 
-   (defthm c-sum-merge-m-lemma2
-     (implies (and (MV-NTH 4 (GET-C-ARGS SINGLE-C1))
-                   (MV-NTH 4 (GET-C-ARGS SINGLE-C2))
-                   (EQUAL (CAR (MV-NTH 1 (GET-C-ARGS SINGLE-C2)))
-                          'LIST))
-              (< (+ (COUNT-C-LST (MV-NTH 3 (GET-C-ARGS SINGLE-C1)))
-                    (COUNT-C-LST (MV-NTH 3 (GET-C-ARGS SINGLE-C2))))
-                 (+ (COUNT-C SINGLE-C1)
-                    (COUNT-C SINGLE-C2))))
-     :hints (("Goal"
-              :do-not-induct t
-              :expand ((COUNT-C SINGLE-C1)
-                       (COUNT-C SINGLE-C2))
-              :in-theory (e/d (GET-C-ARGS
-                               SINGLE-C-P
-                               SINGLE-s-P)
-                              ()))))
+;;    (defthm c-sum-merge-m-lemma2
+;;      (implies (and (MV-NTH 4 (GET-C-ARGS SINGLE-C1))
+;;                    (MV-NTH 4 (GET-C-ARGS SINGLE-C2))
+;;                    (EQUAL (CAR (MV-NTH 1 (GET-C-ARGS SINGLE-C2)))
+;;                           'LIST))
+;;               (< (+ (COUNT-C-LST (MV-NTH 3 (GET-C-ARGS SINGLE-C1)))
+;;                     (COUNT-C-LST (MV-NTH 3 (GET-C-ARGS SINGLE-C2))))
+;;                  (+ (COUNT-C SINGLE-C1)
+;;                     (COUNT-C SINGLE-C2))))
+;;      :hints (("Goal"
+;;               :do-not-induct t
+;;               :expand ((COUNT-C SINGLE-C1)
+;;                        (COUNT-C SINGLE-C2))
+;;               :in-theory (e/d (GET-C-ARGS
+;;                                SINGLE-C-P
+;;                                SINGLE-s-P)
+;;                               ()))))
 
-   (defthm c-sum-merge-m-lemma3
-     (IMPLIES (AND (CONSP C2-LST))
-              (and (<= (COUNT-C-LST (CDR C2-LST))
-                       (COUNT-C-LST C2-LST))
-                   (>= (COUNT-C-LST C2-LST)
-                       (COUNT-C-LST (CDR C2-LST)))))
-     :hints (("Goal"
-              :expand (COUNT-C-LST C2-LST)
-              :in-theory (e/d () ()))))
+;;    (defthm c-sum-merge-m-lemma3
+;;      (IMPLIES (AND (CONSP C2-LST))
+;;               (and (<= (COUNT-C-LST (CDR C2-LST))
+;;                        (COUNT-C-LST C2-LST))
+;;                    (>= (COUNT-C-LST C2-LST)
+;;                        (COUNT-C-LST (CDR C2-LST)))))
+;;      :hints (("Goal"
+;;               :expand (COUNT-C-LST C2-LST)
+;;               :in-theory (e/d () ()))))
 
-   (defthm c-sum-merge-m-lemma4
-     (IMPLIES (AND (CONSP C1-LST))
-              (<= (+ a (COUNT-C (CAR C1-LST)))
-                  (+ (COUNT-C-LST C1-LST) a)))
-     :hints (("Goal"
-              :expand (COUNT-C-LST C1-LST)
-              :in-theory (e/d () ()))))
+;;    (defthm c-sum-merge-m-lemma4
+;;      (IMPLIES (AND (CONSP C1-LST))
+;;               (<= (+ a (COUNT-C (CAR C1-LST)))
+;;                   (+ (COUNT-C-LST C1-LST) a)))
+;;      :hints (("Goal"
+;;               :expand (COUNT-C-LST C1-LST)
+;;               :in-theory (e/d () ()))))
 
-   (defthm c-sum-merge-m-lemma5
-     (IMPLIES (AND (CONSP C1-LST)
-                   (<= (+ (COUNT-C-LST C1-LST)
-                          (COUNT-C-LST C2-LST))
-                       (+ (COUNT-C-LST C2-LST)
-                          (COUNT-C (CAR C1-LST)))))
-              (EQUAL (+ (COUNT-C-LST C2-LST)
-                        (COUNT-C (CAR C1-LST)))
-                     (+ (COUNT-C-LST C1-LST)
-                        (COUNT-C-LST C2-LST))))
-     :hints (("Goal"
-              :use ((:instance c-sum-merge-m-lemma4
-                               (a (COUNT-C-LST C2-LST))))
-              :in-theory (e/d () (c-sum-merge-m-lemma4)))))
+;;    (defthm c-sum-merge-m-lemma5
+;;      (IMPLIES (AND (CONSP C1-LST)
+;;                    (<= (+ (COUNT-C-LST C1-LST)
+;;                           (COUNT-C-LST C2-LST))
+;;                        (+ (COUNT-C-LST C2-LST)
+;;                           (COUNT-C (CAR C1-LST)))))
+;;               (EQUAL (+ (COUNT-C-LST C2-LST)
+;;                         (COUNT-C (CAR C1-LST)))
+;;                      (+ (COUNT-C-LST C1-LST)
+;;                         (COUNT-C-LST C2-LST))))
+;;      :hints (("Goal"
+;;               :use ((:instance c-sum-merge-m-lemma4
+;;                                (a (COUNT-C-LST C2-LST))))
+;;               :in-theory (e/d () (c-sum-merge-m-lemma4)))))
 
-   (defthm c-sum-merge-m-lemma6
-     (implies (consp c2-lst)
-              (>= (COUNT-C-LST C2-LST)
-                  (COUNT-C (CAR C2-LST))))
-     :hints (("Goal"
-              :expand (COUNT-C-LST C2-LST)
-              :in-theory (e/d () ()))))
+;;    (defthm c-sum-merge-m-lemma6
+;;      (implies (consp c2-lst)
+;;               (>= (COUNT-C-LST C2-LST)
+;;                   (COUNT-C (CAR C2-LST))))
+;;      :hints (("Goal"
+;;               :expand (COUNT-C-LST C2-LST)
+;;               :in-theory (e/d () ()))))
 
-   (defthm c-sum-merge-m-lemma7
-     (implies (and (consp c2-lst)
-                   (<= (count-c-lst c2-lst)
-                       (count-c (car c2-lst))))
-              (equal (+ (count-c single-c1)
-                        (count-c (car c2-lst)))
-                     (+ (count-c single-c1)
-                        (count-c-lst c2-lst))))
-     :hints (("Goal"
-              :use ((:instance c-sum-merge-m-lemma6))
-              :in-theory (e/d () (c-sum-merge-m-lemma6)))))
+;;    (defthm c-sum-merge-m-lemma7
+;;      (implies (and (consp c2-lst)
+;;                    (<= (count-c-lst c2-lst)
+;;                        (count-c (car c2-lst))))
+;;               (equal (+ (count-c single-c1)
+;;                         (count-c (car c2-lst)))
+;;                      (+ (count-c single-c1)
+;;                         (count-c-lst c2-lst))))
+;;      :hints (("Goal"
+;;               :use ((:instance c-sum-merge-m-lemma6))
+;;               :in-theory (e/d () (c-sum-merge-m-lemma6)))))
 
-   (defthm c-sum-merge-m-lemma8
-     (IMPLIES (AND (CONSP C2-LST)
-                   (<= (COUNT-C-LST C2-LST)
-                       (COUNT-C-LST (CDR C2-LST))))
-              (equal (COUNT-C-LST C2-LST)
-                     (COUNT-C-LST (CDR C2-LST))))
-     :hints (("Goal"
-              :expand (COUNT-C-LST C2-LST)
-              :in-theory (e/d () ()))))
+;;    (defthm c-sum-merge-m-lemma8
+;;      (IMPLIES (AND (CONSP C2-LST)
+;;                    (<= (COUNT-C-LST C2-LST)
+;;                        (COUNT-C-LST (CDR C2-LST))))
+;;               (equal (COUNT-C-LST C2-LST)
+;;                      (COUNT-C-LST (CDR C2-LST))))
+;;      :hints (("Goal"
+;;               :expand (COUNT-C-LST C2-LST)
+;;               :in-theory (e/d () ()))))
 
-   ))
+;;    ))
 
 (in-theory (enable PP-LST-TO-PP))
 
+
+(define c-of-1-merge ((single-c1 rp-termp)
+                      (single-c2 rp-termp))
+  :returns (mv (res-s-lst rp-term-listp :hyp (and (rp-termp single-c1)
+                                                  (rp-termp single-c2)))
+               (res-pp-lst rp-term-listp :hyp (and (rp-termp single-c1)
+                                                   (rp-termp single-c2)) )
+               (res-c-lst rp-term-listp :hyp (and (rp-termp single-c1)
+                                                  (rp-termp single-c2)))
+               (merge-success booleanp))
+  :verify-guards nil
+  (b* (((mv single-c1 negated-c1)
+        (if (negated-termp single-c1) (mv (cadr single-c1) t) (mv single-c1 nil)))
+       ((mv single-c2 negated-c2)
+        (if (negated-termp single-c2) (mv (cadr single-c2) t) (mv single-c2 nil)))
+       ((mv c1-hash-code s-arg1 pp-arg1 c-arg1-lst type1)
+        (get-c-args single-c1))
+       ((mv c2-hash-code s-arg2 pp-arg2 c-arg2-lst type2)
+        (get-c-args single-c2))
+       ((when (or (not type1) (not type2)))
+        (progn$ (hard-error
+                 'c-of-1-merge
+                 "Unexpected single-c instances.~%single-c1:~p0~%single-c2:~p1~%"
+                 (list (cons #\0 (list type1 single-c1))
+                       (cons #\1 (list type2 single-c2))))
+                (mv nil nil nil nil))))
+    (cond ((and (= c1-hash-code (+ 5 c2-hash-code))
+                (consp (list-to-lst pp-arg1))
+                (equal (car (list-to-lst pp-arg1)) ''1)
+                (equal s-arg1 s-arg2)
+                (equal (cdr (list-to-lst pp-arg1))
+                       (list-to-lst pp-arg2))
+                (equal c-arg1-lst c-arg2-lst))
+           (cond ((and negated-c1
+                       negated-c2)
+                  (mv (negate-lst (list-to-lst s-arg1))
+                      (negate-lst (list-to-lst pp-arg2))
+                      (negate-lst c-arg1-lst)
+                      t))
+                 ((and (not negated-c1)
+                       negated-c2)
+                  (b* (((unless (equal s-arg2 ''nil))
+                        (mv nil nil nil nil))
+                       ((mv new-s-lst new-pp-lst new-c-lst)
+                        (create-s-instance pp-arg2
+                                           (create-list-instance c-arg2-lst))))
+                    (mv new-s-lst
+                        new-pp-lst new-c-lst
+                        t)))
+                 ((and (not negated-c2)
+                       negated-c1)
+                  (b* (((unless (equal s-arg2 ''nil))
+                        (mv nil nil nil nil))
+                       ((mv new-s-lst new-pp-lst new-c-lst)
+                        (create-s-instance pp-arg2
+                                           (create-list-instance c-arg2-lst))))
+                    (mv (negate-lst new-s-lst)
+                        (negate-lst new-pp-lst)
+                        (negate-lst new-c-lst)
+                        t)))
+                 (t
+                  (mv (list-to-lst s-arg1) (list-to-lst pp-arg2) c-arg1-lst
+                      t))))
+          ((and (= c2-hash-code (+ 5 c1-hash-code))
+                (consp (list-to-lst pp-arg2))
+                (equal (car (list-to-lst pp-arg2)) ''1)
+                (equal s-arg1 s-arg2)
+                (equal (cdr (list-to-lst pp-arg2))
+                       (list-to-lst pp-arg1))
+                (equal c-arg1-lst c-arg2-lst))
+           (cond ((and negated-c1 negated-c2)
+                  (mv (negate-lst (list-to-lst s-arg2))
+                      (negate-lst (list-to-lst pp-arg1))
+                      (negate-lst c-arg1-lst)
+                      t))
+                 ((and (not negated-c2) negated-c1)
+                  (b* (((unless (equal s-arg1 ''nil))
+                        (mv nil nil nil nil))
+                       ((mv new-s-lst new-pp-lst new-c-lst)
+                        (create-s-instance pp-arg1
+                                           (create-list-instance c-arg2-lst))))
+                    (mv new-s-lst
+                        new-pp-lst new-c-lst
+                        t)))
+                 ((and (not negated-c1) negated-c2)
+                  (b* (((unless (equal s-arg2 ''nil))
+                        (mv nil nil nil nil))
+                       ((mv new-s-lst new-pp-lst new-c-lst)
+                        (create-s-instance pp-arg1
+                                           (create-list-instance c-arg2-lst))))
+                    (mv (negate-lst new-s-lst)
+                        (negate-lst new-pp-lst)
+                        (negate-lst new-c-lst)
+                        t)))
+                 (t
+                  (mv (list-to-lst s-arg1) (list-to-lst pp-arg1) c-arg1-lst
+                      t))))
+          (t
+           (mv nil nil nil nil))))
+  ///
+  (verify-guards c-of-1-merge
+    :hints (("Goal"
+             :do-not-induct t
+             :in-theory (e/d () ())))))
 
 (acl2::defines
  c-sum-merge
@@ -1894,6 +2001,12 @@
      (let ((limit (1- limit)))
        (b* (;; don't try to merge negated elements. They will be coughed off and
             ;; will be tried later.
+
+            ((mv s-lst pp-lst c-lst merge-success)
+             (c-of-1-merge single-c1 single-c2))
+            ((when merge-success)
+             (mv (create-list-instance s-lst) pp-lst c-lst t))
+            
             ((when (or (negated-termp single-c1)
                        (negated-termp single-c2)))
              (mv ''nil nil nil nil ))
@@ -2216,6 +2329,12 @@
 
   (enable-c-of-s-fix-mode t))
 
+;; :i-am-here
+
+;; (define c-sum-merge-light ((c1-lst rp-term-listp)
+;;                            (c2-lst rp-term-listp))
+  
+
 (define c-sum-merge-main ((c1-lst rp-term-listp)
                           (c2-lst rp-term-listp)
                           &key
@@ -2253,9 +2372,9 @@
                                     (rp-term-listp arg-pp-lst)
                                     (rp-term-listp arg-c-lst)))
                (to-be-coughed-s-lst rp-term-listp
-                                     :hyp (and (rp-term-listp arg-s-lst)
-                                               (rp-term-listp arg-pp-lst)
-                                               (rp-term-listp arg-c-lst)))
+                                    :hyp (and (rp-term-listp arg-s-lst)
+                                              (rp-term-listp arg-pp-lst)
+                                              (rp-term-listp arg-c-lst)))
                (to-be-coughed-pp-lst rp-term-listp
                                      :hyp (and (rp-term-listp arg-s-lst)
                                                (rp-term-listp arg-pp-lst)
@@ -2305,8 +2424,6 @@
                       "Unexpected single-s instance: ~p0 ~%"
                       (list (cons #\0 cur-s)))
           (mv (cons cur-s arg-pp-lst) arg-c-lst to-be-coughed-s-lst to-be-coughed-pp-lst to-be-coughed-c-lst))))))
-
-
 
 (local
  (defthm rp-termp-lemma1
@@ -2495,17 +2612,19 @@
   :hints (("Goal"
            :in-theory (e/d (measure-lemmas) ())))
   (b* ((term-orig term)
-       (term (ex-from-rp$ term)))
+       (term (ex-from-rp$ term))
+       ((mv abs-term ?negated)
+        (case-match term (('-- e) (mv (ex-from-rp$ e) t)) (& (mv term nil)))))
     (cond
-     ((single-c-p term)
+     ((single-c-p abs-term)
       (cons term-orig acc))
-     ((single-s-p term)
+     ((single-s-p abs-term)
       (cons term-orig acc))
-     ((single-s-c-res-p term)
+     ((single-s-c-res-p abs-term)
       (cons term-orig acc))
-     ((sum-list-p term)
+     ((sum-list-p abs-term)
       (cons term-orig acc))
-     ((and-list-p term)
+     ((and-list-p abs-term)
       (cons term-orig acc))
      ((binary-sum-p term)
       (b* ((acc (extract-new-sum-element (cadr term) acc))
@@ -2515,8 +2634,8 @@
       (b* ((x (ifix (cadr term)))) ;; ifix here is ok because sum-list calls sum which
         ;; calls ifix for its arguments..
         (cond ((natp x) (append (repeat x ''1) acc))
-              (t (append (repeat (- x) ''-1) acc)))))
-     ((pp-term-p term)
+              (t (append (repeat (- x) '(-- '1)) acc)))))
+     ((pp-term-p abs-term)
       (cons term-orig acc))
      (t
       (progn$
@@ -2908,7 +3027,7 @@
                           (rp-term-listp pp-lst)
                           (rp-term-listp c-lst)))
   (b* (((mv pp-lst c-lst) (s-of-s-fix-lst (list-to-lst s) pp-lst c-lst))
-      #| (pp-lst-before-clean pp-lst)||#
+       #| (pp-lst-before-clean pp-lst)||#
        (c-lst (s-fix-pp-args-aux c-lst))
        (pp-lst (if (clean-pp-args-cond nil c-lst)
                    (s-fix-pp-args-aux pp-lst)
@@ -2949,15 +3068,11 @@
        ((mv coughed-pp-lst arg-pp-lst)
         (c-fix-arg-aux-with-cond arg-pp-lst t (clean-pp-args-cond arg-s-lst arg-c-lst)))
 
-
-
        ((mv arg-s-lst arg-pp-lst arg-c-lst
             coughed-s-lst coughed-pp-lst to-be-coughed-c-lst)
-         (c-pattern3-reduce  arg-s-lst arg-pp-lst arg-c-lst
-                             coughed-s-lst coughed-pp-lst to-be-coughed-c-lst))
+        (c-pattern3-reduce  arg-s-lst arg-pp-lst arg-c-lst
+                            coughed-s-lst coughed-pp-lst to-be-coughed-c-lst))
 
-
-       
        ((mv merged-s-lst merged-pp-lst merged-c-lst)
         (create-c-instance arg-s-lst arg-pp-lst arg-c-lst))
 
@@ -3008,45 +3123,66 @@
                                                     (s-sum-merge-aux
                                                      to-be-coughed-c-lst
                                                      (s-sum-merge-aux
-                                                     to-be-coughed-c-lst
-                                                     c-lst))
+                                                      to-be-coughed-c-lst
+                                                      c-lst))
                                                     t)
-                           (s-spec-meta-aux s pp-lst c-lst)))
+                         (s-spec-meta-aux s pp-lst c-lst)))
                 (c-res (if bitp ''0
                          (c-spec-meta-aux s pp-lst c-lst
-                                        to-be-coughed-c-lst quarternaryp)))
+                                          to-be-coughed-c-lst quarternaryp)))
                 (res `(cons ,s-res (cons ,c-res 'nil))))
              res))
           (('c-s-spec sum)
            (b* (((mv s pp-lst c-lst to-be-coughed-c-lst);;(mv s pp c)
                  (new-sum-merge sum))
                 ((mv quarternaryp ?bitp) (quarternaryp-sum sum))
-                (s-res (s-spec-meta-aux s pp-lst c-lst))
-                (c-res (c-spec-meta-aux s pp-lst c-lst to-be-coughed-c-lst quarternaryp)))
+                (s-res (if bitp (create-s-c-res-instance (list-to-lst s)
+                                                         pp-lst
+                                                         (s-sum-merge-aux
+                                                          to-be-coughed-c-lst
+                                                          (s-sum-merge-aux
+                                                           to-be-coughed-c-lst
+                                                           c-lst))
+                                                         t)
+                         (s-spec-meta-aux s pp-lst c-lst)))
+                (c-res (if bitp
+                           ''0
+                         (c-spec-meta-aux s pp-lst c-lst
+                                          to-be-coughed-c-lst quarternaryp))))
              `(cons ,c-res (cons ,s-res 'nil))))
           (('s-spec sum)
-           (b* (((mv s pp-lst c-lst &);;(mv s pp c)
-                 (new-sum-merge sum)))
-             (s-spec-meta-aux s pp-lst c-lst)))
+           (b* (((mv s pp-lst c-lst to-be-coughed-c-lst);;(mv s pp c)
+                 (new-sum-merge sum))
+                ((mv ?quarternaryp ?bitp) (quarternaryp-sum sum)))
+             (if bitp
+                 (create-s-c-res-instance (list-to-lst s)
+                                          pp-lst
+                                          (s-sum-merge-aux
+                                           to-be-coughed-c-lst
+                                           (s-sum-merge-aux
+                                            to-be-coughed-c-lst
+                                            c-lst))
+                                          t)
+               (s-spec-meta-aux s pp-lst c-lst))))
           (('c-spec sum)
            (b* (((mv s pp-lst c-lst to-be-coughed-c-lst)
                  (new-sum-merge sum))
                 ((mv quarternaryp ?bitp) (quarternaryp-sum sum)))
-             (c-spec-meta-aux s pp-lst c-lst to-be-coughed-c-lst quarternaryp)))
+             (if bitp
+                 ''0
+               (c-spec-meta-aux s pp-lst c-lst to-be-coughed-c-lst quarternaryp))))
           (& term))))
     (mv result t)))
 
 #|
 
 (s-spec-meta `(s-spec (cons (binary-and (bit-of a 0) (bit-of b 0))
-                            (cons (binary-or (binary-and (bit-of a 0) (bit-of b 0))
-                                             (binary-and (bit-of a 0) (bit-of b 0)))
-                                  (cons (binary-and (bit-of a 0) (bit-of b 0))
-                                        (cons (binary-and (bit-of a 1) (bit-of
-                                                                        b 0))
-                                              'nil
-                                              ))))))
+(cons (binary-or (binary-and (bit-of a 0) (bit-of b 0))
+(binary-and (bit-of a 0) (bit-of b 0)))
+(cons (binary-and (bit-of a 0) (bit-of b 0))
+(cons (binary-and (bit-of a 1) (bit-of
+b 0))
+'nil
+))))))
 ||#
 ;;;;;;;;;;;;;;;;;;;;
-
-

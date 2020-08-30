@@ -244,14 +244,7 @@
 (local
  (in-theory (disable lexorder)))
 
-(define pp-has-bitp-rp (term)
-  :guard-hints (("goal"
-                 :in-theory (e/d (is-rp) ())))
-  (if (is-rp term)
-      (or (equal (cadr term)
-                 ''bitp)
-          (pp-has-bitp-rp (caddr term)))
-    nil))
+
 
 (define pp-term-p (term)
   :enabled t
@@ -287,7 +280,10 @@
       (('bit-of & &) t)
       (''1 t)
       (''0 t)
-      (& (pp-has-bitp-rp orig)))))
+      (& (and (pp-has-bitp-rp orig)
+              (not (include-fnc term 's-c-res))
+              (not (include-fnc term 'c))
+              (not (include-fnc term 's)))))))
 
 (define cut-list-by-half ((lst true-listp)
                           (size natp))

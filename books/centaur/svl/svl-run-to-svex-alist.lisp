@@ -170,6 +170,10 @@
 
      svexl-eval-aux-is-svexl-eval-aux-wog
 
+
+     rp::force$-fail
+     rp::force$-of-t
+
      )))
 
 (define alist-term-to-entry-list (term)
@@ -243,7 +247,7 @@
        
        ((mv rw rp::rp-state)
         (rp::rp-rw
-         term nil context nil (rp::rw-step-limit rp::rp-state) rp::rp-state state))
+         term nil context nil nil (rp::rw-step-limit rp::rp-state) rp::rp-state state))
        (rp::rp-state (rp::update-not-simplified-action
                       tmp-rp-not-simplified-action rp::rp-state))
        

@@ -723,6 +723,15 @@
 
 
 (progn
+  (define s-c-res-p (term)
+    :inline t
+    (case-match term (('s-c-res & & &) t))
+    ///
+    (defthm s-c-res-p-implies-fc
+      (implies (s-c-res-p term)
+               (case-match term (('s-c-res & & &) t)))
+      :rule-classes :forward-chaining))
+
   (define single-c-p (term)
     :inline t
     (case-match term (('c & & & &) t))
@@ -849,6 +858,23 @@
                (case-match term (('binary-not &) t)))
       :rule-classes :forward-chaining))
 
+  (define binary-fnc-p (term)
+    :inline t
+    (or (binary-or-p term)
+        (binary-and-p term)
+        (binary-xor-p term)
+        (binary-?-p term)
+        (binary-not-p term)))
+
+  (define bit-of-p (term)
+    :inline t
+    (case-match term (('bit-of & &) t))
+    ///
+    (defthm bit-of-p-implies-fc
+      (implies (bit-of-p term)
+               (case-match term (('bit-of & &) t)))
+      :rule-classes :forward-chaining))
+
   (define adder-or-p (term)
     :inline t
     (case-match term (('adder-or & &) t))
@@ -936,6 +962,18 @@
                    (c-spec sum)
                    (1- size))))))
 
+
+(define pp-has-bitp-rp (term)
+  :hints (("Goal"
+           :in-theory (e/d (is-rp) ())))
+  :guard-hints (("goal"
+                 :in-theory (e/d (is-rp) ())))
+  (if (is-rp term)
+      (or (equal (cadr term)
+                 ''bitp)
+          (pp-has-bitp-rp (caddr term)))
+    nil))
+
 (encapsulate
   nil
 
@@ -998,3 +1036,5 @@
        bit-concat
        ;;sv::4vec-fix
        ))))
+
+

@@ -519,6 +519,7 @@
              :do-not '(preprocess)
              :in-theory (e/d (bitp)
                              (svl::4vec-part-select-is-bits
+                              EQUAL-SIDES-TO-S
                               SVL::4VEC-ZERO-EXT-IS-BITS
                               svl::convert-4vec-concat-to-4vec-concat$
                               svl::4vec-concat$-of-size=1-term2=0
@@ -552,7 +553,8 @@
        (equal (SVL::BITS (SV::4VEC-== (BINARY-and x y) 1) '0 '1)
               (BINARY-and x y)))
   :hints (("Goal"
-           :in-theory (e/d (bitp and$ or$) ()))))
+           :in-theory (e/d (bitp and$ or$)
+                           (EQUAL-SIDES-TO-S)))))
 
 (def-rp-rule$ t t
   bit-of-4vec-bitnot-main
@@ -561,7 +563,8 @@
                   (svl::4vec-bitnot$ 1 x)))
   :hints (("Goal"
            :in-theory (e/d (bitp) (bitp-of-bit-of
-                                   (:TYPE-PRESCRIPTION BIT-OF))))))
+                                   (:TYPE-PRESCRIPTION BIT-OF)
+                                   )))))
 
 (def-rp-rule$ t t
   bit-of-4vec-bitnot
@@ -614,7 +617,8 @@
                             binary-and
                             binary-not
                             binary-or
-                            binary-xor) ()))))
+                            binary-xor)
+                           (equal-sides-to-s)))))
 
 (def-rp-rule 3vec-fix-of-bit-of
   (implies t

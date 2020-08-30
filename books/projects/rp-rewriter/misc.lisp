@@ -143,18 +143,26 @@
           `(encapsulate
              ,sigs
              ,@fncs
-             (defthm ,rule-name
-               (and (implies ,hyp-body
-                             (,(if iff `iff `equal)
-                              ,lhs
-                              ,rhs-body))
-                    ,@openers)
-               ,@hints)
+             (with-output
+               :stack :pop
+               :on (acl2::summary acl2::event)
+               :summary (acl2::time acl2::rules)
+               (defthm ,rule-name
+                 (and (implies ,hyp-body
+                               (,(if iff `iff `equal)
+                                ,lhs
+                                ,rhs-body))
+                      ,@openers)
+                 ,@hints))
              (add-rp-rule ,rule-name))
         `(progn
-           (defthm ,rule-name
-             ,untranslated-rule
-             ,@hints)
+           (with-output
+             :stack :pop
+             :on (acl2::summary acl2::event)
+             :summary (acl2::time acl2::rules)
+             (defthm ,rule-name
+               ,untranslated-rule
+               ,@hints))
            (add-rp-rule ,rule-name)))))
 
   ;; (case-match rule
@@ -379,7 +387,9 @@ new rule is created to be used by RP-Rewriter. You can disable this by setting ~
        (value-triple ',rule-name)))
 
   (defmacro def-rp-rule (rule-name rule &rest hints)
-    `(with-output :off :all :gag-mode nil :on error
+    `(with-output
+       :off :all
+       :stack :push
        ,(def-rp-rule-fn rule-name rule hints)))
 
   (defmacro def-rp-rule$ (defthmd disabled rule-name rule  &rest hints)
@@ -613,42 +623,50 @@ RP-Rewriter will throw an eligible error.</p>"
                            )
   `(make-event
     (b* ((- (check-if-clause-processor-up-to-date (w state)))
-         (body `(def-rp-rule ,',name ,',term
-                  :rule-classes ,',rule-classes
-                  :hints (("Goal"
-                           :do-not-induct t
-                           :rw-cache-state nil
-                           :do-not '(preprocess generalize fertilize)
-                           :clause-processor
-                           (rp-cl :runes ,,runes
-                                  :runes-outside-in ,,runes-outside-in
-                                  :new-synps ,',new-synps))))))
+         (body `(with-output
+                  :stack :pop
+                  :on (acl2::summary acl2::event acl2::error)
+                  :gag-mode :goals
+                  :summary (acl2::time acl2::rules)
+                  (def-rp-rule ,',name ,',term
+                    :rule-classes ,',rule-classes
+                    :hints (("Goal"
+                             :do-not-induct t
+                             :rw-cache-state nil
+                             :do-not '(preprocess generalize fertilize)
+                             :clause-processor
+                             (rp-cl :runes ,,runes
+                                    :runes-outside-in ,,runes-outside-in
+                                    :new-synps ,',new-synps)))))))
       ,(if (or disable-meta-rules
                enable-meta-rules
                enable-rules
                disable-rules)
-           ``(encapsulate
-               nil
-               ,@(if ',enable-meta-rules
-                     `((local
-                        (enable-meta-rules ,@',enable-meta-rules)))
-                   'nil)
+           ``(with-output
+               :off :all
+               :stack :push
+               (encapsulate
+                 nil
+                 ,@(if ',enable-meta-rules
+                       `((local
+                          (enable-meta-rules ,@',enable-meta-rules)))
+                     'nil)
 
-               ,@(if ',disable-meta-rules
-                     `((local
-                        (disable-meta-rules ,@',disable-meta-rules)))
-                   'nil)
+                 ,@(if ',disable-meta-rules
+                       `((local
+                          (disable-meta-rules ,@',disable-meta-rules)))
+                     'nil)
 
-               ,@(if ',enable-rules
-                     `((local
-                        (enable-rules ,',enable-rules)))
-                   'nil)
+                 ,@(if ',enable-rules
+                       `((local
+                          (enable-rules ,',enable-rules)))
+                     'nil)
 
-               ,@(if ',disable-rules
-                     `((local
-                        (disable-rules ,',disable-rules)))
-                   'nil)
-               ,body)
+                 ,@(if ',disable-rules
+                       `((local
+                          (disable-rules ,',disable-rules)))
+                     'nil)
+                 ,body))
          `body))))
 
 (defmacro defthmrp (&rest rest)
