@@ -36,9 +36,7 @@
 
 (define parse-any ((input nat-listp))
   :returns (mv (error? maybe-msgp)
-               (nat? (and (maybe-natp nat?)
-                          (implies (not error?) (natp nat?))
-                          (implies error? (not nat?))))
+               (nat natp :rule-classes (:rewrite :type-prescription))
                (rest-input nat-listp))
   :short "Parse any natural number."
   :long
@@ -53,21 +51,18 @@
      (e.g. to see that it is the expected one, or one of the expected ones).
      The only case in which this may fail is
      when the input list of natural number is empty;
-     in this case, @('nil') is returned instead of a natural number."))
-  (b* ((input (nat-list-fix input)))
-    (if (consp input)
-        (mv nil (car input) (cdr input))
-      (mv "Failed to parse any natural number: end of input reached."
-          nil
-          input)))
+     in this case, 0 is returned as second result, but it is irrelevant."))
+  (if (consp input)
+      (mv nil
+          (lnfix (car input))
+          (nat-list-fix (cdr input)))
+    (mv "Failed to parse any natural number: end of input reached."
+        0
+        (nat-list-fix input)))
   :no-function t
+  :prepwork ((local (in-theory (disable natp))))
   :hooks (:fix)
   ///
-
-  (defret natp-of-parse-any
-    (implies (not error?)
-             (natp nat?))
-    :rule-classes :type-prescription)
 
   (defret len-of-parse-any-linear-<=
     (<= (len rest-input)
@@ -91,16 +86,14 @@
   :short "Parse a given natural number
           into a tree that matches
           a direct numeric value notation that consists of that number."
-  (b* ((nat (lnfix nat)))
-    (seq input
-         (input-nat := (parse-any input))
-         (unless (eql input-nat nat)
-           (return-raw
-            (mv (msg "Failed to parse ~x0; found ~x1 instead."
-                     nat input-nat)
-                nil
-                (cons input-nat input))))
-         (return (tree-leafterm (list nat)))))
+  (b* ((nat (lnfix nat))
+       ((mv error? input-nat input) (parse-any input))
+       ((when error?) (mv error? nil input))
+       ((unless (= input-nat nat))
+        (mv (msg "Failed to parse ~x0; found ~x1 instead." nat input-nat)
+            nil
+            (cons input-nat input))))
+    (mv nil (tree-leafterm (list nat)) input))
   :no-function t
   :hooks (:fix)
   ///

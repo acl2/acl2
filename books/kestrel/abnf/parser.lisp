@@ -351,12 +351,12 @@
           into a tree that matches
           a range numeric value notation that consists of that range."
   (b* ((min (mbe :logic (nfix min) :exec min))
-       (max (mbe :logic (nfix max) :exec max)))
-    (seq input
-         (nat := (parse-any input))
-         (unless (and (<= min nat) (<= nat max))
-           (return-raw (mv *grammar-parser-error-msg* nil (cons nat input))))
-         (return (tree-leafterm (list nat)))))
+       (max (mbe :logic (nfix max) :exec max))
+       ((mv error? nat input) (parse-any input))
+       ((when error?) (mv error? nil input))
+       ((unless (and (<= min nat) (<= nat max)))
+        (mv *grammar-parser-error-msg* nil (cons nat input))))
+    (mv nil (tree-leafterm (list nat)) input))
   :guard-hints (("Goal" :cases ((natp (mv-nth 1 (parse-any input))))))
   :no-function t
   :hooks (:fix)
@@ -452,11 +452,11 @@
           into a tree that matches
           a case-insensitive character value notation
           that consists of that character."
-  (seq input
-       (nat := (parse-any input))
-       (unless (nat-match-insensitive-char-p nat char)
-         (return-raw (mv *grammar-parser-error-msg* nil (cons nat input))))
-       (return (tree-leafterm (list nat))))
+  (b* (((mv error? nat input) (parse-any input))
+       ((when error?) (mv error? nil input))
+       ((unless (nat-match-insensitive-char-p nat char))
+        (mv *grammar-parser-error-msg* nil (cons nat input))))
+    (mv nil (tree-leafterm (list nat)) input))
   :no-function t
   :hooks (:fix)
   ///
@@ -480,14 +480,15 @@
           into a tree that matches
           a case-insensitive character value notation
           that consists of those two characters."
-  (seq input
-       (nat1 := (parse-any input))
-       (unless (nat-match-insensitive-char-p nat1 char1)
-         (return-raw (mv *grammar-parser-error-msg* nil (cons nat1 input))))
-       (nat2 := (parse-any input))
-       (unless (nat-match-insensitive-char-p nat2 char2)
-         (return-raw (mv *grammar-parser-error-msg* nil (cons nat2 input))))
-       (return (tree-leafterm (list nat1 nat2))))
+  (b* (((mv error? nat1 input) (parse-any input))
+       ((when error?) (mv error? nil input))
+       ((unless (nat-match-insensitive-char-p nat1 char1))
+        (mv *grammar-parser-error-msg* nil (cons nat1 input)))
+       ((mv error? nat2 input) (parse-any input))
+       ((when error?) (mv error? nil input))
+       ((unless (nat-match-insensitive-char-p nat2 char2))
+        (mv *grammar-parser-error-msg* nil (cons nat2 input))))
+    (mv nil (tree-leafterm (list nat1 nat2)) input))
   :no-function t
   :hooks (:fix)
   ///
