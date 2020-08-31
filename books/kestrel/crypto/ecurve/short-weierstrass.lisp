@@ -15,7 +15,6 @@
 (include-book "primes")
 (include-book "points")
 (include-book "kestrel/prime-fields/prime-fields" :dir :system)
-(include-book "xdoc/constructors" :dir :system)
 
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "short-weierstrass-closure-simp"))
