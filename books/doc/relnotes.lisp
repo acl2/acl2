@@ -141,7 +141,9 @@
     "This is a library about " (xdoc::ahref "json.org" "JSON") ".
      It currently contains an initial abstract syntax of JSON,
      consisting of " (xdoc::seetopic "fty" "fixtypes") ";
-     it also contains some initial operations on this abstract syntax.")
+     it also contains some initial operations on this abstract syntax,
+     as well as a translator from the output of the parser at
+     @('[books]/kestrel/json-parser/') to the abstract syntax.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

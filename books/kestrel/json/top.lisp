@@ -11,6 +11,7 @@
 (in-package "JSON")
 
 (include-book "abstract-syntax")
+(include-book "parser-output-to-abstract-syntax")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
