@@ -50,7 +50,7 @@
    (xdoc::p
     "The parsed natural number is returned as the second result,
      so that the caller can examine it
-     (e.g. to see that it is the expected one, or an expected one).
+     (e.g. to see that it is the expected one, or one of the expected ones).
      The only case in which this may fail is
      when the input list of natural number is empty;
      in this case, @('nil') is returned instead of a natural number."))
