@@ -199,12 +199,13 @@ h = 01
 
 (encapsulate ()
 
-  ;; It's easy to calculate that point-on-elliptic-curve-p holds on the
-  ;; generator, except that the rtl::primep guard of this function takes too
-  ;; long to compute if the definition of secp256k1-prime is enabled.  So we
-  ;; separate out the calculation of the body of point-on-elliptic-curve-p in
-  ;; the lemma below (where we enable secp256k1-prime), which we use to prove
-  ;; the main theorem (without enabling the definition of secp256k1-prime).
+  ;; It's easy to calculate that point-on-weierstrass-elliptic-curve-p holds on
+  ;; the generator, except that the rtl::primep guard of this function takes
+  ;; too long to compute if the definition of secp256k1-prime is enabled.  So
+  ;; we separate out the calculation of the body of
+  ;; point-on-weierstrass-elliptic-curve-p in the lemma below (where we enable
+  ;; secp256k1-prime), which we use to prove the main theorem (without enabling
+  ;; the definition of secp256k1-prime).
 
   (local
    (defthm lemma
@@ -212,7 +213,7 @@ h = 01
             (a (secp256k1-a))
             (b (secp256k1-b))
             (point (secp256k1-generator)))
-       ;; body of point-on-elliptic-curve-p:
+       ;; body of point-on-weierstrass-elliptic-curve-p:
        (or (eq point :infinity)
            (let ((x (car point))
                  (y (cdr point)))
@@ -227,18 +228,18 @@ h = 01
      :rule-classes nil
      :hints (("Goal" :in-theory (enable secp256k1-prime
                                         secp256k1-generator
-                                     secp256k1-generator-x
-                                     secp256k1-generator-y
+                                        secp256k1-generator-x
+                                        secp256k1-generator-y
                                         secp256k1-a
                                         secp256k1-b)))))
 
-  (defthm point-on-elliptic-curve-p-of-secp256k1-generator
-    (point-on-elliptic-curve-p (secp256k1-generator)
-                               (secp256k1-prime)
-                               (secp256k1-a)
-                               (secp256k1-b))
+  (defthm point-on-weierstrass-elliptic-curve-p-of-secp256k1-generator
+    (point-on-weierstrass-elliptic-curve-p (secp256k1-generator)
+                                           (secp256k1-prime)
+                                           (secp256k1-a)
+                                           (secp256k1-b))
     :hints (("Goal"
-             :in-theory (enable point-on-elliptic-curve-p)
+             :in-theory (enable point-on-weierstrass-elliptic-curve-p)
              :use lemma))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -317,7 +318,7 @@ h = 01
     (let ((p (secp256k1-prime)))
       (equal (pow a (/ (- p 1) 2) p)
              1)))
-)
+  )
 
 ;; There is a reasonably simple formula for finding mod-sqrt(a)
 ;; when p = 3 (mod 4), which is the case here.
@@ -373,23 +374,24 @@ h = 01
          <p/>
          The result is a point on the elliptic curve."
   (defund secp256k1+ (point1 point2)
-    (declare (xargs :guard (and (pointp point1) (pointp point2)
-                                (point-in-pxp-p point1 (secp256k1-prime))
-                                (point-in-pxp-p point2 (secp256k1-prime))
-                                (point-on-elliptic-curve-p point1
-                                                           (secp256k1-prime)
-                                                           (secp256k1-a)
-                                                           (secp256k1-b))
-                                (point-on-elliptic-curve-p point2
-                                                           (secp256k1-prime)
-                                                           (secp256k1-a)
-                                                           (secp256k1-b)))
-                    :guard-hints (("Goal"
-                                   :in-theory (enable secp256k1-prime
-                                                      secp256k1-a
-                                                      secp256k1-b)
-                                   :use secp256k1-prime-is-prime))
-                    :normalize nil)) ; to prevent SECP256K1-A from becoming 0
+    (declare
+     (xargs :guard (and (pointp point1) (pointp point2)
+                        (point-in-pxp-p point1 (secp256k1-prime))
+                        (point-in-pxp-p point2 (secp256k1-prime))
+                        (point-on-weierstrass-elliptic-curve-p point1
+                                                               (secp256k1-prime)
+                                                               (secp256k1-a)
+                                                               (secp256k1-b))
+                        (point-on-weierstrass-elliptic-curve-p point2
+                                                               (secp256k1-prime)
+                                                               (secp256k1-a)
+                                                               (secp256k1-b)))
+            :guard-hints (("Goal"
+                           :in-theory (enable secp256k1-prime
+                                              secp256k1-a
+                                              secp256k1-b)
+                           :use secp256k1-prime-is-prime))
+            :normalize nil)) ; to prevent SECP256K1-A from becoming 0
     (curve-group-+ point1 point2 (secp256k1-prime) (secp256k1-a)
   (secp256k1-b)))
 )
@@ -408,23 +410,23 @@ h = 01
            (point-in-pxp-p (secp256k1+ point1 point2) (secp256k1-prime)))
   :hints (("Goal" :in-theory (enable secp256k1+))))
 
-(defthm point-on-elliptic-curve-p-of-secp256k1+
+(defthm point-on-weierstrass-elliptic-curve-p-of-secp256k1+
   (implies (and (pointp point1)
                 (pointp point2)
                 (point-in-pxp-p point1 (secp256k1-prime))
                 (point-in-pxp-p point2 (secp256k1-prime))
-                (point-on-elliptic-curve-p point1
-                                           (secp256k1-prime)
-                                           (secp256k1-a)
-                                           (secp256k1-b))
-                (point-on-elliptic-curve-p point2
-                                           (secp256k1-prime)
-                                           (secp256k1-a)
-                                           (secp256k1-b)))
-           (point-on-elliptic-curve-p (secp256k1+ point1 point2)
-                                      (secp256k1-prime)
-                                      (secp256k1-a)
-                                      (secp256k1-b)))
+                (point-on-weierstrass-elliptic-curve-p point1
+                                                       (secp256k1-prime)
+                                                       (secp256k1-a)
+                                                       (secp256k1-b))
+                (point-on-weierstrass-elliptic-curve-p point2
+                                                       (secp256k1-prime)
+                                                       (secp256k1-a)
+                                                       (secp256k1-b)))
+           (point-on-weierstrass-elliptic-curve-p (secp256k1+ point1 point2)
+                                                  (secp256k1-prime)
+                                                  (secp256k1-a)
+                                                  (secp256k1-b)))
   :hints (("Goal" :in-theory (enable secp256k1+ secp256k1-a secp256k1-b))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -449,21 +451,22 @@ h = 01
          <p/>
          The result is a point on the elliptic curve."
   (defund secp256k1* (s point)
-    (declare (xargs :guard (and (natp s)
-                                (pointp point)
-                                (point-in-pxp-p point (secp256k1-prime))
-                                (point-on-elliptic-curve-p point
-                                                           (secp256k1-prime)
-                                                           (secp256k1-a)
-                                                           (secp256k1-b)))
-                    :guard-hints (("Goal"
-                                   :in-theory (e/d (secp256k1-prime
-                                                    secp256k1-a
-                                                    secp256k1-b)
-                                                   (curve-scalar-*))
-                                   :use (secp256k1-prime-is-prime
-                                         secp256k1-prime>2)))
-                    :normalize nil)) ; to prevent SECP256K1-A from becoming 0
+    (declare
+     (xargs :guard (and (natp s)
+                        (pointp point)
+                        (point-in-pxp-p point (secp256k1-prime))
+                        (point-on-weierstrass-elliptic-curve-p point
+                                                               (secp256k1-prime)
+                                                               (secp256k1-a)
+                                                               (secp256k1-b)))
+            :guard-hints (("Goal"
+                           :in-theory (e/d (secp256k1-prime
+                                            secp256k1-a
+                                            secp256k1-b)
+                                           (curve-scalar-*))
+                           :use (secp256k1-prime-is-prime
+                                 secp256k1-prime>2)))
+            :normalize nil)) ; to prevent SECP256K1-A from becoming 0
     (curve-scalar-* s point (secp256k1-prime) (secp256k1-a) (secp256k1-b))))
 
 (defthm pointp-of-secp256k1*
@@ -478,18 +481,18 @@ h = 01
            (point-in-pxp-p (secp256k1* s point) (secp256k1-prime)))
   :hints (("Goal" :in-theory (enable secp256k1*))))
 
-(defthm point-on-elliptic-curve-p-of-secp256k1*
+(defthm point-on-weierstrass-elliptic-curve-p-of-secp256k1*
   (implies (and (natp s)
                 (pointp point)
                 (point-in-pxp-p point (secp256k1-prime))
-                (point-on-elliptic-curve-p point
-                                           (secp256k1-prime)
-                                           (secp256k1-a)
-                                           (secp256k1-b)))
-           (point-on-elliptic-curve-p (secp256k1* s point)
-                                      (secp256k1-prime)
-                                      (secp256k1-a)
-                                      (secp256k1-b)))
+                (point-on-weierstrass-elliptic-curve-p point
+                                                       (secp256k1-prime)
+                                                       (secp256k1-a)
+                                                       (secp256k1-b)))
+           (point-on-weierstrass-elliptic-curve-p (secp256k1* s point)
+                                                  (secp256k1-prime)
+                                                  (secp256k1-a)
+                                                  (secp256k1-b)))
   :hints (("Goal" :in-theory (enable secp256k1* secp256k1-a secp256k1-b))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -508,7 +511,7 @@ h = 01
                                 (point-in-pxp-p point (secp256k1-prime)))
                     :guard-hints (("Goal" :in-theory (enable fep)))))
     (curve-negate point (secp256k1-prime)))
-)
+  )
 
 (defthm pointp-of-secp256k1-negate
   (implies (pointp point)
