@@ -305,9 +305,9 @@
                    (integerp b)
                    (pointp pt))
               (iff (point-on-weierstrass-elliptic-curve-p pt (prime) a b)
-                   (simp-point-on-elliptic-curve-p pt a b)))
+                   (simp-point-on-weierstrass-elliptic-curve-p pt a b)))
      :hints (("Goal" :in-theory (e/d (P[X.Y]
-                                      simp-point-on-elliptic-curve-p
+                                      simp-point-on-weierstrass-elliptic-curve-p
                                       pointp
                                       point-on-weierstrass-elliptic-curve-p
                                       =p
