@@ -19,7 +19,7 @@
   (and (standard-char-p x)
        (alpha-char-p x))
   :parents (character-kinds)
-  :short "Recognize letters."
+  :short "Recognize ASCII letters."
   :long
   (xdoc::topstring
    (xdoc::p
