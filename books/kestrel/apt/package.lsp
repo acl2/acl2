@@ -158,6 +158,7 @@
                          ensure-value-is-not-in-list$
                          ensure-value-is-symbol$
                          ensure-value-is-symbol-list$
+                         ensure-value-is-true-list$
                          ensure-value-is-untranslated-term$
                          equivalence-relationp
                          er-soft+

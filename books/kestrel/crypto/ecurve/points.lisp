@@ -25,12 +25,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; The following predicate models (at least)
-; all possible points of all possible elliptic curves.
-; A point is either a pair of natural numbers or a special point at infinity.
-; This type of points is perhaps more general then elliptic curves,
-; and thus it might be factored out into some more general library.
-
 (define pointp (point)
   :short "Recognizer all possible points of all possible elliptic curves."
   :long
