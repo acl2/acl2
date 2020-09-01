@@ -1198,6 +1198,22 @@
                              (pp-term-p `(binary-or ,x ,y))))
              :in-theory (e/d (is-rp ex-from-rp) ())))))
 
+
+(progn
+  (encapsulate
+    (((pattern2-reduce-enabled) => *))
+    (local
+     (defun pattern2-reduce-enabled ()
+       nil)))
+
+  (defmacro enable-pattern2-reduce (enable)
+    (if enable
+        `(defattach  pattern2-reduce-enabled return-t)
+      `(defattach  pattern2-reduce-enabled return-nil)))
+
+  (enable-pattern2-reduce t))
+
+
 (define c-pattern2-reduce ((s-lst rp-term-listp)
                            (pp-lst rp-term-listp)
                            (c-lst rp-term-listp))
@@ -1208,7 +1224,8 @@
 
   :verify-guards :after-returns
   (b* (((unless (and (not s-lst)
-                     (not c-lst)))
+                     (not c-lst)
+                     (pattern2-reduce-enabled)))
         (mv nil nil)))
     (case-match pp-lst
       ((''1 pp1 pp2 pp3)
@@ -1427,7 +1444,8 @@
                                :hyp (and (rp-termp pp)
                                          (rp-termp c)))
                (reducedp booleanp))
-  (b* (((unless (equal c ''nil))
+  (b* (((unless (and (equal c ''nil)
+                     (pattern2-reduce-enabled)))
         (mv nil nil)))
     (case-match pp
       (('list ''1 pp1 pp2 pp3)

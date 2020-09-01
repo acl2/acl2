@@ -702,11 +702,10 @@ An example run:
   '(("result" _ _ _ _ result)))
 
 
-
 (defthmrp signed-dot-product-with-acc-is-correct
-  (b* ((?signed t)
-       (?acc-size 128)
-       (?dot-product-size 8))
+  (b* ((signed t)
+       (acc-size 128)
+       (dot-product-size 8))
     (implies (and (integer-listp in1)
                   (integer-listp in2)
                   (integerp acc-init-val)
@@ -743,9 +742,9 @@ An example run:
 
 
 (defthmrp unsigned-dot-product-with-acc-is-correct
-  (b* ((?signed nil)
-       (?acc-size 128)
-       (?dot-product-size 8))
+  (b* ((signed nil)
+       (acc-size 128)
+       (dot-product-size 8))
     (implies (and (integer-listp in1)
                   (integer-listp in2)
                   (integerp acc-init-val)

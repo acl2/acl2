@@ -281,3 +281,92 @@
                          0)))
   :hints (("Goal"
            :in-theory (e/d (bitp) ()))))
+
+
+
+
+(def-rp-rule$ nil nil
+  s-c-spec-with-zero
+  (and (equal (s-c-spec (list 0 a b))
+              (s-c-spec (list a b)))
+       (equal (s-c-spec (list a b 0))
+              (s-c-spec (list a b)))
+       (equal (s-c-spec (list a 0 b))
+              (s-c-spec (list a b)))
+       (equal (s-c-spec (list 0 a))
+              (s-c-spec (list a)))
+       (equal (s-c-spec (list a 0))
+              (s-c-spec (list a)))
+
+       (equal (c-s-spec (list 0 a b))
+              (c-s-spec (list a b)))
+       (equal (c-s-spec (list a b 0))
+              (c-s-spec (list a b)))
+       (equal (c-s-spec (list a 0 b))
+              (c-s-spec (list a b)))
+       (equal (c-s-spec (list 0 a))
+              (c-s-spec (list a)))
+       (equal (c-s-spec (list a 0))
+              (c-s-spec (list a)))
+
+       (equal (c-spec (list 0 a b))
+              (c-spec (list a b)))
+       (equal (c-spec (list a b 0))
+              (c-spec (list a b)))
+       (equal (c-spec (list a 0 b))
+              (c-spec (list a b)))
+       (equal (c-spec (list 0 a))
+              (c-spec (list a)))
+       (equal (c-spec (list a 0))
+              (c-spec (list a)))
+
+       (equal (s-spec (list 0 a b))
+              (s-spec (list a b)))
+       (equal (s-spec (list a b 0))
+              (s-spec (list a b)))
+       (equal (s-spec (list a 0 b))
+              (s-spec (list a b)))
+       (equal (s-spec (list 0 a))
+              (s-spec (list a)))
+       (equal (s-spec (list a 0))
+              (s-spec (list a))))
+  :hints (("Goal"
+           :in-theory (e/d (s-c-spec
+                            c-s-spec
+                            s-spec c-spec sum-list
+                            sum)
+                           ()))))
+
+(def-rp-rule$ nil nil
+  s-c-spec-with-one
+  (implies (bitp a)
+           (and (equal (s-c-spec (list 1 a))
+                       (list (not$ a) a))
+                (equal (s-c-spec (list a 1))
+                       (list (not$ a) a))
+
+                (equal (c-spec (list 1 a))
+                       a)
+                (equal (c-spec (list a 1))
+                       a)
+
+                (equal (s-spec (list 1 a))
+                       (not$ a))
+                (equal (s-spec (list a 1))
+                       (not$ a))
+
+                (equal (c-s-spec (list 1 a))
+                       (list a (not$ a)))
+                (equal (c-s-spec (list a 1))
+                       (list a (not$ a)))))
+  :hints (("Goal"
+           :in-theory (e/d (bitp)
+                           ()))))
+
+
+(def-rp-rule plus-with-0
+  (implies (integerp a)
+           (and (equal (+ a 0)
+                       a)
+                (equal (+ 0 a)
+                       a))))
