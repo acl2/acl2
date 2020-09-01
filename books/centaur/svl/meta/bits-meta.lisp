@@ -124,17 +124,24 @@
                       (acl2-numberp size)))))
      :rule-classes :forward-chaining)))
 
+(define has-bitp-side-cond (term)
+  :prepwork ((local
+              (in-theory (e/d (rp::is-rp) ()))))
+  (and (rp::is-rp term)
+       (or (equal (cadr term) ''bitp)
+           (has-bitp-side-cond (caddr term)))))
+
 (define is-bits-0-pos-size-of-a-bitp (orig-term start size)
   :progn t
   :inline t
-  (and (case-match orig-term (('rp ''bitp &) t))
+  (and (has-bitp-side-cond orig-term)
        (equal start 0)
        (posp size))
   ///
   (local
    (defthm is-bits-0-1-of-a-bitp-implies
      (implies (is-bits-0-pos-size-of-a-bitp orig-term start size)
-              (and (case-match orig-term (('rp ''bitp &) t))
+              (and (has-bitp-side-cond orig-term)
                    (equal start 0)
                    (posp size)))
      :rule-classes :forward-chaining)))
@@ -142,14 +149,14 @@
 (define is-bits-pos-start-of-a-bitp (orig-term start size)
   :progn t
   :inline t
-  (and (case-match orig-term (('rp ''bitp &) t))
+  (and (has-bitp-side-cond orig-term)
        (posp start)
        (natp size))
   ///
   (local
    (defthm is-bits-pos-start-of-a-bitp-implies
      (implies (is-bits-pos-start-of-a-bitp orig-term start size)
-              (and (case-match orig-term (('rp ''bitp &) t))
+              (and (has-bitp-side-cond orig-term)
                    (posp start)
                    (natp size)))
      :rule-classes :forward-chaining)))
@@ -451,16 +458,7 @@
 
   (local
    (in-theory (disable 4VEC-ZERO-EXT-IS-4VEC-CONCAT)))
-
-  (local
-   (defthm IS-BITS-0-1-OF-A-BITP-def
-     (equal (is-bits-0-pos-size-of-a-bitp term start size)
-            (AND (CASE-MATCH TERM (('RP ''BITP &) T))
-                 (EQUAL START 0)
-                 (posp SIZE)))
-     :hints (("Goal"
-              :in-theory (e/d (is-bits-0-pos-size-of-a-bitp) ())))))
-
+  
   (with-output
     :off :all
     :gag-mode nil
@@ -714,6 +712,25 @@
 
 
 (local
+ (defthm HAS-BITP-SIDE-COND-lemma
+  (implies (and (rp-evl-meta-extract-global-facts)
+                (rp::valid-sc term a)
+                (HAS-BITP-SIDE-COND TERM))
+           (and (bitp (rp-evlt term a))
+                ;;(bitp (rp-evl term a))
+                ))
+  :hints (("Goal"
+           :induct (HAS-BITP-SIDE-COND TERM)
+           :do-not-induct t
+           :in-theory (e/d (HAS-BITP-SIDE-COND
+                            rp::is-if
+                            RP::VALID-SC-SINGLE-STEP
+                            rp::is-rp
+                            RP::VALID-SC
+                            )
+                           (bitp))))))
+
+(local
  (defthm bits-meta-fn-aux-correct-lemma1
    (implies
     (and (rp-evl-meta-extract-global-facts)
@@ -731,6 +748,8 @@
                              is-bits-0-pos-size-of-a-bitp)
                             (rp::valid-sc))))))
 
+
+
 (local
  (defthm bits-meta-fn-aux-correct-lemma2
    (implies
@@ -743,10 +762,13 @@
                  start size)
            0))
    :hints (("Goal"
+            :do-not-induct t
+            :use ((:instance HAS-BITP-SIDE-COND-lemma))
             :in-theory (e/d (rp::valid-sc-single-step
                              RP::IS-RP
                              is-bits-pos-start-of-a-bitp)
-                            (rp::valid-sc))))))
+                            (rp::valid-sc
+                             HAS-BITP-SIDE-COND-lemma))))))
 
 (local
  (defthm rp-evlt-of-quoted
@@ -790,20 +812,20 @@
                      (:free (x) (nth 1 x))
                      (:free (x) (nth 0 x)))
             :in-theory (e/d* (bits-meta-fn-aux
-                             IS-BITAND/OR/XOR
-                             rp::is-rp rp::is-if
-                             rp::regular-eval-lemmas
-                             rp-evlt-of-ex-from-rp-reverse
-                             natp)
-                            (RP::RP-EVLT-OF-EX-FROM-RP
-                             rp-trans
-                             NTH-ADD1
-                             RP::EX-FROM-RP
-                             FIX
-                             RP::INCLUDE-FNC
-                             RP::INCLUDE-FNC-SUBTERMS
-                             NTH-0-CONS
-                             SV::4VEC-CONCAT-OF-4VEC-FIX-LOW-NORMALIZE-CONST))))))
+                              IS-BITAND/OR/XOR
+                              rp::is-rp rp::is-if
+                              rp::regular-eval-lemmas
+                              rp-evlt-of-ex-from-rp-reverse
+                              natp)
+                             (RP::RP-EVLT-OF-EX-FROM-RP
+                              rp-trans
+                              NTH-ADD1
+                              RP::EX-FROM-RP
+                              FIX
+                              RP::INCLUDE-FNC
+                              RP::INCLUDE-FNC-SUBTERMS
+                              NTH-0-CONS
+                              SV::4VEC-CONCAT-OF-4VEC-FIX-LOW-NORMALIZE-CONST))))))
 
 (local
  (defthm bits-of-meta-fn-correct
