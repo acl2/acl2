@@ -164,6 +164,19 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "simpl-imp::imp-language"
+                             "Simple Programming Language Imp"))
+
+   (xdoc::p
+    "This is a library about a simple programming language, called Imp,
+     found (with small variations) in a variety of didactic resources.
+     This library formalizes syntax and semantics of this language,
+     and provides a program-mode interpreter of Imp programs.
+     This library may be extended with examples of
+     formal verification of Imp programs in ACL2.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "solidity::solidity" "Solidity Library"))
 
    (xdoc::p
