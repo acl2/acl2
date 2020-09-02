@@ -339,36 +339,6 @@
   (defruled msgp-of-*grammar-parser-error-msg*
     (msgp *grammar-parser-error-msg*)))
 
-(define parse-in-range ((min natp) (max natp) (input nat-listp))
-  :guard (<= min max)
-  :returns (mv (error? maybe-msgp)
-               (tree? (and (maybe-treep tree?)
-                           (implies (not error?) (treep tree?))
-                           (implies error? (not tree?))))
-               (rest-input nat-listp))
-  :parents (grammar-parser-implementation)
-  :short "Parse a natural number in a given range
-          into a tree that matches
-          a range numeric value notation that consists of that range."
-  (b* ((min (mbe :logic (nfix min) :exec min))
-       (max (mbe :logic (nfix max) :exec max))
-       ((mv error? nat input) (parse-any input))
-       ((when error?) (mv error? nil input))
-       ((unless (and (<= min nat) (<= nat max)))
-        (mv *grammar-parser-error-msg* nil (cons nat input))))
-    (mv nil (tree-leafterm (list nat)) input))
-  :guard-hints (("Goal" :cases ((natp (mv-nth 1 (parse-any input))))))
-  :no-function t
-  :hooks (:fix)
-  ///
-
-  (more-returns
-   (rest-input (and (<= (len rest-input) (len input))
-                    (implies (not error?)
-                             (< (len rest-input) (len input))))
-               :name len-of-parse-in-range-linear
-               :rule-classes :linear)))
-
 (define parse-in-either-range ((min1 natp) (max1 natp)
                                (min2 natp) (max2 natp)
                                (input nat-listp))

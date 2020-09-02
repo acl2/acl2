@@ -108,3 +108,41 @@
              (< (len rest-input)
                 (len input)))
     :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define parse-in-range ((min natp) (max natp) (input nat-listp))
+  :guard (<= min max)
+  :returns (mv (error? maybe-msgp)
+               (tree? (and (maybe-treep tree?)
+                           (implies (not error?) (treep tree?))
+                           (implies error? (not tree?))))
+               (rest-input nat-listp))
+  :short "Parse a natural number in a given range
+          into a tree that matches
+          a range numeric value notation that consists of that range."
+  (b* ((min (lnfix min))
+       (max (lnfix max))
+       ((mv error? nat input) (parse-any input))
+       ((when error?) (mv error? nil input))
+       ((unless (and (<= min nat) (<= nat max)))
+        (mv (msg "Failed to parse a number between ~x0 and ~x1; ~
+                  found ~x2 instead."
+                 min max nat)
+            nil
+            (cons nat input))))
+    (mv nil (tree-leafterm (list nat)) input))
+  :no-function t
+  :hooks (:fix)
+  ///
+
+  (defret len-of-parse-in-range-linear-<=
+    (<= (len rest-input)
+        (len input))
+    :rule-classes :linear)
+
+  (defret len-of-parse-in-range-linear-<
+    (implies (not error?)
+             (< (len rest-input)
+                (len input)))
+    :rule-classes :linear))
