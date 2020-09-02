@@ -111,6 +111,37 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define parse-exact-list ((nats nat-listp) (input nat-listp))
+  :returns (mv (error? maybe-msgp)
+               (tree? (and (maybe-treep tree?)
+                           (implies (not error?) (treep tree?))
+                           (implies error? (not tree?))))
+               (rest-input nat-listp))
+  :short "Parse zero or more given natural numbers
+          into a tree that matches
+          a direct numeric value notation
+          that consists of that list of numbers."
+  (b* (((mv error? input) (parse-exact-list-aux nats input))
+       ((when error?) (mv error? nil input)))
+    (mv nil (tree-leafterm nats) input))
+
+  :prepwork
+  ((define parse-exact-list-aux ((nats nat-listp) (input nat-listp))
+     :returns (mv (error? maybe-msgp)
+                  (rest-input nat-listp))
+     (b* (((when (endp nats)) (mv nil (nat-list-fix input)))
+          (nat (lnfix (car nats)))
+          ((mv error? input-nat input) (parse-any input))
+          ((when error?) (mv error? input))
+          ((unless (= input-nat nat))
+           (mv (msg "Failed to parse ~x0: found ~x1 instead." nat input-nat)
+               (cons input-nat input)))
+          ((mv error? input) (parse-exact-list-aux (cdr nats) input))
+          ((when error?) (mv error? input)))
+       (mv nil input)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define parse-in-range ((min natp) (max natp) (input nat-listp))
   :guard (<= min max)
   :returns (mv (error? maybe-msgp)
