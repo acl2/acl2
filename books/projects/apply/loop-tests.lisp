@@ -10,7 +10,7 @@
 (include-book "projects/apply/top" :dir :system)
 (include-book "std/testing/assert-bang" :dir :system)
 (include-book "std/testing/assert-bang-stobj" :dir :system)
-(include-book "std/testing/eval" :dir :system)
+(include-book "std/testing/must-fail" :dir :system)
 
 (assert-event
  (equal (loop$ for x in '(1 2 3 4) sum (* x x))

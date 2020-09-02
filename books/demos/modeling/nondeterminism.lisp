@@ -60,7 +60,7 @@
   (atom (foo))
   :hints (("Goal" :in-theory (disable atom))))
 
-(include-book "std/testing/eval" :dir :system) ; define must-fail
+(include-book "std/testing/must-fail" :dir :system)
 
 (must-fail
  (thm (equal (foo) t)))

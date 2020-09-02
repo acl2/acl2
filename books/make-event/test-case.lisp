@@ -9,7 +9,7 @@
 (in-package "ACL2")
 
 (include-book "std/testing/assert-bang" :dir :system)
-(include-book "std/testing/eval" :dir :system)
+(include-book "std/testing/must-fail" :dir :system)
 
 (defmacro test-case (form &key (expected 'nil expected-p))
   (let ((form (if expected-p

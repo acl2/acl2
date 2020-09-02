@@ -18,7 +18,7 @@ show how, if it did, we could have used the macro itself via defexec.
 
 (include-book "misc/defpun" :dir :system)
 
-(include-book "std/testing/eval" :dir :system)
+(include-book "std/testing/must-fail" :dir :system)
 
 ;; This one fails.  So I wrap this in must-fail.
 

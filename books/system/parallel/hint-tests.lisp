@@ -12,7 +12,8 @@
 #+acl2-par
 (progn
 
-(include-book "std/testing/eval" :dir :system)
+(include-book "std/testing/must-fail" :dir :system)
+(include-book "std/testing/must-succeed" :dir :system)
 
 ;==============================================================================
 ; Computed Hints
