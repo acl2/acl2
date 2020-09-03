@@ -53,8 +53,6 @@
                         (:rewrite member-of-abs-fs-fix-when-natp)
                         (:rewrite hifat-find-file-correctness-lemma-2)
                         (:rewrite
-                         no-duplicatesp-equal-of-abs-addrs-of-abs-fs-fix)
-                        (:rewrite
                          abs-find-file-helper-of-collapse-lemma-2)
                         (:rewrite
                          m1-file-alist-p-of-intersection-equal-2)

@@ -479,12 +479,12 @@
     :in-theory
     (e/d
      (update-dir-contents-correctness-1)
-     (no-duplicatesp-equal-of-fat32-build-index-list-of-effective-fat-of-update-dir-contents
+     (no-duplicatesp-of-fat32-build-index-list-of-effective-fat-of-update-dir-contents
       (:rewrite get-clusterchain-contents-correctness-2)))
     :expand (get-clusterchain-contents
              fat32-in-memory first-cluster 2097152)
     :use
-    (no-duplicatesp-equal-of-fat32-build-index-list-of-effective-fat-of-update-dir-contents
+    (no-duplicatesp-of-fat32-build-index-list-of-effective-fat-of-update-dir-contents
      (:instance
       (:rewrite get-clusterchain-contents-correctness-2)
       (length 2097152)
@@ -607,7 +607,9 @@
       (max-entry-count fat32-in-memory)))))
   :hints
   (("goal"
-    :in-theory (disable (:rewrite lofat-remove-file-correctness-1-lemma-1))
+    :do-not-induct t
+    :in-theory (e/d ()
+                    ((:rewrite lofat-remove-file-correctness-1-lemma-1)))
     :use
     (:instance
      (:rewrite lofat-remove-file-correctness-1-lemma-1)
@@ -684,7 +686,6 @@
                                   update-dir-contents-correctness-1)
                     ((:rewrite lofat-remove-file-correctness-1)
                      make-list-ac-removal
-                     (:rewrite lofat-remove-file-correctness-1-lemma-64)
                      (:rewrite lofat-find-file-correctness-1)
                      lofat-unlink-refinement-lemma-1
                      (:rewrite
