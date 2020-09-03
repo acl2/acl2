@@ -680,7 +680,8 @@ encapsulate), and is mainly meant as a tool for macro developers.</dd>
                name 'define 'defines))
        ((when (and long sub-long))
         (raise "Can't give :long in (~x1 ~x0 ...) because there is a global ~
-                :long in the (~x2 ~x0 ...) form."))
+                :long in the (~x2 ~x0 ...) form."
+               name 'define 'defines))
 
        (kwd-alist guts1.kwd-alist)
        (kwd-alist (remove1-assoc :short kwd-alist))
@@ -1027,7 +1028,7 @@ lemma for the overall mutually recursive proof, and doesn't export it.</p>
         (raise "Defret-mutual needs a mutual recursion created with defines to work on."))
        (guts (cdr (assoc mutual-recursion defines-alist)))
        ((unless guts)
-        (raise "~x0 is not the name of a mutual recursion created with defines."))
+        (raise "~x0 is not the name of a mutual recursion created with defines." mutual-recursion))
        ((defines-guts guts))
        ((unless guts.flag-defthm-macro)
         (raise "No flag defthm macro for ~x0." mutual-recursion))
