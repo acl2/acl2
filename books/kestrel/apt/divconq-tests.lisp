@@ -24,7 +24,7 @@
 
 (must-succeed*
  (gen-inputs-1-0)
- (apt::divconq old)
+ (apt::divconq old :schema :list-fold)
  :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -33,12 +33,12 @@
 
 (must-succeed*
  (gen-inputs-2-0)
- (apt::divconq old :list-input list)
+ (apt::divconq old :schema :list-fold :list-input list)
  :with-output-off nil)
 
 (must-succeed*
  (gen-inputs-2-1)
- (apt::divconq old :list-input list)
+ (apt::divconq old :schema :list-fold :list-input list)
  :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -47,17 +47,17 @@
 
 (must-succeed*
  (gen-inputs-3-0)
- (apt::divconq old :list-input list)
+ (apt::divconq old :schema :list-fold :list-input list)
  :with-output-off nil)
 
 (must-succeed*
  (gen-inputs-3-1)
- (apt::divconq old :list-input list)
+ (apt::divconq old :schema :list-fold :list-input list)
  :with-output-off nil)
 
 (must-succeed*
  (gen-inputs-3-2)
- (apt::divconq old :list-input list)
+ (apt::divconq old :schema :list-fold :list-input list)
  :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -66,22 +66,22 @@
 
 (must-succeed*
  (gen-inputs-4-0)
- (apt::divconq old :list-input list)
+ (apt::divconq old :schema :list-fold :list-input list)
  :with-output-off nil)
 
 (must-succeed*
  (gen-inputs-4-1)
- (apt::divconq old :list-input list)
+ (apt::divconq old :schema :list-fold :list-input list)
  :with-output-off nil)
 
 (must-succeed*
  (gen-inputs-4-2)
- (apt::divconq old :list-input list)
+ (apt::divconq old :schema :list-fold :list-input list)
  :with-output-off nil)
 
 (must-succeed*
  (gen-inputs-4-3)
- (apt::divconq old :list-input list)
+ (apt::divconq old :schema :list-fold :list-input list)
  :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -118,6 +118,7 @@
   (forall (ints) (pre-post-p ints (?sort ints))))
 
 (apt::divconq sortp[?sort]
+              :schema :list-fold
               :spec-atom-name sortp-atom[?sort-atom]
               :spec-cons-name sortp-cons[?sort-cons]
               :cdr-output sorted-cdr

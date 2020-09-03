@@ -343,6 +343,7 @@
                 (alistp a)
                 (rp-evl (rp-apply-bindings (rp-hyp rule) bindings) a)
                 (bindings-alistp bindings)
+                (rp-rule-rwp rule)
                 (rp-iff-flag rule))
            (iff (rp-evl (rp-apply-bindings (rp-lhs rule) bindings) a)
                 (rp-evl (rp-apply-bindings (rp-rhs rule) bindings) a)))
@@ -359,6 +360,7 @@
                 (alistp a)
                 (rp-evl (rp-apply-bindings (rp-hyp rule) bindings) a)
                 (bindings-alistp bindings)
+                (rp-rule-rwp rule)
                 (not (rp-iff-flag rule)))
            (equal (rp-evl (rp-apply-bindings (rp-lhs rule) bindings) a)
                   (rp-evl (rp-apply-bindings (rp-rhs rule) bindings) a)))
@@ -755,6 +757,7 @@
 
   (defthm valid-sc-apply-bindings-for-hyp
     (implies (and (valid-rulep rule)
+                  (rp-rule-rwp rule)
                   (bindings-alistp bindings)
                   (valid-sc-bindings bindings a))
              (valid-sc (rp-apply-bindings (rp-hyp rule) bindings) a))
@@ -1008,6 +1011,7 @@
   (defthm valid-sc-apply-bindings-for-rhs
     (implies
      (and (valid-rulep rule)
+          (rp-rule-rwp rule)
           (not (include-fnc (rp-hyp rule) 'list))
           (not (include-fnc (rp-rhs rule) 'list))
           (alistp a)

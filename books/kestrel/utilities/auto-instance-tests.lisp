@@ -19,7 +19,8 @@
 (include-book "std/testing/assert-bang" :dir :system)
 
 ; For testing:
-(include-book "std/testing/eval" :dir :system)
+(include-book "std/testing/must-fail" :dir :system)
+(include-book "std/testing/must-succeed" :dir :system)
 
 ; We include the following books in order to add more theorems to the world.
 (include-book "kestrel/utilities/lists/intersection-theorems" :dir :system)

@@ -2124,7 +2124,8 @@
                   (save-ev-fncall-guard-er ',fn
                                            ',guard
                                            (stobjs-in ',fn (w *the-live-state*))
-                                           (list ,@formals))
+                                           (list ,@formals)
+                                           ',wrld)
                   (er hard! 'program-only
                     "~@0"
                     (program-only-er-msg ',fn
@@ -8003,11 +8004,13 @@
                                         *initial-untouchable-fns*)
                       when
 
-; It is tempting to conjoin (logicp fn wrld) below.  But we awnt to include
+; It is tempting to conjoin (logicp fn wrld) below.  But we want to include
 ; relevant program mode functions too, if any, in case the user converts them
-; to logic mode.
+; to logic mode.  We consider a #+acl2-save-unnormalized-bodies to be a hack,
+; for which we include that logicp check in order to avoid an built-time error.
 
-                      (and (getpropc fn 'unnormalized-body nil wrld)
+                      (and #+acl2-save-unnormalized-bodies (logicp fn wrld)
+                           (getpropc fn 'unnormalized-body nil wrld)
                            (all-nils (stobjs-in fn wrld))
                            (all-nils (stobjs-out fn wrld)))
                       collect fn))

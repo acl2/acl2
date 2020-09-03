@@ -954,7 +954,7 @@
                  (untranslate-preprocess-fn ,wrld)
                  ,wrld))
 
-(defun save-ev-fncall-guard-er (fn guard stobjs-in args)
+(defun save-ev-fncall-guard-er (fn guard stobjs-in args w)
 
 ; Warning: If you change this definition, consider changing :doc
 ; make-wormhole-status, which references this definition.
@@ -969,7 +969,7 @@
 
                      nil
                      :ENTER
-                     (list fn guard stobjs-in args)))
+                     (list fn guard stobjs-in args w)))
                  nil))
 
 (defrec attachment
@@ -1755,7 +1755,7 @@
 
 ; Tflg specifies whether we want translated or user-level terms when we
 ; construct the type expressions.  Note that tflg does not affect how we treat
-; the :guard term!  The :guard term is either already translated in edcls or is
+; the :GUARD term!  The :GUARD term is either already translated in edcls or is
 ; not and whatever it is is how we treat it.  But we have to assemble type
 ; expressions from TYPE specs and tflg affects that assembly.  For example
 ; (TYPE (INTEGER 1 5) X) can either produce (AND (INTEGERP X) (<= 1 X) (<= X
@@ -1765,7 +1765,7 @@
 ; always returned untranslated type expressions.  We need the type expressions
 ; to be in translated form in translate11-lambda-object and
 ; well-formed-lambda-objectp because we must confirm that the (translated) type
-; expressions are among the conjuncts of the (translated) :guard.  We could
+; expressions are among the conjuncts of the (translated) :GUARD.  We could
 ; have avoided adding tflg and just always returned fully translated terms but
 ; that might have changed behavior assumed by user books that called various
 ; system translation functions.  So we introduced tflg in versions of those
@@ -1777,11 +1777,11 @@
 ; edcls contains only valid type declarations, as explained in the comment
 ; below about translate-declaration-to-guard-gen-var-lst.
 
-; We are careful to preserve the order, except that we consider :stobjs as
-; going before :guard.  (An example is (defun load-qs ...) in community book
+; We are careful to preserve the order, except that we consider :STOBJS as
+; going before :GUARD.  (An example is (defun load-qs ...) in community book
 ; books/defexec/other-apps/qsort/programs.lisp.)  Before Version_3.5, Jared
 ; Davis sent us the following example, for which guard verification failed on
-; the guard of the guard, because the :guard conjuncts were unioned into the
+; the guard of the guard, because the :GUARD conjuncts were unioned into the
 ; :type contribution to the guard, leaving a guard of (and (natp n) (= (length
 ; x) n) (stringp x)).  It seems reasonable to accumulate the guard conjuncts in
 ; the order presented by the user.
@@ -1793,6 +1793,11 @@
 ;            (type string x)
 ;            (ignore x n))
 ;   t)
+
+; NOTE: A special case is when wrld is nil.  In that case, :STOBJS declarations
+; in edcls are ignored and checks are skipped for SATISFIES declarations.
+; Therefore, if you call this with wrld = nil, then other code should deal
+; suitably with :STOBJS declarations and check SATISFIES declarations.
 
   (cond ((null edcls)
          (revappend stobjs-acc (reverse guards-acc)))
@@ -1809,11 +1814,12 @@
                      (if (and (true-listp (cadr temp1))
                               (eq (car (cadr temp1)) 'AND))
                          (or (cdr (cadr temp1))
-; The following (list t) avoids ignoring :guard (and).
+; The following (list t) avoids ignoring :GUARD (and).
                              (list t))
                          (list (cadr temp1)))
                      nil))
-                (temp2 (assoc-keyword :STOBJS (cdar edcls)))
+                (temp2 (and (consp wrld) ; see comment above about stobjs
+                            (assoc-keyword :STOBJS (cdar edcls))))
                 (stobj-conjuncts
                  (if temp2
                      (stobj-recognizer-terms
@@ -1857,6 +1863,7 @@
         (t (get-guards2 (cdr edcls)
                         targets tflg wrld stobjs-acc guards-acc))))
 
+;;; Comment changes only:
 (defun get-guards1 (edcls targets args name wrld)
 
 ; We compute the guards but add (state-p name) when necessary:
@@ -1868,16 +1875,23 @@
 ; includes the symbol, guards; (2) the formal arguments, args, include state;
 ; (3) (state-p state) is not already in the result of get-guards2; and (4) the
 ; function symbol in question, name, is not state-p itself, whose guard is
-; truly t.  If the (state-p state) conjunct is added, it is added in front of
-; the other conjuncts, consistently with the order described in :DOC
-; guard-miscellany.
+; truly t -- but see the exception for wrld = nil below.  If the (state-p
+; state) conjunct is added, it is added in front of the other conjuncts,
+; consistently with the order described in :DOC guard-miscellany.
 
 ; Note that we may pass in args = nil to avoid adding a state-p call, for
 ; example when defining a macro.  In that case name is ignored, so it is safe
 ; to pass in name = nil.
 
+; NOTE: A special case is when wrld is nil.  In that case, :STOBJS declarations
+; in edcls are ignored and checks are skipped for SATISFIES declarations;
+; moreover, a state-p conjunct (as described above) is not added.  Therefore,
+; if you call this with wrld = nil, then other code should deal suitably with
+; :STOBJS declarations and check SATISFIES declarations.
+
   (let ((conjuncts (get-guards2 edcls targets nil wrld nil nil)))
-    (cond ((and (member-eq 'guards targets) ; (1)
+    (cond ((and (consp wrld) ; see NOTE just above
+                (member-eq 'guards targets) ; (1)
                 (member-eq 'state args) ; (2)
                 (not (member-equal '(state-p state) conjuncts)) ; (3)
                 (not (eq name 'state-p))) ; (4)
@@ -1934,6 +1948,19 @@
                              wrld)))))
 
 (defun dcls-guard-raw-from-def (def wrld)
+
+; Def is the cdr of a defun (or defun-nx, defund, etc.) event; thus, (car def)
+; is the name being introduced.  Wrld is an ACL2 logical world, possibly nil
+; (see note below).  We return (mv dcls guard), where dcls is the strip-cdrs of
+; the declarations of def and guard is the untranslated guard extracted from
+; def, comprehending not only :GUARD xargs but also TYPE declarations,
+; :SPLIT-TYPES xargs, and if wrld is non-nil, :STOBJS xargs.
+
+; NOTE: A special case is when wrld is nil.  In that case, :STOBJS declarations
+; in edcls are ignored and checks are skipped for SATISFIES declarations.
+; Therefore, if you call this with wrld = nil, then other code should deal
+; suitably with :STOBJS declarations and check SATISFIES declarations.
+
   (let* ((dcls (append-lst (strip-cdrs (remove-strings
                                         (butlast (cddr def) 1)))))
          (split-types (get-unambiguous-xargs-flg1/edcls1
@@ -5306,7 +5333,7 @@
 ; may be called in the presence of local stobjs.
 
   (prog2$
-   (save-ev-fncall-guard-er fn guard stobjs-in args)
+   (save-ev-fncall-guard-er fn guard stobjs-in args w)
    (let ((form (and (symbolp fn)
                     (cdr (assoc-eq fn (table-alist 'guard-msg-table w))))))
      (mv-let

@@ -6,7 +6,9 @@
 
 (include-book "prove-interface")
 
-(include-book "std/testing/eval" :dir :system) ; for assert!-stobj
+(include-book "std/testing/assert-bang-stobj" :dir :system)
+(include-book "std/testing/must-eval-to-t" :dir :system)
+(include-book "std/testing/must-fail" :dir :system)
 
 (defmacro must-succeed-pi (form) ; prove-interface version of must-succeed
   `(local (must-eval-to-t ,form)))
@@ -48,22 +50,40 @@
 ; :pso ; displays the proof
 
 ; Use prove$ in a function.
-(defun first-success (termlist time-limit state)
+(defun first-success-time (termlist time-limit state)
   (declare (xargs :mode :program :stobjs state))
   (cond ((endp termlist) (value nil))
         (t (er-let* ((result (prove$ (car termlist) :time-limit time-limit)))
              (cond (result (value (car termlist)))
-                   (t (first-success (cdr termlist) time-limit state)))))))
+                   (t (first-success-time (cdr termlist) time-limit state)))))))
 
 ; Returns (mv nil (equal (append (append x y) z) (append x y z)) state):
-#+skip
 (local (must-eval-to
-        (first-success '((equal x y)
-                         (equal (append (append x y) x y x y x y x y)
-                                (append x y x y x y x y x y))
-                         (equal (append (append x y) z)
-                                (append x y z))
-                         (equal u u))
-                       2
-                       state)
+        (first-success-time '((equal x y)
+                              (equal (append (append x y) x y x y x y x y)
+                                     (append x y x y x y x y x y))
+                              (equal (append (append x y) z)
+                                     (append x y z))
+                              (equal u u))
+                            2 ; I've measured about 1/100 as sufficient.
+                            state)
+        '(equal (append (append x y) z) (append x y z))))
+
+; Use prove$ in a function.
+(defun first-success-step (termlist step-limit state)
+  (declare (xargs :mode :program :stobjs state))
+  (cond ((endp termlist) (value nil))
+        (t (er-let* ((result (prove$ (car termlist) :step-limit step-limit)))
+             (cond (result (value (car termlist)))
+                   (t (first-success-step (cdr termlist) step-limit state)))))))
+
+(local (must-eval-to
+        (first-success-step '((equal x y)
+                              (equal (append (append x y) x y x y x y x y)
+                                     (append x y x y x y x y x y))
+                              (equal (append (append x y) z)
+                                     (append x y z))
+                              (equal u u))
+                            1000 ; 435 should suffice
+                            state)
         '(equal (append (append x y) z) (append x y z))))

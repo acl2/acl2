@@ -21,6 +21,33 @@ module fa (
     assign c = (x & y) | (x & z) | (y & z);
     endmodule
 
+module DT_SB4_HC_64_64_FMA(
+        input logic [63:0]   IN1,
+        input logic [63:0]   IN2,
+	input logic [127:0]   IN3,		   
+        output logic [128:0] result);
+   
+   wire [127:0] 	     mult_result;
+   DT_SB4_HC_64_64 mult (IN1, IN2, mult_result);
+   assign result = mult_result + IN3;
+endmodule
+
+
+module DT_SB4_HC_64_64_FMMA(
+        input logic [63:0]   IN1,
+        input logic [63:0]   IN2,
+	input logic [63:0]   IN3,
+        input logic [63:0]   IN4,
+	input logic [127:0]  IN5, 
+        output logic [129:0] result);
+   
+   wire [127:0] 	     mult_result1;
+   wire [127:0] 	     mult_result2;
+   DT_SB4_HC_64_64 mult1 (IN1, IN2, mult_result1);
+   DT_SB4_HC_64_64 mult2 (IN3, IN4, mult_result2);
+   assign result = mult_result1 + mult_result2 + IN5;
+   
+endmodule
 
 module DT_SB4_HC_64_64(
         input logic [63:0] IN1,

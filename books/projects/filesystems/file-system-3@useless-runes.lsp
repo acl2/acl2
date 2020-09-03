@@ -1008,12 +1008,12 @@
         (:REWRITE L2-READ-AFTER-WRITE-1-LEMMA-3)))
 (L3-RDCHS-CORRECTNESS-1
      (10385 49 (:DEFINITION L3-STAT))
-     (4624 288 (:DEFINITION LEN))
+     (4660 288 (:DEFINITION LEN))
      (3309 54
            (:DEFINITION FETCH-BLOCKS-BY-INDICES))
      (3212 54 (:DEFINITION UNMAKE-BLOCKS))
      (3168 24 (:REWRITE INSERT-TEXT-CORRECTNESS-4))
-     (2871 1307 (:REWRITE DEFAULT-CDR))
+     (2895 1307 (:REWRITE DEFAULT-CDR))
      (2582 30 (:REWRITE DEFAULT-COERCE-1))
      (2189 116 (:REWRITE NTH-WHEN->=-N-LEN-L))
      (1982 116 (:REWRITE TAKE-OF-LEN-FREE))
@@ -1092,6 +1092,8 @@
          (:REWRITE L3-STAT-CORRECTNESS-1-LEMMA-2))
      (45 4
          (:REWRITE L3-STAT-CORRECTNESS-1-LEMMA-4))
+     (36 36
+         (:TYPE-PRESCRIPTION TRUE-LISTP-OF-INSERT-TEXT))
      (28 12
          (:REWRITE L3-REGULAR-FILE-ENTRY-P-CORRECTNESS-3
                    . 1))
@@ -1325,7 +1327,7 @@
           (178 28
                (:REWRITE L3-REGULAR-FILE-ENTRY-P-CORRECTNESS-3
                          . 2))
-          (152 23 (:DEFINITION LEN))
+          (156 23 (:DEFINITION LEN))
           (150 10 (:DEFINITION L3-FS-P))
           (123 6 (:REWRITE NTH-WHEN->=-N-LEN-L))
           (122 122 (:REWRITE DEFAULT-CAR))
@@ -1337,11 +1339,11 @@
           (55 11 (:DEFINITION ASSOC-EQUAL))
           (53 29 (:REWRITE DEFAULT-+-2))
           (38 8 (:DEFINITION CHARACTER-LISTP))
+          (36 2
+              (:REWRITE MAKE-BLOCKS-CORRECTNESS-5 . 1))
           (35 15
               (:REWRITE L3-REGULAR-FILE-ENTRY-P-CORRECTNESS-3
                         . 1))
-          (34 2
-              (:REWRITE MAKE-BLOCKS-CORRECTNESS-5 . 1))
           (33 24 (:REWRITE DEFAULT-<-2))
           (32 2 (:REWRITE TAKE-OF-LEN-FREE))
           (32 1 (:REWRITE INSERT-TEXT-CORRECTNESS-4))
@@ -1424,7 +1426,7 @@
         (:REWRITE BOUNDED-NAT-LISTP-CORRECTNESS-1))
      (3 3
         (:TYPE-PRESCRIPTION FEASIBLE-FILE-LENGTH-P)))
-(L3-WRCHS-RETURNS-FS (774 72 (:DEFINITION LEN))
+(L3-WRCHS-RETURNS-FS (822 72 (:DEFINITION LEN))
                      (540 180
                           (:TYPE-PRESCRIPTION ASSOC-WHEN-ZP-LEN))
                      (437 425 (:REWRITE DEFAULT-CAR))
@@ -1435,7 +1437,7 @@
                      (270 34 (:DEFINITION CHARACTER-LISTP))
                      (246 12 (:REWRITE NTH-WHEN->=-N-LEN-L))
                      (216 12 (:REWRITE TAKE-OF-LEN-FREE))
-                     (204 12
+                     (216 12
                           (:REWRITE MAKE-BLOCKS-CORRECTNESS-5 . 1))
                      (192 108 (:REWRITE DEFAULT-+-2))
                      (190 38 (:DEFINITION ASSOC-EQUAL))
@@ -1461,6 +1463,9 @@
                      (78 66 (:REWRITE DEFAULT-<-1))
                      (72 18 (:DEFINITION NFIX))
                      (72 9 (:DEFINITION MEMBER-EQUAL))
+                     (48 48 (:TYPE-PRESCRIPTION UNMAKE-BLOCKS))
+                     (48 24
+                         (:TYPE-PRESCRIPTION TRUE-LISTP-OF-INSERT-TEXT))
                      (45 45 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
                      (36 36 (:TYPE-PRESCRIPTION NULL))
                      (36 36 (:DEFINITION NULL))
@@ -1468,7 +1473,6 @@
                      (32 32 (:LINEAR POSITION-WHEN-MEMBER))
                      (32 32
                          (:LINEAR POSITION-EQUAL-AC-WHEN-MEMBER))
-                     (24 24 (:TYPE-PRESCRIPTION UNMAKE-BLOCKS))
                      (24 24 (:TYPE-PRESCRIPTION NATP))
                      (24 6 (:REWRITE COMMUTATIVITY-OF-+))
                      (18 18 (:TYPE-PRESCRIPTION MAKE-BLOCKS))
@@ -1802,7 +1806,7 @@
      (1398 22
            (:DEFINITION FETCH-BLOCKS-BY-INDICES))
      (1300 22 (:DEFINITION UNMAKE-BLOCKS))
-     (992 157 (:DEFINITION LEN))
+     (1016 157 (:DEFINITION LEN))
      (848 44 (:REWRITE NTH-WHEN->=-N-LEN-L))
      (740 18 (:REWRITE DEFAULT-COERCE-3))
      (736 24
@@ -1837,7 +1841,7 @@
           (:REWRITE L3-STAT-CORRECTNESS-2-LEMMA-2))
      (112 14
           (:REWRITE FETCH-BLOCKS-BY-INDICES-CORRECTNESS-2))
-     (102 6
+     (108 6
           (:REWRITE MAKE-BLOCKS-CORRECTNESS-5 . 1))
      (102 4 (:REWRITE L3-WRCHS-RETURNS-FS))
      (88 22 (:REWRITE COMMUTATIVITY-OF-+))
@@ -1851,11 +1855,11 @@
      (69 3 (:DEFINITION GENERATE-INDEX-LIST))
      (66 66
          (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
+     (64 64 (:TYPE-PRESCRIPTION UNMAKE-BLOCKS))
      (54 18
          (:REWRITE REMOVE1-ASSOC-WHEN-ABSENT . 1))
      (54 6
          (:REWRITE UNMAKE-BLOCKS-CORRECTNESS-1))
-     (52 52 (:TYPE-PRESCRIPTION UNMAKE-BLOCKS))
      (52 52
          (:TYPE-PRESCRIPTION FETCH-BLOCKS-BY-INDICES))
      (50 50
@@ -1865,6 +1869,8 @@
      (40 40 (:TYPE-PRESCRIPTION NAT-LISTP))
      (30 30 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
      (26 26 (:TYPE-PRESCRIPTION NATP))
+     (24 12
+         (:TYPE-PRESCRIPTION TRUE-LISTP-OF-INSERT-TEXT))
      (24 8
          (:REWRITE L3-BOUNDED-FS-P-CORRECTNESS-2))
      (18 18 (:TYPE-PRESCRIPTION NULL))
@@ -1878,15 +1884,15 @@
 (L3-WRCHS-CORRECTNESS-1 (4776 74
                               (:DEFINITION FETCH-BLOCKS-BY-INDICES))
                         (4542 74 (:DEFINITION UNMAKE-BLOCKS))
-                        (3925 526 (:DEFINITION LEN))
+                        (4072 526 (:DEFINITION LEN))
                         (2922 148 (:REWRITE NTH-WHEN->=-N-LEN-L))
                         (2917 2427 (:REWRITE DEFAULT-CAR))
-                        (2763 2291 (:REWRITE DEFAULT-CDR))
+                        (2773 2291 (:REWRITE DEFAULT-CDR))
                         (2592 148 (:REWRITE TAKE-OF-LEN-FREE))
                         (2529 323 (:DEFINITION ASSOC-EQUAL))
                         (2182 74 (:DEFINITION NTH))
                         (1968 74 (:DEFINITION TAKE))
-                        (1663 64 (:REWRITE DEFAULT-COERCE-3))
+                        (1689 64 (:REWRITE DEFAULT-COERCE-3))
                         (1561 52 (:REWRITE INSERT-TEXT-CORRECTNESS-4))
                         (1531 86
                               (:REWRITE UNMAKE-BLOCKS-CORRECTNESS-2))
@@ -1900,9 +1906,9 @@
                         (745 656 (:REWRITE DEFAULT-<-1))
                         (603 67 (:DEFINITION REMOVE1-ASSOC-EQUAL))
                         (594 44 (:DEFINITION CHARACTER-LISTP))
-                        (534 163 (:DEFINITION NFIX))
-                        (510 30
+                        (540 30
                              (:REWRITE MAKE-BLOCKS-CORRECTNESS-5 . 1))
+                        (534 163 (:DEFINITION NFIX))
                         (489 95
                              (:REWRITE L3-STAT-CORRECTNESS-2-LEMMA-2))
                         (456 456 (:LINEAR POSITION-WHEN-MEMBER))
@@ -1924,6 +1930,8 @@
                         (230 25 (:DEFINITION MEMBER-EQUAL))
                         (228 222
                              (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
+                        (173 99
+                             (:TYPE-PRESCRIPTION TRUE-LISTP-OF-INSERT-TEXT))
                         (166 25
                              (:REWRITE L3-STAT-CORRECTNESS-1-LEMMA-3))
                         (160 5 (:DEFINITION L2-FS-P))
@@ -2218,7 +2226,7 @@
          (:REWRITE L2-WRCHS-RETURNS-FS-LEMMA-3))
      (9 5 (:REWRITE L3-TO-L2-FS-CORRECTNESS-1)))
 (L3-READ-AFTER-WRITE-1-LEMMA-1
-     (1889 198 (:DEFINITION LEN))
+     (1993 198 (:DEFINITION LEN))
      (1716 26
            (:DEFINITION FETCH-BLOCKS-BY-INDICES))
      (1672 26 (:DEFINITION UNMAKE-BLOCKS))
@@ -2235,9 +2243,9 @@
      (534 38
           (:REWRITE UNMAKE-BLOCKS-CORRECTNESS-2))
      (478 38 (:DEFINITION CHARACTER-LISTP))
-     (442 26
+     (468 26
           (:REWRITE MAKE-BLOCKS-CORRECTNESS-5 . 1))
-     (372 12 (:REWRITE DEFAULT-COERCE-3))
+     (376 12 (:REWRITE DEFAULT-COERCE-3))
      (368 56
           (:REWRITE L3-STAT-CORRECTNESS-2-LEMMA-2))
      (364 77 (:REWRITE ZP-OPEN))
@@ -2337,8 +2345,8 @@
         (:TYPE-PRESCRIPTION FEASIBLE-FILE-LENGTH-P))
      (5 5 (:REWRITE DEFAULT-COERCE-2)))
 (L3-READ-AFTER-WRITE-1-LEMMA-3
-     (15665 44 (:DEFINITION L3-WRCHS))
-     (5756 544 (:DEFINITION LEN))
+     (16017 44 (:DEFINITION L3-WRCHS))
+     (6108 544 (:DEFINITION LEN))
      (4529 69
            (:DEFINITION FETCH-BLOCKS-BY-INDICES))
      (3976 69 (:DEFINITION UNMAKE-BLOCKS))
@@ -2358,9 +2366,9 @@
            (:REWRITE UNMAKE-BLOCKS-CORRECTNESS-2))
      (1673 129 (:DEFINITION CHARACTER-LISTP))
      (1614 272 (:DEFINITION ASSOC-EQUAL))
-     (1565 908 (:REWRITE DEFAULT-+-2))
-     (1496 88
+     (1584 88
            (:REWRITE MAKE-BLOCKS-CORRECTNESS-5 . 1))
+     (1565 908 (:REWRITE DEFAULT-+-2))
      (1229 28
            (:REWRITE L2-CREATE-CORRECTNESS-1-LEMMA-2))
      (1188 132 (:DEFINITION REMOVE1-ASSOC-EQUAL))
@@ -2389,9 +2397,12 @@
           (:REWRITE L3-WRCHS-CORRECTNESS-1-LEMMA-7))
      (458 430
           (:REWRITE L3-REGULAR-FILE-ENTRY-P-CORRECTNESS-1))
+     (411 411 (:TYPE-PRESCRIPTION UNMAKE-BLOCKS))
      (368 6
           (:REWRITE L2-WRCHS-RETURNS-FS-LEMMA-3))
      (365 365 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
+     (352 176
+          (:TYPE-PRESCRIPTION TRUE-LISTP-OF-INSERT-TEXT))
      (339 113 (:DEFINITION BINARY-APPEND))
      (338 26
           (:REWRITE L3-STAT-CORRECTNESS-1-LEMMA-3))
@@ -2403,7 +2414,6 @@
      (264 264 (:TYPE-PRESCRIPTION NULL))
      (264 264 (:DEFINITION NULL))
      (264 88 (:REWRITE L3-TO-L2-FS-GUARD-LEMMA-1))
-     (235 235 (:TYPE-PRESCRIPTION UNMAKE-BLOCKS))
      (214 6
           (:REWRITE L2-STAT-CORRECTNESS-1-LEMMA-5))
      (208 208 (:TYPE-PRESCRIPTION NAT-LISTP))
@@ -2441,23 +2451,23 @@
         (:REWRITE L3-BOUNDED-FS-P-CORRECTNESS-2))
      (1 1
         (:REWRITE L2-READ-AFTER-WRITE-1-LEMMA-3)))
-(L3-STAT-AFTER-WRITE (12196 34 (:DEFINITION L3-WRCHS))
+(L3-STAT-AFTER-WRITE (12468 34 (:DEFINITION L3-WRCHS))
+                     (6872 786 (:DEFINITION LEN))
                      (6841 105
                            (:DEFINITION FETCH-BLOCKS-BY-INDICES))
-                     (6546 786 (:DEFINITION LEN))
                      (6281 4516 (:REWRITE DEFAULT-CAR))
                      (6068 105 (:DEFINITION UNMAKE-BLOCKS))
                      (5618 32 (:DEFINITION L3-TO-L2-FS))
-                     (5230 4014 (:REWRITE DEFAULT-CDR))
+                     (5266 4014 (:REWRITE DEFAULT-CDR))
                      (5118 85
                            (:REWRITE L2-CREATE-CORRECTNESS-1-LEMMA-2))
                      (4780 665 (:DEFINITION ASSOC-EQUAL))
                      (4216 210 (:REWRITE NTH-WHEN->=-N-LEN-L))
                      (3338 210 (:REWRITE TAKE-OF-LEN-FREE))
                      (3166 105 (:DEFINITION NTH))
-                     (3047 113
+                     (3101 113
                            (:REWRITE INSERT-TEXT-CORRECTNESS-4))
-                     (2905 80 (:REWRITE DEFAULT-COERCE-3))
+                     (2977 80 (:REWRITE DEFAULT-COERCE-3))
                      (2851 105 (:DEFINITION TAKE))
                      (2768 210
                            (:REWRITE L3-REGULAR-FILE-ENTRY-P-CORRECTNESS-3
@@ -2476,7 +2486,7 @@
                      (1372 309 (:REWRITE ZP-OPEN))
                      (1360 966 (:REWRITE DEFAULT-<-2))
                      (1291 102 (:DEFINITION CHARACTER-LISTP))
-                     (1156 68
+                     (1224 68
                            (:REWRITE MAKE-BLOCKS-CORRECTNESS-5 . 1))
                      (1155 20
                            (:REWRITE L2-STAT-CORRECTNESS-1-LEMMA-5))
@@ -2492,7 +2502,7 @@
                      (782 34 (:DEFINITION GENERATE-INDEX-LIST))
                      (769 207
                           (:REWRITE FETCH-BLOCKS-BY-INDICES-CORRECTNESS-1))
-                     (657 18 (:LINEAR INSERT-TEXT-CORRECTNESS-3))
+                     (711 18 (:LINEAR INSERT-TEXT-CORRECTNESS-3))
                      (652 70
                           (:REWRITE L3-STAT-CORRECTNESS-1-LEMMA-4))
                      (622 562
@@ -2511,11 +2521,11 @@
                           (:REWRITE L3-WRCHS-CORRECTNESS-1-LEMMA-8))
                      (473 473
                           (:TYPE-PRESCRIPTION FEASIBLE-FILE-LENGTH-P))
+                     (420 420 (:TYPE-PRESCRIPTION UNMAKE-BLOCKS))
                      (420 105 (:REWRITE COMMUTATIVITY-OF-+))
                      (417 139 (:DEFINITION BINARY-APPEND))
                      (315 315
                           (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
-                     (284 284 (:TYPE-PRESCRIPTION UNMAKE-BLOCKS))
                      (266 266 (:TYPE-PRESCRIPTION NAT-LISTP))
                      (262 55
                           (:REWRITE L3-STAT-CORRECTNESS-1-LEMMA-1))
@@ -2548,48 +2558,44 @@
                      (18 6
                          (:REWRITE L3-BOUNDED-FS-P-CORRECTNESS-2))
                      (8 8 (:REWRITE CHARACTER-LISTP-COERCE)))
-(L3-READ-AFTER-WRITE-1 (1062 3 (:DEFINITION L3-WRCHS))
-                       (691 84 (:DEFINITION LEN))
+(L3-READ-AFTER-WRITE-1 (1086 3 (:DEFINITION L3-WRCHS))
+                       (791 83 (:DEFINITION LEN))
                        (660 10
                             (:DEFINITION FETCH-BLOCKS-BY-INDICES))
                        (580 10 (:DEFINITION UNMAKE-BLOCKS))
-                       (414 315 (:REWRITE DEFAULT-CDR))
+                       (411 308 (:REWRITE DEFAULT-CDR))
                        (410 20 (:REWRITE NTH-WHEN->=-N-LEN-L))
-                       (383 19 (:REWRITE INSERT-TEXT-CORRECTNESS-4))
+                       (340 18 (:REWRITE INSERT-TEXT-CORRECTNESS-4))
                        (320 20 (:REWRITE TAKE-OF-LEN-FREE))
                        (310 10 (:DEFINITION NTH))
-                       (309 280 (:REWRITE DEFAULT-CAR))
                        (305 17
                             (:REWRITE L3-REGULAR-FILE-ENTRY-P-CORRECTNESS-3
                                       . 2))
+                       (282 276 (:REWRITE DEFAULT-CAR))
                        (280 10 (:DEFINITION TAKE))
                        (247 141 (:REWRITE DEFAULT-+-2))
                        (224 16 (:DEFINITION L3-FS-P))
                        (220 13
                             (:REWRITE UNMAKE-BLOCKS-CORRECTNESS-2))
-                       (212 9 (:REWRITE DEFAULT-COERCE-3))
-                       (159 2 (:REWRITE NTHCDR-WHEN->=-N-LEN-L))
+                       (214 9 (:REWRITE DEFAULT-COERCE-3))
+                       (155 110 (:REWRITE DEFAULT-<-2))
                        (153 141 (:REWRITE DEFAULT-+-1))
-                       (152 108 (:REWRITE DEFAULT-<-2))
                        (150 50
                             (:TYPE-PRESCRIPTION ASSOC-WHEN-ZP-LEN))
                        (135 10 (:REWRITE L3-FS-P-ASSOC))
                        (133 31 (:REWRITE ZP-OPEN))
                        (133 10 (:REWRITE ASSOC-OF-CAR-WHEN-MEMBER))
-                       (122 108 (:REWRITE DEFAULT-<-1))
+                       (133 2 (:REWRITE NTHCDR-WHEN->=-N-LEN-L))
+                       (124 110 (:REWRITE DEFAULT-<-1))
                        (120 24 (:DEFINITION ASSOC-EQUAL))
                        (114 17
                             (:REWRITE L3-STAT-CORRECTNESS-2-LEMMA-2))
                        (111 9 (:DEFINITION CHARACTER-LISTP))
-                       (102 6
+                       (108 6
                             (:REWRITE MAKE-BLOCKS-CORRECTNESS-5 . 1))
-                       (101 4
-                            (:REWRITE TRUE-LISTP-WHEN-STRING-LIST))
-                       (89 4 (:DEFINITION STRING-LISTP))
+                       (84 25 (:DEFINITION NFIX))
                        (83 10 (:DEFINITION MEMBER-EQUAL))
                        (81 9 (:DEFINITION REMOVE1-ASSOC-EQUAL))
-                       (78 23 (:DEFINITION NFIX))
-                       (70 2 (:DEFINITION TRUE-LISTP))
                        (69 3 (:DEFINITION GENERATE-INDEX-LIST))
                        (63 19
                            (:REWRITE FETCH-BLOCKS-BY-INDICES-CORRECTNESS-1))
@@ -2603,20 +2609,19 @@
                            (:REWRITE L3-REGULAR-FILE-ENTRY-P-CORRECTNESS-1))
                        (50 50 (:TYPE-PRESCRIPTION ZP))
                        (50 50 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
-                       (46 46 (:LINEAR POSITION-WHEN-MEMBER))
-                       (46 46
+                       (47 47 (:LINEAR POSITION-WHEN-MEMBER))
+                       (47 47
                            (:LINEAR POSITION-EQUAL-AC-WHEN-MEMBER))
                        (43 43
                            (:TYPE-PRESCRIPTION FEASIBLE-FILE-LENGTH-P))
                        (39 13 (:DEFINITION BINARY-APPEND))
-                       (39 1 (:DEFINITION NTHCDR))
+                       (38 38 (:TYPE-PRESCRIPTION UNMAKE-BLOCKS))
+                       (37 1 (:DEFINITION NTHCDR))
                        (30 30
                            (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
-                       (26 26 (:TYPE-PRESCRIPTION UNMAKE-BLOCKS))
                        (26 26 (:TYPE-PRESCRIPTION NAT-LISTP))
                        (24 24 (:REWRITE DEFAULT-COERCE-2))
-                       (20 20 (:TYPE-PRESCRIPTION STRING-LISTP))
-                       (20 20 (:TYPE-PRESCRIPTION NFIX))
+                       (22 22 (:TYPE-PRESCRIPTION NFIX))
                        (20 20
                            (:TYPE-PRESCRIPTION FETCH-BLOCKS-BY-INDICES))
                        (20 20 (:REWRITE SUBSETP-MEMBER . 2))
@@ -2626,7 +2631,6 @@
                        (18 18 (:DEFINITION NULL))
                        (18 6 (:REWRITE L3-TO-L2-FS-GUARD-LEMMA-1))
                        (15 15 (:REWRITE DEFAULT-COERCE-1))
-                       (10 10 (:TYPE-PRESCRIPTION TRUE-LISTP))
                        (9 9 (:TYPE-PRESCRIPTION MAKE-BLOCKS))
                        (9 9
                           (:REWRITE L2-READ-AFTER-WRITE-1-LEMMA-1))
@@ -2637,10 +2641,10 @@
                        (3 3 (:REWRITE MAKE-BLOCKS-CORRECTNESS-4))
                        (1 1 (:REWRITE DEFAULT-UNARY-MINUS)))
 (L3-READ-AFTER-WRITE-2
-     (1416 4 (:DEFINITION L3-WRCHS))
+     (1448 4 (:DEFINITION L3-WRCHS))
+     (862 110 (:DEFINITION LEN))
      (858 13
           (:DEFINITION FETCH-BLOCKS-BY-INDICES))
-     (830 110 (:DEFINITION LEN))
      (754 13 (:DEFINITION UNMAKE-BLOCKS))
      (611 30 (:REWRITE NTH-WHEN->=-N-LEN-L))
      (542 15 (:DEFINITION TAKE))
@@ -2670,7 +2674,7 @@
      (149 22
           (:REWRITE L3-STAT-CORRECTNESS-2-LEMMA-2))
      (148 12 (:DEFINITION CHARACTER-LISTP))
-     (136 8
+     (144 8
           (:REWRITE MAKE-BLOCKS-CORRECTNESS-5 . 1))
      (108 13 (:DEFINITION MEMBER-EQUAL))
      (108 12 (:DEFINITION REMOVE1-ASSOC-EQUAL))
@@ -2696,11 +2700,11 @@
          (:TYPE-PRESCRIPTION FEASIBLE-FILE-LENGTH-P))
      (54 2 (:DEFINITION NTHCDR))
      (51 17 (:DEFINITION BINARY-APPEND))
+     (50 50 (:TYPE-PRESCRIPTION UNMAKE-BLOCKS))
      (48 2 (:REWRITE LEN-OF-NTHCDR))
      (39 39
          (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
      (36 2 (:REWRITE CONSP-OF-NTHCDR))
-     (34 34 (:TYPE-PRESCRIPTION UNMAKE-BLOCKS))
      (34 34 (:TYPE-PRESCRIPTION NFIX))
      (34 34 (:TYPE-PRESCRIPTION NAT-LISTP))
      (26 26
@@ -2846,12 +2850,12 @@
      (28757 164 (:DEFINITION L3-CREATE))
      (23711 18506 (:REWRITE DEFAULT-CAR))
      (21939 26 (:DEFINITION L2-CREATE))
-     (21572 16577 (:REWRITE DEFAULT-CDR))
+     (21664 16577 (:REWRITE DEFAULT-CDR))
      (20002 310
             (:DEFINITION FETCH-BLOCKS-BY-INDICES))
      (18162 2655 (:DEFINITION ASSOC-EQUAL))
      (17808 310 (:DEFINITION UNMAKE-BLOCKS))
-     (16948 3033 (:DEFINITION LEN))
+     (17086 3033 (:DEFINITION LEN))
      (16538 425
             (:REWRITE L2-CREATE-CORRECTNESS-1-LEMMA-2))
      (14030 716 (:REWRITE NTH-WHEN->=-N-LEN-L))
@@ -2949,6 +2953,8 @@
           (:REWRITE MAKE-BLOCKS-CORRECTNESS-4))
      (162 162
           (:REWRITE L2-READ-AFTER-WRITE-2-LEMMA-2))
+     (138 138
+          (:TYPE-PRESCRIPTION TRUE-LISTP-OF-INSERT-TEXT))
      (114 64 (:REWRITE L2-CREATE-RETURNS-FS))
      (111 37
           (:REWRITE L3-BOUNDED-FS-P-CORRECTNESS-2))

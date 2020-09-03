@@ -43,5 +43,6 @@
 (include-book "hons-get-meta")
 (include-book "equal-meta")
 (include-book "mv-nth-meta")
+(include-book "implies-meta")
 
 (attach-meta-fncs built-in-metas)

@@ -141,7 +141,9 @@
     "This is a library about " (xdoc::ahref "json.org" "JSON") ".
      It currently contains an initial abstract syntax of JSON,
      consisting of " (xdoc::seetopic "fty" "fixtypes") ";
-     it also contains some initial operations on this abstract syntax.")
+     it also contains some initial operations on this abstract syntax,
+     as well as a translator from the output of the parser at
+     @('[books]/kestrel/json-parser/') to the abstract syntax.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -159,6 +161,19 @@
     " and to "
     (xdoc::seetopic "omap::omaps" "the library of ordered maps")
     ".")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "simpl-imp::imp-language"
+                             "Simple Programming Language Imp"))
+
+   (xdoc::p
+    "This is a library about a simple programming language, called Imp,
+     found (with small variations) in a variety of didactic resources.
+     This library formalizes syntax and semantics of this language,
+     and provides a program-mode interpreter of Imp programs.
+     This library may be extended with examples of
+     formal verification of Imp programs in ACL2.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -303,7 +318,13 @@
       by removing the @(':non-executable') option,
       which does not seem necessary or useful.
       The new function is marked non-executable
-      if and only if the target function is."))
+      if and only if the target function is.")
+    (xdoc::li
+     "The transformation has been made more widely or readily applicable
+      by removing the applicability condition that required
+      the restriction predicate to be boolean-valued.
+      The new function now uses @(tsee mbt$) instead of @(tsee mbt),
+      thus obviating the need for the removed applicability condition."))
 
    (xdoc::p
     "The @(tsee apt::tailrec) transformation has been improved as follows:")
@@ -445,7 +466,13 @@
     "The XDOC constructor @(tsee xdoc::evmac-topic-implementation)
      has been simplified by removing its
      @(':item-state'), @(':item-wrld'), and @(':item-ctx') options.
-     Instead, named constants have been provided for these common items.")
+     Instead, named constants have been provided for these common items.
+     This constructor has also been extended with a @(':default-parent') option.
+     A function has been also added to construct a common kind of items.")
+
+   (xdoc::p
+    "The XDOC constructor @(tsee xdoc::evmac-topic-event-generation)
+     has been extended with an additional option.")
 
    (xdoc::p
     "A utility @(tsee evmac-prepare-proofs) has been added,
@@ -478,6 +505,9 @@
    (xdoc::p
     "The macro @(tsee fty::defomap) has been improved
      to generate additional theorems.")
+
+   (xdoc::p
+    "A fixtype @(tsee nat-set) of osets of natural numbers has been added.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -674,9 +704,17 @@
      followed by @(tsee soft::defsoft).")
 
    (xdoc::p
-    "New macros @(tsee soft::define2) and @(tsee soft::define-sk2)
+    "New macros
+     @('defund2'),
+     @(tsee soft::define2),
+     @(tsee soft::defund-sk2), and
+     @(tsee soft::define-sk2)
      have been added.
-     These abbreviate @(tsee define) and @(tsee std::define-sk)
+     These abbreviate
+     @(tsee defund),
+     @(tsee define),
+     @(tsee defund-sk), and
+     @(tsee std::define-sk)
      followed by @(tsee soft::defsoft),
      analogously to other macros as described above.")
 
@@ -760,6 +798,13 @@
    (xdoc::h4 (xdoc::seetopic "std::std/util" "Standard Utilities Library"))
 
    (xdoc::p
+    "A new event macro @(tsee defund-sk) has been added,
+     which is like @(tsee defun-sk) but it disables
+     (1) the function definition (if @(':constrain') is @('nil'))
+     or the definition rule (if @(':constrain') is non-@('nil'))
+     and (2) the rewrite rule.")
+
+   (xdoc::p
     "A new event macro @(tsee defmacro+) has been added,
      with is like @(tsee defmacro) but with "
     (xdoc::seetopic "xdoc" "XDOC")
@@ -827,6 +872,10 @@
     "The line containing @('#!/bin/bash') at the top of various shell scripts
      has been replaced by a line containing @('#!/usr/bin/env bash'), for
      increased portability.")
+
+   (xdoc::p
+    "The book @('tools/defttag-muffled.lisp') provides a way, using a trust
+    tag, to turn off all subsequent ``TTAG NOTE'' messages.  Use with care!!")
 
    ))
 

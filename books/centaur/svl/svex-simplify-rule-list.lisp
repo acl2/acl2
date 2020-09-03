@@ -27,6 +27,26 @@
 
 (include-book "meta/top")
 
+
+(defconst *svex-simplify-meta-rules*
+  '((:META SVL::4VEC-RSH-OF-META . SV::4VEC-RSH)
+    (:META SVL::SVEXL-NODE-EVAL-WOG-META-MAIN
+           . SVL::SVEXL-NODE-EVAL-WOG)
+    (:META SVL::SVEX-EVAL-WOG-META-MAIN
+           . SVL::SVEX-EVAL-WOG)
+    (:META SVL::CONCAT-META . SV::4VEC-CONCAT)
+    (:META SVL::CONCAT-META . SVL::4VEC-CONCAT$)
+    (:META SVL::BITS-OF-META-FN . SVL::BITS)
+    (:META SVL::BITS-OF-META-FN
+           . SV::4VEC-PART-SELECT)
+    (:META RP::MV-NTH-META . MV-NTH)
+    (:META RP::RP-EQUAL-META . EQUAL)
+    (:META RP::ASSOC-EQ-VALS-META . rp::ASSOC-EQ-VALS)
+    (:META RP::HONS-GET-META . HONS-GET)
+    (:META RP::FAST-ALIST-FREE-META . FAST-ALIST-FREE)
+    (:META RP::HONS-ACONS-META . HONS-ACONS)))
+
+
 (progn
   (defconst *svex-simplify-rules*
     '((:rewrite concat-of-rsh-with-0-to-bits)
@@ -218,7 +238,7 @@
       (:executable-counterpart fast-alist-free)
       (:executable-counterpart svexl-eval-wog)
       (:rewrite svexl-eval-is-svexl-eval-wog)
-      (:rewrite svexl-eval-wog-opener)
+      (:rewrite svexl-eval-wog-for-rp)
       ;;(:rewrite rp::svexl-eval-wog-opener_lambda-opener)
       (:rewrite svexl-eval-aux-wog-nil)
 
@@ -241,7 +261,7 @@
       (:executable-counterpart svex-p)
 
       (:executable-counterpart svexl-node-p)
-      (:executable-counterpart svl::svexl->node-alist$inline)
+      (:executable-counterpart svl::svexl->node-array$inline)
       (:executable-counterpart svl::svexl->top-node$inline)
     
       (:rewrite svexlist-eval-wog-nil-def)
@@ -308,12 +328,12 @@
       (:executable-counterpart sv::4vec-part-select)
       (:executable-counterpart sv::4vec-part-install)
 
-      (:rewrite svexllist-eval-wog-opener)
+      (:rewrite svexllist-eval-wog-for-rp)
       ;(:rewrite rp::svexllist-eval-wog-opener_lambda-opener)
       (:executable-counterpart svexllist->top-nodelist$inline)
-      (:executable-counterpart svexllist->node-alist$inline)
+      (:executable-counterpart svexllist->node-array$inline)
       (:executable-counterpart svexllist-p)
-      (:executable-counterpart svexl-node-alist-p)
+      (:executable-counterpart svexl-node-array-p)
       (:executable-counterpart svexl-node-p)
       (:executable-counterpart equal)
       (:executable-counterpart =)

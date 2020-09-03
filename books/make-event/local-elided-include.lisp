@@ -106,8 +106,7 @@
 ; Include the book whose certificate we want to check.
 (include-book "local-elided")
 
-; Define must-succeed (used below).
-(include-book "std/testing/eval" :dir :system)
+(include-book "std/testing/must-succeed" :dir :system)
 
 ; Define read-list (used below).
 (include-book "misc/file-io" :dir :system)

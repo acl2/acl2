@@ -606,15 +606,15 @@
      (5 5 (:REWRITE ASSOC-AFTER-REMOVE1-ASSOC)))
 (ASSOC-EQUAL-OF-REMOVE1-EQUAL (53 53 (:REWRITE DEFAULT-CAR))
                               (17 17 (:REWRITE DEFAULT-CDR)))
-(ASSOC-EQUAL-WHEN-MEMBER-EQUAL (67 67 (:REWRITE DEFAULT-CAR))
-                               (63 14 (:REWRITE SUBSETP-MEMBER . 3))
-                               (47 2 (:DEFINITION SUBSETP-EQUAL))
-                               (19 19 (:REWRITE SUBSETP-MEMBER . 2))
-                               (19 19 (:REWRITE SUBSETP-MEMBER . 1))
-                               (17 17 (:REWRITE DEFAULT-CDR))
-                               (14 14 (:REWRITE SUBSETP-MEMBER . 4))
-                               (7 7 (:TYPE-PRESCRIPTION SUBSETP-EQUAL))
-                               (4 4 (:REWRITE SUBSETP-TRANS)))
+(ASSOC-OF-CAR-WHEN-MEMBER (113 113 (:REWRITE DEFAULT-CAR))
+                          (65 16 (:REWRITE SUBSETP-MEMBER . 3))
+                          (47 2 (:DEFINITION SUBSETP-EQUAL))
+                          (21 21 (:REWRITE SUBSETP-MEMBER . 2))
+                          (21 21 (:REWRITE SUBSETP-MEMBER . 1))
+                          (19 19 (:REWRITE DEFAULT-CDR))
+                          (16 16 (:REWRITE SUBSETP-MEMBER . 4))
+                          (7 7 (:TYPE-PRESCRIPTION SUBSETP-EQUAL))
+                          (4 4 (:REWRITE SUBSETP-TRANS)))
 (CAR-OF-NTHCDR (319 33
                     (:REWRITE TRUE-LISTP-WHEN-STRING-LIST))
                (265 17 (:DEFINITION TRUE-LISTP))
@@ -1059,14 +1059,6 @@
                           (23 2 (:DEFINITION SUBSETP-EQUAL))
                           (10 10 (:TYPE-PRESCRIPTION SUBSETP-EQUAL))
                           (4 4 (:REWRITE SUBSETP-TRANS)))
-(ASSOC-OF-CAR-WHEN-MEMBER (62 13 (:REWRITE SUBSETP-MEMBER . 3))
-                          (47 2 (:DEFINITION SUBSETP-EQUAL))
-                          (19 19 (:REWRITE DEFAULT-CDR))
-                          (18 18 (:REWRITE SUBSETP-MEMBER . 2))
-                          (18 18 (:REWRITE SUBSETP-MEMBER . 1))
-                          (13 13 (:REWRITE SUBSETP-MEMBER . 4))
-                          (7 7 (:TYPE-PRESCRIPTION SUBSETP-EQUAL))
-                          (4 4 (:REWRITE SUBSETP-TRANS)))
 (DEC-DEC-INDUCT (3 3 (:REWRITE DEFAULT-<-2))
                 (3 3 (:REWRITE DEFAULT-<-1))
                 (2 2 (:REWRITE ZP-OPEN))
@@ -1360,20 +1352,21 @@
                  (1 1 (:DEFINITION TRUE-LISTP))
                  (1 1 (:DEFINITION STRING-LISTP)))
 (MEMBER-OF-CAR-OF-NTH-IN-STRIP-CARS
-     (190 12 (:REWRITE ASSOC-OF-CAR-WHEN-MEMBER))
-     (110 106 (:REWRITE DEFAULT-CDR))
-     (106 47 (:REWRITE SUBSETP-MEMBER . 1))
-     (96 58 (:REWRITE DEFAULT-+-2))
-     (84 58 (:REWRITE DEFAULT-<-2))
-     (67 6 (:REWRITE MEMBER-EQUAL-NTH))
-     (58 58 (:REWRITE DEFAULT-<-1))
-     (58 58 (:REWRITE DEFAULT-+-1))
+     (204 199 (:REWRITE DEFAULT-CDR))
+     (178 102 (:REWRITE DEFAULT-+-2))
+     (156 97 (:REWRITE SUBSETP-MEMBER . 1))
+     (153 104 (:REWRITE DEFAULT-<-2))
+     (116 104 (:REWRITE DEFAULT-<-1))
+     (102 102 (:REWRITE DEFAULT-+-1))
+     (97 97 (:REWRITE SUBSETP-MEMBER . 2))
+     (83 83 (:REWRITE SUBSETP-MEMBER . 4))
+     (83 83 (:REWRITE SUBSETP-MEMBER . 3))
+     (59 12 (:DEFINITION ASSOC-EQUAL))
      (56 2 (:DEFINITION SUBSETP-EQUAL))
-     (47 47 (:REWRITE SUBSETP-MEMBER . 2))
-     (33 33 (:REWRITE SUBSETP-MEMBER . 4))
-     (33 33 (:REWRITE SUBSETP-MEMBER . 3))
-     (24 4 (:DEFINITION ALISTP))
-     (21 21 (:REWRITE ZP-OPEN))
+     (27 27 (:REWRITE ZP-OPEN))
+     (12 12
+         (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
+     (12 2 (:DEFINITION ALISTP))
      (10 10 (:TYPE-PRESCRIPTION SUBSETP-EQUAL))
      (4 4 (:REWRITE SUBSETP-TRANS)))
 (ASSOC-OF-CAR-OF-NTH (1364 1349 (:REWRITE DEFAULT-CAR))
@@ -2701,3 +2694,112 @@
                              (1 1 (:TYPE-PRESCRIPTION STRING-LISTP))
                              (1 1 (:DEFINITION TRUE-LISTP))
                              (1 1 (:DEFINITION STRING-LISTP)))
+(REMOVE-DUPLICATES-WHEN-NO-DUPLICATESP
+     (166 6
+          (:REWRITE TRUE-LIST-FIX-WHEN-TRUE-LISTP))
+     (118 13
+          (:REWRITE TRUE-LISTP-WHEN-STRING-LIST))
+     (95 7 (:DEFINITION TRUE-LISTP))
+     (81 14 (:DEFINITION STRING-LISTP))
+     (63 63 (:TYPE-PRESCRIPTION STRING-LISTP))
+     (45 45 (:REWRITE DEFAULT-CDR))
+     (43 14 (:REWRITE SUBSETP-MEMBER . 3))
+     (37 37 (:REWRITE DEFAULT-CAR))
+     (28 28 (:TYPE-PRESCRIPTION TRUE-LISTP))
+     (23 2 (:DEFINITION SUBSETP-EQUAL))
+     (16 16 (:REWRITE SUBSETP-MEMBER . 2))
+     (16 16 (:REWRITE SUBSETP-MEMBER . 1))
+     (14 14 (:REWRITE SUBSETP-MEMBER . 4))
+     (10 10 (:TYPE-PRESCRIPTION SUBSETP-EQUAL))
+     (4 4 (:REWRITE SUBSETP-TRANS)))
+(NOT-INTERSECTP-OF-SET-DIFFERENCE$-WHEN-SUBSETP-1
+     (3143 24
+           (:REWRITE SET-DIFFERENCE$-WHEN-NOT-INTERSECTP))
+     (2506 8 (:DEFINITION SET-DIFFERENCE-EQUAL))
+     (1346 187
+           (:REWRITE INTERSECT-WITH-SUBSET . 4))
+     (1259 454 (:REWRITE SUBSETP-MEMBER . 1))
+     (740 186
+          (:REWRITE INTERSECT-WITH-SUBSET . 1))
+     (692 11
+          (:REWRITE INTERSECT-WITH-SUBSET . 13))
+     (667 101
+          (:REWRITE INTERSECT-WITH-SUBSET . 7))
+     (511 187
+          (:REWRITE INTERSECT-WITH-SUBSET . 3))
+     (452 186
+          (:REWRITE INTERSECT-WITH-SUBSET . 2))
+     (432 432 (:REWRITE DEFAULT-CAR))
+     (408 189
+          (:REWRITE INTERSECT-WITH-SUBSET . 6))
+     (398 398 (:REWRITE DEFAULT-CDR))
+     (394 101
+          (:REWRITE INTERSECT-WITH-SUBSET . 8))
+     (324 217 (:REWRITE SUBSETP-TRANS))
+     (310 188
+          (:REWRITE INTERSECT-WITH-SUBSET . 5))
+     (281 101
+          (:REWRITE INTERSECT-WITH-SUBSET . 10))
+     (242 11
+          (:REWRITE INTERSECT-WITH-SUBSET . 14))
+     (195 141 (:REWRITE SUBSETP-MEMBER . 3))
+     (189 101
+          (:REWRITE INTERSECT-WITH-SUBSET . 12))
+     (189 101
+          (:REWRITE INTERSECT-WITH-SUBSET . 9))
+     (181 101
+          (:REWRITE INTERSECT-WITH-SUBSET . 11))
+     (141 141 (:REWRITE SUBSETP-MEMBER . 4))
+     (63 63
+         (:TYPE-PRESCRIPTION SET-DIFFERENCE-EQUAL))
+     (11 11
+         (:REWRITE INTERSECT-WITH-SUBSET . 16))
+     (11 11
+         (:REWRITE INTERSECT-WITH-SUBSET . 15)))
+(SUBSETP-OF-SET-DIFFERENCE$ (3565 61 (:REWRITE INTERSECTP-IS-COMMUTATIVE))
+                            (998 564 (:REWRITE SUBSETP-MEMBER . 1))
+                            (898 21
+                                 (:REWRITE MEMBER-OF-SET-DIFFERENCE-EQUAL))
+                            (666 169 (:REWRITE SUBSETP-TRANS))
+                            (645 231
+                                 (:REWRITE INTERSECT-WITH-SUBSET . 4))
+                            (570 569 (:REWRITE DEFAULT-CAR))
+                            (487 486 (:REWRITE DEFAULT-CDR))
+                            (474 412 (:REWRITE SUBSETP-MEMBER . 3))
+                            (412 412 (:REWRITE SUBSETP-MEMBER . 4))
+                            (249 231
+                                 (:REWRITE INTERSECT-WITH-SUBSET . 1))
+                            (231 231
+                                 (:REWRITE INTERSECT-WITH-SUBSET . 6))
+                            (231 231
+                                 (:REWRITE INTERSECT-WITH-SUBSET . 5))
+                            (231 231
+                                 (:REWRITE INTERSECT-WITH-SUBSET . 3))
+                            (231 231
+                                 (:REWRITE INTERSECT-WITH-SUBSET . 2))
+                            (223 223
+                                 (:REWRITE INTERSECT-WITH-SUBSET . 12))
+                            (223 223
+                                 (:REWRITE INTERSECT-WITH-SUBSET . 11))
+                            (223 223
+                                 (:REWRITE INTERSECT-WITH-SUBSET . 10))
+                            (223 223
+                                 (:REWRITE INTERSECT-WITH-SUBSET . 9))
+                            (223 223
+                                 (:REWRITE INTERSECT-WITH-SUBSET . 8))
+                            (223 223
+                                 (:REWRITE INTERSECT-WITH-SUBSET . 7))
+                            (173 15
+                                 (:REWRITE TRUE-LISTP-WHEN-STRING-LIST))
+                            (139 23 (:DEFINITION STRING-LISTP))
+                            (79 79 (:TYPE-PRESCRIPTION STRING-LISTP))
+                            (71 71
+                                (:REWRITE INTERSECT-WITH-SUBSET . 16))
+                            (71 71
+                                (:REWRITE INTERSECT-WITH-SUBSET . 15))
+                            (71 71
+                                (:REWRITE INTERSECT-WITH-SUBSET . 14))
+                            (71 71
+                                (:REWRITE INTERSECT-WITH-SUBSET . 13))
+                            (6 1
+                               (:REWRITE TRUE-LIST-FIX-WHEN-TRUE-LISTP)))

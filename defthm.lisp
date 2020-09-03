@@ -121,7 +121,8 @@
            ((fquotep lhs) "quoted constant")
            ((flambda-applicationp lhs) "LET-expression")
            (t (er hard 'interpret-term-as-rewrite-rule2
-                  "Implementation error: forgot a case.  LHS:~|~x0.")))
+                  "Implementation error: forgot a case.  LHS:~|~x0."
+                  lhs)))
      lhs))
    (t (let ((bad-synp-hyp-msg (bad-synp-hyp-msg
                                hyps (all-vars lhs) nil wrld)))
@@ -2100,8 +2101,18 @@
          (lst (external-linearize xconcl ens wrld state)))
     (cond ((null lst)
            (er soft ctx
-               "No :LINEAR rule can be generated from ~x0.  See :DOC linear."
-               name))
+               "No :LINEAR rule can be generated from ~x0.  See :DOC ~
+                linear.~@1"
+               name
+               (mv-let (flg x ttree)
+                 (eval-ground-subexpressions concl ens wrld state nil)
+                 (declare (ignore flg ttree))
+                 (if (quotep x)
+                     (msg "  Note that after ground evaluation, the ~
+                           conclusion, ~x0, was treated as the constant, ~x1."
+                          (untranslate concl t wrld)
+                          (untranslate x t wrld))
+                   ""))))
           ((not (null (cdr lst)))
            (er soft ctx
                "No :LINEAR rule can be generated from ~x0 because the ~
@@ -10505,9 +10516,8 @@
                                  (list (cons #\0 14)
                                        (cons #\1 (caar vals)))
                                  col chan state nil))
-                          (t (fmt1 " ~q1"
-                                   (list (cons #\0 14)
-                                         (cons #\1 (caar vals)))
+                          (t (fmt1 " ~q0"
+                                   (list (cons #\0 (caar vals)))
                                    col chan state nil)))
                     (declare (ignore col))
                     (print-info-for-rules-entry (cdr keys) (cdr vals) chan

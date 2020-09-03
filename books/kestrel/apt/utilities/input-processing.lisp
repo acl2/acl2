@@ -257,13 +257,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define process-old-to-new-name (old-to-new-name
-                                 (old-to-new-name-present booleanp)
-                                 (old symbolp)
-                                 (new symbolp)
-                                 (names-to-avoid symbol-listp)
-                                 ctx
-                                 state)
+(define process-input-old-to-new-name (old-to-new-name
+                                       (old-to-new-name-present booleanp)
+                                       (old symbolp)
+                                       (new symbolp)
+                                       (names-to-avoid symbol-listp)
+                                       ctx
+                                       state)
   :returns (mv erp
                (result "A list @('(old-to-new updated-names-to-avoid)')
                         satisfying
@@ -343,13 +343,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define process-new-to-old-name (new-to-old-name
-                                 (new-to-old-name-present booleanp)
-                                 (old symbolp)
-                                 (new symbolp)
-                                 (names-to-avoid symbol-listp)
-                                 ctx
-                                 state)
+(define process-input-new-to-old-name (new-to-old-name
+                                       (new-to-old-name-present booleanp)
+                                       (old symbolp)
+                                       (new symbolp)
+                                       (names-to-avoid symbol-listp)
+                                       ctx
+                                       state)
   :returns (mv erp
                (result "A list @('(new-to-old updated-names-to-avoid)')
                         satisfying
@@ -359,7 +359,7 @@
   :short "Process the @(':new-to-old-name') input of an APT transformation."
   :long
   (xdoc::topstring-p
-   "This is quite analogous to @(tsee process-old-to-new-name),
+   "This is quite analogous to @(tsee process-input-old-to-new-name),
     but for the @(':new-to-old-name') input of an APT transformation.")
   (b* ((wrld (w state))
        ((er &) (if new-to-old-name-present
@@ -404,10 +404,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define process-old-to-new-enable (old-to-new-enable
-                                   (old-to-new-enable-present booleanp)
-                                   ctx
-                                   state)
+(define process-input-old-to-new-enable (old-to-new-enable
+                                         (old-to-new-enable-present booleanp)
+                                         ctx
+                                         state)
   :returns (mv erp (processed-old-to-new-enable booleanp) state)
   :short "Process the @(':old-to-new-enable') input of an APT transformation."
   :long
@@ -436,15 +436,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define process-new-to-old-enable (new-to-old-enable
-                                   (new-to-old-enable-present booleanp)
-                                   ctx
-                                   state)
+(define process-input-new-to-old-enable (new-to-old-enable
+                                         (new-to-old-enable-present booleanp)
+                                         ctx
+                                         state)
   :returns (mv erp (processed-new-to-old-enable booleanp) state)
   :short "Process the @(':new-to-old-enable') input of an APT transformation."
   :long
   (xdoc::topstring-p
-   "This is quite analogous to @(tsee process-old-to-new-enable),
+   "This is quite analogous to @(tsee process-input-old-to-new-enable),
     but for the @(':new-to-old-enable') input of an APT transformation.")
   (if new-to-old-enable-present
       (b* (((er &) (ensure-value-is-boolean$ new-to-old-enable
@@ -457,13 +457,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define process-old-if-new-name (old-if-new-name
-                                 (old-if-new-name-present booleanp)
-                                 (old symbolp)
-                                 (new symbolp)
-                                 (names-to-avoid symbol-listp)
-                                 ctx
-                                 state)
+(define process-input-old-if-new-name (old-if-new-name
+                                       (old-if-new-name-present booleanp)
+                                       (old symbolp)
+                                       (new symbolp)
+                                       (names-to-avoid symbol-listp)
+                                       ctx
+                                       state)
   :returns (mv erp
                (result "A list @('(old-if-new updated-names-to-avoid)')
                         satisfying
@@ -543,10 +543,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define process-old-if-new-enable (old-if-new-enable
-                                   (old-if-new-enable-present booleanp)
-                                   ctx
-                                   state)
+(define process-input-old-if-new-enable (old-if-new-enable
+                                         (old-if-new-enable-present booleanp)
+                                         ctx
+                                         state)
   :returns (mv erp (processed-old-if-new-enable booleanp) state)
   :short "Process the @(':old-if-new-enable') input of an APT transformation."
   :long
@@ -575,14 +575,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define process-old-to-wrapper-name (old-to-wrapper-name
-                                     (old-to-wrapper-name-present booleanp)
-                                     (gen-wrapper booleanp)
-                                     (old symbolp)
-                                     (wrapper symbolp)
-                                     (names-to-avoid symbol-listp)
-                                     ctx
-                                     state)
+(define process-input-old-to-wrapper-name (old-to-wrapper-name
+                                           (old-to-wrapper-name-present
+                                            booleanp)
+                                           (gen-wrapper booleanp)
+                                           (old symbolp)
+                                           (wrapper symbolp)
+                                           (names-to-avoid symbol-listp)
+                                           ctx
+                                           state)
   :returns (mv erp
                (result "A list @('(old-to-wrapper updated-names-to-avoid)')
                         satisfying
@@ -592,7 +593,7 @@
   :short "Process the @(':old-to-wrapper-name') input of an APT transformation."
   :long
   (xdoc::topstring-p
-   "This is quite analogous to @(tsee process-old-to-new-name),
+   "This is quite analogous to @(tsee process-input-old-to-new-name),
     but for the @(':old-to-wrapper-name') input of an APT transformation.
     The @('gen-wrapper') parameter is @('t') iff the wrapper is generated,
     i.e. if the @(':wrapper') input of the transformation is @('t').
@@ -648,14 +649,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define process-wrapper-to-old-name (wrapper-to-old-name
-                                     (wrapper-to-old-name-present booleanp)
-                                     (gen-wrapper booleanp)
-                                     (old symbolp)
-                                     (wrapper symbolp)
-                                     (names-to-avoid symbol-listp)
-                                     ctx
-                                     state)
+(define process-input-wrapper-to-old-name (wrapper-to-old-name
+                                           (wrapper-to-old-name-present
+                                            booleanp)
+                                           (gen-wrapper booleanp)
+                                           (old symbolp)
+                                           (wrapper symbolp)
+                                           (names-to-avoid symbol-listp)
+                                           ctx
+                                           state)
   :returns (mv erp
                (result "A list @('(wrapper-to-old updated-names-to-avoid)')
                         satisfying
@@ -665,7 +667,7 @@
   :short "Process the @(':wrapper-to-old-name') input of an APT transformation."
   :long
   (xdoc::topstring-p
-   "This is quite analogous to @(tsee process-old-to-wrapper-name),
+   "This is quite analogous to @(tsee process-input-old-to-wrapper-name),
     but for the @(':wrapper-to-old-name') input of an APT transformation.")
   (if gen-wrapper
       (b* ((wrld (w state))
@@ -718,17 +720,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define process-old-to-wrapper-enable (old-to-wrapper-enable
-                                       (old-to-wrapper-enable-present booleanp)
-                                       (gen-wrapper booleanp)
-                                       ctx
-                                       state)
+(define process-input-old-to-wrapper-enable (old-to-wrapper-enable
+                                             (old-to-wrapper-enable-present
+                                              booleanp)
+                                             (gen-wrapper booleanp)
+                                             ctx
+                                             state)
   :returns (mv erp (processed-old-to-wrapper-enable booleanp) state)
   :short "Process the @(':old-to-wrapper-enable') input of
           an APT transformation."
   :long
   (xdoc::topstring-p
-   "This is quite analogous to @(tsee process-old-to-new-enable),
+   "This is quite analogous to @(tsee process-input-old-to-new-enable),
     but for the @(':old-to-wrapper-enable') input of an APT transformation.
     The @('gen-wrapper') parameter is @('t') iff the wrapper is generated,
     i.e. if the @(':wrapper') input of the transformation is @('t').
@@ -753,17 +756,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define process-wrapper-to-old-enable (wrapper-to-old-enable
-                                       (wrapper-to-old-enable-present booleanp)
-                                       (gen-wrapper booleanp)
-                                       ctx
-                                       state)
+(define process-input-wrapper-to-old-enable (wrapper-to-old-enable
+                                             (wrapper-to-old-enable-present
+                                              booleanp)
+                                             (gen-wrapper booleanp)
+                                             ctx
+                                             state)
   :returns (mv erp (processed-wrapper-to-old-enable booleanp) state)
   :short "Process the @(':wrapper-to-old-enable') input of
           an APT transformation."
   :long
   (xdoc::topstring-p
-   "This is quite analogous to @(tsee process-old-to-wrapper-name),
+   "This is quite analogous to @(tsee process-input-old-to-wrapper-name),
     but for the @(':wrapper-to-old-name') input of an APT transformation.")
   (if gen-wrapper
       (if wrapper-to-old-enable-present
@@ -785,11 +789,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define process-wrapper-enable (wrapper-enable
-                                (wrapper-enable-present booleanp)
-                                (gen-wrapper booleanp)
-                                ctx
-                                state)
+(define process-input-wrapper-enable (wrapper-enable
+                                      (wrapper-enable-present booleanp)
+                                      (gen-wrapper booleanp)
+                                      ctx
+                                      state)
   :returns (mv erp (processed-wrapper-enable booleanp) state)
   :short "Process the @(':wrapper-enable') input of an APT transformation."
   :long

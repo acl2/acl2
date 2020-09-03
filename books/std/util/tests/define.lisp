@@ -32,7 +32,7 @@
 (include-book "../define")
 (include-book "utils")
 (include-book "std/testing/assert-bang" :dir :system)
-(include-book "std/testing/eval" :dir :system)
+(include-book "std/testing/must-fail" :dir :system)
 
 (define foo ()
   :returns (ans integerp)

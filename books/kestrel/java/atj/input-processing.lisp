@@ -18,6 +18,7 @@
 (include-book "kestrel/error-checking/ensure-value-is-boolean" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-in-list" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-string" :dir :system)
+(include-book "kestrel/error-checking/ensure-value-is-untranslated-term" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
 (include-book "kestrel/std/system/check-list-call" :dir :system)
 (include-book "kestrel/std/system/known-packages-plus" :dir :system)
@@ -536,9 +537,10 @@
         (er-soft+ ctx t nil "The test name ~x0 in the :TESTS input ~
                              must contain only letters and digits." name))
        ((er (list term$ &))
-        (ensure-term$ call
-                      (msg "The test term ~x0 in the :TESTS input" call)
-                      t nil))
+        (ensure-value-is-untranslated-term$
+         call
+         (msg "The test term ~x0 in the :TESTS input" call)
+         t nil))
        ((when (or (variablep term$)
                   (fquotep term$)
                   (flambda-applicationp term$)))

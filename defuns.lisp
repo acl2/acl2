@@ -6536,14 +6536,16 @@
 
      (maybe-warn-or-error-on-non-rec-measure (car names) ctx wrld state))
     (t (value nil)))
-   (let* ((boot-strap-flg (global-val 'boot-strap-flg wrld))
+   (let* (#-acl2-save-unnormalized-bodies
+          (boot-strap-flg (global-val 'boot-strap-flg wrld))
           (wrld0 (cond (non-executablep (putprop-x-lst1 names 'non-executablep
                                                         non-executablep
                                                         wrld))
                        (t wrld)))
-          (wrld1 (if boot-strap-flg
-                     wrld0
-                   (putprop-x-lst2 names 'unnormalized-body bodies wrld0)))
+          (wrld1 (cond
+                  #-acl2-save-unnormalized-bodies
+                  (boot-strap-flg wrld0)
+                  (t (putprop-x-lst2 names 'unnormalized-body bodies wrld0))))
           (wrld2 (put-invariant-risk
                   names
                   bodies
@@ -6954,7 +6956,8 @@
 
 (defconst *xargs-keywords*
 
-; Keep this in sync with :doc xargs.
+; Keep this in sync with :doc xargs.  Also, if you add to this list, consider
+; modifying memoize-partial-declare accordingly.
 
   '(:guard :guard-hints :guard-debug :guard-simplify
            :hints :measure :measure-debug
@@ -10468,7 +10471,9 @@
 ; "real" value of the function is a list of items extracted from lst during the
 ; checking.  These items are:
 
-;    names     - the names of the fns in the clique
+;    names     - the names of the fns in the clique, in order (as that order is
+;                expected by partial-functions-table-guard; see
+;                partial-functions-table-guard-msg)
 ;    arglists  - their formals
 ;    docs      - their documentation strings
 ;    pairs     - the (section-symbol . citations) pairs parsed from docs
@@ -11170,7 +11175,7 @@
 
                       *t*
                       wrld)))))))))))
-  (& (er hard 'store-signature "Unrecognized signature!" insig))))
+  (& (er hard 'store-signature "Unrecognized signature!"))))
 
 (defun intro-udf-lst1 (insigs wrld)
   (cond ((null insigs) wrld)

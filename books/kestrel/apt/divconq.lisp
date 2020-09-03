@@ -10,6 +10,7 @@
 
 (in-package "APT")
 
+(include-book "kestrel/error-checking/ensure-symbol-is-fresh-event-name" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-in-list" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-legal-variable-name" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-not-in-list" :dir :system)
@@ -17,7 +18,7 @@
 (include-book "kestrel/event-macros/input-processing" :dir :system)
 (include-book "kestrel/event-macros/proof-preparation" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
-(include-book "kestrel/soft/implementation" :dir :system)
+(include-book "kestrel/soft/defund-sk2" :dir :system)
 (include-book "kestrel/std/system/defun-sk-queries" :dir :system)
 (include-book "kestrel/std/system/fresh-logical-name-with-dollars-suffix" :dir :system)
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
@@ -43,42 +44,42 @@
   "@('old') is the homonymous input to @(tsee divconq) when it has no type;
    otherwise, it is the function symbol denoted by that input."
 
-  "@('schema') is the homonymous input to @(tsee divconq)."
+  (xdoc::evmac-topic-implementation-item-input "schema" "divconq")
 
-  "@('list-input') is the homonymous input to @(tsee divconq)."
+  (xdoc::evmac-topic-implementation-item-input "list-input" "divconq")
 
-  "@('fvar-atom-name') is the homonymous input to @(tsee divconq)."
+  (xdoc::evmac-topic-implementation-item-input "fvar-atom-name" "divconq")
 
-  "@('fvar-cons-name') is the homonymous input to @(tsee divconq)."
+  (xdoc::evmac-topic-implementation-item-input "fvar-cons-name" "divconq")
 
-  "@('fold-name') is the homonymous input to @(tsee divconq)."
+  (xdoc::evmac-topic-implementation-item-input "fold-name" "divconq")
 
-  "@('fold-enable') is the homonymous input to @(tsee divconq)."
+  (xdoc::evmac-topic-implementation-item-input "fold-enable" "divconq")
 
-  "@('spec-atom-name') is the homonymous input to @(tsee divconq)."
+  (xdoc::evmac-topic-implementation-item-input "spec-atom-name" "divconq")
 
-  "@('spec-atom-enable') is the homonymous input to @(tsee divconq)."
+  (xdoc::evmac-topic-implementation-item-input "spec-atom-enable" "divconq")
 
-  "@('spec-cons-name') is the homonymous input to @(tsee divconq)."
+  (xdoc::evmac-topic-implementation-item-input "spec-cons-name" "divconq")
 
-  "@('spec-cons-enable') is the homonymous input to @(tsee divconq)."
+  (xdoc::evmac-topic-implementation-item-input "spec-cons-enable" "divconq")
 
-  "@('equal-fold-name') is the homonymous input to @(tsee divconq)."
+  (xdoc::evmac-topic-implementation-item-input "equal-fold-name" "divconq")
 
-  "@('equal-fold-enable') is the homonymous input to @(tsee divconq)."
+  (xdoc::evmac-topic-implementation-item-input "equal-fold-enable" "divconq")
 
   "@('cdr-output') is the homonymous input to @(tsee divconq)
    when it has no type;
    otherwise, it is the variable symbol @('y')
    described in the user documentation."
 
-  "@('new-name') is the homonymous input to @(tsee divconq)."
+  (xdoc::evmac-topic-implementation-item-input "new-name" "divconq")
 
   "@('new-enable') is the homonymous input to @(tsee divconq)
    if it has no type;
    otherwise, it is the boolean resulting from processing that input."
 
-  "@('old-if-new-name') is the homonymous input to @(tsee divconq)."
+  (xdoc::evmac-topic-implementation-item-input "old-if-new-name" "divconq")
 
   "@('old-if-new-enable') is the homonymous input to @(tsee divconq)
    if it has no type;
@@ -88,9 +89,9 @@
    if it has no type;
    otherwise, it is the boolean resulting from processing that input."
 
-  "@('print') is the homonymous input to @(tsee divconq)."
+  (xdoc::evmac-topic-implementation-item-input "print" "divconq")
 
-  "@('show-only') is the homonymous input to @(tsee divconq)."
+  (xdoc::evmac-topic-implementation-item-input "show-only" "divconq")
 
   "@('inputs') is the list of variable symbols @('(x0 x1 ... xn)')
    described in the user documentation."
@@ -101,8 +102,8 @@
   "@('iorel') is the homonymous function symbol
    described in the user documentation."
 
-  "@('?f') is the function variable that @('old') depends on,
-   as described in the user documentation."
+  "@('?f') is the homonymous function symbol
+   described in the user documentation."
 
   "@('?g') is the homonymous function symbol
    described in the user documentation."
@@ -210,16 +211,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define divconq-process-schema (schema ctx state)
+(define divconq-process-schema (schema (schema-present booleanp) ctx state)
   :returns (mv erp (nothing null) state)
   :short "Process the @(':schema') input."
   (if (eq schema :list-fold)
       (value nil)
-    (er-soft+ ctx t nil
-              "The :SCHEMA input must be :LIST-FOLD, ~
-               but it is ~x0 instead. ~
-               More schemas will be supported in the future."
-              schema)))
+    (if schema-present
+        (er-soft+ ctx t nil
+                  "The :SCHEMA input must be :LIST-FOLD, ~
+                   but it is ~x0 instead. ~
+                   More schemas will be supported in the future."
+                  schema)
+      (er-soft+ ctx t nil
+                "The :SCHEMA input must be supplied."))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -261,25 +265,20 @@
                state)
   :mode :program
   :short "Process the @(':fvar-atom-name') input."
-  (b* ((wrld (w state))
-       ((er &) (ensure-value-is-symbol$ fvar-atom-name
+  (b* (((er &) (ensure-value-is-symbol$ fvar-atom-name
                                         "The :FVAR-ATOM-NAME input"
                                         t nil))
        (??g (if (eq fvar-atom-name :auto)
                 (add-suffix ?f "-ATOM")
               fvar-atom-name))
-       (msg/nil (fresh-namep-msg-weak ?g 'function wrld))
-       ((when msg/nil)
-        (er-soft+ ctx t nil
-                  "The name ~x0 specified by :FVAR-ATOM-NAME ~
-                   is already in use.  ~@1"
-                  ?g msg/nil))
-       ((when (member-eq ?g names-to-avoid))
-        (er-soft+ ctx t nil
-                  "The name ~x0 specified by :FVAR-ATOM-NAME ~
-                   must be distinct form the names ~&1 ~
-                   that are also being generated."
-                  ?g names-to-avoid)))
+       ((er names-to-avoid)
+        (ensure-symbol-is-fresh-event-name$
+         ?g
+         (msg "The name ~x0 specified by :FVAR-ATOM-NAME" ?g)
+         'function
+         names-to-avoid
+         t
+         nil)))
     (value (list ?g names-to-avoid))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -297,25 +296,20 @@
                state)
   :mode :program
   :short "Process the @(':fvar-cons-name') input."
-  (b* ((wrld (w state))
-       ((er &) (ensure-value-is-symbol$ fvar-cons-name
+  (b* (((er &) (ensure-value-is-symbol$ fvar-cons-name
                                         "The :FVAR-CONS-NAME input"
                                         t nil))
        (??h (if (eq fvar-cons-name :auto)
                 (add-suffix ?f "-CONS")
               fvar-cons-name))
-       (msg/nil (fresh-namep-msg-weak ?h 'function wrld))
-       ((when msg/nil)
-        (er-soft+ ctx t nil
-                  "The name ~x0 specified by :FVAR-CONS-NAME ~
-                   is already in use.  ~@1"
-                  ?h msg/nil))
-       ((when (member-eq ?h names-to-avoid))
-        (er-soft+ ctx t nil
-                  "The name ~x0 specified by :FVAR-CONS-NAME ~
-                   must be distinct form the names ~&1 ~
-                   that are also being generated."
-                  ?h names-to-avoid)))
+       ((er names-to-avoid)
+        (ensure-symbol-is-fresh-event-name$
+         ?h
+         (msg "The name ~x0 specified by :FVAR-CONS-NAME" ?h)
+         'function
+         names-to-avoid
+         t
+         nil)))
     (value (list ?h names-to-avoid))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -335,25 +329,20 @@
                state)
   :mode :program
   :short "Process the @(':fold-name') input."
-  (b* ((wrld (w state))
-       ((er &) (ensure-value-is-symbol$ fold-name
+  (b* (((er &) (ensure-value-is-symbol$ fold-name
                                         "The :FOLD-NAME input"
                                         t nil))
        (fold (if (eq fold-name :auto)
                  (packn-pos (list "FOLD[" ?g "][" ?h "]") old)
                fold-name))
-       (msg/nil (fresh-namep-msg-weak fold 'function wrld))
-       ((when msg/nil)
-        (er-soft+ ctx t nil
-                  "The name ~x0 specified by :FOLD-NAME ~
-                   is already in use.  ~@1"
-                  fold msg/nil))
-       ((when (member-eq fold names-to-avoid))
-        (er-soft+ ctx t nil
-                  "The name ~x0 specified by :FOLD-NAME ~
-                   must be distinct form the names ~&1 ~
-                   that are also being generated."
-                  fold names-to-avoid)))
+       ((er names-to-avoid)
+        (ensure-symbol-is-fresh-event-name$
+         fold
+         (msg "The name ~x0 specified by :FOLD-NAME" fold)
+         'function
+         names-to-avoid
+         t
+         nil)))
     (value (list fold names-to-avoid))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -372,25 +361,20 @@
                state)
   :mode :program
   :short "Process the @(':spec-atom-name') input."
-  (b* ((wrld (w state))
-       ((er &) (ensure-value-is-symbol$ spec-atom-name
+  (b* (((er &) (ensure-value-is-symbol$ spec-atom-name
                                         "The :SPEC-ATOM-NAME input"
                                         t nil))
        (spec-atom (if (eq spec-atom-name :auto)
                       (packn-pos (list "SPEC-ATOM[" ?g "]") old)
                     spec-atom-name))
-       (msg/nil (fresh-namep-msg-weak spec-atom 'function wrld))
-       ((when msg/nil)
-        (er-soft+ ctx t nil
-                  "The name ~x0 specified by :SPEC-ATOM-NAME ~
-                   is already in use.  ~@1"
-                  spec-atom msg/nil))
-       ((when (member-eq spec-atom names-to-avoid))
-        (er-soft+ ctx t nil
-                  "The name ~x0 specified by :SPEC-ATOM-NAME ~
-                   must be distinct form the names ~&1 ~
-                   that are also being generated."
-                  spec-atom names-to-avoid)))
+       ((er names-to-avoid)
+        (ensure-symbol-is-fresh-event-name$
+         spec-atom
+         (msg "The name ~x0 specified by :SPEC-ATOM-NAME" spec-atom)
+         'function
+         names-to-avoid
+         t
+         nil)))
     (value (list spec-atom names-to-avoid))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -409,25 +393,20 @@
                state)
   :mode :program
   :short "Process the @(':spec-cons-name') input."
-  (b* ((wrld (w state))
-       ((er &) (ensure-value-is-symbol$ spec-cons-name
+  (b* (((er &) (ensure-value-is-symbol$ spec-cons-name
                                         "The :SPEC-CONS-NAME input"
                                         t nil))
        (spec-cons (if (eq spec-cons-name :auto)
                       (packn-pos (list "SPEC-CONS[" ?h "]") old)
                     spec-cons-name))
-       (msg/nil (fresh-namep-msg-weak spec-cons 'function wrld))
-       ((when msg/nil)
-        (er-soft+ ctx t nil
-                  "The name ~x0 specified by :SPEC-CONS-NAME ~
-                   is already in use.  ~@1"
-                  spec-cons msg/nil))
-       ((when (member-eq spec-cons names-to-avoid))
-        (er-soft+ ctx t nil
-                  "The name ~x0 specified by :SPEC-CONS-NAME ~
-                   must be distinct form the names ~&1 ~
-                   that are also being generated."
-                  spec-cons names-to-avoid)))
+       ((er names-to-avoid)
+        (ensure-symbol-is-fresh-event-name$
+         spec-cons
+         (msg "The name ~x0 specified by :SPEC-CONS-NAME" spec-cons)
+         'function
+         names-to-avoid
+         t
+         nil)))
     (value (list spec-cons names-to-avoid))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -447,25 +426,20 @@
                state)
   :mode :program
   :short "Process the @(':equal-fold-name') input."
-  (b* ((wrld (w state))
-       ((er &) (ensure-value-is-symbol$ equal-fold-name
+  (b* (((er &) (ensure-value-is-symbol$ equal-fold-name
                                         "The :EQUAL-FOLD-NAME input"
                                         t nil))
        (equal-fold (if (eq equal-fold-name :auto)
                        (packn-pos (list "EQUAL[" ?f "][" fold "]") old)
                      equal-fold-name))
-       (msg/nil (fresh-namep-msg-weak equal-fold 'function wrld))
-       ((when msg/nil)
-        (er-soft+ ctx t nil
-                  "The name ~x0 specified by :EQUAL-FOLD-NAME ~
-                   is already in use.  ~@1"
-                  equal-fold msg/nil))
-       ((when (member-eq equal-fold names-to-avoid))
-        (er-soft+ ctx t nil
-                  "The name ~x0 specified by :EQUAL-FOLD-NAME ~
-                   must be distinct form the names ~&1 ~
-                   that are also being generated."
-                  equal-fold names-to-avoid)))
+       ((er names-to-avoid)
+        (ensure-symbol-is-fresh-event-name$
+         equal-fold
+         (msg "The name ~x0 specified by :EQUAL-FOLD-NAME" equal-fold)
+         'function
+         names-to-avoid
+         t
+         nil)))
     (value (list equal-fold names-to-avoid))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -503,6 +477,7 @@
 
 (define divconq-process-inputs (old
                                 schema
+                                (schema-present booleanp)
                                 fvar-atom-name
                                 fvar-cons-name
                                 fold-name
@@ -574,7 +549,7 @@
                                                               verify-guards
                                                               ctx
                                                               state))
-       ((er &) (divconq-process-schema schema ctx state))
+       ((er &) (divconq-process-schema schema schema-present ctx state))
        ((er x0) (divconq-process-list-input list-input
                                             old
                                             inputs
@@ -652,18 +627,19 @@
                          new-enable
                          (fundef-enabledp old state)
                          "The :NEW-ENABLE input" t nil))
-       ((er (list old-if-new names-to-avoid)) (process-old-if-new-name
-                                               old-if-new-name
-                                               old-if-new-name-present
-                                               old
-                                               new
-                                               names-to-avoid
-                                               ctx
-                                               state))
-       ((er old-if-new-enable) (process-old-if-new-enable old-if-new-enable
-                                                          old-if-new-enable-present
-                                                          ctx
-                                                          state))
+       ((er (list old-if-new names-to-avoid))
+        (process-input-old-if-new-name old-if-new-name
+                                       old-if-new-name-present
+                                       old
+                                       new
+                                       names-to-avoid
+                                       ctx
+                                       state))
+       ((er old-if-new-enable)
+        (process-input-old-if-new-enable old-if-new-enable
+                                         old-if-new-enable-present
+                                         ctx
+                                         state))
        ((er verify-guards) (ensure-boolean-or-auto-and-return-boolean$
                             verify-guards
                             (guard-verified-p old wrld)
@@ -693,7 +669,8 @@
 
 (xdoc::evmac-topic-event-generation divconq
                                     :some-local-nonlocal-p t
-                                    :some-local-p t)
+                                    :some-local-p t
+                                    :some-nonlocal-p t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -758,35 +735,36 @@
                              (?g symbolp)
                              (?h symbolp)
                              (verify-guards booleanp))
-  :returns (mv (local-events pseudo-event-form-listp)
-               (exported-events pseudo-event-form-listp)
-               (event-to-print pseudo-event-formp))
+  :returns (mv (local-event pseudo-event-formp)
+               (exported-event pseudo-event-formp))
   :short "Generate the @('fold[?g][?h]') function
           described in the user documentation."
   (b* ((inputs-with-car (divconq-gen-inputs-with-car inputs x0))
        (inputs-with-cdr (divconq-gen-inputs-with-cdr inputs x0))
+       (macro (if fold-enable 'soft::defun2 'soft::defund2))
        (body `(cond ((atom ,x0) (,?g ,@inputs))
                     (t (,?h ,@inputs-with-car
                             (,fold ,@inputs-with-cdr)))))
-       (event-to-print `(soft::defun2 ,fold ,inputs
-                          (declare (xargs :measure (acl2-count ,x0)))
-                          ,body))
-       (verify-guards-event? (and verify-guards
-                                  `((local
-                                     (verify-guards ,fold
-                                       :hints (("Goal" :in-theory nil)))))))
-       (local-events `((local
-                        (soft::defun2 ,fold ,inputs
-                          (declare (xargs :measure (acl2-count ,x0)
-                                          :hints (("Goal" :in-theory nil))))
-                          ,body))
-                       ,@verify-guards-event?))
-       (disable-event? (and (not fold-enable)
-                            `((in-theory (disable ,fold)))))
-       (exported-events `(,event-to-print
-                          ,@(and verify-guards `((verify-guards ,fold)))
-                          ,@disable-event?)))
-    (mv local-events exported-events event-to-print)))
+       (local-event
+        `(local
+          (,macro ,fold ,inputs
+                  (declare
+                   (xargs
+                    :measure (acl2-count ,x0)
+                    :hints (("Goal" :in-theory nil))
+                    ,@(and verify-guards '(:guard t))
+                    ,@(and verify-guards
+                           '(:guard-hints (("Goal" :in-theory nil))))
+                    :verify-guards ,verify-guards))
+                  ,body)))
+       (exported-event
+        `(,macro ,fold ,inputs
+                 (declare (xargs
+                           :measure (acl2-count ,x0)
+                           ,@(and verify-guards '(:guard t))
+                           :verify-guards ,verify-guards))
+                 ,body)))
+    (mv local-event exported-event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -797,29 +775,29 @@
                                   (iorel symbolp)
                                   (?g symbolp)
                                   (verify-guards booleanp))
-  :returns (mv (local-events pseudo-event-form-listp)
-               (exported-events pseudo-event-form-listp)
-               (event-to-print pseudo-event-formp))
+  :returns (mv (local-event pseudo-event-formp)
+               (exported-event pseudo-event-formp))
   :short "Generate the @('spec-atom[?g]') function
           described in the user documentation."
-  (b* ((body `(forall ,inputs
+  (b* ((macro (if spec-atom-enable 'soft::defun-sk2 'soft::defund-sk2))
+       (body `(forall ,inputs
                       (impliez (atom ,x0)
                                (,iorel ,@inputs (,?g ,@inputs)))))
-       (event-to-print `(soft::defun-sk2 ,spec-atom () ,body))
-       (verify-guards-event? (and verify-guards
-                                  `((local
-                                     (verify-guards ,spec-atom
-                                       :hints (("Goal" :in-theory nil)))))))
-       (local-events `((local ,event-to-print)
-                       ,@verify-guards-event?))
-       (spec-atom-necc (add-suffix spec-atom "-NECC"))
-       (disable-event? (and (not spec-atom-enable)
-                            `((in-theory (disable ,spec-atom
-                                                  ,spec-atom-necc)))))
-       (exported-events `(,event-to-print
-                          ,@(and verify-guards `((verify-guards ,spec-atom)))
-                          ,@disable-event?)))
-    (mv local-events exported-events event-to-print)))
+       (local-event
+        `(local
+          (,macro ,spec-atom ()
+                  (declare
+                   (xargs ,@(and verify-guards '(:guard t))
+                          ,@(and verify-guards
+                                 '(:guard-hints (("Goal" :in-theory nil))))
+                          :verify-guards ,verify-guards))
+                  ,body)))
+       (exported-event
+        `(,macro ,spec-atom ()
+                 (declare (xargs ,@(and verify-guards '(:guard t))
+                                 :verify-guards ,verify-guards))
+                 ,body)))
+    (mv local-event exported-event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -831,33 +809,33 @@
                                   (?h symbolp)
                                   (cdr-output symbolp)
                                   (verify-guards booleanp))
-  :returns (mv (local-events pseudo-event-form-listp)
-               (exported-events pseudo-event-form-listp)
-               (event-to-print pseudo-event-formp))
+  :returns (mv (local-event pseudo-event-formp)
+               (exported-event pseudo-event-formp))
   :short "Generate the @('spec-cons[?h]') function
           described in the user documentation."
   (b* ((inputs-with-car (divconq-gen-inputs-with-car inputs x0))
        (inputs-with-cdr (divconq-gen-inputs-with-cdr inputs x0))
+       (macro (if spec-cons-enable 'soft::defun-sk2 'soft::defund-sk2))
        (body `(forall (,@inputs ,cdr-output)
                       (impliez (and (consp ,x0)
                                     (,iorel ,@inputs-with-cdr ,cdr-output))
                                (,iorel ,@inputs
                                        (,?h ,@inputs-with-car ,cdr-output)))))
-       (event-to-print `(soft::defun-sk2 ,spec-cons () ,body))
-       (verify-guards-event? (and verify-guards
-                                  `((local
-                                     (verify-guards ,spec-cons
-                                       :hints (("Goal" :in-theory nil)))))))
-       (local-events `((local ,event-to-print)
-                       ,@verify-guards-event?))
-       (spec-cons-necc (add-suffix spec-cons "-NECC"))
-       (disable-event? (and (not spec-cons-enable)
-                            `((in-theory (disable ,spec-cons
-                                                  ,spec-cons-necc)))))
-       (exported-events `(,event-to-print
-                          ,@(and verify-guards `((verify-guards ,spec-cons)))
-                          ,@disable-event?)))
-    (mv local-events exported-events event-to-print)))
+       (local-event
+        `(local
+          (,macro ,spec-cons ()
+                  (declare
+                   (xargs ,@(and verify-guards '(:guard t))
+                          ,@(and verify-guards
+                                 '(:guard-hints (("Goal" :in-theory nil))))
+                          :verify-guards ,verify-guards))
+                  ,body)))
+       (exported-event
+        `(,macro ,spec-cons ()
+                 (declare (xargs ,@(and verify-guards '(:guard t))
+                                 :verify-guards ,verify-guards))
+                 ,body)))
+    (mv local-event exported-event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -867,29 +845,29 @@
                                    (?f symbolp)
                                    (fold symbolp)
                                    (verify-guards booleanp))
-  :returns (mv (local-events pseudo-event-form-listp)
-               (exported-events pseudo-event-form-listp)
-               (event-to-print pseudo-event-formp))
+  :returns (mv (local-event pseudo-event-formp)
+               (exported-event pseudo-event-formp))
   :short "Generate the @('equal[?f][fold[?g][?h]]') function
           described in the user documentation."
-  (b* ((body `(forall ,inputs
+  (b* ((macro (if equal-fold-enable 'soft::defun-sk2 'soft::defund-sk2))
+       (body `(forall ,inputs
                       (equal (,?f ,@inputs)
                              (,fold ,@inputs))))
-       (event-to-print `(soft::defun-sk2 ,equal-fold () ,body))
-       (verify-guards-event? (and verify-guards
-                                  `((local
-                                     (verify-guards ,equal-fold
-                                       :hints (("Goal" :in-theory nil)))))))
-       (local-events `((local ,event-to-print)
-                       ,@verify-guards-event?))
-       (equal-fold-necc (add-suffix equal-fold "-NECC"))
-       (disable-event? (and (not equal-fold-enable)
-                            `((in-theory (disable ,equal-fold
-                                                  ,equal-fold-necc)))))
-       (exported-events `(,event-to-print
-                          ,@(and verify-guards `((verify-guards ,equal-fold)))
-                          ,@disable-event?)))
-    (mv local-events exported-events event-to-print)))
+       (local-event
+        `(local
+          (,macro ,equal-fold ()
+                  (declare
+                   (xargs ,@(and verify-guards '(:guard t))
+                          ,@(and verify-guards
+                                 '(:guard-hints (("Goal" :in-theory nil))))
+                          :verify-guards ,verify-guards))
+                  ,body)))
+       (exported-event
+        `(,macro ,equal-fold ()
+                 (declare (xargs ,@(and verify-guards '(:guard t))
+                                 :verify-guards ,verify-guards))
+                 ,body)))
+    (mv local-event exported-event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -899,27 +877,29 @@
                             (spec-cons symbolp)
                             (equal-fold symbolp)
                             (verify-guards booleanp))
-  :returns (mv (local-events pseudo-event-form-listp)
-               (exported-events pseudo-event-form-listp)
-               (event-to-print pseudo-event-formp))
+  :returns (mv (local-event pseudo-event-formp)
+               (exported-event pseudo-event-formp))
   :short "Generate the @('new') function
           described in the user documentation."
-  (b* ((body `(and (,equal-fold)
+  (b* ((macro (if new-enable 'soft::defun2 'soft::defund2))
+       (body `(and (,equal-fold)
                    (,spec-atom)
                    (,spec-cons)))
-       (event-to-print `(soft::defun2 ,new () ,body))
-       (verify-guards-event? (and verify-guards
-                                  `((local
-                                     (verify-guards ,new
-                                       :hints (("Goal" :in-theory nil)))))))
-       (local-events `((local ,event-to-print)
-                       ,@verify-guards-event?))
-       (disable-event? (and (not new-enable)
-                            `((in-theory (disable ,new)))))
-       (exported-events `(,event-to-print
-                          ,@(and verify-guards `((verify-guards ,new)))
-                          ,@disable-event?)))
-    (mv local-events exported-events event-to-print)))
+       (local-event
+        `(local
+          (,macro ,new ()
+                  (declare
+                   (xargs ,@(and verify-guards '(:guard t))
+                          ,@(and verify-guards
+                                 '(:guard-hints (("Goal" :in-theory nil))))
+                          :verify-guards ,verify-guards))
+                  ,body)))
+       (exported-event
+        `(,macro ,new ()
+                 (declare (xargs ,@(and verify-guards '(:guard t))
+                                 :verify-guards ,verify-guards))
+                 ,body)))
+    (mv local-event exported-event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1042,28 +1022,23 @@
   :short "Generate the top-level event."
   (b* ((??g-event (divconq-gen-?g-fvar ?g inputs))
        (??h-event (divconq-gen-?h-fvar ?h inputs))
-       ((mv fold-local-events
-            fold-exported-events
-            fold-event-to-print)
+       ((mv fold-local-event
+            fold-exported-event)
         (divconq-gen-fold-fn fold fold-enable inputs x0 ?g ?h verify-guards))
-       ((mv spec-atom-local-events
-            spec-atom-exported-events
-            spec-atom-event-to-print)
+       ((mv spec-atom-local-event
+            spec-atom-exported-event)
         (divconq-gen-spec-atom-fn spec-atom spec-atom-enable
                                   inputs x0 iorel ?g verify-guards))
-       ((mv spec-cons-local-events
-            spec-cons-exported-events
-            spec-cons-event-to-print)
+       ((mv spec-cons-local-event
+            spec-cons-exported-event)
         (divconq-gen-spec-cons-fn spec-cons spec-cons-enable
                                   inputs x0 iorel ?h cdr-output verify-guards))
-       ((mv equal-fold-local-events
-            equal-fold-exported-events
-            equal-fold-event-to-print)
+       ((mv equal-fold-local-event
+            equal-fold-exported-event)
         (divconq-gen-equal-fold-fn equal-fold equal-fold-enable
                                    inputs ?f fold verify-guards))
-       ((mv new-local-events
-            new-exported-events
-            new-event-to-print)
+       ((mv new-local-event
+            new-exported-event)
         (divconq-gen-new-fn new new-enable
                             spec-atom spec-cons equal-fold verify-guards))
        ((mv fold-correct-event fold-correct &)
@@ -1078,18 +1053,18 @@
           (evmac-prepare-proofs)
           ,?g-event
           ,?h-event
-          ,@fold-local-events
-          ,@spec-atom-local-events
-          ,@spec-cons-local-events
-          ,@equal-fold-local-events
-          ,@new-local-events
+          ,fold-local-event
+          ,spec-atom-local-event
+          ,spec-cons-local-event
+          ,equal-fold-local-event
+          ,new-local-event
           ,fold-correct-event
           ,old-if-new-local-event
-          ,@fold-exported-events
-          ,@spec-atom-exported-events
-          ,@spec-cons-exported-events
-          ,@equal-fold-exported-events
-          ,@new-exported-events
+          ,fold-exported-event
+          ,spec-atom-exported-event
+          ,spec-cons-exported-event
+          ,equal-fold-exported-event
+          ,new-exported-event
           ,old-if-new-exported-event))
        (encapsulate `(encapsulate () ,@encapsulate-events))
        ((when show-only)
@@ -1104,11 +1079,11 @@
                       (member-eq print '(:result :info :all))
                       `(,@(and (member-eq print '(:info :all))
                                '((cw-event "~%")))
-                        (cw-event "~x0~|" ',fold-event-to-print)
-                        (cw-event "~x0~|" ',spec-atom-event-to-print)
-                        (cw-event "~x0~|" ',spec-cons-event-to-print)
-                        (cw-event "~x0~|" ',equal-fold-event-to-print)
-                        (cw-event "~x0~|" ',new-event-to-print)
+                        (cw-event "~x0~|" ',fold-exported-event)
+                        (cw-event "~x0~|" ',spec-atom-exported-event)
+                        (cw-event "~x0~|" ',spec-cons-exported-event)
+                        (cw-event "~x0~|" ',equal-fold-exported-event)
+                        (cw-event "~x0~|" ',new-exported-event)
                         (cw-event "~x0~|" ',old-if-new-exported-event)))))
     `(progn
        ,encapsulate+
@@ -1120,6 +1095,7 @@
 
 (define divconq-fn (old
                     schema
+                    (schema-present booleanp)
                     list-input
                     fvar-atom-name
                     fvar-cons-name
@@ -1173,6 +1149,7 @@
                   names-to-avoid))
         (divconq-process-inputs old
                                 schema
+                                schema-present
                                 fvar-atom-name
                                 fvar-cons-name
                                 fold-name
@@ -1240,7 +1217,7 @@
                      old
                      ;; optional inputs:
                      &key
-                     (schema ':list-fold)
+                     (schema ':irrelevant schema-present)
                      (list-input ':auto)
                      (fvar-atom-name ':auto)
                      (fvar-cons-name ':auto)
@@ -1262,6 +1239,7 @@
                      (show-only 'nil))
     `(make-event-terse (divconq-fn ',old
                                    ',schema
+                                   ',schema-present
                                    ',list-input
                                    ',fvar-atom-name
                                    ',fvar-cons-name

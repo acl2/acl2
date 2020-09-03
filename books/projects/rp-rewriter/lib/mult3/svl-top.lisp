@@ -694,30 +694,30 @@
               bits-of-c-when-bit-when-start-0-side-cond)
 
 (rp::def-rp-rule
- bits-of-c-res-when-bit-when-start>0
- (implies (and (bitp (rp::c-res x y z))
+ bits-of-s-c-res-when-bit-when-start>0
+ (implies (and (bitp (rp::s-c-res x y z))
                (posp start))
-          (equal (svl::bits (rp::c-res x y z) start 1)
+          (equal (svl::bits (rp::s-c-res x y z) start 1)
                  0))
  :hints (("Goal"
           :in-theory (e/d (bitp) ()))))
 
 (rp::def-rp-rule
- bits-of-c-res-when-bit-when-start=0
- (implies (and (bitp (rp::c-res x y z)))
-          (equal (svl::bits (rp::c-res x y z) 0 1)
-                 (rp::c-res x y z)))
+ bits-of-s-c-res-when-bit-when-start=0
+ (implies (and (bitp (rp::s-c-res x y z)))
+          (equal (svl::bits (rp::s-c-res x y z) 0 1)
+                 (rp::s-c-res x y z)))
  :hints (("Goal"
           :in-theory (e/d (bitp) ()))))
 
 (defthm
-  bits-of-c-res-when-bit-when-start=0-side-cond
-  (implies (and (bitp (rp::c-res x y z)))
-           (bitp (rp::c-res x y z)))
+  bits-of-s-c-res-when-bit-when-start=0-side-cond
+  (implies (and (bitp (rp::s-c-res x y z)))
+           (bitp (rp::s-c-res x y z)))
   :rule-classes nil)
 
-(rp-attach-sc bits-of-c-res-when-bit-when-start=0
-              bits-of-c-res-when-bit-when-start=0-side-cond)
+(rp-attach-sc bits-of-s-c-res-when-bit-when-start=0
+              bits-of-s-c-res-when-bit-when-start=0-side-cond)
 
 (def-rp-rule
   concat-of-adder-and-is-f2
@@ -748,3 +748,5 @@
          (svl::4vec-concat$ 1 (s-spec (list (and$ x y))) z))
   :hints (("Goal"
            :in-theory (e/d (and$) ()))))
+
+(bump-all-enabled-meta-rules)

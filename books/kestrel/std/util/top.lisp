@@ -18,6 +18,8 @@
 (include-book "definj-doc")
 (include-book "defiso")
 (include-book "defiso-doc")
+(include-book "defund-sk")
+(include-book "defund-sk-doc")
 (include-book "defmacro-plus")
 (include-book "defmacro-plus-doc")
 (include-book "defmapping")

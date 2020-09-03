@@ -11240,7 +11240,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
     (cond ((null guard)
            (illegal nil
-                    "Illegal-type."
+                    "Illegal-type: ~x0."
                     (list (cons #\0 x))))
           (t
            `(let ((var ,y))
@@ -14258,6 +14258,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (iprint-soft-bound . ,*iprint-soft-bound-default*)
     (keep-tmp-files . nil)
     (last-event-data . nil)
+    (last-ld-result . nil)
     (last-make-event-expansion . nil)
     (last-step-limit . -1) ; any number should be OK
     (ld-level . 0)
@@ -28527,6 +28528,7 @@ Lisp definition."
           (t (er hard! 'bbody
                  "Implementation error: Illegal call of bbody: the symbol ~x0 ~
                   is not a key of ~x1."
+                 fn
                  *bbody-alist*)))))
 
 (defmacro bbody (fn)

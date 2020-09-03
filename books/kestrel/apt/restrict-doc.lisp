@@ -255,18 +255,7 @@
      :design-notes-appcond "@($\\mathit{GR}$)"
      :presence "the generated function is guard-verified
                 (which is determined by the @(':verify-guards') input;
-                see above)")
-
-    (xdoc::evmac-appcond
-     ":restriction-boolean"
-     (xdoc::&&
-      (xdoc::p
-       "The restricting predicate is boolean-valued:")
-      (xdoc::codeblock
-       "(booleanp restriction<x1,...,xn>)")
-      (xdoc::p
-       "This is not explicitly present in the " *restrict-design-notes*
-       ", which implicitly assume @($R$) to be boolean-valued."))))
+                see above)"))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -279,13 +268,13 @@
      (xdoc::codeblock
       ";; when old is not recursive:"
       "(defun new (x1 ... xn)"
-      "  (if (mbt restriction<x1,...,xn>)"
+      "  (if (mbt$ restriction<x1,...,xn>)"
       "      old-body<x1,...,xn>"
       "    undefined))"
       ""
       ";; when old is recursive:"
       "(defun new (x1 ... xn)"
-      "  (if (mbt restriction<x1,...,xn>)"
+      "  (if (mbt$ restriction<x1,...,xn>)"
       "      old-body<x1,...,xn,"
       "               (new update1-x1<x1,...,xn,new>"
       "                    ..."
@@ -303,11 +292,9 @@
       "The guard is @('(and old-guard<x1,...,xn> restriction<x1,...,xn>)').")
      (xdoc::p
       "Since the restriction test follows from the guard,
-       the test is wrapped by @(tsee mbt).
-       Since @(tsee mbt) requires its argument to be @('t')
-       (not just non-@('nil')),
-       the applicability condition @(':restriction-boolean') ensures that
-       the restriction test is @('t') when it is non-@('nil').")
+       the test is wrapped by @(tsee mbt$).
+       The use of @(tsee mbt$), as opposed to @(tsee mbt),
+       avoids requiring @('restriction') to be boolean-valued.")
      (xdoc::p
       "In the " *restrict-design-notes* ",
        @('new') is denoted by @($f'$)."))

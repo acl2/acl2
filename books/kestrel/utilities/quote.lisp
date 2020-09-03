@@ -29,6 +29,18 @@
            (equal (car item) 'quote))
   :rule-classes :forward-chaining)
 
+(defthm myquotep-forward-to-consp
+  (implies (myquotep item)
+           (and (consp item)
+                (true-listp item)))
+  :rule-classes :forward-chaining)
+
+(defthm myquotep-forward-to-equal-of-len
+  (implies (myquotep x)
+           (equal 2 (len x)))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable myquotep))))
+
 ;;;
 ;;; all-myquotep
 ;;;
@@ -71,12 +83,6 @@
 (defthm myquotep-of-list-of-quote
   (myquotep (list 'quote x))
   :hints (("Goal" :in-theory (enable myquotep))))
-
-(defthm myquotep-forward-to-consp
-  (implies (myquotep item)
-           (and (consp item)
-                (true-listp item)))
-  :rule-classes :forward-chaining)
 
 (defthmd not-cddr-when-all-myquotep
   (implies (and (all-myquotep items)

@@ -1125,6 +1125,8 @@
 ; If error-flg is non-nil, trans-ans is (stobjs-out . valx).
 
                              (er-progn
+                              (assign last-ld-result (cons error-flg
+                                                           trans-ans))
                               (chk-absstobj-invariants nil state)
                               (cond
                                (error-flg (mv t nil state))

@@ -108,13 +108,6 @@
             res))
          ((acl2::fquotep term) term)
          ((is-synp term) ''t)
-         #|((is-cons term)
-         (b* ((term1 (rp-apply-bindings (cadr term) bindings))
-         (term2 (rp-apply-bindings (caddr term) bindings)))
-         (case-match term2
-         (('list . rest)
-         `(list ,term1 . ,rest))
-         (& `(list ,term1 ,term2)))))||#
          (t
           (cons-with-hint (car term)
                           (rp-apply-bindings-subterms (cdr term) bindings )
@@ -143,6 +136,7 @@
    (defun rp-match-lhs (term rule-lhs context acc-bindings)
      (declare (xargs :measure (acl2::acl2-count rule-lhs)
                      :guard (and (alistp acc-bindings)
+                                 (rp-termp term)
                                  (rp-termp rule-lhs))
                      #|(and (rp-termp term)
                      (bindings-alistp acc-bindings) ;
@@ -189,23 +183,8 @@
              (rp-match-lhs-subterms (cdr term-in-cons) (cdr rule-lhs) context
                                     acc-bindings)))
           ((consp term-w/o-rp) ;; both term and rule is consp,
-           (cond #|((and (is-cons rule-lhs)
-            (equal (car term-w/o-rp) 'list))
-            (case-match term-w/o-rp
-            (('list & &)
-            (rp-match-lhs-subterms (cdr term-w/o-rp) (cdr rule-lhs) context
-            acc-bindings))
-            (('list & & . &)
-            (b* ((-  (cw "here1 ~%"))
-            ((mv context acc-bindings valid)
-            (rp-match-lhs (cadr term-w/o-rp) (cadr rule-lhs) context acc-bindings))
-            ((when (not valid)) ;; stop trying if not valid.
-            (mv context acc-bindings nil))
-            (-  (cw "here2 ~%")))
-            (rp-match-lhs `(list . ,(cddr term-w/o-rp))
-            (caddr rule-lhs) context acc-bindings)))
-            (& (mv context acc-bindings nil))))||#
-            ((equal (car term-w/o-rp) (car rule-lhs))
+           (cond
+            ((eq (car rule-lhs) (car term-w/o-rp))
              ;; if their function name be the same, keep on matching.
              (rp-match-lhs-subterms (cdr term-w/o-rp) (cdr rule-lhs) context
                                     acc-bindings))
@@ -217,6 +196,7 @@
    (defun rp-match-lhs-subterms (subterms sublhs context acc-bindings)
      (declare (xargs :measure (acl2::acl2-count sublhs)
                      :guard (and (alistp acc-bindings)
+                                 (rp-term-listp subterms)
                                  (rp-term-listp sublhs))
                      #|(and (rp-term-listp subterms)
                      (bindings-alistp acc-bindings) ;
@@ -248,16 +228,16 @@
      (cond
       ((atom rule-lhs) t)
       ((acl2::fquotep rule-lhs)
-       (let ((term-w/o-rp (ex-from-rp term)))
+       (let ((term-w/o-rp (ex-from-rp-loose term)))
          (equal rule-lhs term-w/o-rp)))
       (t
        (b* ((term (ex-from-falist term))
-            (term-w/o-rp (ex-from-rp term)))
+            (term-w/o-rp (ex-from-rp-loose term)))
          (and (consp term-w/o-rp)
               (b* ((term- (if (should-term-be-in-cons rule-lhs term-w/o-rp)
                               (put-term-in-cons term-w/o-rp)
                             term-w/o-rp)))
-                (and (equal (car term-) (car rule-lhs))
+                (and (eq (car rule-lhs) (car term-))
                      (rp-does-lhs-match-subterms (cdr term-) (cdr rule-lhs)))))))))
 
    (defun rp-does-lhs-match-subterms (subterms sublhs )
@@ -275,28 +255,14 @@
         (rp-does-lhs-match (car subterms) (car sublhs))
         (rp-does-lhs-match-subterms (cdr subterms) (cdr sublhs)))))))
 
-  (define rp-match-lhs-precheck (term rule-fnc rule-lhs state)
-    (declare (xargs :stobjs (state))
-             (ignorable state rule-fnc))
+  (define rp-match-lhs-precheck (term rule-lhs)
     :inline t
     :guard (and (consp term)
                 (consp rule-lhs)
                 (not (eq (car rule-lhs) 'quote))
                 (rp-termp rule-lhs)
-                (not (eq (car term) 'quote))
-;(rp-term-listp (cdr term))
-                )
-
-    (and  ;(consp rule-lhs)
-;(not (eq (car rule-lhs) 'quote))
-     (rp-does-lhs-match-subterms (cdr term) (cdr rule-lhs))
-     #|(or (not rule-fnc)
-     (apply$-userfn rule-fnc (list term))
-     #|(b* (((mv err result)
-     (magic-ev-fncall rule-fnc (list term)
-     state
-     nil t)))
-     (if err t result))||#)||#))
+                (not (eq (car term) 'quote)))
+    (rp-does-lhs-match-subterms (cdr term) (cdr rule-lhs)))
 
   (defmacro rp-get-rules-for-term (fn-name rules)
     `(cdr (hons-get ,fn-name ,rules))))
@@ -312,21 +278,12 @@
   (if (atom context)
       term
     (let ((c (car context)))
-      (if (case-match c (('equal m &) (rp-equal m term)) (& nil))
-          (caddr c)
-        (if (and iff-flg (rp-equal-cnt c term 1))
-            ''t
-          (rp-check-context term (cdr context) iff-flg))))))
-
-#|(defun rp-check-context (term context iff-flg)
-  (declare (xargs :mode :logic
-                  :guard (and #|(context-syntaxp context)||#
-                          (booleanp iff-flg))))
-  (b* (((mv changed new-term)
-        (rp-check-context-aux (ex-from-rp term) context iff-flg)))
-    (if changed
-        new-term
-      term)))||#
+      (cond ((case-match c (('equal m &) (rp-equal m term)) (& nil))
+             (caddr c))
+            ((and iff-flg (rp-equal-cnt c term 1))
+             ''t)
+            (t
+             (rp-check-context term (cdr context) iff-flg))))))
 
 (mutual-recursion
 
@@ -377,9 +334,9 @@
     (magic-ev-fncall ACL2::FN ARGS STATE
                      ACL2::HARD-ERROR-RETURNS-NILP ACL2::AOK))
 
-  (defun rp-ex-counterpart (term exc-rules rp-state state)
+  (defun rp-ex-counterpart (term rp-state state)
     (declare (xargs  :mode :logic
-                     :guard (and (symbol-alistp exc-rules))
+                     :guard (rp-termp term)
                      :stobjs (state rp-state)))
     ;; if the term can be simplified using executable counterpart, do that.
     ;; rp-ex-cp-fnc is a function defined in macros.lisp.
@@ -391,7 +348,7 @@
           (eq (car term) 'quote)
           (eq (car term) 'list)
           (not (quote-listp (cdr term)))
-          (consp (hons-get (car term) exc-rules)))
+          (disabled-exc-rules-boundp (car term) rp-state))
       (mv term rp-state))
      ((case-match term ((fn ('quote &)) (or (equal fn 'car)
                                             (equal fn 'cdr)
@@ -566,11 +523,11 @@
 
   (mutual-recursion
 
-   (defun rp-rw-relieve-synp (term bindings exc-rules state)
+   (defun rp-rw-relieve-synp (term bindings  state)
      (declare (xargs  :stobjs state
                       :guard (and #|(rp-termp term)||#
                               (alistp bindings)
-                              (symbol-alistp exc-rules))
+                              )
                       :mode :logic))
      "Relieve syntaxp by binding the variables and executing all the function
       calls in syntaxp. returns t if syntaxp test passes, nil otherwise"
@@ -583,34 +540,35 @@
             (exc (rp-exc-all hyp bindings state))
             (res (nonnil-p exc)))
          res))
-      (t (rp-rw-relieve-synp-subterms (cdr term) bindings exc-rules state))))
+      (t (rp-rw-relieve-synp-subterms (cdr term) bindings  state))))
 
-   (defun rp-rw-relieve-synp-subterms (subterms bindings exc-rules state)
+   (defun rp-rw-relieve-synp-subterms (subterms bindings  state)
      (declare (xargs  :stobjs state
                       :guard (and #|(rp-term-listp subterms)||#
                               (alistp bindings)
-                              (symbol-alistp exc-rules))
+                              )
                       :mode :logic))
      (if (atom subterms)
          t
-       (and (rp-rw-relieve-synp (car subterms) bindings exc-rules state)
-            (rp-rw-relieve-synp-subterms (cdr subterms) bindings exc-rules
+       (and (rp-rw-relieve-synp (car subterms) bindings  state)
+            (rp-rw-relieve-synp-subterms (cdr subterms) bindings 
                                          state)))))
 
-  (defund rp-rw-relieve-synp-wrap (term  bindings exc-rules state)
+  (defund rp-rw-relieve-synp-wrap (term  bindings  state)
     (declare (xargs  :stobjs (state)
                      :guard (and #|(rp-termp term)||#
                              (alistp bindings)
-                             (symbol-alistp exc-rules))
+                             )
                      :verify-guards nil))
     (or
      (not (include-fnc term 'synp))
      (rp-rw-relieve-synp term
                          (remove-rp-from-bindings bindings)
-                         exc-rules state)))
+                          state)))
 
   (defund remove-rp-from-bindings-for-synp (rule var-bindings)
     (declare (xargs :guard (and (rule-syntaxp rule)
+                                (not (rp-rule-metap rule))
                                 (alistp var-bindings))))
     ;; remove the first rp wrapper from bindings if the hypotheses of the rule
     ;; includes syntaxp.
@@ -618,72 +576,15 @@
         (remove-rp-from-bindings var-bindings)
       var-bindings)))
 
-(defun rp-rw-rule-aux (term rules-for-term context iff-flg state)
-  (declare (xargs :mode :logic
-                  :verify-guards nil
-                  :stobjs (state)
-                  :guard (and #|(rp-termp term)||#
-                          (consp term)
-                          (not (equal (car term) 'quote))
-                          (rule-list-syntaxp rules-for-term)
-                          #|(context-syntaxp context)||#)))
-  ;; if rules-for-term-rest is not nil, the first element is the applied ruled.
-  ;; rules-for-term-rest is always subsetp of rules-for-term.
-  "Search the rules for the term and try to find a matching one.
-returns (mv rule rules-rest bindings rp-context)"
-  (if (atom rules-for-term)
-      (mv nil nil nil context)
-    (b* ((rule (car rules-for-term))
-         ;; if rule has is an iff relation and iff-flg is not set, then keep searching.
-         ((when (and (rp-iff-flag rule)
-                     (not iff-flg)))
-          (rp-rw-rule-aux term (cdr rules-for-term) context iff-flg state))
-         (lhs (rp-lhs rule))
-         ((mv rp-context bindings bindings-valid)
-          (if (rp-match-lhs-precheck term (rp-rule-fnc rule) lhs state) ;(rp-does-lhs-match term lhs)
-              (rp-match-lhs term lhs context nil)
-            (mv context nil nil))))
-      (if bindings-valid
-          (mv rule (cdr rules-for-term)  bindings rp-context)
-        (rp-rw-rule-aux term (cdr rules-for-term) context iff-flg state)))))
-
-#|(encapsulate
-  nil
-
-  (defun rp-rw-apply-falist-meta (term)
-    (declare (xargs
-              :verify-guards nil
-              :guard (and #|(rp-termp term)||#
-                      (consp term))))
-    ;; bring all the functions together for the falist feature.
-    (cond
-     #|((and (is-honsed-assoc-eq-values term))
-      (mv t
-          `,(hons-get-list-values-term
-             (cadr (cadr term))
-             (cadadr (caddr term)))))||#
-     #|((eq (car term) 'hons-acons)
-      (hons-acons-meta term))||#
-     ((and (case-match term (('equal & &) t) (& nil))
-           (rp-equal (cadr term)
-                     (caddr term)))
-      (mv t ''t))
-#|     ((eq (car term) 'fast-alist-free)
-      (fast-alist-free-rp-meta term))||#
-     #|((eq (car term) 'hons-get)
-      (hons-get-rp-meta term))||#
-     (t (mv nil term)))))||#
-
-
 (progn
   (encapsulate
     ((rp-rw-meta-rule (term meta-fnc-name) (mv t t)
-                      :guard t)
+                      :guard (rp-termp term))
      (rp-formula-checks (state) t :stobjs (state)))
     (local
      (defun rp-rw-meta-rule (term meta-fnc-name)
        (declare (ignorable meta-fnc-name)
-                (xargs :guard t))
+                (xargs :guard (rp-termp term)))
        (mv term nil)))
 
     (local
@@ -715,126 +616,56 @@ returns (mv rule rules-rest bindings rp-context)"
                      (rp-rw-meta-rule term meta-fnc-name)))
                  (dont-rw-syntaxp dont-rw))))
 
-    (defun rp-rw-meta-rules (term meta-rules rp-state)
-      (declare (xargs :guard (and (consp term)
-                                  (simple-meta-rule-alistp meta-rules))
-                      :verify-guards nil
-                      :stobjs (rp-state)))
-      (b* ((entry (hons-get (car term) meta-rules))
-           ((unless entry) (mv nil term t rp-state))
-           ((mv res-term dont-rw)
-            (rp-rw-meta-rule term (cdr entry)))
+    (defund rp-rw-meta-rule-main (term rule rp-state)
+      (declare (xargs  :stobjs (rp-state)
+                       :verify-guards nil
+                       :guard (and (rp-termp term)
+                                   (rule-syntaxp rule)
+                                   (rp-rule-metap rule))))
+      (b* (((mv res-term dont-rw)
+            (rp-rw-meta-rule term (rp-rule-meta-fnc rule)))
            (term-changed (not (equal res-term term)))
-           (rp-state (if term-changed
-                         (rp-stat-add-to-rules-used-meta-cnt entry
-                                                             rp-state)
-                       rp-state))
-           (rp-state (if term-changed
-                         (rp-state-push-meta-to-rw-stack entry term res-term
-                                                         rp-state)
-                       rp-state)))
+           #|(rp-state (if term-changed
+           (rp-stat-add-to-rules-used-meta-cnt rule
+           rp-state)
+           rp-state))||#
+           #|(rp-state (if term-changed
+           (rp-state-push-meta-to-rw-stack rule term res-term
+           rp-state)
+           rp-state))||#)
         (mv term-changed res-term dont-rw rp-state)))))
 
-#|(encapsulate
-  nil
-
-  (defun rp-rw-meta-rule (term meta-rule rp-state state)
-    (declare (xargs
-              :verify-guards nil
-              :stobjs (rp-state state)
-              :guard (and
-                      (rp-meta-rule-rec-p meta-rule state)
-                      (consp term))))
-    (b* (((mv error res)
-          (magic-ev-fncall (rp-meta-fnc meta-rule)
-                           (list term)
-                           state
-                           *rp-hard-error-returns-nilp*
-                           nil))
-         ((when (or error
-                    (not (mbe :logic (acl2::logicp (rp-meta-fnc meta-rule) (w state))
-                              :exec t))))
-          (mv (hard-error
-               'rp-rw-apply-meta
-               "Failure to execute the meta rule function: ~n0 ~%"
-               (list (cons #\0
-                           (rp-meta-fnc meta-rule))))
-              term
-              nil
-              rp-state))
-         ((mv res-term dont-rw)
-          (if (rp-meta-dont-rw meta-rule)
-              (mv (mv-nth 0 res) (mv-nth 1 res))
-            (mv res nil)))
-         (term-changed (not (equal term res-term))) ;; is this expensive?
-         (rp-state (rp-stat-add-to-rules-used-meta-cnt meta-rule rp-state))
-         (rp-state (rp-state-push-meta-to-rw-stack meta-rule term res-term rp-state))
-         ((mv res-term term-changed)
-          (cond ((rp-meta-syntax-verified meta-rule)
-                 (mv res-term term-changed))
-                ((rp-termp res-term)
-                 (mv res-term term-changed))
-                (t
-                 (progn$
-                  (cw "WARNING! Meta rule (~p0) returned a syntactically invalid term ~%"
-                      meta-rule)
-                  (mv term nil))))))
-      (mv term-changed res-term dont-rw rp-state)))
-
-  (defund rp-rw-meta-rules (term meta-rules rp-state state)
-    (declare (xargs
-              :verify-guards nil
-              :stobjs (rp-state state)
-              :guard (and #|(rp-termp term)||#
-                      (rp-meta-rule-recs-p meta-rules state)
-                      (consp term))))
-    "Provides a mechanism to enable users to attach meta ~
-    rules on the go. Returns (mv term-changed term dont-rw)"
-    (let ((meta-rule (hons-get (car term) meta-rules)))
-      (if meta-rule
-          (rp-rw-meta-rule term meta-rule rp-state state)
-        (mv nil term nil rp-state)))
-    #|(if (atom meta-rules)
-    (mv nil term nil rp-state)
-    (if (equal (car term) (rp-meta-trig-fnc (car meta-rules)))
-    (rp-rw-meta-rule term (car meta-rules) rp-state state)
-    (rp-rw-meta-rules term (cdr meta-rules) rp-state state)))||#)
-
-  #|(defun rp-rw-apply-meta (term meta-rules state)
-  (declare (xargs
-  :verify-guards nil
-  :stobjs (state)
-  :guard (and (rp-termp term)
-  (rp-meta-rulesp meta-rules)
-  (consp term)))
-  (ignorable meta-rules state))
-  ;; regular meta rules integrated into rp-rewriter.
-  ;; this list can be expanded if all the meta rule functions are proved
-  ;; correct.
-  ;; maybe later I will create a mechanism to enable users to attach meta
-  ;; rules on the go.
-  "returns (mv term-changed term dont-rw)"
-  (cond ((equal (car term) 'tmp-pp+)
-  (let ((res (resolve-pp-sum-order term)))
-  (if (and (rp-termp res)
-  (all-falist-consistent res))
-  (mv t res t)
-  (mv nil term nil))))
-
-  ((equal (car term) 'assoc-eq-vals)
-  (let ((res (resolve-assoc-eq-vals term)))
-  (if (and (rp-termp res)
-  (all-falist-consistent res))
-  (mv t res t)
-  (mv nil term nil))))
-  ((equal (car term) 'merge-b+)
-  (b* (((mv res dont-rw) (resolve-b+-order term)))
-  (mv t res dont-rw)))
-  #|((case-match term (('car ('quote (& . &))) t) (& nil))
-  (mv t (list 'quote (car (cadr (cadr term)))) t))||#
-  #|((case-match term (('cdr ('quote (& . &))) t) (& nil))
-  (mv t (list 'quote (cdr (cadr (cadr term)))) t))||#
-  (t (mv nil term nil))))||#)||#
+(defun rp-rw-rule-aux (term rules-for-term context iff-flg state)
+  (declare (xargs :mode :logic
+                  :verify-guards nil
+                  :stobjs (state)
+                  :guard (and
+                          (rp-termp term)
+                          (consp term)
+                          (not (equal (car term) 'quote))
+                          (rule-list-syntaxp rules-for-term)
+                          #|(context-syntaxp context)||#)))
+  ;; if rules-for-term-rest is not nil, the first element is the applied ruled.
+  ;; rules-for-term-rest is always subsetp of rules-for-term.
+  "Search the rules for the term and try to find a matching one.
+returns (mv rule rules-rest bindings rp-context)"
+  (if (atom rules-for-term)
+      (mv nil nil nil context)
+    (b* ((rule (car rules-for-term))
+         ((when (rp-rule-metap rule))
+          (mv rule (cdr rules-for-term)  nil context))
+         ;; if rule has is an iff relation and iff-flg is not set, then keep searching.
+         ((when (and (rp-iff-flag rule)
+                     (not iff-flg)))
+          (rp-rw-rule-aux term (cdr rules-for-term) context iff-flg state))
+         (lhs (rp-lhs rule))
+         ((mv rp-context bindings bindings-valid)
+          (if (rp-match-lhs-precheck term lhs) ;(rp-does-lhs-match term lhs)
+              (rp-match-lhs term lhs context nil)
+            (mv context nil nil))))
+      (if bindings-valid
+          (mv rule (cdr rules-for-term)  bindings rp-context)
+        (rp-rw-rule-aux term (cdr rules-for-term) context iff-flg state)))))
 
 (encapsulate
   nil
@@ -845,10 +676,10 @@ returns (mv rule rules-rest bindings rp-context)"
   (defund check-if-relieved-with-rp-aux (fnc param)
     (declare (xargs
               :verify-guards nil
-              :guard (and #|(symbolp fnc)||#
-                      #|(rp-termp param)||#)))
+              :guard (rp-termp param)))
     (cond
-     ((is-rp param)
+     ((mbe :logic (is-rp param)
+           :exec (is-rp-loose param))
       (or (equal fnc (cadr (cadr param)))
           (check-if-relieved-with-rp-aux fnc (caddr param))))
      (t nil)))
@@ -861,7 +692,7 @@ returns (mv rule rules-rest bindings rp-context)"
   (defund check-if-relieved-with-rp (term)
     (declare (xargs
               :verify-guards nil
-              :guard t #|(rp-termp term)||#))
+              :guard (rp-termp term)))
     (case-match term
       ((fnc param) ;; if a function with single parameter.
        (if (eq fnc 'quote)
@@ -938,26 +769,103 @@ returns (mv rule rules-rest bindings rp-context)"
              unquote-all
              w)))
 
+
+(progn
+  (defund-inline dont-rw-car (dont-rw)
+    (declare (xargs :guard t))
+    (if (consp dont-rw)
+        (car dont-rw)
+      (if dont-rw
+          dont-rw
+        nil)))
+
+  (defund-inline dont-rw-cdr (dont-rw)
+    (declare (xargs :guard t))
+    (if (consp dont-rw)
+        (cdr dont-rw)
+      (if dont-rw
+          dont-rw
+        nil)))
+
+
+  (mutual-recursion
+   ;; for outside-in rules
+   (defund match-lhs-for-dont-rw (lhs dont-rw acc-bindings)
+     (declare (xargs :guard (alistp acc-bindings)
+                     :verify-guards nil))
+     (cond ((atom lhs)
+            (cons (cons lhs dont-rw) acc-bindings))
+           ((quotep lhs)
+            acc-bindings)
+           (t (match-lhs-for-dont-rw-lst (cdr lhs) (dont-rw-cdr dont-rw)
+                                         acc-bindings))))
+   (defund match-lhs-for-dont-rw-lst (lhs-lst dont-rw acc-bindings)
+     (declare (xargs :guard (alistp acc-bindings)))
+     (cond ((atom lhs-lst)
+            acc-bindings)
+           (t (let* ((acc-bindings (match-lhs-for-dont-rw (car lhs-lst)
+                                                          (dont-rw-car dont-rw)
+                                                          acc-bindings)))
+                (match-lhs-for-dont-rw-lst (cdr lhs-lst)
+                                           (dont-rw-cdr dont-rw)
+                                           acc-bindings))))))
+
+  (mutual-recursion
+   (defun apply-bindings-for-dont-rw (term bindings )
+     (declare (xargs  :mode :logic
+                      :guard (and #|(rp-termp term)||#
+                              (alistp bindings))))
+     ;; apply the given bindings to the given term
+     ;; That term can be anything but it is expected to be hyp or rhs of a rule.
+     ;; Lambda expressions are not supported and it is enforced by rp-termp
+     (cond ((acl2::variablep term)
+            (b* ((binding (assoc-equal term bindings))
+                 (res (if (consp binding)
+                          (cdr binding)
+                        (progn$ (cw "warning binding problem for dont-rw! ~p0 ~%" term)
+                                term))))
+              res))
+           ((acl2::fquotep term) t)
+           (t
+            (cons nil
+                  (apply-bindings-for-dont-rw-lst (cdr term) bindings)))))
+
+   (defun apply-bindings-for-dont-rw-lst (lst bindings )
+     (declare (xargs  :mode :logic
+                      :guard (and (alistp bindings))))
+     (if (atom lst)
+         nil
+       (cons (apply-bindings-for-dont-rw (car lst) bindings )
+             (apply-bindings-for-dont-rw-lst (cdr lst) bindings )))))
+
+  (defund-inline calculate-dont-rw (rule rhs/hyp dont-rw outside-in-flg)
+    (declare (xargs :guard (and (weak-custom-rewrite-rule-p rule)
+                                (not (rp-rule-metap rule)))
+                    :verify-guards nil))
+    (cond (outside-in-flg
+           (b* (((when (not dont-rw))
+                 dont-rw)
+                (bindings (match-lhs-for-dont-rw (rp-lhs rule) dont-rw nil))
+                (new-dont-rw (apply-bindings-for-dont-rw rhs/hyp bindings)))
+             new-dont-rw))
+          (t rhs/hyp))))
+
 (mutual-recursion
 
  ;; The big, main 4 mutually recursive functions that calls the above functions
  ;; to perform rewriting.
 
- (defun rp-rw-rule (term rules-for-term context limit rules-alist exc-rules
-                         meta-rules iff-flg rp-state state)
+ (defun rp-rw-rule (term dont-rw rules-for-term context iff-flg outside-in-flg limit rp-state state)
    (declare (type (unsigned-byte 58) limit))
-   (declare (xargs :measure (+
-                             (nfix limit))
-                   :guard (and #|(rp-termp term)||#
-                           #|(all-falist-consistent term)||#
-                           #|(rp-syntaxp term)||#
-                           (natp limit)
+   (declare (ignorable dont-rw))
+   (declare (xargs :measure (nfix limit)
+                   :guard (and
+                           (rp-termp term)
+                           (rp-term-listp context)
                            (booleanp iff-flg)
-                           (rule-list-syntaxp rules-for-term)
-                           (simple-meta-rule-alistp meta-rules)
-                           #|(context-syntaxp context)||#
-                           (rules-alistp rules-alist)
-                           (symbol-alistp exc-rules))
+                           (natp limit)
+                           (VALID-RP-STATE-SYNTAXP RP-STATE)
+                           (rule-list-syntaxp rules-for-term))
                    :stobjs (state
                             rp-state)
                    :verify-guards nil
@@ -968,78 +876,72 @@ returns (mv rule rules-rest bindings rp-context)"
          (atom term)
          (acl2::fquotep term)
          (zp limit))
-     (mv nil (rp-check-context term context iff-flg) nil rp-state));))
-    (t (b* (((mv rule rules-for-term-rest var-bindings rp-context)
-             (rp-rw-rule-aux term rules-for-term context iff-flg state))
-            ((when (not rule)) ;; no rules found
-             (mv nil (rp-check-context term context iff-flg) nil rp-state))
-            #|(no-rp-var-bindings
-            (remove-rp-from-bindings-for-synp rule var-bindings))||#
-            ((mv stack-index rp-state)
-             (rp-state-push-to-try-to-rw-stack rule var-bindings
-                                               rp-context rp-state))
-            (synp-relieved
-             (rp-rw-relieve-synp-wrap (rp-hyp rule)
-                                      ;;(rp-rule-fnc rule)
-                                      var-bindings ;no-rp-var-bindings
-                                      exc-rules
-                                      state))
-            ((when (not synp-relieved))
-             (b* ((rp-state (rp-stat-add-to-rules-used rule 'failed-synp
-                                                       rp-state))
-                  (rp-state (rp-state-push-to-result-to-rw-stack rule stack-index
-                                                                 'failed-synp nil nil rp-state)))
-               (rp-rw-rule
-                term rules-for-term-rest context (1- limit) rules-alist exc-rules
-                meta-rules
-                iff-flg rp-state state)))
-            (hyp (rp-apply-bindings (rp-hyp rule) var-bindings))
+     (mv nil (rp-check-context term context iff-flg) dont-rw rp-state));))
+    (t
+     (b* (
+          ((mv rule rules-for-term-rest var-bindings rp-context)
+           (rp-rw-rule-aux term rules-for-term context iff-flg state))
+          ((when (not rule)) ;; no rules found
+           (mv nil (rp-check-context term context iff-flg) dont-rw rp-state))
 
-            ((mv hyp-rewritten rp-state)
-             (rp-rw hyp
-                    (rp-hyp rule)
-                    ;;(rp-hyp rule)  ;rp-get-dont-rw
-                    rp-context
-                    (1- limit) rules-alist exc-rules
-                    meta-rules t rp-state state))
+          ((when (rp-rule-metap rule))
+           (b* (((mv term-changed term dont-rw rp-state)
+                 (rp-rw-meta-rule-main term rule rp-state)))
+             (if term-changed
+                 (mv term-changed term dont-rw rp-state)
+               (rp-rw-rule term dont-rw rules-for-term-rest context iff-flg outside-in-flg
+                            (1- limit) rp-state state))))
 
-            (hyp-relieved (nonnil-p hyp-rewritten))
-            ((when (not hyp-relieved))
-             (b* ((rp-state (rp-stat-add-to-rules-used rule 'failed rp-state))
-                  (rp-state (rp-state-push-to-result-to-rw-stack rule
-                                                                 stack-index 'failed nil nil
-                                                                 rp-state)))
-               (rp-rw-rule
-                term rules-for-term-rest
-                context (1- limit) rules-alist exc-rules
-                meta-rules
-                iff-flg rp-state state)))
-            (term-res (rp-apply-bindings (rp-rhs rule) var-bindings))
-            (rp-state (rp-stat-add-to-rules-used rule nil rp-state))
-            (rp-state (rp-state-push-to-result-to-rw-stack rule stack-index
-                                                           'success term
-                                                           term-res rp-state))
-            (dont-rw (rp-rhs rule)))
-         (mv t term-res dont-rw rp-state)))))
+          ((mv stack-index rp-state)
+           (rp-state-push-to-try-to-rw-stack rule var-bindings
+                                             rp-context rp-state))
+          (synp-relieved
+           (rp-rw-relieve-synp-wrap (rp-hyp rule)
+                                    var-bindings ;no-rp-var-bindings
+                                    state))
+          ((when (not synp-relieved))
+           (b* ((rp-state (rp-stat-add-to-rules-used rule 'failed-synp
+                                                     rp-state))
+                (rp-state (rp-state-push-to-result-to-rw-stack rule stack-index
+                                                               'failed-synp nil nil rp-state)))
+             (rp-rw-rule term dont-rw rules-for-term-rest context iff-flg outside-in-flg (1- limit)  rp-state state)))
+          (hyp (rp-apply-bindings (rp-hyp rule) var-bindings))
 
- (defun rp-rw-if (term dont-rw context limit rules-alist exc-rules meta-rules
-                       iff-flg rp-state state)
+          ((mv hyp-rewritten rp-state)
+           (rp-rw hyp
+                  (calculate-dont-rw rule (rp-hyp rule) dont-rw outside-in-flg)
+                  rp-context t
+                  (1- limit) rp-state state))
+
+          (hyp-relieved (nonnil-p hyp-rewritten))
+          ((when (not hyp-relieved))
+           (b* ((rp-state (rp-stat-add-to-rules-used rule 'failed rp-state))
+                (rp-state (rp-state-push-to-result-to-rw-stack rule
+                                                               stack-index 'failed nil nil
+                                                               rp-state)))
+             (rp-rw-rule
+              term dont-rw rules-for-term-rest context iff-flg outside-in-flg (1- limit) rp-state state)))
+          (term-res (rp-apply-bindings (rp-rhs rule) var-bindings))
+          (rp-state (rp-stat-add-to-rules-used rule nil rp-state))
+          (rp-state (rp-state-push-to-result-to-rw-stack rule stack-index
+                                                         'success term
+                                                         term-res rp-state))
+          (dont-rw (calculate-dont-rw rule (rp-rhs rule) dont-rw outside-in-flg)))
+       (mv t term-res dont-rw rp-state)))))
+
+ (defun rp-rw-if (term dont-rw context iff-flg limit rp-state state)
    (declare (type (unsigned-byte 58) limit))
    (declare (xargs
              :measure (+ (nfix limit))
              :stobjs (state
                       rp-state)
-             :guard (and #|(rp-termp term)||#
-                     #|(all-falist-consistent term)||#
-                     #|(dont-rw-syntaxp dont-rw)||#
+             :guard (and
+                     (rp-termp term)
                      (natp limit)
-                     #|(context-syntaxp context)||#
-                     #|(rp-stat-p rp-state)||#
-                     #|(rp-syntaxp term)||#
+                     (valid-rp-state-syntaxp rp-state)
+                     (rp-term-listp context)
                      (booleanp iff-flg)
-                     (simple-meta-rule-alistp meta-rules)
-                     (rules-alistp rules-alist)
-                     (symbol-alistp exc-rules))
+                     )
              :verify-guards nil
              :mode :logic))
    ;; if a term is in the form
@@ -1052,71 +954,54 @@ returns (mv rule rules-rest bindings rp-context)"
      (b* ((dont-rw (dont-rw-if-fix dont-rw)) ;;for guard
           ;; rewrite the condition first.
           ((mv cond-rw rp-state)
-           (rp-rw (cadr term)
-                  (cadr dont-rw)
-                  context (1- limit)
-                  rules-alist exc-rules
-                  meta-rules
-                  t rp-state state))
+           (rp-rw (cadr term) (cadr dont-rw)
+                  context t
+                  (1- limit)
+                  rp-state state))
           ;; if the cond is ''nil, then the 3rd subterm
+          
           ((when (equal cond-rw ''nil))
-           (rp-rw (cadddr term)
-                  (cadddr dont-rw)
-                  context (1- limit)
-                  rules-alist exc-rules
-                  meta-rules
-                  iff-flg rp-state state))
+           (rp-rw (cadddr term) (cadddr dont-rw)
+                  context iff-flg
+                  (1- limit) rp-state state))
           ;; if the cond is ''t then return the rewritten 2nd subterm
           ((when (nonnil-p cond-rw))
-           (rp-rw (caddr term)
-                  (caddr dont-rw)
-                  context  (1- limit)
-                  rules-alist exc-rules
-                  meta-rules
-                  iff-flg rp-state state))
+           (rp-rw (caddr term) (caddr dont-rw)
+                  context iff-flg
+                  (1- limit) rp-state state))
           ;; cond is something other than ''t or ''nil, add to the
           ;; context to each subterm and simply them.
           (extra-context1 (rp-extract-context cond-rw))
           (?r1-context (append extra-context1 context))
           ((mv r1 rp-state)
-           (rp-rw (caddr term) (caddr dont-rw) r1-context
-                  (1- limit) rules-alist exc-rules
-                  meta-rules
-                  iff-flg rp-state state))
+           (rp-rw (caddr term) (caddr dont-rw)
+                  r1-context iff-flg
+                  (1- limit) rp-state state))
           (extra-context2
            (rp-extract-context (dumb-negate-lit2 cond-rw)))
           (?r2-context (append extra-context2 context))
           ((mv r2 rp-state)
-           (rp-rw (cadddr term)
-                  (cadddr dont-rw)
-                  r2-context
-                  (1- limit) rules-alist exc-rules
-                  meta-rules
-                  iff-flg rp-state state))
+           (rp-rw (cadddr term) (cadddr dont-rw)
+                  r2-context iff-flg
+                  (1- limit) rp-state state))
           ;; if the two subterms are equal, return them
           ((when (equal r1 r2)) (mv r1 rp-state)))
        ;; could not simplify, return the rewritten term.
        (mv `(if ,cond-rw ,r1 ,r2) rp-state)))
     (t (mv term rp-state))))
 
- (defun rp-rw (term dont-rw context limit rules-alist exc-rules meta-rules
-                    iff-flg rp-state state)
+ (defun rp-rw (term dont-rw context iff-flg limit rp-state state)
    (declare (type (unsigned-byte 58) limit))
    (declare (xargs :measure (+
                              (nfix limit))
                    :stobjs (state rp-state)
                    :verify-guards nil
-                   :guard (and #|(rp-termp term)||#
-                           #|(all-falist-consistent term)||#
-                           #|(dont-rw-syntaxp dont-rw)||#
-                           (booleanp iff-flg)
+                   :guard (and
+                           (rp-termp term)
                            (natp limit)
-                           #|(rp-syntaxp term)||#
-                           #|(context-syntaxp context)||#
-                           (rules-alistp rules-alist)
-                           #|(rp-stat-p rp-state)||#
-                           (simple-meta-rule-alistp meta-rules)
-                           (symbol-alistp exc-rules))
+                           (rp-term-listp context)
+                           (booleanp iff-flg)
+                           (valid-rp-state-syntaxp rp-state))
                    :mode :logic))
    ;; term: term to be rewritten.
 
@@ -1124,9 +1009,6 @@ returns (mv rule rules-rest bindings rp-context)"
    ;; when an element of it is t, then we do not try to rewrite that term.
    ;; That is set to t by a previously applied rule. When we apply a rule, we do
    ;; not need to dive into the variables that's just moved around.
-
-   ;; rules-to-skip: list of rules to skip because they previously failed with
-   ;; hypothesis relieve test.
 
    ;; limit is just a really big number to prove termination.
 
@@ -1136,6 +1018,12 @@ returns (mv rule rules-rest bindings rp-context)"
 
    ;; returns (mv term-changed term)
    (cond
+    ((atom term)
+     (mv
+      (if (should-not-rw dont-rw) term (rp-check-context term context iff-flg))
+      rp-state))
+    ((eq (car term) 'quote)
+     (mv term rp-state))
     ((zp limit)
      (progn$
       (rp-state-print-rules-used rp-state)
@@ -1147,24 +1035,28 @@ returns (mv rule rules-rest bindings rp-context)"
                  :frames 100). ~%"
                   (list (cons #\0 (rw-step-limit rp-state))))
       (mv term rp-state)))
-    ((or (atom term)
-         (eq (car term) 'quote))
-     (mv term rp-state))
     (t
      (b* (;; exit right away if said to not rewrite
-          ((when (should-not-rw dont-rw)
-;(equal dont-rw t)
-             )
+          ((when (should-not-rw dont-rw))
            (mv term rp-state))
           ;; update the term to see if it simplifies with respect to the
           ;; context
           ((when (and iff-flg
                       (check-if-relieved-with-rp term)))
            (mv ''t rp-state))
-          (term
-           (rp-check-context term context iff-flg))
-          ((mv term rp-state)
-           (rp-ex-counterpart term exc-rules rp-state state))
+
+          #|(term
+          (rp-check-context term context iff-flg))||#
+
+          
+          ((mv rule-rewritten-flg term dont-rw rp-state)
+           (rp-rw-rule term dont-rw
+                       (rules-alist-outside-in-get (car term) rp-state)
+                       context iff-flg t 
+                       (1- limit) rp-state state))
+          
+          ((when rule-rewritten-flg)
+           (rp-rw term dont-rw context iff-flg (1- limit) rp-state state))
 
           ;; if simplified to a constant, then exit.
           ((when (or (atom term)
@@ -1173,68 +1065,51 @@ returns (mv rule rules-rest bindings rp-context)"
            (mv term rp-state))
           ;; if the term is an "if" statement don't try to rewrite but branch.
           ((when (is-if term))
-           (rp-rw-if term dont-rw context (1- limit) rules-alist exc-rules
-                     meta-rules iff-flg rp-state state))
+           (rp-rw-if term dont-rw context iff-flg (1- limit) rp-state state))
 
+          
           ;; rewrite the subterm
           ((mv subterms rp-state)
            (if (is-hide term)
                (mv (cdr term) rp-state)
-             (rp-rw-subterms (cdr term) (if (consp dont-rw) (cdr dont-rw) nil)
-                             context (1- limit) rules-alist exc-rules
-                             meta-rules rp-state state)))
+             (rp-rw-subterms (cdr term) (dont-rw-cdr dont-rw)
+                             context (1- limit) rp-state state)))
 
+          
+          
           ;; put back the term together after subterm is rewritten
           (term (cons-with-hint (car term) subterms term))
 
           ;; check if it is a cw or hard-error statements.
           (- (rp-rw-check-hard-error-or-cw term rp-state))
 
-          #|((when (is-lambda term))
-          (b* ((new-dont-rw (rp-get-dont-rw (caddr (car term))))
-          (term (rp-beta-reduce-main term)))
-          (rp-rw term new-dont-rw context (1- limit) rules-alist exc-rules
-          meta-rules iff-flg stat state)))||#
           ;; if the subterm is only a list of quotep's, then run ex-counterpart
           ((mv term rp-state)
-           (rp-ex-counterpart term exc-rules rp-state state))
+           (rp-ex-counterpart term rp-state state))
           ((when (or (atom term)
                      (eq (car term) 'quote)))
            (mv term rp-state))
-
-          ;; run used defined meta rules
-          ((mv meta-changed-term-flg term meta-dont-rw rp-state)
-           (rp-rw-meta-rules term meta-rules rp-state))
-          ((when meta-changed-term-flg)
-           (rp-rw term meta-dont-rw context (1- limit) rules-alist exc-rules
-                  meta-rules iff-flg rp-state state))
+          
+          
           ((mv rule-rewritten-flg term dont-rw rp-state)
-           (rp-rw-rule term
-                       (rp-get-rules-for-term (car term) rules-alist) context
-                       (1- limit) rules-alist exc-rules meta-rules iff-flg rp-state
-                       state))
+           (rp-rw-rule term dont-rw
+                       (rules-alist-inside-out-get (car term) rp-state)
+                       context iff-flg nil 
+                       (1- limit) rp-state state))
           ((when (not rule-rewritten-flg))
            (mv term rp-state)))
-       (rp-rw term dont-rw context (1- limit) rules-alist exc-rules
-              meta-rules iff-flg rp-state state)))))
+       (rp-rw term dont-rw context iff-flg (1- limit) rp-state state)))))
 
- (defun rp-rw-subterms (subterms dont-rw context limit rules-alist
-                                 exc-rules meta-rules rp-state state)
+ (defun rp-rw-subterms (subterms dont-rw context limit rp-state state)
    ;; call the rewriter on subterms.
    (declare (type (unsigned-byte 58) limit))
    (declare (xargs :measure (nfix limit)
                    :stobjs (state rp-state)
-                   :guard (and #|(rp-term-listp subterms)||#
-                           #|(all-falist-consistent-lst subterms)||#
-                           #|(context-syntaxp context)||#
-                           #|(dont-rw-syntaxp dont-rw)||#
-                           #|(not (eq dont-rw t))||#
+                   :guard (and
+                           (rp-term-listp subterms)
+                           (rp-term-listp context)
                            (natp limit)
-                           #|(rp-syntaxp-lst subterms)||#
-                           #|(rp-stat-p rp-state)||#
-                           (rules-alistp rules-alist)
-                           (simple-meta-rule-alistp meta-rules)
-                           (symbol-alistp exc-rules))
+                           (valid-rp-state-syntaxp rp-state))
                    :verify-guards nil
                    :mode :logic))
    (cond
@@ -1244,20 +1119,17 @@ returns (mv rule rules-rest bindings rp-context)"
     (t
      (b* (((mv car-subterms rp-state)
            (rp-rw (car subterms)
-                  (if (consp dont-rw) (car dont-rw) nil)
+                  (dont-rw-car dont-rw)
                   context
-                  (1- limit)
-                  rules-alist
-                  exc-rules
-                  meta-rules
                   nil
+                  (1- limit)
                   rp-state
                   state))
           ((mv rest rp-state)
            (rp-rw-subterms (cdr subterms)
-                           (if (consp dont-rw) (cdr dont-rw) nil)
-                           context (1- limit) rules-alist exc-rules
-                           meta-rules
+                           (dont-rw-cdr dont-rw)
+                           context
+                           (1- limit)
                            rp-state state)))
        (mv (cons-with-hint
             car-subterms
@@ -1303,7 +1175,7 @@ returns (mv rule rules-rest bindings rp-context)"
 
 (define attach-sc-from-context ((context)
                                 (term))
-
+  :returns (mv res-context res-term)
   (cond ((atom context)
          (mv context term))
         ((include-fnc term 'falist)
@@ -1327,31 +1199,28 @@ returns (mv rule rules-rest bindings rp-context)"
                     (cons-with-hint cur rest-context context)
                     term))))))))
 
-(defun rp-rw-aux (term rules-alist exc-rules meta-rules rp-state state)
+(defun preprocess-then-rp-rw (term rp-state state)
   ;; term can have lambda expressions.
   ;; rules-alist is expected to be a fast-alist
   ;; this is the function that is called by the clause processor.
   (declare (xargs :stobjs (state rp-state)
-                  :guard (and #|(rp-termp term)||#
-                          #|(rp-syntaxp term)||#
-                          (simple-meta-rule-alistp meta-rules)
-                          #|(all-falist-consistent term)||#
-                          (rules-alistp rules-alist)
-                          (symbol-alistp exc-rules)
-                          #|(rp-stat-p rp-state)||#)
+                  :guard (and
+                          (rp-termp term)
+                          (valid-rp-state-syntaxp rp-state))
                   :verify-guards nil))
   (b* ((step-limit (rw-step-limit rp-state))
        ((when (include-fnc term 'list))
-        (progn$ (hard-error 'rp-rw-aux "unexpected term is given to rp-rw-aux! ~p0"
+        (progn$ (hard-error 'preprocess-then-rp-rw
+                            "unexpected term is given to preprocess-then-rp-rw ~p0"
                             (list (cons #\0 term)))
                 (mv term rp-state)))
-        
+
        ((mv res- rp-state)
         (case-match
           term
           (('implies p q)
            (b* (
-                
+
                 ((mv newp rp-state)
                  (progn$
                   ;; (time-tracker :rp-rewriter :end)
@@ -1361,10 +1230,9 @@ returns (mv rule rules-rest bindings rp-context)"
                   ;;               :msg "Elapsed runtime took ~st secs;~%")
                   ;; (time-tracker t)
                   ;; (time-tracker :rp-rewriter :start)
-                  (rp-rw p nil nil  step-limit rules-alist exc-rules
-                         meta-rules
-                         t rp-state state)))
-                
+                  (rp-rw p nil nil
+                         t step-limit rp-state state)))
+
                 (& (time-tracker :rp-rewriter :stop))
                 (& (time-tracker :rp-rewriter :print?
                                  :min-time 1/10
@@ -1376,22 +1244,21 @@ seconds~%"))
                                  :interval 5
                                  :msg "Elapsed runtime took ~st secs;~%"))
                 (context (rp-extract-context newp))
-                
+
                 ((mv context q)
                  (attach-sc-from-context context q))
-                
+
                 (& (time-tracker :rp-rewriter :start))
-                
+
                 ;; (- (cw "rp-rw-aux- rules-alist ~p0~%" rules-alist))
 
                 ;; (- (cw "rp-rw-aux- exc-rules ~p0 ~%" exc-rules))
 
                 ;; (- (cw "rp-rw-aux- meta-rules ~p0 ~%" meta-rules))
-                
+
                 ((mv newq rp-state)
-                 (rp-rw q nil context  step-limit rules-alist exc-rules
-                        meta-rules t rp-state state))
-                
+                 (rp-rw q nil context t step-limit rp-state state))
+
                 (& (time-tracker :rp-rewriter :stop))
                 (& (time-tracker :rp-rewriter :print?
                                  :min-time 1/10
@@ -1403,16 +1270,15 @@ seconds~%"))
                  rp-state)))
           (&
            (b* (((mv res rp-state)
-                 (rp-rw term nil nil  step-limit rules-alist exc-rules
-                        meta-rules t rp-state state)))
+                 (rp-rw term nil nil t step-limit rp-state state)))
              (mv res rp-state)))))
-       
+
        (- (rp-state-print-rules-used rp-state))
        (- (if (not (equal res- ''t))
               (b* ((action (not-simplified-action rp-state)))
                 (cond ((equal action ':error)
                        (hard-error
-                        'rp-rw-aux
+                        'preprocess-then-rp-rw
                         "Error! rp-rewriter did not reduce the term to t! To supress this error run:
 (set-not-simplified-action :warning) or (set-not-simplified-action :none)
 Resulting  term is:~% ~p0 ~%"

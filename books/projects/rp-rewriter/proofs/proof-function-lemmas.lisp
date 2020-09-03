@@ -464,6 +464,7 @@
 
 (defthm valid-rules-subsetp
   (implies (and (valid-rulesp rules)
+                (true-listp subrules)
                 (subsetp subrules rules))
            (valid-rulesp subrules))
   :hints (("Goal"

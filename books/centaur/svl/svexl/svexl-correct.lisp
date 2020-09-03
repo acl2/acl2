@@ -31,12 +31,12 @@
 ;; a function to help with induction and be a bridge between functions.
 (local
  (mutual-recursion
-  (defun svex-induct1 (svex reuse-stats nodesdb node-env svexl-node-alist env)
+  (defun svex-induct1 (svex reuse-stats nodesdb node-env svexl-node-array env)
     (declare (xargs :measure (sv::svex-count svex)))
     (sv::svex-case
      svex
-     :quote (mv svex.val svex nodesdb node-env svexl-node-alist)
-     :var (mv (svex-env-fastlookup-wog svex.name env) svex nodesdb node-env svexl-node-alist)
+     :quote (mv svex.val svex nodesdb node-env svexl-node-array)
+     :var (mv (svex-env-fastlookup-wog svex.name env) svex nodesdb node-env svexl-node-array)
      :call (b* ((nodesdb-entry (hons-get svex nodesdb))
                 ((when nodesdb-entry)
                  (mv
@@ -44,9 +44,9 @@
                   (make-svexl-node-node :node-id (cdr nodesdb-entry))
                   nodesdb
                   node-env
-                  svexl-node-alist))
-                ((mv rest-result rest-node nodesdb node-env svexl-node-alist)
-                 (svexlist-induct1 svex.args reuse-stats nodesdb node-env svexl-node-alist
+                  svexl-node-array))
+                ((mv rest-result rest-node nodesdb node-env svexl-node-array)
+                 (svexlist-induct1 svex.args reuse-stats nodesdb node-env svexl-node-array
                                    env))
                 (cnt (len node-env))
                 (new-node (make-svexl-node-call
@@ -59,28 +59,27 @@
                      (make-svexl-node-node :node-id cnt)
                      (hons-acons svex cnt nodesdb)
                      (hons-acons cnt result node-env)
-                     (hons-acons cnt new-node svexl-node-alist))
-               (mv result new-node nodesdb node-env svexl-node-alist)))))
+                     (hons-acons cnt new-node svexl-node-array))
+               (mv result new-node nodesdb node-env svexl-node-array)))))
 
-  (defun svexlist-induct1 (lst reuse-stats nodesdb node-env svexl-node-alist env)
+  (defun svexlist-induct1 (lst reuse-stats nodesdb node-env svexl-node-array env)
     (declare (xargs :measure (sv::svexlist-count lst)))
     (if (atom lst)
-        (mv nil nil nodesdb node-env svexl-node-alist)
-      (b* (((mv new-car-lst new-car-node-lst nodesdb node-env svexl-node-alist)
+        (mv nil nil nodesdb node-env svexl-node-array)
+      (b* (((mv new-car-lst new-car-node-lst nodesdb node-env svexl-node-array)
             (svex-induct1
-             (car lst) reuse-stats nodesdb node-env svexl-node-alist env))
-           ((mv new-cdr-lst new-cdr-node-lst nodesdb node-env svexl-node-alist)
+             (car lst) reuse-stats nodesdb node-env svexl-node-array env))
+           ((mv new-cdr-lst new-cdr-node-lst nodesdb node-env svexl-node-array)
             (svexlist-induct1
-             (cdr lst) reuse-stats nodesdb node-env svexl-node-alist env)))
+             (cdr lst) reuse-stats nodesdb node-env svexl-node-array env)))
         (mv (cons new-car-lst new-cdr-lst)
             (cons new-car-node-lst new-cdr-node-lst)
             nodesdb
             node-env
-            svexl-node-alist))))))
+            svexl-node-array))))))
 
 (local
  (make-flag svex-induct1 :defthm-macro-name defthm-svex-induct1))
-
 
 ;; an invariant; nodesdb and node-env is consistent.
 (local
@@ -98,10 +97,10 @@
             (equal (svex-eval (car n1) env)
                    (cdr s1))
             (node-env-nodesdb-inv (cdr nodesdb)
-                                            (cdr node-env)
-                                            env))))))
+                                  (cdr node-env)
+                                  env))))))
 
-(progn  
+(progn
   (local
    (defthmd svexl-induct1-inv1-lemma0
      (implies (and (node-env-nodesdb-inv nodesdb node-env env)
@@ -151,7 +150,7 @@
                      (svex-env-p env)
                      (node-env-nodesdb-inv nodesdb node-env env))
                 (b* (((mv res ?node-res nodesdb-res node-env-res ?svexl-res)
-                      (svex-induct1 svex reuse-stats nodesdb node-env svexl-node-alist env)))
+                      (svex-induct1 svex reuse-stats nodesdb node-env svexl-node-array env)))
                   (and (node-env-nodesdb-inv nodesdb-res node-env-res env)
                        (equal res (svex-eval svex env)))))
        :flag svex-induct1)
@@ -161,7 +160,7 @@
                      (svex-env-p env)
                      (node-env-nodesdb-inv nodesdb node-env env))
                 (b* (((mv res ?node-res nodesdb-res node-env-res ?svexl-res)
-                      (svexlist-induct1 lst reuse-stats nodesdb node-env svexl-node-alist env)))
+                      (svexlist-induct1 lst reuse-stats nodesdb node-env svexl-node-array env)))
                   (and (node-env-nodesdb-inv nodesdb-res node-env-res env)
                        (equal res (svexlist-eval lst env)))))
        :flag svexlist-induct1)
@@ -172,33 +171,30 @@
                                svex-env-lookup-is-svex-env-fastlookup-wog)
                               (svex-eval-is-svex-eval-wog)))))))
 
-
 (local
  (progn
    (defthm svex-to-svexl-aux-of-cnt
      (implies (syntaxp (equal cnt 'cnt))
-              (equal (svex-to-svexl-aux svex reuse-stats nodesdb svexl-node-alist cnt)
-                     (svex-to-svexl-aux svex reuse-stats nodesdb svexl-node-alist (len
-                                                                        svexl-node-alist))))
+              (equal (svex-to-svexl-aux svex reuse-stats nodesdb svexl-node-array cnt)
+                     (svex-to-svexl-aux svex reuse-stats nodesdb svexl-node-array (len
+                                                                                   svexl-node-array))))
      :hints (("Goal"
-              :expand ((svex-to-svexl-aux svex reuse-stats nodesdb svexl-node-alist cnt)
-                       (svex-to-svexl-aux svex reuse-stats nodesdb svexl-node-alist (len
-                                                                          svexl-node-alist)))
+              :expand ((svex-to-svexl-aux svex reuse-stats nodesdb svexl-node-array cnt)
+                       (svex-to-svexl-aux svex reuse-stats nodesdb svexl-node-array (len
+                                                                                     svexl-node-array)))
               :in-theory (e/d () ()))))
 
    (defthm svex-to-svexl-aux-lst-of-cnt
      (implies (and (syntaxp (equal cnt 'cnt)))
-              (equal (svex-to-svexl-aux-lst lst reuse-stats nodesdb svexl-node-alist cnt)
-                     (svex-to-svexl-aux-lst lst reuse-stats nodesdb svexl-node-alist (len
-                                                                           svexl-node-alist))))
+              (equal (svex-to-svexl-aux-lst lst reuse-stats nodesdb svexl-node-array cnt)
+                     (svex-to-svexl-aux-lst lst reuse-stats nodesdb svexl-node-array (len
+                                                                                      svexl-node-array))))
      :hints (("Goal"
               :do-not-induct t
-              :expand ((svex-to-svexl-aux-lst lst reuse-stats nodesdb svexl-node-alist cnt)
+              :expand ((svex-to-svexl-aux-lst lst reuse-stats nodesdb svexl-node-array cnt)
                        (SVEX-TO-SVEXL-AUX-LST LST
-                                              REUSE-STATS NODESDB svexl-node-alist (LEN svexl-node-alist)))
+                                              REUSE-STATS NODESDB svexl-node-array (LEN svexl-node-array)))
               :in-theory (e/d () ()))))))
-
-
 
 (local
  (defthm-svex-induct1
@@ -206,12 +202,12 @@
      (implies (and (svex-p svex)
                    (svex-env-p env)
                    (equal (len node-env)
-                          (len svexl-node-alist))
+                          (len svexl-node-array))
                    (node-env-nodesdb-inv nodesdb node-env env))
               (b* (((mv new-node nodesdb-res svexl-res ?cnt-res)
-                    (svex-to-svexl-aux svex reuse-stats nodesdb svexl-node-alist cnt))
+                    (svex-to-svexl-aux svex reuse-stats nodesdb svexl-node-array cnt))
                    ((mv ?res-i new-node-i nodesdb-res-i node-env-res-i svexl-res-i)
-                    (svex-induct1 svex reuse-stats nodesdb node-env svexl-node-alist env)))
+                    (svex-induct1 svex reuse-stats nodesdb node-env svexl-node-array env)))
                 (and (equal (len svexl-res-i)
                             (len node-env-res-i))
                      (equal cnt-res (len node-env-res-i))
@@ -224,12 +220,12 @@
      (implies (and (svexlist-p lst)
                    (svex-env-p env)
                    (equal (len node-env)
-                          (len svexl-node-alist))
+                          (len svexl-node-array))
                    (node-env-nodesdb-inv nodesdb node-env env))
               (b* (((mv new-node-lst nodesdb-res svexl-res ?cnt-res)
-                    (svex-to-svexl-aux-lst lst reuse-stats nodesdb svexl-node-alist cnt))
+                    (svex-to-svexl-aux-lst lst reuse-stats nodesdb svexl-node-array cnt))
                    ((mv ?res-i new-node-lst-i nodesdb-res-i node-env-res-i svexl-res-i)
-                    (svexlist-induct1 lst reuse-stats nodesdb node-env svexl-node-alist env)))
+                    (svexlist-induct1 lst reuse-stats nodesdb node-env svexl-node-array env)))
                 (and (equal (len svexl-res-i)
                             (len node-env-res-i))
                      (equal cnt-res (len node-env-res-i))
@@ -240,40 +236,37 @@
 
    :hints (("goal"
             :expand ((svex-to-svexl-aux-lst nil reuse-stats
-                                            nodesdb svexl-node-alist (len node-env))
+                                            nodesdb svexl-node-array (len node-env))
                      (SVEX-TO-SVEXL-AUX-LST LST REUSE-STATS
-                                            NODESDB svexl-node-alist (LEN NODE-ENV))
+                                            NODESDB svexl-node-array (LEN NODE-ENV))
                      (svex-to-svexl-aux svex reuse-stats
-                                              nodesdb svexl-node-alist (len node-env)))
+                                        nodesdb svexl-node-array (len node-env)))
             :in-theory (e/d () ()))
            ("Subgoal *1/6"
             :use ((:instance svex-induct1-inv1
                              (svex (car lst))))
             :in-theory (e/d () (svex-induct1-inv1))))))
 
-
-
 (local
- (defun svexl-node-env-inv (svexl-node-alist node-env env)
-   (if (or (atom svexl-node-alist)
+ (defun svexl-node-env-inv (svexl-node-array node-env env)
+   (if (or (atom svexl-node-array)
            (atom node-env))
-       (and (eq svexl-node-alist nil)
+       (and (eq svexl-node-array nil)
             (eq node-env nil))
-     (b* ((s (car svexl-node-alist))
+     (b* ((s (car svexl-node-array))
           (n (car node-env)))
        (and (consp s)
             (consp n)
             (equal (car s) (car n))
-            (equal (car s) (1- (len svexl-node-alist)))
+            (equal (car s) (1- (len svexl-node-array)))
             (equal (svexl-node-eval (cdr s) (cdr node-env) env)
                    (cdr n))
-            (svexl-node-env-inv (cdr svexl-node-alist) (cdr node-env) env))))))
-
+            (svexl-node-env-inv (cdr svexl-node-array) (cdr node-env) env))))))
 
 (local
  (defthm svexl-and-node-env-inv-implies-lens
-   (implies (svexl-node-env-inv svexl-node-alist node-env env)
-            (equal (len svexl-node-alist)
+   (implies (svexl-node-env-inv svexl-node-array node-env env)
+            (equal (len svexl-node-array)
                    (len node-env)))
    :rule-classes :forward-chaining))
 
@@ -305,20 +298,19 @@
 
 (local
  (defthm svex-fncs-to-svexl-node-fncs-reverse
-  (implies (svex-p svex)
-           (and (equal (svexl-node-kind svex)
-                       (svex-kind svex))
-                (equal (svexl-node-call->args svex)
-                       (svex-call->args svex))
-                (equal (svexl-node-call->fn svex)
-                       (svex-call->fn svex))
-                (equal (svexl-node-quote->val svex)
-                       (sv::svex-quote->val svex))
-                (equal (svexl-node-var->name svex)
+   (implies (svex-p svex)
+            (and (equal (svexl-node-kind svex)
+                        (svex-kind svex))
+                 (equal (svexl-node-call->args svex)
+                        (svex-call->args svex))
+                 (equal (svexl-node-call->fn svex)
+                        (svex-call->fn svex))
+                 (equal (svexl-node-quote->val svex)
+                        (sv::svex-quote->val svex))
+                 (equal (svexl-node-var->name svex)
                         (svex-var->name svex))))
-  :hints (("Goal"
-           :in-theory (e/d (svex-fncs-to-svexl-node-fncs) ())))))
-
+   :hints (("Goal"
+            :in-theory (e/d (svex-fncs-to-svexl-node-fncs) ())))))
 
 (local
  (defthm types-of-nodesdb-var
@@ -338,16 +330,15 @@
                  (equal (nfix (cdr (hons-assoc-equal x alist)))
                         (cdr (hons-assoc-equal x alist)))))))
 
-
 (local
  (defthm-svex-induct1
-   (defthm return-type-of-svex-induct1 
+   (defthm return-type-of-svex-induct1
      (b* (((mv ?res ?new-node nodesdb-res ?node-env-res svexl-res)
-           (svex-induct1 svex reuse-stats nodesdb node-env svexl-node-alist env)))
+           (svex-induct1 svex reuse-stats nodesdb node-env svexl-node-array env)))
        (and (implies (and (svex-p svex)
-                          (svexl-node-alist-p svexl-node-alist)
+                          (svexl-node-array-p svexl-node-array)
                           (nodesdb-p nodesdb))
-                     (svexl-node-alist-p svexl-res))
+                     (svexl-node-array-p svexl-res))
             (implies (and (svex-p svex)
                           (nodesdb-p nodesdb))
                      (nodesdb-p nodesdb-res))
@@ -356,13 +347,13 @@
                      (svexl-node-p new-node))))
      :flag svex-induct1)
 
-   (defthm return-type-of-svexlist-induct1 
+   (defthm return-type-of-svexlist-induct1
      (b* (((mv ?res ?new-node-lst ?nodesdb-res ?node-env-res svexl-res)
-           (svexlist-induct1 lst reuse-stats nodesdb node-env svexl-node-alist env)))
+           (svexlist-induct1 lst reuse-stats nodesdb node-env svexl-node-array env)))
        (and (implies (and (svexlist-p lst)
-                          (svexl-node-alist-p svexl-node-alist)
+                          (svexl-node-array-p svexl-node-array)
                           (nodesdb-p nodesdb))
-                     (svexl-node-alist-p svexl-res))
+                     (svexl-node-array-p svexl-res))
             (implies (and (svexlist-p lst)
                           (nodesdb-p nodesdb))
                      (nodesdb-p nodesdb-res))
@@ -371,10 +362,9 @@
                      (svexl-nodelist-p new-node-lst))))
      :flag svexlist-induct1)
 
-   :hints (("goal" 
+   :hints (("goal"
             :in-theory (e/d ()
                             ())))))
-
 
 (local
  (defthm nfix-of-len
@@ -387,8 +377,6 @@
           val)
    :hints (("goal"
             :in-theory (e/d (svex-env-fastlookup-wog) ())))))
-
-
 
 (local
  (mutual-recursion
@@ -415,7 +403,6 @@
        (eq x nil)
      (and (equal (car x) (1- (len x)))
           (well-numbered-list-p (cdr x))))))
-
 
 (local
  (defthm suffixp-lemma1
@@ -498,8 +485,6 @@
                              svexl-node-eval-is-svexl-node-eval-wog))))))
 
 
-
-
 (local
  (defthm-svexl-node-eval
    (defthm suffixp-all-nodes-covered
@@ -520,15 +505,14 @@
                             (svexl-nodelist-eval-is-svexl-nodelist-eval-wog
                              svexl-node-eval-is-svexl-node-eval-wog))))))
 
-
 (local
  (defthm lemma1
    (implies (and (hons-assoc-equal svex nodesdb)
                  (svex-p svex)
                  (svex-env-p env)
                  (nodesdb-p nodesdb)
-                 (svexl-node-alist-p svexl-node-alist)
-                 (svexl-node-env-inv svexl-node-alist node-env env)
+                 (svexl-node-array-p svexl-node-array)
+                 (svexl-node-env-inv svexl-node-array node-env env)
                  (well-numbered-list-p (strip-cars node-env))
                  (node-env-nodesdb-inv nodesdb node-env env))
             (hons-assoc-equal (cdr (hons-assoc-equal svex nodesdb))
@@ -540,23 +524,23 @@
      (implies (and (svex-p svex)
                    (svex-env-p env)
                    (nodesdb-p nodesdb)
-                   (svexl-node-alist-p svexl-node-alist))
+                   (svexl-node-array-p svexl-node-array))
               (b* (((mv ?res ?new-node ?nodesdb-res node-env-res ?svexl-res)
-                    (svex-induct1 svex reuse-stats nodesdb node-env svexl-node-alist env)))
+                    (svex-induct1 svex reuse-stats nodesdb node-env svexl-node-array env)))
                 (and (suffixp node-env node-env-res))))
      :flag svex-induct1)
 
    (defthm suffix-p-svex-to-svexl-aux-lst-node-env
      (implies (and (svexlist-p lst)
                    (svex-env-p env)
-                   (svexl-node-alist-p svexl-node-alist)
+                   (svexl-node-array-p svexl-node-array)
                    (nodesdb-p nodesdb))
               (b* (((mv ?res ?new-node-lst ?nodesdb-res node-env-res ?svexl-res)
-                    (svexlist-induct1 lst reuse-stats nodesdb node-env svexl-node-alist env)))
+                    (svexlist-induct1 lst reuse-stats nodesdb node-env svexl-node-array env)))
                 (and (suffixp node-env node-env-res))))
      :flag svexlist-induct1)
    :otf-flg t
-   :hints (("goal" 
+   :hints (("goal"
             :in-theory (e/d (svexl-nodelist-eval
                              suffixp
                              svexl-node-eval
@@ -570,19 +554,18 @@
                              nodesdb-p
                              svexl-nodelist-eval-is-svexl-nodelist-eval-wog))))))
 
-
 (local
  (defthm-svex-induct1
    (defthm svex-to-svexl-aux--svex-meval--svexl
      (implies (and (svex-p svex)
                    (svex-env-p env)
                    (nodesdb-p nodesdb)
-                   (svexl-node-alist-p svexl-node-alist)
-                   (svexl-node-env-inv svexl-node-alist node-env env)
+                   (svexl-node-array-p svexl-node-array)
+                   (svexl-node-env-inv svexl-node-array node-env env)
                    (well-numbered-list-p (strip-cars node-env))
                    (node-env-nodesdb-inv nodesdb node-env env))
               (b* (((mv res new-node ?nodesdb-res node-env-res svexl-res)
-                    (svex-induct1 svex reuse-stats nodesdb node-env svexl-node-alist env)))
+                    (svex-induct1 svex reuse-stats nodesdb node-env svexl-node-array env)))
                 (and (svexl-node-env-inv svexl-res node-env-res env)
                      (all-nodes-covered new-node node-env-res)
                      (well-numbered-list-p (strip-cars node-env-res))
@@ -593,13 +576,13 @@
    (defthm svex-to-svexl-aux-lst--svexlist-meval--svexl
      (implies (and (svexlist-p lst)
                    (svex-env-p env)
-                   (svexl-node-alist-p svexl-node-alist)
+                   (svexl-node-array-p svexl-node-array)
                    (nodesdb-p nodesdb)
-                   (svexl-node-env-inv svexl-node-alist node-env env)
+                   (svexl-node-env-inv svexl-node-array node-env env)
                    (well-numbered-list-p (strip-cars node-env))
                    (node-env-nodesdb-inv nodesdb node-env env))
               (b* (((mv res new-node-lst ?nodesdb-res node-env-res svexl-res)
-                    (svexlist-induct1 lst reuse-stats nodesdb node-env svexl-node-alist env)))
+                    (svexlist-induct1 lst reuse-stats nodesdb node-env svexl-node-array env)))
                 (and (svexl-node-env-inv svexl-res node-env-res env)
                      (well-numbered-list-p (strip-cars node-env-res))
                      (all-nodes-covered-lst new-node-lst node-env-res)
@@ -624,10 +607,10 @@
                              (x (mv-nth 1
                                         (svex-induct1 (car lst)
                                                       reuse-stats nodesdb
-                                                      node-env svexl-node-alist env)))
+                                                      node-env svexl-node-array env)))
                              (node-env (mv-nth 3
                                                (svex-induct1 (car lst)
-                                                             reuse-stats nodesdb node-env svexl-node-alist env)))
+                                                             reuse-stats nodesdb node-env svexl-node-array env)))
                              (big (mv-nth
                                    3
                                    (svexlist-induct1
@@ -635,16 +618,14 @@
                                     reuse-stats
                                     (mv-nth 2
                                             (svex-induct1 (car lst)
-                                                          reuse-stats nodesdb node-env svexl-node-alist env))
+                                                          reuse-stats nodesdb node-env svexl-node-array env))
                                     (mv-nth 3
                                             (svex-induct1 (car lst)
-                                                          reuse-stats nodesdb node-env svexl-node-alist env))
+                                                          reuse-stats nodesdb node-env svexl-node-array env))
                                     (mv-nth 4
                                             (svex-induct1 (car lst)
-                                                          reuse-stats nodesdb node-env svexl-node-alist env))
+                                                          reuse-stats nodesdb node-env svexl-node-array env))
                                     env)))))))))
-
-
 
 (local
  (defthmd equal-cons-1
@@ -657,19 +638,18 @@
 
 (local
  (defthm svexl-eval-aux--svexl-and-node-env-inv
-   (implies (and (svexl-node-alist-p svexl-node-alist)
+   (implies (and (svexl-node-array-p svexl-node-array)
                  (svex-env-p env)
-                 (svexl-node-env-inv svexl-node-alist node-env env))
-            (equal (svexl-eval-aux svexl-node-alist env)
+                 (svexl-node-env-inv svexl-node-array node-env env))
+            (equal (svexl-eval-aux svexl-node-array env)
                    node-env))
    :hints (("Goal"
-            :induct (svexl-node-env-inv svexl-node-alist node-env env)
+            :induct (svexl-node-env-inv svexl-node-array node-env env)
             :do-not-induct t
             :in-theory (e/d (svexl-eval-aux
                              equal-cons-1)
                             (svexl-node-eval-is-svexl-node-eval-wog
-                             svexl-eval-aux-is-svexl-eval-aux-wog))))))  
-
+                             svexl-eval-aux-is-svexl-eval-aux-wog))))))
 
 (defthmd svexl-correct
   (implies (and (svex-p svex)
@@ -686,13 +666,13 @@
                             (svex svex)
                             (env env)
                             (node-env nil)
-                            (svexl-node-alist nil)
+                            (svexl-node-array nil)
                             (nodesdb nil)
                             (cnt 0))
                  (:instance svexl-eval-aux--svexl-and-node-env-inv
-                            (svexl-node-alist (mv-nth 2
-                                           (svex-to-svexl-aux svex (svex-to-svexl-get-stats nil svex)
-                                                              nil nil 0)))
+                            (svexl-node-array (mv-nth 2
+                                                      (svex-to-svexl-aux svex (svex-to-svexl-get-stats nil svex)
+                                                                         nil nil 0)))
                             (env env)
                             (node-env (MV-NTH 3
                                               (SVEX-INDUCT1 SVEX (SVEX-TO-SVEXL-GET-STATS NIL SVEX)
@@ -721,17 +701,17 @@
                             (lst lst)
                             (env env)
                             (node-env nil)
-                            (svexl-node-alist nil)
+                            (svexl-node-array nil)
                             (nodesdb nil)
                             (cnt 0))
                  (:instance svexl-eval-aux--svexl-and-node-env-inv
-                            (svexl-node-alist (mv-nth 2
-                                           (svex-to-svexl-aux-lst lst (svex-to-svexl-get-stats-lst nil lst)
-                                                              nil nil 0)))
+                            (svexl-node-array (mv-nth 2
+                                                      (svex-to-svexl-aux-lst lst (svex-to-svexl-get-stats-lst nil lst)
+                                                                             nil nil 0)))
                             (env env)
                             (node-env (MV-NTH 3
                                               (svexlist-induct1 lst (svex-to-svexl-get-stats-lst nil lst)
-                                                            nil nil nil env)))))
+                                                                nil nil nil env)))))
            :in-theory (e/d (svexl-eval
                             svexllist-eval)
                            (svexl-eval-is-svexl-eval-wog
@@ -746,3 +726,118 @@
 
 (rp::add-rp-rule svexl-correct :disabled t)
 (rp::add-rp-rule svexllist-correct :disabled t)
+
+(encapsulate
+  nil
+
+  (local
+   (defun svexl-node-alist-eval-alt (alist node-env env)
+     (b* ((keys (strip-cars alist))
+          (lst (strip-cdrs alist))
+          (eval-lst (svexl-nodelist-eval lst node-env env)))
+       (pairlis$ keys eval-lst))))
+
+  (local
+   (defthm svexl-node-alist-eval-redef
+     (implies t
+              (equal (svexl-node-alist-eval alist node-env env)
+                     (svexl-node-alist-eval-alt alist node-env env)))
+     :hints (("Goal"
+              :in-theory (e/d (svexl-node-alist-eval
+                               SVEXL-NODELIST-EVAL
+                               SVEXL-NODE-ALIST-P)
+                              (SVEXL-NODE-ALIST-EVAL-IS-SVEXL-NODE-ALIST-EVAL-WOG
+                               SVEXL-NODELIST-EVAL-IS-SVEXL-NODELIST-EVAL-WOG))))))
+
+  (local
+   (defun svex-alist-eval-alt (alist env)
+     (b* ((keys (strip-cars alist))
+          (lst (strip-cdrs alist))
+          (eval-lst (sv::svexlist-eval lst env)))
+       (pairlis$ keys eval-lst))))
+
+  (local
+   (defthm svex-alist-eval-redef
+     (implies (sv::svex-alist-p alist)
+              (equal (sv::svex-alist-eval alist  env)
+                     (svex-alist-eval-alt alist  env)))
+     :hints (("Goal"
+              :in-theory (e/d (svexl-node-alist-eval
+                               SVEXLIST-EVAL
+                               sv::svex-alist-eval)
+                              ())))))
+
+  (defthm svexl-node-alist-p-of-pairlis$
+    (implies (and (equal (len x) (len y))
+                  (sv::svarlist-p x)
+                  (svexl-nodelist-p y))
+             (svexl-node-alist-p (pairlis$ x y)))
+    :hints (("Goal"
+             :in-theory (e/d (svexl-node-alist-p
+                              sv::svarlist-p
+                              svexl-nodelist-p)
+                             ()))))
+
+  (local
+   (defthm sv::svex-alist-p-and-strip-fncs
+     (implies (SV::SVEX-ALIST-P alist)
+              (and (sv::svarlist-p (strip-cars alist))
+                   (svexlist-p (strip-cdrs alist))))))
+
+  (local
+   (defthm strip-cars/cdrs-of-pairlis$
+     (and (implies (true-listp x)
+                   (equal (strip-cars (pairlis$ x y))
+                          x))
+          (implies (and (equal (len x) (len y))
+                        (true-listp y))
+                   (equal (strip-cdrs (pairlis$ x y))
+                          y)))))
+
+  (defthmd svexl-alist-correct
+    (implies (and (sv::svex-alist-p alist)
+                  (svex-env-p env))
+             (equal (sv::svex-alist-eval alist env)
+                    (svexl-alist-eval (svex-alist-to-svexl-alist alist) env)))
+    :hints (("Goal"
+             :do-not-induct t
+             :use ((:instance svex-to-svexl-aux-lst--svexlist-induct1
+                              (reuse-stats (svex-to-svexl-get-stats-lst nil (STRIP-CDRS ALIST)))
+                              (lst (STRIP-CDRS ALIST))
+                              (env env)
+                              (node-env nil)
+                              (svexl-node-array nil)
+                              (nodesdb nil)
+                              (cnt 0))
+                   (:instance svexl-eval-aux--svexl-and-node-env-inv
+                              (svexl-node-array (mv-nth 2
+                                                        (svex-to-svexl-aux-lst
+                                                         (STRIP-CDRS ALIST)
+                                                         (svex-to-svexl-get-stats-lst nil (STRIP-CDRS ALIST))
+                                                         nil nil 0)))
+                              (env env)
+                              (node-env (MV-NTH 3
+                                                (svexlist-induct1 (STRIP-CDRS
+                                                                   ALIST)
+                                                                  (svex-to-svexl-get-stats-lst nil (STRIP-CDRS ALIST))
+                                                                  nil nil nil env)))))
+             :in-theory (e/d (sv::svex-alist-eval
+                              sv::svex-alist-p
+                              svexlist-eval
+                              svexl-correct
+                              SVEX-ALIST-TO-SVEXL-ALIST
+                              svexl-alist-eval)
+                             (svexl-eval-is-svexl-eval-wog
+                              svexl-eval-aux--svexl-and-node-env-inv
+                              svex-to-svexl-aux-lst--svexlist-induct1
+                              svexllist-correct
+                              svexl-nodelist-eval-is-svexl-nodelist-eval-wog
+                              svex-to-svexl-aux--svex-induct-1
+                              svex-to-svexl-aux-lst--svexlist-induct1
+                              svexl-eval-aux--svexl-and-node-env-inv
+                              svexl-node-eval-is-svexl-node-eval-wog
+                              return-cnt-of-svex-to-svexl-aux
+                              svexl-eval-aux-is-svexl-eval-aux-wog
+                              svex-eval-is-svex-eval-wog)))))
+
+  (rp::add-rp-rule svexl-alist-correct :disabled t))

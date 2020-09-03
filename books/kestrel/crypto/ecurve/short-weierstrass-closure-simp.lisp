@@ -20,12 +20,12 @@
 ; ------------------------------------------
 
 ; In this book we define "simplified" versions of the functions
-; point-on-elliptic-curve-p and curve-group-+ from short-weierstrass.lisp by
-; encapsulating some of the arithmetic using our previously defined polynomials
-; in short-weierstrass-lemma.lisp. We then prove the closure property for these
-; simplified definitions, which short-weierstrass.lisp then uses to prove the
-; closure property on the original definitions of the two aforementioned
-; functions.
+; point-on-weierstrass-elliptic-curve-p and curve-group-+ from
+; short-weierstrass.lisp by encapsulating some of the arithmetic using our
+; previously defined polynomials in short-weierstrass-lemma.lisp. We then prove
+; the closure property for these simplified definitions, which
+; short-weierstrass.lisp then uses to prove the closure property on the
+; original definitions of the two aforementioned functions.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -70,12 +70,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Simplified definitions of point-on-elliptic-curve-p and curve-group-+.
+; Simplified definitions of point-on-weierstrass-elliptic-curve-p and curve-group-+.
 
 ;; The following definitions are based on P[X.Y], alpha{x1=x2}, alpha{x1=/=x2},
 ;; which are disabled, thus greatly simplifying proofs.
 
-(defund simp-point-on-elliptic-curve-p (point a b)
+(defund simp-point-on-weierstrass-elliptic-curve-p (point a b)
   (or (equal point :infinity)
       (let ((x (car point)) (y (cdr point)))
         (=p (P[X.Y] x y a b) 0))))
@@ -116,13 +116,13 @@
                 (integerp b)
                 (pointp point1)
                 (pointp point2)
-                (simp-point-on-elliptic-curve-p point1 a b)
-                (simp-point-on-elliptic-curve-p point2 a b))
-           (simp-point-on-elliptic-curve-p
+                (simp-point-on-weierstrass-elliptic-curve-p point1 a b)
+                (simp-point-on-weierstrass-elliptic-curve-p point2 a b))
+           (simp-point-on-weierstrass-elliptic-curve-p
             (simp-curve-group-+ point1 point2 a b) a b))
   :hints (("Goal"
            :in-theory (enable simp-curve-group-+
-                              simp-point-on-elliptic-curve-p
+                              simp-point-on-weierstrass-elliptic-curve-p
                               pointp)
            :use ((:instance P[X1.Y1]=0-and-P[X2.Y2]=0-implies-P[X3.Y3]=0
                   (x1 (car point1))
