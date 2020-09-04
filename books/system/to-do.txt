@@ -824,3 +824,18 @@ and then checking their accuracy at the end of the build.  See
 function check-built-in-constants in interface-raw.lisp.
 
 <><><><><><><><><><><><><><><><><><><><><><><><><>
+
+{{Fix the start argument of (subseq-list lst start end) to a natural
+number using MBE.}}
+
+Quite a few rules about subseq-list and subseq will become more
+concise and have fewer case-splits when we replace start with (nfix
+start). A quick look suggests that this will, however, require some
+work to get "make devel-check" (see :doc
+verify-guards-for-system-functions) to pass and to get the community
+books to certify afterwards.
+
+Note that others seem to independently have noted the desirability
+of doing this in :doc subseq-list.
+
+<><><><><><><><><><><><><><><><><><><><><><><><><>
