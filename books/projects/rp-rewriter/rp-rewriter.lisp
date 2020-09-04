@@ -53,6 +53,9 @@
  (include-book "proofs/local-lemmas"))
 
 (local
+ (include-book "proofs/aux-function-lemmas"))
+
+(local
  (in-theory (disable state-p)))
 
 (local
@@ -576,16 +579,20 @@
         (remove-rp-from-bindings var-bindings)
       var-bindings)))
 
+
 (progn
   (encapsulate
-    ((rp-rw-meta-rule (term meta-fnc-name) (mv t t)
-                      :guard (rp-termp term))
+    ((rp-rw-meta-rule (term meta-fnc-name dont-rw context rp-state state)
+                      (mv t t rp-state)
+                      :guard (rp-termp term)
+                      :stobjs (state rp-state))
      (rp-formula-checks (state) t :stobjs (state)))
     (local
-     (defun rp-rw-meta-rule (term meta-fnc-name)
-       (declare (ignorable meta-fnc-name)
-                (xargs :guard (rp-termp term)))
-       (mv term nil)))
+     (defun rp-rw-meta-rule (term meta-fnc-name dont-rw context rp-state state)
+       (declare (ignorable term meta-fnc-name dont-rw context rp-state state)
+                (xargs :guard (rp-termp term))
+                (xargs :stobjs (state rp-state)))
+       (mv term nil rp-state)))
 
     (local
      (defun rp-formula-checks (state)
@@ -595,45 +602,55 @@
 
     (defthm rp-rw-meta-rule-valid-eval
       (implies (and (rp-termp term)
+                    (rp-term-listp context)
                     (valid-sc term a)
+                    (valid-sc-subterms context a)
                     (rp-evl-meta-extract-global-facts)
-                    (rp-formula-checks state))
-               (b* (((mv res-term ?dont-rw)
-                     (rp-rw-meta-rule term meta-fnc-name)))
+                    (rp-formula-checks state)
+                    (rp-statep rp-state))
+               (b* (((mv res-term ?dont-rw ?res-rp-state)
+                     (rp-rw-meta-rule term meta-fnc-name dont-rw context rp-state state)))
                  (and (valid-sc res-term a)
                       (equal (rp-evlt res-term a)
                              (rp-evlt term a))))))
 
+    (defthm rp-rw-meta-rule-rp-state-preservedp
+      (implies (rp-statep rp-state)
+               (b* (((mv ?res-term ?dont-rw res-rp-state)
+                     (rp-rw-meta-rule term meta-fnc-name dont-rw context rp-state state)))
+                 (rp-state-preservedp rp-state res-rp-state))))
+
     (defthm rp-rw-meta-rule-valid-rp-termp
       (implies (and (rp-termp term))
-               (b* (((mv res-term ?dont-rw)
-                     (rp-rw-meta-rule term meta-fnc-name)))
+               (b* (((mv res-term ?dont-rw ?rp-state)
+                     (rp-rw-meta-rule term meta-fnc-name dont-rw context rp-state state)))
                  (rp-termp res-term))))
 
-    (defthm rp-rw-meta-rule-valid-dont-rw-syntaxp
-      (implies t
-               (b* (((mv ?res-term dont-rw)
-                     (rp-rw-meta-rule term meta-fnc-name)))
-                 (dont-rw-syntaxp dont-rw))))
+    #|(defthm rp-rw-meta-rule-valid-dont-rw-syntaxp
+      (b* (((mv ?res-term ?dont-rw ?res-rp-state)
+            (rp-rw-meta-rule term meta-fnc-name dont-rw context rp-state state)))
+        (dont-rw-syntaxp dont-rw)))||#
+    )
 
-    (defund rp-rw-meta-rule-main (term rule rp-state)
-      (declare (xargs  :stobjs (rp-state)
-                       :verify-guards nil
-                       :guard (and (rp-termp term)
-                                   (rule-syntaxp rule)
-                                   (rp-rule-metap rule))))
-      (b* (((mv res-term dont-rw)
-            (rp-rw-meta-rule term (rp-rule-meta-fnc rule)))
-           (term-changed (not (equal res-term term)))
-           #|(rp-state (if term-changed
-           (rp-stat-add-to-rules-used-meta-cnt rule
-           rp-state)
-           rp-state))||#
-           #|(rp-state (if term-changed
-           (rp-state-push-meta-to-rw-stack rule term res-term
-           rp-state)
-           rp-state))||#)
-        (mv term-changed res-term dont-rw rp-state)))))
+  (defund rp-rw-meta-rule-main (term rule dont-rw context rp-state state)
+    (declare (xargs  :stobjs (rp-state state)
+                     :verify-guards nil
+                     :guard (and (rp-termp term)
+                                 (rule-syntaxp rule)
+                                 (rp-rule-metap rule))))
+    (b* (((mv res-term dont-rw rp-state)
+          (rp-rw-meta-rule term (rp-rule-meta-fnc rule) dont-rw context
+                           rp-state state))
+         (term-changed (not (equal res-term term)))
+         #|(rp-state (if term-changed
+         (rp-stat-add-to-rules-used-meta-cnt rule ;
+         rp-state) ;
+         rp-state))||#
+         #|(rp-state (if term-changed
+         (rp-state-push-meta-to-rw-stack rule term res-term ;
+         rp-state) ;
+         rp-state))||#)
+      (mv term-changed res-term dont-rw rp-state))))
 
 (defun rp-rw-rule-aux (term rules-for-term context iff-flg state)
   (declare (xargs :mode :logic
@@ -884,7 +901,7 @@ returns (mv rule rules-rest bindings rp-context)"
 
           ((when (rp-rule-metap rule))
            (b* (((mv term-changed term dont-rw rp-state)
-                 (rp-rw-meta-rule-main term rule rp-state)))
+                 (rp-rw-meta-rule-main term rule dont-rw context rp-state state)))
              (if term-changed
                  (mv term-changed term dont-rw rp-state)
                (rp-rw-rule term dont-rw rules-for-term-rest context iff-flg outside-in-flg

@@ -127,9 +127,13 @@
                             mv-nth-meta
                             rp::VALID-SC)))))||#
 
-(rp::add-meta-rules mv-nth-formula-checks
-                    (list (make rp::rp-meta-rule-rec
-                                :fnc 'mv-nth-meta
-                                :trig-fnc 'mv-nth
-                                :dont-rw t
-                                :valid-syntax t)))
+
+(rp::add-meta-rule
+ :meta-fnc mv-nth-meta
+ :trig-fnc mv-nth
+ :formula-checks mv-nth-formula-checks
+ :valid-syntaxp t
+ :returns (mv term dont-rw)
+ 
+ :hints (("Goal"
+          :in-theory (e/d () (mv-nth-meta)))))

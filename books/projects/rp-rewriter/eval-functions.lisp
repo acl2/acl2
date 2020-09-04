@@ -45,27 +45,6 @@
 (include-book "std/basic/two-nats-measure" :dir :system)
 (include-book "misc/untranslate-patterns" :dir :system)
 
-(defrec rp-evaluators
-  (valid-rp-meta-rule-listp
-   valid-rp-meta-rulep
-   eval-and-all
-   valid-sc
-   valid-sc-subterms
-   rp-evl
-   rp-evl-lst
-   rp-evl-meta-extract-global-badguy
-   rp-evl-meta-extract-contextual-badguy
-   rp-evl-falsify
-   rp-evl-falsify-sufficient
-   rp-evl-constraint-0
-   rp-evl-meta-extract-global-badguy-sufficient
-   valid-rp-meta-rulep-witness
-   valid-rp-meta-rulep-necc
-   evals-equal-sk
-   evals-equal-sk-necc
-   evals-equal-sk-witness
-   )
-  nil)
 
 (define create-eval-fnc (fnc-alist)
   :guard (fnc-alistp fnc-alist)
@@ -392,7 +371,7 @@
                             (and (valid-sc term2 a)
                                  (equal (rp-evlt term1 a)
                                         (rp-evlt term2 a))))))
- (defun-sk valid-rp-meta-rulep (rule state-)
+ #|(defun-sk valid-rp-meta-rulep (rule state-)
   (declare (xargs :guard (weak-rp-meta-rule-rec-p rule)
                   :verify-guards nil))
   (forall
@@ -417,7 +396,7 @@
         (if (atom rules)
             (equal rules nil)
             (and (valid-rp-meta-rulep (car rules) state)
-                 (valid-rp-meta-rule-listp (cdr rules) state)))))
+                 (valid-rp-meta-rule-listp (cdr rules) state))))||#)
 
 
 
@@ -459,3 +438,7 @@
 (make-flag valid-sc-nt :defthm-macro-name defthm-valid-sc-nt
            :hints (("Goal"
                     :in-theory (e/d (measure-lemmas) ()))))
+
+
+
+

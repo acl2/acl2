@@ -1900,14 +1900,23 @@
 ;;                             resolve-assoc-eq-vals-rec
 ;;                             resolve-pp-sum-order)))))
 
-(rp::add-meta-rules
+#|(rp::add-meta-rules
  pp-sum-meta-formal-checks
  (list
   (make rp-meta-rule-rec
         :fnc 'resolve-pp-sum-order-main
         :trig-fnc 'merge-pp+
         :dont-rw t
-        :valid-syntax t)))
+        :valid-syntax t)))||#
+
+(rp::add-meta-rule
+ :meta-fnc resolve-pp-sum-order-main
+ :trig-fnc merge-pp+
+ :valid-syntaxp t
+ :formula-checks pp-sum-meta-formal-checks
+ :returns (mv term dont-rw)
+ :hints (("Goal"
+          :in-theory (e/d () (resolve-pp-sum-order-main)))))
 
 (in-theory (disable (:e rp::merge-pp+)
                     (:e rp::p+)))

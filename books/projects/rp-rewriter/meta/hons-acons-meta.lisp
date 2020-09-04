@@ -319,11 +319,14 @@
                             hons-acons-meta
                             VALID-SC)))))||#
 
-(rp::add-meta-rules
- hons-acons-meta-formula-checks
- (list
-  (make rp-meta-rule-rec
-        :fnc 'hons-acons-meta
-        :trig-fnc 'hons-acons
-        :dont-rw t
-        :valid-syntax t)))
+
+
+(rp::add-meta-rule
+ :meta-fnc hons-acons-meta
+ :trig-fnc hons-acons
+ :formula-checks hons-acons-meta-formula-checks
+ :valid-syntaxp t
+ :returns (mv term dont-rw)
+ 
+ :hints (("Goal"
+          :in-theory (e/d () (hons-acons-meta)))))

@@ -743,7 +743,7 @@
                      rp::not-simplified-action
                      rp::update-not-simplified-action
                      rp::preprocess-then-rp-rw
-                     rp::rp-meta-rule-recs-p
+                     ;;rp::rp-meta-rule-recs-p
                      rp::rw-step-limit
                      table-alist
                      (:type-prescription natp-rp-rw-step-limit)
@@ -774,9 +774,9 @@
        ((mv runes runes-outside-in)
         (if (or runes runes-outside-in)
             (mv (acl2::append-without-guard
-                 (rp::get-enabled-meta-rules-from-table nil state) runes)
+                 *svex-simplify-meta-rules* runes)
                 (acl2::append-without-guard
-                 (rp::get-enabled-meta-rules-from-table t state)
+                 *svex-simplify-meta-rules-outside-in*
                  runes-outside-in))
           (mv nil nil)))
        
@@ -846,7 +846,7 @@
                      rp::not-simplified-action
                      rp::update-not-simplified-action
                      rp::preprocess-then-rp-rw
-                     rp::rp-meta-rule-recs-p
+                     
                      rp::rw-step-limit
                      table-alist
                      (:type-prescription natp-rp-rw-step-limit)
@@ -875,9 +875,9 @@
        ((mv runes runes-outside-in)
         (if (or runes runes-outside-in)
             (mv (acl2::append-without-guard
-                 (rp::get-enabled-meta-rules-from-table nil state) runes)
+                 *svex-simplify-meta-rules* runes)
                 (acl2::append-without-guard
-                 (rp::get-enabled-meta-rules-from-table t state)
+                 *svex-simplify-meta-rules-outside-in*
                  runes-outside-in))
           (mv nil nil)))
        

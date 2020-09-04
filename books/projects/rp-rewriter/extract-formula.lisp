@@ -796,9 +796,11 @@
         `(table rp-rules nil ',cur-table :clear))))
 
   (defmacro disable-exc-counterpart (fnc)
+    (declare (xargs :guard (symbolp fnc)))
     `(table rp-exc-rules ',fnc nil))
 
   (defmacro enable-exc-counterpart (fnc)
+    (declare (xargs :guard (symbolp fnc)))
     `(table rp-exc-rules ',fnc t)))
 
 

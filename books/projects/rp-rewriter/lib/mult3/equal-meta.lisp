@@ -75,122 +75,42 @@
                   (case-match y (('s & & &) t))))
     :rule-classes :forward-chaining))
 
-(local
- (defthmd cons-count-cadddr-lemma
-   (IMPLIES (AND (ARE-C-INSTANCES x y))
-            (O< (+ (CONS-COUNT (CAdDDR (cdr x)))
-                   (CONS-COUNT (CADdDR (cdr y))))
-                (+ (CONS-COUNT X) (CONS-COUNT Y))))
-   :hints (("Goal"
-            :in-theory (e/d (cons-count
-                             is-rp-loose) ())))))
-
-(local
- (defthmd cons-count-cadddr-lemma-2
-   (IMPLIES (or (AND (ARE-s-INSTANCES x y))
-                (and (s-c-res-p x)
-                     (s-c-res-p y)))
-            (O< (+ (CONS-COUNT (CAdDR (cdr x)))
-                   (CONS-COUNT (CADDR (cdr y))))
-                (+ (CONS-COUNT X) (CONS-COUNT Y))))
-   :hints (("Goal"
-            :in-theory (e/d (cons-count
-                             is-rp-loose) ())))))
-
-(local
- (DEFTHMd local-EQUALITY-MEASURE-LEMMA9
-   (IMPLIES (AND (<= A B) (<= X Y))
-            (<= (+ X A) (+ B Y)))))
-
-(local
- (defthmd cons-count-cadddr-lemma2
-   (IMPLIES (AND (ARE-C-INSTANCES (EX-FROM-RP-LOOSE X)
-                                  (EX-FROM-RP-LOOSE Y)))
-            (O< (+ (CONS-COUNT (CADDdR (cdr (EX-FROM-RP-LOOSE X))))
-                   (CONS-COUNT (CADDdR (cdr (EX-FROM-RP-LOOSE Y)))))
-                (+ (CONS-COUNT X) (CONS-COUNT Y))))
-   :hints (("Goal"
-            :use ((:instance cons-count-cadddr-lemma
-                             (x (ex-from-rp-loose x))
-                             (y (ex-from-rp-loose y)))
-                  (:instance local-EQUALITY-MEASURE-LEMMA9
-                             (a (cons-count (ex-from-rp-loose x)))
-                             (x (cons-count (ex-from-rp-loose y)))
-                             (y (cons-count y))
-                             (b (cons-count x))))
-            :in-theory (e/d (MEASURE-LEMMA4-V2) ())))))
-
-(local
- (defthmd cons-count-cadddr-lemma2-2
-   (IMPLIES (AND (ARE-s-INSTANCES (EX-FROM-RP-LOOSE X)
-                                  (EX-FROM-RP-LOOSE Y)))
-            (O< (+ (CONS-COUNT (CADDR (cdr (EX-FROM-RP-LOOSE X))))
-                   (CONS-COUNT (CADdR (cdr (EX-FROM-RP-LOOSE Y)))))
-                (+ (CONS-COUNT X) (CONS-COUNT Y))))
-   :hints (("Goal"
-            :use ((:instance cons-count-cadddr-lemma-2
-                             (x (ex-from-rp-loose x))
-                             (y (ex-from-rp-loose y)))
-                  (:instance local-EQUALITY-MEASURE-LEMMA9
-                             (a (cons-count (ex-from-rp-loose x)))
-                             (x (cons-count (ex-from-rp-loose y)))
-                             (y (cons-count y))
-                             (b (cons-count x))))
-            :in-theory (e/d (MEASURE-LEMMA4-V2) ())))))
-
-
-
-(local
- (defthm cons-count-lemma-s-c-res-p
-   (IMPLIES (AND (S-C-RES-P (EX-FROM-RP-LOOSE X))
-                 (S-C-RES-P (EX-FROM-RP-LOOSE Y)))
-            (O< (+ (CONS-COUNT (CADDDR (EX-FROM-RP-LOOSE X)))
-                   (CONS-COUNT (CADDDR (EX-FROM-RP-LOOSE Y))))
-                (+ (CONS-COUNT X) (CONS-COUNT Y))))
-   :hints (("Goal"
-            :do-not-induct t
-            :use ((:instance cons-count-cadddr-lemma-2
-                             (x (ex-from-rp-loose x))
-                             (y (ex-from-rp-loose y)))
-                  (:instance local-EQUALITY-MEASURE-LEMMA9
-                             (a (cons-count (ex-from-rp-loose x)))
-                             (x (cons-count (ex-from-rp-loose y)))
-                             (y (cons-count y))
-                             (b (cons-count x))))
-            :in-theory (e/d (MEASURE-LEMMA4-V2)
-                            ())))))
-
-(defun rp-equal-iter-pp (x y lst-flg)
+(define rp-equal-iter-pp ((x)
+                          (y)
+                          (lst-flg booleanp))
   ;; returns (mv order equal-x-y)
-  (declare (xargs :guard t
-                  :measure (+ (cons-count x) (cons-count y))
-                  :otf-flg t
-                  :hints (("Goal"
-                           :expand ((:free (x) (nth 3 x))
-                                    (:free (x) (nth 2 x))
-                                    (:free (x) (nth 1 x))
-                                    (:free (x) (nth 0 x)))
-                           :in-theory (e/d (measure-lemmas
-                                            cons-count-cadddr-lemma2-2
-                                            cons-count-cadddr-lemma
-                                            cons-count-cadddr-lemma2) ())))))
+  :guard (and (if lst-flg
+                  (rp-term-listp x)
+                (rp-termp x))
+              (if lst-flg
+                  (rp-term-listp y)
+                (rp-termp y)))
+  :prepwork ((local
+              (in-theory (disable ex-from-rp)))
+             (defthm nth-of-constant
+               (implies (and (syntaxp (quotep pos))
+                             (natp pos))
+                        (equal (nth pos lst)
+                               (IF (ENDP lst)
+                                   NIL
+                                   (IF (ZP pos)
+                                       (CAR lst)
+                                       (NTH (- pos 1) (CDR lst))))))))
+  :measure (+ (cons-count x) (cons-count y))
+  :hints (("Goal"
+           :in-theory (e/d (measure-lemmas) ())))
   (cond
    (lst-flg (if (or (atom x)
                     (atom y))
                 (equal x y)
               (and (rp-equal-iter-pp (car x) (car y) nil)
                    (rp-equal-iter-pp (cdr x) (cdr y) t))))
-   (t (let ((x (ex-from-rp-loose x))
-            (y (ex-from-rp-loose y)))
+   (t (let ((x (ex-from-rp$ x))
+            (y (ex-from-rp$ y)))
         (cond ((or (atom x)
                    (atom y)
                    (eq (car x) 'quote))
                (equal x y))
-              ((and (s-c-res-p x)
-                    (s-c-res-p y))
-               (and (rp-equal-iter-pp (nth 1 x) (nth 1 y) nil)
-                    (rp-equal-cnt-memoized (nth 2 x) (nth 2 y))
-                    (rp-equal-iter-pp (nth 3 x) (nth 3 y) nil)))
               ((are-c-instances x y)
                (and (equal (nth 1 x) (nth 1 y))
                     (rp-equal-iter-pp (nth 2 x) (nth 2 y) nil)
@@ -200,15 +120,21 @@
                (and (equal (nth 1 x) (nth 1 y))
                     (rp-equal-cnt-memoized (nth 2 x) (nth 2 y))
                     (rp-equal-iter-pp (nth 3 x) (nth 3 y) nil)))
+              ((and (s-c-res-p x)
+                    (s-c-res-p y))
+               (and (rp-equal-iter-pp (nth 1 x) (nth 1 y) nil)
+                    (rp-equal-cnt-memoized (nth 2 x) (nth 2 y))
+                    (rp-equal-iter-pp (nth 3 x) (nth 3 y) nil)))              
               (t (and (equal (car x) (car y))
                       (rp-equal-iter-pp (cdr x) (cdr y) t))))))))
 
-(define rp-equal-cnt-iter (x y cnt)
+(define rp-equal-cnt-iter ((x rp-termp)
+                           (y rp-termp)
+                           cnt)
   (declare (ignorable cnt))
   (rp-equal-iter-pp x y nil))
 
-(defund rp-equal-iter-pp+-meta (term)
-  (declare (xargs :guard t))
+(define rp-equal-iter-pp+-meta ((term rp-termp))
   (case-match term
     (('equal a b)
      (if (rp-equal-iter-pp a b nil)
@@ -220,21 +146,6 @@
   rp-evl
   (strip-cars *small-evl-fncs*))
 
-(def-formula-checks
-  rp-equal-iter-pp+-meta-formula-checks
-  (rp-equal-iter-pp+-meta))
-
-(local
- (defthmd rp-evlt-of-ex-from-rp-loose-reverse
-   (implies (syntaxp (atom term))
-            (equal (rp-evlt term a)
-                   (rp-evlt (EX-FROM-RP-LOOSE term) a)))
-   :hints (("Goal"
-            :induct (EX-FROM-RP-LOOSE term)
-            :do-not-induct t
-            :in-theory (e/d (EX-FROM-RP-LOOSE
-                             IS-RP-LOOSE) ())))))
-
 (local
  (defthmd rp-evlt-of-ex-from-rp-reverse
    (implies (syntaxp (atom term))
@@ -243,23 +154,7 @@
    :hints (("Goal"
             :induct (EX-FROM-RP term)
             :do-not-induct t
-            :in-theory (e/d (EX-FROM-Rp
-                             IS-RP-LOOSE) ())))))
-
-(local
- (defthm rp-termp-of-CAR-CDDDDR
-   (implies (and (rp-termp X)
-                 (consp x)
-;(not (quotep x))
-                 (consp (cdr x))
-                 (consp (cddr x))
-                 (consp (cdddr x))
-                 (consp (cddddr x)))
-            (rp-termp (car (cddddr x))))
-   :hints (("Goal"
-            :in-theory (e/d (RP-TERMP IS-RP
-                                      EX-FROM-RP-LOOSE
-                                      IS-RP-LOOSE)
+            :in-theory (e/d (EX-FROM-RP)
                             ())))))
 
 (local
@@ -267,47 +162,11 @@
    nil
 
    (local
-    (defthm rp-termp-lemma1
-      (implies (and (rp-termp term)
-                    (consp term))
-               (rp-termp (car term)))
-      :hints (("goal"
-               :expand (rp-termp term)
-               :in-theory (e/d (ex-from-rp-loose is-rp-loose
-                                                 rp-termp) ())))))
-
-   (local
-    (defthm rp-termp-lemma2
-      (implies (and (rp-termp term)
-                    (CONSP term))
-               (rp-termp (car term)))
-      :hints (("goal"
-               :expand (rp-termp term)
-               :in-theory (e/d (ex-from-rp-loose is-rp-loose
-                                                 rp-termp) ())))))
-
-   (local
-    (defthm lemma2
-      (implies (and (equal (rp-evl-lst (cdr x) a)
-                           (rp-evl-lst (cdr y) a))
-                    (equal (car x) (car y))
-                    (consp x)
-                    (consp y)
-                    (not (quotep x)))
-               (equal (equal (rp-evl x a)
-                             (rp-evl y a))
-                      t))
-      :hints (("Goal"
-               :in-theory (e/d (rp-evl-of-fncall-args) ())))))
-
-   (local
-    (defthm lemma2-v2
+    (defthm lemma1
       (implies (and (equal (rp-evlt-lst (cdr x) a)
                            (rp-evlt-lst (cdr y) a))
                     (equal (car x) (car y))
                     (consp x)
-                    (rp-termp x)
-                    (rp-termp y)
                     (consp y)
                     (not (quotep x)))
                (equal (equal (rp-evlt x a)
@@ -319,70 +178,57 @@
                :expand ((RP-TRANS Y))
                :in-theory (e/d (rp-evl-of-fncall-args) ())))))
 
-   (local
-    (defthm rp-evlt-of-rp-equal-iter-pp+-lemma
-      (if (equal lst-flg 'nil)
-          (implies (and (rp-evl-meta-extract-global-facts)
-                        (rp-termp x)
-                        (rp-termp y)
-                        (rp-equal-iter-pp+-meta-formula-checks state)
-                        (rp-equal-iter-pp x y lst-flg))
-                   (equal (equal (rp-evlt x a)
-                                 (rp-evlt y a))
-                          t))
-        (implies (and (rp-evl-meta-extract-global-facts)
-                      (rp-term-listp x)
-                      (rp-term-listp y)
-                      (rp-equal-iter-pp+-meta-formula-checks state)
-                      (rp-equal-iter-pp x y lst-flg))
-                 (equal (equal (rp-evlt-lst x a)
-                               (rp-evlt-lst y a))
-                        t)))
-      :hints (("Goal"
-               :expand ((:free (x) (nth 3 x))
-                        (:free (x) (nth 2 x))
-                        (:free (x) (nth 1 x))
-                        (:free (x) (nth 0 x)))
-               :do-not-induct t
-               :induct (rp-equal-iter-pp x y lst-flg)
-
-               :in-theory (e/d (rp-equal-iter-pp
-                                ex-from-rp-loose-is-ex-from-rp
-                                ;;rp-evl-of-fncall-args
-                                rp-evlt-of-ex-from-rp-reverse
-                                rp-equal-cnt-memoized)
-                               (EVL-OF-EXTRACT-FROM-RP-LOOSE
-                                (:REWRITE DEFAULT-CAR)
-                                (:REWRITE RP-EVL-OF-RP-EQUAL2-SUBTERMS)
-                                (:REWRITE ACL2::O-P-O-INFP-CAR)(:DEFINITION
-                                                                RP-EQUAL-SUBTERMS)
-                                (:REWRITE LEMMA2)
-                                (:REWRITE
-                                 RP-EQUAL-SUBTERMS-IMPLIES-RP-EQUAL2-SUBTERMS)
-                                (:DEFINITION RP-EQUAL2-SUBTERMS)
-                                (:REWRITE RP-EVL-OF-RP-EQUAL-LOOSE)
-                                (:REWRITE ACL2::NTH-WHEN-PREFIXP)
-                                (:REWRITE RP-EVL-OF-RP-EQUAL-SUBTERMS)
-                                (:REWRITE RP-EVL-OF-RP-EQUAL)
-                                (:DEFINITION EX-FROM-RP)
-                                (:REWRITE RP-EVL-OF-RP-EQUAL2)
-                                (:DEFINITION RP-EQUAL2)
-                                (:REWRITE RP-EQUAL-IMPLIES-RP-EQUAL2)
-                                (:REWRITE NOT-INCLUDE-RP)
-                                (:REWRITE DEFAULT-CDR)
-                                (:DEFINITION RP-TRANS)
-                                RP-EVLT-OF-EX-FROM-RP-LOOSE-REVERSE
-                                rp-evlt-of-ex-from-rp
-                                rp-termp))))))
-
-   (defthm rp-evl-of-rp-equal-iter-pp+
-     (implies (and (rp-evl-meta-extract-global-facts)
-                   (rp-termp term)
-                   (rp-equal-iter-pp+-meta-formula-checks state))
-              (equal (rp-evlt (mv-nth 0 (rp-equal-iter-pp+-meta term)) a)
-                     (rp-evlt term a)))
+   (defthm rp-evlt-of-rp-equal-iter-pp+-correct
+     (if (equal lst-flg 'nil)
+         (implies (and ;;(rp-evl-meta-extract-global-facts)
+                       (rp-equal-iter-pp x y lst-flg))
+                  (equal (rp-evlt x a)
+                         (rp-evlt y a)))
+       (implies (and ;;(rp-evl-meta-extract-global-facts)
+                     (rp-equal-iter-pp x y lst-flg))
+                (equal (rp-evlt-lst x a)
+                       (rp-evlt-lst y a))))
      :hints (("Goal"
-              :use ((:instance rp-evlt-of-rp-equal-iter-pp+-lemma
+              :expand ((:free (x) (nth 3 x))
+                       (:free (x) (nth 2 x))
+                       (:free (x) (nth 1 x))
+                       (:free (x) (nth 0 x)))
+              :do-not-induct t
+              :induct (rp-equal-iter-pp x y lst-flg)
+
+              :in-theory (e/d (rp-equal-iter-pp
+                               ex-from-rp-loose-is-ex-from-rp
+                               ;;rp-evl-of-fncall-args
+                               rp-evlt-of-ex-from-rp-reverse
+                               rp-equal-cnt-memoized)
+                              (EVL-OF-EXTRACT-FROM-RP-LOOSE
+                               (:REWRITE DEFAULT-CAR)
+                               (:REWRITE RP-EVL-OF-RP-EQUAL2-SUBTERMS)
+                               (:REWRITE ACL2::O-P-O-INFP-CAR)(:DEFINITION
+                                                               RP-EQUAL-SUBTERMS)
+                               (:REWRITE
+                                RP-EQUAL-SUBTERMS-IMPLIES-RP-EQUAL2-SUBTERMS)
+                               (:DEFINITION RP-EQUAL2-SUBTERMS)
+                               (:REWRITE RP-EVL-OF-RP-EQUAL-LOOSE)
+                               (:REWRITE ACL2::NTH-WHEN-PREFIXP)
+                               (:REWRITE RP-EVL-OF-RP-EQUAL-SUBTERMS)
+                               (:REWRITE RP-EVL-OF-RP-EQUAL)
+                               (:DEFINITION EX-FROM-RP)
+                               (:REWRITE RP-EVL-OF-RP-EQUAL2)
+                               (:DEFINITION RP-EQUAL2)
+                               (:REWRITE RP-EQUAL-IMPLIES-RP-EQUAL2)
+                               (:REWRITE NOT-INCLUDE-RP)
+                               (:REWRITE DEFAULT-CDR)
+                               (:DEFINITION RP-TRANS)
+                               ;;rp-evlt-of-ex-from-rp-reverse
+                               rp-evlt-of-ex-from-rp
+                               rp-termp)))))
+
+   (defthm rp-evlt-of-rp-equal-iter-pp+
+     (equal (rp-evlt (mv-nth 0 (rp-equal-iter-pp+-meta term)) a)
+            (rp-evlt term a))
+     :hints (("Goal"
+              :use ((:instance rp-evlt-of-rp-equal-iter-pp+-correct
                                (x (CADR TERM))
                                (y (CADDR TERM))
                                (lst-flg nil)))
@@ -411,61 +257,20 @@
    :hints (("Goal"
             :in-theory (e/d (rp-equal-iter-pp+-meta) ())))))
 
-#|(defthm rp-equal-iter-pp+-meta-is-valid-rp-meta-rulep
-  (implies (and (rp-equal-iter-pp+-meta-formula-checks state)
-                (rp-evl-meta-extract-global-facts :state state))
-           (let ((rule (make rp-meta-rule-rec
-                             :fnc 'rp-equal-iter-pp+-meta
-                             :trig-fnc 'equal
-                             :dont-rw t
-                             :valid-syntax t)))
-             (and (valid-rp-meta-rulep rule state)
-                  (rp-meta-valid-syntaxp-sk rule state))))
-  :otf-flg t
-  :hints (("Goal"
-           :in-theory (e/d (RP-META-VALID-SYNTAXP)
-                           (RP-TERMP
-                            rp-term-listp
-                            VALID-SC)))))||#
-
-(rp::add-meta-rules
- rp-equal-iter-pp+-meta-formula-checks
+#|(rp::add-meta-rules
+ empty-formula-checks
  (list
   (make rp-meta-rule-rec
         :fnc 'rp-equal-iter-pp+-meta
         :trig-fnc 'equal
         :dont-rw t
-        :valid-syntax t)))
+        :valid-syntax t)))||#
+
+(rp::add-meta-rule
+ :meta-fnc rp-equal-iter-pp+-meta
+ :trig-fnc equal
+ :valid-syntaxp t
+ :returns (mv term dont-rw))
+
 
 (disable-meta-rules rp-equal-meta)
-
-#|(mutual-recursion
-(defun
-rp-equal-for-pp+ (term1 term2)
-(declare (xargs :mode :logic
-:verify-guards t
-:guard t))
-"check syntactic equivalance of two terms by ignoring all the rp terms"
-(let* ((term1 (ex-from-rp-loose term1))
-(term2 (ex-from-rp-loose term2)))
-(cond ((or (atom term1)
-(atom term2)
-(acl2::fquotep term1)
-(acl2::fquotep term2))
-(equal term1 term2))
-((eq (car term1) 'pp+)
-(rp-eq term1 term2))
-(t (and (eq (car term1) (car term2))
-(rp-equal-for-pp+-subterms (cdr term1)
-(cdr term2)))))))
-(defun rp-equal-for-pp+-subterms (subterm1 subterm2)
-(declare (xargs :mode :logic
-:guard t))
-(if (or (atom subterm1) (atom subterm2))
-(equal subterm1 subterm2)
-(and (rp-equal-for-pp+ (car subterm1) (car subterm2))
-(rp-equal-for-pp+-subterms (cdr subterm1)
-(cdr subterm2))))))||#
-
-#|(local
-(make-flag  rp-equal-for-pp+ :defthm-macro-name defthm-rp-equal-for-pp+))||#

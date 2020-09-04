@@ -929,7 +929,7 @@
                            (rp::rp-termp
                             rp::valid-sc)))))||#
 
-(rp::add-meta-rules bits-of-formula-checks
+#|(rp::add-meta-rules bits-of-formula-checks
                     (list (make rp::rp-meta-rule-rec
                                 :fnc 'bits-of-meta-fn
                                 :trig-fnc 'sv::4vec-part-select
@@ -949,4 +949,33 @@
                                 :fnc 'concat-meta
                                 :trig-fnc 'sv::4vec-concat
                                 :dont-rw t
-                                :valid-syntax t)))
+                                :valid-syntax t)))||#
+
+
+(rp::add-meta-rule
+ :meta-fnc bits-of-meta-fn
+ :trig-fnc sv::4vec-part-select
+ :formula-checks bits-of-formula-checks
+ :valid-syntaxp t
+ :returns (mv term dont-rw))
+
+(rp::add-meta-rule
+ :meta-fnc bits-of-meta-fn
+ :trig-fnc bits
+ :formula-checks bits-of-formula-checks
+ :valid-syntaxp t
+ :returns (mv term dont-rw))
+
+(rp::add-meta-rule
+ :meta-fnc concat-meta
+ :trig-fnc 4vec-concat$
+ :formula-checks bits-of-formula-checks
+ :valid-syntaxp t
+ :returns (mv term dont-rw))
+
+(rp::add-meta-rule
+ :meta-fnc concat-meta
+ :trig-fnc sv::4vec-concat
+ :formula-checks bits-of-formula-checks
+ :valid-syntaxp t
+ :returns (mv term dont-rw))

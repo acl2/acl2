@@ -2653,7 +2653,8 @@
         ;; calls ifix for its arguments..
         (cond ((natp x) (append (repeat x ''1) acc))
               (t (append (repeat (- x) '(-- '1)) acc)))))
-     ((pp-term-p abs-term)
+     ((or (pp-term-p abs-term)
+          (pp-has-bitp-rp term-orig))
       (cons term-orig acc))
      (t
       (progn$

@@ -118,17 +118,9 @@
                              is-falist))))))
 
 
-
-(defun empty-formula-checks (state)
-  (declare (xargs :stobjs (state))
-           (ignorable state))
-  t)
-
-(rp::add-meta-rules
- empty-formula-checks
- (list (make rp::rp-meta-rule-rec
-             :fnc 'implies-meta
-             :trig-fnc 'implies
-             :dont-rw t
-             :outside-in t
-             :valid-syntax t)))
+(rp::add-meta-rule
+ :meta-fnc implies-meta
+ :trig-fnc implies
+ :valid-syntaxp t
+ :outside-in t
+ :returns (mv term dont-rw))

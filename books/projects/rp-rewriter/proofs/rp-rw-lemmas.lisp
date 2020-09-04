@@ -504,9 +504,9 @@
 (local
  (in-theory
   (disable
-   rp-meta-valid-syntax-listp
+   ;;rp-meta-valid-syntax-listp
 
-   valid-rp-meta-rule-listp
+   ;;valid-rp-meta-rule-listp
 
    rp-statep
 
@@ -576,7 +576,7 @@
    (:TYPE-PRESCRIPTION RP-EXTRACT-CONTEXT)
    (:DEFINITION BINARY-APPEND)
    (:TYPE-PRESCRIPTION acl2::TRUE-LISTP-APPEND)
-   (:TYPE-PRESCRIPTION RP-META-VALID-SYNTAX-LISTP)
+   ;(:TYPE-PRESCRIPTION RP-META-VALID-SYNTAX-LISTP)
    (:REWRITE ACL2::CONSP-OF-APPEND)
    (:REWRITE ACL2::CAR-OF-APPEND)
    (:TYPE-PRESCRIPTION BINARY-APPEND)
@@ -753,25 +753,29 @@
 
     (defthm-rp-rw
       (defthm rp-rw-returns-valid-rp-statep
-        (implies (valid-rp-statep rp-state)
+        (implies (and (valid-rp-statep rp-state)
+                      (rp-statep rp-state))
                  (valid-rp-statep
                   (mv-nth 1 (rp-rw term dont-rw context iff-flg hyp-flg limit rp-state state))))
         :flag rp-rw)
       (defthm rp-rw-rule-retuns-valid-rp-statep
-        (implies (valid-rp-statep rp-state)
+        (implies (and (valid-rp-statep rp-state)
+                      (rp-statep rp-state))
                  (valid-rp-statep
                   (mv-nth 3 (rp-rw-rule term dont-rw rules-for-term context iff-flg outside-in-flg limit rp-state state))))
         :flag rp-rw-rule)
 
       (defthm rp-rw-if-retuns-valid-rp-statep
-        (implies (valid-rp-statep rp-state)
+        (implies (and (valid-rp-statep rp-state)
+                      (rp-statep rp-state))
                  (valid-rp-statep
                   (mv-nth 1 (rp-rw-if term dont-rw context iff-flg  hyp-flg limit
                                       rp-state state))))
         :flag rp-rw-if)
 
       (defthm rp-rw-subterms-retuns-valid-d-rp-statep
-        (implies (valid-rp-statep rp-state)
+        (implies (and (valid-rp-statep rp-state)
+                      (rp-statep rp-state))
                  (valid-rp-statep
                   (mv-nth 1 (rp-rw-subterms subterms dont-rw context hyp-flg limit
                                             rp-state state))))
@@ -1760,7 +1764,7 @@
                               (:type-prescription o<)
                               (:type-prescription eval-and-all)
                               (:type-prescription valid-rules-alistp)
-                              (:type-prescription valid-rp-meta-rule-listp)
+                              ;(:type-prescription valid-rp-meta-rule-listp)
                               (:type-prescription should-not-rw$inline)
                               (:rewrite valid-sc-cons)
                               (:rewrite not-include-rp-means-valid-sc)

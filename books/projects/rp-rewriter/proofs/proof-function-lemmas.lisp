@@ -667,3 +667,27 @@
            :in-theory (e/d () ()))))
 
 
+(defthm rp-state-preservedp-implies-valid-rp-statep
+  (implies (and ;;(rp-statep rp-state)
+                (valid-rp-statep rp-state)
+                (rp-state-preservedp rp-state new-rp-state))
+           (valid-rp-statep new-rp-state))
+  :hints (("Goal"
+           :do-not-induct t
+           :use ((:instance RP-STATE-PRESERVEDP-SK-necc
+                            (key (valid-rp-statep-witness NEW-RP-STATE))
+                            (OLD-RP-STATE rp-state))
+                 (:instance valid-rp-statep-necc
+                            (key (valid-rp-statep-witness NEW-RP-STATE))))
+           :expand (valid-rp-statep new-rp-state)
+           :in-theory (e/d (rp-state-preservedp)
+                           (RP-STATE-PRESERVEDP-SK
+                            VALID-RP-STATEP
+                            VALID-RULESP
+                            RP-STATE-PRESERVEDP-SK
+                            VALID-RP-STATE-SYNTAXP-AUX
+                            valid-rp-statep
+                            (:DEFINITION NOT)
+                            (:TYPE-PRESCRIPTION VALID-RP-STATEP)
+                            (:TYPE-PRESCRIPTION VALID-RULESP)
+                            RP-STATEP)))))

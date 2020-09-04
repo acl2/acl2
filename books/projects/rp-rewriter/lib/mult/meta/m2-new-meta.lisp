@@ -1219,11 +1219,19 @@
 ;;                             m2-meta-main
 ;;                             valid-sc)))))
 
-(rp::add-meta-rules
+#|(rp::add-meta-rules
  m2-meta-formula-checks
  (list
   (make rp-meta-rule-rec
         :fnc 'm2-meta-main
         :trig-fnc 'm2-new
         :dont-rw t
-        :valid-syntax t)))
+        :valid-syntax t)))||#
+
+
+(rp::add-meta-rule
+ :meta-fnc m2-meta-main
+ :trig-fnc m2-new
+ :valid-syntaxp t
+ :formula-checks m2-meta-formula-checks
+ :returns (mv term dont-rw))

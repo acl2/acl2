@@ -46,6 +46,9 @@
     (:META RP::FAST-ALIST-FREE-META . FAST-ALIST-FREE)
     (:META RP::HONS-ACONS-META . HONS-ACONS)))
 
+(defconst *svex-simplify-meta-rules-outside-in*
+  'nil)
+
 
 (progn
   (defconst *svex-simplify-rules*

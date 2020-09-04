@@ -809,4 +809,4 @@
          (and (integerp a)
               (integer-listp b))))
 
-(bump-all-enabled-meta-rules)
+(bump-all-meta-rules)
