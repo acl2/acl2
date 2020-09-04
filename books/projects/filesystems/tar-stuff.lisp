@@ -1058,12 +1058,6 @@
            (> (len x) (- start)))
   :rule-classes :linear)
 
-;; Move later.
-(defthm str::make-character-list-under-charlisteqv
-  (str::charlisteqv (make-character-list x)
-                    x)
-  :hints (("goal" :in-theory (enable str::charlisteqv))))
-
 (defthm
   subseq-of-implode-of-append
   (equal (subseq (implode (append x y))
