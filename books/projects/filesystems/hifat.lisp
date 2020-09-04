@@ -1680,7 +1680,8 @@
                     (ac1 (- ac 1))
                     (ac2 ac)))))
 
-(defthm hifat-bounded-file-alist-p-of-cdr
+;; Rules like this are just a lot of trouble, actually...
+(defthmd hifat-bounded-file-alist-p-of-cdr
   (implies (hifat-bounded-file-alist-p x)
            (hifat-bounded-file-alist-p (cdr x)))
   :hints (("goal" :in-theory (enable hifat-bounded-file-alist-p))))
@@ -2742,6 +2743,7 @@
    (fat32-name-to-name-helper
     character-list n)))
 
+;; We should consider disabling this...
 (defun fat32-name-to-name (character-list)
   (declare (xargs :guard (and (character-listp character-list)
                               (equal (len character-list) 11))))
