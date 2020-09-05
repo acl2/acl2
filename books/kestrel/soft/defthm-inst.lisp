@@ -12,6 +12,7 @@
 
 (include-book "core")
 
+(include-book "kestrel/event-macros/make-event-terse" :dir :system)
 (include-book "kestrel/event-macros/restore-output" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)

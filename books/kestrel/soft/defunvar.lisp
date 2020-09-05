@@ -12,6 +12,8 @@
 
 (include-book "core")
 
+(include-book "kestrel/event-macros/cw-event" :dir :system)
+(include-book "kestrel/event-macros/make-event-terse" :dir :system)
 (include-book "kestrel/event-macros/restore-output" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
 (include-book "kestrel/std/system/maybe-pseudo-event-formp" :dir :system)

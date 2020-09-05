@@ -12,6 +12,7 @@
 
 (include-book "core")
 
+(include-book "kestrel/event-macros/cw-event" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
 (include-book "kestrel/std/system/irecursivep" :dir :system)
 (include-book "kestrel/std/system/well-founded-relation-plus" :dir :system)

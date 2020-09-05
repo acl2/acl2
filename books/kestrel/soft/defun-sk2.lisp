@@ -10,12 +10,8 @@
 
 (in-package "SOFT")
 
-(include-book "defunvar")
-(include-book "defsoft")
-(include-book "defun2")
-(include-book "defund2")
-(include-book "defchoose2")
-(include-book "defun-sk2")
-(include-book "define2")
-(include-book "defun-inst")
-(include-book "defthm-inst")
+(include-book "core")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(gen-macro2-of-macro defun-sk)
