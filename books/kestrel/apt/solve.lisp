@@ -19,6 +19,7 @@
 (include-book "kestrel/event-macros/proof-preparation" :dir :system)
 (include-book "kestrel/event-macros/restore-output" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
+(include-book "kestrel/soft/defun-sk2" :dir :system)
 (include-book "kestrel/soft/defund-sk2" :dir :system)
 (include-book "kestrel/std/system/fresh-logical-name-with-dollars-suffix" :dir :system)
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
