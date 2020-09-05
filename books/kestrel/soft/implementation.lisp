@@ -19,3 +19,10 @@
 (include-book "define2")
 (include-book "defun-inst")
 (include-book "defthm-inst")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc+ soft-implementation
+  :parents (soft)
+  :short "Implementation of SOFT."
+  :order-subtopics t)

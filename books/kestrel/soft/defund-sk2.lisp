@@ -10,7 +10,7 @@
 
 (in-package "SOFT")
 
-(include-book "defsoft")
+(include-book "gen-macro2-of-macro")
 
 (include-book "kestrel/std/util/defund-sk" :dir :system)
 

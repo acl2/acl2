@@ -10,7 +10,7 @@
 
 (in-package "SOFT")
 
-(include-book "defsoft")
+(include-book "gen-macro2-of-macro")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
