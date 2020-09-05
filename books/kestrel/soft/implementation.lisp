@@ -64,35 +64,6 @@
             the same function variables as the function's matrix ~x1.~%"
            rule-body fun-matrix))))
 
-(define print-funvar-dependency ((fun symbolp)
-                                 (kind sofun-kindp)
-                                 (wrld plist-worldp))
-  :returns (nothing "Always @(tsee null).")
-  :mode :program
-  :short "Print the function variables that a funcion depends on."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "When a second-order function, or an instance thereof, is introduced,
-     the submitted event form first introduces the function,
-     and then prints the function variables that the function depends on.
-     The following code performs that printing.")
-   (xdoc::p
-    "This function returns nothing.
-     It is only used for side effects, namely printing.")
-   (xdoc::p
-    "The @('kind') argument is the kind of @('fun') if second-order,
-     otherwise it is the kind of the second-order function
-     of which @('fun') is an instance."))
-  (let ((funvars (case kind
-                   (plain (funvars-of-plain-fn fun wrld))
-                   (choice (funvars-of-choice-fn fun wrld))
-                   (quant (funvars-of-quantifier-fn fun wrld)))))
-    (if funvars
-        (cw "The function ~x0 depends on the function variables ~x1.~%"
-            fun (remove-duplicates-eq funvars))
-      (cw "The function ~x0 depends on no function variables.~%" fun))))
-
 (gen-macro2-of-macro defun)
 
 (gen-macro2-of-macro defund)
