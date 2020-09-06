@@ -1188,7 +1188,7 @@
               :expand ((:with comparable-mergesort-is-identity-under-set-equiv-lemma-3
                               (member-equal (nth (+ -1 n) x)
                                             (comparable-mergesort x)))
-                       (:with take-for-dec-induct
+                       (:with take-as-append-and-nth
                               (take n x)))))))
 
   (defthm
@@ -1556,10 +1556,10 @@
                     comparable-mergesort-equals-comparable-insertsort))
        :expand
        ((:with
-         take-for-dec-induct
+         take-as-append-and-nth
          (take n (comparable-mergesort (remove-duplicates-equal x))))
         (:with
-         take-for-dec-induct
+         take-as-append-and-nth
          (take n (comparable-mergesort (remove-duplicates-equal y))))))
       ("subgoal *1/2"
        :use (:instance
