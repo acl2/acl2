@@ -158,10 +158,12 @@
 
   ;; Mihir M. mod: this lemma is useful in a few different places when
   ;; reasoning about take, decrementing n but keeping l the same.
-  (defthmd take-for-dec-induct
+  (defthmd take-as-append-and-nth
     (equal (take n l) (if (zp n)
                           nil
                         (append (take (- n 1) l) (list (nth (- n 1) l))))))
+
+  (theory-invariant (incompatible (:rewrite take-as-append-and-nth) (:definition take)))
 
   (defcong list-equiv equal (take n x) 2
     :hints(("Goal"
