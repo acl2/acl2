@@ -156,6 +156,13 @@
                   (<= (nfix n) (len l)))
              (no-duplicatesp-equal (take n l))))
 
+  ;; Mihir M. mod: this lemma is useful in a few different places when
+  ;; reasoning about take, decrementing n but keeping l the same.
+  (defthmd take-for-dec-induct
+    (equal (take n l) (if (zp n)
+                          nil
+                        (append (take (- n 1) l) (list (nth (- n 1) l))))))
+
   (defcong list-equiv equal (take n x) 2
     :hints(("Goal"
             :induct (and (take n x)
