@@ -1144,6 +1144,11 @@
                    (compare< y x)))
   :rewrite :direct)
 
+;; Mihir M. mod: comparable-mergesort-is-identity-under-set-equiv is a generic
+;; lemma with a self-explanatory name instantiated in defsort for all sorts,
+;; and common-sort-for-perms is a generic lemma stating all permutations of a
+;; duplicate-free list sort under a total order to the same list which is not
+;; yet instatiated in defsort.
 (encapsulate
   ()
 
@@ -1152,7 +1157,7 @@
   (defthm no-duplicatesp-equal-of-remove-duplicates-equal
     (no-duplicatesp-equal (remove-duplicates-equal x)))
 
-  (local (in-theory (enable nth take)))
+  (local (in-theory (enable nth)))
 
   (local
    (defthm member-equal-nth
@@ -1165,12 +1170,6 @@
      :hints(("Goal" :in-theory (e/d (comparable-mergesort
                                      floor-bounded-by-/)
                                     (len))))))
-
-  (local
-   (defthmd comparable-mergesort-is-identity-under-set-equiv-lemma-2
-     (implies (not (zp n))
-              (equal (take n x) (append (take (- n 1) x)
-                                        (list (nth (- n 1) x)))))))
 
   (local
    (defthmd comparable-mergesort-is-identity-under-set-equiv-lemma-3
@@ -1189,7 +1188,7 @@
               :expand ((:with comparable-mergesort-is-identity-under-set-equiv-lemma-3
                               (member-equal (nth (+ -1 n) x)
                                             (comparable-mergesort x)))
-                       (:with comparable-mergesort-is-identity-under-set-equiv-lemma-2
+                       (:with take-for-dec-induct
                               (take n x)))))))
 
   (defthm
@@ -1551,17 +1550,17 @@
      (("goal"
        :induct (dec-induct n)
        :in-theory (e/d
-                   (comparable-mergesort-is-identity-under-set-equiv-lemma-2
-                    (:definition compare<-negation-transitive)
+                   ((:definition compare<-negation-transitive)
                     (:definition compare<-strict))
                    (compare<-total-necc
                     comparable-mergesort-equals-comparable-insertsort))
-       :restrict
-       ((comparable-mergesort-is-identity-under-set-equiv-lemma-2
-         ((n n)
-          (x (comparable-mergesort (remove-duplicates-equal x))))
-         ((n n)
-          (x (comparable-mergesort (remove-duplicates-equal y)))))))
+       :expand
+       ((:with
+         take-for-dec-induct
+         (take n (comparable-mergesort (remove-duplicates-equal x))))
+        (:with
+         take-for-dec-induct
+         (take n (comparable-mergesort (remove-duplicates-equal y))))))
       ("subgoal *1/2"
        :use (:instance
              compare<-total-necc
