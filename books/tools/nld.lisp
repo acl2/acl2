@@ -59,7 +59,41 @@ ACL2 !>
 ; being an undeclared free variable.  With some effort that might be fixable;
 ; anyhow, it probably is reasonably harmless.
 
+; The function prepend-ld-result anticipates a particular "error stack" form
+; for the error case that is not yet implemented.  If we settle on a form for
+; the error stack, then we can add suitable guards and guard-verify the
+; functions, and we will likely document the form (if nothing else, by writing
+; a predicate to recognize the error stack, used in those guards).
+
 (in-package "ACL2")
+
+(defun error-stack-summary (s)
+  (let* ((d (assoc-eq :free-variables s))
+         (l (and d (cadr (assoc-keyword :location (cdr d))))))
+    (cond
+     ((equal l "body of")
+      :free-variables-body)
+     ((equal l "guard for")
+      :free-variables-guard)
+     ((assoc-eq :termination-proof s)
+      :termination-proof)
+     ((assoc-eq :guard-proof s)
+      :guard-proof)
+     (t
+      :other-error))))
+
+(defun prepend-ld-result (x)
+  (case-match x
+    ((error stobjs-out
+            ((:ERROR-STACK . error-stack)
+             . er)
+            . rest)
+     `(,error ,stobjs-out
+              (,(error-stack-summary error-stack)
+               (:ERROR-STACK . ,error-stack)
+               . ,er)
+              . ,rest))
+    (& x)))
 
 (defmacro nld (form &rest args)
   (cond ((keyword-value-listp args)
@@ -72,7 +106,8 @@ ACL2 !>
                           args
                         (list* :ld-prompt nil args))))
            `(er-progn (ld (list ,form) ,@args)
-                      (value (f-get-global 'last-ld-result state)))))
+                      (value (prepend-ld-result
+                              (f-get-global 'last-ld-result state))))))
         (t (er hard 'nld
                "Bad call of nld, since this is not a keyword-value-listp:~&~s"
                args))))
