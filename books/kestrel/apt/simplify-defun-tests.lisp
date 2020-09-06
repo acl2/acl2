@@ -4036,6 +4036,20 @@ this failure.
   (make-event '(:or (simplify g :equiv iff)
                     (value-triple :failed))))
 
+; Test of forcing
+(deftest
+  (defun f (x)
+    (car (cons x x)))
+  (defthm car-f
+    (implies (force (equal (append (append x y) z)
+                           (append x y z)))
+             (equal (car (cons x x)) x)))
+  (in-theory (disable associativity-of-append f car-cons))
+  (simplify f)
+  (must-be-redundant
+   (DEFUND F$1 (X) (DECLARE (XARGS :GUARD T :VERIFY-GUARDS NIL)) X)
+   (DEFTHM F-BECOMES-F$1 (EQUAL (F X) (F$1 X)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Avoid problems when default defun-mode is :program.  This is awkward to test,
