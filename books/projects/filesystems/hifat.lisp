@@ -391,6 +391,71 @@
   :hints (("goal" :in-theory (enable subsetp-equal prefixp)
            :induct (prefixp x y))))
 
+(defthm
+  subseq-of-implode-of-append
+  (equal (subseq (implode (append x y))
+                 start end)
+         (cond ((and (not (integerp (- (+ (len x) (len y)) start)))
+                     (null end))
+                "")
+               ((and (not (integerp start))
+                     (<= (len x)
+                         (- (+ (len x) (len y)) start))
+                     (integerp (- (+ (len x) (len y)) start))
+                     (null end))
+                (implode (append x (take (- (len y) start) y))))
+               ((and (integerp start)
+                     (< (len x) start)
+                     (null end))
+                (implode (take (- (+ (len x) (len y)) start)
+                               (nthcdr (- start (len x)) y))))
+               ((and (integerp start)
+                     (< start 0)
+                     (null end))
+                (implode (append x (take (- (len y) start) y))))
+               ((and (not (integerp start))
+                     (integerp (- (+ (len x) (len y)) start))
+                     (< (- (+ (len x) (len y)) start)
+                        (len x))
+                     (null end))
+                (implode (take (- (+ (len x) (len y)) start) x)))
+               ((null end)
+                (implode (append (nthcdr start x) y)))
+               ((stringp y)
+                (implode (take (- end start) (nthcdr start x))))
+               ((not (natp (- end start))) "")
+               ((and (< start 0)
+                     (< (- end start) (len x)))
+                (implode (take (- end start) x)))
+               ((and (not (integerp start))
+                     (< (- end start) (len x)))
+                (implode (take (- end start) x)))
+               ((not (integerp start))
+                (implode (append x (take (- end (+ start (len x))) y))))
+               ((and (<= 0 start)
+                     (<= end (len x))
+                     (not (integerp end)))
+                (implode (take (- end start) x)))
+               ((and (< start 0)
+                     (<= (len x) (- end start)))
+                (implode (append x (take (- end (+ start (len x))) y))))
+               ((< start 0)
+                (implode (take (- end start) x)))
+               ((< (len x) start)
+                (implode (take (- end start)
+                               (nthcdr (- start (len x)) y))))
+               ((<= end (len x))
+                (implode (take (- end start) (nthcdr start x))))
+               (t (implode (append (nthcdr start x)
+                                   (take (- end (len x)) y))))))
+  :hints (("goal" :in-theory (e/d (subseq subseq-list take)
+                                  ((:e force)))
+           :do-not-induct t
+           :use ((:theorem (equal (+ start (- start) (- (len x)))
+                                  (- (len x))))
+                 (:theorem (equal (+ (len x) (- (len x)) (len y))
+                                  (len y)))))))
+
 (defthmd
   painful-debugging-lemma-14
   (implies (not (zp cluster-size))
@@ -1990,6 +2055,22 @@
     (t (hifat-find-file fs x))))
   :hints (("goal" :in-theory (enable hifat-find-file))))
 
+;; This can't be made local.
+(defthm
+  hifat-no-dups-p-of-m1-file->contents-of-hifat-find-file-lemma-1
+  (implies (and (m1-file-alist-p fs)
+                (hifat-no-dups-p fs))
+           (hifat-no-dups-p (m1-file->contents (cdr (assoc-equal key fs)))))
+  :hints (("goal" :in-theory (enable hifat-no-dups-p m1-file->contents
+                                     m1-file-contents-fix m1-file-contents-p
+                                     m1-directory-file-p))))
+
+(defthm
+  hifat-no-dups-p-of-m1-file->contents-of-hifat-find-file
+  (hifat-no-dups-p (m1-file->contents (mv-nth 0 (hifat-find-file fs path))))
+  :hints (("goal" :in-theory (enable hifat-no-dups-p
+                                     m1-file-alist-p hifat-find-file))))
+
 (defund
   hifat-place-file
   (fs path file)
@@ -2081,16 +2162,6 @@
     :use (hifat-place-file-of-fat32-filename-list-fix
           (:instance hifat-place-file-of-fat32-filename-list-fix
                      (path path-equiv))))))
-
-;; This can't be made local.
-(defthm
-  hifat-place-file-correctness-lemma-2
-  (implies (and (m1-file-alist-p fs)
-                (hifat-no-dups-p fs))
-           (hifat-no-dups-p (m1-file->contents (cdr (assoc-equal key fs)))))
-  :hints (("goal" :in-theory (enable hifat-no-dups-p m1-file->contents
-                                     m1-file-contents-fix m1-file-contents-p
-                                     m1-directory-file-p))))
 
 (defthm
   hifat-place-file-correctness-3

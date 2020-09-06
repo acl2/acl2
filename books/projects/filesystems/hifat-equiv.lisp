@@ -234,6 +234,36 @@
 (defequiv hifat-equiv
   :hints (("goal" :in-theory (enable hifat-equiv))))
 
+(defthm consp-of-assoc-when-hifat-equiv-lemma-1
+  (implies (and (not (consp (assoc-equal name m1-file-alist2)))
+                (m1-file-alist-p m1-file-alist1)
+                (hifat-subsetp m1-file-alist1 m1-file-alist2))
+           (not (consp (assoc-equal name m1-file-alist1))))
+  :hints (("goal" :in-theory (enable hifat-subsetp m1-file-alist-p))))
+
+(defthm
+  consp-of-assoc-when-hifat-equiv
+  (implies (hifat-equiv x y)
+           (equal (consp (assoc-equal (fat32-filename-fix name)
+                                      (hifat-file-alist-fix x)))
+                  (consp (assoc-equal (fat32-filename-fix name)
+                                      (hifat-file-alist-fix y)))))
+  :hints (("goal" :do-not-induct t
+           :in-theory (e/d (hifat-equiv)
+                           (hifat-subsetp-preserves-assoc))
+           :use ((:instance hifat-subsetp-preserves-assoc
+                            (x (hifat-file-alist-fix x))
+                            (y (hifat-file-alist-fix y))
+                            (file (fat32-filename-p name)))
+                 (:instance hifat-subsetp-preserves-assoc
+                            (x (hifat-file-alist-fix y))
+                            (y (hifat-file-alist-fix x))
+                            (file (fat32-filename-p name))))
+           :cases ((consp (assoc-equal (fat32-filename-fix name)
+                                       (hifat-file-alist-fix x))))))
+  :rule-classes
+  :congruence)
+
 (defthm
   hifat-equiv-of-cons-lemma-1
   (implies
