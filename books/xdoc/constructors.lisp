@@ -934,7 +934,7 @@
 
 (generate-primitive-constructor-for-dir/&& :@tsee
   "Construct an XDOC tree
-   for a typewriter topic link directive <tt>@</tt><tt>(csee ...)</tt>.")
+   for a typewriter topic link directive <tt>@</tt><tt>(tsee ...)</tt>.")
 
 (generate-primitive-constructor-for-dir/&& :@see?
   "Construct an XDOC tree
