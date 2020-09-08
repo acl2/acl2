@@ -159,6 +159,8 @@
 (include-book "centaur/misc/dag-measure" :dir :system)
 (include-book "centaur/misc/try-gl-concls" :dir :system)
 
+(include-book "centaur/svl/top" :dir :system)
+
 ;; BOZO conflicts with something in 4v-sexpr?
 
 ;; (include-book "misc/remove-assoc")
