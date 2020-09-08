@@ -875,7 +875,11 @@
 
    (xdoc::p
     "The book @('tools/defttag-muffled.lisp') provides a way, using a trust
-    tag, to turn off all subsequent ``TTAG NOTE'' messages.  Use with care!!")
+     tag, to turn off all subsequent ``TTAG NOTE'' messages.  Use with care!!")
+
+   (xdoc::p
+    "See @(see rewrite$) for a flexible, convenient interface to the ACL2
+     rewriter that can be called programmatically.")
 
    ))
 
