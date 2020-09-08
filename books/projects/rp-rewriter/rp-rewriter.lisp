@@ -370,7 +370,7 @@
                   (natp (natp val))
                   (bitp (bitp val))
                   (integerp (integerp val))))
-           (rp-state (rp-stat-add-to-rules-used-ex-cnt fn rp-state))
+           (rp-state (rp-stat-add-to-rules-used fn nil t rp-state))
            (rp-state (increment-rw-stack-size rp-state)))
         (mv (list 'quote res) rp-state)))
      (t
@@ -386,7 +386,7 @@
            #|(term (if (equal fn 'list) (rp-untrans term) term))||#
            ((mv err val)
             (magic-ev-fncall-wrapper fn (unquote-all (cdr term)) state *rp-hard-error-returns-nilp* nil))
-           (rp-state (rp-stat-add-to-rules-used-ex-cnt fn rp-state))
+           (rp-state (rp-stat-add-to-rules-used fn nil t rp-state))
            (rp-state (increment-rw-stack-size rp-state)))
         (mv (if err
                 (progn$
@@ -642,14 +642,12 @@
           (rp-rw-meta-rule term (rp-rule-meta-fnc rule) dont-rw context
                            rp-state state))
          (term-changed (not (equal res-term term)))
-         #|(rp-state (if term-changed
-         (rp-stat-add-to-rules-used-meta-cnt rule ;
-         rp-state) ;
-         rp-state))||#
-         #|(rp-state (if term-changed
-         (rp-state-push-meta-to-rw-stack rule term res-term ;
-         rp-state) ;
-         rp-state))||#)
+         (rp-state (rp-stat-add-to-rules-used rule (if term-changed nil 'failed) nil
+                                              rp-state))
+         (rp-state (if term-changed
+                       (rp-state-push-meta-to-rw-stack rule term res-term ;
+                                                       rp-state)          ;
+                     rp-state)))
       (mv term-changed res-term dont-rw rp-state))))
 
 (defun rp-rw-rule-aux (term rules-for-term context iff-flg state)
@@ -915,7 +913,7 @@ returns (mv rule rules-rest bindings rp-context)"
                                     var-bindings ;no-rp-var-bindings
                                     state))
           ((when (not synp-relieved))
-           (b* ((rp-state (rp-stat-add-to-rules-used rule 'failed-synp
+           (b* ((rp-state (rp-stat-add-to-rules-used rule 'failed-synp nil
                                                      rp-state))
                 (rp-state (rp-state-push-to-result-to-rw-stack rule stack-index
                                                                'failed-synp nil nil rp-state)))
@@ -931,7 +929,7 @@ returns (mv rule rules-rest bindings rp-context)"
 
           (hyp-relieved (nonnil-p hyp-rewritten))
           ((when (not hyp-relieved))
-           (b* ((rp-state (rp-stat-add-to-rules-used rule 'failed rp-state))
+           (b* ((rp-state (rp-stat-add-to-rules-used rule 'failed  nil rp-state))
                 (rp-state (rp-state-push-to-result-to-rw-stack rule
                                                                stack-index 'failed nil nil
                                                                rp-state)))
@@ -939,7 +937,7 @@ returns (mv rule rules-rest bindings rp-context)"
               term dont-rw rules-for-term-rest context iff-flg outside-in-flg
                (1- limit) rp-state state)))
           (term-res (rp-apply-bindings (rp-rhs rule) var-bindings))
-          (rp-state (rp-stat-add-to-rules-used rule nil rp-state))
+          (rp-state (rp-stat-add-to-rules-used rule nil nil rp-state))
           (rp-state (rp-state-push-to-result-to-rw-stack rule stack-index
                                                          'success term
                                                          term-res rp-state))

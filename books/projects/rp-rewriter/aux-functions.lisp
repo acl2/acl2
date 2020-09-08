@@ -1694,9 +1694,9 @@
   (rules-alist-outside-in :type (hash-table eq) :initially nil)
   (disabled-exc-rules :type (hash-table eq) :initially nil) 
   
-  (show-used-rules-flg :type (satisfies booleanp) :initially nil)
+  (show-used-rules-flg :type (satisfies booleanp) :initially t)
   (count-used-rules-flg :type (satisfies booleanp) :initially nil)
-  (rules-used :type (satisfies alistp) :initially nil)
+  (rules-used :type (hash-table equal) :initially nil)
 
   (rp-brr :type (satisfies booleanp) :initially nil)
   (rw-stack-size :type (satisfies integerp) :initially 0)
@@ -1729,8 +1729,7 @@
 
 (defund rp-state-new-run (rp-state)
   (declare (xargs :stobjs (rp-state)))
-  (b* ((- (fast-alist-free (rules-used rp-state)))
-       (rp-state (update-rules-used nil rp-state))
+  (b* ((rp-state (rules-used-clear rp-state))
        (rp-state (update-rw-stack-size 0 rp-state))
        (rp-state (update-rw-stack nil rp-state))
        (rp-state (update-rule-frame-cnts nil rp-state)))

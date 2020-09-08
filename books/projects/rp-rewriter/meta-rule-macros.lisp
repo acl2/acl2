@@ -374,7 +374,7 @@ redundant). If you choose to keep this lemma disabled, then set this to t. It
 is, by default, set to t. </li>
 <li>:hints regular ACL2 hints passed to the defthm event of the aforementioned
 lemma to be proved.</li>
-<li> :cl-name-prefix Meta functions are attaced to RP-Rewriter using a
+<li> :cl-name-prefix Meta functions are attached to RP-Rewriter using a
 defattach mechanism. By default, add-meta-rule will not trigger this mechanism,
 and the user needs to call @(see attach-meta-fncs) once all the necessary meta
 rules are created and included in the same book. If you wish to call @(see
@@ -385,47 +385,6 @@ attach-meta-fncs) from being executed. </li>
 "
  )
 
-;; (defun create-rp-rw-meta-rule-fn-aux (meta-rules)
-;;   (if (atom meta-rules)
-;;       `((t (mv term nil )))
-;;     (b* ((m (car meta-rules))
-;;          (fnc (rp-meta-fnc m))
-;;          (?trig-fnc (rp-meta-trig-fnc m))
-;;          (dont-rw (rp-meta-dont-rw m))
-;;          (syntax (rp-meta-syntax-verified m)))
-;;       (cons
-;;        `((eq ',fnc meta-fnc-name)
-;;          ,(if dont-rw
-;;               `(b* (((mv res-term dont-rw)
-;;                      (,fnc term))
-;;                     . ,(if syntax
-;;                            nil
-;;                          `((res-term
-;;                             (if (rp-termp res-term)
-;;                                 res-term
-;;                               (progn$ (cw "Meta-function ~p0 returned a term that does not satisfy rp::rp-termp" ',fnc)
-;;                                       term))))))
-;;                  (mv res-term dont-rw ))
-;;             `(b* ((res-term
-;;                    (,fnc term))
-;;                   . ,(if syntax
-;;                          nil
-;;                        `((res-term
-;;                           (if (rp-termp res-term)
-;;                               res-term
-;;                             (progn$ (cw "Meta-function ~p0 returned a term that does not satisfy rp::rp-termp" ',fnc)
-;;                                     term))))))
-;;                (mv res-term nil ))))
-;;        (create-rp-rw-meta-rule-fn-aux (cdr meta-rules))))))
-
-;; (defun get-meta-rule-validity-lemma (meta-rules)
-;;   (declare (xargs :guard (weak-rp-meta-rule-recs-p meta-rules)))
-;;   (if (atom meta-rules)
-;;       nil
-;;     (cons (sa (rp-meta-fnc (car meta-rules)) 'for
-;;               (rp-meta-trig-fnc (car meta-rules))
-;;               'valid)
-;;           (get-meta-rule-validity-lemma (cdr meta-rules)))))
 
 
 (defun create-rp-rw-meta-rule-fn-aux1 (rp-rw-all-meta-rules)
@@ -581,37 +540,6 @@ attach all the meta functions to RP-Rewriter. \"prefix\" should be a unique ~
 symbol for the updated meta-rule caller function. ~%"
                 nil)))
 
-#|(progn
-  (defthm valid-rp-meta-rule-listp-opener-cons
-    (equal (valid-rp-meta-rule-listp (cons rule1 rest) state)
-           (and (valid-rp-meta-rulep rule1 state)
-                (valid-rp-meta-rule-listp rest state)))
-    :hints (("goal"
-             :in-theory (e/d (valid-rp-meta-rule-listp)
-                             (valid-rp-meta-rulep)))))
-
-  (defthm valid-rp-meta-rule-listp-opener-nil
-    (equal (valid-rp-meta-rule-listp nil state)
-           t)
-    :hints (("goal"
-             :in-theory (e/d (valid-rp-meta-rule-listp)
-                             (valid-rp-meta-rulep)))))
-
-  (defthm rp-meta-valid-syntax-listp-opener-cons
-    (equal (rp-meta-valid-syntax-listp (cons first rest) state)
-           (and (rp-meta-valid-syntaxp-sk first state)
-                (rp-meta-valid-syntax-listp rest
-                                            state)))
-    :hints (("goal"
-             :in-theory (e/d (rp-meta-valid-syntax-listp)
-                             (rp-meta-valid-syntaxp-sk)))))
-
-  (defthm rp-meta-valid-syntax-listp-opener-nil
-    (equal (rp-meta-valid-syntax-listp nil state)
-           t)
-    :hints (("goal"
-             :in-theory (e/d (rp-meta-valid-syntax-listp)
-                             (rp-meta-valid-syntaxp-sk))))))||#
 
 (progn
 
@@ -870,14 +798,16 @@ that it is syntactically correct. Otherwise skip this step.
 7. Save the meta rule in the rule-set of RP-Rewriter for meta rules.
 <code>
 @('
-(add-meta-rules <formula-check-name>
-                (list (make rp-meta-rule-rec
-                            :fnc <meta-fnc>
-                            :trig-fnc <trig-fnc>
-                            :dont-rw <t-if-returns-dont-rw>
-                            :outside-in <t-if-the-meta-rule-should-apply-from-outside-in>
-                            :valid-syntax <t-if-rp-termp-of-meta-fnc-is-proved>)))')
+(rp::add-meta-rule
+ :meta-fnc <meta-fnc>
+ :trig-fnc <trig-fnc>
+ :returns <return-signature>
+ :outside-in <t-if-the-meta-rule-should-apply-from-outside-in>
+ :valid-syntaxp <t-if-rp-termp-of-meta-fnc-is-proved>)
+')
 </code>
+
+See @(see add-meta-rule) for further discussion of the options.
 
 </p>
 
@@ -893,7 +823,8 @@ rules are included.
 
 <p>
 You may look at examples of RP-Rewriter meta rules under
-/books/projects/RP-Rewriter/meta/*
+/books/projects/RP-Rewriter/meta/*. implies-meta.lisp is a very simple example
+of an outside-in meta rule.
 </p>
 
 <p>

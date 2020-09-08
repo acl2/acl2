@@ -662,7 +662,7 @@
                         (rp-rw-subterms subterms dont-rw context hyp-flg limit
                                         rp-state state))
                :in-theory (e/d (RP-STAT-ADD-TO-RULES-USED)
-                               (update-rules-used
+                               (;;update-rules-used
                                 SHOW-USED-RULES-FLG
                                 UPDATE-NTH
                                 RP-STAT-ADD-TO-RULES-USED)))))))
@@ -727,7 +727,7 @@
                         (rp-rw-subterms subterms dont-rw context hyp-flg limit
                                         rp-state state))
                :in-theory (e/d (RP-STAT-ADD-TO-RULES-USED)
-                               (update-rules-used
+                               (;;update-rules-used
                                 SHOW-USED-RULES-FLG
                                 UPDATE-NTH
                                 RP-STAT-ADD-TO-RULES-USED)))))))
@@ -796,7 +796,7 @@
                         (rp-rw-subterms subterms dont-rw context hyp-flg limit
                                         rp-state state))
                :in-theory (e/d (RP-STAT-ADD-TO-RULES-USED)
-                               (update-rules-used
+                               (;;update-rules-used
                                 SHOW-USED-RULES-FLG
                                 UPDATE-NTH
                                 VALID-RP-STATEP

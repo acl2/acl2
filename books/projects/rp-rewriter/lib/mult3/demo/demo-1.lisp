@@ -114,7 +114,7 @@
 ; more stobjs.
 (set-waterfall-parallelism nil)
 
-  ;; Lemma for final stage adder.
+;; Lemma for final stage adder.
 (defthmrp final-stage-adder-correct
   (implies (and (integerp in1)
                 (integerp in2))

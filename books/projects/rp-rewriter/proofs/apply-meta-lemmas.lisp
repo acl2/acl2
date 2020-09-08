@@ -111,8 +111,8 @@
            (valid-rp-state-syntaxp (mv-nth 3 (rp-rw-meta-rule-main term rule dont-rw context rp-state state))))
   :hints (("Goal"
            :in-theory (e/d (rp-rw-meta-rule-main
-                            rp-stat-add-to-rules-used-meta-cnt
-                            RP-STATE-PUSH-META-TO-RW-STACK
+                            ;;rp-stat-add-to-rules-used-meta-cnt
+                            ;;RP-STATE-PUSH-META-TO-RW-STACK
                             )
                            (RP-STATEP)))))
 
@@ -121,8 +121,8 @@
                 (rp-statep rp-state))
            (valid-rp-statep (mv-nth 3 (rp-rw-meta-rule-main term rule dont-rw context rp-state state))))
   :hints (("Goal"
-           :in-theory (e/d (rp-stat-add-to-rules-used-meta-cnt
-                            RP-STATE-PUSH-META-TO-RW-STACK
+           :in-theory (e/d (;;rp-stat-add-to-rules-used-meta-cnt
+                            ;;RP-STATE-PUSH-META-TO-RW-STACK
                             ;;valid-rp-statep
                             )
                            (RP-STATEP
