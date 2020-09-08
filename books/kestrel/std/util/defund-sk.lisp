@@ -20,11 +20,12 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We pass the inputs to @(tsee defun-sk) unchanged,
-     and let @(tsee defun-sk) catch all the errors.
-     We do no need to perform any input validation here.")
+    "We extract the @(':thm-enable') input, if any, and we validate it.
+     We pass the remaining inputs to @(tsee defun-sk) unchanged,
+     and let @(tsee defun-sk) catch all the errors on those inputs.")
    (xdoc::p
-    "However, in order to generate the event
+    "Even though we delegate most input validation to @(tsee defun-sk),
+     in order to generate the event
      to disable the function and the rewrite rules,
      we need to retrieve some information from the inputs.
      In doing so, we can assume the inputs to be correct,
@@ -53,12 +54,21 @@
      if the quantifier is existential,
      the rule name is obtained by adding @('-suff') after the function name."))
 
-  (defun defund-sk-names-to-disable (name rest)
+  (defun defund-sk-extract-thm-enable (rest)
+    (declare (xargs :mode :program))
+    (let ((pos (position-eq :thm-enable rest)))
+      (if (not pos)
+          (mv nil rest)
+        (mv (nth (1+ pos) rest)
+            (append (take pos rest)
+                    (nthcdr (+ 2 pos) rest))))))
+
+  (defun defund-sk-names-to-disable (name rest-for-defun-sk thm-enable)
     (declare (xargs :mode :program))
     (mv-let (erp dcls-and-body keyword-alist)
-      (partition-rest-and-keyword-args rest *defun-sk-keywords*)
+      (partition-rest-and-keyword-args rest-for-defun-sk *defun-sk-keywords*)
       (if erp
-          (mv nil nil)
+          nil
         (let* ((constrain (cdr (assoc-eq :constrain keyword-alist)))
                (thm-name (cdr (assoc-eq :thm-name keyword-alist)))
                (name/defrule
@@ -71,15 +81,19 @@
                              (if (eq quantifier 'forall)
                                  (add-suffix name "-NECC")
                                (add-suffix name "-SUFF"))))))
-          (mv name/defrule rwrule)))))
+          (if thm-enable
+              (list name/defrule)
+            (list name/defrule rwrule))))))
 
   (defun defund-sk-fn (name args rest)
     (declare (xargs :mode :program))
-    (mv-let (name/defrule rwrule)
-      (defund-sk-names-to-disable name rest)
-      `(progn
-         (defun-sk ,name ,args ,@rest)
-         (in-theory (disable ,name/defrule ,rwrule)))))
+    (mv-let (thm-enable rest-for-defun-sk)
+      (defund-sk-extract-thm-enable rest)
+      (let ((names-to-disable
+             (defund-sk-names-to-disable name rest-for-defun-sk thm-enable)))
+        `(progn
+           (defun-sk ,name ,args ,@rest-for-defun-sk)
+           (in-theory (disable ,@names-to-disable))))))
 
   (defmacro defund-sk (name args &rest rest)
     `(make-event (defund-sk-fn ',name ',args ',rest))))

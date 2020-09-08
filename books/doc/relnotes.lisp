@@ -802,7 +802,8 @@
      which is like @(tsee defun-sk) but it disables
      (1) the function definition (if @(':constrain') is @('nil'))
      or the definition rule (if @(':constrain') is non-@('nil'))
-     and (2) the rewrite rule.")
+     and (2) the rewrite rule
+     if the @(':thm-enable') input is @('nil') (which is the default).")
 
    (xdoc::p
     "A new event macro @(tsee defmacro+) has been added,
