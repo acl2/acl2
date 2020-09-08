@@ -79,15 +79,15 @@
     :returns (secp-result secp256k1-pointp)
     (b* ((point1 (secp256k1-point-to-pointp secp-point1))
          (point2 (secp256k1-point-to-pointp secp-point2))
-         ((unless (point-on-elliptic-curve-p point1
-                                             (secp256k1-prime)
-                                             (secp256k1-a)
-                                             (secp256k1-b)))
+         ((unless (point-on-weierstrass-elliptic-curve-p point1
+                                                         (secp256k1-prime)
+                                                         (secp256k1-a)
+                                                         (secp256k1-b)))
           (secp256k1-point 1 1))
-         ((unless (point-on-elliptic-curve-p point2
-                                             (secp256k1-prime)
-                                             (secp256k1-a)
-                                             (secp256k1-b)))
+         ((unless (point-on-weierstrass-elliptic-curve-p point2
+                                                         (secp256k1-prime)
+                                                         (secp256k1-a)
+                                                         (secp256k1-b)))
           (secp256k1-point 1 1))
          (result (secp256k1+ point1 point2))
          ((when (equal result (cons 0 0)))
@@ -102,10 +102,10 @@
     :returns (secp-result secp256k1-pointp)
     (b* ((nat (mbe :logic (nfix nat) :exec nat))
          (point (secp256k1-point-to-pointp secp-point))
-         ((unless (point-on-elliptic-curve-p point
-                                             (secp256k1-prime)
-                                             (secp256k1-a)
-                                             (secp256k1-b)))
+         ((unless (point-on-weierstrass-elliptic-curve-p point
+                                                         (secp256k1-prime)
+                                                         (secp256k1-a)
+                                                         (secp256k1-b)))
           (secp256k1-point 1 1))
          (result (secp256k1* nat point))
          ((when (equal result (cons 0 0)))
@@ -131,7 +131,7 @@
                     (equal point (secp256k1-point-generator)))
                (secp256k1-pub-key-p (secp256k1-mul-wrapper nat point)))
       :enable secp256k1-pub-key-p
-      :disable ((:e point-on-elliptic-curve-p))))
+      :disable ((:e point-on-weierstrass-elliptic-curve-p))))
 
   (defattach secp256k1-priv-to-pub secp256k1-priv-to-pub-exec)
 

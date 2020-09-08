@@ -19,7 +19,8 @@
 (in-package "MODAPP")
 (include-book "user-defs")
 (include-book "doppelgangers")
-(include-book "std/testing/eval" :dir :system)
+(include-book "std/testing/must-fail" :dir :system)
+(include-book "std/testing/must-succeed" :dir :system)
 
 (defthm take-n-take-n
   (implies (natp n)
@@ -139,4 +140,3 @@
 (expected-to :succeed :evaluation
              (badge 'expt-5)
              '(APPLY$-BADGE 1 1 . T))
-

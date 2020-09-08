@@ -41,6 +41,9 @@
 (include-book "simplify-doc")
 (include-book "simplify-term-doc")
 
+(include-book "solve")
+(include-book "solve-doc")
+
 (include-book "tailrec")
 (include-book "tailrec-doc")
 

@@ -1702,7 +1702,7 @@
            ~x0 and badge ~x1, but surprisingly, the table event specified an ~
            extension by that record of~|~%  ~x2~|~%instead of specifying an ~
            extension of the existing list of stored badge structures,~|~%~  ~
-           x3."
+           ~x3."
           fn
           specified-badge
           (cdr val)

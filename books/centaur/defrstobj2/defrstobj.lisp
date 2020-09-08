@@ -764,7 +764,7 @@ the typed record.</li>
 
 (defun rstobj-elem-default-case (field)
   (b* (((rstobj-field field)))
-    `(,field.field-key ,field.initially)))
+    `(,field.field-key ',field.initially)))
 
 (defun rstobj-elem-default-cases (fields)
   (if (Atom fields)

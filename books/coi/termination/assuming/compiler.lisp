@@ -114,7 +114,8 @@
 (include-book "coi/syntax/syntax" :dir :system)
 (include-book "coi/util/mv-nth" :dir :system)
 (include-book "compiler-proof")
-(include-book "std/testing/eval" :dir :system)
+(include-book "std/testing/must-not-prove" :dir :system)
+(include-book "std/testing/must-prove" :dir :system)
 (include-book "coi/util/pseudo-translate" :dir :system)
 (include-book "coi/util/recursion-support" :dir :system)
 

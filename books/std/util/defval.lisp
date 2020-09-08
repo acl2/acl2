@@ -86,7 +86,8 @@ constant.  For instance, here's what this looks like for
 @('*defval-example-number*'):</p>
 
 <box>
-@(def *defval-example-number*)
+<p><b>Definition:</b> @('*defval-example-number*')</p>
+@({(defconst *defval-example-number* (fib 5))})
 </box>
 
 <p>In contrast, when @(':showval') is enabled, @('defval') will extend
@@ -94,7 +95,7 @@ constant.  For instance, here's what this looks like for
 
 <box>
 <p><b>Value:</b></p>
-@(`(:code *defval-example-number*)`)
+@({8})
 </box>
 
 <p>The optional @(':prepwork') argument can be used to put arbitrary events

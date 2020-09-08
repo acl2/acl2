@@ -73,3 +73,9 @@
   (("goal" :use len-of-insert-text)
    ("subgoal 4'''" :expand (len (insert-text nil 0 text)))
    ("subgoal 1'4'" :expand (len oldtext))))
+
+(defthm true-listp-of-insert-text
+  (implies (true-listp oldtext)
+           (true-listp (insert-text oldtext start text)))
+  :hints (("goal" :in-theory (enable insert-text)))
+  :rule-classes :type-prescription)

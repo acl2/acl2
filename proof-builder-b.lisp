@@ -2426,7 +2426,7 @@
                                       The value(s) returned was ~
                                       (were):~%~ ~ ~x1.~%"
                                      (list (cons #\0 success-expr)
-                                           (cons #\2 vals))))
+                                           (cons #\1 vals))))
                           (mv erp val state))
                 (mv (car vals) (cadr vals) state))))))
 

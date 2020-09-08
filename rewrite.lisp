@@ -15421,7 +15421,7 @@
                                            produce a term with no :program ~
                                            mode function symbols.  The term ~
                                            produced has :program mode ~
-                                           function symbol~#3~[~/~s] ~&3.  ~
+                                           function symbol~#3~[~/s~] ~&3.  ~
                                            You might consider proving a ~
                                            well-formedness guarantee to avoid ~
                                            this runtime test altogether.  See ~

@@ -1,4 +1,4 @@
-; A lightweight book about the built-in function binary-append.
+; Rules to prove an equality of booleans by proving both directions
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
 ; Copyright (C) 2013-2019 Kestrel Institute

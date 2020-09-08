@@ -141,7 +141,9 @@
     "This is a library about " (xdoc::ahref "json.org" "JSON") ".
      It currently contains an initial abstract syntax of JSON,
      consisting of " (xdoc::seetopic "fty" "fixtypes") ";
-     it also contains some initial operations on this abstract syntax.")
+     it also contains some initial operations on this abstract syntax,
+     as well as a translator from the output of the parser at
+     @('[books]/kestrel/json-parser/') to the abstract syntax.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -159,6 +161,19 @@
     " and to "
     (xdoc::seetopic "omap::omaps" "the library of ordered maps")
     ".")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "simpl-imp::imp-language"
+                             "Simple Programming Language Imp"))
+
+   (xdoc::p
+    "This is a library about a simple programming language, called Imp,
+     found (with small variations) in a variety of didactic resources.
+     This library formalizes syntax and semantics of this language,
+     and provides a program-mode interpreter of Imp programs.
+     This library may be extended with examples of
+     formal verification of Imp programs in ACL2.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -491,6 +506,9 @@
     "The macro @(tsee fty::defomap) has been improved
      to generate additional theorems.")
 
+   (xdoc::p
+    "A fixtype @(tsee nat-set) of osets of natural numbers has been added.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "java::java" "Java Library"))
@@ -688,12 +706,14 @@
    (xdoc::p
     "New macros
      @('defund2'),
-     @(tsee soft::define2), and
+     @(tsee soft::define2),
+     @(tsee soft::defund-sk2), and
      @(tsee soft::define-sk2)
      have been added.
      These abbreviate
      @(tsee defund),
-     @(tsee define), and
+     @(tsee define),
+     @(tsee defund-sk), and
      @(tsee std::define-sk)
      followed by @(tsee soft::defsoft),
      analogously to other macros as described above.")
@@ -852,6 +872,10 @@
     "The line containing @('#!/bin/bash') at the top of various shell scripts
      has been replaced by a line containing @('#!/usr/bin/env bash'), for
      increased portability.")
+
+   (xdoc::p
+    "The book @('tools/defttag-muffled.lisp') provides a way, using a trust
+    tag, to turn off all subsequent ``TTAG NOTE'' messages.  Use with care!!")
 
    ))
 

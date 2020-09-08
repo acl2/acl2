@@ -21,7 +21,8 @@
 
 (defun prove$-fn (term state hints otf-flg)
 
-; This function is based on thm-fn.  It returns
+; This function is based on thm-fn.  It returns (value t) if the proof
+; succeeds, else (value nil).
 
   (declare (xargs :mode :program :stobjs state))
   (with-ctx-summarized
@@ -68,7 +69,7 @@
                    `(with-prover-time-limit ,time-limit ,form)
                  form))
          (form (if step-limit
-                   `(with-prover-step-limit ,step-limit ,form)
+                   `(with-prover-step-limit! ,step-limit ,form)
                  form)))
     `(convert-soft-error-to-value ,form nil)))
 

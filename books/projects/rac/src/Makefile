@@ -4,7 +4,7 @@ all: ../bin/rac ../bin/parse
 ../bin/parse: parser.l parser.y parser.h output.c main.c
 	bison -d -v parser.y
 	flex parser.l
-	g++ -g -o parse parser.tab.c lex.yy.c output.c main.c -ll
+	g++ -g -o parse parser.tab.c lex.yy.c output.c main.c
 	install -m 775 parse ${RAC}/bin
 	/bin/rm parse
 

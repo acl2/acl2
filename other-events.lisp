@@ -17806,10 +17806,19 @@
 ; - guard-hints is the unique supplied value of :guard-hints if any, else is
 ;   nil; and
 ; - dcls results from the input dcls by ensuring that :verify-guards has value
-;   nil.
+;   nil and if the :guard is t (implicitly or explicitly), it is listed first
+;   in its own declare form.
 
 ; Note that erp is non-nil if any of :verify-guards, :non-executable, or
 ; :guard-hints is associated with two or more distinct values in dcls.
+
+; The reason we put :guard t in its own declare form is to assist in redundancy
+; checking.  This is a bit of overkill in general, since we don't expect two
+; defun-sk calls to be the same except for the placement of (equivalent)
+; declarations.  But when the first defun-sk specifies :guard t and the second
+; specifies no guard, then we would like these to generate the same inner
+; encapsulate, where :verify-guards nil is specified on the defun (guard
+; verification comes after the inner encapsulate).
 
   (let* ((guard-p (and (fetch-dcl-fields '(type :guard) dcls) t))
          (verify-guards-fields (remove-duplicates-equal
@@ -17828,9 +17837,15 @@
          (guard-hints (cond ((cdr guard-hints-fields) 'error)
                             (t (car guard-hints-fields))))
          (dcls (cons '(declare (xargs :verify-guards nil))
-                     (if (eq verify-guards-p t)
-                         (strip-dcls '(:verify-guards) dcls)
-                       dcls))))
+                     (strip-dcls '(:guard-hints)
+                                 (if (eq verify-guards-p t)
+                                     (strip-dcls '(:verify-guards) dcls)
+                                   dcls))))
+         (dcls (let ((guards (fetch-dcl-fields '(:guard) dcls)))
+                 (cond ((member-equal guards '((t) ('t) nil))
+                        (cons `(declare (xargs :guard t))
+                              (strip-dcls '(:guard) dcls)))
+                       (t dcls)))))
     (cond ((or (eq verify-guards-p 'error)
                (eq non-exec-p 'error)
                (eq guard-hints 'error))
@@ -17914,12 +17929,17 @@
                        (skolem-name
                         (or skolem-name
                             (add-suffix name "-WITNESS")))
+                       (stobjs (fetch-dcl-field :STOBJS dcls))
+                       (skolem-call `(,skolem-name ,@args))
+                       (skolem-call (if stobjs
+                                        `(non-exec ,skolem-call)
+                                      skolem-call))
                        (defun-body
                          (if (= (length bound-vars) 1)
-                             `(let ((,(car bound-vars) (,skolem-name ,@args)))
+                             `(let ((,(car bound-vars) ,skolem-call))
                                 ,body-guts)
                            `(mv-let (,@bound-vars)
-                              (,skolem-name ,@args)
+                              ,skolem-call
                               ,body-guts)))
                        (thm-name
                         (or thm-name
@@ -17938,26 +17958,51 @@
                      ()
                      (logic)
                      (set-match-free-default :all)
-                     (set-inhibit-warnings "Theory" "Use" "Free" "Non-rec" "Infected")
+                     (set-inhibit-warnings "Theory" "Use" "Free" "Non-rec"
+                                           "Infected")
                      (encapsulate
-                       ((,skolem-name ,args
-                                      ,(if (= (length bound-vars) 1)
-                                           (car bound-vars)
-                                         (cons 'mv bound-vars))
-                                      #+:non-standard-analysis
-                                      ,@(and classicalp-p
-                                             `(:classicalp ,classicalp)))
+                       (((,skolem-name ,@(make-list (length args)
+                                                    :initial-element '*))
+                         =>
+                         ,(if (= (length bound-vars) 1)
+                              '*
+                            (cons 'mv
+                                  (make-list (length bound-vars)
+                                             :initial-element '*)))
+                         #+:non-standard-analysis
+                         ,@(and classicalp-p
+                                `(:classicalp ,classicalp)))
                         ,@(and constrained
-                               `((,name ,args t
-                                        #+:non-standard-analysis
-                                        ,@(and classicalp-p
-                                               `(:classicalp ,classicalp))))))
+                               `((,name
+                                  ,args
+                                  t
+                                  ,@(and stobjs
+                                         `(:stobjs ,@stobjs))
+                                  ,@(and guard-p
+                                         (mv-let (ign guard)
+                                           (dcls-guard-raw-from-def
+                                            (cdr defun-form)
+
+; It is safe to pass nil in for the world because we are meeting the conditions
+; of dcls-guard-raw-from-def: an explicit :STOBJS keyword is added above if
+; there are stobjs, and SATISFIES declarations are checked in the local
+; defun-form.
+
+                                            nil)
+                                           (declare (ignore ign))
+                                           `(:guard ,guard)))
+                                  #+:non-standard-analysis
+                                  ,@(and classicalp-p
+                                         `(:classicalp ,classicalp))))))
                        (local (in-theory '(implies)))
                        (local
-                        (defchoose ,skolem-name ,bound-vars ,args
-                          ,defchoose-body
-                          ,@(and strengthen
-                                 '(:strengthen t))))
+                        (encapsulate ; unable to declare ignorable in defchoose
+                          ()
+                          (set-ignore-ok t) ; local to encapsulate
+                          (defchoose ,skolem-name ,bound-vars ,args
+                            ,defchoose-body
+                            ,@(and strengthen
+                                   '(:strengthen t)))))
                        ,@(and strengthen
                               `((defthm ,(add-suffix skolem-name "-STRENGTHEN")
                                   ,(defchoose-constraint-extra
@@ -25188,7 +25233,7 @@
                                 evaluates to nil:~|~%~x2."
                                index len-all-conjuncts form))))))))))
 
-(defun print-gv1 (fn-guard-stobjsin-args conjunct substitute ctx state)
+(defun print-gv1 (info conjunct substitute ctx state)
   (cond
    ((not (or (booleanp substitute)
              (natp substitute)))
@@ -25197,25 +25242,28 @@
          NIL, or a natural number."
         substitute))
    (t
-    (let* ((wrld (w state))
-           (fn (nth 0 fn-guard-stobjsin-args))
-           (guard (nth 1 fn-guard-stobjsin-args))
-           (args (apply-user-stobj-alist-or-kwote
-                  (user-stobj-alist state)
-                  (nth 3 fn-guard-stobjsin-args)
-                  nil))
-           (formals (formals fn wrld))
+    (let* ((fn (nth 0 info))
+           (guard (nth 1 info))
+           (wrld (nth 4 info))
            (guard-fn (add-suffix-to-fn fn "{GUARD}")))
 
 ; Note: (nth 2 fn-guard-stobjsin-args) is the stobjs-in of fn, but we don't
 ; need it.
 
-      (if conjunct
-          (let ((conjuncts (flatten-ands-in-lit (guard fn nil wrld))))
-            (print-gv-conjunct guard-fn formals conjuncts args 1
-                               (length conjuncts) fn substitute ctx state))
-        (print-gv-form guard-fn guard nil formals args t substitute ctx
-                       state))))))
+      (revert-world
+       (pprogn
+        (set-w! wrld state)
+        (let ((formals (formals fn wrld))
+              (args (apply-user-stobj-alist-or-kwote
+                     (user-stobj-alist state)
+                     (nth 3 info)
+                     nil)))
+          (if conjunct
+              (let ((conjuncts (flatten-ands-in-lit (guard fn nil wrld))))
+                (print-gv-conjunct guard-fn formals conjuncts args 1
+                                   (length conjuncts) fn substitute ctx state))
+            (print-gv-form guard-fn guard nil formals args t substitute ctx
+                           state)))))))))
 
 (defun print-gv-fn (evisc-tuple conjunct substitute state)
   (prog2$
@@ -30845,18 +30893,18 @@
 ;    :FORGET NIL
 ;    :MEMO-TABLE-INIT-SIZE 60
 ;    :AOKP NIL)
-;   
+;
 ;   (lp)
 
 ; That works:
 
 ;   ACL2 !>(time$ (fib 100))
-;   ; (EV-REC *RETURN-LAST-ARG3* ...) took 
+;   ; (EV-REC *RETURN-LAST-ARG3* ...) took
 ;   ; 0.00 seconds realtime, 0.00 seconds runtime
 ;   ; (7,648 bytes allocated).
 ;   573147844013817084101
 ;   ACL2 !>(time$ (fib 100))
-;   ; (EV-REC *RETURN-LAST-ARG3* ...) took 
+;   ; (EV-REC *RETURN-LAST-ARG3* ...) took
 ;   ; 0.00 seconds realtime, 0.00 seconds runtime
 ;   ; (16 bytes allocated).
 ;   573147844013817084101
@@ -30979,7 +31027,7 @@
 ;     (defthm natp-lim
 ;       (natp (lim))
 ;       :rule-classes :type-prescription))
-;   
+;
 ;   (defun fib-limit2 (n limit)
 ;     (declare (type (integer 0 *) limit))
 ;     (declare (xargs :guard (integerp n)
@@ -31446,9 +31494,9 @@
          (if (free-exactly-in-last-arg-of-calls limit fns-limit body)
              (memoize-partial-translations-msg-bodies
               (cdr tail) fns-limit limit wrld)
-           (msg "The limit variable ~x0 fails to occur free where expected in ~
-                 the body of the definition of function ~x1 (essentially, as ~
-                 the last argument of each recursive call)."
+           (msg "The limit variable ~x0 fails to occur free exactly where ~
+                 expected in the body of the definition of function ~x1 ~
+                 (essentially, as the last argument of each recursive call)."
                 limit fn)))
         (& (msg "~@0 (must be of the form (IF (ZP LIMIT) & &))."
                 (msg str fn))))))))
@@ -31568,7 +31616,10 @@
          (memoize-table (table-alist 'memoize-table wrld))
          (key-formals (if (symbolp key)
                           (getpropc key 'formals t wrld)
-                        t))
+                        (er hard ctx
+                            "~@0The first argument of memoize must be a ~
+                             symbol, unlike ~x1."
+                            str key)))
          (key-class (symbol-class key wrld))
          (val (if (symbol-alistp val)
                   val
@@ -31686,6 +31737,13 @@
                  str (cdr (assoc-eq :memo-table-init-size val))))
             ((not (memoize-table-chk-commutative str key val ctx wrld))
              nil) ; an error was presumably already caused
+            ((not (symbolp total))
+             (er hard ctx
+                 "~@0The value of the :total keyword for memoize must be a ~
+                  symbol, but ~x1 is not.  Presumably you are trying to use ~
+                  the :total option of memoize directly, which is not ~
+                  recommended.  See :DOC memoize-partial."
+                 str total))
             ((and total
                   (not (cltl-def-memoize-partial key total wrld)))
              (er hard ctx

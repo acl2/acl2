@@ -24,7 +24,7 @@
    (:rewrite m1-file-alist-p-when-subsetp-equal)
    (:rewrite
     abs-fs-fix-of-put-assoc-equal-lemma-2)
-   abs-fs-fix-of-put-assoc-equal-lemma-3
+   abs-addrs-of-remove-assoc-lemma-1
    (:type-prescription
     abs-directory-file-p-when-m1-file-p-lemma-1))))
 

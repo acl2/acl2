@@ -7781,7 +7781,8 @@
       (e/d (lofat-to-hifat-helper
             (:definition hifat-no-dups-p)
             remove1-dir-ent not-intersectp-list
-            (:linear hifat-to-lofat-inversion-lemma-16))
+            (:linear hifat-to-lofat-inversion-lemma-16)
+            hifat-bounded-file-alist-p-of-cdr)
            ((:rewrite nth-of-nats=>chars)
             (:rewrite dir-ent-p-when-member-equal-of-dir-ent-list-p)
             (:rewrite fati-of-hifat-to-lofat-helper-disjoint-lemma-2)

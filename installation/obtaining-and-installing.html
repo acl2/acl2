@@ -577,9 +577,11 @@ start up your Common Lisp, and compile by executing the following forms.
   (compile-acl2)
 </PRE>
 
-Now each time you want to use ACL2, you need only execute the following forms
+Now each time you want to use ACL2, execute the following forms
 after starting up Common Lisp in subdirectory <CODE>acl2-8.3</CODE> of
-<I>dir</I>.
+<I>dir</I>.  This may take a minute or two (which is another reason to
+consider installing an executable image as described above, using
+`<code>make</code>' if possible).
 
 <PRE>
   (load "init.lisp")
@@ -587,11 +589,6 @@ after starting up Common Lisp in subdirectory <CODE>acl2-8.3</CODE> of
   (load-acl2)
   (initialize-acl2)
 </PRE>
-
-<I>Note.</I> The resulting process includes the ACL2 documentation, and hence
-will probably be considerably larger (perhaps twice the size) than the result
-of running an executable image created as described <A
-HREF="#Create-Image">above</A>.
 
 <P>
 

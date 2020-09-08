@@ -829,7 +829,15 @@
 
   (define xdoc::evmac-topic-implementation-item-input ((name stringp)
                                                        (macro stringp))
-    (xdoc::&& "@('" name "') is the homonymous input to @('" macro "').")))
+    (xdoc::&& "@('" name "') is the homonymous input to @('" macro "')."))
+
+  (define xdoc::evmac-topic-implementation-item-fn-doc ((name stringp))
+    (xdoc::&& "@('" name "') is the homonymous function symbol "
+              "describes in the user documentation."))
+
+  (define xdoc::evmac-topic-implementation-item-thm-doc ((name stringp))
+    (xdoc::&& "@('" name "') is the homonymous thoerem symbol "
+              "describes in the user documentation.")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

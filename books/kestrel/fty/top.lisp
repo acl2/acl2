@@ -32,9 +32,10 @@
 (include-book "defomap")
 (include-book "defset")
 (include-book "map")
+(include-book "nat-set")
+(include-book "nati")
 (include-book "nibble")
 (include-book "nibble-list")
-(include-book "nati")
 (include-book "set")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -22,6 +22,8 @@
 (include-book "ensure-value-is-string")
 (include-book "ensure-value-is-symbol")
 (include-book "ensure-value-is-symbol-list")
+(include-book "ensure-value-is-true-list")
+(include-book "ensure-value-is-untranslated-term")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

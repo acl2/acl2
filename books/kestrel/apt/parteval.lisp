@@ -13,6 +13,7 @@
 (include-book "kestrel/error-checking/ensure-value-is-boolean" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-symbol-list" :dir :system)
+(include-book "kestrel/error-checking/ensure-value-is-untranslated-term" :dir :system)
 (include-book "kestrel/event-macros/cw-event" :dir :system)
 (include-book "kestrel/event-macros/input-processing" :dir :system)
 (include-book "kestrel/event-macros/intro-macros" :dir :system)
@@ -141,7 +142,8 @@
        (cj (car cj...cm))
        (description
         (msg "The term ~x0 assigned to the static parameter ~x1" cj yj))
-       ((er (list cj$ stobjs-out)) (ensure-term$ cj description t nil))
+       ((er (list cj$ stobjs-out))
+        (ensure-value-is-untranslated-term$ cj description t nil))
        ((er &) (ensure-term-ground$ cj$ description t nil))
        ((er &) (ensure-term-logic-mode$ cj$ description t nil))
        ((er &) (ensure-function/lambda/term-number-of-results$ stobjs-out 1

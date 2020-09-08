@@ -63,11 +63,11 @@
                          ensure-list-functions$
                          ensure-list-no-duplicates$
                          ensure-string-or-nil$
-                         ensure-term$
                          ensure-term-ground$
                          ensure-value-is-boolean$
                          ensure-value-is-in-list$
                          ensure-value-is-string$
+                         ensure-value-is-untranslated-term$
                          er-soft+
                          explode
                          fargn

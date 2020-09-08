@@ -1354,8 +1354,7 @@ simulate\".)  Try these, as well as the examples shown above.</p>
 (defun symsim-fn-print-lst (tuples n total wrld state)
   (cond ((null tuples)
          (fms "========================================~%~%"
-              (list (cons #\0 n))
-              *standard-co* state nil))
+              nil *standard-co* state nil))
         (t
          (let ((tuple (car tuples)))
            (pprogn

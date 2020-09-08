@@ -41,7 +41,7 @@
 (include-book "app-view/user-level-memory-utils" :dir :proof-utils :ttags :all)
 (include-book "../../tools/execution/init-state" :ttags :all)
 (include-book "centaur/gl/gl" :dir :system)
-(include-book "std/testing/eval" :dir :system)
+(include-book "std/testing/must-fail" :dir :system)
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 

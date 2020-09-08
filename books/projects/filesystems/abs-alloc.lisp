@@ -40,8 +40,6 @@
                          abs-file-alist-p-of-abs-file->contents)
                         (:rewrite member-of-abs-fs-fix-when-natp)
                         (:rewrite
-                         no-duplicatesp-equal-of-abs-addrs-of-abs-fs-fix)
-                        (:rewrite
                          m1-file-alist-p-of-intersection-equal-2)
                         (:rewrite absfat-subsetp-transitivity-lemma-5)
                         (:rewrite
@@ -178,7 +176,7 @@
                        abs-fs-p abs-file-alist-p abs-no-dups-p)
         ((:rewrite abs-fs-p-correctness-1)
          (:rewrite abs-no-dups-p-of-put-assoc-equal)
-         (:rewrite abs-fs-fix-of-put-assoc-equal-lemma-1)
+         (:rewrite subsetp-of-abs-addrs-of-put-assoc-lemma-1)
          (:rewrite abs-fs-p-when-hifat-no-dups-p)
          (:rewrite hifat-find-file-correctness-1-lemma-1)
          (:rewrite consp-of-assoc-of-abs-fs-fix)
@@ -319,7 +317,7 @@
                            abs-fs-p abs-file-alist-p abs-no-dups-p)
             ((:rewrite abs-fs-p-correctness-1)
              (:rewrite abs-no-dups-p-of-put-assoc-equal)
-             (:rewrite abs-fs-fix-of-put-assoc-equal-lemma-1)
+             (:rewrite subsetp-of-abs-addrs-of-put-assoc-lemma-1)
              (:rewrite abs-fs-p-when-hifat-no-dups-p)
              (:rewrite hifat-find-file-correctness-1-lemma-1)
              (:rewrite consp-of-assoc-of-abs-fs-fix)
@@ -398,7 +396,7 @@
                                    fat32-filename-equiv
                                    abs-fs-p abs-file-alist-p abs-no-dups-p)
                     ((:rewrite abs-no-dups-p-of-put-assoc-equal)
-                     (:rewrite abs-fs-fix-of-put-assoc-equal-lemma-1)
+                     (:rewrite subsetp-of-abs-addrs-of-put-assoc-lemma-1)
                      (:rewrite abs-fs-p-when-hifat-no-dups-p)
                      (:rewrite hifat-find-file-correctness-1-lemma-1)
                      (:rewrite consp-of-assoc-of-abs-fs-fix)
@@ -412,7 +410,7 @@
                       abs-file-alist-p-when-m1-file-alist-p)
                      (:rewrite abs-alloc-correctness-1)
                      (:rewrite
-                      abs-fs-fix-of-put-assoc-equal-lemma-3)
+                      abs-addrs-of-remove-assoc-lemma-1)
                      (:rewrite abs-no-dups-p-of-cdr)
                      (:rewrite abs-addrs-of-put-assoc-lemma-1)
                      (:rewrite abs-addrs-when-m1-file-alist-p)

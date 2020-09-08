@@ -9,6 +9,37 @@ ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(PROOF-TREE))
  (PROOF-TREE)
 ACL2 !>>(IN-PACKAGE "ACL2")
  "ACL2"
+ACL2 !>>(INCLUDE-BOOK "std/testing/must-fail"
+                      :DIR :SYSTEM)
+
+Summary
+Form:  ( INCLUDE-BOOK "std/testing/must-fail" ...)
+Rules: NIL
+ "[books]/std/testing/must-fail.lisp"
+ACL2 !>>(DEFMACRO
+         MF (FORM &KEY (EXPECTED ':SOFT))
+         (CONS
+          'MUST-FAIL
+          (CONS
+           FORM
+           (CONS
+            ':EXPECTED
+            (CONS
+             EXPECTED
+             (CONS
+                ':WITH-OUTPUT-OFF
+                (CONS (CONS 'PROOF-TREE
+                            (CONS 'PROVE
+                                  (CONS 'EVENT
+                                        (CONS 'SUMMARY
+                                              (CONS 'PROOF-BUILDER
+                                                    (CONS 'HISTORY 'NIL))))))
+                      'NIL)))))))
+
+Summary
+Form:  ( DEFMACRO MF ...)
+Rules: NIL
+ MF
 ACL2 !>>(DEFUN FIB-LIMIT (N LIMIT)
                (DECLARE (TYPE (INTEGER 0 *) LIMIT)
                         (TYPE INTEGER N))
@@ -203,33 +234,53 @@ Summary
 Form:  ( PROGN (MAKE-EVENT ...) ...)
 Rules: NIL
  FIB
+ACL2 !>>(ASSERT-EVENT (EQUAL (FIB 30) (FIB-LIMIT 30 50)))
+ :PASSED
+ACL2 !>>(ASSERT-EVENT (EQUAL (FIB 100) 573147844013817084101))
+ :PASSED
+ACL2 !>>(SET-ENFORCE-REDUNDANCY T)
+ T
 ACL2 !>>(ENCAPSULATE
-           NIL (SET-ENFORCE-REDUNDANCY T)
-           (DEFCHOOSE FIB-LIMIT-CHANGE (LARGE)
-                      (N LIMIT)
-                      (AND (NATP LARGE)
-                           (<= LIMIT LARGE)
-                           (NOT (EQUAL (FIB-LIMIT N LIMIT)
-                                       (FIB-LIMIT N LARGE)))))
-           (DEFCHOOSE FIB-LIMIT-STABLE (LIMIT)
-                      (N)
-                      (AND (NATP LIMIT)
-                           (EQUAL (FIB-LIMIT N LIMIT)
-                                  (FIB-LIMIT N (FIB-LIMIT-CHANGE N LIMIT)))))
-           (DEFUN FIB (N)
-                  (DECLARE (TYPE INTEGER N)
-                           (XARGS :GUARD T))
-                  (FIB-LIMIT N (NFIX (FIB-LIMIT-STABLE N)))))
+         NIL
+         (DEFCHOOSE FIB-LIMIT-CHANGE (LARGE)
+                    (N LIMIT)
+                    (AND (NATP LARGE)
+                         (<= LIMIT LARGE)
+                         (NOT (EQUAL (FIB-LIMIT N LIMIT)
+                                     (FIB-LIMIT N LARGE)))))
+         (DEFCHOOSE FIB-LIMIT-STABLE (LIMIT)
+                    (N)
+                    (AND (NATP LIMIT)
+                         (EQUAL (FIB-LIMIT N LIMIT)
+                                (FIB-LIMIT N (FIB-LIMIT-CHANGE N LIMIT)))))
+         (DEFUN FIB (N)
+                (DECLARE (TYPE INTEGER N)
+                         (XARGS :GUARD T))
+                (FIB-LIMIT N (NFIX (FIB-LIMIT-STABLE N))))
+         (TABLE
+            PARTIAL-FUNCTIONS-TABLE 'FIB-LIMIT
+            '((FIB FIB-LIMIT
+                   FIB-LIMIT-CHANGE FIB-LIMIT-STABLE
+                   (DEFUN FIB (N)
+                          (DECLARE (IGNORABLE N))
+                          (DECLARE (TYPE INTEGER N))
+                          (FLET ((FIB-LIMIT (N LIMIT)
+                                            (DECLARE (IGNORE LIMIT))
+                                            (FIB N)))
+                                (DECLARE (INLINE FIB-LIMIT))
+                                (LET ((LIMIT 0))
+                                     (DECLARE (IGNORABLE LIMIT))
+                                     (IF (OR (= N 0) (= N 1))
+                                         1
+                                         (+ (FIB-LIMIT (- N 1) LIMIT)
+                                            (FIB-LIMIT (- N 2) LIMIT)))))))))
+         (MEMOIZE 'FIB :TOTAL 'FIB-LIMIT))
 
-To verify that the four encapsulated events correctly extend the current
+To verify that the five encapsulated events correctly extend the current
 theory we will evaluate them.  The theory thus constructed is only
 ephemeral.
 
 Encapsulated Events:
-
-
-ACL2 !>>>(SET-ENFORCE-REDUNDANCY T)
-T
 
 
 ACL2 !>>>(DEFCHOOSE FIB-LIMIT-CHANGE (LARGE)
@@ -275,22 +326,82 @@ Form:  ( DEFUN FIB ...)
 Rules: NIL
 :REDUNDANT
 
-End of Encapsulated Events.
 
-Having verified that the encapsulated events validate the signatures
-of the ENCAPSULATE event, we discard the ephemeral theory and extend
-the original theory as directed by the signatures and the non-LOCAL
-events.
+ACL2 !>>>(TABLE
+            PARTIAL-FUNCTIONS-TABLE 'FIB-LIMIT
+            '((FIB FIB-LIMIT
+                   FIB-LIMIT-CHANGE FIB-LIMIT-STABLE
+                   (DEFUN FIB (N)
+                          (DECLARE (IGNORABLE N))
+                          (DECLARE (TYPE INTEGER N))
+                          (FLET ((FIB-LIMIT (N LIMIT)
+                                            (DECLARE (IGNORE LIMIT))
+                                            (FIB N)))
+                                (DECLARE (INLINE FIB-LIMIT))
+                                (LET ((LIMIT 0))
+                                     (DECLARE (IGNORABLE LIMIT))
+                                     (IF (OR (= N 0) (= N 1))
+                                         1
+                                         (+ (FIB-LIMIT (- N 1) LIMIT)
+                                            (FIB-LIMIT (- N 2) LIMIT)))))))))
 
+The event ( TABLE PARTIAL-FUNCTIONS-TABLE ...) is redundant.  See :DOC
+redundant-events.
 
 Summary
-Form:  ( ENCAPSULATE NIL (SET-ENFORCE-REDUNDANCY T) ...)
+Form:  ( TABLE PARTIAL-FUNCTIONS-TABLE ...)
 Rules: NIL
- T
-ACL2 !>>(ASSERT-EVENT (EQUAL (FIB 30) (FIB-LIMIT 30 50)))
- :PASSED
-ACL2 !>>(ASSERT-EVENT (EQUAL (FIB 100) 573147844013817084101))
- :PASSED
+:REDUNDANT
+
+
+ACL2 !>>>(MEMOIZE 'FIB :TOTAL 'FIB-LIMIT)
+
+
+ACL2 !>>>(TABLE
+              MEMOIZE-TABLE
+              (DEREF-MACRO-NAME 'FIB
+                                (MACRO-ALIASES WORLD))
+              (LIST* (CONS :CONDITION-FN T)
+                     (CONS :INLINE T)
+                     (CONS :COMMUTATIVE NIL)
+                     (CONS :FORGET NIL)
+                     (CONS :MEMO-TABLE-INIT-SIZE (OR NIL *MHT-DEFAULT-SIZE*))
+                     (CONS :AOKP 'NIL)
+                     (CONS :STATS :DEFAULT)
+                     (CONS :TOTAL 'FIB-LIMIT)
+                     (AND (NOT (EQ ':DEFAULT :DEFAULT))
+                          (LIST (CONS :IDEAL-OKP ':DEFAULT)))))
+
+The event ( TABLE MEMOIZE-TABLE ...) is redundant.  See :DOC redundant-
+events.
+
+Summary
+Form:  ( TABLE MEMOIZE-TABLE ...)
+Rules: NIL
+:REDUNDANT
+
+
+ACL2 !>>>(VALUE-TRIPLE (DEREF-MACRO-NAME 'FIB
+                                         (MACRO-ALIASES (W STATE))))
+FIB
+
+Summary
+Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
+Rules: NIL
+FIB
+
+End of Encapsulated Events.
+
+ACL2 Observation in ( ENCAPSULATE NIL (DEFCHOOSE FIB-LIMIT-CHANGE ...)
+...):  The submitted encapsulate event has created no new ACL2 events,
+and thus is leaving the ACL2 logical world unchanged.  See :DOC encapsulate.
+
+Summary
+Form:  ( ENCAPSULATE NIL (DEFCHOOSE FIB-LIMIT-CHANGE ...) ...)
+Rules: NIL
+ :EMPTY-ENCAPSULATE
+ACL2 !>>(SET-ENFORCE-REDUNDANCY NIL)
+ NIL
 ACL2 !>>(DEFUN FIB2-CLOCK (N CLOCK)
                (DECLARE (XARGS :GUARD (NATP CLOCK))
                         (XARGS :GUARD (INTEGERP N)
@@ -1358,6 +1469,8 @@ Summary
 Form:  ( PROGN (MAKE-EVENT ...) ...)
 Rules: NIL
  ODDLP
+ACL2 !>>(SET-ENFORCE-REDUNDANCY T)
+ T
 ACL2 !>>(ENCAPSULATE
          NIL
          (DEFCHOOSE EVENLP-BDD-CHANGE (LARGE)
@@ -1424,9 +1537,11 @@ ACL2 !>>(ENCAPSULATE
                                            (DECLARE (IGNORABLE BOUND))
                                            (IF (CONSP X)
                                                (EVENLP-BDD (CDR X) BOUND)
-                                               NIL))))))))
+                                               NIL)))))))
+         (MEMOIZE 'EVENLP :TOTAL 'EVENLP-BDD)
+         (MEMOIZE 'ODDLP :TOTAL 'ODDLP-BDD))
 
-To verify that the seven encapsulated events correctly extend the current
+To verify that the nine encapsulated events correctly extend the current
 theory we will evaluate them.  The theory thus constructed is only
 ephemeral.
 
@@ -1565,6 +1680,80 @@ Form:  ( TABLE PARTIAL-FUNCTIONS-TABLE ...)
 Rules: NIL
 :REDUNDANT
 
+
+ACL2 !>>>(MEMOIZE 'EVENLP :TOTAL 'EVENLP-BDD)
+
+
+ACL2 !>>>(TABLE
+              MEMOIZE-TABLE
+              (DEREF-MACRO-NAME 'EVENLP
+                                (MACRO-ALIASES WORLD))
+              (LIST* (CONS :CONDITION-FN T)
+                     (CONS :INLINE T)
+                     (CONS :COMMUTATIVE NIL)
+                     (CONS :FORGET NIL)
+                     (CONS :MEMO-TABLE-INIT-SIZE (OR NIL *MHT-DEFAULT-SIZE*))
+                     (CONS :AOKP 'NIL)
+                     (CONS :STATS :DEFAULT)
+                     (CONS :TOTAL 'EVENLP-BDD)
+                     (AND (NOT (EQ ':DEFAULT :DEFAULT))
+                          (LIST (CONS :IDEAL-OKP ':DEFAULT)))))
+
+The event ( TABLE MEMOIZE-TABLE ...) is redundant.  See :DOC redundant-
+events.
+
+Summary
+Form:  ( TABLE MEMOIZE-TABLE ...)
+Rules: NIL
+:REDUNDANT
+
+
+ACL2 !>>>(VALUE-TRIPLE (DEREF-MACRO-NAME 'EVENLP
+                                         (MACRO-ALIASES (W STATE))))
+EVENLP
+
+Summary
+Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
+Rules: NIL
+EVENLP
+
+
+ACL2 !>>>(MEMOIZE 'ODDLP :TOTAL 'ODDLP-BDD)
+
+
+ACL2 !>>>(TABLE
+              MEMOIZE-TABLE
+              (DEREF-MACRO-NAME 'ODDLP
+                                (MACRO-ALIASES WORLD))
+              (LIST* (CONS :CONDITION-FN T)
+                     (CONS :INLINE T)
+                     (CONS :COMMUTATIVE NIL)
+                     (CONS :FORGET NIL)
+                     (CONS :MEMO-TABLE-INIT-SIZE (OR NIL *MHT-DEFAULT-SIZE*))
+                     (CONS :AOKP 'NIL)
+                     (CONS :STATS :DEFAULT)
+                     (CONS :TOTAL 'ODDLP-BDD)
+                     (AND (NOT (EQ ':DEFAULT :DEFAULT))
+                          (LIST (CONS :IDEAL-OKP ':DEFAULT)))))
+
+The event ( TABLE MEMOIZE-TABLE ...) is redundant.  See :DOC redundant-
+events.
+
+Summary
+Form:  ( TABLE MEMOIZE-TABLE ...)
+Rules: NIL
+:REDUNDANT
+
+
+ACL2 !>>>(VALUE-TRIPLE (DEREF-MACRO-NAME 'ODDLP
+                                         (MACRO-ALIASES (W STATE))))
+ODDLP
+
+Summary
+Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
+Rules: NIL
+ODDLP
+
 End of Encapsulated Events.
 
 ACL2 Observation in ( ENCAPSULATE NIL (DEFCHOOSE EVENLP-BDD-CHANGE
@@ -1576,6 +1765,8 @@ Summary
 Form:  ( ENCAPSULATE NIL (DEFCHOOSE EVENLP-BDD-CHANGE ...) ...)
 Rules: NIL
  :EMPTY-ENCAPSULATE
+ACL2 !>>(SET-ENFORCE-REDUNDANCY NIL)
+ NIL
 ACL2 !>>(ASSERT-EVENT (EVENLP '(1 2 3 4 5 6)))
  :PASSED
 ACL2 !>>(ASSERT-EVENT (NOT (ODDLP '(1 2 3 4 5 6))))
@@ -4007,37 +4198,118 @@ ACL2 !>>(ASSERT-EVENT
                                              '(PERM Z X))
                     T))
  :PASSED
-ACL2 !>>(INCLUDE-BOOK "std/testing/must-fail"
-                      :DIR :SYSTEM)
+ACL2 !>>(U)
+ V        22:x(MUTUAL-RECURSION
+                   (DEFUN XX-WORSE-THAN-BUILTIN-CLOCKED
+                          (TERM1 TERM2 CLK)
+                          ...)
+                   (DEFUN XX-WORSE-THAN-OR-EQUAL-BUILTIN-CLOCKED
+                          (TERM1 TERM2 CLK)
+                          ...)
+                   (DEFUN BASIC-XX-WORSE-THAN-LST1
+                          (ARGS1 ARGS2 CLK)
+                          ...)
+                   (DEFUN BASIC-XX-WORSE-THAN-LST2
+                          (ARGS1 ARGS2 CLK)
+                          ...)
+                   (DEFUN BASIC-XX-WORSE-THAN (TERM1 TERM2 CLK)
+                          ...)
+                   (DEFUN SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL
+                          (TERM1 TERM2 CLK)
+                          ...)
+                   (DEFUN SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST
+                          (ARGS TERM2 CLK)
+                          ...)
+                   (DEFUN XX-WORSE-THAN-LST (ARGS TERM2 CLK)
+                          ...))
+ACL2 !>>(WITH-OUTPUT
+         :OFF
+         :ALL
+         (MEMOIZE-PARTIAL
+            ((XX-WORSE-THAN* XX-WORSE-THAN-BUILTIN-CLOCKED
+                             :RECURSIVE NIL)
+             (XX-WORSE-THAN-OR-EQUAL* XX-WORSE-THAN-OR-EQUAL-BUILTIN-CLOCKED)
+             (BASIC-XX-WORSE-THAN-LST1* BASIC-XX-WORSE-THAN-LST1)
+             (BASIC-XX-WORSE-THAN-LST2* BASIC-XX-WORSE-THAN-LST2)
+             (BASIC-XX-WORSE-THAN* BASIC-XX-WORSE-THAN)
+             (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL*
+                  SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL)
+             (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST*
+                  SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST)
+             (XX-WORSE-THAN-LST* XX-WORSE-THAN-LST))))
+ XX-WORSE-THAN-LST*
+ACL2 !>>(MF (ASSERT-EVENT (EQUAL (XX-WORSE-THAN* '(MEM (CAR (DEL A X)) X)
+                                                 '(MEM (CAR (DEL A X)) Y))
+                                 NIL))
+            :EXPECTED :HARD)
+
+
+ACL2 Error in HARD-ERROR-TO-SOFT-ERROR:  ACL2 cannot ev the call of
+non-executable function XX-WORSE-THAN-BUILTIN-CLOCKED-STABLE on argument
+list:
+
+((MEM (CAR (DEL A X)) X) (MEM (CAR (DEL A X)) Y))
+
+To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
+
 
 Summary
-Form:  ( INCLUDE-BOOK "std/testing/must-fail" ...)
+Form:  ( MAKE-EVENT (QUOTE ...) ...)
 Rules: NIL
- "[books]/std/testing/must-fail.lisp"
-ACL2 !>>(DEFMACRO
-         MF (FORM &KEY (EXPECTED ':SOFT))
-         (CONS
-          'MUST-FAIL
-          (CONS
-           FORM
-           (CONS
-            ':EXPECTED
-            (CONS
-             EXPECTED
-             (CONS
-                ':WITH-OUTPUT-OFF
-                (CONS (CONS 'PROOF-TREE
-                            (CONS 'PROVE
-                                  (CONS 'EVENT
-                                        (CONS 'SUMMARY
-                                              (CONS 'PROOF-BUILDER
-                                                    (CONS 'HISTORY 'NIL))))))
-                      'NIL)))))))
-
-Summary
-Form:  ( DEFMACRO MF ...)
-Rules: NIL
- MF
+ T
+ACL2 !>>(U)
+ V        22:x(MUTUAL-RECURSION
+                   (DEFUN XX-WORSE-THAN-BUILTIN-CLOCKED
+                          (TERM1 TERM2 CLK)
+                          ...)
+                   (DEFUN XX-WORSE-THAN-OR-EQUAL-BUILTIN-CLOCKED
+                          (TERM1 TERM2 CLK)
+                          ...)
+                   (DEFUN BASIC-XX-WORSE-THAN-LST1
+                          (ARGS1 ARGS2 CLK)
+                          ...)
+                   (DEFUN BASIC-XX-WORSE-THAN-LST2
+                          (ARGS1 ARGS2 CLK)
+                          ...)
+                   (DEFUN BASIC-XX-WORSE-THAN (TERM1 TERM2 CLK)
+                          ...)
+                   (DEFUN SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL
+                          (TERM1 TERM2 CLK)
+                          ...)
+                   (DEFUN SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST
+                          (ARGS TERM2 CLK)
+                          ...)
+                   (DEFUN XX-WORSE-THAN-LST (ARGS TERM2 CLK)
+                          ...))
+ACL2 !>>(WITH-OUTPUT
+         :OFF
+         :ALL
+         (MEMOIZE-PARTIAL
+            ((XX-WORSE-THAN* XX-WORSE-THAN-BUILTIN-CLOCKED)
+             (XX-WORSE-THAN-OR-EQUAL* XX-WORSE-THAN-OR-EQUAL-BUILTIN-CLOCKED)
+             (BASIC-XX-WORSE-THAN-LST1* BASIC-XX-WORSE-THAN-LST1)
+             (BASIC-XX-WORSE-THAN-LST2* BASIC-XX-WORSE-THAN-LST2)
+             (BASIC-XX-WORSE-THAN* BASIC-XX-WORSE-THAN)
+             (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL*
+                  SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL)
+             (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST*
+                  SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST)
+             (XX-WORSE-THAN-LST* XX-WORSE-THAN-LST))
+            :CONDITION NIL))
+ XX-WORSE-THAN-LST*
+ACL2 !>>(ASSERT-EVENT (EQUAL (XX-WORSE-THAN* '(MEM (CAR (DEL A X)) X)
+                                             '(MEM (CAR (DEL A X)) Y))
+                             NIL))
+ :PASSED
+ACL2 !>>(ASSERT-EVENT (EQUAL (XX-WORSE-THAN-OR-EQUAL* '(MEM (CAR Z) X)
+                                                      '(PERM Z Y))
+                             NIL))
+ :PASSED
+ACL2 !>>(ASSERT-EVENT
+             (EQUAL (XX-WORSE-THAN-OR-EQUAL* '(PERM (DEL (CAR Z) X) (CDR Z))
+                                             '(PERM Z X))
+                    T))
+ :PASSED
 ACL2 !>>(DEFUN BAD{WRONG-FORM}-LIMIT (N LIMIT)
                (DECLARE (TYPE (INTEGER 0 *) LIMIT)
                         (TYPE (INTEGER 0 *) N)
@@ -4258,8 +4530,8 @@ value  = ((BAD{USES-LIMIT} BAD{USES-LIMIT}-LIMIT
                                   (DECLARE (TYPE INTEGER N))
                                   (FLET (#) (DECLARE #) (LET # # #)))))
 Reason:
-The limit variable LIMIT fails to occur free where expected in the
-body of the definition of function BAD{USES-LIMIT}-LIMIT (essentially,
+The limit variable LIMIT fails to occur free exactly where expected
+in the body of the definition of function BAD{USES-LIMIT}-LIMIT (essentially,
 as the last argument of each recursive call).
 
 (See :DOC set-iprint to be able to see elided values in this message.)
@@ -6084,4 +6356,514 @@ Summary
 Form:  ( MAKE-EVENT (QUOTE ...) ...)
 Rules: NIL
  T
+ACL2 !>>(DEFUN
+         COLLATZ-LIMIT (N LIMIT)
+         (DECLARE (XARGS :GUARD (AND (NATP N) (NATP LIMIT))
+                         :MEASURE (ACL2-COUNT LIMIT)))
+         (IF
+          (ZP LIMIT)
+          (PROG2$ (ER HARD? 'COLLATZ-LIMIT
+                      "Limit exceeded!")
+                  0)
+          (LET ((LIMIT (1- LIMIT)))
+               (IF (INT= N 1)
+                   0
+                   (1+ (COLLATZ-LIMIT (IF (EVENP N) (FLOOR N 2) (1+ (* 3 N)))
+                                      LIMIT))))))
+
+The admission of COLLATZ-LIMIT is trivial, using the relation O< (which
+is known to be well-founded on the domain recognized by O-P) and the
+measure (ACL2-COUNT LIMIT).  We observe that the type of COLLATZ-LIMIT
+is described by the theorem 
+(AND (INTEGERP (COLLATZ-LIMIT N LIMIT)) (<= 0 (COLLATZ-LIMIT N LIMIT))).
+We used primitive type reasoning.
+
+Computing the guard conjecture for COLLATZ-LIMIT....
+
+The non-trivial part of the guard conjecture for COLLATZ-LIMIT, given
+the :compound-recognizer rules NATP-COMPOUND-RECOGNIZER and 
+ZP-COMPOUND-RECOGNIZER and primitive type reasoning, is
+
+Goal
+(IMPLIES
+ (AND (NATP LIMIT)
+      (NATP N)
+      (NOT (ZP LIMIT)))
+ (LET
+  ((LIMIT (+ -1 LIMIT)))
+  (AND
+    (LET ((VAR N)) (INTEGERP VAR))
+    (OR (EQLABLEP N) (EQLABLEP 1))
+    (OR (EQL N 1) (INTEGERP N))
+    (OR (EQL N 1)
+        (NOT (EVENP N))
+        (RATIONALP N))
+    (OR (EQL N 1)
+        (NOT (EVENP N))
+        (NOT (EQL 2 0)))
+    (OR (EQL N 1)
+        (EVENP N)
+        (ACL2-NUMBERP N))
+    (OR (EQL N 1)
+        (EVENP N)
+        (ACL2-NUMBERP (* 3 N)))
+    (OR (EQL N 1)
+        (NATP (IF (EVENP N)
+                  (FLOOR N 2)
+                  (+ 1 (* 3 N)))))
+    (OR (EQL N 1) (NATP LIMIT))
+    (OR (EQL N 1)
+        (ACL2-NUMBERP (COLLATZ-LIMIT (IF (EVENP N) (FLOOR N 2) (+ 1 (* 3 N)))
+                                     LIMIT)))))).
+
+Q.E.D.
+
+That completes the proof of the guard theorem for COLLATZ-LIMIT.  
+COLLATZ-LIMIT is compliant with Common Lisp.
+
+Summary
+Form:  ( DEFUN COLLATZ-LIMIT ...)
+Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
+        (:COMPOUND-RECOGNIZER ZP-COMPOUND-RECOGNIZER)
+        (:DEFINITION EQL)
+        (:DEFINITION EVENP)
+        (:DEFINITION FLOOR)
+        (:DEFINITION NATP)
+        (:DEFINITION NOT)
+        (:EXECUTABLE-COUNTERPART EQL)
+        (:EXECUTABLE-COUNTERPART EQLABLEP)
+        (:EXECUTABLE-COUNTERPART NOT)
+        (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
+        (:EXECUTABLE-COUNTERPART UNARY-/)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL))
+ COLLATZ-LIMIT
+ACL2 !>>(MEMOIZE-PARTIAL COLLATZ)
+
+
+ACL2 !>>>(MAKE-EVENT
+          (ER-PROGN
+            (MEMOIZE-PARTIAL-BASIC-CHECKS
+                 '((COLLATZ COLLATZ-LIMIT COLLATZ-LIMIT-CHANGE
+                            COLLATZ-LIMIT-STABLE))
+                 'MEMOIZE-PARTIAL
+                 STATE)
+            (MV-LET
+                 (MSG DEFS TABLE-EVENT)
+                 (MEMOIZE-PARTIAL-SUPPORTING-EVENTS
+                      '((COLLATZ COLLATZ-LIMIT COLLATZ-LIMIT-CHANGE
+                                 COLLATZ-LIMIT-STABLE))
+                      (W STATE))
+                 (COND (MSG (ER SOFT 'MEMOIZE-PARTIAL "~@0" MSG))
+                       (T (VALUE (CONS 'PROGN
+                                       (APPEND DEFS (LIST TABLE-EVENT))))))))
+          :ON-BEHALF-OF :QUIET!)
+
+
+ACL2 !>>>(DEFCHOOSE COLLATZ-LIMIT-CHANGE (LARGE)
+                    (N LIMIT)
+                    (AND (NATP LARGE)
+                         (<= LIMIT LARGE)
+                         (NOT (EQUAL (COLLATZ-LIMIT N LIMIT)
+                                     (COLLATZ-LIMIT N LARGE)))))
+
+Summary
+Form:  ( DEFCHOOSE COLLATZ-LIMIT-CHANGE ...)
+Rules: NIL
+COLLATZ-LIMIT-CHANGE
+
+
+ACL2 !>>>(DEFCHOOSE
+              COLLATZ-LIMIT-STABLE (LIMIT)
+              (N)
+              (AND (NATP LIMIT)
+                   (EQUAL (COLLATZ-LIMIT N LIMIT)
+                          (COLLATZ-LIMIT N (COLLATZ-LIMIT-CHANGE N LIMIT)))))
+
+Summary
+Form:  ( DEFCHOOSE COLLATZ-LIMIT-STABLE ...)
+Rules: NIL
+COLLATZ-LIMIT-STABLE
+
+
+ACL2 !>>>(DEFUN COLLATZ (N)
+                (DECLARE (XARGS :GUARD (LET ((LIMIT 0))
+                                            (DECLARE (IGNORABLE LIMIT))
+                                            (AND (NATP N) (NATP LIMIT)))))
+                (COLLATZ-LIMIT N (NFIX (COLLATZ-LIMIT-STABLE N))))
+
+Since COLLATZ is non-recursive, its admission is trivial.  We observe
+that the type of COLLATZ is described by the theorem 
+(AND (INTEGERP (COLLATZ N)) (<= 0 (COLLATZ N))).  We used the :type-
+prescription rule COLLATZ-LIMIT.
+
+Computing the guard conjecture for COLLATZ....
+
+The guard conjecture for COLLATZ is trivial to prove, given the :compound-
+recognizer rule NATP-COMPOUND-RECOGNIZER and the :type-prescription
+rules NATP and NFIX.  COLLATZ is compliant with Common Lisp.
+
+Summary
+Form:  ( DEFUN COLLATZ ...)
+Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
+        (:TYPE-PRESCRIPTION COLLATZ-LIMIT)
+        (:TYPE-PRESCRIPTION NATP)
+        (:TYPE-PRESCRIPTION NFIX))
+COLLATZ
+
+
+ACL2 !>>>(TABLE
+          PARTIAL-FUNCTIONS-TABLE 'COLLATZ-LIMIT
+          '((COLLATZ
+             COLLATZ-LIMIT COLLATZ-LIMIT-CHANGE
+             COLLATZ-LIMIT-STABLE
+             (DEFUN
+              COLLATZ (N)
+              (DECLARE (IGNORABLE N))
+              (FLET
+               ((COLLATZ-LIMIT (N LIMIT)
+                               (DECLARE (IGNORE LIMIT))
+                               (COLLATZ N)))
+               (DECLARE (INLINE COLLATZ-LIMIT))
+               (LET
+                ((LIMIT 0))
+                (DECLARE (IGNORABLE LIMIT))
+                (IF
+                   (INT= N 1)
+                   0
+                   (1+ (COLLATZ-LIMIT (IF (EVENP N) (FLOOR N 2) (1+ (* 3 N)))
+                                      LIMIT)))))))))
+
+Summary
+Form:  ( TABLE PARTIAL-FUNCTIONS-TABLE ...)
+Rules: NIL
+PARTIAL-FUNCTIONS-TABLE
+
+Summary
+Form:  ( PROGN (DEFCHOOSE COLLATZ-LIMIT-CHANGE ...) ...)
+Rules: NIL
+
+Summary
+Form:  ( MAKE-EVENT (ER-PROGN ...) ...)
+Rules: NIL
+PARTIAL-FUNCTIONS-TABLE
+
+
+ACL2 !>>>(MEMOIZE 'COLLATZ :TOTAL 'COLLATZ-LIMIT)
+
+
+ACL2 !>>>(TABLE
+              MEMOIZE-TABLE
+              (DEREF-MACRO-NAME 'COLLATZ
+                                (MACRO-ALIASES WORLD))
+              (LIST* (CONS :CONDITION-FN T)
+                     (CONS :INLINE T)
+                     (CONS :COMMUTATIVE NIL)
+                     (CONS :FORGET NIL)
+                     (CONS :MEMO-TABLE-INIT-SIZE (OR NIL *MHT-DEFAULT-SIZE*))
+                     (CONS :AOKP 'NIL)
+                     (CONS :STATS :DEFAULT)
+                     (CONS :TOTAL 'COLLATZ-LIMIT)
+                     (AND (NOT (EQ ':DEFAULT :DEFAULT))
+                          (LIST (CONS :IDEAL-OKP ':DEFAULT)))))
+
+Summary
+Form:  ( TABLE MEMOIZE-TABLE ...)
+Rules: NIL
+MEMOIZE-TABLE
+
+
+ACL2 !>>>(VALUE-TRIPLE (DEREF-MACRO-NAME 'COLLATZ
+                                         (MACRO-ALIASES (W STATE))))
+COLLATZ
+
+Summary
+Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
+Rules: NIL
+COLLATZ
+
+Summary
+Form:  ( PROGN (MAKE-EVENT ...) ...)
+Rules: NIL
+ COLLATZ
+ACL2 !>>(SET-ENFORCE-REDUNDANCY T)
+ T
+ACL2 !>>(ENCAPSULATE
+         NIL
+         (DEFCHOOSE COLLATZ-LIMIT-CHANGE (LARGE)
+                    (N LIMIT)
+                    (AND (NATP LARGE)
+                         (<= LIMIT LARGE)
+                         (NOT (EQUAL (COLLATZ-LIMIT N LIMIT)
+                                     (COLLATZ-LIMIT N LARGE)))))
+         (DEFCHOOSE
+              COLLATZ-LIMIT-STABLE (LIMIT)
+              (N)
+              (AND (NATP LIMIT)
+                   (EQUAL (COLLATZ-LIMIT N LIMIT)
+                          (COLLATZ-LIMIT N (COLLATZ-LIMIT-CHANGE N LIMIT)))))
+         (DEFUN COLLATZ (N)
+                (DECLARE (XARGS :GUARD (LET ((LIMIT 0))
+                                            (DECLARE (IGNORABLE LIMIT))
+                                            (AND (NATP N) (NATP LIMIT)))))
+                (COLLATZ-LIMIT N (NFIX (COLLATZ-LIMIT-STABLE N))))
+         (TABLE
+          PARTIAL-FUNCTIONS-TABLE 'COLLATZ-LIMIT
+          '((COLLATZ
+             COLLATZ-LIMIT COLLATZ-LIMIT-CHANGE
+             COLLATZ-LIMIT-STABLE
+             (DEFUN
+              COLLATZ (N)
+              (DECLARE (IGNORABLE N))
+              (FLET
+               ((COLLATZ-LIMIT (N LIMIT)
+                               (DECLARE (IGNORE LIMIT))
+                               (COLLATZ N)))
+               (DECLARE (INLINE COLLATZ-LIMIT))
+               (LET
+                ((LIMIT 0))
+                (DECLARE (IGNORABLE LIMIT))
+                (IF
+                   (INT= N 1)
+                   0
+                   (1+ (COLLATZ-LIMIT (IF (EVENP N) (FLOOR N 2) (1+ (* 3 N)))
+                                      LIMIT)))))))))
+         (MEMOIZE 'COLLATZ
+                  :TOTAL 'COLLATZ-LIMIT))
+
+To verify that the five encapsulated events correctly extend the current
+theory we will evaluate them.  The theory thus constructed is only
+ephemeral.
+
+Encapsulated Events:
+
+
+ACL2 !>>>(DEFCHOOSE COLLATZ-LIMIT-CHANGE (LARGE)
+                    (N LIMIT)
+                    (AND (NATP LARGE)
+                         (<= LIMIT LARGE)
+                         (NOT (EQUAL (COLLATZ-LIMIT N LIMIT)
+                                     (COLLATZ-LIMIT N LARGE)))))
+
+The event ( DEFCHOOSE COLLATZ-LIMIT-CHANGE ...) is redundant.  See
+:DOC redundant-events.
+
+Summary
+Form:  ( DEFCHOOSE COLLATZ-LIMIT-CHANGE ...)
+Rules: NIL
+:REDUNDANT
+
+
+ACL2 !>>>(DEFCHOOSE
+              COLLATZ-LIMIT-STABLE (LIMIT)
+              (N)
+              (AND (NATP LIMIT)
+                   (EQUAL (COLLATZ-LIMIT N LIMIT)
+                          (COLLATZ-LIMIT N (COLLATZ-LIMIT-CHANGE N LIMIT)))))
+
+The event ( DEFCHOOSE COLLATZ-LIMIT-STABLE ...) is redundant.  See
+:DOC redundant-events.
+
+Summary
+Form:  ( DEFCHOOSE COLLATZ-LIMIT-STABLE ...)
+Rules: NIL
+:REDUNDANT
+
+
+ACL2 !>>>(DEFUN COLLATZ (N)
+                (DECLARE (XARGS :GUARD (LET ((LIMIT 0))
+                                            (DECLARE (IGNORABLE LIMIT))
+                                            (AND (NATP N) (NATP LIMIT)))))
+                (COLLATZ-LIMIT N (NFIX (COLLATZ-LIMIT-STABLE N))))
+
+The event ( DEFUN COLLATZ ...) is redundant.  See :DOC redundant-events.
+
+Summary
+Form:  ( DEFUN COLLATZ ...)
+Rules: NIL
+:REDUNDANT
+
+
+ACL2 !>>>(TABLE
+          PARTIAL-FUNCTIONS-TABLE 'COLLATZ-LIMIT
+          '((COLLATZ
+             COLLATZ-LIMIT COLLATZ-LIMIT-CHANGE
+             COLLATZ-LIMIT-STABLE
+             (DEFUN
+              COLLATZ (N)
+              (DECLARE (IGNORABLE N))
+              (FLET
+               ((COLLATZ-LIMIT (N LIMIT)
+                               (DECLARE (IGNORE LIMIT))
+                               (COLLATZ N)))
+               (DECLARE (INLINE COLLATZ-LIMIT))
+               (LET
+                ((LIMIT 0))
+                (DECLARE (IGNORABLE LIMIT))
+                (IF
+                   (INT= N 1)
+                   0
+                   (1+ (COLLATZ-LIMIT (IF (EVENP N) (FLOOR N 2) (1+ (* 3 N)))
+                                      LIMIT)))))))))
+
+The event ( TABLE PARTIAL-FUNCTIONS-TABLE ...) is redundant.  See :DOC
+redundant-events.
+
+Summary
+Form:  ( TABLE PARTIAL-FUNCTIONS-TABLE ...)
+Rules: NIL
+:REDUNDANT
+
+
+ACL2 !>>>(MEMOIZE 'COLLATZ :TOTAL 'COLLATZ-LIMIT)
+
+
+ACL2 !>>>(TABLE
+              MEMOIZE-TABLE
+              (DEREF-MACRO-NAME 'COLLATZ
+                                (MACRO-ALIASES WORLD))
+              (LIST* (CONS :CONDITION-FN T)
+                     (CONS :INLINE T)
+                     (CONS :COMMUTATIVE NIL)
+                     (CONS :FORGET NIL)
+                     (CONS :MEMO-TABLE-INIT-SIZE (OR NIL *MHT-DEFAULT-SIZE*))
+                     (CONS :AOKP 'NIL)
+                     (CONS :STATS :DEFAULT)
+                     (CONS :TOTAL 'COLLATZ-LIMIT)
+                     (AND (NOT (EQ ':DEFAULT :DEFAULT))
+                          (LIST (CONS :IDEAL-OKP ':DEFAULT)))))
+
+The event ( TABLE MEMOIZE-TABLE ...) is redundant.  See :DOC redundant-
+events.
+
+Summary
+Form:  ( TABLE MEMOIZE-TABLE ...)
+Rules: NIL
+:REDUNDANT
+
+
+ACL2 !>>>(VALUE-TRIPLE (DEREF-MACRO-NAME 'COLLATZ
+                                         (MACRO-ALIASES (W STATE))))
+COLLATZ
+
+Summary
+Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
+Rules: NIL
+COLLATZ
+
+End of Encapsulated Events.
+
+ACL2 Observation in ( ENCAPSULATE NIL (DEFCHOOSE COLLATZ-LIMIT-CHANGE
+...) ...):  The submitted encapsulate event has created no new ACL2
+events, and thus is leaving the ACL2 logical world unchanged.  See
+:DOC encapsulate.
+
+Summary
+Form:  ( ENCAPSULATE NIL (DEFCHOOSE COLLATZ-LIMIT-CHANGE ...) ...)
+Rules: NIL
+ :EMPTY-ENCAPSULATE
+ACL2 !>>(SET-ENFORCE-REDUNDANCY NIL)
+ NIL
+ACL2 !>>(DEFUN COLLATZ-SUM-REC (N ACC)
+               (DECLARE (XARGS :GUARD (AND (NATP N) (NATP ACC))))
+               (IF (ZP N)
+                   ACC
+                   (COLLATZ-SUM-REC (1- N)
+                                    (+ (COLLATZ N) ACC))))
+
+The admission of COLLATZ-SUM-REC is trivial, using the relation O<
+(which is known to be well-founded on the domain recognized by O-P)
+and the measure (ACL2-COUNT N).  We observe that the type of COLLATZ-SUM-REC
+is described by the theorem 
+(OR (ACL2-NUMBERP (COLLATZ-SUM-REC N ACC))
+    (EQUAL (COLLATZ-SUM-REC N ACC) ACC)).
+We used primitive type reasoning.
+
+Computing the guard conjecture for COLLATZ-SUM-REC....
+
+The guard conjecture for COLLATZ-SUM-REC is trivial to prove, given
+the :compound-recognizer rules NATP-COMPOUND-RECOGNIZER and 
+ZP-COMPOUND-RECOGNIZER, the :executable-counterpart of NATP, primitive
+type reasoning and the :type-prescription rule COLLATZ.  COLLATZ-SUM-REC
+is compliant with Common Lisp.
+
+Summary
+Form:  ( DEFUN COLLATZ-SUM-REC ...)
+Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
+        (:COMPOUND-RECOGNIZER ZP-COMPOUND-RECOGNIZER)
+        (:EXECUTABLE-COUNTERPART NATP)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:TYPE-PRESCRIPTION COLLATZ))
+ COLLATZ-SUM-REC
+ACL2 !>>(DEFUN COLLATZ-SUM (N)
+               (COLLATZ-SUM-REC N 0))
+
+Since COLLATZ-SUM is non-recursive, its admission is trivial.  We observe
+that the type of COLLATZ-SUM is described by the theorem 
+(ACL2-NUMBERP (COLLATZ-SUM N)).  We used the :type-prescription rule
+COLLATZ-SUM-REC.
+
+Summary
+Form:  ( DEFUN COLLATZ-SUM ...)
+Rules: ((:TYPE-PRESCRIPTION COLLATZ-SUM-REC))
+ COLLATZ-SUM
+ACL2 !>>(COMP T)
+ NIL
+ACL2 !>>(ASSERT-EVENT (EQUAL (COLLATZ-SUM (EXPT 10 6))
+                             131434424))
+ :PASSED
+ACL2 !>>(DEFUN
+             COLLATZ-LIMIT-SUM-REC (N ACC LIMIT)
+             (DECLARE (XARGS :GUARD (AND (NATP N) (NATP ACC) (NATP LIMIT))))
+             (IF (ZP N)
+                 ACC
+                 (COLLATZ-LIMIT-SUM-REC (1- N)
+                                        (+ (COLLATZ-LIMIT N LIMIT) ACC)
+                                        LIMIT)))
+
+The admission of COLLATZ-LIMIT-SUM-REC is trivial, using the relation
+O< (which is known to be well-founded on the domain recognized by O-P)
+and the measure (ACL2-COUNT N).  We observe that the type of 
+COLLATZ-LIMIT-SUM-REC is described by the theorem 
+(OR (ACL2-NUMBERP (COLLATZ-LIMIT-SUM-REC N ACC LIMIT))
+    (EQUAL (COLLATZ-LIMIT-SUM-REC N ACC LIMIT)
+           ACC)).
+We used primitive type reasoning.
+
+Computing the guard conjecture for COLLATZ-LIMIT-SUM-REC....
+
+The guard conjecture for COLLATZ-LIMIT-SUM-REC is trivial to prove,
+given the :compound-recognizer rules NATP-COMPOUND-RECOGNIZER and 
+ZP-COMPOUND-RECOGNIZER, primitive type reasoning and the :type-prescription
+rule COLLATZ-LIMIT.  COLLATZ-LIMIT-SUM-REC is compliant with Common
+Lisp.
+
+Summary
+Form:  ( DEFUN COLLATZ-LIMIT-SUM-REC ...)
+Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
+        (:COMPOUND-RECOGNIZER ZP-COMPOUND-RECOGNIZER)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:TYPE-PRESCRIPTION COLLATZ-LIMIT))
+ COLLATZ-LIMIT-SUM-REC
+ACL2 !>>(DEFUN COLLATZ-LIMIT-SUM (N)
+               (COLLATZ-LIMIT-SUM-REC N 0 (1- (EXPT 2 60))))
+
+Since COLLATZ-LIMIT-SUM is non-recursive, its admission is trivial.
+We observe that the type of COLLATZ-LIMIT-SUM is described by the theorem
+(ACL2-NUMBERP (COLLATZ-LIMIT-SUM N)).  We used the :type-prescription
+rule COLLATZ-LIMIT-SUM-REC.
+
+Summary
+Form:  ( DEFUN COLLATZ-LIMIT-SUM ...)
+Rules: ((:TYPE-PRESCRIPTION COLLATZ-LIMIT-SUM-REC))
+ COLLATZ-LIMIT-SUM
+ACL2 !>>(COMP T)
+ NIL
+ACL2 !>>(ASSERT-EVENT (EQUAL (COLLATZ-LIMIT-SUM (EXPT 10 6))
+                             (COLLATZ-LIMIT (EXPT 10 6))))
+
+
+ACL2 Error in TOP-LEVEL:  COLLATZ-LIMIT takes 2 arguments but in the
+call (COLLATZ-LIMIT (EXPT 10 6)) it is given 1 argument.  The formal
+parameters list for COLLATZ-LIMIT is (N LIMIT).
+
 ACL2 !>>Bye.

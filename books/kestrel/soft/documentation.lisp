@@ -154,7 +154,15 @@
     "A function variable is used in
      <see topic='@(url second-order-functions)'>second-order functions</see> and
      <see topic='@(url second-order-theorems)'>second-order theorems</see>
-     as a placeholder for any function with the same arity.")))
+     as a placeholder for any function with the same arity.")
+
+   (xdoc::h3 "Naming Conventions")
+
+   (xdoc::p
+    "Starting function variable names with @('?'),
+     as in the examples in the SOFT documentation pages,
+     provides a visual cue for their function variable status.
+     However, SOFT does not enforce this naming convention.")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -179,7 +187,18 @@
      may be replaced by functions of matching arities,
      obtaining a new function that is an
      <see topic='@(url second-order-function-instances)'>instance</see>
-     of the second-order function."))
+     of the second-order function.")
+
+   (xdoc::h3 "Naming Conventions")
+
+   (xdoc::p
+    "Ending second-order function names
+     with the function variables it depends on (in any order),
+     enclosed in square brackets,
+     as in the examples in the SOFT documentation pages,
+     conveys the dependency on the function variables
+     and provides a visual cue for their implicit presence.
+     However, SOFT does not enforce this naming convention."))
 
   :order-subtopics t)
 
@@ -209,7 +228,21 @@
      These function variables may be replaced by functions of matching arities,
      obtaining a new theorem that is an
      <see topic='@(url second-order-theorem-instances)'>instance</see>
-     of the second-order theorem.")))
+     of the second-order theorem.")
+
+   (xdoc::h3 "Naming Conventions")
+
+   (xdoc::p
+    "Including in the name of a second-order theorem,
+     between square brackets (in any order),
+     the function variables that the theorem depends on,
+     as in the examples in the SOFT documentation pages,
+     makes the dependency more explicit when referencing the theorem.
+     This naming convention may arise naturally
+     when the name of the theorem includes names of second-order functions that
+     follow the naming convention described in @(see second-order-functions),
+     or it may be explicitly followed when choosing the name of the theorem.
+     However, SOFT does not enforce this naming convention.")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -243,7 +276,20 @@
      that uses a <see topic='@(url acl2::functional-instantiation)'>functional
      instance</see> of the
      <see topic='@(url termination-theorem)'>termination theorem</see>
-     of the second-order function that is being instantiated.")))
+     of the second-order function that is being instantiated.")
+
+   (xdoc::h3 "Naming Conventions")
+
+   (xdoc::p
+    "If the name of the second-order function that is being instantiated
+     follows the naming convention described in @(see second-order-functions),
+     the name of the instance can be obtained
+     by replacing the names of the function variables between square brackets
+     with the names of the replacing functions in the instantiation,
+     as in the examples in the SOFT documentation pages,
+     This conveys the idea of applying the second-order function
+     to the functions that replace the function variables.
+     However, SOFT does not enforce this naming convention.")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -466,14 +512,7 @@
 
    (xdoc::codeblock
     ";; A binary function variable:"
-    "(defunvar ?g (* *) => *)")
-
-   (xdoc::h3 "Naming Conventions")
-
-   (xdoc::p
-    "Starting function variable names with @('?') (as in the examples above)
-     provides a visual cue for their function variable status.
-     However, SOFT does not enforce this naming convention.")))
+    "(defunvar ?g (* *) => *)")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -630,18 +669,7 @@
     ";; A generic folding function on values as binary trees:"
     "(defun2 fold[?f][?g] (bt)"
     "  (cond ((atom bt) (?f bt))"
-    "        (t (?g (fold[?f][?g] (car bt)) (fold[?f][?g] (cdr bt))))))")
-
-   (xdoc::h3 "Naming Conventions")
-
-   (xdoc::p
-    "Ending second-order function names
-     with the function variables it depends on (in any order),
-     enclosed in square brackets
-     (as in the examples above)
-     conveys the dependency on the function variables
-     and provides a visual cue for their implicit presence.
-     However, SOFT does not enforce this naming convention.")))
+    "        (t (?g (fold[?f][?g] (car bt)) (fold[?f][?g] (cdr bt))))))")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -726,13 +754,7 @@
    (xdoc::codeblock
     ";; A function constrained to return a fixed point of ?F, if any exists:"
     "(defchoose2 fixpoint[?f] x ()"
-    "  (equal (?f x) x))")
-
-   (xdoc::h3 "Naming Conventions")
-
-   (xdoc::p
-    "The same naming convention for the functions introduced by @(tsee defun2)
-     apply to the functions introduced by @(tsee defchoose2).")))
+    "  (equal (?f x) x))")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -778,13 +800,7 @@
    (xdoc::codeblock
     ";; A predicate that recognizes injective functions:"
     "(defun-sk2 injective[?f] ()"
-    " (forall (x y) (implies (equal (?f x) (?f y)) (equal x y))))")
-
-   (xdoc::h3 "Naming Conventions")
-
-   (xdoc::p
-    "The same naming convention for the functions introduced by @(tsee defun2)
-     apply to the functions introduced by @(tsee defun-sk2).")))
+    " (forall (x y) (implies (equal (?f x) (?f y)) (equal x y))))")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -822,6 +838,45 @@
 
    (xdoc::p
     "@('sofun') is introduced as a first-order function using @(tsee define).
+     It is also recorded as a second-order function via @(tsee defsoft).")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc defund-sk2
+
+  :parents (soft-macros second-order-functions)
+
+  :short "Introduce a second-order function
+          via a second-order version of @(tsee acl2::defund-sk)."
+
+  :long
+
+  (xdoc::topstring
+
+   (xdoc::h3 "General Form")
+
+   (xdoc::codeblock
+    "(defund-sk2 sofun ...) ; same as defund-sk")
+
+   (xdoc::h3 "Inputs")
+
+   (xdoc::p
+    "The inputs are identical to @(tsee acl2::defund-sk).")
+
+   (xdoc::p
+    "The function @('sofun') must satisfy
+     all the requirements for @(tsee defsoft),
+     because @('defund-sk2') generates @('(defsoft sofun)') (see below).")
+
+   (xdoc::h3 "Generated Events")
+
+   (xdoc::codeblock
+    "(defund-sk sofun ...) ; input form with defund-sk2 replaced by defund-sk"
+    "(defsoft sofun)")
+
+   (xdoc::p
+    "@('sofun') is introduced as a first-order function
+     using @(tsee acl2::defund-sk).
      It is also recorded as a second-order function via @(tsee defsoft).")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1162,21 +1217,7 @@
     ""
     ";; Recognize functions whose four-fold application is injective:"
     "(defun-inst injective[quad[?f]] (?f)"
-    "  (injective[?f] (?f . quad[?f])))")
-
-   (xdoc::h3 "Naming Conventions")
-
-   (xdoc::p
-    "If the name of the second-order function that is being instantiated
-     follows the naming convention described for
-     @(tsee defun2), @(tsee defchoose2), and @(tsee defun-sk2),
-     the name of the instance can be obtained
-     by replacing the names of the function variables between square brackets
-     with the names of the replacing functions in the instantiation
-     (as in the examples above).
-     This conveys the idea of applying the second-order function
-     to the functions that replace the function variables.
-     However, SOFT does not enforce this naming convention.")))
+    "  (injective[?f] (?f . quad[?f])))")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1269,22 +1310,7 @@
     ";; when its function parameters satisfy the predicates just introduced:"
     "(defthm fold-io[?f][?g][?io]"
     "  (implies (and (atom-io[?f][?io]) (consp-io[?g][?io]))"
-    "           (?io x (fold[?f][?g] x))))")
-
-   (xdoc::h3 "Naming Conventions")
-
-   (xdoc::p
-    "Including in the name of a second-order theorem,
-     between square brackets (in any order),
-     the function variables that the theorem depends on,
-     makes the dependency more explicit when referencing the theorem.
-     This naming convention may arise naturally
-     when the name of the theorem includes names of second-order functions
-     that follow the analogous naming convention
-     (as in the @('len-of-map[?f][?p]') example above),
-     or it may be explicitly followed when choosing the name of the theorem
-     (as in the @('fold-io[?f][?g][?io]') example above).
-     However, SOFT does not enforce this naming convention.")))
+    "           (?io x (fold[?f][?g] x))))")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

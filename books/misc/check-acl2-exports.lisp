@@ -202,6 +202,7 @@
 
 ; Symbols below should probably be added to *acl2-exports*.
 
+    F-BOUNDP-GLOBAL
     FMT-HARD-RIGHT-MARGIN
     FMT-SOFT-RIGHT-MARGIN
     TOGGLE-INHIBIT-WARNING

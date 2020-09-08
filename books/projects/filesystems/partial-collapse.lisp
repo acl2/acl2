@@ -1498,7 +1498,7 @@
         (:definition put-assoc-equal)
         (:rewrite no-duplicatesp-of-strip-cars-of-put-assoc)
         (:type-prescription
-         abs-fs-fix-of-put-assoc-equal-lemma-3)))
+         abs-addrs-of-remove-assoc-lemma-1)))
       :induct (induction-scheme dir frame x)
       :expand
       ((collapse frame)
@@ -2826,7 +2826,7 @@
     :induct (ctx-app-list x relpath frame l)
     :expand
     (:with
-     no-duplicatesp-equal-of-abs-addrs-of-abs-fs-fix
+     no-duplicatesp-of-abs-addrs-of-abs-fs-fix
      (no-duplicatesp-equal
       (abs-addrs
        (abs-fs-fix
@@ -3278,7 +3278,7 @@
           (:rewrite collapse-1st-index-of-frame-val->src-of-cdr-of-assoc-linear-lemma-2)
           (:rewrite abs-separate-of-frame->frame-of-collapse-this-lemma-8
                     . 1)
-          (:type-prescription abs-fs-fix-of-put-assoc-equal-lemma-3)
+          (:type-prescription abs-addrs-of-remove-assoc-lemma-1)
           (:rewrite 1st-complete-of-put-assoc-lemma-1)
           (:definition len))))))
 
@@ -4405,7 +4405,7 @@
           (:rewrite abs-file-alist-p-when-m1-file-alist-p)
           (:rewrite put-assoc-equal-without-change . 2)
           (:rewrite ctx-app-ok-when-absfat-equiv-lemma-4)
-          (:type-prescription abs-fs-fix-of-put-assoc-equal-lemma-3)))
+          (:type-prescription abs-addrs-of-remove-assoc-lemma-1)))
     :induct (collapse frame)
     :expand
     (:with
@@ -6149,7 +6149,7 @@
           (:rewrite 1st-complete-of-remove-assoc-2)
           (:rewrite collapse-1st-index-of-frame-val->src-of-cdr-of-assoc-linear-lemma-2)
           (:rewrite abs-separate-of-frame->frame-of-collapse-this-lemma-8 . 1)
-          (:type-prescription abs-fs-fix-of-put-assoc-equal-lemma-3)
+          (:type-prescription abs-addrs-of-remove-assoc-lemma-1)
           (:rewrite 1st-complete-of-put-assoc-lemma-1)
           (:definition len)
           (:rewrite partial-collapse-correctness-lemma-1))))))
@@ -9345,7 +9345,7 @@
           (:rewrite different-from-own-src-1)
           (:type-prescription frame-val->path$inline)
           (:definition nthcdr)
-          (:type-prescription abs-fs-fix-of-put-assoc-equal-lemma-3)
+          (:type-prescription abs-addrs-of-remove-assoc-lemma-1)
           (:type-prescription assoc-when-zp-len)
           (:rewrite ctx-app-ok-when-absfat-equiv-lemma-4)
           (:rewrite partial-collapse-correctness-lemma-24)
