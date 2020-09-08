@@ -332,7 +332,8 @@ but instead you passed ~p0!%"
 @('
 (add-meta-rule :meta-fnc <meta-fnc-name> ;; mandatory
                :trig-fnc <trig-fnc-name> ;; mandatory
-               :formula-checks <formula-check-fnc-name> ;; mandatory
+               :formula-checks <formula-check-fnc-name> ;; nil by default,
+ necessary for most cases.
                :returns <return-signature>   ;; optional
                :outside-in <nil-t-or-:both>  ;; optional, nil by default
                :valid-syntaxp <t-or-nil>     ;; optional, t by default
@@ -346,17 +347,18 @@ but instead you passed ~p0!%"
 registers a verified meta-rule for RP-Rewriter.
 </p>
 
-<p> Mandatory arguments: <p>
+<p> Mandatory arguments: </p>
 <ul>
 <li> :meta-fnc  must be the name of the meta function. </li>
 <li> :trig-fnc  the function to trigger this meta function </li>
-<li> :formula-checks  the name of the formula-checks function created
-with def-formula-checks </li>
 </ul>
 
 <p> Optional Arguments: </p>
 
 <ul>
+<li> :formula-checks  the name of the formula-checks function created
+with def-formula-checks if the meta rule needed one. This will likely be
+necessary for most cases. </li>
 <li> :returns  return signature of the meta function. By default, it is 'term',
 which means that it only returns the rewritten term. Other acceptable forms are
 (mv term dont-rw), (mv term dont-rw rp-state), (mv term rp-state) etc. in any
@@ -520,9 +522,9 @@ attach-meta-fncs) from being executed. </li>
  :parents (rp-rewriter/meta-rules)
  :short "Checks if all the added meta-rules are 'registered'"
  :long "<p>
-After calling @(see add-meta-rules) or when different books with meta rules are
+After calling @(see add-meta-rule) or when different books with meta rules are
  included, users need to call @(see rp::attach-meta-fncs). This function
- checks if it is necessary. </p>
+ checks if it is necessary.</p>
 <code>(is-rp-clause-processor-up-to-date world)</code>
 ")
 
@@ -870,7 +872,7 @@ dont-rw structure would enable that.</p>
  :parents (rp-rewriter/meta-rules)
  :short "Creates and attaches a new meta-rule caller function to register added meta rules."
  :long "<p>
-After calling @(see add-meta-rules) or when different books with meta rules are
+After calling @(see add-meta-rule) or when different books with meta rules are
  included, users need to call attach-meta-fncs. This creates a
  new meta function caller function and attaches it to rp::rp-rw-meta-rule. </p>
 <code>(rp::attach-meta-fncs unique-prefix)</code>
