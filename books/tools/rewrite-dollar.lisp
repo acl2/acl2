@@ -69,8 +69,8 @@
 
  <p>A call @('(rewrite$ term ...)') returns an @(see error-triple), @('(mv erp
  val state)').  @('Erp') is non-@('nil') when an error has occurred.  Otherwise
- @('val') is of the form @('(mv rewritten-term runes . pairs)') where
- @('pairs') is typically @('nil') (as discussed further below) and:</p>
+ @('val') is of the form @('(rewritten-term runes . pairs)') where @('pairs')
+ is typically @('nil') (as discussed further below) and:</p>
 
  <ul>
 
@@ -88,9 +88,9 @@
  assumptions''.  If there are forced assumptions, then they are conjoined into
  a single goal, which by default is the target of a separate call to the
  prover, much like a call of @(tsee thm).  The return value @('pairs'),
- mentioned above, is non-@('nil') exactly when there are no forced assumptions.
- We say no more here about @('pairs'), as it will suffice for most users to
- view them solely as an indicator of forced assumptions.  (Technical note for
+ mentioned above, is @('nil') exactly when there are no forced assumptions.  We
+ say no more here about @('pairs'), as it will suffice for most users to view
+ them solely as an indicator of forced assumptions.  (Technical note for
  advanced users: these are the pairs returned by ACL2 source function
  @('extract-and-clausify-assumptions').)</p>
 
@@ -675,7 +675,7 @@
 
                          rcnst saved-pspv
 
-; 
+;
 
                          state)
   (b* (((er repeat)
@@ -794,7 +794,7 @@
                         (and hands-off (list :hands-off hands-off))
                         (and in-theory (list :in-theory in-theory))
                         (and no-thanks (list :no-thanks no-thanks))
-                        (and nonlinearp (list :nonlinearp nonlinearp)) 
+                        (and nonlinearp (list :nonlinearp nonlinearp))
                         (and restrict (list :restrict restrict))
                         (and rw-cache-state (list :rw-cache-state
                                                   rw-cache-state))))
