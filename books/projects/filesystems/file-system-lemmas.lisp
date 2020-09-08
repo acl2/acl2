@@ -1722,3 +1722,26 @@
   (equal (alistp (append x y))
          (and (alistp (true-list-fix x))
               (alistp y))))
+
+(defthmd take-as-append-and-nth
+  (equal (take n l)
+         (if (zp n)
+             nil
+             (append (take (- n 1) l)
+                     (list (nth (- n 1) l))))))
+
+(theory-invariant (incompatible (:rewrite take-as-append-and-nth)
+                                (:rewrite append-of-take-and-cons)))
+
+(defthm consp-of-assoc-of-nth-of-strip-cars
+  (implies (not (null (nth n (strip-cars alist))))
+           (consp (assoc-equal (nth n (strip-cars alist))
+                               alist)))
+  :hints (("goal" :in-theory (disable (:rewrite member-equal-nth)
+                                      (:rewrite member-of-strip-cars))
+           :use ((:instance (:rewrite member-equal-nth)
+                            (l (strip-cars alist))
+                            (n n))
+                 (:instance (:rewrite member-of-strip-cars)
+                            (alist alist)
+                            (x (nth n (strip-cars alist))))))))

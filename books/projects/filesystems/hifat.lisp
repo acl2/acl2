@@ -2814,8 +2814,7 @@
    (fat32-name-to-name-helper
     character-list n)))
 
-;; We should consider disabling this...
-(defun fat32-name-to-name (character-list)
+(defund fat32-name-to-name (character-list)
   (declare (xargs :guard (and (character-listp character-list)
                               (equal (len character-list) 11))))
   (b*
@@ -2929,4 +2928,5 @@
          "/bin/mkdir")))
 
 (defthm character-listp-of-fat32-path-to-path
-  (character-listp (fat32-path-to-path string-list)))
+  (character-listp (fat32-path-to-path string-list))
+  :hints (("goal" :in-theory (enable fat32-name-to-name))))
