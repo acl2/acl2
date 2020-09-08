@@ -190,46 +190,51 @@
               :do-not-induct t
               :do-not '(preprocess fertilize)
               :use ((:instance rp-evl-and-side-cond-consistent-of-rp-rw
-                               (term term #|(REMOVE-RETURN-LAST TERM)||#)
+                               (term term #|(remove-return-last term)||#)
                                (dont-rw nil)
                                (context nil)
-                               (limit (RW-STEP-LIMIT RP-STATE))
+                               (hyp-flg nil)
+                               (limit (rw-step-limit rp-state))
                                (iff-flg t))
                     (:instance rp-evl-and-side-cond-consistent-of-rp-rw
-                               (term (CADR term #|(REMOVE-RETURN-LAST TERM)||#))
+                               (term (cadr term #|(remove-return-last term)||#))
                                (dont-rw nil)
                                (context nil)
-                               (limit (RW-STEP-LIMIT RP-STATE))
+                               (hyp-flg nil)
+                               (limit (rw-step-limit rp-state))
                                (iff-flg t))
                     (:instance rp-evl-and-side-cond-consistent-of-rp-rw
-                               (term (MV-NTH
+                               (term (mv-nth
                                       1
-                                      (ATTACH-SC-FROM-CONTEXT
-                                       (RP-EXTRACT-CONTEXT
-                                        (MV-NTH 0
-                                                (RP-RW (CADR TERM)
-                                                       NIL NIL
-                                                       T (RW-STEP-LIMIT
-                                                          RP-STATE)
-                                                       RP-STATE STATE)))
-                                       (CADDR TERM))))
+                                      (attach-sc-from-context
+                                       (rp-extract-context
+                                        (mv-nth 0
+                                                (rp-rw (cadr term)
+                                                       nil nil
+                                                       t nil (rw-step-limit
+                                                          rp-state)
+                                                       rp-state state)))
+                                       (caddr term))))
                                (dont-rw nil)
-                               (context (MV-NTH
+                               (context (mv-nth
                                          0
-                                         (ATTACH-SC-FROM-CONTEXT
-                                          (RP-EXTRACT-CONTEXT
-                                           (MV-NTH 0
-                                                   (RP-RW (CADR TERM)
-                                                          NIL NIL
-                                                          T (RW-STEP-LIMIT RP-STATE) RP-STATE STATE)))
-                                          (CADDR TERM))))
-                               (limit (RW-STEP-LIMIT RP-STATE))
+                                         (attach-sc-from-context
+                                          (rp-extract-context
+                                           (mv-nth 0
+                                                   (rp-rw (cadr term)
+                                                          nil nil
+                                                          t nil (rw-step-limit rp-state) rp-state state)))
+                                          (caddr term))))
+                               (limit (rw-step-limit rp-state))
                                (iff-flg t)
-                               (rp-state (MV-NTH 1
-                                                 (RP-RW (CADR term)
-                                                        NIL NIL
-                                                        T  (RW-STEP-LIMIT RP-STATE)rp-state
-                                                        STATE)))))
+                               (hyp-flg nil)
+                               (rp-state (mv-nth 1
+                                                 (rp-rw (cadr term)
+                                                        nil nil
+                                                        t nil (rw-step-limit
+                                                            rp-state)
+                                                        rp-state
+                                                        state)))))
               :expand ((:free (x y) (iff x y))
                        (:free (x) (rp-trans (cons 'implies x)))
                        (:free (x y) (RP-TRANS-LST (cons x y))))
@@ -249,7 +254,7 @@
                                valid-sc
                                valid-rules-alistp
                                RP-EVL-of-variable
-                               valid-rp-meta-rule-listp
+                               ;;valid-rp-meta-rule-listp
                                EVAL-AND-ALL
                                rp-evl-and-side-cond-consistent-of-rp-rw
 
@@ -278,10 +283,10 @@
                                (:TYPE-PRESCRIPTION FALIST-CONSISTENT)
                                (:TYPE-PRESCRIPTION EX-FROM-SYNP)
                                (:TYPE-PRESCRIPTION VALID-RULES-ALISTP)
-                               (:TYPE-PRESCRIPTION VALID-RP-META-RULE-LISTP)
+                               ;;(:TYPE-PRESCRIPTION VALID-RP-META-RULE-LISTP)
                                (:TYPE-PRESCRIPTION SYMBOL-ALISTP)
-                               (:TYPE-PRESCRIPTION
-                                RP-META-VALID-SYNTAX-LISTP)
+                               #|(:TYPE-PRESCRIPTION
+                                RP-META-VALID-SYNTAX-LISTP)||#
                                (:TYPE-PRESCRIPTION EQLABLE-ALISTP)
 
                                rp-termp
@@ -317,15 +322,15 @@
                               remove-return-last
                               beta-search-reduce))))))
 
-(defthm rp-meta-rule-recs-p-implies-WEAK-RP-META-RULE-REC-P
+#|(defthm rp-meta-rule-recs-p-implies-WEAK-RP-META-RULE-REC-P
   (implies (rp-meta-rule-recs-p meta-rules state)
            (weak-rp-meta-rule-recs-p meta-rules))
   :hints (("Goal"
            :induct (weak-rp-meta-rule-recs-p meta-rules)
            :in-theory (e/d (weak-rp-meta-rule-recs-p
-                            rp-meta-rule-recs-p) ()))))
+                            rp-meta-rule-recs-p) ()))))||#
 
-(defthm remove-disabled-meta-rules-returns-rp-meta-rule-recs-p
+#|(defthm remove-disabled-meta-rules-returns-rp-meta-rule-recs-p
   (implies (rp-meta-rule-recs-p meta-rules state)
            (rp-meta-rule-recs-p
             (remove-disabled-meta-rules meta-rules
@@ -334,9 +339,9 @@
   :hints (("Goal"
            :in-theory (e/d (rp-meta-rule-recs-p
                             remove-disabled-meta-rules)
-                           ()))))
+                           ()))))||#
 
-(defthm remove-disabled-meta-rules-returns-RP-META-VALID-SYNTAX-LISTP
+#|(defthm remove-disabled-meta-rules-returns-RP-META-VALID-SYNTAX-LISTP
   (implies (RP-META-VALID-SYNTAX-LISTP meta-rules state)
            (RP-META-VALID-SYNTAX-LISTP
             (remove-disabled-meta-rules meta-rules
@@ -345,7 +350,7 @@
   :hints (("Goal"
            :in-theory (e/d (RP-META-VALID-SYNTAX-LISTP
                             remove-disabled-meta-rules)
-                           ()))))
+                           ()))))||#
 
 (defthm rp-statep-of-preprocess-then-rp-rw
   (implies (rp-statep rp-state)
@@ -370,7 +375,8 @@
                             (:DEFINITION TRUE-LISTP))))))
 
 (defthm valid-rp-statep-of-preprocess-then-rp-rw
-  (implies (valid-rp-statep rp-state)
+  (implies (and (valid-rp-statep rp-state)
+                (rp-statep rp-state))
            (valid-rp-statep (mv-nth 1 (preprocess-then-rp-rw term  rp-state state))))
   :hints (("Goal"
            :in-theory (e/d ()

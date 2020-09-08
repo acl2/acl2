@@ -60,71 +60,36 @@
   (declare (xargs :guard t))
   (case-match term
     (('equal a b)
-     (if (rp-equal  a b)
+     (if (rp-equal a b)
          (mv ''t t)
        (mv term `(nil t t))))
     (& (mv term nil))))
 
-(local
- (defthm rp-valid-termp-rp-equal-meta
-   (implies (rp-termp term)
-            (rp-termp (mv-nth 0 (rp-equal-meta term))))
-   :hints (("Goal"
-            :in-theory (e/d (rp-equal-meta) ())))))
+(defund rp-equal-cnt-meta (term)
+  (declare (xargs :guard t))
+  (case-match term
+    (('equal a b)
+     (if (rp-equal-cnt a b 3)
+         (mv ''t t)
+       (mv term `(nil t t))))
+    (& (mv term nil))))
 
 (def-formula-checks-default-evl
  rp-evl
  (strip-cars *small-evl-fncs*))
 
-(def-formula-checks
- rp-equal-meta-formula-checks
- (rp-equal-meta
-  equal))
+(rp::add-meta-rule
+ :meta-fnc rp-equal-meta
+ :trig-fnc equal
+ :valid-syntaxp t
+ :returns (mv term dont-rw)
+ :hints (("Goal"
+          :in-theory (e/d (rp-equal-meta) ()))))
 
-(local
- (defthm rp-evl-of-rp-equal-meta
-   (implies (rp-termp term)
-            (equal (rp-evlt (mv-nth 0 (rp-equal-meta term)) a)
-                   (rp-evlt term a)))
-   :hints (("Goal"
-            :in-theory (e/d (rp-equal-meta)
-                            ())))))
-
-(local
- (defthm valid-sc-of-rp-equal-meta
-   (implies (valid-sc term a)
-            (valid-sc (mv-nth 0 (rp-equal-meta term)) a))
-   :hints (("Goal"
-            :in-theory (e/d (rp-equal-meta)
-                            ())))))
-
-(defthm dont-rw-syntaxp-rp-equal-meta
-  (dont-rw-syntaxp (mv-nth 1  (rp-equal-meta term)))
-  :hints (("Goal"
-           :in-theory (e/d (rp-equal-meta) ()))))
-
-#|(defthm rp-equal-meta-is-valid-rp-meta-rulep
-  (implies (and (rp-equal-meta-formula-checks state)
-                (rp-evl-meta-extract-global-facts :state state))
-           (let ((rule (make rp-meta-rule-rec
-                             :fnc 'rp-equal-meta
-                             :trig-fnc 'equal
-                             :dont-rw t
-                             :valid-syntax t)))
-             (and (valid-rp-meta-rulep rule state)
-                  (rp-meta-valid-syntaxp-sk rule state))))
-  :otf-flg t
-  :hints (("Goal"
-           :in-theory (e/d (RP-META-VALID-SYNTAXP)
-                           (RP-TERMP
-                            rp-equal-meta
-                            RP-TERMP
-                            VALID-SC)))))||#
-(rp::add-meta-rules
- rp-equal-meta-formula-checks
- (list
-  (make rp-meta-rule-rec
-        :fnc 'rp-equal-meta
-        :trig-fnc 'equal
-        :dont-rw t
-        :valid-syntax t)))
+(rp::add-meta-rule
+ :meta-fnc rp-equal-cnt-meta
+ :trig-fnc equal
+ :valid-syntaxp t
+ :returns (mv term dont-rw)
+ :hints (("Goal"
+          :in-theory (e/d (RP-EQUAL-CNT-META) ()))))

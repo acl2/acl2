@@ -1023,17 +1023,17 @@
 ;;                             assoc-eq-vals-meta
 ;;                             VALID-SC)))))
 
-(rp::add-meta-rules
- hons-get-meta-formula-checks
- (list
-  (make rp-meta-rule-rec
-        :fnc 'hons-get-meta
-        :trig-fnc 'hons-get
-        :dont-rw t
-        :valid-syntax t)
 
-  (make rp-meta-rule-rec
-        :fnc 'assoc-eq-vals-meta
-        :trig-fnc 'assoc-eq-vals
-        :dont-rw t
-        :valid-syntax t)))
+(rp::add-meta-rule
+ :meta-fnc hons-get-meta
+ :trig-fnc hons-get
+ :formula-checks hons-get-meta-formula-checks
+ :valid-syntaxp t
+ :returns (mv term dont-rw))
+
+(rp::add-meta-rule
+ :meta-fnc assoc-eq-vals-meta
+ :trig-fnc assoc-eq-vals
+ :formula-checks hons-get-meta-formula-checks
+ :valid-syntaxp t
+ :returns (mv term dont-rw))

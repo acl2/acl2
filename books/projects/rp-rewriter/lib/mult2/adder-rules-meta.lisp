@@ -629,52 +629,20 @@
             :in-theory (e/d (resolve-adder-sum-order
                              resolve-adder-sum-order-rec) ())))))
 
-(defthm resolve-adder-and-order-is-valid-rp-meta-rulep
-  (implies (and (adder-rule-formula-checks state)
-                (rp-evl-meta-extract-global-facts :state state))
-           (let ((rule (make rp-meta-rule-rec
-                             :fnc 'resolve-adder-and-order
-                             :trig-fnc 'merge-adder-and
-                             :dont-rw t
-                             :valid-syntax t)))
-             (and (valid-rp-meta-rulep rule state)
-                  (rp-meta-valid-syntaxp-sk rule state))))
-  :otf-flg t
-  :hints (("Goal"
-           :in-theory (e/d (RP-META-VALID-SYNTAXP)
-                           (RP-TERMP
-                            
-                            
-                            VALID-SC)))))
 
-(defthm resolve-adder-sum-order-is-valid-rp-meta-rulep
-  (implies (and (adder-rule-formula-checks state)
-                (rp-evl-meta-extract-global-facts :state state))
-           (let ((rule (make rp-meta-rule-rec
-                             :fnc 'resolve-adder-sum-order
-                             :trig-fnc 'merge-adder-b+
-                             :dont-rw t
-                             :valid-syntax t)))
-             (and (valid-rp-meta-rulep rule state)
-                  (rp-meta-valid-syntaxp-sk rule state))))
-  :otf-flg t
-  :hints (("Goal"
-           :in-theory (e/d (RP-META-VALID-SYNTAXP)
-                           (RP-TERMP
-                            
-                            
-                            VALID-SC)))))
 
-(rp::add-meta-rules
- adder-rule-formula-checks
- (list
-  (make rp-meta-rule-rec
-        :fnc 'resolve-adder-and-order
-        :trig-fnc 'merge-adder-and
-        :dont-rw t
-        :valid-syntax t)
-  (make rp-meta-rule-rec
-        :fnc 'resolve-adder-sum-order
-        :trig-fnc 'merge-adder-b+
-        :dont-rw t
-        :valid-syntax t)))
+
+(rp::add-meta-rule
+ :meta-fnc resolve-adder-and-order
+ :trig-fnc merge-adder-and
+ :valid-syntaxp t
+ :formula-checks adder-rule-formula-checks ;
+ :returns (mv term dont-rw))
+
+(rp::add-meta-rule
+ :meta-fnc resolve-adder-sum-order
+ :trig-fnc merge-adder-b+
+ :valid-syntaxp t
+ :formula-checks adder-rule-formula-checks
+ :returns (mv term dont-rw))
+

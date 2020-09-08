@@ -55,22 +55,24 @@
 ;; as a back up, add the definition rule
 (add-rp-rule implies :outside-in t)
 
-(define implies-meta (term)
+(define implies-meta (term dont-rw)
   :verify-guards nil
   :returns (mv (res-term)
                (dont-rw))
   (case-match term
     (('implies p q)
      (b* (((when (cons-count-compare term 2000))
-           (mv term nil));; when term is too large, exit and let the outside-in
+           (mv term dont-rw)) ;; when term is too large, exit and let the outside-in
           ;; definition rule take  care of it so we don't  try working with big
           ;; terms.
           (context (rp-extract-context p))
           ((mv ? q)
            (attach-sc-from-context context q)))
        (mv `(if ,p (if ,q 't 'nil) 't)
-            nil)))
-    (& (mv term nil))))
+           `(nil ,(dont-rw-car (dont-rw-cdr dont-rw))
+                 (nil ,(dont-rw-car (dont-rw-cdr (dont-rw-cdr dont-rw))) t t)
+                 t)))) 
+    (& (mv term dont-rw))))
 
 (local
  (defthm true-listp-of-ATTACH-SC-FROM-CONTEXT
@@ -118,17 +120,9 @@
                              is-falist))))))
 
 
-
-(defun empty-formula-checks (state)
-  (declare (xargs :stobjs (state))
-           (ignorable state))
-  t)
-
-(rp::add-meta-rules
- empty-formula-checks
- (list (make rp::rp-meta-rule-rec
-             :fnc 'implies-meta
-             :trig-fnc 'implies
-             :dont-rw t
-             :outside-in t
-             :valid-syntax t)))
+(rp::add-meta-rule
+ :meta-fnc implies-meta
+ :trig-fnc implies
+ :valid-syntaxp t
+ :outside-in t
+ :returns (mv term dont-rw))

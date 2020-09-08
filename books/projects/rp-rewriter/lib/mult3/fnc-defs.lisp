@@ -42,7 +42,7 @@
 
 (include-book "projects/rp-rewriter/top" :dir :system)
 
-(include-book "centaur/svl/bits-sbits" :dir :system)
+;;(include-book "centaur/svl/bits-sbits" :dir :system)
 
 (progn
   (define binary-sum (x y)
@@ -723,6 +723,15 @@
 
 
 (progn
+  (define s-c-res-p (term)
+    :inline t
+    (case-match term (('s-c-res & & &) t))
+    ///
+    (defthm s-c-res-p-implies-fc
+      (implies (s-c-res-p term)
+               (case-match term (('s-c-res & & &) t)))
+      :rule-classes :forward-chaining))
+
   (define single-c-p (term)
     :inline t
     (case-match term (('c & & & &) t))
@@ -811,8 +820,15 @@
     (defthm binary-or-p-implies-fc
       (implies (binary-or-p term)
                (case-match term (('binary-or & &) t)))
-      :rule-classes :forward-chaining))
+      :rule-classes :forward-chaining)
 
+    (defthm binary-or-p-of-binary-or
+      (equal (binary-or-p (cons 'binary-or y))
+             (let ((term (cons 'binary-or y))) 
+               (case-match term (('binary-or & &) t))))
+      :hints (("Goal"
+               :in-theory (e/d (binary-or-p) ())))))
+ 
   (define binary-and-p (term)
     :inline t
     (case-match term (('binary-and & &) t))
@@ -820,7 +836,14 @@
     (defthm binary-and-p-implies-fc
       (implies (binary-and-p term)
                (case-match term (('binary-and & &) t)))
-      :rule-classes :forward-chaining))
+      :rule-classes :forward-chaining)
+
+    (defthm binary-and-p-of-binary-and
+      (equal (binary-and-p (cons 'binary-and y))
+             (let ((term (cons 'binary-and y))) 
+               (case-match term (('binary-and & &) t))))
+      :hints (("goal"
+               :in-theory (e/d (binary-and-p) ())))))
 
   (define binary-xor-p (term)
     :inline t
@@ -829,7 +852,13 @@
     (defthm binary-xor-p-implies-fc
       (implies (binary-xor-p term)
                (case-match term (('binary-xor & &) t)))
-      :rule-classes :forward-chaining))
+      :rule-classes :forward-chaining)
+    (defthm binary-xor-p-of-binary-xor
+      (equal (binary-xor-p (cons 'binary-xor y))
+             (let ((term (cons 'binary-xor y))) 
+               (case-match term (('binary-xor & &) t))))
+      :hints (("goal"
+               :in-theory (e/d (binary-xor-p) ())))))
 
   (define binary-?-p (term)
     :inline t
@@ -838,7 +867,13 @@
     (defthm binary-?-p-implies-fc
       (implies (binary-?-p term)
                (case-match term (('binary-? & & &) t)))
-      :rule-classes :forward-chaining))
+      :rule-classes :forward-chaining)
+    (defthm binary-?-p-of-binary-?
+      (equal (binary-?-p (cons 'binary-? y))
+             (let ((term (cons 'binary-? y))) 
+               (case-match term (('binary-? & & &) t))))
+      :hints (("goal"
+               :in-theory (e/d (binary-?-p) ())))))
 
   (define binary-not-p (term)
     :inline t
@@ -847,6 +882,30 @@
     (defthm binary-not-p-implies-fc
       (implies (binary-not-p term)
                (case-match term (('binary-not &) t)))
+      :rule-classes :forward-chaining)
+
+    (defthm binary-not-p-of-binary-not
+      (equal (binary-not-p (cons 'binary-not y))
+             (let ((term (cons 'binary-not y))) 
+               (case-match term (('binary-not &) t))))
+      :hints (("goal"
+               :in-theory (e/d (binary-not-p) ())))))
+
+  (define binary-fnc-p (term)
+    :inline t
+    (or (binary-or-p term)
+        (binary-and-p term)
+        (binary-xor-p term)
+        (binary-?-p term)
+        (binary-not-p term)))
+
+  (define bit-of-p (term)
+    :inline t
+    (case-match term (('bit-of & &) t))
+    ///
+    (defthm bit-of-p-implies-fc
+      (implies (bit-of-p term)
+               (case-match term (('bit-of & &) t)))
       :rule-classes :forward-chaining))
 
   (define adder-or-p (term)
@@ -915,3 +974,100 @@
   (case-match term
     (('rp ''bitp &)
      t)))
+
+(define bit-concat ((x integerp)
+                    (y integerp))
+  (logapp 1 x y))
+
+(define 2vec-adder ((x integerp)
+                    (y integerp)
+                    (carry-in integerp)
+                    (size natp))
+  (if (zp size)
+      0
+    (let ((sum (list (bit-of x 0)
+                     (bit-of y 0)
+                     carry-in)))
+      (bit-concat
+       (s-spec sum)
+       (2vec-adder (ash x -1)
+                   (ash y -1)
+                   (c-spec sum)
+                   (1- size))))))
+
+
+(define pp-has-bitp-rp (term)
+  :hints (("Goal"
+           :in-theory (e/d (is-rp) ())))
+  :guard-hints (("goal"
+                 :in-theory (e/d (is-rp) ())))
+  (if (is-rp term)
+      (or (equal (cadr term)
+                 ''bitp)
+          (pp-has-bitp-rp (caddr term)))
+    nil))
+
+(encapsulate
+  nil
+
+  (local
+   (in-theory (disable
+              ;; +-is-SUM
+              ;; mod2-is-m2
+              ;; floor2-if-f2
+              ;; c-is-f2
+              ;; s-is-m2
+               ;; s-spec-is-m2
+               ;;SVL::4VEC-ZERO-EXT-IS-4VEC-CONCAT
+               ;;c-spec-is-f2
+               ;;s-c-spec-is-list-m2-f2
+               ;;c-s-spec-is-list-m2-f2
+               ;;s-of-c-trig-def
+               )))
+
+  (with-output
+    :off :all
+    :gag-mode nil
+
+    (def-formula-checks
+      mult-formula-checks
+      (binary-append
+       --
+       sum-list
+       binary-and
+       and-list
+       sort-sum
+       rp::c-s-spec
+       rp::s-c-spec
+       rp::c-spec
+       rp::s-spec
+       bit-of
+       ;; svl::bits
+       ;; svl::4vec-bitand
+       ;; svl::4vec-bitor
+       ;; svl::4vec-?
+       ;; svl::4vec-?*
+       ;; sv::4vec-bitxor
+       ;; svl::4vec-bitnot
+       ;; svl::4vec-bitnot$
+       adder-b+
+       s-of-c-trig
+       binary-?
+       binary-xor
+       binary-or
+       binary-not
+       bit-fix
+       s-c-res
+       c
+       m2
+       f2
+       times2
+       s
+       pp
+       binary-sum
+       ;;sv::3vec-fix
+       bit-concat
+       ;;sv::4vec-fix
+       ))))
+
+

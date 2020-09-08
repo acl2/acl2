@@ -927,6 +927,21 @@
                             ex-from-rp-loose
                             is-rp-loose) ()))))
 
+(defthm rp-termp-caddddr
+  (implies (and (rp-termp term)
+                (consp term)
+                (not (quotep term))
+                (consp (cdr term))
+                (consp (cddr term))
+                (consp (cdddr term))
+                (consp (cddddr term)))
+           (rp-termp (car (cddddr term))))
+  :hints (("Goal"
+           :in-theory (e/d (rp-termp
+                            is-rp
+                            ex-from-rp-loose
+                            is-rp-loose) ()))))
+
 #|(defthm rp-syntaxp-caddr
   (implies (and (rp-syntaxp term)
                 (consp term)
@@ -1053,3 +1068,36 @@
   (implies (and (rp-term-listp lst1)
                 (rp-term-listp lst2))
            (rp-term-listp (append lst1 lst2))))
+
+
+(defthm rp-state-preservedp-of-the-same
+  (implies (rp-statep rp-state)
+           (rp-state-preservedp rp-state rp-state))
+  :hints (("Goal"
+           :in-theory (e/d (rp-state-preservedp) ()))))
+
+(defthm rp-state-preservedp-implies-rp-statep
+  (implies (and (rp-statep rp-state)
+                (rp-state-preservedp rp-state new-rp-state))
+           (rp-statep new-rp-state))
+  :hints (("Goal"
+           :in-theory (e/d (rp-state-preservedp) ()))))
+
+(defthm rp-state-preservedp-implies-valid-rp-state-syntaxp
+  (implies (and (valid-rp-state-syntaxp rp-state)
+                (rp-state-preservedp rp-state new-rp-state))
+           (valid-rp-state-syntaxp new-rp-state))
+  :hints (("Goal"
+           :do-not-induct t
+           :use ((:instance RP-STATE-PRESERVEDP-SK-necc
+                            (key (VALID-RP-STATE-SYNTAXP-AUX-WITNESS
+                                  NEW-RP-STATE))
+                            (OLD-RP-STATE rp-state))
+                 (:instance VALID-RP-STATE-SYNTAXP-AUX-necc
+                            (key (VALID-RP-STATE-SYNTAXP-AUX-WITNESS NEW-RP-STATE))))
+           :expand (VALID-RP-STATE-SYNTAXP-AUX NEW-RP-STATE)
+           :in-theory (e/d (rp-state-preservedp
+                            valid-rp-state-syntaxp)
+                           (RP-STATE-PRESERVEDP-SK
+                            VALID-RP-STATE-SYNTAXP-AUX
+                            RP-STATEP)))))

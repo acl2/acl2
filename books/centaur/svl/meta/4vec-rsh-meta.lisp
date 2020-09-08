@@ -287,9 +287,16 @@
                            (rp::RP-TERMP
                             rp::VALID-SC)))))||#
 
-(rp::add-meta-rules 4vec-rsh-of-formula-checks
+#|(rp::add-meta-rules 4vec-rsh-of-formula-checks
                     (list (make rp::rp-meta-rule-rec
                                 :fnc '4vec-rsh-of-meta
                                 :trig-fnc '4vec-rsh
                                 :dont-rw t
-                                :valid-syntax t)))
+                                :valid-syntax t)))||#
+
+(rp::add-meta-rule
+ :meta-fnc 4vec-rsh-of-meta
+ :trig-fnc 4vec-rsh
+ :formula-checks 4vec-rsh-of-formula-checks
+ :valid-syntaxp t
+ :returns (mv term dont-rw))

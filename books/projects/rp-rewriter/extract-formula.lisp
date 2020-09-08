@@ -796,9 +796,11 @@
         `(table rp-rules nil ',cur-table :clear))))
 
   (defmacro disable-exc-counterpart (fnc)
+    (declare (xargs :guard (symbolp fnc)))
     `(table rp-exc-rules ',fnc nil))
 
   (defmacro enable-exc-counterpart (fnc)
+    (declare (xargs :guard (symbolp fnc)))
     `(table rp-exc-rules ',fnc t)))
 
 
@@ -816,18 +818,29 @@ the functions below to register rules to RP-Rewriter's
 @('(rp::add-rp-rule <rule-name> 
                  &key (disabled 'nil)
                       (beta-reduce 'nil)
-                      (hints 'nil))')
+                      (hints 'nil)
+                      (inside-out ':default)
+                      (outside-in 'nil))')
 </code>
  <p>This macro submits a table event that saves the given rule in the
  ruleset. The time you use submit this event will affect the priority the rule
  will have. If you choose to add the rule as disabled, you may use the
  corresponding key. </p>
+
 <p> The beta-reduce key checks the RHS of the rule to see if it is a lambda
 expression. If that is the case, then it calls @(see rp::defthm-lambda) to
 create a new rule and save that instead. The name of the new rule will be
 printed, and it will be disabled for ACL2. You need to use that new name while
 enabling/disabling the added rule for RP-Rewriter. The hints key is only relevant when
 defthm-lambda is called. </p>
+
+<p> inside-out and outside-in keys determine whether or not the rule should be
+an outside-in, inside-out or both. If you set inside-out to :default and
+outside-in to t, then the rule will be an outside-in only. If you set both t,
+it will be both; if you set only one of them to t, it will be only one. And,
+users are not allowed to set both to nil. You may change the rewrite direction
+of an already added rewrite rule by calling add-rp-rule again and by
+reassigning the direction with these flags.</p>
 
 
 <code> @('(rp::def-rp-rule <rule-name> <conjecture> <optional-hints> ...)') </code>

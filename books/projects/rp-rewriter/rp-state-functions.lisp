@@ -75,14 +75,13 @@ which submits an event.
  :short "Sets whether or not RP-Rewriter should print used rules when rewriting
  a conjecture."
  :long
- "<p>(show-rules @('<nil-OR-t-OR-:cnt>')) submits an event that changes
- RP-Rewriter's behaviour on saving and printing used rules. For best
- performance, it is set to nil by default. When set to t, it prints rule in a
- fashion similar to the built-in rewriter but only differently for
- meta-rules. When set to :cnt, it also attaches a number to each rune showing
- how many times they are used, and how many times they failed due to unrelieved
- hypotheses. These entries are saved in rules-used field of stobj rp::rp-state. </p>"
- )
+ "<p>(show-rules  @('<nil-OR-t-OR-:cnt>'))   submits  an  event   that  changes
+ RP-Rewriter's behaviour on  saving and printing used rules. When  set to t, it
+ prints rule in a fashion similar to the built-in rewriter but only differently
+ for meta-rules.  When set  to :cnt,  it also  attaches a  number to  each rune
+ showing how many  times they are used,  and how many times they  failed due to
+ unrelieved hypotheses.  These entries are  saved in rules-used field  of stobj
+ rp::rp-state. </p>" )
 
 
 (encapsulate
@@ -110,101 +109,81 @@ which submits an event.
         (mv nil `(value-triple `(not-simplifed-action ,',',flg)) state
             rp-state))))
 
-  (defund rp-stat-add-to-rules-used (rule failed rp-state)
-    (declare (xargs :guard (and (weak-custom-rewrite-rule-p rule))
+  (defund rp-stat-add-to-rules-used (rule failed ex-counterpart-flg rp-state)
+    (declare (xargs :guard (or ex-counterpart-flg
+                               (weak-custom-rewrite-rule-p rule))
+                    :guard-hints (("Goal"
+                                   :in-theory (e/d () (rp-statep
+                                                       COUNT-USED-RULES-FLG
+                                                       SHOW-USED-RULES-FLG
+                                                       weak-custom-rewrite-rule-p))))
                     :stobjs (rp-state)))
     (if (show-used-rules-flg rp-state)
         (cond ((count-used-rules-flg rp-state)
-               (b* ((old-lst (rules-used rp-state))
-                    (rule-name (rp-rune rule))
-                    (rule-name
+               (b* ((rune (if ex-counterpart-flg
+                              `(:executable-counterpart ,rule)
+                            (rp-rune rule)))
+                    (rune
                      (cond (failed
-                            (cons failed rule-name))
-                           (t rule-name)))
-                    (entry (hons-get rule-name old-lst))
-                    (val (if (consp entry) (1+ (nfix (cdr entry))) 1)))
-                 (update-rules-used
-                  (hons-acons rule-name
-                              val
-                              old-lst)
-                  rp-state)))
+                            (cons rune failed))
+                           (t rune)))
+                    (rp-state
+                     (if (not (rules-used-boundp rune rp-state))
+                         (rules-used-put 'all-rules
+                                         (cons rune
+                                               (rules-used-get 'all-rules
+                                                               rp-state))
+                                         rp-state)
+                       rp-state))
+                         
+                    (val (1+ (nfix (rules-used-get rune rp-state)))))
+                 (rules-used-put rune val rp-state)))
               (t
-               (b* ((old-lst (rules-used rp-state))
-                    (rule-name (rp-rune rule))
-                    (entry (hons-get rule-name old-lst))
-                    ((when entry) rp-state))
-                 (update-rules-used (hons-acons rule-name nil old-lst)
-                                    rp-state))))
+               (b* (((when failed)
+                     rp-state)
+                    (rune1 (if ex-counterpart-flg
+                               rule
+                             (rp-rune rule)))
+                    ((when (rules-used-boundp rune1  rp-state))
+                     rp-state)
+                    (rune2 (if ex-counterpart-flg
+                               `(:executable-counterpart ,rule)
+                             (rp-rune rule)))
+                    (rp-state
+                     (rules-used-put 'all-rules
+                                     (cons rune2
+                                           (rules-used-get 'all-rules
+                                                           rp-state))
+                                     rp-state))
+                    (rp-state (rules-used-put rune1 nil rp-state)))
+                 rp-state)))
       rp-state))
 
-  (defund rp-stat-add-to-rules-used-ex-cnt (rule-name rp-state)
+
+  (defund rp-state-print-rules-used-aux (all-rules rp-state)
     (declare (xargs :stobjs (rp-state)))
-    (if (show-used-rules-flg rp-state)
-        (cond
-         ((count-used-rules-flg rp-state)
-          (b* ((old-lst (rules-used rp-state))
-               (rule-name `(:executable-counterpart ,rule-name))
-               (entry (hons-get rule-name old-lst))
-               (val (if (consp entry) (1+ (nfix (cdr entry))) 1)))
-            (update-rules-used
-             (hons-acons rule-name
-                         val
-                         old-lst)
-             rp-state)))
-         (t
-          (b* ((old-lst (rules-used rp-state))
-               (rule-name `(:executable-counterpart ,rule-name))
-               (entry (hons-get rule-name old-lst))
-               ((when entry) rp-state))
-            (update-rules-used (hons-acons rule-name nil old-lst)
-                               rp-state))))
-      rp-state))
-
-  (defund rp-stat-add-to-rules-used-meta-cnt (meta-rule rp-state)
-    (declare (xargs :stobjs (rp-state)
-                    :guard (and (consp meta-rule)
-                                (symbolp (car meta-rule))
-                                (symbolp (cdr meta-rule)))))
-    (if (show-used-rules-flg rp-state)
-        (cond
-         ((count-used-rules-flg rp-state)
-          (b* ((old-lst (rules-used rp-state))
-               (rule-name `(:meta ,(cdr meta-rule)
-                                  :trig ,(car meta-rule)))
-               (entry (hons-get rule-name old-lst))
-               (val (if (consp entry) (1+ (nfix (cdr entry))) 1)))
-            (update-rules-used
-             (hons-acons rule-name
-                         val
-                         old-lst)
-             rp-state)))
-         (t
-          (b* ((old-lst (rules-used rp-state))
-               (rule-name `(:meta ,(cdr meta-rule)
-                                  :trig ,(car meta-rule)))
-               (entry (hons-get rule-name old-lst))
-               ((when entry) rp-state))
-            (update-rules-used (hons-acons rule-name nil old-lst)
-                               rp-state))))
-      rp-state))
-
+    (if (atom all-rules)
+        nil
+      (acons (car all-rules)
+             (rules-used-get (car all-rules) rp-state)
+             (rp-state-print-rules-used-aux (cdr all-rules) rp-state))))
+  
   (defund rp-state-print-rules-used (rp-state)
-    (declare (xargs :stobjs (rp-state)))
+    (declare (xargs :stobjs (rp-state)
+                    :guard-hints (("Goal"
+                                   :in-theory (e/d () (rp-statep
+                                                       COUNT-USED-RULES-FLG
+                                                       SHOW-USED-RULES-FLG
+                                                       weak-custom-rewrite-rule-p))))))
     (if (show-used-rules-flg rp-state)
-        (cw "Rules used so far: ~p0 ~%"
-            (let* ((alist (rules-used rp-state)))
+        (cw "~%List of rules used: ~p0 ~%"
+            (let* ((all-rules (true-list-fix (rules-used-get 'all-rules rp-state))))
               (if (count-used-rules-flg rp-state)
                   (merge-comperator-sort
-                   (b* ((alist (fast-alist-clean alist))
-                        (alist (if (true-listp alist) alist nil)))
-                     alist)
+                   (true-list-fix (rp-state-print-rules-used-aux all-rules rp-state))
                    'rule-result-comperator)
-                #|(acl2::merge-sort-lexorder
-                (b* ((alist (fast-alist-clean alist))
-                (alist (if (true-listp alist) alist nil)))
-                alist))||#
                 (acl2::merge-sort-lexorder
-                 (strip-cars alist)))))
+                 all-rules))))
       nil)))
 
 (defund rp-state-push-to-try-to-rw-stack (rule var-bindings rp-context rp-state)
@@ -232,17 +211,16 @@ which submits an event.
 
 (defund rp-state-push-meta-to-rw-stack (meta-rule old-term new-term rp-state)
   (declare (xargs :stobjs (rp-state)
-                  :guard (and (consp meta-rule)
-                              (symbolp (car meta-rule))
-                              (symbolp (cdr meta-rule)))))
+                  :guard (and (WEAK-CUSTOM-REWRITE-RULE-P meta-rule)
+                              (rp-rule-metap meta-rule))))
   (if (rp-brr rp-state)
       (b* ((old-rw-stack (rw-stack rp-state))
            (index (rw-stack-size rp-state))
            (new-rw-stack (acons index
                                 (list
                                  (list ':type 'meta-applied)
-                                 (list ':meta-fnc (cdr meta-rule))
-                                 (list ':trig-fnc (car meta-rule))
+                                 (list ':meta-fnc (rp-rule-meta-fnc meta-rule))
+                                 (list ':trig-fnc (rp-rule-trig-fnc meta-rule))
                                  (list ':new-term new-term)
                                  (list ':old-term old-term))
                                 old-rw-stack))

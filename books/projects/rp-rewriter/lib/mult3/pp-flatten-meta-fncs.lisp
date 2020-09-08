@@ -56,7 +56,6 @@
 (local
  (in-theory (enable pp)))
 
-
 (define and-list-hash-aux (lst)
   :returns (mv (hash integerp)
                (rest-size natp))
@@ -239,19 +238,8 @@
          (true-listp (cdar x))
          (pp-lists-p (cdr x)))))
 
-
-
 (local
  (in-theory (disable lexorder)))
-
-(define pp-has-bitp-rp (term)
-  :guard-hints (("goal"
-                 :in-theory (e/d (is-rp) ())))
-  (if (is-rp term)
-      (or (equal (cadr term)
-                 ''bitp)
-          (pp-has-bitp-rp (caddr term)))
-    nil))
 
 (define pp-term-p (term)
   :enabled t
@@ -260,34 +248,63 @@
            :in-theory (e/d (measure-lemmas) ())))
   (b* ((orig term)
        (term (ex-from-rp term)))
-    (case-match term
-      (('binary-and x y)
-       (and (pp-term-p x)
-            (pp-term-p y)))
-      (('binary-or x y)
-       (and (pp-term-p x)
-            (pp-term-p y)))
-      (('binary-xor x y)
-       (and (pp-term-p x)
-            (pp-term-p y)))
-      (('binary-? x y z)
-       (and (pp-term-p x) ;
-            (pp-term-p y) ;
-            (pp-term-p z)))
-      ;; (('adder-and x y)
-      ;;  (and (pp-term-p x) ;
+    (cond ((or (binary-and-p term)
+               (binary-or-p term)
+               (binary-xor-p term))
+           (and (pp-term-p (cadr term))
+                (pp-term-p (caddr term))))
+          ((binary-?-p term)
+           (and (pp-term-p (cadr term))
+                (pp-term-p (caddr term))
+                (pp-term-p (cadddr term))))
+          ((or (binary-not-p term)
+               (pp-p term))
+           (and (pp-term-p (cadr term))))
+          ((or (bit-of-p term)
+               (equal term ''1)
+               (equal term ''0))
+           t)
+          (t (and (pp-has-bitp-rp orig)
+                  (not (include-fnc term 's-c-res))
+                  (not (include-fnc term 'c))
+                  (not (include-fnc term 's)))))))
+
+      ;; (('binary-and x y)
+      ;;  (and (pp-term-p x)
       ;;       (pp-term-p y)))
-      ;; (('adder-or x y)
-      ;;  (and (pp-term-p x) ;
+      ;; (('binary-or x y)
+      ;;  (and (pp-term-p x)
       ;;       (pp-term-p y)))
-      (('binary-not x)
-       (and (pp-term-p x)))
-      (('pp x)
-       (and (pp-term-p x)))
-      (('bit-of & &) t)
-      (''1 t)
-      (''0 t)
-      (& (pp-has-bitp-rp orig)))))
+      ;; (('binary-xor x y)
+      ;;  (and (pp-term-p x)
+      ;;       (pp-term-p y)))
+      ;; (('binary-? x y z)
+      ;;  (and (pp-term-p x) ;
+      ;;       (pp-term-p y) ;
+      ;;       (pp-term-p z)))
+      ;; ;; (('adder-and x y)
+      ;; ;;  (and (pp-term-p x) ;
+      ;; ;;       (pp-term-p y)))
+      ;; ;; (('adder-or x y)
+      ;; ;;  (and (pp-term-p x) ;
+      ;; ;;       (pp-term-p y)))
+      ;; (('binary-not x)
+      ;;  (and (pp-term-p x)))
+      ;; (('pp x)
+      ;;  (and (pp-term-p x)))
+      ;; (('bit-of & &) t)
+      ;; (''1 t)
+      ;; (''0 t)
+      ;; (& (and (pp-has-bitp-rp orig)
+      ;;         (not (include-fnc term 's-c-res))
+      ;;         (not (include-fnc term 'c))
+      ;;         (not (include-fnc term 's)))))))
+
+(define pp-term-list-p (lst)
+  (if (atom lst)
+      (equal lst nil)
+    (and (pp-term-p (car lst))
+         (pp-term-list-p (cdr lst)))))
 
 (define cut-list-by-half ((lst true-listp)
                           (size natp))
@@ -743,76 +760,72 @@
   :verify-guards nil
   (b* ((orig term)
        (term (ex-from-rp term)))
-    (case-match term
-      (('binary-and x y)
-       (b* ((lst1 (pp-term-to-pp-lists x nil))
-            (lst2 (pp-term-to-pp-lists y nil))
-            (anded (and$-pp-lists lst1 lst2 nil sign))
-            (anded (sort-pp-lists anded (len anded))))
-         anded))
-     #| (('adder-and x y)
-       (b* ((lst1 (pp-term-to-pp-lists x nil))
-            (lst2 (pp-term-to-pp-lists y nil))
-            (anded (and$-pp-lists lst1 lst2 nil sign))
-            (anded (sort-pp-lists anded (len anded))))
-         anded))||#
-      (('binary-or x y)
-       (b* ((lst1 (pp-term-to-pp-lists x sign))
-            (lst2 (pp-term-to-pp-lists y sign))
-            (x (merge-sorted-pp-lists lst1  lst2 ))
-            (y (and$-pp-lists lst1 lst2 nil (not sign)))
-            (y (sort-pp-lists y (len y))))
-         (merge-sorted-pp-lists x  y )))
-      #|(('adder-or x y)
-       (b* ((lst1 (pp-term-to-pp-lists x sign))
-            (lst2 (pp-term-to-pp-lists y sign))
-            (x (merge-sorted-pp-lists lst1  lst2 ))
-            (y (and$-pp-lists lst1 lst2 nil (not sign)))
-            (y (sort-pp-lists y (len y))))
-         (merge-sorted-pp-lists x  y )))||#
-      (('binary-xor x y)
-       (b* ((lst1 (pp-term-to-pp-lists x sign))
-            (lst2 (pp-term-to-pp-lists y sign))
-            (acc (merge-sorted-pp-lists lst1  lst2 ))
-            (minus-x-and-y (and$-pp-lists lst1 lst2 nil (not sign)))
-            (minus-x-and-y (sort-pp-lists minus-x-and-y (len minus-x-and-y))))
-         (merge-sorted-pp-lists
-          acc
-          (merge-sorted-pp-lists  minus-x-and-y  minus-x-and-y ))))
-      (('binary-? test x y)
-       (b* ((test-lst (pp-term-to-pp-lists test sign))
 
-            (x-lst (pp-term-to-pp-lists x sign))
-            (x-and-test (and$-pp-lists test-lst x-lst nil sign))
-            (x-and-test (sort-pp-lists x-and-test (len x-and-test)))
+    (cond ((binary-and-p term)
+           (b* ((x (cadr term))
+                (y (caddr term))
+                (lst1 (pp-term-to-pp-lists x nil))
+                (lst2 (pp-term-to-pp-lists y nil))
+                (anded (and$-pp-lists lst1 lst2 nil sign))
+                (anded (sort-pp-lists anded (len anded))))
+             anded))
+          ((binary-or-p term)
+           (b* ((x (cadr term))
+                (y (caddr term))
+                (lst1 (pp-term-to-pp-lists x sign))
+                (lst2 (pp-term-to-pp-lists y sign))
+                (x (merge-sorted-pp-lists lst1  lst2 ))
+                (y (and$-pp-lists lst1 lst2 nil (not sign)))
+                (y (sort-pp-lists y (len y))))
+             (merge-sorted-pp-lists x  y )))
+          ((binary-xor-p term)
+           (b* ((x (cadr term))
+                (y (caddr term))
+                (lst1 (pp-term-to-pp-lists x sign))
+                (lst2 (pp-term-to-pp-lists y sign))
+                (acc (merge-sorted-pp-lists lst1  lst2 ))
+                (minus-x-and-y (and$-pp-lists lst1 lst2 nil (not sign)))
+                (minus-x-and-y (sort-pp-lists minus-x-and-y (len minus-x-and-y))))
+             (merge-sorted-pp-lists
+              acc
+              (merge-sorted-pp-lists  minus-x-and-y  minus-x-and-y ))))
+          ((binary-?-p term)
+           (b* ((test (cadr term))
+                (x (caddr term))
+                (y (cadddr term))
+                (test-lst (pp-term-to-pp-lists test sign))
 
-            (y-lst (pp-term-to-pp-lists y sign))
-            (--y-and-test (and$-pp-lists test-lst y-lst nil (not sign)))
-            (--y-and-test (sort-pp-lists --y-and-test (len --y-and-test))))
-         (merge-sorted-pp-lists x-and-test
-                                (merge-sorted-pp-lists --y-and-test  y-lst))))
-      (('binary-not x)
-       (b* ((lst1 (pp-term-to-pp-lists x (not sign))))
-         (merge-sorted-pp-lists (list (cons sign (list ''1)))
-                                lst1)))
-      (('pp x)
-       (pp-term-to-pp-lists x sign))
-      (('bit-of & &)
-       (list (cons sign (list term))))
-      #|(''0
-      (list (cons sign (list term))))||#
-      (''1
-       (list (cons sign (list term))))
-      (''0
-       nil)
-      (&
-       (if (pp-has-bitp-rp orig)
-           (list (cons sign (list orig)))
-         (progn$
-          (cw "unexpected term ~p0 ~%" orig)
-          (hard-error 'pp-term-to-pp-lists
-                      "unexpected term ~p0 ~%"
-                      (list (cons #\0 orig))))))))
+                (x-lst (pp-term-to-pp-lists x sign))
+                (x-and-test (and$-pp-lists test-lst x-lst nil sign))
+                (x-and-test (sort-pp-lists x-and-test (len x-and-test)))
+
+                (y-lst (pp-term-to-pp-lists y sign))
+                (--y-and-test (and$-pp-lists test-lst y-lst nil (not sign)))
+                (--y-and-test (sort-pp-lists --y-and-test (len --y-and-test))))
+             (merge-sorted-pp-lists x-and-test
+                                    (merge-sorted-pp-lists --y-and-test
+                                                           y-lst))))
+          ((binary-not-p term)
+           (b* ((x (cadr term))
+                (lst1 (pp-term-to-pp-lists x (not sign))))
+             (merge-sorted-pp-lists (list (cons sign (list ''1)))
+                                    lst1)))
+          ((pp-p term)
+           (pp-term-to-pp-lists (cadr term) sign))
+          ((bit-of-p term)
+           (list (cons sign (list term))))
+          ((equal term ''1)
+           (list (cons sign (list term))))
+          ((equal term ''0)
+           nil)
+          (t (if (pp-has-bitp-rp orig)
+                 (list (cons sign (list orig)))
+               (progn$
+                (cw "unexpected term ~p0 ~%" orig)
+                (hard-error 'pp-term-to-pp-lists
+                            "unexpected term ~p0 ~%"
+                            (list (cons #\0 orig))))))))
+
   ///
 
   (verify-guards pp-term-to-pp-lists
@@ -882,97 +895,85 @@
                      (pp-lists-to-term-pp-lst (cdr lst)))
              (cons cur
                    (pp-lists-to-term-pp-lst (cdr lst))))))))
+ 
+(define pp-remove-extraneous-sc (term)
+  :returns (res-term pp-term-p :hyp (pp-term-p term)
+                     :hints (("Goal"
+                              :do-not-induct t
+                              :induct (pp-remove-extraneous-sc term)
+                              :expand ((:free (x y) (pp-term-p (cons x y)))
+                                       (:free (x y) (BINARY-AND-P (cons x y)))
+                                       (:free (x y) (BINARY-OR-P (cons x y)))
+                                       (:free (x y) (BINARY-XOR-P (cons x y)))
+                                       (:free (x y) (BINARY-?-p (cons x y)))
+                                       (:free (x y) (PP-P (cons x y)))
+                                       (:free (x y) (BINARY-NOT-P (cons x y)))
+                                       (:free (x y) (BIT-OF-P (cons x y))))
+                              :in-theory (e/d (ex-from-rp is-rp) ()))))
+  :measure (cons-count term)
+  :hints (("Goal"
+           :in-theory (e/d (measure-lemmas) ())))
+  (let* ((term- (ex-from-rp term)))
+    (cond ((or (atom term)
+               (quotep term))
+           term)
+          ((bit-of-p term-)
+           `(bit-of ,(ex-from-rp (cadr term-))
+                    ,(ex-from-rp (caddr term-))))
+          ((or (BINARY-AND-p term-)
+               (BINARY-OR-p term-)
+               (BINARY-XOR-p term-))
+           (cons-with-hint
+            (car term-)
+            (cons-with-hint (pp-remove-extraneous-sc (cadr term-))
+                            (cons-with-hint (pp-remove-extraneous-sc (caddr term-))
+                                            nil
+                                            (cddr term-))
+                            (cdr term-))
+            term-))
+           
+          ((or (BINARY-NOT-p term-)
+               (pp-p term-))
+           (cons-with-hint (car term-)
+                           (cons-with-hint (pp-remove-extraneous-sc (cadr
+                                                                     term-))
+                                           nil
+                                           (cdr term-))
+                           term-))
 
-#|(define pp-lists-to-term-pp-lst ((lst pp-lists-p))
-  (b* (((when (atom lst))
-        (mv nil nil nil nil))
-       ((mv pp-lst2 pp-lst3 pp-lst4 pp-lst1)
-        (pp-lists-to-term-pp-lst (cdr lst)))
-
-       (cur (cdar lst))
-       ((mv cur group)
-        (cond ((atom cur) (mv ''1 1))
-              ((atom (cdr cur)) (mv (if (equal (car cur) ''1)
-                                        ''1
-                                      `(and-list (list ,(car cur))))
-                                    1))
-              ((atom (cddr cur)) (mv `(and-list (list . ,cur)) 2))
-              (t (mv `(and-list (list . ,cur))
-                     (cond ((equal (len cur) 3) 3)
-                           (t 4))))))
-       ;(cur (hons-copy cur))
-
-       (cur (if (caar lst)
-                `(-- ,cur)
-              cur))
-
-       (pp-lst2 (if (= group 2) (cons cur pp-lst2) pp-lst2))
-       (pp-lst3 (if (= group 3) (cons cur pp-lst3) pp-lst3))
-       (pp-lst4 (if (= group 4) (cons cur pp-lst4) pp-lst4))
-       (pp-lst1 (if (= group 1) (cons cur pp-lst1) pp-lst1)))
-    (mv pp-lst2 pp-lst3 pp-lst4 pp-lst1)))||#
-
-#|(define pp-flatten ((term pp-term-p)
-                    (sign booleanp))
-  (case-match term
-    (('binary-and ('bit-of & &) ('bit-of & &))
-     (b* ((cur-single
-           (if (lexorder (cadr term) (caddr term))
-               (if sign
-                   `(-- (and-list (list . ,(cdr term))))
-                 `(and-list (list . ,(cdr term))))
-
-              (if sign
-                  `(-- (and-list (list ,(caddr term) ,(cadr term))))
-                `(and-list (list ,(caddr term) ,(cadr term)))))))
-       (list (list cur-single) nil nil nil)))
-    (&
-     (b* ((pp-lists (pp-term-to-pp-lists term sign))
-          ((mv pp-lst2 pp-lst3 pp-lst4 pp-lst1) (pp-lists-to-term-pp-lst pp-lists))
-          #|(result (If pp-lists (cons 'list result) ''nil))||#
-          )
-       (if (or pp-lst2 pp-lst3 pp-lst4 pp-lst1)
-           (list pp-lst2 pp-lst3 pp-lst4 pp-lst1)
-         nil)))))||#
+          ((BINARY-?-p term-)
+           (cons-with-hint
+            (car term-)
+            (cons-with-hint (pp-remove-extraneous-sc (cadr term-))
+                            (cons-with-hint (pp-remove-extraneous-sc (caddr term-))
+                                            (cons-with-hint (pp-remove-extraneous-sc (cadddr term-))
+                                                            nil
+                                                            (cdddr term-))
+                                            (cddr term-))
+                            (cdr term-))
+            term-))
+          (t term))))
 
 (define pp-flatten ((term pp-term-p)
                     (sign booleanp))
-  (case-match term
-    (('binary-and ('bit-of & &) ('bit-of & &))
-     (b* ((cur-single
-           (if (lexorder2- (cadr term) (caddr term))
-               (if sign
-                   `(-- ,(create-and-list-instance (cdr term)))
-                 (create-and-list-instance (cdr term)))
-             (if sign
-                 `(-- ,(create-and-list-instance (list (caddr term) (cadr term))))
-               (create-and-list-instance (list (caddr term) (cadr term)))))))
-       (list cur-single)))
-    (&
-     (b* ((pp-lists (pp-term-to-pp-lists term sign))
-          (pp-lst (pp-lists-to-term-pp-lst pp-lists))
-          #|(result (If pp-lists (cons 'list result) ''nil))||#
-          )
-       pp-lst))))
-
-#|(define pp-flatten ((term pp-term-p)
-                    (sign booleanp))
-  (case-match term
-    (('binary-and ('bit-of & &) ('bit-of & &))
-     (or (ppf-2)
-     (if (lexorder (cadr term) (caddr term))
-         `(list ,(if sign `(-- ,term) term))
-       `(list
-         ,(hons-copy
-           (if sign
-              `(-- (binary-and ,(caddr term) ,(cadr term)))
-            `(binary-and ,(caddr term) ,(cadr term))))))))
-    (&
-     (b* ((pp-lists (pp-term-to-pp-lists term sign))
-          (result (pp-lists-to-term-pp-lst pp-lists))
-          (result (If pp-lists (cons 'list result) ''nil)))
-       result))))||#
-
+  (b* ((term (pp-remove-extraneous-sc term)))
+    (cond ((and (case-match term
+                  (('binary-and ('bit-of & &) ('bit-of & &)) t))
+                (not (rp-equal (cadr term) (caddr term))))
+           (b* ((cur-single
+                 (if (lexorder2- (cadr term) (caddr term))
+                     (if sign
+                         `(-- ,(create-and-list-instance (cdr term)))
+                       (create-and-list-instance (cdr term)))
+                   (if sign
+                       `(-- ,(create-and-list-instance (list (caddr term) (cadr term))))
+                     (create-and-list-instance (list (caddr term) (cadr term)))))))
+             (list cur-single)))
+          (t (b* ((pp-lists (pp-term-to-pp-lists term sign))
+                  (pp-lst (pp-lists-to-term-pp-lst pp-lists))
+                  #|(result (If pp-lists (cons 'list result) ''nil))||#
+                  )
+               pp-lst)))))
 
 (progn
 
@@ -990,7 +991,7 @@
                     (a (ex-from-rp a)))
                  (case-match a (('bit-of & &) t) (''1 t))))
       :rule-classes :forward-chaining))
-  
+
   (define sort-sum-meta-aux-aux (cur)
     :returns (mv valid pp-list-entry)
     :verify-guards nil
@@ -1055,12 +1056,11 @@
                                 (:TYPE-PRESCRIPTION TRUE-LISTP)
                                 (:TYPE-PRESCRIPTION O-P)
                                 (:DEFINITION NOT)
-                                (:TYPE-PRESCRIPTION SV::SVEXLIST-P)
-                                (:TYPE-PRESCRIPTION SV::SVEX-ENV-P)
-                                (:TYPE-PRESCRIPTION SV::SVEX-ALIST-P)
+                                ;; (:TYPE-PRESCRIPTION SV::SVEXLIST-P)
+                                ;; (:TYPE-PRESCRIPTION SV::SVEX-ENV-P)
+                                ;; (:TYPE-PRESCRIPTION SV::SVEX-ALIST-P)
                                 (:DEFINITION RP-TERMP)))))))
-    
-  
+
   (define sort-sum-meta-aux (term)
     :returns (mv valid pp-lists)
     :measure (cons-count term)
@@ -1094,72 +1094,6 @@
                   (implies valid
                            (pp-lists-p pp-lists))))
 
-  
-  #|(define sort-sum-meta-aux (term)
-    :returns (mv valid pp-lists)
-    (case-match term
-      (('binary-sum x rest)
-       (b* ((x (ex-from-rp x)))
-         (case-match x
-           (('binary-and a b)
-            (b* ((a-orig a)
-                 (b-orig b)
-                 (a (ex-from-rp a))
-                 (b (ex-from-rp b))
-                 ((unless (and (or (case-match a (('bit-of & &) t))
-                                   (case-match a-orig (('rp ''bitp &) t)))
-                               (or (case-match b (('bit-of & &) t) )
-                                   (case-match b-orig (('rp ''bitp &) t)))))
-                  (mv nil nil))
-                 ((mv rest-valid rest)
-                  (sort-sum-meta-aux rest))
-                 ((unless rest-valid)
-                  (mv nil nil)))
-              (mv t
-                  (cons (cons nil (sort-and$-list (cdr x) 2))
-                        rest))))
-           (('bit-of & &)
-            (b* (((mv rest-valid rest)
-                  (sort-sum-meta-aux rest))
-                 ((unless rest-valid)
-                  (mv nil nil)))
-              (mv t (cons (list nil x)
-                          rest))))
-           (''1
-            (b* (((mv rest-valid rest)
-                  (sort-sum-meta-aux rest))
-                 ((unless rest-valid)
-                  (mv nil nil)))
-              (mv t (cons (list nil x)
-                          rest))))
-           (''0
-            (sort-sum-meta-aux rest))
-           (& (mv nil nil)))))
-      (('binary-and a b)
-       (b* ((a-orig a)
-            (b-orig b)
-            (a (ex-from-rp a))
-            (b (ex-from-rp b))
-            ((unless (and (or (case-match a (('bit-of & &) t) (''1 t))
-                              (case-match a-orig (('rp ''bitp &) t)))
-                          (or (case-match b (('bit-of & &) t) (''1 t))
-                              (case-match b-orig (('rp ''bitp &) t)))))
-             (mv nil nil)))
-         (mv t
-             (cons (cons nil (sort-and$-list (cdr term) 2))
-                   nil))))
-      (('bit-of & &)
-       (mv t (list (list nil term))))
-      (''1
-       (mv t (list (list nil term))))
-      (''0
-       (mv t nil))
-      (&
-       (mv nil nil)))
-    ///
-    (acl2::defret pp-lists-p-of-<fn>
-                  (implies valid
-                           (pp-lists-p pp-lists))))||#
 
   (define sort-sum-meta (term)
     :returns (mv result
@@ -1187,6 +1121,10 @@
                    term)
                (hard-error 'sort-sum-meta "" nil)
                (mv term t))))))
+
+
+
+(value-triple (hons-clear t))
 
 (local
  (in-theory (disable floor len)))
@@ -1318,13 +1256,19 @@
    :hints (("Goal"
             :in-theory (e/d (pp-lists-to-term-pp-lst) ())))))
 
+
+(defret rp-termp-of-<fn>
+  (implies (rp-termp term)
+           (rp-termp res-term))
+  :fn pp-remove-extraneous-sc
+  :hints (("Goal"
+           :in-theory (e/d (pp-remove-extraneous-sc) ()))))
+
 (defthm rp-term-listp-of-pp-flatten
   (implies (rp-termp term)
            (rp-term-listp (pp-flatten term sign)))
   :hints (("Goal"
            :in-theory (e/d (pp-flatten) ()))))
-
-
 
 (defret rp-term-listp-of-<fn>
   (implies (and (rp-termp cur)
@@ -1345,7 +1289,7 @@
                             (:FORWARD-CHAINING
                              ACL2::|a <= b & b <= c  =>  a <= c|)
                             (:FORWARD-CHAINING
-                                    ACL2::|a <= b & b < c  =>  a < c|))))))
+                             ACL2::|a <= b & b < c  =>  a < c|))))))
 
 (defthm rp-term-list-listp-strip-cdrs-sort-sum-meta-aux
   (implies (rp-termp term)
@@ -1504,6 +1448,25 @@
                              is-if
                              is-rp) ())))))
 
+
+(defret valid-sc-of-pp-remove-extraneous-sc
+  (implies (force (valid-sc term a))
+           (valid-sc res-term a))
+  :fn pp-remove-extraneous-sc
+  :hints (("Goal"
+           :do-not-induct t
+           :induct (pp-remove-extraneous-sc term)
+           :expand ((:free (x y) (is-rp (cons x y))))
+           :in-theory (e/d (pp-remove-extraneous-sc)
+                           ((:REWRITE CAR-OF-EX-FROM-RP-IS-NOT-RP)
+                            (:DEFINITION INCLUDE-FNC)
+                            (:DEFINITION RP-TERMP)
+                            (:REWRITE NOT-INCLUDE-RP-MEANS-VALID-SC)
+                            (:REWRITE RP-TERMP-OF-PP-REMOVE-EXTRANEOUS-SC)
+                            (:DEFINITION FALIST-CONSISTENT)
+                            (:DEFINITION FALIST-CONSISTENT-AUX)
+                            rp-termp)))))
+
 (defthm pp-flatten-returns-valid-sc
   (implies (force (valid-sc term a))
            (VALID-SC-SUBTERMS (pp-flatten term sign) a))
@@ -1511,7 +1474,6 @@
            :in-theory (e/d (pp-flatten
                             CREATE-AND-LIST-INSTANCE
                             is-if is-rp) ()))))
-
 
 (local
  (defret valid-sc-of-<fn>
