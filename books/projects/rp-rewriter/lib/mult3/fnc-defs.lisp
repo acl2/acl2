@@ -820,8 +820,15 @@
     (defthm binary-or-p-implies-fc
       (implies (binary-or-p term)
                (case-match term (('binary-or & &) t)))
-      :rule-classes :forward-chaining))
+      :rule-classes :forward-chaining)
 
+    (defthm binary-or-p-of-binary-or
+      (equal (binary-or-p (cons 'binary-or y))
+             (let ((term (cons 'binary-or y))) 
+               (case-match term (('binary-or & &) t))))
+      :hints (("Goal"
+               :in-theory (e/d (binary-or-p) ())))))
+ 
   (define binary-and-p (term)
     :inline t
     (case-match term (('binary-and & &) t))
@@ -829,7 +836,14 @@
     (defthm binary-and-p-implies-fc
       (implies (binary-and-p term)
                (case-match term (('binary-and & &) t)))
-      :rule-classes :forward-chaining))
+      :rule-classes :forward-chaining)
+
+    (defthm binary-and-p-of-binary-and
+      (equal (binary-and-p (cons 'binary-and y))
+             (let ((term (cons 'binary-and y))) 
+               (case-match term (('binary-and & &) t))))
+      :hints (("goal"
+               :in-theory (e/d (binary-and-p) ())))))
 
   (define binary-xor-p (term)
     :inline t
@@ -838,7 +852,13 @@
     (defthm binary-xor-p-implies-fc
       (implies (binary-xor-p term)
                (case-match term (('binary-xor & &) t)))
-      :rule-classes :forward-chaining))
+      :rule-classes :forward-chaining)
+    (defthm binary-xor-p-of-binary-xor
+      (equal (binary-xor-p (cons 'binary-xor y))
+             (let ((term (cons 'binary-xor y))) 
+               (case-match term (('binary-xor & &) t))))
+      :hints (("goal"
+               :in-theory (e/d (binary-xor-p) ())))))
 
   (define binary-?-p (term)
     :inline t
@@ -847,7 +867,13 @@
     (defthm binary-?-p-implies-fc
       (implies (binary-?-p term)
                (case-match term (('binary-? & & &) t)))
-      :rule-classes :forward-chaining))
+      :rule-classes :forward-chaining)
+    (defthm binary-?-p-of-binary-?
+      (equal (binary-?-p (cons 'binary-? y))
+             (let ((term (cons 'binary-? y))) 
+               (case-match term (('binary-? & & &) t))))
+      :hints (("goal"
+               :in-theory (e/d (binary-?-p) ())))))
 
   (define binary-not-p (term)
     :inline t
@@ -856,7 +882,14 @@
     (defthm binary-not-p-implies-fc
       (implies (binary-not-p term)
                (case-match term (('binary-not &) t)))
-      :rule-classes :forward-chaining))
+      :rule-classes :forward-chaining)
+
+    (defthm binary-not-p-of-binary-not
+      (equal (binary-not-p (cons 'binary-not y))
+             (let ((term (cons 'binary-not y))) 
+               (case-match term (('binary-not &) t))))
+      :hints (("goal"
+               :in-theory (e/d (binary-not-p) ())))))
 
   (define binary-fnc-p (term)
     :inline t

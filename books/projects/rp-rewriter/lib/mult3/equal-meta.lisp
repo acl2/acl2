@@ -274,3 +274,4 @@
 
 
 (disable-meta-rules rp-equal-meta)
+(disable-meta-rules rp-equal-cnt-meta)

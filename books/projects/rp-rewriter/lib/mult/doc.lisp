@@ -40,7 +40,7 @@
 
 ;(include-book "svl-top")
 
-(xdoc::defxdoc
+#|(xdoc::defxdoc
  multiplier-proofs
  :parents (rp-rewriter/applications)
  :short "Multiplier verification tool v1"
@@ -48,4 +48,4 @@
  rp::Multiplier-Verification-v3) </p>
 
  <p> If you  would like to use this  library anyways, then you can  look at the
- demo.lsp file under projects/rp-rewriter/lib/mult. </p>" )
+ demo.lsp file under projects/rp-rewriter/lib/mult. </p>" )||#

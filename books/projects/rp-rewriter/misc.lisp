@@ -389,6 +389,7 @@ new rule is created to be used by RP-Rewriter. You can disable this by setting ~
   (defmacro def-rp-rule (rule-name rule &rest hints)
     `(with-output
        :off :all
+       :on (error)
        :stack :push
        ,(def-rp-rule-fn rule-name rule hints)))
 

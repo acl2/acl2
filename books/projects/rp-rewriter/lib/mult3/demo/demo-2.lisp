@@ -106,10 +106,7 @@
                         (if one-lane 1 0))))
         (or (cw "one and only one of dot-product, four-lanes-lo,
 four-lanes-hi and one-lane should be set to 1.~%")
-            (hard-error 'mode
-                        "one and only one of dot-product, four-lanes-lo,
-four-lanes-hi and one-lane should be set to 1.~%"
-                        nil)
+            (hard-error 'mode "" nil)
             0))
        (mode 0)
        (mode (svl::sbits 0 1 (if acc-on 0 1) mode))
@@ -138,15 +135,15 @@ four-lanes-hi and one-lane should be set to 1.~%"
 
 ;; Below two  events are only for  debugging. These create rewrite  rules whose
 ;; LHS's    are   (svl::svl-run-phase-wog    "fa"   ins    env   design)    and
-;; (svl::svl-run-phase-wog  "ha" ins  env  design). When  the rewriter  matches
-;; these rules,  the program will  throw an  error.  When the  rewriter starts,
-;; rewrite rules are  prioritized with respect to the order  they are submitted
-;; to ACL2, and the most recent rule will have the highest priority. With these
-;; events, we enforce that the instances of "fa" and "ha" modules are rewritten
-;; by rewrite  rules defined from this  point forward.  As per  our method, the
-;; definition of  these adder modules should  never be opened, and  this system
-;; prevents that  from happening  and gives us  an idea as  to why  the rewrite
-;; rules for "fa" and "ha" were not applied.
+;; (svl::svl-run-phase-wog  "ha"  ins  env  design),  respectibely.   When  the
+;; rewriter matches  these rules, the  program will  throw an error.   When the
+;; rewriter starts,  rewrite rules  are prioritized with  respect to  the order
+;; they are submitted to  ACL2, and the most recent rule  will have the highest
+;; priority. With these events, we enforce  that the instances of "fa" and "ha"
+;; modules are rewritten by the rewrite  rules defined from this point forward.
+;; As per  our method, the  definition of these  adder modules should  never be
+;; opened, and this system prevents that from happening and gives us an idea as
+;; to why the intended rewrite rules for "fa" and "ha" were not applied.
 (def-rw-opener-error svl-run-phase-of-FullAdder-opener-error
   (svl::svl-run-phase-wog "fa" ins env design)
   :do-not-print (env design))
@@ -213,8 +210,8 @@ four-lanes-hi and one-lane should be set to 1.~%"
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Below are proofs for different modes of this multiplier module that pertains
-;; only to the combinational modes. The next section will show an example of
-;; how to verify a sequential operation.
+;; to only  the combinational modes.   PART II will show  an example of  how to
+;; verify a sequential operation.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Let's first prove the 'one-lane 64x64-bit multiplication' mode.
@@ -232,6 +229,14 @@ four-lanes-hi and one-lane should be set to 1.~%"
 (defconst *out-binds*
   '(("result" result)))
 
+
+;; Below is our first correctness proof of a multiplier module. SVL-RUN returns
+;; an alist of all the variables stated  in *out-binds*. In this case, there is
+;; only one entry whose key is 'result'. We state the expression of this signal
+;; in our conjecture.  In this case  it is [in3 + in2*in1 (both sign-extended)]
+;; and the complete result is truncated at 128 bits.  This is the specification
+;; of  this  multiplication  mode.   When  writing  the  specification,  it  is
+;; imperative to have "loghead" wrapping the arithmetic functions as seen here.
 (defthmrp signed-one-lane-mult-is-correct
   (implies (and (integerp in1)
                 (integerp in2)
@@ -249,14 +254,28 @@ four-lanes-hi and one-lane should be set to 1.~%"
                                                   (sign-ext in2 64))
                                                in3)))))))
 
-;; SVL-RUN retuns an alist of all  the variables stated in *out-binds*. In this
-;; case, there is only one entry whose key is 'result'. We state the expression
-;; of this signal in  our conjecture.  In this case it is  [in3 + in2*in1 (both
-;; sign-extended)] and the  complete result is truncated at 128  bits.  This is
-;; the   specification  of   this  multiplication   mode.   When   writing  the
-;; specification, it  is imperative to  have "loghead" wrapping  the arithmetic
-;; functions as seen here.
 
+;; Alternatively, we can set certain inputs to constants. In this case, we can
+;; set in3 to 0, and prove only the multiplication function (but not FMA).
+(defthmrp signed-one-lane-mult-is-correct-for-in3=0
+  (implies (and (integerp in1)
+                (integerp in2))
+           (equal (svl::svl-run "Integrated_Multiplier"
+                                (make-fast-alist `((in1 . ,in1)
+                                                   (in2 . ,in2)
+                                                   (in3 . 0)
+                                                   (mode . ,(mode :one-lane t
+                                                                  :signed t))))
+                                *in-binds-one-lane*
+                                *out-binds*
+                                *mult-svl-design*)
+                  `((result . ,(loghead 128 (* (sign-ext in1 64)
+                                               (sign-ext in2 64))))))))
+
+
+
+;; We can prove the same for mode for unsigned numbers by changing the
+;; specification accordingly.
 (defthmrp unsigned-one-lane-mult-is-correct
   (implies (and (integerp in1)
                 (integerp in2)
@@ -274,17 +293,11 @@ four-lanes-hi and one-lane should be set to 1.~%"
                                                   (loghead 64 in2))
                                                in3)))))))
 
-;; The   spec   in   unsigned-one-lane-mult-correct    is   very   similar   to
-;; signed-one-lane-mult-correct except  in1 and in2  are not sign  extended but
-;; they are truncated at 64 bits. Note that  we do not need to truncate or sign
-;; extent in3 because it is 128-bits  and since the overall result is truncated
-;; at 128-bits, it is not necessary to sign-extend or truncate in3.
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Now let's verify the dot product operation.
 
 ;; To make  it easy  on us  (more readable), we  define another  input bindings
-;; alist for dot product.
+;; alist for dot product mode.
 (defconst *in-binds-dot-product*
   '(("clk" 0)
     ("IN1[31:0]" in1_0)
@@ -673,13 +686,15 @@ An example run:
 ;; cycles, we dot-product and accumulate in1[0-3] and in2[0-3], and in the next
 ;; one we dot-product and accumulate in1[4-7]  and in2[4-7]. Note that the form
 ;; in[i],  such as  in1[0], does  not designate  an array  access but  they are
-;; independent free variables.
+;; independent free variables. LISP allows users to have such characters in
+;; object names.
 
-;; During the phases  where the values of inputs should  be 'dont-care', we put
+;; During the phases  where the values of inputs should  be "dont-care", we put
 ;; "0"s instead.   It is because our  method currently has a  very weak support
 ;; when some  of the  inputs are  four-valued even though  they don't  have any
 ;; effect on the  output.  It is possiple  to prove the same  lemmas below with
-;; 'dont-care's instead of zeros but we omit that procedure for simplicity.
+;; "dont-care"s instead  of zeros  but that  procedure entails  jumping through
+;; hoops so we omit that for simplicity.
 
 (defconst *in-binds-dot-product-with-acc*
   `(("clk" 0 1 ~)
@@ -703,16 +718,20 @@ An example run:
 
 
 (defthmrp signed-dot-product-with-acc-is-correct
-  (b* ((signed t)
+  (b* ((signed t) ;; set up the parameters first.
        (acc-size 128)
        (dot-product-size 8))
-    (implies (and (integer-listp in1)
+    (implies (and (integer-listp in1) 
                   (integer-listp in2)
                   (integerp acc-init-val)
-                  (equal (len in1) dot-product-size)
-                  (equal (len in2) dot-product-size))
+                  (equal (len in1) dot-product-size) ;; necessary to show that
+                  ;; "nth" function returns a valid value (an integer).
+                  (equal (len in2) dot-product-size) ;; same as above.
+                  )
              (equal (svl::svl-run "Integrated_Multiplier"
-                                  (make-fast-alist `((in1[0] . ,(nth 0 in1))
+                                  (make-fast-alist `(;; will be used in the
+                                                     ;; first cycle:
+                                                     (in1[0] . ,(nth 0 in1))
                                                      (in2[0] . ,(nth 0 in2))
                                                      (in1[1] . ,(nth 1 in1))
                                                      (in2[1] . ,(nth 1 in2))
@@ -720,7 +739,8 @@ An example run:
                                                      (in2[2] . ,(nth 2 in2))
                                                      (in1[3] . ,(nth 3 in1))
                                                      (in2[3] . ,(nth 3 in2))
-
+                                                     ;; will be used in the
+                                                     ;; second cycle:
                                                      (in1[4] . ,(nth 4 in1))
                                                      (in2[4] . ,(nth 4 in2))
                                                      (in1[5] . ,(nth 5 in1))
@@ -729,8 +749,8 @@ An example run:
                                                      (in2[6] . ,(nth 6 in2))
                                                      (in1[7] . ,(nth 7 in1))
                                                      (in2[7] . ,(nth 7 in2))
+                                                     
                                                      (acc-init-val . ,acc-init-val)
-
                                                      (mode   . ,(mode :dot-product t
                                                                       :acc-on t
                                                                       :signed signed))))
@@ -742,7 +762,7 @@ An example run:
 
 
 (defthmrp unsigned-dot-product-with-acc-is-correct
-  (b* ((signed nil)
+  (b* ((signed nil) ;;signed=nil is the only difference here than the previous lemma
        (acc-size 128)
        (dot-product-size 8))
     (implies (and (integer-listp in1)
@@ -768,6 +788,7 @@ An example run:
                                                      (in2[6] . ,(nth 6 in2))
                                                      (in1[7] . ,(nth 7 in1))
                                                      (in2[7] . ,(nth 7 in2))
+
                                                      (acc-init-val . ,acc-init-val)
                                                      (mode   . ,(mode :dot-product t
                                                                       :acc-on t
