@@ -719,6 +719,11 @@
      analogously to other macros as described above.")
 
    (xdoc::p
+    "A new macro @(tsee soft::defequal),
+     to define second-order equalities between functions
+     and provide some reasoning support for them.")
+
+   (xdoc::p
     "An option @(':enable') has been added to @(tsee soft::defun-inst),
      to control the enablement of the generated function
      (and, for quantifier functions, also of the associated rewrite rule).")

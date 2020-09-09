@@ -21,6 +21,7 @@
 (include-book "define-sk2")
 (include-book "defun-inst")
 (include-book "defthm-inst")
+(include-book "defequal")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
