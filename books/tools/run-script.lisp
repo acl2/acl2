@@ -62,6 +62,7 @@
  ; Help dependency scanner.
  #||
  (depends-on \"NAME-log.txt\")
+ (depends-on \"NAME-input.lsp\")
  (include-book ...)
  (include-book ...)
  ...
