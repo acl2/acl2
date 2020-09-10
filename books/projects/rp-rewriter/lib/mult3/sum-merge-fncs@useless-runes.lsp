@@ -1,195 +1,246 @@
 (RP::VALID-LIST-TERMP)
 (RP::CONS-PP-TO-PP-LST-LST)
 (RP::APPEND-PP-LST-LSTS)
-(RP::S-ORDER (604 18 (:DEFINITION RP::EX-FROM-RP))
-             (438 316 (:REWRITE RP::MEASURE-LEMMA1))
-             (334 18 (:REWRITE RP::NOT-INCLUDE-RP))
-             (280 18 (:DEFINITION RP::INCLUDE-FNC))
-             (239 3 (:REWRITE O<=-O-FINP-DEF))
-             (186 6
-                  (:REWRITE RP::EQUALITY-MEASURE-LEMMA8))
-             (184 60 (:REWRITE DEFAULT-CDR))
-             (174 66 (:REWRITE DEFAULT-CAR))
-             (90 6
-                 (:REWRITE RP::EQUALITY-MEASURE-LEMMA7))
-             (80 80 (:REWRITE RP::MEASURE-LEMMA1-2))
-             (76 36 (:REWRITE RP::CONS-COUNT-ATOM))
-             (68 4 (:REWRITE RP::MEASURE-LEMMA6))
-             (66 2 (:REWRITE RP::EX-FROM-RP-X2))
-             (54 54 (:TYPE-PRESCRIPTION RP::INCLUDE-FNC))
-             (36 36
-                 (:TYPE-PRESCRIPTION RP::INCLUDE-FNC-SUBTERMS))
-             (36 18 (:REWRITE DEFAULT-<-2))
-             (36 18 (:REWRITE DEFAULT-<-1))
-             (22 22
-                 (:REWRITE RP::EQUALITY-MEASURE-LEMMA3))
-             (20 2
-                 (:REWRITE RP::QUOTEP-TERM-WITH-EX-FROM-RP))
+(RP::S-ORDER (26260 9912 (:REWRITE RP::MEASURE-LEMMA1))
+             (25402 746 (:DEFINITION RP::EX-FROM-RP))
+             (16308 5292 (:REWRITE RP::MEASURE-LEMMA1-2))
+             (14700 828 (:REWRITE RP::NOT-INCLUDE-RP))
+             (12520 762 (:DEFINITION RP::INCLUDE-FNC))
+             (11066 5290 (:REWRITE DEFAULT-CDR))
+             (6846 4108 (:REWRITE DEFAULT-CAR))
+             (6514 266
+                   (:LINEAR APPLY$-BADGEP-PROPERTIES . 1))
+             (6252 314 (:DEFINITION APPLY$-BADGEP))
+             (3682 24 (:DEFINITION SUBSETP-EQUAL))
+             (3296 36
+                   (:REWRITE RP::RP-TERMP-IMPLIES-CDR-LISTP))
+             (2410 180 (:DEFINITION MEMBER-EQUAL))
+             (2252 588 (:REWRITE O-P-O-INFP-CAR))
+             (2202 2202
+                   (:TYPE-PRESCRIPTION RP::INCLUDE-FNC))
+             (2174 60 (:REWRITE SUBSETP-REFLEXIVE-LEMMA))
+             (1510 96
+                   (:REWRITE MEMBER-EQUAL-NEWVAR-COMPONENTS-1))
+             (1308 1308
+                   (:TYPE-PRESCRIPTION RP::INCLUDE-FNC-SUBTERMS))
+             (858 314 (:DEFINITION WEAK-APPLY$-BADGE-P))
+             (676 20 (:REWRITE RP::EX-FROM-RP-X2))
+             (426 100
+                  (:LINEAR APPLY$-BADGEP-PROPERTIES . 2))
+             (414 414 (:TYPE-PRESCRIPTION APPLY$-BADGEP))
+             (360 360 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
+             (348 6 (:DEFINITION TRUE-LISTP))
+             (312 312 (:REWRITE SUBSETP-IMPLIES-MEMBER))
+             (288 288
+                  (:REWRITE MEMBER-EQUAL-NEWVAR-COMPONENTS-3))
+             (264 1 (:DEFINITION RP::S-ORDER))
+             (242 6 (:DEFINITION LEN))
+             (234 62 (:REWRITE RP::IS-IF-RP-TERMP))
+             (234 6 (:DEFINITION ALL-NILS))
+             (220 22
+                  (:REWRITE RP::QUOTEP-TERM-WITH-EX-FROM-RP))
+             (192 192
+                  (:REWRITE MEMBER-EQUAL-NEWVAR-COMPONENTS-2))
+             (174 12
+                  (:REWRITE RP::RP-TERM-LISTP-IS-TRUE-LISTP))
+             (168 168 (:TYPE-PRESCRIPTION SUBSETP-EQUAL))
+             (146 12 (:DEFINITION NATP))
+             (130 130 (:REWRITE FN-CHECK-DEF-NOT-QUOTE))
+             (128 128
+                  (:REWRITE RP::RP-TERMP-SHOULD-TERM-BE-IN-CONS-LHS))
+             (113 3 (:REWRITE O<=-O-FINP-DEF))
+             (112 30 (:REWRITE RP::RP-TERMP-CADR))
+             (88 48 (:REWRITE RP::CONS-COUNT-ATOM))
+             (60 60
+                 (:REWRITE TRANSITIVITY-OF-SUBSETP-EQUAL))
+             (56 24
+                 (:REWRITE APPLY$-BADGEP-PROPERTIES . 3))
+             (48 4 (:REWRITE <<-IMPLIES-LEXORDER))
+             (42 42 (:TYPE-PRESCRIPTION LEN))
+             (42 18
+                 (:REWRITE APPLY$-BADGEP-PROPERTIES . 1))
+             (32 8 (:REWRITE <<-TRICHOTOMY))
+             (30 30 (:TYPE-PRESCRIPTION ALL-NILS))
+             (28 28
+                 (:REWRITE SYMBOL-LISTP-IMPLIES-SYMBOLP))
+             (28 14 (:REWRITE DEFAULT-+-2))
+             (24 24 (:TYPE-PRESCRIPTION TRUE-LISTP))
+             (24 24 (:TYPE-PRESCRIPTION <<))
+             (22 14 (:REWRITE DEFAULT-+-1))
              (18 18
-                 (:TYPE-PRESCRIPTION RP::IS-RP$INLINE))
-             (18 18
-                 (:REWRITE RP::EQUALITY-MEASURE-LEMMA1))
-             (16 8 (:REWRITE DEFAULT-+-2))
-             (16 8 (:REWRITE DEFAULT-+-1))
+                 (:REWRITE INTEGER-LISTP-IMPLIES-INTEGERP))
              (15 3 (:REWRITE AC-<))
+             (14 6
+                 (:REWRITE APPLY$-BADGEP-PROPERTIES . 2))
              (12 12
-                 (:REWRITE RP::EQUALITY-MEASURE-LEMMA2))
+                 (:REWRITE TRUE-LIST-LISTP-IMPLIES-TRUE-LISTP))
+             (12 12 (:LINEAR LEN-WHEN-PREFIXP))
+             (10 10
+                 (:REWRITE RP::EQUALITY-MEASURE-LEMMA3))
              (9 3 (:REWRITE O-INFP-O-FINP-O<=))
-             (8 2 (:REWRITE O-P-O-INFP-CAR))
+             (8 8 (:TYPE-PRESCRIPTION O-FINP))
+             (8 8 (:REWRITE <<-TRANSITIVE))
+             (8 4 (:REWRITE <<-ASYMMETRIC))
+             (6 6 (:REWRITE LEN-MEMBER-EQUAL-LOOP$-AS))
+             (6 6
+                (:REWRITE RP::EQUALITY-MEASURE-LEMMA2))
+             (6 6
+                (:REWRITE RP::EQUALITY-MEASURE-LEMMA1))
+             (6 6 (:REWRITE DEFAULT-<-2))
+             (6 6 (:REWRITE DEFAULT-<-1))
+             (6 6 (:LINEAR BOUNDS-POSITION-EQUAL-AC))
+             (6 6 (:LINEAR BOUNDS-POSITION-EQUAL))
+             (4 4
+                (:TYPE-PRESCRIPTION RP::IS-RP-LOOSE$INLINE))
+             (4 4 (:TYPE-PRESCRIPTION RP::IS-IF$INLINE))
+             (4 4 (:REWRITE LEXORDER-TRANSITIVE))
              (3 3 (:REWRITE |a < b & b < c  =>  a < c|))
-             (2 2 (:REWRITE FN-CHECK-DEF-NOT-QUOTE)))
+             (3 1
+                (:REWRITE RP::SMALL-ALPHORDER-SANITY)))
 (RP::S-ORDER-FLAG (544 16 (:DEFINITION RP::EX-FROM-RP))
                   (418 296 (:REWRITE RP::MEASURE-LEMMA1))
                   (304 16 (:REWRITE RP::NOT-INCLUDE-RP))
                   (256 16 (:DEFINITION RP::INCLUDE-FNC))
-                  (239 3 (:REWRITE O<=-O-FINP-DEF))
-                  (186 6
-                       (:REWRITE RP::EQUALITY-MEASURE-LEMMA8))
                   (166 54 (:REWRITE DEFAULT-CDR))
                   (160 60 (:REWRITE DEFAULT-CAR))
-                  (90 6
-                      (:REWRITE RP::EQUALITY-MEASURE-LEMMA7))
-                  (76 36 (:REWRITE RP::CONS-COUNT-ATOM))
+                  (113 3 (:REWRITE O<=-O-FINP-DEF))
+                  (88 48 (:REWRITE RP::CONS-COUNT-ATOM))
                   (72 72 (:REWRITE RP::MEASURE-LEMMA1-2))
-                  (68 4 (:REWRITE RP::MEASURE-LEMMA6))
                   (66 2 (:REWRITE RP::EX-FROM-RP-X2))
                   (48 48 (:TYPE-PRESCRIPTION RP::INCLUDE-FNC))
-                  (36 18 (:REWRITE DEFAULT-<-2))
-                  (36 18 (:REWRITE DEFAULT-<-1))
                   (32 32
                       (:TYPE-PRESCRIPTION RP::INCLUDE-FNC-SUBTERMS))
-                  (22 22
-                      (:REWRITE RP::EQUALITY-MEASURE-LEMMA3))
                   (20 2
                       (:REWRITE RP::QUOTEP-TERM-WITH-EX-FROM-RP))
-                  (18 18
-                      (:REWRITE RP::EQUALITY-MEASURE-LEMMA1))
                   (16 16
                       (:TYPE-PRESCRIPTION RP::IS-RP$INLINE))
                   (16 8 (:REWRITE DEFAULT-+-2))
                   (16 8 (:REWRITE DEFAULT-+-1))
                   (15 3 (:REWRITE AC-<))
-                  (12 12
-                      (:REWRITE RP::EQUALITY-MEASURE-LEMMA2))
                   (9 3 (:REWRITE O-INFP-O-FINP-O<=))
                   (8 2 (:REWRITE O-P-O-INFP-CAR))
+                  (4 4
+                     (:REWRITE RP::EQUALITY-MEASURE-LEMMA3))
                   (3 3 (:REWRITE |a < b & b < c  =>  a < c|))
                   (1 1 (:REWRITE FN-CHECK-DEF-NOT-QUOTE)))
 (FLAG::FLAG-EQUIV-LEMMA)
 (RP::S-ORDER-FLAG-EQUIVALENCES)
 (RP::EX-FROM-RP/--LOOSE
-     (4462 2 (:REWRITE O<=-O-FINP-DEF))
-     (4029 32
+     (3095 12
            (:REWRITE APPLY$-BADGEP-PROPERTIES . 1))
-     (4014 25 (:DEFINITION APPLY$-BADGEP))
-     (2292 16 (:DEFINITION SUBSETP-EQUAL))
-     (1972 132 (:DEFINITION MEMBER-EQUAL))
-     (1265 1178 (:REWRITE DEFAULT-CDR))
-     (1098 88
-           (:REWRITE MEMBER-EQUAL-NEWVAR-COMPONENTS-1))
-     (1075 347 (:REWRITE DEFAULT-+-2))
-     (873 14
-          (:REWRITE RP::RP-TERM-LISTP-IS-TRUE-LISTP))
-     (787 40 (:REWRITE SUBSETP-REFLEXIVE-LEMMA))
-     (634 7 (:DEFINITION TRUE-LISTP))
-     (623 347 (:REWRITE DEFAULT-+-1))
-     (466 14 (:DEFINITION RP::RP-TERM-LISTP))
-     (435 29 (:DEFINITION LENGTH))
-     (422 422 (:REWRITE DEFAULT-CAR))
-     (368 36 (:DEFINITION LEN))
-     (354 29
+     (3092 11 (:DEFINITION APPLY$-BADGEP))
+     (1386 12 (:DEFINITION SUBSETP-EQUAL))
+     (1335 6
+           (:REWRITE RP::RP-TERM-LISTP-IS-TRUE-LISTP))
+     (1146 90 (:DEFINITION MEMBER-EQUAL))
+     (1128 3 (:DEFINITION TRUE-LISTP))
+     (942 15
           (:REWRITE RP::RP-TERMP-IMPLIES-CDR-LISTP))
-     (300 300 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
-     (298 3 (:DEFINITION RP::RP-TERMP))
-     (290 58 (:REWRITE COMMUTATIVITY-OF-+))
-     (264 264
-          (:REWRITE MEMBER-EQUAL-NEWVAR-COMPONENTS-3))
-     (238 238 (:REWRITE SUBSETP-IMPLIES-MEMBER))
-     (232 58 (:DEFINITION INTEGER-ABS))
-     (207 1 (:DEFINITION RP::FALIST-CONSISTENT))
-     (193 14 (:DEFINITION NATP))
-     (176 176
-          (:REWRITE MEMBER-EQUAL-NEWVAR-COMPONENTS-2))
-     (168 168 (:TYPE-PRESCRIPTION APPLY$-BADGEP))
-     (161 1
+     (937 898 (:REWRITE DEFAULT-CDR))
+     (918 9 (:DEFINITION RP::RP-TERMP))
+     (759 30 (:REWRITE SUBSETP-REFLEXIVE-LEMMA))
+     (720 48
+          (:REWRITE MEMBER-EQUAL-NEWVAR-COMPONENTS-1))
+     (621 3 (:DEFINITION RP::FALIST-CONSISTENT))
+     (483 3
           (:DEFINITION RP::FALIST-CONSISTENT-AUX))
-     (134 35 (:REWRITE O-P-O-INFP-CAR))
-     (118 118 (:TYPE-PRESCRIPTION SUBSETP-EQUAL))
-     (112 48 (:REWRITE RP::IS-IF-RP-TERMP))
-     (93 93 (:REWRITE FOLD-CONSTS-IN-+))
-     (90 29
-         (:REWRITE RP::RP-TERMP-IMPLIES-SUBTERMS))
-     (87 87
-         (:TYPE-PRESCRIPTION STR::TRUE-LISTP-OF-EXPLODE))
-     (87 58 (:REWRITE STR::CONSP-OF-EXPLODE))
-     (78 78 (:TYPE-PRESCRIPTION LEN))
-     (78 74 (:REWRITE DEFAULT-<-2))
-     (78 74 (:REWRITE DEFAULT-<-1))
-     (76 24
-         (:LINEAR APPLY$-BADGEP-PROPERTIES . 2))
-     (74 21
-         (:REWRITE APPLY$-BADGEP-PROPERTIES . 2))
-     (72 72
-         (:TYPE-PRESCRIPTION RP::RP-TERM-LISTP))
-     (64 25 (:DEFINITION WEAK-APPLY$-BADGE-P))
-     (58 58 (:REWRITE DEFAULT-UNARY-MINUS))
-     (58 29
-         (:REWRITE STR::COERCE-TO-LIST-REMOVAL))
-     (56 28
-         (:REWRITE APPLY$-BADGEP-PROPERTIES . 3))
-     (48 48
-         (:REWRITE RP::RP-TERMP-SHOULD-TERM-BE-IN-CONS-LHS))
-     (48 24
-         (:LINEAR APPLY$-BADGEP-PROPERTIES . 1))
-     (43 43
-         (:REWRITE INTEGER-LISTP-IMPLIES-INTEGERP))
-     (42 7 (:DEFINITION ALL-NILS))
-     (40 40
-         (:REWRITE TRANSITIVITY-OF-SUBSETP-EQUAL))
-     (40 16 (:REWRITE RP::RP-TERMP-CADDDR))
-     (37 37
+     (416 416 (:REWRITE DEFAULT-CAR))
+     (342 6 (:DEFINITION RP::RP-TERM-LISTP))
+     (307 144 (:REWRITE DEFAULT-+-2))
+     (278 8 (:REWRITE O<=-O-FINP-DEF))
+     (195 144 (:REWRITE DEFAULT-+-1))
+     (195 13 (:DEFINITION LENGTH))
+     (180 180 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
+     (164 16 (:DEFINITION LEN))
+     (156 156 (:REWRITE SUBSETP-IMPLIES-MEMBER))
+     (150 42 (:REWRITE O-P-O-INFP-CAR))
+     (144 144
+          (:REWRITE MEMBER-EQUAL-NEWVAR-COMPONENTS-3))
+     (126 15
+          (:REWRITE RP::RP-TERMP-IMPLIES-SUBTERMS))
+     (120 36 (:REWRITE RP::IS-IF-RP-TERMP))
+     (104 26 (:REWRITE COMMUTATIVITY-OF-+))
+     (104 26 (:DEFINITION INTEGER-ABS))
+     (96 96
+         (:REWRITE MEMBER-EQUAL-NEWVAR-COMPONENTS-2))
+     (90 90
          (:LINEAR MEMBER-EQUAL-ACL2-COUNT-SMALLER-3))
-     (36 36 (:REWRITE LEN-MEMBER-EQUAL-LOOP$-AS))
-     (36 16 (:REWRITE RP::RP-TERMP-CADR))
-     (36 16 (:REWRITE RP::RP-TERMP-CADDR))
-     (36 16 (:REWRITE RP::IS-RP-PSEUDO-TERMP))
-     (35 35 (:TYPE-PRESCRIPTION ALL-NILS))
-     (33 33 (:REWRITE O-P-DEF-O-FINP-1))
-     (29 29 (:TYPE-PRESCRIPTION QUOTEP))
-     (29 29
-         (:REWRITE RATIONAL-LISTP-IMPLIES-RATIONALP))
-     (29 29 (:REWRITE INTEGERP==>NUMERATOR-=-X))
-     (29 29
-         (:REWRITE INTEGERP==>DENOMINATOR-=-1))
-     (29 29
-         (:REWRITE STR::EXPLODE-WHEN-NOT-STRINGP))
-     (29 29 (:REWRITE DEFAULT-REALPART))
-     (29 29 (:REWRITE DEFAULT-NUMERATOR))
-     (29 29 (:REWRITE DEFAULT-IMAGPART))
-     (29 29 (:REWRITE DEFAULT-DENOMINATOR))
-     (28 28 (:TYPE-PRESCRIPTION TRUE-LISTP))
-     (28 28 (:LINEAR LEN-WHEN-PREFIXP))
-     (26 26
+     (84 84 (:TYPE-PRESCRIPTION SUBSETP-EQUAL))
+     (76 6 (:DEFINITION NATP))
+     (75 15 (:DEFINITION QUOTEP))
+     (74 74 (:TYPE-PRESCRIPTION APPLY$-BADGEP))
+     (64 64
          (:LINEAR MEMBER-EQUAL-ACL2-COUNT-SMALLER-2))
-     (25 5 (:DEFINITION QUOTEP))
-     (18 18
+     (63 46 (:REWRITE DEFAULT-<-2))
+     (60 46 (:REWRITE DEFAULT-<-1))
+     (50 18
+         (:LINEAR APPLY$-BADGEP-PROPERTIES . 2))
+     (48 12 (:REWRITE RP::RP-TERMP-CADDDR))
+     (48 12 (:REWRITE RP::RP-TERMP-CADDDDR))
+     (40 40
          (:LINEAR MEMBER-EQUAL-ACL2-COUNT-SMALLER-0))
-     (14 14
-         (:REWRITE TRUE-LIST-LISTP-IMPLIES-TRUE-LISTP))
-     (14 14 (:LINEAR BOUNDS-POSITION-EQUAL-AC))
-     (14 14 (:LINEAR BOUNDS-POSITION-EQUAL))
-     (13 13
+     (39 39
+         (:TYPE-PRESCRIPTION STR::TRUE-LISTP-OF-EXPLODE))
+     (39 26 (:REWRITE STR::CONSP-OF-EXPLODE))
+     (36 36
+         (:TYPE-PRESCRIPTION RP::RP-TERM-LISTP))
+     (36 36
+         (:REWRITE RP::RP-TERMP-SHOULD-TERM-BE-IN-CONS-LHS))
+     (36 36 (:REWRITE O-P-DEF-O-FINP-1))
+     (36 18
+         (:LINEAR APPLY$-BADGEP-PROPERTIES . 1))
+     (36 12 (:REWRITE RP::RP-TERMP-CADR))
+     (36 12 (:REWRITE RP::RP-TERMP-CADDR))
+     (36 12 (:REWRITE RP::IS-RP-PSEUDO-TERMP))
+     (36 6 (:REWRITE O-FIRST-EXPT-<))
+     (34 34 (:TYPE-PRESCRIPTION LEN))
+     (32 32
          (:LINEAR MEMBER-EQUAL-ACL2-COUNT-SMALLER-1))
-     (10 2 (:REWRITE AC-<))
-     (9 9
-        (:TYPE-PRESCRIPTION RP::FALIST-CONSISTENT-AUX))
-     (8 8 (:REWRITE FN-CHECK-DEF-NOT-QUOTE))
-     (6 2 (:REWRITE O-INFP-O-FINP-O<=))
-     (5 1
-        (:REWRITE RP::ATOM-RP-TERMP-IS-SYMBOLP))
-     (2 2 (:TYPE-PRESCRIPTION RP::IS-RP$INLINE))
-     (2 2 (:REWRITE |a < b & b < c  =>  a < c|))
-     (1 1
+     (30 30
+         (:REWRITE TRANSITIVITY-OF-SUBSETP-EQUAL))
+     (28 11 (:DEFINITION WEAK-APPLY$-BADGE-P))
+     (27 27
+         (:TYPE-PRESCRIPTION RP::FALIST-CONSISTENT-AUX))
+     (27 8 (:REWRITE AC-<))
+     (26 26 (:REWRITE DEFAULT-UNARY-MINUS))
+     (26 13
+         (:REWRITE STR::COERCE-TO-LIST-REMOVAL))
+     (24 24 (:REWRITE FN-CHECK-DEF-NOT-QUOTE))
+     (24 12 (:REWRITE O-FIRST-EXPT-DEF-O-FINP))
+     (24 12
+         (:REWRITE APPLY$-BADGEP-PROPERTIES . 3))
+     (24 9
+         (:REWRITE APPLY$-BADGEP-PROPERTIES . 2))
+     (19 19
+         (:REWRITE INTEGER-LISTP-IMPLIES-INTEGERP))
+     (18 3 (:DEFINITION ALL-NILS))
+     (16 16 (:REWRITE LEN-MEMBER-EQUAL-LOOP$-AS))
+     (16 8 (:REWRITE O-INFP-O-FINP-O<=))
+     (15 15 (:TYPE-PRESCRIPTION QUOTEP))
+     (15 15 (:TYPE-PRESCRIPTION ALL-NILS))
+     (15 3
+         (:REWRITE RP::ATOM-RP-TERMP-IS-SYMBOLP))
+     (13 13
+         (:REWRITE RATIONAL-LISTP-IMPLIES-RATIONALP))
+     (13 13 (:REWRITE INTEGERP==>NUMERATOR-=-X))
+     (13 13
+         (:REWRITE INTEGERP==>DENOMINATOR-=-1))
+     (13 13
+         (:REWRITE STR::EXPLODE-WHEN-NOT-STRINGP))
+     (13 13 (:REWRITE DEFAULT-REALPART))
+     (13 13 (:REWRITE DEFAULT-NUMERATOR))
+     (13 13 (:REWRITE DEFAULT-IMAGPART))
+     (13 13 (:REWRITE DEFAULT-DENOMINATOR))
+     (12 12 (:TYPE-PRESCRIPTION TRUE-LISTP))
+     (12 12 (:LINEAR LEN-WHEN-PREFIXP))
+     (12 6 (:REWRITE O-FIRST-COEFF-<))
+     (8 8 (:REWRITE |a < b & b < c  =>  a < c|))
+     (6 6 (:TYPE-PRESCRIPTION RP::IS-RP$INLINE))
+     (6 6
+        (:REWRITE TRUE-LIST-LISTP-IMPLIES-TRUE-LISTP))
+     (6 6 (:LINEAR BOUNDS-POSITION-EQUAL-AC))
+     (6 6 (:LINEAR BOUNDS-POSITION-EQUAL))
+     (3 3
         (:REWRITE SYMBOL-LISTP-IMPLIES-SYMBOLP)))
 (RP::RP-TERMP-OF-EX-FROM-RP/--LOOSE
      (3230 393 (:REWRITE RP::IS-IF-RP-TERMP))
@@ -214,33 +265,32 @@
      (8 8 (:TYPE-PRESCRIPTION RP::IS-IF$INLINE))
      (6 6
         (:TYPE-PRESCRIPTION RP::IS-RP-LOOSE$INLINE)))
-(RP::EX-FROM-RP/-- (157 55 (:REWRITE DEFAULT-+-2))
-                   (87 55 (:REWRITE DEFAULT-+-1))
+(RP::EX-FROM-RP/-- (108 55 (:REWRITE DEFAULT-+-2))
+                   (71 55 (:REWRITE DEFAULT-+-1))
                    (67 55 (:REWRITE DEFAULT-CDR))
                    (60 4 (:DEFINITION LENGTH))
-                   (46 2 (:REWRITE O<=-O-FINP-DEF))
                    (44 4 (:DEFINITION LEN))
                    (43 43 (:REWRITE DEFAULT-CAR))
                    (32 8 (:DEFINITION INTEGER-ABS))
+                   (26 2 (:REWRITE O<=-O-FINP-DEF))
                    (24 6 (:REWRITE O-P-O-INFP-CAR))
                    (20 4
                        (:REWRITE APPLY$-BADGEP-PROPERTIES . 1))
                    (18 6 (:DEFINITION APPLY$-BADGEP))
-                   (14 10 (:REWRITE DEFAULT-<-2))
-                   (14 10 (:REWRITE DEFAULT-<-1))
                    (12 12
                        (:TYPE-PRESCRIPTION STR::TRUE-LISTP-OF-EXPLODE))
+                   (12 10 (:REWRITE DEFAULT-<-2))
+                   (12 10 (:REWRITE DEFAULT-<-1))
                    (12 8 (:REWRITE STR::CONSP-OF-EXPLODE))
                    (12 6 (:DEFINITION WEAK-APPLY$-BADGE-P))
                    (10 2
                        (:REWRITE APPLY$-BADGEP-PROPERTIES . 2))
-                   (10 2 (:REWRITE AC-<))
                    (8 8 (:REWRITE DEFAULT-UNARY-MINUS))
                    (8 4
                       (:REWRITE STR::COERCE-TO-LIST-REMOVAL))
                    (6 6 (:TYPE-PRESCRIPTION APPLY$-BADGEP))
                    (6 6 (:REWRITE O-P-DEF-O-FINP-1))
-                   (6 2 (:REWRITE O-INFP-O-FINP-O<=))
+                   (6 2 (:REWRITE AC-<))
                    (5 1
                       (:REWRITE RP::ATOM-RP-TERMP-IS-SYMBOLP))
                    (4 4 (:TYPE-PRESCRIPTION LEN))
@@ -257,6 +307,7 @@
                    (4 4 (:REWRITE DEFAULT-NUMERATOR))
                    (4 4 (:REWRITE DEFAULT-IMAGPART))
                    (4 4 (:REWRITE DEFAULT-DENOMINATOR))
+                   (4 2 (:REWRITE O-INFP-O-FINP-O<=))
                    (2 2 (:REWRITE |a < b & b < c  =>  a < c|))
                    (2 2 (:REWRITE FN-CHECK-DEF-NOT-QUOTE))
                    (1 1
@@ -330,102 +381,311 @@
      (10 10
          (:TYPE-PRESCRIPTION RP::IS-IF$INLINE)))
 (RP::EX-FROM---$INLINE)
-(RP::PP-ORDER$INLINE (12336 771 (:DEFINITION RP::EX-FROM-RP))
-                     (8481 771 (:REWRITE RP::NOT-INCLUDE-RP))
-                     (6168 771 (:DEFINITION RP::INCLUDE-FNC))
-                     (3265 3265 (:REWRITE DEFAULT-CDR))
-                     (2829 2829 (:REWRITE DEFAULT-CAR))
-                     (2313 2313
-                           (:TYPE-PRESCRIPTION RP::INCLUDE-FNC))
-                     (1542 1542
-                           (:TYPE-PRESCRIPTION RP::INCLUDE-FNC-SUBTERMS))
-                     (1542 771 (:DEFINITION QUOTEP))
-                     (771 771
-                          (:TYPE-PRESCRIPTION RP::IS-RP$INLINE))
-                     (217 31 (:REWRITE RP::IFIX-OPENER))
-                     (212 53 (:REWRITE O-P-O-INFP-CAR))
-                     (155 31
-                          (:REWRITE APPLY$-BADGEP-PROPERTIES . 1))
-                     (93 31 (:DEFINITION APPLY$-BADGEP))
-                     (62 31 (:DEFINITION WEAK-APPLY$-BADGE-P))
-                     (53 53 (:REWRITE O-P-DEF-O-FINP-1))
-                     (40 40 (:REWRITE FN-CHECK-DEF-NOT-QUOTE))
-                     (31 31 (:TYPE-PRESCRIPTION APPLY$-BADGEP))
-                     (31 31
-                         (:REWRITE INTEGER-LISTP-IMPLIES-INTEGERP))
+(RP::PP-ORDER$INLINE (1796 1796 (:REWRITE DEFAULT-CDR))
+                     (1298 1298 (:REWRITE DEFAULT-CAR))
+                     (732 204 (:REWRITE O-P-O-INFP-CAR))
+                     (176 176 (:REWRITE O-P-DEF-O-FINP-1))
+                     (174 44 (:REWRITE RP::IS-IF-RP-TERMP))
+                     (96 16 (:REWRITE RP::NOT-INCLUDE-RP))
+                     (90 90 (:REWRITE FN-CHECK-DEF-NOT-QUOTE))
+                     (80 20 (:REWRITE RP::RP-TERMP-CADR))
+                     (72 72
+                         (:REWRITE RP::RP-TERMP-SHOULD-TERM-BE-IN-CONS-LHS))
+                     (64 14 (:DEFINITION RP::INCLUDE-FNC))
+                     (40 10
+                         (:REWRITE RP::RP-TERMP-IMPLIES-CDR-LISTP))
+                     (32 2 (:DEFINITION RP::EX-FROM-RP))
+                     (22 22
+                         (:REWRITE SYMBOL-LISTP-IMPLIES-SYMBOLP))
+                     (18 18 (:TYPE-PRESCRIPTION RP::INCLUDE-FNC))
+                     (14 2 (:REWRITE RP::IFIX-OPENER))
+                     (10 2
+                         (:REWRITE APPLY$-BADGEP-PROPERTIES . 1))
+                     (6 2 (:DEFINITION APPLY$-BADGEP))
+                     (4 4
+                        (:TYPE-PRESCRIPTION RP::IS-RP-LOOSE$INLINE))
+                     (4 4 (:TYPE-PRESCRIPTION RP::IS-IF$INLINE))
+                     (4 4
+                        (:TYPE-PRESCRIPTION RP::INCLUDE-FNC-SUBTERMS))
+                     (4 4
+                        (:REWRITE RATIONAL-LISTP-IMPLIES-RATIONALP))
                      (4 2
                         (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
+                     (4 2 (:DEFINITION WEAK-APPLY$-BADGE-P))
+                     (2 2 (:TYPE-PRESCRIPTION APPLY$-BADGEP))
                      (2 2
-                        (:REWRITE RATIONAL-LISTP-IMPLIES-RATIONALP))
+                        (:REWRITE INTEGER-LISTP-IMPLIES-INTEGERP))
                      (2 2
                         (:REWRITE ACL2-NUMBER-LISTP-IMPLIES-ACL2-NUMBERP)))
 (RP::BOOLEANP-OF-PP-ORDER.EQUALS
-     (25264 1579 (:DEFINITION RP::EX-FROM-RP))
-     (17369 1579 (:REWRITE RP::NOT-INCLUDE-RP))
-     (12632 1579 (:DEFINITION RP::INCLUDE-FNC))
-     (6436 6112 (:REWRITE DEFAULT-CDR))
-     (6220 5896 (:REWRITE DEFAULT-CAR))
-     (4737 4737
+     (23632 1477 (:DEFINITION RP::EX-FROM-RP))
+     (16247 1477 (:REWRITE RP::NOT-INCLUDE-RP))
+     (11816 1477 (:DEFINITION RP::INCLUDE-FNC))
+     (5992 5692 (:REWRITE DEFAULT-CDR))
+     (5463 5163 (:REWRITE DEFAULT-CAR))
+     (4431 4431
            (:TYPE-PRESCRIPTION RP::INCLUDE-FNC))
-     (3158 3158
+     (2954 2954
            (:TYPE-PRESCRIPTION RP::INCLUDE-FNC-SUBTERMS))
-     (3158 1579 (:DEFINITION QUOTEP))
-     (1579 1579
+     (2954 1477 (:DEFINITION QUOTEP))
+     (1477 1477
            (:TYPE-PRESCRIPTION RP::IS-RP$INLINE))
-     (1300 244 (:REWRITE O-P-O-INFP-CAR))
-     (568 244 (:REWRITE O-P-DEF-O-FINP-1))
-     (324 324 (:TYPE-PRESCRIPTION O-FINP))
-     (287 41 (:REWRITE RP::IFIX-OPENER))
-     (205 41
+     (1204 226 (:REWRITE O-P-O-INFP-CAR))
+     (526 226 (:REWRITE O-P-DEF-O-FINP-1))
+     (300 300 (:TYPE-PRESCRIPTION O-FINP))
+     (266 38 (:REWRITE RP::IFIX-OPENER))
+     (190 38
           (:REWRITE APPLY$-BADGEP-PROPERTIES . 1))
-     (123 41 (:DEFINITION APPLY$-BADGEP))
-     (82 41 (:DEFINITION WEAK-APPLY$-BADGE-P))
-     (68 68 (:REWRITE FN-CHECK-DEF-NOT-QUOTE))
+     (114 38 (:DEFINITION APPLY$-BADGEP))
+     (76 38 (:DEFINITION WEAK-APPLY$-BADGE-P))
+     (63 63 (:REWRITE FN-CHECK-DEF-NOT-QUOTE))
      (44 22 (:REWRITE O-INFP->NEQ-0))
-     (41 41 (:TYPE-PRESCRIPTION APPLY$-BADGEP))
-     (41 41
+     (38 38 (:TYPE-PRESCRIPTION APPLY$-BADGEP))
+     (38 38
          (:REWRITE INTEGER-LISTP-IMPLIES-INTEGERP))
-     (27 25 (:REWRITE DEFAULT-<-2))
-     (27 25 (:REWRITE DEFAULT-<-1)))
-(RP::PP-LST-ORDEREDP)
-(RP::PP-ORDEREDP)
-(RP::PP-ORDER-AND-NEGATED-TERMSP)
+     (24 23 (:REWRITE DEFAULT-<-2))
+     (24 23 (:REWRITE DEFAULT-<-1)))
+(RP::PP-LST-ORDEREDP (5557 19 (:DEFINITION RP::RP-TERMP))
+                     (3877 19 (:DEFINITION RP::FALIST-CONSISTENT))
+                     (3010 19
+                           (:DEFINITION RP::FALIST-CONSISTENT-AUX))
+                     (2232 2232 (:REWRITE DEFAULT-CDR))
+                     (1444 1444 (:REWRITE DEFAULT-CAR))
+                     (1313 33
+                           (:REWRITE RP::RP-TERMP-IMPLIES-SUBTERMS))
+                     (1188 36 (:DEFINITION QUOTEP))
+                     (1106 4
+                           (:LINEAR APPLY$-BADGEP-PROPERTIES . 1))
+                     (1102 2 (:DEFINITION APPLY$-BADGEP))
+                     (1075 93 (:REWRITE RP::IS-IF-RP-TERMP))
+                     (973 55 (:REWRITE RP::RP-TERMP-CADR))
+                     (860 8 (:DEFINITION SUBSETP-EQUAL))
+                     (818 233 (:REWRITE O-P-O-INFP-CAR))
+                     (700 60 (:DEFINITION MEMBER-EQUAL))
+                     (651 33
+                          (:REWRITE RP::RP-TERMP-IMPLIES-CDR-LISTP))
+                     (478 20 (:REWRITE SUBSETP-REFLEXIVE-LEMMA))
+                     (440 32
+                          (:REWRITE MEMBER-EQUAL-NEWVAR-COMPONENTS-1))
+                     (390 390 (:TYPE-PRESCRIPTION O-P))
+                     (200 38 (:REWRITE RP::IS-RP-PSEUDO-TERMP))
+                     (195 195 (:REWRITE O-P-DEF-O-FINP-1))
+                     (179 30
+                          (:REWRITE RP::ATOM-RP-TERMP-IS-SYMBOLP))
+                     (169 169
+                          (:REWRITE RP::RP-TERMP-SHOULD-TERM-BE-IN-CONS-LHS))
+                     (120 120 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
+                     (115 115
+                          (:TYPE-PRESCRIPTION RP::FALIST-CONSISTENT-AUX))
+                     (114 38 (:REWRITE RP::RP-TERMP-CADDR))
+                     (105 105 (:REWRITE FN-CHECK-DEF-NOT-QUOTE))
+                     (104 104 (:REWRITE SUBSETP-IMPLIES-MEMBER))
+                     (96 96
+                         (:REWRITE MEMBER-EQUAL-NEWVAR-COMPONENTS-3))
+                     (64 64
+                         (:REWRITE MEMBER-EQUAL-NEWVAR-COMPONENTS-2))
+                     (56 56 (:TYPE-PRESCRIPTION SUBSETP-EQUAL))
+                     (42 7 (:REWRITE RP::NOT-INCLUDE-RP))
+                     (40 4
+                         (:REWRITE RP::RP-TERM-LISTP-IS-TRUE-LISTP))
+                     (38 4 (:DEFINITION NATP))
+                     (36 2 (:DEFINITION TRUE-LISTP))
+                     (33 33 (:TYPE-PRESCRIPTION QUOTEP))
+                     (31 31
+                         (:TYPE-PRESCRIPTION RP::IS-RP$INLINE))
+                     (30 30
+                         (:REWRITE SYMBOL-LISTP-IMPLIES-SYMBOLP))
+                     (28 7 (:DEFINITION RP::INCLUDE-FNC))
+                     (22 22 (:TYPE-PRESCRIPTION APPLY$-BADGEP))
+                     (20 20
+                         (:REWRITE TRANSITIVITY-OF-SUBSETP-EQUAL))
+                     (16 8
+                         (:REWRITE APPLY$-BADGEP-PROPERTIES . 3))
+                     (14 14 (:TYPE-PRESCRIPTION LEN))
+                     (14 2 (:DEFINITION LEN))
+                     (12 6
+                         (:REWRITE APPLY$-BADGEP-PROPERTIES . 1))
+                     (12 2 (:DEFINITION ALL-NILS))
+                     (10 10 (:TYPE-PRESCRIPTION ALL-NILS))
+                     (8 8 (:TYPE-PRESCRIPTION TRUE-LISTP))
+                     (8 2 (:DEFINITION WEAK-APPLY$-BADGE-P))
+                     (7 7 (:TYPE-PRESCRIPTION RP::INCLUDE-FNC))
+                     (6 6
+                        (:REWRITE INTEGER-LISTP-IMPLIES-INTEGERP))
+                     (4 4
+                        (:REWRITE TRUE-LIST-LISTP-IMPLIES-TRUE-LISTP))
+                     (4 4 (:LINEAR LEN-WHEN-PREFIXP))
+                     (4 2 (:REWRITE DEFAULT-+-2))
+                     (4 2
+                        (:REWRITE APPLY$-BADGEP-PROPERTIES . 2))
+                     (4 2
+                        (:LINEAR APPLY$-BADGEP-PROPERTIES . 2))
+                     (2 2 (:REWRITE LEN-MEMBER-EQUAL-LOOP$-AS))
+                     (2 2 (:REWRITE DEFAULT-<-2))
+                     (2 2 (:REWRITE DEFAULT-<-1))
+                     (2 2 (:REWRITE DEFAULT-+-1))
+                     (2 2 (:LINEAR BOUNDS-POSITION-EQUAL-AC))
+                     (2 2 (:LINEAR BOUNDS-POSITION-EQUAL)))
+(RP::PP-ORDEREDP (292 1 (:DEFINITION RP::RP-TERMP))
+                 (199 1 (:DEFINITION RP::FALIST-CONSISTENT))
+                 (154 1
+                      (:DEFINITION RP::FALIST-CONSISTENT-AUX))
+                 (102 102 (:REWRITE DEFAULT-CDR))
+                 (75 75 (:REWRITE DEFAULT-CAR))
+                 (42 12 (:REWRITE O-P-O-INFP-CAR))
+                 (20 20 (:TYPE-PRESCRIPTION O-P))
+                 (16 4 (:REWRITE RP::IS-IF-RP-TERMP))
+                 (10 10 (:REWRITE O-P-DEF-O-FINP-1))
+                 (9 9 (:TYPE-PRESCRIPTION RP::EX-FROM-SYNP))
+                 (9 2
+                    (:REWRITE RP::ATOM-RP-TERMP-IS-SYMBOLP))
+                 (8 2 (:REWRITE RP::RP-TERMP-CADR))
+                 (8 2 (:REWRITE RP::RP-TERMP-CADDR))
+                 (8 2 (:REWRITE RP::IS-RP-PSEUDO-TERMP))
+                 (6 6
+                    (:REWRITE RP::RP-TERMP-SHOULD-TERM-BE-IN-CONS-LHS))
+                 (6 1 (:REWRITE RP::NOT-INCLUDE-RP))
+                 (5 5 (:REWRITE FN-CHECK-DEF-NOT-QUOTE))
+                 (4 1
+                    (:REWRITE RP::RP-TERMP-IMPLIES-CDR-LISTP))
+                 (4 1 (:DEFINITION RP::INCLUDE-FNC))
+                 (2 2
+                    (:REWRITE SYMBOL-LISTP-IMPLIES-SYMBOLP))
+                 (1 1 (:TYPE-PRESCRIPTION RP::INCLUDE-FNC))
+                 (1 1
+                    (:TYPE-PRESCRIPTION RP::FALIST-CONSISTENT-AUX)))
+(RP::PP-ORDER-AND-NEGATED-TERMSP
+     (995 5 (:DEFINITION RP::FALIST-CONSISTENT))
+     (770 5
+          (:DEFINITION RP::FALIST-CONSISTENT-AUX))
+     (531 531 (:REWRITE DEFAULT-CDR))
+     (384 384 (:REWRITE DEFAULT-CAR))
+     (210 60 (:REWRITE O-P-O-INFP-CAR))
+     (88 22 (:REWRITE RP::IS-IF-RP-TERMP))
+     (63 9
+         (:REWRITE RP::RP-TERMP-IMPLIES-SUBTERMS))
+     (50 50 (:REWRITE O-P-DEF-O-FINP-1))
+     (48 12 (:REWRITE RP::RP-TERMP-CADR))
+     (45 10
+         (:REWRITE RP::ATOM-RP-TERMP-IS-SYMBOLP))
+     (40 10 (:REWRITE RP::RP-TERMP-CADDR))
+     (40 10 (:REWRITE RP::IS-RP-PSEUDO-TERMP))
+     (36 9
+         (:REWRITE RP::RP-TERMP-IMPLIES-CDR-LISTP))
+     (34 34
+         (:REWRITE RP::RP-TERMP-SHOULD-TERM-BE-IN-CONS-LHS))
+     (30 5 (:REWRITE RP::NOT-INCLUDE-RP))
+     (28 14 (:DEFINITION QUOTEP))
+     (25 25 (:REWRITE FN-CHECK-DEF-NOT-QUOTE))
+     (20 5 (:DEFINITION RP::INCLUDE-FNC))
+     (10 10
+         (:REWRITE SYMBOL-LISTP-IMPLIES-SYMBOLP))
+     (9 9 (:TYPE-PRESCRIPTION QUOTEP))
+     (5 5 (:TYPE-PRESCRIPTION RP::INCLUDE-FNC))
+     (5 5
+        (:TYPE-PRESCRIPTION RP::FALIST-CONSISTENT-AUX)))
 (RP::BOOLEANP-OF-PP-ORDER-AND-NEGATED-TERMSP.NEGATED-TERMS
      (101 101 (:REWRITE DEFAULT-CDR))
      (45 45 (:REWRITE DEFAULT-CAR)))
 (RP::BOOLEANP-OF-PP-ORDER-AND-NEGATED-TERMSP.EQUAL-TERMS
      (101 101 (:REWRITE DEFAULT-CDR))
      (45 45 (:REWRITE DEFAULT-CAR)))
-(RP::PP-SUM-MERGE-AUX (356 156 (:REWRITE RP::MEASURE-LEMMA1))
+(RP::PP-SUM-MERGE-AUX (2412 42
+                            (:REWRITE RP::RP-TERMP-IMPLIES-SUBTERMS))
+                      (2338 46 (:DEFINITION QUOTEP))
+                      (2222 10
+                            (:LINEAR APPLY$-BADGEP-PROPERTIES . 1))
+                      (2210 6 (:DEFINITION APPLY$-BADGEP))
+                      (1720 16 (:DEFINITION SUBSETP-EQUAL))
+                      (1718 10 (:DEFINITION RP::RP-TERMP))
+                      (1400 120 (:DEFINITION MEMBER-EQUAL))
+                      (1302 1242 (:REWRITE DEFAULT-CDR))
+                      (1244 42
+                            (:REWRITE RP::RP-TERMP-IMPLIES-CDR-LISTP))
+                      (1226 6 (:DEFINITION RP::FALIST-CONSISTENT))
+                      (956 40 (:REWRITE SUBSETP-REFLEXIVE-LEMMA))
+                      (952 6
+                           (:DEFINITION RP::FALIST-CONSISTENT-AUX))
+                      (880 64
+                           (:REWRITE MEMBER-EQUAL-NEWVAR-COMPONENTS-1))
+                      (743 703 (:REWRITE DEFAULT-CAR))
+                      (356 156 (:REWRITE RP::MEASURE-LEMMA1))
                       (280 10 (:DEFINITION RP::EX-FROM-RP))
-                      (241 5 (:REWRITE O<=-O-FINP-DEF))
-                      (130 10 (:REWRITE RP::NOT-INCLUDE-RP))
-                      (102 6 (:REWRITE RP::MEASURE-LEMMA6))
-                      (100 10 (:DEFINITION RP::INCLUDE-FNC))
-                      (96 36 (:REWRITE DEFAULT-CDR))
-                      (87 47 (:REWRITE DEFAULT-CAR))
-                      (62 34 (:REWRITE RP::CONS-COUNT-ATOM))
+                      (261 5 (:REWRITE O<=-O-FINP-DEF))
+                      (260 74 (:REWRITE O-P-O-INFP-CAR))
+                      (240 240 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
+                      (208 208 (:REWRITE SUBSETP-IMPLIES-MEMBER))
+                      (192 192
+                           (:REWRITE MEMBER-EQUAL-NEWVAR-COMPONENTS-3))
+                      (142 12 (:REWRITE RP::NOT-INCLUDE-RP))
+                      (128 128
+                           (:REWRITE MEMBER-EQUAL-NEWVAR-COMPONENTS-2))
+                      (112 112 (:TYPE-PRESCRIPTION SUBSETP-EQUAL))
+                      (108 12 (:DEFINITION RP::INCLUDE-FNC))
+                      (92 30 (:REWRITE RP::IS-IF-RP-TERMP))
+                      (84 84
+                          (:REWRITE RP::RP-TERMP-SHOULD-TERM-BE-IN-CONS-LHS))
+                      (82 54 (:REWRITE RP::CONS-COUNT-ATOM))
+                      (80 8
+                          (:REWRITE RP::RP-TERM-LISTP-IS-TRUE-LISTP))
+                      (76 8 (:DEFINITION NATP))
+                      (72 4 (:DEFINITION TRUE-LISTP))
+                      (68 4 (:REWRITE RP::MEASURE-LEMMA6))
+                      (56 18 (:REWRITE RP::RP-TERMP-CADR))
+                      (54 54 (:REWRITE FN-CHECK-DEF-NOT-QUOTE))
                       (52 52 (:REWRITE RP::MEASURE-LEMMA1-2))
-                      (30 30 (:TYPE-PRESCRIPTION RP::INCLUDE-FNC))
-                      (28 14 (:REWRITE DEFAULT-<-2))
-                      (28 14 (:REWRITE DEFAULT-<-1))
-                      (26 13 (:REWRITE DEFAULT-+-2))
-                      (26 13 (:REWRITE DEFAULT-+-1))
+                      (46 46 (:TYPE-PRESCRIPTION APPLY$-BADGEP))
+                      (42 42 (:TYPE-PRESCRIPTION QUOTEP))
+                      (40 40
+                          (:REWRITE TRANSITIVITY-OF-SUBSETP-EQUAL))
+                      (40 8
+                          (:REWRITE RP::ATOM-RP-TERMP-IS-SYMBOLP))
+                      (38 38
+                          (:TYPE-PRESCRIPTION RP::FALIST-CONSISTENT-AUX))
+                      (36 20 (:REWRITE DEFAULT-<-2))
+                      (36 20 (:REWRITE DEFAULT-<-1))
+                      (36 12 (:REWRITE RP::RP-TERMP-CADDR))
+                      (36 12 (:REWRITE RP::IS-RP-PSEUDO-TERMP))
+                      (34 17 (:REWRITE DEFAULT-+-2))
+                      (32 32 (:TYPE-PRESCRIPTION RP::INCLUDE-FNC))
+                      (32 16
+                          (:REWRITE APPLY$-BADGEP-PROPERTIES . 3))
+                      (30 17 (:REWRITE DEFAULT-+-1))
+                      (28 28 (:TYPE-PRESCRIPTION LEN))
+                      (28 28
+                          (:TYPE-PRESCRIPTION RP::EX-FROM-SYNP))
+                      (28 4 (:DEFINITION LEN))
                       (25 5 (:REWRITE AC-<))
+                      (24 12
+                          (:REWRITE APPLY$-BADGEP-PROPERTIES . 1))
+                      (24 4 (:DEFINITION ALL-NILS))
                       (20 20
                           (:TYPE-PRESCRIPTION RP::INCLUDE-FNC-SUBTERMS))
-                      (20 10 (:DEFINITION QUOTEP))
-                      (15 5 (:REWRITE O-INFP-O-FINP-O<=))
-                      (14 14
+                      (20 20 (:TYPE-PRESCRIPTION ALL-NILS))
+                      (20 6 (:DEFINITION WEAK-APPLY$-BADGE-P))
+                      (16 16 (:TYPE-PRESCRIPTION TRUE-LISTP))
+                      (16 16
                           (:REWRITE RP::EQUALITY-MEASURE-LEMMA3))
-                      (14 14
+                      (16 16
                           (:REWRITE RP::EQUALITY-MEASURE-LEMMA1))
-                      (10 10
-                          (:TYPE-PRESCRIPTION RP::IS-RP$INLINE))
+                      (15 5 (:REWRITE O-INFP-O-FINP-O<=))
+                      (12 12
+                          (:REWRITE INTEGER-LISTP-IMPLIES-INTEGERP))
                       (8 8
+                         (:REWRITE TRUE-LIST-LISTP-IMPLIES-TRUE-LISTP))
+                      (8 8
+                         (:REWRITE SYMBOL-LISTP-IMPLIES-SYMBOLP))
+                      (8 8 (:LINEAR LEN-WHEN-PREFIXP))
+                      (8 4
+                         (:REWRITE APPLY$-BADGEP-PROPERTIES . 2))
+                      (8 4
+                         (:LINEAR APPLY$-BADGEP-PROPERTIES . 2))
+                      (5 5 (:REWRITE |a < b & b < c  =>  a < c|))
+                      (4 4 (:REWRITE LEN-MEMBER-EQUAL-LOOP$-AS))
+                      (4 4
                          (:REWRITE RP::EQUALITY-MEASURE-LEMMA2))
-                      (5 5
-                         (:REWRITE |a < b & b < c  =>  a < c|)))
+                      (4 4 (:LINEAR BOUNDS-POSITION-EQUAL-AC))
+                      (4 4 (:LINEAR BOUNDS-POSITION-EQUAL)))
 (RP::RP-TERM-LISTP-OF-PP-SUM-MERGE-AUX
      (13307 241
             (:REWRITE RP::RP-TERMP-IMPLIES-SUBTERMS))
@@ -508,7 +768,35 @@
      (22 22 (:LINEAR BOUNDS-POSITION-EQUAL))
      (17 17
          (:TYPE-PRESCRIPTION RP::INCLUDE-FNC)))
-(RP::PP-SUM-MERGE)
+(RP::PP-SUM-MERGE (584 2 (:DEFINITION RP::RP-TERMP))
+                  (398 2 (:DEFINITION RP::FALIST-CONSISTENT))
+                  (308 2
+                       (:DEFINITION RP::FALIST-CONSISTENT-AUX))
+                  (204 204 (:REWRITE DEFAULT-CDR))
+                  (161 161 (:REWRITE DEFAULT-CAR))
+                  (84 24 (:REWRITE O-P-O-INFP-CAR))
+                  (40 40 (:TYPE-PRESCRIPTION O-P))
+                  (32 8 (:REWRITE RP::IS-IF-RP-TERMP))
+                  (20 20
+                      (:TYPE-PRESCRIPTION RP::EX-FROM-SYNP))
+                  (20 20 (:REWRITE O-P-DEF-O-FINP-1))
+                  (18 4
+                      (:REWRITE RP::ATOM-RP-TERMP-IS-SYMBOLP))
+                  (16 4 (:REWRITE RP::RP-TERMP-CADR))
+                  (16 4 (:REWRITE RP::RP-TERMP-CADDR))
+                  (16 4 (:REWRITE RP::IS-RP-PSEUDO-TERMP))
+                  (12 12
+                      (:REWRITE RP::RP-TERMP-SHOULD-TERM-BE-IN-CONS-LHS))
+                  (12 2 (:REWRITE RP::NOT-INCLUDE-RP))
+                  (10 10 (:REWRITE FN-CHECK-DEF-NOT-QUOTE))
+                  (8 2
+                     (:REWRITE RP::RP-TERMP-IMPLIES-CDR-LISTP))
+                  (8 2 (:DEFINITION RP::INCLUDE-FNC))
+                  (4 4
+                     (:REWRITE SYMBOL-LISTP-IMPLIES-SYMBOLP))
+                  (2 2 (:TYPE-PRESCRIPTION RP::INCLUDE-FNC))
+                  (2 2
+                     (:TYPE-PRESCRIPTION RP::FALIST-CONSISTENT-AUX)))
 (RP::RP-TERMP-OF-PP-SUM-MERGE
      (1791 9 (:DEFINITION RP::FALIST-CONSISTENT))
      (1386 9
@@ -547,37 +835,132 @@
      (3 3
         (:TYPE-PRESCRIPTION RP::CREATE-LIST-INSTANCE))
      (2 2 (:TYPE-PRESCRIPTION APPLY$-BADGEP)))
-(RP::S-ORDER-AND-NEGATED-TERMSP)
-(RP::S-SUM-MERGE-AUX (356 156 (:REWRITE RP::MEASURE-LEMMA1))
+(RP::S-ORDER-AND-NEGATED-TERMSP
+     (995 5 (:DEFINITION RP::FALIST-CONSISTENT))
+     (770 5
+          (:DEFINITION RP::FALIST-CONSISTENT-AUX))
+     (531 531 (:REWRITE DEFAULT-CDR))
+     (384 384 (:REWRITE DEFAULT-CAR))
+     (210 60 (:REWRITE O-P-O-INFP-CAR))
+     (88 22 (:REWRITE RP::IS-IF-RP-TERMP))
+     (63 9
+         (:REWRITE RP::RP-TERMP-IMPLIES-SUBTERMS))
+     (50 50 (:REWRITE O-P-DEF-O-FINP-1))
+     (48 12 (:REWRITE RP::RP-TERMP-CADR))
+     (45 10
+         (:REWRITE RP::ATOM-RP-TERMP-IS-SYMBOLP))
+     (40 10 (:REWRITE RP::RP-TERMP-CADDR))
+     (40 10 (:REWRITE RP::IS-RP-PSEUDO-TERMP))
+     (36 9
+         (:REWRITE RP::RP-TERMP-IMPLIES-CDR-LISTP))
+     (34 34
+         (:REWRITE RP::RP-TERMP-SHOULD-TERM-BE-IN-CONS-LHS))
+     (30 5 (:REWRITE RP::NOT-INCLUDE-RP))
+     (28 14 (:DEFINITION QUOTEP))
+     (25 25 (:REWRITE FN-CHECK-DEF-NOT-QUOTE))
+     (20 5 (:DEFINITION RP::INCLUDE-FNC))
+     (10 10
+         (:REWRITE SYMBOL-LISTP-IMPLIES-SYMBOLP))
+     (9 9 (:TYPE-PRESCRIPTION QUOTEP))
+     (5 5 (:TYPE-PRESCRIPTION RP::INCLUDE-FNC))
+     (5 5
+        (:TYPE-PRESCRIPTION RP::FALIST-CONSISTENT-AUX)))
+(RP::S-SUM-MERGE-AUX (2412 42
+                           (:REWRITE RP::RP-TERMP-IMPLIES-SUBTERMS))
+                     (2338 46 (:DEFINITION QUOTEP))
+                     (2222 10
+                           (:LINEAR APPLY$-BADGEP-PROPERTIES . 1))
+                     (2210 6 (:DEFINITION APPLY$-BADGEP))
+                     (1720 16 (:DEFINITION SUBSETP-EQUAL))
+                     (1718 10 (:DEFINITION RP::RP-TERMP))
+                     (1400 120 (:DEFINITION MEMBER-EQUAL))
+                     (1302 1242 (:REWRITE DEFAULT-CDR))
+                     (1244 42
+                           (:REWRITE RP::RP-TERMP-IMPLIES-CDR-LISTP))
+                     (1226 6 (:DEFINITION RP::FALIST-CONSISTENT))
+                     (956 40 (:REWRITE SUBSETP-REFLEXIVE-LEMMA))
+                     (952 6
+                          (:DEFINITION RP::FALIST-CONSISTENT-AUX))
+                     (880 64
+                          (:REWRITE MEMBER-EQUAL-NEWVAR-COMPONENTS-1))
+                     (743 703 (:REWRITE DEFAULT-CAR))
+                     (356 156 (:REWRITE RP::MEASURE-LEMMA1))
                      (280 10 (:DEFINITION RP::EX-FROM-RP))
-                     (241 5 (:REWRITE O<=-O-FINP-DEF))
-                     (130 10 (:REWRITE RP::NOT-INCLUDE-RP))
-                     (102 6 (:REWRITE RP::MEASURE-LEMMA6))
-                     (100 10 (:DEFINITION RP::INCLUDE-FNC))
-                     (96 36 (:REWRITE DEFAULT-CDR))
-                     (87 47 (:REWRITE DEFAULT-CAR))
-                     (62 34 (:REWRITE RP::CONS-COUNT-ATOM))
+                     (261 5 (:REWRITE O<=-O-FINP-DEF))
+                     (260 74 (:REWRITE O-P-O-INFP-CAR))
+                     (240 240 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
+                     (208 208 (:REWRITE SUBSETP-IMPLIES-MEMBER))
+                     (192 192
+                          (:REWRITE MEMBER-EQUAL-NEWVAR-COMPONENTS-3))
+                     (142 12 (:REWRITE RP::NOT-INCLUDE-RP))
+                     (128 128
+                          (:REWRITE MEMBER-EQUAL-NEWVAR-COMPONENTS-2))
+                     (112 112 (:TYPE-PRESCRIPTION SUBSETP-EQUAL))
+                     (108 12 (:DEFINITION RP::INCLUDE-FNC))
+                     (92 30 (:REWRITE RP::IS-IF-RP-TERMP))
+                     (84 84
+                         (:REWRITE RP::RP-TERMP-SHOULD-TERM-BE-IN-CONS-LHS))
+                     (82 54 (:REWRITE RP::CONS-COUNT-ATOM))
+                     (80 8
+                         (:REWRITE RP::RP-TERM-LISTP-IS-TRUE-LISTP))
+                     (76 8 (:DEFINITION NATP))
+                     (72 4 (:DEFINITION TRUE-LISTP))
+                     (68 4 (:REWRITE RP::MEASURE-LEMMA6))
+                     (56 18 (:REWRITE RP::RP-TERMP-CADR))
+                     (54 54 (:REWRITE FN-CHECK-DEF-NOT-QUOTE))
                      (52 52 (:REWRITE RP::MEASURE-LEMMA1-2))
-                     (30 30 (:TYPE-PRESCRIPTION RP::INCLUDE-FNC))
-                     (28 14 (:REWRITE DEFAULT-<-2))
-                     (28 14 (:REWRITE DEFAULT-<-1))
-                     (26 13 (:REWRITE DEFAULT-+-2))
-                     (26 13 (:REWRITE DEFAULT-+-1))
+                     (46 46 (:TYPE-PRESCRIPTION APPLY$-BADGEP))
+                     (42 42 (:TYPE-PRESCRIPTION QUOTEP))
+                     (40 40
+                         (:REWRITE TRANSITIVITY-OF-SUBSETP-EQUAL))
+                     (40 8
+                         (:REWRITE RP::ATOM-RP-TERMP-IS-SYMBOLP))
+                     (38 38
+                         (:TYPE-PRESCRIPTION RP::FALIST-CONSISTENT-AUX))
+                     (36 20 (:REWRITE DEFAULT-<-2))
+                     (36 20 (:REWRITE DEFAULT-<-1))
+                     (36 12 (:REWRITE RP::RP-TERMP-CADDR))
+                     (36 12 (:REWRITE RP::IS-RP-PSEUDO-TERMP))
+                     (34 17 (:REWRITE DEFAULT-+-2))
+                     (32 32 (:TYPE-PRESCRIPTION RP::INCLUDE-FNC))
+                     (32 16
+                         (:REWRITE APPLY$-BADGEP-PROPERTIES . 3))
+                     (30 17 (:REWRITE DEFAULT-+-1))
+                     (28 28 (:TYPE-PRESCRIPTION LEN))
+                     (28 4 (:DEFINITION LEN))
                      (25 5 (:REWRITE AC-<))
+                     (24 12
+                         (:REWRITE APPLY$-BADGEP-PROPERTIES . 1))
+                     (24 4 (:DEFINITION ALL-NILS))
+                     (20 20
+                         (:TYPE-PRESCRIPTION RP::IS-RP$INLINE))
                      (20 20
                          (:TYPE-PRESCRIPTION RP::INCLUDE-FNC-SUBTERMS))
-                     (20 10 (:DEFINITION QUOTEP))
-                     (15 5 (:REWRITE O-INFP-O-FINP-O<=))
-                     (14 14
+                     (20 20 (:TYPE-PRESCRIPTION ALL-NILS))
+                     (20 6 (:DEFINITION WEAK-APPLY$-BADGE-P))
+                     (16 16 (:TYPE-PRESCRIPTION TRUE-LISTP))
+                     (16 16
                          (:REWRITE RP::EQUALITY-MEASURE-LEMMA3))
-                     (14 14
+                     (16 16
                          (:REWRITE RP::EQUALITY-MEASURE-LEMMA1))
-                     (10 10
-                         (:TYPE-PRESCRIPTION RP::IS-RP$INLINE))
+                     (15 5 (:REWRITE O-INFP-O-FINP-O<=))
+                     (12 12
+                         (:REWRITE INTEGER-LISTP-IMPLIES-INTEGERP))
                      (8 8
+                        (:REWRITE TRUE-LIST-LISTP-IMPLIES-TRUE-LISTP))
+                     (8 8
+                        (:REWRITE SYMBOL-LISTP-IMPLIES-SYMBOLP))
+                     (8 8 (:LINEAR LEN-WHEN-PREFIXP))
+                     (8 4
+                        (:REWRITE APPLY$-BADGEP-PROPERTIES . 2))
+                     (8 4
+                        (:LINEAR APPLY$-BADGEP-PROPERTIES . 2))
+                     (5 5 (:REWRITE |a < b & b < c  =>  a < c|))
+                     (4 4 (:REWRITE LEN-MEMBER-EQUAL-LOOP$-AS))
+                     (4 4
                         (:REWRITE RP::EQUALITY-MEASURE-LEMMA2))
-                     (5 5
-                        (:REWRITE |a < b & b < c  =>  a < c|)))
+                     (4 4 (:LINEAR BOUNDS-POSITION-EQUAL-AC))
+                     (4 4 (:LINEAR BOUNDS-POSITION-EQUAL)))
 (RP::RP-TERM-LISTP-OF-S-SUM-MERGE-AUX
      (13307 241
             (:REWRITE RP::RP-TERMP-IMPLIES-SUBTERMS))
@@ -660,7 +1043,35 @@
      (22 22 (:LINEAR BOUNDS-POSITION-EQUAL))
      (17 17
          (:TYPE-PRESCRIPTION RP::INCLUDE-FNC)))
-(RP::S-SUM-MERGE)
+(RP::S-SUM-MERGE (584 2 (:DEFINITION RP::RP-TERMP))
+                 (398 2 (:DEFINITION RP::FALIST-CONSISTENT))
+                 (308 2
+                      (:DEFINITION RP::FALIST-CONSISTENT-AUX))
+                 (204 204 (:REWRITE DEFAULT-CDR))
+                 (161 161 (:REWRITE DEFAULT-CAR))
+                 (84 24 (:REWRITE O-P-O-INFP-CAR))
+                 (40 40 (:TYPE-PRESCRIPTION O-P))
+                 (32 8 (:REWRITE RP::IS-IF-RP-TERMP))
+                 (20 20
+                     (:TYPE-PRESCRIPTION RP::EX-FROM-SYNP))
+                 (20 20 (:REWRITE O-P-DEF-O-FINP-1))
+                 (18 4
+                     (:REWRITE RP::ATOM-RP-TERMP-IS-SYMBOLP))
+                 (16 4 (:REWRITE RP::RP-TERMP-CADR))
+                 (16 4 (:REWRITE RP::RP-TERMP-CADDR))
+                 (16 4 (:REWRITE RP::IS-RP-PSEUDO-TERMP))
+                 (12 12
+                     (:REWRITE RP::RP-TERMP-SHOULD-TERM-BE-IN-CONS-LHS))
+                 (12 2 (:REWRITE RP::NOT-INCLUDE-RP))
+                 (10 10 (:REWRITE FN-CHECK-DEF-NOT-QUOTE))
+                 (8 2
+                    (:REWRITE RP::RP-TERMP-IMPLIES-CDR-LISTP))
+                 (8 2 (:DEFINITION RP::INCLUDE-FNC))
+                 (4 4
+                    (:REWRITE SYMBOL-LISTP-IMPLIES-SYMBOLP))
+                 (2 2 (:TYPE-PRESCRIPTION RP::INCLUDE-FNC))
+                 (2 2
+                    (:TYPE-PRESCRIPTION RP::FALIST-CONSISTENT-AUX)))
 (RP::RP-TERMP-OF-S-SUM-MERGE
      (1791 9 (:DEFINITION RP::FALIST-CONSISTENT))
      (1386 9
@@ -700,140 +1111,133 @@
         (:TYPE-PRESCRIPTION RP::CREATE-LIST-INSTANCE))
      (2 2 (:TYPE-PRESCRIPTION APPLY$-BADGEP)))
 (RP::S-FIX-PP-ARGS-AUX
-     (2809 15
+     (5268 8 (:DEFINITION APPLY$-BADGEP))
+     (4482 47
+           (:REWRITE RP::RP-TERMP-IMPLIES-SUBTERMS))
+     (4448 58 (:DEFINITION QUOTEP))
+     (3760 20
+           (:LINEAR APPLY$-BADGEP-PROPERTIES . 1))
+     (3472 32 (:DEFINITION SUBSETP-EQUAL))
+     (3248 15 (:DEFINITION RP::RP-TERMP))
+     (2832 240 (:DEFINITION MEMBER-EQUAL))
+     (2601 2493 (:REWRITE DEFAULT-CDR))
+     (2248 12 (:DEFINITION RP::FALIST-CONSISTENT))
+     (2166 47
+           (:REWRITE RP::RP-TERMP-IMPLIES-CDR-LISTP))
+     (1926 80 (:REWRITE SUBSETP-REFLEXIVE-LEMMA))
+     (1780 128
+           (:REWRITE MEMBER-EQUAL-NEWVAR-COMPONENTS-1))
+     (1743 11
+           (:DEFINITION RP::FALIST-CONSISTENT-AUX))
+     (1335 1335 (:REWRITE DEFAULT-CAR))
+     (1023 24
            (:REWRITE APPLY$-BADGEP-PROPERTIES . 1))
-     (2799 5 (:DEFINITION APPLY$-BADGEP))
-     (2595 1 (:REWRITE O<=-O-FINP-DEF))
-     (2532 2 (:LINEAR ACL2-COUNT-OF-SUM))
-     (1562 12 (:DEFINITION SUBSETP-EQUAL))
-     (1322 98 (:DEFINITION MEMBER-EQUAL))
-     (789 737 (:REWRITE DEFAULT-CDR))
-     (744 64
-          (:REWRITE MEMBER-EQUAL-NEWVAR-COMPONENTS-1))
-     (725 10
+     (970 16
           (:REWRITE RP::RP-TERM-LISTP-IS-TRUE-LISTP))
-     (579 30 (:REWRITE SUBSETP-REFLEXIVE-LEMMA))
-     (544 5 (:DEFINITION TRUE-LISTP))
-     (367 120 (:REWRITE DEFAULT-+-2))
-     (346 10 (:DEFINITION RP::RP-TERM-LISTP))
-     (338 21
-          (:REWRITE RP::RP-TERMP-IMPLIES-CDR-LISTP))
-     (298 3 (:DEFINITION RP::RP-TERMP))
-     (295 295 (:REWRITE DEFAULT-CAR))
-     (220 220 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
-     (212 120 (:REWRITE DEFAULT-+-1))
-     (209 209
-          (:TYPE-PRESCRIPTION ACL2-COUNT-OF-CONSP-POSITIVE))
-     (207 1 (:DEFINITION RP::FALIST-CONSISTENT))
-     (192 192
+     (843 8 (:DEFINITION TRUE-LISTP))
+     (686 188 (:REWRITE O-P-O-INFP-CAR))
+     (650 10 (:DEFINITION RP::RP-EQUAL))
+     (579 11
+          (:LINEAR APPLY$-BADGEP-PROPERTIES . 2))
+     (576 24 (:DEFINITION RP::EX-FROM-RP))
+     (480 480 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
+     (416 416 (:REWRITE SUBSETP-IMPLIES-MEMBER))
+     (384 384
           (:REWRITE MEMBER-EQUAL-NEWVAR-COMPONENTS-3))
-     (180 12 (:DEFINITION LENGTH))
-     (176 176 (:REWRITE SUBSETP-IMPLIES-MEMBER))
-     (167 17 (:DEFINITION LEN))
-     (161 1
-          (:DEFINITION RP::FALIST-CONSISTENT-AUX))
-     (128 128
+     (384 28 (:REWRITE RP::NOT-INCLUDE-RP))
+     (304 28 (:DEFINITION RP::INCLUDE-FNC))
+     (256 256
           (:REWRITE MEMBER-EQUAL-NEWVAR-COMPONENTS-2))
-     (120 24 (:REWRITE COMMUTATIVITY-OF-+))
-     (102 27 (:REWRITE O-P-O-INFP-CAR))
-     (100 10 (:DEFINITION NATP))
-     (96 24 (:DEFINITION INTEGER-ABS))
-     (96 4 (:DEFINITION RP::EX-FROM-RP))
-     (88 88 (:TYPE-PRESCRIPTION SUBSETP-EQUAL))
-     (88 36 (:REWRITE RP::IS-IF-RP-TERMP))
-     (74 21
-         (:REWRITE RP::RP-TERMP-IMPLIES-SUBTERMS))
-     (66 66 (:TYPE-PRESCRIPTION APPLY$-BADGEP))
-     (65 1 (:DEFINITION RP::RP-EQUAL))
-     (60 4 (:REWRITE RP::NOT-INCLUDE-RP))
-     (52 52
-         (:TYPE-PRESCRIPTION RP::RP-TERM-LISTP))
-     (48 4 (:DEFINITION RP::INCLUDE-FNC))
-     (47 47 (:TYPE-PRESCRIPTION LEN))
-     (41 35 (:REWRITE DEFAULT-<-2))
-     (40 20
-         (:REWRITE APPLY$-BADGEP-PROPERTIES . 3))
-     (37 35 (:REWRITE DEFAULT-<-1))
-     (36 36
-         (:TYPE-PRESCRIPTION STR::TRUE-LISTP-OF-EXPLODE))
-     (36 36
-         (:REWRITE RP::RP-TERMP-SHOULD-TERM-BE-IN-CONS-LHS))
-     (36 24 (:REWRITE STR::CONSP-OF-EXPLODE))
-     (36 18
-         (:LINEAR APPLY$-BADGEP-PROPERTIES . 1))
-     (33 9 (:DEFINITION QUOTEP))
-     (32 12 (:REWRITE RP::RP-TERMP-CADDDR))
-     (30 30
+     (250 10 (:REWRITE RP::EX-FROM-RP-X2))
+     (224 224 (:TYPE-PRESCRIPTION SUBSETP-EQUAL))
+     (224 68 (:REWRITE RP::IS-IF-RP-TERMP))
+     (166 166 (:REWRITE O-P-DEF-O-FINP-1))
+     (158 16 (:DEFINITION NATP))
+     (133 133
+          (:REWRITE RP::RP-TERMP-SHOULD-TERM-BE-IN-CONS-LHS))
+     (106 49 (:REWRITE DEFAULT-+-2))
+     (100 12 (:DEFINITION LEN))
+     (99 99 (:TYPE-PRESCRIPTION APPLY$-BADGEP))
+     (96 31 (:REWRITE RP::RP-TERMP-CADR))
+     (94 94 (:REWRITE FN-CHECK-DEF-NOT-QUOTE))
+     (88 27 (:REWRITE RP::RP-TERMP-CADDR))
+     (88 27 (:REWRITE RP::IS-RP-PSEUDO-TERMP))
+     (85 17
+         (:REWRITE RP::ATOM-RP-TERMP-IS-SYMBOLP))
+     (80 80
          (:REWRITE TRANSITIVITY-OF-SUBSETP-EQUAL))
-     (30 5 (:DEFINITION ALL-NILS))
-     (28 12 (:REWRITE RP::RP-TERMP-CADR))
-     (28 12 (:REWRITE RP::RP-TERMP-CADDR))
-     (28 12 (:REWRITE RP::IS-RP-PSEUDO-TERMP))
-     (25 25 (:TYPE-PRESCRIPTION ALL-NILS))
-     (25 25 (:REWRITE O-P-DEF-O-FINP-1))
-     (25 1 (:REWRITE RP::EX-FROM-RP-X2))
-     (24 24 (:REWRITE DEFAULT-UNARY-MINUS))
-     (24 12
-         (:REWRITE STR::COERCE-TO-LIST-REMOVAL))
-     (22 22
+     (76 76 (:TYPE-PRESCRIPTION RP::INCLUDE-FNC))
+     (67 67
+         (:TYPE-PRESCRIPTION RP::FALIST-CONSISTENT-AUX))
+     (65 49 (:REWRITE DEFAULT-+-1))
+     (64 32
+         (:REWRITE APPLY$-BADGEP-PROPERTIES . 3))
+     (60 60 (:TYPE-PRESCRIPTION LEN))
+     (60 4 (:DEFINITION LENGTH))
+     (48 48
+         (:TYPE-PRESCRIPTION RP::INCLUDE-FNC-SUBTERMS))
+     (48 8 (:DEFINITION ALL-NILS))
+     (47 47 (:TYPE-PRESCRIPTION QUOTEP))
+     (40 40 (:TYPE-PRESCRIPTION ALL-NILS))
+     (40 10 (:REWRITE RP::RP-TERMP-CADDDR))
+     (37 1 (:REWRITE O<=-O-FINP-DEF))
+     (32 32 (:TYPE-PRESCRIPTION TRUE-LISTP))
+     (32 8 (:REWRITE COMMUTATIVITY-OF-+))
+     (32 8 (:DEFINITION WEAK-APPLY$-BADGE-P))
+     (32 8 (:DEFINITION INTEGER-ABS))
+     (27 27
          (:REWRITE INTEGER-LISTP-IMPLIES-INTEGERP))
-     (21 21 (:TYPE-PRESCRIPTION QUOTEP))
-     (20 20 (:TYPE-PRESCRIPTION TRUE-LISTP))
+     (24 6 (:REWRITE RP::RP-TERMP-CADDDDR))
+     (23 11
+         (:REWRITE APPLY$-BADGEP-PROPERTIES . 2))
+     (21 18 (:REWRITE DEFAULT-<-2))
      (20 20 (:LINEAR LEN-WHEN-PREFIXP))
-     (20 5 (:DEFINITION WEAK-APPLY$-BADGE-P))
-     (17 17 (:REWRITE LEN-MEMBER-EQUAL-LOOP$-AS))
-     (16 8
-         (:LINEAR APPLY$-BADGEP-PROPERTIES . 2))
-     (12 12 (:TYPE-PRESCRIPTION RP::INCLUDE-FNC))
-     (12 12
-         (:REWRITE RATIONAL-LISTP-IMPLIES-RATIONALP))
-     (12 12 (:REWRITE INTEGERP==>NUMERATOR-=-X))
-     (12 12
-         (:REWRITE INTEGERP==>DENOMINATOR-=-1))
-     (12 12
-         (:REWRITE STR::EXPLODE-WHEN-NOT-STRINGP))
-     (12 12 (:REWRITE DEFAULT-REALPART))
-     (12 12 (:REWRITE DEFAULT-NUMERATOR))
-     (12 12 (:REWRITE DEFAULT-IMAGPART))
-     (12 12 (:REWRITE DEFAULT-DENOMINATOR))
-     (10 10
+     (19 18 (:REWRITE DEFAULT-<-1))
+     (17 17
+         (:REWRITE SYMBOL-LISTP-IMPLIES-SYMBOLP))
+     (16 16
          (:REWRITE TRUE-LIST-LISTP-IMPLIES-TRUE-LISTP))
-     (10 10 (:REWRITE FN-CHECK-DEF-NOT-QUOTE))
+     (12 12
+         (:TYPE-PRESCRIPTION STR::TRUE-LISTP-OF-EXPLODE))
+     (12 12 (:REWRITE LEN-MEMBER-EQUAL-LOOP$-AS))
+     (12 8 (:REWRITE STR::CONSP-OF-EXPLODE))
+     (10 10
+         (:REWRITE RP::RP-EQUAL-SUBTERMS-REFLEXIVE))
+     (10 10 (:REWRITE RP::RP-EQUAL-REFLEXIVE))
      (10 10 (:LINEAR BOUNDS-POSITION-EQUAL-AC))
      (10 10 (:LINEAR BOUNDS-POSITION-EQUAL))
-     (10 5
-         (:REWRITE APPLY$-BADGEP-PROPERTIES . 2))
-     (9 9
-        (:TYPE-PRESCRIPTION RP::FALIST-CONSISTENT-AUX))
-     (9 1 (:REWRITE AC-<))
-     (8 8
-        (:TYPE-PRESCRIPTION RP::INCLUDE-FNC-SUBTERMS))
-     (6 6 (:TYPE-PRESCRIPTION RP::IS-RP$INLINE))
+     (8 8 (:REWRITE DEFAULT-UNARY-MINUS))
+     (8 4
+        (:REWRITE STR::COERCE-TO-LIST-REMOVAL))
      (5 5
         (:LINEAR MEMBER-EQUAL-ACL2-COUNT-SMALLER-3))
-     (5 1
-        (:REWRITE RP::ATOM-RP-TERMP-IS-SYMBOLP))
-     (5 1
-        (:LINEAR ACL2-COUNT-OF-CONSP-POSITIVE))
+     (5 1 (:REWRITE AC-<))
+     (4 4
+        (:REWRITE RATIONAL-LISTP-IMPLIES-RATIONALP))
+     (4 4 (:REWRITE INTEGERP==>NUMERATOR-=-X))
+     (4 4 (:REWRITE INTEGERP==>DENOMINATOR-=-1))
+     (4 4
+        (:REWRITE STR::EXPLODE-WHEN-NOT-STRINGP))
+     (4 4 (:REWRITE DEFAULT-REALPART))
+     (4 4 (:REWRITE DEFAULT-NUMERATOR))
+     (4 4 (:REWRITE DEFAULT-IMAGPART))
+     (4 4 (:REWRITE DEFAULT-DENOMINATOR))
      (4 4
         (:LINEAR MEMBER-EQUAL-ACL2-COUNT-SMALLER-2))
-     (3 1 (:REWRITE O-INFP-O-FINP-O<=))
+     (3 3 (:TYPE-PRESCRIPTION RP::EX-FROM-SYNP))
      (2 2
         (:LINEAR MEMBER-EQUAL-ACL2-COUNT-SMALLER-1))
      (2 2
         (:LINEAR MEMBER-EQUAL-ACL2-COUNT-SMALLER-0))
-     (1 1 (:REWRITE |a < b & b < c  =>  a < c|))
+     (2 1 (:REWRITE O-INFP-O-FINP-O<=))
      (1 1
-        (:REWRITE SYMBOL-LISTP-IMPLIES-SYMBOLP))
-     (1 1
-        (:REWRITE RP::RP-EQUAL-SUBTERMS-REFLEXIVE))
-     (1 1 (:REWRITE RP::RP-EQUAL-REFLEXIVE)))
+        (:REWRITE |a < b & b < c  =>  a < c|)))
 (RP::RP-TERM-LISTP-OF-S-FIX-PP-ARGS-AUX
-     (43314 169 (:DEFINITION RP::RP-TERMP))
-     (36239 561
+     (43354 169 (:DEFINITION RP::RP-TERMP))
+     (36299 561
             (:REWRITE RP::RP-TERMP-IMPLIES-SUBTERMS))
-     (33512 58 (:DEFINITION APPLY$-BADGEP))
-     (30851 114
+     (33572 58 (:DEFINITION APPLY$-BADGEP))
+     (30911 114
             (:LINEAR APPLY$-BADGEP-PROPERTIES . 1))
      (29196 164 (:DEFINITION RP::FALIST-CONSISTENT))
      (25417 24389 (:REWRITE DEFAULT-CDR))
@@ -841,7 +1245,7 @@
      (22596 144
             (:DEFINITION RP::FALIST-CONSISTENT-AUX))
      (20110 1710 (:DEFINITION MEMBER-EQUAL))
-     (17168 561
+     (17208 561
             (:REWRITE RP::RP-TERMP-IMPLIES-CDR-LISTP))
      (13693 570 (:REWRITE SUBSETP-REFLEXIVE-LEMMA))
      (12640 912
@@ -852,14 +1256,14 @@
      (3583 721 (:REWRITE RP::IS-IF-RP-TERMP))
      (3420 3420 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
      (3326 330 (:DEFINITION RP::INCLUDE-FNC))
-     (3025 114
+     (3085 114
            (:REWRITE RP::RP-TERM-LISTP-IS-TRUE-LISTP))
      (2964 2964 (:REWRITE SUBSETP-IMPLIES-MEMBER))
      (2899 57
            (:LINEAR APPLY$-BADGEP-PROPERTIES . 2))
      (2736 2736
            (:REWRITE MEMBER-EQUAL-NEWVAR-COMPONENTS-3))
-     (2671 57 (:DEFINITION TRUE-LISTP))
+     (2731 57 (:DEFINITION TRUE-LISTP))
      (2147 2055 (:REWRITE O-P-DEF-O-FINP-1))
      (2031 2031
            (:REWRITE RP::RP-TERMP-SHOULD-TERM-BE-IN-CONS-LHS))
@@ -907,6 +1311,7 @@
      (92 92 (:TYPE-PRESCRIPTION O-FINP))
      (62 62 (:LINEAR BOUNDS-POSITION-EQUAL-AC))
      (62 62 (:LINEAR BOUNDS-POSITION-EQUAL))
+     (60 15 (:REWRITE RP::RP-TERMP-CADDDDR))
      (57 57 (:REWRITE LEN-MEMBER-EQUAL-LOOP$-AS))
      (57 57 (:REWRITE DEFAULT-<-2))
      (57 57 (:REWRITE DEFAULT-<-1))
@@ -917,7 +1322,35 @@
          (:REWRITE RP::QUOTEP-TERM-WITH-EX-FROM-RP))
      (6 6
         (:TYPE-PRESCRIPTION RP::IS-IF$INLINE)))
-(RP::S-FIX-ARGS (1 1 (:TYPE-PRESCRIPTION RP::S-FIX-ARGS)))
+(RP::S-FIX-ARGS (292 1 (:DEFINITION RP::RP-TERMP))
+                (199 1 (:DEFINITION RP::FALIST-CONSISTENT))
+                (154 1
+                     (:DEFINITION RP::FALIST-CONSISTENT-AUX))
+                (102 102 (:REWRITE DEFAULT-CDR))
+                (76 76 (:REWRITE DEFAULT-CAR))
+                (42 12 (:REWRITE O-P-O-INFP-CAR))
+                (20 20 (:TYPE-PRESCRIPTION O-P))
+                (16 4 (:REWRITE RP::IS-IF-RP-TERMP))
+                (10 10 (:REWRITE O-P-DEF-O-FINP-1))
+                (9 9 (:TYPE-PRESCRIPTION RP::EX-FROM-SYNP))
+                (9 2
+                   (:REWRITE RP::ATOM-RP-TERMP-IS-SYMBOLP))
+                (8 2 (:REWRITE RP::RP-TERMP-CADR))
+                (8 2 (:REWRITE RP::RP-TERMP-CADDR))
+                (8 2 (:REWRITE RP::IS-RP-PSEUDO-TERMP))
+                (6 6
+                   (:REWRITE RP::RP-TERMP-SHOULD-TERM-BE-IN-CONS-LHS))
+                (6 1 (:REWRITE RP::NOT-INCLUDE-RP))
+                (5 5 (:REWRITE FN-CHECK-DEF-NOT-QUOTE))
+                (4 1
+                   (:REWRITE RP::RP-TERMP-IMPLIES-CDR-LISTP))
+                (4 1 (:DEFINITION RP::INCLUDE-FNC))
+                (2 2
+                   (:REWRITE SYMBOL-LISTP-IMPLIES-SYMBOLP))
+                (1 1 (:TYPE-PRESCRIPTION RP::S-FIX-ARGS))
+                (1 1 (:TYPE-PRESCRIPTION RP::INCLUDE-FNC))
+                (1 1
+                   (:TYPE-PRESCRIPTION RP::FALIST-CONSISTENT-AUX)))
 (RP::RP-TERMP-OF-S-FIX-ARGS
      (398 2 (:DEFINITION RP::FALIST-CONSISTENT))
      (308 2
@@ -955,141 +1388,134 @@
         (:TYPE-PRESCRIPTION RP::FALIST-CONSISTENT-AUX))
      (2 1 (:DEFINITION WEAK-APPLY$-BADGE-P))
      (1 1 (:TYPE-PRESCRIPTION APPLY$-BADGEP)))
-(RP::C-FIX-ARG-AUX (2809 15
+(RP::C-FIX-ARG-AUX (5268 8 (:DEFINITION APPLY$-BADGEP))
+                   (4482 47
+                         (:REWRITE RP::RP-TERMP-IMPLIES-SUBTERMS))
+                   (4456 62 (:DEFINITION QUOTEP))
+                   (3760 20
+                         (:LINEAR APPLY$-BADGEP-PROPERTIES . 1))
+                   (3472 32 (:DEFINITION SUBSETP-EQUAL))
+                   (3248 15 (:DEFINITION RP::RP-TERMP))
+                   (2832 240 (:DEFINITION MEMBER-EQUAL))
+                   (2643 2519 (:REWRITE DEFAULT-CDR))
+                   (2248 12 (:DEFINITION RP::FALIST-CONSISTENT))
+                   (2166 47
+                         (:REWRITE RP::RP-TERMP-IMPLIES-CDR-LISTP))
+                   (1926 80 (:REWRITE SUBSETP-REFLEXIVE-LEMMA))
+                   (1780 128
+                         (:REWRITE MEMBER-EQUAL-NEWVAR-COMPONENTS-1))
+                   (1743 11
+                         (:DEFINITION RP::FALIST-CONSISTENT-AUX))
+                   (1365 1365 (:REWRITE DEFAULT-CAR))
+                   (1023 24
                          (:REWRITE APPLY$-BADGEP-PROPERTIES . 1))
-                   (2799 5 (:DEFINITION APPLY$-BADGEP))
-                   (2595 1 (:REWRITE O<=-O-FINP-DEF))
-                   (2532 2 (:LINEAR ACL2-COUNT-OF-SUM))
-                   (1562 12 (:DEFINITION SUBSETP-EQUAL))
-                   (1322 98 (:DEFINITION MEMBER-EQUAL))
-                   (789 737 (:REWRITE DEFAULT-CDR))
-                   (744 64
-                        (:REWRITE MEMBER-EQUAL-NEWVAR-COMPONENTS-1))
-                   (725 10
+                   (970 16
                         (:REWRITE RP::RP-TERM-LISTP-IS-TRUE-LISTP))
-                   (579 30 (:REWRITE SUBSETP-REFLEXIVE-LEMMA))
-                   (544 5 (:DEFINITION TRUE-LISTP))
-                   (367 120 (:REWRITE DEFAULT-+-2))
-                   (346 10 (:DEFINITION RP::RP-TERM-LISTP))
-                   (338 21
-                        (:REWRITE RP::RP-TERMP-IMPLIES-CDR-LISTP))
-                   (298 3 (:DEFINITION RP::RP-TERMP))
-                   (295 295 (:REWRITE DEFAULT-CAR))
-                   (220 220 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
-                   (212 120 (:REWRITE DEFAULT-+-1))
-                   (209 209
-                        (:TYPE-PRESCRIPTION ACL2-COUNT-OF-CONSP-POSITIVE))
-                   (207 1 (:DEFINITION RP::FALIST-CONSISTENT))
-                   (192 192
+                   (843 8 (:DEFINITION TRUE-LISTP))
+                   (780 12 (:DEFINITION RP::RP-EQUAL))
+                   (718 196 (:REWRITE O-P-O-INFP-CAR))
+                   (672 28 (:DEFINITION RP::EX-FROM-RP))
+                   (579 11
+                        (:LINEAR APPLY$-BADGEP-PROPERTIES . 2))
+                   (480 480 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
+                   (444 32 (:REWRITE RP::NOT-INCLUDE-RP))
+                   (416 416 (:REWRITE SUBSETP-IMPLIES-MEMBER))
+                   (384 384
                         (:REWRITE MEMBER-EQUAL-NEWVAR-COMPONENTS-3))
-                   (180 12 (:DEFINITION LENGTH))
-                   (176 176 (:REWRITE SUBSETP-IMPLIES-MEMBER))
-                   (167 17 (:DEFINITION LEN))
-                   (161 1
-                        (:DEFINITION RP::FALIST-CONSISTENT-AUX))
-                   (128 128
+                   (352 32 (:DEFINITION RP::INCLUDE-FNC))
+                   (300 12 (:REWRITE RP::EX-FROM-RP-X2))
+                   (256 256
                         (:REWRITE MEMBER-EQUAL-NEWVAR-COMPONENTS-2))
-                   (120 24 (:REWRITE COMMUTATIVITY-OF-+))
-                   (102 27 (:REWRITE O-P-O-INFP-CAR))
-                   (100 10 (:DEFINITION NATP))
-                   (96 24 (:DEFINITION INTEGER-ABS))
-                   (96 4 (:DEFINITION RP::EX-FROM-RP))
-                   (88 88 (:TYPE-PRESCRIPTION SUBSETP-EQUAL))
-                   (88 36 (:REWRITE RP::IS-IF-RP-TERMP))
-                   (74 21
-                       (:REWRITE RP::RP-TERMP-IMPLIES-SUBTERMS))
-                   (66 66 (:TYPE-PRESCRIPTION APPLY$-BADGEP))
-                   (65 1 (:DEFINITION RP::RP-EQUAL))
-                   (60 4 (:REWRITE RP::NOT-INCLUDE-RP))
-                   (52 52
-                       (:TYPE-PRESCRIPTION RP::RP-TERM-LISTP))
-                   (48 4 (:DEFINITION RP::INCLUDE-FNC))
-                   (47 47 (:TYPE-PRESCRIPTION LEN))
-                   (41 35 (:REWRITE DEFAULT-<-2))
-                   (40 20
-                       (:REWRITE APPLY$-BADGEP-PROPERTIES . 3))
-                   (37 35 (:REWRITE DEFAULT-<-1))
-                   (36 36
-                       (:TYPE-PRESCRIPTION STR::TRUE-LISTP-OF-EXPLODE))
-                   (36 36
-                       (:REWRITE RP::RP-TERMP-SHOULD-TERM-BE-IN-CONS-LHS))
-                   (36 24 (:REWRITE STR::CONSP-OF-EXPLODE))
-                   (36 18
-                       (:LINEAR APPLY$-BADGEP-PROPERTIES . 1))
-                   (33 9 (:DEFINITION QUOTEP))
-                   (32 12 (:REWRITE RP::RP-TERMP-CADDDR))
-                   (30 30
+                   (224 224 (:TYPE-PRESCRIPTION SUBSETP-EQUAL))
+                   (224 68 (:REWRITE RP::IS-IF-RP-TERMP))
+                   (174 174 (:REWRITE O-P-DEF-O-FINP-1))
+                   (158 16 (:DEFINITION NATP))
+                   (133 133
+                        (:REWRITE RP::RP-TERMP-SHOULD-TERM-BE-IN-CONS-LHS))
+                   (106 49 (:REWRITE DEFAULT-+-2))
+                   (100 12 (:DEFINITION LEN))
+                   (99 99 (:TYPE-PRESCRIPTION APPLY$-BADGEP))
+                   (98 98 (:REWRITE FN-CHECK-DEF-NOT-QUOTE))
+                   (96 31 (:REWRITE RP::RP-TERMP-CADR))
+                   (88 88 (:TYPE-PRESCRIPTION RP::INCLUDE-FNC))
+                   (88 27 (:REWRITE RP::RP-TERMP-CADDR))
+                   (88 27 (:REWRITE RP::IS-RP-PSEUDO-TERMP))
+                   (85 17
+                       (:REWRITE RP::ATOM-RP-TERMP-IS-SYMBOLP))
+                   (80 80
                        (:REWRITE TRANSITIVITY-OF-SUBSETP-EQUAL))
-                   (30 5 (:DEFINITION ALL-NILS))
-                   (28 12 (:REWRITE RP::RP-TERMP-CADR))
-                   (28 12 (:REWRITE RP::RP-TERMP-CADDR))
-                   (28 12 (:REWRITE RP::IS-RP-PSEUDO-TERMP))
-                   (25 25 (:TYPE-PRESCRIPTION ALL-NILS))
-                   (25 25 (:REWRITE O-P-DEF-O-FINP-1))
-                   (25 1 (:REWRITE RP::EX-FROM-RP-X2))
-                   (24 24 (:REWRITE DEFAULT-UNARY-MINUS))
-                   (24 12
-                       (:REWRITE STR::COERCE-TO-LIST-REMOVAL))
-                   (22 22
+                   (67 67
+                       (:TYPE-PRESCRIPTION RP::FALIST-CONSISTENT-AUX))
+                   (65 49 (:REWRITE DEFAULT-+-1))
+                   (64 32
+                       (:REWRITE APPLY$-BADGEP-PROPERTIES . 3))
+                   (60 60 (:TYPE-PRESCRIPTION LEN))
+                   (60 4 (:DEFINITION LENGTH))
+                   (56 56
+                       (:TYPE-PRESCRIPTION RP::INCLUDE-FNC-SUBTERMS))
+                   (48 8 (:DEFINITION ALL-NILS))
+                   (47 47 (:TYPE-PRESCRIPTION QUOTEP))
+                   (40 40 (:TYPE-PRESCRIPTION ALL-NILS))
+                   (40 10 (:REWRITE RP::RP-TERMP-CADDDR))
+                   (37 1 (:REWRITE O<=-O-FINP-DEF))
+                   (32 32 (:TYPE-PRESCRIPTION TRUE-LISTP))
+                   (32 8 (:REWRITE COMMUTATIVITY-OF-+))
+                   (32 8 (:DEFINITION WEAK-APPLY$-BADGE-P))
+                   (32 8 (:DEFINITION INTEGER-ABS))
+                   (27 27
                        (:REWRITE INTEGER-LISTP-IMPLIES-INTEGERP))
-                   (21 21 (:TYPE-PRESCRIPTION QUOTEP))
-                   (20 20 (:TYPE-PRESCRIPTION TRUE-LISTP))
+                   (24 6 (:REWRITE RP::RP-TERMP-CADDDDR))
+                   (23 11
+                       (:REWRITE APPLY$-BADGEP-PROPERTIES . 2))
+                   (21 18 (:REWRITE DEFAULT-<-2))
                    (20 20 (:LINEAR LEN-WHEN-PREFIXP))
-                   (20 5 (:DEFINITION WEAK-APPLY$-BADGE-P))
-                   (17 17 (:REWRITE LEN-MEMBER-EQUAL-LOOP$-AS))
-                   (16 8
-                       (:LINEAR APPLY$-BADGEP-PROPERTIES . 2))
-                   (12 12 (:TYPE-PRESCRIPTION RP::INCLUDE-FNC))
-                   (12 12
-                       (:REWRITE RATIONAL-LISTP-IMPLIES-RATIONALP))
-                   (12 12 (:REWRITE INTEGERP==>NUMERATOR-=-X))
-                   (12 12
-                       (:REWRITE INTEGERP==>DENOMINATOR-=-1))
-                   (12 12
-                       (:REWRITE STR::EXPLODE-WHEN-NOT-STRINGP))
-                   (12 12 (:REWRITE DEFAULT-REALPART))
-                   (12 12 (:REWRITE DEFAULT-NUMERATOR))
-                   (12 12 (:REWRITE DEFAULT-IMAGPART))
-                   (12 12 (:REWRITE DEFAULT-DENOMINATOR))
-                   (10 10
+                   (19 18 (:REWRITE DEFAULT-<-1))
+                   (17 17
+                       (:REWRITE SYMBOL-LISTP-IMPLIES-SYMBOLP))
+                   (16 16
                        (:REWRITE TRUE-LIST-LISTP-IMPLIES-TRUE-LISTP))
-                   (10 10 (:REWRITE FN-CHECK-DEF-NOT-QUOTE))
+                   (12 12
+                       (:TYPE-PRESCRIPTION STR::TRUE-LISTP-OF-EXPLODE))
+                   (12 12
+                       (:REWRITE RP::RP-EQUAL-SUBTERMS-REFLEXIVE))
+                   (12 12 (:REWRITE RP::RP-EQUAL-REFLEXIVE))
+                   (12 12 (:REWRITE LEN-MEMBER-EQUAL-LOOP$-AS))
+                   (12 8 (:REWRITE STR::CONSP-OF-EXPLODE))
                    (10 10 (:LINEAR BOUNDS-POSITION-EQUAL-AC))
                    (10 10 (:LINEAR BOUNDS-POSITION-EQUAL))
-                   (10 5
-                       (:REWRITE APPLY$-BADGEP-PROPERTIES . 2))
-                   (9 9
-                      (:TYPE-PRESCRIPTION RP::FALIST-CONSISTENT-AUX))
-                   (9 1 (:REWRITE AC-<))
-                   (8 8
-                      (:TYPE-PRESCRIPTION RP::INCLUDE-FNC-SUBTERMS))
-                   (6 6 (:TYPE-PRESCRIPTION RP::IS-RP$INLINE))
+                   (8 8 (:REWRITE DEFAULT-UNARY-MINUS))
+                   (8 4
+                      (:REWRITE STR::COERCE-TO-LIST-REMOVAL))
                    (5 5
                       (:LINEAR MEMBER-EQUAL-ACL2-COUNT-SMALLER-3))
-                   (5 1
-                      (:REWRITE RP::ATOM-RP-TERMP-IS-SYMBOLP))
-                   (5 1
-                      (:LINEAR ACL2-COUNT-OF-CONSP-POSITIVE))
+                   (5 1 (:REWRITE AC-<))
+                   (4 4 (:TYPE-PRESCRIPTION RP::EX-FROM-SYNP))
+                   (4 4
+                      (:REWRITE RATIONAL-LISTP-IMPLIES-RATIONALP))
+                   (4 4 (:REWRITE INTEGERP==>NUMERATOR-=-X))
+                   (4 4 (:REWRITE INTEGERP==>DENOMINATOR-=-1))
+                   (4 4
+                      (:REWRITE STR::EXPLODE-WHEN-NOT-STRINGP))
+                   (4 4 (:REWRITE DEFAULT-REALPART))
+                   (4 4 (:REWRITE DEFAULT-NUMERATOR))
+                   (4 4 (:REWRITE DEFAULT-IMAGPART))
+                   (4 4 (:REWRITE DEFAULT-DENOMINATOR))
                    (4 4
                       (:LINEAR MEMBER-EQUAL-ACL2-COUNT-SMALLER-2))
-                   (3 1 (:REWRITE O-INFP-O-FINP-O<=))
                    (2 2
                       (:LINEAR MEMBER-EQUAL-ACL2-COUNT-SMALLER-1))
                    (2 2
                       (:LINEAR MEMBER-EQUAL-ACL2-COUNT-SMALLER-0))
-                   (1 1 (:REWRITE |a < b & b < c  =>  a < c|))
+                   (2 1 (:REWRITE O-INFP-O-FINP-O<=))
                    (1 1
-                      (:REWRITE SYMBOL-LISTP-IMPLIES-SYMBOLP))
-                   (1 1
-                      (:REWRITE RP::RP-EQUAL-SUBTERMS-REFLEXIVE))
-                   (1 1 (:REWRITE RP::RP-EQUAL-REFLEXIVE)))
+                      (:REWRITE |a < b & b < c  =>  a < c|)))
 (RP::RP-TERM-LISTP-OF-C-FIX-ARG-AUX.COUGHED-LST
-     (49028 191 (:DEFINITION RP::RP-TERMP))
-     (40481 675
+     (49068 191 (:DEFINITION RP::RP-TERMP))
+     (40541 675
             (:REWRITE RP::RP-TERMP-IMPLIES-SUBTERMS))
-     (39635 905 (:DEFINITION QUOTEP))
-     (37369 65 (:DEFINITION APPLY$-BADGEP))
-     (34722 128
+     (39695 905 (:DEFINITION QUOTEP))
+     (37429 65 (:DEFINITION APPLY$-BADGEP))
+     (34782 128
             (:LINEAR APPLY$-BADGEP-PROPERTIES . 1))
      (33042 186 (:DEFINITION RP::FALIST-CONSISTENT))
      (28741 27587 (:REWRITE DEFAULT-CDR))
@@ -1097,7 +1523,7 @@
      (25571 163
             (:DEFINITION RP::FALIST-CONSISTENT-AUX))
      (22560 1920 (:DEFINITION MEMBER-EQUAL))
-     (19625 675
+     (19665 675
             (:REWRITE RP::RP-TERMP-IMPLIES-CDR-LISTP))
      (15366 640 (:REWRITE SUBSETP-REFLEXIVE-LEMMA))
      (14180 1024
@@ -1109,13 +1535,13 @@
      (3840 3840 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
      (3754 373 (:DEFINITION RP::INCLUDE-FNC))
      (3328 3328 (:REWRITE SUBSETP-IMPLIES-MEMBER))
-     (3165 128
+     (3225 128
            (:REWRITE RP::RP-TERM-LISTP-IS-TRUE-LISTP))
      (3072 3072
            (:REWRITE MEMBER-EQUAL-NEWVAR-COMPONENTS-3))
      (2913 64
            (:LINEAR APPLY$-BADGEP-PROPERTIES . 2))
-     (2797 64 (:DEFINITION TRUE-LISTP))
+     (2857 64 (:DEFINITION TRUE-LISTP))
      (2460 430 (:REWRITE RP::RP-TERMP-CADR))
      (2430 2322 (:REWRITE O-P-DEF-O-FINP-1))
      (2322 2322
@@ -1169,22 +1595,23 @@
      (64 64 (:REWRITE DEFAULT-<-2))
      (64 64 (:REWRITE DEFAULT-<-1))
      (64 64 (:REWRITE DEFAULT-+-1))
+     (60 15 (:REWRITE RP::RP-TERMP-CADDDDR))
      (36 36
          (:REWRITE RP::RP-EQUAL-SUBTERMS-REFLEXIVE)))
 (RP::RP-TERM-LISTP-OF-C-FIX-ARG-AUX.CLEANED-LST
-     (60033 229 (:DEFINITION RP::RP-TERMP))
-     (46467 770
+     (60073 229 (:DEFINITION RP::RP-TERMP))
+     (46527 770
             (:REWRITE RP::RP-TERMP-IMPLIES-SUBTERMS))
-     (42879 75 (:DEFINITION APPLY$-BADGEP))
+     (42939 75 (:DEFINITION APPLY$-BADGEP))
      (40488 224 (:DEFINITION RP::FALIST-CONSISTENT))
-     (40252 148
+     (40312 148
             (:LINEAR APPLY$-BADGEP-PROPERTIES . 1))
      (34446 33084 (:REWRITE DEFAULT-CDR))
      (31980 296 (:DEFINITION SUBSETP-EQUAL))
      (31339 200
             (:DEFINITION RP::FALIST-CONSISTENT-AUX))
      (26060 2220 (:DEFINITION MEMBER-EQUAL))
-     (22742 770
+     (22782 770
             (:REWRITE RP::RP-TERMP-IMPLIES-CDR-LISTP))
      (17756 740 (:REWRITE SUBSETP-REFLEXIVE-LEMMA))
      (16380 1184
@@ -1198,9 +1625,9 @@
      (3848 3848 (:REWRITE SUBSETP-IMPLIES-MEMBER))
      (3552 3552
            (:REWRITE MEMBER-EQUAL-NEWVAR-COMPONENTS-3))
-     (3365 148
+     (3425 148
            (:REWRITE RP::RP-TERM-LISTP-IS-TRUE-LISTP))
-     (2977 74 (:DEFINITION TRUE-LISTP))
+     (3037 74 (:DEFINITION TRUE-LISTP))
      (2936 2828 (:REWRITE O-P-DEF-O-FINP-1))
      (2933 74
            (:LINEAR APPLY$-BADGEP-PROPERTIES . 2))
@@ -1254,13 +1681,70 @@
      (74 74 (:REWRITE DEFAULT-<-2))
      (74 74 (:REWRITE DEFAULT-<-1))
      (74 74 (:REWRITE DEFAULT-+-1))
+     (60 15 (:REWRITE RP::RP-TERMP-CADDDDR))
      (42 42
          (:REWRITE RP::RP-EQUAL-SUBTERMS-REFLEXIVE))
      (24 3
          (:REWRITE RP::QUOTEP-TERM-WITH-EX-FROM-RP))
      (6 6
         (:TYPE-PRESCRIPTION RP::IS-IF$INLINE)))
-(RP::C-FIX-PP-ARGS)
+(RP::C-FIX-ARG-AUX-WITH-COND$INLINE)
+(RP::RP-TERM-LISTP-OF-C-FIX-ARG-AUX-WITH-COND.COUGHED-LST
+     (28 2 (:DEFINITION RP::RP-TERM-LISTP))
+     (10 2
+         (:REWRITE RP::RP-TERMP-IMPLIES-SUBTERMS))
+     (8 8 (:TYPE-PRESCRIPTION RP::RP-TERMP))
+     (8 2
+        (:REWRITE RP::RP-TERMP-IMPLIES-CDR-LISTP))
+     (6 2 (:DEFINITION QUOTEP))
+     (4 4 (:REWRITE DEFAULT-CAR))
+     (2 2 (:TYPE-PRESCRIPTION QUOTEP))
+     (2 2
+        (:REWRITE RP::RP-TERMP-SHOULD-TERM-BE-IN-CONS-LHS))
+     (2 2 (:REWRITE FN-CHECK-DEF-NOT-QUOTE))
+     (2 2 (:REWRITE DEFAULT-CDR)))
+(RP::RP-TERM-LISTP-OF-C-FIX-ARG-AUX-WITH-COND.CLEANED-LST
+     (28 2 (:DEFINITION RP::RP-TERM-LISTP))
+     (10 2
+         (:REWRITE RP::RP-TERMP-IMPLIES-SUBTERMS))
+     (8 8 (:TYPE-PRESCRIPTION RP::RP-TERMP))
+     (8 2
+        (:REWRITE RP::RP-TERMP-IMPLIES-CDR-LISTP))
+     (6 2 (:DEFINITION QUOTEP))
+     (4 4 (:REWRITE DEFAULT-CAR))
+     (2 2 (:TYPE-PRESCRIPTION QUOTEP))
+     (2 2
+        (:REWRITE RP::RP-TERMP-SHOULD-TERM-BE-IN-CONS-LHS))
+     (2 2 (:REWRITE FN-CHECK-DEF-NOT-QUOTE))
+     (2 2 (:REWRITE DEFAULT-CDR)))
+(RP::C-FIX-PP-ARGS (292 1 (:DEFINITION RP::RP-TERMP))
+                   (199 1 (:DEFINITION RP::FALIST-CONSISTENT))
+                   (154 1
+                        (:DEFINITION RP::FALIST-CONSISTENT-AUX))
+                   (102 102 (:REWRITE DEFAULT-CDR))
+                   (76 76 (:REWRITE DEFAULT-CAR))
+                   (42 12 (:REWRITE O-P-O-INFP-CAR))
+                   (20 20 (:TYPE-PRESCRIPTION O-P))
+                   (16 4 (:REWRITE RP::IS-IF-RP-TERMP))
+                   (10 10 (:REWRITE O-P-DEF-O-FINP-1))
+                   (9 9 (:TYPE-PRESCRIPTION RP::EX-FROM-SYNP))
+                   (9 2
+                      (:REWRITE RP::ATOM-RP-TERMP-IS-SYMBOLP))
+                   (8 2 (:REWRITE RP::RP-TERMP-CADR))
+                   (8 2 (:REWRITE RP::RP-TERMP-CADDR))
+                   (8 2 (:REWRITE RP::IS-RP-PSEUDO-TERMP))
+                   (6 6
+                      (:REWRITE RP::RP-TERMP-SHOULD-TERM-BE-IN-CONS-LHS))
+                   (6 1 (:REWRITE RP::NOT-INCLUDE-RP))
+                   (5 5 (:REWRITE FN-CHECK-DEF-NOT-QUOTE))
+                   (4 1
+                      (:REWRITE RP::RP-TERMP-IMPLIES-CDR-LISTP))
+                   (4 1 (:DEFINITION RP::INCLUDE-FNC))
+                   (2 2
+                      (:REWRITE SYMBOL-LISTP-IMPLIES-SYMBOLP))
+                   (1 1 (:TYPE-PRESCRIPTION RP::INCLUDE-FNC))
+                   (1 1
+                      (:TYPE-PRESCRIPTION RP::FALIST-CONSISTENT-AUX)))
 (RP::RP-TERMP-OF-C-FIX-PP-ARGS.COUGHED-PP
      (398 2 (:DEFINITION RP::FALIST-CONSISTENT))
      (308 2
@@ -1336,7 +1820,34 @@
 (RP::C/D-REMOVE-REPEATED-S)
 (RP::RETURN-T)
 (RP::RETURN-NIL)
-(RP::C-FIX-S-ARGS)
+(RP::C-FIX-S-ARGS (292 1 (:DEFINITION RP::RP-TERMP))
+                  (199 1 (:DEFINITION RP::FALIST-CONSISTENT))
+                  (154 1
+                       (:DEFINITION RP::FALIST-CONSISTENT-AUX))
+                  (102 102 (:REWRITE DEFAULT-CDR))
+                  (76 76 (:REWRITE DEFAULT-CAR))
+                  (42 12 (:REWRITE O-P-O-INFP-CAR))
+                  (20 20 (:TYPE-PRESCRIPTION O-P))
+                  (16 4 (:REWRITE RP::IS-IF-RP-TERMP))
+                  (10 10 (:REWRITE O-P-DEF-O-FINP-1))
+                  (9 9 (:TYPE-PRESCRIPTION RP::EX-FROM-SYNP))
+                  (9 2
+                     (:REWRITE RP::ATOM-RP-TERMP-IS-SYMBOLP))
+                  (8 2 (:REWRITE RP::RP-TERMP-CADR))
+                  (8 2 (:REWRITE RP::RP-TERMP-CADDR))
+                  (8 2 (:REWRITE RP::IS-RP-PSEUDO-TERMP))
+                  (6 6
+                     (:REWRITE RP::RP-TERMP-SHOULD-TERM-BE-IN-CONS-LHS))
+                  (6 1 (:REWRITE RP::NOT-INCLUDE-RP))
+                  (5 5 (:REWRITE FN-CHECK-DEF-NOT-QUOTE))
+                  (4 1
+                     (:REWRITE RP::RP-TERMP-IMPLIES-CDR-LISTP))
+                  (4 1 (:DEFINITION RP::INCLUDE-FNC))
+                  (2 2
+                     (:REWRITE SYMBOL-LISTP-IMPLIES-SYMBOLP))
+                  (1 1 (:TYPE-PRESCRIPTION RP::INCLUDE-FNC))
+                  (1 1
+                     (:TYPE-PRESCRIPTION RP::FALIST-CONSISTENT-AUX)))
 (RP::RP-TERMP-OF-C-FIX-S-ARGS.COUGHED-S
      (398 2 (:DEFINITION RP::FALIST-CONSISTENT))
      (308 2

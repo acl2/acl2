@@ -10,17 +10,9 @@
 
 (in-package "SOFT")
 
-(include-book "implementation")
+(include-book "gen-macro2-of-macro")
 
 (include-book "kestrel/utilities/define-sk" :dir :system)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; This is in a separate file from implementation.lisp
-; because it includes the non-built-in DEFINE-SK.
-; Thus, one can include this file only if needed.
-; Note that we do not create a file define2.lisp analogous to this one
-; because SOFT already includes DEFINE for its own implementation.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

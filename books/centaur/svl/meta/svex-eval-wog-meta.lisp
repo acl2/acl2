@@ -1210,7 +1210,7 @@
                             rp::rp-term-listp
                             rp::valid-sc)))))||#
 
-(rp::add-meta-rules svex-eval-wog-formula-checks
+#|(rp::add-meta-rules svex-eval-wog-formula-checks
                     (list (make rp::rp-meta-rule-rec
                                 :fnc 'svex-eval-wog-meta-main
                                 :trig-fnc 'svex-eval-wog
@@ -1220,4 +1220,19 @@
                                 :fnc 'svexl-node-eval-wog-meta-main
                                 :trig-fnc 'svexl-node-eval-wog
                                 :dont-rw t
-                                :valid-syntax t)))
+                                :valid-syntax t)))||#
+
+
+(rp::add-meta-rule
+ :meta-fnc svexl-node-eval-wog-meta-main
+ :trig-fnc svexl-node-eval-wog
+ :formula-checks svex-eval-wog-formula-checks
+ :valid-syntaxp t
+ :returns (mv term dont-rw))
+
+(rp::add-meta-rule
+ :meta-fnc svex-eval-wog-meta-main
+ :trig-fnc svex-eval-wog
+ :formula-checks svex-eval-wog-formula-checks
+ :valid-syntaxp t
+ :returns (mv term dont-rw))

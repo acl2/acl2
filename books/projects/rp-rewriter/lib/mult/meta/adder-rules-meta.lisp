@@ -668,7 +668,7 @@
                             
                             VALID-SC)))))||#
 
-(rp::add-meta-rules
+#|(rp::add-meta-rules
  adder-rule-formula-checks
  (list
   (make rp-meta-rule-rec
@@ -680,4 +680,18 @@
         :fnc 'resolve-adder-sum-order
         :trig-fnc 'merge-adder-b+
         :dont-rw t
-        :valid-syntax t)))
+        :valid-syntax t)))||#
+
+
+(rp::add-meta-rule
+ :meta-fnc resolve-adder-and-order
+ :trig-fnc merge-adder-and
+ :valid-syntaxp t
+ :formula-checks adder-rule-formula-checks ;
+ :returns (mv term dont-rw))
+(rp::add-meta-rule
+ :meta-fnc resolve-adder-sum-order
+ :trig-fnc merge-adder-b+
+ :valid-syntaxp t
+ :formula-checks adder-rule-formula-checks
+ :returns (mv term dont-rw))

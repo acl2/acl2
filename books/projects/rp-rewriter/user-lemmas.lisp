@@ -151,7 +151,7 @@ Forced term was:~% ~p0 ~% "
    (hard-error
     'force-fail
     "The below term could not be reduced to 't. 
-If you want to look at the stack, you can try using 
+If you want to look at the stack, you can enable and view it with 
  (rp::update-rp-brr t rp::rp-state) and
  (rp::pp-rw-stack :omit '()
                   :evisc-tuple (evisc-tuple 10 12 nil nil)
@@ -166,3 +166,10 @@ Forced term is ~p2 ~% "
    (equal (force$ forced-term rule hyp) t))
   :hints (("goal" 
            :in-theory '(return-last hard-error hide))))
+
+
+(disable-exc-counterpart force$)
+
+(def-rp-rule force$-of-t
+  (equal (force$ t rule-name hyp)
+         t))

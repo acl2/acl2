@@ -38,7 +38,7 @@
 
 (in-package "RP")
 
-(xdoc::defxdoc
+#|(xdoc::defxdoc
  multiplier-proofs-2
  :parents (rp-rewriter/applications)
  :short "A demo for integer multiplier proofs 2.0"
@@ -257,4 +257,4 @@ acl2::set-max-mem) and it can finish large proofs when SBCL terminates with memo
 errors.  </p>
 "
 
- )
+ )||#

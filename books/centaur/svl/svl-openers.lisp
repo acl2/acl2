@@ -729,7 +729,7 @@ because guards might be executed too many times during such proofs.</p>"
                             delayed-env
                             modules)
            (b* ((x (cdr (assoc-equal modname modules)))
-                (- (cw "Using svl-run-phase-wog-opener for ~p0 ~%"
+                (- (cw "Expanding the module ~p0... ~%"
                        modname))
                 (env-wires (svex-env-append
                             (car delayed-env)

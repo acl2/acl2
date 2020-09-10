@@ -22,6 +22,17 @@
                   (2 2 (:REWRITE RATIONALP-UNARY--))
                   (2 2
                      (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP)))
+(DENOMINATOR-OF-+-OF---AND-- (6 6
+                                (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
+                             (5 3 (:REWRITE DEFAULT-+-2))
+                             (5 3 (:REWRITE DEFAULT-+-1))
+                             (4 2 (:REWRITE DEFAULT-UNARY-MINUS))
+                             (4 2 (:REWRITE DEFAULT-DENOMINATOR))
+                             (3 2 (:REWRITE RATIONALP-+))
+                             (3 2 (:REWRITE DENOMINATOR-PLUS))
+                             (2 2 (:REWRITE RATIONALP-UNARY--))
+                             (2 2 (:REWRITE INTEGERP==>DENOMINATOR=1))
+                             (2 2 (:REWRITE DENOMINATOR-WHEN-INTEGERP)))
 (<=-OF-DENOMINATOR-OF-*-OF-/ (3 2 (:REWRITE /R-WHEN-ABS-NUMERATOR=1))
                              (2 2 (:REWRITE DEFAULT-<-2))
                              (2 2 (:REWRITE DEFAULT-<-1))

@@ -108,31 +108,9 @@
                             ())))))
 
 
-#|(defthm fast-alist-free-meta-is-valid-rp-meta-rulep
-  (implies (and (fast-alist-free-meta-formula-checks state)
-                (rp-evl-meta-extract-global-facts :state state))
-           (let ((rule (make rp-meta-rule-rec
-                             :fnc 'fast-alist-free-meta
-                             :trig-fnc 'fast-alist-free
-                             :dont-rw t
-                             :valid-syntax t)))
-             (and (valid-rp-meta-rulep rule state)
-                  (rp-meta-valid-syntaxp-sk rule state))))
-  :otf-flg t
-  :hints (("Goal"
-           :in-theory (e/d (RP-META-VALID-SYNTAXP)
-                           (RP-TERMP
-                            fast-alist-free-meta
-                            RP-TERM-LISTP
-                            
-                            VALID-SC)))))||#
-
-
-(rp::add-meta-rules
- fast-alist-free-meta-formula-checks
- (list
-  (make rp-meta-rule-rec
-        :fnc 'fast-alist-free-meta
-        :trig-fnc 'fast-alist-free
-        :dont-rw t
-        :valid-syntax t)))
+(rp::add-meta-rule
+ :meta-fnc fast-alist-free-meta
+ :trig-fnc fast-alist-free
+ :formula-checks fast-alist-free-meta-formula-checks
+ :valid-syntaxp t
+ :returns (mv term dont-rw))

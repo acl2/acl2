@@ -68,7 +68,8 @@
                            ,real-body)))
           (fnc `((local
                   (defun-nx ,fnc-name ,keys
-                    ,real-body)))))
+                    ,real-body))
+                 (disable-exc-counterpart ,fnc-name))))
        (mv (append other-signatures (list signature))
            (append other-fncs fnc)
            (append other-openers opener)
@@ -142,18 +143,26 @@
           `(encapsulate
              ,sigs
              ,@fncs
-             (defthm ,rule-name
-               (and (implies ,hyp-body
-                             (,(if iff `iff `equal)
-                              ,lhs
-                              ,rhs-body))
-                    ,@openers)
-               ,@hints)
+             (with-output
+               :stack :pop
+               :on (acl2::summary acl2::event)
+               :summary (acl2::time acl2::rules)
+               (defthm ,rule-name
+                 (and (implies ,hyp-body
+                               (,(if iff `iff `equal)
+                                ,lhs
+                                ,rhs-body))
+                      ,@openers)
+                 ,@hints))
              (add-rp-rule ,rule-name))
         `(progn
-           (defthm ,rule-name
-             ,untranslated-rule
-             ,@hints)
+           (with-output
+             :stack :pop
+             :on (acl2::summary acl2::event)
+             :summary (acl2::time acl2::rules)
+             (defthm ,rule-name
+               ,untranslated-rule
+               ,@hints))
            (add-rp-rule ,rule-name)))))
 
   ;; (case-match rule
@@ -291,7 +300,7 @@
                                             'rp-rules (w state))))
              (- (and (not (consp entry))
                      (hard-error 'bump-rp-rule
-                                 "This rule is not added with add-rp-rule uet. There is
+                                 "This rule is not added with add-rp-rule There is
 nothing to bump!" nil)))
              (cur-table (table-alist 'rp-rules (w state)))
              (cur-table (remove-assoc-equal rune cur-table)))
@@ -323,7 +332,7 @@ nothing to bump!" nil)))
                  (hard-error 'add-rp-rule
                              "Inside-out and outside-in options cannot be nil
 at the same time. ~%" nil))))
-                        
+
       `(make-event
         (b* ((body (and ,beta-reduce
                         (meta-extract-formula ',rule-name state)))
@@ -337,12 +346,12 @@ at the same time. ~%" nil))))
              (rest-body
               `(with-output
                  :off :all
-                 :gag-mode nil
+                 :gag-mode nil :on error
                  (make-event
                   (b* ((rune (get-rune-name ',new-rule-name state))
                        (disabled ,,disabled)
                        (- (get-rules `(,rune) state :warning :err)))
-                    `(progn  
+                    `(progn
                        (table rp-rules
                               ',rune
                               (cons ,(cond
@@ -356,29 +365,40 @@ at the same time. ~%" nil))))
                  (defthm-lambda ,new-rule-name
                    ,body
                    :hints ,',hints)
-                 (acl2::extend-pe-table ,new-rule-name
-                                        (def-rp-rule ,new-rule-name
-                                          ,body
-                                          :hints ,',hints))
-                 (in-theory (disable ,new-rule-name))
-                 (value-triple (cw "This rule has a lambda expression on its RHS, ~
+                 (with-output :off :all :gag-mode nil :on error
+                   (progn
+                     (acl2::extend-pe-table ,new-rule-name
+                                            (def-rp-rule ,new-rule-name
+                                              ,body
+                                              :hints ,',hints))
+                     (in-theory (disable ,new-rule-name))
+                     (value-triple (cw "This rule has a lambda expression on its RHS, ~
 and it is automatically put through rp::defthm-lambda  and a ~
 new rule is created to be used by RP-Rewriter. You can disable this by setting ~
 :beta-reduce to nil ~% The name of this rule is: ~p0 ~%" ',new-rule-name))
-                 (value-triple ',new-rule-name))
+                     (value-triple ',new-rule-name))))
             rest-body)))))
 
-  (defmacro def-rp-rule (rule-name rule &rest hints)
+  (defun def-rp-rule-fn (rule-name rule hints)
     `(progn
        (defthm-lambda ,rule-name ,rule ,@hints)
        (acl2::extend-pe-table ,rule-name
-                              (def-rp-rule ,rule-name ,rule ,@hints))))
+                              (def-rp-rule ,rule-name ,rule ,@hints))
+       (value-triple ',rule-name)))
+
+  (defmacro def-rp-rule (rule-name rule &rest hints)
+    `(with-output
+       :off :all
+       :on (error)
+       :stack :push
+       ,(def-rp-rule-fn rule-name rule hints)))
 
   (defmacro def-rp-rule$ (defthmd disabled rule-name rule  &rest hints)
     `(progn
        (,(if defthmd 'defthmd 'defthm)
         ,rule-name ,rule ,@hints)
-       (add-rp-rule  ,rule-name :disabled ,disabled))))
+       (with-output :off :all :gag-mode nil :on error
+         (add-rp-rule  ,rule-name :disabled ,disabled)))))
 
 (encapsulate
   nil
@@ -507,7 +527,6 @@ RP-Rewriter will throw an eligible error.</p>"
       (mv (acons (caar alist) c rest)
           state))))
 
-
 (define rp-thm-rw-fn ((term rp-termp) runes
                       runes-outside-in
                       (new-synps alistp)
@@ -517,8 +536,6 @@ RP-Rewriter will throw an eligible error.</p>"
        ((mv term rp-state)
         (preprocess-then-rp-rw term rp-state state)))
     (mv term rp-state)))
-  
-  
 
 (defmacro rp-thm (term &key
                        (untranslate 't)
@@ -607,42 +624,50 @@ RP-Rewriter will throw an eligible error.</p>"
                            )
   `(make-event
     (b* ((- (check-if-clause-processor-up-to-date (w state)))
-         (body `(def-rp-rule ,',name ,',term
-                  :rule-classes ,',rule-classes
-                  :hints (("Goal"
-                           :do-not-induct t
-                           :rw-cache-state nil
-                           :do-not '(preprocess generalize fertilize)
-                           :clause-processor
-                           (rp-cl :runes ,,runes
-                                  :runes-outside-in ,,runes-outside-in
-                                  :new-synps ,',new-synps))))))
+         (body `(with-output
+                  :stack :pop
+                  :on (acl2::summary acl2::event acl2::error)
+                  :gag-mode :goals
+                  :summary (acl2::time acl2::rules)
+                  (def-rp-rule ,',name ,',term
+                    :rule-classes ,',rule-classes
+                    :hints (("Goal"
+                             :do-not-induct t
+                             :rw-cache-state nil
+                             :do-not '(preprocess generalize fertilize)
+                             :clause-processor
+                             (rp-cl :runes ,,runes
+                                    :runes-outside-in ,,runes-outside-in
+                                    :new-synps ,',new-synps)))))))
       ,(if (or disable-meta-rules
                enable-meta-rules
                enable-rules
                disable-rules)
-           ``(encapsulate
-               nil
-               ,@(if ',enable-meta-rules
-                     `((local
-                        (enable-meta-rules ,@',enable-meta-rules)))
-                   'nil)
+           ``(with-output
+               :off :all
+               :stack :push
+               (encapsulate
+                 nil
+                 ,@(if ',enable-meta-rules
+                       `((local
+                          (enable-meta-rules ,@',enable-meta-rules)))
+                     'nil)
 
-               ,@(if ',disable-meta-rules
-                     `((local
-                        (disable-meta-rules ,@',disable-meta-rules)))
-                   'nil)
+                 ,@(if ',disable-meta-rules
+                       `((local
+                          (disable-meta-rules ,@',disable-meta-rules)))
+                     'nil)
 
-               ,@(if ',enable-rules
-                     `((local
-                        (enable-rules ,',enable-rules)))
-                   'nil)
+                 ,@(if ',enable-rules
+                       `((local
+                          (enable-rules ,',enable-rules)))
+                     'nil)
 
-               ,@(if ',disable-rules
-                     `((local
-                        (disable-rules ,',disable-rules)))
-                   'nil)
-               ,body)
+                 ,@(if ',disable-rules
+                       `((local
+                          (disable-rules ,',disable-rules)))
+                     'nil)
+                 ,body))
          `body))))
 
 (defmacro defthmrp (&rest rest)

@@ -745,3 +745,43 @@
                               (:REWRITE RP::EQUALITY-MEASURE-LEMMA1))
                            (8 2 (:REWRITE COMMUTATIVITY-OF-+))
                            (2 2 (:REWRITE RP::MEASURE-LEMMA7-2)))
+(RP::COUNT-COUNG-COMPARE-OF-SUMS)
+(RP::CONS-COUNT-OF-CADDDR (408 20 (:DEFINITION RP::CONS-COUNT))
+                          (278 278 (:REWRITE RP::MEASURE-LEMMA1))
+                          (66 32 (:REWRITE DEFAULT-+-2))
+                          (64 64 (:REWRITE RP::MEASURE-LEMMA1-2))
+                          (58 32 (:REWRITE DEFAULT-+-1))
+                          (23 10 (:REWRITE DEFAULT-<-2))
+                          (17 10 (:REWRITE DEFAULT-<-1))
+                          (10 10
+                              (:REWRITE RP::EQUALITY-MEASURE-LEMMA3))
+                          (10 10
+                              (:REWRITE RP::EQUALITY-MEASURE-LEMMA2))
+                          (10 10
+                              (:REWRITE RP::EQUALITY-MEASURE-LEMMA1))
+                          (10 2 (:REWRITE RP::MEASURE-LEMMA7-2))
+                          (10 2 (:REWRITE RP::MEASURE-LEMMA7))
+                          (10 2 (:REWRITE RP::MEASURE-LEMMA6-5))
+                          (7 7 (:REWRITE FOLD-CONSTS-IN-+))
+                          (4 2
+                             (:REWRITE RP::SUM-WITH-POSITIVE-LEMMA3)))
+(RP::CONS-COUNT-OF-CADDDDR (534 26 (:DEFINITION RP::CONS-COUNT))
+                           (364 364 (:REWRITE RP::MEASURE-LEMMA1))
+                           (102 46 (:REWRITE DEFAULT-+-2))
+                           (84 84 (:REWRITE RP::MEASURE-LEMMA1-2))
+                           (82 46 (:REWRITE DEFAULT-+-1))
+                           (30 12 (:REWRITE DEFAULT-<-2))
+                           (20 12 (:REWRITE DEFAULT-<-1))
+                           (15 15 (:REWRITE FOLD-CONSTS-IN-+))
+                           (12 12
+                               (:REWRITE RP::EQUALITY-MEASURE-LEMMA3))
+                           (12 12
+                               (:REWRITE RP::EQUALITY-MEASURE-LEMMA2))
+                           (12 12
+                               (:REWRITE RP::EQUALITY-MEASURE-LEMMA1))
+                           (10 2 (:REWRITE RP::MEASURE-LEMMA7-2))
+                           (10 2 (:REWRITE RP::MEASURE-LEMMA7))
+                           (10 2 (:REWRITE RP::MEASURE-LEMMA6-5))
+                           (10 2 (:REWRITE RP::CONS-COUNT-OF-CADDDR))
+                           (6 3
+                              (:REWRITE RP::SUM-WITH-POSITIVE-LEMMA3)))

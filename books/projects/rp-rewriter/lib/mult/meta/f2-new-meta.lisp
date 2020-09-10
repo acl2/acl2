@@ -1334,7 +1334,7 @@
 ;;                             d2-meta-main
 ;;                             valid-sc)))))
 
-(rp::add-meta-rules
+#|(rp::add-meta-rules
  f2-meta-formula-checks
  (list
   (make rp-meta-rule-rec
@@ -1346,4 +1346,18 @@
         :fnc 'd2-meta-main
         :trig-fnc 'd2-new
         :dont-rw t
-        :valid-syntax t)))
+        :valid-syntax t)))||#
+
+(rp::add-meta-rule
+ :meta-fnc f2-meta-main
+ :trig-fnc f2-new
+ :valid-syntaxp t
+ :formula-checks f2-meta-formula-checks
+ :returns (mv term dont-rw))
+
+(rp::add-meta-rule
+ :meta-fnc d2-meta-main
+ :trig-fnc d2-new
+ :valid-syntaxp t
+ :formula-checks f2-meta-formula-checks
+ :returns (mv term dont-rw))

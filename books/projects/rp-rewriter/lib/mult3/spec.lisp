@@ -34,7 +34,6 @@
 ; Original Author(s):
 ; Mertcan Temel         <mert@utexas.edu>
 
-
 ;; Specs and lemmas for multiplier proofs.
 ;; Main lemmas:
 ;; 1. mult-simple-spec-is-* (disabled)
@@ -44,6 +43,8 @@
 (in-package "RP")
 
 (include-book "ihs/basic-definitions" :dir :system)
+
+(include-book "fnc-defs")
 
 (include-book "projects/rp-rewriter/top" :dir :system)
 
@@ -960,7 +961,7 @@
               (sum-col-bybit-simple (ash mult -1)
                                     mcand
                                     (1- col-index))))))
-  
+
   (define sum-pps-bycol-bybit-simple ((mult integerp)
                                       (mcand integerp)
                                       (carry-in integerp)
@@ -1113,3 +1114,159 @@
                             mult-byrow-spec-is-mult-simple-spec
                             mult-bycol-spec-is-mult-byrow-spec)
                            ()))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Plus to 2vec-adder
+
+(encapsulate
+  nil
+
+  (local
+   (include-book "lemmas"))
+
+  (local
+   (defthmd equal-of-loghead-logapp-1-lemma
+     (implies (not (zp size))
+              (equal (logapp 1 (bit-of x 0) (loghead (1- size) (ash x -1)))
+                     (loghead size x)))
+     :hints (("Goal"
+              :in-theory (e/d* (bitops::ihsext-inductions
+                                bit-of
+                                bitops::ihsext-recursive-redefs)
+                               ())))))
+
+  (local
+   (defthm equal-of-loghead-logapp-1
+     (implies (not (zp size))
+              (equal (equal (loghead size x)
+                            (logapp 1 a b))
+                     (equal (logapp 1 (bit-of x 0) (loghead (1- size) (ash x -1)))
+                            (logapp 1 a b))))
+     :hints (("Goal"
+              :use ((:instance equal-of-loghead-logapp-1-lemma))
+              :in-theory (e/d* ()
+                               ())))))
+
+  (local
+   (defthm to-m2
+     (equal (ACL2::BOOL->BIT (LOGBITP 0 X))
+            (m2 x))
+     :hints (("Goal"
+              :in-theory (e/d (LOGBITP
+                               floor
+                               ifix
+                               oddp
+                               evenp
+                               mod
+                               m2
+                               ACL2::BOOL->BIT
+                               (:REWRITE ACL2::|(* (if a b c) x)|)
+                               (:REWRITE ACL2::|(* 1 x)|)
+                               (:REWRITE ACL2::|(* y x)|)
+                               (:REWRITE ACL2::|(equal (if a b c) x)|)
+                               (:REWRITE ACL2::|(mod (if a b c) x)|)
+                               (:REWRITE ACL2::|(mod x 2)| . 1)
+                               (:REWRITE ACL2::INTEGERP==>DENOMINATOR-=-1)
+                               (:REWRITE ACL2::INTEGERP==>NUMERATOR-=-X))
+                              (mod2-is-m2
+                               +-is-sum
+                               floor2-if-f2))))))
+
+  (local
+   (defthm logtail-to-floor
+     (implies (integerp x)
+              (equal
+               (logtail 1 x)
+               (floor x 2)))
+     :hints (("Goal"
+              :in-theory (e/d (floor
+                               logtail)
+                              ())))))
+
+  (local
+   (defthm logapp-of-the-same
+     (equal (equal (logapp 1 x y)
+                   (logapp 1 x z))
+            (equal (ifix y) (ifix z)))
+     :hints (("Goal"
+              :in-theory (e/d (logapp
+                               sum
+                               ifix)
+                              (+-is-sum))))))
+
+  (local
+   (encapsulate
+     nil
+     (local
+      (use-arithmetic-5 t))
+     (defthm f2-of-m2
+       (and (equal (sum other (f2 (sum (m2 x) y)))
+                   (sum other
+                        (f2 (sum x y))
+                        (-- (f2 x))))
+            (equal (sum (f2 (sum (m2 x) y)) other)
+                   (sum other
+                        (f2 (sum x y))
+                        (-- (f2 x)))))
+       :hints (("Goal"
+                :in-theory (e/d (f2
+                                 m2
+                                 sum --)
+                                (+-is-sum
+                                 floor2-if-f2
+                                 mod2-is-m2)))))))
+
+  (local
+   (defthm bitp-of-f2
+     (and (implies (and (bitp x)
+                        (bitp y)
+                        (bitp z))
+                   (bitp (f2 (sum x y z))))
+          (implies (and (bitp x)
+                        (bitp y))
+                   (bitp (f2 (sum x y)))))
+     :hints (("Goal"
+              :in-theory (e/d (bitp) ())))))
+
+
+  (defthm loghead-of-+-is-2vec-adder
+    (implies (and (integerp x)
+                  (integerp y)
+                  (bitp carry))
+             (and (equal (loghead size (+ x y carry))
+                         (2vec-adder x y carry size))
+                  (equal (loghead size (+ x carry y))
+                         (2vec-adder x y carry size))
+                  (equal (loghead size (+ carry x y))
+                         (2vec-adder x y carry size))))
+    :otf-flg t
+    :hints (("Goal"
+             :induct (2vec-adder x y carry size)
+             :do-not-induct t
+             :in-theory (e/d* (2vec-adder
+                               s-spec
+                               BITOPS::LOGCDR-OF-LOGHEAD
+                               sum-list
+                               BIT-OF
+                               c-spec
+                               bit-concat)
+                              (D2-OF-MINUS
+                               SUM-OF-F2S)))))
+  
+  (defthm loghead-of-+-is-2vec-adder-without-carry
+    (implies (and (integerp x)
+                  (integerp y))
+             (equal (loghead size (+ x y))
+                    (2vec-adder x y 0 size)))
+    :otf-flg t
+    :hints (("Goal"
+             :use ((:instance loghead-of-+-is-2vec-adder
+                              (carry 0)))
+             :do-not-induct t
+             :in-theory (e/d ()
+                             (loghead-of-+-is-2vec-adder))))))
+
+
+(add-rp-rule loghead-of-+-is-2vec-adder-without-carry)
+(add-rp-rule loghead-of-+-is-2vec-adder)
+

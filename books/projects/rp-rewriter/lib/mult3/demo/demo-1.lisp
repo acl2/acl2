@@ -87,10 +87,10 @@
                 (bitp z))
            (equal (svl::svl-run-phase-wog "fa"
                                           (list x y z)
-                                          '(nil nil)
+                                          svl::*empty-state*
                                           *svl-design*)
                   (mv (s-c-spec (list x y z))
-                      '(nil nil))))
+                      svl::*empty-state*)))
   :hints (("Goal"
            :do-not-induct t
            :in-theory (e/d (bitp)
@@ -101,10 +101,10 @@
                 (bitp y))
            (equal (svl::svl-run-phase-wog "ha"
                                           (list x y)
-                                          '(nil nil)
+                                          svl::*empty-state*
                                           *svl-design*)
                   (mv (s-c-spec (list x y))
-                      '(nil nil))))
+                      svl::*empty-state*)))
   :hints (("Goal"
            :do-not-induct t
            :in-theory (e/d (bitp)
@@ -114,18 +114,17 @@
 ; more stobjs.
 (set-waterfall-parallelism nil)
 
-  ;; Lemma for final stage adder.
+;; Lemma for final stage adder.
 (defthmrp final-stage-adder-correct
   (implies (and (integerp in1)
                 (integerp in2))
            (equal (svl::svl-run-phase-wog "HC_128"
                                           (list in1 in2)
-                                          '(nil nil)
+                                          svl::*empty-state*
                                           *svl-design*)
-                  (mv (list (rp::4vec-adder (svl::bits in1 0 128)
-                                            (svl::bits in2 0 128 )
-                                            0 129))
-                      (svl::make-svl-env))))
+                  (mv (list (loghead 129 (+ (loghead 128 in1)
+                                            (loghead 128 in2))))
+                      svl::*empty-state*)))
   :disable-meta-rules (s-c-spec-meta)
   :enable-rules rp::*adder-rules*)
 
@@ -160,8 +159,8 @@
                 (integerp in2))
            (equal (svl::svl-run-phase-wog "DT_SB4_HC_64_64"
                                           (list in1 in2)
-                                          '(nil nil)
+                                          svl::*empty-state*
                                           *svl-design*)
                   (mv  (list (loghead 128 (* (sign-ext in1 64)
                                              (sign-ext in2 64))))
-                       (svl::make-svl-env)))))
+                       svl::*empty-state*))))

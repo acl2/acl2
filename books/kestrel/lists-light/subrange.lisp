@@ -201,3 +201,37 @@
            (equal (equal (cdr lst) (subrange 1 end lst))
                   (and (true-listp lst)
                        (equal (len lst) (+ 1 end))))))
+
+(defthmd equal-of-subrange-opener-helper
+  (implies (and (natp low)
+                (natp high)
+                (<= low high))
+           (equal (equal (subrange low high x)
+                         y)
+                  (and (consp y)
+                       (equal (nth low x) (nth 0 y))
+                       (equal (subrange (+ 1 low) high x)
+                              (cdr y)))))
+  :hints (("Goal" :use ((:instance subrange-opener (end high) (start low) (lst x))))))
+
+(defthmd equal-of-subrange-opener
+  (implies (and (syntaxp (and (quotep low)
+                              (quote high)))
+                (natp low)
+                (natp high)
+                (<= low high))
+           (equal (equal (subrange low high x)
+                         y)
+                  (and (consp y)
+                       (equal (nth low x) (nth 0 y))
+                       (equal (subrange (+ 1 low) high x)
+                              (cdr y)))))
+  :hints (("Goal" :use (:instance equal-of-subrange-opener-helper))))
+
+(defthm equal-subrange-nthcdr-rewrite
+  (implies (and (equal (+ 1 j) (len x))
+                (true-listp x))
+           (equal (equal (subrange i j x)
+                         (nthcdr i x))
+                  t))
+  :hints (("Goal" :in-theory (e/d (subrange nthcdr) ()))))

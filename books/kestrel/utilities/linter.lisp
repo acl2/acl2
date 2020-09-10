@@ -255,7 +255,10 @@
   (let* ((args-mentioned (args-in-format-string string)) ;these are chars
          (alist-keys (symbolic-strip-cars alist))
          (quoted-args-mentioned (enquote-list args-mentioned)))
-    (prog2$ (if (not (subsetp-equal quoted-args-mentioned alist-keys))
+    (progn$ (if (not (no-duplicatesp alist-keys))
+                (cw "(In ~s0, questionable format string use in ~x1. Duplicate keys in alist: ~x2)~%~%" (thing-being-checked-to-string thing-being-checked) call alist-keys)
+              nil)
+     (if (not (subsetp-equal quoted-args-mentioned alist-keys))
                 (cw "(In ~s0, questionable format string use in ~x1. Missing args? Mentioned args are ~x2 but alist keys are ~x3)~%~%" (thing-being-checked-to-string thing-being-checked) call quoted-args-mentioned alist-keys)
               nil)
             (if (not (subsetp-equal alist-keys quoted-args-mentioned))

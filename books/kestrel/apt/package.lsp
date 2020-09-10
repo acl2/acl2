@@ -294,6 +294,7 @@
                          replace-in-untranslated-term
                          resolve-numbered-name-wildcard
                          restore-output?
+                         rewrite$
                          rewrite-if-avoid-swap
                          rewrite-if1
                          rewrite1

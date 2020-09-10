@@ -746,4 +746,4 @@
                             (:REWRITE BITP-OF-BIT-OF))))))
 
 
-(bump-all-enabled-meta-rules)
+(bump-all-meta-rules)

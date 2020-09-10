@@ -10,7 +10,9 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/soft/implementation" :dir :system)
+(include-book "kestrel/soft/defunvar" :dir :system)
+(include-book "kestrel/soft/defun2" :dir :system)
+(include-book "kestrel/soft/defun-sk2" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

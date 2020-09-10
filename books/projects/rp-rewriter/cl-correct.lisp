@@ -66,10 +66,10 @@
     (b* ((e (cdar table-entry)))
       (append (true-list-fix e) (get-meta-rules (cdr table-entry))))))
 
-(defwarrant rp-meta-fnc)
-(defwarrant rp-meta-trig-fnc)
+;;(defwarrant rp-meta-fnc)
+;;(defwarrant rp-meta-trig-fnc)
 
-(define get-enabled-meta-rules-from-table (outside-in-flg state)
+#|(define get-enabled-meta-rules-from-table (outside-in-flg state)
   :prepwork
   ((local
     (defthm weak-rp-meta-rule-recs-p-implies-true-listp
@@ -114,7 +114,7 @@
                              (not outside-in-flg)))))
                    collect x))
        (- (fast-alist-clean rp-rules)))
-    res))
+    res))||#
 
 (defun rp-clause-processor-aux (cl hints rp-state state)
   (declare
@@ -193,19 +193,19 @@ values will cause runes to be not retrieved from the table.~%")))||#
    :otf-flg t
    :hints (("Goal"
             :do-not-induct t
-            :expand ((remove-disabled-meta-rules
+          #|  :expand ((remove-disabled-meta-rules
                       nil
                       (table-alist 'disabled-rp-meta-rules
                                    (cdr (assoc-equal 'acl2::current-acl2-world
-                                                     (nth 2 state))))))
+                                                     (nth 2 state))))))||#
             :in-theory (e/d (rp-evl-of-fncall-args
                              rp-evl-of-beta-search-reduce
-                             rp-meta-valid-syntax-listp
+                             ;;rp-meta-valid-syntax-listp
                              preprocess-then-rp-rw-is-correct)
                             (get-rules
-                             valid-rp-meta-rule-listp
-                             valid-rp-meta-rulep
-                             rp-meta-valid-syntaxp-sk
+                             ;;valid-rp-meta-rule-listp
+                             ;;valid-rp-meta-rulep
+                             ;;rp-meta-valid-syntaxp-sk
                              ex-from-synp-lemma1
                              valid-rules-alistp
                              preprocess-then-rp-rw
@@ -218,7 +218,7 @@ values will cause runes to be not retrieved from the table.~%")))||#
    (xargs :stobjs (rp-state state)
           :guard t
           :guard-hints (("goal"
-                         :in-theory (e/d (rp-meta-valid-syntax-listp)
+                         :in-theory (e/d ()
                                          (rp-meta-valid-syntaxp-sk))))
           :verify-guards nil))
   (if (rp-cl-hints-p hints)
@@ -229,12 +229,6 @@ values will cause runes to be not retrieved from the table.~%")))||#
     (mv nil (list cl) rp-state state)))
 
 (verify-guards rp-rewriter)
-
-(progn
-  (table rp-rw 'meta-rules nil)
-  (table rp-rw 'simple-meta-rules-alist nil)
-  (table rp-rw 'rp-rewriter
-         'rp-rewriter))
 
 (local
  (defthm correctness-of-rp-clause-processor-lemma
@@ -261,13 +255,13 @@ values will cause runes to be not retrieved from the table.~%")))||#
   :otf-flg t
   :hints (("Goal"
            :in-theory (e/d (correctness-of-rp-clause-processor-aux
-                            valid-rp-meta-rule-listp
-                            rp-meta-valid-syntax-listp
+                            ;;valid-rp-meta-rule-listp
+                            
                             preprocess-then-rp-rw-is-correct)
                            (rp-clause-processor-aux
                             rp-cl-hints-p
-                            valid-rp-meta-rulep
-                            rp-meta-valid-syntaxp-sk
+                            ;;valid-rp-meta-rulep
+                            ;;rp-meta-valid-syntaxp-sk
                             acl2::conjoin-clauses
                             acl2::clauses-result))))
   :rule-classes :clause-processor)

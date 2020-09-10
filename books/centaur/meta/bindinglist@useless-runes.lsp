@@ -1436,30 +1436,7 @@
   80
   (:REWRITE
    CMR::REMOVE-SELF-BINDINGS-OF-PSEUDO-TERM-LIST-FIX-ACTUALS-NORMALIZE-CONST)))
-(CMR::SET-EQUIV-LEMMA (71 12 (:REWRITE SUBSETP-MEMBER . 3))
-                      (66 5 (:DEFINITION MEMBER-EQUAL))
-                      (18 1 (:REWRITE SUBSETP-OF-CONS))
-                      (14 14 (:TYPE-PRESCRIPTION SUBSETP-EQUAL))
-                      (14 14 (:REWRITE SUBSETP-MEMBER . 2))
-                      (14 14 (:REWRITE SUBSETP-MEMBER . 1))
-                      (14 2
-                          (:REWRITE SUBSETP-IMPLIES-SUBSETP-CDR))
-                      (12 12 (:REWRITE SUBSETP-MEMBER . 4))
-                      (10 2 (:DEFINITION BINARY-APPEND))
-                      (8 8 (:REWRITE SUBSETP-TRANS2))
-                      (8 8 (:REWRITE SUBSETP-TRANS))
-                      (8 8 (:REWRITE MEMBER-WHEN-ATOM))
-                      (8 4
-                         (:TYPE-PRESCRIPTION TRUE-LISTP-APPEND))
-                      (7 7 (:REWRITE SUBSETP-WHEN-ATOM-RIGHT))
-                      (7 7 (:REWRITE SUBSETP-WHEN-ATOM-LEFT))
-                      (7 7 (:REWRITE DEFAULT-CDR))
-                      (7 7 (:REWRITE DEFAULT-CAR))
-                      (4 4 (:TYPE-PRESCRIPTION TRUE-LISTP))
-                      (4 4 (:TYPE-PRESCRIPTION BINARY-APPEND))
-                      (4 4 (:REWRITE APPEND-WHEN-NOT-CONSP))
-                      (4 4
-                         (:REWRITE APPEND-ATOM-UNDER-LIST-EQUIV)))
+(CMR::SET-EQUIV-LEMMA)
 (CMR::SET-EQUIV-LEMMA2 (260 4 (:DEFINITION SET-DIFFERENCE-EQUAL))
                        (154 14 (:REWRITE SUBSETP-CAR-MEMBER))
                        (104 8 (:DEFINITION MEMBER-EQUAL))

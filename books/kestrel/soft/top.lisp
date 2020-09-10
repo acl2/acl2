@@ -12,5 +12,3 @@
 
 (include-book "documentation")
 (include-book "implementation")
-(include-book "define-sk2")
-(include-book "defund-sk2")

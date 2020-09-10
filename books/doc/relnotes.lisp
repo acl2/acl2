@@ -260,6 +260,17 @@
 
    (xdoc::p
     "A new transformation has been added:
+     @(tsee apt::solve), the `solving transformation'.
+     This attempts to directly solve a program synthesis problem,
+     expressed as a constraint problem,
+     via inference methods like rewriting, SMT solving, SAT solving, etc.
+     Currently two rewriting methods are supported,
+     along with a manual method in which the solution is supplied
+     (which still automates some event and proof generation);
+     support for more methods will be added.")
+
+   (xdoc::p
+    "A new transformation has been added:
      @(tsee apt::expdata), the `expanded data transformation'.
      This can realize data type refinements where
      each instance of the old data may be represented by
@@ -719,6 +730,11 @@
      analogously to other macros as described above.")
 
    (xdoc::p
+    "A new macro @(tsee soft::defequal),
+     to define second-order equalities between functions
+     and provide some reasoning support for them.")
+
+   (xdoc::p
     "An option @(':enable') has been added to @(tsee soft::defun-inst),
      to control the enablement of the generated function
      (and, for quantifier functions, also of the associated rewrite rule).")
@@ -802,7 +818,8 @@
      which is like @(tsee defun-sk) but it disables
      (1) the function definition (if @(':constrain') is @('nil'))
      or the definition rule (if @(':constrain') is non-@('nil'))
-     and (2) the rewrite rule.")
+     and (2) the rewrite rule
+     if the @(':thm-enable') input is @('nil') (which is the default).")
 
    (xdoc::p
     "A new event macro @(tsee defmacro+) has been added,
@@ -875,7 +892,11 @@
 
    (xdoc::p
     "The book @('tools/defttag-muffled.lisp') provides a way, using a trust
-    tag, to turn off all subsequent ``TTAG NOTE'' messages.  Use with care!!")
+     tag, to turn off all subsequent ``TTAG NOTE'' messages.  Use with care!!")
+
+   (xdoc::p
+    "See @(see rewrite$) for a flexible, convenient interface to the ACL2
+     rewriter that can be called programmatically.")
 
    ))
 

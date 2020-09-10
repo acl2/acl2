@@ -245,6 +245,13 @@
                         (28 28 (:REWRITE SUBSETP-MEMBER . 2))
                         (25 25 (:REWRITE SUBSETP-MEMBER . 4))
                         (3 1 (:REWRITE FOLD-CONSTS-IN-+)))
+(TAKE-AS-APPEND-AND-NTH (493 44 (:REWRITE TAKE-OF-LEN-FREE))
+                        (429 81 (:DEFINITION LEN))
+                        (261 174 (:REWRITE DEFAULT-+-2))
+                        (209 172 (:REWRITE DEFAULT-<-2))
+                        (174 174 (:REWRITE DEFAULT-+-1))
+                        (172 172 (:REWRITE DEFAULT-<-1))
+                        (19 3 (:REWRITE CDR-OF-APPEND-WHEN-CONSP)))
 (LIST-EQUIV-IMPLIES-EQUAL-TAKE-2
      (84 7 (:REWRITE TAKE-OF-LEN-FREE))
      (47 27 (:REWRITE DEFAULT-+-2))
