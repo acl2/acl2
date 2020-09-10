@@ -80,7 +80,8 @@
       SMT solving,
       SAT solving,
       etc.
-      Currently this solving transformation only supports (a form of) rewriting,
+      Currently this solving transformation
+      only supports (two forms of) rewriting,
       but there are plans to extend it to additional methods.
       Note that some of the methods listed above
       correspond to the sketching approach to program synthesis,
@@ -179,9 +180,14 @@
       "It must be one of the following:")
      (xdoc::ul
       (xdoc::li
+       "@(':acl2-rewriter'), to use the ACL2 rewriter.
+        This method is made available by including
+        @('[books]/kestrel/apt/solve-method-acl2-rewriter.lisp').")
+      (xdoc::li
        "@(':axe-rewriter'), to use the Axe rewriter.
-        (Until Axe is open-sourced in the community books,
-        this method is only available inside Kestrel.)")
+        Until Axe is open-sourced in the community books,
+        this method is only available inside Kestrel, by including
+        @('kestrel-acl2/transformations/solve-method-axe-rewriter.lisp').")
       (xdoc::li
        "@(':manual'), to manually supply a solution."))
      (xdoc::p
@@ -190,13 +196,19 @@
     (xdoc::desc
      "@(':method-rules') &mdash; @('nil')"
      (xdoc::p
-      "Specifies the Axe rewrite rules to use
-       when @(':method') is @(':axe-rewriter').")
+      "Specifies the ACL2 or Axe rewrite rules to use
+       when @(':method') is @(':acl2-rewriter') or @(':axe-rewriter').")
      (xdoc::p
       "It must be a list of symbols that are
-       names of ACL2 theorems usable as Axe rewrite rules.")
+       names of ACL2 theorems usable as ACL2 or Axe rewrite rules.")
      (xdoc::p
-      "This input may be present only if @(':method') is @(':axe-rewriter')."))
+      "For the ACL2 rewriter, these rules are added to the current theory,
+       and the rewriter operates in the so-augmented theory.
+       For the Axe rewriter, these rules define the theory
+       that the rewriter operates on.")
+     (xdoc::p
+      "This input may be present only if
+       @(':method') is @(':acl2-rewriter') or @(':axe-rewriter')."))
 
     (xdoc::desc
      "@(':solution-name') &mdash; default @(':auto')"
@@ -320,11 +332,11 @@
      If no solution is found, the transformation fails
      with an informative error message.")
 
-   (xdoc::h4 "Axe Rewriter")
+   (xdoc::h4 "Rewriting")
 
    (xdoc::p
-    "When the @(':method') input is @(':axe-rewriter'),
-     the transformation calls the Axe rewriter
+    "When the @(':method') input is @(':acl2-rewriter') or @(':axe-rewriter'),
+     the transformation calls the ACL2 or Axe rewriter
      on the term @('matrix<(?f x1 ... xn)>'),
      obtaining a rewritten term @('result').")
 
@@ -348,7 +360,7 @@
      The @(':solution-guard') input may be used to add such assumptions,
      and @(':solution-guard-hints') input may be used to verify guards,
      but there is no general guarantee that suitable input values always exist:
-     the Axe rewriter may produce a logically valid term
+     the ACL2 or Axe rewriter may produce a logically valid term
      that cannot be guard-verified under any hypotheses on its variables.
      Future extensions of this transformation may address this issue,
      e.g. by limiting rewriting so that
@@ -377,17 +389,22 @@
 
    (xdoc::p
     "When the transformation is successful,
-     the Axe rewriting provides an Axe proof of correctness of the solution.
+     the ACL2 or Axe rewriting provides
+     an ACL2 or Axe proof of correctness of the solution.
      This should suffice to generate an ACL2 proof
      of the @('old-if-new') refinement theorem in principle,
      but in practice there may be technical difficulties in some cases.
+     Difficulties seem unlikely to happen when using the ACL2 rewriter,
+     because the same rewrites should apply during the generated proof.
+     Difficulties may be possible when using the Axe rewriter,
+     because its rewriting may not exactly correspond to ACL2's rewriting.
      Future extensions of this transformation may address this issue,
-     e.g. by having the Axe rewriter produce an ACL2 proof in some form
+     e.g. by having the Axe rewriter produce an ACL2 proof
      that this transformation may use to prove the refinement theorem.")
 
    (xdoc::p
     "In any case, the transformation attempts to prove a theorem
-     to confirm the correctness of Axe's rewriting in ACL2.
+     to confirm the correctness of ACL2's or Axe's rewriting in ACL2.
      If that theorem is successful,
      the transformation internally generates a theorem of the form")
    (xdoc::codeblock

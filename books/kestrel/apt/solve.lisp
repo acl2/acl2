@@ -181,19 +181,29 @@
 (define solve-process-method (method (method-present booleanp) ctx state)
   :returns (mv erp (nothing null) state)
   :short "Process the @(':method') input."
-  (cond ((eq method :axe-rewriter)
+  (cond ((eq method :acl2-rewriter)
+         (if (function-symbolp 'solve-gen-solution-acl2-rewriter$ (w state))
+             (value nil)
+           (er-soft+
+            ctx t nil
+            "In order to use the ACL2 rewriter as the solving method ~
+             it is necessary to include ~
+             [books]/kestrel/apt/solve-method-acl2-rewriter.lisp.")))
+        ((eq method :axe-rewriter)
          (if (function-symbolp 'solve-gen-solution-axe-rewriter$ (w state))
              (value nil)
            (er-soft+
             ctx t nil
             "In order to use the Axe rewriter as the solving method ~
-             it is necessary to load the file at ~
-             kestrel-acl2/transformations/solve-method-axe-rewriter.lisp.")))
+             it is necessary to include ~
+             kestrel-acl2/transformations/solve-method-axe-rewriter.lisp
+             (available inside Kestrel).")))
         ((eq method :manual)
          (value nil))
         (method-present
          (er-soft+ ctx t nil
-                   "The :METHOD inputs must be :AXE-REWRITER or :MANUAL, ~
+                   "The :METHOD inputs must be ~
+                    :ACL2-REWRITER, :AXE-REWRITER, or :MANUAL, ~
                     but it is ~x0 instead. ~
                     More methods will be supported in the future."
                    method))
@@ -495,6 +505,48 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define solve-gen-solution-acl2-rewriter ((matrix pseudo-termp)
+                                          (?f symbolp)
+                                          (x1...xn symbol-listp)
+                                          (method-rules symbol-listp)
+                                          ctx
+                                          state)
+  :returns (mv erp
+               (result "A tuple @('(rewritten-term f-body used-rules)')
+                        satisfying
+                        @('(typed-tuplep pseudo-termp
+                                         pseudo-termp
+                                         symbol-listp
+                                         result)').")
+               state)
+  :mode :program
+  :short "Attempt to generate a solution,
+          i.e. to solve @('old') for @('?f') using the ACL2 rewriter."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is a wrapper that reflectively calls the core function,
+     which is in a separate file.
+     This way, one can include the separate file, and call this function,
+     only if desired,
+     without having the @(tsee solve) transformation
+     always depend on, and include, the @(tsee rewrite$) tool.
+     The input validation performed by this transformation ensures that
+     we call this function only if its file is loaded.")
+   (xdoc::p
+    "If the call is successful, this function returns
+     the result @('rewritten-term') of ACL2 rewriting
+     and the obtained solution body @('f-body').
+     See the user documentation, Section `Solution Determination'."))
+  (trans-eval-error-triple `(solve-gen-solution-acl2-rewriter$
+                             ,@(kwote-lst
+                                (list matrix ?f x1...xn method-rules ctx))
+                             state)
+                           ctx
+                           state))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define solve-gen-solution-axe-rewriter ((matrix pseudo-termp)
                                          (?f symbolp)
                                          (x1...xn symbol-listp)
@@ -513,10 +565,10 @@
    (xdoc::p
     "This is a wrapper that reflectively calls the core function,
      which is in a separate file.
-     This way, one can load the separate file, and call this function,
+     This way, one can include the separate file, and call this function,
      only if desired,
      without having the @(tsee solve) transformation
-     always depend on, and including, Axe.
+     always depend on, and include, the Axe tool.
      The input validation performed by this transformation ensures that
      we call this function only if its file is loaded.")
    (xdoc::p
@@ -530,6 +582,79 @@
                              state)
                            ctx
                            state))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define solve-gen-theorem-acl2-rewriter ((matrix pseudo-termp)
+                                         (?f symbolp)
+                                         (x1...xn symbol-listp)
+                                         (rewritten-term pseudo-termp)
+                                         (f-body pseudo-termp)
+                                         (used-rules symbol-listp)
+                                         (names-to-avoid symbol-listp)
+                                         (wrld plist-worldp))
+  :returns (mv (events "A @(tsee pseudo-event-form-listp).")
+               (name "A @(tsee symbolp).")
+               (updated-names-to-avoid "A @(tsee symbol-listp)."))
+  :mode :program
+  :short "Generate a local theorem for
+          the correctness of the solution found by the ACL2 rewriter."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If @(tsee solve-gen-solution-acl2-rewriter) succeeds,
+     it should be the case that
+     the matrix of @('old') is equal to the rewritten term,
+     but the ACL2 rewriter does not produce a replayable ACL2 proof of that.
+     However, in order to prove the refinement theorem,
+     we need an ACL2 theorem asserting that
+     the matrix is equal to the rewritten term.")
+   (xdoc::p
+    "So here we attempt to generate a local theorem asserting that.
+     The programmatic interface to the ACL2 rewriter returns
+     the rules used by the rewriting.
+     Thus, we attempt to prove the theorem
+     in the theory consisting of those rewrite rules,
+     assuming that ACL2 will perform the same rewrites.")
+   (xdoc::p
+    "For uniformity with other solving methods,
+     we also generate a theorem of the form")
+   (xdoc::codeblock
+    "(implies (equal (?f x1 ... xn)"
+    "                f-body)"
+    "         term<(?f x1 ... xn)>)")
+   (xdoc::p
+    "(see the user documentation).
+     This is why this function returns a list of events.
+     The list has always length 2:
+     the first event is a lemma about ACL2's rewriting;
+     the second event is the main theorem @('matrix<f-body>')."))
+  (b* (((mv lemma-name names-to-avoid)
+        (fresh-logical-name-with-$s-suffix 'acl2-rewriting-correct
+                                           nil
+                                           names-to-avoid
+                                           wrld))
+       (used-rules (remove-equal '(:fake-rune-for-type-set nil) used-rules))
+       (lemma-event
+        `(local
+          (defthmd ,lemma-name
+            (equal ,matrix ,rewritten-term)
+            :hints (("Goal" :in-theory ',used-rules)))))
+       ((mv main-name names-to-avoid)
+        (fresh-logical-name-with-$s-suffix 'f-body-correct
+                                           nil
+                                           names-to-avoid
+                                           wrld))
+       (main-event
+        `(local
+          (defthmd ,main-name
+            (implies (equal (,?f ,@x1...xn)
+                            ,f-body)
+                     ,matrix)
+            :hints (("Goal" :in-theory nil :use ,lemma-name))))))
+    (mv (list lemma-event main-event)
+        main-name
+        names-to-avoid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -553,7 +678,7 @@
     "If @(tsee solve-gen-solution-axe-rewriter) succeeds,
      it should be the case that
      the matrix of @('old') is equal to the rewritten term,
-     but the Axe rewriter does not produced a replayable ACL2 proof of that.
+     but the Axe rewriter does not produce a replayable ACL2 proof of that.
      However, in order to prove the refinement theorem,
      we need an ACL2 theorem asserting that
      the matrix is equal to the rewritten term.")
@@ -637,7 +762,28 @@
      a theorem (event and name) for the correctness of the solution.
      The theorem asserts @('matrix<f-body>');
      see user documentation, Section `Solution Determination'."))
-  (cond ((eq method :axe-rewriter)
+  (cond ((eq method :acl2-rewriter)
+         (b* (((er (list rewritten-term f-body used-rules))
+               (solve-gen-solution-acl2-rewriter matrix
+                                                 ?f
+                                                 x1...xn
+                                                 method-rules
+                                                 ctx
+                                                 state))
+              ((mv f-body-correct-events f-body-correct names-to-avoid)
+               (solve-gen-theorem-acl2-rewriter matrix
+                                                ?f
+                                                x1...xn
+                                                rewritten-term
+                                                f-body
+                                                used-rules
+                                                names-to-avoid
+                                                (w state))))
+           (value (list f-body
+                        f-body-correct-events
+                        f-body-correct
+                        names-to-avoid))))
+        ((eq method :axe-rewriter)
          (b* (((er (list rewritten-term f-body))
                (solve-gen-solution-axe-rewriter matrix
                                                 ?f
