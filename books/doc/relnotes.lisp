@@ -260,6 +260,17 @@
 
    (xdoc::p
     "A new transformation has been added:
+     @(tsee apt::solve), the `solving transformation'.
+     This attempts to directly solve a program synthesis problem,
+     expressed as a constraint problem,
+     via inference methods like rewriting, SMT solving, SAT solving, etc.
+     Currently two rewriting methods are supported,
+     along with a manual method in which the solution is supplied
+     (which still automates some event and proof generation);
+     support for more methods will be added.")
+
+   (xdoc::p
+    "A new transformation has been added:
      @(tsee apt::expdata), the `expanded data transformation'.
      This can realize data type refinements where
      each instance of the old data may be represented by
