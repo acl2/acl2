@@ -17,3 +17,5 @@
                    (11 11 (:TYPE-PRESCRIPTION TRUE-LISTP))
                    (11 11 (:TYPE-PRESCRIPTION BINARY-APPEND)))
 (RP::FORCE-FAIL)
+(RP::FORCE$-FAIL)
+(RP::FORCE$-OF-T)
