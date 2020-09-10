@@ -16620,8 +16620,10 @@ Some (rather awful) testing forms are
             (- (nfix (ceiling (* 32 (+ 2 (len old-contents)))
                               cluster-size)))))))
      :hints
-     (("goal" :in-theory (enable hifat-place-file hifat-find-file
-                                 hifat-cluster-count-of-hifat-place-file-lemma-3)
+     (("goal" :in-theory
+       (e/d (hifat-place-file hifat-find-file
+                              hifat-cluster-count-of-hifat-place-file-lemma-3)
+            ((:rewrite nfix-when-natp)))
        :induct (hifat-place-file fs path file)))))
 
   (defthm
