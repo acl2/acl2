@@ -786,6 +786,11 @@
      namely the updated list of names to avoid.
      This helps making the calling code more concise and less error-prone.")
 
+   (xdoc::p
+    "A new utility @(tsee if-tree-leaf-terms) has been added,
+     to collect the leaf sub-terms of a term
+     according to the @(tsee if) tree structure of the term.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "std/testing" "Standard Testing Library"))
