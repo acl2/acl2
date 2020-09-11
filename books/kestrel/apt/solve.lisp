@@ -22,6 +22,7 @@
 (include-book "kestrel/soft/defun-sk2" :dir :system)
 (include-book "kestrel/soft/defund-sk2" :dir :system)
 (include-book "kestrel/std/system/fresh-logical-name-with-dollars-suffix" :dir :system)
+(include-book "kestrel/std/system/if-tree-leaf-terms" :dir :system)
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
 (include-book "kestrel/utilities/runes" :dir :system)
 (include-book "kestrel/utilities/trans-eval-error-triple" :dir :system)
@@ -183,7 +184,7 @@
   :returns (mv erp (nothing null) state)
   :short "Process the @(':method') input."
   (cond ((eq method :acl2-rewriter)
-         (if (function-symbolp 'solve-gen-solution-acl2-rewriter$ (w state))
+         (if (function-symbolp 'solve-call-acl2-rewriter (w state))
              (value nil)
            (er-soft+
             ctx t nil
@@ -191,7 +192,7 @@
              it is necessary to include ~
              [books]/kestrel/apt/solve-method-acl2-rewriter.lisp.")))
         ((eq method :axe-rewriter)
-         (if (function-symbolp 'solve-gen-solution-axe-rewriter$ (w state))
+         (if (function-symbolp 'solve-call-axe-rewriter (w state))
              (value nil)
            (er-soft+
             ctx t nil
@@ -506,6 +507,71 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define solve-gen-solution-from-rewritten-term ((matrix pseudo-termp)
+                                                (rewritten-term pseudo-termp)
+                                                (?f symbolp)
+                                                (x1...xn symbol-listp)
+                                                ctx
+                                                state)
+  :returns (mv erp (f-body "A @(tsee pseudo-termp).") state)
+  :short "Attempt to determine a solution from a rewritten term."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This function is called after calling a rewriter
+     (currently, the ACL2 and Axe rewriters are supported)
+     on the matrix of the specification.
+     The obtained rewritten term is passed to this function,
+     which attempts to extract a solution from it.
+     This extraction process does not depend on the particular rewriter,
+     and thus it is factored in this function,
+     which is always part of the transformation
+     (unlike the functions to call the rewriters,
+     which are in separately includable files.
+     The matrix of the specification is passed to this function
+     just for the purpose of being used in error messages.")
+   (xdoc::p
+    "The extraction process is as explained in the user documentation.
+     We collect the leaves of the @(tsee if) tree,
+     and remove all the @('t') ones from the list,
+     since they do not contribute any constraints.
+     If there are no more terms left, they were all @('t'),
+     and thus we return @('nil') as the solution;
+     anything else would be fine as well, but @('nil') is simple.
+     If there is exactly one term left and it has the form
+     @('(equal (?f x1 ... xn) term<x1,...,xn>)'),
+     we return @('term<x1,...,xn>') as the solution.")
+   (xdoc::p
+    "The current strategy is somewhat restrictive;
+     there are clearly (easy) ways to extract solutions
+     from a wider range of forms of rewritten terms.
+     There are plans to do that.")
+   (xdoc::p
+    "In the final error message, we use no evisceration
+     so that the terms can always be seen in full.
+     We do not expect these terms to be too large in the near future.
+     If this changes, we may use some evisceration."))
+  (b* ((leaf-terms (if-tree-leaf-terms rewritten-term))
+       (leaf-terms (remove-equal *t* leaf-terms))
+       ((when (not leaf-terms)) (value *nil*))
+       (leaf-term (car leaf-terms))
+       ((when (and (not (cdr leaf-terms)) ; LEAF-TERM is the only one remaining
+                   (nvariablep leaf-term)
+                   (not (fquotep leaf-term))
+                   (eq (ffn-symb leaf-term) 'equal)
+                   (= (len (fargs leaf-term)) 2)
+                   (equal (fargn leaf-term 1) (fcons-term ?f x1...xn))))
+        (value (fargn leaf-term 2))))
+    (er-soft+ ctx t nil
+              "The rewriter has rewritten the term ~X10 to ~X20, ~
+               which does not determine a solution for ~x3 ~
+               according to the user documentation. ~
+               This transformation may be extended in the future ~
+               to determine solutions in more cases than now."
+              nil matrix rewritten-term ?f)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define solve-gen-solution-acl2-rewriter ((matrix pseudo-termp)
                                           (?f symbolp)
                                           (x1...xn symbol-listp)
@@ -526,25 +592,28 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is a wrapper that reflectively calls the core function,
-     which is in a separate file.
-     This way, one can include the separate file, and call this function,
-     only if desired,
-     without having the @(tsee solve) transformation
-     always depend on, and include, the @(tsee rewrite$) tool.
+    "We reflectively call a function that calls the ACL2 rewriter.
+     This function is in a separate file,
+     which can be included, along with its dependency on @(tsee rewrite$),
+     only if desired.
      The input validation performed by this transformation ensures that
-     we call this function only if its file is loaded.")
+     we call the function only if its file is included.")
    (xdoc::p
-    "If the call is successful, this function returns
-     the result @('rewritten-term') of ACL2 rewriting
-     and the obtained solution body @('f-body').
-     See the user documentation, Section `Solution Determination'."))
-  (trans-eval-error-triple `(solve-gen-solution-acl2-rewriter$
-                             ,@(kwote-lst
-                                (list matrix ?f x1...xn method-rules ctx))
-                             state)
-                           ctx
-                           state))
+    "If the call is successful, we attempt to extract a solution,
+     and we return it along with the rewritten term and the used rules."))
+  (b* (((er (list rewritten-term used-rules))
+        (trans-eval-error-triple `(solve-call-acl2-rewriter
+                                   ,@(kwote-lst (list matrix method-rules ctx))
+                                   state)
+                                 ctx
+                                 state))
+       ((er f-body) (solve-gen-solution-from-rewritten-term matrix
+                                                            rewritten-term
+                                                            ?f
+                                                            x1...xn
+                                                            ctx
+                                                            state)))
+    (value (list rewritten-term f-body used-rules))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -562,27 +631,22 @@
   :short "Attempt to generate a solution,
           i.e. to solve @('old') for @('?f') using the Axe rewriter."
   :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is a wrapper that reflectively calls the core function,
-     which is in a separate file.
-     This way, one can include the separate file, and call this function,
-     only if desired,
-     without having the @(tsee solve) transformation
-     always depend on, and include, the Axe tool.
-     The input validation performed by this transformation ensures that
-     we call this function only if its file is loaded.")
-   (xdoc::p
-    "If the call is successful, this function returns
-     the result @('rewritten-term') of Axe rewriting
-     and the obtained solution body @('f-body').
-     See the user documentation, Section `Solution Determination'."))
-  (trans-eval-error-triple `(solve-gen-solution-axe-rewriter$
-                             ,@(kwote-lst
-                                (list matrix ?f x1...xn method-rules ctx))
-                             state)
-                           ctx
-                           state))
+  (xdoc::topstring-p
+   "This is similar to @(tsee solve-gen-solution-acl2-rewriter).
+    See its documentation.")
+  (b* (((er rewritten-term)
+        (trans-eval-error-triple `(solve-call-axe-rewriter
+                                   ,@(kwote-lst (list matrix method-rules ctx))
+                                   state)
+                                 ctx
+                                 state))
+       ((er f-body) (solve-gen-solution-from-rewritten-term matrix
+                                                            rewritten-term
+                                                            ?f
+                                                            x1...xn
+                                                            ctx
+                                                            state)))
+    (value (list rewritten-term f-body))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

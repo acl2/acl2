@@ -221,6 +221,7 @@
                          guard-raw
                          guard-verified-p
                          ibody
+                         if-tree-leaf-terms
                          implicate
                          implicate-untranslated-terms
                          impliez
