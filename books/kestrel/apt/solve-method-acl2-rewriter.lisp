@@ -10,8 +10,8 @@
 
 (in-package "APT")
 
+(include-book "kestrel/std/system/if-tree-leaf-terms" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
-(include-book "std/util/define" :dir :system)
 (include-book "tools/rewrite-dollar" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -35,14 +35,17 @@
           i.e. to solve @('old') for @('?f') using the ACL2 rewriter."
   (b* (((er (list term used))
         (rewrite$ matrix :ctx ctx :in-theory `(enable ,@method-rules)))
-       ((when (and (nvariablep term)
-                   (not (fquotep term))
-                   (eq (ffn-symb term) 'equal)
-                   (= (len (fargs term)) 2)
-                   (equal (fargn term 1) (fcons-term ?f x1...xn))))
-        (value (list term (fargn term 2) used)))
-       ((when (equal term *t*))
-        (value (list term *nil* used))))
+       (subterms (acl2::if-tree-leaf-terms term))
+       (subterms (remove-equal *t* subterms))
+       ((when (not subterms)) (value (list term *nil* used)))
+       (subterm (car subterms))
+       ((when (and (not (cdr subterms))
+                   (nvariablep subterm)
+                   (not (fquotep subterm))
+                   (eq (ffn-symb subterm) 'equal)
+                   (= (len (fargs subterm)) 2)
+                   (equal (fargn subterm 1) (fcons-term ?f x1...xn))))
+        (value (list term (fargn subterm 2) used))))
     (er-soft+ ctx t nil
               "The ACL2 rewriter has rewritten the term ~X10 to ~X20, ~
                which does not determine a solution for ~x3 ~

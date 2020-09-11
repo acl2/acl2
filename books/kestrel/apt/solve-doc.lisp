@@ -341,51 +341,82 @@
      obtaining a rewritten term @('result').")
 
    (xdoc::p
-    "When @('result') has the form")
-   (xdoc::codeblock
-    "(equal (?f x1 ... xn) term<x1,...,xn>)")
+    "Consider the outer @(tsee if) tree structure of @('result'),
+     and collect all the leaves of such a tree:")
+   (xdoc::ul
+    (xdoc::li
+     "If @('result') is not a call of @(tsee if),
+      then @('result') is the only leaf.")
+    (xdoc::li
+     "If @('result') has the form @('(if a b c)'),
+      recursively collect the leaves of @('b') of @('c'),
+      and join them into a list."))
    (xdoc::p
-    "where @('term<x1,...,xn>') is a term
-     that may depend on @('x1'), ..., @('xn')
-     and that does not contain @('?f'),
-     the transformation is successful,
-     and the determined solution is")
-   (xdoc::codeblock
-    "(defun f (x1 ... xn)"
-    "  term<x1,...,xn>)")
-   (xdoc::p
-    "Note that there is no general guarantee that
-     @('term<x1,...,xn>') can be guard-verified
-     without assumptions on @('x1'), ..., @('xn').
-     The @(':solution-guard') input may be used to add such assumptions,
-     and @(':solution-guard-hints') input may be used to verify guards,
-     but there is no general guarantee that suitable input values always exist:
-     the ACL2 or Axe rewriter may produce a logically valid term
-     that cannot be guard-verified under any hypotheses on its variables.
-     Future extensions of this transformation may address this issue,
-     e.g. by limiting rewriting so that
-     only guard-verifiable terms are produced.")
+    "For instance, if @('result') is @('(if a (if b c d) e)'),
+     the collected leaves are @('c'), @('d'), and @('e').")
 
    (xdoc::p
-    "When @('result') is @('t'),
-     the transformation is successful,
+    "There are three cases to consider.")
+
+   (xdoc::p
+    "The first case is the one where all the collected leaves are @('t').
+     In this case, the transformation is successful,
      and the determined solution is")
    (xdoc::codeblock
     "(defun f (x1 ... xn)"
     "  nil)")
    (xdoc::p
     "The fact that @('matrix<(?f x1 ... xn)>') rewrote to @('t')
+     (under all the conditions in the @(tsee if) tree)
      means that any @('?f') satisfies the constraints.
      So anything can be used as the solution @('f').
      We use the function that always returns @('nil') for simplicity.
      While this may seem an unlikely case,
      it may arise under certain conditions,
-     e.g. for some boundary conditions.")
+     e.g. for some boundary cases.")
 
    (xdoc::p
-    "Otherwise, if @('result') is anything else than the forms above,
-     the transformation fails.
+    "The second case is the one where one collected leaf has the form")
+   (xdoc::codeblock
+    "(equal (?f x1 ... xn) term<x1,...,xn>)")
+   (xdoc::p
+    "where @('term<x1,...,xn>') is a term
+     that may depend on @('x1'), ..., @('xn')
+     and that does not contain @('?f'),
+     and all the other collected leaves are @('t').
+     In this case, the transformation is successful,
+     and the determined solution is")
+   (xdoc::codeblock
+    "(defun f (x1 ... xn)"
+    "  term<x1,...,xn>)")
+   (xdoc::p
+    "The conditions under which the rewritten term is @('t')
+     put no constraints on the solution,
+     which can be therefore entirely determined
+     by the only equality leaf.")
+
+   (xdoc::p
+    "The third case is the one where the two cases do not apply.
+     In this case, the transformation fails.
      No solution has been determined.")
+
+   (xdoc::p
+    "Support for determining solutions in more cases
+     may be added in the future.")
+
+   (xdoc::p
+    "Note that, in the second case above,
+     there is no general guarantee that
+     @('term<x1,...,xn>') can be guard-verified
+     without assumptions on @('x1'), ..., @('xn').
+     The @(':solution-guard') input may be used to add such assumptions,
+     and @(':solution-guard-hints') input may be used to verify guards,
+     but there is no general guarantee that suitable inputs always exist:
+     the ACL2 or Axe rewriter may produce a logically valid term
+     that cannot be guard-verified under any hypotheses on its variables.
+     Future extensions of this transformation may address this issue,
+     e.g. by limiting rewriting so that
+     only guard-verifiable terms are produced.")
 
    (xdoc::p
     "When the transformation is successful,
