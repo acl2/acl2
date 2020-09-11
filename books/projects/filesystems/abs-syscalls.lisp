@@ -4606,10 +4606,9 @@
     (prefixp
      (frame-val->path
       (cdr
-       (assoc-equal
-        (abs-find-file-src (partial-collapse frame (dirname path))
-                           (dirname path))
-        frame)))
+       (assoc-equal (abs-find-file-src (partial-collapse frame (dirname path))
+                                       (dirname path))
+                    frame)))
      (dirname path))
     (< 1 (len path)))
    (equal
@@ -4617,20 +4616,18 @@
      0
      (abs-place-file-helper
       (frame-val->dir
-       (cdr
-        (assoc-equal
-         (abs-find-file-src (partial-collapse frame (dirname path))
-                            (dirname path))
-         (partial-collapse frame (dirname path)))))
+       (cdr (assoc-equal
+             (abs-find-file-src (partial-collapse frame (dirname path))
+                                (dirname path))
+             (partial-collapse frame (dirname path)))))
       (append
        (nthcdr
         (len
          (frame-val->path
-          (cdr
-           (assoc-equal (abs-find-file-src
-                         (partial-collapse frame (dirname path))
-                         (dirname path))
-                        frame))))
+          (cdr (assoc-equal
+                (abs-find-file-src (partial-collapse frame (dirname path))
+                                   (dirname path))
+                frame))))
         (dirname path))
        (list (basename path)))
       '((dir-ent 0 0 0 0 0 0 0 0 0 0 0 16
@@ -4640,25 +4637,23 @@
      0
      (abs-place-file-helper
       (frame-val->dir
-       (cdr
-        (assoc-equal
-         (abs-find-file-src (partial-collapse frame (dirname path))
-                            (dirname path))
-         (partial-collapse frame (dirname path)))))
+       (cdr (assoc-equal
+             (abs-find-file-src (partial-collapse frame (dirname path))
+                                (dirname path))
+             (partial-collapse frame (dirname path)))))
       (nthcdr
        (len
         (frame-val->path
-         (cdr
-          (assoc-equal (abs-find-file-src
-                        (partial-collapse frame (dirname path))
-                        (dirname path))
-                       frame))))
+         (cdr (assoc-equal
+               (abs-find-file-src (partial-collapse frame (dirname path))
+                                  (dirname path))
+               frame))))
        path)
       '((dir-ent 0 0 0 0 0 0 0 0 0 0 0 16
                  0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
         (contents))))))
   :instructions
-  (promote
+  (:promote
    (:dive 1 2 2 1 2)
    (:rewrite dirname-alt)
    :top (:dive 1 2 2 2 1)
@@ -4677,19 +4672,17 @@
         (+ -1 (len path))
         (len
          (frame-val->path
-          (cdr
-           (assoc-equal (abs-find-file-src
-                         (partial-collapse frame (dirname path))
-                         (dirname path))
-                        frame))))))
+          (cdr (assoc-equal
+                (abs-find-file-src (partial-collapse frame (dirname path))
+                                   (dirname path))
+                frame))))))
       (n2
        (len
         (frame-val->path
-         (cdr
-          (assoc-equal (abs-find-file-src
-                        (partial-collapse frame (dirname path))
-                        (dirname path))
-                       frame)))))
+         (cdr (assoc-equal
+               (abs-find-file-src (partial-collapse frame (dirname path))
+                                  (dirname path))
+               frame)))))
       (l path))))
    (:dive 1 2 2 1)
    := :top
@@ -4701,19 +4694,17 @@
       (-
        (len
         (frame-val->path
-         (cdr
-          (assoc-equal (abs-find-file-src
-                        (partial-collapse frame (dirname path))
-                        (dirname path))
-                       frame))))))
+         (cdr (assoc-equal
+               (abs-find-file-src (partial-collapse frame (dirname path))
+                                  (dirname path))
+               frame))))))
      (nthcdr
       (len
        (frame-val->path
-        (cdr
-         (assoc-equal
-          (abs-find-file-src (partial-collapse frame (dirname path))
-                             (dirname path))
-          frame))))
+        (cdr (assoc-equal
+              (abs-find-file-src (partial-collapse frame (dirname path))
+                                 (dirname path))
+              frame))))
       path))
     :hints :none
     :equiv list-equiv)
@@ -4725,20 +4716,18 @@
       (-
        (len
         (frame-val->path
-         (cdr
-          (assoc-equal (abs-find-file-src
-                        (partial-collapse frame (dirname path))
-                        (dirname path))
-                       frame))))))
+         (cdr (assoc-equal
+               (abs-find-file-src (partial-collapse frame (dirname path))
+                                  (dirname path))
+               frame))))))
      (len
       (nthcdr
        (len
         (frame-val->path
-         (cdr
-          (assoc-equal (abs-find-file-src
-                        (partial-collapse frame (dirname path))
-                        (dirname path))
-                       frame))))
+         (cdr (assoc-equal
+               (abs-find-file-src (partial-collapse frame (dirname path))
+                                  (dirname path))
+               frame))))
        path))))
    (:rewrite binary-append-take-nthcdr)
    :top :bash (:dive 2)
@@ -4746,14 +4735,14 @@
    :top :bash
    (:= (nthcdr (+ -1 (len path)) path)
        (cons (car (nthcdr (+ -1 (len path)) path))
-             (cdr (nthcdr (+ -1 (len path))
-                          path)))
+             (cdr (nthcdr (+ -1 (len path)) path)))
        :hints :none)
    (:bash ("goal" :in-theory (disable (:rewrite nthcdr-of-nthcdr))
            :use (:instance (:rewrite nthcdr-of-nthcdr)
                            (x path)
                            (b (+ -1 (len path)))
-                           (a 1))))
+                           (a 1))
+           :expand (nthcdr 1 (nthcdr (+ -1 (len path)) path))))
    (:dive 2)
    (:rewrite cons-car-cdr)
    :top :bash))
@@ -4765,10 +4754,10 @@
     (prefixp
      (frame-val->path
       (cdr
-       (assoc-equal
-        (abs-find-file-src (partial-collapse frame (dirname path))
-                           (dirname path))
-        frame)))
+       (assoc-equal (abs-find-file-src
+                     (partial-collapse frame (dirname path))
+                     (dirname path))
+                    frame)))
      (dirname path))
     (consp path))
    (fat32-filename-list-equiv
@@ -4776,11 +4765,11 @@
      (nthcdr
       (len
        (frame-val->path$inline
-        (cdr
-         (assoc-equal
-          (abs-find-file-src (partial-collapse frame (dirname path))
-                             (dirname path))
-          frame))))
+        (cdr (assoc-equal
+              (abs-find-file-src
+               (partial-collapse frame (dirname path))
+               (dirname path))
+              frame))))
       (dirname path))
      (cons (basename path) 'nil))
     (if
@@ -4788,11 +4777,11 @@
      (nthcdr
       (len
        (frame-val->path
-        (cdr
-         (assoc-equal
-          (abs-find-file-src (partial-collapse frame (dirname path))
-                             (dirname path))
-          frame))))
+        (cdr (assoc-equal
+              (abs-find-file-src
+               (partial-collapse frame (dirname path))
+               (dirname path))
+              frame))))
       path)
      (list (car path)))))
   :instructions
@@ -4815,19 +4804,19 @@
         (+ -1 (len path))
         (len
          (frame-val->path
-          (cdr
-           (assoc-equal (abs-find-file-src
-                         (partial-collapse frame (dirname path))
-                         (dirname path))
-                        frame))))))
+          (cdr (assoc-equal
+                (abs-find-file-src
+                 (partial-collapse frame (dirname path))
+                 (dirname path))
+                frame))))))
       (n2
        (len
         (frame-val->path
-         (cdr
-          (assoc-equal (abs-find-file-src
-                        (partial-collapse frame (dirname path))
-                        (dirname path))
-                       frame)))))
+         (cdr (assoc-equal
+               (abs-find-file-src
+                (partial-collapse frame (dirname path))
+                (dirname path))
+               frame)))))
       (l path))))
    (:dive 1 1)
    := :top
@@ -4839,19 +4828,19 @@
       (-
        (len
         (frame-val->path
-         (cdr
-          (assoc-equal (abs-find-file-src
-                        (partial-collapse frame (dirname path))
-                        (dirname path))
-                       frame))))))
+         (cdr (assoc-equal
+               (abs-find-file-src
+                (partial-collapse frame (dirname path))
+                (dirname path))
+               frame))))))
      (nthcdr
       (len
        (frame-val->path
-        (cdr
-         (assoc-equal
-          (abs-find-file-src (partial-collapse frame (dirname path))
-                             (dirname path))
-          frame))))
+        (cdr (assoc-equal
+              (abs-find-file-src
+               (partial-collapse frame (dirname path))
+               (dirname path))
+              frame))))
       path))
     :hints :none
     :equiv list-equiv)
@@ -4864,20 +4853,20 @@
        (-
         (len
          (frame-val->path
-          (cdr
-           (assoc-equal (abs-find-file-src
-                         (partial-collapse frame (dirname path))
-                         (dirname path))
-                        frame))))))
+          (cdr (assoc-equal
+                (abs-find-file-src
+                 (partial-collapse frame (dirname path))
+                 (dirname path))
+                frame))))))
       (len
        (nthcdr
         (len
          (frame-val->path
-          (cdr
-           (assoc-equal (abs-find-file-src
-                         (partial-collapse frame (dirname path))
-                         (dirname path))
-                        frame))))
+          (cdr (assoc-equal
+                (abs-find-file-src
+                 (partial-collapse frame (dirname path))
+                 (dirname path))
+                frame))))
         path)))))
    (:rewrite binary-append-take-nthcdr)
    :top (:change-goal nil t)
@@ -4886,14 +4875,15 @@
    :top :bash
    (:= (nthcdr (+ -1 (len path)) path)
        (cons (car (nthcdr (+ -1 (len path)) path))
-             (cdr (nthcdr (+ -1 (len path))
-                          path)))
+             (cdr (nthcdr (+ -1 (len path)) path)))
        :hints :none)
-   (:bash ("goal" :in-theory (disable (:rewrite nthcdr-of-nthcdr))
-           :use (:instance (:rewrite nthcdr-of-nthcdr)
-                           (x path)
-                           (b (+ -1 (len path)))
-                           (a 1))))
+   (:bash
+    ("goal" :in-theory (disable (:rewrite nthcdr-of-nthcdr))
+     :use (:instance (:rewrite nthcdr-of-nthcdr)
+                     (x path)
+                     (b (+ -1 (len path)))
+                     (a 1))
+     :expand (nthcdr 1 (nthcdr (+ -1 (len path)) path))))
    (:dive 2)
    (:rewrite cons-car-cdr)
    :top
@@ -27913,8 +27903,9 @@
        (path (file-table-element->fid (cdr file-table-entry)))
        ((mv file error-code)
         (abs-find-file frame path))
-       ((unless (and (equal error-code 0)
-                     (m1-regular-file-p file)))
+       ((unless (m1-regular-file-p file))
+        (mv "" -1 *eisdir*))
+       ((unless (equal error-code 0))
         (mv "" -1 error-code))
        (new-offset (min (+ offset count)
                         (length (m1-file->contents file))))

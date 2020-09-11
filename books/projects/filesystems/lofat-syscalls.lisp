@@ -71,8 +71,9 @@
          fat32-in-memory
          root-dir-ent-list
          path))
-       ((unless (and (equal error-code 0)
-                     (lofat-regular-file-p file)))
+       ((unless (lofat-regular-file-p file))
+        (mv "" -1 *eisdir*))
+       ((unless (equal error-code 0))
         (mv "" -1 error-code))
        (file-contents (lofat-file->contents file))
        (new-offset (min (+ offset count)

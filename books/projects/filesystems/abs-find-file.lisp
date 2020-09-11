@@ -3984,7 +3984,8 @@
                      (:rewrite abs-addrs-when-m1-file-alist-p)
                      (:rewrite abs-separate-of-put-assoc)
                      (:rewrite nthcdr-when->=-n-len-l)
-                     (:definition remove-assoc-equal)))
+                     (:definition remove-assoc-equal)
+                     (:rewrite nfix-when-natp)))
     :expand
     ((:with
       abs-find-file-of-remove-assoc-1

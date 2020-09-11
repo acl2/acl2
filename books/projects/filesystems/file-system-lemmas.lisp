@@ -1723,6 +1723,7 @@
          (and (alistp (true-list-fix x))
               (alistp y))))
 
+;; Contributed to books/std/lists/take.lisp
 (defthmd take-as-append-and-nth
   (equal (take n l)
          (if (zp n)
@@ -1745,3 +1746,49 @@
                  (:instance (:rewrite member-of-strip-cars)
                             (alist alist)
                             (x (nth n (strip-cars alist))))))))
+
+(defthmd painful-debugging-lemma-21
+  (equal (+ x (- x) y) (fix y))
+  :hints (("goal" :in-theory (disable (:e force)))))
+
+(encapsulate () (local (in-theory (disable fix)))
+  (defthm fix-when-acl2-numberp
+    (implies (acl2-numberp x)
+             (equal (fix x) x))
+    :hints (("goal" :in-theory (enable fix)))))
+
+(encapsulate () (local (in-theory (disable length string-append)))
+  (defthm length-of-string-append
+    (equal (length (string-append str1 str2))
+           (+ (len (coerce str1 'list))
+              (len (coerce str2 'list))))
+    :hints (("goal" :in-theory (enable length string-append)))))
+
+(encapsulate () (local (in-theory (disable nfix)))
+  (defthm
+    nfix-of-position-ac-linear
+    (implies (<= 0 acc)
+             (<= (nfix (position-equal-ac item lst acc))
+                 (+ acc (len lst))))
+    :rule-classes :linear :hints (("Goal" :in-theory (enable nfix)))))
+
+(encapsulate () (local (in-theory (disable length)))
+  (defthm
+    length-when-stringp
+    (implies (stringp x)
+    (equal
+     (length x)
+     (len (coerce x 'list))))
+    :hints (("goal" :in-theory (enable length)))))
+
+(encapsulate () (local (in-theory (disable string-append)))
+  (defthm string-append-of-empty-string-1
+    (equal (string-append "" str2)
+           (if (stringp str2) str2 ""))
+    :hints (("goal" :in-theory (enable string-append)))))
+
+(encapsulate () (local (in-theory (disable nfix natp)))
+  (defthm nfix-when-natp
+    (implies (natp x) (equal (nfix x) x))
+    :hints (("goal" :do-not-induct t
+             :in-theory (enable nfix natp)))))

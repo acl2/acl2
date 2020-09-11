@@ -3653,7 +3653,9 @@
                        (hifat-to-lofat-helper
                         fat32-in-memory fs first-cluster)))
    (fat-length fat32-in-memory))
-  :hints (("goal" :in-theory (enable nth))))
+  :hints (("goal" :in-theory (e/d (nth)
+                                  ((:rewrite nfix-when-natp)
+                                   (:rewrite length-when-stringp))))))
 
 (defthm
   lofat-fs-p-of-hifat-to-lofat-helper-lemma-1
