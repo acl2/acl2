@@ -104,12 +104,13 @@
 
     (xdoc::p
      "Solving methods that require tools that are not part of ACL2
-      can be modularly and selectively loaded and used
-      by including the files in which their core implementation lies.
+      can be modularly and selectively used
+      by including the files in which the callers of such tools reside.
       This solving transformation, as part of input validation,
       checks that (the file of) the specified solving method has been loaded
-      (more precisely, it checks that a function symbol in that file
-      is present in the ACL2 world).")
+      (more precisely, it checks that the function symbol of the caller
+      is present in the ACL2 world).
+      The caller is called via reflection by the solving transformation.")
 
     (xdoc::p
      "The " *solve-design-notes* ", which use "
