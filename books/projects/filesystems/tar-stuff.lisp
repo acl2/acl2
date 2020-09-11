@@ -2,6 +2,27 @@
 
 (include-book "test-stuff")
 
+(local (in-theory (e/d
+                   ()
+                   ((:definition str::strprefixp$inline)
+                    (:linear len-when-prefixp)
+                    (:rewrite
+                     append-nthcdr-dirname-basename-under-fat32-filename-list-equiv-lemma-1
+                     . 3)
+                    (:linear listpos-upper-bound-strong-2)
+                    (:rewrite <<-sort-consp)
+                    ;; Consider disabling everywhere.
+                    (:definition hifat-file-alist-fix)
+                    (:rewrite
+                     hifat-find-file-correctness-3-lemma-2)
+                    (:linear
+                     dir-ent-clusterchain-contents-of-lofat-place-file-coincident-lemma-4
+                     . 1)
+                    (:linear
+                     dir-ent-clusterchain-contents-of-lofat-place-file-coincident-lemma-10)
+                    (:rewrite no-duplicatesp-of-member)
+                    (:linear getopt::defoptions-lemma-8)))))
+
 (defconst *tar-regtype* #\0)
 (defconst *tar-dirtype* #\5)
 (defconst *tar-block-size* 512)
@@ -879,23 +900,27 @@
                           len-of-explode-when-m1-file-contents-p-1)
                          (:rewrite
                           hifat-find-file-correctness-3-lemma-2)
-                         (:REWRITE DEFAULT-CAR)
-                         (:REWRITE
-                          M1-FILE->CONTENTS$INLINE-OF-M1-FILE-FIX-X-NORMALIZE-CONST)
-                         (:REWRITE
-                          CDR-OF-FAT32-FILENAME-LIST-FIX-X-NORMALIZE-CONST-UNDER-FAT32-FILENAME-LIST-EQUIV)
-                         (:REWRITE
-                          CONS-OF-FAT32-FILENAME-FIX-X-NORMALIZE-CONST-UNDER-FAT32-FILENAME-LIST-EQUIV)
-                         (:REWRITE
-                          CONS-OF-FAT32-FILENAME-LIST-FIX-Y-NORMALIZE-CONST-UNDER-FAT32-FILENAME-LIST-EQUIV)
-                         (:REWRITE
-                          CAR-OF-FAT32-FILENAME-LIST-FIX-X-NORMALIZE-CONST-UNDER-FAT32-FILENAME-EQUIV)
-                         (:REWRITE PUT-ASSOC-EQUAL-WITHOUT-CHANGE . 2)
-                         (:REWRITE
-                          DIR-STREAM-OF-FAT32-FILENAME-LIST-FIX-FILE-LIST-NORMALIZE-CONST)
-                         (:REWRITE
-                          CAR-OF-TRUE-LIST-LIST-FIX-X-NORMALIZE-CONST-UNDER-LIST-EQUIV)
-                         (:TYPE-PRESCRIPTION NATP-POSITION-AC)))
+                         (:rewrite take-of-len-free)
+                         (:rewrite str::consp-of-explode)
+                         (:linear position-when-member)
+                         (:rewrite default-car)
+                         (:rewrite append-atom-under-list-equiv)
+                         (:linear len-when-hifat-bounded-file-alist-p
+                                  . 2)
+                         (:linear len-when-hifat-bounded-file-alist-p
+                                  . 1)
+                         (:rewrite hifat-subsetp-preserves-assoc)
+                         (:rewrite consp-of-assoc-when-hifat-equiv-lemma-1)
+                         (:rewrite member-when-atom)
+                         (:rewrite consp-of-append)
+                         (:linear lower-bound-of-len-when-sublistp)
+                         (:linear len-when-prefixp)
+                         (:rewrite subsetp-member . 3)
+                         (:rewrite put-assoc-equal-without-change . 2)
+                         (:type-prescription natp-position-ac)
+                         (:definition length)
+                         (:definition atom)
+                         (:definition min)))
     :induct
     (hifat-tar-name-list-string fs path name-list fd-table
                                 file-table dir-stream-table entry-count)
@@ -927,11 +952,43 @@
    (:rewrite hifat-tar-name-list-string-reduction-correctness-lemma-3)
    :top :s))
 
+(defthm
+  stringp-of-hifat-tar-name-list-string-reduction
+  (stringp
+   (hifat-tar-name-list-string-reduction fs path name-list entry-count))
+  :hints (("goal" :do-not-induct t
+           :use hifat-tar-name-list-string-reduction-correctness-1))
+  :rule-classes :type-prescription)
+
 (defund alist-shift (alist shift)
   (if (atom alist)
       nil
     (cons (cons (caar alist) (+ shift (cdar alist)))
           (alist-shift (cdr alist) shift))))
+
+(defthm consp-of-assoc-of-alist-shift
+  (implies (alistp alist)
+           (equal (consp (assoc-equal x (alist-shift alist shift)))
+                  (consp (assoc-equal x alist))))
+  :hints (("goal" :in-theory (enable alist-shift))))
+
+(defthm alistp-of-alist-shift
+  (alistp (alist-shift alist shift))
+  :hints (("goal" :in-theory (enable alist-shift))))
+
+(defthm assoc-of-alist-shift
+  (implies (case-split (not (null x)))
+           (equal (assoc-equal x (alist-shift alist shift))
+                  (if (atom (assoc-equal x alist))
+                      nil
+                      (cons (car (assoc-equal x alist))
+                            (+ shift (cdr (assoc-equal x alist)))))))
+  :hints (("goal" :in-theory (enable alist-shift))))
+
+(defthm strip-cars-of-alist-shift
+  (equal (strip-cars (alist-shift alist shift))
+         (strip-cars alist))
+  :hints (("goal" :in-theory (enable alist-shift))))
 
 (defund
   hifat-tar-name-list-alist
@@ -989,114 +1046,12 @@
              fs (append path (list head))
              names (- entry-count 1))))))))
 
-(defthm consp-of-assoc-of-alist-shift
-  (implies (alistp alist)
-           (equal (consp (assoc-equal x (alist-shift alist shift)))
-                  (consp (assoc-equal x alist))))
-  :hints (("goal" :in-theory (enable alist-shift))))
-
-(defthm alistp-of-alist-shift
-  (alistp (alist-shift alist shift))
-  :hints (("goal" :in-theory (enable alist-shift))))
-
 (defthm alistp-of-hifat-tar-name-list-alist
   (alistp (hifat-tar-name-list-alist fs path name-list entry-count))
   :hints (("goal" :in-theory (enable hifat-tar-name-list-alist))))
 
-(defthm assoc-of-alist-shift
-  (implies (case-split (not (null x)))
-           (equal (assoc-equal x (alist-shift alist shift))
-                  (if (atom (assoc-equal x alist))
-                      nil
-                      (cons (car (assoc-equal x alist))
-                            (+ shift (cdr (assoc-equal x alist)))))))
-  :hints (("goal" :in-theory (enable alist-shift))))
-
-(defthm strip-cars-of-alist-shift
-  (equal (strip-cars (alist-shift alist shift))
-         (strip-cars alist))
-  :hints (("goal" :in-theory (enable alist-shift))))
-
 (defthm
-  hifat-tar-name-list-alist-correctness-lemma-1
-  (consp
-   (assoc-equal
-    (cdr (assoc-equal (mv-nth 2 (hifat-open path fd-table file-table))
-                      (mv-nth 0
-                              (hifat-open path fd-table file-table))))
-    (mv-nth 1
-            (hifat-open path fd-table file-table))))
-  :hints (("goal" :do-not-induct t
-           :in-theory (enable hifat-open)))
-  :rule-classes :type-prescription)
-
-(defthm
-  hifat-tar-name-list-alist-correctness-lemma-3
-  (implies
-   (not (equal (mv-nth 1 (hifat-find-file fs path))
-               0))
-   (>
-    (mv-nth
-     1
-     (hifat-find-file
-      fs
-      (file-table-element->fid
-       (cdr
-        (assoc-equal
-         (cdr (assoc-equal (mv-nth 2 (hifat-open path fd-table file-table))
-                           (mv-nth 0
-                                   (hifat-open path fd-table file-table))))
-         (mv-nth 1
-                 (hifat-open path fd-table file-table)))))))
-    0))
-  :hints (("goal" :in-theory (enable hifat-open)))
-  :rule-classes :linear)
-
-(defthm hifat-tar-name-list-alist-correctness-lemma-4
-  (implies (and (integerp start)
-                (equal start end)
-                (stringp seq))
-           (equal (subseq seq start end) ""))
-  :hints (("goal" :in-theory (enable subseq subseq-list))))
-
-(defthm hifat-tar-name-list-alist-correctness-lemma-7
-  (equal (subseq "" start end)
-         (implode (take (+ end (- start)) nil)))
-  :hints (("goal" :in-theory (e/d (subseq subseq-list repeat)
-                                  (take-of-too-many take-when-atom)))))
-
-(defthm
-  stringp-of-hifat-tar-name-list-string-reduction
-  (stringp
-   (hifat-tar-name-list-string-reduction fs path name-list entry-count))
-  :hints (("goal" :do-not-induct t
-           :use hifat-tar-name-list-string-reduction-correctness-1))
-  :rule-classes :type-prescription)
-
-(defthm
-  hifat-tar-name-list-alist-correctness-lemma-2
-  (and (< 0
-          (len (explode (tar-header-block path len typeflag))))
-       (not (equal (tar-header-block path len typeflag)
-                   "")))
-  :hints (("goal" :in-theory (enable tar-header-block)))
-  :rule-classes
-  ((:linear
-    :corollary (< 0
-                  (len (explode (tar-header-block path len typeflag)))))
-   (:rewrite :corollary (not (equal (tar-header-block path len typeflag)
-                                    "")))))
-
-(defthm hifat-tar-name-list-alist-correctness-lemma-10
-  (iff (prefixp (append y x) y) (atom x))
-  :hints (("goal" :in-theory (enable prefixp))))
-
-(defthm hifat-tar-name-list-alist-correctness-lemma-15
-  (iff (equal x (append x y))
-       (equal y (if (consp x) (cdr (last x)) x))))
-
-(defthm
-  hifat-tar-name-list-alist-correctness-lemma-13
+  no-duplicatesp-of-strip-cars-of-hifat-tar-name-list-alist-lemma-1
   (implies
    (case-split (or (not (prefixp path1 path2))
                    (equal path1 path2)))
@@ -1112,8 +1067,15 @@
   :hints
   (("goal" :in-theory (enable hifat-tar-name-list-alist))))
 
+(defthm no-duplicatesp-of-strip-cars-of-hifat-tar-name-list-alist-lemma-2
+  (implies (and (integerp start)
+                (equal start end)
+                (stringp seq))
+           (equal (subseq seq start end) ""))
+  :hints (("goal" :in-theory (enable subseq subseq-list))))
+
 (defthm
-  hifat-tar-name-list-alist-correctness-lemma-16
+  no-duplicatesp-of-strip-cars-of-hifat-tar-name-list-alist-lemma-3
   (not
    (member-equal nil
     (strip-cars
@@ -1123,7 +1085,7 @@
   :rule-classes :type-prescription)
 
 (defthm
-  hifat-tar-name-list-alist-correctness-lemma-17
+  no-duplicatesp-of-strip-cars-of-hifat-tar-name-list-alist-lemma-4
   (implies (and (consp path)
                 (not (zp (mv-nth 1 (hifat-find-file fs path)))))
            (equal (hifat-tar-name-list-alist fs path name-list entry-count)
@@ -1132,29 +1094,7 @@
                                      hifat-pread hifat-lstat hifat-open))))
 
 (defthm
-  hifat-tar-name-list-alist-correctness-lemma-18
-  (not
-   (consp
-    (assoc-equal nil
-                 (hifat-tar-name-list-alist fs path name-list entry-count))))
-  :hints (("goal" :in-theory (enable hifat-tar-name-list-alist alist-shift)))
-  :rule-classes :type-prescription)
-
-(defthm
-  hifat-tar-name-list-alist-correctness-lemma-19
-  (implies
-   (consp
-    (assoc-equal path2
-                 (hifat-tar-name-list-alist fs path1 name-list entry-count)))
-   (natp
-    (cdr (assoc-equal
-          path2
-          (hifat-tar-name-list-alist fs path1 name-list entry-count)))))
-  :hints (("goal" :in-theory (enable hifat-tar-name-list-alist alist-shift)))
-  :rule-classes :type-prescription)
-
-(defthm
-  hifat-tar-name-list-alist-correctness-lemma-20
+  no-duplicatesp-of-strip-cars-of-hifat-tar-name-list-alist-lemma-5
   (implies (and (consp name-list)
                 (prefixp (append path1 (list name))
                          path2)
@@ -1178,11 +1118,10 @@
                                (cdr (nthcdr (len path1) path2))))
                      (x path1))))))
 
-(encapsulate
-  () (local (in-theory (disable atom)))
+(encapsulate () (local (in-theory (disable atom)))
 
   (defthmd
-    hifat-tar-name-list-alist-correctness-lemma-11
+    no-duplicatesp-of-strip-cars-of-hifat-tar-name-list-alist-lemma-6
     (implies
      (and (member-equal
            path2
@@ -1229,30 +1168,30 @@
   (local (include-book "std/lists/intersectp" :dir :system))
 
   (defthm
-    hifat-tar-name-list-alist-correctness-lemma-22
+    no-duplicatesp-of-strip-cars-of-hifat-tar-name-list-alist-lemma-7
     (implies
      (and
       (not (zp n))
-      (not (member-equal (car name-list)
-                         (cdr name-list))))
+      (not (member-equal name
+                         name-list1)))
      (not
       (prefixp
-       (append path1 (list (car name-list)))
+       (append path1 (list name))
        (nth (+ -1 n)
-            (strip-cars (hifat-tar-name-list-alist fs path1 (cdr name-list)
+            (strip-cars (hifat-tar-name-list-alist fs path1 name-list1
                                                    (+ -1 entry-count)))))))
     :hints
     (("goal"
       :use
       (:instance
-       hifat-tar-name-list-alist-correctness-lemma-11
+       no-duplicatesp-of-strip-cars-of-hifat-tar-name-list-alist-lemma-6
        (path2
         (nth (+ -1 n)
-             (strip-cars (hifat-tar-name-list-alist fs path1 (cdr name-list)
+             (strip-cars (hifat-tar-name-list-alist fs path1 name-list1
                                                     (+ -1 entry-count)))))
-       (name (car name-list))
+       (name name)
        (path1 path1)
-       (name-list (cdr name-list))
+       (name-list name-list1)
        (fs fs)
        (entry-count (- entry-count 1))))))
 
@@ -1260,32 +1199,17 @@
    (defthmd
      lemma-1
      (implies
-      (not (member-equal (car name-list)
-                         (cdr name-list)))
+      (not (member-equal name
+                         name-list1))
       (not
        (intersectp-equal
         (take n
-              (strip-cars (hifat-tar-name-list-alist fs path1 (cdr name-list)
+              (strip-cars (hifat-tar-name-list-alist fs path1 name-list1
                                                      (+ -1 entry-count))))
         (strip-cars
          (hifat-tar-name-list-alist
-          fs (append path1 (list (car name-list)))
-          (mv-nth
-           0
-           (get-names-from-dirp
-            0
-            (list
-             (cons
-              0
-              (dir-stream
-               (<<-sort
-                (strip-cars
-                 (m1-file->contents
-                  (mv-nth
-                   0
-                   (hifat-find-file
-                    (m1-file->contents (mv-nth 0 (hifat-find-file fs path1)))
-                    (list (car name-list))))))))))))
+          fs (append path1 (list name))
+          name-list2
           (+ -1 entry-count))))))
      :hints
      (("goal"
@@ -1295,105 +1219,78 @@
        (:with
         take-as-append-and-nth
         (take n
-              (strip-cars (hifat-tar-name-list-alist fs path1 (cdr name-list)
+              (strip-cars (hifat-tar-name-list-alist fs path1 name-list1
                                                      (+ -1 entry-count)))))))))
 
   (defthm
-    hifat-tar-name-list-alist-correctness-lemma-23
+    no-duplicatesp-of-strip-cars-of-hifat-tar-name-list-alist-lemma-8
     (implies
-     (not (member-equal (car name-list)
-                        (cdr name-list)))
+     (not (member-equal name
+                        name-list1))
      (not
       (intersectp-equal
-       (strip-cars (hifat-tar-name-list-alist fs path1 (cdr name-list)
+       (strip-cars (hifat-tar-name-list-alist fs path1 name-list1
                                               (+ -1 entry-count)))
        (strip-cars
         (hifat-tar-name-list-alist
-         fs (append path1 (list (car name-list)))
-         (mv-nth
-          0
-          (get-names-from-dirp
-           0
-           (list
-            (cons
-             0
-             (dir-stream
-              (<<-sort
-               (strip-cars
-                (m1-file->contents
-                 (mv-nth
-                  0
-                  (hifat-find-file
-                   (m1-file->contents (mv-nth 0 (hifat-find-file fs path1)))
-                   (list (car name-list))))))))))))
+         fs (append path1 (list name))
+         name-list2
          (+ -1 entry-count))))))
     :hints
     (("goal" :do-not-induct t
       :use (:instance lemma-1
                       (n
                        (len
-                        (strip-cars (hifat-tar-name-list-alist fs path1 (cdr name-list)
+                        (strip-cars (hifat-tar-name-list-alist fs path1 name-list1
                                                                (+ -1
                                                                   entry-count)))))))))
 
   (defthm
-    hifat-tar-name-list-alist-correctness-lemma-24
+    no-duplicatesp-of-strip-cars-of-hifat-tar-name-list-alist-lemma-9
     (implies
      (and
       (not (consp path1))
-      (not (member-equal (car name-list)
-                         (cdr name-list)))
+      (not (member-equal name
+                         name-list1))
       (equal
-       (car name-list)
+       name
        (car (nth (+ -1 n)
-                 (strip-cars (hifat-tar-name-list-alist fs path1 (cdr name-list)
+                 (strip-cars (hifat-tar-name-list-alist fs path1 name-list1
                                                         (+ -1 entry-count)))))))
      (not
       (consp
        (nth (+ -1 n)
-            (strip-cars (hifat-tar-name-list-alist fs path1 (cdr name-list)
+            (strip-cars (hifat-tar-name-list-alist fs path1 name-list1
                                                    (+ -1 entry-count)))))))
     :hints
     (("goal"
       :use
       (:instance
-       hifat-tar-name-list-alist-correctness-lemma-11
+       no-duplicatesp-of-strip-cars-of-hifat-tar-name-list-alist-lemma-6
        (path2
         (nth (+ -1 n)
-             (strip-cars (hifat-tar-name-list-alist fs path1 (cdr name-list)
+             (strip-cars (hifat-tar-name-list-alist fs path1 name-list1
                                                     (+ -1 entry-count)))))
-       (name-list (cdr name-list))
+       (name-list name-list1)
        (entry-count (- entry-count 1))
-       (name (car name-list))))))
+       (name name)))))
 
   (local
    (defthmd
      lemma-2
      (implies
       (and (not (consp path1))
-           (not (member-equal (car name-list)
-                              (cdr name-list))))
+           (not (member-equal name
+                              name-list1)))
       (not
        (intersectp-equal
         (take n
-              (strip-cars (hifat-tar-name-list-alist fs path1 (cdr name-list)
+              (strip-cars (hifat-tar-name-list-alist fs path1 name-list1
                                                      (+ -1 entry-count))))
         (strip-cars
          (hifat-tar-name-list-alist
-          fs (list (car name-list))
-          (mv-nth
-           0
-           (get-names-from-dirp
-            0
-            (list
-             (cons
-              0
-              (dir-stream
-               (<<-sort
-                (strip-cars
-                 (m1-file->contents
-                  (mv-nth 0
-                          (hifat-find-file fs (list (car name-list))))))))))))
+          fs (list name)
+          name-list2
           (+ -1 entry-count))))))
      :hints
      (("goal"
@@ -1403,250 +1300,213 @@
        (:with
         take-as-append-and-nth
         (take n
-              (strip-cars (hifat-tar-name-list-alist fs path1 (cdr name-list)
+              (strip-cars (hifat-tar-name-list-alist fs path1 name-list1
                                                      (+ -1 entry-count)))))))))
 
   (defthm
-    hifat-tar-name-list-alist-correctness-lemma-25
+    no-duplicatesp-of-strip-cars-of-hifat-tar-name-list-alist-lemma-10
     (implies
      (and (not (consp path1))
-          (not (member-equal (car name-list)
-                             (cdr name-list))))
+          (not (member-equal name
+                             name-list1)))
      (not
       (intersectp-equal
-       (strip-cars (hifat-tar-name-list-alist fs path1 (cdr name-list)
+       (strip-cars (hifat-tar-name-list-alist fs path1 name-list1
                                               (+ -1 entry-count)))
        (strip-cars
         (hifat-tar-name-list-alist
-         fs (list (car name-list))
-         (mv-nth
-          0
-          (get-names-from-dirp
-           0
-           (list
-            (cons
-             0
-             (dir-stream
-              (<<-sort
-               (strip-cars
-                (m1-file->contents
-                 (mv-nth 0
-                         (hifat-find-file fs (list (car name-list))))))))))))
+         fs (list name)
+         name-list2
          (+ -1 entry-count))))))
-     :hints
-     (("goal"
-       :do-not-induct t
-       :use (:instance lemma-2 (n
-                                (len (hifat-tar-name-list-alist fs path1 (cdr name-list)
-                                                                (+ -1 entry-count)))))))))
-
-(encapsulate
-  ()
-
-  (local
-   (defthmd lemma-1 (iff (equal (len (explode str1)) 0)
-                         (equal (explode str1) nil))
-     :hints
-     (("goal" :expand (len (explode str1))))))
-
-  (local
-   (defthmd lemma-2
-     (implies (and (<= 0 (- start)) (<= 0 start))
-              (integerp (- start)))))
-
-  (defthm
-    subseq-of-string-append
-    (equal
-     (subseq (string-append str1 str2)
-             start end)
-     (cond ((and (not (stringp str2))
-                 (not (stringp str1)))
-            (subseq "" 0 (- end start)))
-           ((not (stringp str1))
-            (subseq str2 start end))
-           ((not (stringp str2))
-            (subseq str1 start end))
-           ((not (integerp (- end start))) "")
-           ((and (< end (+ start (len (explode str1))))
-                 (not (null end))
-                 (natp (- end start))
-                 (not (integerp start)))
-            (subseq str1 0 (- end start)))
-           ((and (>= end (+ start (len (explode str1))))
-                 (not (null end))
-                 (integerp (- end start))
-                 (not (integerp start)))
-            (string-append str1
-                           (subseq str2 0
-                                   (- end (+ start (len (explode str1)))))))
-           ((and (< start 0)
-                 (not (null end))
-                 (natp (- end start))
-                 (>= end (+ start (len (explode str1)))))
-            (string-append str1
-                           (subseq str2 0
-                                   (- end (+ start (len (explode str1)))))))
-           ((and (< start 0)
-                 (not (null end))
-                 (< end (+ start (len (explode str1))))
-                 (> end start))
-            (subseq str1 0 (- end start)))
-           ((not (integerp (- start))) "")
-           ((and (not (null end))
-                 (not (acl2-numberp end))
-                 (not (integerp start)))
-            "")
-           ((and (acl2-numberp end)
-                 (not (integerp end)))
-            "")
-           ((and (integerp start)
-                 (<= start (len (explode str1)))
-                 (<= 0 start)
-                 (null end))
-            (string-append (subseq str1 start nil)
-                           str2))
-           ((and (< (len (explode str1)) start)
-                 (null end)
-                 (natp (- (+ (len (explode str1))
-                             (len (explode str2)))
-                          start)))
-            (subseq str2 (- start (len (explode str1)))
-                    nil))
-           ((and (<= (+ start (len (explode str1))) end)
-                 (not (integerp start))
-                 (< (- start) (len (explode str1))))
-            (string-append str1
-                           (subseq str2 0
-                                   (+ (- end (+ start (len (explode str1))))))))
-           ((and (<= (+ start (len (explode str1))) end)
-                 (not (integerp start))
-                 (< (len (explode str1)) start)
-                 (<= start
-                     (+ (len (explode str1))
-                        (len (explode str2)))))
-            (string-append str1
-                           (subseq str2 0
-                                   (+ (- end (+ start (len (explode str1))))))))
-           ((and (<= (+ start (len (explode str1))) end)
-                 (< start 0)
-                 (not (null end)))
-            (string-append str1
-                           (subseq str2 0
-                                   (+ (- end (+ start (len (explode str1))))))))
-           ((and (not (integerp start))
-                 (< end (+ start (len (explode str1))))
-                 (< start end))
-            (subseq str1 0 (- end start)))
-           ((and (not (natp (- (+ (len (explode str1))
-                                  (len (explode str2)))
-                               start)))
-                 (null end))
-            "")
-           ((and (<= start 0)
-                 (equal (len (explode str1)) 0)
-                 (not (null end))
-                 (not (acl2-numberp end)))
-            (string-append str1 (subseq str2 0 (- start))))
-           ((and (not (integerp start))
-                 (equal (len (explode str1)) 0)
-                 (not (null end))
-                 (not (acl2-numberp end)))
-            str1)
-           ((and (< 0 start)
-                 (not (null end))
-                 (not (acl2-numberp end)))
-            "")
-           ((and (< (- start) (len (explode str1)))
-                 (not (null end))
-                 (not (acl2-numberp end)))
-            (subseq str1 0 (- start)))
-           ((and (< start 0)
-                 (not (null end))
-                 (<= (len (explode str1)) (- start))
-                 (not (acl2-numberp end)))
-            (string-append str1
-                           (subseq str2
-                                   0 (- (+ start (len (explode str1)))))))
-           ((and (< start 0)
-                 (<= (+ (len (explode str1)) start) end)
-                 (integerp end))
-            (string-append str1
-                           (subseq str2 0
-                                   (- end (+ start (len (explode str1)))))))
-           ((and (< (len (explode str1)) start)
-                 (<= start
-                     (+ (len (explode str1))
-                        (len (explode str2))))
-                 (null end))
-            (subseq str2 (- start (len (explode str1)))
-                    nil))
-           ((and (< (len (explode str1)) start)
-                 (<= start
-                     (+ (len (explode str1))
-                        (len (explode str2))))
-                 (integerp end))
-            (subseq str2 (- start (len (explode str1)))
-                    (- end (len (explode str1)))))
-           ((and (integerp start)
-                 (<= start (len (explode str1)))
-                 (<= 0 start)
-                 (< (len (explode str1)) end)
-                 (integerp end))
-            (string-append (subseq str1 start nil)
-                           (subseq str2 0 (- end (len (explode str1))))))
-           ((and (<= 0 start)
-                 (<= start end)
-                 (<= end (len (explode str1)))
-                 (integerp end))
-            (subseq str1 start end))
-           ((and (integerp start)
-                 (< start 0)
-                 (null end))
-            (string-append str1
-                           (subseq str2 0 (- (len (explode str2)) start))))
-           ((and (< start 0)
-                 (not (null end))
-                 (<= start end)
-                 (< end (+ start (len (explode str1)))))
-            (subseq str1 0 (- end start)))
-           ((and (< start 0)
-                 (not (null end))
-                 (<= start end)
-                 (< end (+ start (len (explode str1)))))
-            (subseq str1 start end))
-           ((and (integerp start)
-                 (< (+ (len (explode str1))
-                       (len (explode str2)))
-                    start))
-            (subseq "" start end))
-           ((and (acl2-numberp end)
-                 (not (integerp end)))
-            "")
-           ((and (not (null end)) (< end start))
-            "")
-           (t (implode (append (explode str1)
-                               (explode str2))))))
-    :hints (("goal" :in-theory (e/d (subseq subseq-list) ((:e force)))
-             :do-not-induct t
-             :use ((:instance painful-debugging-lemma-21
-                              (x start)
-                              (y (- (len (explode str1)))))
-                   (:theorem (iff (integerp (+ (- start)
-                                               (len (explode str1))
-                                               (len (explode str2))))
-                                  (integerp (- start))))
-                   lemma-1 lemma-2))))
-
-  (defthm hifat-tar-name-list-alist-correctness-lemma-28
-    (implies
-     (stringp seq)
-     (equal (subseq seq 0 (len (explode seq))) seq))
-    :hints (("Goal" :in-theory (enable subseq subseq-list)))))
-
-;; Move later.
+    :hints
+    (("goal"
+      :do-not-induct t
+      :use (:instance lemma-2 (n
+                               (len (hifat-tar-name-list-alist fs path1 name-list1
+                                                               (+ -1 entry-count)))))))))
 
 (defthm
-  hifat-tar-name-list-alist-correctness-lemma-31
+  no-duplicatesp-of-strip-cars-of-hifat-tar-name-list-alist-lemma-11
+  (implies
+   (m1-directory-file-p
+    (mv-nth
+     0
+     (hifat-find-file fs
+                      (file-table-element->fid
+                       (cdr (assoc-equal (cdr (assoc-equal fd (fd-table-fix fd-table)))
+                                         (file-table-fix file-table)))))))
+   (> (mv-nth 2
+              (hifat-pread fd count offset fs fd-table file-table))
+      0))
+  :hints (("goal" :do-not-induct t
+           :in-theory (enable hifat-pread)))
+  :rule-classes :linear)
+
+(defthm
+  no-duplicatesp-of-strip-cars-of-hifat-tar-name-list-alist-lemma-12
+  (implies
+   (and
+    (consp (assoc-equal fd (fd-table-fix fd-table)))
+    (consp (assoc-equal (cdr (assoc-equal fd (fd-table-fix fd-table)))
+                        (file-table-fix file-table)))
+    (not
+     (m1-directory-file-p
+      (mv-nth
+       0
+       (hifat-find-file
+        fs
+        (file-table-element->fid
+         (cdr (assoc-equal (cdr (assoc-equal fd (fd-table-fix fd-table)))
+                           (file-table-fix file-table))))))))
+    (equal
+     (mv-nth
+      1
+      (hifat-find-file
+       fs
+       (file-table-element->fid
+        (cdr (assoc-equal (cdr (assoc-equal fd (fd-table-fix fd-table)))
+                          (file-table-fix file-table))))))
+     0))
+   (equal (mv-nth 2
+                  (hifat-pread fd count offset fs fd-table file-table))
+          0))
+  :hints (("goal" :do-not-induct t
+           :in-theory (enable hifat-pread))))
+
+(defthm
+  no-duplicatesp-of-strip-cars-of-hifat-tar-name-list-alist-lemma-13
+  (implies (and (not (zp (mv-nth 1 (hifat-find-file fs path))))
+                (consp path))
+           (equal (hifat-tar-name-list-alist fs path name-list entry-count)
+                  nil))
+  :hints (("goal" :in-theory (e/d (alist-shift hifat-pread
+                                               hifat-tar-name-list-alist)
+                                  ()))))
+
+(defthm
+  no-duplicatesp-of-strip-cars-of-hifat-tar-name-list-alist
+  (implies
+   (no-duplicatesp-equal name-list)
+   (no-duplicatesp-equal
+    (strip-cars (hifat-tar-name-list-alist fs path1 name-list entry-count))))
+  :hints
+  (("goal"
+    :in-theory (e/d (;; Enabling the definition lemma just leads to sadness with
+                     ;; regards to hifat-tar-name-list-string-reduction. The small
+                     ;; number of subgoals which need the definition should be
+                     ;; handled with expand hints.
+                     (:induction hifat-tar-name-list-string)
+                     hifat-tar-name-list-alist
+                     hifat-open hifat-lstat
+                     ;; I don't know if I can justify enabling every system call,
+                     ;; but this one has to be enabled on account of really stupid
+                     ;; subgoals.
+                     hifat-opendir painful-debugging-lemma-21)
+                    (take-when-prefixp
+                     prefixp-of-cons-right
+                     take-of-cons
+                     append-of-cons
+                     binary-append
+                     string-append
+                     take-of-too-many
+                     (:rewrite nthcdr-when->=-n-len-l)
+                     (:rewrite take-of-len-free)
+                     (:linear position-equal-ac-when-member)
+                     (:definition position-equal-ac)
+                     (:rewrite consp-of-nthcdr)
+                     (:rewrite
+                      dir-stream-table-p-when-subsetp-equal)
+                     (:rewrite hifat-to-lofat-inversion-lemma-2)
+                     (:rewrite <<-sort-consp)
+                     (:rewrite m1-directory-file-p-when-m1-file-p)
+                     (:rewrite true-listp-when-string-list)
+                     (:rewrite hifat-find-file-correctness-3)
+                     (:definition string-listp)
+                     (:rewrite
+                      string-listp-when-fat32-filename-list-p)
+                     (:linear
+                      len-when-hifat-bounded-file-alist-p . 2)
+                     (:linear
+                      len-when-hifat-bounded-file-alist-p . 1)
+                     (:rewrite m1-regular-file-p-correctness-1)
+                     (:definition nthcdr)
+                     (:definition atom)
+                     (:definition min)
+                     (:definition nfix)
+                     (:definition natp))))))
+
+(defthm
+  hifat-tar-name-list-alist-correctness-lemma-1
+  (implies
+   (not (equal (mv-nth 1 (hifat-find-file fs path))
+               0))
+   (>
+    (mv-nth
+     1
+     (hifat-find-file
+      fs
+      (file-table-element->fid
+       (cdr
+        (assoc-equal
+         (cdr (assoc-equal (mv-nth 2 (hifat-open path fd-table file-table))
+                           (mv-nth 0
+                                   (hifat-open path fd-table file-table))))
+         (mv-nth 1
+                 (hifat-open path fd-table file-table)))))))
+    0))
+  :hints (("goal" :in-theory (enable hifat-open)))
+  :rule-classes :linear)
+
+(defthm hifat-tar-name-list-alist-correctness-lemma-7
+  (equal (subseq "" start end)
+         (implode (take (+ end (- start)) nil)))
+  :hints (("goal" :in-theory (e/d (subseq subseq-list repeat)
+                                  (take-of-too-many take-when-atom)))))
+
+(defthm
+  hifat-tar-name-list-alist-correctness-lemma-2
+  (and (< 0
+          (len (explode (tar-header-block path len typeflag))))
+       (not (equal (tar-header-block path len typeflag)
+                   "")))
+  :hints (("goal" :in-theory (enable tar-header-block)))
+  :rule-classes
+  ((:linear
+    :corollary (< 0
+                  (len (explode (tar-header-block path len typeflag)))))
+   (:rewrite :corollary (not (equal (tar-header-block path len typeflag)
+                                    "")))))
+
+(defthm
+  hifat-tar-name-list-alist-correctness-lemma-18
+  (not
+   (consp
+    (assoc-equal nil
+                 (hifat-tar-name-list-alist fs path name-list entry-count))))
+  :hints (("goal" :in-theory (enable hifat-tar-name-list-alist alist-shift)))
+  :rule-classes :type-prescription)
+
+(defthm
+  hifat-tar-name-list-alist-correctness-lemma-19
+  (implies
+   (consp
+    (assoc-equal path2
+                 (hifat-tar-name-list-alist fs path1 name-list entry-count)))
+   (natp
+    (cdr (assoc-equal
+          path2
+          (hifat-tar-name-list-alist fs path1 name-list entry-count)))))
+  :hints (("goal" :in-theory (enable hifat-tar-name-list-alist alist-shift)))
+  :rule-classes :type-prescription)
+
+(defthm hifat-tar-name-list-alist-correctness-lemma-12
+  (implies
+   (stringp seq)
+   (equal (subseq seq 0 (len (explode seq))) seq))
+  :hints (("Goal" :in-theory (enable subseq subseq-list))))
+
+(defthm
+  hifat-tar-name-list-alist-correctness-lemma-21
   (equal (mv-nth '0
                  (hifat-tar-name-list-string fs (cons (car name-list1) 'nil)
                                              name-list2 fd-table file-table
@@ -1658,52 +1518,6 @@
     :do-not-induct t
     :in-theory
     (enable (:rewrite hifat-tar-name-list-string-reduction-correctness-1)))))
-
-(defthm
-  hifat-tar-name-list-alist-correctness-lemma-30
-  (implies
-   (m1-directory-file-p
-    (mv-nth
-     0
-     (hifat-find-file fs
-                      (file-table-element->fid
-                       (cdr (assoc-equal (cdr (assoc-equal fd fd-table))
-                                         file-table))))))
-   (> (mv-nth 2
-              (hifat-pread fd count offset fs fd-table file-table))
-      0))
-  :hints (("goal" :do-not-induct t
-           :in-theory (enable hifat-pread)))
-  :rule-classes :linear)
-
-(defthm
-  hifat-tar-name-list-alist-correctness-lemma-32
-  (implies
-   (and
-    (consp (assoc-equal fd fd-table))
-    (consp (assoc-equal (cdr (assoc-equal fd fd-table))
-                        file-table))
-    (not
-     (m1-directory-file-p
-      (mv-nth
-       0
-       (hifat-find-file fs
-                        (file-table-element->fid
-                         (cdr (assoc-equal (cdr (assoc-equal fd fd-table))
-                                           file-table)))))))
-    (equal
-     (mv-nth
-      1
-      (hifat-find-file fs
-                       (file-table-element->fid
-                        (cdr (assoc-equal (cdr (assoc-equal fd fd-table))
-                                          file-table)))))
-     0))
-   (equal (mv-nth 2
-                  (hifat-pread fd count offset fs fd-table file-table))
-          0))
-  :hints (("goal" :do-not-induct t
-           :in-theory (enable hifat-pread))))
 
 (defthm
   hifat-tar-name-list-alist-correctness-lemma-14
@@ -1736,22 +1550,69 @@
   :hints (("goal" :do-not-induct t
            :in-theory (enable hifat-lstat))))
 
+(defthm
+  hifat-tar-name-list-alist-correctness-lemma-4
+  (implies
+   (equal (mv-nth 1 (hifat-find-file fs path))
+          0)
+   (equal
+    (mv-nth
+     1
+     (hifat-find-file
+      fs
+      (file-table-element->fid
+       (cdr
+        (assoc-equal
+         (cdr (assoc-equal (mv-nth 2 (hifat-open path fd-table file-table))
+                           (mv-nth 0
+                                   (hifat-open path fd-table file-table))))
+         (mv-nth 1
+                 (hifat-open path fd-table file-table)))))))
+    0))
+  :hints (("goal" :do-not-induct t
+           :in-theory (enable hifat-open))))
+
+(defthm
+  not-consp-assoc-nil-hifat-tar-name-list-alist
+  (not
+   (consp
+    (assoc-equal nil
+                 (hifat-tar-name-list-alist fs path name-list entry-count))))
+  :rule-classes :type-prescription
+  :hints (("Goal" :in-theory (enable hifat-tar-name-list-alist))))
+
+(defthm
+  hifat-tar-name-list-alist-correctness-lemma-13
+  (implies (not (m1-directory-file-p (mv-nth 0 (hifat-find-file fs path))))
+           (equal (hifat-tar-name-list-alist fs path name-list entry-count)
+                  nil))
+  :hints (("goal" :in-theory (enable hifat-tar-name-list-alist alist-shift
+                                     hifat-lstat hifat-find-file))))
+
 (encapsulate
   ()
 
+  ;; Quick note about enabling and disabling things: get-names-from-dirp-alt
+  ;; probably might not want to be enabled, because there are a couple of rules
+  ;; to be derived from
+  ;; no-duplicatesp-of-strip-cars-of-hifat-tar-name-list-alist-lemma-8 and
+  ;; no-duplicatesp-of-strip-cars-of-hifat-tar-name-list-alist-lemma-10 which
+  ;; will want get-names-from-dirp-to be there? Aaah, maybe not, because
+  ;; get-names-from-dirp-alt gets rid of the dir-stream table which is nice.
   (local (in-theory
-          (e/d (;; Enabling the definition lemma just leads to sadness with
-                ;; regards to hifat-tar-name-list-string-reduction. The small
-                ;; number of subgoals which need the definition should be
-                ;; handled with expand hints.
+          (e/d (;; Enabling the definition rules for these two, below, just
+                ;; leads to sadness with regards to
+                ;; hifat-tar-name-list-string-reduction. The small number of
+                ;; subgoals which need the definition should be handled with
+                ;; expand hints and specific rules.
                 (:induction hifat-tar-name-list-string)
-                hifat-tar-name-list-alist
-                hifat-open hifat-lstat
-                ;; I don't know if I can justify enabling every system call,
-                ;; but this one has to be enabled on account of really stupid
-                ;; subgoals.
-                hifat-opendir
-                get-names-from-dirp-alt painful-debugging-lemma-21)
+                (:induction hifat-tar-name-list-alist)
+                ;; There are too many lemmas which need these syscall
+                ;; definitions to be opened up.
+                hifat-open hifat-lstat hifat-opendir
+                get-names-from-dirp-alt
+                painful-debugging-lemma-21
+                length-of-empty-list)
                (append-of-cons
                 binary-append
                 string-append
@@ -1778,19 +1639,12 @@
                  len-when-hifat-bounded-file-alist-p . 1)
                 (:rewrite m1-regular-file-p-correctness-1)
                 (:definition nthcdr)
+                ;; It's dubious how much labour is saved by disabling these,
+                ;; but it's worth a shot.
                 (:definition atom)
                 (:definition min)
                 (:definition nfix)
-                (:definition natp)
-                (:definition fat32-path-to-path)))))
-
-  (defthm
-    not-consp-assoc-nil-hifat-tar-name-list-alist
-    (not
-     (consp
-      (assoc-equal nil
-                   (hifat-tar-name-list-alist fs path name-list entry-count))))
-    :rule-classes :type-prescription)
+                (:definition natp)))))
 
   (defthm
     acl2-numberp-of-cdr-of-assoc-of-hifat-tar-name-list-alist
@@ -1805,14 +1659,6 @@
     :rule-classes :type-prescription)
 
   (defthm
-    hifat-tar-name-list-alist-correctness-lemma-5
-    (implies (and (not (zp (mv-nth 1 (hifat-find-file fs path))))
-                  (consp path))
-             (equal (hifat-tar-name-list-alist fs path name-list entry-count)
-                    nil))
-    :hints (("goal" :in-theory (e/d (alist-shift hifat-pread) nil))))
-
-  (defthm
     hifat-tar-name-list-alist-correctness-lemma-6
     (implies
      (consp
@@ -1823,28 +1669,6 @@
             path2
             (hifat-tar-name-list-alist fs path1 name-list entry-count)))))
     :rule-classes :type-prescription)
-
-  (defthm
-    hifat-tar-name-list-alist-correctness-lemma-8
-    (implies
-     (equal (mv-nth 1 (hifat-find-file fs path))
-            0)
-     (equal
-      (mv-nth
-       1
-       (hifat-find-file
-        fs
-        (file-table-element->fid
-         (cdr
-          (assoc-equal
-           (cdr (assoc-equal (mv-nth 2 (hifat-open path fd-table file-table))
-                             (mv-nth 0
-                                     (hifat-open path fd-table file-table))))
-           (mv-nth 1
-                   (hifat-open path fd-table file-table)))))))
-      0))
-    :hints (("goal" :do-not-induct t
-             :in-theory (enable hifat-open))))
 
   (defthm
     hifat-tar-name-list-alist-correctness-lemma-9
@@ -1870,18 +1694,6 @@
              :in-theory (enable hifat-open hifat-find-file)))
     :rule-classes :type-prescription)
 
-  (defthm
-    hifat-tar-name-list-alist-correctness-lemma-26
-    (implies
-     (no-duplicatesp-equal name-list)
-     (no-duplicatesp-equal
-      (strip-cars (hifat-tar-name-list-alist fs path1 name-list entry-count))))
-    :hints
-    (("goal"
-      :in-theory (e/d (hifat-opendir strip-cars)
-                      (take-when-prefixp prefixp-of-cons-right
-                                         take-of-cons get-names-from-dirp-alt)))))
-
   ;; This lemma is gathering too many case-splits. We'll have to disable some
   ;; of the splitter lemmas.
   ;; The degree to which it's becoming difficult to prove this with lemmas
@@ -1894,21 +1706,24 @@
       (assoc-equal path2
                    (hifat-tar-name-list-alist fs path1 name-list entry-count)))
      (and
-      (subseq
-       (mv-nth
-        0
-        (hifat-tar-name-list-string fs path1 name-list fd-table file-table
-                                    dir-stream-table entry-count))
-       (cdr (assoc-equal
-             path2
-             (hifat-tar-name-list-alist fs path1 name-list entry-count)))
-       (+
+      (equal
+       (subseq
+        (mv-nth
+         0
+         (hifat-tar-name-list-string fs path1 name-list fd-table file-table
+                                     dir-stream-table entry-count))
         (cdr (assoc-equal
               path2
               (hifat-tar-name-list-alist fs path1 name-list entry-count)))
-        (length
-         (hifat-tar-reg-file-string fs
-                                    (implode (fat32-path-to-path path2))))))
+        (+
+         (cdr (assoc-equal
+               path2
+               (hifat-tar-name-list-alist fs path1 name-list entry-count)))
+         (length
+          (hifat-tar-reg-file-string fs
+                                     (implode (fat32-path-to-path path2))))))
+       (hifat-tar-reg-file-string fs
+                                  (implode (fat32-path-to-path path2))))
       (>=
        (length
         (mv-nth
