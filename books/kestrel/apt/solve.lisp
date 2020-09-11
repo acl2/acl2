@@ -23,6 +23,7 @@
 (include-book "kestrel/soft/defund-sk2" :dir :system)
 (include-book "kestrel/std/system/fresh-logical-name-with-dollars-suffix" :dir :system)
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
+(include-book "kestrel/utilities/runes" :dir :system)
 (include-book "kestrel/utilities/trans-eval-error-triple" :dir :system)
 
 (include-book "utilities/input-processing")
@@ -605,7 +606,8 @@
     "If @(tsee solve-gen-solution-acl2-rewriter) succeeds,
      it should be the case that
      the matrix of @('old') is equal to the rewritten term,
-     but the ACL2 rewriter does not produce a replayable ACL2 proof of that.
+     but the ACL2 rewriter does not quite produce
+     a replayable ACL2 proof of that.
      However, in order to prove the refinement theorem,
      we need an ACL2 theorem asserting that
      the matrix is equal to the rewritten term.")
@@ -614,8 +616,11 @@
      The programmatic interface to the ACL2 rewriter returns
      the rules used by the rewriting.
      Thus, we attempt to prove the theorem
-     in the theory consisting of those rewrite rules,
-     assuming that ACL2 will perform the same rewrites.")
+     in the theory consisting of these rules,
+     assuming that ACL2 will perform the same rewrites in the theorem.
+     Note, however, that the returned list of rules may include
+     the ``fake'' rules for linear arithmetic and other proof methods.
+     Thus, we use a utility to drop all of those.")
    (xdoc::p
     "For uniformity with other solving methods,
      we also generate a theorem of the form")
@@ -634,7 +639,7 @@
                                            nil
                                            names-to-avoid
                                            wrld))
-       (used-rules (remove-equal '(:fake-rune-for-type-set nil) used-rules))
+       (used-rules (acl2::drop-fake-runes used-rules))
        (lemma-event
         `(local
           (defthmd ,lemma-name
