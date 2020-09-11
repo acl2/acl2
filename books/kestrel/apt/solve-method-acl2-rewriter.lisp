@@ -33,8 +33,13 @@
   :mode :program
   :short "Attempt to generate a solution,
           i.e. to solve @('old') for @('?f') using the ACL2 rewriter."
-  (b* (((er (list term used))
+  (b* (((er (list* term used pairs))
         (rewrite$ matrix :ctx ctx :in-theory `(enable ,@method-rules)))
+       ((unless (null pairs))
+        (value (raise "Internal error: ~
+                       REWRITE$ returned non-NIL pairs ~x0 ~
+                       even though it was called without forced assumptions."
+                      pairs)))
        (subterms (acl2::if-tree-leaf-terms term))
        (subterms (remove-equal *t* subterms))
        ((when (not subterms)) (value (list term *nil* used)))
