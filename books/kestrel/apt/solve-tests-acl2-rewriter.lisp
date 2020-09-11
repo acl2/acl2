@@ -29,7 +29,25 @@
              :method-rules (rwrule)))
 
 (must-succeed*
+ (gen-inputs-1-rw-if-eqterm-t)
+ (apt::solve old
+             :method :acl2-rewriter
+             :method-rules (rwrule)))
+
+(must-succeed*
+ (gen-inputs-1-rw-if-t-eqterm)
+ (apt::solve old
+             :method :acl2-rewriter
+             :method-rules (rwrule)))
+
+(must-succeed*
  (gen-inputs-1-rw-t)
+ (apt::solve old
+             :method :acl2-rewriter
+             :method-rules (rwrule)))
+
+(must-succeed*
+ (gen-inputs-1-rw-if-t-t)
  (apt::solve old
              :method :acl2-rewriter
              :method-rules (rwrule)))
@@ -45,7 +63,25 @@
              :method-rules (rwrule)))
 
 (must-succeed*
+ (gen-inputs-2-rw-if-eqterm-t)
+ (apt::solve old
+             :method :acl2-rewriter
+             :method-rules (rwrule)))
+
+(must-succeed*
+ (gen-inputs-2-rw-if-t-eqterm)
+ (apt::solve old
+             :method :acl2-rewriter
+             :method-rules (rwrule)))
+
+(must-succeed*
  (gen-inputs-2-rw-t)
+ (apt::solve old
+             :method :acl2-rewriter
+             :method-rules (rwrule)))
+
+(must-succeed*
+ (gen-inputs-2-rw-if-t-t)
  (apt::solve old
              :method :acl2-rewriter
              :method-rules (rwrule)))
@@ -61,7 +97,25 @@
              :method-rules (rwrule)))
 
 (must-succeed*
+ (gen-inputs-3-rw-if-eqterm-t)
+ (apt::solve old
+             :method :acl2-rewriter
+             :method-rules (rwrule)))
+
+(must-succeed*
+ (gen-inputs-3-rw-if-t-eqterm)
+ (apt::solve old
+             :method :acl2-rewriter
+             :method-rules (rwrule)))
+
+(must-succeed*
  (gen-inputs-3-rw-t)
+ (apt::solve old
+             :method :acl2-rewriter
+             :method-rules (rwrule)))
+
+(must-succeed*
+ (gen-inputs-3-rw-if-t-t)
  (apt::solve old
              :method :acl2-rewriter
              :method-rules (rwrule)))

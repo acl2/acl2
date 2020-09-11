@@ -29,8 +29,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Generate an I/O relation (matrix of OLD) that
-; rewrites to an equality of its last argument (i.e. the output).
+; Generate an I/O relation (matrix of OLD) that rewrites to
+; (EQUAL OUTPUT TERM).
 
 (defmacro gen-matrix-rw-eqterm (&key name inputs output term rwrule)
   `(encapsulate
@@ -49,6 +49,58 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Generate an I/O relation (matrix of OLD) that rewrites to
+; (IF ... (EQUAL OUTPUT TERM) T).
+
+(defmacro gen-matrix-rw-if-eqterm-t (&key name inputs output term test rwrule)
+  `(encapsulate
+     (((,name ,@(repeat (1+ (len inputs)) '*)) => *)
+      ((,term ,@(repeat (len inputs) '*)) => *)
+      ((,test) => *))
+     (local
+      (defun ,term (,@inputs)
+        (declare (ignore ,@inputs))
+        nil))
+     (local
+      (defun ,name (,@inputs ,output)
+        (equal ,output (,term ,@inputs))))
+     (local
+      (defun ,test ()
+        t))
+     (defthmd ,rwrule
+       (equal (,name ,@inputs ,output)
+              (if (,test)
+                  (equal ,output (,term ,@inputs))
+                t)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Generate an I/O relation (matrix of OLD) that rewrites to
+; (IF ... T (EQUAL OUTPUT TERM)).
+
+(defmacro gen-matrix-rw-if-t-eqterm (&key name inputs output term test rwrule)
+  `(encapsulate
+     (((,name ,@(repeat (1+ (len inputs)) '*)) => *)
+      ((,term ,@(repeat (len inputs) '*)) => *)
+      ((,test) => *))
+     (local
+      (defun ,term (,@inputs)
+        (declare (ignore ,@inputs))
+        nil))
+     (local
+      (defun ,name (,@inputs ,output)
+        (equal ,output (,term ,@inputs))))
+     (local
+      (defun ,test ()
+        nil))
+     (defthmd ,rwrule
+       (equal (,name ,@inputs ,output)
+              (if (,test)
+                  t
+                (equal ,output (,term ,@inputs)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; Generate an I/O relation (matrix of OLD) that rewrites to T.
 
 (defmacro gen-matrix-rw-t (&key name inputs output rwrule)
@@ -61,6 +113,25 @@
      (defthmd ,rwrule
        (equal (,name ,@inputs ,output)
               t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Generate an I/O relation (matrix of OLD) that rewrites to (IF ... T T).
+
+(defmacro gen-matrix-rw-if-t-t (&key name inputs output test rwrule)
+  `(encapsulate
+     (((,name ,@(repeat (1+ (len inputs)) '*)) => *)
+      ((,test) => *))
+     (local
+      (defun ,name (,@inputs ,output)
+        (declare (ignore ,@inputs ,output))
+        t))
+     (local
+      (defun ,test ()
+        nil))
+     (defthmd ,rwrule
+       (equal (,name ,@inputs ,output)
+              (if (,test) t t)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -147,6 +218,42 @@
                            :rwrule ,rwrule)
      (gen-old :name ,old :vars ,inputs :matrix ,matrix :?f ,?f)))
 
+(defmacro gen-inputs-1-rw-if-eqterm-t (&key (?f '?f)
+                                            (matrix 'm)
+                                            (inputs '(x))
+                                            (output 'y)
+                                            (term 'term)
+                                            (test 'test)
+                                            (rwrule 'rwrule)
+                                            (old 'old))
+  `(encapsulate ()
+     (gen-funvar :name ,?f :arity 1)
+     (gen-matrix-rw-if-eqterm-t :name ,matrix
+                                :inputs ,inputs
+                                :output ,output
+                                :term ,term
+                                :test ,test
+                                :rwrule ,rwrule)
+     (gen-old :name ,old :vars ,inputs :matrix ,matrix :?f ,?f)))
+
+(defmacro gen-inputs-1-rw-if-t-eqterm (&key (?f '?f)
+                                            (matrix 'm)
+                                            (inputs '(x))
+                                            (output 'y)
+                                            (term 'term)
+                                            (test 'test)
+                                            (rwrule 'rwrule)
+                                            (old 'old))
+  `(encapsulate ()
+     (gen-funvar :name ,?f :arity 1)
+     (gen-matrix-rw-if-t-eqterm :name ,matrix
+                                :inputs ,inputs
+                                :output ,output
+                                :term ,term
+                                :test ,test
+                                :rwrule ,rwrule)
+     (gen-old :name ,old :vars ,inputs :matrix ,matrix :?f ,?f)))
+
 (defmacro gen-inputs-1-rw-t (&key (?f '?f)
                                   (matrix 'm)
                                   (inputs '(x))
@@ -159,6 +266,22 @@
                       :inputs ,inputs
                       :output ,output
                       :rwrule ,rwrule)
+     (gen-old :name ,old :vars ,inputs :matrix ,matrix :?f ,?f)))
+
+(defmacro gen-inputs-1-rw-if-t-t (&key (?f '?f)
+                                       (matrix 'm)
+                                       (inputs '(x))
+                                       (output 'y)
+                                       (test 'test)
+                                       (rwrule 'rwrule)
+                                       (old 'old))
+  `(encapsulate ()
+     (gen-funvar :name ,?f :arity 1)
+     (gen-matrix-rw-if-t-t :name ,matrix
+                           :inputs ,inputs
+                           :output ,output
+                           :test ,test
+                           :rwrule ,rwrule)
      (gen-old :name ,old :vars ,inputs :matrix ,matrix :?f ,?f)))
 
 (defmacro gen-inputs-1-sat-eqterm (&key (?f '?f)
@@ -195,6 +318,42 @@
                            :rwrule ,rwrule)
      (gen-old :name ,old :vars ,inputs :matrix ,matrix :?f ,?f)))
 
+(defmacro gen-inputs-2-rw-if-eqterm-t (&key (?f '?f)
+                                            (matrix 'm)
+                                            (inputs '(x1 x2))
+                                            (output 'y)
+                                            (term 'term)
+                                            (test 'test)
+                                            (rwrule 'rwrule)
+                                            (old 'old))
+  `(encapsulate ()
+     (gen-funvar :name ,?f :arity 2)
+     (gen-matrix-rw-if-eqterm-t :name ,matrix
+                                :inputs ,inputs
+                                :output ,output
+                                :term ,term
+                                :test ,test
+                                :rwrule ,rwrule)
+     (gen-old :name ,old :vars ,inputs :matrix ,matrix :?f ,?f)))
+
+(defmacro gen-inputs-2-rw-if-t-eqterm (&key (?f '?f)
+                                            (matrix 'm)
+                                            (inputs '(x1 x2))
+                                            (output 'y)
+                                            (term 'term)
+                                            (test 'test)
+                                            (rwrule 'rwrule)
+                                            (old 'old))
+  `(encapsulate ()
+     (gen-funvar :name ,?f :arity 2)
+     (gen-matrix-rw-if-t-eqterm :name ,matrix
+                                :inputs ,inputs
+                                :output ,output
+                                :term ,term
+                                :test ,test
+                                :rwrule ,rwrule)
+     (gen-old :name ,old :vars ,inputs :matrix ,matrix :?f ,?f)))
+
 (defmacro gen-inputs-2-rw-t (&key (?f '?f)
                                   (matrix 'm)
                                   (inputs '(x1 x2))
@@ -207,6 +366,22 @@
                       :inputs ,inputs
                       :output ,output
                       :rwrule ,rwrule)
+     (gen-old :name ,old :vars ,inputs :matrix ,matrix :?f ,?f)))
+
+(defmacro gen-inputs-2-rw-if-t-t (&key (?f '?f)
+                                       (matrix 'm)
+                                       (inputs '(x1 x2))
+                                       (output 'y)
+                                       (test 'test)
+                                       (rwrule 'rwrule)
+                                       (old 'old))
+  `(encapsulate ()
+     (gen-funvar :name ,?f :arity 2)
+     (gen-matrix-rw-if-t-t :name ,matrix
+                           :inputs ,inputs
+                           :output ,output
+                           :test ,test
+                           :rwrule ,rwrule)
      (gen-old :name ,old :vars ,inputs :matrix ,matrix :?f ,?f)))
 
 (defmacro gen-inputs-2-sat-eqterm (&key (?f '?f)
@@ -243,6 +418,42 @@
                            :rwrule ,rwrule)
      (gen-old :name ,old :vars ,inputs :matrix ,matrix :?f ,?f)))
 
+(defmacro gen-inputs-3-rw-if-eqterm-t (&key (?f '?f)
+                                            (matrix 'm)
+                                            (inputs '(x1 x2 x3))
+                                            (output 'y)
+                                            (term 'term)
+                                            (test 'test)
+                                            (rwrule 'rwrule)
+                                            (old 'old))
+  `(encapsulate ()
+     (gen-funvar :name ,?f :arity 3)
+     (gen-matrix-rw-if-eqterm-t :name ,matrix
+                                :inputs ,inputs
+                                :output ,output
+                                :term ,term
+                                :test ,test
+                                :rwrule ,rwrule)
+     (gen-old :name ,old :vars ,inputs :matrix ,matrix :?f ,?f)))
+
+(defmacro gen-inputs-3-rw-if-t-eqterm (&key (?f '?f)
+                                            (matrix 'm)
+                                            (inputs '(x1 x2 x3))
+                                            (output 'y)
+                                            (term 'term)
+                                            (test 'test)
+                                            (rwrule 'rwrule)
+                                            (old 'old))
+  `(encapsulate ()
+     (gen-funvar :name ,?f :arity 3)
+     (gen-matrix-rw-if-t-eqterm :name ,matrix
+                                :inputs ,inputs
+                                :output ,output
+                                :term ,term
+                                :test ,test
+                                :rwrule ,rwrule)
+     (gen-old :name ,old :vars ,inputs :matrix ,matrix :?f ,?f)))
+
 (defmacro gen-inputs-3-rw-t (&key (?f '?f)
                                   (matrix 'm)
                                   (inputs '(x1 x2 x3))
@@ -255,6 +466,22 @@
                       :inputs ,inputs
                       :output ,output
                       :rwrule ,rwrule)
+     (gen-old :name ,old :vars ,inputs :matrix ,matrix :?f ,?f)))
+
+(defmacro gen-inputs-3-rw-if-t-t (&key (?f '?f)
+                                       (matrix 'm)
+                                       (inputs '(x1 x2 x3))
+                                       (output 'y)
+                                       (test 'test)
+                                       (rwrule 'rwrule)
+                                       (old 'old))
+  `(encapsulate ()
+     (gen-funvar :name ,?f :arity 3)
+     (gen-matrix-rw-if-t-t :name ,matrix
+                           :inputs ,inputs
+                           :output ,output
+                           :test ,test
+                           :rwrule ,rwrule)
      (gen-old :name ,old :vars ,inputs :matrix ,matrix :?f ,?f)))
 
 (defmacro gen-inputs-3-sat-eqterm (&key (?f '?f)
