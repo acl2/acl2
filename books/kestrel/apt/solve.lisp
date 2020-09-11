@@ -180,11 +180,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defval *solve-call-acl2-rewriter*
+  :short "Name of the function (defined in a separate file)
+          to call the ACL2 rewriter."
+  'solve-call-acl2-rewriter)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defval *solve-call-axe-rewriter*
+  :short "Name of the function (defined in a separate file)
+          to call the Axe rewriter."
+  'solve-call-axe-rewriter)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define solve-process-method (method (method-present booleanp) ctx state)
   :returns (mv erp (nothing null) state)
   :short "Process the @(':method') input."
   (cond ((eq method :acl2-rewriter)
-         (if (function-symbolp 'solve-call-acl2-rewriter (w state))
+         (if (function-symbolp *solve-call-acl2-rewriter* (w state))
              (value nil)
            (er-soft+
             ctx t nil
@@ -192,7 +206,7 @@
              it is necessary to include ~
              [books]/kestrel/apt/solve-method-acl2-rewriter.lisp.")))
         ((eq method :axe-rewriter)
-         (if (function-symbolp 'solve-call-axe-rewriter (w state))
+         (if (function-symbolp *solve-call-axe-rewriter* (w state))
              (value nil)
            (er-soft+
             ctx t nil
@@ -602,7 +616,7 @@
     "If the call is successful, we attempt to extract a solution,
      and we return it along with the rewritten term and the used rules."))
   (b* (((er (list rewritten-term used-rules))
-        (trans-eval-error-triple `(solve-call-acl2-rewriter
+        (trans-eval-error-triple `(,*solve-call-acl2-rewriter*
                                    ,@(kwote-lst (list matrix method-rules ctx))
                                    state)
                                  ctx
@@ -635,7 +649,7 @@
    "This is similar to @(tsee solve-gen-solution-acl2-rewriter).
     See its documentation.")
   (b* (((er rewritten-term)
-        (trans-eval-error-triple `(solve-call-axe-rewriter
+        (trans-eval-error-triple `(,*solve-call-axe-rewriter*
                                    ,@(kwote-lst (list matrix method-rules ctx))
                                    state)
                                  ctx
