@@ -122,6 +122,7 @@
 (xdoc::order-subtopics apt (common-concepts
                             common-options
                             casesplit
+                            divconq
                             expdata
                             isodata
                             parteval
@@ -134,6 +135,7 @@
                             simplify-defun-sk-programmatic
                             simplify-term
                             simplify-term-programmatic
+                            solve
                             tailrec
                             utilities))
 
