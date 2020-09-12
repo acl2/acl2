@@ -127,6 +127,7 @@
      "(solve old"
      "       :method                 ; no default"
      "       :method-rules           ; default nil"
+     "       :solution               ; no default"
      "       :solution-name          ; default :auto"
      "       :solution-enable        ; default nil"
      "       :solution-guard         ; default t"
@@ -150,7 +151,7 @@
      (xdoc::p
       "@('old') must be a SOFT quantifier function
        (see `Classification' section in @(tsee soft::defsoft))
-       that depends on one function variable (call it @('?f')),
+       that depends on one function variable (let it be @('?f')),
        that has no parameters,
        and whose body has the form")
      (xdoc::codeblock
@@ -212,6 +213,35 @@
        @(':method') is @(':acl2-rewriter') or @(':axe-rewriter')."))
 
     (xdoc::desc
+     "@(':solution') &mdash; no default"
+     (xdoc::p
+      "Specifies an existing function to use as solution,
+       when @(':method') is @(':manual').")
+     (xdoc::p
+      "It must be the name of an existing function
+       with @('n') arguments and 1 result.")
+     (xdoc::p
+      "This input may be present only if @(':method') is @(':manual').
+       If this input is present, then the inputs
+       @(':solution-name'),
+       @(':solution-enable'),
+       @(':solution-guard'),
+       @(':solution-guard-hints'), and
+       @(':solution-body')
+       must be all absent.
+       If any of these inputs are present,
+       then the @(':solution') input must be absent.
+       If @(':method') is @(':manual'),
+       exactly one of @(':solution') and @(':solution-body') must be present.")
+     (xdoc::p
+      "The existing function specified by this input
+       must be guard-verified if guards are to be verified,
+       according to the @(':verify-guards') input.")
+     (xdoc::p
+      "In the rest of the documentation page,
+       let @('f') be the name of this function."))
+
+    (xdoc::desc
      "@(':solution-name') &mdash; default @(':auto')"
      (xdoc::p
       "Determines the name of the generated solution function for @('?f').")
@@ -226,6 +256,8 @@
       (xdoc::li
        "Any other symbol, to use as the name of the solution function."))
      (xdoc::p
+      "This input must be absent if the @(':solution') input is present.")
+     (xdoc::p
       "In the rest of the documentation page,
        let @('f') be this name."))
 
@@ -239,7 +271,9 @@
       (xdoc::li
        "@('t'), to enable it.")
       (xdoc::li
-       "@('nil'), to disable it.")))
+       "@('nil'), to disable it."))
+     (xdoc::p
+      "This input must be absent if the @(':solution') input is present."))
 
     (xdoc::desc
      "@(':solution-guard') &mdash; default @('t')"
@@ -251,7 +285,9 @@
        The term must return a single (i.e. non-@(tsee mv)) result.")
      (xdoc::p
       "See Section `Solution Determination' below
-       for a discussion about this input."))
+       for a discussion about this input.")
+     (xdoc::p
+      "This input must be absent if the @(':solution') input is present."))
 
     (xdoc::desc
      "@(':solution-guard-hints') &mdash; default @('nil')"
@@ -262,7 +298,9 @@
        for a discussion about this input.")
      (xdoc::p
       "This input may be present only if guards are to be verified,
-       as determined by the @(':verify-guards') input."))
+       as determined by the @(':verify-guards') input.")
+     (xdoc::p
+      "This input must be absent if the @(':solution') input is present."))
 
     (xdoc::desc
      "@(':solution-body') &mdash; no default"
@@ -278,19 +316,15 @@
        for a discussion about this input.")
      (xdoc::p
       "This input may be present only if @(':method') is @(':manual').
-       In fact, this input must be present if @(':method') is @(':manual')."))
+       If this input is present, then the @(':solution') input must be absent.
+       If @(':method') is @(':manual'),
+       exactly one of @(':solution') and @(':solution-body') must be present."))
 
     (xdoc::desc
      "@(':solution-hints') &mdash; @('nil')"
      (xdoc::p
       "Specifies the hints to prove the correctness of the solution,
        when @(':method') is @(':manual').")
-     (xdoc::p
-      "It must be an untranslated term
-       whose free variables are among @('x1'), ..., @('xn').")
-     (xdoc::p
-      "See Section `Solution Determination' below
-       for a discussion about this input.")
      (xdoc::p
       "This input may be present only if @(':method') is @(':manual')."))
 
@@ -457,8 +491,25 @@
    (xdoc::p
     "When the @(':method') input is @(':manual'),
      the transformation calls no inference tool.
-     Instead, the @(':solution-body') input, which must be supplied,
-     is used to determine the solution")
+     Instead, the @(':solution') or @(':solution-body') input,
+     which must be supplied,
+     is used to determine the solution.")
+
+   (xdoc::p
+    "If the @(':solution') input is supplied,
+     it must refer to an existing function @('f'),
+     with the same number of arguments and results as @('?f').
+     It must be the case that")
+   (xdoc::codeblock
+    "(implies (equal (?f x1 ... xn)"
+    "                (f x1 ... xn))"
+    "         matrix<(?f x1 ... xn)>)")
+   (xdoc::p
+    "This proof is attempted via the @(':solution-hints') input.")
+
+   (xdoc::p
+    "If the @(':solution-body') input is supplied,
+     the transformation generates the function")
    (xdoc::codeblock
     "(defun f (x1 ... xn)"
     "  term<x1,...,xn>)")
@@ -470,10 +521,9 @@
    (xdoc::codeblock
     "(implies (equal (?f x1 ... xn)"
     "                term<x1,...,xn>)"
-    "         term<(?f x1 ... xn)>)")
+    "         matrix<(?f x1 ... xn)>)")
    (xdoc::p
-    "which has the same form as the one for the Axe rewriter (see above).
-     Its proof is attempted via the @(':solution-hints') input.")
+    "This proof is attempted via the @(':solution-hints') input.")
    (xdoc::p
     "The guard of @('f') is determined by @(':solution-guard').
      If guards are to be verified,
@@ -492,6 +542,9 @@
       "(defun f (x1 ... xn)"
       "  (declare (xargs :guard ...)) ; from :solution-guard input"
       "  ...) ; see section 'Solution Determination' above")
+     (xdoc::p
+      "This is not generated if @(':method') is @(':manual')
+       and the @(':solution') input is present.")
      (xdoc::p
       "In the " *solve-design-notes* ",
        @('f') is denoted by @($f_0$)."))

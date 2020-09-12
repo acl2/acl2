@@ -51,6 +51,8 @@
 
   (xdoc::evmac-topic-implementation-item-input "method-rules" "solve")
 
+  (xdoc::evmac-topic-implementation-item-input "solution" "solve")
+
   (xdoc::evmac-topic-implementation-item-input "solution-name" "solve")
 
   (xdoc::evmac-topic-implementation-item-input "solution-enable" "solve")
@@ -93,10 +95,15 @@
 
   (xdoc::evmac-topic-implementation-item-fn-doc "f")
 
-  "@('f-body') is the obtained body of the solution function @('f')."
+  "@('f-existsp') is a boolean indicating whether @('f') already exists,
+   i.e. it is supplied as the @(':solution') input,
+   and thus @('f') is not generated."
 
-  "@('f-body-correct') is the name of the generated theorem
-   asserting the correctness of @('f-body')."
+  "@('f-body') is the obtained body of the solution function @('f'),
+   when this function is generated."
+
+  "@('solution-correct') is the name of the generated theorem
+   asserting the correctness of the solution."
 
   (xdoc::evmac-topic-implementation-item-fn-doc "new")
 
@@ -240,8 +247,54 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define solve-process-solution (solution
+                                (solution-present booleanp)
+                                (x1...xn symbol-listp)
+                                (method keywordp)
+                                verify-guards
+                                ctx
+                                state)
+  :returns (mv erp (f-existsp booleanp) state)
+  :verify-guards nil
+  :short "Process the @(':solution') input."
+  (b* (((when (not solution-present)) (value nil))
+       ((unless (eq method :manual))
+        (er-soft+ ctx t nil
+                  "The :SOLUTION input may be present ~
+                   only if :METHOD is :MANUAL, ~
+                   but :METHOD is ~x0 instead."
+                  method))
+       ((er &) (ensure-function-name$ solution "The :SOLUTION input" t nil))
+       ((er &) (ensure-function-arity$
+                solution
+                (len x1...xn)
+                (msg "The function ~x0 specified by the :SOLUTION input"
+                     solution)
+                t
+                nil))
+       ((er &) (ensure-function-number-of-results$
+                solution
+                1
+                (msg "The function ~x0 specified by the :SOLUTION input"
+                     solution)
+                t
+                nil))
+       ((when (and (eq verify-guards t)
+                   (not (guard-verified-p+ solution (w state)))))
+        (er-soft+ ctx t nil
+                  "Since the :VERIFY-GUARDS input is T, ~
+                   the function ~x0 specified by the :SOLUTION input ~
+                   must be guard-verified, but it is not."
+                  solution)))
+    (value t)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define solve-process-solution-name (solution-name
+                                     (solution-name-present booleanp)
                                      (?f symbolp)
+                                     (solution symbolp)
+                                     (solution-present booleanp)
                                      (names-to-avoid symbol-listp)
                                      ctx
                                      state)
@@ -250,45 +303,85 @@
                         @('(typed-tuplep symbolp symbol-listp result)').")
                state)
   :mode :program
-  (b* (((er &) (ensure-value-is-symbol$ solution-name
-                                        "The :SOLUTION-NAME input"
-                                        t nil))
-       ((er f) (if (eq solution-name :auto)
-                   (b* ((chars (explode (symbol-name ?f)))
-                        ((unless (and (consp chars)
-                                      (eql (car chars) #\?)))
-                         (er-soft+ ctx t nil
-                                   "The :SOLUTION-NAME input is :AUTO ~
-                                    (perhaps by default). ~
-                                    This is allowed only if ~
-                                    the name of ~x0 starts with ?, ~
-                                    but it does not."
-                                   ?f))
-                        (f (intern-in-package-of-symbol
-                            (implode (cdr chars))
-                            ?f)))
-                     (value f))
-                 (value solution-name)))
-       ((er names-to-avoid)
-        (ensure-symbol-is-fresh-event-name$
-         f
-         (msg "The name ~x0 specified by :SOLUTION-NAME" f)
-         'function
-         names-to-avoid
-         t
-         nil)))
-    (value (list f names-to-avoid))))
+  :short "Process the @(':solution-name') input."
+  :long
+  (xdoc::topstring-p
+   "If this input is absent and the @(':solution') input is present,
+    we return the value of the latter as the @('f') result.
+    This way, @(tsee solve-process-inputs) can obtain @('f') from this function
+    in all cases.")
+  (if solution-present
+      (if solution-name-present
+          (er-soft+ ctx t nil
+                    "Since the :SOLUTION input is present, ~
+                     the :SOLUTION-NAME input must be absent.")
+        (value (list solution names-to-avoid)))
+    (b* (((er &) (ensure-value-is-symbol$ solution-name
+                                          "The :SOLUTION-NAME input"
+                                          t nil))
+         ((er f) (if (eq solution-name :auto)
+                     (b* ((chars (explode (symbol-name ?f)))
+                          ((unless (and (consp chars)
+                                        (eql (car chars) #\?)))
+                           (er-soft+ ctx t nil
+                                     "The :SOLUTION-NAME input is :AUTO ~
+                                      (perhaps by default). ~
+                                      This is allowed only if ~
+                                      the name of ~x0 starts with ?, ~
+                                      but it does not."
+                                     ?f))
+                          (f (intern-in-package-of-symbol
+                              (implode (cdr chars))
+                              ?f)))
+                       (value f))
+                   (value solution-name)))
+         ((er names-to-avoid)
+          (ensure-symbol-is-fresh-event-name$
+           f
+           (msg "The name ~x0 specified by :SOLUTION-NAME" f)
+           'function
+           names-to-avoid
+           t
+           nil)))
+      (value (list f names-to-avoid)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define solve-process-solution-enable (solution-enable
+                                       (solution-enable-present booleanp)
+                                       (solution-present booleanp)
+                                       ctx
+                                       state)
+  :returns (mv erp (nothing null) state)
+  :short "Process the @(':solution-enable') input."
+  (if (and solution-enable-present
+           solution-present)
+      (er-soft+ ctx t nil
+                "Since the :SOLUTION input is present, ~
+                 the :SOLUTION-ENABLE input must be absent.")
+    (ensure-value-is-boolean$ solution-enable
+                              "The :SOLUTION-ENABLE input"
+                              t
+                              nil))
+  :prepwork ((local (in-theory (enable acl2::ensure-value-is-boolean)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define solve-process-solution-guard (solution-guard
+                                      (solution-guard-present booleanp)
                                       (x1...xn symbol-listp)
+                                      (solution-present booleanp)
                                       ctx
                                       state)
   :returns (mv erp (nothing "Always @('nil').") state)
   :mode :program
   :short "Process the @(':solution-guard') input."
-  (b* (((er (list term stobjs-out))
+  (b* (((when (and solution-guard-present
+                   solution-present))
+        (er-soft+ ctx t nil
+                  "Since the :SOLUTION input is present, ~
+                   the :SOLUTION-GUARD input must be absent."))
+       ((er (list term stobjs-out))
         (ensure-value-is-untranslated-term$ solution-guard
                                             "The :SOLUTION-GUARD input" t nil))
        (description (msg "The :SOLUTION-GUARD term ~x0" solution-guard))
@@ -304,7 +397,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define solve-process-solution-guard-hints (solution-guard-hints ctx state)
+(define solve-process-solution-guard-hints (solution-guard-hints
+                                            (solution-guard-hints-present
+                                             booleanp)
+                                            (solution-present booleanp)
+                                            ctx
+                                            state)
   :returns (mv erp (nothing null) state)
   :short "Process the @(':solution-guard-hints') input."
   :long
@@ -312,10 +410,15 @@
    "For now we just check that this is a true list,
     which may be enough to catch simple mistakes.
     We may extend this input processor with more validity checks.")
-  (ensure-value-is-true-list$ solution-guard-hints
-                              "The :SOLUTION-GUARD-HINTS input"
-                              t
-                              nil)
+  (if (and solution-guard-hints-present
+           solution-present)
+      (er-soft+ ctx t nil
+                "Since the :SOLUTION input is present, ~
+                 the :SOLUTION-GUARD-HINTS input must be absent.")
+    (ensure-value-is-true-list$ solution-guard-hints
+                                "The :SOLUTION-GUARD-HINTS input"
+                                t
+                                nil))
   :prepwork ((local (in-theory (enable acl2::ensure-value-is-true-list)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -324,31 +427,40 @@
                                      (solution-body-present booleanp)
                                      (x1...xn symbol-listp)
                                      (method keywordp)
+                                     (solution-present booleanp)
                                      ctx
                                      state)
   :returns (mv erp (nothing "Always @('nil').") state)
   :mode :program
   :short "Process the @(':solution-body') input."
   (if (eq method :manual)
-      (if (not solution-body-present)
-          (er-soft+ ctx t nil
-                    "Since the :METHOD input is :MANUAL, ~
-                     the :SOLUTION-BODY input must be supplied, ~
-                     but it is absent instead.")
-        (b* (((er (list term stobjs-out))
-              (ensure-value-is-untranslated-term$ solution-body
-                                                  "The :SOLUTION-BODY input"
-                                                  t nil))
-             (description (msg "The :SOLUTION-BODY term ~x0" solution-body))
-             ((er &) (ensure-function/lambda/term-number-of-results$ stobjs-out
-                                                                     1
-                                                                     description
-                                                                     t nil))
-             ((er &) (ensure-term-free-vars-subset$ term
-                                                    x1...xn
-                                                    description
-                                                    t nil)))
-          (value nil)))
+      (if solution-present
+          (if solution-body-present
+              (er-soft+ ctx t nil
+                        "The :SOLUTION and :SOLUTION-BODY inputs ~
+                         cannot be both present.")
+            (value nil))
+        (if (not solution-body-present)
+            (er-soft+ ctx t nil
+                      "Since the :METHOD input is :MANUAL, ~
+                       one of the :SOLUTION and :SOLUTION-BODY inputs ~
+                       must be supplied.")
+          (b* (((er (list term stobjs-out))
+                (ensure-value-is-untranslated-term$ solution-body
+                                                    "The :SOLUTION-BODY input"
+                                                    t nil))
+               (description (msg "The :SOLUTION-BODY term ~x0" solution-body))
+               ((er &) (ensure-function/lambda/term-number-of-results$
+                        stobjs-out
+                        1
+                        description
+                        t
+                        nil))
+               ((er &) (ensure-term-free-vars-subset$ term
+                                                      x1...xn
+                                                      description
+                                                      t nil)))
+            (value nil))))
     (if solution-body-present
         (er-soft+ ctx t nil
                   "Since the :METHOD input is not :MANUAL, ~
@@ -390,10 +502,16 @@
                               method
                               (method-present booleanp)
                               method-rules
+                              solution
+                              (solution-present booleanp)
                               solution-name
+                              (solution-name-present booleanp)
                               solution-enable
+                              (solution-enable-present booleanp)
                               solution-guard
+                              (solution-guard-present booleanp)
                               solution-guard-hints
+                              (solution-guard-hints-present booleanp)
                               solution-body
                               (solution-body-present booleanp)
                               solution-hints
@@ -414,6 +532,7 @@
                                     ?f
                                     x1...xn
                                     matrix
+                                    f-existsp
                                     f
                                     new
                                     new-enable$
@@ -426,6 +545,7 @@
                                          symbolp
                                          symbol-listp
                                          pseudo-termp
+                                         booleanp
                                          symbolp
                                          symbolp
                                          booleanp
@@ -445,27 +565,43 @@
                                                               state))
        ((er &) (solve-process-method method method-present ctx state))
        ((er &) (solve-process-method-rules method-rules ctx state))
+       ((er f-existsp) (solve-process-solution solution
+                                               solution-present
+                                               x1...xn
+                                               method
+                                               verify-guards
+                                               ctx
+                                               state))
        ((er (list f names-to-avoid))
         (solve-process-solution-name solution-name
+                                     solution-name-present
                                      ?f
+                                     solution
+                                     solution-present
                                      names-to-avoid
                                      ctx
                                      state))
-       ((er &) (ensure-value-is-boolean$ solution-enable
-                                         "The :SOLUTION-ENABLE input"
-                                         t
-                                         nil))
+       ((er &) (solve-process-solution-enable solution-enable
+                                              solution-enable-present
+                                              solution-present
+                                              ctx
+                                              state))
        ((er &) (solve-process-solution-guard solution-guard
+                                             solution-guard-present
                                              x1...xn
+                                             solution-present
                                              ctx
                                              state))
        ((er &) (solve-process-solution-guard-hints solution-guard-hints
+                                                   solution-guard-hints-present
+                                                   solution-present
                                                    ctx
                                                    state))
        ((er &) (solve-process-solution-body solution-body
                                             solution-body-present
                                             x1...xn
                                             method
+                                            solution-present
                                             ctx
                                             state))
        ((er &) (solve-process-solution-hints solution-hints
@@ -505,6 +641,7 @@
                  ?f
                  x1...xn
                  matrix
+                 f-existsp
                  f
                  new
                  new-enable
@@ -724,7 +861,7 @@
             (equal ,matrix ,rewritten-term)
             :hints (("Goal" :in-theory ',used-rules)))))
        ((mv main-name names-to-avoid)
-        (fresh-logical-name-with-$s-suffix 'f-body-correct
+        (fresh-logical-name-with-$s-suffix 'solution-correct
                                            nil
                                            names-to-avoid
                                            wrld))
@@ -797,7 +934,7 @@
             (equal ,matrix ,rewritten-term)
             :hints (("Goal" :in-theory (enable ,@method-rules))))))
        ((mv main-name names-to-avoid)
-        (fresh-logical-name-with-$s-suffix 'f-body-correct
+        (fresh-logical-name-with-$s-suffix 'solution-correct
                                            nil
                                            names-to-avoid
                                            wrld))
@@ -826,8 +963,8 @@
                                         state)
   :returns (mv erp
                (result "A tuple @('(f-body
-                                    f-body-correct-events
-                                    f-body-correct
+                                    solution-correct-events
+                                    solution-correct
                                     updated-names-to-avoid)')
                         satisfying @('(typed-tuplep pseudo-termp
                                                     pseudo-event-form-listp
@@ -837,14 +974,8 @@
   :mode :program
   :short "Attempt to generate a solution, and a theorem for its correctness."
   :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is meant to provide a uniform interface across all solution methods.
-     No matter what the method is, this function returns (if successful),
-     the body of the solution and
-     a theorem (event and name) for the correctness of the solution.
-     The theorem asserts @('matrix<f-body>');
-     see user documentation, Section `Solution Determination'."))
+  (xdoc::topstring-p
+   "This is used when @('f-existsp') is @('nil').")
   (cond ((eq method :acl2-rewriter)
          (b* (((er (list rewritten-term f-body used-rules))
                (solve-gen-solution-acl2-rewriter matrix
@@ -853,7 +984,7 @@
                                                  method-rules
                                                  ctx
                                                  state))
-              ((mv f-body-correct-events f-body-correct names-to-avoid)
+              ((mv solution-correct-events solution-correct names-to-avoid)
                (solve-gen-theorem-acl2-rewriter matrix
                                                 ?f
                                                 x1...xn
@@ -863,8 +994,8 @@
                                                 names-to-avoid
                                                 (w state))))
            (value (list f-body
-                        f-body-correct-events
-                        f-body-correct
+                        solution-correct-events
+                        solution-correct
                         names-to-avoid))))
         ((eq method :axe-rewriter)
          (b* (((er (list rewritten-term f-body))
@@ -874,7 +1005,7 @@
                                                 method-rules
                                                 ctx
                                                 state))
-              ((mv f-body-correct-events f-body-correct names-to-avoid)
+              ((mv solution-correct-events solution-correct names-to-avoid)
                (solve-gen-theorem-axe-rewriter matrix
                                                ?f
                                                x1...xn
@@ -884,13 +1015,13 @@
                                                names-to-avoid
                                                (w state))))
            (value (list f-body
-                        f-body-correct-events
-                        f-body-correct
+                        solution-correct-events
+                        solution-correct
                         names-to-avoid))))
         ((eq method :manual)
          (b* ((f-body solution-body)
               ((mv thm-name names-to-avoid)
-               (fresh-logical-name-with-$s-suffix 'f-body-correct
+               (fresh-logical-name-with-$s-suffix 'solution-correct
                                                   nil
                                                   names-to-avoid
                                                   (w state)))
@@ -944,6 +1075,40 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define solve-gen-theorem-for-solution ((matrix pseudo-termp)
+                                        (?f symbolp)
+                                        (x1...xn symbol-listp)
+                                        (f symbolp)
+                                        (solution-hints true-listp)
+                                        (names-to-avoid symbol-listp)
+                                        (wrld plist-worldp))
+  :returns (mv (solution-correct-event "A @(tsee pseudo-event-formp).")
+               (solution-correct "A @(tsee symbolp).")
+               (updated-names-to-avoid "A @(tsee symbol-listp)."))
+  :mode :program
+  :short "Attempt to generate a theorem for the supplied solution."
+  :long
+  (xdoc::topstring-p
+   "This is used when @('f-existsp') is @('t').
+    In this case, @('f') is not generated (it already exists),
+    so we only generate the theorem asserting its correctness
+    (see the user documentation).")
+  (b* (((mv thm-name names-to-avoid)
+        (fresh-logical-name-with-$s-suffix 'solution-correct
+                                           nil
+                                           names-to-avoid
+                                           wrld))
+       (thm-event
+        `(local
+          (defthmd ,thm-name
+            (implies (equal (,?f ,@x1...xn)
+                            (,f ,@x1...xn))
+                     ,matrix)
+            :hints ,solution-hints))))
+    (mv thm-event thm-name names-to-avoid)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define solve-gen-new ((new symbolp)
                        (new-enable booleanp)
                        (x1...xn symbol-listp)
@@ -982,11 +1147,21 @@
                               (old symbolp)
                               (x1...xn symbol-listp)
                               (new symbolp)
+                              (f-existsp booleanp)
                               (f symbolp)
-                              (f-body-correct symbolp))
+                              (solution-correct symbolp))
   :returns (mv (local-event pseudo-event-formp)
                (exported-event pseudo-event-formp))
   :short "Generate the @('old-if-new') theorem."
+  :long
+  (xdoc::topstring-p
+   "In the generated hints, we enable @('f') (by including it in the theory)
+    if @('f') is generated, because in that case
+    the theorem @('solution-correct') mentions its body, not @('f').
+    If instead @('f') already exists,
+    the theorem @('solution-correct') mentions @('f'), as does @('new'),
+    and so there is no need to enable it
+    (and in fact, enabling it might even sabotage the proof).")
   (b* ((macro (if old-if-new-enable 'defthm 'defthmd))
        (formula `(implies (,new) (,old)))
        (new-necc (add-suffix new "-NECC"))
@@ -994,9 +1169,12 @@
        (instantiation (if (>= (len x1...xn) 2)
                           (solve-gen-old-if-new-thm-aux x1...xn 0 old-witness)
                         `((,(car x1...xn) (,old-witness)))))
+       (theory (if f-existsp
+                   (list old new-necc)
+                 (list old new-necc f)))
        (hints `(("Goal"
-                 :in-theory '(,old ,new-necc ,f)
-                 :use (:instance ,f-body-correct ,@instantiation))))
+                 :in-theory ',theory
+                 :use (:instance ,solution-correct ,@instantiation))))
        (local-event `(local (,macro ,old-if-new ,formula :hints ,hints)))
        (exported-event `(,macro ,old-if-new ,formula)))
     (mv local-event exported-event))
@@ -1020,6 +1198,7 @@
                               (matrix pseudo-termp)
                               (method keywordp)
                               (method-rules symbol-listp)
+                              (f-existsp booleanp)
                               (f symbolp)
                               (solution-enable booleanp)
                               (solution-guard "An untranslated term.")
@@ -1041,25 +1220,40 @@
   :mode :program
   :short "Generate the top-level event."
   (b* ((wrld (w state))
-       ((er (list f-body f-body-correct-events f-body-correct &))
-        (solve-gen-solution-and-theorem matrix
-                                        ?f
-                                        x1...xn
-                                        method
-                                        method-rules
-                                        solution-body
-                                        solution-hints
-                                        names-to-avoid
-                                        ctx
-                                        state))
-       ((mv f-local-event f-exported-event) (solve-gen-f f
-                                                         x1...xn
-                                                         f-body
-                                                         solution-guard
-                                                         solution-guard-hints
-                                                         solution-enable
-                                                         verify-guards
-                                                         wrld))
+       ((er (list f-body? solution-correct-events solution-correct))
+        (if f-existsp
+            (b* (((mv solution-correct-event solution-correct &)
+                  (solve-gen-theorem-for-solution matrix
+                                                  ?f
+                                                  x1...xn
+                                                  f
+                                                  solution-hints
+                                                  names-to-avoid
+                                                  wrld)))
+              (value (list (list solution-correct-event) solution-correct)))
+          (b* (((er (list f-body solution-correct-events solution-correct &))
+                (solve-gen-solution-and-theorem matrix
+                                                ?f
+                                                x1...xn
+                                                method
+                                                method-rules
+                                                solution-body
+                                                solution-hints
+                                                names-to-avoid
+                                                ctx
+                                                state)))
+            (value (list f-body solution-correct-events solution-correct)))))
+       ((mv f-local-event? f-exported-event?)
+        (if f-existsp
+            (mv nil nil)
+          (solve-gen-f f
+                       x1...xn
+                       f-body?
+                       solution-guard
+                       solution-guard-hints
+                       solution-enable
+                       verify-guards
+                       wrld)))
        ((mv new-local-event new-exported-event)
         (solve-gen-new new new-enable x1...xn ?f f verify-guards))
        ((mv old-if-new-local-event old-if-new-exported-event)
@@ -1068,16 +1262,17 @@
                               old
                               x1...xn
                               new
+                              f-existsp
                               f
-                              f-body-correct))
+                              solution-correct))
        (encapsulate-events
         `((logic)
           (evmac-prepare-proofs)
-          ,@f-body-correct-events
-          ,f-local-event
+          ,@solution-correct-events
+          ,@(and f-local-event? (list f-local-event?))
           ,new-local-event
           ,old-if-new-local-event
-          ,f-exported-event
+          ,@(and f-exported-event? (list f-exported-event?))
           ,new-exported-event
           ,old-if-new-exported-event))
        (encapsulate `(encapsulate () ,@encapsulate-events))
@@ -1093,7 +1288,8 @@
                       (member-eq print '(:result :info :all))
                       `(,@(and (member-eq print '(:info :all))
                                '((cw-event "~%")))
-                        (cw-event "~x0~|" ',f-exported-event)
+                        ,@(and (not f-existsp)
+                               `((cw-event "~x0~|" ',f-exported-event?)))
                         (cw-event "~x0~|" ',new-exported-event)
                         (cw-event "~x0~|" ',old-if-new-exported-event)))))
     (value
@@ -1109,10 +1305,16 @@
                   method
                   (method-present booleanp)
                   method-rules
+                  solution
+                  (solution-present booleanp)
                   solution-name
+                  (solution-name-present booleanp)
                   solution-enable
+                  (solution-enable-present booleanp)
                   solution-guard
+                  (solution-guard-present booleanp)
                   solution-guard-hints
+                  (solution-guard-hints-present booleanp)
                   solution-body
                   (solution-body-present booleanp)
                   solution-hints
@@ -1142,6 +1344,7 @@
                   ??f
                   x1...xn
                   matrix
+                  f-existsp
                   f
                   new
                   new-enable
@@ -1150,23 +1353,19 @@
                   verify-guards
                   names-to-avoid))
         (solve-process-inputs old
-                              method
-                              method-present
+                              method method-present
                               method-rules
-                              solution-name
-                              solution-enable
-                              solution-guard
-                              solution-guard-hints
-                              solution-body
-                              solution-body-present
-                              solution-hints
-                              solution-hints-present
+                              solution solution-present
+                              solution-name solution-name-present
+                              solution-enable solution-enable-present
+                              solution-guard solution-guard-present
+                              solution-guard-hints solution-guard-hints-present
+                              solution-body solution-body-present
+                              solution-hints solution-hints-present
                               new-name
                               new-enable
-                              old-if-new-name
-                              old-if-new-name-present
-                              old-if-new-enable
-                              old-if-new-enable-present
+                              old-if-new-name old-if-new-name-present
+                              old-if-new-enable old-if-new-enable-present
                               verify-guards
                               print
                               show-only
@@ -1178,6 +1377,7 @@
                                          matrix
                                          method
                                          method-rules
+                                         f-existsp
                                          f
                                          solution-enable
                                          solution-guard
@@ -1213,13 +1413,14 @@
                    old
                    ;; optional inputs:
                    &key
-                   (method ':irrelevant method-present)
+                   (method ':no-default method-present)
                    (method-rules 'nil)
-                   (solution-name ':auto)
-                   (solution-enable 'nil)
-                   (solution-guard 't)
-                   (solution-guard-hints 'nil)
-                   (solution-body ':irrelevant solution-body-present)
+                   (solution ':no-default solution-present)
+                   (solution-name ':auto solution-name-present)
+                   (solution-enable 'nil solution-enable-present)
+                   (solution-guard 't solution-guard-present)
+                   (solution-guard-hints 'nil solution-guard-hints-present)
+                   (solution-body ':no-default solution-body-present)
                    (solution-hints 'nil solution-hints-present)
                    (new-name ':auto)
                    (new-enable ':auto)
@@ -1232,10 +1433,16 @@
                                  ',method
                                  ',method-present
                                  ',method-rules
+                                 ',solution
+                                 ',solution-present
                                  ',solution-name
+                                 ',solution-name-present
                                  ',solution-enable
+                                 ',solution-enable-present
                                  ',solution-guard
+                                 ',solution-guard-present
                                  ',solution-guard-hints
+                                 ',solution-guard-hints-present
                                  ',solution-body
                                  ',solution-body-present
                                  ',solution-hints
