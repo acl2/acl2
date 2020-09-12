@@ -38,9 +38,8 @@
                   (signum x))))
 
 (defthm numerator-of--
-  (implies (rationalp x)
-           (equal (numerator (- x))
-                  (- (numerator x)))))
+  (equal (numerator (- x))
+         (- (numerator x))))
 
 ;move
 (local
