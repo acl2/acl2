@@ -336,21 +336,7 @@
 
     (xdoc::desc-apt-input-old-if-new-enable)
 
-    (xdoc::desc
-     "@(':verify-guards') &mdash; default @(':auto')"
-     (xdoc::p
-      "Determines whether the guards of the generated function(s)
-       are to be verified or not.")
-     (xdoc::p
-      "It must be one of the following:")
-     (xdoc::ul
-      (xdoc::li
-       "@('t'), to verify them.")
-      (xdoc::li
-       "@('nil'), to not verify them.")
-      (xdoc::li
-       "@(':auto'), to verify them if and only if
-        the guards of @('old') are verified.")))
+    (xdoc::desc-apt-input-verify-guards)
 
     (xdoc::evmac-input-print solve)
 
