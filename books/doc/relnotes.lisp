@@ -739,6 +739,10 @@
      to control the enablement of the generated function
      (and, for quantifier functions, also of the associated rewrite rule).")
 
+   (xdoc::p
+    "An option @(':enable') has been added to @(tsee soft::defthm-inst),
+     to control the enablement of the generated theorem.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "std/basic" "Standard Basic Library"))
