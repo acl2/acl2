@@ -873,10 +873,13 @@
 
                             (car (access assumption bad-ass :assumnotes))))
                        (print-no-change
-                        "A false assumption was encountered from applying the ~
-                         rune ~x0 to the target ~x1."
+                        "When applying the rune ~x0 to the target ~x1, a ~
+                         hypothesis of the form (~x2 ...) or (~x3 ...) was ~
+                         later found to be false."
                         (list (cons #\0 (access assumnote assumnote :rune))
-                              (cons #\1 (access assumnote assumnote :target)))))
+                              (cons #\1 (access assumnote assumnote :target))
+                              (cons #\2 'force)
+                              (cons #\3 'case-split))))
                      (mv nil nil state)))
                    (t
                     (let* ((returned-pc-state (car vals))
