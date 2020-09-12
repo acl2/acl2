@@ -8802,7 +8802,7 @@
                          (butlast fa-table 1)
                          b))))
 
-  (defthm non-free-index-listp-correctness-6-lemma-3
+  (defthmd non-free-index-listp-correctness-6-lemma-3
     (implies (and (lower-bounded-integer-listp x b)
                   (bounded-nat-listp x (len fa-table))
                   (no-duplicatesp-equal x)
@@ -8819,7 +8819,6 @@
            (<= (+ 2 (len x)) (len fa-table)))
   :hints
   (("goal"
-    :in-theory (disable non-free-index-listp-correctness-6-lemma-3)
     :use (:instance non-free-index-listp-correctness-6-lemma-3
                     (b *ms-first-data-cluster*)))))
 

@@ -2096,59 +2096,6 @@
                                          file))
           (ctx-app abs-file-alist1 fs x x-path)))))))
 
-(defthm abs-mkdir-correctness-lemma-50
-  (implies (consp path)
-           (fat32-filename-list-equiv
-            (append (dirname path)
-                    (list (basename path)))
-            path))
-  :hints (("goal" :in-theory (enable dirname basename
-                                     basename-dirname-helper
-                                     fat32-filename-list-fix
-                                     fat32-filename-list-equiv)))
-  :rule-classes
-  (:rewrite
-   (:rewrite
-    :corollary
-    (iff (fat32-filename-list-equiv (dirname path)
-                                    path)
-         (atom path))
-    :instructions
-    ((:bash ("goal" :in-theory (enable dirname basename
-                                       basename-dirname-helper
-                                       fat32-filename-list-fix
-                                       fat32-filename-list-equiv)))
-     (:claim
-      (equal
-       (len (append (fat32-filename-list-fix path)
-                    (list (mv-nth 0
-                                  (basename-dirname-helper path)))))
-       (len path))
-      :hints :none)
-     (:change-goal nil t)
-     (:dive 1 1)
-     := :up
-     (:rewrite len-of-fat32-filename-list-fix)
-     :top
-     :s :bash))
-   (:rewrite
-    :corollary
-    (implies (and (consp path) (nat-equiv n (len (dirname path))))
-             (fat32-filename-list-equiv
-              (nthcdr n path)
-              (list (basename path))))
-    :instructions (:split (:dive 1 2)
-                          (:= path
-                              (append (dirname path)
-                                      (list (basename path)))
-                              :equiv fat32-filename-list-equiv$inline)
-                          :top (:dive 1)
-                          (:= (append (nthcdr n (dirname path))
-                                      (list (basename path))))
-                          (:dive 1)
-                          (:= nil)
-                          :top :bash))))
-
 (defthm
   abs-mkdir-correctness-lemma-53
   (implies
@@ -3346,8 +3293,7 @@
                                       fat32-filename-list-fix
                                       fat32-filename-list-equiv
                                       fat32-filename-equiv)
-                           (abs-mkdir-correctness-lemma-50
-                            (:definition nth)
+                           ((:definition nth)
                             (:definition true-listp)
                             (:definition string-listp)
                             (:rewrite true-listp-when-string-list)
@@ -3365,8 +3311,7 @@
                                       abs-find-file-after-abs-mkdir-lemma-4
                                       len-when-consp
                                       fat32-filename-list-fix abs-alloc)
-                           (abs-mkdir-correctness-lemma-50
-                            (:definition nth)
+                           ((:definition nth)
                             (:definition true-listp)
                             (:definition string-listp)
                             (:rewrite true-listp-when-string-list)
@@ -3769,7 +3714,7 @@
                                       abs-find-file-after-abs-mkdir-lemma-4
                                       len-when-consp fat32-filename-list-fix
                                       abs-alloc abs-fs-fix)
-                           (abs-mkdir-correctness-lemma-50
+                           (append-nthcdr-dirname-basename-under-fat32-filename-list-equiv-lemma-1
                             (:definition nth)
                             (:definition true-listp)
                             (:definition string-listp)
@@ -3788,7 +3733,7 @@
                             (:definition no-duplicatesp-equal)
                             (:rewrite abs-fs-p-correctness-1)
                             (:definition len)))
-    :use abs-mkdir-correctness-lemma-50
+    :use append-nthcdr-dirname-basename-under-fat32-filename-list-equiv-lemma-1
     :do-not-induct t))
   :otf-flg t)
 
@@ -4600,296 +4545,6 @@
                            (x-path path)))))
 
 (defthm
-  abs-mkdir-correctness-lemma-139
-  (implies
-   (and
-    (prefixp
-     (frame-val->path
-      (cdr
-       (assoc-equal (abs-find-file-src (partial-collapse frame (dirname path))
-                                       (dirname path))
-                    frame)))
-     (dirname path))
-    (< 1 (len path)))
-   (equal
-    (mv-nth
-     0
-     (abs-place-file-helper
-      (frame-val->dir
-       (cdr (assoc-equal
-             (abs-find-file-src (partial-collapse frame (dirname path))
-                                (dirname path))
-             (partial-collapse frame (dirname path)))))
-      (append
-       (nthcdr
-        (len
-         (frame-val->path
-          (cdr (assoc-equal
-                (abs-find-file-src (partial-collapse frame (dirname path))
-                                   (dirname path))
-                frame))))
-        (dirname path))
-       (list (basename path)))
-      '((dir-ent 0 0 0 0 0 0 0 0 0 0 0 16
-                 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
-        (contents))))
-    (mv-nth
-     0
-     (abs-place-file-helper
-      (frame-val->dir
-       (cdr (assoc-equal
-             (abs-find-file-src (partial-collapse frame (dirname path))
-                                (dirname path))
-             (partial-collapse frame (dirname path)))))
-      (nthcdr
-       (len
-        (frame-val->path
-         (cdr (assoc-equal
-               (abs-find-file-src (partial-collapse frame (dirname path))
-                                  (dirname path))
-               frame))))
-       path)
-      '((dir-ent 0 0 0 0 0 0 0 0 0 0 0 16
-                 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
-        (contents))))))
-  :instructions
-  (:promote
-   (:dive 1 2 2 1 2)
-   (:rewrite dirname-alt)
-   :top (:dive 1 2 2 2 1)
-   (:rewrite basename-alt)
-   (:dive 1 1)
-   (:rewrite last-alt)
-   :top
-   (:bash
-    ("goal"
-     :in-theory (e/d nil)
-     :use
-     (:instance
-      take-of-nthcdr
-      (n1
-       (-
-        (+ -1 (len path))
-        (len
-         (frame-val->path
-          (cdr (assoc-equal
-                (abs-find-file-src (partial-collapse frame (dirname path))
-                                   (dirname path))
-                frame))))))
-      (n2
-       (len
-        (frame-val->path
-         (cdr (assoc-equal
-               (abs-find-file-src (partial-collapse frame (dirname path))
-                                  (dirname path))
-               frame)))))
-      (l path))))
-   (:dive 1 2 2 1)
-   := :top
-   (:=
-    (list (nth (+ -1 (len path)) path))
-    (nthcdr
-     (+
-      -1 (len path)
-      (-
-       (len
-        (frame-val->path
-         (cdr (assoc-equal
-               (abs-find-file-src (partial-collapse frame (dirname path))
-                                  (dirname path))
-               frame))))))
-     (nthcdr
-      (len
-       (frame-val->path
-        (cdr (assoc-equal
-              (abs-find-file-src (partial-collapse frame (dirname path))
-                                 (dirname path))
-              frame))))
-      path))
-    :hints :none
-    :equiv list-equiv)
-   (:dive 1 2 2)
-   (:claim
-    (<=
-     (+
-      -1 (len path)
-      (-
-       (len
-        (frame-val->path
-         (cdr (assoc-equal
-               (abs-find-file-src (partial-collapse frame (dirname path))
-                                  (dirname path))
-               frame))))))
-     (len
-      (nthcdr
-       (len
-        (frame-val->path
-         (cdr (assoc-equal
-               (abs-find-file-src (partial-collapse frame (dirname path))
-                                  (dirname path))
-               frame))))
-       path))))
-   (:rewrite binary-append-take-nthcdr)
-   :top :bash (:dive 2)
-   (:rewrite nthcdr-of-nthcdr)
-   :top :bash
-   (:= (nthcdr (+ -1 (len path)) path)
-       (cons (car (nthcdr (+ -1 (len path)) path))
-             (cdr (nthcdr (+ -1 (len path)) path)))
-       :hints :none)
-   (:bash ("goal" :in-theory (disable (:rewrite nthcdr-of-nthcdr))
-           :use (:instance (:rewrite nthcdr-of-nthcdr)
-                           (x path)
-                           (b (+ -1 (len path)))
-                           (a 1))
-           :expand (nthcdr 1 (nthcdr (+ -1 (len path)) path))))
-   (:dive 2)
-   (:rewrite cons-car-cdr)
-   :top :bash))
-
-(defthmd
-  abs-mkdir-correctness-lemma-157
-  (implies
-   (and
-    (prefixp
-     (frame-val->path
-      (cdr
-       (assoc-equal (abs-find-file-src
-                     (partial-collapse frame (dirname path))
-                     (dirname path))
-                    frame)))
-     (dirname path))
-    (consp path))
-   (fat32-filename-list-equiv
-    (binary-append
-     (nthcdr
-      (len
-       (frame-val->path$inline
-        (cdr (assoc-equal
-              (abs-find-file-src
-               (partial-collapse frame (dirname path))
-               (dirname path))
-              frame))))
-      (dirname path))
-     (cons (basename path) 'nil))
-    (if
-     (< 1 (len path))
-     (nthcdr
-      (len
-       (frame-val->path
-        (cdr (assoc-equal
-              (abs-find-file-src
-               (partial-collapse frame (dirname path))
-               (dirname path))
-              frame))))
-      path)
-     (list (car path)))))
-  :instructions
-  (:promote
-   (:dive 1 1 2)
-   (:rewrite dirname-alt)
-   :top (:dive 1 2 1)
-   (:rewrite basename-alt)
-   (:dive 1 1)
-   (:rewrite last-alt)
-   :top :bash
-   (:bash
-    ("goal"
-     :in-theory (e/d nil)
-     :use
-     (:instance
-      take-of-nthcdr
-      (n1
-       (-
-        (+ -1 (len path))
-        (len
-         (frame-val->path
-          (cdr (assoc-equal
-                (abs-find-file-src
-                 (partial-collapse frame (dirname path))
-                 (dirname path))
-                frame))))))
-      (n2
-       (len
-        (frame-val->path
-         (cdr (assoc-equal
-               (abs-find-file-src
-                (partial-collapse frame (dirname path))
-                (dirname path))
-               frame)))))
-      (l path))))
-   (:dive 1 1)
-   := :top
-   (:=
-    (list (nth (+ -1 (len path)) path))
-    (nthcdr
-     (+
-      -1 (len path)
-      (-
-       (len
-        (frame-val->path
-         (cdr (assoc-equal
-               (abs-find-file-src
-                (partial-collapse frame (dirname path))
-                (dirname path))
-               frame))))))
-     (nthcdr
-      (len
-       (frame-val->path
-        (cdr (assoc-equal
-              (abs-find-file-src
-               (partial-collapse frame (dirname path))
-               (dirname path))
-              frame))))
-      path))
-    :hints :none
-    :equiv list-equiv)
-   (:dive 1)
-   (:claim
-    (and
-     (<=
-      (+
-       -1 (len path)
-       (-
-        (len
-         (frame-val->path
-          (cdr (assoc-equal
-                (abs-find-file-src
-                 (partial-collapse frame (dirname path))
-                 (dirname path))
-                frame))))))
-      (len
-       (nthcdr
-        (len
-         (frame-val->path
-          (cdr (assoc-equal
-                (abs-find-file-src
-                 (partial-collapse frame (dirname path))
-                 (dirname path))
-                frame))))
-        path)))))
-   (:rewrite binary-append-take-nthcdr)
-   :top (:change-goal nil t)
-   (:dive 2)
-   (:rewrite nthcdr-of-nthcdr)
-   :top :bash
-   (:= (nthcdr (+ -1 (len path)) path)
-       (cons (car (nthcdr (+ -1 (len path)) path))
-             (cdr (nthcdr (+ -1 (len path)) path)))
-       :hints :none)
-   (:bash
-    ("goal" :in-theory (disable (:rewrite nthcdr-of-nthcdr))
-     :use (:instance (:rewrite nthcdr-of-nthcdr)
-                     (x path)
-                     (b (+ -1 (len path)))
-                     (a 1))
-     :expand (nthcdr 1 (nthcdr (+ -1 (len path)) path))))
-   (:dive 2)
-   (:rewrite cons-car-cdr)
-   :top
-   :bash :bash))
-
-(defthm
   hifat-equiv-of-put-assoc-equal-1
   (implies (and (hifat-equiv (m1-file->contents file1)
                              (m1-file->contents file2))
@@ -5114,20 +4769,8 @@
                  (abs-addrs (abs-fs-fix fs)))
   :hints (("goal" :in-theory (enable abs-alloc abs-fs-fix abs-addrs))))
 
-(defthm abs-mkdir-correctness-lemma-179
-  (implies (and (consp path)
-                (<= (nfix n) (len (dirname path))))
-           (fat32-filename-list-equiv (append (nthcdr n (dirname path))
-                                              (list (basename path)))
-                                      (nthcdr n path)))
-  :hints (("goal" :in-theory (disable (:rewrite nthcdr-of-append))
-           :use (:instance (:rewrite nthcdr-of-append)
-                           (b (list (basename path)))
-                           (a (dirname path))
-                           (n n)))))
-
 (defthm
-  abs-mkdir-correctness-lemma-189
+  abs-mkdir-correctness-lemma-157
   (implies
    (and (abs-file-alist-p fs)
         (not (consp (abs-addrs fs))))
@@ -5214,7 +4857,6 @@
           (:rewrite m1-file-alist-p-when-subsetp-equal)
           (:type-prescription
            abs-find-file-correctness-1-lemma-17)
-          abs-mkdir-correctness-lemma-50
           (:rewrite collapse-hifat-place-file-lemma-6)
           (:definition nth)
           (:rewrite
@@ -6972,11 +6614,11 @@
             *eexist*))
     :hints (("goal" :in-theory (e/d (abs-mkdir frame-reps-fs)
                                     ((:rewrite abs-mkdir-correctness-lemma-128)
-                                     abs-mkdir-correctness-lemma-179))
+                                     append-nthcdr-dirname-basename-under-fat32-filename-list-equiv))
              :do-not-induct t)))
 
   (defthm
-    abs-mkdir-correctness-lemma-178
+    abs-mkdir-correctness-lemma-125
     (implies
      (and
       (consp
@@ -8281,7 +7923,7 @@
                                (y (list (basename path)))
                                (x (dirname path))
                                (fs fs))
-                    abs-mkdir-correctness-lemma-50))))
+                    append-nthcdr-dirname-basename-under-fat32-filename-list-equiv-lemma-1))))
 
     (defthm
       abs-mkdir-correctness-lemma-190
@@ -8377,10 +8019,10 @@
                                (collapse collapse-this
                                          (:rewrite
                                           abs-mkdir-correctness-lemma-128)
-                                         abs-mkdir-correctness-lemma-179)))))
+                                         append-nthcdr-dirname-basename-under-fat32-filename-list-equiv)))))
 
     (defthm
-      abs-mkdir-correctness-lemma-125
+      abs-mkdir-correctness-lemma-156
       (implies
        (and
         (prefixp
@@ -8497,10 +8139,10 @@
       :hints (("goal" :do-not-induct t
                :in-theory (e/d (abs-mkdir frame-reps-fs)
                                ((:rewrite abs-mkdir-correctness-lemma-128)
-                                abs-mkdir-correctness-lemma-179)))))
+                                append-nthcdr-dirname-basename-under-fat32-filename-list-equiv)))))
 
     (defthm
-      abs-mkdir-correctness-lemma-191
+      abs-mkdir-correctness-lemma-158
       (implies
        (and (mv-nth 1 (collapse frame))
             (absfat-equiv (mv-nth 0 (collapse frame))
@@ -9322,12 +8964,6 @@
                :induct (mv (fat32-filename-list-prefixp x y)
                            (hifat-find-file fs x)))))
 
-    (defthmd hifat-place-file-correctness-5
-      (equal (hifat-place-file fs path file)
-             (mv (mv-nth 0 (hifat-place-file fs path file))
-                 (mv-nth 1 (hifat-place-file fs path file))))
-      :hints (("goal" :in-theory (enable hifat-place-file))))
-
     (defthm
       abs-mkdir-correctness-lemma-199
       (implies
@@ -9535,7 +9171,7 @@
                                      (dirname path))
                   frame)))))
          (len (dirname path))))
-       (:rewrite abs-mkdir-correctness-lemma-179)
+       (:rewrite append-nthcdr-dirname-basename-under-fat32-filename-list-equiv)
        :top (:claim (m1-file-alist-p fs))
        (:claim (hifat-equiv (mv-nth 0 (collapse frame))
                             fs))
@@ -9853,7 +9489,7 @@
      :hints
      (("goal" :do-not-induct t
        :in-theory
-       (e/d (frame-reps-fs abs-mkdir) (abs-mkdir-correctness-lemma-179))))))
+       (e/d (frame-reps-fs abs-mkdir) (append-nthcdr-dirname-basename-under-fat32-filename-list-equiv))))))
 
   ;; This has some unnecessary hypotheses which are awkward to remove.
   (defthm abs-mkdir-correctness-1
@@ -9981,7 +9617,7 @@
             (dirname path))
            (find-new-index
             (strip-cars (partial-collapse frame (dirname path))))))))
-       abs-mkdir-correctness-lemma-50)))
+       append-nthcdr-dirname-basename-under-fat32-filename-list-equiv-lemma-1)))
     :otf-flg t))
 
 (skip-proofs
@@ -14302,7 +13938,6 @@
                         hifat-place-file hifat-find-file
                         assoc-equal-of-frame->frame)
          ((:rewrite collapse-hifat-place-file-lemma-6)
-          (:rewrite abs-mkdir-correctness-lemma-178)
           (:rewrite abs-separate-of-frame->frame-of-collapse-this-lemma-8
                     . 2)
           (:rewrite abs-find-file-after-abs-mkdir-lemma-22)
@@ -14312,7 +13947,6 @@
                     . 3)
           (:rewrite abs-lstat-refinement-lemma-1)
           (:rewrite abs-fs-p-of-ctx-app)
-          (:rewrite abs-mkdir-correctness-lemma-50 . 3)
           (:rewrite partial-collapse-correctness-lemma-2)
           (:type-prescription assoc-when-zp-len)
           (:rewrite abs-mkdir-correctness-lemma-43)
@@ -14876,7 +14510,6 @@
                         hifat-place-file hifat-find-file
                         assoc-equal-of-frame->frame)
          ((:rewrite collapse-hifat-place-file-lemma-6)
-          (:rewrite abs-mkdir-correctness-lemma-178)
           (:rewrite abs-separate-of-frame->frame-of-collapse-this-lemma-8
                     . 2)
           (:rewrite abs-find-file-after-abs-mkdir-lemma-22)
@@ -14886,7 +14519,6 @@
                     . 3)
           (:rewrite abs-lstat-refinement-lemma-1)
           (:rewrite abs-fs-p-of-ctx-app)
-          (:rewrite abs-mkdir-correctness-lemma-50 . 3)
           (:rewrite partial-collapse-correctness-lemma-2)
           (:type-prescription assoc-when-zp-len)
           (:rewrite abs-addrs-when-m1-file-contents-p)
@@ -15203,7 +14835,6 @@
                          hifat-place-file hifat-find-file
                          assoc-equal-of-frame->frame)
           ((:rewrite collapse-hifat-place-file-lemma-6)
-           (:rewrite abs-mkdir-correctness-lemma-178)
            (:rewrite abs-separate-of-frame->frame-of-collapse-this-lemma-8
                      . 2)
            (:rewrite abs-find-file-after-abs-mkdir-lemma-22)
@@ -15213,7 +14844,6 @@
                      . 3)
            (:rewrite abs-lstat-refinement-lemma-1)
            (:rewrite abs-fs-p-of-ctx-app)
-           (:rewrite abs-mkdir-correctness-lemma-50 . 3)
            (:rewrite partial-collapse-correctness-lemma-2)
            (:type-prescription assoc-when-zp-len)
            (:rewrite abs-addrs-when-m1-file-contents-p)
@@ -20386,7 +20016,6 @@
                         hifat-no-dups-p hifat-place-file
                         assoc-equal-of-frame->frame)
          ((:rewrite collapse-hifat-place-file-lemma-6)
-          (:rewrite abs-mkdir-correctness-lemma-178)
           (:rewrite abs-separate-of-frame->frame-of-collapse-this-lemma-8
                     . 2)
           (:rewrite abs-find-file-after-abs-mkdir-lemma-22)
@@ -20396,7 +20025,6 @@
                     . 3)
           (:rewrite abs-lstat-refinement-lemma-1)
           (:rewrite abs-fs-p-of-ctx-app)
-          (:rewrite abs-mkdir-correctness-lemma-50 . 3)
           (:rewrite partial-collapse-correctness-lemma-2)
           (:type-prescription assoc-when-zp-len)
           (:rewrite abs-addrs-when-m1-file-contents-p)
@@ -21679,7 +21307,6 @@
                         hifat-place-file hifat-find-file
                         assoc-equal-of-frame->frame)
          ((:rewrite collapse-hifat-place-file-lemma-6)
-          (:rewrite abs-mkdir-correctness-lemma-178)
           (:rewrite abs-separate-of-frame->frame-of-collapse-this-lemma-8
                     . 2)
           (:rewrite abs-find-file-after-abs-mkdir-lemma-22)
@@ -21689,7 +21316,6 @@
                     . 3)
           (:rewrite abs-lstat-refinement-lemma-1)
           (:rewrite abs-fs-p-of-ctx-app)
-          (:rewrite abs-mkdir-correctness-lemma-50 . 3)
           (:rewrite partial-collapse-correctness-lemma-2)
           (:type-prescription assoc-when-zp-len)
           (:rewrite abs-addrs-when-m1-file-contents-p)
@@ -21971,7 +21597,6 @@
                         hifat-place-file hifat-find-file
                         abs-complete frame->root)
          ((:rewrite collapse-hifat-place-file-lemma-6)
-          (:rewrite abs-mkdir-correctness-lemma-178)
           (:rewrite abs-separate-of-frame->frame-of-collapse-this-lemma-8
                     . 2)
           (:rewrite abs-find-file-after-abs-mkdir-lemma-22)
@@ -21981,7 +21606,6 @@
                     . 3)
           (:rewrite abs-lstat-refinement-lemma-1)
           (:rewrite abs-fs-p-of-ctx-app)
-          (:rewrite abs-mkdir-correctness-lemma-50 . 3)
           (:rewrite partial-collapse-correctness-lemma-2)
           (:type-prescription assoc-when-zp-len)
           (:rewrite abs-addrs-when-m1-file-contents-p)
@@ -22245,7 +21869,6 @@
                         hifat-no-dups-p
                         hifat-place-file hifat-find-file)
          ((:rewrite collapse-hifat-place-file-lemma-6)
-          (:rewrite abs-mkdir-correctness-lemma-178)
           (:rewrite abs-separate-of-frame->frame-of-collapse-this-lemma-8
                     . 2)
           (:rewrite abs-find-file-after-abs-mkdir-lemma-22)
@@ -22255,7 +21878,6 @@
                     . 3)
           (:rewrite abs-lstat-refinement-lemma-1)
           (:rewrite abs-fs-p-of-ctx-app)
-          (:rewrite abs-mkdir-correctness-lemma-50 . 3)
           (:rewrite partial-collapse-correctness-lemma-2)
           (:type-prescription assoc-when-zp-len)
           (:rewrite abs-addrs-when-m1-file-contents-p)
@@ -22329,7 +21951,6 @@
                         hifat-no-dups-p
                         hifat-place-file hifat-find-file)
          ((:rewrite collapse-hifat-place-file-lemma-6)
-          (:rewrite abs-mkdir-correctness-lemma-178)
           (:rewrite abs-separate-of-frame->frame-of-collapse-this-lemma-8
                     . 2)
           (:rewrite abs-find-file-after-abs-mkdir-lemma-22)
@@ -22339,7 +21960,6 @@
                     . 3)
           (:rewrite abs-lstat-refinement-lemma-1)
           (:rewrite abs-fs-p-of-ctx-app)
-          (:rewrite abs-mkdir-correctness-lemma-50 . 3)
           (:rewrite partial-collapse-correctness-lemma-2)
           (:type-prescription assoc-when-zp-len)
           (:rewrite abs-addrs-when-m1-file-contents-p)
@@ -23208,7 +22828,6 @@
                         hifat-no-dups-p hifat-place-file
                         hifat-find-file abs-alloc abs-complete)
          ((:rewrite collapse-hifat-place-file-lemma-6)
-          (:rewrite abs-mkdir-correctness-lemma-178)
           (:rewrite abs-separate-of-frame->frame-of-collapse-this-lemma-8
                     . 2)
           (:rewrite abs-find-file-after-abs-mkdir-lemma-22)
@@ -23218,7 +22837,6 @@
                     . 3)
           (:rewrite abs-lstat-refinement-lemma-1)
           (:rewrite abs-fs-p-of-ctx-app)
-          (:rewrite abs-mkdir-correctness-lemma-50 . 3)
           (:rewrite partial-collapse-correctness-lemma-2)
           (:type-prescription assoc-when-zp-len)
           (:rewrite abs-addrs-when-m1-file-contents-p)
@@ -23287,7 +22905,6 @@
                        hifat-place-file hifat-find-file
                        abs-alloc ctx-app-ok addrs-at)
         ((:rewrite collapse-hifat-place-file-lemma-6)
-         (:rewrite abs-mkdir-correctness-lemma-178)
          (:rewrite abs-separate-of-frame->frame-of-collapse-this-lemma-8
                    . 2)
          (:rewrite abs-find-file-after-abs-mkdir-lemma-22)
@@ -23297,7 +22914,6 @@
                    . 3)
          (:rewrite abs-lstat-refinement-lemma-1)
          (:rewrite abs-fs-p-of-ctx-app)
-         (:rewrite abs-mkdir-correctness-lemma-50 . 3)
          (:rewrite partial-collapse-correctness-lemma-2)
          (:type-prescription assoc-when-zp-len)
          (:rewrite abs-addrs-when-m1-file-contents-p)
@@ -23441,7 +23057,6 @@
                         abs-alloc ctx-app abs-fs-fix
                         abs-addrs basename-alt dirname-alt)
          ((:rewrite collapse-hifat-place-file-lemma-6)
-          (:rewrite abs-mkdir-correctness-lemma-178)
           (:rewrite abs-separate-of-frame->frame-of-collapse-this-lemma-8
                     . 2)
           (:rewrite abs-find-file-after-abs-mkdir-lemma-22)
@@ -23451,7 +23066,6 @@
                     . 3)
           (:rewrite abs-lstat-refinement-lemma-1)
           (:rewrite abs-fs-p-of-ctx-app)
-          (:rewrite abs-mkdir-correctness-lemma-50 . 3)
           (:rewrite partial-collapse-correctness-lemma-2)
           (:type-prescription assoc-when-zp-len)
           (:rewrite abs-addrs-when-m1-file-contents-p)
@@ -23530,7 +23144,6 @@
                         abs-fs-fix abs-addrs basename-alt
                         dirname-alt frame->root abs-complete)
          ((:rewrite collapse-hifat-place-file-lemma-6)
-          (:rewrite abs-mkdir-correctness-lemma-178)
           (:rewrite abs-separate-of-frame->frame-of-collapse-this-lemma-8
                     . 2)
           (:rewrite abs-find-file-after-abs-mkdir-lemma-22)
@@ -23540,7 +23153,6 @@
                     . 3)
           (:rewrite abs-lstat-refinement-lemma-1)
           (:rewrite abs-fs-p-of-ctx-app)
-          (:rewrite abs-mkdir-correctness-lemma-50 . 3)
           (:rewrite partial-collapse-correctness-lemma-2)
           (:type-prescription assoc-when-zp-len)
           (:rewrite abs-addrs-when-m1-file-contents-p)
@@ -23631,7 +23243,6 @@
                        abs-alloc ctx-app abs-fs-fix
                        abs-addrs abs-complete frame->root)
         ((:rewrite collapse-hifat-place-file-lemma-6)
-         (:rewrite abs-mkdir-correctness-lemma-178)
          (:rewrite abs-separate-of-frame->frame-of-collapse-this-lemma-8
                    . 2)
          (:rewrite abs-find-file-after-abs-mkdir-lemma-22)
@@ -23641,7 +23252,6 @@
                    . 3)
          (:rewrite abs-lstat-refinement-lemma-1)
          (:rewrite abs-fs-p-of-ctx-app)
-         (:rewrite abs-mkdir-correctness-lemma-50 . 3)
          (:rewrite partial-collapse-correctness-lemma-2)
          (:type-prescription assoc-when-zp-len)
          (:rewrite abs-addrs-when-m1-file-contents-p)
@@ -23710,7 +23320,6 @@
                        abs-alloc ctx-app abs-fs-fix
                        abs-addrs ctx-app-ok addrs-at)
         ((:rewrite collapse-hifat-place-file-lemma-6)
-         (:rewrite abs-mkdir-correctness-lemma-178)
          (:rewrite abs-separate-of-frame->frame-of-collapse-this-lemma-8
                    . 2)
          (:rewrite abs-find-file-after-abs-mkdir-lemma-22)
@@ -23720,7 +23329,6 @@
                    . 3)
          (:rewrite abs-lstat-refinement-lemma-1)
          (:rewrite abs-fs-p-of-ctx-app)
-         (:rewrite abs-mkdir-correctness-lemma-50 . 3)
          (:rewrite partial-collapse-correctness-lemma-2)
          (:type-prescription assoc-when-zp-len)
          (:rewrite abs-addrs-when-m1-file-contents-p)
@@ -23804,7 +23412,6 @@
                         abs-alloc ctx-app abs-fs-fix
                         abs-addrs abs-complete frame->root)
          ((:rewrite collapse-hifat-place-file-lemma-6)
-          (:rewrite abs-mkdir-correctness-lemma-178)
           (:rewrite abs-separate-of-frame->frame-of-collapse-this-lemma-8
                     . 2)
           (:rewrite abs-find-file-after-abs-mkdir-lemma-22)
@@ -23814,7 +23421,6 @@
                     . 3)
           (:rewrite abs-lstat-refinement-lemma-1)
           (:rewrite abs-fs-p-of-ctx-app)
-          (:rewrite abs-mkdir-correctness-lemma-50 . 3)
           (:rewrite partial-collapse-correctness-lemma-2)
           (:type-prescription assoc-when-zp-len)
           (:rewrite abs-addrs-when-m1-file-contents-p)
@@ -23937,7 +23543,6 @@
                         ctx-app abs-fs-fix abs-addrs dirname-alt
                         basename-alt frame->root abs-complete)
          ((:rewrite collapse-hifat-place-file-lemma-6)
-          (:rewrite abs-mkdir-correctness-lemma-178)
           (:rewrite abs-separate-of-frame->frame-of-collapse-this-lemma-8
                     . 2)
           (:rewrite abs-find-file-after-abs-mkdir-lemma-22)
@@ -23947,7 +23552,6 @@
                     . 3)
           (:rewrite abs-lstat-refinement-lemma-1)
           (:rewrite abs-fs-p-of-ctx-app)
-          (:rewrite abs-mkdir-correctness-lemma-50 . 3)
           (:rewrite partial-collapse-correctness-lemma-2)
           (:type-prescription assoc-when-zp-len)
           (:rewrite abs-addrs-when-m1-file-contents-p)
@@ -24022,7 +23626,6 @@
                         abs-alloc ctx-app abs-fs-fix
                         abs-addrs abs-complete frame->root)
          ((:rewrite collapse-hifat-place-file-lemma-6)
-          (:rewrite abs-mkdir-correctness-lemma-178)
           (:rewrite abs-separate-of-frame->frame-of-collapse-this-lemma-8
                     . 2)
           (:rewrite abs-find-file-after-abs-mkdir-lemma-22)
@@ -24032,7 +23635,6 @@
                     . 3)
           (:rewrite abs-lstat-refinement-lemma-1)
           (:rewrite abs-fs-p-of-ctx-app)
-          (:rewrite abs-mkdir-correctness-lemma-50 . 3)
           (:rewrite partial-collapse-correctness-lemma-2)
           (:type-prescription assoc-when-zp-len)
           (:rewrite abs-addrs-when-m1-file-contents-p)
@@ -24109,7 +23711,6 @@
                        abs-fs-fix abs-addrs basename-alt
                        dirname-alt frame->root abs-complete)
         ((:rewrite collapse-hifat-place-file-lemma-6)
-         (:rewrite abs-mkdir-correctness-lemma-178)
          (:rewrite abs-separate-of-frame->frame-of-collapse-this-lemma-8
                    . 2)
          (:rewrite abs-find-file-after-abs-mkdir-lemma-22)
@@ -24119,7 +23720,6 @@
                    . 3)
          (:rewrite abs-lstat-refinement-lemma-1)
          (:rewrite abs-fs-p-of-ctx-app)
-         (:rewrite abs-mkdir-correctness-lemma-50 . 3)
          (:rewrite partial-collapse-correctness-lemma-2)
          (:type-prescription assoc-when-zp-len)
          (:rewrite abs-addrs-when-m1-file-contents-p)
@@ -24211,7 +23811,6 @@
                         abs-alloc ctx-app abs-fs-fix
                         abs-addrs basename-alt dirname-alt)
          ((:rewrite collapse-hifat-place-file-lemma-6)
-          (:rewrite abs-mkdir-correctness-lemma-178)
           (:rewrite abs-separate-of-frame->frame-of-collapse-this-lemma-8
                     . 2)
           (:rewrite abs-find-file-after-abs-mkdir-lemma-22)
@@ -24221,7 +23820,6 @@
                     . 3)
           (:rewrite abs-lstat-refinement-lemma-1)
           (:rewrite abs-fs-p-of-ctx-app)
-          (:rewrite abs-mkdir-correctness-lemma-50 . 3)
           (:rewrite partial-collapse-correctness-lemma-2)
           (:type-prescription assoc-when-zp-len)
           (:rewrite abs-addrs-when-m1-file-contents-p)
@@ -24315,7 +23913,6 @@
                         abs-fs-fix abs-addrs basename-alt
                         dirname-alt frame->root abs-complete)
          ((:rewrite collapse-hifat-place-file-lemma-6)
-          (:rewrite abs-mkdir-correctness-lemma-178)
           (:rewrite abs-separate-of-frame->frame-of-collapse-this-lemma-8
                     . 2)
           (:rewrite abs-find-file-after-abs-mkdir-lemma-22)
@@ -24325,7 +23922,6 @@
                     . 3)
           (:rewrite abs-lstat-refinement-lemma-1)
           (:rewrite abs-fs-p-of-ctx-app)
-          (:rewrite abs-mkdir-correctness-lemma-50 . 3)
           (:rewrite partial-collapse-correctness-lemma-2)
           (:type-prescription assoc-when-zp-len)
           (:rewrite abs-addrs-when-m1-file-contents-p)
@@ -24415,7 +24011,6 @@
                         abs-fs-fix abs-addrs basename-alt
                         dirname-alt frame->root abs-complete)
          ((:rewrite collapse-hifat-place-file-lemma-6)
-          (:rewrite abs-mkdir-correctness-lemma-178)
           (:rewrite abs-separate-of-frame->frame-of-collapse-this-lemma-8
                     . 2)
           (:rewrite abs-find-file-after-abs-mkdir-lemma-22)
@@ -24425,7 +24020,6 @@
                     . 3)
           (:rewrite abs-lstat-refinement-lemma-1)
           (:rewrite abs-fs-p-of-ctx-app)
-          (:rewrite abs-mkdir-correctness-lemma-50 . 3)
           (:rewrite partial-collapse-correctness-lemma-2)
           (:type-prescription assoc-when-zp-len)
           (:rewrite abs-addrs-when-m1-file-contents-p)
@@ -24515,7 +24109,6 @@
                         abs-fs-fix abs-addrs basename-alt
                         dirname-alt abs-complete frame->root)
          ((:rewrite collapse-hifat-place-file-lemma-6)
-          (:rewrite abs-mkdir-correctness-lemma-178)
           (:rewrite abs-separate-of-frame->frame-of-collapse-this-lemma-8
                     . 2)
           (:rewrite abs-find-file-after-abs-mkdir-lemma-22)
@@ -24525,7 +24118,6 @@
                     . 3)
           (:rewrite abs-lstat-refinement-lemma-1)
           (:rewrite abs-fs-p-of-ctx-app)
-          (:rewrite abs-mkdir-correctness-lemma-50 . 3)
           (:rewrite partial-collapse-correctness-lemma-2)
           (:type-prescription assoc-when-zp-len)
           (:rewrite abs-addrs-when-m1-file-contents-p)
@@ -24618,7 +24210,6 @@
                        abs-fs-fix abs-addrs basename-alt
                        dirname-alt abs-complete frame->root)
         ((:rewrite collapse-hifat-place-file-lemma-6)
-         (:rewrite abs-mkdir-correctness-lemma-178)
          (:rewrite abs-separate-of-frame->frame-of-collapse-this-lemma-8
                    . 2)
          (:rewrite abs-find-file-after-abs-mkdir-lemma-22)
@@ -24628,7 +24219,6 @@
                    . 3)
          (:rewrite abs-lstat-refinement-lemma-1)
          (:rewrite abs-fs-p-of-ctx-app)
-         (:rewrite abs-mkdir-correctness-lemma-50 . 3)
          (:rewrite partial-collapse-correctness-lemma-2)
          (:type-prescription assoc-when-zp-len)
          (:rewrite abs-addrs-when-m1-file-contents-p)
@@ -24726,7 +24316,6 @@
                         abs-fs-fix abs-addrs basename-alt
                         dirname-alt abs-complete frame->root)
          ((:rewrite collapse-hifat-place-file-lemma-6)
-          (:rewrite abs-mkdir-correctness-lemma-178)
           (:rewrite abs-separate-of-frame->frame-of-collapse-this-lemma-8
                     . 2)
           (:rewrite abs-find-file-after-abs-mkdir-lemma-22)
@@ -24736,7 +24325,6 @@
                     . 3)
           (:rewrite abs-lstat-refinement-lemma-1)
           (:rewrite abs-fs-p-of-ctx-app)
-          (:rewrite abs-mkdir-correctness-lemma-50 . 3)
           (:rewrite partial-collapse-correctness-lemma-2)
           (:type-prescription assoc-when-zp-len)
           (:rewrite abs-addrs-when-m1-file-contents-p)
@@ -24825,7 +24413,6 @@
                         abs-fs-fix abs-addrs basename-alt
                         dirname-alt abs-complete frame->root)
          ((:rewrite collapse-hifat-place-file-lemma-6)
-          (:rewrite abs-mkdir-correctness-lemma-178)
           (:rewrite abs-separate-of-frame->frame-of-collapse-this-lemma-8
                     . 2)
           (:rewrite abs-find-file-after-abs-mkdir-lemma-22)
@@ -24835,7 +24422,6 @@
                     . 3)
           (:rewrite abs-lstat-refinement-lemma-1)
           (:rewrite abs-fs-p-of-ctx-app)
-          (:rewrite abs-mkdir-correctness-lemma-50 . 3)
           (:rewrite partial-collapse-correctness-lemma-2)
           (:type-prescription assoc-when-zp-len)
           (:rewrite abs-addrs-when-m1-file-contents-p)
@@ -24935,7 +24521,6 @@
                         abs-fs-fix abs-addrs basename-alt
                         dirname-alt abs-complete frame->root)
          ((:rewrite collapse-hifat-place-file-lemma-6)
-          (:rewrite abs-mkdir-correctness-lemma-178)
           (:rewrite abs-separate-of-frame->frame-of-collapse-this-lemma-8
                     . 2)
           (:rewrite abs-find-file-after-abs-mkdir-lemma-22)
@@ -24945,7 +24530,6 @@
                     . 3)
           (:rewrite abs-lstat-refinement-lemma-1)
           (:rewrite abs-fs-p-of-ctx-app)
-          (:rewrite abs-mkdir-correctness-lemma-50 . 3)
           (:rewrite partial-collapse-correctness-lemma-2)
           (:type-prescription assoc-when-zp-len)
           (:rewrite abs-addrs-when-m1-file-contents-p)
@@ -25039,7 +24623,6 @@
                         abs-fs-fix abs-addrs basename-alt
                         dirname-alt abs-complete frame->root)
          ((:rewrite collapse-hifat-place-file-lemma-6)
-          (:rewrite abs-mkdir-correctness-lemma-178)
           (:rewrite abs-separate-of-frame->frame-of-collapse-this-lemma-8
                     . 2)
           (:rewrite abs-find-file-after-abs-mkdir-lemma-22)
@@ -25049,7 +24632,6 @@
                     . 3)
           (:rewrite abs-lstat-refinement-lemma-1)
           (:rewrite abs-fs-p-of-ctx-app)
-          (:rewrite abs-mkdir-correctness-lemma-50 . 3)
           (:rewrite partial-collapse-correctness-lemma-2)
           (:type-prescription assoc-when-zp-len)
           (:rewrite abs-addrs-when-m1-file-contents-p)
@@ -25144,7 +24726,6 @@
                         abs-fs-fix abs-addrs basename-alt
                         dirname-alt abs-complete frame->root)
          ((:rewrite collapse-hifat-place-file-lemma-6)
-          (:rewrite abs-mkdir-correctness-lemma-178)
           (:rewrite abs-separate-of-frame->frame-of-collapse-this-lemma-8
                     . 2)
           (:rewrite abs-find-file-after-abs-mkdir-lemma-22)
@@ -25154,7 +24735,6 @@
                     . 3)
           (:rewrite abs-lstat-refinement-lemma-1)
           (:rewrite abs-fs-p-of-ctx-app)
-          (:rewrite abs-mkdir-correctness-lemma-50 . 3)
           (:rewrite partial-collapse-correctness-lemma-2)
           (:type-prescription assoc-when-zp-len)
           (:rewrite abs-addrs-when-m1-file-contents-p)
@@ -25638,7 +25218,6 @@
                         hifat-place-file hifat-find-file
                         abs-alloc ctx-app abs-fs-fix abs-addrs)
          ((:rewrite collapse-hifat-place-file-lemma-6)
-          (:rewrite abs-mkdir-correctness-lemma-178)
           (:rewrite abs-separate-of-frame->frame-of-collapse-this-lemma-8
                     . 2)
           (:rewrite abs-find-file-after-abs-mkdir-lemma-22)
@@ -25648,7 +25227,6 @@
                     . 3)
           (:rewrite abs-lstat-refinement-lemma-1)
           (:rewrite abs-fs-p-of-ctx-app)
-          (:rewrite abs-mkdir-correctness-lemma-50 . 3)
           (:rewrite partial-collapse-correctness-lemma-2)
           (:type-prescription assoc-when-zp-len)
           (:rewrite abs-addrs-when-m1-file-contents-p)
@@ -26646,7 +26224,6 @@
                         assoc-equal-of-frame->frame
                         len-of-insert-text)
          ((:rewrite collapse-hifat-place-file-lemma-6)
-          (:rewrite abs-mkdir-correctness-lemma-178)
           (:rewrite abs-separate-of-frame->frame-of-collapse-this-lemma-8
                     . 2)
           (:rewrite abs-find-file-after-abs-mkdir-lemma-22)
@@ -26656,7 +26233,6 @@
                     . 3)
           (:rewrite abs-lstat-refinement-lemma-1)
           (:rewrite abs-fs-p-of-ctx-app)
-          (:rewrite abs-mkdir-correctness-lemma-50 . 3)
           (:rewrite partial-collapse-correctness-lemma-2)
           (:type-prescription assoc-when-zp-len)
           (:rewrite abs-addrs-when-m1-file-contents-p)
@@ -27085,7 +26661,6 @@
                         abs-alloc ctx-app abs-fs-fix
                         abs-addrs basename-alt dirname-alt)
          ((:rewrite collapse-hifat-place-file-lemma-6)
-          (:rewrite abs-mkdir-correctness-lemma-178)
           (:rewrite abs-separate-of-frame->frame-of-collapse-this-lemma-8
                     . 2)
           (:rewrite abs-find-file-after-abs-mkdir-lemma-22)
@@ -27095,7 +26670,6 @@
                     . 3)
           (:rewrite abs-lstat-refinement-lemma-1)
           (:rewrite abs-fs-p-of-ctx-app)
-          (:rewrite abs-mkdir-correctness-lemma-50 . 3)
           (:rewrite partial-collapse-correctness-lemma-2)
           (:type-prescription assoc-when-zp-len)
           (:rewrite abs-addrs-when-m1-file-contents-p)
@@ -27188,7 +26762,6 @@
                         abs-alloc ctx-app abs-fs-fix
                         abs-addrs basename-alt dirname-alt)
          ((:rewrite collapse-hifat-place-file-lemma-6)
-          (:rewrite abs-mkdir-correctness-lemma-178)
           (:rewrite abs-separate-of-frame->frame-of-collapse-this-lemma-8
                     . 2)
           (:rewrite abs-find-file-after-abs-mkdir-lemma-22)
@@ -27198,7 +26771,6 @@
                     . 3)
           (:rewrite abs-lstat-refinement-lemma-1)
           (:rewrite abs-fs-p-of-ctx-app)
-          (:rewrite abs-mkdir-correctness-lemma-50 . 3)
           (:rewrite partial-collapse-correctness-lemma-2)
           (:type-prescription assoc-when-zp-len)
           (:rewrite abs-addrs-when-m1-file-contents-p)
@@ -27292,7 +26864,6 @@
                         abs-fs-fix abs-addrs basename-alt
                         dirname-alt frame->root abs-complete)
          ((:rewrite collapse-hifat-place-file-lemma-6)
-          (:rewrite abs-mkdir-correctness-lemma-178)
           (:rewrite abs-separate-of-frame->frame-of-collapse-this-lemma-8
                     . 2)
           (:rewrite abs-find-file-after-abs-mkdir-lemma-22)
@@ -27302,7 +26873,6 @@
                     . 3)
           (:rewrite abs-lstat-refinement-lemma-1)
           (:rewrite abs-fs-p-of-ctx-app)
-          (:rewrite abs-mkdir-correctness-lemma-50 . 3)
           (:rewrite partial-collapse-correctness-lemma-2)
           (:type-prescription assoc-when-zp-len)
           (:rewrite abs-addrs-when-m1-file-contents-p)
@@ -27590,7 +27160,6 @@
                         abs-fs-fix abs-addrs basename-alt
                         dirname-alt frame->root abs-complete)
          ((:rewrite collapse-hifat-place-file-lemma-6)
-          (:rewrite abs-mkdir-correctness-lemma-178)
           (:rewrite abs-separate-of-frame->frame-of-collapse-this-lemma-8
                     . 2)
           (:rewrite abs-find-file-after-abs-mkdir-lemma-22)
@@ -27600,7 +27169,6 @@
                     . 3)
           (:rewrite abs-lstat-refinement-lemma-1)
           (:rewrite abs-fs-p-of-ctx-app)
-          (:rewrite abs-mkdir-correctness-lemma-50 . 3)
           (:rewrite partial-collapse-correctness-lemma-2)
           (:type-prescription assoc-when-zp-len)
           (:rewrite abs-addrs-when-m1-file-contents-p)
@@ -27825,7 +27393,6 @@
                         hifat-place-file hifat-find-file
                         abs-alloc ctx-app abs-fs-fix abs-addrs)
          ((:rewrite collapse-hifat-place-file-lemma-6)
-          (:rewrite abs-mkdir-correctness-lemma-178)
           (:rewrite abs-separate-of-frame->frame-of-collapse-this-lemma-8
                     . 2)
           (:rewrite abs-find-file-after-abs-mkdir-lemma-22)
@@ -27835,7 +27402,6 @@
                     . 3)
           (:rewrite abs-lstat-refinement-lemma-1)
           (:rewrite abs-fs-p-of-ctx-app)
-          (:rewrite abs-mkdir-correctness-lemma-50 . 3)
           (:rewrite partial-collapse-correctness-lemma-2)
           (:type-prescription assoc-when-zp-len)
           (:rewrite abs-addrs-when-m1-file-contents-p)
@@ -27893,7 +27459,9 @@
                               (frame-p frame)
                               (consp (assoc-equal 0 frame)))))
   (b*
-      ((fd-table-entry (assoc-equal fd fd-table))
+      ((fd-table (mbe :logic (fd-table-fix fd-table) :exec fd-table))
+       (file-table (mbe :logic (file-table-fix file-table) :exec file-table))
+       (fd-table-entry (assoc-equal fd fd-table))
        ((unless (consp fd-table-entry))
         (mv "" -1 *ebadf*))
        (file-table-entry (assoc-equal (cdr fd-table-entry)

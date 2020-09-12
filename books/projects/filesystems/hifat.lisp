@@ -456,6 +456,10 @@
                  (:theorem (equal (+ (len x) (- (len x)) (len y))
                                   (len y)))))))
 
+(defthm when-prefixp-append-same
+  (iff (prefixp (append y x) y) (atom x))
+  :hints (("goal" :in-theory (enable prefixp))))
+
 (defthmd
   painful-debugging-lemma-14
   (implies (not (zp cluster-size))
@@ -2170,6 +2174,12 @@
                   (hifat-file-alist-fix fs)))
   :hints (("goal" :in-theory (enable hifat-place-file))))
 
+(defthmd hifat-place-file-correctness-5
+  (equal (hifat-place-file fs path file)
+         (mv (mv-nth 0 (hifat-place-file fs path file))
+             (mv-nth 1 (hifat-place-file fs path file))))
+  :hints (("goal" :in-theory (enable hifat-place-file))))
+
 (defcong m1-file-equiv equal
   (hifat-place-file fs path file) 3
   :hints (("goal" :in-theory (enable hifat-place-file))))
@@ -2906,7 +2916,7 @@
 ;;            :expand (PATH-TO-FAT32-PATH (TAKE (+ -1 (LEN CHARACTER-LIST))
 ;;                                                      CHARACTER-LIST))) ))
 
-(defun fat32-path-to-path (string-list)
+(defund fat32-path-to-path (string-list)
   (declare (xargs :guard (fat32-filename-list-p string-list)))
   (if (atom string-list)
       nil
@@ -2929,4 +2939,4 @@
 
 (defthm character-listp-of-fat32-path-to-path
   (character-listp (fat32-path-to-path string-list))
-  :hints (("goal" :in-theory (enable fat32-name-to-name))))
+  :hints (("goal" :in-theory (enable fat32-name-to-name fat32-path-to-path))))

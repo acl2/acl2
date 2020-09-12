@@ -10465,7 +10465,6 @@ Some (rather awful) testing forms are
       (:definition remove-assoc-equal)
       (:linear make-clusters-correctness-2)
       (:rewrite clear-clusterchain-reversibility-lemma-1)
-      (:linear non-free-index-listp-correctness-6-lemma-3)
       (:rewrite len-of-effective-fat)
       (:definition make-list-ac)
       (:REWRITE SUBSETP-CAR-MEMBER)

@@ -1785,6 +1785,10 @@
   (defthm string-append-of-empty-string-1
     (equal (string-append "" str2)
            (if (stringp str2) str2 ""))
+    :hints (("goal" :in-theory (enable string-append))))
+  (defthm string-append-of-empty-string-2
+    (equal (string-append str1 "")
+           (if (stringp str1) str1 ""))
     :hints (("goal" :in-theory (enable string-append)))))
 
 (encapsulate () (local (in-theory (disable nfix natp)))
@@ -1792,3 +1796,144 @@
     (implies (natp x) (equal (nfix x) x))
     :hints (("goal" :do-not-induct t
              :in-theory (enable nfix natp)))))
+
+;; The following are redundant with the eponymous theorems in
+;; books/std/lists/take.lisp, from where they were taken with thanks.
+(defthm take-of-append
+  (equal (take n (append x y))
+         (if (< (nfix n) (len x))
+             (take n x)
+             (append x (take (- n (len x)) y))))
+  :hints (("goal" :induct (take n x))))
+(defthm take-under-iff
+  (iff (take n xs)
+       (not (zp n))))
+
+(encapsulate () (local (in-theory (disable subseq string-append)))
+
+  (local
+   (defthm lemma-1 (iff (equal (len (coerce str1 'list)) 0)
+                        (equal (coerce str1 'list) nil))
+     :hints
+     (("goal" :expand (len (coerce str1 'list))))))
+
+  (local
+   (defthmd lemma-2
+     (implies (and (<= 0 (- start)) (<= 0 start))
+              (integerp (- start)))))
+
+  ;; There's no simple way to reduce the number of cases here.
+  (defthm subseq-of-string-append
+    (equal (subseq (string-append str1 str2) start end)
+           (cond ((and (not (stringp str2)) (not (stringp str1))) (subseq "" 0 (- end start)))
+                 ((not (stringp str1)) (subseq str2 start end))
+                 ((not (stringp str2)) (subseq str1 start end))
+                 ((and (integerp start) (<= (length str1) end)
+                       (<= start (length str1)) (<= 0 start) (integerp end))
+                  (string-append (subseq str1 start nil)
+                                 (subseq str2 0 (- end (length str1)))))
+                 ((and (< end (+ start (length str1))) (not (null end))
+                       (natp (- end start)) (not (integerp start)))
+                  (subseq str1 0 (- end start)))
+                 ((and (>= end (+ start (length str1))) (not (null end))
+                       (integerp (- end start)) (not (integerp start)))
+                  (string-append str1 (subseq str2 0 (- end (+ start (length str1))))))
+                 ((not (integerp (- start))) "")
+                 ((and (integerp start) (<= start (length str1)) (<= 0 start) (null end))
+                  (string-append (subseq str1 start nil) str2))
+                 ((and (<= start 0) (equal (length str1) 0)
+                       (not (null end)) (not (acl2-numberp end)))
+                  (string-append str1 (subseq str2 0 (- start))))
+                 ((and (< (- start) (length str1)) (not (null end)) (not (acl2-numberp end)))
+                  (subseq str1 0 (- start)))
+                 ((and (< start 0) (<= (length str1) (- start))
+                       (not (null end)) (not (acl2-numberp end)))
+                  (string-append str1 (subseq str2 0 (- (+ start (length str1))))))
+                 ((and (< start 0) (integerp end)
+                       (<= (+ (length str1) start) end))
+                  (string-append str1 (subseq str2 0 (- end (+ start (length str1))))))
+                 ((and (< (length str1) start) (null end)
+                       (<= start (+ (length str1) (length str2))))
+                  (subseq str2 (- start (length str1)) nil))
+                 ((and (< (length str1) start) (integerp end)
+                       (<= start (+ (length str1) (length str2))))
+                  (subseq str2 (- start (length str1)) (- end (length str1))))
+                 ((and (<= 0 start) (<= start end) (<= end (length str1)) (integerp end))
+                  (subseq str1 start end))
+                 ((and (integerp start) (< start 0) (null end))
+                  (string-append str1 (subseq str2 0 (- (length str2) start))))
+                 ((and (< start 0) (< end (+ start (length str1)))
+                       (not (null end)) (<= start end))
+                  (subseq str1 start end))
+                 ((and (integerp start) (< (+ (length str1) (length str2)) start))
+                  (subseq "" start end))
+                 ((and (acl2-numberp end) (not (integerp end))) "")
+                 ((and (not (null end)) (< end start)) "")
+                 (t (string-append str1 str2))))
+    :hints (("goal" :in-theory
+             (e/d (subseq string-append)
+                  ((:e force) (:rewrite coerce-inverse-1) (:rewrite coerce-inverse-2)))
+             :do-not-induct t
+             :use
+             ((:instance painful-debugging-lemma-21 (x start) (y (- (length str1))))
+              (:theorem (iff (integerp (+ (- start) (length str1) (length str2)))
+                             (integerp (- start))))
+              lemma-2
+              (:instance completion-of-coerce (y 'string)
+                         (x (take (+ end (- start) (- (len (coerce str1 'list))))
+                                  (coerce str2 'list))))
+              (:instance completion-of-coerce (y 'string)
+                         (x (append (coerce str1 'list)
+                                    (take (+ end (- start) (- (len (coerce str1 'list))))
+                                          (coerce str2 'list)))))
+              (:instance completion-of-coerce (y 'string)
+                         (x (take (+ (- start) (len (coerce str2 'list))) (coerce str2 'list))))
+              (:instance completion-of-coerce (y 'string)
+                         (x (append (coerce str1 'list)
+                                    (take (+ (- start) (len (coerce str2 'list)))
+                                          (coerce str2 'list)))))
+              (:instance completion-of-coerce (y 'string)
+                         (x (take (+ end (- (len (coerce str1 'list))))
+                                  (coerce str2 'list))))
+              (:instance completion-of-coerce (y 'string)
+                         (x (append (nthcdr start (coerce str1 'list))
+                                    (take (+ end (- (len (coerce str1 'list))))
+                                          (coerce str2 'list)))))
+              (:instance (:rewrite coerce-inverse-1)
+                         (x (make-character-list (take (+ end (- start)
+                                                          (- (len (coerce str1 'list))))
+                                                       (coerce str2 'list)))))
+              (:instance (:rewrite coerce-inverse-1) (x (nthcdr start (coerce str1 'list))))
+              (:instance (:rewrite coerce-inverse-1)
+                         (x (append (coerce str1 'list) (coerce str2 'list))))
+              (:instance (:rewrite coerce-inverse-1)
+                         (x (take (+ end (- (len (coerce str1 'list)))) (coerce str2 'list))))
+              (:instance (:rewrite painful-debugging-lemma-21)
+               (x (len (coerce str1 'list))) (y (len (coerce str2 'list))))
+              (:instance (:rewrite coerce-inverse-1)
+                         (x (make-character-list (take (+ (- start) (len (coerce str2 'list)))
+                                                       (coerce str2 'list)))))
+              (:instance (:rewrite coerce-inverse-2) (x str1))
+              (:instance (:rewrite coerce-inverse-1)
+               (x (make-character-list
+                   (take (+ end (- (len (coerce str1 'list)))) (coerce str2 'list)))))))))
+
+  (defthm then-subseq-empty-1
+    (implies (and (stringp seq)
+                  (>= start (length seq)))
+             (equal (subseq seq start nil) ""))
+    :hints (("goal" :in-theory (enable subseq subseq-list))))
+  (defthm then-subseq-same-1
+    (implies (stringp seq)
+             (equal (subseq seq 0 nil) seq))
+    :hints (("goal" :in-theory (enable subseq subseq-list))))
+  (defthm subseq-of-length-1
+    (implies (equal (length seq) end)
+             (equal (subseq seq start end)
+                    (subseq seq start nil)))
+    :hints (("goal" :do-not-induct t
+             :in-theory (enable subseq subseq-list)))))
+
+(defthm when-append-same
+  (iff (equal x (append x y))
+       (equal y (if (consp x) (cdr (last x)) x))))
