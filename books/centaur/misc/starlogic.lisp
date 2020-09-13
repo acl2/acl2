@@ -37,7 +37,7 @@
   :short "Boolean connectives that avoid case splits."
   :long "<p>Perhaps the most common reason that ACL2 proofs take a long time is
 that they split into too many cases unnecessarily.  The alternative Boolean
-operators @('iff*'), @('and*'), @('or*'), @('xor*'), and @('if*') can help to
+operators @('iff*'), @('and*'), @('or*'), and @('xor*') can help to
 avoid such case splits.</p>
 
 <p>A small and abstract example: Suppose foo is a function that has the following shape:</p>
@@ -195,7 +195,8 @@ through @('exceptional-casek-1') were untrue.</p>
 
 
 (defsection or*
-
+  :parents (non-case-splitting-logic)
+  :short "Non-case-splitting version of OR."
   (defun binary-or* (a b)
     (declare (xargs :guard t))
     (or a b))
@@ -342,4 +343,3 @@ through @('exceptional-casek-1') were untrue.</p>
 
 
 ||#
-
