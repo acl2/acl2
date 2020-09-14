@@ -1595,7 +1595,9 @@
                     (proof-supporters-alist nil)
                     (lambda$-alist nil)
                     (loop$-alist nil)
-                    (common-lisp-compliant-lambdas nil))))
+                    (common-lisp-compliant-lambdas nil)
+                    (rewrite-quoted-constant-rules nil)
+                    )))
              (list* `(operating-system ,operating-system)
                     `(command-number-baseline-info
                       ,(make command-number-baseline-info
@@ -23629,14 +23631,21 @@
                    (equal target-name-or-rune
                           (access rewrite-rule lemma :rune))))
              (member (access rewrite-rule lemma :subclass)
-                     '(backchain abbreviation definition))
+                     '(backchain abbreviation definition
+                                 rewrite-quoted-constant))
              (or (eq geneqv :none)
                  (geneqv-refinementp (access rewrite-rule lemma :equiv)
                                      geneqv
                                      wrld)))
         (mv-let
          (flg alist)
-         (one-way-unify (access rewrite-rule lemma :lhs) term)
+         (one-way-unify
+          (if (and (eq (access rewrite-rule lemma :subclass)
+                       'rewrite-quoted-constant)
+                   (eql (car (access rewrite-rule lemma :heuristic-info)) 2))
+              (access rewrite-rule lemma :rhs)
+              (access rewrite-rule lemma :lhs))
+          term)
          (cond
           (flg
            (if target-index
@@ -23956,7 +23965,8 @@
 
 (defun show-rewrite-linear (caller index col rune nume show-more subst-hyps
                                    subst-hyps-2 unify-subst unify-subst-2 free
-                                   free-2 rhs abbreviations term-id-iff ens
+                                   free-2 rhs rewrite-quoted-constant-form-2p
+                                   abbreviations term-id-iff ens
                                    enabled-only-flg equiv pl-p state)
 
 ; Pl-p is true when we are calling this function on behalf of :pl, and is false
@@ -23991,7 +24001,9 @@
                     ~ ~ ~@f variable: ~&6~/~
                     ~ ~ ~@f variables: ~&6~sn~]~
                ~#7~[~/  WARNING:  One of the hypotheses is (equivalent to) NIL, ~
-               and hence will apparently be impossible to relieve.~]~|"))
+               and hence will apparently be impossible to relieve.~]~
+               ~#8~[~/  WARNING:  The new term above is only used if it ~
+               rewrites to a quoted constant!~]~|"))
          (pprogn
           (fms fmt-string
                (list (cons #\x "")
@@ -24009,8 +24021,9 @@
                      (cons #\5 (zero-one-or-more (length free)))
                      (cons #\6 free)
                      (cons #\n "")
-                     (cons #\7 (if (member-eq nil subst-hyps) 1 0))
-                     (cons #\t (term-evisc-tuple nil state)))
+                     (cons #\7 (if (member-equal *nil* subst-hyps) 1 0))
+                     (cons #\t (term-evisc-tuple nil state))
+                     (cons #\8 (if rewrite-quoted-constant-form-2p 1 0)))
                (standard-co state) state nil)
           (cond (show-more
                  (pprogn
@@ -24056,7 +24069,7 @@
                              (cons #\n (if (null free-2)
                                            "[none]"
                                          ""))
-                             (cons #\7 (if (member-eq nil subst-hyps-2)
+                             (cons #\7 (if (member-equal *nil* subst-hyps-2)
                                            1
                                          0))
                              (cons #\t (term-evisc-tuple nil state)))
@@ -24084,7 +24097,12 @@
         (cond
          ((eq caller 'show-rewrites)
           (mv (access rewrite-rule lemma :hyps)
-              (access rewrite-rule lemma :rhs)
+              (if (and (eq (access rewrite-rule lemma :subclass)
+                           'rewrite-quoted-constant)
+                       (eql (car (access rewrite-rule lemma :heuristic-info))
+                            2))
+                  (access rewrite-rule lemma :lhs)
+                  (access rewrite-rule lemma :rhs))
               (access rewrite-rule lemma :rune)))
          (t
           (mv (access linear-lemma lemma :hyps)
@@ -24099,7 +24117,12 @@
                            (all-vars1-lst hyps nil)))
                 (free (reverse (set-difference-assoc-eq
                                 result-and-hyps-vars
-                                unify-subst))))
+                                unify-subst)))
+                (rewrite-quoted-constant-form-2p
+                 (and (eq (access rewrite-rule lemma :subclass)
+                          'rewrite-quoted-constant)
+                      (eql (car (access rewrite-rule lemma :heuristic-info))
+                           2))))
            (cond
             (pl-p
              (show-rewrite-linear
@@ -24114,7 +24137,9 @@
               nil ; unify-subst-2,  irrelevant
               free
               nil ; free-2, irrelevant
-              result abbreviations term-id-iff ens enabled-only-flg
+              result
+              rewrite-quoted-constant-form-2p
+              abbreviations term-id-iff ens enabled-only-flg
               (and (eq caller 'show-rewrites)
                    (access sar sar :equiv))
               t ; pl-p
@@ -24148,7 +24173,9 @@
                (reverse (set-difference-assoc-eq
                          result-and-hyps-vars
                          unify-subst-2))
-               result abbreviations term-id-iff ens enabled-only-flg
+               result
+               rewrite-quoted-constant-form-2p
+               abbreviations term-id-iff ens enabled-only-flg
                (and (eq caller 'show-rewrites)
                     (access sar sar :equiv))
                nil ; pl-p
@@ -24210,7 +24237,9 @@
                        (keywordp (car rule-id))
                      (member-eq (car rule-id)
                                 (cond ((eq caller 'show-rewrites)
-                                       '(:rewrite :definition))
+                                       '(:rewrite
+                                         :rewrite-quoted-constant
+                                         :definition))
                                       (t :linear))))
                    rule-id))
         (w (w state)))
@@ -24218,19 +24247,26 @@
      ((and (not pl-p) ; optimization -- check is already made by pl2-fn
            rule-id
            (not (or name index rune)))
-      (fms "The rule-id argument to ~s0 must be a name, a positive ~
-            integer, or a rune representing a rewrite or definition rule, but ~
-            ~x1 is none of these.~|"
+      (fms "The rule-id argument to ~s0 must be a name, a positive integer, ~
+            or a rune representing a rewrite, rewrite-quoted-constant, or ~
+            definition rule, but ~x1 is none of these.~|"
            (list (cons #\0 (symbol-name caller))
                  (cons #\1 rule-id))
            (standard-co state) state nil))
      ((and (not pl-p) ; optimization -- check is already made by pl2-fn
            (or (variablep current-term)
-               (fquotep current-term)
+               (and (fquotep current-term)
+                    (not (and (eq caller 'show-rewrites)
+                              rule-id
+                              (eq (car rule-id) :rewrite-quoted-constant))))
                (flambdap (ffn-symb current-term))))
-      (fms "It is only possible to apply ~#0~[rewrite rules to terms~/linear ~
-            rules for triggers~] that are not variables, (quoted) constants, ~
-            or applications of lambda expressions.  However, the current term ~
+; The message below intentionally conflates ``rewrite rules'' with
+; ``rewrite-quoted-constant'' rules, since this facility doesn't really
+; distinguish the two.
+      (fms "It is only possible to apply ~#0~[rewrite rules to terms that are ~
+            not variables or applications of lambda expressions~/linear rules ~
+            for triggers that are not variables, quoted constants, or ~
+            applications of lambda expessions~].  However, the current term ~
             is:~%~ ~ ~y1.~|"
            (list (cons #\0 (if (eq caller 'show-rewrites) 0 1))
                  (cons #\1 current-term))
@@ -24261,7 +24297,9 @@
                     (applicable-rewrite-rules1
                      current-term
                      geneqv
-                     (getpropc (ffn-symb current-term) 'lemmas nil w)
+                     (if (quotep current-term)
+                         (global-val 'rewrite-quoted-constant-rules w)
+                         (getpropc (ffn-symb current-term) 'lemmas nil w))
                      1 (or name rune) index w))
                    (t
                     (applicable-linear-rules1
@@ -24490,22 +24528,20 @@
                       (keywordp (car rule-id)))))
         (er soft caller
             "The rule-id supplied to ~x0 must be a symbol or a rune, but ~x1 ~
-            is neither.  See :DOC ~x0."
+             is neither.  See :DOC ~x0."
             caller rule-id))
        (t (mv-let
             (flg term1)
             (cond ((or (variablep term)
-                       (fquotep term)
                        (flambdap (ffn-symb term)))
                    (mv t (remove-guard-holders term wrld)))
                   (t (mv nil term)))
             (cond ((or (variablep term1)
-                       (fquotep term1)
                        (flambdap (ffn-symb term1)))
                    (er soft caller
                        "~@0 must represent a term that is not a variable or a ~
-                      constant, which is not a LET (or LAMBDA application).  ~
-                      But ~x1 does not meet this requirement."
+                        LET (or LAMBDA application).  But ~x1 does not meet ~
+                        this requirement."
                        (case caller
                          (pl (msg "A non-symbol argument of ~x0" caller))
                          (pl2 (msg "The first argument of ~x0" caller))
@@ -24542,6 +24578,12 @@
            (ens (ens-maybe-brr state))
            (name (deref-macro-name name (macro-aliases wrld))))
       (cond
+       ((eq name 'quote)
+        (print-info-for-rules
+         (info-for-lemmas
+          (global-val 'rewrite-quoted-constant-rules wrld)
+          t ens wrld)
+         (standard-co state) state))
        ((function-symbolp name wrld)
         (print-info-for-rules
          (append
@@ -24567,8 +24609,9 @@
          (standard-co state) state))
        (t (er soft 'pl
               "If the argument to PL is a symbol, then it must be a function ~
-               symbol in the current world or else a macro that is associated ~
-               with a function symbol (see :DOC add-macro-alias).")))))
+               symbol in the current world, the symbol QUOTE, or else a macro ~
+               that is associated with a function symbol (see :DOC ~
+               add-macro-alias).")))))
    (t (pl2-fn name nil 'pl state))))
 
 (defmacro pl (name)

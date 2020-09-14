@@ -87,7 +87,11 @@
          (wrld  (acl2::w state))
          ;; Call ACL2's function that checks whether the rule is okay or not.
          ((mv msg ?eqv ?lhs ?rhs ?ttree)
-          (acl2::interpret-term-as-rewrite-rule name nil
+; J Moore mod 8/22/2020:  Interpret-term-as-rewrite-rule now expects a new
+; first argument, qc-flg, which if true indicates we're processing a
+; :rewrite-quoted-constant-rule.
+          (acl2::interpret-term-as-rewrite-rule nil ; qc-flg
+                                                name nil
 
 ; Matt K. mod, 8/22/2016: Interpret-term-as-rewrite-rule now expects its term
 ; argument to have had remove-guard-holders applied.

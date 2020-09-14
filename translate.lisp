@@ -1863,7 +1863,6 @@
         (t (get-guards2 (cdr edcls)
                         targets tflg wrld stobjs-acc guards-acc))))
 
-;;; Comment changes only:
 (defun get-guards1 (edcls targets args name wrld)
 
 ; We compute the guards but add (state-p name) when necessary:

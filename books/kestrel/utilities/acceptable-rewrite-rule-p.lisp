@@ -23,7 +23,13 @@
    ((null lst) t)
    (t (mv-let
         (msg eqv lhs rhs ttree)
-        (interpret-term-as-rewrite-rule name
+
+; J Moore 8/22/2020: Modified call below when new first argument, qc-flg, was added.  By
+; specifying qc-flg = nil we require name to be a :rewrite rule rather than
+; a :rewrite-quoted-constant rule.
+
+        (interpret-term-as-rewrite-rule nil        ; qc-flg 
+                                        name
                                         (caar lst) ; hyps
                                         (cdar lst) ; concl
                                         nil        ; ctx

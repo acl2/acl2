@@ -9039,6 +9039,11 @@
                         "the :rewrite rules ~*R"
                       "the :rewrite rule ~*R"))
                   (cons #\R names)))
+             (:REWRITE-QUOTED-CONSTANT
+              (mv (if pluralp
+                      "the :rewrite-quoted-constant rules ~*Q"
+                      "the :rewrite-quoted-constant rule ~*Q")
+                  (cons #\Q names)))
              (:LINEAR
               (mv (if pluralp
                       "the :linear rules ~*L"
