@@ -117,7 +117,6 @@
     :in-theory (e/d (partial-collapse collapse)
                     ((:definition no-duplicatesp-equal)
                      (:definition assoc-equal)
-                     (:rewrite subsetp-when-prefixp)
                      (:definition true-listp)
                      (:rewrite put-assoc-equal-without-change . 2)
                      abs-separate-of-frame->frame-of-collapse-this-lemma-8
@@ -3728,7 +3727,6 @@
                            (:definition member-equal)
                            (:rewrite subsetp-car-member)
                            (:definition no-duplicatesp-equal)
-                           (:rewrite subsetp-when-prefixp)
                            (:rewrite valid-seqp-when-prefixp)
                            (:rewrite
                             final-val-seq-of-collapse-this-lemma-5)
@@ -4598,7 +4596,6 @@
           (:definition member-equal)
           (:definition remove-assoc-equal)
           (:definition no-duplicatesp-equal)
-          (:rewrite subsetp-when-prefixp)
           (:rewrite partial-collapse-correctness-lemma-1)
           (:rewrite collapse-1st-index-of-frame-val->src-of-cdr-of-assoc-linear-lemma-2)
           (:rewrite abs-file-alist-p-when-m1-file-alist-p)
@@ -7826,7 +7823,6 @@
    (("goal" :in-theory (e/d (seq-this collapse-seq collapse-iter)
                             ((:rewrite partial-collapse-correctness-lemma-24)
                              (:definition no-duplicatesp-equal)
-                             (:rewrite subsetp-when-prefixp)
                              (:definition assoc-equal)
                              (:definition member-equal)
                              (:rewrite member-of-abs-addrs-when-natp . 2)
@@ -7856,7 +7852,6 @@
        (:rewrite abs-separate-of-frame->frame-of-collapse-this-lemma-8
                  . 2)
        (:linear len-of-seq-this-1)
-       (:rewrite subsetp-when-prefixp)
        (:rewrite partial-collapse-correctness-lemma-20)))
      :expand (collapse-iter frame 1)
      :induct (collapse frame)
@@ -8525,7 +8520,6 @@
                   abs-separate-of-frame->frame-of-collapse-this-lemma-8
                   . 2)
                  (:linear len-of-seq-this-1)
-                 (:rewrite subsetp-when-prefixp)
                  (:rewrite
                   partial-collapse-correctness-lemma-20)
                  ;; maybe this can be kept for the lemmas
@@ -8636,7 +8630,6 @@
                       (:definition member-equal)
                       (:definition no-duplicatesp-equal)
                       (:rewrite partial-collapse-correctness-lemma-2)
-                      (:rewrite subsetp-when-prefixp)
                       (:rewrite assoc-of-car-when-member)
                       (:rewrite subsetp-car-member)
                       (:rewrite prefixp-when-equal-lengths)
@@ -9407,7 +9400,6 @@
          ((:rewrite partial-collapse-correctness-lemma-24)
           (:definition no-duplicatesp-equal)
           (:definition assoc-equal)
-          (:rewrite subsetp-when-prefixp)
           (:rewrite prefixp-when-equal-lengths)
           (:definition remove-equal)
           (:rewrite strip-cars-of-remove-assoc)

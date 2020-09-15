@@ -4294,6 +4294,7 @@
           (:type-prescription fat32-filename-list-fix$inline))
          ((:rewrite remove-when-absent)
           (:definition remove-equal)
+
           (:rewrite abs-find-file-correctness-lemma-18)
           (:definition member-equal)
           (:rewrite abs-find-file-correctness-1-lemma-3)
@@ -4308,18 +4309,18 @@
           (:rewrite
            abs-separate-of-frame->frame-of-collapse-this-lemma-8
            . 3)
-          (:DEFINITION REMOVE-ASSOC-EQUAL)
-          (:TYPE-PRESCRIPTION ASSOC-WHEN-ZP-LEN)
-          (:REWRITE
-           COLLAPSE-1ST-INDEX-OF-FRAME-VAL->SRC-OF-CDR-OF-ASSOC-LINEAR-LEMMA-2)
-          (:REWRITE LEN-WHEN-PREFIXP)
-          (:REWRITE PUT-ASSOC-EQUAL-WITHOUT-CHANGE . 2)
-          (:REWRITE
-           ABS-FIND-FILE-CORRECTNESS-1-LEMMA-45)
-          (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1)
-          (:REWRITE TRUE-LISTP-WHEN-ABS-FILE-ALIST-P)
-          (:DEFINITION LEN)
-          (:REWRITE CONSP-OF-NTHCDR)))))
+          (:definition remove-assoc-equal)
+          (:type-prescription assoc-when-zp-len)
+          (:rewrite
+           collapse-1st-index-of-frame-val->src-of-cdr-of-assoc-linear-lemma-2)
+          (:rewrite len-when-prefixp)
+          (:rewrite put-assoc-equal-without-change . 2)
+          (:rewrite
+           abs-find-file-correctness-1-lemma-45)
+          (:rewrite prefixp-one-way-or-another . 1)
+          (:rewrite true-listp-when-abs-file-alist-p)
+          (:definition len)
+          (:rewrite consp-of-nthcdr)))))
 
   (defthm
     abs-find-file-correctness-lemma-47
@@ -4986,7 +4987,6 @@
                     (:definition remove-assoc-equal)
                     (:rewrite abs-file-alist-p-correctness-1)
                     (:rewrite nthcdr-when->=-n-len-l)
-                    (:rewrite subsetp-when-prefixp)
                     (:definition strip-cars)
                     abs-find-file-helper-of-collapse-3
                     (:rewrite consp-of-nthcdr)
@@ -5671,7 +5671,6 @@
       (:definition remove-assoc-equal)
       (:rewrite abs-file-alist-p-correctness-1)
       (:rewrite nthcdr-when->=-n-len-l)
-      (:rewrite subsetp-when-prefixp)
       (:definition strip-cars)
       abs-find-file-helper-of-collapse-3
       abs-find-file-correctness-1-lemma-3
