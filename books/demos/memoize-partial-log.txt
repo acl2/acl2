@@ -2591,18 +2591,17 @@ ACL2 !>>(DEFUN FIB-ST-LIMIT (N ST LIMIT)
                (DECLARE (TYPE (INTEGER 0 *) LIMIT)
                         (TYPE INTEGER N))
                (DECLARE (XARGS :MEASURE (NFIX LIMIT)
-                               :STOBJS ST
-                               :VERIFY-GUARDS NIL))
+                               :STOBJS ST))
                (IF (ZP LIMIT)
-                   (MV 0 ST)
+                   (PROG2$ (ER HARD? 'FIB-ST-LIMIT
+                               "Hit the limit: n=~x0 (fld st)=~x1."
+                               N (FLD ST))
+                           0)
                    (LET ((LIMIT (1- LIMIT)))
                         (IF (OR (= N 0) (= N 1))
-                            (MV 1 ST)
-                            (MV-LET (X1 ST)
-                                    (FIB-ST-LIMIT (- N 1) ST LIMIT)
-                                    (MV-LET (X2 ST)
-                                            (FIB-ST-LIMIT (- N 2) ST LIMIT)
-                                            (MV (+ X1 X2) ST)))))))
+                            1
+                            (+ (FIB-ST-LIMIT (- N 1) ST LIMIT)
+                               (FIB-ST-LIMIT (- N 2) ST LIMIT))))))
 Subgoal 2
 Subgoal 1
 Subgoal 1'
@@ -2617,14 +2616,97 @@ Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
         (:DEFINITION O-P)
         (:DEFINITION O<)
         (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
-        (:FAKE-RUNE-FOR-TYPE-SET NIL))
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:TYPE-PRESCRIPTION FIB-ST-LIMIT))
  FIB-ST-LIMIT
-ACL2 !>>(DEFTHM NATP-FIB-ST-LIMIT-0
-                (NATP (CAR (FIB-ST-LIMIT N LIMIT ST)))
+ACL2 !>>(MEMOIZE-PARTIAL FIB-ST)
+
+Summary
+Form:  ( DEFCHOOSE FIB-ST-LIMIT-CHANGE ...)
+Rules: NIL
+FIB-ST-LIMIT-CHANGE
+
+Summary
+Form:  ( DEFCHOOSE FIB-ST-LIMIT-STABLE ...)
+Rules: NIL
+FIB-ST-LIMIT-STABLE
+
+Summary
+Form:  ( DEFUN FIB-ST ...)
+Rules: ((:TYPE-PRESCRIPTION FIB-ST-LIMIT))
+FIB-ST
+
+Summary
+Form:  ( TABLE PARTIAL-FUNCTIONS-TABLE ...)
+Rules: NIL
+PARTIAL-FUNCTIONS-TABLE
+
+Summary
+Form:  ( PROGN (DEFCHOOSE FIB-ST-LIMIT-CHANGE ...) ...)
+Rules: NIL
+
+Summary
+Form:  ( MAKE-EVENT (ER-PROGN ...) ...)
+Rules: NIL
+PARTIAL-FUNCTIONS-TABLE
+
+Summary
+Form:  ( TABLE MEMOIZE-TABLE ...)
+Rules: NIL
+MEMOIZE-TABLE
+FIB-ST
+
+Summary
+Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
+Rules: NIL
+FIB-ST
+
+Summary
+Form:  ( PROGN (MAKE-EVENT ...) ...)
+Rules: NIL
+ FIB-ST
+ACL2 !>>(ASSERT-EVENT (EQUAL (FIB-ST 100 ST)
+                             573147844013817084101))
+ :PASSED
+ACL2 !>>(DEFUN
+             FIB-ST-OUT-LIMIT (N ST LIMIT)
+             (DECLARE (TYPE (INTEGER 0 *) LIMIT)
+                      (TYPE INTEGER N))
+             (DECLARE (XARGS :MEASURE (NFIX LIMIT)
+                             :STOBJS ST
+                             :VERIFY-GUARDS NIL))
+             (IF (ZP LIMIT)
+                 (MV 0 ST)
+                 (LET ((LIMIT (1- LIMIT)))
+                      (IF (OR (= N 0) (= N 1))
+                          (MV 1 ST)
+                          (MV-LET (X1 ST)
+                                  (FIB-ST-OUT-LIMIT (- N 1) ST LIMIT)
+                                  (MV-LET (X2 ST)
+                                          (FIB-ST-OUT-LIMIT (- N 2) ST LIMIT)
+                                          (MV (+ X1 X2) ST)))))))
+Subgoal 2
+Subgoal 1
+Subgoal 1'
+
+Summary
+Form:  ( DEFUN FIB-ST-OUT-LIMIT ...)
+Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
+        (:COMPOUND-RECOGNIZER ZP-COMPOUND-RECOGNIZER)
+        (:DEFINITION =)
+        (:DEFINITION NFIX)
+        (:DEFINITION O-FINP)
+        (:DEFINITION O-P)
+        (:DEFINITION O<)
+        (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL))
+ FIB-ST-OUT-LIMIT
+ACL2 !>>(DEFTHM NATP-FIB-ST-OUT-LIMIT-0
+                (NATP (CAR (FIB-ST-OUT-LIMIT N LIMIT ST)))
                 :RULE-CLASSES :TYPE-PRESCRIPTION)
 
-ACL2 Observation in ( DEFTHM NATP-FIB-ST-LIMIT-0 ...):  Our heuristics
-choose (CAR (FIB-ST-LIMIT N LIMIT ST)) as the :TYPED-TERM.
+ACL2 Observation in ( DEFTHM NATP-FIB-ST-OUT-LIMIT-0 ...):  Our heuristics
+choose (CAR (FIB-ST-OUT-LIMIT N LIMIT ST)) as the :TYPED-TERM.
 Subgoal 2
 Subgoal 1
 Subgoal *1/3
@@ -2634,11 +2716,11 @@ Subgoal *1/2'
 Subgoal *1/1
 
 Summary
-Form:  ( DEFTHM NATP-FIB-ST-LIMIT-0 ...)
+Form:  ( DEFTHM NATP-FIB-ST-OUT-LIMIT-0 ...)
 Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
         (:COMPOUND-RECOGNIZER ZP-COMPOUND-RECOGNIZER)
         (:DEFINITION =)
-        (:DEFINITION FIB-ST-LIMIT)
+        (:DEFINITION FIB-ST-OUT-LIMIT)
         (:DEFINITION MV-NTH)
         (:DEFINITION NATP)
         (:DEFINITION NOT)
@@ -2646,15 +2728,15 @@ Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
         (:EXECUTABLE-COUNTERPART NATP)
         (:EXECUTABLE-COUNTERPART ZP)
         (:FAKE-RUNE-FOR-TYPE-SET NIL)
-        (:INDUCTION FIB-ST-LIMIT)
+        (:INDUCTION FIB-ST-OUT-LIMIT)
         (:REWRITE CAR-CONS)
-        (:TYPE-PRESCRIPTION FIB-ST-LIMIT))
- NATP-FIB-ST-LIMIT-0
-ACL2 !>>(VERIFY-GUARDS FIB-ST-LIMIT)
+        (:TYPE-PRESCRIPTION FIB-ST-OUT-LIMIT))
+ NATP-FIB-ST-OUT-LIMIT-0
+ACL2 !>>(VERIFY-GUARDS FIB-ST-OUT-LIMIT)
 Goal'
 
 Summary
-Form:  ( VERIFY-GUARDS FIB-ST-LIMIT)
+Form:  ( VERIFY-GUARDS FIB-ST-OUT-LIMIT)
 Rules: ((:COMPOUND-RECOGNIZER ZP-COMPOUND-RECOGNIZER)
         (:DEFINITION =)
         (:DEFINITION LENGTH)
@@ -2664,14 +2746,15 @@ Rules: ((:COMPOUND-RECOGNIZER ZP-COMPOUND-RECOGNIZER)
         (:EXECUTABLE-COUNTERPART ACL2-NUMBERP)
         (:EXECUTABLE-COUNTERPART ZP)
         (:FAKE-RUNE-FOR-TYPE-SET NIL)
-        (:TYPE-PRESCRIPTION FIB-ST-LIMIT)
-        (:TYPE-PRESCRIPTION NATP-FIB-ST-LIMIT-0))
- FIB-ST-LIMIT
-ACL2 !>>(MF (MEMOIZE-PARTIAL FIB-ST))
+        (:TYPE-PRESCRIPTION FIB-ST-OUT-LIMIT)
+        (:TYPE-PRESCRIPTION NATP-FIB-ST-OUT-LIMIT-0))
+ FIB-ST-OUT-LIMIT
+ACL2 !>>(MF (MEMOIZE-PARTIAL FIB-ST-OUT))
 
 
 ACL2 Error in MEMOIZE-PARTIAL:  
-The stobj ST is among the formals of FIB-ST-LIMIT.
+The stobj ST is returned by FIB-ST-OUT-LIMIT, which is illegal for
+memoization.
 See :DOC memoize-partial.
 
 
@@ -2764,7 +2847,8 @@ ACL2 !>>(MF (MEMOIZE-PARTIAL FIB-STATE))
 
 
 ACL2 Error in MEMOIZE-PARTIAL:  
-STATE is among the formals of FIB-STATE-LIMIT.
+STATE is among the formals of FIB-STATE-LIMIT, which is illegal for
+memoization.
 See :DOC memoize-partial.
 
 
@@ -2993,11 +3077,6 @@ Rules: ((:TYPE-PRESCRIPTION COLLATZ-LIMIT-SUM-REC))
 ACL2 !>>(COMP T)
  NIL
 ACL2 !>>(ASSERT-EVENT (EQUAL (COLLATZ-LIMIT-SUM (EXPT 10 6))
-                             (COLLATZ-LIMIT (EXPT 10 6))))
-
-
-ACL2 Error in TOP-LEVEL:  COLLATZ-LIMIT takes 2 arguments but in the
-call (COLLATZ-LIMIT (EXPT 10 6)) it is given 1 argument.  The formal
-parameters list for COLLATZ-LIMIT is (N LIMIT).
-
+                             (COLLATZ-SUM (EXPT 10 6))))
+ :PASSED
 ACL2 !>>Bye.

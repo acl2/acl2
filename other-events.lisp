@@ -30967,7 +30967,7 @@
 ; drop substantially.
 
 ; We now provide theory to justify the approach outlined above, ignoring
-; details that we do not consider worthy of discussion here.  In particular we
+; details that we do not consider important to discuss here.  In particular we
 ; ignore here the straightforward extension of this theory to mutual-recursion.
 
 ; Consider a guard-verified function f0-limit that is defined as follows, where
@@ -30981,12 +30981,10 @@
 
 ; The restriction can probably be relaxed somewhat, for example to allow
 ; subtracting a number larger than 1.  But we expect this form to be convenient
-; in practice, hence sufficient to support.  (We also considered allowing the
-; variants zpf and 1-f of zp and 1-, respectively.  However, the witness from
-; fib-limit-stable is not guaranteed to be below any particular size.  If one
-; does try to use a stronger guard on limit, then guard verification of f0, as
-; defined below, will fail.)  The restriction of limit to the final parameter
-; of each recursive call is reminiscent of the test for irrelevant formals,
+; in practice, hence sufficient to support.  (We could quite possibly support
+; the variants zpf and 1-f of zp and 1-, respectively; if so we should think
+; through guard issues.)  The restriction of limit to the final parameter of
+; each recursive call is reminiscent of the test for irrelevant formals,
 ; although the present requirement is much simpler and also sufficient here.
 
 ; Now consider the following raw Lisp definition, which is based entirely on
@@ -31035,9 +31033,14 @@
 ; Now define (f0 x1 ... xk) to be the limit (if there is one) of (f0-limit x1
 ; ... xk L) for natural numbers L, defined in ACL2 in analogy to how fib is
 ; defined in terms of fib-limit in the example above.  (The guard on f0 will
-; bind limit to 0, as in that example, and a moment's thought should be
-; convincing that this guard is sufficient for guard verification when the
-; guard on f0 allows limit to be any natp; we say no more about that here.)
+; bind limit to 0 in the guard on f0-limit, as in that example, and a moment's
+; thought should be convincing that this guard is sufficient for guard
+; verification when the guard on f0 allows limit to be any natp; we say no more
+; about that here.)  Note that since we do not intend to execute f0, we do not
+; need its body to be guard-verifiable (which justifies the use of defun-nx, as
+; we do when there are stobj inputs) -- all that matters are the logical
+; definition of f0 and well-guardedness for the executable definition that we
+; install.
 
 ; By (a), every instance of the following formula is a theorem.
 
@@ -31223,64 +31226,68 @@
 ; definition into the partial-functions-table, made by its table guard,
 ; partial-functions-table-guard.
 
-  (let ((ev (cltl-def-from-name fn-limit wrld)))
-    (cond
-     ((member-eq 'state fn-limit-formals)
-      :state)
-     ((fetch-dcl-field :stobjs (butlast (cdddr ev) 1))
-      (cons :stobjs (fetch-dcl-field :stobjs (butlast (cdddr ev) 1))))
-     (t (let* ((limit (assert$ (consp fn-limit-formals)
-                               (car (last fn-limit-formals))))
-               (def
-                (case-match ev
-                  (('DEFUN !fn-limit !fn-limit-formals . &)
-                   (cdr ev))
-                  (('MUTUAL-RECURSION . defs)
-                   (let* ((def (assoc-eq fn-limit (strip-cdrs defs))))
-                     (and (equal (cadr def) fn-limit-formals)
-                          def)))
-                  (& nil))))
-          (cond
-           ((null def) :definition-not-found)
-           (t
-            (let* ((fn-limit-body (car (last ev)))
-                   (rest
-                    (case-match fn-limit-body
-                      (('IF ('ZP !limit)
-                            &
-                            ('LET ((!limit ('1- !limit)))
-                                  . rest))
-                       rest)
-                      (('COND (('ZP !limit)
-                               &)
-                              (t ('LET ((!limit ('1- !limit)))
-                                       . rest)))
-                       rest)
+  (cond
+   ((member-eq 'state fn-limit-formals)
+    :state)
+   ((collect-user-stobjs (stobjs-out fn-limit wrld))
+
+; This will lead to an error, so we don't mind calling collect-user-stobjs a
+; second time here.
+
+    (cons :stobjs (collect-user-stobjs (stobjs-out fn-limit wrld))))
+   (t (let* ((ev (cltl-def-from-name fn-limit wrld))
+             (limit (assert$ (consp fn-limit-formals)
+                             (car (last fn-limit-formals))))
+             (def
+              (case-match ev
+                (('DEFUN !fn-limit !fn-limit-formals . &)
+                 (cdr ev))
+                (('MUTUAL-RECURSION . defs)
+                 (let* ((def (assoc-eq fn-limit (strip-cdrs defs))))
+                   (and (equal (cadr def) fn-limit-formals)
+                        def)))
+                (& nil))))
+        (cond
+         ((null def) :definition-not-found)
+         (t
+          (let* ((fn-limit-body (car (last ev)))
+                 (rest
+                  (case-match fn-limit-body
+                    (('IF ('ZP !limit)
+                          &
+                          ('LET ((!limit ('1- !limit)))
+                                . rest))
+                     rest)
+                    (('COND (('ZP !limit)
+                             &)
+                            (t ('LET ((!limit ('1- !limit)))
+                                     . rest)))
+                     rest)
 
 ; We do not support other macros because we have not (yet?) convinced ourselves
 ; of sufficient similarity in their behaviors in Common Lisp and ACL2 (which
 ; seems important; see the Essay mentioned above).
 
-                      (& nil))))
-              (and rest
-                   (let* ((fn-formals (butlast fn-limit-formals 1))
-                          (body (car (last rest)))
-                          (dcls (butlast (cddr def) 1))
-                          (type-dcls (remove-var-from-type-dcls
-                                      limit
-                                      (fetch-dcl-field 'type dcls))))
-                     `(defun ,fn ,fn-formals
+                    (& nil))))
+            (and rest
+                 (let* ((fn-formals (butlast fn-limit-formals 1))
+                        (body (car (last rest)))
+                        (dcls (butlast (cddr def) 1))
+                        (type-dcls (remove-var-from-type-dcls
+                                    limit
+                                    (fetch-dcl-field 'type dcls))))
+                   `(defun ,fn ,fn-formals
 
 ; We are confident about this definition, so rather than recover the ignore and
 ; ignorable declarations, we simply declare all formals to be ignorable.
 
-                        (declare (ignorable ,@fn-formals))
-                        ,@(and type-dcls `((declare ,@type-dcls)))
-                        (flet ,flet-bindings
-                          (declare (inline ,fn-limit))
-                          (let ((,limit 0))
-                            (declare (ignorable ,limit))
-                            ,body)))))))))))))
+                      (declare (ignorable ,@fn-formals))
+                      ,@(and type-dcls `((declare ,@type-dcls)))
+                      (flet ,flet-bindings
+                        (declare (inline ,fn-limit))
+                        (let ((,limit 0))
+                          (declare (ignorable ,limit))
+                          ,body))))))))))))
 
 (defun memoize-partial-declare (fn-limit limit wrld)
 
@@ -31350,11 +31357,13 @@
                fn-limit)
           nil nil))
      ((eq def :state)
-      (mv (msg "STATE is among the formals of ~x0."
+      (mv (msg "STATE is among the formals of ~x0, which is illegal for ~
+                memoization."
                fn-limit)
           nil nil))
      ((eq (car def) :stobjs)
-      (mv (msg "The stobj~#0~[ ~&0 is~/s ~&0 are~] among the formals of ~x1."
+      (mv (msg "The stobj~#0~[ ~&0 is~/s ~&0 are~] returned by ~x1, which is ~
+                illegal for memoization."
                (cdr def)
                fn-limit)
           nil nil))
@@ -31381,10 +31390,31 @@
                             (,fn-limit
                              ,@fn-formals
                              (,fn-limit-change ,@fn-limit-formals)))))
-              (defun ,fn ,fn-formals
-                ,(memoize-partial-declare fn-limit limit wrld)
-                (,fn-limit ,@fn-formals
-                           (nfix (,fn-limit-stable ,@fn-formals)))))
+              ,(let* ((stobjs-in (stobjs-in fn-limit wrld))
+                      (stobjs (collect-user-stobjs stobjs-in)))
+                 `(defun ,fn ,fn-formals
+                    ,(memoize-partial-declare fn-limit limit wrld)
+                    ,@(and stobjs
+                           `((declare (xargs :stobjs ,@stobjs))))
+
+; We only need non-exec when there is at least one stobj among fn-formals.
+; Since calls of fn-limit-stable cannot be executed, it seems harmless to use
+; non-exec in all cases; but we keep this simpler in the non-stobj case by
+; avoiding non-exec.
+
+; A separate issue is whether to use non-exec here, or defun-nx in place of
+; defun, when there is at least one stobj among fn-formals.  Either should be
+; fine, but we use non-exec to avoid complicating the redundancy check done for
+; this event when collect-non-redundant is called by
+; partial-functions-table-guard-msg, since defun-nx is a macro that does not
+; show up when get-event (called by collect-non-redundant) is returned.
+
+                    ,(let ((body
+                            `(,fn-limit ,@fn-formals
+                                        (nfix (,fn-limit-stable ,@fn-formals)))))
+                       (if stobjs
+                           `(non-exec ,body)
+                         body)))))
             `(,fn ,fn-limit ,fn-limit-change ,fn-limit-stable ,def)))))))
 
 (defun memoize-partial-supporting-events-rec (tuples flet-bindings wrld msg
