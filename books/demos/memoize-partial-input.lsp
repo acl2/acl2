@@ -15,6 +15,8 @@
               :with-output-off
               (proof-tree prove event summary proof-builder history)))
 
+(set-compile-fns t)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Singly-recursive example
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1154,7 +1156,7 @@ is thus illegal.
 
 (mf
 #||
-ACL2 Error in MEMOIZE-PARTIAL:  
+ACL2 Error in MEMOIZE-PARTIAL:
 The stobj ST is returned by FIB-ST-OUT-LIMIT, which is illegal for
 memoization.
 See :DOC memoize-partial.
@@ -1199,6 +1201,10 @@ FIB-STATE-LIMIT.
 
 ; Since it's an open problem whether the 3n+1 algorithm terminates, we have an
 ; opportunity to show off memoize-partial.
+
+; While we're at it, we'll test (comp t), which at one point failed to preserve
+; the effect of memoize-partial, making collatz non-executable.
+(set-compile-fns nil)
 
 (defun collatz-limit (n limit)
   (declare (xargs :guard (and (natp n)
@@ -1275,11 +1281,6 @@ FIB-STATE-LIMIT.
 (defun collatz-sum (n)
   (collatz-sum-rec n 0))
 
-(comp t)
-
-(assert-event (equal (collatz-sum (expt 10 6)) ; 1,000,000
-                     131434424)) ; 131,434,224
-
 (defun collatz-limit-sum-rec (n acc limit)
   (declare (xargs :guard (and (natp n) (natp acc) (natp limit))))
   (if (zp n)
@@ -1295,7 +1296,12 @@ FIB-STATE-LIMIT.
 
   (collatz-limit-sum-rec n 0 (1- (expt 2 60))))
 
-(comp t)
+; Suppress output since (comp t) returns (value nil) in CCL and SBCL, else
+; (value t).
+(with-output :off :all (progn (comp t) (value-triple nil)))
+
+(assert-event (equal (collatz-sum (expt 10 6)) ; 1,000,000
+                     131434424)) ; 131,434,224
 
 (assert-event (equal (collatz-limit-sum (expt 10 6)) ; 1,000,000
                      (collatz-sum (expt 10 6))))
