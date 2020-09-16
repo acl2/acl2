@@ -874,6 +874,11 @@
     "Support for @(tsee defun-sk)'s option @(':constrain')
      has been added to @(tsee std::define-sk).")
 
+   (xdoc::p
+    "A macro @(tsee std::tuple) has been added,
+     to mimic the @(tsee mv) return specifier notation
+     for tuple (i.e. list) results, useful inside error triples.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Licensing Changes")
