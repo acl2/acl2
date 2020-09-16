@@ -68,7 +68,12 @@
    (xdoc::p
     "We may extend this macro with support for
      @(':hyp') and other features of return specifiers.
-     We may also extend it to support names other than @('result')."))
+     We may also extend it to support names other than @('result').")
+   (xdoc::p
+    "The macro is in the @('STD') package,
+     but we also add a synonym in the @('ACL2') package.")
+   (xdoc::@def "tuple")
+   (xdoc::@def "acl2::tuple"))
 
   (define tuple-fn ((args true-listp))
     :returns (mv vars conjunctns)
@@ -88,4 +93,7 @@
     (b* (((mv vars conjuncts) (tuple-fn args)))
       `(and (tuplep ,(len args) result)
             (b* (((list ,@vars) result))
-              (and ,@conjuncts))))))
+              (and ,@conjuncts)))))
+
+  (defmacro acl2::tuple (&rest args)
+    `(tuple ,@args)))
