@@ -6,6 +6,17 @@
 ; are a large number of registers, as this data structure holds all of
 ; the supervisor data as well.
 
+; Added by Matt K., 9/16/2020:
+; In GCL, the use of GCL_MEM_MULTIPLE can cause this to fail with a call of
+; make-array on behalf of the defstobj event below: "The storage for
+; RELOCATABLE-BLOCKS is exhausted. 23545 pages allocated."  (Specifically, this
+; has happened at UT CS when GCL_MEM_MULTIPLE was set to 0.25, where there was
+; success on a single-threaded certification without that setting.)  Since
+; available memory is an issue when using GCL_MEM_MULTIPLE as recommended, we
+; remove this book for GCL in order to avoid surprising certification failures.
+; The following line accomplishes that task:
+; cert_param: (non-gcl)
+
 (in-package "ACL2")
 
 (include-book "constants")

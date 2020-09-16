@@ -6608,7 +6608,12 @@
            ,(if (eq test 'hons-equal)
                 #+hons 'eql #-hons 'equal
                 test)
-           ,@(and size `(:size ,size))
+           ,@(and size `(:size
+
+; The GCL implementation installed at UT CS on 9/16/2020 does not allow
+; hash-tables of size 0.
+
+                         (let ((size ,size)) (if (= size 0) 1 size))))
            ,@(and rehash-size `(:rehash-size ,(float rehash-size)))
            ,@(and rehash-threshold `(:rehash-threshold ,(float rehash-threshold))))))
 
