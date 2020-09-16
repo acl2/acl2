@@ -837,6 +837,10 @@
 
   (define xdoc::evmac-topic-implementation-item-thm-doc ((name stringp))
     (xdoc::&& "@('" name "') is the homonymous thoerem symbol "
+              "described in the user documentation."))
+
+  (define xdoc::evmac-topic-implementation-item-var-doc ((name stringp))
+    (xdoc::&& "@('" name "') is the homonymous variable symbol "
               "described in the user documentation.")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
