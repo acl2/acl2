@@ -1896,7 +1896,7 @@
            (hifat-no-dups-p (put-assoc-equal key file m1-file-alist)))
   :hints (("goal" :in-theory (enable hifat-no-dups-p))))
 
-(defun hifat-file-alist-fix (hifat-file-alist)
+(defund hifat-file-alist-fix (hifat-file-alist)
   (declare (xargs :guard (and (m1-file-alist-p hifat-file-alist)
                               (hifat-no-dups-p hifat-file-alist))
                   :verify-guards nil))
@@ -1922,7 +1922,8 @@
        (cons head tail)))))
 
 (defthm m1-file-alist-p-of-hifat-file-alist-fix
-  (m1-file-alist-p (hifat-file-alist-fix hifat-file-alist)))
+  (m1-file-alist-p (hifat-file-alist-fix hifat-file-alist))
+  :hints (("goal" :in-theory (enable hifat-file-alist-fix))))
 
 (defthm
   hifat-file-alist-fix-when-hifat-no-dups-p
@@ -1930,14 +1931,14 @@
                 (m1-file-alist-p hifat-file-alist))
            (equal (hifat-file-alist-fix hifat-file-alist)
                   hifat-file-alist))
-  :hints (("goal" :in-theory (enable hifat-no-dups-p))))
+  :hints (("goal" :in-theory (enable hifat-no-dups-p hifat-file-alist-fix))))
 
 (defthm
   hifat-no-dups-p-of-hifat-file-alist-fix
   (hifat-no-dups-p (hifat-file-alist-fix hifat-file-alist))
   :hints
   (("goal"
-    :in-theory (enable hifat-no-dups-p)
+    :in-theory (enable hifat-no-dups-p hifat-file-alist-fix)
     :induct (hifat-file-alist-fix hifat-file-alist))))
 
 ;; This can't be made local.

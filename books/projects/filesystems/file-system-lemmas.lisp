@@ -1825,7 +1825,7 @@
   ;; There's no simple way to reduce the number of cases here.
   (defthm subseq-of-string-append
     (equal (subseq (string-append str1 str2) start end)
-           (cond ((and (not (stringp str2)) (not (stringp str1))) (subseq "" 0 (- end start)))
+           (cond ((and (not (stringp str2)) (not (stringp str1))) (subseq "" start end))
                  ((not (stringp str1)) (subseq str2 start end))
                  ((not (stringp str2)) (subseq str1 start end))
                  ((and (integerp start) (<= (length str1) end)
@@ -1909,30 +1909,43 @@
               (:instance (:rewrite coerce-inverse-1)
                          (x (take (+ end (- (len (coerce str1 'list)))) (coerce str2 'list))))
               (:instance (:rewrite painful-debugging-lemma-21)
-               (x (len (coerce str1 'list))) (y (len (coerce str2 'list))))
+                         (x (len (coerce str1 'list))) (y (len (coerce str2 'list))))
               (:instance (:rewrite coerce-inverse-1)
                          (x (make-character-list (take (+ (- start) (len (coerce str2 'list)))
                                                        (coerce str2 'list)))))
               (:instance (:rewrite coerce-inverse-2) (x str1))
               (:instance (:rewrite coerce-inverse-1)
-               (x (make-character-list
-                   (take (+ end (- (len (coerce str1 'list)))) (coerce str2 'list)))))))))
+                         (x (make-character-list
+                             (take (+ end (- (len (coerce str1 'list)))) (coerce str2 'list)))))))))
 
   (defthm then-subseq-empty-1
     (implies (and (stringp seq)
                   (>= start (length seq)))
              (equal (subseq seq start nil) ""))
     :hints (("goal" :in-theory (enable subseq subseq-list))))
+
   (defthm then-subseq-same-1
     (implies (stringp seq)
              (equal (subseq seq 0 nil) seq))
     :hints (("goal" :in-theory (enable subseq subseq-list))))
+
   (defthm subseq-of-length-1
     (implies (equal (length seq) end)
              (equal (subseq seq start end)
                     (subseq seq start nil)))
     :hints (("goal" :do-not-induct t
-             :in-theory (enable subseq subseq-list)))))
+             :in-theory (enable subseq subseq-list))))
+
+  (defthm subseq-of-empty-list
+    (equal (subseq "" start end)
+           (coerce (take (+ end (- start)) nil) 'string))
+    :hints (("goal" :in-theory (enable subseq subseq-list))))
+
+  (defthm then-subseq-same-2
+    (implies
+     (and (stringp seq) (equal end (length seq)))
+     (equal (subseq seq 0 end) seq))
+    :hints (("Goal" :in-theory (enable subseq subseq-list)))))
 
 (defthm when-append-same
   (iff (equal x (append x y))

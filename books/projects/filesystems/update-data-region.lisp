@@ -445,7 +445,7 @@
 (defthm
   lofat-fs-p-of-update-fati
   (implies (and (lofat-fs-p fat32-in-memory)
-                (force (< i (fat-length fat32-in-memory))))
+                (case-split (< i (fat-length fat32-in-memory))))
            (equal (lofat-fs-p (update-fati i v fat32-in-memory))
                   (fat32-entry-p v)))
   :hints

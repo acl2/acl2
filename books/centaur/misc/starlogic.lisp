@@ -195,7 +195,8 @@ through @('exceptional-casek-1') were untrue.</p>
 
 
 (defsection or*
-
+  :parents (non-case-splitting-logic)
+  :short "Non-case-splitting version of OR."
   (defun binary-or* (a b)
     (declare (xargs :guard t))
     (or a b))
@@ -342,4 +343,3 @@ through @('exceptional-casek-1') were untrue.</p>
 
 
 ||#
-

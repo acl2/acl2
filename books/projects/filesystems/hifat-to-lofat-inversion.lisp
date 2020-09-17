@@ -7545,7 +7545,7 @@
      (iff (equal (hifat-entry-count fs) 0) (atom fs))
      :hints
      (("goal"
-       :in-theory (enable hifat-entry-count)))))
+       :in-theory (enable hifat-entry-count hifat-file-alist-fix)))))
 
   (defthmd
     hifat-to-lofat-inversion-lemma-16

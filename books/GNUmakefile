@@ -596,7 +596,6 @@ SLOW_BOOKS := \
 # could be added as x86isa is below.
 
 SLOW_BOOKS += $(filter projects/x86isa/%, $(OK_CERTS))
-SLOW_BOOKS += $(filter projects/filesystems/%, $(OK_CERTS))
 
 SLOW_BOOK_TARGETS :=
 

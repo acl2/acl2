@@ -951,7 +951,7 @@
                        (fs m1-file-alist2)))
       :do-not-induct t
       :in-theory (e/d (m1-file-p m1-directory-file-p m1-file-contents-p
-                                 m1-file->contents hifat-equiv)
+                                 m1-file->contents hifat-equiv hifat-file-alist-fix)
                       ((:rewrite hifat-find-file-correctness-1)))))
     :rule-classes :congruence))
 
@@ -1258,6 +1258,9 @@
                            "LOCAL      " "SHARE      "))))
     (equal errno 0))))
 
+;; This function is not going to return a pure filename as its (mv-nth 0
+;; ...). We'll let the chips fall where they may. But we really need to be able
+;; to return nil to signal clearly that we have reached the end of the stream.
 (defund hifat-readdir (dirp dir-stream-table)
   (declare (xargs :guard (and (dir-stream-table-p dir-stream-table)
                               (natp dirp))
@@ -1270,9 +1273,9 @@
        (alist-elem
         (assoc-equal dirp dir-stream-table))
        ((unless (consp alist-elem))
-        (mv *empty-fat32-name* *ebadf* dir-stream-table))
+        (mv nil *ebadf* dir-stream-table))
        ((unless (consp (dir-stream->file-list (cdr alist-elem))))
-        (mv *empty-fat32-name* 0 dir-stream-table)))
+        (mv nil 0 dir-stream-table)))
     (mv
      (car (dir-stream->file-list (cdr alist-elem)))
      0

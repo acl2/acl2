@@ -373,7 +373,7 @@
            (hifat-equiv (cons head tail1)
                         (cons head tail2)))
   :hints
-  (("goal" :in-theory (e/d (hifat-equiv hifat-no-dups-p))
+  (("goal" :in-theory (e/d (hifat-equiv hifat-no-dups-p hifat-file-alist-fix))
     :expand (hifat-file-alist-fix (cons head tail1))))
   :rule-classes :congruence)
 
@@ -404,3 +404,59 @@
                      (fs2 (hifat-file-alist-fix fs1))
                      (fs1 (hifat-file-alist-fix fs2))))))
   :rule-classes :congruence)
+
+(defthm
+  put-assoc-under-hifat-equiv-1
+  (implies (and (hifat-equiv (m1-file->contents file1)
+                             (m1-file->contents file2))
+                (syntaxp (not (term-order file1 file2)))
+                (m1-directory-file-p (m1-file-fix file1))
+                (m1-directory-file-p (m1-file-fix file2)))
+           (hifat-equiv (put-assoc-equal name file1 fs)
+                        (put-assoc-equal name file2 fs)))
+  :hints
+  (("goal"
+    :induct (mv (put-assoc-equal name file1 fs)
+                (put-assoc-equal name file2 fs))
+    :in-theory
+    (e/d (hifat-no-dups-p hifat-equiv hifat-file-alist-fix)
+         (hifat-subsetp-reflexive-lemma-4
+          (:rewrite hifat-file-alist-fix-when-hifat-no-dups-p))))
+   ("subgoal *1/2"
+    :use
+    (:instance
+     hifat-subsetp-reflexive-lemma-4
+     (x
+      (list
+       (cons (fat32-filename-fix (car (car fs)))
+             (m1-file (m1-file->dir-ent file1)
+                      (hifat-file-alist-fix (m1-file->contents file1))))))
+     (y (hifat-file-alist-fix (cdr fs)))))))
+
+(defthm
+  put-assoc-under-hifat-equiv-3
+  (implies (and (equal (m1-file->contents file1)
+                       (m1-file->contents file2))
+                (syntaxp (not (term-order file1 file2)))
+                (m1-regular-file-p (m1-file-fix file1))
+                (m1-regular-file-p (m1-file-fix file2)))
+           (hifat-equiv (put-assoc-equal name file1 fs)
+                        (put-assoc-equal name file2 fs)))
+  :hints
+  (("goal"
+    :induct (mv (put-assoc-equal name file1 fs)
+                (put-assoc-equal name file2 fs))
+    :in-theory
+    (e/d (hifat-no-dups-p hifat-equiv hifat-file-alist-fix)
+         (hifat-subsetp-reflexive-lemma-4
+          (:rewrite hifat-file-alist-fix-when-hifat-no-dups-p))))
+   ("subgoal *1/2"
+    :use
+    (:instance
+     hifat-subsetp-reflexive-lemma-4
+     (x
+      (list
+       (cons (fat32-filename-fix (car (car fs)))
+             (m1-file (m1-file->dir-ent file1)
+                      (hifat-file-alist-fix (m1-file->contents file1))))))
+     (y (hifat-file-alist-fix (cdr fs)))))))

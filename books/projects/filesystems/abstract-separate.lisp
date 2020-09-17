@@ -762,7 +762,7 @@
 (defthm
   abs-addrs-of-put-assoc-1
   (implies
-   (and (abs-directory-file-p val)
+   (and (abs-file-p val)
         (abs-file-alist-p abs-file-alist)
         (abs-no-dups-p abs-file-alist)
         (fat32-filename-p name))
@@ -771,7 +771,7 @@
                       (abs-addrs (remove-assoc-equal name abs-file-alist)))))
   :hints
   (("goal"
-    :in-theory (e/d (abs-addrs)
+    :in-theory (e/d (abs-addrs abs-file-p-alt)
                     ((:rewrite commutativity-2-of-append-under-set-equiv)))
     :induct (mv (remove-assoc-equal name abs-file-alist)
                 (put-assoc-equal name val abs-file-alist)))
@@ -791,21 +791,23 @@
                 (y (abs-addrs (abs-file->contents val)))
                 (x '(0)))))))
 
+;; Note, this is not subsumed by abs-addrs-of-put-assoc-1 because it is hinged
+;; on equal rather than set-equiv.
 (defthm
   abs-addrs-of-put-assoc-2
-  (implies
-   (and (m1-regular-file-p val)
-        (abs-file-alist-p abs-file-alist)
-        (abs-no-dups-p abs-file-alist)
-        (fat32-filename-p name))
-   (equal (abs-addrs (put-assoc-equal name val abs-file-alist))
-          (abs-addrs (remove-assoc-equal name abs-file-alist))))
+  (implies (and (abs-complete (abs-file->contents val))
+                (abs-file-alist-p abs-file-alist)
+                (abs-no-dups-p abs-file-alist)
+                (fat32-filename-p name))
+           (equal (abs-addrs (put-assoc-equal name val abs-file-alist))
+                  (abs-addrs (remove-assoc-equal name abs-file-alist))))
   :hints
   (("goal"
     :in-theory (e/d (abs-addrs)
                     ((:rewrite commutativity-2-of-append-under-set-equiv)))
     :induct (mv (remove-assoc-equal name abs-file-alist)
-                (put-assoc-equal name val abs-file-alist)))))
+                (put-assoc-equal name val abs-file-alist))
+    :do-not-induct t)))
 
 (defthmd
   no-duplicatesp-of-abs-addrs-of-put-assoc-lemma-1
@@ -817,42 +819,33 @@
            :expand (abs-file-alist-p abs-file-alist)))
   :rule-classes :type-prescription)
 
-;; Revisit this; it takes three subinductions.
-(defthm
-  no-duplicatesp-of-abs-addrs-of-put-assoc-1
-  (implies
-   (and (abs-directory-file-p val)
-        (abs-no-dups-p abs-file-alist)
-        (abs-file-alist-p abs-file-alist)
-        (fat32-filename-p name))
-   (equal
-    (no-duplicatesp-equal
-     (abs-addrs (put-assoc-equal name val abs-file-alist)))
-    (and
-     (no-duplicatesp-equal
-      (abs-addrs (remove-assoc-equal name abs-file-alist)))
-     (no-duplicatesp-equal (abs-addrs (abs-file->contents val)))
-     (not
-      (intersectp-equal (abs-addrs (remove-assoc-equal name abs-file-alist))
-                        (abs-addrs (abs-file->contents val)))))))
-  :hints (("goal" :in-theory (e/d (abs-addrs intersectp-equal
-                                             no-duplicatesp-of-abs-addrs-of-put-assoc-lemma-1)))))
+(encapsulate
+  ()
 
-(defthm
-  no-duplicatesp-of-abs-addrs-of-put-assoc-2
-  (implies (and (m1-regular-file-p val)
-                (abs-no-dups-p abs-file-alist)
-                (abs-file-alist-p abs-file-alist)
-                (fat32-filename-p name))
-           (equal (no-duplicatesp-equal
-                   (abs-addrs (put-assoc-equal name val abs-file-alist)))
-                  (no-duplicatesp-equal
-                   (abs-addrs (remove-assoc-equal name abs-file-alist)))))
-  :hints
-  (("goal"
-    :in-theory
-    (e/d (abs-addrs intersectp-equal
-                    no-duplicatesp-of-abs-addrs-of-put-assoc-lemma-1)))))
+  (local (include-book "std/lists/intersectp" :dir :system))
+
+  (defthm
+    no-duplicatesp-of-abs-addrs-of-put-assoc-1
+    (implies
+     (and (abs-file-p val)
+          (abs-no-dups-p abs-file-alist)
+          (abs-file-alist-p abs-file-alist)
+          (fat32-filename-p name))
+     (equal
+      (no-duplicatesp-equal
+       (abs-addrs (put-assoc-equal name val abs-file-alist)))
+      (and
+       (no-duplicatesp-equal
+        (abs-addrs (remove-assoc-equal name abs-file-alist)))
+       (no-duplicatesp-equal (abs-addrs (abs-file->contents val)))
+       (not
+        (intersectp-equal (abs-addrs (remove-assoc-equal name abs-file-alist))
+                          (abs-addrs (abs-file->contents val)))))))
+    :hints
+    (("goal"
+      :in-theory
+      (e/d (abs-addrs intersectp-equal abs-file-p-alt
+                      no-duplicatesp-of-abs-addrs-of-put-assoc-lemma-1))))))
 
 (defthm
   no-duplicatesp-of-abs-addrs-of-remove-assoc-lemma-1
