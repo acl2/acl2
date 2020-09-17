@@ -40,6 +40,8 @@ Summary
 Form:  ( DEFMACRO MF ...)
 Rules: NIL
  MF
+ACL2 !>>(SET-COMPILE-FNS T)
+ T
 ACL2 !>>(DEFUN FIB-LIMIT (N LIMIT)
                (DECLARE (TYPE (INTEGER 0 *) LIMIT)
                         (TYPE INTEGER N))
@@ -1309,7 +1311,7 @@ ACL2 !>>(ASSERT-EVENT
                     T))
  :PASSED
 ACL2 !>>(U)
- V        22:x(MUTUAL-RECURSION
+ V        23:x(MUTUAL-RECURSION
                    (DEFUN XX-WORSE-THAN-BUILTIN-CLOCKED
                           (TERM1 TERM2 CLK)
                           ...)
@@ -1368,7 +1370,7 @@ Form:  ( MAKE-EVENT (QUOTE ...) ...)
 Rules: NIL
  T
 ACL2 !>>(U)
- V        22:x(MUTUAL-RECURSION
+ V        23:x(MUTUAL-RECURSION
                    (DEFUN XX-WORSE-THAN-BUILTIN-CLOCKED
                           (TERM1 TERM2 CLK)
                           ...)
@@ -2857,6 +2859,8 @@ Summary
 Form:  ( MAKE-EVENT (QUOTE ...) ...)
 Rules: NIL
  T
+ACL2 !>>(SET-COMPILE-FNS NIL)
+ NIL
 ACL2 !>>(DEFUN
          COLLATZ-LIMIT (N LIMIT)
          (DECLARE (XARGS :GUARD (AND (NATP N) (NATP LIMIT))
@@ -3046,11 +3050,6 @@ Summary
 Form:  ( DEFUN COLLATZ-SUM ...)
 Rules: ((:TYPE-PRESCRIPTION COLLATZ-SUM-REC))
  COLLATZ-SUM
-ACL2 !>>(COMP T)
- NIL
-ACL2 !>>(ASSERT-EVENT (EQUAL (COLLATZ-SUM (EXPT 10 6))
-                             131434424))
- :PASSED
 ACL2 !>>(DEFUN
              COLLATZ-LIMIT-SUM-REC (N ACC LIMIT)
              (DECLARE (XARGS :GUARD (AND (NATP N) (NATP ACC) (NATP LIMIT))))
@@ -3074,8 +3073,12 @@ Summary
 Form:  ( DEFUN COLLATZ-LIMIT-SUM ...)
 Rules: ((:TYPE-PRESCRIPTION COLLATZ-LIMIT-SUM-REC))
  COLLATZ-LIMIT-SUM
-ACL2 !>>(COMP T)
+ACL2 !>>(WITH-OUTPUT :OFF
+                     :ALL (PROGN (COMP T) (VALUE-TRIPLE NIL)))
  NIL
+ACL2 !>>(ASSERT-EVENT (EQUAL (COLLATZ-SUM (EXPT 10 6))
+                             131434424))
+ :PASSED
 ACL2 !>>(ASSERT-EVENT (EQUAL (COLLATZ-LIMIT-SUM (EXPT 10 6))
                              (COLLATZ-SUM (EXPT 10 6))))
  :PASSED
