@@ -1458,12 +1458,6 @@
   :hints (("goal" :in-theory (enable hifat-open)))
   :rule-classes :linear)
 
-(defthm hifat-tar-name-list-alist-correctness-lemma-7
-  (equal (subseq "" start end)
-         (implode (take (+ end (- start)) nil)))
-  :hints (("goal" :in-theory (e/d (subseq subseq-list repeat)
-                                  (take-of-too-many take-when-atom)))))
-
 (defthm
   hifat-tar-name-list-alist-correctness-lemma-2
   (and (< 0
@@ -1488,26 +1482,7 @@
   :rule-classes :type-prescription)
 
 (defthm
-  hifat-tar-name-list-alist-correctness-lemma-19
-  (implies
-   (consp
-    (assoc-equal path2
-                 (hifat-tar-name-list-alist fs path1 name-list entry-count)))
-   (natp
-    (cdr (assoc-equal
-          path2
-          (hifat-tar-name-list-alist fs path1 name-list entry-count)))))
-  :hints (("goal" :in-theory (enable hifat-tar-name-list-alist alist-shift)))
-  :rule-classes :type-prescription)
-
-(defthm hifat-tar-name-list-alist-correctness-lemma-12
-  (implies
-   (stringp seq)
-   (equal (subseq seq 0 (len (explode seq))) seq))
-  :hints (("Goal" :in-theory (enable subseq subseq-list))))
-
-(defthm
-  hifat-tar-name-list-alist-correctness-lemma-21
+  hifat-tar-name-list-alist-correctness-lemma-7
   (equal (mv-nth '0
                  (hifat-tar-name-list-string fs (cons (car name-list1) 'nil)
                                              name-list2 fd-table file-table
