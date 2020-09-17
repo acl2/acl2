@@ -37,7 +37,7 @@
   :short "Boolean connectives that avoid case splits."
   :long "<p>Perhaps the most common reason that ACL2 proofs take a long time is
 that they split into too many cases unnecessarily.  The alternative Boolean
-operators @('iff*'), @('and*'), @('or*'), and @('xor*') can help to
+operators @('iff*'), @('and*'), @('or*'), @('xor*'), and @('if*') can help to
 avoid such case splits.</p>
 
 <p>A small and abstract example: Suppose foo is a function that has the following shape:</p>
