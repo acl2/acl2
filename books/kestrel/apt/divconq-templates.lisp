@@ -30,7 +30,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Generate (an abstract form of) the function IOREL
+; Generate (an abstract form of) the lambda expression for IOREL
 ; described in the user documentation.
 
 (defmacro gen-iorel (&key name arity)

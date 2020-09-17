@@ -344,6 +344,7 @@
                          translate-hints
                          translate-term-lst
                          try-event
+                         tuple
                          ubody
                          uguard
                          unnormalized-body
