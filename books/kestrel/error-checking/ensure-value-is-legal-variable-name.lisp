@@ -17,5 +17,5 @@
 (def-error-checker ensure-value-is-legal-variable-name ((x "Value to check."))
   :short "Cause an error if a value is not a legal variable name."
   :body (((legal-variablep x)
-          "~@0 must be a legal name for a variable, but it is not."
-          description)))
+          "~@0 must be a legal name for a variable, but it is ~x1 instead."
+          description x)))
