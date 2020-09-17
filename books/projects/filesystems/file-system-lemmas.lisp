@@ -1825,7 +1825,7 @@
   ;; There's no simple way to reduce the number of cases here.
   (defthm subseq-of-string-append
     (equal (subseq (string-append str1 str2) start end)
-           (cond ((and (not (stringp str2)) (not (stringp str1))) (subseq "" 0 (- end start)))
+           (cond ((and (not (stringp str2)) (not (stringp str1))) (subseq "" start end))
                  ((not (stringp str1)) (subseq str2 start end))
                  ((not (stringp str2)) (subseq str1 start end))
                  ((and (integerp start) (<= (length str1) end)
