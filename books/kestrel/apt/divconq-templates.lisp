@@ -37,29 +37,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Generate (an abstract form of) the lambda expression for IOREL
-; described in the user documentation.
-
-(defmacro gen-iorel (&key name arity)
-  `(defstub ,name ,(repeat arity '*) => *))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ; Generate the function OLD described in the user documentation.
 
-(defmacro gen-old (&key name ?f vars iorel)
-  `(defun-sk2 ,name ()
-     (forall ,vars (,iorel ,@vars (,?f ,@vars)))))
-
-; extension:
-(defmacro gen-old-ext (&key (name 'old)
-                            (?f '?f)
-                            (iorel 'iorel)
-                            (x 'x)
-                            x1...
-                            ...xn
-                            a1...
-                            ...am)
+(defmacro gen-old (&key (name 'old)
+                        (?f '?f)
+                        (iorel 'iorel)
+                        (x 'x)
+                        x1...
+                        ...xn
+                        a1...
+                        ...am)
   (let ((x-x1...xn (append x1... (list x) ...xn))
         (x-a1...am (append a1... (list x) ...am)))
     `(defun-sk2 ,name ()
@@ -70,28 +57,14 @@
 
 ; Generate the function FOLD[?F][?G] described in the user documentation.
 
-(defmacro gen-fold (&key name ?g ?h vars1 var vars2 hints guard-hints)
-  (let ((vars (append vars1 (list var) vars2)))
-    `(progn
-       (defun2 ,name ,vars
-         (declare (xargs :measure (acl2-count ,var)
-                    ,@(and hints (list :hints hints))))
-         (cond ((atom ,var) (,?g ,@vars))
-               (t (,?h ,@vars1
-                       (car ,var)
-                       ,@vars2
-                       (,name ,@vars1 (cdr ,var) ,@vars2)))))
-       (verify-guards ,name ,@(and guard-hints (list :hints guard-hints))))))
-
-; extension:
-(defmacro gen-fold-ext (&key (name 'fold[?g][?h])
-                             (?g '?g)
-                             (?h '?h)
-                             (x 'x)
-                             z1...
-                             ...zm
-                             hints
-                             guard-hints)
+(defmacro gen-fold (&key (name 'fold[?g][?h])
+                         (?g '?g)
+                         (?h '?h)
+                         (x 'x)
+                         z1...
+                         ...zm
+                         hints
+                         guard-hints)
   (let ((x-z1...zm (append z1... (list x) ...zm)))
     `(defun2 ,name ,x-z1...zm
        (declare (xargs
@@ -110,25 +83,15 @@
 
 ; Generate the function SPEC-ATOM[?G] described in the user documentation.
 
-(defmacro gen-spec-atom (&key name ?g vars1 var vars2 iorel guard-hints)
-  (let ((vars (append vars1 (list var) vars2)))
-    `(progn
-       (defun-sk2 ,name  ()
-         (forall ,vars
-                 (impliez (atom ,var)
-                          (,iorel ,@vars (,?g ,@vars)))))
-       (verify-guards ,name ,@(and guard-hints (list :hints guard-hints))))))
-
-; extension:
-(defmacro gen-spec-atom-ext (&key (name 'spec-atom[?g])
-                                  (?g '?g)
-                                  (x 'x)
-                                  x1...
-                                  ...xn
-                                  a1...
-                                  ...am
-                                  (iorel 'iorel)
-                                  guard-hints)
+(defmacro gen-spec-atom (&key (name 'spec-atom[?g])
+                              (?g '?g)
+                              (x 'x)
+                              x1...
+                              ...xn
+                              a1...
+                              ...am
+                              (iorel 'iorel)
+                              guard-hints)
   (let ((x-x1...xn (append x1... (list x) ...xn))
         (x-a1...am (append a1... (list x) ...am)))
     `(defun-sk2 ,name  ()
@@ -143,28 +106,16 @@
 
 ; Generate the function SPEC-CONS[?H] described in the user documentation.
 
-(defmacro gen-spec-cons (&key name ?h vars1 var vars2 cdrout iorel guard-hints)
-  (let ((vars (append vars1 (list var) vars2)))
-    `(progn
-       (defun-sk2 ,name ()
-         (forall (,@vars ,cdrout)
-                 (impliez (and (consp ,var)
-                               (,iorel ,@vars1 (cdr ,var) ,@vars2 ,cdrout))
-                          (iorel ,@vars
-                                 (,?h ,@vars1 (car ,var) ,@vars2 ,cdrout)))))
-       (verify-guards ,name ,@(and guard-hints (list :hints guard-hints))))))
-
-; extension:
-(defmacro gen-spec-cons-ext (&key (name 'spec-cons[?h])
-                                  (?h '?h)
-                                  (x 'x)
-                                  (y 'y)
-                                  x1...
-                                  ...xn
-                                  a1...
-                                  ...am
-                                  (iorel 'iorel)
-                                  guard-hints)
+(defmacro gen-spec-cons (&key (name 'spec-cons[?h])
+                              (?h '?h)
+                              (x 'x)
+                              (y 'y)
+                              x1...
+                              ...xn
+                              a1...
+                              ...am
+                              (iorel 'iorel)
+                              guard-hints)
   (let ((x-x1...xn (append x1... (list x) ...xn)))
     `(defun-sk2 ,name ()
        (declare (xargs :guard t
@@ -181,22 +132,13 @@
 ; Generate the function EQUAL[?F][FOLD[?G][?H]]
 ; described in the user documentation.
 
-(defmacro gen-equal-fold (&key name ?f fold vars guard-hints)
-  `(progn
-     (defun-sk2 ,name ()
-       (forall ,vars
-               (equal (,?f ,@vars)
-                      (,fold ,@vars))))
-     (verify-guards ,name ,@(and guard-hints (list :hints guard-hints)))))
-
-; extension:
-(defmacro gen-equal-fold-ext (&key (name 'equal[?f][fold[?g][?h]])
-                                   (?f '?f)
-                                   (fold 'fold[?g][?h])
-                                   (x 'x)
-                                   z1...
-                                   ...zm
-                                   guard-hints)
+(defmacro gen-equal-fold (&key (name 'equal[?f][fold[?g][?h]])
+                               (?f '?f)
+                               (fold 'fold[?g][?h])
+                               (x 'x)
+                               z1...
+                               ...zm
+                               guard-hints)
   (let ((x-z1...zm (append z1... (list x) ...zm)))
     `(defun-sk2 ,name ()
        (declare (xargs :guard t
@@ -261,104 +203,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Generate generic inputs of the transformation,
-; for different arities and different positions of the list input.
-; The name GEN-INPUTS-n-m means arity n and position m (0-based).
-
-(defmacro gen-inputs-1-0 (&key (old 'old)
-                               (iorel 'iorel)
-                               (?f '?f)
-                               (vars '(list)))
-  `(encapsulate ()
-     (gen-iorel :name ,iorel :arity 2)
-     (gen-funvar :name ,?f :arity 1)
-     (gen-old :name ,old :?f ,?f :vars ,vars :iorel ,iorel)))
-
-(defmacro gen-inputs-2-0 (&key (old 'old)
-                               (iorel 'iorel)
-                               (?f '?f)
-                               (vars '(list x)))
-  `(encapsulate ()
-     (gen-iorel :name ,iorel :arity 3)
-     (gen-funvar :name ,?f :arity 2)
-     (gen-old :name ,old :?f ?f :vars ,vars :iorel ,iorel)))
-
-(defmacro gen-inputs-2-1 (&key (old 'old)
-                               (iorel 'iorel)
-                               (?f '?f)
-                               (vars '(x list)))
-  `(encapsulate ()
-     (gen-iorel :name ,iorel :arity 3)
-     (gen-funvar :name ,?f :arity 2)
-     (gen-old :name ,old :?f ?f :vars ,vars :iorel ,iorel)))
-
-(defmacro gen-inputs-3-0 (&key (old 'old)
-                               (iorel 'iorel)
-                               (?f '?f)
-                               (vars '(list x y)))
-  `(encapsulate ()
-     (gen-iorel :name ,iorel :arity 4)
-     (gen-funvar :name ,?f :arity 3)
-     (gen-old :name ,old :?f ?f :vars ,vars :iorel ,iorel)))
-
-(defmacro gen-inputs-3-1 (&key (old 'old)
-                               (iorel 'iorel)
-                               (?f '?f)
-                               (vars '(x list y)))
-  `(encapsulate ()
-     (gen-iorel :name ,iorel :arity 4)
-     (gen-funvar :name ,?f :arity 3)
-     (gen-old :name ,old :?f ?f :vars ,vars :iorel ,iorel)))
-
-(defmacro gen-inputs-3-2 (&key (old 'old)
-                               (iorel 'iorel)
-                               (?f '?f)
-                               (vars '(x y list)))
-  `(encapsulate ()
-     (gen-iorel :name ,iorel :arity 4)
-     (gen-funvar :name ,?f :arity 3)
-     (gen-old :name ,old :?f ?f :vars ,vars :iorel ,iorel)))
-
-(defmacro gen-inputs-4-0 (&key (old 'old)
-                               (iorel 'iorel)
-                               (?f '?f)
-                               (vars '(list x y z)))
-  `(encapsulate ()
-     (gen-iorel :name ,iorel :arity 5)
-     (gen-funvar :name ,?f :arity 4)
-     (gen-old :name ,old :?f ?f :vars ,vars :iorel ,iorel)))
-
-(defmacro gen-inputs-4-1 (&key (old 'old)
-                               (iorel 'iorel)
-                               (?f '?f)
-                               (vars '(x list y z)))
-  `(encapsulate ()
-     (gen-iorel :name ,iorel :arity 5)
-     (gen-funvar :name ,?f :arity 4)
-     (gen-old :name ,old :?f ?f :vars ,vars :iorel ,iorel)))
-
-(defmacro gen-inputs-4-2 (&key (old 'old)
-                               (iorel 'iorel)
-                               (?f '?f)
-                               (vars '(x y list z)))
-  `(encapsulate ()
-     (gen-iorel :name ,iorel :arity 5)
-     (gen-funvar :name ,?f :arity 4)
-     (gen-old :name ,old :?f ?f :vars ,vars :iorel ,iorel)))
-
-(defmacro gen-inputs-4-3 (&key (old 'old)
-                               (iorel 'iorel)
-                               (?f '?f)
-                               (vars '(x y z list)))
-  `(encapsulate ()
-     (gen-iorel :name ,iorel :arity 5)
-     (gen-funvar :name ,?f :arity 4)
-     (gen-old :name ,old :?f ?f :vars ,vars :iorel ,iorel)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; extension:
-
-; Generate generic inputs of the transformation,
 ; for different values of n and m and
 ; different positions npos and mpos within 1,...,n and 1,...m
 ; (both npos and mpos are 0-based).
@@ -388,7 +232,7 @@
        (gen-funvar :name ?f :arity ,(1+ m))
        (gen-stub :name iorel :arity ,(+ 2 n))
        ,@(gen-a1...am-stubs m n)
-       (gen-old-ext :x1... ,(take npos x1...xn)
-                    :...xn ,(nthcdr npos x1...xn)
-                    :a1... ,(take mpos a1...am)
-                    :...am ,(nthcdr mpos a1...am)))))
+       (gen-old :x1... ,(take npos x1...xn)
+                :...xn ,(nthcdr npos x1...xn)
+                :a1... ,(take mpos a1...am)
+                :...am ,(nthcdr mpos a1...am)))))
