@@ -24119,7 +24119,8 @@
                                 result-and-hyps-vars
                                 unify-subst)))
                 (rewrite-quoted-constant-form-2p
-                 (and (eq (access rewrite-rule lemma :subclass)
+                 (and (eq caller 'show-rewrites)
+                      (eq (access rewrite-rule lemma :subclass)
                           'rewrite-quoted-constant)
                       (eql (car (access rewrite-rule lemma :heuristic-info))
                            2))))
