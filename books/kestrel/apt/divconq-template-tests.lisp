@@ -11,7 +11,7 @@
 (in-package "ACL2")
 
 (include-book "divconq")
-(include-book "divconq-templates")
+(include-book "divconq-template-generators")
 
 (include-book "std/testing/must-succeed-star" :dir :system)
 

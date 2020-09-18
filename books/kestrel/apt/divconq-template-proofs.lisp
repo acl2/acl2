@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "divconq-templates")
+(include-book "divconq-template-generators")
 
 (include-book "kestrel/event-macros/proof-preparation" :dir :system)
 (include-book "std/testing/must-succeed-star" :dir :system)
