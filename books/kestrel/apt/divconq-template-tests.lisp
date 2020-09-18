@@ -17,7 +17,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Template-based tests for n = m = 0.
+; Template tests for n = m = 0.
 
 (must-succeed*
  (gen-inputs 0 0 0 0)
@@ -26,7 +26,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Template-based tests for n = m = 1.
+; Template tests for n = m = 1.
 
 (must-succeed*
  (gen-inputs 1 0 1 0)
@@ -50,7 +50,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Template-based tests for n = 2 and m = 1.
+; Template tests for n = 2 and m = 1.
 
 (must-succeed*
  (gen-inputs 2 0 1 0)
@@ -84,7 +84,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Template-based tests for n = 1 and m = 2.
+; Template tests for n = 1 and m = 2.
 
 (must-succeed*
  (gen-inputs 1 0 2 0)
@@ -118,7 +118,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Template-based tests for n = m = 2.
+; Template tests for n = m = 2.
 
 (must-succeed*
  (gen-inputs 2 0 2 0)
