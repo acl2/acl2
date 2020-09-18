@@ -30,6 +30,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Generate a function stub.
+
+(defmacro gen-stub (&key name arity)
+  `(defstub ,name ,(repeat arity '*) => *))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; Generate (an abstract form of) the lambda expression for IOREL
 ; described in the user documentation.
 
@@ -43,6 +50,21 @@
 (defmacro gen-old (&key name ?f vars iorel)
   `(defun-sk2 ,name ()
      (forall ,vars (,iorel ,@vars (,?f ,@vars)))))
+
+; extension:
+(defmacro gen-old-ext (&key (name 'old)
+                            (?f '?f)
+                            (iorel 'iorel)
+                            (x 'x)
+                            x1...
+                            ...xn
+                            a1...
+                            ...am)
+  (let ((x-x1...xn (append x1... (list x) ...xn))
+        (x-a1...am (append a1... (list x) ...am)))
+    `(defun-sk2 ,name ()
+       (declare (xargs :guard t :verify-guards t))
+       (forall ,x-x1...xn (,iorel ,@x-x1...xn (,?f ,@x-a1...am))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -61,6 +83,29 @@
                        (,name ,@vars1 (cdr ,var) ,@vars2)))))
        (verify-guards ,name ,@(and guard-hints (list :hints guard-hints))))))
 
+; extension:
+(defmacro gen-fold-ext (&key (name 'fold[?g][?h])
+                             (?g '?g)
+                             (?h '?h)
+                             (x 'x)
+                             z1...
+                             ...zm
+                             hints
+                             guard-hints)
+  (let ((x-z1...zm (append z1... (list x) ...zm)))
+    `(defun2 ,name ,x-z1...zm
+       (declare (xargs
+                 :measure (acl2-count ,x)
+                 ,@(and hints (list :hints hints))
+                 :guard t
+                 :verify-guards t
+                 :guard-hints ,guard-hints))
+       (cond ((atom ,x) (,?g ,@x-z1...zm))
+             (t (,?h ,@z1...
+                     (car ,x)
+                     ,@...zm
+                     (,name ,@z1... (cdr ,x) ,@...zm)))))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Generate the function SPEC-ATOM[?G] described in the user documentation.
@@ -73,6 +118,26 @@
                  (impliez (atom ,var)
                           (,iorel ,@vars (,?g ,@vars)))))
        (verify-guards ,name ,@(and guard-hints (list :hints guard-hints))))))
+
+; extension:
+(defmacro gen-spec-atom-ext (&key (name 'spec-atom[?g])
+                                  (?g '?g)
+                                  (x 'x)
+                                  x1...
+                                  ...xn
+                                  a1...
+                                  ...am
+                                  (iorel 'iorel)
+                                  guard-hints)
+  (let ((x-x1...xn (append x1... (list x) ...xn))
+        (x-a1...am (append a1... (list x) ...am)))
+    `(defun-sk2 ,name  ()
+       (declare (xargs :guard t
+                       :verify-guards t
+                       :guard-hints ,guard-hints))
+       (forall ,x-x1...xn
+               (impliez (atom ,x)
+                        (,iorel ,@x-x1...xn (,?g ,@x-a1...am)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -89,6 +154,28 @@
                                  (,?h ,@vars1 (car ,var) ,@vars2 ,cdrout)))))
        (verify-guards ,name ,@(and guard-hints (list :hints guard-hints))))))
 
+; extension:
+(defmacro gen-spec-cons-ext (&key (name 'spec-cons[?h])
+                                  (?h '?h)
+                                  (x 'x)
+                                  (y 'y)
+                                  x1...
+                                  ...xn
+                                  a1...
+                                  ...am
+                                  (iorel 'iorel)
+                                  guard-hints)
+  (let ((x-x1...xn (append x1... (list x) ...xn)))
+    `(defun-sk2 ,name ()
+       (declare (xargs :guard t
+                       :verify-guards t
+                       :guard-hints ,guard-hints))
+       (forall (,@x-x1...xn ,y)
+               (impliez (and (consp ,x)
+                             (,iorel ,@x1... (cdr ,x) ,@...xn ,y))
+                        (iorel ,@x-x1...xn
+                               (,?h ,@a1... (car ,x) ,@...am ,y)))))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Generate the function EQUAL[?F][FOLD[?G][?H]]
@@ -102,27 +189,50 @@
                       (,fold ,@vars))))
      (verify-guards ,name ,@(and guard-hints (list :hints guard-hints)))))
 
+; extension:
+(defmacro gen-equal-fold-ext (&key (name 'equal[?f][fold[?g][?h])
+                                   (?f '?f)
+                                   (fold 'fold[?g][?h])
+                                   (x 'x)
+                                   z1...
+                                   ...zm
+                                   guard-hints)
+  (let ((x-z1...zm (append z1... (list x) ...zm)))
+    `(defun-sk2 ,name ()
+       (declare (xargs :guard t
+                       :verify-guards t
+                       :guard-hints ,guard-hints))
+       (forall ,x-z1...zm
+               (equal (,?f ,@x-z1...zm)
+                      (,fold ,@x-z1...zm))))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Generate the function NEW described in the user documentation.
 
-(defmacro gen-new (&key name equal-fold spec-atom spec-cons guard-hints)
-  `(progn
-     (defun2 ,name ()
-       (and (,equal-fold)
-            (,spec-atom)
-            (,spec-cons)))
-     (verify-guards ,name ,@(and guard-hints (list :hints guard-hints)))))
+(defmacro gen-new (&key (name 'new)
+                        (equal-fold 'equal[?f][fold[?g][?h]])
+                        (spec-atom 'spec-atom[?g])
+                        (spec-cons 'spec-cons[?h])
+                        guard-hints)
+  `(defun2 ,name ()
+     (declare (xargs :guard t :verify-guards t :guard-hints ,guard-hints))
+     (and (,equal-fold)
+          (,spec-atom)
+          (,spec-cons))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Generate the theorem OLD-IF-NEW described in the user documentation.
 
-(defmacro gen-old-if-new (&key name old new hints)
+(defmacro gen-old-if-new (&key (name 'old-if-new)
+                               (old 'old)
+                               (new 'new)
+                               hints)
   `(defthm ,name
      (implies (,new)
               (,old))
-     ,@(and hints (list :hints hints))))
+     :hints ,hints))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -219,3 +329,42 @@
      (gen-iorel :name ,iorel :arity 5)
      (gen-funvar :name ,?f :arity 4)
      (gen-old :name ,old :?f ?f :vars ,vars :iorel ,iorel)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; extension:
+
+; Generate generic inputs of the transformation,
+; for different values of n and m and
+; different positions npos and mpos within 1,...,n and 1,...m
+; (both npos and mpos are 0-based).
+
+; generate list of variables X1, ..., Xn:
+(defun gen-x1...xn (n)
+  (cond ((zp n) nil)
+        (t (append (gen-x1...xn (1- n)) (list (packn (list 'x n)))))))
+
+; generate list of terms (A1 X1 ... Xn), ..., (Am X1 ... Xn):
+(defun gen-a1...am (m x1...xn)
+  (cond ((zp m) nil)
+        (t (append (gen-a1...am (1- m) x1...xn)
+                   (list `(,(packn (list 'a m)) ,@x1...xn))))))
+
+; generate stubs for A1, ..., Am:
+(defun gen-a1...am-stubs (m n)
+  (cond ((zp m) nil)
+        (t (append (gen-a1...am-stubs (1- m) n)
+                   (list `(gen-stub :name ,(packn (list 'a m)) :arity ,n))))))
+
+; generate generic inputs:
+(defmacro gen-inputs (n npos m mpos)
+  (let* ((x1...xn (gen-x1...xn n))
+         (a1...am (gen-a1...am m x1...xn)))
+    `(encapsulate ()
+       (gen-funvar :name ?f :arity ,(1+ m))
+       (gen-stub :name iorel :arity ,(+ 2 n))
+       ,@(gen-a1...am-stubs m n)
+       (gen-old-ext :x1... ,(take npos x1...xn)
+                    :...xn ,(nthcdr npos x1...xn)
+                    :a1... ,(take mpos a1...am)
+                    :...am ,(nthcdr mpos a1...am)))))
