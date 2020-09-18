@@ -35,10 +35,8 @@
                         (:rewrite
                          m1-file-p-of-cdar-when-m1-file-alist-p)
                         (:rewrite natp-of-car-when-nat-listp)
-                        (:rewrite abs-find-file-correctness-1-lemma-3)
                         (:rewrite
                          partial-collapse-correctness-lemma-24)
-                        (:rewrite abs-find-file-correctness-lemma-29)
                         (:rewrite collapse-1st-index-of-frame-val->src-of-cdr-of-assoc-linear-lemma-2)
                         (:rewrite when-zp-src-of-1st-collapse-1)
                         (:rewrite ctx-app-ok-of-abs-fs-fix-1)
@@ -3669,7 +3667,6 @@
                             (:rewrite consp-of-nthcdr)
                             (:rewrite
                              abs-find-file-correctness-1-lemma-18)
-                            (:rewrite abs-find-file-correctness-1-lemma-3)
                             (:definition no-duplicatesp-equal)
                             (:rewrite abs-fs-p-correctness-1)
                             (:definition len)))
@@ -3817,24 +3814,9 @@
            :do-not-induct t))
   :rule-classes :forward-chaining)
 
-;; How come this was not already proven?
-(defthm
- abs-mkdir-correctness-lemma-85
- (implies
-      (and (prefixp (frame-val->path (cdr (assoc-equal x frame)))
-                    (fat32-filename-list-fix path))
-           (equal (mv-nth 1 (abs-find-file frame path))
-                  *enoent*))
-      (equal (abs-find-file-helper
-                  (frame-val->dir (cdr (assoc-equal x frame)))
-                  (nthcdr (len (frame-val->path (cdr (assoc-equal x frame))))
-                          path))
-             (abs-find-file frame path)))
- :hints (("goal" :in-theory (enable abs-find-file hifat-find-file))))
-
 ;; This is nice and general.
 (defthm
-  abs-mkdir-correctness-lemma-86
+  abs-mkdir-correctness-lemma-85
   (implies
    (and
     (fat32-filename-list-equiv
@@ -4479,9 +4461,9 @@
            (hifat-find-file (mv-nth 0 (collapse frame))
                             path))))
   :hints (("goal" :in-theory (e/d (frame->root)
-                                  (abs-mkdir-correctness-lemma-86))
+                                  (abs-mkdir-correctness-lemma-85))
            :do-not-induct t
-           :use (:instance abs-mkdir-correctness-lemma-86
+           :use (:instance abs-mkdir-correctness-lemma-85
                            (x-path path)))))
 
 (defthm
@@ -4738,7 +4720,6 @@
           (:rewrite abs-addrs-when-m1-file-contents-p)
           (:rewrite
            abs-separate-of-frame->frame-of-collapse-this-lemma-11)
-          (:rewrite abs-find-file-correctness-1-lemma-3)
           (:rewrite
            absfat-equiv-implies-set-equiv-addrs-at-1-lemma-1)
           (:rewrite
@@ -4791,7 +4772,6 @@
           (:rewrite absfat-subsetp-transitivity-lemma-7)
           (:rewrite assoc-after-remove-assoc)
           (:rewrite abs-find-file-correctness-lemma-2)
-          (:rewrite abs-mkdir-correctness-lemma-85)
           (:rewrite len-when-prefixp)
           (:rewrite m1-directory-file-p-when-m1-file-p)
           (:rewrite consp-of-assoc-of-abs-fs-fix)
@@ -8820,7 +8800,7 @@
                                     (dirname path))
                  (partial-collapse frame (dirname path)))))
           (fat32-filename-list-fix (dirname path)))))
-       (:rewrite abs-mkdir-correctness-lemma-86)
+       (:rewrite abs-mkdir-correctness-lemma-85)
        :top :bash (:dive 1 2 2)
        (:claim
         (and
@@ -9819,22 +9799,110 @@
            :in-theory (enable abs-find-file-helper)))
   :rule-classes :forward-chaining)
 
-(skip-proofs
- (defthm abs-find-file-after-abs-mkdir-lemma-5
-   (implies
-    (and
-     (frame-p frame)
-     (abs-separate frame)
-     (subsetp-equal (abs-addrs (frame->root frame))
-                    (frame-addrs-root (frame->frame frame)))
-     (no-duplicatesp-equal (strip-cars frame))
-     (mv-nth 1 (collapse frame))
-     (fat32-filename-list-prefixp path1 path2))
-    (equal
-     (1st-complete-under-path
-      (frame->frame (partial-collapse frame path1))
-      path2)
-     0))))
+#||
+A hard ACL2 error can be seen by executing the following commands at this
+point.
+
+(verify
+ (implies (and
+           (consp (frame->frame frame))
+           (< 0
+              (1st-complete-under-path (frame->frame frame)
+                                       path))
+           (<
+            0
+            (frame-val->src
+             (cdr (assoc-equal (1st-complete-under-path (frame->frame frame)
+                                                        path)
+                               (frame->frame frame)))))
+           (mv-nth 1 (collapse frame)))
+          (ctx-app-ok
+           (frame-val->dir
+            (cdr
+             (assoc-equal
+              (frame-val->src
+               (cdr (assoc-equal (1st-complete-under-path (frame->frame frame)
+                                                          path)
+                                 (frame->frame frame))))
+              (frame->frame frame))))
+           (1st-complete-under-path (frame->frame frame)
+                                    path)
+           (nthcdr
+            (len
+             (frame-val->path
+              (cdr
+               (assoc-equal
+                (frame-val->src
+                 (cdr (assoc-equal (1st-complete-under-path (frame->frame frame)
+                                                            path)
+                                   (frame->frame frame))))
+                (frame->frame frame)))))
+            (frame-val->path
+             (cdr (assoc-equal (1st-complete-under-path (frame->frame frame)
+                                                        path)
+                               (frame->frame frame))))))))
+
+promote
+
+sr
+
+At least for me, it reads:
+HARD ACL2 ERROR in FMT-VAR:  Illegal Fmt Syntax.  Unbound Fmt Variable.
+The tilde directive at location 494 in the fmt string below uses the
+variable #\8.  But this variable is not bound in the association list,
+((#\x "~ ~ Additional bindings: ~X0t"
+      (#\0 (X (FRAME->FRAME FRAME))))
+ (#\c . 0)
+ (#\3)
+ (#\s . 0)
+ (#\a (X (FRAME->FRAME FRAME))
+      (Y (NTHCDR (LEN #@5#)
+                 (FRAME-VAL->PATH #@6#)))
+      (VAR (1ST-COMPLETE-UNDER-PATH (FRAME->FRAME FRAME)
+                                    PATH))
+      (FS (FRAME-VAL->DIR (CDR #@7#))))
+ (#\b . 1)
+ (#\e . EQUAL)
+ . #@8#),
+supplied with the fmt string.
+
+
+
+ACL2 Error in PC-MACROEXPAND:  Evaluation aborted.  To debug see :DOC
+print-gv, see :DOC trace, and see :DOC wet.
+
+
+Macroexpansion of instruction (ACL2-PC::SR) failed!
+||#
+
+(defthm
+  abs-find-file-after-abs-mkdir-lemma-16
+  (implies
+   (and (mv-nth 1 (collapse frame))
+        (abs-separate frame)
+        (frame-p frame)
+        (no-duplicatesp-equal (strip-cars (frame->frame frame)))
+        (atom (frame-val->path (cdr (assoc-equal 0 frame))))
+        (subsetp-equal (abs-addrs (frame->root frame))
+                       (frame-addrs-root (frame->frame frame))))
+   (equal
+    (1st-complete-under-path (frame->frame (partial-collapse frame path))
+                             path)
+    0))
+  :hints (("goal" :in-theory (enable partial-collapse
+                                     collapse 1st-complete-under-path
+                                     partial-collapse-correctness-lemma-122)
+           :induct (partial-collapse frame path))))
+
+(defthm abs-find-file-after-abs-mkdir-lemma-5
+  (implies (and (frame-p frame)
+                (atom (assoc-equal 0 frame))
+                (equal (1st-complete-under-path frame path1)
+                       0)
+                (prefixp path1 path2))
+           (equal (1st-complete-under-path frame path2)
+                  0))
+  :hints (("goal" :in-theory (enable 1st-complete-under-path))))
 
 (defthm
   1st-complete-under-path-of-put-assoc-1
@@ -9950,10 +10018,10 @@
   (("goal"
     :do-not-induct t
     :in-theory (e/d (basename-alt abs-find-file-helper frame->root)
-                    (abs-mkdir-correctness-lemma-86))
+                    (abs-mkdir-correctness-lemma-85))
     :use
     (:instance
-     abs-mkdir-correctness-lemma-86
+     abs-mkdir-correctness-lemma-85
      (path (list basename))
      (x-path
       (nthcdr
@@ -10389,7 +10457,7 @@
 ;;      (disable
 ;;       abs-mkdir-correctness-lemma-155
 ;;       abs-find-file-src-correctness-2
-;;       abs-mkdir-correctness-lemma-86)
+;;       abs-mkdir-correctness-lemma-85)
 ;;      :use
 ;;      (:instance
 ;;       abs-find-file-src-correctness-2
@@ -10983,10 +11051,10 @@
    :top
    (:bash
     ("goal"
-     :in-theory (disable (:rewrite abs-mkdir-correctness-lemma-86))
+     :in-theory (disable (:rewrite abs-mkdir-correctness-lemma-85))
      :use
      (:instance
-      (:rewrite abs-mkdir-correctness-lemma-86)
+      (:rewrite abs-mkdir-correctness-lemma-85)
       (x-path (dirname (file-table-element->fid
                         (cdr (assoc-equal (cdr (assoc-equal fd fd-table))
                                           file-table)))))
@@ -11344,10 +11412,10 @@
    :top :bash
    (:bash
     ("goal"
-     :in-theory (disable (:rewrite abs-mkdir-correctness-lemma-86))
+     :in-theory (disable (:rewrite abs-mkdir-correctness-lemma-85))
      :use
      (:instance
-      (:rewrite abs-mkdir-correctness-lemma-86)
+      (:rewrite abs-mkdir-correctness-lemma-85)
       (x-path (dirname (file-table-element->fid
                         (cdr (assoc-equal (cdr (assoc-equal fd fd-table))
                                           file-table)))))
@@ -11362,10 +11430,10 @@
                                     file-table)))))))))
    (:bash
     ("goal"
-     :in-theory (disable (:rewrite abs-mkdir-correctness-lemma-86))
+     :in-theory (disable (:rewrite abs-mkdir-correctness-lemma-85))
      :use
      (:instance
-      (:rewrite abs-mkdir-correctness-lemma-86)
+      (:rewrite abs-mkdir-correctness-lemma-85)
       (x-path (dirname (file-table-element->fid
                         (cdr (assoc-equal (cdr (assoc-equal fd fd-table))
                                           file-table)))))
@@ -11546,10 +11614,10 @@
                                   file-table))))))))
   :hints
   (("goal"
-    :in-theory (disable (:rewrite abs-mkdir-correctness-lemma-86))
+    :in-theory (disable (:rewrite abs-mkdir-correctness-lemma-85))
     :use
     (:instance
-     (:rewrite abs-mkdir-correctness-lemma-86)
+     (:rewrite abs-mkdir-correctness-lemma-85)
      (x-path (dirname (file-table-element->fid
                        (cdr (assoc-equal (cdr (assoc-equal fd fd-table))
                                          file-table)))))
@@ -11684,10 +11752,10 @@
   :hints
   (("goal"
     :in-theory (e/d ()
-                    ((:rewrite abs-mkdir-correctness-lemma-86)))
+                    ((:rewrite abs-mkdir-correctness-lemma-85)))
     :use
     (:instance
-     (:rewrite abs-mkdir-correctness-lemma-86)
+     (:rewrite abs-mkdir-correctness-lemma-85)
      (x-path (dirname (file-table-element->fid
                        (cdr (assoc-equal (cdr (assoc-equal fd fd-table))
                                          file-table)))))
@@ -11830,10 +11898,10 @@
                     (cdr (assoc-equal (cdr (assoc-equal fd fd-table))
                                       file-table))))))))))
     :in-theory (e/d nil
-                    ((:rewrite abs-mkdir-correctness-lemma-86)))
+                    ((:rewrite abs-mkdir-correctness-lemma-85)))
     :use
     (:instance
-     (:rewrite abs-mkdir-correctness-lemma-86)
+     (:rewrite abs-mkdir-correctness-lemma-85)
      (x-path (dirname (file-table-element->fid
                        (cdr (assoc-equal (cdr (assoc-equal fd fd-table))
                                          file-table)))))
@@ -11977,10 +12045,10 @@
                     (cdr (assoc-equal (cdr (assoc-equal fd fd-table))
                                       file-table))))))))))
     :in-theory (e/d nil
-                    ((:rewrite abs-mkdir-correctness-lemma-86)))
+                    ((:rewrite abs-mkdir-correctness-lemma-85)))
     :use
     (:instance
-     (:rewrite abs-mkdir-correctness-lemma-86)
+     (:rewrite abs-mkdir-correctness-lemma-85)
      (x-path (dirname (file-table-element->fid
                        (cdr (assoc-equal (cdr (assoc-equal fd fd-table))
                                          file-table)))))
@@ -12163,10 +12231,10 @@
                      (cdr (assoc-equal (cdr (assoc-equal fd fd-table))
                                        file-table))))))))))
      :in-theory (e/d nil
-                     ((:rewrite abs-mkdir-correctness-lemma-86)))
+                     ((:rewrite abs-mkdir-correctness-lemma-85)))
      :use
      (:instance
-      (:rewrite abs-mkdir-correctness-lemma-86)
+      (:rewrite abs-mkdir-correctness-lemma-85)
       (x-path (dirname (file-table-element->fid
                         (cdr (assoc-equal (cdr (assoc-equal fd fd-table))
                                           file-table)))))
@@ -12489,10 +12557,10 @@
           (dirname (file-table-element->fid
                     (cdr (assoc-equal (cdr (assoc-equal fd fd-table))
                                       file-table))))))))))
-    :in-theory (disable (:rewrite abs-mkdir-correctness-lemma-86))
+    :in-theory (disable (:rewrite abs-mkdir-correctness-lemma-85))
     :use
     (:instance
-     (:rewrite abs-mkdir-correctness-lemma-86)
+     (:rewrite abs-mkdir-correctness-lemma-85)
      (x-path (dirname (file-table-element->fid
                        (cdr (assoc-equal (cdr (assoc-equal fd fd-table))
                                          file-table)))))
@@ -12611,10 +12679,10 @@
           (dirname (file-table-element->fid
                     (cdr (assoc-equal (cdr (assoc-equal fd fd-table))
                                       file-table))))))))))
-    :in-theory (disable (:rewrite abs-mkdir-correctness-lemma-86))
+    :in-theory (disable (:rewrite abs-mkdir-correctness-lemma-85))
     :use
     (:instance
-     (:rewrite abs-mkdir-correctness-lemma-86)
+     (:rewrite abs-mkdir-correctness-lemma-85)
      (x-path (dirname (file-table-element->fid
                        (cdr (assoc-equal (cdr (assoc-equal fd fd-table))
                                          file-table)))))
@@ -12903,7 +12971,7 @@
     :do-not-induct t
     :in-theory
     (e/d (abs-complete)
-         (abs-mkdir-correctness-lemma-86 abs-mkdir-correctness-lemma-87))
+         (abs-mkdir-correctness-lemma-85 abs-mkdir-correctness-lemma-87))
     :use
     (:instance
      (:rewrite abs-mkdir-correctness-lemma-87)
@@ -13057,10 +13125,10 @@
                     (cdr (assoc-equal (cdr (assoc-equal fd fd-table))
                                       file-table))))))))))
     :in-theory (e/d (abs-complete)
-                    ((:rewrite abs-mkdir-correctness-lemma-86)))
+                    ((:rewrite abs-mkdir-correctness-lemma-85)))
     :use
     (:instance
-     (:rewrite abs-mkdir-correctness-lemma-86)
+     (:rewrite abs-mkdir-correctness-lemma-85)
      (x-path
       (nthcdr
        (len
@@ -13350,10 +13418,10 @@
   :hints
   (("goal"
     :in-theory (e/d nil
-                    ((:rewrite abs-mkdir-correctness-lemma-86)))
+                    ((:rewrite abs-mkdir-correctness-lemma-85)))
     :use
     (:instance
-     (:rewrite abs-mkdir-correctness-lemma-86)
+     (:rewrite abs-mkdir-correctness-lemma-85)
      (x-path
       (nthcdr
        (len
@@ -13516,10 +13584,10 @@
   (("goal"
     :do-not-induct t
     :in-theory (e/d nil
-                    ((:rewrite abs-mkdir-correctness-lemma-86)))
+                    ((:rewrite abs-mkdir-correctness-lemma-85)))
     :use
     (:instance
-     (:rewrite abs-mkdir-correctness-lemma-86)
+     (:rewrite abs-mkdir-correctness-lemma-85)
      (x-path
       (nthcdr
        (len
@@ -13782,10 +13850,10 @@
                      (cdr (assoc-equal (cdr (assoc-equal fd fd-table))
                                        file-table))))))))))
      :in-theory (e/d (abs-complete)
-                     ((:rewrite abs-mkdir-correctness-lemma-86)))
+                     ((:rewrite abs-mkdir-correctness-lemma-85)))
      :use
      (:instance
-      (:rewrite abs-mkdir-correctness-lemma-86)
+      (:rewrite abs-mkdir-correctness-lemma-85)
       (x-path
        (nthcdr
         (len
@@ -13960,10 +14028,10 @@
           (dirname (file-table-element->fid
                     (cdr (assoc-equal (cdr (assoc-equal fd fd-table))
                                       file-table))))))))))
-    :in-theory (disable (:rewrite abs-mkdir-correctness-lemma-86))
+    :in-theory (disable (:rewrite abs-mkdir-correctness-lemma-85))
     :use
     (:instance
-     (:rewrite abs-mkdir-correctness-lemma-86)
+     (:rewrite abs-mkdir-correctness-lemma-85)
      (x-path (dirname (file-table-element->fid
                        (cdr (assoc-equal (cdr (assoc-equal fd fd-table))
                                          file-table)))))
@@ -14912,10 +14980,10 @@
           (dirname (file-table-element->fid
                     (cdr (assoc-equal (cdr (assoc-equal fd fd-table))
                                       file-table))))))))))
-    :in-theory (disable (:rewrite abs-mkdir-correctness-lemma-86))
+    :in-theory (disable (:rewrite abs-mkdir-correctness-lemma-85))
     :use
     (:instance
-     (:rewrite abs-mkdir-correctness-lemma-86)
+     (:rewrite abs-mkdir-correctness-lemma-85)
      (x-path (dirname (file-table-element->fid
                        (cdr (assoc-equal (cdr (assoc-equal fd fd-table))
                                          file-table)))))
@@ -17446,10 +17514,10 @@
                     (cdr (assoc-equal (cdr (assoc-equal fd fd-table))
                                       file-table))))))))))
     :in-theory (e/d nil
-                    ((:rewrite abs-mkdir-correctness-lemma-86)))
+                    ((:rewrite abs-mkdir-correctness-lemma-85)))
     :use
     (:instance
-     (:rewrite abs-mkdir-correctness-lemma-86)
+     (:rewrite abs-mkdir-correctness-lemma-85)
      (x-path (dirname (file-table-element->fid
                        (cdr (assoc-equal (cdr (assoc-equal fd fd-table))
                                          file-table)))))
@@ -18148,10 +18216,10 @@
                               file-table))))))))))
     :in-theory
     (e/d nil
-         ((:rewrite abs-mkdir-correctness-lemma-86)))
+         ((:rewrite abs-mkdir-correctness-lemma-85)))
     :use
     (:instance
-     (:rewrite abs-mkdir-correctness-lemma-86)
+     (:rewrite abs-mkdir-correctness-lemma-85)
      (x-path
       (dirname
        (file-table-element->fid
@@ -18973,10 +19041,10 @@
                      (cdr (assoc-equal (cdr (assoc-equal fd fd-table))
                                        file-table))))))))))
      :in-theory (e/d nil
-                     ((:rewrite abs-mkdir-correctness-lemma-86)))
+                     ((:rewrite abs-mkdir-correctness-lemma-85)))
      :use
      (:instance
-      (:rewrite abs-mkdir-correctness-lemma-86)
+      (:rewrite abs-mkdir-correctness-lemma-85)
       (x-path
        (nthcdr
         (len
@@ -20300,10 +20368,10 @@
   ((:bash
     ("goal"
      :in-theory (e/d nil
-                     ((:rewrite abs-mkdir-correctness-lemma-86)))
+                     ((:rewrite abs-mkdir-correctness-lemma-85)))
      :use
      (:instance
-      (:rewrite abs-mkdir-correctness-lemma-86)
+      (:rewrite abs-mkdir-correctness-lemma-85)
       (x-path
        (nthcdr
         (len
@@ -20627,10 +20695,10 @@
   ((:bash ("goal" :in-theory (enable member-of-names-at)))
    (:bash
     ("goal"
-     :in-theory (disable (:rewrite abs-mkdir-correctness-lemma-86))
+     :in-theory (disable (:rewrite abs-mkdir-correctness-lemma-85))
      :use
      (:instance
-      (:rewrite abs-mkdir-correctness-lemma-86)
+      (:rewrite abs-mkdir-correctness-lemma-85)
       (x-path (dirname (file-table-element->fid
                         (cdr (assoc-equal (cdr (assoc-equal fd fd-table))
                                           file-table)))))
@@ -21321,7 +21389,7 @@
   ((:bash
     ("goal"
      :in-theory (e/d nil
-                     ((:rewrite abs-mkdir-correctness-lemma-86)))
+                     ((:rewrite abs-mkdir-correctness-lemma-85)))
      :expand
      (:with
       abs-mkdir-correctness-lemma-30
@@ -21372,7 +21440,7 @@
                                        file-table))))))))))
      :use
      (:instance
-      (:rewrite abs-mkdir-correctness-lemma-86)
+      (:rewrite abs-mkdir-correctness-lemma-85)
       (x-path
        (nthcdr
         (len
@@ -21627,10 +21695,10 @@
   (("goal"
     :do-not-induct t
     :in-theory (e/d ((:rewrite member-of-names-at))
-                    ((:rewrite abs-mkdir-correctness-lemma-86)))
+                    ((:rewrite abs-mkdir-correctness-lemma-85)))
     :use
     (:instance
-     (:rewrite abs-mkdir-correctness-lemma-86)
+     (:rewrite abs-mkdir-correctness-lemma-85)
      (x-path (dirname (file-table-element->fid
                        (cdr (assoc-equal (cdr (assoc-equal fd fd-table))
                                          file-table)))))
@@ -24100,10 +24168,10 @@
   :hints
   (("goal"
     :in-theory (e/d (member-of-names-at)
-                    ((:rewrite abs-mkdir-correctness-lemma-86)))
+                    ((:rewrite abs-mkdir-correctness-lemma-85)))
     :use
     (:instance
-     (:rewrite abs-mkdir-correctness-lemma-86)
+     (:rewrite abs-mkdir-correctness-lemma-85)
      (x-path
       (nthcdr
        (len
@@ -25111,10 +25179,10 @@
                     (cdr (assoc-equal (cdr (assoc-equal fd fd-table))
                                       file-table))))))))))
     :in-theory (e/d nil
-                    ((:rewrite abs-mkdir-correctness-lemma-86)))
+                    ((:rewrite abs-mkdir-correctness-lemma-85)))
     :use
     (:instance
-     (:rewrite abs-mkdir-correctness-lemma-86)
+     (:rewrite abs-mkdir-correctness-lemma-85)
      (x-path
       (nthcdr
        (len
@@ -25571,10 +25639,10 @@
                     (cdr (assoc-equal (cdr (assoc-equal fd fd-table))
                                       file-table))))))))))
     :in-theory (e/d nil
-                    ((:rewrite abs-mkdir-correctness-lemma-86)))
+                    ((:rewrite abs-mkdir-correctness-lemma-85)))
     :use
     (:instance
-     (:rewrite abs-mkdir-correctness-lemma-86)
+     (:rewrite abs-mkdir-correctness-lemma-85)
      (x-path
       (nthcdr
        (len
@@ -25783,10 +25851,10 @@
     ("goal"
      :do-not-induct t
      :in-theory (e/d (member-of-names-at)
-                     ((:rewrite abs-mkdir-correctness-lemma-86)))
+                     ((:rewrite abs-mkdir-correctness-lemma-85)))
      :use
      (:instance
-      (:rewrite abs-mkdir-correctness-lemma-86)
+      (:rewrite abs-mkdir-correctness-lemma-85)
       (x-path
        (nthcdr
         (len
