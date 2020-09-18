@@ -757,7 +757,7 @@
                    term
                  (genvar x "VAR$" nil (append vars-done x-x1...xn (list y))))))
        (cons var (divconq-gen-x-z1...zm-aux (cdr terms-to-do)
-                                            (cons term vars-done)
+                                            (cons var vars-done)
                                             x-a1...am
                                             x-x1...xn
                                             x
