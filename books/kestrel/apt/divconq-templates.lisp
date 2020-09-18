@@ -190,7 +190,7 @@
      (verify-guards ,name ,@(and guard-hints (list :hints guard-hints)))))
 
 ; extension:
-(defmacro gen-equal-fold-ext (&key (name 'equal[?f][fold[?g][?h])
+(defmacro gen-equal-fold-ext (&key (name 'equal[?f][fold[?g][?h]])
                                    (?f '?f)
                                    (fold 'fold[?g][?h])
                                    (x 'x)
@@ -220,6 +220,30 @@
      (and (,equal-fold)
           (,spec-atom)
           (,spec-cons))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Generate the internal theorem FOLD-CORRECT
+; (not described in the user documentation).
+
+(defmacro gen-fold-correct (&key (name 'fold-correct)
+                                 (spec-atom 'spec-atom[?g])
+                                 (spec-cons 'spec-cons[?h])
+                                 (fold 'fold[?g][?h])
+                                 (x 'x)
+                                 x1...
+                                 ...xn
+                                 a1...
+                                 ...am
+                                 (iorel 'iorel)
+                                 hints)
+  (let ((x-x1...xn (append x1... (list x) ...xn))
+        (x-a1...am (append a1... (list x) ...am)))
+    `(defthm ,name
+       (implies (and (,spec-atom)
+                     (,spec-cons))
+                (,iorel ,@x-x1...xn (,fold ,@x-a1...am)))
+       :hints ,hints)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
