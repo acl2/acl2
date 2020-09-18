@@ -284,7 +284,7 @@ question -- so then concatenate on that bit's path to w.  Got that?</p>")
            (len aliases)))
 
   (fty::deffixtype aliases-normorderedp :pred aliases-normorderedp :fix aliases-bound-fix
-    :equiv aliases-equiv :define t :forward t :execp nil)
+    :equiv aliases-equiv :define t :forward t :executablep nil)
 
   (local (in-theory (disable aliases-bound-fix)))
 
