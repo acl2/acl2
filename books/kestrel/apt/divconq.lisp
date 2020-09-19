@@ -19,6 +19,7 @@
 (include-book "kestrel/event-macros/proof-preparation" :dir :system)
 (include-book "kestrel/event-macros/restore-output" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
+(include-book "kestrel/soft/defequal" :dir :system)
 (include-book "kestrel/soft/defunvar" :dir :system)
 (include-book "kestrel/soft/defun2" :dir :system)
 (include-book "kestrel/soft/defund2" :dir :system)
@@ -889,30 +890,16 @@
                                 (equal-fold-enable booleanp)
                                 (x-z1...zm symbol-listp)
                                 (?f symbolp)
-                                (fold symbolp)
-                                (verify-guards booleanp))
-  :returns (mv (local-event pseudo-event-formp)
-               (exported-event pseudo-event-formp))
+                                (fold symbolp))
+  :returns (event pseudo-event-formp)
   :short "Generate the function @('equal[?f][fold[?g][?h]]')."
-  (b* ((macro (if equal-fold-enable 'soft::defun-sk2 'soft::defund-sk2))
-       (body `(forall ,x-z1...zm
-                      (equal (,?f ,@x-z1...zm)
-                             (,fold ,@x-z1...zm))))
-       (hints '(("Goal" :in-theory nil)))
-       (local-event
-        `(local
-          (,macro ,equal-fold ()
-                  (declare
-                   (xargs ,@(and verify-guards '(:guard t))
-                          ,@(and verify-guards (list :guard-hints hints))
-                          :verify-guards ,verify-guards))
-                  ,body)))
-       (exported-event
-        `(,macro ,equal-fold ()
-                 (declare (xargs ,@(and verify-guards '(:guard t))
-                                 :verify-guards ,verify-guards))
-                 ,body)))
-    (mv local-event exported-event)))
+  `(soft::defequal ,equal-fold
+                   :left ,?f
+                   :right ,fold
+                   :vars ,x-z1...zm
+                   :enable ,equal-fold-enable
+                   :left-to-right-enable ,equal-fold-enable
+                   :right-to-left-enable ,equal-fold-enable))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1002,12 +989,14 @@
 (define divconq-gen-old-if-new ((old-if-new symbolp)
                                 (old-if-new-enable booleanp)
                                 (old symbolp)
+                                (?f symbolp)
                                 (x-x1...xn symbol-listp)
                                 (x-z1...zm symbol-listp)
                                 (x-a1...am symbol-listp)
                                 (x symbolp)
                                 (equal-fold symbolp)
                                 (new symbolp)
+                                (fold symbolp)
                                 (fold-correct symbolp))
   :returns (mv (local-event pseudo-event-formp)
                (exported-event pseudo-event-formp))
@@ -1015,7 +1004,7 @@
   :short "Generate the theorem @('old-if-new')."
   (b* ((formula `(implies (,new) (,old)))
        (old-witness (add-suffix-to-fn old "-WITNESS"))
-       (equal-fold-necc (add-suffix equal-fold "-NECC"))
+       (equal-fold-l2r (packn-pos (list ?f '-to- fold) equal-fold))
        (x-x1...xn-subst
         (if (>= (len x-x1...xn) 2)
             (loop$ for var in x-x1...xn
@@ -1029,7 +1018,7 @@
                collect `(,z ,(sublis-var x-x1...xn-subst a))))
        (hints `(("Goal"
                  :in-theory '(,old ,new)
-                 :use ((:instance ,equal-fold-necc ,@x-z1...zm-instantiation)
+                 :use ((:instance ,equal-fold-l2r ,@x-z1...zm-instantiation)
                        (:instance ,fold-correct ,@x-x1...xn-instantiation)))))
        (defthm/defthmd (if old-if-new-enable 'defthm 'defthmd))
        (local-event `(local
@@ -1088,10 +1077,9 @@
         (divconq-gen-spec-cons spec-cons spec-cons-enable
                                old x-x1...xn x-a1...am x y
                                iorel ?h verify-guards))
-       ((mv equal-fold-local-event
-            equal-fold-exported-event)
+       (equal-fold-event
         (divconq-gen-equal-fold equal-fold equal-fold-enable
-                                x-z1...zm ?f fold verify-guards))
+                                x-z1...zm ?f fold))
        ((mv new-local-event
             new-exported-event)
         (divconq-gen-new new new-enable
@@ -1102,26 +1090,25 @@
                                   names-to-avoid wrld))
        ((mv old-if-new-local-event
             old-if-new-exported-event)
-        (divconq-gen-old-if-new old-if-new old-if-new-enable old
+        (divconq-gen-old-if-new old-if-new old-if-new-enable old ?f
                                 x-x1...xn x-z1...zm x-a1...am x
-                                equal-fold new fold-correct))
+                                equal-fold new fold fold-correct))
        (encapsulate-events
         `((logic)
           (evmac-prepare-proofs)
           ,?g-event
           ,?h-event
           ,fold-local-event
+          ,fold-exported-event
           ,spec-atom-local-event
+          ,spec-atom-exported-event
           ,spec-cons-local-event
-          ,equal-fold-local-event
+          ,spec-cons-exported-event
+          ,equal-fold-event
           ,new-local-event
+          ,new-exported-event
           ,fold-correct-event
           ,old-if-new-local-event
-          ,fold-exported-event
-          ,spec-atom-exported-event
-          ,spec-cons-exported-event
-          ,equal-fold-exported-event
-          ,new-exported-event
           ,old-if-new-exported-event))
        (encapsulate `(encapsulate () ,@encapsulate-events))
        ((when show-only)
@@ -1139,7 +1126,7 @@
                         (cw-event "~x0~|" ',fold-exported-event)
                         (cw-event "~x0~|" ',spec-atom-exported-event)
                         (cw-event "~x0~|" ',spec-cons-exported-event)
-                        (cw-event "~x0~|" ',equal-fold-exported-event)
+                        (cw-event "~x0~|" ',equal-fold-event)
                         (cw-event "~x0~|" ',new-exported-event)
                         (cw-event "~x0~|" ',old-if-new-exported-event)))))
     `(progn

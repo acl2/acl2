@@ -74,10 +74,13 @@
                            (pre-post-p (cdr ints) sorted-cdr))
                       (pre-post-p ints
                                   (?sort-cons (car ints) sorted-cdr)))))
-   (defun-sk2 equal[?sort][fold[?sort-atom][?sort-cons]] ()
-     (forall (ints)
-             (equal (?sort ints)
-                    (fold[?sort-atom][?sort-cons] ints))))
+   (defequal equal[?sort][fold[?sort-atom][?sort-cons]]
+     :left ?sort
+     :right fold[?sort-atom][?sort-cons]
+     :vars (ints)
+     :enable nil
+     :left-to-right-enable nil
+     :right-to-left-enable nil)
    (defun2 sortp{1}[?sort][?sort-atom][?sort-cons] ()
      (and (equal[?sort][fold[?sort-atom][?sort-cons]])
           (sortp-atom[?sort-atom])

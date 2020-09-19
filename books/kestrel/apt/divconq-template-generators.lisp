@@ -10,6 +10,7 @@
 
 (in-package "ACL2")
 
+(include-book "kestrel/soft/defequal" :dir :system)
 (include-book "kestrel/soft/defunvar" :dir :system)
 (include-book "kestrel/soft/defun2" :dir :system)
 (include-book "kestrel/soft/defun-sk2" :dir :system)
@@ -137,16 +138,12 @@
                                (fold 'fold[?g][?h])
                                (x 'x)
                                z1...
-                               ...zm
-                               guard-hints)
+                               ...zm)
   (let ((x-z1...zm (append z1... (list x) ...zm)))
-    `(defun-sk2 ,name ()
-       (declare (xargs :guard t
-                       :verify-guards t
-                       :guard-hints ,guard-hints))
-       (forall ,x-z1...zm
-               (equal (,?f ,@x-z1...zm)
-                      (,fold ,@x-z1...zm))))))
+    `(defequal ,name
+       :left ,?f
+       :right ,fold
+       :vars ,x-z1...zm)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

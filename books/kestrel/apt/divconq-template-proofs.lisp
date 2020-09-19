@@ -37,7 +37,7 @@
   (cond ((zp m) nil)
         (t (append (gen-z1...zm (1- m)) (list (packn (list 'z m)))))))
 
-(defmacro gen-outputs (n npos m mpos &key equal-fold-necc-inst fold-correct-inst)
+(defmacro gen-outputs (n npos m mpos &key equal-fold-l2r-inst fold-correct-inst)
   (let* ((x1...xn (gen-x1...xn n))
          (z1...zm (gen-z1...zm m))
          (a1...am (gen-a1...am m x1...xn))
@@ -70,8 +70,7 @@
         :guard-hints (("Goal" :in-theory nil)))
        (gen-equal-fold
         :z1... ,z1...
-        :...zm ,@(list ...zm)
-        :guard-hints (("Goal" :in-theory nil)))
+        :...zm ,@(list ...zm))
        (gen-fold-correct
         :x1... ,x1...
         :...xn ,@(list ...xn)
@@ -88,10 +87,8 @@
        (gen-old-if-new
         :hints (("Goal"
                  :in-theory '(old new)
-                 :use ((:instance equal[?f][fold[?g][?h]]-necc
-                        ,@equal-fold-necc-inst)
-                       (:instance fold-correct
-                        ,@fold-correct-inst))))))))
+                 :use ((:instance ?f-to-fold[?g][?h] ,@equal-fold-l2r-inst)
+                       (:instance fold-correct ,@fold-correct-inst))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -100,7 +97,7 @@
 (must-succeed*
  (gen-inputs 0 0 0 0)
  (gen-outputs 0 0 0 0
-              :equal-fold-necc-inst ((x (old-witness)))
+              :equal-fold-l2r-inst ((x (old-witness)))
               :fold-correct-inst ((x (old-witness)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -112,32 +109,32 @@
 (must-succeed*
  (gen-inputs 1 0 1 0)
  (gen-outputs 1 0 1 0
-              :equal-fold-necc-inst ((x (mv-nth 0 (old-witness)))
-                                     (z1 (a1 (mv-nth 1 (old-witness)))))
+              :equal-fold-l2r-inst ((x (mv-nth 0 (old-witness)))
+                                    (z1 (a1 (mv-nth 1 (old-witness)))))
               :fold-correct-inst ((x (mv-nth 0 (old-witness)))
                                   (x1 (mv-nth 1 (old-witness))))))
 
 (must-succeed*
  (gen-inputs 1 1 1 0)
  (gen-outputs 1 1 1 0
-              :equal-fold-necc-inst ((x (mv-nth 1 (old-witness)))
-                                     (z1 (a1 (mv-nth 0 (old-witness)))))
+              :equal-fold-l2r-inst ((x (mv-nth 1 (old-witness)))
+                                    (z1 (a1 (mv-nth 0 (old-witness)))))
               :fold-correct-inst ((x1 (mv-nth 0 (old-witness)))
                                   (x (mv-nth 1 (old-witness))))))
 
 (must-succeed*
  (gen-inputs 1 0 1 1)
  (gen-outputs 1 0 1 1
-              :equal-fold-necc-inst ((x (mv-nth 0 (old-witness)))
-                                     (z1 (a1 (mv-nth 1 (old-witness)))))
+              :equal-fold-l2r-inst ((x (mv-nth 0 (old-witness)))
+                                    (z1 (a1 (mv-nth 1 (old-witness)))))
               :fold-correct-inst ((x (mv-nth 0 (old-witness)))
                                   (x1 (mv-nth 1 (old-witness))))))
 
 (must-succeed*
  (gen-inputs 1 1 1 1)
  (gen-outputs 1 1 1 1
-              :equal-fold-necc-inst ((x (mv-nth 1 (old-witness)))
-                                     (z1 (a1 (mv-nth 0 (old-witness)))))
+              :equal-fold-l2r-inst ((x (mv-nth 1 (old-witness)))
+                                    (z1 (a1 (mv-nth 0 (old-witness)))))
               :fold-correct-inst ((x1 (mv-nth 0 (old-witness)))
                                   (x (mv-nth 1 (old-witness))))))
 
@@ -150,9 +147,9 @@
 (must-succeed*
  (gen-inputs 2 0 1 0)
  (gen-outputs 2 0 1 0
-              :equal-fold-necc-inst ((x (mv-nth 0 (old-witness)))
-                                     (z1 (a1 (mv-nth 1 (old-witness))
-                                             (mv-nth 2 (old-witness)))))
+              :equal-fold-l2r-inst ((x (mv-nth 0 (old-witness)))
+                                    (z1 (a1 (mv-nth 1 (old-witness))
+                                            (mv-nth 2 (old-witness)))))
               :fold-correct-inst ((x (mv-nth 0 (old-witness)))
                                   (x1 (mv-nth 1 (old-witness)))
                                   (x2 (mv-nth 2 (old-witness))))))
@@ -160,9 +157,9 @@
 (must-succeed*
  (gen-inputs 2 1 1 0)
  (gen-outputs 2 1 1 0
-              :equal-fold-necc-inst ((x (mv-nth 1 (old-witness)))
-                                     (z1 (a1 (mv-nth 0 (old-witness))
-                                             (mv-nth 2 (old-witness)))))
+              :equal-fold-l2r-inst ((x (mv-nth 1 (old-witness)))
+                                    (z1 (a1 (mv-nth 0 (old-witness))
+                                            (mv-nth 2 (old-witness)))))
               :fold-correct-inst ((x1 (mv-nth 0 (old-witness)))
                                   (x (mv-nth 1 (old-witness)))
                                   (x2 (mv-nth 2 (old-witness))))))
@@ -170,9 +167,9 @@
 (must-succeed*
  (gen-inputs 2 2 1 0)
  (gen-outputs 2 2 1 0
-              :equal-fold-necc-inst ((x (mv-nth 2 (old-witness)))
-                                     (z1 (a1 (mv-nth 0 (old-witness))
-                                             (mv-nth 1 (old-witness)))))
+              :equal-fold-l2r-inst ((x (mv-nth 2 (old-witness)))
+                                    (z1 (a1 (mv-nth 0 (old-witness))
+                                            (mv-nth 1 (old-witness)))))
               :fold-correct-inst ((x1 (mv-nth 0 (old-witness)))
                                   (x2 (mv-nth 1 (old-witness)))
                                   (x (mv-nth 2 (old-witness))))))
@@ -180,9 +177,9 @@
 (must-succeed*
  (gen-inputs 2 0 1 1)
  (gen-outputs 2 0 1 1
-              :equal-fold-necc-inst ((x (mv-nth 0 (old-witness)))
-                                     (z1 (a1 (mv-nth 1 (old-witness))
-                                             (mv-nth 2 (old-witness)))))
+              :equal-fold-l2r-inst ((x (mv-nth 0 (old-witness)))
+                                    (z1 (a1 (mv-nth 1 (old-witness))
+                                            (mv-nth 2 (old-witness)))))
               :fold-correct-inst ((x (mv-nth 0 (old-witness)))
                                   (x1 (mv-nth 1 (old-witness)))
                                   (x2 (mv-nth 2 (old-witness))))))
@@ -190,9 +187,9 @@
 (must-succeed*
  (gen-inputs 2 1 1 1)
  (gen-outputs 2 1 1 1
-              :equal-fold-necc-inst ((x (mv-nth 1 (old-witness)))
-                                     (z1 (a1 (mv-nth 0 (old-witness))
-                                             (mv-nth 2 (old-witness)))))
+              :equal-fold-l2r-inst ((x (mv-nth 1 (old-witness)))
+                                    (z1 (a1 (mv-nth 0 (old-witness))
+                                            (mv-nth 2 (old-witness)))))
               :fold-correct-inst ((x1 (mv-nth 0 (old-witness)))
                                   (x (mv-nth 1 (old-witness)))
                                   (x2 (mv-nth 2 (old-witness))))))
@@ -200,9 +197,9 @@
 (must-succeed*
  (gen-inputs 2 2 1 1)
  (gen-outputs 2 2 1 1
-              :equal-fold-necc-inst ((x (mv-nth 2 (old-witness)))
-                                     (z1 (a1 (mv-nth 0 (old-witness))
-                                             (mv-nth 1 (old-witness)))))
+              :equal-fold-l2r-inst ((x (mv-nth 2 (old-witness)))
+                                    (z1 (a1 (mv-nth 0 (old-witness))
+                                            (mv-nth 1 (old-witness)))))
               :fold-correct-inst ((x1 (mv-nth 0 (old-witness)))
                                   (x2 (mv-nth 1 (old-witness)))
                                   (x (mv-nth 2 (old-witness))))))
@@ -216,54 +213,54 @@
 (must-succeed*
  (gen-inputs 1 0 2 0)
  (gen-outputs 1 0 2 0
-              :equal-fold-necc-inst ((x (mv-nth 0 (old-witness)))
-                                     (z1 (a1 (mv-nth 1 (old-witness))))
-                                     (z2 (a2 (mv-nth 1 (old-witness)))))
+              :equal-fold-l2r-inst ((x (mv-nth 0 (old-witness)))
+                                    (z1 (a1 (mv-nth 1 (old-witness))))
+                                    (z2 (a2 (mv-nth 1 (old-witness)))))
               :fold-correct-inst ((x (mv-nth 0 (old-witness)))
                                   (x1 (mv-nth 1 (old-witness))))))
 
 (must-succeed*
  (gen-inputs 1 1 2 0)
  (gen-outputs 1 1 2 0
-              :equal-fold-necc-inst ((x (mv-nth 1 (old-witness)))
-                                     (z1 (a1 (mv-nth 0 (old-witness))))
-                                     (z2 (a2 (mv-nth 0 (old-witness)))))
+              :equal-fold-l2r-inst ((x (mv-nth 1 (old-witness)))
+                                    (z1 (a1 (mv-nth 0 (old-witness))))
+                                    (z2 (a2 (mv-nth 0 (old-witness)))))
               :fold-correct-inst ((x1 (mv-nth 0 (old-witness)))
                                   (x (mv-nth 1 (old-witness))))))
 
 (must-succeed*
  (gen-inputs 1 0 2 1)
  (gen-outputs 1 0 2 1
-              :equal-fold-necc-inst ((x (mv-nth 0 (old-witness)))
-                                     (z1 (a1 (mv-nth 1 (old-witness))))
-                                     (z2 (a2 (mv-nth 1 (old-witness)))))
+              :equal-fold-l2r-inst ((x (mv-nth 0 (old-witness)))
+                                    (z1 (a1 (mv-nth 1 (old-witness))))
+                                    (z2 (a2 (mv-nth 1 (old-witness)))))
               :fold-correct-inst ((x (mv-nth 0 (old-witness)))
                                   (x1 (mv-nth 1 (old-witness))))))
 
 (must-succeed*
  (gen-inputs 1 1 2 1)
  (gen-outputs 1 1 2 1
-              :equal-fold-necc-inst ((x (mv-nth 1 (old-witness)))
-                                     (z1 (a1 (mv-nth 0 (old-witness))))
-                                     (z2 (a2 (mv-nth 0 (old-witness)))))
+              :equal-fold-l2r-inst ((x (mv-nth 1 (old-witness)))
+                                    (z1 (a1 (mv-nth 0 (old-witness))))
+                                    (z2 (a2 (mv-nth 0 (old-witness)))))
               :fold-correct-inst ((x1 (mv-nth 0 (old-witness)))
                                   (x (mv-nth 1 (old-witness))))))
 
 (must-succeed*
  (gen-inputs 1 0 2 2)
  (gen-outputs 1 0 2 2
-              :equal-fold-necc-inst ((x (mv-nth 0 (old-witness)))
-                                     (z1 (a1 (mv-nth 1 (old-witness))))
-                                     (z2 (a2 (mv-nth 1 (old-witness)))))
+              :equal-fold-l2r-inst ((x (mv-nth 0 (old-witness)))
+                                    (z1 (a1 (mv-nth 1 (old-witness))))
+                                    (z2 (a2 (mv-nth 1 (old-witness)))))
               :fold-correct-inst ((x (mv-nth 0 (old-witness)))
                                   (x1 (mv-nth 1 (old-witness))))))
 
 (must-succeed*
  (gen-inputs 1 1 2 2)
  (gen-outputs 1 1 2 2
-              :equal-fold-necc-inst ((x (mv-nth 1 (old-witness)))
-                                     (z1 (a1 (mv-nth 0 (old-witness))))
-                                     (z2 (a2 (mv-nth 0 (old-witness)))))
+              :equal-fold-l2r-inst ((x (mv-nth 1 (old-witness)))
+                                    (z1 (a1 (mv-nth 0 (old-witness))))
+                                    (z2 (a2 (mv-nth 0 (old-witness)))))
               :fold-correct-inst ((x1 (mv-nth 0 (old-witness)))
                                   (x (mv-nth 1 (old-witness))))))
 
@@ -276,11 +273,11 @@
 (must-succeed*
  (gen-inputs 2 0 2 0)
  (gen-outputs 2 0 2 0
-              :equal-fold-necc-inst ((x (mv-nth 0 (old-witness)))
-                                     (z1 (a1 (mv-nth 1 (old-witness))
-                                             (mv-nth 2 (old-witness))))
-                                     (z2 (a2 (mv-nth 1 (old-witness))
-                                             (mv-nth 2 (old-witness)))))
+              :equal-fold-l2r-inst ((x (mv-nth 0 (old-witness)))
+                                    (z1 (a1 (mv-nth 1 (old-witness))
+                                            (mv-nth 2 (old-witness))))
+                                    (z2 (a2 (mv-nth 1 (old-witness))
+                                            (mv-nth 2 (old-witness)))))
               :fold-correct-inst ((x (mv-nth 0 (old-witness)))
                                   (x1 (mv-nth 1 (old-witness)))
                                   (x2 (mv-nth 2 (old-witness))))))
@@ -288,11 +285,11 @@
 (must-succeed*
  (gen-inputs 2 1 2 0)
  (gen-outputs 2 1 2 0
-              :equal-fold-necc-inst ((x (mv-nth 1 (old-witness)))
-                                     (z1 (a1 (mv-nth 0 (old-witness))
-                                             (mv-nth 2 (old-witness))))
-                                     (z2 (a2 (mv-nth 0 (old-witness))
-                                             (mv-nth 2 (old-witness)))))
+              :equal-fold-l2r-inst ((x (mv-nth 1 (old-witness)))
+                                    (z1 (a1 (mv-nth 0 (old-witness))
+                                            (mv-nth 2 (old-witness))))
+                                    (z2 (a2 (mv-nth 0 (old-witness))
+                                            (mv-nth 2 (old-witness)))))
               :fold-correct-inst ((x1 (mv-nth 0 (old-witness)))
                                   (x (mv-nth 1 (old-witness)))
                                   (x2 (mv-nth 2 (old-witness))))))
@@ -300,11 +297,11 @@
 (must-succeed*
  (gen-inputs 2 2 2 0)
  (gen-outputs 2 2 2 0
-              :equal-fold-necc-inst ((x (mv-nth 2 (old-witness)))
-                                     (z1 (a1 (mv-nth 0 (old-witness))
-                                             (mv-nth 1 (old-witness))))
-                                     (z2 (a2 (mv-nth 0 (old-witness))
-                                             (mv-nth 1 (old-witness)))))
+              :equal-fold-l2r-inst ((x (mv-nth 2 (old-witness)))
+                                    (z1 (a1 (mv-nth 0 (old-witness))
+                                            (mv-nth 1 (old-witness))))
+                                    (z2 (a2 (mv-nth 0 (old-witness))
+                                            (mv-nth 1 (old-witness)))))
               :fold-correct-inst ((x1 (mv-nth 0 (old-witness)))
                                   (x2 (mv-nth 1 (old-witness)))
                                   (x (mv-nth 2 (old-witness))))))
@@ -312,11 +309,11 @@
 (must-succeed*
  (gen-inputs 2 0 2 1)
  (gen-outputs 2 0 2 1
-              :equal-fold-necc-inst ((x (mv-nth 0 (old-witness)))
-                                     (z1 (a1 (mv-nth 1 (old-witness))
-                                             (mv-nth 2 (old-witness))))
-                                     (z2 (a2 (mv-nth 1 (old-witness))
-                                             (mv-nth 2 (old-witness)))))
+              :equal-fold-l2r-inst ((x (mv-nth 0 (old-witness)))
+                                    (z1 (a1 (mv-nth 1 (old-witness))
+                                            (mv-nth 2 (old-witness))))
+                                    (z2 (a2 (mv-nth 1 (old-witness))
+                                            (mv-nth 2 (old-witness)))))
               :fold-correct-inst ((x (mv-nth 0 (old-witness)))
                                   (x1 (mv-nth 1 (old-witness)))
                                   (x2 (mv-nth 2 (old-witness))))))
@@ -324,11 +321,11 @@
 (must-succeed*
  (gen-inputs 2 1 2 1)
  (gen-outputs 2 1 2 1
-              :equal-fold-necc-inst ((x (mv-nth 1 (old-witness)))
-                                     (z1 (a1 (mv-nth 0 (old-witness))
-                                             (mv-nth 2 (old-witness))))
-                                     (z2 (a2 (mv-nth 0 (old-witness))
-                                             (mv-nth 2 (old-witness)))))
+              :equal-fold-l2r-inst ((x (mv-nth 1 (old-witness)))
+                                    (z1 (a1 (mv-nth 0 (old-witness))
+                                            (mv-nth 2 (old-witness))))
+                                    (z2 (a2 (mv-nth 0 (old-witness))
+                                            (mv-nth 2 (old-witness)))))
               :fold-correct-inst ((x1 (mv-nth 0 (old-witness)))
                                   (x (mv-nth 1 (old-witness)))
                                   (x2 (mv-nth 2 (old-witness))))))
@@ -336,11 +333,11 @@
 (must-succeed*
  (gen-inputs 2 2 2 1)
  (gen-outputs 2 2 2 1
-              :equal-fold-necc-inst ((x (mv-nth 2 (old-witness)))
-                                     (z1 (a1 (mv-nth 0 (old-witness))
-                                             (mv-nth 1 (old-witness))))
-                                     (z2 (a2 (mv-nth 0 (old-witness))
-                                             (mv-nth 1 (old-witness)))))
+              :equal-fold-l2r-inst ((x (mv-nth 2 (old-witness)))
+                                    (z1 (a1 (mv-nth 0 (old-witness))
+                                            (mv-nth 1 (old-witness))))
+                                    (z2 (a2 (mv-nth 0 (old-witness))
+                                            (mv-nth 1 (old-witness)))))
               :fold-correct-inst ((x1 (mv-nth 0 (old-witness)))
                                   (x2 (mv-nth 1 (old-witness)))
                                   (x (mv-nth 2 (old-witness))))))
@@ -348,11 +345,11 @@
 (must-succeed*
  (gen-inputs 2 0 2 2)
  (gen-outputs 2 0 2 2
-              :equal-fold-necc-inst ((x (mv-nth 0 (old-witness)))
-                                     (z1 (a1 (mv-nth 1 (old-witness))
-                                             (mv-nth 2 (old-witness))))
-                                     (z2 (a2 (mv-nth 1 (old-witness))
-                                             (mv-nth 2 (old-witness)))))
+              :equal-fold-l2r-inst ((x (mv-nth 0 (old-witness)))
+                                    (z1 (a1 (mv-nth 1 (old-witness))
+                                            (mv-nth 2 (old-witness))))
+                                    (z2 (a2 (mv-nth 1 (old-witness))
+                                            (mv-nth 2 (old-witness)))))
               :fold-correct-inst ((x (mv-nth 0 (old-witness)))
                                   (x1 (mv-nth 1 (old-witness)))
                                   (x2 (mv-nth 2 (old-witness))))))
@@ -360,11 +357,11 @@
 (must-succeed*
  (gen-inputs 2 1 2 2)
  (gen-outputs 2 1 2 2
-              :equal-fold-necc-inst ((x (mv-nth 1 (old-witness)))
-                                     (z1 (a1 (mv-nth 0 (old-witness))
-                                             (mv-nth 2 (old-witness))))
-                                     (z2 (a2 (mv-nth 0 (old-witness))
-                                             (mv-nth 2 (old-witness)))))
+              :equal-fold-l2r-inst ((x (mv-nth 1 (old-witness)))
+                                    (z1 (a1 (mv-nth 0 (old-witness))
+                                            (mv-nth 2 (old-witness))))
+                                    (z2 (a2 (mv-nth 0 (old-witness))
+                                            (mv-nth 2 (old-witness)))))
               :fold-correct-inst ((x1 (mv-nth 0 (old-witness)))
                                   (x (mv-nth 1 (old-witness)))
                                   (x2 (mv-nth 2 (old-witness))))))
@@ -372,11 +369,11 @@
 (must-succeed*
  (gen-inputs 2 2 2 2)
  (gen-outputs 2 2 2 2
-              :equal-fold-necc-inst ((x (mv-nth 2 (old-witness)))
-                                     (z1 (a1 (mv-nth 0 (old-witness))
-                                             (mv-nth 1 (old-witness))))
-                                     (z2 (a2 (mv-nth 0 (old-witness))
-                                             (mv-nth 1 (old-witness)))))
+              :equal-fold-l2r-inst ((x (mv-nth 2 (old-witness)))
+                                    (z1 (a1 (mv-nth 0 (old-witness))
+                                            (mv-nth 1 (old-witness))))
+                                    (z2 (a2 (mv-nth 0 (old-witness))
+                                            (mv-nth 1 (old-witness)))))
               :fold-correct-inst ((x1 (mv-nth 0 (old-witness)))
                                   (x2 (mv-nth 1 (old-witness)))
                                   (x (mv-nth 2 (old-witness))))))

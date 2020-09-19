@@ -473,14 +473,13 @@
      (xdoc::p
       "Equality between @('?f') and @('fold[?g][?h]'):")
      (xdoc::codeblock
-      "(soft::defun-sk2 equal[?f][fold[?g][?h]] ()"
-      "  (forall (x z1 ... zm)"
-      "          (equal (?f x z1 ... zm)"
-      "                 (fold[?g][?h] x z1 ... zm))))")
+      "(soft::defequal equal[?f][fold[?g][?h]]"
+      "  :left ?f"
+      "  :right fold[?g][?h]"
+      "  :vars (x z1 ... zm))")
      (xdoc::p
       "In the " *divconq-design-notes* ",
-       this equality is just denoted by @($f=\\mathit{fold}(g,h)$),
-       but this must be expressed as a second-order @(tsee defun-sk) in ACL2."))
+       this equality is denoted by @($f=\\mathit{fold}(g,h)$)."))
 
     (xdoc::desc
      "@('new')"
