@@ -2318,7 +2318,7 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
       (equal (elab-modlist-norm x) x)
       ///
       (deffixtype elab-modlist-norm :fix elab-modlist-norm :pred elab-modlist-normp
-        :equiv elab-modlist-norm-equiv :define t :forward t :execp nil))
+        :equiv elab-modlist-norm-equiv :define t :forward t :executablep nil))
 
     (defthm elab-modlist-fix-of-elab-modlist-norm
       (equal (elab-modlist-fix (elab-modlist-norm x))
@@ -2401,7 +2401,7 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
       (implies (moddbp moddb)
                (equal (moddb-fix moddb) moddb)))
 
-    (deffixtype moddb :pred moddbp :fix moddb-fix :equiv moddb-equiv :define t :execp nil)
+    (deffixtype moddb :pred moddbp :fix moddb-fix :equiv moddb-equiv :define t :executablep nil)
 
     (defthm nth-of-moddb-fix
       (and (equal (nth 0 (moddb-fix moddb))
@@ -2502,7 +2502,7 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
     ///
     (deffixtype moddb-norm :pred moddb-norm-p
       :fix moddb-norm :equiv moddb-norm-equiv
-      :define t :forward t :execp nil)
+      :define t :forward t :executablep nil)
 
     (fty::deffixcong moddb-norm-equiv nat-equiv (nth *moddb->nmods* moddb) moddb)
 
