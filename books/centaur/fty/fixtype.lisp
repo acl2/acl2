@@ -163,8 +163,11 @@
                              (get-fixtypes-alist world))))))))
 
 
-(defmacro deffixtype (name &key pred fix equiv (executablep 't)
-                           ;; optional
+(defmacro deffixtype (name &key
+                           pred
+                           fix
+                           equiv
+                           (executablep 't)
                            define
                            verbosep
                            hints
