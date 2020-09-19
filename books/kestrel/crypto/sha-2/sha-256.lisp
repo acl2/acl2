@@ -68,7 +68,7 @@
                               (natp n)
                               (< n 32))))
   ;; Note the order of the arguments here:
-  (shr 32 x n))
+  (bvshr 32 x n))
 
 ;; Equation (4.2)
 (defun ch32 (x y z)

@@ -42,7 +42,7 @@
             repeat
             reverse-list
             putbit
-            shr
+            bvshr
             slice
             string=>nats
             two-nats-measure

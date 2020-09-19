@@ -68,7 +68,7 @@
                               (natp n)
                               (< n 64))))
   ;; Note the order of the arguments here:
-  (shr 64 x n))
+  (bvshr 64 x n))
 
 ;; Equation (4.8)
 (defun ch64 (x y z)
