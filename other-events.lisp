@@ -24046,8 +24046,9 @@
                                      (cond
                                       (extra ; always true?
                                        (msg
-                                        "~ ~ Additional bindings: ~X0t"
-                                        extra))
+                                        "~ ~ Additional bindings: ~X01"
+                                        extra
+                                        (term-evisc-tuple nil state)))
                                       (t ""))))
                              (cons #\c (if (eq caller 'show-rewrites) 0 1))
                              (cons #\3 (untrans0
@@ -24072,7 +24073,8 @@
                              (cons #\7 (if (member-equal *nil* subst-hyps-2)
                                            1
                                          0))
-                             (cons #\t (term-evisc-tuple nil state)))
+                             (cons #\t (term-evisc-tuple nil state))
+                             (cons #\8 (if rewrite-quoted-constant-form-2p 1 0)))
                        (standard-co state) state nil)))
                 (t state))))))))
 

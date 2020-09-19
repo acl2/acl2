@@ -9799,6 +9799,7 @@
            :in-theory (enable abs-find-file-helper)))
   :rule-classes :forward-chaining)
 
+;;; Matt K. note: The following has been fixed, 9/19/2020.
 #||
 A hard ACL2 error can be seen by executing the following commands at this
 point.
