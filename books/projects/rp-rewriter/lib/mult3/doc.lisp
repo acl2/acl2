@@ -45,7 +45,7 @@
  Multiplier-Verification
  :parents (rp-rewriter/applications)
  :short "An efficient library to verify large integer multiplier designs."
- :long "  <p> Implemented and verified  completely on ACL2, we  provide a novel
+ :long "  <p> Implemented and verified  completely in ACL2, we  provide a novel
  method to  verify complex integer  multiplier designs implemented  in (System)
  Verilog. With a 4-6x scaling factor,  this tool can verify integer multipliers
  that may be  implemented with Booth Encoding, various summation  trees such as
@@ -71,22 +71,20 @@ rewrite rules dedicated for multiplier designs are used to simplify them and
 prove them equivalent to their specification. </p>
 
 <p>  Our  library  uses  various  heuristics  and  modes  to  simplify  various
-designs. We give  the users to option to enable/disable  some of the heuristics
+designs. We give the users the  option to enable/disable some of the heuristics
 that might help speed-up the proofs (and/or reduce memory use) or in some cases
-help proofs  finish.  We  leave the  most aggressive  settings enabled  for best
-coverage.   If  you wish  to  tune  their  proofs by  enabling/disabling  these
-heuristics, you may check out @(see Multiplier-Verification-Heuristics).
-</p>
+help proofs finish.   We enable very aggressive heuristics by  default for best
+coverage.   If   you  wish  to   tune  the   performance  of  your   proofs  by
+enabling/disabling    these   heuristics,    you    can    check   out    @(see
+Multiplier-Verification-Heuristics).  </p>
 
-<p>  We  present two  demos  that  show  how these  tool  can  be used  in  new
+<p>  We  present  two demos  that  show  how  this  tool  can be  used  in  new
 designs. @(see Multiplier-Verification-demo-1) shows  a very basic verification
 case  on  a  stand-alone  64x64-bit  Booth  Encoded  Dadda  multiplier.   @(see
 Multiplier-Verification-demo-2) shows  how this tool  can be used on  much more
-complex  designs  where  a  stand-alone  integer multiplier  is  re-used  as  a
-submodule  for  various   operations  such  as  FMA,   dot-product  and  merged
-multiplication. It also shows a simple verification case on a sequential
-circuit. 
-</p>
+complex designs where a stand-alone integer multiplier is reused as a submodule
+for various operations  such as FMA, dot-product and  merged multiplication. It
+also shows a simple verification case on a sequential circuit.  </p>
 
 
 <p> There  are two older  versions of  this library. If  you would like  to use
@@ -111,16 +109,16 @@ the essentials of the method are similar.  </p>
  are applied  for all the designs,  some are specific to  certain corner cases,
  and some are  just alternatives to others that might  prove more beneficial in
  different cases. We  are continually experimenting with  these heuristics, and
- we let  users control whether  or not they should  be enabled or  disabled. By
- default, we  leave our heuristics settings  to be very aggressive  so that our
- tool is readily  applicable to the majority of design  patterns. However, that
- might notably  slow down proof-time performance  for some designs, or  in some
- cases, they might be too aggressive (i.e., cause proofs to fail that otherwise
- would be successful). If you are  not happy with the default configuration for
- any reason, you may benefit from  enabling/disabling some of our heuristics by
- following the  instructions below. Note  that we deliberately  omit describing
- what these heuristics are as we  are preparing for another paper.  Also beware
- that these heuristics and related events might change over time. </p>
+ we  let users  control  whether or  not  some of  these  heuristics should  be
+ enabled.  By default, we leave our heuristic settings to be very aggressive so
+ that   our  tool   is   readily   applicable  to   the   majority  of   design
+ patterns. However,  that might  notably slow  down proof-time  performance for
+ some designs,  or in  some cases,  they might be  too aggressive  (i.e., cause
+ proofs to fail that otherwise would be  successful). If you are not happy with
+ the   default   configuration  for   any   reason,   you  may   benefit   from
+ enabling/disabling  some  of  our  heuristics by  following  the  instructions
+ below.  Beware that  these heuristics  and  related events  might change  over
+ time. </p>
 
 
 <p> STINGY-PP-CLEAN:  Booth Encoded designs produce  a lot of terms  as part of
@@ -190,7 +188,10 @@ Booth-Encoded designs.
  starting  point;  however,  real-world  applications  of  integer  multipliers
  involve more intricate  design strategies. We tried to recreate  some of those
  strategies  and   compiled  a   more  complex   multiplier  module   given  in
- @('<your-acl2-directory>/books/projects/rp-rewriter/lib/mult3/demo/integrated_multipliers.sv').
+ @('<your-acl2-directory>/books/projects/rp-rewriter/lib/mult3/demo/integrated_multipliers.sv'). You
+ may find this file in <a
+ href\"https://github.com/acl2/acl2/blob/master/books/projects/rp-rewriter/lib/mult3/demo/integrated_multipliers.sv\"
+ target=\"_blank\"> GitHub </a> as well.
  This module allocates  four identical 33x33-bit signed  multipliers, two final
  stage adders and some smaller  reduction trees to perform different multiplier
  operations. These include signed/unsigned four-laned 32x32-bit multiplication
@@ -210,6 +211,8 @@ Booth-Encoded designs.
 
 <p> 1.  Include necessary books.  @(see acl2::SVL) system uses  @(see acl2::SV)
 and @(see acl2::VL) packages. So we start with them.
+</p>
+
 <code>
 (include-book \"centaur/sv/top\" :dir :system) ;; a big book; takes around 30 seconds
 (include-book \"centaur/vl/loader/top\" :dir :system) ;; takes around 10 seconds
@@ -217,19 +220,20 @@ and @(see acl2::VL) packages. So we start with them.
 (include-book \"centaur/svl/top\" :dir :system) ;; takes just a few seconds
 </code>
 
-Then, the last book we need to include  has the rewrite and meta rules to carry
-out simplification of multiplier modules.
+<p> Then, include has the rewrite and meta rules to carry out simplification of
+multiplier modules:
+</p>
 
 <code>
 (include-book \"projects/rp-rewriter/lib/mult3/svl-top\" :dir :system)
 </code>
-</p>
 
 
-<p> 2. Convert the System Verilog design to SVL system. All takes just a couple
-seconds. Load VL design:
-  <code> @('
-(acl2::defconsts
+<p> 2. Convert the System Verilog design to SVL design. All three events take a few
+seconds in total. </p>
+
+<p> Load VL design: </p>
+  <code> @('(acl2::defconsts
    (*mult-vl-design* state)
    (b* (((mv loadresult state)
          (vl::vl-load (vl::make-vl-loadconfig
@@ -238,7 +242,7 @@ seconds. Load VL design:
 ')
 </code>
 
-Load SV design:
+<p> Load SV design: </p>
 <code>
 @('
 (acl2::defconsts
@@ -254,19 +258,23 @@ Load SV design:
 ')
 </code>
 
-Load SVL Design:
+<p> Load SVL Design: </p>
 <code>
 (acl2::defconsts (*mult-svl-design* rp::rp-state)
                  (svl::svl-flatten-design *mul-sv-design*
                                           *mult-vl-design*
                                           :dont-flatten :all))
 </code>
-</p>
 
 
 <p> 
 
-3. We create rewrite rules for adder modules. For full-adder:
+3. Create rewrite rules for adder modules.
+
+</p>
+
+
+<p> For full-adder: </p>
 <code> 
 @('
 (def-rp-rule svl-run-phase-of-FullAdder
@@ -285,7 +293,7 @@ Load SVL Design:
                            ()))))
 ')
 </code>
-For half-adder:
+<p> For half-adder: </p>
 <code> 
 @('
 (def-rp-rule svl-run-phase-of-HalfAdder
@@ -303,7 +311,7 @@ For half-adder:
                            ()))))
 ')
 </code>
-For the final stage adder:
+<p> For the final stage adder: </p>
 <code> 
 @('
 (defthmrp LF_131-final-stage-adder-correct
@@ -321,13 +329,13 @@ For the final stage adder:
 ')
 </code>
 
-</p>
 
 
-
-<p> 4. Now we create a new function called \"mode\" to calculate the value of the
+<p> 4. We  create a new function called @('mode') to calculate the value of the
 signal of the same name in integrated_multipliers.sv. This will make our proofs
 more readable and easier to manage.
+</p>
+
 <code>
 @('
 (define mode (&key
@@ -359,8 +367,6 @@ four-lanes-hi and one-lane should be set to 1.~%\")
 ')
 </code> 
 
-</p>
-
 <p> 5.  We  are now ready to  verify the top module  for various multiplication
 modes. First,  we verify various  combinational modes (one-lane  64x64-bit FMA,
 4-32x32-bit  dot-product, and four-lane  32x32-bit  multiplication  with lower  and
@@ -391,7 +397,7 @@ signals to some free variables.
  Below is our first correctness proof  of a multiplication mode SVL-RUN returns
 an association list  of all the variables stated in  *out-binds*. In this case,
 there is only one entry whose key  is 'result'. We state the expression of this
-signal  in  our  conjecture.   In  this   case  it  is  [in3  +  in2*in1  (both
+signal  in  our  conjecture.  Here  it  is  [in3  +  in2*in1  (both
 sign-extended)] and the complete result is  truncated at 128 bits.  This is the
 specification of this multiplication mode.   When writing the specification, it
 is imperative to have @(see acl2::loghead) wrapping the arithmetic functions as
@@ -423,8 +429,8 @@ fact, we could set any portion of any input signals to any constants.
 
 <p>
 
-We  can  prove  the  same  for  mode  for  unsigned  numbers  by  changing  the
-specification accordingly.
+We  can  prove  the  same  for  the mode  for  unsigned  numbers  by  changing  the
+specification accordingly:
 <code>
 @('
 (defthmrp unsigned-one-lane-mult-is-correct
@@ -451,8 +457,8 @@ specification accordingly.
 
 <p> Now, let's verify  the dot product operation. To make  it more readable, we
 define another input bindings  alist for the dot product mode.  We split two of
-the input signals to four lanes. Each lemma similarly takes a round a second to
-prove.
+the input signals to four lanes. This conjecture, similarly, takes about a second to
+prove. We omit the proofs for unsigned for brevity.
 
 <code>
 @('
@@ -504,41 +510,6 @@ prove.
                                                   (sign-ext in2_3 32))
                                                in3)))))))
 
-(defthmrp unsigned-dot-product-is-correct
-  (implies (and (integerp in1_0)
-                (integerp in2_0)
-                (integerp in1_1)
-                (integerp in2_1)
-                (integerp in1_2)
-                (integerp in2_2)
-                (integerp in1_3)
-                (integerp in2_3)
-                (integerp in3))
-           (equal (svl::svl-run \"Integrated_Multiplier\"
-                                (make-fast-alist `((in1_0 . ,in1_0)
-                                                   (in2_0 . ,in2_0)
-                                                   (in1_1 . ,in1_1)
-                                                   (in2_1 . ,in2_1)
-                                                   (in1_2 . ,in1_2)
-                                                   (in2_2 . ,in2_2)
-                                                   (in1_3 . ,in1_3)
-                                                   (in2_3 . ,in2_3)
-                                                   (in3   . ,in3)
-                                                   (mode  . ,(mode :dot-product t
-                                                                   :signed nil))))
-                                *in-binds-dot-product*
-                                *out-binds*
-                                *mult-svl-design*)
-                  `((result . ,(loghead 128 (+ (* (loghead 32 in1_0)
-                                                  (loghead 32 in2_0))
-                                               (* (loghead 32 in1_1)
-                                                  (loghead 32 in2_1))
-                                               (* (loghead 32 in1_2)
-                                                  (loghead 32 in2_2))
-                                               (* (loghead 32 in1_3)
-                                                  (loghead 32 in2_3))
-                                               in3)))))))
-
 ')
 </code>
 
@@ -546,7 +517,7 @@ prove.
 
 <p> Another mode is four-lane multiplication that truncate at the lower half of
  multiplication.   Similarly,  we  define   new  input  and  output  simulation
- patterns:
+ patterns, splitting all three inputs and the output to four lanes:
 
 <code>
 @('
@@ -844,12 +815,14 @@ Below is a demo  that shows how to input a multiplier  design coded in (System)
 
 <p>
 1. Include the books to convert Verilog designs to SVL format.
+</p>
 <code>
 (include-book \"centaur/sv/top\" :dir :system) ;; a big book; takes around 30 seconds
 (include-book \"centaur/vl/loader/top\" :dir :system) ;; takes around 10 seconds
 (include-book \"oslib/ls\" :dir :system)
 (include-book \"centaur/svl/top\" :dir :system)
 </code>
+<p>
 @(see acl2::SVL) system uses @(see acl2::SV) and @(see acl2::VL) packages.
 </p>
 
@@ -912,7 +885,7 @@ the adder module names instead of ':all'. See @(see svl::svl-flatten-design).
 
 
 <p>
-5. Include the book that has the rewriter rules and meta rules for RP-Rewriter
+5. Include the book that has the rewrite and meta rules
 for multiplier proofs:
 <code>
 (include-book \"projects/rp-rewriter/lib/mult3/svl-top\" :dir :system)
@@ -922,6 +895,8 @@ for multiplier proofs:
 
 <p>
 6. Rewrite the adder modules with our specification:
+
+</p>
 
 <code>
 (def-rp-rule svl-run-phase-of-FullAdder
@@ -955,11 +930,13 @@ for multiplier proofs:
                            ()))))
 </code>
 
+<p>
 The multiplier we are working on uses two types of bit-level adders: a
 full-adder with module name \"fa\", and a half-adder with module name
 \"ha\". We rewrite them with the lemmas given above. We use @(see rp::def-rp-rule)
 to save these in the @(see rp::RP-Rewriter)'s rule-set. ACL2 can prove these lemmas
-easily by case-splitting with bitp and trying all the combinations.
+easily by case-splitting with @('bitp') and trying all the combinations.
+</p>
 
 <code>
 (defthmrp final-stage-adder-correct
@@ -976,12 +953,14 @@ easily by case-splitting with bitp and trying all the combinations.
   :enable-rules rp::*adder-rules*)
 </code>
 
-This multiplier module uses a Han-Carlson parallel prefix adder with module
-name \"HC_128\". We use our suggested rewriting scheme to prove this adder
-equivalent to our specification. The macro @(see rp::defthmrp) calls
-RP-Rewriter as a clause processor. In proofs for adder modules, the arguments
+<p>
+This multiplier  module uses  a Han-Carlson parallel  prefix adder  with module
+name \"HC_128\".   We use our  suggested rewriting  scheme to prove  this adder
+equivalent  to   our  specification.   The  macro   @(see  rp::defthmrp)  calls
+RP-Rewriter as a  clause processor. In proofs for adder  modules, the arguments
 ':disable-meta-rules (s-c-spec-meta)' and ':enable-rules rp::*adder-rules*' are
-standard.
+standard. These arguments disable the  rules specific to multiplier modules and
+enable the ones for adders.
 
 </p>
 
@@ -1054,5 +1033,11 @@ multipliers garbage collector of CCL does a better job with @(see
 acl2::set-max-mem) and it can finish large proofs when SBCL terminates with memory
 errors. 
 </p>
+
+
+<p>
+You may continue to @(see Multiplier-Verification-demo-2).
+</p>
+
 "
  )

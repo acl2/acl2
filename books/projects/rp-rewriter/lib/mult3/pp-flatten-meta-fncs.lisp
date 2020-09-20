@@ -264,7 +264,7 @@
                (equal term ''1)
                (equal term ''0))
            t)
-          (t (and (pp-has-bitp-rp orig)
+          (t (and (has-bitp-rp orig)
                   (not (include-fnc term 's-c-res))
                   (not (include-fnc term 'c))
                   (not (include-fnc term 's)))))))
@@ -818,7 +818,7 @@
            (list (cons sign (list term))))
           ((equal term ''0)
            nil)
-          (t (if (pp-has-bitp-rp orig)
+          (t (if (has-bitp-rp orig)
                  (list (cons sign (list orig)))
                (progn$
                 (cw "unexpected term ~p0 ~%" orig)

@@ -4584,3 +4584,16 @@
             (sv::4vec-p (nth index lst)))
    :hints (("Goal"
             :in-theory (e/d (4vec-p) ()))))
+
+
+(def-rp-rule sv::4vec-xdet-opener
+  (implies (integerp x)
+           (equal (sv::4vec-xdet x)
+                  x))
+  :hints (("goal"
+           :in-theory (e/d (sv::4vec-xdet
+                            4vec-fix
+                            4VEC-P
+                            sv::4vec->upper
+                            sv::4vec->lower)
+                           ()))))

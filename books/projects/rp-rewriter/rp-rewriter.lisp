@@ -987,7 +987,11 @@ returns (mv rule rules-rest bindings rp-context)"
           ;; cond is something other than ''t or ''nil
           ;; if in hyp-flg=1 (meaning a hyp is being rewritten), then stop
           ;; trying to rewrite.
-          ((when hyp-flg)
+          ((when (and hyp-flg
+                      ;; If this comes from a rule that resembles anything
+                      ;; other than "and", then keep on rewriting.
+                      (not (equal (cadr dont-rw)
+                                  (caddr dont-rw)))))
            (mv term rp-state))
 
           ;; add to the
@@ -1000,7 +1004,7 @@ returns (mv rule rules-rest bindings rp-context)"
                   (1- limit) rp-state state))
           (extra-context2
            (rp-extract-context (dumb-negate-lit2 cond-rw)))
-          (?r2-context (append extra-context2 context))
+          (r2-context (append extra-context2 context))
           ((mv r2 rp-state)
            (rp-rw (cadddr term) (cadddr dont-rw)
                   r2-context iff-flg hyp-flg

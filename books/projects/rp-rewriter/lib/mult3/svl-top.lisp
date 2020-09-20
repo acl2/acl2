@@ -191,7 +191,38 @@
     :hints (("goal"
              :in-theory (e/d (bitp) ())))))
 
+
+
+
 (progn
+  (encapsulate
+    nil
+    (local
+     (use-arithmetic-5 t))
+    (def-rp-rule
+      4vec-bitand-to-binary-and-when-atleast-one-is-bitp
+      (implies (or (and (bitp x)
+                        (force (integerp y)))
+                   (and (bitp y)
+                        (force (integerp x))))
+               (equal (sv::4vec-bitand x y)
+                      (binary-and (svl::bits x 0 1)
+                                  (svl::bits y 0 1))))
+      :hints (("Goal"
+               :in-theory (e/d (bitp
+                                bit-of
+                                svl::Bits
+                                SV::4VEC-PART-SELECT
+                                SV::3VEC-BITAND
+                                SV::4VEC->UPPER
+                                SV::4VEC->LOWER
+                                SV::3VEC-FIX
+                                sv::4vec-bitand
+                                )
+                               (mod2-is-m2
+                                +-IS-SUM
+                                floor2-if-f2))))))
+  
   (def-rp-rule 4vec-bitand-is-binary-and-when-bitp
     (implies (and (bitp x)
                   (bitp y))
@@ -757,7 +788,7 @@
                            ((:TYPE-PRESCRIPTION BIT-OF)
                             (:REWRITE BITP-OF-BIT-OF))))))
 
-(def-rp-rule
+(def-rp-rule$ t t
   4vec-concat$-1-of-binary-and
   (equal (svl::4vec-concat$ 1 (and$ x y) z)
          (svl::4vec-concat$ 1 (s-spec (list (and$ x y))) z))
@@ -808,5 +839,178 @@
   (equal (integer-listp (cons a b))
          (and (integerp a)
               (integer-listp b))))
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; For when definitions of ha and fa modules are replaced with + sign:
+
+;; it is necessary to create this rewrite mechanism because when output of an
+;; ha becomes and input of another ha, it messes up with the system somehow and
+;; some full-adders are not simplified as they are supposed to. So I looked at
+;; the rw stack for svl::bits-of-4vec-plus-is-4vec-plus-start=0 and
+;; svl::bits-of-4vec-plus-is-4vec-plus to figure out what fa and ha are
+;; rewritten to. And I decided to rewrite summation of single bit SV::4VEC-PLUS
+;; to temp-ha-spec. If it is added with another SV::4VEC-PLUS, then it is
+;; probably a part of a full-adder, so I convert that to fa spec.
+;; For other adder types, other rewrite rules might be necessary.
+
+(defun temp-ha-spec (x y)
+  (svl::4vec-list (ss x y)
+                  (cc x y)))
+
+
+(encapsulate
+  nil
+  (local
+   (use-arithmetic-5 t))
+  (def-rp-rule
+    4vec-plus-of-bits-to-temp-ha-spec
+    (implies (and (bitp x)
+                  (bitp y)
+                  (integerp size)
+                  (> size 1))
+             (equal (svl::bits (sv::4vec-plus x y)
+                               0 size)
+                    (temp-ha-spec x y)))
+    :hints (("goal"
+             :in-theory (e/d (bitp
+                              sum
+                              svl::bits
+                              sv::4vec-part-select
+                              sv::4vec->upper
+                              sv::4vec->lower
+                              sv::4vec-concat)
+                             (+-is-sum)))))
+  (def-rp-rule
+    4vec-plus-rule-for-fa
+    (implies (and (bitp x)
+                  (bitp y)
+                  (bitp z)
+                  (integerp size)
+                  (> size 1))
+             (equal (svl::bits (sv::4vec-plus (temp-ha-spec x y)
+                                              z)
+                               0 size)
+                    (svl::4vec-list (ss x y z)
+                                    (cc x y z))))
+    :hints (("goal"
+             :in-theory (e/d (bitp
+                              sum
+                              svl::bits
+                              sv::4vec-part-select
+                              sv::4vec->upper
+                              sv::4vec->lower
+                              sv::4vec-concat)
+                             (+-is-sum)))))
+
+  (def-rp-rule
+    4vec-plus-rule-for-fa-to-ss
+    (implies (and (bitp x)
+                  (bitp y)
+                  (bitp z))
+             (equal (svl::bits (sv::4vec-plus (temp-ha-spec x y)
+                                              z)
+                               0 1)
+                    (ss x y z)))
+    :hints (("goal"
+             :in-theory (e/d (bitp
+                              sum
+                              svl::bits
+                              sv::4vec-part-select
+                              sv::4vec->upper
+                              sv::4vec->lower
+                              sv::4vec-concat)
+                             (+-is-sum)))))
+
+  (def-rp-rule
+    4vec-plus-rule-for-fa-to-cc
+    (implies (and (bitp x)
+                  (bitp y)
+                  (bitp z))
+             (equal (svl::bits (sv::4vec-plus (temp-ha-spec x y)
+                                              z)
+                               1 1)
+                    (cc x y z)))
+    :hints (("goal"
+             :in-theory (e/d (bitp
+                              sum
+                              svl::bits
+                              sv::4vec-part-select
+                              sv::4vec->upper
+                              sv::4vec->lower
+                              sv::4vec-concat)
+                             (+-is-sum)))))
+
+  (def-rp-rule 4vec-concat$-of-temp-ha-spec
+    (implies (and (bitp x)
+                  (bitp y))
+             (equal (svl::4vec-concat$ 2
+                                       (temp-ha-spec x y)
+                                       0)
+                    (temp-ha-spec x y)))
+    :hints (("goal"
+             :in-theory (e/d (bitp bitp) ()))))
+
+  (def-rp-rule bits-of-temp-ha-spec-out-of-range
+    (implies (and (bitp x)
+                  (bitp y)
+                  (posp size)
+                  (integerp start)
+                  (> start 1)) 
+             (equal (svl::bits (temp-ha-spec x y)
+                               start size)
+                    0))
+    :hints (("Goal"
+             :in-theory (e/d (svl::bits
+                              f2 sum
+                              bitp
+                              SV::4VEC-RSH
+                              SV::4VEC-CONCAT
+                              SV::4VEC-SHIFT-CORE
+                              SV::4VEC->UPPER
+                              SV::4VEC->LOWER
+                              SV::4VEC-PART-SELECT)
+                             (+-is-sum
+                              floor2-if-f2
+                              mod2-is-m2)))))
+
+  )
+
+(def-rp-rule
+  bits-0-1-of-temp-ha-spec
+  (equal (svl::bits (temp-ha-spec x y) 0 1)
+         (ss x y))
+  :hints (("Goal"
+           ;;:cases ((M2 (SUM-LIST (LIST X Y))))
+           :in-theory (e/d (S-SPEC-TO-ADDER-M2) ()))))
+
+(def-rp-rule
+  bits-1-1-of-temp-ha-spec
+  (implies (and (bitp x)
+                (bitp y))
+           (equal (svl::bits (temp-ha-spec x y) 1 1)
+                  (cc x y)))
+  :hints (("Goal"
+           :in-theory (e/d (bitp) ()))))
+
+(def-rp-rule integerp-temp-ha-spec
+  (implies (and (integerp x)
+                (integerp y))
+           (integerp (temp-ha-spec x y))))
+
+
+
+
+;;;;;;;;;;;;;;;;;;;;
+
+(def-rp-rule svex-env-fix$inline-opener
+  (implies (sv::svex-env-p x)
+           (equal (sv::svex-env-fix$inline x)
+                  x)))
+
+(def-rp-rule sv::svex-alist-eval-for-symbolic-is-svex-alist-eval
+  (equal (sv::svex-alist-eval-for-symbolic x y z)
+         (sv::svex-alist-eval x y)))
 
 (bump-all-meta-rules)
