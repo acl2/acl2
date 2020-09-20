@@ -197,6 +197,8 @@
     (cond
      ((member name '(*first-order-like-terms-and-out-arities*
                      *badge-prim-falist*
+                     *system-verify-guards-alist-1*
+                     *system-verify-guards-alist-2*
                      *apply$-boot-fns-badge-alist*)
               :test 'eq)
 
