@@ -29,14 +29,11 @@
 (include-book "kestrel/std/system/fresh-logical-name-with-dollars-suffix" :dir :system)
 (include-book "kestrel/std/util/tuple" :dir :system)
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
-(include-book "projects/apply/top" :dir :system)
 
 (include-book "utilities/input-processing")
 (include-book "utilities/transformation-table")
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defwarrant sublis-var)
+(local (include-book "projects/apply/top" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
