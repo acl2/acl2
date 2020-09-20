@@ -119,7 +119,14 @@
 ; 1. Badges
 
 (defun badge (fn)
-  (declare (xargs :guard t :mode :logic))
+  (declare (xargs :guard t
+
+; Badge, apply$-primp, and apply$ all come up in :program mode in #+acl2-devel
+; builds.  These all depend on functions in *system-verify-guards-alist-1*,
+; which are in :program mode in #+acl2-devel builds (see the discussion in
+; *system-verify-guards-alist*).
+
+                  :mode :program))
   (cond
    ((apply$-primp fn) (badge-prim fn))
    ((eq fn 'BADGE) *generic-tame-badge-1*)
@@ -133,9 +140,6 @@
 
 #-acl2-devel
 (in-theory (disable apply$-primp badge-prim))
-
-#-acl2-devel
-(in-theory (disable badge))
 
 ; -----------------------------------------------------------------
 ; 2. Tameness
@@ -490,10 +494,6 @@
 ; clique as a reflexive function: the fact that (ev$ (cadr x) a) is smaller
 ; than (cadr x) when (cadr x) is tame requires reasoning about ev$ before it is
 ; admitted.
-
-#-acl2-devel
-(in-theory (disable badge
-                    (:executable-counterpart badge)))
 
 ; -----------------------------------------------------------------
 ; 4. Executable Versions of BADGE and TAMEP
@@ -2293,118 +2293,19 @@
 ; with verify-guards nil, prove the lemma equating them, and verify-guards to
 ; install the fast :exec.
 
-(defun tails-ac (lst ac)
-  (declare (xargs :guard (and (true-listp lst)
-                              (true-listp ac))
-                  :mode :program))
-  (cond ((endp lst) (revappend ac nil))
-        (t (tails-ac (cdr lst) (cons lst ac)))))
-
-(defun tails (lst)
-  (declare (xargs :guard (true-listp lst)
-                  :mode :program))
-  (mbe :logic
-       (cond ((endp lst) nil)
-             (t (cons lst (tails (cdr lst)))))
-       :exec (tails-ac lst nil)))
+; See apply-prim.lisp for definitions of tails-ac and tails.
 
 ; -----------------------------------------------------------------
 ; Loop$-as and Its Tail Recursive Counterpart
 
-(defun empty-loop$-as-tuplep (tuple)
-; A loop$-as-tuple is empty if at least one element is empty.
-  (declare (xargs :guard (true-list-listp tuple)
-                  :mode :program))
-  (cond ((endp tuple) nil)
-        ((endp (car tuple)) t)
-        (t (empty-loop$-as-tuplep (cdr tuple)))))
-
-(defun car-loop$-as-tuple (tuple)
-  (declare (xargs :guard (true-list-listp tuple)
-                  :mode :program))
-  (cond ((endp tuple) nil)
-        (t (cons (caar tuple) (car-loop$-as-tuple (cdr tuple))))))
-
-(defun cdr-loop$-as-tuple (tuple)
-  (declare (xargs :guard (true-list-listp tuple)
-                  :mode :program))
-  (cond ((endp tuple) nil)
-        (t (cons (cdar tuple) (cdr-loop$-as-tuple (cdr tuple))))))
-
-(defun loop$-as-ac (tuple ac)
-  (declare (xargs :guard (and (true-list-listp tuple)
-                              (true-listp ac))
-                  :mode :program))
-  (cond ((endp tuple) (revappend ac nil))
-        ((empty-loop$-as-tuplep tuple) (revappend ac nil))
-        (t (loop$-as-ac (cdr-loop$-as-tuple tuple)
-                        (cons (car-loop$-as-tuple tuple)
-                              ac)))))
-
-(defun loop$-as (tuple)
-  (declare (xargs :guard (true-list-listp tuple)
-                  :mode :program))
-  (mbe :logic
-       (cond ((endp tuple) nil)
-             ((empty-loop$-as-tuplep tuple) nil)
-             (t (cons (car-loop$-as-tuple tuple)
-                      (loop$-as (cdr-loop$-as-tuple tuple)))))
-       :exec
-       (loop$-as-ac tuple nil)))
+; See apply-prim.lisp for definitions of empty-loop$-as-tuplep,
+; car-loop$-as-tuple, cdr-loop$-as-tuple, loop$-as-ac, and loop$-as.
 
 ; -----------------------------------------------------------------
 ; From-to-by and Its Tail Recursive Counterpart
 
-; We will need this measure in order to warrant from-to-by-ac.
-(defun from-to-by-measure (i j)
-  (declare (xargs :guard t))
-  (if (and (integerp i)
-           (integerp j)
-           (<= i j))
-      (+ 1 (- j i))
-      0))
-
-(defun from-to-by-ac (i j k ac)
-  (declare (xargs :guard (and (integerp i)
-                              (integerp j)
-                              (integerp k)
-                              (< 0 k)
-                              (true-listp ac))
-                  :mode :program))
-  (cond ((mbt (and (integerp i)
-                   (integerp j)
-                   (integerp k)
-                   (< 0 k)))
-         (cond
-          ((<= i j)
-           (from-to-by-ac i (- j k) k (cons j ac)))
-          (t ac)))
-        (t nil)))
-
-(defun from-to-by (i j k)
-  (declare (xargs :guard (and (integerp i)
-                              (integerp j)
-                              (integerp k)
-                              (< 0 k))
-                  :mode :program))
-
-; Before we verify the guards (and so avail ourselves of the :exec branch
-; below), (time$ (length (from-to-by 1 1000000 1))) took 0.21 seconds.  After
-; verify guards it took 0.07 seconds.
-
-  (mbe :logic
-       (cond ((mbt (and (integerp i)
-                        (integerp j)
-                        (integerp k)
-                        (< 0 k)))
-              (cond
-               ((<= i j)
-                (cons i (from-to-by (+ i k) j k)))
-               (t nil)))
-             (t nil))
-       :exec (if (< j i)
-                 nil
-                 (from-to-by-ac i (+ i (* k (floor (- j i) k))) k nil))))
+; See apply-prim.lisp for definitions of from-to-by-measure, from-to-by-ac, and
+; from-to-by.
 
 ; Timing Comparision
 ; (time$ (length (from-to-by 1 1000000 1))
@@ -2725,16 +2626,7 @@
 ; scion guard conjectures will require it to be proved because CLTL doesn't fix
 ; the result.
 
-(defun revappend-true-list-fix (x ac)
-
-; This function is equivalent to (revappend (true-list-fix x) ac) but doesn't
-; copy x before reversing it onto ac.
-
-  (declare (xargs :guard t
-                  :mode :program))
-  (if (atom x)
-      ac
-      (revappend-true-list-fix (cdr x) (cons (car x) ac))))
+; See apply-prim.lisp for the definition of revappend-true-list-fix.
 
 (defun append$-ac (fn lst ac)
   (declare (xargs :guard (and (apply$-guard fn '(nil))

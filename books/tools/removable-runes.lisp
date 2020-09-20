@@ -92,7 +92,7 @@
  @(':verbose-p = nil'), then there is no output.  Finally, if @(':verbose-p =
  t'), then all the fields are printed, but in addition you will see the usual
  output for each attempt, each (except for the initial event) preceded by the
- corresponding @('tsee in-theory) event.</p>
+ corresponding @(tsee in-theory) event.</p>
 
  <p>We now say a bit more about the tool's algorithm as we describe the
  @(':multiplier') argument, which is 1 by default but can also be any positive

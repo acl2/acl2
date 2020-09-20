@@ -137,7 +137,7 @@
 ; during the build of ACL2, specifically when the :acl2-devel feature is set.
 ; For documentation of the acl2-devel process, see :DOC
 ; verify-guards-for-system-functions, or see the comment in source constant
-; *system-verify-guards-alist* in boot-strap-pass-2-b.lisp.
+; *system-verify-guards-alist*.
 
 ; (The basic story is that we first introduce such functions in :program
 ; mode, build an ``:acl2-devel'' image of the system, redundantly define the
@@ -174,62 +174,132 @@
 
 (in-package "ACL2")
 
+; Loop$ scion support
+
+; The following definitions were previously in apply.lisp, section "12. Loop$
+; Scions"; some relevant comments are still there.  But we have moved those
+; definitions to here so that they will be included in
+; *system-verify-guards-alist-1*, defined below.
+
+(defun tails-ac (lst ac)
+  (declare (xargs :guard (and (true-listp lst)
+                              (true-listp ac))
+                  :mode :program))
+  (cond ((endp lst) (revappend ac nil))
+        (t (tails-ac (cdr lst) (cons lst ac)))))
+
+(defun tails (lst)
+  (declare (xargs :guard (true-listp lst)
+                  :mode :program))
+  (mbe :logic
+       (cond ((endp lst) nil)
+             (t (cons lst (tails (cdr lst)))))
+       :exec (tails-ac lst nil)))
+
+(defun empty-loop$-as-tuplep (tuple)
+; A loop$-as-tuple is empty if at least one element is empty.
+  (declare (xargs :guard (true-list-listp tuple)
+                  :mode :program))
+  (cond ((endp tuple) nil)
+        ((endp (car tuple)) t)
+        (t (empty-loop$-as-tuplep (cdr tuple)))))
+
+(defun car-loop$-as-tuple (tuple)
+  (declare (xargs :guard (true-list-listp tuple)
+                  :mode :program))
+  (cond ((endp tuple) nil)
+        (t (cons (caar tuple) (car-loop$-as-tuple (cdr tuple))))))
+
+(defun cdr-loop$-as-tuple (tuple)
+  (declare (xargs :guard (true-list-listp tuple)
+                  :mode :program))
+  (cond ((endp tuple) nil)
+        (t (cons (cdar tuple) (cdr-loop$-as-tuple (cdr tuple))))))
+
+(defun loop$-as-ac (tuple ac)
+  (declare (xargs :guard (and (true-list-listp tuple)
+                              (true-listp ac))
+                  :mode :program))
+  (cond ((endp tuple) (revappend ac nil))
+        ((empty-loop$-as-tuplep tuple) (revappend ac nil))
+        (t (loop$-as-ac (cdr-loop$-as-tuple tuple)
+                        (cons (car-loop$-as-tuple tuple)
+                              ac)))))
+
+(defun loop$-as (tuple)
+  (declare (xargs :guard (true-list-listp tuple)
+                  :mode :program))
+  (mbe :logic
+       (cond ((endp tuple) nil)
+             ((empty-loop$-as-tuplep tuple) nil)
+             (t (cons (car-loop$-as-tuple tuple)
+                      (loop$-as (cdr-loop$-as-tuple tuple)))))
+       :exec
+       (loop$-as-ac tuple nil)))
+
+; We will need this measure in order to warrant from-to-by-ac.
+(defun from-to-by-measure (i j)
+  (declare (xargs :guard t))
+  (if (and (integerp i)
+           (integerp j)
+           (<= i j))
+      (+ 1 (- j i))
+      0))
+
+(defun from-to-by-ac (i j k ac)
+  (declare (xargs :guard (and (integerp i)
+                              (integerp j)
+                              (integerp k)
+                              (< 0 k)
+                              (true-listp ac))
+                  :mode :program))
+  (cond ((mbt (and (integerp i)
+                   (integerp j)
+                   (integerp k)
+                   (< 0 k)))
+         (cond
+          ((<= i j)
+           (from-to-by-ac i (- j k) k (cons j ac)))
+          (t ac)))
+        (t nil)))
+
+(defun from-to-by (i j k)
+  (declare (xargs :guard (and (integerp i)
+                              (integerp j)
+                              (integerp k)
+                              (< 0 k))
+                  :mode :program))
+
+; Before we verify the guards (and so avail ourselves of the :exec branch
+; below), (time$ (length (from-to-by 1 1000000 1))) took 0.21 seconds.  After
+; verify guards it took 0.07 seconds.
+
+  (mbe :logic
+       (cond ((mbt (and (integerp i)
+                        (integerp j)
+                        (integerp k)
+                        (< 0 k)))
+              (cond
+               ((<= i j)
+                (cons i (from-to-by (+ i k) j k)))
+               (t nil)))
+             (t nil))
+       :exec (if (< j i)
+                 nil
+                 (from-to-by-ac i (+ i (* k (floor (- j i) k))) k nil))))
+
+(defun revappend-true-list-fix (x ac)
+
+; This function is equivalent to (revappend (true-list-fix x) ac) but doesn't
+; copy x before reversing it onto ac.
+
+  (declare (xargs :guard t
+                  :mode :program))
+  (if (atom x)
+      ac
+      (revappend-true-list-fix (cdr x) (cons (car x) ac))))
+
 ; Handling the Primitives
-
-(defun first-order-like-terms-and-out-arities1 (runes avoid-fns wrld ans)
-  (declare (xargs :mode :program))
-
-; We return a list of the form (... ((fn . formals) . output-arity) ...).  See
-; first-order-like-terms-and-out-arities for details.
-
-  (cond
-   ((endp runes) ans)
-   (t (let ((fn (base-symbol (car runes))))
-        (cond
-         ((and (acl2-system-namep fn wrld)
-
-; In ACL2(r), we avoid non-classical functions, to avoid failure of the
-; defevaluator event in the book version of apply-prim.lisp.
-
-; But there's a deeper reason to avoid non-classical functions.  The logical
-; story behind apply$ involves introducing a single mutual-recursion that
-; defines apply$ and all functions.  See for example
-; books/projects/apply-model/ex1/doppelgangers.lisp.  But ACL2(r) does not
-; permit recursive definitions of non-classical functions.
-
-; Even if we could work through that concern, it may well be wrong to give a
-; badge to a non-classical function, because the usual test for non-classical
-; functions in a body would not notice the first argument of a call, (apply
-; 'non-classical-function ...).
-
-               #+:non-standard-analysis
-               (classicalp fn wrld)
-
-               (not (member-eq fn avoid-fns))
-               (all-nils (getpropc fn 'stobjs-in nil wrld))
-
-; Note that even functions taking state like state-p and global-table-cars,
-; i.e., that take a STATE-STATE input, will have STATE in their stobjs-in and
-; hence will fail the test just above.  So we don't need to give special
-; treatment to such functions.
-
-               (all-nils (getpropc fn 'stobjs-out nil wrld)))
-
-; Note that stobj creators take no stobjs in but return stobjs.  We don't want
-; any such functions in our answer!  Also, we don't want to think about
-; functions like BOUNDP-GLOBAL1 and 32-BIT-INTEGER-STACK-LENGTH1 that use
-; STATE-STATE as a formal preventing their execution.
-
-          (first-order-like-terms-and-out-arities1
-           (cdr runes)
-           avoid-fns wrld
-           (cons (cons (cons fn (formals fn wrld))
-                       (length (getpropc fn 'stobjs-out nil wrld)))
-                 ans)))
-         (t (first-order-like-terms-and-out-arities1
-             (cdr runes)
-             avoid-fns wrld
-             ans)))))))
 
 ; Note: The following list is used to determine ancestral dependence on
 ; apply$-userfn.  But because apply$ calls apply$-userfn, we think it is
@@ -286,6 +356,342 @@
 ;    CLEAR-MEMOIZE-TABLE
      ))
 
+(defun split-system-verify-guards-alist (alist wrld alist1 alist2)
+
+; The definitions of badge-prim, apply$-primp, and apply$-prim all depend on
+; the notion of "apply$ primitive".  That notion depends on the constant
+; *badge-prim-falist*, which in turn depends on the constant
+; *first-order-like-terms-and-out-arities*.  And that constant, in turn,
+; depends on the constant *system-verify-guards-alist-1*, which is the
+; restriction of *system-verify-guards-alist-1* to functions that are already
+; defined at this point during the build.  This function is employed to make
+; that restriction, by splitting the given alist, *system-verify-guards-alist*,
+; into *system-verify-guards-alist-1* and *system-verify-guards-alist-2*.
+; Alist1 and alist2 are accumulators that are nil at the top level.
+
+  (declare (xargs :guard (and (symbol-alistp alist)
+                              (plist-worldp wrld)
+                              (true-listp alist1)
+                              (true-listp alist2))))
+  (cond ((endp alist) (mv (reverse alist1) (reverse alist2)))
+        (t (let ((fn (caar alist)))
+             (cond ((getpropc fn 'absolute-event-number nil wrld)
+                    (split-system-verify-guards-alist
+                     (cdr alist) wrld
+                     (cons (car alist) alist1)
+                     alist2))
+                   (t
+                    (split-system-verify-guards-alist
+                     (cdr alist) wrld
+                     alist1
+                     (cons (car alist) alist2))))))))
+
+(defconst *system-verify-guards-alist*
+
+; Each member of this alist is of the form (fn . nil), for non-recursive fn, or
+; else (fn . measure).
+
+; It can be produced by evaluating
+
+; (new-verify-guards-fns state)
+
+; after including the book *devel-check-book* in an ACL2 built with feature
+; :acl2-devel set.  Additional discussion may be found in :doc
+; verify-guards-for-system-functions and in the Essay on the APPLY$
+; Integration.
+
+; That book needs to be certified using such an ACL2 executable (with
+; :acl2-devel set).  Here are instructions for doing that certification, which
+; may take several minutes, and then performing the appropriate checks.  It
+; assumes that "ACL2" below references your ACL2 sources directory.  Note:
+; Replace "saved_acl2d" as necessary, e.g., perhaps "ccl-saved_acl2d".
+
+; cd ACL2
+; make ACL2_DEVEL=t
+; make clean-books
+; cd books
+; (time ./build/cert.pl -j 8 --acl2 `pwd`/../saved_acl2d system/devel-check)
+; cd ACL2
+; make devel-check ACL2=`pwd`/saved_acl2d
+
+  '((>=-LEN ACL2-COUNT X)
+    (ABBREV-EVISC-TUPLE)
+    (ACCESS-COMMAND-TUPLE-NUMBER)
+    (ADD-SUFFIX-TO-FN)
+    (ALIST-TO-DOUBLETS ACL2-COUNT ALIST)
+    (ALL->=-LEN ACL2-COUNT LST)
+    (ALL-FNNAMES1 ACL2-COUNT X)
+    (ALWAYS$ ACL2-COUNT LST)
+    (ALWAYS$+ ACL2-COUNT LST)
+    (APPEND$ ACL2-COUNT LST)
+    (APPEND$+ ACL2-COUNT LST)
+    (APPEND$+-AC ACL2-COUNT LST)
+    (APPEND$-AC ACL2-COUNT LST)
+    (APPLY$ :? ARGS FN)
+    (APPLY$-LAMBDA :? ARGS FN)
+    (APPLY$-PRIM)
+    (ARGLISTP)
+    (ARGLISTP1 ACL2-COUNT LST)
+    (ARITIES-OKP ACL2-COUNT USER-TABLE)
+    (ARITY)
+    (ARITY-ALISTP ACL2-COUNT ALIST)
+    (BACKCHAIN-LIMIT-LISTP ACL2-COUNT LST)
+    (BADGE)
+    (CAR-LOOP$-AS-TUPLE ACL2-COUNT TUPLE)
+    (CDR-LOOP$-AS-TUPLE ACL2-COUNT TUPLE)
+    (CERT-ANNOTATIONSP)
+    (CHK-LENGTH-AND-KEYS ACL2-COUNT ACTUALS)
+    (CLEAN-BRR-STACK)
+    (CLEAN-BRR-STACK1 ACL2-COUNT STACK)
+    (COLLECT$ ACL2-COUNT LST)
+    (COLLECT$+ ACL2-COUNT LST)
+    (COLLECT$+-AC ACL2-COUNT LST)
+    (COLLECT$-AC ACL2-COUNT LST)
+    (COLLECT-BY-POSITION ACL2-COUNT FULL-DOMAIN)
+    (COLLECT-LAMBDA-KEYWORDPS ACL2-COUNT LST)
+    (COLLECT-NON-X ACL2-COUNT LST)
+    (CONS-TERM1-MV2)
+    (DEF-BODY)
+    (DEFUN-MODE)
+    (DEREF-MACRO-NAME)
+    (DISABLEDP-FN)
+    (DISABLEDP-FN-LST ACL2-COUNT RUNIC-MAPPING-PAIRS)
+    (DOUBLET-LISTP ACL2-COUNT X)
+    (DUMB-NEGATE-LIT)
+    (DUPLICATE-KEYS-ACTION)
+    (EMPTY-LOOP$-AS-TUPLEP ACL2-COUNT TUPLE)
+    (ENABLED-NUMEP)
+    (ENABLED-RUNEP)
+    (ENABLED-STRUCTURE-P)
+    (ENS)
+    (EQUAL-X-CONSTANT)
+    (ER-CMP-FN)
+    (EV$ :? A X)
+    (EV$-LIST :? A X)
+    (FETCH-DCL-FIELD)
+    (FETCH-DCL-FIELDS ACL2-COUNT LST)
+    (FETCH-DCL-FIELDS1 ACL2-COUNT LST)
+    (FETCH-DCL-FIELDS2 ACL2-COUNT KWD-LIST)
+    (FFNNAMEP ACL2-COUNT TERM)
+    (FFNNAMEP-LST ACL2-COUNT L)
+    (FIND-ALTERNATIVE-SKIP NFIX (BINARY-+ MAXIMUM (UNARY-- I)))
+    (FIND-ALTERNATIVE-START)
+    (FIND-ALTERNATIVE-START1 NFIX (BINARY-+ MAXIMUM (UNARY-- I)))
+    (FIND-ALTERNATIVE-STOP NFIX
+                           (BINARY-+ (BINARY-+ '1 MAXIMUM)
+                                     (UNARY-- I)))
+    (FIND-DOT-DOT NFIX
+                  (BINARY-+ (LENGTH FULL-PATHNAME)
+                            (UNARY-- I)))
+    (FIND-FIRST-BAD-ARG ACL2-COUNT ARGS)
+    (FMT-CHAR)
+    (FMT-VAR)
+    (FMX!-CW-FN)
+    (FMX-CW-FN)
+    (FMX-CW-FN-GUARD)
+    (FMX-CW-MSG)
+    (FMX-CW-MSG-1 NFIX CLK)
+    (FNUME)
+    (FORMALIZED-VARLISTP ACL2-COUNT VARLIST)
+    (FROM-TO-BY FROM-TO-BY-MEASURE I J)
+    (FROM-TO-BY-AC FROM-TO-BY-MEASURE I J)
+    (FSUBCOR-VAR ACL2-COUNT FORM)
+    (FSUBCOR-VAR-LST ACL2-COUNT FORMS)
+    (ILKS-PER-ARGUMENT-SLOT)
+    (ILKS-PLIST-WORLDP)
+    (ILLEGAL-FMT-STRING)
+    (IMPLICATE)
+    (LAMBDA-KEYWORDP)
+    (LAMBDA-SUBTERMP ACL2-COUNT TERM)
+    (LAMBDA-SUBTERMP-LST ACL2-COUNT TERMLIST)
+    (LATEST-BODY)
+    (LEGAL-CONSTANTP)
+    (LEGAL-CONSTANTP1)
+    (LEGAL-INITP)
+    (LEGAL-VARIABLE-OR-CONSTANT-NAMEP)
+    (LEGAL-VARIABLEP)
+    (LOGIC-FNS-LIST-LISTP ACL2-COUNT X)
+    (LOGIC-FNS-LISTP ACL2-COUNT LST)
+    (LOGIC-FNSP ACL2-COUNT TERM)
+    (LOGIC-TERM-LIST-LISTP)
+    (LOGIC-TERM-LISTP)
+    (LOGIC-TERMP)
+    (LOGICAL-NAMEP)
+    (LOOP$-AS ACL2-COUNT TUPLE)
+    (LOOP$-AS-AC ACL2-COUNT TUPLE)
+    (MACRO-ARGLIST-AFTER-RESTP)
+    (MACRO-ARGLIST-KEYSP ACL2-COUNT ARGS)
+    (MACRO-ARGLIST-OPTIONALP ACL2-COUNT ARGS)
+    (MACRO-ARGLIST1P ACL2-COUNT ARGS)
+    (MACRO-ARGS)
+    (MACRO-ARGS-STRUCTUREP)
+    (MACRO-VARS ACL2-COUNT ARGS)
+    (MACRO-VARS-AFTER-REST)
+    (MACRO-VARS-KEY ACL2-COUNT ARGS)
+    (MACRO-VARS-OPTIONAL ACL2-COUNT ARGS)
+    (MAKE-LAMBDA-APPLICATION)
+    (MATCH-CLAUSE)
+    (MATCH-CLAUSE-LIST ACL2-COUNT CLAUSES)
+    (MATCH-TESTS-AND-BINDINGS ACL2-COUNT PAT)
+    (MERGE-SORT-SYMBOL-< ACL2-COUNT L)
+    (MERGE-SORT-TERM-ORDER ACL2-COUNT L)
+    (MERGE-SYMBOL-< BINARY-+ (LEN L1)
+                    (LEN L2))
+    (MERGE-TERM-ORDER BINARY-+ (ACL2-COUNT L1)
+                      (ACL2-COUNT L2))
+    (META-EXTRACT-CONTEXTUAL-FACT)
+    (META-EXTRACT-GLOBAL-FACT+)
+    (META-EXTRACT-RW+-TERM)
+    (MSGP)
+    (NEWLINE)
+    (OBSERVATION1-CW)
+    (OVERRIDE-HINTS)
+    (PLAUSIBLE-DCLSP ACL2-COUNT LST)
+    (PLAUSIBLE-DCLSP1 ACL2-COUNT LST)
+    (PLIST-WORLDP-WITH-FORMALS ACL2-COUNT ALIST)
+    (PUSH-IO-RECORD)
+    (RELATIVIZE-BOOK-PATH)
+    (REMOVE-GUARD-HOLDERS-WEAK)
+    (REMOVE-GUARD-HOLDERS1 ACL2-COUNT TERM)
+    (REMOVE-GUARD-HOLDERS1-LST ACL2-COUNT LST)
+    (REMOVE-LAMBDAS)
+    (REMOVE-LAMBDAS-LST ACL2-COUNT TERMLIST)
+    (REMOVE-LAMBDAS1 ACL2-COUNT TERM)
+    (REVAPPEND-TRUE-LIST-FIX ACL2-COUNT X)
+    (RUNEP)
+    (SAVED-OUTPUT-TOKEN-P)
+    (SCAN-PAST-WHITESPACE NFIX (BINARY-+ MAXIMUM (UNARY-- I)))
+    (SCAN-TO-CLTL-COMMAND ACL2-COUNT WRLD)
+    (SILENT-ERROR)
+    (STANDARD-EVISC-TUPLEP)
+    (STOBJP)
+    (STRING-PREFIXP)
+    (STRING-PREFIXP-1 ACL2-COUNT I)
+    (STRIP-CADRS ACL2-COUNT X)
+    (STRIP-DCLS ACL2-COUNT LST)
+    (STRIP-DCLS1 ACL2-COUNT LST)
+    (STRIP-KEYWORD-LIST ACL2-COUNT LST)
+    (SUBCOR-VAR ACL2-COUNT FORM)
+    (SUBCOR-VAR-LST ACL2-COUNT FORMS)
+    (SUBCOR-VAR1 ACL2-COUNT VARS)
+    (SUBLIS-VAR)
+    (SUBLIS-VAR-LST)
+    (SUBLIS-VAR1 ACL2-COUNT FORM)
+    (SUBLIS-VAR1-LST ACL2-COUNT L)
+    (SUBSEQUENCEP ACL2-COUNT LST1)
+    (SUBST-EXPR)
+    (SUBST-EXPR-ERROR)
+    (SUBST-EXPR1 ACL2-COUNT TERM)
+    (SUBST-EXPR1-LST ACL2-COUNT ARGS)
+    (SUBST-VAR ACL2-COUNT FORM)
+    (SUBST-VAR-LST ACL2-COUNT L)
+    (SUITABLY-TAMEP-LISTP ACL2-COUNT ARGS)
+    (SUM$ ACL2-COUNT LST)
+    (SUM$+ ACL2-COUNT LST)
+    (SUM$+-AC ACL2-COUNT LST)
+    (SUM$-AC ACL2-COUNT LST)
+    (SYSFILE-OR-STRING-LISTP ACL2-COUNT X)
+    (SYSFILE-P)
+    (TAILS ACL2-COUNT LST)
+    (TAILS-AC ACL2-COUNT LST)
+    (TAMEP ACL2-COUNT X)
+    (TAMEP-FUNCTIONP ACL2-COUNT FN)
+    (TERM-LIST-LISTP ACL2-COUNT L)
+    (TERM-LISTP ACL2-COUNT X)
+    (TERM-ORDER)
+    (TERM-ORDER1)
+    (TERMIFY-CLAUSE-SET ACL2-COUNT CLAUSES)
+    (TERMP ACL2-COUNT X)
+    (THEREIS$ ACL2-COUNT LST)
+    (THEREIS$+ ACL2-COUNT LST)
+    (THROW-NONEXEC-ERROR-P)
+    (THROW-NONEXEC-ERROR-P1)
+    (TRANSLATE-ABBREV-RUNE)
+    (TTAG-ALISTP ACL2-COUNT X)
+    (UNTIL$ ACL2-COUNT LST)
+    (UNTIL$+ ACL2-COUNT LST)
+    (UNTIL$+-AC ACL2-COUNT LST)
+    (UNTIL$-AC ACL2-COUNT LST)
+    (WARNING-OFF-P1)
+    (WARNING1-CW)
+    (WEAK-APPLY$-BADGE-ALISTP ACL2-COUNT X)
+    (WHEN$ ACL2-COUNT LST)
+    (WHEN$+ ACL2-COUNT LST)
+    (WHEN$+-AC ACL2-COUNT LST)
+    (WHEN$-AC ACL2-COUNT LST)
+    (WORLD-EVISCERATION-ALIST)
+    (WRITE-FOR-READ)
+    (ZERO-ONE-OR-MORE)))
+
+(when-pass-2
+
+(make-event
+ (mv-let (old new)
+   (split-system-verify-guards-alist *system-verify-guards-alist*
+                                     (w state)
+                                     nil nil)
+   `(progn
+; We are putting these defconst forms against the left margin so that they can
+; be found using tags (meta-. in Emacs).
+(defconst *system-verify-guards-alist-1* ',old)
+(defconst *system-verify-guards-alist-2* ',new)
+           )))
+
+(defun first-order-like-terms-and-out-arities1 (fns avoid-fns wrld ans)
+  (declare (xargs :mode :program))
+
+; We return a list of the form (... ((fn . formals) . output-arity) ...).  See
+; first-order-like-terms-and-out-arities for details.
+
+  (cond
+   ((endp fns) ans)
+   (t (let ((fn (car fns)))
+        (cond
+         ((and (acl2-system-namep fn wrld)
+
+; In ACL2(r), we avoid non-classical functions, to avoid failure of the
+; defevaluator event in the book version of apply-prim.lisp.
+
+; But there's a deeper reason to avoid non-classical functions.  The logical
+; story behind apply$ involves introducing a single mutual-recursion that
+; defines apply$ and all functions.  See for example
+; books/projects/apply-model/ex1/doppelgangers.lisp.  But ACL2(r) does not
+; permit recursive definitions of non-classical functions.
+
+; Even if we could work through that concern, it may well be wrong to give a
+; badge to a non-classical function, because the usual test for non-classical
+; functions in a body would not notice the first argument of a call, (apply
+; 'non-classical-function ...).
+
+               #+:non-standard-analysis
+               (classicalp fn wrld)
+
+               (not (member-eq fn avoid-fns))
+               (all-nils (getpropc fn 'stobjs-in nil wrld))
+
+; Note that even functions taking state like state-p and global-table-cars,
+; i.e., that take a STATE-STATE input, will have STATE in their stobjs-in and
+; hence will fail the test just above.  So we don't need to give special
+; treatment to such functions.
+
+               (all-nils (getpropc fn 'stobjs-out nil wrld)))
+
+; Note that stobj creators take no stobjs in but return stobjs.  We don't want
+; any such functions in our answer!  Also, we don't want to think about
+; functions like BOUNDP-GLOBAL1 and 32-BIT-INTEGER-STACK-LENGTH1 that use
+; STATE-STATE as a formal preventing their execution.
+
+          (first-order-like-terms-and-out-arities1
+           (cdr fns)
+           avoid-fns wrld
+           (cons (cons (cons fn (formals fn wrld))
+                       (length (getpropc fn 'stobjs-out nil wrld)))
+                 ans)))
+         (t (first-order-like-terms-and-out-arities1
+             (cdr fns)
+             avoid-fns wrld
+             ans)))))))
+
 (defun first-order-like-terms-and-out-arities (world)
 
 ; Search the world for every ACL2 primitive function that does not traffic (in
@@ -315,7 +721,20 @@
 
   (declare (xargs :mode :program))
   (first-order-like-terms-and-out-arities1
-   (function-theory :here)
+
+; The first argument of union-eq below contains functions that we want to
+; consider apply$ primitives even though they are in :program mode at this
+; point during the build, because they will ultimately be :logic mode
+; functions.  Note that this is even sensible for #+acl2-devel builds, because
+; apply$-prim comes up in :program mode for such executables.
+
+; The two arguments to union-eq below are disjoint if every member of the first
+; is a :program mode function symbol.  But we don't count on that, which is why
+; we use union-eq rather than append.
+
+   (union-eq
+    (strip-cars *system-verify-guards-alist-1*)
+    (strip-base-symbols (function-theory :here)))
    *blacklisted-apply$-fns*
    world
    nil))
@@ -335,8 +754,6 @@
 ; need the arities.  So we define another constant which is used in those
 ; places.  That constant, *badge-prim-falist*, is a fast alist.
 
-(when-pass-2
-
 ; There is a bit of a boot-strap problem in defining the constant
 ; *first-order-like-terms-and-out-arities*.  ACL2 rightly complains about
 ; compiling make-event forms, so we mark this event with when-pass-2, along
@@ -346,7 +763,8 @@
 (make-event ` ; backquote here so that the next line can assist tags
 (defconst *first-order-like-terms-and-out-arities*
   ',(first-order-like-terms-and-out-arities (w state)))
-))
+)
+) ; end when-pass-2
 
 ; We originally defined the apply$-badge record here.  But it is needed in
 ; warrantp, which is needed in defattach-constraint-rec.
@@ -539,7 +957,7 @@
 
 #+acl2-loop-only
 (defun apply$-prim (fn args)
-  (declare (xargs :guard (true-listp args)))
+  (declare (xargs :guard (true-listp args) :mode :program))
   (make-apply$-prim-body))
 
 )

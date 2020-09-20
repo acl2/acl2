@@ -2076,6 +2076,21 @@
   :hints (("goal" :in-theory (enable hifat-no-dups-p
                                      m1-file-alist-p hifat-find-file))))
 
+(defthmd hifat-find-file-correctness-2
+  (equal (hifat-find-file fs path)
+         (mv (mv-nth 0 (hifat-find-file fs path))
+             (mv-nth 1 (hifat-find-file fs path))))
+  :hints (("goal" :in-theory (enable hifat-find-file))))
+
+(defthmd
+  hifat-find-file-correctness-5
+  (implies
+   (not (zp (mv-nth 1 (hifat-find-file fs path))))
+   (equal (hifat-find-file fs path)
+          (mv (make-m1-file)
+              (mv-nth 1 (hifat-find-file fs path)))))
+  :hints (("goal" :in-theory (enable hifat-find-file))))
+
 (defund
   hifat-place-file
   (fs path file)
