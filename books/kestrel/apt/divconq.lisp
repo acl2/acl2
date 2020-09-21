@@ -887,16 +887,36 @@
                                 (equal-fold-enable booleanp)
                                 (x-z1...zm symbol-listp)
                                 (?f symbolp)
-                                (fold symbolp))
+                                (fold symbolp)
+                                (print evmac-input-print-p))
   :returns (event pseudo-event-formp)
   :short "Generate the function @('equal[?f][fold[?g][?h]]')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Note that, unless the @(':print') input of @(tsee divconq) is @(':all'),
+     we pass @(':print nil') to @(tsee soft::defequal),
+     to avoid showing its expansion on the screen (see @(tsee soft::defequal)).
+     Instead, the code in @(tsee divconq-gen-everything)
+     shows the @(tsee soft::defequal) form itself
+     (if @(tsee divconq)'s @(':print') is at least @(':result')).")
+   (xdoc::p
+    "We do not expect this @(tsee soft::defequal) event to fail
+     (it would be an internal/implementation error if it did).
+     So there is no need to pass @(':print :error').
+     If the event actually fails, then it can be debugged
+     by passing @(':all') to @(tsee divconq),
+     which in this cases also passes it to @(tsee soft::equal),
+     or by passing @(':show-only t') to @(tsee divconq)
+     and examining/trying the resulting expansion."))
   `(soft::defequal ,equal-fold
                    :left ,?f
                    :right ,fold
                    :vars ,x-z1...zm
                    :enable ,equal-fold-enable
                    :left-to-right-enable ,equal-fold-enable
-                   :right-to-left-enable ,equal-fold-enable))
+                   :right-to-left-enable ,equal-fold-enable
+                   :print ,(and (eq print :all) :all)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1076,7 +1096,8 @@
                                iorel ?h verify-guards))
        (equal-fold-event
         (divconq-gen-equal-fold equal-fold equal-fold-enable
-                                x-z1...zm ?f fold))
+                                x-z1...zm ?f fold
+                                print))
        ((mv new-local-event
             new-exported-event)
         (divconq-gen-new new new-enable
