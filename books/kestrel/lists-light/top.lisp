@@ -51,6 +51,7 @@
 (include-book "perm-def")
 (include-book "perm")
 (include-book "perm2")
+(include-book "repeat-tail")
 (include-book "subrange-def")
 (include-book "subrange")
 (include-book "subsequencep-equal")
