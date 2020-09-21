@@ -864,8 +864,46 @@
   nil
   (local
    (use-arithmetic-5 t))
+
   (def-rp-rule
-    4vec-plus-of-bits-to-temp-ha-spec
+    4vec-plus-of-bits-to-temp-ha-spec-1
+    (implies (and (bitp x)
+                  (bitp y)
+                  (integerp size)
+                  (> size 0))
+             (equal (svl::bits (sv::4vec-plus x y)
+                               1 size)
+                    (svl::bits (temp-ha-spec x y) 1 1)))
+    :hints (("goal"
+             :in-theory (e/d (bitp
+                              sum
+                              svl::bits
+                              sv::4vec-part-select
+                              sv::4vec->upper
+                              sv::4vec->lower
+                              sv::4vec-concat)
+                             (+-is-sum)))))
+  
+
+  (def-rp-rule
+    4vec-plus-of-bits-to-temp-ha-spec-2
+    (implies (and (bitp x)
+                  (bitp y))
+             (equal (svl::bits (sv::4vec-plus x y)
+                               0 1)
+                    (svl::bits (temp-ha-spec x y) 0 1)))
+    :hints (("goal"
+             :in-theory (e/d (bitp
+                              sum
+                              svl::bits
+                              sv::4vec-part-select
+                              sv::4vec->upper
+                              sv::4vec->lower
+                              sv::4vec-concat)
+                             (+-is-sum)))))
+  
+  (def-rp-rule
+    4vec-plus-of-bits-to-temp-ha-spec-3
     (implies (and (bitp x)
                   (bitp y)
                   (integerp size)
@@ -882,6 +920,8 @@
                               sv::4vec->lower
                               sv::4vec-concat)
                              (+-is-sum)))))
+
+  
   (def-rp-rule
     4vec-plus-rule-for-fa
     (implies (and (bitp x)
@@ -944,13 +984,20 @@
 
   (def-rp-rule 4vec-concat$-of-temp-ha-spec
     (implies (and (bitp x)
-                  (bitp y))
-             (equal (svl::4vec-concat$ 2
+                  (bitp y)
+                  (integerp size)
+                  (> size 1))
+             (equal (svl::4vec-concat$ size
                                        (temp-ha-spec x y)
                                        0)
                     (temp-ha-spec x y)))
     :hints (("goal"
-             :in-theory (e/d (bitp bitp) ()))))
+             :in-theory (e/d (bitp
+                              SV::4VEC-CONCAT
+                              SV::4VEC->LOWER
+                              SV::4VEC->UPPER
+                              svl::4vec-concat$)
+                             ()))))
 
   (def-rp-rule bits-of-temp-ha-spec-out-of-range
     (implies (and (bitp x)

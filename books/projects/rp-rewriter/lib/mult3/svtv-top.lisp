@@ -52,7 +52,9 @@
                 svl::svexllist-correct
                 svl::svexl-correct))
 
-
+(rp::bump-rp-rule svl::svexl-alist-correct)
+(rp::bump-rp-rule svl::svexllist-correct)
+(rp::bump-rp-rule svl::svexl-correct)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -64,7 +66,8 @@
                           new-adders-file
                           adder-module-names
                           sanity-check
-                          local)
+                          local
+                          dummy-top)
   (declare (ignorable original-sv original-vl new-adders-file
                       adder-module-names
                       local))
@@ -85,7 +88,8 @@
                         (acl2::defconsts
                          (,(sa '*redefined x '-sv-design*))
                          (b* (((mv errmsg new-sv-design & &)
-                               (vl::vl-design->sv-design ,x
+                               (vl::vl-design->sv-design ,(if dummy-top
+                                                              dummy-top x)
                                                          *redefined-adders-vl-design*
                                                          (vl::make-vl-simpconfig)))
                               (- (and errmsg (acl2::raise "~@0~%" errmsg))))
@@ -213,14 +217,16 @@ replaced includes a state holding element. This happened with module ~p0 ~%"
 
 (defmacro replace-adders (&key original-sv original-vl  new-sv
                                new-adders-file adder-module-names
-                               (sanity-check 't) local)
+                               (sanity-check 't)
+                               local
+                               dummy-top)
   `(make-event
     (replace-adders-fn ',original-sv ',original-vl ',new-sv
                        ',new-adders-file
                        ',adder-module-names
                        ,sanity-check
-                       ,local)))
-
+                       ,local
+                       ',dummy-top)))
 
 (add-rp-rule unsigned-byte-p :disabled t)
 (add-rp-rule INTEGER-RANGE-P :disabled t)

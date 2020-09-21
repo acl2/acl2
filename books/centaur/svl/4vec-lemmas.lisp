@@ -108,6 +108,26 @@
            :in-theory (e/d (4vec-rsh
                             sv::4vec-shift-core) ()))))
 
+(defthm 4vec-rsh-of-bitp
+  (implies (and (posp pos)
+                (bitp x))
+           (equal (4vec-rsh pos x)
+                  0))
+  :hints (("Goal"
+           :in-theory (e/d (4vec-rsh
+                            4VEC-SHIFT-CORE)
+                           ()))))
+
+(defthm 4vec-rsh-of-0
+  (implies t
+           (equal (4vec-rsh 0 x)
+                  (4vec-fix x)))
+  :hints (("Goal"
+           :in-theory (e/d (4vec-rsh
+                            4vec-fix
+                            4vec-shift-core)
+                           ()))))
+
 (def-rp-rule natp-4vec-zero-ext
   (implies (and (natp size)
                 (natp val))

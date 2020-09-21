@@ -1041,3 +1041,187 @@ You may continue to @(see Multiplier-Verification-demo-2).
 
 "
  )
+
+
+(xdoc::defxdoc
+ Multiplier-Verification-demo-3
+ :parents (Multiplier-Verification)
+ :short  "Another  demo  for   @(see  Multiplier-Verification) showing how
+ @(see acl2::svtv-run) can be used by overriding the adder modules."
+ :long "
+
+<p>This demo  shows how  this tool can  be used to  verify a  multiplier module
+translated  with @(see  acl2::defsvtv). This  is done  by overriding  the adder
+modules in the original design before calling defsvtv.  </p>
+
+<p>Our tool requires identifying adder modules used by the candidate multiplier
+design.  When defsvtv  is called, the design is flattened  completely.  That is
+why we  mainly use SVL system  where design hierarchy can  be maintained during
+symbolic simulation.  However, the @(see acl2::SVL) system is not as capable as
+defsvtv at handling  very complex designs that might  have combinational loops.
+Therefore, we provide an alternative way to  using SVL (which was used in @(see
+Multiplier-Verification-demo-1)  and   @(see  Multiplier-Verification-demo-2)).
+First, we  create copies  of the adder  modules (e.g.,  half-adder, full-adder,
+final stage adder) and we redefine  them.  The redefined adder modules have the
+same functionality but  use the Verilog \"+\" arithmetic  operator only.  Then,
+we override the  original adder modules in  the SV design and we  create a test
+vector  with  defsvtv  with  these  redefined modules.   This  helps  our  tool
+differentiate the adder modules individually, and rewrite them in a similar way
+as SVL designs.  </p>
+
+<p> Replacing the adder modules without any check would not be safe. So we also
+perform a  sanity check. We have  a macro \"replace-adders\" that  replaces the
+adders in the  original SV design, and  create a new one. As  that happens, the
+macro also calls our tools to make sure that the replacement adder modules have
+the same signature as the original  ones, and they are functionally equivalent.
+</p>
+
+<p>   For   this   tutorial,   we   use   the   same   design   as   in   @(see
+Multiplier-Verification-demo-1), which is a 64x64-bit Dadda tree, Booth Encoded
+multiplier with Han-Carlson  final stage adder. The same events  given here can
+also be  found in  /books/projects/rp-rewriter/lib/mult3/demo/demo-3.lisp. This
+file   also   shows   the   same   procedure  for   the   module   from   @(see
+Multiplier-Verification-demo-2), which is a more complex multiplier module that
+can perform  FMA, dot  product etc.  You can see  these demo  files also  on <a
+href=\"https://github.com/acl2/acl2/blob/master/books/projects/rp-rewriter/lib/mult3/demo/\"
+target=\"_blank\">GitHub</a> </p>
+
+<p> Step 1. Include the necessary books: </p>
+
+<code>
+(include-book \"centaur/sv/top\" :dir :system) ;; a big book; takes around 30 seconds
+(include-book \"centaur/vl/loader/top\" :dir :system) ;; takes around 10 seconds
+(include-book \"oslib/ls\" :dir :system)
+(include-book \"projects/rp-rewriter/lib/mult3/svtv-top\" :dir :system)
+</code>
+
+
+<p> Step 2. Create VL and SV designs for the input design </p>
+<code>
+@('
+(acl2::defconsts
+ (*original-mult1-vl-design* state)
+ (b* (((mv loadresult state)
+       (vl::vl-load (vl::make-vl-loadconfig
+                     :start-files '(\"DT_SB4_HC_64_64_multgen.sv\")))))
+   (mv (vl::vl-loadresult->design loadresult) state)))
+
+;; Load SV design.
+(acl2::defconsts
+ (*original-mult1-sv-design*)
+ (b* (((mv errmsg sv-design & &)
+       (vl::vl-design->sv-design \"DT_SB4_HC_64_64\"
+                                 *original-mult1-vl-design*
+                                 (vl::make-vl-simpconfig))))
+   (and errmsg
+        (acl2::raise \"~@0~%\" errmsg))
+   sv-design))
+')
+</code>
+
+
+<p> Step 3. Replace the adder modules: </p>
+
+<p>   We   cannot   use   our   tool    on   a   test   vector   created   with
+*original-mult1-sv-design* because the  adder modules in this  design get mixed
+up with each other when flattened.  So we will create another test vector whose
+adder modules will be distinguishable from  the rest of the circuit.  For that,
+we  created  alternative versions  of  the  adder  modules  used in  the  input
+multiplier  design,  and  saved   them  in  \"adders_with_plus.sv\".   The  new
+definitions  of  these adder  modules  (\"ha\",  \"fa\", and  \"HC_128\")  only
+consist of the \"+\" operator. Examples  are given below.  Pay attention to the
+definition of \"ha\"; there is an extra, redundant \"+ 0\" term. This makes the
+pattern from half-adder to resemble that of a full-adder. This is a work-around
+to a strange problem, and it can be vital to some proofs.  </p>
+
+<code>
+@('
+module fa (
+        input logic x,
+        input logic y,
+        input logic z,
+        output logic s,
+        output logic c);
+    
+    assign {c,s} = x + y + z;
+endmodule // fa
+module ha (
+        input logic a,
+        input logic b,
+        output logic s,
+        output logic c);
+    assign {c,s} = a + b + 0;
+endmodule // ha
+')
+</code>
+
+<p>
+Using   the   macro   below,   we   create  a   new   SV   design   instance
+(*redefined-mult-sv-design*)  that is  a copy  of *original-mult1-sv-design*
+but  with the  stated  adder modules  replaced.  In  order  to perform  this
+replacement soundly, this macro also proves that the replacement modules are
+equivalant to the original (when \":sanity-check\" argument is set to t).
+</p>
+
+<p>
+If the  adders used  in the  original design  are parameterized  (see Verilog
+Parameters),   then  you'd   need  to   create   a  dummy   top  module   in
+adders_with_plus.sv (or any  file name you'd like), and  instantiate all the
+redefined adders the same way as the original design instantiates them. This
+is to ensure that SV design creates instances of the same modules. Then pass
+the name of  this dummy top module with \":dummy-top\"  argument.  For example
+:dummy-top \"dummy_top_module\".  And as the  adder module name(s), you'd need
+to  pass  the   \"SV\"  version  of  the  instantiated  module   name  such  as
+\"ha$WIDTH=1\".
+</p>
+
+<code>
+@('
+(replace-adders :new-sv *redefined-mult1-sv-design*
+                :original-sv *original-mult1-sv-design*
+                :original-vl *original-mult1-vl-design*
+                ;; prove that the replaced adders are equivalent to the originals:
+                :sanity-check t
+                ;; whether or not the non-essentials events be exported:
+                :local nil
+                ;; name of the file(s) that has the replacement adder modules:
+                :new-adders-file (\"adders_with_plus.sv\")
+                ;; Name of the modules to be replaced:
+                :adder-module-names (\"ha\" \"fa\" \"HC_128\"))
+')
+</code>
+
+
+<p> Step 4. Create the test vector with @(see acl2::defsvtv): </p>
+
+<code>
+@('
+(sv::defsvtv redefined-mult1-svtv
+             :mod *redefined-mult1-sv-design*
+             :inputs '((\"IN1\" a)
+                       (\"IN2\" b))
+             :outputs
+             '((\"result\" res)))
+')
+</code>
+
+<p> Step 5. Run our tool to verify that the multiplier design is correct: </p>
+
+<code>
+@('
+(defthmrp multiplier-correct-for-redefined-design
+  (implies (and (integerp in1)
+                (integerp in2))
+           (equal (sv::svtv-run (redefined-mult1-svtv)
+                                `((a . ,in1)
+                                  (b . ,in2)))
+                  `((res . ,(loghead 128 (* (sign-ext in1 64)
+                                            (sign-ext in2 64))))))))
+')
+</code>
+
+<p> As mentioned above, there are more examples in
+/books/projects/rp-rewriter/lib/mult3/demo/demo-3.lisp
+</p>
+"
+)
