@@ -12,11 +12,11 @@
 (in-package "ACL2")
 
 (include-book "perm-def")
-(local (include-book "kestrel/lists-light/memberp" :dir :system))
-(local (include-book "kestrel/lists-light/member-equal" :dir :system))
+(local (include-book "memberp"))
+(local (include-book "member-equal"))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
-(local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
-(local (include-book "kestrel/lists-light/remove1-equal" :dir :system))
+(local (include-book "subsetp-equal"))
+(local (include-book "remove1-equal"))
 
 (local (in-theory (enable member-equal-becomes-memberp)))
 

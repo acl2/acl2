@@ -13,7 +13,7 @@
 
 ;; STATUS: In-progress
 
-(local (include-book "kestrel/lists-light/take" :dir :system))
+(local (include-book "take"))
 
 ;guaranteed to return a result of length len (actually (nfix len))
 (defund update-nth2 (len key val lst)
