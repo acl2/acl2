@@ -135,7 +135,6 @@
     :in-theory (e/d (partial-collapse collapse)
                     ((:definition no-duplicatesp-equal)
                      (:definition assoc-equal)
-                     (:rewrite subsetp-when-prefixp)
                      (:rewrite put-assoc-equal-without-change . 2)
                      abs-separate-of-frame->frame-of-collapse-this-lemma-8
                      (:rewrite true-list-fix-when-true-listp)
@@ -8180,7 +8179,6 @@
                                     (1st-complete (frame->frame frame)))
                      x)))))
   :hints (("goal" :in-theory (enable collapse-this abs-addrs-of-ctx-app-1-lemma-7))))
-
 
 (defthmd
   partial-collapse-correctness-lemma-24

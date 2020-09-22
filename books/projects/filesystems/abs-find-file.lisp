@@ -4338,7 +4338,6 @@
       (:definition remove-assoc-equal)
       (:rewrite abs-file-alist-p-correctness-1)
       (:rewrite nthcdr-when->=-n-len-l)
-      (:rewrite subsetp-when-prefixp)
       (:definition strip-cars)
       abs-find-file-helper-of-collapse-3
       (:rewrite abs-find-file-of-put-assoc)

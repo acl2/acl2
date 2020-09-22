@@ -908,8 +908,7 @@
           (:type-prescription assoc-equal-when-frame-p)
           (:definition assoc-equal)
           (:definition no-duplicatesp-equal)
-          (:rewrite m1-file-alist-p-when-subsetp-equal)
-          (:rewrite subsetp-when-prefixp)))
+          (:rewrite m1-file-alist-p-when-subsetp-equal)))
     :induct (mv (fat32-filename-list-prefixp relpath path)
                 (names-at fs relpath))
     :expand (abs-place-file-helper fs path file))))
@@ -1417,7 +1416,6 @@
                 ((:definition remove-assoc-equal)
                  (:rewrite remove-assoc-when-absent-1)
                  (:rewrite remove-assoc-of-put-assoc)
-                 (:rewrite subsetp-when-prefixp)
                  (:rewrite abs-fs-fix-when-abs-fs-p)
                  (:rewrite abs-fs-p-when-hifat-no-dups-p)
                  (:definition abs-complete)
@@ -2035,7 +2033,6 @@
           (:rewrite hifat-equiv-when-absfat-equiv)
           (:definition no-duplicatesp-equal)
           (:rewrite subsetp-of-abs-addrs-of-put-assoc-lemma-1)
-          (:rewrite subsetp-when-prefixp)
           (:rewrite abs-addrs-when-m1-file-alist-p)
           (:rewrite abs-addrs-of-ctx-app-2)))
     :induct (mv (append x-path path)
@@ -2632,7 +2629,6 @@
              (:definition abs-complete)
              (:rewrite
               subsetp-of-abs-addrs-of-put-assoc-lemma-1)
-             (:rewrite subsetp-when-prefixp)
              abs-mkdir-correctness-lemma-71))
        :induct (mv (abs-place-file-helper fs1 path file)
                    (abs-place-file-helper fs2 path file)))
@@ -3160,7 +3156,6 @@
         (collapse)
         ((:definition no-duplicatesp-equal)
          (:definition assoc-equal)
-         (:rewrite subsetp-when-prefixp)
          (:rewrite
           abs-separate-of-frame->frame-of-collapse-this-lemma-8
           . 2)
@@ -4334,8 +4329,7 @@
           (:rewrite default-cdr)
           (:rewrite abs-separate-of-frame->frame-of-collapse-this-lemma-8
                     . 2)
-          (:rewrite prefixp-when-equal-lengths)
-          (:rewrite subsetp-when-prefixp)))
+          (:rewrite prefixp-when-equal-lengths)))
     :do-not-induct t
     :use (:instance
           (:rewrite hifat-equiv-when-absfat-equiv)
