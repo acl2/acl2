@@ -122,8 +122,19 @@ the list @('y')."
     (prefixp x x)
     :hints(("Goal" :induct (len x))))
 
-  (defthm prefixp-of-append-2
-    (prefixp x (append x y)))
+  (local
+   (defthm nthcdr-when-atom
+     (implies (atom l)
+              (list-equiv (nthcdr n l) nil))
+     :hints (("goal" :in-theory (enable prefixp list-equiv)))))
+
+  (defthm prefixp-of-append-arg2
+    (equal (prefixp x (append y z))
+           (or (prefixp x y)
+               (and (equal (true-list-fix y)
+                           (take (len y) x))
+                    (prefixp (nthcdr (len y) x) z))))
+    :hints (("goal" :in-theory (enable prefixp nthcdr))))
 
   (local (defthm equal-len-0
            (equal (equal (len x) 0)
@@ -204,6 +215,12 @@ the list @('y')."
     :hints (("goal" :in-theory (enable prefixp)
              :induct (prefixp x y))))
 
-  (defthm prefixp-of-append-1
-    (iff (prefixp (append x y) x) (atom y))
-    :hints (("goal" :in-theory (enable prefixp)))))
+  (defthm prefixp-of-append-arg1
+    (equal (prefixp (append x y) z)
+           (and (<= (+ (len x) (len y)) (len z))
+                (equal (true-list-fix x)
+                       (take (len x) z))
+                (prefixp (true-list-fix y)
+                         (nthcdr (len x) z))))
+    :hints (("goal" :in-theory (enable prefixp)
+             :induct (prefixp x z)))))
