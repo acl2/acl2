@@ -122,7 +122,7 @@ the list @('y')."
     (prefixp x x)
     :hints(("Goal" :induct (len x))))
 
-  (defthm prefixp-of-append
+  (defthm prefixp-of-append-2
     (prefixp x (append x y)))
 
   (local (defthm equal-len-0
@@ -204,6 +204,6 @@ the list @('y')."
     :hints (("goal" :in-theory (enable prefixp)
              :induct (prefixp x y))))
 
-  (defthm when-prefixp-append-same
+  (defthm prefixp-of-append-1
     (iff (prefixp (append x y) x) (atom y))
     :hints (("goal" :in-theory (enable prefixp)))))
