@@ -16,37 +16,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define solve-gen-solution-acl2-rewriter$ ((matrix pseudo-termp)
-                                           (?f symbolp)
-                                           (x1...xn symbol-listp)
-                                           (method-rules symbol-listp)
-                                           ctx
-                                           state)
+(define solve-call-acl2-rewriter ((matrix pseudo-termp)
+                                  (method-rules symbol-listp)
+                                  ctx
+                                  state)
   :returns (mv erp
-               (result "A tuple @('(rewritten-term f-body used-rules)')
+               (result "A tuple @('(rewritten-term used-rules)')
                         satisfying
-                        @('(typed-tuplep pseudo-termp
-                                         pseudo-termp
-                                         symbol-listp
-                                         result)').")
+                        @('(typed-tuplep pseudo-termp symbol-listp result)').")
                state)
   :mode :program
-  :short "Attempt to generate a solution,
-          i.e. to solve @('old') for @('?f') using the ACL2 rewriter."
-  (b* (((er (list term used))
+  :short "Call the ACL2 rewriter on the matrix of @('old')."
+  (b* (((er (list* rewritten-term used-rules pairs))
         (rewrite$ matrix :ctx ctx :in-theory `(enable ,@method-rules)))
-       ((when (and (nvariablep term)
-                   (not (fquotep term))
-                   (eq (ffn-symb term) 'equal)
-                   (= (len (fargs term)) 2)
-                   (equal (fargn term 1) (fcons-term ?f x1...xn))))
-        (value (list term (fargn term 2) used)))
-       ((when (equal term *t*))
-        (value (list term *nil* used))))
-    (er-soft+ ctx t nil
-              "The ACL2 rewriter has rewritten the term ~X10 to ~X20, ~
-               which does not determine a solution for ~x3 ~
-               according to the user documentation. ~
-               This transformation may be extended in the future ~
-               to determine solutions in more cases than now."
-              nil matrix term ?f)))
+       ((unless (null pairs))
+        (value (raise "Internal error: ~
+                       REWRITE$ returned non-NIL pairs ~x0 ~
+                       even though it was called without forced assumptions."
+                      pairs))))
+    (value (list rewritten-term used-rules))))

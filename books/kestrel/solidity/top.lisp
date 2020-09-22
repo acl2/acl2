@@ -20,7 +20,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ solidity
-  :parents (acl2::projects)
+  :parents (acl2::kestrel-books acl2::projects)
   :short "An ACL2 library for Solidity."
   :long
   (xdoc::topstring

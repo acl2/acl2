@@ -739,6 +739,10 @@
      to control the enablement of the generated function
      (and, for quantifier functions, also of the associated rewrite rule).")
 
+   (xdoc::p
+    "An option @(':enable') has been added to @(tsee soft::defthm-inst),
+     to control the enablement of the generated theorem.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "std/basic" "Standard Basic Library"))
@@ -785,6 +789,11 @@
      have been improved to return an additional result,
      namely the updated list of names to avoid.
      This helps making the calling code more concise and less error-prone.")
+
+   (xdoc::p
+    "A new utility @(tsee if-tree-leaf-terms) has been added,
+     to collect the leaf sub-terms of a term
+     according to the @(tsee if) tree structure of the term.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -864,6 +873,11 @@
    (xdoc::p
     "Support for @(tsee defun-sk)'s option @(':constrain')
      has been added to @(tsee std::define-sk).")
+
+   (xdoc::p
+    "A macro @(tsee std::tuple) has been added,
+     to mimic the @(tsee mv) return specifier notation
+     for tuple (i.e. list) results, useful inside error triples.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2988,7 +3002,7 @@
  @(':rewrite').</p>
 
  <p>The rule @('sets-are-true-lists') has been split into three rules with the
- same formula: a disabled @(see rewrite) rule of that name, a (@see
+ same formula: a disabled @(see rewrite) rule of that name, a @(see
  compound-recognizer) rule @('sets-are-true-lists-compound-recognizer'), and a
  rewrite rule @('sets-are-true-lists-cheap') whose @(see backchain-limit) is
  1.</p>

@@ -746,32 +746,24 @@ certify-books-short: basic
 #   ./build/cert.pl -j 8 --acl2 `pwd`/../saved_acl2d system/top.cert
 .PHONY: devel-check
 devel-check:
-	@counter=0 ; \
-	while [ t ] ;\
-	do \
-	echo "(chk-new-verified-guards $$counter) ..." ;\
-	echo "(chk-new-verified-guards $$counter)" > workxxx.devel-check ;\
-	$(ACL2) < workxxx.devel-check > devel-check.out ;\
-	if [ "`fgrep CHK-NEW-VERIFIED-GUARDS-COMPLETE devel-check.out`" ] ; then \
+	@echo "(chk-new-verified-guards)" > workxxx.devel-check
+	@$(ACL2) < workxxx.devel-check > devel-check.out
+	@if [ "`fgrep CHK-NEW-VERIFIED-GUARDS-SUCCESS devel-check.out`" ] ; then \
 		rm -f workxxx.devel-check devel-check.out ;\
 		echo 'SUCCESS for chk-new-verified-guards' ;\
 		break ;\
-	fi ;\
-	if [ "`fgrep CHK-NEW-VERIFIED-GUARDS-SUCCESS devel-check.out`" ] ; then \
-		rm -f workxxx.devel-check devel-check.out ;\
-		counter=`expr $$counter + 1` ;\
 	else \
 		echo '**FAILED** for chk-new-verified-guards;' ;\
 		echo '           output log follows:' ;\
 		cat devel-check.out ;\
 		rm -f workxxx.devel-check ;\
 		exit 1 ;\
-	fi \
-	done
+	fi
 	@echo "(check-system-events)" > workxxx.devel-check
 	@$(ACL2) < workxxx.devel-check > devel-check.out
 	@if [ "`fgrep CHECK-SYSTEM-EVENTS-SUCCESS devel-check.out`" ] ; \
 		then \
+		rm -f workxxx.devel-check devel-check.out ;\
 		echo 'SUCCESS for check-system-events' ;\
 	else \
 		echo '**FAILED** for check-new-system-events;' ;\

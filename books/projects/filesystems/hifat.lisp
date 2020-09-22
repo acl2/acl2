@@ -456,6 +456,10 @@
                  (:theorem (equal (+ (len x) (- (len x)) (len y))
                                   (len y)))))))
 
+(defthm when-prefixp-append-same
+  (iff (prefixp (append y x) y) (atom x))
+  :hints (("goal" :in-theory (enable prefixp))))
+
 (defthmd
   painful-debugging-lemma-14
   (implies (not (zp cluster-size))
@@ -1892,7 +1896,7 @@
            (hifat-no-dups-p (put-assoc-equal key file m1-file-alist)))
   :hints (("goal" :in-theory (enable hifat-no-dups-p))))
 
-(defun hifat-file-alist-fix (hifat-file-alist)
+(defund hifat-file-alist-fix (hifat-file-alist)
   (declare (xargs :guard (and (m1-file-alist-p hifat-file-alist)
                               (hifat-no-dups-p hifat-file-alist))
                   :verify-guards nil))
@@ -1918,7 +1922,8 @@
        (cons head tail)))))
 
 (defthm m1-file-alist-p-of-hifat-file-alist-fix
-  (m1-file-alist-p (hifat-file-alist-fix hifat-file-alist)))
+  (m1-file-alist-p (hifat-file-alist-fix hifat-file-alist))
+  :hints (("goal" :in-theory (enable hifat-file-alist-fix))))
 
 (defthm
   hifat-file-alist-fix-when-hifat-no-dups-p
@@ -1926,14 +1931,14 @@
                 (m1-file-alist-p hifat-file-alist))
            (equal (hifat-file-alist-fix hifat-file-alist)
                   hifat-file-alist))
-  :hints (("goal" :in-theory (enable hifat-no-dups-p))))
+  :hints (("goal" :in-theory (enable hifat-no-dups-p hifat-file-alist-fix))))
 
 (defthm
   hifat-no-dups-p-of-hifat-file-alist-fix
   (hifat-no-dups-p (hifat-file-alist-fix hifat-file-alist))
   :hints
   (("goal"
-    :in-theory (enable hifat-no-dups-p)
+    :in-theory (enable hifat-no-dups-p hifat-file-alist-fix)
     :induct (hifat-file-alist-fix hifat-file-alist))))
 
 ;; This can't be made local.
@@ -2071,6 +2076,21 @@
   :hints (("goal" :in-theory (enable hifat-no-dups-p
                                      m1-file-alist-p hifat-find-file))))
 
+(defthmd hifat-find-file-correctness-2
+  (equal (hifat-find-file fs path)
+         (mv (mv-nth 0 (hifat-find-file fs path))
+             (mv-nth 1 (hifat-find-file fs path))))
+  :hints (("goal" :in-theory (enable hifat-find-file))))
+
+(defthmd
+  hifat-find-file-correctness-5
+  (implies
+   (not (zp (mv-nth 1 (hifat-find-file fs path))))
+   (equal (hifat-find-file fs path)
+          (mv (make-m1-file)
+              (mv-nth 1 (hifat-find-file fs path)))))
+  :hints (("goal" :in-theory (enable hifat-find-file))))
+
 (defund
   hifat-place-file
   (fs path file)
@@ -2168,6 +2188,12 @@
   (implies (not (zp (mv-nth 1 (hifat-place-file fs path file))))
            (equal (mv-nth 0 (hifat-place-file fs path file))
                   (hifat-file-alist-fix fs)))
+  :hints (("goal" :in-theory (enable hifat-place-file))))
+
+(defthmd hifat-place-file-correctness-5
+  (equal (hifat-place-file fs path file)
+         (mv (mv-nth 0 (hifat-place-file fs path file))
+             (mv-nth 1 (hifat-place-file fs path file))))
   :hints (("goal" :in-theory (enable hifat-place-file))))
 
 (defcong m1-file-equiv equal
@@ -2906,7 +2932,7 @@
 ;;            :expand (PATH-TO-FAT32-PATH (TAKE (+ -1 (LEN CHARACTER-LIST))
 ;;                                                      CHARACTER-LIST))) ))
 
-(defun fat32-path-to-path (string-list)
+(defund fat32-path-to-path (string-list)
   (declare (xargs :guard (fat32-filename-list-p string-list)))
   (if (atom string-list)
       nil
@@ -2929,4 +2955,4 @@
 
 (defthm character-listp-of-fat32-path-to-path
   (character-listp (fat32-path-to-path string-list))
-  :hints (("goal" :in-theory (enable fat32-name-to-name))))
+  :hints (("goal" :in-theory (enable fat32-name-to-name fat32-path-to-path))))

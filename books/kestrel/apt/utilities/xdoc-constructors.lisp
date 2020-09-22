@@ -541,62 +541,39 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro+ xdoc::desc-apt-input-verify-guards (wrapper? &rest additional)
-  (declare (xargs :guard (member-eq wrapper? '(:never :optional :always))))
+(defmacro+ xdoc::desc-apt-input-verify-guards (&key (plural-functions 't)
+                                                    additional-text)
+  (declare (xargs :guard (booleanp plural-functions)))
   :short "Build a description of the @(':verify-guards') input
           for the user documentation of an APT transformation."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The @('wrapper?') parameter of this macro
-     has the value @(':never') when the transformation
-     never generates a wrapper;
-     it has the value @(':optional') when the transformation includes
-     a @(':wrapper') input that determines whether
-     the wrapper is generated or not (i.e. the wrapper is optional);
-     it has the value @(':always') when the transformation
-     always generates the wrapper.")
+    "The @(':plural') parameter of this macro
+     indicates whether the transformation generates multiple functions or not.
+     Based on that, the text is slightly customized
+     with plural for `generated functions' or not.")
    (xdoc::p
-    "This involves the new function,
-     and also the wrapper function when present.
-     This is determined by the @('wrapper?') parameter of this macro."))
-  (b* ((new/wrapper-ref
-        (case wrapper?
-          (:never "@('new')")
-          (:optional "@('new') and (if generated) @('wrapper')")
-          (:always "@('new') and @('wrapper')")))
-       (is/are
-        (case wrapper?
-          (:never "is")
-          (:optional "is/are")
-          (:always "are")))
-       (it/them
-        (case wrapper?
-          (:never "it")
-          (:optional "it/them")
-          (:always "them"))))
-    `(xdoc::desc
-      "@(':verify-guards') &mdash; default @(':auto')"
-      (xdoc::p
-       "Determines whether "
-       ,new/wrapper-ref
-       " "
-       ,is/are
-       " guard-verified:")
-      (xdoc::ul
-       (xdoc::li
-        "@('t'), to guard-verify "
-        ,it/them
-        ".")
-       (xdoc::li
-        "@('nil'), to not guard-verify "
-        ,it/them
-        ".")
-       (xdoc::li
-        "@(':auto'), to guard-verify "
-        ,it/them
-        " iff @('old') is guard-verified."))
-      ,@additional)))
+    "The @(':additional-text) parameter of this macro
+     must be either @('nil') (the default) or an XDOC tree.
+     The tree (if any) is added at the end of the boilerplate text."))
+  `(xdoc::desc
+    "@(':verify-guards') &mdash; default @(':auto')"
+    (xdoc::p
+     "Determines whether the guards of the generated "
+     ,(if plural-functions "functions" "functions")
+     " are verified or not.")
+    (xdoc::p
+     "It must be one of the following:")
+    (xdoc::ul
+     (xdoc::li
+      "@('t'), to verify the guards.")
+     (xdoc::li
+      "@('nil'), to not verify guards.")
+     (xdoc::li
+      "@(':auto'), to verify the guards if and only if
+       the guards of the target function @('old') are verified."))
+    ,@(and additional-text (list additional-text))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

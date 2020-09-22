@@ -130,8 +130,8 @@
     "The lemma @('len-when-no-duplicatesp-and-subsetp')
      is used to prove the theorem @('set-size-when-subsetp'), and
      the lemma @('len-when-no-duplicatesp-and-strict-subsetp')
-     is similarly used to prove the theorem @('set-size-when-strict-subsetp).
-     @(tsee set-size') is defined as @(tsee len) of @(tsee remove-duplicates),
+     is similarly used to prove the theorem @('set-size-when-strict-subsetp').
+     @(tsee set-size) is defined as @(tsee len) of @(tsee remove-duplicates),
      which produces lists satisfying @(tsee no-duplicatesp),
      making the lemmas applicable to the theorems."))
 

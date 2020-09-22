@@ -6,9 +6,9 @@
 ; functions.  Add an include-book for each new such book.  (Various people have
 ; done so since this book was originally added.)
 
-; See *system-verify-guards-alist* in ACL2 source file boot-strap-pass-2.lisp
-; for how this book relates to which functions in the ACL2 system come up in
-; :logic mode.
+; See *system-verify-guards-alist* in the ACL2 sources, or see :DOC
+; verify-guards-for-system-functions, for how this book relates to which
+; functions in the ACL2 system come up in :logic mode.
 
 (in-package "ACL2")
 

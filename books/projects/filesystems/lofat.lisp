@@ -2488,8 +2488,7 @@ Some (rather awful) testing forms are
                                    lofat-to-hifat-helper-correctness-4)
             ((:rewrite m1-file-alist-p-of-cdr-when-m1-file-alist-p)
              (:rewrite nth-of-effective-fat)
-             (:definition assoc-equal)
-             (:definition hifat-file-alist-fix)))))
+             (:definition assoc-equal)))))
      :rule-classes :linear))
 
   ;; This induction proof is becoming a sort of bag to hold many things at
@@ -2590,7 +2589,6 @@ Some (rather awful) testing forms are
             ((:rewrite m1-file-alist-p-of-cdr-when-m1-file-alist-p)
              (:rewrite nth-of-effective-fat)
              (:definition assoc-equal)
-             (:definition hifat-file-alist-fix)
              (:REWRITE SUBSETP-CAR-MEMBER)
              (:REWRITE DIR-ENT-LIST-P-OF-CDR-WHEN-DIR-ENT-LIST-P)
              (:REWRITE ASSOC-OF-CAR-WHEN-MEMBER)
@@ -10465,7 +10463,6 @@ Some (rather awful) testing forms are
       (:definition remove-assoc-equal)
       (:linear make-clusters-correctness-2)
       (:rewrite clear-clusterchain-reversibility-lemma-1)
-      (:linear non-free-index-listp-correctness-6-lemma-3)
       (:rewrite len-of-effective-fat)
       (:definition make-list-ac)
       (:REWRITE SUBSETP-CAR-MEMBER)
@@ -11423,7 +11420,6 @@ Some (rather awful) testing forms are
         nth-of-effective-fat
         (:rewrite m1-file-alist-p-of-cdr-when-m1-file-alist-p)
         (:definition no-duplicatesp-equal)
-        (:definition hifat-file-alist-fix)
         (:rewrite lofat-to-hifat-helper-after-delete-and-clear-2-lemma-2
                   . 1)
         (:rewrite assoc-of-car-when-member)
@@ -16620,8 +16616,10 @@ Some (rather awful) testing forms are
             (- (nfix (ceiling (* 32 (+ 2 (len old-contents)))
                               cluster-size)))))))
      :hints
-     (("goal" :in-theory (enable hifat-place-file hifat-find-file
-                                 hifat-cluster-count-of-hifat-place-file-lemma-3)
+     (("goal" :in-theory
+       (e/d (hifat-place-file hifat-find-file
+                              hifat-cluster-count-of-hifat-place-file-lemma-3)
+            ((:rewrite nfix-when-natp)))
        :induct (hifat-place-file fs path file)))))
 
   (defthm
@@ -19431,7 +19429,6 @@ Some (rather awful) testing forms are
       (:rewrite put-assoc-equal-without-change . 2)
       (:rewrite nats=>chars-of-take)
       (:rewrite hifat-to-lofat-inversion-lemma-2)
-      (:DEFINITION HIFAT-FILE-ALIST-FIX)
       (:REWRITE SUBSETP-CAR-MEMBER)
       (:REWRITE CONSP-OF-ASSOC-OF-HIFAT-FILE-ALIST-FIX)
       (:REWRITE ASSOC-OF-CAR-WHEN-MEMBER)
@@ -19557,7 +19554,6 @@ Some (rather awful) testing forms are
        hifat-entry-count-of-lofat-to-hifat-helper-of-delete-dir-ent-lemma-3)
       (:rewrite put-assoc-equal-without-change . 2)
       (:rewrite nats=>chars-of-take)
-      (:definition hifat-file-alist-fix)
       (:rewrite hifat-subsetp-reflexive-lemma-3)))
     :induct (lofat-to-hifat-helper fat32-in-memory
                                    dir-ent-list entry-limit)
@@ -23039,96 +23035,6 @@ Some (rather awful) testing forms are
       (x (list nil)))))))
 
 (defthm
-  lofat-place-file-correctness-1-lemma-71
-  (implies
-   (and
-    (consp dir-ent-list)
-    (useful-dir-ent-list-p dir-ent-list)
-    (not (equal (mv-nth 1
-                        (find-dir-ent (cdr dir-ent-list)
-                                      (dir-ent-filename (car dir-ent-list))))
-                0))
-    (equal
-     (mv-nth
-      3
-      (lofat-to-hifat-helper
-       fat32-in-memory (cdr dir-ent-list)
-       (+
-        -1 entry-limit
-        (-
-         (hifat-entry-count
-          (mv-nth 0
-                  (lofat-to-hifat-helper
-                   fat32-in-memory
-                   (make-dir-ent-list
-                    (mv-nth 0
-                            (dir-ent-clusterchain-contents
-                             fat32-in-memory (car dir-ent-list))))
-                   (+ -1 entry-limit))))))))
-     0))
-   (equal
-    (hifat-file-alist-fix
-     (cons
-      (cons
-       (dir-ent-filename (car dir-ent-list))
-       (m1-file
-        (car dir-ent-list)
-        (mv-nth 0
-                (lofat-to-hifat-helper
-                 fat32-in-memory
-                 (make-dir-ent-list
-                  (mv-nth 0
-                          (dir-ent-clusterchain-contents
-                           fat32-in-memory (car dir-ent-list))))
-                 (+ -1 entry-limit)))))
-      (mv-nth
-       0
-       (lofat-to-hifat-helper
-        fat32-in-memory (cdr dir-ent-list)
-        (+
-         -1 entry-limit
-         (-
-          (hifat-entry-count
-           (mv-nth
-            0
-            (lofat-to-hifat-helper
-             fat32-in-memory
-             (make-dir-ent-list
-              (mv-nth 0
-                      (dir-ent-clusterchain-contents
-                       fat32-in-memory (car dir-ent-list))))
-             (+ -1 entry-limit))))))))))
-    (cons
-     (cons
-      (dir-ent-filename (car dir-ent-list))
-      (m1-file
-       (car dir-ent-list)
-       (mv-nth
-        0
-        (lofat-to-hifat-helper
-         fat32-in-memory
-         (make-dir-ent-list (mv-nth 0
-                                    (dir-ent-clusterchain-contents
-                                     fat32-in-memory (car dir-ent-list))))
-         (+ -1 entry-limit)))))
-     (mv-nth
-      0
-      (lofat-to-hifat-helper
-       fat32-in-memory (cdr dir-ent-list)
-       (+
-        -1 entry-limit
-        (-
-         (hifat-entry-count
-          (mv-nth 0
-                  (lofat-to-hifat-helper
-                   fat32-in-memory
-                   (make-dir-ent-list
-                    (mv-nth 0
-                            (dir-ent-clusterchain-contents
-                             fat32-in-memory (car dir-ent-list))))
-                   (+ -1 entry-limit))))))))))))
-
-(defthm
   lofat-place-file-correctness-1-lemma-72
   (implies
    (and
@@ -26118,7 +26024,6 @@ Some (rather awful) testing forms are
   ;;       (:REWRITE
   ;;        M1-FILE-ALIST-P-OF-CDR-WHEN-M1-FILE-ALIST-P)
   ;;       (:DEFINITION PLACE-DIR-ENT)
-  ;;       (:DEFINITION HIFAT-FILE-ALIST-FIX)
   ;;       (:REWRITE NOT-INTERSECTP-LIST-OF-APPEND-1)))
   ;;     :induct (induction-scheme dir-ent-list
   ;;                               entry-limit fat32-in-memory x)

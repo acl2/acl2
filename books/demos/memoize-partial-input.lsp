@@ -15,6 +15,8 @@
               :with-output-off
               (proof-tree prove event summary proof-builder history)))
 
+(set-compile-fns t)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Singly-recursive example
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1101,11 +1103,35 @@ is thus illegal.
                   :condition)
  :expected :hard)
 
-; Stobjs aren't handled by defchoose, so we need an error if there are stobjs.
+; We can handle user-defined stobj inputs when there are no stobj outputs
+; (which would make non-profiling memoization illegal).
 
 (defstobj st fld)
 
 (defun fib-st-limit (n st limit)
+  (declare (type (integer 0 *) limit)
+           (type integer n))
+  (declare (xargs :measure (nfix limit)
+                  :stobjs st))
+  (if (zp limit)
+      (prog2$ (er hard? 'fib-st-limit
+                  "Hit the limit: n=~x0 (fld st)=~x1."
+                  n (fld st))
+              0) ; to return a natp
+    (let ((limit (1- limit)))
+      (if (or (= n 0) (= n 1))
+          1
+        (+ (fib-st-limit (- n 1) st limit)
+           (fib-st-limit (- n 2) st limit))))))
+
+(memoize-partial fib-st)
+
+(assert-event (equal (fib-st 100 st)
+                     573147844013817084101))
+
+; Memoization is illegal for stobj outputs.
+
+(defun fib-st-out-limit (n st limit)
   (declare (type (integer 0 *) limit)
            (type integer n))
   (declare (xargs :measure (nfix limit)
@@ -1117,23 +1143,27 @@ is thus illegal.
       (if (or (= n 0) (= n 1))
           (mv 1 st)
         (mv-let (x1 st)
-          (fib-st-limit (- n 1) st limit)
+          (fib-st-out-limit (- n 1) st limit)
           (mv-let (x2 st)
-            (fib-st-limit (- n 2) st limit)
+            (fib-st-out-limit (- n 2) st limit)
             (mv (+ x1 x2) st)))))))
 
-(defthm natp-fib-st-limit-0
-  (natp (car (fib-st-limit n limit st)))
+(defthm natp-fib-st-out-limit-0
+  (natp (car (fib-st-out-limit n limit st)))
   :rule-classes :type-prescription)
 
-(verify-guards fib-st-limit)
+(verify-guards fib-st-out-limit)
 
 (mf
 #||
-ACL2 Error in MEMOIZE-PARTIAL:  The stobj ST is among the formals of
-FIB-ST-LIMIT.
+ACL2 Error in MEMOIZE-PARTIAL:
+The stobj ST is returned by FIB-ST-OUT-LIMIT, which is illegal for
+memoization.
+See :DOC memoize-partial.
 ||#
- (memoize-partial fib-st))
+ (memoize-partial fib-st-out))
+
+; Memoization is illegal for state input.
 
 (defun fib-state-limit (n state limit)
   (declare (type (integer 0 *) limit)
@@ -1171,6 +1201,10 @@ FIB-STATE-LIMIT.
 
 ; Since it's an open problem whether the 3n+1 algorithm terminates, we have an
 ; opportunity to show off memoize-partial.
+
+; While we're at it, we'll test (comp t), which at one point failed to preserve
+; the effect of memoize-partial, making collatz non-executable.
+(set-compile-fns nil)
 
 (defun collatz-limit (n limit)
   (declare (xargs :guard (and (natp n)
@@ -1247,11 +1281,6 @@ FIB-STATE-LIMIT.
 (defun collatz-sum (n)
   (collatz-sum-rec n 0))
 
-(comp t)
-
-(assert-event (equal (collatz-sum (expt 10 6)) ; 1,000,000
-                     131434424)) ; 131,434,224
-
 (defun collatz-limit-sum-rec (n acc limit)
   (declare (xargs :guard (and (natp n) (natp acc) (natp limit))))
   (if (zp n)
@@ -1267,7 +1296,12 @@ FIB-STATE-LIMIT.
 
   (collatz-limit-sum-rec n 0 (1- (expt 2 60))))
 
-(comp t)
+; Suppress output since (comp t) returns (value nil) in CCL and SBCL, else
+; (value t).
+(with-output :off :all (progn (comp t) (value-triple nil)))
+
+(assert-event (equal (collatz-sum (expt 10 6)) ; 1,000,000
+                     131434424)) ; 131,434,224
 
 (assert-event (equal (collatz-limit-sum (expt 10 6)) ; 1,000,000
-                     (collatz-limit (expt 10 6))))
+                     (collatz-sum (expt 10 6))))

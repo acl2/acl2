@@ -10,6 +10,7 @@
 
 (in-package "ACL2")
 
+(include-book "alistp")
 (include-book "acons")
 (include-book "assoc-equal")
 (include-book "strip-cars")

@@ -3653,7 +3653,9 @@
                        (hifat-to-lofat-helper
                         fat32-in-memory fs first-cluster)))
    (fat-length fat32-in-memory))
-  :hints (("goal" :in-theory (enable nth))))
+  :hints (("goal" :in-theory (e/d (nth)
+                                  ((:rewrite nfix-when-natp)
+                                   (:rewrite length-when-stringp))))))
 
 (defthm
   lofat-fs-p-of-hifat-to-lofat-helper-lemma-1
@@ -7543,7 +7545,7 @@
      (iff (equal (hifat-entry-count fs) 0) (atom fs))
      :hints
      (("goal"
-       :in-theory (enable hifat-entry-count)))))
+       :in-theory (enable hifat-entry-count hifat-file-alist-fix)))))
 
   (defthmd
     hifat-to-lofat-inversion-lemma-16
@@ -8800,7 +8802,7 @@
                          (butlast fa-table 1)
                          b))))
 
-  (defthm non-free-index-listp-correctness-6-lemma-3
+  (defthmd non-free-index-listp-correctness-6-lemma-3
     (implies (and (lower-bounded-integer-listp x b)
                   (bounded-nat-listp x (len fa-table))
                   (no-duplicatesp-equal x)
@@ -8817,7 +8819,6 @@
            (<= (+ 2 (len x)) (len fa-table)))
   :hints
   (("goal"
-    :in-theory (disable non-free-index-listp-correctness-6-lemma-3)
     :use (:instance non-free-index-listp-correctness-6-lemma-3
                     (b *ms-first-data-cluster*)))))
 

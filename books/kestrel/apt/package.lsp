@@ -116,11 +116,13 @@
                          ens
                          ensure-boolean-or-auto-and-return-boolean$
                          ensure-doublet-list$
+                         ensure-function-arity$
                          ensure-function-defined$
                          ensure-function-guard-verified$
                          ensure-function-has-args$
                          ensure-function-known-measure$
                          ensure-function-logic-mode$
+                         ensure-function-name$
                          ensure-function-name-or-numbered-wildcard$
                          ensure-function-no-stobjs$
                          ensure-function-not-in-termination-thm$
@@ -220,7 +222,9 @@
                          get-vars-in-untranslated-term
                          guard-raw
                          guard-verified-p
+                         guard-verified-p+
                          ibody
+                         if-tree-leaf-terms
                          implicate
                          implicate-untranslated-terms
                          impliez
@@ -340,6 +344,7 @@
                          translate-hints
                          translate-term-lst
                          try-event
+                         tuple
                          ubody
                          uguard
                          unnormalized-body

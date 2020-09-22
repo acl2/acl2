@@ -331,7 +331,7 @@
 
     (xdoc::desc-apt-input-wrapper-to-old-enable)
 
-    (xdoc::desc-apt-input-verify-guards :optional)
+    (xdoc::desc-apt-input-verify-guards)
 
     (xdoc::evmac-input-hints)
 

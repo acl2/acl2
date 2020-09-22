@@ -39,7 +39,7 @@
 (defthm hifat-entry-count-of-hifat-file-alist-fix
   (equal (hifat-entry-count (hifat-file-alist-fix fs))
          (hifat-entry-count fs))
-  :hints (("Goal" :in-theory (enable hifat-entry-count)) ))
+  :hints (("Goal" :in-theory (enable hifat-entry-count hifat-file-alist-fix))))
 
 (defthm
   m1-file-alist-p-of-remove1-assoc-equal

@@ -833,11 +833,15 @@
 
   (define xdoc::evmac-topic-implementation-item-fn-doc ((name stringp))
     (xdoc::&& "@('" name "') is the homonymous function symbol "
-              "describes in the user documentation."))
+              "described in the user documentation."))
 
   (define xdoc::evmac-topic-implementation-item-thm-doc ((name stringp))
-    (xdoc::&& "@('" name "') is the homonymous thoerem symbol "
-              "describes in the user documentation.")))
+    (xdoc::&& "@('" name "') is the homonymous theorem symbol "
+              "described in the user documentation."))
+
+  (define xdoc::evmac-topic-implementation-item-var-doc ((name stringp))
+    (xdoc::&& "@('" name "') is the homonymous variable symbol "
+              "described in the user documentation.")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

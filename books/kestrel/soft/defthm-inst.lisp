@@ -90,10 +90,10 @@
        ((unless (no-duplicatesp keywords))
         (er-soft+ ctx t nil
                   "The inputs keywords must be unique."))
-       ((unless (subsetp keywords '(:rule-classes :print)))
+       ((unless (subsetp keywords '(:rule-classes :enable :print)))
         (er-soft+ ctx t nil
                   "Only the input keywords ~
-                   :RULE-CLASSES and :PRINT are allowed."))
+                   :RULE-CLASSES, :ENABLE, and :PRINT are allowed."))
        (print-pair (assoc-keyword :print options))
        (print (if print-pair
                   (cadr print-pair)
@@ -104,13 +104,24 @@
                    but ~x0 is not."
                   print))
        (options (remove-keyword :print options))
+       (enable-pair (assoc-keyword :enable options))
+       (enable (if enable-pair
+                   (cadr enable-pair)
+                 t))
+       ((unless (booleanp enable))
+        (er-soft+ ctx t nil
+                  "The :ENABLE input must be T or NIL, ~
+                   but it is ~x0 instead."
+                  enable))
+       (options (remove-keyword :enable options))
        (sothm-formula (formula sothm nil wrld))
        (thm-formula (fun-subst-term inst sothm-formula wrld))
        (thm-formula (untranslate thm-formula t wrld))
        (fsbs (ext-fun-subst-term sothm-formula inst wrld))
        (thm-proof (sothm-inst-proof sothm fsbs wrld))
-       (defthm-event `(defthm ,thm ,thm-formula ,@thm-proof ,@options))
-       (defthm-event-without-proof `(defthm ,thm ,thm-formula ,@options))
+       (macro (if enable 'defthm 'defthmd))
+       (defthm-event `(,macro ,thm ,thm-formula ,@thm-proof ,@options))
+       (defthm-event-without-proof `(,macro ,thm ,thm-formula ,@options))
        (return-value-event `(value-triple ',thm))
        (event (cond ((eq print nil)
                      `(progn
