@@ -890,6 +890,25 @@
   :hints (("goal" :in-theory (e/d (abs-addrs intersectp-equal
                                              no-duplicatesp-of-abs-addrs-of-put-assoc-lemma-1)))))
 
+(defthm
+  no-duplicatesp-of-abs-addrs-of-abs-file->contents-of-cdr-of-assoc
+  (implies (and (abs-file-alist-p fs)
+                (no-duplicatesp-equal (abs-addrs fs)))
+           (no-duplicatesp-equal
+            (abs-addrs (abs-file->contents (cdr (assoc-equal name fs))))))
+  :hints
+  (("goal"
+    :in-theory (e/d (abs-addrs abs-file-alist-p
+                               abs-file->contents abs-file-contents-fix
+                               abs-file-contents-p
+                               abs-directory-file-p abs-file-p)
+                    (m1-file-alist-p-of-cdr-when-m1-file-alist-p
+                     abs-file-alist-p-correctness-1
+                     m1-file-contents-p-correctness-1
+                     assoc-when-zp-len
+                     abs-addrs-when-m1-file-alist-p
+                     abs-file-alist-p-when-m1-file-alist-p)))))
+
 (defund abs-fs-p (x)
   (declare (xargs :guard t))
   (and (abs-file-alist-p x)
@@ -5615,6 +5634,82 @@
   :hints (("goal" :do-not-induct t
            :in-theory (enable collapse-this))))
 
+(defthm
+  partial-collapse-correctness-lemma-1
+  (implies
+   (and (abs-separate (frame->frame frame))
+        (mv-nth 1 (collapse frame))
+        (consp (assoc-equal x (frame->frame frame)))
+        (zp (frame-val->src (cdr (assoc-equal x (frame->frame frame)))))
+        (frame-p (frame->frame frame))
+        (no-duplicatesp-equal (strip-cars (frame->frame frame)))
+        (dist-names (frame->root frame)
+                    nil (frame->frame frame)))
+   (ctx-app-ok (frame->root frame)
+               x
+               (frame-val->path (cdr (assoc-equal x (frame->frame frame))))))
+  :hints
+  (("goal"
+    :in-theory
+    (e/d (collapse collapse-this)
+         ((:rewrite remove-assoc-of-put-assoc)
+          (:definition remove-assoc-equal)
+          (:rewrite remove-assoc-of-remove-assoc)
+          (:rewrite abs-file-alist-p-when-m1-file-alist-p)
+          (:rewrite put-assoc-equal-without-change . 2)
+          (:type-prescription abs-addrs-of-remove-assoc-lemma-1)))
+    :induct (collapse frame)
+    :expand
+    (:with
+     ctx-app-ok-of-ctx-app-1
+     (ctx-app-ok
+      (ctx-app
+       (frame->root frame)
+       (frame-val->dir$inline
+        (cdr (assoc-equal (1st-complete (frame->frame frame))
+                          (frame->frame frame))))
+       (1st-complete (frame->frame frame))
+       (frame-val->path$inline
+        (cdr (assoc-equal (1st-complete (frame->frame frame))
+                          (frame->frame frame)))))
+      x
+      (frame-val->path$inline (cdr (assoc-equal x (frame->frame frame))))))))
+  :rule-classes
+  ((:rewrite
+    :corollary
+    (implies
+     (and (abs-separate (frame->frame frame))
+          (mv-nth 1 (collapse frame))
+          (consp (assoc-equal x (frame->frame frame)))
+          (zp (frame-val->src (cdr (assoc-equal x (frame->frame frame)))))
+          (frame-p (frame->frame frame))
+          (no-duplicatesp-equal (strip-cars (frame->frame frame)))
+          (dist-names (frame->root frame)
+                      nil (frame->frame frame))
+          (fat32-filename-list-equiv
+           relpath
+           (frame-val->path (cdr (assoc-equal x (frame->frame frame))))))
+     (ctx-app-ok (frame->root frame)
+                 x relpath)))))
+
+(defthm
+  abs-separate-of-collapse-this
+  (implies
+   (and
+    (frame-p frame)
+    (mv-nth 1 (collapse frame))
+    (no-duplicatesp-equal (strip-cars (frame->frame frame)))
+    (consp (assoc-equal x (frame->frame frame)))
+    (abs-complete (frame-val->dir (cdr (assoc-equal x (frame->frame frame)))))
+    (abs-separate frame)
+    (not (consp (frame-val->path (cdr (assoc-equal 0 frame))))))
+   (abs-separate (collapse-this frame x)))
+  :hints
+  (("goal"
+    :do-not-induct t
+    :cases ((equal (frame-val->src (cdr (assoc-equal x (frame->frame frame))))
+                   0)))))
+
 (defund frame-addrs-root (frame)
   (declare (xargs :guard (frame-p frame)))
   (cond ((atom frame) nil)
@@ -6680,8 +6775,8 @@
     :expand (collapse-iter frame 1))))
 
 (defthm collapse-1st-index-of-frame-val->src-of-cdr-of-assoc-linear-lemma-8
-  (implies (and (consp (assoc-equal x (frame->frame frame)))
-                (frame-p (frame->frame frame)))
+  (implies (and (consp (assoc-equal x frame))
+                (frame-p frame))
            (natp x))
   :rule-classes :forward-chaining)
 
@@ -6690,17 +6785,20 @@
   (implies
    (and (mv-nth 1 (collapse frame))
         (consp (assoc-equal x (frame->frame frame)))
-        (frame-p (frame->frame frame))
         (no-duplicatesp-equal (strip-cars (frame->frame frame))))
    (not (equal (1st-complete (frame->frame frame))
                (frame-val->src (cdr (assoc-equal x (frame->frame frame)))))))
   :hints
   (("goal"
-    :in-theory (disable (:rewrite abs-separate-of-frame->frame-of-collapse-this-lemma-8 . 2))
-    :use (:instance (:rewrite abs-separate-of-frame->frame-of-collapse-this-lemma-8 . 2)
-                    (frame frame)
-                    (x x)
-                    (y (1st-complete (frame->frame frame)))))))
+    :in-theory
+    (disable (:rewrite abs-separate-of-frame->frame-of-collapse-this-lemma-8
+                       . 2))
+    :use
+    (:instance (:rewrite abs-separate-of-frame->frame-of-collapse-this-lemma-8
+                         . 2)
+               (frame frame)
+               (x x)
+               (y (1st-complete (frame->frame frame)))))))
 
 (defthm
   collapse-1st-index-of-frame-val->src-of-cdr-of-assoc-linear-lemma-10
@@ -6718,17 +6816,24 @@
      (frame-val->src (cdr (assoc-equal x (frame->frame frame)))))))
   :hints
   (("goal"
-    :in-theory (e/d (collapse-iter)
-                    ((:rewrite collapse-1st-index-of-frame-val->src-of-cdr-of-assoc-linear-lemma-7)))
-    :use ((:instance (:rewrite collapse-1st-index-of-frame-val->src-of-cdr-of-assoc-linear-lemma-7)
-                     (x x)
-                     (n 1)
-                     (frame frame))
-          (:instance
-           (:rewrite collapse-1st-index-of-frame-val->src-of-cdr-of-assoc-linear-lemma-7)
-           (x (frame-val->src (cdr (assoc-equal x (frame->frame frame)))))
-           (n 1)
-           (frame frame)))
+    :in-theory
+    (e/d
+     (collapse-iter)
+     ((:rewrite
+       collapse-1st-index-of-frame-val->src-of-cdr-of-assoc-linear-lemma-7)))
+    :use
+    ((:instance
+      (:rewrite
+       collapse-1st-index-of-frame-val->src-of-cdr-of-assoc-linear-lemma-7)
+      (x x)
+      (n 1)
+      (frame frame))
+     (:instance
+      (:rewrite
+       collapse-1st-index-of-frame-val->src-of-cdr-of-assoc-linear-lemma-7)
+      (x (frame-val->src (cdr (assoc-equal x (frame->frame frame)))))
+      (n 1)
+      (frame frame)))
     :expand (collapse-iter frame 1))))
 
 (defthm
@@ -6803,7 +6908,6 @@
   :hints (("goal" :in-theory (enable frame-addrs-before
                                      intersectp-equal collapse-1st-index))))
 
-;; Rename later.
 (defthm
   frame-val->src-of-cdr-of-assoc-when-member-of-frame-addrs-before
   (implies (member-equal y (frame-addrs-before frame x n))
