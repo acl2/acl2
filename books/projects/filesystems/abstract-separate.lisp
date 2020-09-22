@@ -4891,7 +4891,9 @@
   (("goal"
     :in-theory (e/d (dist-names names-at)
                     ((:rewrite remove-when-absent)
-                     (:rewrite abs-fs-p-correctness-1))))))
+                     (:rewrite abs-fs-p-correctness-1)
+                     (:rewrite prefixp-of-append-arg1)
+                     (:rewrite prefixp-of-append-arg2))))))
 
 (defthm
   names-at-of-put-assoc
