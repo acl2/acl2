@@ -56,6 +56,3 @@
 (include-book "subrange")
 (include-book "subsequencep-equal")
 (include-book "update-nth2")
-
-;; Typed lists:
-(include-book "symbol-listp")

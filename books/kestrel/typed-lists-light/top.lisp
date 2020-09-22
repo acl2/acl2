@@ -15,3 +15,4 @@
 (include-book "all-true-listp")
 (include-book "items-have-len")
 (include-book "maxelem")
+(include-book "symbol-listp")
