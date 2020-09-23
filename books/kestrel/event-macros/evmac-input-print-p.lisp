@@ -16,6 +16,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::defenum evmac-input-print-p (nil :error :result :info :all)
+  :parents (event-macros)
   :short "Recognize a valid @(':print') input of an event macro."
   :long
   (xdoc::topstring
