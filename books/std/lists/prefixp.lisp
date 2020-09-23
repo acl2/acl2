@@ -36,6 +36,7 @@
 (in-package "ACL2")
 (include-book "equiv")
 (local (include-book "take"))
+(local (include-book "sets"))
 
 (defsection prefixp
   :parents (std/lists)
@@ -121,8 +122,19 @@ the list @('y')."
     (prefixp x x)
     :hints(("Goal" :induct (len x))))
 
-  (defthm prefixp-of-append
-    (prefixp x (append x y)))
+  (local
+   (defthm nthcdr-when-atom
+     (implies (atom l)
+              (list-equiv (nthcdr n l) nil))
+     :hints (("goal" :in-theory (enable prefixp list-equiv)))))
+
+  (defthm prefixp-of-append-arg2
+    (equal (prefixp x (append y z))
+           (or (prefixp x y)
+               (and (equal (true-list-fix y)
+                           (take (len y) x))
+                    (prefixp (nthcdr (len y) x) z))))
+    :hints (("goal" :in-theory (enable prefixp nthcdr))))
 
   (local (defthm equal-len-0
            (equal (equal (len x) 0)
@@ -142,7 +154,7 @@ the list @('y')."
                     (list-equiv x y)))
     :hints(("Goal" :in-theory (enable prefixp list-equiv))))
 
-  ;; Mihir M. mod: Six lemmas are added below. prefixp-transitive generates
+  ;; Mihir M. mod: Eight lemmas are added below. prefixp-transitive generates
   ;; two rewrite rules which are identical except in how they bind the free
   ;; variable y; it is similar with prefixp-one-way-or-another and the free
   ;; variable z. In nth-when-prefixp, the rewrite rule is a little less general
@@ -195,4 +207,20 @@ the list @('y')."
     (implies (prefixp x y)
              (equal (append x (nthcdr (len x) y)) y))
     :hints (("Goal" :induct (prefixp x y)
-             :in-theory (enable prefixp)) )))
+             :in-theory (enable prefixp)) ))
+
+  (defthmd subsetp-when-prefixp
+    (implies (prefixp x y)
+             (subsetp-equal x y))
+    :hints (("goal" :in-theory (enable prefixp)
+             :induct (prefixp x y))))
+
+  (defthm prefixp-of-append-arg1
+    (equal (prefixp (append x y) z)
+           (and (<= (+ (len x) (len y)) (len z))
+                (equal (true-list-fix x)
+                       (take (len x) z))
+                (prefixp (true-list-fix y)
+                         (nthcdr (len x) z))))
+    :hints (("goal" :in-theory (enable prefixp)
+             :induct (prefixp x z)))))

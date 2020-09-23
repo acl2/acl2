@@ -385,12 +385,6 @@
 ;; bytes.
 (local (include-book "std/typed-lists/integer-listp" :dir :system))
 
-(defthm subsetp-when-prefixp
-  (implies (prefixp x y)
-           (subsetp-equal x y))
-  :hints (("goal" :in-theory (enable subsetp-equal prefixp)
-           :induct (prefixp x y))))
-
 (defthm
   subseq-of-implode-of-append
   (equal (subseq (implode (append x y))
@@ -455,10 +449,6 @@
                                   (- (len x))))
                  (:theorem (equal (+ (len x) (- (len x)) (len y))
                                   (len y)))))))
-
-(defthm when-prefixp-append-same
-  (iff (prefixp (append y x) y) (atom x))
-  :hints (("goal" :in-theory (enable prefixp))))
 
 (defthmd
   painful-debugging-lemma-14

@@ -13,7 +13,7 @@
 (local
  (in-theory (disable take-of-too-many make-list-ac-removal
                      revappend-removal str::hex-digit-listp-of-cons
-                     loghead logtail nth-when->=-n-len-l subsetp-when-prefixp
+                     loghead logtail nth-when->=-n-len-l
                      subsetp-trans2 subsetp-trans integer-listp)))
 
 (local
