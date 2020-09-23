@@ -11,5 +11,8 @@
 (in-package "ACL2")
 
 (include-book "character-listp")
+(include-book "rational-listp")
 (include-book "all-true-listp")
 (include-book "items-have-len")
+(include-book "maxelem")
+(include-book "symbol-listp")

@@ -11,7 +11,7 @@
 
 (in-package "ACL2")
 
-(local (include-book "kestrel/lists-light/member-equal" :dir :system))
+(local (include-book "member-equal"))
 
 (in-theory (disable set-difference-equal))
 

@@ -1,4 +1,4 @@
-; Theorems about perm and other non-built-in functions
+; A macro version of acons
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
 ; Copyright (C) 2013-2020 Kestrel Institute
@@ -11,10 +11,7 @@
 
 (in-package "ACL2")
 
-(include-book "perm")
-(include-book "reverse-list")
-
-(defthm perm-of-reverse-list
-  (perm (reverse-list x)
-        x)
-  :hints (("Goal" :in-theory (enable reverse-list))))
+;; This is faster in my tests than acons (since acons is a function).  (Also,
+;; this does not have a guard requiring (alistp alist), whereas acons does.)
+(defmacro acons-fast (key datum alist)
+  `(cons (cons ,key ,datum) ,alist))
