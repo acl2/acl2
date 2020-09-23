@@ -1029,23 +1029,6 @@
   (alistp (hifat-tar-name-list-alist fs path name-list entry-count))
   :hints (("goal" :in-theory (enable hifat-tar-name-list-alist))))
 
-(defthm
-  no-duplicatesp-of-strip-cars-of-hifat-tar-name-list-alist-lemma-1
-  (implies
-   (case-split (or (not (prefixp path1 path2))
-                   (equal path1 path2)))
-   (and
-    (not
-     (consp (assoc-equal path2
-                         (hifat-tar-name-list-alist
-                          fs path1 name-list entry-count))))
-    (atom
-     (assoc-equal path2
-                  (hifat-tar-name-list-alist
-                   fs path1 name-list entry-count)))))
-  :hints
-  (("goal" :in-theory (enable hifat-tar-name-list-alist))))
-
 (defthm no-duplicatesp-of-strip-cars-of-hifat-tar-name-list-alist-lemma-2
   (implies (and (integerp start)
                 (equal start end)
@@ -1056,11 +1039,13 @@
 (defthm
   no-duplicatesp-of-strip-cars-of-hifat-tar-name-list-alist-lemma-3
   (not
-   (member-equal nil
-    (strip-cars
-                 (hifat-tar-name-list-alist fs path name-list entry-count))))
-  :hints (("goal" :in-theory (e/d (hifat-tar-name-list-alist)
-                                  (append append-of-cons))))
+   (member-equal
+    nil
+    (strip-cars (hifat-tar-name-list-alist fs path name-list entry-count))))
+  :hints
+  (("goal" :in-theory (e/d (hifat-tar-name-list-alist)
+                           (append append-of-cons
+                                   (:rewrite prefixp-of-append-arg1)))))
   :rule-classes :type-prescription)
 
 (defthm
@@ -1097,23 +1082,46 @@
                                (cdr (nthcdr (len path1) path2))))
                      (x path1))))))
 
-(encapsulate () (local (in-theory (disable atom)))
+(encapsulate
+  ()
+
+  ;; This was the (less general) lemma in books/std/lists/prefixp.lisp.
+  (local
+   (defthm when-prefixp-append-same
+     (iff (prefixp (append x y) x) (atom y))
+     :hints (("goal" :in-theory (enable prefixp)))))
+
+  (defthm
+    no-duplicatesp-of-strip-cars-of-hifat-tar-name-list-alist-lemma-1
+    (implies
+     (case-split (or (not (prefixp path1 path2))
+                     (equal path1 path2)))
+     (and
+      (not
+       (consp (assoc-equal
+               path2
+               (hifat-tar-name-list-alist fs path1 name-list entry-count))))
+      (atom (assoc-equal
+             path2
+             (hifat-tar-name-list-alist fs path1 name-list entry-count)))))
+    :hints (("goal" :in-theory (e/d (hifat-tar-name-list-alist)
+                                    ((:rewrite prefixp-of-append-arg1))))))
 
   (defthmd
     no-duplicatesp-of-strip-cars-of-hifat-tar-name-list-alist-lemma-6
     (implies
-     (and (member-equal
-           path2
-           (strip-cars (hifat-tar-name-list-alist
-                        fs path1 name-list entry-count)))
-          (not (member-equal name name-list)))
+     (and
+      (member-equal
+       path2
+       (strip-cars (hifat-tar-name-list-alist fs path1 name-list entry-count)))
+      (not (member-equal name name-list)))
      (not (prefixp (append path1 (list name))
                    path2)))
     :hints
-    (("goal"
-      :in-theory (e/d (hifat-tar-name-list-alist
-                       hifat-pread hifat-open hifat-lstat)
-                      (append append-of-cons))))
+    (("goal" :in-theory
+      (e/d (hifat-tar-name-list-alist hifat-pread hifat-open hifat-lstat)
+           (atom append append-of-cons
+                 (:rewrite prefixp-of-append-arg1)))))
     :rule-classes
     (:rewrite
      (:rewrite
@@ -1125,9 +1133,9 @@
             (not (member-equal name name-list)))
        (not
         (consp
-         (assoc-equal path2
-                      (hifat-tar-name-list-alist
-                       fs path1 name-list entry-count))))))
+         (assoc-equal
+          path2
+          (hifat-tar-name-list-alist fs path1 name-list entry-count))))))
      (:rewrite
       :corollary
       (implies
@@ -1135,13 +1143,10 @@
             (prefixp (append path1 (list name))
                      path2)
             (not (member-equal name name-list)))
-       (atom (assoc-equal path2
-                          (hifat-tar-name-list-alist
-                           fs path1 name-list entry-count))))
-      :hints (("goal" :in-theory (enable atom)))))))
-
-(encapsulate
-  ()
+       (atom (assoc-equal
+              path2
+              (hifat-tar-name-list-alist fs path1 name-list entry-count))))
+      :hints (("goal" :in-theory (enable atom))))))
 
   (local (include-book "std/basic/inductions" :dir :system))
   (local (include-book "std/lists/intersectp" :dir :system))
@@ -1161,6 +1166,7 @@
                                                    (+ -1 entry-count)))))))
     :hints
     (("goal"
+      :in-theory (disable (:rewrite prefixp-of-append-arg1))
       :use
       (:instance
        no-duplicatesp-of-strip-cars-of-hifat-tar-name-list-alist-lemma-6

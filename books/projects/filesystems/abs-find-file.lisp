@@ -132,6 +132,15 @@
   :hints (("goal" :in-theory (enable abs-find-file-helper))))
 
 (defthm
+  no-duplicatesp-equal-of-abs-addrs-of-abs-file->contents-of-abs-find-file-helper
+  (implies
+   (no-duplicatesp-equal (abs-addrs (abs-fs-fix fs)))
+   (no-duplicatesp-equal
+    (abs-addrs
+     (abs-file->contents (mv-nth 0 (abs-find-file-helper fs path))))))
+  :hints (("goal" :in-theory (enable abs-find-file-helper))))
+
+(defthm
   member-of-names-at-lemma-1
   (implies (and (abs-file-alist-p fs)
                 (consp (assoc-equal name fs))
@@ -4329,7 +4338,6 @@
       (:definition remove-assoc-equal)
       (:rewrite abs-file-alist-p-correctness-1)
       (:rewrite nthcdr-when->=-n-len-l)
-      (:rewrite subsetp-when-prefixp)
       (:definition strip-cars)
       abs-find-file-helper-of-collapse-3
       (:rewrite abs-find-file-of-put-assoc)
