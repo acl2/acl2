@@ -129,7 +129,13 @@
      we also ensure that the associated rewrite rule
      does not depend on additional function variables.
      If the function is recursive,
-     we also ensure that the well-founded relation is @(tsee o<)."))
+     we also ensure that the well-founded relation is @(tsee o<).")
+   (xdoc::p
+    "We print on screen an observation about the function being recorded
+     and which function variables it depends on.
+     This can be suppressed
+     (e.g. when generating @(tsee defsoft) events programmatically)
+     via @('(with-output :off observation ...)')."))
   (b* ((wrld (w state))
        ((unless (symbolp fn))
         (er-soft+ ctx t nil
@@ -159,15 +165,24 @@
                    it depends on no function variables, directly or indirectly."
                   fn))
        (table-event `(table second-order-functions ',fn ',funvars))
-       (print-event `(cw-event "The second-order function ~x0 ~
-                                depends on the function variables ~x1.~%"
-                               ',fn ',funvars))
        ((er &) (ensure-wfrel-o< fn ctx state))
-       ((er &) (ensure-defun-sk-rule-same-funvars fn ctx state)))
+       ((er &) (ensure-defun-sk-rule-same-funvars fn ctx state))
+       (state (acl2::io? observation
+                         nil
+                         state
+                         (fn funvars)
+                         (fms "SOFT: ~
+                               recorded ~x0 as a second-order function ~
+                               that depends on the function variables ~x1.~%"
+                              (list (cons #\0 fn)
+                                    (cons #\1 (acl2::sort-symbol-listp
+                                               funvars)))
+                              *standard-co*
+                              state
+                              nil))))
     (value
      `(progn
         ,table-event
-        ,print-event
         (value-triple ',fn)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -179,7 +194,12 @@
    @(def acl2::defsoft)"
 
   (defmacro defsoft (fn)
-    `(make-event-terse (defsoft-fn ',fn (cons 'defsoft ',fn) state)))
+    `(with-output
+       :gag-mode nil
+       :off ,(set-difference-eq acl2::*valid-output-names* '(error observation))
+       :stack :push
+       (make-event (defsoft-fn ',fn (cons 'defsoft ',fn) state)
+                   :on-behalf-of :quiet!)))
 
   (defmacro acl2::defsoft (&rest args)
     `(defsoft ,@args)))
