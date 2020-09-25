@@ -2,6 +2,9 @@
 ; Written by Matt Kaufmann
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
+; This code was revised and extended with the addition of find-defs and
+; find-events in September 2020 by Mihir Mehta.
+
 (in-package "ACL2")
 
 (program)
@@ -42,7 +45,7 @@
 
 (defmacro find-events (fns &optional
                            (omit-boot-strap 't)
-                           (types '(defthm defaxiom defchoose)))
+                           (types '(defthm defaxiom defchoose defun)))
   (declare (xargs :guard (let ((fns (if (and (true-listp fns)
                                              (eq (car fns) 'quote)
                                              (eql (length fns) 2))
@@ -59,11 +62,11 @@
                ((symbolp fns) (list fns))
                ((symbol-listp fns) fns)
                (t (er hard 'find-lemmas
-                      "The first argument to find-lemmas must be a symbol or ~
+                      "The first argument to find-events must be a symbol or ~
                        a list of symbols, but ~x0 is not."
                       fns))))
          (fns `(deref-macro-name-list ',fns (macro-aliases (w state)))))
-    `(find-events-fn ,fns ',omit-boot-strap nil (w state) (w state) ,types)))
+    `(find-events-fn ,fns ',omit-boot-strap nil (w state) (w state) ',types)))
 
 (defmacro find-lemmas (fns &optional
                            (omit-boot-strap 't))
@@ -98,7 +101,7 @@
     `(find-events-fn ,fns ',omit-boot-strap nil (w state) (w state)
                      '(defthm defaxiom defchoose))))
 
-(defmacro find-funs (fns &optional (omit-boot-strap 't))
+(defmacro find-defs (fns &optional (omit-boot-strap 't))
   (declare (xargs :guard (let ((fns (if (and (true-listp fns)
                                              (eq (car fns) 'quote)
                                              (eql (length fns) 2))
@@ -114,8 +117,8 @@
          (fns (cond
                ((symbolp fns) (list fns))
                ((symbol-listp fns) fns)
-               (t (er hard 'find-funs
-                      "The first argument to find-funs must be a symbol or ~
+               (t (er hard 'find-defs
+                      "The first argument to find-defs must be a symbol or ~
                        a list of symbols, but ~x0 is not."
                       fns))))
          (fns `(deref-macro-name-list ',fns (macro-aliases (w state)))))
