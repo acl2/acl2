@@ -47,28 +47,27 @@
  :short "An efficient library to verify large integer multiplier designs."
  :long "  <p> Implemented and verified  completely in ACL2, we  provide a novel
  method to  verify complex integer  multiplier designs implemented  in (System)
- Verilog. With a 4-6x scaling factor,  this tool can verify integer multipliers
- that may be  implemented with Booth Encoding, various summation  trees such as
- Wallace   and   Dadda,    and   numerous   final   stage    adders   such   as
- carry-lookahead. For example, we can  verify 64x64-bit multipliers in around a
- second;  128x128 in  2-4 seconds;  256x256 in  6-12 seconds  and 1024x1024-bit
- multipliers  in  around  5  minutes   as  tested  with  almost  100  different
- designs. </p>
+ Verilog. With a very efficient proof-time scaling factor, this tool can verify
+ integer  multipliers that  may  be implemented  with  Booth Encoding,  various
+ summation trees  such as Wallace  and Dadda,  and numerous final  stage adders
+ such as carry-lookahead.  For example, we can verify  64x64-bit multipliers in
+ around  a  second;  128x128  in  2-4 seconds;  256x256  in  6-12  seconds  and
+ 1024x1024-bit  multipliers in  around  5  minutes as  tested  with almost  100
+ different designs. </p>
 
-<p> The basics of this new  verification method appeared in CAV 2020 (Automated
+<p> The outline of this new verification method appeared in CAV 2020 (Automated
 and  Scalable  Verification  of  Integer Multipliers  by  Mertcan  Temel,  Anna
-Slobodova, Warren A. Hunt, Jr.) available here:
-<a href=\"http://doi.org/10.1007/978-3-030-53288-8_23\">
-http://doi.org/10.1007/978-3-030-53288-8_23</a>.  
-</p>
+Slobodova,     Warren     A.     Hunt,      Jr.)     available     here:     <a
+href=\"http://doi.org/10.1007/978-3-030-53288-8_23\">
+http://doi.org/10.1007/978-3-030-53288-8_23</a>.  </p>
 
-<p>  Our  framework  currently  only  supports  (System)  Verilog  with  design
-hierarchy as inputs.   These designs are translated to  @(see ACL2::SVL) design
-without  flattening   the  adder   modules  such   as  full-adders   and  final
-stage-adders. Then @(see RP-Rewriter) are used as the clause-processor to carry
-out all the rewriting instead of the built-in rewriter, and our meta rules and
-rewrite rules dedicated for multiplier designs are used to simplify them and
-prove them equivalent to their specification. </p>
+<p> Our framework currently supports  (System) Verilog with design hierarchy as
+inputs only.  These  designs are translated to @(see  ACL2::SVL) design without
+flattening the adder  modules such as full-adders and  final stage-adders. Then
+@(see  RP-Rewriter) are  used  as the  clause-processor to  carry  out all  the
+rewriting instead  of the  built-in rewriter,  and our  meta rules  and rewrite
+rules dedicated for multiplier designs are used to simplify them and prove them
+equivalent to their specification. </p>
 
 <p>  Our  library  uses  various  heuristics  and  modes  to  simplify  various
 designs. We give the users the  option to enable/disable some of the heuristics
@@ -85,6 +84,16 @@ Multiplier-Verification-demo-2) shows  how this tool  can be used on  much more
 complex designs where a stand-alone integer multiplier is reused as a submodule
 for various operations  such as FMA, dot-product and  merged multiplication. It
 also shows a simple verification case on a sequential circuit.  </p>
+
+<p>  Alternatively,   we  present  a   different  framework  that   uses  @(see
+acl2::defsvtv) instead of @(see acl2::svl). Defsvtv is more capable than SVL at
+handling combinational loops but it  flattens designs completely. This prevents
+our method from working properly because we need to identify instantiated adder
+modules. Therefore,  we soundly replace  adder modules with  their identifiable
+copies even when  flattened. Then, we call defsvtv on  the redefined multiplier
+design and we can verify this test vector with out tool. This mechanism is
+described in @(see Multiplier-Verification-demo-3).
+</p>
 
 
 <p> There  are two older  versions of  this library. If  you would like  to use
@@ -189,12 +198,12 @@ Booth-Encoded designs.
  involve more intricate  design strategies. We tried to recreate  some of those
  strategies  and   compiled  a   more  complex   multiplier  module   given  in
  @('<your-acl2-directory>/books/projects/rp-rewriter/lib/mult3/demo/integrated_multipliers.sv'). You
- may find this file in <a
- href\"https://github.com/acl2/acl2/blob/master/books/projects/rp-rewriter/lib/mult3/demo/integrated_multipliers.sv\"
- target=\"_blank\"> GitHub </a> as well.
- This module allocates  four identical 33x33-bit signed  multipliers, two final
- stage adders and some smaller  reduction trees to perform different multiplier
- operations. These include signed/unsigned four-laned 32x32-bit multiplication
+ may      find      this      file      on       <a
+ href=\"https://github.com/acl2/acl2/blob/master/books/projects/rp-rewriter/lib/mult3/demo/integrated_multipliers.sv\"
+ target=\"_blank\"> GitHub </a> as well.   This module allocates four identical
+ 33x33-bit  signed  multipliers,  two  final  stage  adders  and  some  smaller
+ reduction  trees to  perform  different multiplier  operations. These  include
+ signed/unsigned four-laned 32x32-bit multiplication
  (or FMA), one-lane 64x64-bit  multiplication (or FMA), 4-32x32-bit dot-product
  modes (with or without an  accumulator). These operations can be combinational
  or sequential,  in which case an  accumulator is used to  store results across
@@ -783,11 +792,6 @@ product specification function as given below.
                                                    signed acc-init-val acc-size)))))))
 ')
 </code>
-</p>
-
-
-<p> This concludes our examples of multiplier verification for various use
-cases.
 </p>
 
 
