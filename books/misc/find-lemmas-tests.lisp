@@ -2,17 +2,16 @@
 (include-book "find-lemmas")
 (include-book "std/lists/sets" :dir :system)
 
-(local (defun p (x) x))
-(local (defun q (x) (p x)))
-(local (defthm foo (equal (p x) x)))
-(local (defthm bar (equal (q x) (p x))))
+(defconst *p-def* '(defun p (x) x))
+(defconst *q-def* '(defun q (x) (p x)))
+(defconst *foo-def* '(defthm foo (equal (p x) x)))
+(defconst *bar-def* '(defthm bar (equal (q x) (p x))))
 
-(assert-event (set-equiv (find-lemmas '(p))
-                         '((defthm foo (equal (p x) x))
-                           (defthm bar (equal (q x) (p x))))))
+(local (make-event *p-def*))
+(local (make-event *q-def*))
+(local (make-event *foo-def*))
+(local (make-event *bar-def*))
 
-(assert-event (set-equiv (find-lemmas '(q))
-                         '((defthm bar (equal (q x) (p x))))))
-
-(assert-event (set-equiv (find-funs '(p))
-                         '((defun p (x) x) (defun q (x) (p x)))))
+(assert-event (set-equiv (find-lemmas '(p)) (list *foo-def* *bar-def*)))
+(assert-event (set-equiv (find-lemmas '(q)) (list *bar-def*)))
+(assert-event (set-equiv (find-funs '(p)) (list *p-def* *q-def*)))
