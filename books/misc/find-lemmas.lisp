@@ -45,7 +45,7 @@
 
 (defmacro find-events (fns &optional
                            (omit-boot-strap 't)
-                           (types '(defthm defaxiom defchoose defun)))
+                           (types '(defthm defaxiom defchoose defun defuns)))
   (declare (xargs :guard (let ((fns (if (and (true-listp fns)
                                              (eq (car fns) 'quote)
                                              (eql (length fns) 2))
@@ -122,7 +122,8 @@
                        a list of symbols, but ~x0 is not."
                       fns))))
          (fns `(deref-macro-name-list ',fns (macro-aliases (w state)))))
-    `(find-events-fn ,fns ',omit-boot-strap nil (w state) (w state) '(defun))))
+    `(find-events-fn ,fns ',omit-boot-strap nil (w state) (w state)
+                     '(defun defuns))))
 
 ; Documentation:
 
