@@ -260,6 +260,17 @@
 
    (xdoc::p
     "A new transformation has been added:
+     @(tsee apt::solve), the `solving transformation'.
+     This attempts to directly solve a program synthesis problem,
+     expressed as a constraint problem,
+     via inference methods like rewriting, SMT solving, SAT solving, etc.
+     Currently two rewriting methods are supported,
+     along with a manual method in which the solution is supplied
+     (which still automates some event and proof generation);
+     support for more methods will be added.")
+
+   (xdoc::p
+    "A new transformation has been added:
      @(tsee apt::expdata), the `expanded data transformation'.
      This can realize data type refinements where
      each instance of the old data may be represented by
@@ -719,9 +730,18 @@
      analogously to other macros as described above.")
 
    (xdoc::p
+    "A new macro @(tsee soft::defequal),
+     to define second-order equalities between functions
+     and provide some reasoning support for them.")
+
+   (xdoc::p
     "An option @(':enable') has been added to @(tsee soft::defun-inst),
      to control the enablement of the generated function
      (and, for quantifier functions, also of the associated rewrite rule).")
+
+   (xdoc::p
+    "An option @(':enable') has been added to @(tsee soft::defthm-inst),
+     to control the enablement of the generated theorem.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -770,6 +790,11 @@
      namely the updated list of names to avoid.
      This helps making the calling code more concise and less error-prone.")
 
+   (xdoc::p
+    "A new utility @(tsee if-tree-leaf-terms) has been added,
+     to collect the leaf sub-terms of a term
+     according to the @(tsee if) tree structure of the term.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "std/testing" "Standard Testing Library"))
@@ -802,7 +827,8 @@
      which is like @(tsee defun-sk) but it disables
      (1) the function definition (if @(':constrain') is @('nil'))
      or the definition rule (if @(':constrain') is non-@('nil'))
-     and (2) the rewrite rule.")
+     and (2) the rewrite rule
+     if the @(':thm-enable') input is @('nil') (which is the default).")
 
    (xdoc::p
     "A new event macro @(tsee defmacro+) has been added,
@@ -848,6 +874,11 @@
     "Support for @(tsee defun-sk)'s option @(':constrain')
      has been added to @(tsee std::define-sk).")
 
+   (xdoc::p
+    "A macro @(tsee std::tuple) has been added,
+     to mimic the @(tsee mv) return specifier notation
+     for tuple (i.e. list) results, useful inside error triples.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Licensing Changes")
@@ -875,7 +906,11 @@
 
    (xdoc::p
     "The book @('tools/defttag-muffled.lisp') provides a way, using a trust
-    tag, to turn off all subsequent ``TTAG NOTE'' messages.  Use with care!!")
+     tag, to turn off all subsequent ``TTAG NOTE'' messages.  Use with care!!")
+
+   (xdoc::p
+    "See @(see rewrite$) for a flexible, convenient interface to the ACL2
+     rewriter that can be called programmatically.")
 
    ))
 
@@ -2967,7 +3002,7 @@
  @(':rewrite').</p>
 
  <p>The rule @('sets-are-true-lists') has been split into three rules with the
- same formula: a disabled @(see rewrite) rule of that name, a (@see
+ same formula: a disabled @(see rewrite) rule of that name, a @(see
  compound-recognizer) rule @('sets-are-true-lists-compound-recognizer'), and a
  rewrite rule @('sets-are-true-lists-cheap') whose @(see backchain-limit) is
  1.</p>

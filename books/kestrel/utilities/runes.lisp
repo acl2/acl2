@@ -14,11 +14,22 @@
 
 (include-book "system/pseudo-good-worldp" :dir :system) ;for pseudo-runep
 
-;; TODO: Are there any more?
 (defconst *fake-rule-classes*
-  '(:fake-rune-for-type-set
-    :fake-rune-for-linear))
+  (strip-cars *fake-rune-alist*))
 
+;filter out fake runes like (:FAKE-RUNE-FOR-TYPE-SET NIL)
+(defun drop-fake-runes (runes)
+  (declare (xargs :guard t ;;(pseudo-or-fake-rune-listp runes)
+                  ))
+  (if (atom runes)
+      nil
+    (let ((rune (first runes)))
+      (if (and (consp rune)
+               (member-eq (first rune) *fake-rule-classes*))
+          (drop-fake-runes (rest runes))
+        (cons rune (drop-fake-runes (rest runes)))))))
+
+;; TODO: Are there any more?
 (defconst *non-fake-rule-classes*
   '(:executable-counterpart
     :rewrite
@@ -40,13 +51,13 @@
     :type-set-inverter
     :well-founded-relation))
 
-;; Unlike runep, this does not take wrld.  This includes "fake" runes.
+;; Unlike runep, this does not take wrld.  This recognizes "fake" runes.
 (defun fake-runep (rune)
   (declare (xargs :guard t))
   (and (consp rune)
        (member-eq (car rune) *fake-rule-classes*)
        (consp (cdr rune))
-       (null (cadr rune)) ; the second arg must always be nil?
+       (null (cadr rune)) ; the second arg must always be nil (see the Essay on Fake Runes)
        (null (cdr (cdr rune)))))
 
 (defun pseudo-or-fake-runep (rune)
@@ -60,13 +71,3 @@
       (null runes)
     (and (pseudo-or-fake-runep (first runes))
          (pseudo-or-fake-rune-listp (rest runes)))))
-
-;filter out fake runes like (:FAKE-RUNE-FOR-TYPE-SET NIL)
-(defun drop-fake-runes (runes)
-  (declare (xargs :guard (pseudo-or-fake-rune-listp runes)))
-  (if (endp runes)
-      nil
-    (let ((rune (first runes)))
-      (if (member-eq (first rune) *non-fake-rule-classes*)
-          (cons rune (drop-fake-runes (rest runes)))
-        (drop-fake-runes (rest runes))))))

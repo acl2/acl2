@@ -63,7 +63,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The type @('pointp) is larger than @(tsee secp256k1-point),
+    "The type @('pointp') is larger than @(tsee secp256k1-point),
      because it includes all possible points for all possible fields.
      So, we limit the conversion to points in the field of secp256k1,
      as expressed by the guard.")

@@ -1261,6 +1261,72 @@
   (true-listp val))
 
 ;-----------------------------------------------------------------
+; REWRITE-QUOTED-CONSTANT-RULES
+
+; This is a list of rewrite-rule records, all of which have the subclass
+; REWRITE-QUOTED-CONSTANT.
+
+(defun pseudo-loop-stopper-elementp (x)
+  (case-match x
+    ((var1 var2 . fns)
+     (and (symbolp var1)
+          (symbolp var2)
+          (pseudo-function-symbol-listp fns nil)))
+    (& nil)))
+
+(defun pseudo-loop-stopperp (x)
+  (cond ((atom x) (null x))
+        (t (and (pseudo-loop-stopper-elementp (car x))
+                (pseudo-loop-stopperp (cdr x))))))
+
+(defun nil-or-nat-listp (x)
+  (cond ((atom x) (null x))
+        (t (and (or (null (car x))
+                    (natp (car x)))
+                (nil-or-nat-listp (cdr x))))))
+
+(defun pseudo-match-freep (x)
+
+; According to a comment in the defrec for rewrite-rule, the match-free should
+; be :once or :all if there are free vars in the hypotheses of a rule.  This
+; function doesn't check that condition.
+
+  (or (null x)
+      (eq x :once)
+      (eq x :all)))
+
+(defun pseudo-rewrite-quoted-constant-rulep (x)
+  (case-match x
+    (('REWRITE-RULE rune nume hyps equiv lhs rhs
+                    subclass heuristic-info
+                    backchain-limit-lst
+                    var-info . match-free)
+     (cond
+      ((eq subclass 'rewrite-quoted-constant)
+       (and (pseudo-runep rune)
+            (pseudo-numep nume)
+            (pseudo-term-listp hyps)
+            (pseudo-function-symbolp equiv 2)
+            (pseudo-termp lhs)
+            (pseudo-termp rhs)
+            (consp heuristic-info)
+            (integerp (car heuristic-info))
+            (<= 1 (car heuristic-info))
+            (<= (car heuristic-info) 3)
+            (pseudo-loop-stopperp (cdr heuristic-info))
+            (or (null backchain-limit-lst) ; If the user explicitly sets this field to a nat
+                (nil-or-nat-listp backchain-limit-lst)) ; it is coerced to a list of nats.
+            (booleanp var-info)
+            (pseudo-match-freep match-free)))
+      (t nil)))
+    (& nil)))
+
+(defun pseudo-rewrite-quoted-constant-rulesp (x)
+  (cond ((atom x) (null x))
+        (t (and (pseudo-rewrite-quoted-constant-rulep (car x))
+                (pseudo-rewrite-quoted-constant-rulesp (cdr x))))))
+
+;-----------------------------------------------------------------
 ; ABSOLUTE-EVENT-NUMBER
 
 (defun absolute-event-numberp (sym val)
@@ -1666,16 +1732,6 @@
 ;   ((rune . nume) trigger hyps concls . match-free)
 ;   nil)
 
-(defun pseudo-match-freep (x)
-
-; According to a comment in the defrec for rewrite-rule, the match-free should
-; be :once or :all if there are free vars in the hypotheses of a rule.  This
-; function doesn't check that condition.
-
-  (or (null x)
-      (eq x :once)
-      (eq x :all)))
-
 (defun pseudo-forward-chaining-rulep (x)
   (case-match x
     (('FORWARD-CHAINING-RULE (rune . nume) trigger hyps concls . match-free)
@@ -1770,6 +1826,8 @@
     (LOOP$-ALIST (loop$-alistp val))
     (COMMON-LISP-COMPLIANT-LAMBDAS (common-lisp-compliant-lambdasp val))
     (NEVER-IRRELEVANT-FNS-ALIST (never-irrelevant-fns-alistp val))
+    (REWRITE-QUOTED-CONSTANT-RULES
+     (pseudo-rewrite-quoted-constant-rulesp val))
     (otherwise nil)))
 
 ;-----------------------------------------------------------------
@@ -1861,25 +1919,6 @@
 ;   nil)
 
 ; But the restrictions on the fields depend on the subclass of the rule.
-
-(defun pseudo-loop-stopper-elementp (x)
-  (case-match x
-    ((var1 var2 . fns)
-     (and (symbolp var1)
-          (symbolp var2)
-          (pseudo-function-symbol-listp fns nil)))
-    (& nil)))
-
-(defun pseudo-loop-stopperp (x)
-  (cond ((atom x) (null x))
-        (t (and (pseudo-loop-stopper-elementp (car x))
-                (pseudo-loop-stopperp (cdr x))))))
-
-(defun nil-or-nat-listp (x)
-  (cond ((atom x) (null x))
-        (t (and (or (null (car x))
-                    (natp (car x)))
-                (nil-or-nat-listp (cdr x))))))
 
 (defun pseudo-rewrite-rulep (x)
   (case-match x

@@ -139,7 +139,7 @@
       (mv nil
           `(progn
              (register-event ,message)
-             
+
              (value-triple ,message))
           state))))
 
@@ -160,7 +160,7 @@
                                 integerp-of-i-assoc)))
 
             (start-timer)
-            
+
             (with-output
               :off :all
               :gag-mode nil
@@ -185,7 +185,7 @@
              (rp::enable-rules '(logand-to-4vec-bitand
                                  ;;logand-to-4vec-bitand-side-cond
                                  integerp-of-i-assoc)))
-            (start-timer)            
+            (start-timer)
             (with-output
               :off :all
               :gag-mode nil
@@ -204,6 +204,8 @@
     (list* (rp-rw-event (1+ (- *maxdepth* max-depth)))
            (acl2-rw-event (1+ (- *maxdepth* max-depth)))
            (create-events (1- max-depth)))))
+
+(comp t) ; added for GCL and perhaps useful for other Lisps besides CCL and SBCL
 
 (make-event
  `(with-output

@@ -11,7 +11,7 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/lists-light/memberp-def" :dir :system)
+(include-book "memberp-def")
 
 ;; TODO: move?
 ;; Like remove1 but does not require L to be a true-list.

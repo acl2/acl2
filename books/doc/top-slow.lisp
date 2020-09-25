@@ -159,6 +159,8 @@
 (include-book "centaur/misc/dag-measure" :dir :system)
 (include-book "centaur/misc/try-gl-concls" :dir :system)
 
+(include-book "centaur/svl/top" :dir :system)
+
 ;; BOZO conflicts with something in 4v-sexpr?
 
 ;; (include-book "misc/remove-assoc")
@@ -261,6 +263,7 @@ book that depends on Glucose being installed.</p>")
 (include-book "tools/defthmg" :dir :system)
 (include-book "tools/trivial-ancestors-check" :dir :system)
 (include-book "tools/without-subsumption" :dir :system)
+(include-book "tools/rewrite-dollar" :dir :system)
 (include-book "coi/util/rewrite-equiv" :dir :system)
 
 ;; This book memoizes several functions including translate11, translate11-lst,

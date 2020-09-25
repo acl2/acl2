@@ -117,6 +117,7 @@
 (include-book "kestrel/utilities/sublis-expr-plus" :dir :system)
 (include-book "utilities/untranslate-specifiers")
 (include-book "utilities/hints-specifiers")
+(include-book "tools/rewrite-dollar" :dir :system)
 
 (program)
 (set-state-ok t)
@@ -1024,7 +1025,7 @@
 ; This record holds values precomputed for calls of rewrite1 and rewrite1-lst.
 ; The fields are listed alphabetically.
 
-  (ens rcnst saved-pspv thints)
+  (rcnst saved-pspv)
   nil)
 
 #!acl2
@@ -1034,186 +1035,35 @@
 ; non-error case) is a rewrite1-record, to serve as input for rewrite1.
 
   (declare (xargs :stobjs state))
-  (b* ((saved-pspv
-        (make-pspv (ens state) wrld state
-
-; The following settings are probably unimportant, as the first is only used
-; for printing and the last two are only used by push-clause.  (Well, ACL2(p)
-; may use these too, but perhaps that's not too important.)  We leave them here
-; for now, but if they need to be removed for some reason, that may be
-; feasible.
-
-                   :displayed-goal *placeholder-literal* ; from, e.g., thm-fn
-                   :user-supplied-term *placeholder-literal* ; from, e.g., prove
-                   :orig-hints thints)) ; from, e.g., prove
-       ((er pair)                       ; from waterfall1
-        (find-applicable-hint-settings
-         *initial-clause-id*
-         (add-literal *placeholder-literal* (dumb-negate-lit-lst thyps) t)
-         nil saved-pspv ctx
-         thints wrld nil state))
-       (hint-settings (car pair))
-       (thints (if pair (cdr pair) thints))
-       ((er pspv)
-        (load-hint-settings-into-pspv
-         t hint-settings saved-pspv nil wrld ctx state))
-       ((when (intersectp-eq
-               '(:do-not-induct :do-not :induct :use :cases :by)
-               (strip-cars hint-settings)))
-        (er soft ctx
-            "It makes no sense in this context to be given hints for \"Goal\" ~
-             that include any of :do-not-induct, :do-not, :induct, :use, ~
-             :cases, or :by.  Such hints, whether explicit or from default ~
-             hints, are therefore illegal.")))
+  (b* ((saved-pspv (acl2::rewrite$-pspv thints wrld state))
+       (hyps-clause (dumb-negate-lit-lst thyps))
+       ((er rcnst)
+        (acl2::rewrite$-rcnst hyps-clause saved-pspv thints ctx wrld state)))
     (value (make rewrite1-record
-                 :ens (ens-from-pspv pspv)
-                 :rcnst (access prove-spec-var pspv :rewrite-constant)
-                 :saved-pspv saved-pspv
-                 :thints thints))))
+                 :rcnst rcnst
+                 :saved-pspv saved-pspv))))
 
 #!acl2
 (defun rewrite1 (tterm alist thyps geneqv rec ctx wrld state)
-
-; This is a modification of function tool2-fn from community book
-; misc/expander.lisp.  Some of that function's parameters are set here as
-; follows: prove-assumptions = t, and translate-flg = print-flg =
-; must-rewrite-flg = nil.  The parameter inhibit-output is in one sense nil, in
-; that we don't manipulate inhibit-output-lst here; however, output may be
-; inhibited above this call.  There are also a few changes, e.g., here we don't
-; "thank" for the hint (there's no point since we are avoiding output).  Two
-; bigger changes are that we pass in an alist under which tterm is to be
-; rewritten (but thyps is still in terms of the global environment, not alist),
-; and we return a value of (cons new-tterm runes) rather than (cons runes
-; new-tterm), for readability of trace output.
-
-; Also: In the expander, we bind byes to (get-assns new-ttree nil).  A comment
-; there suggests that byes will be nil when prove-assumptions = t, which is
-; baked in here.  I think that might not actually be true, because of
-; user-supplied hints of the form :by new-lemma-name.  But we'll follow the
-; model of the expander and simply ignore those byes.
-
-; We return an error triple with value (cons runes rewritten-term).
-
-  (b* ((ens (access rewrite1-record rec :ens))
-       (rcnst0 (access rewrite1-record rec :rcnst))
-       (saved-pspv (access rewrite1-record rec :saved-pspv))
-       (thints (access rewrite1-record rec :thints))
-       (- (initialize-brr-stack state)) ; could probably be done earlier or later
-       (state (initialize-proof-tree ; from waterfall
-               *initial-clause-id*
-               (list (list (implicate (conjoin thyps) *placeholder-literal*)))
-               ctx
-               state))
-       (current-clause ; from simplify-clause1
-        (dumb-negate-lit-lst thyps))
-       (rcnst (change rewrite-constant
-                      rcnst0
-
-; For a long time, up to October 2016, we failed to set the :current-clause and
-; :top-clause fields of this rcnst.  That had the unfortunate effect of making
-; mfc-clause return nil.  That function only requires the :current-clause, so
-; in the interest of not giving rewrite-fncallp too much to work with during
-; evaluation of expander functions in this file, we only set :current-clause,
-; hoping that it doesn't permit too much expansion; here's more on the topic of
-; expansion using :current-clause.
-
-; We considered extending the :current-clause with (equal tterm ???), perhaps
-; using genvar to guarantee that ??? is new.  But we avoid that in order to
-; avoid giving rewrite-fncallp access to the term being simplified, by way of
-; the :top-clause or :current-clause that are passed into it, when deciding
-; whether or not a rewritten term or its subterms are already lying around in
-; the clause.  This is purely a heuristic choice.  We discovered this issue
-; when attempting to simplify a term (specifically, the body of an existing
-; defun) with subterms (integer-listp x) as well as (car x) and (cdr x).  It
-; was unfortunate when (integer-listp x) expanded, since we were trying to
-; obtain an "aesthetic" simplification.  There was nothing other than other
-; subterms of that defun body to suggest keeping that expansion, we we have
-; decided to avoid extending current-clause using that body.
-
-                      :current-clause current-clause
-                      :force-info t))
-       (pts nil)
-       ((mv contradictionp type-alist ?!fc-pair-lst) ; from simplify-clause1
-        (forward-chain current-clause
-                       pts
-                       (access rewrite-constant rcnst :force-info)
-                       nil wrld
-                       (access rewrite-constant rcnst :current-enabled-structure)
-                       (access rewrite-constant rcnst :oncep-override)
-                       state))
-       ((when contradictionp)
+  (b* (((er (list* rewritten-term runes pairs))
+        (acl2::rewrite$
+         tterm
+         :alist alist
+         :hyps thyps
+         :geneqv geneqv
+         :prove-forced-assumptions t ; the default, but let's be explicit
+         :translate nil
+         :default-hints-p nil
+         :repeat 3
+         :ctx ctx
+         :wrld wrld
+         :rcnst (access rewrite1-record rec :rcnst)
+         :saved-pspv (access rewrite1-record rec :saved-pspv)))
+       ((when pairs)
         (er soft ctx
-            "Contradiction found in hypotheses~|~%~x0~|~%using type-set ~
-             reasoning!"
-            (untranslate-lst thyps nil wrld)))
-       ((mv step-limit contradictionp simplify-clause-pot-lst) ; from simplify-clause1
-        (setup-simplify-clause-pot-lst current-clause
-                                       (pts-to-ttree-lst pts)
-                                       nil ; fc-pair-lst  ;; RBK:
-                                       type-alist
-                                       rcnst
-                                       wrld state
-                                       (initial-step-limit wrld state)))
-       ((when contradictionp)
-        (er soft ctx
-            "Contradiction found in hypotheses~|~%~x0~|~%using linear reasoning!"
-            (untranslate-lst thyps nil wrld)))
-
-; We skip the call of process-equational-polys in simplify-clause1; I think
-; that we can assume that by the time tool2 is called, that call wouldn't have
-; any effect anyhow.  By the way, we skipped remove-trivial-equivalence
-; earlier.
-
-; Now we continue as in rewrite-clause.
-
-       (local-rcnst (change rewrite-constant rcnst
-                            :current-literal
-                            (make current-literal
-                                  :not-flg nil
-                                  :atm *placeholder-literal*)))
-       (gstack (initial-gstack 'simplify-clause nil current-clause))
-       ((mv step-limit val ttree state)
-        (rewrite** tterm alist thyps ctx
-                   (expander-repeat-limit state)
-                   0
-                   type-alist
-                   geneqv
-                   wrld state step-limit
-                   simplify-clause-pot-lst rcnst gstack
-                   nil
-                   nil))
-       ((when (eq val t))
-        (mv t nil state))
-       ((mv step-limit bad-ass ttree)
-        (resume-suspended-assumption-rewriting
-         ttree nil gstack simplify-clause-pot-lst local-rcnst wrld state
-         step-limit))
-       ((when bad-ass)
-        (er soft ctx
-            "Generated false assumption, ~x0! ~ So, rewriting is aborted, ~
-             just as it would be in the course of a regular ACL2 proof."
-            bad-ass))
-       (rewritten-term val)
-       ((mv pairs pspv state)
-        (process-assumptions
-         0
-         (change prove-spec-var saved-pspv
-                 :tag-tree
-                 (set-cl-ids-of-assumptions
-                  ttree *initial-clause-id*))
-         wrld state))
-       ((er ttree)
-        (accumulate-ttree-and-step-limit-into-state
-         (access prove-spec-var pspv :tag-tree)
-         step-limit
-         state))
-       (- (initialize-brr-stack state))
-       ((er new-ttree)
-        (prove-loop1 1 nil pairs pspv thints ens wrld ctx state))
-       (runes (all-runes-in-ttree
-               new-ttree
-               (all-runes-in-ttree
-                ttree nil))))
+            "Implementation error: We are surprised to see unproved ~
+             assumptions returned by ~x0."
+            'acl2::rewrite$)))
     (value (cons rewritten-term runes))))
 
 (defun rewrite1-lst (tterm-lst alist thyps rec ctx wrld state)
@@ -1675,7 +1525,9 @@
                        (append (term-to-lits (dumb-negate-lit tst2) wrld)
                                hyps)
                        geneqv rec runes ctx wrld state))
-                     (ens (access acl2::rewrite1-record rec :ens))
+                     (rcnst (access acl2::rewrite1-record rec :rcnst))
+                     (ens (access acl2::rewrite-constant rcnst
+                                  :current-enabled-structure))
                      ((mv term ttree)
                       (rewrite-if1 tst2 tbr2 fbr2
                                    nil ; swapped-p
@@ -1706,7 +1558,9 @@
             (t rewritten-body))))
        (value (cons new-body runes))))
     ((':BLOCKER ('QUOTE blocker-fn) arg1 arg2)
-     (let ((ens (access acl2::rewrite1-record rec :ens)))
+     (let* ((rcnst (access acl2::rewrite1-record rec :rcnst))
+            (ens (access acl2::rewrite-constant rcnst
+                         :current-enabled-structure)))
        (cond
         ((and (quotep arg1)
               (quotep arg2)

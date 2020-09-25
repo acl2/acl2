@@ -50,11 +50,7 @@
 ; This is a lighter-weight check, based on the guards verified outside the
 ; boot-strap (with feature :acl2-devel present).
 
-  (cons 'progn
-        (add-guards-as-assertions-fn
-         (loop for pair in *system-verify-guards-alist*
-               append
-               (strip-cars (cdr pair))))))
+  (cons 'progn (strip-cars *system-verify-guards-alist*)))
 
 (defun collect-common-lisp-compliant-user-defuns1 (tl wrld ans)
 

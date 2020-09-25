@@ -106,7 +106,7 @@
     <li>When monitoring other rules above indicates that an
     instruction is not being fetched successfully using @(see rb-alt):
     <br/>
-    Monitor @('one-read-with-rb-alt-from-program-at-alt-in-marking-view).
+    Monitor @('one-read-with-rb-alt-from-program-at-alt-in-marking-view').
     </li>
 
     <li>When monitoring other rules above indicates that ACL2 can't
@@ -116,7 +116,7 @@
     <br/>
     An instance of where monitoring this rule might be helpful is when
     the @('program-at') hypothesis of
-    @('one-read-with-rb-alt-from-program-at-alt-in-marking-view) is not
+    @('one-read-with-rb-alt-from-program-at-alt-in-marking-view') is not
     being relieved.
    </li>
 

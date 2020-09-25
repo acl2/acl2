@@ -11,7 +11,7 @@
 
 (defxdoc include-book-paths
   :parents (kestrel-utilities)
-  :short "List paths via (@tsee include-book) down to a given book"
+  :short "List paths via @(tsee include-book) down to a given book"
   :long "@({
  General Form:
 

@@ -468,7 +468,7 @@
       "This input may be present only if
        @('surjmaps') includes some @(':resultj')."))
 
-    (xdoc::desc-apt-input-verify-guards :never)
+    (xdoc::desc-apt-input-verify-guards :plural-functions nil)
 
     (xdoc::desc-apt-input-untranslate)
 

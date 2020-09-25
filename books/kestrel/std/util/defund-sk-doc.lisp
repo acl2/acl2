@@ -21,11 +21,19 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is exactly like a @(tsee defun-sk),
-     but it also generates an event to disable
-     the function definition and its associated rewrite rule.
-     The rewrite rule associated to a @(tsee defun-sk)
-     is the one whose name is controlled by the @(':thm-name') option.
-     When the function is constrained (i.e. @(':constrain') is @('t')),
-     it does not have a definition, but it has a definition rule:
-     this is the one being disabled by @('defund-sk').")))
+    "This is exactly like a @(tsee defun-sk), except for two differences:")
+   (xdoc::ul
+    (xdoc::li
+     "It also generates an event to disable the function definition.
+      Thus, this macro is consistent with built-in macros like
+      @(tsee defund) and @(tsee defund-nx).")
+    (xdoc::li
+     "It also supports a @(':thm-enable') input, @('nil') by default,
+      that is used to generate, when @('nil'), an event to disable
+      the rewrite rule associated to the function.
+      This rewrite rule is the one
+      whose name is controlled by the @(':thm-name') option;
+      thus, the @(':thm-enable') option of @('defund-sk2')
+      is named consistently.
+      No disabling event is generated if @(':thm-enable') is @('t');
+      the rewrite rule is left enabled."))))

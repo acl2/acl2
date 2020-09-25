@@ -5234,7 +5234,9 @@
 
   nil)
 
-; There are four subclasses of rewrite rule, distinguished by the :subclass slot.
+; There are five subclasses of rewrite rule, distinguished by the :subclass
+; slot.
+
 ; 'backchain - the traditional rewrite rule.  In this case, :heuristic-info is
 ;   the loop-stopper for the rule: a list of elements of the form (x y . fns),
 ;   indicating that in replacing lhs by rhs (the binding of) y moves forward to
@@ -5256,8 +5258,8 @@
 ;   :heuristic-info is of the form (name fn thm-name1 hyp-fn thm-name2)
 ;   . combined-arities-alist); see rewrite-with-lemma.
 
-; Rockwell Addition: The recursivep property used to be the fn name if the
-; fn in question was singly recursive.  Now it is a singleton list (fn).
+;   Rockwell Addition: The recursivep property used to be the fn name if the
+;   fn in question was singly recursive.  Now it is a singleton list (fn).
 
 ; 'definition - a rule implementing a non-abbreviational definitional equation.
 ; In this case :heuristic-info is the pair (recursivep . controller-alist)
@@ -5267,6 +5269,11 @@
 ; alist pairing each fn named in recursivep to a mask of t's and nil's in 1:1
 ; correspondence with the formals of the fn and indicating with t's which
 ; arguments control the recursion for this definition.
+
+; 'rewrite-quoted-constant - rewrite rules that only apply to evgs.  See the
+;  Essay on Rewriting Quoted Constants.  In this case, :heuristic-information
+;  is a list (n . loop-stopper), where n is a natural number that the rule is of
+;  Form [n] as discussed in the essay.
 
 (defun relevant-ground-lemmas (hyp wrld)
   (mv-let (not-flg hyp)
@@ -7085,8 +7092,10 @@
   (case called-sys-fn
     (rewrite
      (cond ((integerp bkptr)
-            (cond ((member-eq calling-sys-fn '(rewrite-with-lemma
-                                               add-linear-lemma))
+            (cond ((member-eq calling-sys-fn
+                              '(rewrite-with-lemma
+                                rewrite-quoted-constant-with-lemma
+                                add-linear-lemma))
                    (msg " the atom of the ~n0 hypothesis" (list bkptr)))
                   ((eq calling-sys-fn 'simplify-clause)
                    (msg " the atom of the ~n0 literal" (list bkptr)))
@@ -7186,7 +7195,9 @@
                (cond ((eq obj nil) "falsify")
                      ((eq obj t) "establish")
                      (t "simplify")))))
-        ((rewrite-with-lemma add-linear-lemma)
+        ((rewrite-with-lemma
+          rewrite-quoted-constant-with-lemma
+          add-linear-lemma)
          (cw "~x0. Attempting to apply ~F1 to~%     ~Y23"
              i
              (get-rule-field (cdr (access gframe frame :args)) :rune)
@@ -8832,6 +8843,16 @@
                (t (er hard 'tilde-@-failure-reason-phrase1
                       "Unrecognized failure reason, ~x0."
                       failure-reason)))))))
+        ((and (consp failure-reason)
+              (eq (car failure-reason) 'normalizer-failed-to-evaluate))
+         (msg "the normalizer, ~x0, simplified to a non-constant, ~x1."
+              (cadr failure-reason)
+              (caddr failure-reason)))
+        ((and (consp failure-reason)
+              (eq (car failure-reason) 'normalizer-returned-same-constant))
+         (msg "the normalizer, ~x0, simplified to the same constant, ~x1."
+              (cadr failure-reason)
+              (caddr failure-reason)))
         ((and (consp failure-reason)
               (eq (car failure-reason) 'cached))
          (msg "~@0~|*NOTE*: This failure was cached earlier.  Use the hint ~
@@ -10790,7 +10811,8 @@
 ; were none found, or an error message suitable for use with ~@.  This
 ; message will describe what is wrong with the first (and only) bad
 ; synp hyp found and will be used in chk-acceptable-rewrite-rule2
-; or chk-acceptable-linear-rule2, or in rewrite-with-lemma.
+; (and related checkers for linear and quoted constant rules)
+; and in rewrite-with-lemma.
 
 ; Hyps is a list of hypotheses we are to check, bound-vars is an
 ; accumulator of all the vars known to be bound (initially set to the
@@ -12929,6 +12951,151 @@
     (cons (car fns) (warranted-fns (cdr fns) badge-userfn-alist)))
    (t (warranted-fns (cdr fns) badge-userfn-alist))))
 
+; Essay on Rewriting Quoted Constants
+
+; ACL2 (and Nqthm before it) never rewrote quoted constants.  In the days
+; before user-defined equivalence relations there was no point, since no two
+; distinct quoted constants are EQUAL.  (The special handling of IFF slots is
+; the exception that proves the utility of the idea, as illustrated below.)
+; However, with user-defined equivalences, it is conceivable that two distinct
+; (mod EQUAL) constants are equivalent and that one is preferred over the
+; other.  It is sort of surprising that ACL2 has supported user-defined
+; equivalence and congruence based rewriting for 15 years or so without
+; identifying this little weakness in its rewriter.
+
+; For example,
+
+; Example A: one might wish to replace '23 by 'T in a slot where IFF is being
+;            maintained.
+
+; Example B: one might wish to replace '(C A B A . 77) by '(A B C) in a slot
+;            where SET-EQUALP is being maintained.
+
+; Example C: one might wish to replace '(LAMBDA (X) X) by 'IDENTITY in a slot
+;            where FN-EQUAL is being maintained.
+
+; Such replacements cannot be done now because ACL2 won't apply a rewrite rule
+; to a quoted constant.  (One can phrase rewrite rules that operate on the
+; parent term containing the constant, e.g., if foo is a function that admits
+; IFF as as a congruence in its first argument, one might prove (equal (foo 23
+; lst) (foo t lst)).  Another such example would be:
+
+; (set-equal (set-union '(C A B A . 77) u)
+;            (set-union '(A B C) u))
+
+; but this workaround is unsatisfactory because one needs such a rule for each
+; function admitting the equivalence relation as a congruence.  We suspect that
+; the reason this weakness in the rewriter was never identified is that user's
+; employed this workaround on an as-needed basis.
+
+; To facilitate the rewriting of quoted constants we will add a new rule-class,
+; :rewrite-quoted-constant, and a new world global called
+; rewrite-quoted-constant-rules which is just a list of ordinary :rewrite rule
+; records (but tagged :rewrite-quoted-constant in the :subclass), each of which
+; is derived from a corollary of one of these three forms:
+
+; [1] (IMPLIES hyps (equiv 'lhs-evg 'rhs-evg))
+; [2] (IMPLIES hyps (equiv (fn x) x)), where x is a variable.
+; [3] (IMPLIES hyps (equiv lhs-term rhs-term))
+
+; We now explain how such rules are used.  When the rewriter encounters (QUOTE
+; target-evg), it will scan down rewrite-quoted-constant-rules processing each
+; rule in turn until it finds the first ``applicable'' rule.  Then it does the
+; ``replacement'' described below.
+
+; A rule is ``applicable'' exactly in the sense that an ordinary :rewrite rule
+; is, except for how we match the lhs of the rule with the target.  In
+; particular, to be applicable the rule must be enabled, the equiv of the rule
+; must refine the equiv being maintained by the rewriter, the lhs of the rule
+; must ``match'' the target-evg as described below, and the hyps must be
+; relieved, etc.  In addition, for a form [2] rule to be applicable, the
+; executable counterpart of the fn named in the rule must be enabled.
+
+; The notion of ``match'' for evgs is a bit strange:
+;  - a form [1] rule matches when lhs-evg is exactly target-evg.
+;  - a form [2] rule matches any target-evg!
+;  - a form [3] rule matches if its lhs one-way-unifies with (QUOTE target-evg).
+
+; The ``replacement'' directed by an applicable rule is as follows:
+;  - a form [1] rule replaces the target-evg by the rhs-evg
+;  - a form [2] rule replaces the target-evg by the (non-erroneous) result of
+;    calling the executable counterpart of fn on the target-evg.
+;  - a form [3] rule replaces (QUOTE target-evg) by the (rewritten) instantiated
+;    rhs-term.
+
+; Notice that the replacement performed by a form [3] rule might not yield a
+; quoted constant, but that's ok.
+
+; Rewrite rules generally have a loop-stopper entry in the :heuristic-info
+; field of the record.  In the case of rewrite-quoted-constant rules -- which
+; are in fact represented by rewrite-rule records but stored in the
+; rewrite-quoted-constant-rules global variable -- the :heuristic-info is (n
+; . loop-stopper), where n is the form number.  Rules of form [1] and [2] can't
+; actually have non-nil loop-stoppers because the variables mentioned in the
+; loop-stopper must be distinct and occur in both the lhs and rhs.  But we go
+; ahead and compute and store the (usually nil) loop-stopper.
+
+; Worked Examples:
+
+; Here are :rewrite-quoted-constant rules for addressing Examples A, B, and C
+; above.  We also add an Example D that illustrates why some Form [1] rules
+; might require hypotheses even though the conclusion of a Form [1] rule is a
+; ground term.
+
+; Example A: one might wish to replace '23 by 'T in a slot where IFF is being
+;            maintained.
+
+; Solution:
+; (IFF '23 'T)                                     ; Form [1]
+; or, more generally,
+; (IMPLIES (AND X (SYNTAXP (NOT (EQUAL X ''NIL)))) ; Form [3]
+;          (IFF X 'T))
+
+; The Form [3] rule shown above illustrates why :rewrite-quoted-constant rules
+; can't be easily stored as normal :rewrite rules, i.e., on the lemmas property
+; of the top function symbol of the lhs.  Here there is no ``top function
+; symbol.''
+
+; Example B: one might wish to replace '(C A B A . 77) by '(A B C) in a slot
+;            where SET-EQUALP is being maintained.
+
+; Solution:
+; (SET-EQUALP (NORMALIZE-SET X) X)                 ; Form [2]
+
+; where NORMALIZE-SET is a function that coerces a non-true-list to a
+; true-list, removes duplicates, and sorts a list.  Of course, this example
+; could also be coded as the Form [1] rule (SET-EQUALP '(C A B A . 77) '(A B
+; C)).  But that raises the question: does it work recursively down the
+; cdr-chain of a set?  For example, would the user expect the Form [1] rule to
+; replace '(D C A B A . 77) by '(D A B C)?  After all, the lhs-evg does occur
+; in a SET-EQUALP slot of the target-evg.  But we decided Form [1] rules will
+; only hit at the top-level so that the regression isn't slowed down by them
+; when large quoted constants arise.  If you want to sweep the target-evg for
+; opportunities, use a Form [2] rule and code the sweep yourself.  Form [2]
+; rules are like metafunctions, but only apply to quoted constant terms and so
+; the Form [2] rule itself is all you need to prove to effect the
+; transformation.
+
+; Example C: one might wish to replace '(LAMBDA (X) X) by 'IDENTITY in a slot
+;            where FN-EQUAL is being maintained.
+; Solution:
+; (FN-EQUAL '(LAMBDA (X) X) 'IDENTITY)             ; Form [1]
+; or more generally
+; (IMPLIES (SYMBOLP V)                             ; Form [3]
+;          (FN-EQUAL (LIST 'LAMBDA (LIST V) V)
+;                    'IDENTITY))
+
+; Example D: one might wish to replace '(LAMBDA (X) (FOO X)) by
+;            '(LAMBDA (X) (BAR X)) in a slot where FN-EQUAL is
+;            being maintained.
+
+; Solution:
+; (IMPLIES (WARRANT FOO BAR)                      ; Form [1]
+;          (FN-EQUAL '(LAMBDA (X) (FOO X))
+;                    '(LAMBDA (X) (BAR X))))
+; This illustrates how the equivalence of two quoted constants might
+; require a hypothesis.
+
 (mutual-recursion
 
 ; State is an argument of rewrite only to permit us to call ev.  In general,
@@ -13006,17 +13173,8 @@
                                  (cond (temp (cdr temp))
                                        (t term))))))
       ((fquotep term)
-       (cond ((fn-slot-from-geneqvp geneqv)
-              (sl-let
-               (evg1 ttree1)
-               (rewrite-entry
-                (rewrite-lambda-object (unquote term)))
-               (cond ((equal evg1 (unquote term))
-                      (mv step-limit term ttree))
-                     (t (mv step-limit
-                            (list 'quote evg1)
-                            (cons-tag-trees ttree1 ttree))))))
-             (t (mv step-limit term ttree))))
+       (rewrite-entry
+        (rewrite-quoted-constant term)))
       ((eq (ffn-symb term) 'if)
 
 ; Normally we rewrite (IF a b c) by rewriting a and then one or both
@@ -19099,6 +19257,257 @@
                      (t (mv step-limit nil term ttree)))))
       (t
        (mv step-limit nil term ttree))))))
+
+(defun rewrite-quoted-constant-with-lemma
+  (term lemma ; &extra formals
+        rdepth step-limit
+        type-alist obj geneqv pequiv-info wrld state
+        fnstack ancestors
+        backchain-limit
+        simplify-clause-pot-lst rcnst gstack
+        ttree)
+
+; The structure of this function and its immediate,
+; rewrite-quoted-constant-with-lemmas, is based on rewrite-with-lemma and
+; rewrite-with-lemmas.  Term is a quoted evg, i.e., 'evg, and lemma is an
+; enabled :rewrite-quoted-constant rule whose :heuristic-info field contains (n
+; . loop-stopper), where n is the form number as per the Essay on Rewriting
+; Quoted Constants:
+
+; [1] (IMPLIES hyps (equiv 'lhs-evg 'rhs-evg))
+; [2] (IMPLIES hyps (equiv (fn x) x)), where x is a variable.
+; [3] (IMPLIES hyps (equiv lhs-term rhs-term))
+
+; In all cases below, we check that equiv is a refinement of geneqv.  Roughly
+; speaking, if n is 1 and evg is lhs-evg, we backchain to establish the hyps
+; and if successful replace term by 'rhs-evg.  If n is 2 and backchaining
+; succeeds and (fn 'evg) returns a non-erroneous result, we replace term with
+; the quoted result.  If n is 3, we unify lhs-term with 'evg and if successful
+; backchain and rewrite as with an ordinary rewrite rule.
+
+; The four values returned by this function are: a new step-limit, t or nil
+; indicating whether lemma was used to rewrite term, the rewritten version of
+; term, and the final version of ttree.
+
+; This function is a No-Change Loser modulo rw-cache: only the values of
+; 'rw-cache-any-tag and 'rw-cache-nil-tag may differ between the input and
+; output ttrees.
+
+  (declare (type (unsigned-byte 29) rdepth)
+           (type (signed-byte 30) step-limit))
+  (the-mv
+   4
+   (signed-byte 30)
+   (let* ((gstack (push-gframe 'rewrite-quoted-constant-with-lemma nil term lemma))
+          (rdepth (adjust-rdepth rdepth))
+          (temp (access rewrite-rule lemma :heuristic-info))
+          (n (car temp))
+          (loop-stopper (cdr temp)))
+     (declare (type (unsigned-byte 29) rdepth)
+              (type integer n))
+     (cond ((zero-depthp rdepth)
+            (rdepth-error
+             (mv step-limit nil term ttree)))
+           ((not (geneqv-refinementp (access rewrite-rule lemma :equiv)
+                                     geneqv
+                                     wrld))
+            (mv step-limit nil term ttree))
+           (t
+; Note below we swap the lhs and rhs of form [2] rules!  The rule is written
+; and stored as (equiv (fn var) var), but actually used as though it were
+; (equiv var (fn var)), so in this code we actually let lhs be the var and rhs
+; be the normalizer expression.
+
+            (let ((lhs (if (eql n 2)
+                           (access rewrite-rule lemma :rhs)
+                           (access rewrite-rule lemma :lhs)))
+                  (rhs (if (eql n 2)
+                           (access rewrite-rule lemma :lhs)
+                           (access rewrite-rule lemma :rhs)))
+                  (rune (access rewrite-rule lemma :rune)))
+              (mv-let (unify-ans unify-subst)
+                (cond
+                 ((eql n 1)
+                  (mv (equal term lhs) nil))
+                 ((eql n 2)
+                  (mv t (list (cons lhs term))))
+                 ((eql n 3)
+                  (one-way-unify-restrictions
+                   lhs
+                   term
+                   (cdr (assoc-equal
+                         rune
+                         (access rewrite-constant rcnst
+                                 :restrictions-alist)))))
+                 (t (mv nil
+                        (er hard 'rewrite-quoted-constant-with-lemma
+                            "We've encountered a :rewrite-quoted-constant ~
+                             rule, namely ~x0, with an unrecognized form ~
+                             number, ~x1."
+                            rune
+                            n))))
+                (cond
+                 ((and unify-ans
+                       (null (brkpt1 lemma term unify-subst
+                                     type-alist ancestors
+                                     ttree
+                                     gstack rcnst state)))
+                  (cond
+                   ((null (loop-stopperp loop-stopper unify-subst wrld))
+                    (prog2$
+                     (brkpt2 nil 'loop-stopper
+                             unify-subst gstack nil nil
+                             rcnst state)
+                     (mv step-limit nil term ttree)))
+                   (t
+                    (with-accumulated-persistence
+                     rune
+                     ((the (signed-byte 30) step-limit) flg term ttree)
+                     flg
+                     (sl-let
+                      (relieve-hyps-ans failure-reason unify-subst ttree)
+                      (rewrite-entry
+                       (relieve-hyps
+                        rune
+                        term
+                        (access rewrite-rule lemma :hyps)
+                        (access rewrite-rule lemma
+                                :backchain-limit-lst)
+                        unify-subst
+                        (not (oncep (access rewrite-constant
+                                            rcnst
+                                            :oncep-override)
+                                    (access rewrite-rule
+                                            lemma
+                                            :match-free)
+                                    rune
+                                    (access rewrite-rule
+                                            lemma
+                                            :nume))))
+                       :obj nil         ; ignored
+                       :geneqv nil      ; ignored
+                       :pequiv-info nil ; ignored
+                       )
+                      (cond
+                       (relieve-hyps-ans
+                        (sl-let
+                         (rewritten-rhs ttree)
+                         (with-accumulated-persistence
+                          rune
+                          ((the (signed-byte 30) step-limit)
+                           rewritten-rhs ttree)
+
+; This rewrite of the body is considered a success unless the parent with-acc-p
+; fails.
+
+                          t
+                          (rewrite-entry
+                           (rewrite
+                            rhs
+                            unify-subst
+                            'rhs))
+                          :conc
+                          (access rewrite-rule lemma :hyps))
+                         (cond
+                          ((or (eql n 1)
+                               (and (eql n 2)
+                                    (quotep rewritten-rhs)
+                                    (not (equal term rewritten-rhs)))
+                               (eql n 3))
+                           (prog2$
+                            (brkpt2 t nil unify-subst gstack rewritten-rhs
+                                    ttree rcnst state)
+                            (mv step-limit
+                                t
+                                rewritten-rhs
+                                (push-lemma
+                                 (geneqv-refinementp
+                                  (access rewrite-rule lemma
+                                          :equiv)
+                                  geneqv
+                                  wrld)
+                                 (push-lemma+ rune ttree rcnst ancestors
+                                              rhs
+                                              rewritten-rhs)))))
+                          (t (prog2$
+; We can only get here if n is 2 but either rewritten-rhs is not a quote or
+; it is equal to term.
+                              (brkpt2 nil
+                                      (list
+                                       (if (quotep rewritten-rhs)
+                                           'normalizer-returned-same-constant
+                                           'normalizer-failed-to-evaluate)
+                                       (sublis-var unify-subst rhs)
+                                       rewritten-rhs)
+                                      unify-subst gstack nil nil
+                                      rcnst state)
+                              (mv step-limit nil term ttree))))))
+                       (t (prog2$
+                           (brkpt2 nil failure-reason
+                                   unify-subst gstack nil nil
+                                   rcnst state)
+                           (mv step-limit nil term ttree)))))))))
+                 (t (mv step-limit nil term ttree))))))))))
+
+(defun rewrite-quoted-constant-with-lemmas
+  (term lemmas ; &extra formals
+        rdepth step-limit
+        type-alist obj geneqv pequiv-info wrld state
+        fnstack ancestors backchain-limit
+        simplify-clause-pot-lst rcnst gstack ttree)
+; Term is a quoted evg.
+  (declare (type (unsigned-byte 29) rdepth)
+           (type (signed-byte 30) step-limit))
+  (the-mv
+   4
+   (signed-byte 30)
+   (cond
+    ((null lemmas) (mv step-limit nil term ttree))
+    ((not (enabled-numep
+           (access rewrite-rule (car lemmas) :nume)
+           (access rewrite-constant rcnst
+                   :current-enabled-structure)))
+     (rewrite-entry
+      (rewrite-quoted-constant-with-lemmas term (cdr lemmas))))
+    (t (sl-let
+        (rewrittenp rewritten-term ttree)
+        (rewrite-entry (rewrite-quoted-constant-with-lemma term (car lemmas)))
+        (cond
+         (rewrittenp
+          (mv step-limit t rewritten-term ttree))
+         (t (rewrite-entry
+             (rewrite-quoted-constant-with-lemmas term (cdr lemmas))))))))))
+
+(defun rewrite-quoted-constant (term ; &extra formals
+                                rdepth step-limit
+                                type-alist obj geneqv pequiv-info wrld state
+                                fnstack ancestors backchain-limit
+                                simplify-clause-pot-lst rcnst gstack ttree)
+
+  (sl-let (rewrittenp rewritten-term ttree1)
+          (rewrite-entry
+           (rewrite-quoted-constant-with-lemmas
+            term
+            (global-val 'rewrite-quoted-constant-rules wrld)))
+          (cond
+           (rewrittenp
+            (mv step-limit rewritten-term ttree1))
+           ((fn-slot-from-geneqvp geneqv)
+            (sl-let
+             (evg1 ttree1)
+             (rewrite-entry
+              (rewrite-lambda-object (unquote term)))
+
+; Rewrite-lambda-object is insensitive to the incoming ttree.  So ttree1
+; does not include that tree and if we use evg1 above we have to cons
+; ttree1 onto the existing ttree.
+
+             (cond ((equal evg1 (unquote term))
+                    (mv step-limit term ttree))
+                   (t (mv step-limit
+                          (kwote evg1)
+                          (cons-tag-trees ttree1 ttree))))))
+           (t (mv step-limit term ttree)))))
 
 (defun rewrite-lambda-object (evg ; &extra formals
                               rdepth step-limit

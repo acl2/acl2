@@ -4,4 +4,5 @@
 ; Help dependency scanner.
 #||
 (depends-on "mini-proveall-log.txt")
+(depends-on "mini-proveall-input.lsp")
 ||#

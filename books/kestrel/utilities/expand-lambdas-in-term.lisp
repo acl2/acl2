@@ -15,7 +15,7 @@
 
 (include-book "substitution")
 (local (include-book "../alists-light/pairlis-dollar"))
-(local (include-book "../lists-light/symbol-listp"))
+(local (include-book "../typed-lists-light/symbol-listp"))
 
 ;(later we may handle non-pseudo-terms that still include lets).
 ;This is similar to remove-lambdas, but we don't use remove-lambdas,

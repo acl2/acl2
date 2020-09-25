@@ -55,7 +55,7 @@
 (defun get-fixtypes-alist (world)
   (cdr (assoc 'fixtype-alist (table-alist 'fixtypes world))))
 
-(defun deffixtype-fn (name predicate fix equiv execp definep inline equal topic verbosep hints forward)
+(defun deffixtype-fn (name predicate fix equiv executablep execp definep inline equal topic verbosep hints forward)
   (if definep
       `(with-output ,@(and (not verbosep) '(:off :all :on acl2::error)) :stack :push
          (encapsulate nil
@@ -67,13 +67,13 @@
                      (value-triple
                       (er hard? 'deffixtype
                           "Failed to prove that ~x0 is idempotent.~%" ',fix)))))
-           (,(cond ((not execp)  'defun-nx)
+           (,(cond ((or (not executablep) (not execp)) 'defun-nx)
                    ((not inline) 'defun)
                    (t            'defun-inline))
             ,equiv (x y)
              (declare (xargs :normalize nil
-                             ,@(and execp `(:guard (and (,predicate x) (,predicate y))))
-                             :verify-guards ,execp))
+                             ,@(and executablep execp `(:guard (and (,predicate x) (,predicate y))))
+                             :verify-guards ,(and executablep execp)))
              (,equal (,fix x) (,fix y)))
            (local (in-theory '(,equiv tmp-deffixtype-idempotent
                                       booleanp-compound-recognizer)))
@@ -114,10 +114,10 @@
                                                      :pred predicate
                                                      :fix fix
                                                      :equiv equiv
-                                                     :executablep execp
+                                                     :executablep (and executablep execp)
                                                      :equiv-means-fixes-equal
                                                      ;; BOZO stupid ACL2 is so awful...
-                                                     (if (and execp inline)
+                                                     (if (and executablep execp inline)
                                                          (intern-in-package-of-symbol
                                                           (concatenate 'string (symbol-name equiv) "$INLINE")
                                                           equiv)
@@ -154,7 +154,7 @@
                                                    :pred predicate
                                                    :fix fix
                                                    :equiv equiv
-                                                   :executablep execp
+                                                   :executablep (and executablep execp)
                                                    :equiv-means-fixes-equal thmname
                                                    :inline inline
                                                    :equal equal
@@ -163,7 +163,7 @@
                              (get-fixtypes-alist world))))))))
 
 
-(defmacro deffixtype (name &key pred fix equiv (execp 't)
+(defmacro deffixtype (name &key pred fix equiv (executablep 't) (execp 't)
                            ;; optional
                            define
                            verbosep
@@ -175,7 +175,7 @@
 ; We contemplated making "equal" the default equivalence relation but decided
 ; against it.  See Github Issue 240 for relevant discussion.
   (declare (xargs :guard (and pred fix equiv)))
-  (deffixtype-fn name pred fix equiv execp define inline equal
+  (deffixtype-fn name pred fix equiv executablep execp define inline equal
     (if topic-p topic name)
     verbosep hints forward))
 
@@ -406,4 +406,3 @@
 
 
 ||#
-

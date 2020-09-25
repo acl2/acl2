@@ -31,6 +31,7 @@
 (include-book "dumb-occur-var-open")
 (include-book "guard-verified-exec-fnsp")
 (include-book "guard-verified-fnsp")
+(include-book "if-tree-leaf-terms")
 (include-book "lambda-closedp")
 (include-book "lambda-guard-verified-exec-fnsp")
 (include-book "lambda-guard-verified-fnsp")

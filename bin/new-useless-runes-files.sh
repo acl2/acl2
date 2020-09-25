@@ -1,10 +1,15 @@
 #!/bin/sh
 
 # Run
-#  new-useless-runes-files.sh acl2 tmp
-# to create a temporary file, tmp, in the directory where this script is invoked,
-# and then execute that file in ACL2 to obtain suitable output at the shell, of
-# the following form.
+
+# ./bin/new-useless-runes-files.sh acl2 tmp
+
+# in the main ACL2 directory (using any ACL2, but perhaps it's best to
+# use the one just built).  That will create a temporary file, tmp, in
+# the directory where this script is invoked, then execute that file
+# in ACL2 to obtain suitable output at the shell, of the following
+# form.  (Note that the temporary file, tmp, will then be deleted.)
+
 # @@@ Untracked @useless-runes.lsp files to be added:
 # ("..." ... "...")
 # @@@ Obsolete @useless-runes.lsp files (no corresponding books):

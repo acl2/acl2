@@ -197,6 +197,8 @@
     (cond
      ((member name '(*first-order-like-terms-and-out-arities*
                      *badge-prim-falist*
+                     *system-verify-guards-alist-1*
+                     *system-verify-guards-alist-2*
                      *apply$-boot-fns-badge-alist*)
               :test 'eq)
 
@@ -1595,7 +1597,9 @@
                     (proof-supporters-alist nil)
                     (lambda$-alist nil)
                     (loop$-alist nil)
-                    (common-lisp-compliant-lambdas nil))))
+                    (common-lisp-compliant-lambdas nil)
+                    (rewrite-quoted-constant-rules nil)
+                    )))
              (list* `(operating-system ,operating-system)
                     `(command-number-baseline-info
                       ,(make command-number-baseline-info
@@ -23629,14 +23633,21 @@
                    (equal target-name-or-rune
                           (access rewrite-rule lemma :rune))))
              (member (access rewrite-rule lemma :subclass)
-                     '(backchain abbreviation definition))
+                     '(backchain abbreviation definition
+                                 rewrite-quoted-constant))
              (or (eq geneqv :none)
                  (geneqv-refinementp (access rewrite-rule lemma :equiv)
                                      geneqv
                                      wrld)))
         (mv-let
          (flg alist)
-         (one-way-unify (access rewrite-rule lemma :lhs) term)
+         (one-way-unify
+          (if (and (eq (access rewrite-rule lemma :subclass)
+                       'rewrite-quoted-constant)
+                   (eql (car (access rewrite-rule lemma :heuristic-info)) 2))
+              (access rewrite-rule lemma :rhs)
+              (access rewrite-rule lemma :lhs))
+          term)
          (cond
           (flg
            (if target-index
@@ -23956,7 +23967,8 @@
 
 (defun show-rewrite-linear (caller index col rune nume show-more subst-hyps
                                    subst-hyps-2 unify-subst unify-subst-2 free
-                                   free-2 rhs abbreviations term-id-iff ens
+                                   free-2 rhs rewrite-quoted-constant-form-2p
+                                   abbreviations term-id-iff ens
                                    enabled-only-flg equiv pl-p state)
 
 ; Pl-p is true when we are calling this function on behalf of :pl, and is false
@@ -23991,7 +24003,9 @@
                     ~ ~ ~@f variable: ~&6~/~
                     ~ ~ ~@f variables: ~&6~sn~]~
                ~#7~[~/  WARNING:  One of the hypotheses is (equivalent to) NIL, ~
-               and hence will apparently be impossible to relieve.~]~|"))
+               and hence will apparently be impossible to relieve.~]~
+               ~#8~[~/  WARNING:  The new term above is only used if it ~
+               rewrites to a quoted constant!~]~|"))
          (pprogn
           (fms fmt-string
                (list (cons #\x "")
@@ -24009,8 +24023,9 @@
                      (cons #\5 (zero-one-or-more (length free)))
                      (cons #\6 free)
                      (cons #\n "")
-                     (cons #\7 (if (member-eq nil subst-hyps) 1 0))
-                     (cons #\t (term-evisc-tuple nil state)))
+                     (cons #\7 (if (member-equal *nil* subst-hyps) 1 0))
+                     (cons #\t (term-evisc-tuple nil state))
+                     (cons #\8 (if rewrite-quoted-constant-form-2p 1 0)))
                (standard-co state) state nil)
           (cond (show-more
                  (pprogn
@@ -24033,8 +24048,9 @@
                                      (cond
                                       (extra ; always true?
                                        (msg
-                                        "~ ~ Additional bindings: ~X0t"
-                                        extra))
+                                        "~ ~ Additional bindings: ~X01"
+                                        extra
+                                        (term-evisc-tuple nil state)))
                                       (t ""))))
                              (cons #\c (if (eq caller 'show-rewrites) 0 1))
                              (cons #\3 (untrans0
@@ -24056,10 +24072,11 @@
                              (cons #\n (if (null free-2)
                                            "[none]"
                                          ""))
-                             (cons #\7 (if (member-eq nil subst-hyps-2)
+                             (cons #\7 (if (member-equal *nil* subst-hyps-2)
                                            1
                                          0))
-                             (cons #\t (term-evisc-tuple nil state)))
+                             (cons #\t (term-evisc-tuple nil state))
+                             (cons #\8 (if rewrite-quoted-constant-form-2p 1 0)))
                        (standard-co state) state nil)))
                 (t state))))))))
 
@@ -24084,7 +24101,12 @@
         (cond
          ((eq caller 'show-rewrites)
           (mv (access rewrite-rule lemma :hyps)
-              (access rewrite-rule lemma :rhs)
+              (if (and (eq (access rewrite-rule lemma :subclass)
+                           'rewrite-quoted-constant)
+                       (eql (car (access rewrite-rule lemma :heuristic-info))
+                            2))
+                  (access rewrite-rule lemma :lhs)
+                  (access rewrite-rule lemma :rhs))
               (access rewrite-rule lemma :rune)))
          (t
           (mv (access linear-lemma lemma :hyps)
@@ -24099,7 +24121,13 @@
                            (all-vars1-lst hyps nil)))
                 (free (reverse (set-difference-assoc-eq
                                 result-and-hyps-vars
-                                unify-subst))))
+                                unify-subst)))
+                (rewrite-quoted-constant-form-2p
+                 (and (eq caller 'show-rewrites)
+                      (eq (access rewrite-rule lemma :subclass)
+                          'rewrite-quoted-constant)
+                      (eql (car (access rewrite-rule lemma :heuristic-info))
+                           2))))
            (cond
             (pl-p
              (show-rewrite-linear
@@ -24114,7 +24142,9 @@
               nil ; unify-subst-2,  irrelevant
               free
               nil ; free-2, irrelevant
-              result abbreviations term-id-iff ens enabled-only-flg
+              result
+              rewrite-quoted-constant-form-2p
+              abbreviations term-id-iff ens enabled-only-flg
               (and (eq caller 'show-rewrites)
                    (access sar sar :equiv))
               t ; pl-p
@@ -24148,7 +24178,9 @@
                (reverse (set-difference-assoc-eq
                          result-and-hyps-vars
                          unify-subst-2))
-               result abbreviations term-id-iff ens enabled-only-flg
+               result
+               rewrite-quoted-constant-form-2p
+               abbreviations term-id-iff ens enabled-only-flg
                (and (eq caller 'show-rewrites)
                     (access sar sar :equiv))
                nil ; pl-p
@@ -24210,7 +24242,9 @@
                        (keywordp (car rule-id))
                      (member-eq (car rule-id)
                                 (cond ((eq caller 'show-rewrites)
-                                       '(:rewrite :definition))
+                                       '(:rewrite
+                                         :rewrite-quoted-constant
+                                         :definition))
                                       (t :linear))))
                    rule-id))
         (w (w state)))
@@ -24218,19 +24252,26 @@
      ((and (not pl-p) ; optimization -- check is already made by pl2-fn
            rule-id
            (not (or name index rune)))
-      (fms "The rule-id argument to ~s0 must be a name, a positive ~
-            integer, or a rune representing a rewrite or definition rule, but ~
-            ~x1 is none of these.~|"
+      (fms "The rule-id argument to ~s0 must be a name, a positive integer, ~
+            or a rune representing a rewrite, rewrite-quoted-constant, or ~
+            definition rule, but ~x1 is none of these.~|"
            (list (cons #\0 (symbol-name caller))
                  (cons #\1 rule-id))
            (standard-co state) state nil))
      ((and (not pl-p) ; optimization -- check is already made by pl2-fn
            (or (variablep current-term)
-               (fquotep current-term)
+               (and (fquotep current-term)
+                    (not (and (eq caller 'show-rewrites)
+                              rule-id
+                              (eq (car rule-id) :rewrite-quoted-constant))))
                (flambdap (ffn-symb current-term))))
-      (fms "It is only possible to apply ~#0~[rewrite rules to terms~/linear ~
-            rules for triggers~] that are not variables, (quoted) constants, ~
-            or applications of lambda expressions.  However, the current term ~
+; The message below intentionally conflates ``rewrite rules'' with
+; ``rewrite-quoted-constant'' rules, since this facility doesn't really
+; distinguish the two.
+      (fms "It is only possible to apply ~#0~[rewrite rules to terms that are ~
+            not variables or applications of lambda expressions~/linear rules ~
+            for triggers that are not variables, quoted constants, or ~
+            applications of lambda expessions~].  However, the current term ~
             is:~%~ ~ ~y1.~|"
            (list (cons #\0 (if (eq caller 'show-rewrites) 0 1))
                  (cons #\1 current-term))
@@ -24261,7 +24302,9 @@
                     (applicable-rewrite-rules1
                      current-term
                      geneqv
-                     (getpropc (ffn-symb current-term) 'lemmas nil w)
+                     (if (quotep current-term)
+                         (global-val 'rewrite-quoted-constant-rules w)
+                         (getpropc (ffn-symb current-term) 'lemmas nil w))
                      1 (or name rune) index w))
                    (t
                     (applicable-linear-rules1
@@ -24490,22 +24533,20 @@
                       (keywordp (car rule-id)))))
         (er soft caller
             "The rule-id supplied to ~x0 must be a symbol or a rune, but ~x1 ~
-            is neither.  See :DOC ~x0."
+             is neither.  See :DOC ~x0."
             caller rule-id))
        (t (mv-let
             (flg term1)
             (cond ((or (variablep term)
-                       (fquotep term)
                        (flambdap (ffn-symb term)))
                    (mv t (remove-guard-holders term wrld)))
                   (t (mv nil term)))
             (cond ((or (variablep term1)
-                       (fquotep term1)
                        (flambdap (ffn-symb term1)))
                    (er soft caller
                        "~@0 must represent a term that is not a variable or a ~
-                      constant, which is not a LET (or LAMBDA application).  ~
-                      But ~x1 does not meet this requirement."
+                        LET (or LAMBDA application).  But ~x1 does not meet ~
+                        this requirement."
                        (case caller
                          (pl (msg "A non-symbol argument of ~x0" caller))
                          (pl2 (msg "The first argument of ~x0" caller))
@@ -24542,6 +24583,12 @@
            (ens (ens-maybe-brr state))
            (name (deref-macro-name name (macro-aliases wrld))))
       (cond
+       ((eq name 'quote)
+        (print-info-for-rules
+         (info-for-lemmas
+          (global-val 'rewrite-quoted-constant-rules wrld)
+          t ens wrld)
+         (standard-co state) state))
        ((function-symbolp name wrld)
         (print-info-for-rules
          (append
@@ -24567,8 +24614,9 @@
          (standard-co state) state))
        (t (er soft 'pl
               "If the argument to PL is a symbol, then it must be a function ~
-               symbol in the current world or else a macro that is associated ~
-               with a function symbol (see :DOC add-macro-alias).")))))
+               symbol in the current world, the symbol QUOTE, or else a macro ~
+               that is associated with a function symbol (see :DOC ~
+               add-macro-alias).")))))
    (t (pl2-fn name nil 'pl state))))
 
 (defmacro pl (name)
@@ -30924,7 +30972,7 @@
 ; drop substantially.
 
 ; We now provide theory to justify the approach outlined above, ignoring
-; details that we do not consider worthy of discussion here.  In particular we
+; details that we do not consider important to discuss here.  In particular we
 ; ignore here the straightforward extension of this theory to mutual-recursion.
 
 ; Consider a guard-verified function f0-limit that is defined as follows, where
@@ -30938,12 +30986,10 @@
 
 ; The restriction can probably be relaxed somewhat, for example to allow
 ; subtracting a number larger than 1.  But we expect this form to be convenient
-; in practice, hence sufficient to support.  (We also considered allowing the
-; variants zpf and 1-f of zp and 1-, respectively.  However, the witness from
-; fib-limit-stable is not guaranteed to be below any particular size.  If one
-; does try to use a stronger guard on limit, then guard verification of f0, as
-; defined below, will fail.)  The restriction of limit to the final parameter
-; of each recursive call is reminiscent of the test for irrelevant formals,
+; in practice, hence sufficient to support.  (We could quite possibly support
+; the variants zpf and 1-f of zp and 1-, respectively; if so we should think
+; through guard issues.)  The restriction of limit to the final parameter of
+; each recursive call is reminiscent of the test for irrelevant formals,
 ; although the present requirement is much simpler and also sufficient here.
 
 ; Now consider the following raw Lisp definition, which is based entirely on
@@ -30992,9 +31038,14 @@
 ; Now define (f0 x1 ... xk) to be the limit (if there is one) of (f0-limit x1
 ; ... xk L) for natural numbers L, defined in ACL2 in analogy to how fib is
 ; defined in terms of fib-limit in the example above.  (The guard on f0 will
-; bind limit to 0, as in that example, and a moment's thought should be
-; convincing that this guard is sufficient for guard verification when the
-; guard on f0 allows limit to be any natp; we say no more about that here.)
+; bind limit to 0 in the guard on f0-limit, as in that example, and a moment's
+; thought should be convincing that this guard is sufficient for guard
+; verification when the guard on f0 allows limit to be any natp; we say no more
+; about that here.)  Note that since we do not intend to execute f0, we do not
+; need its body to be guard-verifiable (which justifies the use of defun-nx, as
+; we do when there are stobj inputs) -- all that matters are the logical
+; definition of f0 and well-guardedness for the executable definition that we
+; install.
 
 ; By (a), every instance of the following formula is a theorem.
 
@@ -31180,64 +31231,68 @@
 ; definition into the partial-functions-table, made by its table guard,
 ; partial-functions-table-guard.
 
-  (let ((ev (cltl-def-from-name fn-limit wrld)))
-    (cond
-     ((member-eq 'state fn-limit-formals)
-      :state)
-     ((fetch-dcl-field :stobjs (butlast (cdddr ev) 1))
-      (cons :stobjs (fetch-dcl-field :stobjs (butlast (cdddr ev) 1))))
-     (t (let* ((limit (assert$ (consp fn-limit-formals)
-                               (car (last fn-limit-formals))))
-               (def
-                (case-match ev
-                  (('DEFUN !fn-limit !fn-limit-formals . &)
-                   (cdr ev))
-                  (('MUTUAL-RECURSION . defs)
-                   (let* ((def (assoc-eq fn-limit (strip-cdrs defs))))
-                     (and (equal (cadr def) fn-limit-formals)
-                          def)))
-                  (& nil))))
-          (cond
-           ((null def) :definition-not-found)
-           (t
-            (let* ((fn-limit-body (car (last ev)))
-                   (rest
-                    (case-match fn-limit-body
-                      (('IF ('ZP !limit)
-                            &
-                            ('LET ((!limit ('1- !limit)))
-                                  . rest))
-                       rest)
-                      (('COND (('ZP !limit)
-                               &)
-                              (t ('LET ((!limit ('1- !limit)))
-                                       . rest)))
-                       rest)
+  (cond
+   ((member-eq 'state fn-limit-formals)
+    :state)
+   ((collect-user-stobjs (stobjs-out fn-limit wrld))
+
+; This will lead to an error, so we don't mind calling collect-user-stobjs a
+; second time here.
+
+    (cons :stobjs (collect-user-stobjs (stobjs-out fn-limit wrld))))
+   (t (let* ((ev (cltl-def-from-name fn-limit wrld))
+             (limit (assert$ (consp fn-limit-formals)
+                             (car (last fn-limit-formals))))
+             (def
+              (case-match ev
+                (('DEFUN !fn-limit !fn-limit-formals . &)
+                 (cdr ev))
+                (('MUTUAL-RECURSION . defs)
+                 (let* ((def (assoc-eq fn-limit (strip-cdrs defs))))
+                   (and (equal (cadr def) fn-limit-formals)
+                        def)))
+                (& nil))))
+        (cond
+         ((null def) :definition-not-found)
+         (t
+          (let* ((fn-limit-body (car (last ev)))
+                 (rest
+                  (case-match fn-limit-body
+                    (('IF ('ZP !limit)
+                          &
+                          ('LET ((!limit ('1- !limit)))
+                                . rest))
+                     rest)
+                    (('COND (('ZP !limit)
+                             &)
+                            (t ('LET ((!limit ('1- !limit)))
+                                     . rest)))
+                     rest)
 
 ; We do not support other macros because we have not (yet?) convinced ourselves
 ; of sufficient similarity in their behaviors in Common Lisp and ACL2 (which
 ; seems important; see the Essay mentioned above).
 
-                      (& nil))))
-              (and rest
-                   (let* ((fn-formals (butlast fn-limit-formals 1))
-                          (body (car (last rest)))
-                          (dcls (butlast (cddr def) 1))
-                          (type-dcls (remove-var-from-type-dcls
-                                      limit
-                                      (fetch-dcl-field 'type dcls))))
-                     `(defun ,fn ,fn-formals
+                    (& nil))))
+            (and rest
+                 (let* ((fn-formals (butlast fn-limit-formals 1))
+                        (body (car (last rest)))
+                        (dcls (butlast (cddr def) 1))
+                        (type-dcls (remove-var-from-type-dcls
+                                    limit
+                                    (fetch-dcl-field 'type dcls))))
+                   `(defun ,fn ,fn-formals
 
 ; We are confident about this definition, so rather than recover the ignore and
 ; ignorable declarations, we simply declare all formals to be ignorable.
 
-                        (declare (ignorable ,@fn-formals))
-                        ,@(and type-dcls `((declare ,@type-dcls)))
-                        (flet ,flet-bindings
-                          (declare (inline ,fn-limit))
-                          (let ((,limit 0))
-                            (declare (ignorable ,limit))
-                            ,body)))))))))))))
+                      (declare (ignorable ,@fn-formals))
+                      ,@(and type-dcls `((declare ,@type-dcls)))
+                      (flet ,flet-bindings
+                        (declare (inline ,fn-limit))
+                        (let ((,limit 0))
+                          (declare (ignorable ,limit))
+                          ,body))))))))))))
 
 (defun memoize-partial-declare (fn-limit limit wrld)
 
@@ -31307,11 +31362,13 @@
                fn-limit)
           nil nil))
      ((eq def :state)
-      (mv (msg "STATE is among the formals of ~x0."
+      (mv (msg "STATE is among the formals of ~x0, which is illegal for ~
+                memoization."
                fn-limit)
           nil nil))
      ((eq (car def) :stobjs)
-      (mv (msg "The stobj~#0~[ ~&0 is~/s ~&0 are~] among the formals of ~x1."
+      (mv (msg "The stobj~#0~[ ~&0 is~/s ~&0 are~] returned by ~x1, which is ~
+                illegal for memoization."
                (cdr def)
                fn-limit)
           nil nil))
@@ -31338,10 +31395,31 @@
                             (,fn-limit
                              ,@fn-formals
                              (,fn-limit-change ,@fn-limit-formals)))))
-              (defun ,fn ,fn-formals
-                ,(memoize-partial-declare fn-limit limit wrld)
-                (,fn-limit ,@fn-formals
-                           (nfix (,fn-limit-stable ,@fn-formals)))))
+              ,(let* ((stobjs-in (stobjs-in fn-limit wrld))
+                      (stobjs (collect-user-stobjs stobjs-in)))
+                 `(defun ,fn ,fn-formals
+                    ,(memoize-partial-declare fn-limit limit wrld)
+                    ,@(and stobjs
+                           `((declare (xargs :stobjs ,@stobjs))))
+
+; We only need non-exec when there is at least one stobj among fn-formals.
+; Since calls of fn-limit-stable cannot be executed, it seems harmless to use
+; non-exec in all cases; but we keep this simpler in the non-stobj case by
+; avoiding non-exec.
+
+; A separate issue is whether to use non-exec here, or defun-nx in place of
+; defun, when there is at least one stobj among fn-formals.  Either should be
+; fine, but we use non-exec to avoid complicating the redundancy check done for
+; this event when collect-non-redundant is called by
+; partial-functions-table-guard-msg, since defun-nx is a macro that does not
+; show up when get-event (called by collect-non-redundant) is returned.
+
+                    ,(let ((body
+                            `(,fn-limit ,@fn-formals
+                                        (nfix (,fn-limit-stable ,@fn-formals)))))
+                       (if stobjs
+                           `(non-exec ,body)
+                         body)))))
             `(,fn ,fn-limit ,fn-limit-change ,fn-limit-stable ,def)))))))
 
 (defun memoize-partial-supporting-events-rec (tuples flet-bindings wrld msg
