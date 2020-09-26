@@ -85,7 +85,7 @@
   (("goal"
     :in-theory (e/d (hifat-lstat)
                     ((:rewrite take-of-take-split)
-                     (:linear len-of-member-equal))))))
+                     (:linear len-of-member))))))
 
 (defthm ls-list-correctness-1-lemma-1
   (implies (not

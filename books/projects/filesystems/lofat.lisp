@@ -16209,44 +16209,6 @@ Some (rather awful) testing forms are
   :hints (("goal" :in-theory (enable hifat-cluster-count)
            :induct (put-assoc-equal name file fs))))
 
-;; Rather general
-(defthm lofat-place-file-correctness-1-lemma-3
-  (and
-   (natp (mv-nth 1 (hifat-place-file fs path file)))
-   (not (stringp (mv-nth 0 (hifat-place-file fs path file)))))
-  :hints (("goal" :in-theory (enable hifat-place-file)))
-  :rule-classes
-  ((:type-prescription :corollary
-    (natp (mv-nth 1 (hifat-place-file fs path file))))
-   (:type-prescription :corollary
-    (not (stringp (mv-nth 0 (hifat-place-file fs path file)))))))
-
-;; Rather general
-(defthm lofat-place-file-correctness-1-lemma-4
-  (natp (mv-nth 1 (hifat-find-file fs path)))
-  :hints (("goal" :in-theory (enable hifat-find-file)))
-  :rule-classes :type-prescription)
-
-(defthm len-of-put-assoc-equal-of-fat32-filename-fix
-  (equal (len (put-assoc-equal (fat32-filename-fix x)
-                               val alist))
-         (if (consp (assoc-equal (fat32-filename-fix x)
-                                 alist))
-             (len alist)
-             (+ 1 (len alist)))))
-
-;; Move later
-(defthm
-  len-of-hifat-place-file
-  (equal (len (mv-nth 0 (hifat-place-file fs path file)))
-         (if (and (consp path)
-                  (atom (cdr path))
-                  (atom (assoc-equal (fat32-filename-fix (car path))
-                                     (hifat-file-alist-fix fs))))
-             (+ 1 (len (hifat-file-alist-fix fs)))
-             (len (hifat-file-alist-fix fs))))
-  :hints (("goal" :in-theory (enable hifat-place-file))))
-
 (defthm
   hifat-cluster-count-of-hifat-place-file-lemma-2
   (implies

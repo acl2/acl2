@@ -450,6 +450,22 @@
                  (:theorem (equal (+ (len x) (- (len x)) (len y))
                                   (len y)))))))
 
+(encapsulate
+  ()
+
+  (local (include-book "std/lists/intersection" :dir :system))
+
+  (defthm
+    intersection$-when-subsetp
+    (implies (subsetp-equal x y)
+             (equal (intersection-equal x y)
+                    (true-list-fix x)))
+    :hints (("goal" :in-theory (enable subsetp-equal)))
+    :rule-classes
+    (:rewrite (:rewrite :corollary (implies (subsetp-equal x y)
+                                            (set-equiv (intersection-equal y x)
+                                                       x))))))
+
 (defthmd
   painful-debugging-lemma-14
   (implies (not (zp cluster-size))
@@ -1191,6 +1207,14 @@
 (defthm fat32-filename-fix-when-fat32-filename-p
   (implies (fat32-filename-p x)
            (equal (fat32-filename-fix x) x)))
+
+(defthm len-of-put-assoc-of-fat32-filename-fix
+  (equal (len (put-assoc-equal (fat32-filename-fix x)
+                               val alist))
+         (if (consp (assoc-equal (fat32-filename-fix x)
+                                 alist))
+             (len alist)
+             (+ 1 (len alist)))))
 
 (fty::deffixtype
  fat32-filename
@@ -2011,9 +2035,9 @@
       (hifat-find-file fs path)
       (and (m1-file-p file)
            (integerp error-code))))
-   (:linear
+   (:type-prescription
     :corollary
-    (<= 0 (mv-nth 1 (hifat-find-file fs path))))))
+    (natp (mv-nth 1 (hifat-find-file fs path))))))
 
 (defthmd hifat-find-file-of-fat32-filename-list-fix
   (equal
@@ -2144,10 +2168,15 @@
   (mv-let (fs error-code)
     (hifat-place-file fs path file)
     (and (m1-file-alist-p fs)
-         (integerp error-code)))
+         (natp error-code)))
   :hints
   (("goal" :in-theory (enable hifat-place-file)
-    :induct (hifat-place-file fs path file))))
+    :induct (hifat-place-file fs path file)))
+  :rule-classes
+  ((:rewrite :corollary (m1-file-alist-p (mv-nth 0 (hifat-place-file fs path file))))
+   (:type-prescription :corollary (not (stringp
+                                        (mv-nth 0 (hifat-place-file fs path file)))))
+   (:type-prescription :corollary (natp (mv-nth 1 (hifat-place-file fs path file))))))
 
 (defthmd
   hifat-place-file-of-fat32-filename-list-fix
@@ -2275,6 +2304,17 @@
            (equal (hifat-place-file fs path file)
                   (mv (hifat-file-alist-fix fs)
                       (mv-nth 1 (hifat-place-file fs path file)))))
+  :hints (("goal" :in-theory (enable hifat-place-file))))
+
+(defthm
+  len-of-hifat-place-file
+  (equal (len (mv-nth 0 (hifat-place-file fs path file)))
+         (if (and (consp path)
+                  (atom (cdr path))
+                  (atom (assoc-equal (fat32-filename-fix (car path))
+                                     (hifat-file-alist-fix fs))))
+             (+ 1 (len (hifat-file-alist-fix fs)))
+             (len (hifat-file-alist-fix fs))))
   :hints (("goal" :in-theory (enable hifat-place-file))))
 
 (defund

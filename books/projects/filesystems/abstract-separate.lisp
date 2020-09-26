@@ -3189,7 +3189,7 @@
            (not (consp (assoc-equal x (frame->frame frame)))))
   :hints (("goal" :in-theory (enable frame->frame))))
 
-(defthmd assoc-equal-of-frame->frame
+(defthmd assoc-of-frame->frame
   (equal (assoc-equal x (frame->frame frame))
          (if (not (equal x 0))
              (assoc-equal x frame)
@@ -3201,7 +3201,7 @@
                 (natp x))
            (not (zp x)))
   :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable assoc-equal-of-frame->frame))))
+  :hints (("Goal" :in-theory (enable assoc-of-frame->frame))))
 
 ;; I regard both of the following rewrite rules as dangerous, so I'm keeping
 ;; them disabled except for where they're needed.
@@ -5637,7 +5637,7 @@
            :in-theory (enable collapse-this))))
 
 (defthm
-  partial-collapse-correctness-lemma-1
+  abs-separate-of-collapse-this-lemma-7
   (implies
    (and (abs-separate (frame->frame frame))
         (mv-nth 1 (collapse frame))
