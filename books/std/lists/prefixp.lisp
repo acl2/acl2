@@ -122,12 +122,6 @@ the list @('y')."
     (prefixp x x)
     :hints(("Goal" :induct (len x))))
 
-  (local
-   (defthm nthcdr-when-atom
-     (implies (atom l)
-              (list-equiv (nthcdr n l) nil))
-     :hints (("goal" :in-theory (enable prefixp list-equiv)))))
-
   (defthm prefixp-of-append-arg2
     (equal (prefixp x (append y z))
            (or (prefixp x y)
@@ -220,7 +214,6 @@ the list @('y')."
            (and (<= (+ (len x) (len y)) (len z))
                 (equal (true-list-fix x)
                        (take (len x) z))
-                (prefixp (true-list-fix y)
-                         (nthcdr (len x) z))))
+                (prefixp y (nthcdr (len x) z))))
     :hints (("goal" :in-theory (enable prefixp)
              :induct (prefixp x z)))))
