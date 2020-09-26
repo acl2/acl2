@@ -414,8 +414,8 @@ which submits an event.
                             (frames-offset '0)
                             (omit 'nil)
                             (only 'nil)
-                            (evisc-tuple ''(NIL 3 4 NIL))
-                            (untranslate 't)
+                            (evisc-tuple ''(NIL 6 8 NIL))
+                            (untranslate 'nil)
                             (search-source 'nil))
     (declare (xargs :stobjs (rp-state state)
                     :mode :program))
@@ -478,7 +478,9 @@ untranslate). Default value = t.
 
 (define increment-rw-stack-size (rp-state)
   (declare (xargs :stobjs (rp-state)))
-  (update-rw-stack-size (1+ (rw-stack-size rp-state)) rp-state))
+  (if (rp-brr rp-state)
+      (update-rw-stack-size (1+ (rw-stack-size rp-state)) rp-state)
+    rp-state))
 
 (in-theory (disable rp-statep))
 

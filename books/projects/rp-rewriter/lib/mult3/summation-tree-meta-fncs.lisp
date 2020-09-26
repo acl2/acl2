@@ -485,7 +485,7 @@
    :returns (mv  (max-val integerp)
                  (min-val integerp)
                  (valid booleanp))
-   (b* (((when (is-rp-bitp term)) (mv 1 0 t))
+   (b* (((when (has-bitp-rp term)) (mv 1 0 t))
         (term (ex-from-rp$ term)))
      (cond
       ((single-c-p term)
@@ -1638,7 +1638,7 @@
           ((and (equal pp ''nil)
                 (case-match c
                   (('list single-c)
-                   (or (is-rp-bitp single-c)))))
+                   (or (has-bitp-rp single-c)))))
            (mv nil nil (list (cadr c))))
           ((and (equal pp ''nil)
                 (case-match c
@@ -1705,7 +1705,7 @@
                     (equal pp-lst nil)
                     (case-match c-lst
                       ((single-c)
-                       (or (is-rp-bitp single-c)
+                       (or (has-bitp-rp single-c)
                            (is-c-bitp-traverse single-c))))))
            (mv nil nil nil))
           ((and (quoted-listp s-lst)
@@ -2655,7 +2655,7 @@
         (cond ((natp x) (append (repeat x ''1) acc))
               (t (append (repeat (- x) '(-- '1)) acc)))))
      ((or (pp-term-p abs-term)
-          (pp-has-bitp-rp term-orig))
+          (has-bitp-rp term-orig))
       (cons term-orig acc))
      (t
       (progn$
@@ -2879,7 +2879,7 @@
   (define light-pp-term-p ((term rp-termp))
     :inline t
     (or
-     (pp-has-bitp-rp term)
+     (has-bitp-rp term)
      (b* ((term (ex-from-rp$ term)))
        (case-match term
          (('binary-not &)
@@ -2933,7 +2933,7 @@
                 (mv (1+ rest-sum) t))
                ((single-s-p x)
                 (mv (1+ rest-sum) t))
-               ((is-rp-bitp x-orig)
+               ((has-bitp-rp x-orig)
                 (mv (1+ rest-sum) t))
                ((and-list-p x)
                 (mv (1+ rest-sum) t))
@@ -2967,8 +2967,10 @@
                  (bitp? booleanp))
     (b* (((mv res valid)
           (quarternaryp-sum-aux term)))
-      (mv (and valid
-               (quarternaryp res))
+      (mv (or (and valid
+                   (quarternaryp res))
+              #|(hard-error 'quarternarp-sum "term ~p0 ~%"
+                          (list (cons #\0 term)))||#)
           (and valid
                (bitp res))))))
 

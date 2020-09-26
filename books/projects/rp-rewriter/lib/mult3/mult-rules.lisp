@@ -171,6 +171,14 @@
 ;;   :hints (("Goal"
 ;;            :in-theory (e/d (bitp) ()))))
 
+
+(def-rp-rule binary-xor-of-1
+  (implies (bitp x)
+           (equal (rp::binary-xor 1 x)
+                  (rp::binary-not x)))
+  :hints (("Goal"
+           :in-theory (e/d (bitp) ()))))
+
 (progn
   (def-rp-rule binary-xor-1-of-s
     (equal (binary-xor 1 (s hash-code pp c/d))
@@ -245,6 +253,8 @@
 
   (rp-attach-sc binary-not-of-s-c-res
                 binary-not-of-s-c-res-side-cond))
+
+
 
 (def-rp-rule --of---
   (equal (-- (-- a))

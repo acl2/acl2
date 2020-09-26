@@ -353,16 +353,16 @@
 
 (progn
   (local
-   (defthmd pp-has-bitp-rp-implies-lemma
-     (implies (and (pp-has-bitp-rp term)
+   (defthmd has-bitp-rp-implies-lemma
+     (implies (and (has-bitp-rp term)
                    (mult-formula-checks state)
                    (rp-evl-meta-extract-global-facts)
                    (eval-and-all (context-from-rp term nil) a))
               (bitp (rp-evlt term a)))
      :hints (("goal"
-              :induct (pp-has-bitp-rp term)
+              :induct (has-bitp-rp term)
               :do-not-induct t
-              :in-theory (e/d (pp-has-bitp-rp
+              :in-theory (e/d (has-bitp-rp
                                is-rp
                                is-if
                                eval-and-all
@@ -371,31 +371,31 @@
                                ex-from-rp-lemma1
                                valid-sc))))))
 
-  (local
-   (defthm pp-has-bitp-rp-implies
-     (implies (and (pp-has-bitp-rp term)
-                   (mult-formula-checks state)
-                   (rp-evl-meta-extract-global-facts)
-                   (valid-sc term a))
-              (and (bitp (rp-evlt term a))
-                   (bitp (rp-evlt (ex-from-rp term) a))))
-     :hints (("goal"
-              :induct (pp-has-bitp-rp term)
-              :expand ((valid-sc term a))
-              :do-not-induct t
-              :in-theory (e/d (pp-has-bitp-rp
-                               pp-has-bitp-rp-implies-lemma
-                               is-rp
-                               is-if)
-                              (bitp
-                               rp-trans
-                               ex-from-rp-lemma1
-                               context-from-rp
-                               valid-sc-ex-from-rp-2
-                               not-include-rp
-                               rp-evl-of-rp-call
-                               valid-sc
-                               eval-and-all)))))))
+  
+  (defthm pp-has-bitp-rp-implies
+    (implies (and (has-bitp-rp term)
+                  (mult-formula-checks state)
+                  (rp-evl-meta-extract-global-facts)
+                  (valid-sc term a))
+             (and (bitp (rp-evlt term a))
+                  (bitp (rp-evlt (ex-from-rp term) a))))
+    :hints (("goal"
+             :induct (has-bitp-rp term)
+             :expand ((valid-sc term a))
+             :do-not-induct t
+             :in-theory (e/d (has-bitp-rp
+                              has-bitp-rp-implies-lemma
+                              is-rp
+                              is-if)
+                             (bitp
+                              rp-trans
+                              ex-from-rp-lemma1
+                              context-from-rp
+                              valid-sc-ex-from-rp-2
+                              not-include-rp
+                              rp-evl-of-rp-call
+                              valid-sc
+                              eval-and-all))))))
 
 (defthmd rp-evlt-of-ex-from-rp-reverse-only-atom-and-car
   (AND (IMPLIES (SYNTAXP (or (ATOM TERM)

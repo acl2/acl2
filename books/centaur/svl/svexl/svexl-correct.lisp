@@ -652,8 +652,8 @@
                              svexl-eval-aux-is-svexl-eval-aux-wog))))))
 
 (defthmd svexl-correct
-  (implies (and (svex-p svex)
-                (svex-env-p env))
+  (implies (and (force (svex-p svex))
+                (force (svex-env-p env)))
            (equal (svex-eval svex env)
                   (svexl-eval (svex-to-svexl svex) env)))
   :hints (("Goal"
@@ -687,8 +687,8 @@
                             svex-eval-is-svex-eval-wog)))))
 
 (defthmd svexllist-correct
-  (implies (and (svexlist-p lst)
-                (svex-env-p env))
+  (implies (and (force (svexlist-p lst))
+                (force (svex-env-p env)))
            (equal (svexlist-eval lst env)
                   (svexllist-eval (svexlist-to-svexllist lst) env)))
   :hints (("Goal"
@@ -795,8 +795,8 @@
                           y)))))
 
   (defthmd svexl-alist-correct
-    (implies (and (sv::svex-alist-p alist)
-                  (svex-env-p env))
+    (implies (and (force (sv::svex-alist-p alist))
+                  (force (svex-env-p env)))
              (equal (sv::svex-alist-eval alist env)
                     (svexl-alist-eval (svex-alist-to-svexl-alist alist) env)))
     :hints (("Goal"
