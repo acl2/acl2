@@ -34,3 +34,8 @@
 (defthm booleanp-of-bool-fix
   (booleanp (bool-fix x))
   :rule-classes :type-prescription)
+
+(defthm bool-fix-when-booleanp
+  (implies (booleanp x)
+           (equal (bool-fix x)
+                  x)))
