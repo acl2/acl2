@@ -62,10 +62,12 @@
   :hints (("goal" :in-theory (enable remove-assocs-equal))))
 
 (defthm remove-assocs-equal-when-atom
-  (implies (atom keys)
+  (implies (not (intersectp-equal (strip-cars alist)
+                                  keys))
            (equal (remove-assocs-equal keys alist)
                   (true-list-fix alist)))
-  :hints (("goal" :in-theory (enable remove-assocs-equal))))
+  :hints (("goal" :in-theory (e/d (remove-assocs-equal)
+                                  (intersectp-is-commutative)))))
 
 (defund tar-len-decode-helper (rev-char-list)
   (declare (xargs :guard (character-listp rev-char-list)))
@@ -2766,124 +2768,124 @@
 ;; Hypotheses minimised.
 (defthm
   hifat-tar-name-list-alist-correctness-2
- (b*
-     ((contents1
-       (if
-           (consp path1)
-           (m1-file->contents (mv-nth 0 (hifat-find-file fs path1)))
-         fs)))
-   (implies
-    (and
-     (m1-file-alist-p fs)
-     (hifat-no-dups-p fs)
-     (fat32-filename-list-p path2)
-     (fat32-filename-list-p name-list)
-     (no-duplicatesp-equal name-list)
-     (subsetp-equal name-list (strip-cars contents1))
-     (member-equal
-      (nth (len path1) path2) name-list)
-     (<= (hifat-entry-count
-          (remove-assocs-equal (set-difference-equal (strip-cars contents1) name-list) contents1))
-         (nfix entry-count))
-     (m1-regular-file-p (mv-nth 0 (hifat-find-file fs path2)))
-     (prefixp path1 path2)
-     (>= 100
-         (len (fat32-path-to-path path2))))
-    (consp
-     (assoc-equal path2
-                  (hifat-tar-name-list-alist fs path1 name-list entry-count)))))
- :hints
- (("goal"
-   :induct
-   (hifat-tar-name-list-string fs path1 name-list fd-table
-                               file-table dir-stream-table entry-count)
-   :expand
-   ((:free
-     (path1)
-     (hifat-tar-name-list-alist fs path1 name-list entry-count))
-    (hifat-tar-name-list-string fs path1 name-list fd-table file-table
-                                dir-stream-table entry-count)
-    (:with
-     (:definition set-difference$-redefinition)
-     (:free (l1)
-            (set-difference-equal l1 name-list))))
-   :in-theory
-   (e/d (;; enabling the definition rules for these two, below, just
-         ;; leads to sadness with regards to
-         ;; hifat-tar-name-list-string-reduction. the small number of
-         ;; subgoals which need the definition should be handled with
-         ;; expand hints and specific rules.
-         (:induction hifat-tar-name-list-string)
-         (:induction hifat-tar-name-list-alist)
-         ;; there are too many lemmas which need these syscall
-         ;; definitions to be opened up.
-         hifat-open hifat-lstat hifat-opendir
-         get-names-from-dirp-alt
-         painful-debugging-lemma-21
-         length-of-empty-list
-         hifat-entry-count
-         member-equal
-         subsetp-equal
-         remove-assocs-equal)
-        (append-of-cons
-         binary-append
-         string-append
-         take-of-too-many
-         (:rewrite nthcdr-when->=-n-len-l)
-         (:rewrite take-of-len-free)
-         (:linear position-equal-ac-when-member)
-         (:definition position-equal-ac)
-         (:rewrite
-          dir-stream-table-p-when-subsetp-equal)
-         (:rewrite hifat-to-lofat-inversion-lemma-2)
-         (:rewrite <<-sort-consp)
-         (:definition strip-cars)
-         (:rewrite m1-directory-file-p-when-m1-file-p)
-         (:rewrite true-listp-when-string-list)
-         (:rewrite hifat-find-file-correctness-3)
-         (:definition string-listp)
-         (:rewrite
-          string-listp-when-fat32-filename-list-p)
-         (:linear
-          len-when-hifat-bounded-file-alist-p . 2)
-         (:linear
-          len-when-hifat-bounded-file-alist-p . 1)
-         (:rewrite m1-regular-file-p-correctness-1)
-         (:definition nthcdr)
-         (:linear
-          hifat-tar-name-list-alist-correctness-lemma-1)
-         (:linear
-          hifat-tar-name-list-alist-correctness-lemma-27)
-         (:linear hifat-entry-count-when-hifat-subsetp)
-         (:definition hifat-subsetp)
-         ;; it's dubious how much labour is saved by disabling these,
-         ;; but it's worth a shot.
-         (:definition atom)
-         (:definition min)
-         (:definition nfix)
-         (:definition natp))))
-  ("subgoal *1/5"
-   :expand
-   ((hifat-entry-count
-     (remove-assocs-equal (set-difference-equal (strip-cars fs)
-                                                name-list)
-                          fs))
-    (hifat-entry-count
-     (remove-assocs-equal
-      (set-difference-equal
-       (remove-equal
-        (car name-list)
-        (strip-cars
-         (m1-file->contents (mv-nth 0 (hifat-find-file fs path1)))))
-       (cdr name-list))
-      (m1-file->contents (mv-nth 0 (hifat-find-file fs path1)))))
-    (hifat-entry-count
-     (remove-assocs-equal
-      (set-difference-equal
-       (strip-cars (m1-file->contents (mv-nth 0 (hifat-find-file fs path1))))
-       name-list)
-      (m1-file->contents (mv-nth 0 (hifat-find-file fs path1)))))
-    (hifat-entry-count
-     (cdr (remove-assocs-equal (set-difference-equal (strip-cars fs)
-                                                     name-list)
-                               fs)))))))
+  (b*
+      ((contents1
+        (if
+            (consp path1)
+            (m1-file->contents (mv-nth 0 (hifat-find-file fs path1)))
+          fs)))
+    (implies
+     (and
+      (m1-file-alist-p fs)
+      (hifat-no-dups-p fs)
+      (fat32-filename-list-p path2)
+      (fat32-filename-list-p name-list)
+      (no-duplicatesp-equal name-list)
+      (subsetp-equal name-list (strip-cars contents1))
+      (member-equal
+       (nth (len path1) path2) name-list)
+      (<= (hifat-entry-count
+           (remove-assocs-equal (set-difference-equal (strip-cars contents1) name-list) contents1))
+          (nfix entry-count))
+      (m1-regular-file-p (mv-nth 0 (hifat-find-file fs path2)))
+      (prefixp path1 path2)
+      (>= 100
+          (len (fat32-path-to-path path2))))
+     (consp
+      (assoc-equal path2
+                   (hifat-tar-name-list-alist fs path1 name-list entry-count)))))
+  :hints
+  (("goal"
+    :induct
+    (hifat-tar-name-list-string fs path1 name-list fd-table
+                                file-table dir-stream-table entry-count)
+    :expand
+    ((:free
+      (path1)
+      (hifat-tar-name-list-alist fs path1 name-list entry-count))
+     (hifat-tar-name-list-string fs path1 name-list fd-table file-table
+                                 dir-stream-table entry-count)
+     (:with
+      (:definition set-difference$-redefinition)
+      (:free (l1)
+             (set-difference-equal l1 name-list))))
+    :in-theory
+    (e/d (;; enabling the definition rules for these two, below, just
+          ;; leads to sadness with regards to
+          ;; hifat-tar-name-list-string-reduction. the small number of
+          ;; subgoals which need the definition should be handled with
+          ;; expand hints and specific rules.
+          (:induction hifat-tar-name-list-string)
+          (:induction hifat-tar-name-list-alist)
+          ;; there are too many lemmas which need these syscall
+          ;; definitions to be opened up.
+          hifat-open hifat-lstat hifat-opendir
+          get-names-from-dirp-alt
+          painful-debugging-lemma-21
+          length-of-empty-list
+          hifat-entry-count
+          member-equal
+          subsetp-equal
+          remove-assocs-equal)
+         (append-of-cons
+          binary-append
+          string-append
+          take-of-too-many
+          (:rewrite nthcdr-when->=-n-len-l)
+          (:rewrite take-of-len-free)
+          (:linear position-equal-ac-when-member)
+          (:definition position-equal-ac)
+          (:rewrite
+           dir-stream-table-p-when-subsetp-equal)
+          (:rewrite hifat-to-lofat-inversion-lemma-2)
+          (:rewrite <<-sort-consp)
+          (:definition strip-cars)
+          (:rewrite m1-directory-file-p-when-m1-file-p)
+          (:rewrite true-listp-when-string-list)
+          (:rewrite hifat-find-file-correctness-3)
+          (:definition string-listp)
+          (:rewrite
+           string-listp-when-fat32-filename-list-p)
+          (:linear
+           len-when-hifat-bounded-file-alist-p . 2)
+          (:linear
+           len-when-hifat-bounded-file-alist-p . 1)
+          (:rewrite m1-regular-file-p-correctness-1)
+          (:definition nthcdr)
+          (:linear
+           hifat-tar-name-list-alist-correctness-lemma-1)
+          (:linear
+           hifat-tar-name-list-alist-correctness-lemma-27)
+          (:linear hifat-entry-count-when-hifat-subsetp)
+          (:definition hifat-subsetp)
+          ;; it's dubious how much labour is saved by disabling these,
+          ;; but it's worth a shot.
+          (:definition atom)
+          (:definition min)
+          (:definition nfix)
+          (:definition natp))))
+   ("subgoal *1/5"
+    :expand
+    ((hifat-entry-count
+      (remove-assocs-equal (set-difference-equal (strip-cars fs)
+                                                 name-list)
+                           fs))
+     (hifat-entry-count
+      (remove-assocs-equal
+       (set-difference-equal
+        (remove-equal
+         (car name-list)
+         (strip-cars
+          (m1-file->contents (mv-nth 0 (hifat-find-file fs path1)))))
+        (cdr name-list))
+       (m1-file->contents (mv-nth 0 (hifat-find-file fs path1)))))
+     (hifat-entry-count
+      (remove-assocs-equal
+       (set-difference-equal
+        (strip-cars (m1-file->contents (mv-nth 0 (hifat-find-file fs path1))))
+        name-list)
+       (m1-file->contents (mv-nth 0 (hifat-find-file fs path1)))))
+     (hifat-entry-count
+      (cdr (remove-assocs-equal (set-difference-equal (strip-cars fs)
+                                                      name-list)
+                                fs)))))))

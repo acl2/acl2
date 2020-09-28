@@ -23,7 +23,26 @@
                      position)))
 
 (local
- (in-theory (disable nat-listp-if-fat32-masked-entry-list-p)))
+ (in-theory
+  (disable
+   nat-listp-if-fat32-masked-entry-list-p
+   (:rewrite m1-directory-file-p-when-m1-file-p)
+   (:rewrite absfat-equiv-implies-set-equiv-addrs-at-1-lemma-2)
+   (:rewrite abs-file->contents-when-m1-file-p)
+   (:rewrite hifat-find-file-correctness-1-lemma-1)
+   (:rewrite abs-addrs-when-m1-file-contents-p)
+   (:rewrite
+    fat32-filename-list-p-of-cdr-when-fat32-filename-list-p)
+   (:rewrite abs-addrs-when-m1-file-alist-p-lemma-2)
+   (:rewrite assoc-of-car-when-member)
+   (:rewrite no-duplicatesp-of-strip-cars-when-hifat-no-dups-p)
+   (:rewrite m1-file-alist-p-when-subsetp-equal)
+   (:rewrite abs-no-dups-p-when-m1-file-alist-p)
+   (:rewrite m1-file-alist-p-when-not-consp)
+   (:rewrite m1-file-contents-p-correctness-1)
+   (:rewrite abs-directory-file-p-correctness-1)
+   (:rewrite m1-directory-file-p-correctness-1)
+   (:rewrite m1-directory-file-p-correctness-1))))
 
 (defund 1st-complete-under-path (frame path)
   (declare (xargs :guard (and (frame-p frame)
@@ -9284,54 +9303,8 @@
                             (x (1st-complete-under-path (frame->frame frame)
                                                         path)))))))
 
-(defund collapse-equiv (frame1 frame2)
-  (b* (((mv root1 result1) (collapse frame1))
-       ((mv root2 result2) (collapse frame2)))
-    (or (not (or result1 result2))
-        (and result1
-             result2 (absfat-equiv root1 root2)))))
-
-(defequiv collapse-equiv
-  :hints (("goal" :in-theory (enable collapse-equiv))))
-
 (defthm
-  collapse-of-frame-with-root-of-frame->root-and-frame->frame
-  (equal (collapse (frame-with-root (frame->root frame)
-                                    (frame->frame frame)))
-         (collapse frame))
-  :hints
-  (("goal"
-    :in-theory
-    (e/d (collapse collapse-this)
-         ((:rewrite partial-collapse-correctness-lemma-21)
-          (:definition no-duplicatesp-equal)
-          (:definition assoc-equal)
-          (:rewrite prefixp-when-equal-lengths)
-          (:definition remove-equal)
-          (:rewrite strip-cars-of-remove-assoc)
-          (:rewrite assoc-after-put-assoc)
-          (:rewrite strip-cars-of-put-assoc)
-          (:rewrite no-duplicatesp-of-strip-cars-of-frame->frame)
-          (:definition remove-assoc-equal)
-          (:rewrite remove-when-absent)
-          (:rewrite remove-assoc-of-put-assoc)
-          (:rewrite remove-assoc-of-remove-assoc)
-          abs-separate-of-frame->frame-of-collapse-this-lemma-8))
-    :do-not-induct t
-    :expand ((collapse frame)
-             (collapse (frame-with-root (frame->root frame)
-                                        (frame->frame frame))))))
-  :rule-classes
-  (:rewrite
-   (:rewrite
-    :corollary
-    (collapse-equiv (frame-with-root (frame->root frame)
-                                     (frame->frame frame))
-                    frame)
-    :hints (("Goal" :in-theory (enable collapse-equiv))))))
-
-(defthm
-  partial-collapse-correctness-lemma-25
+  partial-collapse-correctness-lemma-6
   (implies
    (and (frame-p (frame->frame frame))
         (no-duplicatesp-equal (strip-cars (frame->frame frame)))
@@ -9346,7 +9319,7 @@
            :induct (partial-collapse frame path))))
 
 (defthm
-  partial-collapse-correctness-lemma-76
+  partial-collapse-correctness-lemma-7
   (implies (and (dist-names (frame->root frame)
                             nil (frame->frame frame))
                 (abs-separate (frame->frame frame))
@@ -9358,7 +9331,7 @@
   :hints (("goal" :in-theory (enable partial-collapse))))
 
 (defthm
-  partial-collapse-correctness-lemma-140
+  partial-collapse-correctness-lemma-8
   (implies
    (and (frame-p frame)
         (no-duplicatesp-equal (strip-cars frame))
