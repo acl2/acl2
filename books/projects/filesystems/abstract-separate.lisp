@@ -6918,3 +6918,48 @@
   :hints (("goal" :in-theory (enable frame-addrs-before collapse-iter)
            :induct (frame-addrs-before frame x n)
            :expand (collapse-iter frame 1))))
+
+(defund collapse-equiv (frame1 frame2)
+  (b* (((mv root1 result1) (collapse frame1))
+       ((mv root2 result2) (collapse frame2)))
+    (or (not (or result1 result2))
+        (and result1
+             result2 (absfat-equiv root1 root2)))))
+
+(defequiv collapse-equiv
+  :hints (("goal" :in-theory (enable collapse-equiv))))
+
+(defthm
+  collapse-of-frame-with-root-of-frame->root-and-frame->frame
+  (equal (collapse (frame-with-root (frame->root frame)
+                                    (frame->frame frame)))
+         (collapse frame))
+  :hints
+  (("goal"
+    :in-theory
+    (e/d (collapse collapse-this)
+         ((:definition no-duplicatesp-equal)
+          (:definition assoc-equal)
+          (:rewrite prefixp-when-equal-lengths)
+          (:definition remove-equal)
+          (:rewrite strip-cars-of-remove-assoc)
+          (:rewrite assoc-after-put-assoc)
+          (:rewrite strip-cars-of-put-assoc)
+          (:rewrite no-duplicatesp-of-strip-cars-of-frame->frame)
+          (:definition remove-assoc-equal)
+          (:rewrite remove-when-absent)
+          (:rewrite remove-assoc-of-put-assoc)
+          (:rewrite remove-assoc-of-remove-assoc)
+          abs-separate-of-frame->frame-of-collapse-this-lemma-8))
+    :do-not-induct t
+    :expand ((collapse frame)
+             (collapse (frame-with-root (frame->root frame)
+                                        (frame->frame frame))))))
+  :rule-classes
+  (:rewrite
+   (:rewrite
+    :corollary
+    (collapse-equiv (frame-with-root (frame->root frame)
+                                     (frame->frame frame))
+                    frame)
+    :hints (("Goal" :in-theory (enable collapse-equiv))))))

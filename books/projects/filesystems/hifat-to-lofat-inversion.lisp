@@ -4904,7 +4904,8 @@
   (implies (and (hifat-subsetp m1-file-alist1 m1-file-alist2)
                 (alistp m1-file-alist2)
                 (consp (assoc-equal key m1-file-alist1)))
-           (consp (assoc-equal key m1-file-alist2))))
+           (consp (assoc-equal key m1-file-alist2)))
+  :hints (("Goal" :in-theory (enable hifat-subsetp))))
 
 ;; Not ideal...
 (defthm
