@@ -3632,7 +3632,7 @@ them.
                                SV::MODNAME-P)
                               ())))))
 
-  (verify-guards svl-flatten-design-fn
+  (verify-guards acl2::svl-flatten-design-fn
     :hints (("Goal"
              :do-not-induct t
              :in-theory (e/d () ()))))

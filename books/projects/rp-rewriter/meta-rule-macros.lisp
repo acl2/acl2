@@ -110,7 +110,7 @@
 ~p0 ~%"
                        (list (cons #\0 *acceptable-meta-rule-args*))))
        (or (and (symbolp returns)
-                (equal (symbol-name returns) "term"))
+                (equal (symbol-name returns) "TERM"))
            (and (symbol-listp returns)
                 (> (len returns) 2)
                 (equal (car returns) 'mv)
@@ -121,7 +121,7 @@
                        "Possible options for :returns keyword are:
 1. (mv symbol1 symbol2 ...) where symbols must be a subset of ~p1
 2. term
-but instead you passed ~p0!%"
+but instead you passed ~p0~%"
                        (list (cons #\0 returns)
                              (cons #\1 *acceptable-meta-rule-ret-vals*))))
        (or (booleanp valid-syntaxp)
@@ -161,7 +161,9 @@ but instead you passed ~p0!%"
                                               cl-name-prefix state)
                   :stobjs (state)))
   (b* ((rune `(:meta ,meta-fnc . ,trig-fnc))
+       (returns (if (symbolp returns) (list returns) returns))
        (returns (fix-args/returns-package returns))
+       (returns (if (equal (len returns) 1) (car returns) returns))
        (args (true-list-fix (fix-args/returns-package (acl2::formals meta-fnc (w state)))))
        (correctness-lemma (sa meta-fnc 'for trig-fnc 'valid))
        (entry (make meta-rule-table-rec
@@ -421,7 +423,7 @@ attach-meta-fncs) from being executed. </li>
                  (,returns (,meta-fnc . ,args)))
               ,(if valid-syntaxp
                    `(mv term dont-rw rp-state)
-                 `(mv (if (rp-termp term) term input-term) rp-state))))))
+                 `(mv (if (rp-termp term) term input-term) dont-rw rp-state))))))
       (mv (cons meta-fnc added-meta-fnc)
           (cons body rest)))))
 
