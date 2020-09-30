@@ -351,19 +351,16 @@
     (see @(tsee parteval-process-old)).")
   (b* ((wrld (w state))
        ((er old$) (parteval-process-old old verify-guards ctx state))
-       ((er verify-guards$) (ensure-boolean-or-auto-and-return-boolean$
-                             verify-guards
-                             (guard-verified-p old$ wrld)
-                             "The :VERIFY-GUARDS input" t nil))
+       ((er verify-guards$) (process-input-verify-guards verify-guards
+                                                         old$
+                                                         ctx
+                                                         state))
        ((er static$) (parteval-process-static
                       static old$ verify-guards$ ctx state))
        (case (parteval-case-of-old old$ static$ wrld))
        ((er (list new-name$ names-to-avoid))
         (process-input-new-name new-name old$ nil ctx state))
-       ((er new-enable$) (ensure-boolean-or-auto-and-return-boolean$
-                          new-enable
-                          (fundef-enabledp old$ state)
-                          "The :NEW-ENABLE input" t nil))
+       ((er new-enable$) (process-input-new-enable new-enable old$ ctx state))
        ((er thm-name$) (parteval-process-thm-name
                         thm-name old$ new-name$ ctx state))
        (names-to-avoid (cons thm-name$ names-to-avoid))

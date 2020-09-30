@@ -428,12 +428,11 @@
     @(':verify-guards') is also used to process @('old'),
     but it is only tested for equality with @('t')
     (see @(tsee casesplit-process-old)).")
-  (b* ((wrld (w state))
-       ((er old$) (casesplit-process-old old verify-guards ctx state))
-       ((er verify-guards$) (ensure-boolean-or-auto-and-return-boolean$
-                             verify-guards
-                             (guard-verified-p old$ wrld)
-                             "The :VERIFY-GUARDS input" t nil))
+  (b* (((er old$) (casesplit-process-old old verify-guards ctx state))
+       ((er verify-guards$) (process-input-verify-guards verify-guards
+                                                         old$
+                                                         ctx
+                                                         state))
        ((er conditions$) (casesplit-process-conditions
                           conditions old$ verify-guards$ ctx state))
        ((er (list hyps news)) (casesplit-process-theorems
@@ -443,10 +442,7 @@
                                                                      nil
                                                                      ctx
                                                                      state))
-       ((er new-enable$) (ensure-boolean-or-auto-and-return-boolean$
-                          new-enable
-                          (fundef-enabledp old state)
-                          "The :NEW-ENABLE input" t nil))
+       ((er new-enable$) (process-input-new-enable new-enable old$ ctx state))
        ((er thm-name$) (casesplit-process-thm-name
                         thm-name old$ new-name$ ctx state))
        (names-to-avoid (cons thm-name$ names-to-avoid))
