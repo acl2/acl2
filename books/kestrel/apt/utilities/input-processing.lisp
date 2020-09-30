@@ -856,3 +856,28 @@
                   wrapper-to-old-enable)
       (value nil)))
   :prepwork ((local (in-theory (enable acl2::ensure-value-is-boolean)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define process-input-verify-guards (verify-guards (old symbolp) ctx state)
+  :returns (mv erp (doit booleanp) state)
+  :verify-guards nil
+  :short "Process the @(':verify-guards') input of an APT transformation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The APT transformations that use this utility
+     have a @(':verify-guards') input
+     that specifies whether to verify the guards of the generated function(s).
+     This input must be a boolean or @(':auto') (the default).
+     If it is @(':auto'), guard verification takes place
+     iff the old function is guard-verified.
+     In any case, this utility returns a boolean
+     saying whether the guard verification must take place or not."))
+  (cond ((eq verify-guards t) (value t))
+        ((eq verify-guards nil) (value nil))
+        ((eq verify-guards :auto) (value (guard-verified-p old (w state))))
+        (t (er-soft+ ctx t nil
+                     "The :VERIFY-GUARDS input must be T, NIL, or :AUTO, ~
+                      but it is ~x0 instead."
+                     verify-guards))))
