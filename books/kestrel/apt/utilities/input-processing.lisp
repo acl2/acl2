@@ -404,59 +404,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define process-input-old-to-new-enable (old-to-new-enable
-                                         (old-to-new-enable-present booleanp)
-                                         ctx
-                                         state)
-  :returns (mv erp (processed-old-to-new-enable booleanp) state)
-  :short "Process the @(':old-to-new-enable') input of an APT transformation."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The APT transformations that use this utility
-     have an @(':old-to-new-enable') input
-     that specifies whether to enable or not
-     the theorem that rewrites the old function in terms of the new function.
-     This must be a boolean.
-     If absent, it is taken from the APT defaults table;
-     see @(tsee set-default-input-old-to-new-enable).")
-   (xdoc::p
-    "The caller of this utility must set
-     the parameter @('old-to-new-enable-present') to @('t')
-     iff the @(':old-to-new-enable') input is present.
-     If this is @('nil'), the parameter @('old-to-new-enable') is ignored."))
-  (if old-to-new-enable-present
-      (b* (((er &) (ensure-value-is-boolean$ old-to-new-enable
-                                             "The :OLD-TO-NEW-ENABLE input"
-                                             t
-                                             nil)))
-        (value old-to-new-enable))
-    (value (get-default-input-old-to-new-enable (w state))))
-  :prepwork ((local (in-theory (enable acl2::ensure-value-is-boolean)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define process-input-new-to-old-enable (new-to-old-enable
-                                         (new-to-old-enable-present booleanp)
-                                         ctx
-                                         state)
-  :returns (mv erp (processed-new-to-old-enable booleanp) state)
-  :short "Process the @(':new-to-old-enable') input of an APT transformation."
-  :long
-  (xdoc::topstring-p
-   "This is quite analogous to @(tsee process-input-old-to-new-enable),
-    but for the @(':new-to-old-enable') input of an APT transformation.")
-  (if new-to-old-enable-present
-      (b* (((er &) (ensure-value-is-boolean$ new-to-old-enable
-                                             "The :NEW-TO-OLD-ENABLE input"
-                                             t
-                                             nil)))
-        (value new-to-old-enable))
-    (value (get-default-input-new-to-old-enable (w state))))
-  :prepwork ((local (in-theory (enable acl2::ensure-value-is-boolean)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define process-input-old-if-new-name (old-if-new-name
                                        (old-if-new-name-present booleanp)
                                        (old symbolp)
@@ -540,38 +487,6 @@
                 t
                 nil)))
     (value (list name (cons name names-to-avoid)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define process-input-old-if-new-enable (old-if-new-enable
-                                         (old-if-new-enable-present booleanp)
-                                         ctx
-                                         state)
-  :returns (mv erp (processed-old-if-new-enable booleanp) state)
-  :short "Process the @(':old-if-new-enable') input of an APT transformation."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The APT transformations that use this utility
-     have an @(':old-if-new-enable') input
-     that specifies whether to enable or not
-     asserting that the old function is implied by the new function.
-     This must be a boolean.
-     If absent, it is taken from the APT defaults table;
-     see @(tsee set-default-input-old-if-new-enable).")
-   (xdoc::p
-    "The caller of this utility must set
-     the parameter @('old-if-new-enable-present') to @('t')
-     iff the @(':old-if-new-enable') input is present.
-     If this is @('nil'), the parameter @('old-if-new-enable') is ignored."))
-  (if old-if-new-enable-present
-      (b* (((er &) (ensure-value-is-boolean$ old-if-new-enable
-                                             "The :OLD-IF-NEW-ENABLE input"
-                                             t
-                                             nil)))
-        (value old-if-new-enable))
-    (value (get-default-input-old-if-new-enable (w state))))
-  :prepwork ((local (in-theory (enable acl2::ensure-value-is-boolean)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -720,6 +635,137 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define process-input-wrapper-enable (wrapper-enable
+                                      (wrapper-enable-present booleanp)
+                                      (gen-wrapper booleanp)
+                                      ctx
+                                      state)
+  :returns (mv erp (processed-wrapper-enable booleanp) state)
+  :short "Process the @(':wrapper-enable') input of an APT transformation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The APT transformations that use this utility
+     have a @(':wrapper-enable') input
+     that specifies whether to enable or not the wrapper function,
+     assuming it is generated.
+     This must be a boolean.
+     If absent, it is taken from the APT defaults table;
+     see @(tsee set-default-input-wrapper-enable).")
+   (xdoc::p
+    "The @('gen-wrapper') parameter is @('t') iff the wrapper is generated,
+     i.e. if the @(':wrapper') input of the transformation is @('t').
+     If this is @('nil'), we ensure that @(':wrapper-enable') is absent.")
+   (xdoc::p
+    "The caller of this utility must set
+     the parameter @('wrapper-enable-present') to @('t')
+     iff the @(':wrapper-enable') input is present.
+     If this is @('nil'), the parameter @('wrapper-enable') is ignored."))
+  (if gen-wrapper
+      (if wrapper-enable-present
+          (b* (((er &)
+                (ensure-value-is-boolean$ wrapper-enable
+                                          "The :WRAPPER-ENABLE input"
+                                          t
+                                          nil)))
+            (value wrapper-enable))
+        (value (get-default-input-wrapper-enable (w state))))
+    (if wrapper-enable-present
+        (er-soft+ ctx t nil
+                  "Since the :WRAPPER input is (perhaps by default) NIL, ~
+                   no :WRAPPER-ENABLE input may be supplied,
+                   but ~x0 was supplied instead."
+                  wrapper-enable)
+      (value nil)))
+  :prepwork ((local (in-theory (enable acl2::ensure-value-is-boolean)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define process-input-old-to-new-enable (old-to-new-enable
+                                         (old-to-new-enable-present booleanp)
+                                         ctx
+                                         state)
+  :returns (mv erp (processed-old-to-new-enable booleanp) state)
+  :short "Process the @(':old-to-new-enable') input of an APT transformation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The APT transformations that use this utility
+     have an @(':old-to-new-enable') input
+     that specifies whether to enable or not
+     the theorem that rewrites the old function in terms of the new function.
+     This must be a boolean.
+     If absent, it is taken from the APT defaults table;
+     see @(tsee set-default-input-old-to-new-enable).")
+   (xdoc::p
+    "The caller of this utility must set
+     the parameter @('old-to-new-enable-present') to @('t')
+     iff the @(':old-to-new-enable') input is present.
+     If this is @('nil'), the parameter @('old-to-new-enable') is ignored."))
+  (if old-to-new-enable-present
+      (b* (((er &) (ensure-value-is-boolean$ old-to-new-enable
+                                             "The :OLD-TO-NEW-ENABLE input"
+                                             t
+                                             nil)))
+        (value old-to-new-enable))
+    (value (get-default-input-old-to-new-enable (w state))))
+  :prepwork ((local (in-theory (enable acl2::ensure-value-is-boolean)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define process-input-new-to-old-enable (new-to-old-enable
+                                         (new-to-old-enable-present booleanp)
+                                         ctx
+                                         state)
+  :returns (mv erp (processed-new-to-old-enable booleanp) state)
+  :short "Process the @(':new-to-old-enable') input of an APT transformation."
+  :long
+  (xdoc::topstring-p
+   "This is quite analogous to @(tsee process-input-old-to-new-enable),
+    but for the @(':new-to-old-enable') input of an APT transformation.")
+  (if new-to-old-enable-present
+      (b* (((er &) (ensure-value-is-boolean$ new-to-old-enable
+                                             "The :NEW-TO-OLD-ENABLE input"
+                                             t
+                                             nil)))
+        (value new-to-old-enable))
+    (value (get-default-input-new-to-old-enable (w state))))
+  :prepwork ((local (in-theory (enable acl2::ensure-value-is-boolean)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define process-input-old-if-new-enable (old-if-new-enable
+                                         (old-if-new-enable-present booleanp)
+                                         ctx
+                                         state)
+  :returns (mv erp (processed-old-if-new-enable booleanp) state)
+  :short "Process the @(':old-if-new-enable') input of an APT transformation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The APT transformations that use this utility
+     have an @(':old-if-new-enable') input
+     that specifies whether to enable or not
+     asserting that the old function is implied by the new function.
+     This must be a boolean.
+     If absent, it is taken from the APT defaults table;
+     see @(tsee set-default-input-old-if-new-enable).")
+   (xdoc::p
+    "The caller of this utility must set
+     the parameter @('old-if-new-enable-present') to @('t')
+     iff the @(':old-if-new-enable') input is present.
+     If this is @('nil'), the parameter @('old-if-new-enable') is ignored."))
+  (if old-if-new-enable-present
+      (b* (((er &) (ensure-value-is-boolean$ old-if-new-enable
+                                             "The :OLD-IF-NEW-ENABLE input"
+                                             t
+                                             nil)))
+        (value old-if-new-enable))
+    (value (get-default-input-old-if-new-enable (w state))))
+  :prepwork ((local (in-theory (enable acl2::ensure-value-is-boolean)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define process-input-old-to-wrapper-enable (old-to-wrapper-enable
                                              (old-to-wrapper-enable-present
                                               booleanp)
@@ -784,51 +830,5 @@
                    no :WRAPPER-TO-OLD-ENABLE input may be supplied,
                    but ~x0 was supplied instead."
                   wrapper-to-old-enable)
-      (value nil)))
-  :prepwork ((local (in-theory (enable acl2::ensure-value-is-boolean)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define process-input-wrapper-enable (wrapper-enable
-                                      (wrapper-enable-present booleanp)
-                                      (gen-wrapper booleanp)
-                                      ctx
-                                      state)
-  :returns (mv erp (processed-wrapper-enable booleanp) state)
-  :short "Process the @(':wrapper-enable') input of an APT transformation."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The APT transformations that use this utility
-     have a @(':wrapper-enable') input
-     that specifies whether to enable or not the wrapper function,
-     assuming it is generated.
-     This must be a boolean.
-     If absent, it is taken from the APT defaults table;
-     see @(tsee set-default-input-wrapper-enable).")
-   (xdoc::p
-    "The @('gen-wrapper') parameter is @('t') iff the wrapper is generated,
-     i.e. if the @(':wrapper') input of the transformation is @('t').
-     If this is @('nil'), we ensure that @(':wrapper-enable') is absent.")
-   (xdoc::p
-    "The caller of this utility must set
-     the parameter @('wrapper-enable-present') to @('t')
-     iff the @(':wrapper-enable') input is present.
-     If this is @('nil'), the parameter @('wrapper-enable') is ignored."))
-  (if gen-wrapper
-      (if wrapper-enable-present
-          (b* (((er &)
-                (ensure-value-is-boolean$ wrapper-enable
-                                          "The :WRAPPER-ENABLE input"
-                                          t
-                                          nil)))
-            (value wrapper-enable))
-        (value (get-default-input-wrapper-enable (w state))))
-    (if wrapper-enable-present
-        (er-soft+ ctx t nil
-                  "Since the :WRAPPER input is (perhaps by default) NIL, ~
-                   no :WRAPPER-ENABLE input may be supplied,
-                   but ~x0 was supplied instead."
-                  wrapper-enable)
       (value nil)))
   :prepwork ((local (in-theory (enable acl2::ensure-value-is-boolean)))))
