@@ -635,6 +635,30 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define process-input-new-enable (new-enable (old symbolp) ctx state)
+  :returns (mv erp (enable booleanp) state)
+  :verify-guards nil
+  :short "Process the @(':new-enable') input of an APT transformation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The APT transformations that use this utility
+     have a @(':new-enable') input
+     that specifies whether to enable or not the new function.
+     This input must be a boolean or @(':auto') (the default).
+     If it is @(':auto'), the new function is enabled iff the old one is.
+     In any case, this utility returns a boolean
+     saying whether the new function is enabled or not."))
+  (cond ((eq new-enable t) (value t))
+        ((eq new-enable nil) (value nil))
+        ((eq new-enable :auto) (value (fundef-enabledp old state)))
+        (t (er-soft+ ctx t nil
+                     "The :NEW-ENABLE input must be T, NIL, or :AUTO, ~
+                      but it is ~x0 instead."
+                     new-enable))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define process-input-wrapper-enable (wrapper-enable
                                       (wrapper-enable-present booleanp)
                                       (gen-wrapper booleanp)
@@ -649,7 +673,7 @@
      have a @(':wrapper-enable') input
      that specifies whether to enable or not the wrapper function,
      assuming it is generated.
-     This must be a boolean.
+     This input must be a boolean.
      If absent, it is taken from the APT defaults table;
      see @(tsee set-default-input-wrapper-enable).")
    (xdoc::p
