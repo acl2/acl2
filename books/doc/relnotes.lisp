@@ -446,6 +446,10 @@
      with explanatory comments.
      This could serve as a preliminary tutorial.")
 
+   (xdoc::p
+    "New design notes about specifications and refinements have been added,
+     along with a manual page that describes various forms of specifications.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "error-checking" "Error Checking Library"))
@@ -494,6 +498,9 @@
    (xdoc::p
     "The XDOC constructor @(tsee xdoc::evmac-topic-event-generation)
      has been extended with an additional option.")
+
+   (xdoc::p
+    "New XDOC constructors have been added.")
 
    (xdoc::p
     "A utility @(tsee evmac-prepare-proofs) has been added,

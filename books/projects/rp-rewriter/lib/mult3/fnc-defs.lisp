@@ -708,6 +708,16 @@
        (('bit-of name index)
         (b* ((sym (sa  (ex-from-rp-loose name) index)))
           (symbol-name sym)))
+       (('binary-and x y)
+        `(and$ ,(make-readable x) ,(make-readable y)))
+       (('binary-or x y)
+        `(or$ ,(make-readable x) ,(make-readable y)))
+       (('binary-xor x y)
+        `(xor$ ,(make-readable x) ,(make-readable y)))
+       (('binary-? x y z)
+        `(binary-? ,(make-readable x) ,(make-readable y) ,(make-readable z)))
+       (('binary-not x)
+        `(not$ ,(make-readable x)))
        (& (if (atom term)
               (symbol-name term)
             (progn$
@@ -996,7 +1006,7 @@
                    (1- size))))))
 
 
-(define pp-has-bitp-rp (term)
+(define has-bitp-rp (term)
   :hints (("Goal"
            :in-theory (e/d (is-rp) ())))
   :guard-hints (("goal"
@@ -1004,7 +1014,7 @@
   (if (is-rp term)
       (or (equal (cadr term)
                  ''bitp)
-          (pp-has-bitp-rp (caddr term)))
+          (has-bitp-rp (caddr term)))
     nil))
 
 (encapsulate

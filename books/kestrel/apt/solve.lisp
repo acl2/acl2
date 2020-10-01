@@ -557,8 +557,7 @@
                state)
   :mode :program
   :short "Process all the inputs."
-  (b* ((wrld (w state))
-       (names-to-avoid nil)
+  (b* ((names-to-avoid nil)
        ((er (list old ??f x1...xn matrix)) (solve-process-old old
                                                               verify-guards
                                                               ctx
@@ -614,10 +613,7 @@
                                                                names-to-avoid
                                                                ctx
                                                                state))
-       ((er new-enable) (ensure-boolean-or-auto-and-return-boolean$
-                         new-enable
-                         (fundef-enabledp old state)
-                         "The :NEW-ENABLE input" t nil))
+       ((er new-enable) (process-input-new-enable new-enable old ctx state))
        ((er (list old-if-new names-to-avoid))
         (process-input-old-if-new-name old-if-new-name
                                        old-if-new-name-present
@@ -631,10 +627,10 @@
                                          old-if-new-enable-present
                                          ctx
                                          state))
-       ((er verify-guards) (ensure-boolean-or-auto-and-return-boolean$
-                            verify-guards
-                            (guard-verified-p old wrld)
-                            "The :VERIFY-GUARDS input" t nil))
+       ((er verify-guards) (process-input-verify-guards verify-guards
+                                                        old
+                                                        ctx
+                                                        state))
        ((er &) (evmac-process-input-print print ctx state))
        ((er &) (evmac-process-input-show-only show-only ctx state)))
     (value (list old

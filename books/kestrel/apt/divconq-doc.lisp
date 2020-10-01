@@ -197,159 +197,77 @@
       "This is indicated as @('x')
        in the description of the @('old') input above."))
 
-    (xdoc::desc
-     "@(':fvar-atom-name') &mdash; default @(':auto')"
-     (xdoc::p
-      "Determines the name of the generated function variable
-       for the sub-function called for @(tsee atom) inputs.")
-     (xdoc::p
-      "It must be one of the following:")
-     (xdoc::ul
-      (xdoc::li
-       "@(':auto'), to use @('?f') followed by @('-atom').")
-      (xdoc::li
-       "Any other symbol, to use as the name."))
-     (xdoc::p
-      "In the rest of this documentation page,
-       let @('?g') be this name."))
+    (xdoc::evmac-desc-input-name
+     "fvar-atom"
+     :desc "the generated function variable
+            for the sub-function called for @(tsee atom) inputs"
+     :auto-desc "@('?f') followed by @('-atom')"
+     :name-rest "?g")
 
-    (xdoc::desc
-     "@(':fvar-cons-name') &mdash; default @(':auto')"
-     (xdoc::p
-      "Determines the name of the generated function variable
-       for the sub-function called for @(tsee consp) inputs.")
-     (xdoc::p
-      "It must be one of the following:")
-     (xdoc::ul
-      (xdoc::li
-       "@(':auto'), to use @('?f') followed by @('-cons').")
-      (xdoc::li
-       "Any other symbol, to use as the name."))
-     (xdoc::p
-      "In the rest of this documentation page,
-       let @('?h') be this name."))
+    (xdoc::evmac-desc-input-name
+     "fvar-cons"
+     :desc "the generated function variable
+            for the sub-function called for @(tsee consp) inputs"
+     :auto-desc "@('?f') followed by @('-cons')"
+     :name-rest "?h")
 
-    (xdoc::desc
-     "@(':fold-name') &mdash; default @(':auto')"
-     (xdoc::p
-      "Determines the name of the generated
-       list fold second-order function.")
-     (xdoc::p
-      "It must be one of the following:")
-     (xdoc::ul
-      (xdoc::li
-       "@(':auto'), to use the symbol @('fold')
-        (in the same package as @('old')),
-        followed by the name of @('?g') between square brackets,
-        followed by the name of @('?h') between square brackets.")
-      (xdoc::li
-       "Any other symbol, to use as the name."))
-     (xdoc::p
-      "In the rest of this documentation page,
-       let @('fold[?g][?h]') be this name."))
+    (xdoc::evmac-desc-input-name
+     "fold"
+     :desc "the generated list fold second-order function"
+     :auto-desc "the symbol @('fold')
+                 (in the same package as @('old')),
+                 followed by the name of @('?g') between square brackets,
+                 followed by the name of @('?h') between square brackets"
+     :name-rest "fold[?g][?h]")
 
-    (xdoc::desc
-     "@(':fold-enable') &mdash; default @('nil')"
-     (xdoc::p
-      "Determines whether @('fold[?g][?h]') is enabled.")
-     (xdoc::p
-      "It must be one of the following:")
-     (xdoc::ul
-      (xdoc::li
-       "@('t'), to enable it.")
-      (xdoc::li
-       "@('nil'), to disable it.")))
+    (xdoc::evmac-desc-input-enable-t/nil
+     "fold"
+     :desc "@('fold[?g][?h]')")
 
-    (xdoc::desc
-     "@(':spec-atom-name') &mdash; @(':auto')"
-     (xdoc::p
-      "Determines the name of the generated sub-specification
-       second-order predicate for the function variable @('?g').")
-     (xdoc::ul
-      (xdoc::li
-       "@(':auto'), to use the symbol @('spec-atom')
-        (in the same package as @('old')),
-        followed by the name of @('?g') between square brackets.")
-      (xdoc::li
-       "Any other symbol, to use as the name."))
-     (xdoc::p
-      "In the rest of this documentation page,
-       let @('spec-atom[?g]') be this name."))
+    (xdoc::evmac-desc-input-name
+     "spec-atom"
+     :desc "the generated sub-specification
+            second-order predicate for the function variable @('?g')"
+     :auto-desc "the symbol @('spec-atom')
+                 (in the same package as @('old')),
+                 followed by the name of @('?g') between square brackets"
+     :name-rest "spec-atom[?g]")
 
-    (xdoc::desc
-     "@(':spec-atom-enable') &mdash; default @('nil')"
-     (xdoc::p
-      "Determines whether @('spec-atom[?g]'),
-       and its associated @(tsee defun-sk) rewrite rule,
-       are enabled.")
-     (xdoc::p
-      "It must be one of the following:")
-     (xdoc::ul
-      (xdoc::li
-       "@('t'), to enable them.")
-      (xdoc::li
-       "@('nil'), to disable them.")))
+    (xdoc::evmac-desc-input-enable-t/nil
+     "spec-atom"
+     :desc "@('spec-atom[?g]')
+            (along its associated @(tsee defun-sk) rewrite rule)")
 
-    (xdoc::desc
-     "@(':spec-cons-name') &mdash; @(':auto')"
-     (xdoc::p
-      "Determines the name of the generated sub-specification
-       second-order predicate for the function variable @('?h').")
-     (xdoc::ul
-      (xdoc::li
-       "@(':auto'), to use the symbol @('spec-cons')
-        (in the same package as @('old')),
-        followed by the name of @('?h') between square brackets.")
-      (xdoc::li
-       "Any other symbol, to use as the name."))
-     (xdoc::p
-      "In the rest of this documentation page,
-       let @('spec-cons[?h]') be this name."))
+    (xdoc::evmac-desc-input-name
+     "spec-cons"
+     :desc "the generated sub-specification
+            second-order predicate for the function variable @('?h')"
+     :auto-desc "the symbol @('spec-cons')
+                 (in the same package as @('old')),
+                 followed by the name of @('?h') between square brackets"
+     :name-rest "spec-cons[?h]")
 
-    (xdoc::desc
-     "@(':spec-cons-enable') &mdash; default @('nil')"
-     (xdoc::p
-      "Determines whether @('spec-cons[?h]'),
-       and its associated @(tsee defun-sk) rewrite rule,
-       are enabled.")
-     (xdoc::p
-      "It must be one of the following:")
-     (xdoc::ul
-      (xdoc::li
-       "@('t'), to enable them.")
-      (xdoc::li
-       "@('nil'), to disable them.")))
+    (xdoc::evmac-desc-input-enable-t/nil
+     "spec-cons"
+     :desc "@('spec-cons[?h]')
+            (along its associated @(tsee defun-sk) rewrite rule)")
 
-    (xdoc::desc
-     "@(':equal-fold-name') &mdash; @(':auto')"
-     (xdoc::p
-      "Determines the name of the generated second-order equality
-       between @('?f') and @('fold[?g][?h]').")
-     (xdoc::ul
-      (xdoc::li
-       "@(':auto'), to use the symbol @('equal')
-        (in the same package as @('old')),
-        followed by the name of @('?f') between square brackets,
-        followed by the name of @('fold[?g][?h]') between square brackets.")
-      (xdoc::li
-       "Any other symbol, to use as the name."))
-     (xdoc::p
-      "In the rest of this documentation page,
-       let @('equal[?f][fold[?g][?h]]') be this name."))
+    (xdoc::evmac-desc-input-name
+     "equal-fold"
+     :desc "the generated second-order equality
+            between @('?f') and @('fold[?g][?h]')"
+     :auto-desc "the symbol @('equal')
+                 (in the same package as @('old')),
+                 followed by
+                 the name of @('?f') between square brackets,
+                 followed by
+                 the name of @('fold[?g][?h]') between square brackets"
+     :name-rest "equal[?f][fold[?g][?h]]")
 
-    (xdoc::desc
-     "@(':equal-fold-enable') &mdash; default @('nil')"
-     (xdoc::p
-      "Determines whether @('equal[?f][fold[?g][?h]]'),
-       and its associated @(tsee defun-sk) rewrite rule,
-       are enabled.")
-     (xdoc::p
-      "It must be one of the following:")
-     (xdoc::ul
-      (xdoc::li
-       "@('t'), to enable them.")
-      (xdoc::li
-       "@('nil'), to disable them.")))
+    (xdoc::evmac-desc-input-enable-t/nil
+     "equal-fold"
+     :desc "@('equal[?f][fold[?g][?h]]')
+            (along its associated @(tsee defun-sk) rewrite rule)")
 
     (xdoc::desc
      "@(':cdr-output') &mdash; default @(':auto')"

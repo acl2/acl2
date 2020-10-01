@@ -425,10 +425,6 @@
              (nthcdr n1 x)
            (update-nth (- (nfix n2) (nfix n1)) val (nthcdr n1 x)))))
 
-(defthmd car-of-assoc-equal
-  (let ((sd (assoc-equal x alist)))
-    (implies (consp sd) (equal (car sd) x))))
-
 (defthm update-nth-of-update-nth-1
   (implies (not (equal (nfix key1) (nfix key2)))
            (equal (update-nth key1 val1 (update-nth key2 val2 l))
@@ -541,7 +537,7 @@
   (("goal" :in-theory (disable revappend-of-binary-append-1))))
 
 (defthm
-  character-listp-of-member-equal
+  character-listp-of-member
   (implies (character-listp lst)
            (character-listp (member-equal x lst)))
   :rule-classes
@@ -552,7 +548,7 @@
                   (consp (member-equal x lst)))
              (character-listp (cdr (member-equal x lst)))))))
 
-(defthm true-listp-of-member-equal
+(defthm true-listp-of-member
   (implies (true-listp lst)
            (true-listp (member-equal x lst)))
   :rule-classes
@@ -563,12 +559,12 @@
                   (consp (member-equal x lst)))
              (true-listp (cdr (member-equal x lst)))))))
 
-(defthm len-of-member-equal
+(defthm len-of-member
   (<= (len (member-equal x lst))
       (len lst))
   :rule-classes :linear)
 
-(defthm len-of-remove1-assoc-equal
+(defthm len-of-remove1-assoc
   (implies (consp (assoc-equal key alist))
            (equal (len (remove1-assoc-equal key alist))
                   (- (len alist) 1))))
@@ -581,9 +577,9 @@
            (len l))))
 
 (defthm
-  assoc-equal-of-remove1-assoc-equal
+  assoc-of-remove1-assoc
   (implies
-   (and (not (equal key1 nil))
+   (and (not (null key1))
         (not (consp (assoc-equal key1 alist))))
    (not (consp (assoc-equal key1
                             (remove1-assoc-equal key2 alist))))))
@@ -758,7 +754,7 @@
          (nthcdr (+ (nfix a) (nfix b)) x))
   :hints(("goal" :induct (nthcdr b x))))
 
-(defthm acl2-count-of-member-equal
+(defthm acl2-count-of-member
   (<= (acl2-count (member-equal x lst))
       (acl2-count lst))
   :rule-classes :linear)
@@ -964,7 +960,7 @@
              (remove-assoc key alist)
            (put-assoc name val (remove-assoc key alist)))))
 
-(defthm last-of-member-equal
+(defthm last-of-member
   (equal (last (member-equal x lst))
          (if (member-equal x lst)
              (last lst)
@@ -1795,7 +1791,11 @@
   (defthm nfix-when-natp
     (implies (natp x) (equal (nfix x) x))
     :hints (("goal" :do-not-induct t
-             :in-theory (enable nfix natp)))))
+             :in-theory (enable nfix natp))))
+
+  (defthm nfix-when-zp
+    (implies (zp x) (equal (nfix x) 0))
+    :hints (("goal" :in-theory (enable nfix natp)))))
 
 ;; The following are redundant with the eponymous theorems in
 ;; books/std/lists/take.lisp, from where they were taken with thanks.
@@ -1916,7 +1916,7 @@
               (:instance (:rewrite coerce-inverse-2) (x str1))
               (:instance (:rewrite coerce-inverse-1)
                          (x (make-character-list
-                             (take (+ end (- (len (coerce str1 'list)))) (coerce str2 'list)))))))))
+                             (take (- end (len (coerce str1 'list))) (coerce str2 'list)))))))))
 
   (defthm then-subseq-empty-1
     (implies (and (stringp seq)
@@ -1950,3 +1950,34 @@
 (defthm when-append-same
   (iff (equal x (append x y))
        (equal y (if (consp x) (cdr (last x)) x))))
+
+(defthm
+  set-difference$-becomes-intersection$
+  (equal (set-difference-equal l1 (set-difference-equal l1 l2))
+         (intersection-equal l1 l2))
+  :hints
+  (("goal"
+    :induct (intersection-equal l1 l2)
+    :in-theory (e/d nil nil)
+    :expand
+    (:with
+     set-difference$-redefinition
+     (set-difference-equal (cdr l1)
+                           (cons (car l1)
+                                 (set-difference-equal (cdr l1) l2)))))))
+
+(defthm subsetp-of-set-difference$-2
+  (equal (subsetp-equal z (set-difference-equal x y))
+         (and (subsetp-equal z x)
+              (not (intersectp-equal z y))))
+  :hints (("goal" :in-theory (e/d () (intersectp-is-commutative))
+           :induct (mv (intersectp-equal z y) (subsetp-equal z x)))))
+
+(defthm intersectp-when-subsetp
+  (implies (subsetp-equal x y)
+           (equal (intersectp-equal x y)
+                  (consp x))))
+
+(defthm nth-under-iff-1
+  (implies (not (member-equal nil l))
+           (iff (nth n l) (< (nfix n) (len l)))))

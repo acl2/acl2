@@ -1294,6 +1294,14 @@
                      (:rewrite abs-find-file-helper-of-collapse-lemma-2)
                      (:definition remove-equal))))))
 
+(defthm abs-find-file-correctness-lemma-29
+  (implies (equal (mv-nth 1 (hifat-find-file fs path))
+                  0)
+           (equal (cons (mv-nth 0 (hifat-find-file fs path))
+                        '(0))
+                  (hifat-find-file fs path)))
+  :hints (("goal" :in-theory (enable hifat-find-file))))
+
 (defthm
   abs-find-file-correctness-1
   (implies
@@ -1341,7 +1349,8 @@
                      (:rewrite consp-of-assoc-of-frame->frame)
                      (:definition remove-assoc-equal)
                      (:definition len)
-                     (:rewrite put-assoc-equal-without-change . 2)))
+                     (:rewrite put-assoc-equal-without-change . 2)
+                     collapse-of-frame-with-root-of-frame->root-and-frame->frame))
     :induct (collapse frame))))
 
 (defthm

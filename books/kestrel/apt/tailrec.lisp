@@ -759,16 +759,15 @@
                state)
   :mode :program
   :short "Process all the inputs."
-  (b* ((wrld (w state))
-       ((er &) (evmac-process-input-print print ctx state))
+  (b* (((er &) (evmac-process-input-print print ctx state))
        (verbose (and (member-eq print '(:info :all)) t))
        ((er (list old$ test base nonrec updates combine q r))
         (tailrec-process-old old variant verify-guards verbose ctx state))
        ((er &) (tailrec-process-variant$ variant "The :VARIANT input" t nil))
-       ((er verify-guards$) (ensure-boolean-or-auto-and-return-boolean$
-                             verify-guards
-                             (guard-verified-p old$ wrld)
-                             "The :VERIFY-GUARDS input" t nil))
+       ((er verify-guards$) (process-input-verify-guards verify-guards
+                                                         old$
+                                                         ctx
+                                                         state))
        ((er domain$) (tailrec-process-domain domain
                                              old$
                                              combine
@@ -789,10 +788,7 @@
                                          nil
                                          ctx
                                          state))
-       ((er new-enable$) (ensure-boolean-or-auto-and-return-boolean$
-                          new-enable
-                          (fundef-enabledp old state)
-                          "The :NEW-ENABLE input" t nil))
+       ((er new-enable$) (process-input-new-enable new-enable old$ ctx state))
        ((er a) (tailrec-process-accumulator accumulator old$ r ctx state))
        ((er wrapper-enable$)
         (process-input-wrapper-enable wrapper-enable

@@ -696,6 +696,9 @@ An example run:
 ;; "dont-care"s instead  of zeros  but that  procedure entails  jumping through
 ;; hoops so we omit that for simplicity.
 
+;; With the simulation  pattern below, the accumulator (acc) will  be reset and
+;; loaded with "acc-init-val".  Then we perform 8 multiplications  in two clock
+;; cycles, and accumulate the results in acc.
 (defconst *in-binds-dot-product-with-acc*
   `(("clk" 0 1 ~)
     ("IN1[31:0]"   0 0 in1[0] 0 in1[4])

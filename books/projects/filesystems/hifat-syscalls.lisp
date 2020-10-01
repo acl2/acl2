@@ -813,7 +813,7 @@
     :in-theory (enable m1-file-alist-p hifat-find-file))))
 
 (defthm
-  hifat-find-file-correctness-3-lemma-3
+  hifat-find-file-correctness-lemma-5
   (implies
    (and (m1-file-alist-p m1-file-alist1)
         (hifat-no-dups-p m1-file-alist1)
@@ -828,19 +828,13 @@
       (m1-directory-file-p file)
       (hifat-subsetp
        (m1-file->contents file)
-       (m1-file->contents
-        (mv-nth
-         0
-         (hifat-find-file m1-file-alist2 path)))))))
-  :hints
-  (("goal"
-    :induct
-    (mv
-     (mv-nth 1
-             (hifat-find-file m1-file-alist1 path))
-     (mv-nth 1
-             (hifat-find-file m1-file-alist2 path)))
-    :in-theory (enable m1-file-alist-p hifat-find-file))))
+       (m1-file->contents (mv-nth 0
+                                  (hifat-find-file m1-file-alist2 path)))))))
+  :hints (("goal" :induct (mv (mv-nth 1 (hifat-find-file m1-file-alist1 path))
+                              (mv-nth 1
+                                      (hifat-find-file m1-file-alist2 path)))
+           :in-theory (enable m1-file-alist-p
+                              hifat-find-file hifat-subsetp))))
 
 (defthm hifat-find-file-correctness-lemma-1
   (and (equal (hifat-equiv (hifat-file-alist-fix fs1)
@@ -956,15 +950,18 @@
     :rule-classes :congruence))
 
 ;; This should be disabled because it causes infinite loops otherwise...
-(defthmd
-  hifat-find-file-correctness-3-lemma-1
+(defthm
+  hifat-find-file-correctness-lemma-6
   (implies
    (and (m1-file-alist-p m1-file-alist1)
         (hifat-subsetp m1-file-alist1 m1-file-alist2)
-        (m1-regular-file-p (cdr (assoc-equal name m1-file-alist1))))
-   (equal (m1-file->contents (cdr (assoc-equal name m1-file-alist2)))
-          (m1-file->contents (cdr (assoc-equal name m1-file-alist1)))))
-  :hints (("goal" :in-theory (enable m1-file-alist-p hifat-no-dups-p))))
+        (m1-regular-file-p (cdr (assoc-equal name m1-file-alist1)))
+        (syntaxp (not (term-order m1-file-alist1 m1-file-alist2))))
+   (equal (m1-file->contents (cdr (assoc-equal name m1-file-alist1)))
+          (m1-file->contents (cdr (assoc-equal name m1-file-alist2)))))
+  :hints (("goal" :in-theory (enable m1-file-alist-p
+                                     hifat-no-dups-p hifat-subsetp))))
+
 
 (defthmd
   hifat-find-file-correctness-3-lemma-5
@@ -997,14 +994,14 @@
     :in-theory
     (e/d
      (m1-file-alist-p hifat-find-file)
-     ()))
+     (hifat-find-file-correctness-lemma-6)))
    ("subgoal *1/3"
     :use
-    (:instance hifat-find-file-correctness-3-lemma-1
+    (:instance hifat-find-file-correctness-lemma-6
                (name (fat32-filename-fix (car path)))))
    ("subgoal *1/1"
     :use
-    (:instance hifat-find-file-correctness-3-lemma-1
+    (:instance hifat-find-file-correctness-lemma-6
                (name (fat32-filename-fix (car path)))))))
 
 (defthm

@@ -1144,8 +1144,7 @@
                state)
   :mode :program
   :short "Process all the inputs."
-  (b* ((wrld (w state))
-       ((er old$) (expdata-process-old old predicate verify-guards ctx state))
+  (b* (((er old$) (expdata-process-old old predicate verify-guards ctx state))
        ((er (list new$ names-to-avoid))
         (process-input-new-name new-name old$ nil ctx state))
        ((er (list old-to-new$ names-to-avoid))
@@ -1170,10 +1169,10 @@
                                           names-to-avoid
                                           ctx
                                           state))
-       ((er verify-guards$) (ensure-boolean-or-auto-and-return-boolean$
-                             verify-guards
-                             (guard-verified-p old$ wrld)
-                             "The :VERIFY-GUARDS input" t nil))
+       ((er verify-guards$) (process-input-verify-guards verify-guards
+                                                         old$
+                                                         ctx
+                                                         state))
        ((er (list arg-surjmaps res-surjmaps names-to-avoid))
         (expdata-process-surjmaps surjmaps
                                   old$
@@ -1183,11 +1182,7 @@
                                   state))
        ((er &) (ensure-value-is-boolean$ predicate
                                          "The :PREDICATE input" t nil))
-       ((er new-enable$) (ensure-boolean-or-auto-and-return-boolean$
-                          new-enable
-                          (fundef-enabledp old$ state)
-                          "The :NEW-ENABLE input"
-                          t nil))
+       ((er new-enable$) (process-input-new-enable new-enable old$ ctx state))
        ((er old-to-new-enable$) (process-input-old-to-new-enable
                                  old-to-new-enable
                                  old-to-new-enable-suppliedp

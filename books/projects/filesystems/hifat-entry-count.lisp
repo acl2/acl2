@@ -143,7 +143,7 @@
               (iff (induction-scheme m1-file-alist1 m1-file-alist2)
                    (hifat-subsetp m1-file-alist1 m1-file-alist2)))
      :hints (("goal" :induct (induction-scheme m1-file-alist1 m1-file-alist2)
-              :in-theory (enable hifat-no-dups-p)))))
+              :in-theory (enable hifat-no-dups-p hifat-subsetp)))))
 
   (defthm
     hifat-entry-count-when-hifat-subsetp
@@ -157,7 +157,7 @@
     :rule-classes :linear
     :hints
     (("goal" :induct (induction-scheme m1-file-alist1 m1-file-alist2)
-      :in-theory (enable hifat-no-dups-p hifat-entry-count))
+      :in-theory (enable hifat-no-dups-p hifat-entry-count hifat-subsetp))
      ("subgoal *1/7"
       :use (:instance (:rewrite hifat-entry-count-when-hifat-no-dups-p)
                       (m1-file-alist m1-file-alist2)

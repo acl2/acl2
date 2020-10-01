@@ -949,6 +949,9 @@ Useful for testing defunc/definec errors
        (or (== a (car X))
            (in a (cdr X)))))
 
+(definec nin (a :all X :tl) :bool
+  (not (in a X)))
+
 (defdata non-empty-true-list (cons all true-list))
 
 (defdata-alias ne-tl non-empty-true-list)
