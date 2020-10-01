@@ -17,6 +17,7 @@
 (include-book "auto-termination/top") ; omits some books (see file for why)
 (include-book "bitcoin/top")
 (include-book "built-in-theorems-doc")
+(include-book "c/top")
 (include-book "crypto/top")
 (include-book "error-checking/top")
 (include-book "event-macros/top")
