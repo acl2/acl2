@@ -1,9 +1,9 @@
-; X86ISA Library
+; EL (execloader) Library
 
 ; Note: The license below is based on the template at:
 ; http://opensource.org/licenses/BSD-3-Clause
 
-; Copyright (C) 2015, Regents of the University of Texas
+; Copyright (C) 2020, Shilpi Goel
 ; All rights reserved.
 
 ; Redistribution and use in source and binary forms, with or without
@@ -34,12 +34,41 @@
 ; OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ; Original Author(s):
-; Shilpi Goel         <shigoel@cs.utexas.edu>
+; Shilpi Goel         <shigoel@gmail.com>
 
-(ld "~/acl2-customization.lsp" :ld-missing-input-ok t)
-(set-deferred-ttag-notes t state)
+(in-package "EL")
+(include-book "kestrel/fty/byte-list" :dir :system)
+(include-book "centaur/fty/top" :dir :system)
 
-(ld "cert.acl2" :ld-missing-input-ok t)
-(in-package "X86ISA")
+(local (xdoc::set-default-parents mach-o-reader))
 
-(reset-prehistory)
+;; ----------------------------------------------------------------------
+
+(defprod mach-o-section-header
+  ((sectname  stringp :default "")
+   (segname   stringp :default "")
+   (addr      natp :default 0)
+   (size      natp :default 0)
+   (offset    natp :default 0)
+   (align     natp :default 0)
+   (reloff    natp :default 0)
+   (nreloc    natp :default 0)
+   (flags     natp :default 0)
+   (reserved1 natp :default 0)
+   (reserved2 natp :default 0)
+   (reserved3 natp :default 0)))
+(fty::deflist mach-o-section-headers
+              :elt-type mach-o-section-header
+              :true-listp t)
+
+(defprod mach-o-header
+  ((magic      natp :default 0)
+   (cputype    natp :default 0)
+   (cpusubtype natp :default 0)
+   (filetype   natp :default 0)
+   (ncmds      natp :default 0)
+   (sizeofcmds natp :default 0)
+   (flags      natp :default 0)
+   (reserved   acl2::maybe-natp :default 'nil)))
+
+;; ----------------------------------------------------------------------

@@ -185,6 +185,16 @@
      It includes a formalization of some aspects of the language.
      There are plans to extend this to cover more aspects.")
 
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "el::execloader"
+                             "Read and Parse ELF/Mach-O Binary Files"))
+
+   (xdoc::p
+    "This library can be used to read in sections of ELF/Mach-O files into ACL2.
+     An older version of these books used to live in the @(tsee x86isa::x86isa)
+     library.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Changes to Existing Libraries")
