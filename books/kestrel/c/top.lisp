@@ -10,7 +10,7 @@
 
 (in-package "C")
 
-(include-book "xdoc/defxdoc-plus" :dir :system)
+(include-book "language/top")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -37,7 +37,7 @@
      this standard is referenced as `[C18]';
      sections are referenced
      by appending their designations separated by colon,
-     e.g. `[C19:6.2.6]' references Section 6.2.6;
+     e.g. `[C18:6.2.6]' references Section 6.2.6;
      paragraphs are referenced
      by further appending their numbers separated by slash,
      e.g. `[C18:6.2.5/2]' references Paragraph 2 of Section 6.2.5.
