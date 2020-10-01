@@ -11,6 +11,7 @@
 (in-package "C")
 
 (include-book "language/top")
+(include-book "atc/top")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
