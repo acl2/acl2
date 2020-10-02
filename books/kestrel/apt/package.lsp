@@ -168,6 +168,8 @@
                          evmac-appcond-theorem-list
                          evmac-appcond-theorems-no-extra-hints
                          evmac-appcondp
+                         evmac-generate-defthm
+                         evmac-generate-defun
                          evmac-input-hints-p
                          evmac-input-print-p
                          evmac-prepare-proofs

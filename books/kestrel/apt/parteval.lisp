@@ -15,6 +15,7 @@
 (include-book "kestrel/error-checking/ensure-value-is-symbol-list" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-untranslated-term" :dir :system)
 (include-book "kestrel/event-macros/cw-event" :dir :system)
+(include-book "kestrel/event-macros/event-generation" :dir :system)
 (include-book "kestrel/event-macros/input-processing" :dir :system)
 (include-book "kestrel/event-macros/intro-macros" :dir :system)
 (include-book "kestrel/event-macros/make-event-terse" :dir :system)
@@ -631,8 +632,7 @@
    (xdoc::p
     "The hints follow the proof
      in the design notes and in @('parteval-template.lisp')."))
-  (b* ((macro (theorem-intro-macro thm-enable$))
-       (equalities (parteval-gen-static-equalities static$))
+  (b* ((equalities (parteval-gen-static-equalities static$))
        (antecedent (conjoin equalities))
        (consequent `(equal (,old$ ,@(formals old$ wrld))
                            (,new-name$ ,@new-formals)))
@@ -644,10 +644,11 @@
                       :in-theory '(,old$ ,new-name$)
                       :induct (,new-name$ ,@new-formals))))
                 (3 `(("Goal" :in-theory '(,new-name$))))
-                (t (impossible))))
-       (local-event `(local (,macro ,thm-name$ ,formula :hints ,hints)))
-       (exported-event `(,macro ,thm-name$ ,formula)))
-    (mv local-event exported-event)))
+                (t (impossible)))))
+    (evmac-generate-defthm thm-name$
+                           :formula formula
+                           :hints hints
+                           :enable thm-enable$)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

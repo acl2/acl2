@@ -14,6 +14,7 @@
 (include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-untranslated-term" :dir :system)
 (include-book "kestrel/event-macros/applicability-conditions" :dir :system)
+(include-book "kestrel/event-macros/event-generation" :dir :system)
 (include-book "kestrel/event-macros/input-processing" :dir :system)
 (include-book "kestrel/event-macros/intro-macros" :dir :system)
 (include-book "kestrel/event-macros/proof-preparation" :dir :system)
@@ -582,8 +583,7 @@
    If the old and new functions are reflexive,
    we functionally instantiate the stub in that applicability condition.
    </p>"
-  (b* ((macro (theorem-intro-macro thm-enable$))
-       (formals (formals old$ wrld))
+  (b* ((formals (formals old$ wrld))
        (formula (implicate restriction$
                            `(equal (,old$ ,@formals)
                                    (,new-name$ ,@formals))))
@@ -604,14 +604,11 @@
                       '(:use ,lemma-instance)))
                 `(("Goal"
                    :in-theory '(,old-unnorm-name
-                                ,new-unnorm-name)))))
-       (local-event `(local
-                      (,macro ,thm-name$
-                              ,formula
-                              :hints ,hints)))
-       (exported-event `(,macro ,thm-name$
-                                ,formula)))
-    (mv local-event exported-event)))
+                                ,new-unnorm-name))))))
+    (evmac-generate-defthm thm-name$
+                           :formula formula
+                           :hints hints
+                           :enable thm-enable$)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
