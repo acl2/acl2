@@ -5936,7 +5936,7 @@
                                    (n1 1)))))))
 
   (defthm
-    partial-collapse-correctness-lemma-39
+    1st-complete-under-path-of-frame->frame-of-partial-collapse-lemma-34
     (implies
      (and
       (abs-separate (frame->frame frame))
@@ -5988,21 +5988,21 @@
   (("goal"
     :in-theory (disable valid-seqp-after-collapse-this-lemma-5
                         (:rewrite 1st-complete-under-path-of-frame->frame-of-partial-collapse-lemma-33)
-                        partial-collapse-correctness-lemma-39)
+                        1st-complete-under-path-of-frame->frame-of-partial-collapse-lemma-34)
     :use (valid-seqp-after-collapse-this-lemma-5
           (:instance (:rewrite 1st-complete-under-path-of-frame->frame-of-partial-collapse-lemma-33)
                      (seq seq)
                      (n (len seq))
                      (frame frame))
           (:instance
-           partial-collapse-correctness-lemma-39
+           1st-complete-under-path-of-frame->frame-of-partial-collapse-lemma-34
            (seq seq)
            (n (len seq))
            (frame frame))))))
 
 (local
  (defthmd
-   1st-complete-under-path-of-frame->frame-of-partial-collapse-lemma-34
+   1st-complete-under-path-of-frame->frame-of-partial-collapse-lemma-50
    (implies
     (and (abs-separate (frame->frame frame))
          (dist-names (frame->root frame)
@@ -6517,24 +6517,11 @@
        (abs-addrs
         (frame-val->dir (cdr (assoc-equal x (frame->frame frame)))))))))))
 
-(defthm 1st-complete-under-path-of-frame->frame-of-partial-collapse-lemma-50
+(defthm 1st-complete-under-path-of-frame->frame-of-partial-collapse-lemma-70
   (implies (and (consp (assoc-equal x (frame->frame frame)))
                 (frame-p frame))
            (natp x))
   :rule-classes :forward-chaining)
-
-;; Move later.
-(defthm
-  fat32-filename-list-prefixp-transitive
-  (implies (and (fat32-filename-list-prefixp x y)
-                (fat32-filename-list-prefixp y z))
-           (fat32-filename-list-prefixp x z))
-  :hints (("goal" :in-theory (enable fat32-filename-list-prefixp)))
-  :rule-classes
-  (:rewrite
-   (:rewrite :corollary (implies (and (fat32-filename-list-prefixp y z)
-                                      (fat32-filename-list-prefixp x y))
-                                 (fat32-filename-list-prefixp x z)))))
 
 (encapsulate
   ()
@@ -7239,7 +7226,7 @@
   (("goal"
     :do-not-induct t
     :use
-    (1st-complete-under-path-of-frame->frame-of-partial-collapse-lemma-34
+    (1st-complete-under-path-of-frame->frame-of-partial-collapse-lemma-50
      (:instance 1st-complete-under-path-of-frame->frame-of-partial-collapse-lemma-35
                 (n (len (frame->frame frame))))
      (:instance

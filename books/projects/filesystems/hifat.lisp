@@ -2449,6 +2449,18 @@
     :in-theory (enable fat32-filename-list-prefixp-alt))))
 
 (defthm
+  fat32-filename-list-prefixp-transitive
+  (implies (and (fat32-filename-list-prefixp x y)
+                (fat32-filename-list-prefixp y z))
+           (fat32-filename-list-prefixp x z))
+  :hints (("goal" :in-theory (enable fat32-filename-list-prefixp)))
+  :rule-classes
+  (:rewrite
+   (:rewrite :corollary (implies (and (fat32-filename-list-prefixp y z)
+                                      (fat32-filename-list-prefixp x y))
+                                 (fat32-filename-list-prefixp x z)))))
+
+(defthm
   m1-read-after-write-lemma-1
   (implies (m1-regular-file-p file)
            (hifat-no-dups-p (m1-file->contents file)))

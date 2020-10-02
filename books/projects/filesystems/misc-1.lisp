@@ -57,6 +57,50 @@
                     (fs root)))))
 
 (defthm
+  abs-find-file-helper-of-collapse-3
+  (implies (and (no-duplicatesp-equal (strip-cars (frame->frame frame)))
+                (frame-p (frame->frame frame))
+                (abs-separate (frame->frame frame))
+                (dist-names (frame->root frame)
+                            nil (frame->frame frame))
+                (not (equal (mv-nth 1
+                                    (abs-find-file-helper (frame->root frame)
+                                                          path))
+                            0))
+                (not (equal (mv-nth 1
+                                    (abs-find-file-helper (frame->root frame)
+                                                          path))
+                            *enoent*)))
+           (equal (abs-find-file-helper (mv-nth 0 (collapse frame))
+                                        path)
+                  (abs-find-file-helper (frame->root frame)
+                                        path)))
+  :hints (("goal" :in-theory (enable collapse dist-names collapse-this)
+           :induct (collapse frame)))
+  :rule-classes
+  (:rewrite
+   (:rewrite
+    :corollary
+    (implies (and (no-duplicatesp-equal (strip-cars (frame->frame frame)))
+                  (frame-p (frame->frame frame))
+                  (abs-separate (frame->frame frame))
+                  (dist-names (frame->root frame)
+                              nil (frame->frame frame))
+                  (not (equal (mv-nth 1
+                                      (abs-find-file-helper (frame->root frame)
+                                                            path))
+                              0))
+                  (not (equal (mv-nth 1
+                                      (abs-find-file-helper (frame->root frame)
+                                                            path))
+                              *enoent*))
+                  (m1-file-alist-p (mv-nth 0 (collapse frame))))
+             (equal (hifat-find-file (mv-nth 0 (collapse frame))
+                                     path)
+                    (abs-find-file-helper (frame->root frame)
+                                          path))))))
+
+(defthm
   abs-find-file-correctness-lemma-18
   (implies
    (and
@@ -125,7 +169,7 @@
                     (abs-find-file-of-put-assoc-lemma-7))
     :use
     (:instance
-     (:rewrite abs-find-file-of-put-assoc-lemma-4)
+     (:rewrite abs-find-file-of-remove-assoc-lemma-3)
      (path path)
      (frame (remove-assoc-equal
              (1st-complete frame)
@@ -292,7 +336,7 @@
      (:instance (:rewrite abs-find-file-correctness-1-lemma-48)
                 (x (1st-complete frame)))
      (:instance
-      (:rewrite abs-find-file-of-put-assoc-lemma-4)
+      (:rewrite abs-find-file-of-remove-assoc-lemma-3)
       (path path)
       (frame (remove-assoc-equal
               (frame-val->src (cdr (assoc-equal (1st-complete frame)
@@ -452,7 +496,8 @@
     :in-theory (e/d (collapse-this abs-find-file-of-put-assoc-lemma-6
                                    len-of-fat32-filename-list-fix
                                    abs-find-file-correctness-lemma-47)
-                    (abs-find-file-of-put-assoc-lemma-7))
+                    (abs-find-file-of-put-assoc-lemma-7
+                     abs-find-file-correctness-lemma-37))
     :expand
     ((:with abs-find-file-of-remove-assoc-1
             (abs-find-file (remove-assoc-equal (1st-complete frame)
@@ -992,7 +1037,7 @@
                           (nthcdr (len (frame-val->path (cdr (car frame))))
                                   path))))
   :instructions (:promote (:dive 2)
-                          (:rewrite abs-find-file-of-put-assoc-lemma-1)
+                          (:rewrite abs-find-file-of-remove-assoc-lemma-1)
                           :top (:dive 2 2 1)
                           :=
                           :top :s))
