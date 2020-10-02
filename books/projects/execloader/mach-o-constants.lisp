@@ -1,4 +1,4 @@
-; X86ISA Library
+; EL Library
 
 ; Note: The license below is based on the template at:
 ; http://opensource.org/licenses/BSD-3-Clause
@@ -37,12 +37,18 @@
 ; Warren A. Hunt, Jr. <hunt@cs.utexas.edu>
 ; Shilpi Goel         <shigoel@cs.utexas.edu>
 
+; [Shilpi Goel] This book used to live in
+; [books]/projects/x86isa/tools/execution/exec-loaders, but now it's
+; in a stand-alone library of its own.
+
 ;; Constants from MACOS 10.8.5 file:  "/usr/include/mach-o/loader.h"
 
 ;; ==================================================================-
 
-(in-package "X86ISA")
-(include-book "../sdlf-utils" :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+(in-package "EL")
+(include-book "base")
+
+(local (xdoc::set-default-parents mach-o-reader))
 
 ;; ======================================================================
 
@@ -249,33 +255,33 @@
 ;; Some more constants (not from "/usr/include/mach-o/loader.h"):
 
 (defconst *MACH-O-TEXT*
-  (combine-bytes (string-to-bytes "__TEXT")))
+  (merge-bytes (string->bytes "__TEXT")))
 
 (defconst *TEXT-text*
-  (combine-bytes (string-to-bytes "__text")))
+  (merge-bytes (string->bytes "__text")))
 
 (defconst *TEXT-cstring*
-  (combine-bytes (string-to-bytes "__cstring")))
+  (merge-bytes (string->bytes "__cstring")))
 
 (defconst *TEXT-const*
-  (combine-bytes (string-to-bytes "__const")))
+  (merge-bytes (string->bytes "__const")))
 
 (defconst *MACH-O-DATA*
-  (combine-bytes (string-to-bytes "__DATA")))
+  (merge-bytes (string->bytes "__DATA")))
 
 (defconst *DATA-data*
-  (combine-bytes (string-to-bytes "__data")))
+  (merge-bytes (string->bytes "__data")))
 
 (defconst *DATA-dyld*
-  (combine-bytes (string-to-bytes "__dyld")))
+  (merge-bytes (string->bytes "__dyld")))
 
 (defconst *DATA-const*
-  (combine-bytes (string-to-bytes "__const")))
+  (merge-bytes (string->bytes "__const")))
 
 (defconst *DATA-bss*
-  (combine-bytes (string-to-bytes "__bss")))
+  (merge-bytes (string->bytes "__bss")))
 
 (defconst *DATA-common*
-  (combine-bytes (string-to-bytes "__common")))
+  (merge-bytes (string->bytes "__common")))
 
 ;; ======================================================================

@@ -1,9 +1,9 @@
-; X86ISA Library
+; EL (execloader) Library
 
 ; Note: The license below is based on the template at:
 ; http://opensource.org/licenses/BSD-3-Clause
 
-; Copyright (C) 2015, Regents of the University of Texas
+; Copyright (C) 2020, Shilpi Goel
 ; All rights reserved.
 
 ; Redistribution and use in source and binary forms, with or without
@@ -34,12 +34,17 @@
 ; OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ; Original Author(s):
-; Shilpi Goel         <shigoel@cs.utexas.edu>
+; Shilpi Goel         <shigoel@gmail.com>
 
-(ld "~/acl2-customization.lsp" :ld-missing-input-ok t)
-(set-deferred-ttag-notes t state)
+(in-package "EL")
+(include-book "elf-reader")
+(include-book "mach-o-reader")
 
-(ld "cert.acl2" :ld-missing-input-ok t)
-(in-package "X86ISA")
+;; [Shilpi] In Sept. 2020, I pulled out these books from the X86ISA
+;; library ([books]/projects/x86isa/tools/execution/exec-loaders) and
+;; modified them a little. Now they are their own stand-alone library.
 
-(reset-prehistory)
+(defxdoc execloader
+  :parents (acl2::software-verification acl2::projects)
+  :short "Read in some sections of ELF and Mach-O format files into stobjs")
+

@@ -173,7 +173,7 @@
 ;; To create a log file:
 
 ;; Read and load binary into the x86 model's memory:
-(binary-file-load "dataCopy.o")
+(binary-file-load "dataCopy.o" :elf t)
 
 ;; Fill these in by inspecting the object file:
 (defconst *start-address* #ux1_0000_0DC0) ;; address of the first instruction of copyData routine
