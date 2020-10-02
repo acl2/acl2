@@ -12,6 +12,7 @@
 
 (include-book "applicability-conditions")
 (include-book "cw-event")
+(include-book "event-generation")
 (include-book "input-processing")
 (include-book "intro-macros")
 (include-book "make-event-terse")
