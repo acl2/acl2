@@ -11,7 +11,7 @@
 
 (in-package "STD")
 (include-book "std/util/define" :dir :system)
-(include-book "acceptable-rewrite-rule-p")
+(include-book "std/system/acceptable-rewrite-rule-p" :dir :system)
 (set-state-ok t)
 (program)
 

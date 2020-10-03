@@ -812,6 +812,10 @@
      to collect the leaf sub-terms of a term
      according to the @(tsee if) tree structure of the term.")
 
+   (xdoc::p
+    "The utility @('acceptable-rewrite-rulep') has been moved
+     from @('[books]/kestrel/utilities/') to @('[books]/std/system/').")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "std/testing" "Standard Testing Library"))
