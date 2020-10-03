@@ -35,6 +35,10 @@
 (include-book "restrict")
 (include-book "restrict-doc")
 
+(include-book "schemalg")
+(include-book "schemalg-doc")
+(include-book "schemalg-divconq-list-0-1-doc")
+
 (include-book "simplify")
 (include-book "simplify-defun-doc")
 (include-book "simplify-defun-sk-doc")
@@ -127,6 +131,7 @@
                             isodata
                             parteval
                             restrict
+                            schemalg
                             simplify
                             simplify-defun
                             simplify-defun+
