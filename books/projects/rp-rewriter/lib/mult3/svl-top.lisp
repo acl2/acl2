@@ -148,6 +148,13 @@
              (equal (bit-of num start)
                     (svl::bits num start 1)))))
 
+
+(def-rp-rule bits-of-bit-of-out-of-range
+  (implies (and (posp start)
+                (natp size))
+           (equal (svl::bits (bit-of x pos) start size)
+                  0)))
+
 (def-rp-rule bits-of-bit-of
   (equal (svl::bits (bit-of x pos) 0 1)
          (bit-of x pos))
@@ -160,6 +167,17 @@
                             (:TYPE-PRESCRIPTION BIT-OF))))
           ("Subgoal 2"
            :in-theory (e/d () ()))))
+
+
+(def-rp-rule 4vec-rsh-of-bit-of-out-of-range
+  (implies (posp amount)
+           (equal (sv::4vec-rsh amount (bit-of x pos))
+                  0)))
+
+(def-rp-rule minus-of-minus
+  (implies (integerp x)
+           (equal (- (- x))
+                  x)))
 
 (progn
   (def-rp-rule 4vec-bitxor-is-binary-xor-when-bitp

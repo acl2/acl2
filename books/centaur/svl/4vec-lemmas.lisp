@@ -100,6 +100,22 @@
 (local
  (in-theory (enable sv::4vec->upper sv::4vec->lower sv::4vec)))
 
+
+
+
+(defthm bitp-of-4vec-part-select
+  (implies (and (integerp x)
+                (natp start))
+           (bitp (sv::4vec-part-select start 1 x)))
+  :hints (("Goal"
+           :in-theory (e/d (sv::4vec-part-select
+                            4VEC-ZERO-EXT
+                            4VEC-CONCAT
+                            4VEC-RSH
+                            4VEC-SHIFT-CORE)
+                           ()))))
+
+
 (def-rp-rule natp-4vec-rsh
   (implies (and (natp start)
                 (natp num))
@@ -4616,4 +4632,79 @@
                             4VEC-P
                             sv::4vec->upper
                             sv::4vec->lower)
+                           ()))))
+
+(local
+ (defthmd 4vec-parity-to-4vec-bitxor-lemma
+   (implies (and (integerp x)
+                 (natp start))
+            (and (equal (sv::4vec-parity
+                         (sv::4vec-concat
+                          1
+                          (sv::4vec-part-select start 1 x)
+                          (sv::4vec-part-select (1+ start) 1 x)))
+                        (- (sv::4vec-bitxor (sv::4vec-part-select start 1 x)
+                                            (sv::4vec-part-select (1+ start) 1 x))))
+                 (equal (sv::4vec-parity (sv::4vec-part-select start 1 x))
+                        (- (sv::4vec-part-select start 1 x)))))
+   :hints (("Goal"
+            :do-not-induct t
+            :use ((:instance bitp-of-4vec-part-select)
+                  (:instance bitp-of-4vec-part-select
+                             (start (1+ start))))
+            :cases ((equal (sv::4vec-part-select start 1 x) 0)
+                    (equal (sv::4vec-part-select (1+ start) 1 x) 0))
+            :in-theory (e/d (bitp)
+                            (bitp-of-4vec-part-select))))))
+
+
+
+
+(local
+ (defthmd 4vec-parity-to-4vec-bitxor-lemma2
+   (implies (and (integerp x)
+                 (natp start))
+            (equal (4vec-concat 1 (4vec-part-select start 1 x)
+                                (4vec-part-select (+ 1 start) 1 x))
+                   (4vec-part-select start 2 x)))
+   :hints (("goal"
+            :in-theory (e/d* (4vec-part-select
+                              4vec-rsh
+                              bitops::ihsext-inductions
+                              bitops::ihsext-recursive-redefs
+                              4vec-concat
+                              sv::4vec->upper
+                              4vec-shift-core)
+                             (equal-of-4vec-concat-with-size=1))))))
+
+(defthm 4vec-parity-of-4vec-part-select-to-4vec-bitxor
+  (implies (and (integerp x)
+                (natp start))
+           (and (equal (sv::4vec-parity (sv::4vec-part-select start 2 x))
+                       (- (sv::4vec-bitxor (sv::4vec-part-select start 1 x)
+                                           (sv::4vec-part-select (1+ start) 1 x))))
+                (equal (sv::4vec-parity (sv::4vec-part-select start 1 x))
+                       (- (sv::4vec-part-select start 1 x)))))
+  :hints (("Goal"
+           :do-not-induct t
+           :use ((:instance 4vec-parity-to-4vec-bitxor-lemma))
+           :in-theory (e/d (4vec-parity-to-4vec-bitxor-lemma2)
+                           (4vec-parity-to-4vec-bitxor-lemma)))))
+
+(def-rp-rule 4vec-reduction-or-to-4vec-bitor
+  (implies (and (integerp x))
+           (equal (sv::4vec-reduction-or x)
+                  (- (sv::4vec-bitor (sv::4vec-part-select 0 1 x)
+                                     (- (sv::4vec-reduction-or (sv::4vec-rsh 1 x)))))))
+  :hints (("Goal"
+           :in-theory (e/d* (sv::4vec-reduction-or
+                             4VEC-BITOR
+                             bitops::ihsext-recursive-redefs
+                             bitops::ihsext-inductions
+                             SV::3VEC-BITOR
+                             4VEC-PART-SELECT
+                             4VEC-CONCAT
+                             4VEC-RSH
+                             4VEC-SHIFT-CORE
+                             SV::3VEC-REDUCTION-OR)
                            ()))))
