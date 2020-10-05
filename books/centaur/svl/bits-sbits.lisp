@@ -1966,6 +1966,12 @@
                 logbit-to-bits-side-cond))
 
 
+(def-rp-rule 4vec-parity-of-bitp
+  (implies (bitp x)
+           (equal (sv::4vec-parity x)
+                  (- x)))
+  :hints (("Goal"
+           :in-theory (e/d (bitp) ()))))
 
 (def-rp-rule 4vec-parity-of-bits-to-4vec-bitxor
   (implies (and (integerp x)

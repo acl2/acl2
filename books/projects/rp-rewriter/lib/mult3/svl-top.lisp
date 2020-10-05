@@ -863,15 +863,15 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; For when definitions of ha and fa modules are replaced with + sign:
 
-;; it is necessary to create this rewrite mechanism because when output of an
+;; it is necessary  to create this rewrite mechanism because  when output of an
 ;; ha becomes and input of another ha, it messes up with the system somehow and
-;; some full-adders are not simplified as they are supposed to. So I looked at
-;; the rw stack for svl::bits-of-4vec-plus-is-4vec-plus-start=0 and
-;; svl::bits-of-4vec-plus-is-4vec-plus to figure out what fa and ha are
+;; some full-adders are not simplified as they  are supposed to. So I looked at
+;; the   rw    stack   for    svl::bits-of-4vec-plus-is-4vec-plus-start=0   and
+;; svl::bits-of-4vec-plus-is-4vec-plus  to  figure  out  what  fa  and  ha  are
 ;; rewritten to. And I decided to rewrite summation of single bit SV::4VEC-PLUS
-;; to temp-ha-spec. If it is added with another SV::4VEC-PLUS, then it is
-;; probably a part of a full-adder, so I convert that to fa spec.
-;; For other adder types, other rewrite rules might be necessary.
+;; to  temp-ha-spec. If  it is  added with  another SV::4VEC-PLUS,  then it  is
+;; probably a part  of a full-adder, so  I convert that to fa  spec.  For other
+;; adder types, other rewrite rules might be necessary.
 
 (defun temp-ha-spec (x y)
   (svl::4vec-list (ss x y)
