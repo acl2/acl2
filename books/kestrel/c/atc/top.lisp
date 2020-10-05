@@ -10,7 +10,7 @@
 
 (in-package "C")
 
-(include-book "xdoc/defxdoc-plus" :dir :system)
+(include-book "c-abstract-syntax")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
