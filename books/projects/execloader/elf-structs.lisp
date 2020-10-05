@@ -37,7 +37,9 @@
 ; Shilpi Goel         <shigoel@gmail.com>
 
 (in-package "EL")
+
 (include-book "kestrel/fty/byte-list" :dir :system)
+(include-book "centaur/fty/bitstruct" :dir :system)
 (include-book "centaur/fty/top" :dir :system)
 
 (local (xdoc::set-default-parents elf-reader))
@@ -107,5 +109,56 @@
    (shentsize natp :default 0)
    (shnum     natp :default 0)
    (shstrndx  natp :default 0)))
+
+;; Symbol table entries:
+(fty::defbitstruct elf_bits8   8)
+(fty::defbitstruct elf_bits16 16)
+(fty::defbitstruct elf_bits32 32)
+(fty::defbitstruct elf_bits64 64)
+(fty::defbitstruct elf64_sym ;; LSB first                   
+  ;; typedef struct {
+  ;;     uint32_t      st_name;
+  ;;     unsigned char st_info;
+  ;;     unsigned char st_other;
+  ;;     uint16_t      st_shndx;
+  ;;     Elf64_Addr    st_value;
+  ;;     uint64_t      st_size;
+  ;; } Elf64_Sym;
+  ((name     elf_bits32 :default 0)
+   (info     elf_bits8  :default 0)
+   (other    elf_bits8  :default 0)
+   (shndx    elf_bits16 :default 0)
+   (value    elf_bits64 :default 0)
+   (size     elf_bits64 :default 0))
+  :msb-first nil)
+
+(defprod elf64_sym-info
+  ((name-str stringp        :default "") ;; Obtained from strtab.
+   (entry    elf64_sym-p    :default 0)))
+(fty::deflist elf64_sym-info-list
+              :elt-type elf64_sym-info
+              :true-listp t)
+
+(fty::defbitstruct elf32_sym
+  ;; typedef struct {
+  ;;     uint32_t      st_name;
+  ;;     Elf32_Addr    st_value;
+  ;;     uint32_t      st_size;
+  ;;     unsigned char st_info;
+  ;;     unsigned char st_other;
+  ;;     uint16_t      st_shndx;
+  ;; } Elf32_Sym;
+  ((name  elf_bits32 :default 0)
+   (value elf_bits32 :default 0)
+   (size  elf_bits32 :default 0)
+   (info  elf_bits8  :default 0)
+   (other elf_bits8  :default 0)
+   (shndx elf_bits16 :default 0)))
+(defprod elf32_sym-info
+  ((name-str stringp        :default "") ;; Obtained from strtab.
+   (entry    elf32_sym      :default 0)))
+(fty::deflist elf32_sym-info-list
+              :elt-type elf32_sym-info
+              :true-listp t)
 
 ;; ----------------------------------------------------------------------

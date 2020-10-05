@@ -48,11 +48,9 @@
 (local (in-theory (e/d () (unsigned-byte-p))))
 
 (local
- (defthm natp-implies-acl2-numberp
-   (implies (natp x) (acl2-numberp x))
-   :rule-classes :forward-chaining))
-
-(local (in-theory (e/d () (el::elfp unsigned-byte-p))))
+ (defthm canonical-address-p-implies-acl2-numberp
+   (implies (canonical-address-p x)
+            (acl2-numberp x))))
 
 (local
  (defthm acl2-byte-listp-and-x86isa-byte-listp
@@ -66,36 +64,6 @@
 ;; Functions to load the x86 stobj based on the information in the
 ;; elf stobj:
 ;;----------------------------------------------------------------------
-
-(local
- (defthm elf-lemma-1
-   (implies (el::elfp elf)
-            (acl2::byte-listp (el::@elf :text-bytes nil elf)))))
-(local
- (defthm elf-lemma-2
-   (implies (el::elfp elf)
-            (natp (el::@elf :text-addr nil elf)))
-   :rule-classes (:rewrite :type-prescription)))
-
-(local
- (defthm elf-lemma-3
-   (implies (el::elfp elf)
-            (natp (el::@elf :data-addr nil elf)))
-   :rule-classes (:rewrite :type-prescription)))
-
-(local
- (defthm elf-lemma-4
-   (implies (el::elfp elf)
-            (natp (el::@elf :rodata-addr nil elf)))
-   :rule-classes (:rewrite :type-prescription)))
-
-(local
- (defthm elf-lemma-5
-   (implies (el::elfp elf)
-            (natp (el::@elf :bss-addr nil elf)))
-   :rule-classes (:rewrite :type-prescription)))
-
-(local (in-theory (e/d () (el::elfp))))
 
 (defun elf-load-text-section (el::elf x86)  
   (declare (xargs :stobjs (el::elf x86)))
@@ -156,8 +124,6 @@
 ;; Functions to load the x86 stobj based on the information in the
 ;; mach-o stobj:
 ;; ----------------------------------------------------------------------
-
-(local (in-theory (e/d () (el::mach-op))))
 
 ;; (el::populate-mach-o-contents <file-byte-list> mach-o state)
 
@@ -226,13 +192,13 @@
   function to load a program:</p>
 <code> (binary-file-load \"fib.o\" :elf t) ;; or :mach-o t</code>"
   :returns (mv alst
-               (new-elf el::elfp :hyp (el::elfp el::elf))
-               (new-mach-o el::mach-op :hyp (el::mach-op el::mach-o))
+               (new-elf el::good-elf-p :hyp (el::elfp el::good-elf-p))
+               (new-mach-o el::good-mach-o-p :hyp (el::mach-op el::good-mach-o-p))
                (new-x86 x86p :hyp (x86p x86))
                state)
   (cond
    ((and elf (not mach-o))
-    (b* (((mv alst el::elf state)
+    (b* (((mv header section-headers el::elf state)
           (el::populate-elf filename el::elf state))
          ((mv flg0 x86)
           (elf-load-text-section el::elf x86))
@@ -242,7 +208,9 @@
           (prog2$
            (raise "[ELF]: Error encountered while loading sections in the x86 model's memory!~%")
            (mv t el::elf el::mach-o x86 state))))
-      (mv alst el::elf el::mach-o x86 state)))
+      (mv (list (cons :HEADER header)
+                (cons :SECTION-HEADERS section-headers))
+          el::elf el::mach-o x86 state)))
    ((and mach-o (not elf))
     (b* (((mv alst el::mach-o state)
           (el::populate-mach-o filename el::mach-o state))

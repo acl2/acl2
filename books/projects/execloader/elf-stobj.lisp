@@ -276,7 +276,27 @@
     (tbss-offset                    :type (integer 0 *)
                                     :initially 0 :fix (nfix x))
     (tbss-bytes                     :type (satisfies byte-listp)
-                                    :initially nil :fix (ec-call (acl2::byte-list-fix x)))))
+                                    :initially nil :fix (ec-call (acl2::byte-list-fix x)))
+
+    ;; symtab section
+    (symtab-addr                     :type (integer 0 *)
+                                     :initially 0 :fix (nfix x))
+    (symtab-size                     :type (integer 0 *)
+                                     :initially 0 :fix (nfix x))
+    (symtab-offset                   :type (integer 0 *)
+                                     :initially 0 :fix (nfix x))
+    (symtab-bytes                    :type (satisfies byte-listp)
+                                     :initially nil :fix (ec-call (acl2::byte-list-fix x)))
+
+    ;; strtab section
+    (strtab-addr                     :type (integer 0 *)
+                                     :initially 0 :fix (nfix x))
+    (strtab-size                     :type (integer 0 *)
+                                     :initially 0 :fix (nfix x))
+    (strtab-offset                   :type (integer 0 *)
+                                     :initially 0 :fix (nfix x))
+    (strtab-bytes                    :type (satisfies byte-listp)
+                                     :initially nil :fix (ec-call (acl2::byte-list-fix x)))))
 
 (with-output :off (prove event)
   :summary #!acl2 (errors form time)
@@ -285,5 +305,12 @@
       ,@*elf-body*
       :accessor-template (@ x)
       :updater-template (! x))))
+
+(defsection good-elf-p
+  :short "The preferred recognizer for the @('elf') stobj"
+  (defun good-elf-p (elf)
+    (declare (xargs :stobjs elf)
+             (ignore elf))
+    t))
 
 ;; ----------------------------------------------------------------------
