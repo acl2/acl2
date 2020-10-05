@@ -227,8 +227,8 @@
 (defmacro defmergesort (merge-name ;the name to use for the "merge" function
                         merge-sort-name ;the name to use for the "merge sort" function
                         comparison ;the comparison function (fixme allow this to take extra args)
-                        pred ;the name of a predicate describing argumens to the comparison function
-;                        list-pred ;a predicate asserting that all elements of a list satisfy pred
+                        pred ;the name of a predicate recognizing the items to sort
+                        ;; list-pred ;a predicate asserting that all elements of a list satisfy pred
                         &key
                         (verify-guards 't)
                         )
