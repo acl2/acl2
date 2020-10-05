@@ -56,12 +56,8 @@ module ha (
 endmodule // ha
 
 module fa (
-        input logic x,
-        input logic y,
-        input logic z,
-        output logic s,
-        output logic c);
-    
+        input logic x, y, z,
+        output logic s, c);
     assign {c,s} = x + y + z;
 endmodule // fa
 

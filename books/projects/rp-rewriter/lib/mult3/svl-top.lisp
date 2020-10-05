@@ -148,6 +148,13 @@
              (equal (bit-of num start)
                     (svl::bits num start 1)))))
 
+
+(def-rp-rule bits-of-bit-of-out-of-range
+  (implies (and (posp start)
+                (natp size))
+           (equal (svl::bits (bit-of x pos) start size)
+                  0)))
+
 (def-rp-rule bits-of-bit-of
   (equal (svl::bits (bit-of x pos) 0 1)
          (bit-of x pos))
@@ -160,6 +167,17 @@
                             (:TYPE-PRESCRIPTION BIT-OF))))
           ("Subgoal 2"
            :in-theory (e/d () ()))))
+
+
+(def-rp-rule 4vec-rsh-of-bit-of-out-of-range
+  (implies (posp amount)
+           (equal (sv::4vec-rsh amount (bit-of x pos))
+                  0)))
+
+(def-rp-rule minus-of-minus
+  (implies (integerp x)
+           (equal (- (- x))
+                  x)))
 
 (progn
   (def-rp-rule 4vec-bitxor-is-binary-xor-when-bitp
@@ -845,15 +863,15 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; For when definitions of ha and fa modules are replaced with + sign:
 
-;; it is necessary to create this rewrite mechanism because when output of an
+;; it is necessary  to create this rewrite mechanism because  when output of an
 ;; ha becomes and input of another ha, it messes up with the system somehow and
-;; some full-adders are not simplified as they are supposed to. So I looked at
-;; the rw stack for svl::bits-of-4vec-plus-is-4vec-plus-start=0 and
-;; svl::bits-of-4vec-plus-is-4vec-plus to figure out what fa and ha are
+;; some full-adders are not simplified as they  are supposed to. So I looked at
+;; the   rw    stack   for    svl::bits-of-4vec-plus-is-4vec-plus-start=0   and
+;; svl::bits-of-4vec-plus-is-4vec-plus  to  figure  out  what  fa  and  ha  are
 ;; rewritten to. And I decided to rewrite summation of single bit SV::4VEC-PLUS
-;; to temp-ha-spec. If it is added with another SV::4VEC-PLUS, then it is
-;; probably a part of a full-adder, so I convert that to fa spec.
-;; For other adder types, other rewrite rules might be necessary.
+;; to  temp-ha-spec. If  it is  added with  another SV::4VEC-PLUS,  then it  is
+;; probably a part  of a full-adder, so  I convert that to fa  spec.  For other
+;; adder types, other rewrite rules might be necessary.
 
 (defun temp-ha-spec (x y)
   (svl::4vec-list (ss x y)

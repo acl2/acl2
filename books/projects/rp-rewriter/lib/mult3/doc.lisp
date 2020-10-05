@@ -62,7 +62,7 @@ href=\"http://doi.org/10.1007/978-3-030-53288-8_23\">
 http://doi.org/10.1007/978-3-030-53288-8_23</a>.  </p>
 
 <p> Our framework currently supports  (System) Verilog with design hierarchy as
-inputs only.  These  designs are translated to @(see  ACL2::SVL) design without
+inputs only.  These  designs are translated to @(see  SVL) design without
 flattening the adder  modules such as full-adders and  final stage-adders. Then
 @(see  RP-Rewriter) are  used  as the  clause-processor to  carry  out all  the
 rewriting instead  of the  built-in rewriter,  and our  meta rules  and rewrite
@@ -86,7 +86,7 @@ for various operations  such as FMA, dot-product and  merged multiplication. It
 also shows a simple verification case on a sequential circuit.  </p>
 
 <p>  Alternatively,   we  present  a   different  framework  that   uses  @(see
-acl2::defsvtv) instead of @(see acl2::svl). Defsvtv is more capable than SVL at
+defsvtv) instead of @(see svl). Defsvtv is more capable than SVL at
 handling combinational loops but it  flattens designs completely. This prevents
 our method from working properly because we need to identify instantiated adder
 modules. Therefore,  we soundly replace  adder modules with  their identifiable
@@ -218,8 +218,8 @@ Booth-Encoded designs.
  The    same    events    we    give     below    are    also    included    in
  @('<your-acl2-directory>/books/projects/rp-rewriter/lib/mult3/demo/demo-2.lisp'). </p>
 
-<p> 1.  Include necessary books.  @(see acl2::SVL) system uses  @(see acl2::SV)
-and @(see acl2::VL) packages. So we start with them.
+<p> 1.  Include necessary books.  @(see SVL) system uses  @(see SV)
+and @(see VL) packages. So we start with them.
 </p>
 
 <code>
@@ -270,9 +270,9 @@ seconds in total. </p>
 <p> Load SVL Design: </p>
 <code>
 (acl2::defconsts (*mult-svl-design* rp::rp-state)
-                 (svl::svl-flatten-design *mul-sv-design*
-                                          *mult-vl-design*
-                                          :dont-flatten :all))
+                 (svl-flatten-design *mul-sv-design*
+                                     *mult-vl-design*
+                                     :dont-flatten :all))
 </code>
 
 
@@ -420,15 +420,15 @@ fact, we could set any portion of any input signals to any constants.
   (implies (and (integerp in1)
                 (integerp in2)
                 (integerp in3))
-           (equal (svl::svl-run \"Integrated_Multiplier\"
-                                (make-fast-alist `((in1 . ,in1)
-                                                   (in2 . ,in2)
-                                                   (in3 . ,in3)
-                                                   (mode . ,(mode :one-lane t
-                                                                  :signed t))))
-                                *in-binds-one-lane*
-                                *out-binds*
-                                *mult-svl-design*)
+           (equal (svl-run \"Integrated_Multiplier\"
+                           `((in1 . ,in1)
+                             (in2 . ,in2)
+                             (in3 . ,in3)
+                             (mode . ,(mode :one-lane t
+                                            :signed t)))
+                           *in-binds-one-lane*
+                           *out-binds*
+                           *mult-svl-design*)
                   `((result . ,(loghead 128 (+ (* (sign-ext in1 64)
                                                   (sign-ext in2 64))
                                                in3)))))))
@@ -446,15 +446,15 @@ specification accordingly:
   (implies (and (integerp in1)
                 (integerp in2)
                 (integerp in3))
-           (equal (svl::svl-run \"Integrated_Multiplier\"
-                                (make-fast-alist `((in1 . ,in1)
-                                                   (in2 . ,in2)
-                                                   (in3 . ,in3)
-                                                   (mode . ,(mode :one-lane t
-                                                                  :signed nil))))
-                                *in-binds-one-lane*
-                                *out-binds*
-                                *mult-svl-design*)
+           (equal (svl-run \"Integrated_Multiplier\"
+                           `((in1 . ,in1)
+                             (in2 . ,in2)
+                             (in3 . ,in3)
+                             (mode . ,(mode :one-lane t
+                                            :signed nil)))
+                           *in-binds-one-lane*
+                           *out-binds*
+                           *mult-svl-design*)
                   `((result . ,(loghead 128 (+ (* (loghead 64 in1)
                                                   (loghead 64 in2))
                                                in3)))))))
@@ -494,21 +494,21 @@ prove. We omit the proofs for unsigned for brevity.
                 (integerp in1_3)
                 (integerp in2_3)
                 (integerp in3))
-           (equal (svl::svl-run \"Integrated_Multiplier\"
-                                (make-fast-alist `((in1_0 . ,in1_0)
-                                                   (in2_0 . ,in2_0)
-                                                   (in1_1 . ,in1_1)
-                                                   (in2_1 . ,in2_1)
-                                                   (in1_2 . ,in1_2)
-                                                   (in2_2 . ,in2_2)
-                                                   (in1_3 . ,in1_3)
-                                                   (in2_3 . ,in2_3)
-                                                   (in3   . ,in3)
-                                                   (mode  . ,(mode :dot-product t
-                                                                   :signed t))))
-                                *in-binds-dot-product*
-                                *out-binds*
-                                *mult-svl-design*)
+           (equal (svl-run \"Integrated_Multiplier\"
+                           `((in1_0 . ,in1_0)
+                             (in2_0 . ,in2_0)
+                             (in1_1 . ,in1_1)
+                             (in2_1 . ,in2_1)
+                             (in1_2 . ,in1_2)
+                             (in2_2 . ,in2_2)
+                             (in1_3 . ,in1_3)
+                             (in2_3 . ,in2_3)
+                             (in3   . ,in3)
+                             (mode  . ,(mode :dot-product t
+                                             :signed t)))
+                           *in-binds-dot-product*
+                           *out-binds*
+                           *mult-svl-design*)
                   `((result . ,(loghead 128 (+ (* (sign-ext in1_0 32)
                                                   (sign-ext in2_0 32))
                                                (* (sign-ext in1_1 32)
@@ -568,28 +568,28 @@ prove. We omit the proofs for unsigned for brevity.
                 (integerp in1_3)
                 (integerp in2_3)
                 (integerp in3_3))
-           (equal (svl::svl-run \"Integrated_Multiplier\"
-                                (make-fast-alist `((in1_0 . ,in1_0)
-                                                   (in2_0 . ,in2_0)
-                                                   (in3_0 . ,in3_0)
+           (equal (svl-run \"Integrated_Multiplier\"
+                           `((in1_0 . ,in1_0)
+                             (in2_0 . ,in2_0)
+                             (in3_0 . ,in3_0)
 
-                                                   (in1_1 . ,in1_1)
-                                                   (in2_1 . ,in2_1)
-                                                   (in3_1 . ,in3_1)
+                             (in1_1 . ,in1_1)
+                             (in2_1 . ,in2_1)
+                             (in3_1 . ,in3_1)
 
-                                                   (in1_2 . ,in1_2)
-                                                   (in2_2 . ,in2_2)
-                                                   (in3_2 . ,in3_2)
+                             (in1_2 . ,in1_2)
+                             (in2_2 . ,in2_2)
+                             (in3_2 . ,in3_2)
 
-                                                   (in1_3 . ,in1_3)
-                                                   (in2_3 . ,in2_3)
-                                                   (in3_3 . ,in3_3)
+                             (in1_3 . ,in1_3)
+                             (in2_3 . ,in2_3)
+                             (in3_3 . ,in3_3)
 
-                                                   (mode  . ,(mode :four-lanes-lo t
-                                                                   :signed t))))
-                                *in-binds-four-lanes*
-                                *out-binds-four-lanes*
-                                *mult-svl-design*)
+                             (mode  . ,(mode :four-lanes-lo t
+                                             :signed t)))
+                           *in-binds-four-lanes*
+                           *out-binds-four-lanes*
+                           *mult-svl-design*)
                   `((result0 . ,(loghead 32 (+ (* (sign-ext in1_0 32)
                                                   (sign-ext in2_0 32))
                                                in3_0)))
@@ -629,28 +629,28 @@ higher end of the result.
                 (integerp in1_3)
                 (integerp in2_3)
                 (integerp in3_3))
-           (equal (svl::svl-run \"Integrated_Multiplier\"
-                                (make-fast-alist `((in1_0 . ,in1_0)
-                                                   (in2_0 . ,in2_0)
-                                                   (in3_0 . ,in3_0)
+           (equal (svl-run \"Integrated_Multiplier\"
+                           `((in1_0 . ,in1_0)
+                             (in2_0 . ,in2_0)
+                             (in3_0 . ,in3_0)
 
-                                                   (in1_1 . ,in1_1)
-                                                   (in2_1 . ,in2_1)
-                                                   (in3_1 . ,in3_1)
+                             (in1_1 . ,in1_1)
+                             (in2_1 . ,in2_1)
+                             (in3_1 . ,in3_1)
 
-                                                   (in1_2 . ,in1_2)
-                                                   (in2_2 . ,in2_2)
-                                                   (in3_2 . ,in3_2)
+                             (in1_2 . ,in1_2)
+                             (in2_2 . ,in2_2)
+                             (in3_2 . ,in3_2)
 
-                                                   (in1_3 . ,in1_3)
-                                                   (in2_3 . ,in2_3)
-                                                   (in3_3 . ,in3_3)
+                             (in1_3 . ,in1_3)
+                             (in2_3 . ,in2_3)
+                             (in3_3 . ,in3_3)
 
-                                                   (mode  . ,(mode :four-lanes-hi t
-                                                                   :signed t))))
-                                *in-binds-four-lanes*
-                                *out-binds-four-lanes*
-                                *mult-svl-design*)
+                             (mode  . ,(mode :four-lanes-hi t
+                                             :signed t)))
+                           *in-binds-four-lanes*
+                           *out-binds-four-lanes*
+                           *mult-svl-design*)
                   `((result0 . ,(loghead 32 (+ (ash (* (sign-ext in1_0 32)
                                                        (sign-ext in2_0 32))
                                                     -32)
@@ -759,35 +759,35 @@ product specification function as given below.
                   ;; \"nth\" function returns a valid value (an integer).
                   (equal (len in2) dot-product-size) ;; same as above.
                   )
-             (equal (svl::svl-run \"Integrated_Multiplier\"
-                                  (make-fast-alist `(;; will be used in the
-                                                     ;; first cycle:
-                                                     (in1[0] . ,(nth 0 in1))
-                                                     (in2[0] . ,(nth 0 in2))
-                                                     (in1[1] . ,(nth 1 in1))
-                                                     (in2[1] . ,(nth 1 in2))
-                                                     (in1[2] . ,(nth 2 in1))
-                                                     (in2[2] . ,(nth 2 in2))
-                                                     (in1[3] . ,(nth 3 in1))
-                                                     (in2[3] . ,(nth 3 in2))
-                                                     ;; will be used in the
-                                                     ;; second cycle:
-                                                     (in1[4] . ,(nth 4 in1))
-                                                     (in2[4] . ,(nth 4 in2))
-                                                     (in1[5] . ,(nth 5 in1))
-                                                     (in2[5] . ,(nth 5 in2))
-                                                     (in1[6] . ,(nth 6 in1))
-                                                     (in2[6] . ,(nth 6 in2))
-                                                     (in1[7] . ,(nth 7 in1))
-                                                     (in2[7] . ,(nth 7 in2))
+             (equal (svl-run \"Integrated_Multiplier\"
+                             `(;; will be used in the
+                               ;; first cycle:
+                               (in1[0] . ,(nth 0 in1))
+                               (in2[0] . ,(nth 0 in2))
+                               (in1[1] . ,(nth 1 in1))
+                               (in2[1] . ,(nth 1 in2))
+                               (in1[2] . ,(nth 2 in1))
+                               (in2[2] . ,(nth 2 in2))
+                               (in1[3] . ,(nth 3 in1))
+                               (in2[3] . ,(nth 3 in2))
+                               ;; will be used in the
+                               ;; second cycle:
+                               (in1[4] . ,(nth 4 in1))
+                               (in2[4] . ,(nth 4 in2))
+                               (in1[5] . ,(nth 5 in1))
+                               (in2[5] . ,(nth 5 in2))
+                               (in1[6] . ,(nth 6 in1))
+                               (in2[6] . ,(nth 6 in2))
+                               (in1[7] . ,(nth 7 in1))
+                               (in2[7] . ,(nth 7 in2))
                                                      
-                                                     (acc-init-val . ,acc-init-val)
-                                                     (mode   . ,(mode :dot-product t
-                                                                      :acc-on t
-                                                                      :signed signed))))
-                                  *in-binds-dot-product-with-acc*
-                                  *out-binds-with-acc*
-                                  *mult-svl-design*)
+                               (acc-init-val . ,acc-init-val)
+                               (mode   . ,(mode :dot-product t
+                                                :acc-on t
+                                                :signed signed)))
+                             *in-binds-dot-product-with-acc*
+                             *out-binds-with-acc*
+                             *mult-svl-design*)
                     `((result . ,(dot-product-spec in1 in2 dot-product-size 
                                                    signed acc-init-val acc-size)))))))
 ')
@@ -827,7 +827,7 @@ Below is a demo  that shows how to input a multiplier  design coded in (System)
 (include-book \"centaur/svl/top\" :dir :system)
 </code>
 <p>
-@(see acl2::SVL) system uses @(see acl2::SV) and @(see acl2::VL) packages.
+@(see SVL) system uses @(see SV) and @(see VL) packages.
 </p>
 
 <p>
@@ -869,9 +869,9 @@ This is a 64x64 Signed, Booth radix-4 encoded, Dadda Tree integer multiplier.
 4. Load SVL Design:
 <code>
 @('(acl2::defconsts (*svl-design* rp::rp-state)
-                 (svl::svl-flatten-design *sv-design*
-                                          *vl-design*
-                                          :dont-flatten :all))
+                 (svl-flatten-design *sv-design*
+                                     *vl-design*
+                                     :dont-flatten :all))
 ')
 </code>
 
@@ -879,11 +879,11 @@ This is a 64x64 Signed, Booth radix-4 encoded, Dadda Tree integer multiplier.
 
 <p>
 SVL design is a simulation-ready version of SV design with circuit hierarchy
-maintained. We cannot use @(see acl2::defsvtv) because our multiplier
+maintained. We cannot use @(see defsvtv) because our multiplier
 verification method requires maintained hierarchy for adder modules used by the
 main multiplier module.The ':dont-flatten :all' argument retains circuit
 hierarchy.  If users wants to flatten some modules, they should at least have
-the adder module names instead of ':all'. See @(see svl::svl-flatten-design).
+the adder module names instead of ':all'. See @(see svl-flatten-design).
 </p>
 
 
@@ -1007,12 +1007,12 @@ a similar proof as follows:
   (defthmrp multiplier-correct-v1
     (implies (and (integerp in1)
                   (integerp in2))
-             (equal (svl::svl-run \"DT_SB4_HC_64_64\"
-                                  (make-fast-alist `((a . ,in1)
-                                                     (b . ,in2)))
-                                  *input-bindings*
-                                  *output-bindings*
-                                  *svl-design*)
+             (equal (svl-run \"DT_SB4_HC_64_64\"
+                             `((a . ,in1)
+                               (b . ,in2))
+                             *input-bindings*
+                             *output-bindings*
+                             *svl-design*)
                     `((out . ,(loghead 128 (* (sign-ext in1 64)
                                               (sign-ext in2 64)))))))))
 </code>
@@ -1051,17 +1051,17 @@ You may continue to @(see Multiplier-Verification-demo-2).
  Multiplier-Verification-demo-3
  :parents (Multiplier-Verification)
  :short  "Another  demo  for   @(see  Multiplier-Verification) showing how
- @(see acl2::svtv-run) can be used by overriding the adder modules."
+ @(see svtv-run) can be used by overriding the adder modules."
  :long "
 
 <p>This demo  shows how  this tool can  be used to  verify a  multiplier module
-translated  with @(see  acl2::defsvtv). This  is done  by overriding  the adder
+translated  with @(see  defsvtv). This  is done  by overriding  the adder
 modules in the original design before calling defsvtv.  </p>
 
 <p>Our tool requires identifying adder modules used by the candidate multiplier
 design.  When defsvtv  is called, the design is flattened  completely.  That is
 why we  mainly use SVL system  where design hierarchy can  be maintained during
-symbolic simulation.  However, the @(see acl2::SVL) system is not as capable as
+symbolic simulation.  However, the @(see SVL) system is not as capable as
 defsvtv at handling  very complex designs that might  have combinational loops.
 Therefore, we provide an alternative way to  using SVL (which was used in @(see
 Multiplier-Verification-demo-1)  and   @(see  Multiplier-Verification-demo-2)).
@@ -1196,16 +1196,16 @@ to  pass  the   \"SV\"  version  of  the  instantiated  module   name  such  as
 </code>
 
 
-<p> Step 4. Create the test vector with @(see acl2::defsvtv): </p>
+<p> Step 4. Create the test vector with @(see defsvtv): </p>
 
 <code>
 @('
-(sv::defsvtv redefined-mult1-svtv
-             :mod *redefined-mult1-sv-design*
-             :inputs '((\"IN1\" a)
-                       (\"IN2\" b))
-             :outputs
-             '((\"result\" res)))
+(defsvtv redefined-mult1-svtv
+  :mod *redefined-mult1-sv-design*
+  :inputs '((\"IN1\" a)
+            (\"IN2\" b))
+  :outputs
+  '((\"result\" res)))
 ')
 </code>
 
@@ -1216,11 +1216,11 @@ to  pass  the   \"SV\"  version  of  the  instantiated  module   name  such  as
 (defthmrp multiplier-correct-for-redefined-design
   (implies (and (integerp in1)
                 (integerp in2))
-           (equal (sv::svtv-run (redefined-mult1-svtv)
-                                `((a . ,in1)
-                                  (b . ,in2)))
-                  `((res . ,(loghead 128 (* (sign-ext in1 64)
-                                            (sign-ext in2 64))))))))
+           (equal svtv-run (redefined-mult1-svtv)
+                  `((a . ,in1)
+                    (b . ,in2)))
+           `((res . ,(loghead 128 (* (sign-ext in1 64)
+                                     (sign-ext in2 64))))))))
 ')
 </code>
 

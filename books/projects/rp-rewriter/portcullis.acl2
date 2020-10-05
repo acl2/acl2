@@ -67,6 +67,16 @@
             acl2::as
             acl2::from
 
+            acl2::rp-rewriter
+            acl2::rp
+            acl2::sv
+            acl2::svl
+            acl2::defsvtv
+            acl2::vl
+            acl2::svtv-run
+            acl2::svl-run
+            acl2::svl-flatten-design
+
 	    cmr::def-formula-checks
 	    cmr::def-formula-checks-default-evl)
           *common-lisp-symbols-from-main-lisp-package*
