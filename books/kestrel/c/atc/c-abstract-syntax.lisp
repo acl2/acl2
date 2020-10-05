@@ -184,7 +184,7 @@
    (xdoc::p
     "We do not capture the distinction between the @('u') and @('U'),
      which is not very important.
-     Also see @(tsee ciconstant-type-suffix) for a discussion about
+     Also see @(tsee iconst-tysuffix) for a discussion about
      uppercase and lowercase type suffixes."))
   ((value nat)
    (base iconst-base)
