@@ -38,7 +38,7 @@
                       (incf (gethash ',sym *agaa-ht*)))
                     (funcall ',old-sym ,@formals)))))
         (setf (symbol-function sym)
-              (symbol-function new-sym)))
+              (symbol-function new-sym))
         (setf (gethash sym *agaa-ht*) 0)))))
 
 (defun add-guards-as-assertions-fn (lst)
