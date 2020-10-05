@@ -929,6 +929,10 @@
      to mimic the @(tsee mv) return specifier notation
      for tuple (i.e. list) results, useful inside error triples.")
 
+   (xdoc::p
+    "The macro @(tsee std::define-sk) has been moved
+     from @('[books]/kestrel/utilities/') to @('[books]/std/util/').")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Licensing Changes")
