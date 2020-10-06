@@ -13,7 +13,7 @@
 (include-book "abstract-syntax")
 
 (include-book "kestrel/fty/deffixequiv-sk" :dir :system)
-(include-book "kestrel/utilities/define-sk" :dir :system)
+(include-book "std/util/define-sk" :dir :system)
 
 (local (include-book "kestrel/utilities/oset-theorems" :dir :system))
 (local (include-book "kestrel/utilities/true-list-listp-theorems" :dir :system))
