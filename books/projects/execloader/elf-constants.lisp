@@ -73,6 +73,8 @@
 (defconst *tdata*              (merge-bytes (string->bytes ".tdata")))
 (defconst *bss*                (merge-bytes (string->bytes ".bss")))
 (defconst *tbss*               (merge-bytes (string->bytes ".tbss")))
+(defconst *symtab*             (merge-bytes (string->bytes ".symtab")))
+(defconst *strtab*             (merge-bytes (string->bytes ".strtab")))
 ;; /* the ELF magic number */
 (defconst *ELFMAG*             (merge-bytes (append '(127) (string->bytes "ELF"))))
 

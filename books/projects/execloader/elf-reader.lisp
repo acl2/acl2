@@ -65,7 +65,7 @@
 (define elf-read-mem-null-term ((byte-list byte-listp)
                                 (offset natp))
   :short "Read a location at an @('offset') of a given @('byte-list')
-  and return the list of bytes until a null is encountered"
+  and return the list of bytes until a null is encountered (null not included)"
   :measure (nfix (- (len byte-list) offset))
   :guard (<= offset (len byte-list))
   :returns (bl byte-listp :hyp (and (natp offset) (byte-listp byte-list)))
@@ -73,10 +73,12 @@
       (if (< offset (len byte-list))
           (let* ((val (car (nthcdr offset byte-list))))
             (if (equal 0 val)
-                (cons 0 nil)
+                ;; (cons 0 nil)
+                nil
               (cons val
                     (elf-read-mem-null-term byte-list (1+ offset)))))
-        (cons 0 nil))
+        ;; (cons 0 nil)
+        nil)
     nil))
 
 (define elf-read-string-null-term ((byte-list byte-listp)
@@ -241,8 +243,7 @@
  table, located at the offset indicated by the @('sh_offset') value of
  the @('shstrndx')th section"
   :returns (new-sections elf-section-headers-p
-                         :hyp (and (elf-section-headers-p section-headers)
-                                   (elf-section-headers-p acc)))
+                         :hyp (elf-section-headers-p acc))
   (if (atom sections)
       acc
     (b* ((section-header (car sections))
@@ -264,11 +265,79 @@
    (implies (natp n)
             (byte-listp (make-list-ac n 0 nil)))))
 
+(define get-string-section-data ((string-section-index natp)
+                                 (sections elf-section-headers-p)
+                                 (file-byte-list byte-listp))
+  :returns (bl byte-listp :hyp (byte-listp file-byte-list))
+  (b* ((sections-from-string-section-index (nthcdr string-section-index sections))
+       ((unless (and (consp sections-from-string-section-index)
+                     (elf-section-headers-p sections-from-string-section-index)))
+        (prog2$
+         (er hard? 'elf-file-read "String-section-index header not found!~%")
+         nil))
+       (header (car sections-from-string-section-index))
+       ((elf-section-header header))
+       (string-section-header-bytes (take header.size (nthcdr header.offset file-byte-list)))
+       ((unless (byte-listp string-section-header-bytes))
+        (prog2$
+         (er hard? 'elf-file-read "Not enough bytes to read string-section-header data!")
+         nil)))
+    string-section-header-bytes))
+
+(define get-named-section-headers ((elf-header elf-header-p)
+                                   (file-byte-list byte-listp))
+  :returns (new-sections elf-section-headers-p)
+  (b* (((elf-header elf-header))
+       (section-header-offset elf-header.shoff)
+       (section-header-bytes (nthcdr section-header-offset file-byte-list))
+       ((unless (byte-listp section-header-bytes))
+        (prog2$
+         (raise "Not enough bytes to read ELF section headers!")
+         nil))
+       (nsections elf-header.shnum)
+       (w (if (equal elf-header.class 1) 4 8))
+       (string-section-index elf-header.shstrndx)
+       ((when (not (or (equal nsections string-section-index)
+                       (> nsections string-section-index))))
+        (prog2$
+         (raise "ELF Binary: Mismatch between number of sections and string-section-index. ~
+ Strings could not be read. ~%")
+         nil))
+       (headers (read-section-headers nsections w section-header-bytes nil))
+       (string-section-data (get-string-section-data string-section-index headers file-byte-list))
+       (updated-headers (read-section-names headers string-section-data nil)))
+    updated-headers))
+
+(define is-elf-content-p ((contents byte-listp)
+                          state)
+  :short "Check if @('contents') represent a valid ELF binary (in bytes,
+  LSB-first); if so, return the ELF header"
+  :returns (mv (is-elf-file booleanp :rule-classes :type-prescription)
+               (header elf-header-p)
+               state)
+  (b* (((unless (<= 64 (len contents)))
+        (prog2$
+         (raise "Error reading ELF contents!")
+         (mv nil (make-elf-header) state)))
+       (bytes contents)
+       (file-header (take 64 bytes))
+       ((elf-header header) (read-elf-header file-header))
+       (magic (merge-bytes header.magic))
+       (class header.class)
+       ;; ELF32 when class=1
+       ;; ELF64 when class=2
+       ((when (or (not (equal magic *ELFMAG*))
+                  (not (member class '(1 2)))))
+        (prog2$
+         (raise "Error:  Invalid ELF header! ~% Header: ~x0 ~%" header)
+         (mv nil (make-elf-header) state))))
+    (mv t header state)))
+
 (define set-elf-stobj-fields ((sections elf-section-headers-p)
                               (file-bytes byte-listp)
                               elf)
-  :short "Populate ELF stobj with segment bytes"
-  :returns (new-elf elfp :hyp (elfp elf))
+  :short "Populate ELF stobj with bytes corresponding to each section"
+  :returns (new-elf good-elf-p :hyp (good-elf-p elf))
   :prepwork ((local (in-theory (e/d ()
                                     (acl2::make-list-ac-removal
                                      make-list-ac
@@ -429,6 +498,20 @@
                  (elf (!tdata-bytes bytes elf)))
               elf))
 
+           ((equal name-bytes *symtab*)
+            (b* ((elf (!symtab-addr addr elf))
+                 (elf (!symtab-offset offset elf))
+                 (elf (!symtab-size size elf))
+                 (elf (!symtab-bytes bytes elf)))
+              elf))
+
+           ((equal name-bytes *strtab*)
+            (b* ((elf (!strtab-addr addr elf))
+                 (elf (!strtab-offset offset elf))
+                 (elf (!strtab-size size elf))
+                 (elf (!strtab-bytes bytes elf)))
+              elf))
+
            ;; ((equal name-bytes *tbss*)
            ;;  (b* ((bytes (make-list size :initial-element 0))
            ;;       (elf (!tbss-addr addr elf))
@@ -451,76 +534,24 @@
 
       (set-elf-stobj-fields (cdr sections) file-bytes elf))))
 
-(define get-string-section-data ((string-section-index natp)
-                                 (sections elf-section-headers-p)
-                                 (file-byte-list byte-listp))
-  :returns (bl byte-listp :hyp (byte-listp file-byte-list))
-  (b* ((sections-from-string-section-index (nthcdr string-section-index sections))
-       ((unless (and (consp sections-from-string-section-index)
-                     (elf-section-headers-p sections-from-string-section-index)))
-        (prog2$
-         (er hard? 'elf-file-read "String-section-index header not found!~%")
-         nil))
-       (header (car sections-from-string-section-index))
-       ((elf-section-header header))
-       (string-section-header-bytes (take header.size (nthcdr header.offset file-byte-list)))
-       ((unless (byte-listp string-section-header-bytes))
-        (prog2$
-         (er hard? 'elf-file-read "Not enough bytes to read string-section-header data!")
-         nil)))
-    string-section-header-bytes))
-
-(define load-elf-stobj ((sections elf-section-headers-p)
-                        (string-section-data byte-listp)
-                        (file-byte-list byte-listp)
-                        elf)
-  :returns (mv
-            (new-sections elf-section-headers-p
-                          :hyp (elf-section-headers-p sections))
-            (new-elf elfp :hyp (elfp elf)
-                     :hints (("Goal" :in-theory (e/d () (elfp))))))
-  (b* ((new-sections (read-section-names sections string-section-data nil))
-       (elf (set-elf-stobj-fields new-sections file-byte-list elf)))
-    (mv new-sections elf)))
-
-(define is-elf-content-p ((contents byte-listp)
-                          state)
-  :short "Check if @('contents') represent a valid ELF binary (in bytes,
-  LSB-first); if so, return the ELF header"
-  :returns (mv (is-elf-file booleanp :rule-classes :type-prescription)
-               (header elf-header-p)
-               state)
-  (b* (((unless (<= 64 (len contents)))
-        (prog2$
-         (raise "Error reading ELF contents!")
-         (mv nil (make-elf-header) state)))
-       (bytes contents)
-       (file-header (take 64 bytes))
-       ((elf-header header) (read-elf-header file-header))
-       (magic (merge-bytes header.magic))
-       (class header.class)
-       ;; ELF32 when class=1
-       ;; ELF64 when class=2
-       ((when (or (not (equal magic *ELFMAG*))
-                  (not (member class '(1 2)))))
-        (prog2$
-         (raise "Error:  Invalid ELF header! ~% Header: ~x0 ~%" header)
-         (mv nil (make-elf-header) state))))
-    (mv t header state)))
-
 (define populate-elf-contents ((contents byte-listp)
                                elf state)
   :short "Initialize the ELF stobj with @('contents') parsed as an ELF binary"
+  :returns
+  (mv (elf-header elf-header-p)
+      (elf-section-headers elf-section-headers-p)
+      (new-elf good-elf-p :hyp (good-elf-p elf))
+      state)
   :guard-hints (("Goal" :in-theory (e/d ()
                                         (acl2::make-list-ac-removal
                                          make-list-ac
                                          nth len unsigned-byte-p
-                                         elfp state-p))))
+                                         good-elf-p state-p))))  
   (b* (((mv okp header state)
         (is-elf-content-p contents state))
        ((unless okp)
         (prog2$ (raise "Bad ELF contents!")
-                (mv nil elf state)))
+                (mv (make-elf-header) nil elf state)))
        (file-byte-list contents)
        (elf-file-size (len file-byte-list))
        (elf (!elf-file-size elf-file-size elf))
@@ -537,7 +568,7 @@
        ((unless (byte-listp segment-headers))
         (prog2$
          (er hard? 'elf-file-read "Not enough bytes to read ELF segment headers!")
-         (mv nil elf state)))
+         (mv (make-elf-header) nil elf state)))
        (nsegments header.phnum)
        ;; TODO: What do we do with these segments?
        (?segments (if (equal class 1)
@@ -545,57 +576,129 @@
                     (read-segment-headers-64 nsegments segment-headers nil)))
 
        ;; Retrieve the data for the section header
-       (section-header-offset header.shoff)
-       (section-headers (nthcdr section-header-offset file-byte-list))
-       ((unless (byte-listp section-headers))
-        (prog2$
-         (er hard? 'elf-file-read "Not enough bytes to read ELF section headers!")
-         (mv nil elf state)))
-       (nsections header.shnum)
-       (elf (!sections-num nsections elf))
-       (w (if (equal class 1) 4 8))
-       (string-section-index header.shstrndx)
-       ((when (not (or (equal nsections string-section-index)
-                       (> nsections string-section-index))))
-        (prog2$
-         (er hard? 'elf-file-read "ELF Binary: Mismatch between number of sections and string-section-index. ~
- Strings could not be read. ~%")
-         (mv nil elf state)))
-       (sections (read-section-headers nsections w section-headers nil))
-       (string-section-data (get-string-section-data string-section-index sections file-byte-list))
-       ((mv new-sections elf) (load-elf-stobj sections string-section-data file-byte-list elf)))
-    (mv (list (list :HEADER header)
-              (list :SECTIONS new-sections))
-        elf state))
-
-  ///
-
-  (local
-   (defthm elfp-of-relevant-updaters
-     (implies (elfp elf)
-              (and (elfp (!elf :elf-file-size nil v elf))
-                   (elfp (!elf :elf-header-size nil v elf))
-                   (elfp (!elf :sections-num nil v elf))))))
-
-  (defthm elfp-of-mv-nth-1-populate-elf-contents
-    (implies (elfp elf)
-             (elfp (mv-nth 1 (populate-elf-contents contents elf state))))
-    :hints (("Goal" :in-theory (e/d () (elfp))))))
+       (section-headers (get-named-section-headers header file-byte-list))
+       (elf (!sections-num header.shnum elf))
+       (elf (set-elf-stobj-fields section-headers file-byte-list elf)))
+    (mv header section-headers elf state)))
 
 (define populate-elf ((filename stringp)
                       elf
                       state)
-  :short "Initialize the ELF stobj with @('contents') of ELF binary @('filename')"
-  :returns (mv alst
-               (new-elf elfp :hyp (elfp elf)
-                        :hints (("Goal" :in-theory (e/d () (elfp)))))
+  :short "Initialize the ELF stobj with @('contents') of ELF binary @('filename')"  
+  :returns (mv (elf-header elf-header-p)
+               (elf-section-headers elf-section-headers-p)
+               (new-elf good-elf-p :hyp (good-elf-p elf))
                state)
   (b* (((mv contents state)
         (acl2::read-file-bytes filename state))
        ((unless (byte-listp contents))
         (prog2$
          (raise "Error reading file ~s0!" filename)
-         (mv nil elf state))))
+         (mv (make-elf-header) nil elf state))))
     (populate-elf-contents contents elf state)))
 
-;;======================================================================
+;; ----------------------------------------------------------------------
+
+(define get-section-header
+  ((name stringp "Name of a section header; e.g., \".symtab\"")
+   (section-headers elf-section-headers-p))
+  :short "Get the section header from @('section-headers') that corresponds to section @('name'), if it
+  exists"
+  :returns (header elf-section-header-p :hyp (elf-section-headers-p section-headers))
+  (b* (((when (atom section-headers))
+        (prog2$
+         (raise "Section ~s0 data not present!" name)
+         (make-elf-section-header)))
+       (header (car section-headers))
+       ((elf-section-header header))
+       ((unless (equal header.name-str name))
+        (get-section-header name (cdr section-headers))))
+    header))
+
+(define parse-symtab-entries ((elf64 booleanp)
+                              (entrysize natp)
+                              (symbytes byte-listp)
+                              (strbytes byte-listp))
+  :measure (len symbytes)
+  :returns (elf-entries)
+  (b* (((unless (and (< 0 (len symbytes)) (< 0 (nfix entrysize))))
+        nil)
+       ((mv entry rest-symbytes) (merge-first-split-bytes entrysize symbytes))
+       ((unless (if elf64 (elf64_sym-p entry) (elf32_sym-p entry)))
+        (prog2$
+         (raise "Inconsistency with entrysize and symbytes?")
+         nil))
+       (entry-name (if elf64 (elf64_sym->name entry) (elf32_sym->name entry)))
+       ;; (- (cw "~% ~x0 ~%" (if elf64 (elf64_sym-debug entry) (elf32_sym-debug entry))))
+       ;; entry-name is the offset in strbytes where the symbol name is stored.
+       (name-str (bytes->string (take-till-zero (nthcdr entry-name strbytes)))))
+    (cons (if elf64
+              (make-elf64_sym-info
+               :name-str name-str
+               :entry entry)
+            (make-elf32_sym-info
+             :name-str name-str
+             :entry entry))
+          (parse-symtab-entries elf64 entrysize rest-symbytes strbytes)))
+  ///
+
+  (defret elf64_sym-info-list-p-of-<fn>
+    (implies elf64
+             (elf64_sym-info-list-p elf-entries)))
+
+  (defret elf32_sym-info-list-p-of-<fn>
+    (implies (not elf64)
+             (elf32_sym-info-list-p elf-entries))))
+
+(define get-symtab-entries ((elf-header elf-header-p)
+                            (section-headers elf-section-headers-p)
+                            elf)
+  :short "Get all symbol table entries, with names mapped to entries in the string table"
+  :returns (elf-entries)
+  (b* ((symtab-header (get-section-header ".symtab" section-headers))
+       ((elf-section-header symtab-header))
+       (symtab-bytes (@symtab-bytes elf))
+       (strtab-bytes (@strtab-bytes elf))
+       (elf64?
+        ;; ELF32 when class=1
+        ;; ELF64 when class=2
+        (equal (elf-header->class elf-header) 2))
+       (symtab-entries
+        (parse-symtab-entries elf64? symtab-header.entsize symtab-bytes strtab-bytes)))
+    symtab-entries)
+  ///
+
+  (defret elf32_sym-info-list-p-of-<fn>
+    (implies (not (equal (elf-header->class elf-header) 2))
+             (elf32_sym-info-list-p elf-entries)))
+
+  (defret elf64_sym-info-list-p-of-<fn>
+    (implies (equal (elf-header->class elf-header) 2)
+             (elf64_sym-info-list-p elf-entries))))
+
+(define find-label-address-from-elf-symtab-info ((elf64 booleanp)
+                                                 (label stringp)
+                                                 info)
+  :guard (if elf64 (elf64_sym-info-list-p info) (elf32_sym-info-list-p info))
+  :returns (addr acl2::maybe-natp :hyp :guard)               
+  (b* (((when (atom info)) nil)
+       (i (car info))
+       (name (if elf64 (elf64_sym-info->name-str i) (elf32_sym-info->name-str i)))
+       ((if (equal name label))
+        (if elf64
+            (elf64_sym->value (elf64_sym-info->entry i))
+          (elf32_sym->value (elf32_sym-info->entry i)))))
+    (find-label-address-from-elf-symtab-info elf64 label (cdr info))))
+
+(define get-label-address ((label stringp)
+                           (elf-header elf-header-p)
+                           (section-headers elf-section-headers-p)
+                           elf)
+  :short "Return the address of @('label'), if present, by searching in the sym/str table information"
+  :returns (addr acl2::maybe-natp :hyp :guard)
+  (b* ((entries (get-symtab-entries elf-header section-headers elf))
+       (elf64 (equal (elf-header->class elf-header) 2))
+       (addr (find-label-address-from-elf-symtab-info elf64 label entries)))
+    addr))
+
+;; ----------------------------------------------------------------------

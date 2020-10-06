@@ -151,5 +151,11 @@
       :accessor-template (@ x)
       :updater-template (! x))))
 
+(defsection good-mach-o-p
+  :short "The preferred recognizer for the @('mach-o') stobj"
+  (defun good-mach-o-p (mach-o)
+    (declare (xargs :stobjs mach-o)
+             (ignore mach-o))
+    t))
 
 ;; ==================================================================-

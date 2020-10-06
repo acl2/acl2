@@ -122,7 +122,7 @@
 
   :returns (mv new-acc
                (file-bytes byte-listp :hyp (byte-listp rest-of-the-file))
-               (new-mach-o mach-op :hyp (mach-op mach-o)))
+               (new-mach-o good-mach-o-p :hyp (good-mach-o-p mach-o)))
 
   (if (zp nsects)
       (mv (reverse acc) rest-of-the-file mach-o)
@@ -260,8 +260,8 @@
   :returns
   (mv new-acc
       (file-bytes byte-listp :hyp (byte-listp rest-of-the-file))
-      (new-mach-o mach-op :hyp (mach-op mach-o)
-                  :hints (("Goal" :in-theory (e/d () (mach-op))))))
+      (new-mach-o good-mach-o-p :hyp (good-mach-o-p mach-o)
+                  :hints (("Goal" :in-theory (e/d () (good-mach-o-p))))))
 
   (if (zp ncmds)
       (mv (reverse acc) rest-of-the-file mach-o)
@@ -710,43 +710,34 @@
 ;; Fill the sections of the __TEXT segment into mach-o stobj:
 
 (local
- (defthm natp-implies-acl2-numberp
-   (implies (natp x) (acl2-numberp x))
-   :rule-classes :forward-chaining))
-
-(local
  (defthm mach-o-lemma-1
-   (implies (mach-op mach-o)
-            (natp (@mach-o :text-text-section-size nil mach-o)))
+   (implies (good-mach-o-p mach-o)
+            (natp (@mach-o :text-text-section-size i mach-o)))
    :hints (("Goal"
             :use ((:instance elem-p-of-@mach-o-text-text-section-size
-                             (i nil)
                              (mach-o$a mach-o)))
             :in-theory (e/d (unsigned-byte-p)
                             (elem-p-of-@mach-o-text-text-section-size
-                             mach-op))))
+                             good-mach-o-p))))
    :rule-classes :type-prescription))
 (local
  (defthm mach-o-lemma-2
-   (implies (mach-op mach-o)
-            (natp (@mach-o :text-text-section-offset nil mach-o)))
+   (implies (good-mach-o-p mach-o)
+            (natp (@mach-o :text-text-section-offset i mach-o)))
    :hints (("Goal"
-            :use ((:instance elem-p-of-@mach-o-text-text-section-offset
-                             (i nil)
+            :use ((:instance elem-p-of-@mach-o-text-text-section-offset                             
                              (mach-o$a mach-o)))
             :in-theory (e/d (unsigned-byte-p)
                             (elem-p-of-@mach-o-text-text-section-offset
-                             mach-op))))
+                             good-mach-o-p))))
    :rule-classes :type-prescription))
 
 (define fill-TEXT-text-section-bytes ((h-size :type (unsigned-byte 64))
                                       (lc-size :type (unsigned-byte 64))
                                       (remaining-file byte-listp)
                                       mach-o state)
-  :guard-hints (("Goal" :in-theory (e/d () (mach-op))))
-
   :returns (mv err
-               (new-mach-o mach-op :hyp (mach-op mach-o))
+               (new-mach-o good-mach-o-p :hyp (good-mach-o-p mach-o))
                (new-state acl2::state-p :hyp (acl2::state-p state)))
   (b* ((size (@TEXT-text-section-size mach-o))
        (offset (@TEXT-text-section-offset mach-o))
@@ -765,7 +756,7 @@
 
 (local
  (defthm mach-o-lemma-3
-   (implies (mach-op mach-o)
+   (implies (good-mach-o-p mach-o)
             (natp (@mach-o :text-cstring-section-size nil mach-o)))
    :hints (("Goal"
             :use ((:instance elem-p-of-@mach-o-text-cstring-section-size
@@ -773,11 +764,11 @@
                              (mach-o$a mach-o)))
             :in-theory (e/d (unsigned-byte-p)
                             (elem-p-of-@mach-o-text-cstring-section-size
-                             mach-op))))
+                             good-mach-o-p))))
    :rule-classes :type-prescription))
 (local
  (defthm mach-o-lemma-4
-   (implies (mach-op mach-o)
+   (implies (good-mach-o-p mach-o)
             (natp (@mach-o :text-cstring-section-offset nil mach-o)))
    :hints (("Goal"
             :use ((:instance elem-p-of-@mach-o-text-cstring-section-offset
@@ -785,17 +776,17 @@
                              (mach-o$a mach-o)))
             :in-theory (e/d (unsigned-byte-p)
                             (elem-p-of-@mach-o-text-cstring-section-offset
-                             mach-op))))
+                             good-mach-o-p))))
    :rule-classes :type-prescription))
 
 (define fill-TEXT-cstring-section-bytes ((h-size :type (unsigned-byte 64))
                                          (lc-size :type (unsigned-byte 64))
                                          (remaining-file byte-listp)
                                          mach-o state)
-  :guard-hints (("Goal" :in-theory (e/d () (mach-op))))
+  :guard-hints (("Goal" :in-theory (e/d () (good-mach-o-p))))
 
   :returns (mv err
-               (new-mach-o mach-op :hyp (mach-op mach-o))
+               (new-mach-o good-mach-o-p :hyp (good-mach-o-p mach-o))
                (new-state acl2::state-p :hyp (acl2::state-p state)))
   (b* ((size (@TEXT-cstring-section-size mach-o))
        (offset (@TEXT-cstring-section-offset mach-o))
@@ -816,7 +807,7 @@
 
 (local
  (defthm mach-o-lemma-5
-   (implies (mach-op mach-o)
+   (implies (good-mach-o-p mach-o)
             (natp (@mach-o :text-const-section-size nil mach-o)))
    :hints (("Goal"
             :use ((:instance elem-p-of-@mach-o-text-const-section-size
@@ -824,11 +815,11 @@
                              (mach-o$a mach-o)))
             :in-theory (e/d (unsigned-byte-p)
                             (elem-p-of-@mach-o-text-const-section-size
-                             mach-op))))
+                             good-mach-o-p))))
    :rule-classes :type-prescription))
 (local
  (defthm mach-o-lemma-6
-   (implies (mach-op mach-o)
+   (implies (good-mach-o-p mach-o)
             (natp (@mach-o :text-const-section-offset nil mach-o)))
    :hints (("Goal"
             :use ((:instance elem-p-of-@mach-o-text-const-section-offset
@@ -836,17 +827,17 @@
                              (mach-o$a mach-o)))
             :in-theory (e/d (unsigned-byte-p)
                             (elem-p-of-@mach-o-text-const-section-offset
-                             mach-op))))
+                             good-mach-o-p))))
    :rule-classes :type-prescription))
 
 (define fill-TEXT-const-section-bytes ((h-size :type (unsigned-byte 64))
                                        (lc-size :type (unsigned-byte 64))
                                        (remaining-file byte-listp)
                                        mach-o state)
-  :guard-hints (("Goal" :in-theory (e/d () (mach-op))))
+  :guard-hints (("Goal" :in-theory (e/d () (good-mach-o-p))))
 
   :returns (mv err
-               (new-mach-o mach-op :hyp (mach-op mach-o))
+               (new-mach-o good-mach-o-p :hyp (good-mach-o-p mach-o))
                (new-state acl2::state-p :hyp (acl2::state-p state)))
 
   (b* ((size (@TEXT-const-section-size mach-o))
@@ -871,10 +862,10 @@
                                  mach-o state)
   :short "Fill the sections of the @('__TEXT') segment into @('mach-o') stobj"
 
-  :guard-hints (("Goal" :in-theory (e/d () (mach-op))))
+  :guard-hints (("Goal" :in-theory (e/d () (good-mach-o-p))))
   :returns (mv err
-               (new-mach-o mach-op :hyp (mach-op mach-o)
-                           :hints (("Goal" :in-theory (e/d () (mach-op)))))
+               (new-mach-o good-mach-o-p :hyp (good-mach-o-p mach-o)
+                           :hints (("Goal" :in-theory (e/d () (good-mach-o-p)))))
                (new-state acl2::state-p :hyp (acl2::state-p state)))
   (b* (
        ;; text section
@@ -905,7 +896,7 @@
 
 (local
  (defthm mach-o-lemma-7
-   (implies (mach-op mach-o)
+   (implies (good-mach-o-p mach-o)
             (natp (@mach-o :data-data-section-size nil mach-o)))
    :hints (("Goal"
             :use ((:instance elem-p-of-@mach-o-data-data-section-size
@@ -913,11 +904,11 @@
                              (mach-o$a mach-o)))
             :in-theory (e/d (unsigned-byte-p)
                             (elem-p-of-@mach-o-data-data-section-size
-                             mach-op))))
+                             good-mach-o-p))))
    :rule-classes :type-prescription))
 (local
  (defthm mach-o-lemma-8
-   (implies (mach-op mach-o)
+   (implies (good-mach-o-p mach-o)
             (natp (@mach-o :data-data-section-offset nil mach-o)))
    :hints (("Goal"
             :use ((:instance elem-p-of-@mach-o-data-data-section-offset
@@ -925,17 +916,17 @@
                              (mach-o$a mach-o)))
             :in-theory (e/d (unsigned-byte-p)
                             (elem-p-of-@mach-o-data-data-section-offset
-                             mach-op))))
+                             good-mach-o-p))))
    :rule-classes :type-prescription))
 
 (define fill-DATA-data-section-bytes ((h-size  :type (unsigned-byte 64))
                                       (lc-size :type (unsigned-byte 64))
                                       (remaining-file byte-listp)
                                       mach-o state)
-  :guard-hints (("Goal" :in-theory (e/d () (mach-op))))
+  :guard-hints (("Goal" :in-theory (e/d () (good-mach-o-p))))
 
   :returns (mv err
-               (new-mach-o mach-op :hyp (mach-op mach-o))
+               (new-mach-o good-mach-o-p :hyp (good-mach-o-p mach-o))
                (new-state acl2::state-p :hyp (acl2::state-p state)))
 
   (b* ((size (@DATA-data-section-size mach-o))
@@ -956,7 +947,7 @@
 
 (local
  (defthm mach-o-lemma-9
-   (implies (mach-op mach-o)
+   (implies (good-mach-o-p mach-o)
             (natp (@mach-o :data-dyld-section-size nil mach-o)))
    :hints (("Goal"
             :use ((:instance elem-p-of-@mach-o-data-dyld-section-size
@@ -964,11 +955,11 @@
                              (mach-o$a mach-o)))
             :in-theory (e/d (unsigned-byte-p)
                             (elem-p-of-@mach-o-data-dyld-section-size
-                             mach-op))))
+                             good-mach-o-p))))
    :rule-classes :type-prescription))
 (local
  (defthm mach-o-lemma-10
-   (implies (mach-op mach-o)
+   (implies (good-mach-o-p mach-o)
             (natp (@mach-o :data-dyld-section-offset nil mach-o)))
    :hints (("Goal"
             :use ((:instance elem-p-of-@mach-o-data-dyld-section-offset
@@ -976,7 +967,7 @@
                              (mach-o$a mach-o)))
             :in-theory (e/d (unsigned-byte-p)
                             (elem-p-of-@mach-o-data-dyld-section-offset
-                             mach-op))))
+                             good-mach-o-p))))
    :rule-classes :type-prescription))
 
 
@@ -984,10 +975,10 @@
                                       (lc-size :type (unsigned-byte 64))
                                       (remaining-file byte-listp)
                                       mach-o state)
-  :guard-hints (("Goal" :in-theory (e/d () (mach-op))))
+  :guard-hints (("Goal" :in-theory (e/d () (good-mach-o-p))))
 
   :returns (mv err
-               (new-mach-o mach-op :hyp (mach-op mach-o))
+               (new-mach-o good-mach-o-p :hyp (good-mach-o-p mach-o))
                (new-state acl2::state-p :hyp (acl2::state-p state)))
 
   (b* ((size (@DATA-dyld-section-size mach-o))
@@ -1008,7 +999,7 @@
 
 (local
  (defthm mach-o-lemma-11
-   (implies (mach-op mach-o)
+   (implies (good-mach-o-p mach-o)
             (natp (@mach-o :data-const-section-size nil mach-o)))
    :hints (("Goal"
             :use ((:instance elem-p-of-@mach-o-data-const-section-size
@@ -1016,12 +1007,12 @@
                              (mach-o$a mach-o)))
             :in-theory (e/d (unsigned-byte-p)
                             (elem-p-of-@mach-o-data-const-section-size
-                             mach-op))))
+                             good-mach-o-p))))
    :rule-classes :type-prescription))
 
 (local
  (defthm mach-o-lemma-12
-   (implies (mach-op mach-o)
+   (implies (good-mach-o-p mach-o)
             (natp (@mach-o :data-const-section-offset nil mach-o)))
    :hints (("Goal"
             :use ((:instance elem-p-of-@mach-o-data-const-section-offset
@@ -1029,17 +1020,17 @@
                              (mach-o$a mach-o)))
             :in-theory (e/d (unsigned-byte-p)
                             (elem-p-of-@mach-o-data-const-section-offset
-                             mach-op))))
+                             good-mach-o-p))))
    :rule-classes :type-prescription))
 
 (define fill-DATA-const-section-bytes ((h-size :type (unsigned-byte 64))
                                        (lc-size :type (unsigned-byte 64))
                                        (remaining-file byte-listp)
                                        mach-o state)
-  :guard-hints (("Goal" :in-theory (e/d () (mach-op))))
+  :guard-hints (("Goal" :in-theory (e/d () (good-mach-o-p))))
 
   :returns (mv err
-               (new-mach-o mach-op :hyp (mach-op mach-o))
+               (new-mach-o good-mach-o-p :hyp (good-mach-o-p mach-o))
                (new-state acl2::state-p :hyp (acl2::state-p state)))
 
   (b* ((size (@DATA-const-section-size mach-o))
@@ -1060,7 +1051,7 @@
 
 (local
  (defthm mach-o-lemma-13
-   (implies (mach-op mach-o)
+   (implies (good-mach-o-p mach-o)
             (natp (@mach-o :data-bss-section-size nil mach-o)))
    :hints (("Goal"
             :use ((:instance elem-p-of-@mach-o-data-bss-section-size
@@ -1068,11 +1059,11 @@
                              (mach-o$a mach-o)))
             :in-theory (e/d (unsigned-byte-p)
                             (elem-p-of-@mach-o-data-bss-section-size
-                             mach-op))))
+                             good-mach-o-p))))
    :rule-classes :type-prescription))
 (local
  (defthm mach-o-lemma-14
-   (implies (mach-op mach-o)
+   (implies (good-mach-o-p mach-o)
             (natp (@mach-o :data-bss-section-offset nil mach-o)))
    :hints (("Goal"
             :use ((:instance elem-p-of-@mach-o-data-bss-section-offset
@@ -1080,7 +1071,7 @@
                              (mach-o$a mach-o)))
             :in-theory (e/d (unsigned-byte-p)
                             (elem-p-of-@mach-o-data-bss-section-offset
-                             mach-op))))
+                             good-mach-o-p))))
    :rule-classes :type-prescription))
 
 (define fill-DATA-bss-section-bytes ((h-size :type (unsigned-byte 64))
@@ -1088,10 +1079,10 @@
                                      (remaining-file byte-listp)
                                      mach-o state)
 
-  :guard-hints (("Goal" :in-theory (e/d () (mach-op))))
+  :guard-hints (("Goal" :in-theory (e/d () (good-mach-o-p))))
 
   :returns (mv err
-               (new-mach-o mach-op :hyp (mach-op mach-o))
+               (new-mach-o good-mach-o-p :hyp (good-mach-o-p mach-o))
                (new-state acl2::state-p :hyp (acl2::state-p state)))
   (b* ((size (@DATA-bss-section-size mach-o))
        (offset (@DATA-bss-section-offset mach-o))
@@ -1111,7 +1102,7 @@
 
 (local
  (defthm mach-o-lemma-15
-   (implies (mach-op mach-o)
+   (implies (good-mach-o-p mach-o)
             (natp (@mach-o :data-common-section-size nil mach-o)))
    :hints (("Goal"
             :use ((:instance elem-p-of-@mach-o-data-common-section-size
@@ -1119,11 +1110,11 @@
                              (mach-o$a mach-o)))
             :in-theory (e/d (unsigned-byte-p)
                             (elem-p-of-@mach-o-data-common-section-size
-                             mach-op))))
+                             good-mach-o-p))))
    :rule-classes :type-prescription))
 (local
  (defthm mach-o-lemma-16
-   (implies (mach-op mach-o)
+   (implies (good-mach-o-p mach-o)
             (natp (@mach-o :data-common-section-offset nil mach-o)))
    :hints (("Goal"
             :use ((:instance elem-p-of-@mach-o-data-common-section-offset
@@ -1131,17 +1122,17 @@
                              (mach-o$a mach-o)))
             :in-theory (e/d (unsigned-byte-p)
                             (elem-p-of-@mach-o-data-common-section-offset
-                             mach-op))))
+                             good-mach-o-p))))
    :rule-classes :type-prescription))
 
 (define fill-DATA-common-section-bytes ((h-size :type (unsigned-byte 64))
                                         (lc-size :type (unsigned-byte 64))
                                         (remaining-file byte-listp)
                                         mach-o state)
-  :guard-hints (("Goal" :in-theory (e/d () (mach-op))))
+  :guard-hints (("Goal" :in-theory (e/d () (good-mach-o-p))))
 
   :returns (mv err
-               (new-mach-o mach-op :hyp (mach-op mach-o))
+               (new-mach-o good-mach-o-p :hyp (good-mach-o-p mach-o))
                (new-state acl2::state-p :hyp (acl2::state-p state)))
 
   (b* ((size (@DATA-common-section-size mach-o))
@@ -1165,11 +1156,11 @@
                                  (remaining-file byte-listp)
                                  mach-o state)
   :short "Fill the sections of the @('__DATA') segment into @('mach-o')"
-  :guard-hints (("Goal" :in-theory (e/d () (mach-op))))
+  :guard-hints (("Goal" :in-theory (e/d () (good-mach-o-p))))
 
   :returns (mv err
-               (new-mach-o mach-op :hyp (mach-op mach-o)
-                           :hints (("Goal" :in-theory (e/d () (mach-op)))))
+               (new-mach-o good-mach-o-p :hyp (good-mach-o-p mach-o)
+                           :hints (("Goal" :in-theory (e/d () (good-mach-o-p)))))
                (new-state acl2::state-p :hyp (acl2::state-p state)))
   (b* (
        ;; data section:
@@ -1217,10 +1208,10 @@
 
 (local
  (defthm mach-o-lemma-17
-   (implies (mach-op mach-o)
-            (and (mach-op (!mach-o :mach-o-file-size nil x mach-o))
-                 (mach-op (!mach-o :load-cmds-size nil x mach-o))
-                 (mach-op (!mach-o :mach-o-header-size nil x mach-o))))))
+   (implies (good-mach-o-p mach-o)
+            (and (good-mach-o-p (!mach-o :mach-o-file-size nil x mach-o))
+                 (good-mach-o-p (!mach-o :load-cmds-size nil x mach-o))
+                 (good-mach-o-p (!mach-o :mach-o-header-size nil x mach-o))))))
 
 (define populate-mach-o-contents ((file-byte-list byte-listp)
                                   mach-o state)
@@ -1231,10 +1222,10 @@
                       (byte-listp
                        unsigned-byte-p
                        nfix fix
-                       not natp mach-op))))
+                       not natp good-mach-o-p))))
   :returns (mv err
-               (new-mach-o mach-op :hyp (mach-op mach-o)
-                           :hints (("Goal" :in-theory (e/d () (mach-op)))))
+               (new-mach-o good-mach-o-p :hyp (good-mach-o-p mach-o)
+                           :hints (("Goal" :in-theory (e/d () (good-mach-o-p)))))
                (new-state acl2::state-p :hyp (acl2::state-p state)))
 
   (b* ((file-size (len file-byte-list))
@@ -1291,8 +1282,8 @@
                          state)
   :short "Initialize the MACH-O stobj with contents of MACH-O binary @('filename')"
   :returns (mv alst
-               (new-mach-o mach-op :hyp (mach-op mach-o)
-                           :hints (("Goal" :in-theory (e/d () (mach-op)))))
+               (new-mach-o good-mach-o-p :hyp (good-mach-o-p mach-o)
+                           :hints (("Goal" :in-theory (e/d () (good-mach-o-p)))))
                state)
   (b* (((mv contents state)
         (acl2::read-file-bytes filename state))
