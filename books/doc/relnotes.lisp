@@ -265,36 +265,6 @@
 
    (xdoc::p
     "A new transformation has been added:
-     @(tsee apt::divconq), the `divide-and-conquer transformation'.
-     This is a start towards a class of transformations
-     to apply algorithm schemas to non-executable specifications.
-     Given a functional specification consisting of an input/output relation
-     (e.g. consisting of a precondition and postcondition),
-     this transformation partially determines the solution
-     as a recursive function that follows a divide-and-conquer schema
-     (i.e. decompose the problem,
-     solve the sub-problems,
-     and compose the sub-solutions to obtain a solution).
-     Currently the schema is limited to list fold,
-     i.e. the decomposition is @(tsee cdr)
-     (i.e. the same recursive structure of many list operations,
-     such as @(tsee len));
-     support for additional schemas is planned.
-     The partial determination of the solution via the schema
-     amounts to decomposing the initial specification
-     into sub-specifications
-     that can be recursively subjected to APT transformations.
-     This divide-and-conquer transformation is currently realized
-     using " (xdoc::seetopic "soft::soft" "SOFT") " to represent
-     specifications and algorithm schemas,
-     with specifications as second-order functions
-     and refinement as backward implication,
-     as described in the ACL2-2015 Workshop paper on SOFT.
-     In the future, this transformation may be extended to represent
-     specifications and algorithm schemas via the built-in @(tsee apply$).")
-
-   (xdoc::p
-    "A new transformation has been added:
      @(tsee apt::solve), the `solving transformation'.
      This attempts to directly solve a program synthesis problem,
      expressed as a constraint problem,
