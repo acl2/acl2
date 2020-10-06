@@ -78,7 +78,6 @@
 
 
 
-
 ;; in/out lemma for full adder
 ;; def-rp-rule is the same as defthm but saves the rule in rp-rewriter's ruleset
 (def-rp-rule svl-run-phase-of-FullAdder
@@ -143,8 +142,8 @@
     (implies (and (integerp in1)
                   (integerp in2))
              (equal (svl::svl-run "DT_SB4_HC_64_64"
-                                  (make-fast-alist `((a . ,in1)
-                                                     (b . ,in2)))
+                                  `((a . ,in1)
+                                    (b . ,in2))
                                   *input-bindings*
                                   *out-bindings*
                                   *svl-design*)

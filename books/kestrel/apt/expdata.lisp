@@ -14,6 +14,7 @@
 (include-book "kestrel/error-checking/ensure-value-is-not-in-list" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-symbol-list" :dir :system)
+(include-book "kestrel/event-macros/event-generation" :dir :system)
 (include-book "kestrel/event-macros/input-processing" :dir :system)
 (include-book "kestrel/event-macros/intro-macros" :dir :system)
 (include-book "kestrel/event-macros/proof-preparation" :dir :system)
@@ -2800,8 +2801,7 @@
                (new-to-old-exported-event "A @(tsee pseudo-event-formp)."))
   :mode :program
   :short "Generate the @('new-to-old') theorem."
-  (b* ((macro (theorem-intro-macro new-to-old-enable$))
-       (formula (expdata-gen-new-to-old-thm-formula old$
+  (b* ((formula (expdata-gen-new-to-old-thm-formula old$
                                                     arg-surjmaps
                                                     res-surjmaps
                                                     new$
@@ -2814,14 +2814,11 @@
                                                 new$
                                                 old-fn-unnorm-name
                                                 new-fn-unnorm-name
-                                                wrld))
-       (local-event `(local
-                      (defthm ,new-to-old$
-                        ,formula
-                        :hints ,hints)))
-       (exported-event `(,macro ,new-to-old$
-                                ,formula)))
-    (mv local-event exported-event)))
+                                                wrld)))
+    (evmac-generate-defthm new-to-old$
+                           :formula formula
+                           :hints hints
+                           :enable new-to-old-enable$)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3010,8 +3007,7 @@
                (old-to-new-exported-event "A @(tsee pseudo-event-formp)."))
   :mode :program
   :short "Generate the @('old-to-new') theorem."
-  (b* ((macro (theorem-intro-macro old-to-new-enable$))
-       (formula (expdata-gen-old-to-new-thm-formula
+  (b* ((formula (expdata-gen-old-to-new-thm-formula
                  old$ arg-surjmaps res-surjmaps new$ wrld))
        (formula (untranslate formula t wrld))
        (hints (expdata-gen-old-to-new-thm-hints appcond-thm-names
@@ -3019,14 +3015,11 @@
                                                 arg-surjmaps
                                                 res-surjmaps
                                                 new-to-old$
-                                                wrld))
-       (local-event `(local
-                      (defthm ,old-to-new$
-                        ,formula
-                        :hints ,hints)))
-       (exported-event `(,macro ,old-to-new$
-                                ,formula)))
-    (mv local-event exported-event)))
+                                                wrld)))
+    (evmac-generate-defthm old-to-new$
+                           :formula formula
+                           :hints hints
+                           :enable old-to-new-enable$)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3123,8 +3116,7 @@
   :short "Generate the theorem that says that
           the new function maps values in the new representation
           to values in the old representation."
-  (b* ((macro (theorem-intro-macro newp-of-new-enable$))
-       (formula (expdata-gen-newp-of-new-thm-formula old$
+  (b* ((formula (expdata-gen-newp-of-new-thm-formula old$
                                                      arg-surjmaps
                                                      res-surjmaps
                                                      new$
@@ -3135,14 +3127,11 @@
                                                  arg-surjmaps
                                                  res-surjmaps
                                                  new-to-old$
-                                                 wrld))
-       (local-event `(local
-                      (defthm ,newp-of-new$
-                        ,formula
-                        :hints ,hints)))
-       (exported-event `(,macro ,newp-of-new$
-                                ,formula)))
-    (mv local-event exported-event)))
+                                                 wrld)))
+    (evmac-generate-defthm newp-of-new$
+                           :formula formula
+                           :hints hints
+                           :enable newp-of-new-enable$)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -71,6 +71,7 @@
                          current-theory-fn
                          cw-event
                          def-error-checker
+                         def-process-input-fresh-function-name
                          defattach-system
                          defexists
                          deffilter
@@ -168,6 +169,11 @@
                          evmac-appcond-theorem-list
                          evmac-appcond-theorems-no-extra-hints
                          evmac-appcondp
+                         evmac-generate-defthm
+                         evmac-generate-defun
+                         evmac-generate-soft-defun-sk2
+                         evmac-generate-soft-defun2
+                         evmac-generate-soft-defunvar
                          evmac-input-hints-p
                          evmac-input-print-p
                          evmac-prepare-proofs

@@ -45,7 +45,6 @@
 (include-book "std/basic/two-nats-measure" :dir :system)
 (include-book "misc/untranslate-patterns" :dir :system)
 
-
 (define create-eval-fnc (fnc-alist)
   :guard (fnc-alistp fnc-alist)
   :enabled t
@@ -63,8 +62,15 @@
        ,(create-eval-fnc ,fnc-alist)
        :namedp ,,namedp)))
 
+;; (encapsulate
+;;   (((foo) => *))
+;;   (local
+;;    (defun foo ()
+;;      nil)))
+
 (defconst *small-evl-fncs*
-  '((equal . 2)
+  '(;;(foo . 0)
+    (equal . 2)
     (falist . 2)
     (not . 1)
     (if . 3)
@@ -127,13 +133,11 @@
 (acl2::def-meta-extract rp-evl rp-evl-lst)
 
 
-
 (defmacro rp-evlt (term a)
   `(rp-evl (rp-trans ,term) ,a))
 
 (defmacro rp-evlt-lst (lst a)
   `(rp-evl-lst (rp-trans-lst ,lst) ,a))
-
 
 (acl2::add-untranslate-pattern (rp-evl (rp-trans ?x) ?y)  (rp-evlt ?x ?y))
 (acl2::add-untranslate-pattern (rp-evl-lst (rp-trans-lst ?x) ?y)  (rp-evlt-lst ?x ?y))
@@ -228,23 +232,22 @@
 
   (generate-valid-sc 0))||#
 
-
 (encapsulate
   nil
   (defun eval-and-all (lst a)
     (declare (xargs :guard (and (rp-term-listp lst) (alistp a))))
     (if (atom lst)
         t
-        (and (rp-evlt (car lst) a)
-             (eval-and-all (cdr lst) a))))
-  
+      (and (rp-evlt (car lst) a)
+           (eval-and-all (cdr lst) a))))
+
   (local (in-theory (enable cons-count-car-subterms
                             cons-count-cdr-subterms is-if-cons-count
                             m-measure-lemma6 is-rp-cons-count
                             o-p-cons-count measure-lemmas)))
   (mutual-recursion
    (defun
-     valid-sc (term a)
+       valid-sc (term a)
      (declare
       (xargs :measure (acl2::nat-list-measure (list (cons-count term)))))
      (cond ((atom term) t)
@@ -253,14 +256,14 @@
             (and (valid-sc (cadr term) a)
                  (if (rp-evlt (cadr term) a)
                      (valid-sc (caddr term) a)
-                     (valid-sc (cadddr term) a))))
+                   (valid-sc (cadddr term) a))))
            ((is-rp term)
             (and (eval-and-all (context-from-rp term nil)
                                a)
                  (valid-sc (ex-from-rp term) a)))
            (t (valid-sc-subterms (cdr term) a))))
    (defun
-     valid-sc-subterms (subterms a)
+       valid-sc-subterms (subterms a)
      (declare
       (xargs :measure (acl2::nat-list-measure (list (cons-count subterms)))))
      (cond ((atom subterms) t)
@@ -282,7 +285,6 @@
  'else' cases under the context of (rp-evlt test a)</p>
 <p> For every step that RP-Rewriter takes, we prove that valid-sc on terms are
  maintained. Therefore, users have to prove that meta-rules also retains this invariance.</p>")
-
 
 (encapsulate
   nil
@@ -318,7 +320,6 @@
 
          ;(table rp-rw 'meta-defunsk ',sk-fnc-name)
 
-         
 
          (defun-sk ,fnc-name (rule state-)
            (declare (xargs :guard (weak-rp-meta-rule-rec-p rule)
@@ -363,41 +364,39 @@
 
 #|(table rp-rw 'index 0)||#
 
-
 (progn
- (defun-sk evals-equal-sk (term1 term2)
-           (forall a
-                   (implies (valid-sc term1 a)
-                            (and (valid-sc term2 a)
-                                 (equal (rp-evlt term1 a)
-                                        (rp-evlt term2 a))))))
- #|(defun-sk valid-rp-meta-rulep (rule state-)
+  (defun-sk evals-equal-sk (term1 term2)
+    (forall a
+            (implies (valid-sc term1 a)
+                     (and (valid-sc term2 a)
+                          (equal (rp-evlt term1 a)
+                                 (rp-evlt term2 a))))))
+  #|(defun-sk valid-rp-meta-rulep (rule state-)
   (declare (xargs :guard (weak-rp-meta-rule-rec-p rule)
-                  :verify-guards nil))
+  :verify-guards nil))
   (forall
-   term
-   (b* (((mv error res)
-         (magic-ev-fncall (rp-meta-fnc rule)
-                          (list term)
-                          state- t nil)))
-       (implies (and (not error)
-                     (acl2::logicp (rp-meta-fnc rule)
-                                   (w state-)))
-                (and (if (rp-meta-dont-rw rule)
-                         (and (implies (rp-termp term)
-                                       (evals-equal-sk term (mv-nth 0 res))))
-                         (and (implies (rp-termp term)
-                                       (evals-equal-sk term res)))))))))
- 
- (defun valid-rp-meta-rule-listp (rules state)
-        (declare (xargs :guard (weak-rp-meta-rule-recs-p rules)
-                        :verify-guards nil
-                        :stobjs (state)))
-        (if (atom rules)
-            (equal rules nil)
-            (and (valid-rp-meta-rulep (car rules) state)
-                 (valid-rp-meta-rule-listp (cdr rules) state))))||#)
+  term
+  (b* (((mv error res)
+  (magic-ev-fncall (rp-meta-fnc rule)
+  (list term)
+  state- t nil)))
+  (implies (and (not error)
+  (acl2::logicp (rp-meta-fnc rule)
+  (w state-)))
+  (and (if (rp-meta-dont-rw rule)
+  (and (implies (rp-termp term)
+  (evals-equal-sk term (mv-nth 0 res))))
+  (and (implies (rp-termp term)
+  (evals-equal-sk term res)))))))))
 
+  (defun valid-rp-meta-rule-listp (rules state)
+  (declare (xargs :guard (weak-rp-meta-rule-recs-p rules)
+  :verify-guards nil
+  :stobjs (state)))
+  (if (atom rules)
+  (equal rules nil)
+  (and (valid-rp-meta-rulep (car rules) state)
+  (valid-rp-meta-rule-listp (cdr rules) state))))||#)
 
 
 (defun eval-and-all-nt (lst a)
@@ -438,7 +437,3 @@
 (make-flag valid-sc-nt :defthm-macro-name defthm-valid-sc-nt
            :hints (("Goal"
                     :in-theory (e/d (measure-lemmas) ()))))
-
-
-
-

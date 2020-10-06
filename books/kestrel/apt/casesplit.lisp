@@ -14,8 +14,8 @@
 (include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-untranslated-term" :dir :system)
 (include-book "kestrel/event-macros/applicability-conditions" :dir :system)
+(include-book "kestrel/event-macros/event-generation" :dir :system)
 (include-book "kestrel/event-macros/input-processing" :dir :system)
-(include-book "kestrel/event-macros/intro-macros" :dir :system)
 (include-book "kestrel/event-macros/proof-preparation" :dir :system)
 (include-book "kestrel/event-macros/restore-output" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
@@ -764,35 +764,24 @@
      We also use the guard theorem of @('old'),
      which may be needed to discharge the guard obligations
      within the guard term of @('old')."))
-  (b* ((macro (function-intro-macro new-enable$ nil))
-       (formals (formals old$ wrld))
-       (new0 (car (last news)))
-       (body
-        (casesplit-gen-new-fn-body (len conditions$) conditions$ news new0))
-       (body (untranslate body nil wrld))
-       (guard (uguard old$ wrld))
-       (guard-appcond-thm-names (nthcdr (len news) appcond-thm-names))
-       (guard-hints? (and verify-guards$
-                          `(("Goal"
-                             :in-theory nil
-                             :use (,@(strip-cdrs guard-appcond-thm-names)
-                                   (:guard-theorem ,old$))))))
-       (local-event
-        `(local
-          (,macro ,new-name$ (,@formals)
-                  (declare (xargs
-                            :guard ,guard
-                            :verify-guards ,verify-guards$
-                            ,@(if verify-guards$
-                                  (list :guard-hints guard-hints?)
-                                nil)))
-                  ,body)))
-       (exported-event
-        `(,macro ,new-name$ (,@formals)
-                 (declare (xargs :guard ,guard
-                                 :verify-guards ,verify-guards$))
-                 ,body)))
-    (mv local-event exported-event))
+  (evmac-generate-defun
+   new-name$
+   :formals (formals old$ wrld)
+   :guard (uguard old$ wrld)
+   :body (b* ((new0 (car (last news)))
+              (body (casesplit-gen-new-fn-body (len conditions$)
+                                               conditions$
+                                               news
+                                               new0)))
+           (untranslate body nil wrld))
+   :guard-hints (b* ((guard-appcond-thm-names (nthcdr (len news)
+                                                      appcond-thm-names)))
+                  `(("Goal"
+                     :in-theory nil
+                     :use (,@(strip-cdrs guard-appcond-thm-names)
+                           (:guard-theorem ,old$)))))
+   :verify-guards verify-guards$
+   :enable new-enable$)
 
   :prepwork
   ((local (include-book "std/typed-lists/pseudo-term-listp" :dir :system))
@@ -841,8 +830,7 @@
      these are all the applicability conditions,
      because there are no guard-related applicability conditions.
      We also use the theorem names specified in the @('theorems') input."))
-  (b* ((macro (theorem-intro-macro thm-enable$))
-       (formals (formals old$ wrld))
+  (b* ((formals (formals old$ wrld))
        (formula `(equal (,old$ ,@formals)
                         (,new-name$ ,@formals)))
        (formula (untranslate formula t wrld))
@@ -851,14 +839,12 @@
        (hints `(("Goal"
                  :in-theory '(,new-unnorm-name)
                  :use (,@(strip-cdrs thm-hyp-appcond-thm-names)
-                       ,@theorems$))))
-       (local-event `(local
-                      (,macro ,thm-name$
-                              ,formula
-                              :hints ,hints)))
-       (exported-event `(,macro ,thm-name$
-                                ,formula)))
-    (mv local-event exported-event)))
+                       ,@theorems$)))))
+    (evmac-generate-defthm
+     thm-name$
+     :formula formula
+     :hints hints
+     :enable thm-enable$)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

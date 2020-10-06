@@ -24,18 +24,21 @@
                    (logicp sym wrld)))
       (let ((formals (formals sym wrld))
             (guard (guard sym t wrld))
-            (old-sym (gensym)))
+            (old-sym (gensym))
+            (new-sym (gensym)))
         (setf (symbol-function old-sym)
               (symbol-function sym))
-        (eval `(setf (symbol-function ',sym)
-                     (function (lambda ,formals
-                                 (let ((*logic-call-depth*
-                                        (1+ *logic-call-depth*)))
-                                   (when (int= *logic-call-depth* 1)
-                                     (or ,guard
-                                         (error "Guard failed for ~s" ',sym))
-                                     (incf (gethash ',sym *agaa-ht*)))
-                                   (funcall ',old-sym ,@formals))))))
+        (eval `(compile
+                (defun ,new-sym ,formals
+                  (let ((*logic-call-depth*
+                         (1+ *logic-call-depth*)))
+                    (when (int= *logic-call-depth* 1)
+                      (or ,guard
+                          (error "Guard failed for ~s" ',sym))
+                      (incf (gethash ',sym *agaa-ht*)))
+                    (funcall ',old-sym ,@formals)))))
+        (setf (symbol-function sym)
+              (symbol-function new-sym))
         (setf (gethash sym *agaa-ht*) 0)))))
 
 (defun add-guards-as-assertions-fn (lst)
@@ -50,7 +53,8 @@
 ; This is a lighter-weight check, based on the guards verified outside the
 ; boot-strap (with feature :acl2-devel present).
 
-  (cons 'progn (strip-cars *system-verify-guards-alist*)))
+  (cons 'progn (add-guards-as-assertions-fn
+                (strip-cars *system-verify-guards-alist*))))
 
 (defun collect-common-lisp-compliant-user-defuns1 (tl wrld ans)
 

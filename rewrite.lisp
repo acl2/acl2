@@ -6600,9 +6600,10 @@
 ; heuristically only.
 
 ; Current-literal -- a pair containing the not-flg and atm of the literal on
-; which rewrite-clause is currently working.  It is used to avoid biting our
-; tail (see below).  When we are adding a term to the pot-lst, we refuse to add
-; the negation of the current literal.
+; which rewrite-clause is currently working.  It was probably used at one time
+; to avoid biting our tail (see below), but parent trees now perform that
+; function.  We leave :current-literal in the rewrite-constant in case there
+; are tools that use it.
 
 ; Nonlinearp -- A boolean indicating whether nonlinear arithmetic should be
 ; considered to be active.

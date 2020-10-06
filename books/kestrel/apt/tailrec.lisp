@@ -14,6 +14,7 @@
 (include-book "kestrel/error-checking/ensure-value-is-not-in-list" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
 (include-book "kestrel/event-macros/applicability-conditions" :dir :system)
+(include-book "kestrel/event-macros/event-generation" :dir :system)
 (include-book "kestrel/event-macros/input-processing" :dir :system)
 (include-book "kestrel/event-macros/intro-macros" :dir :system)
 (include-book "kestrel/event-macros/proof-preparation" :dir :system)
@@ -1564,14 +1565,11 @@
                              (:induction ,new-name$))
                 :induct (,new-name$ ,@new-formals))
                '(:use (,combine-associativity-uncond-instance)))))
-          (t (impossible))))
-       (local-event `(local (defthmd ,new-to-old-name$
-                              ,formula
-                              :hints ,hints)))
-       (macro (theorem-intro-macro new-to-old-enable$))
-       (exported-event `(,macro ,new-to-old-name$
-                                ,formula)))
-    (mv local-event exported-event)))
+          (t (impossible)))))
+    (evmac-generate-defthm new-to-old-name$
+                           :formula formula
+                           :hints hints
+                           :enable new-to-old-enable$)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2058,14 +2056,11 @@
                 :in-theory nil
                 :expand ((,old$ ,@formals))
                 :use (,new-to-old-instance)))))
-          (t (impossible))))
-       (local-event `(local (defthm ,old-to-new-name$
-                              ,formula
-                              :hints ,hints)))
-       (macro (theorem-intro-macro old-to-new-enable$))
-       (exported-event `(,macro ,old-to-new-name$
-                                ,formula)))
-    (mv local-event exported-event)))
+          (t (impossible)))))
+    (evmac-generate-defthm old-to-new-name$
+                           :formula formula
+                           :hints hints
+                           :enable old-to-new-enable$)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2115,8 +2110,7 @@
    <p>
    This function is called only if the @(':wrapper') input is @('t').
    </p>"
-  (b* ((macro (function-intro-macro wrapper-enable$ nil))
-       (formals (formals old$ wrld))
+  (b* ((formals (formals old$ wrld))
        (body (tailrec-gen-old-as-new-term
               old$ test base nonrec updates a variant$
               new-name$ new-formals wrld))
@@ -2144,21 +2138,15 @@
                 :in-theory nil
                 :use ((:guard-theorem ,old$)
                       ,domain-of-nonrec-when-guard-thm)))))
-          (t (impossible))))
-       (local-event
-        `(local
-          (,macro ,wrapper-name$ (,@formals)
-                  (declare (xargs :guard ,guard
-                                  :verify-guards ,verify-guards$
-                                  ,@(and verify-guards$
-                                         (list :guard-hints guard-hints))))
-                  ,body)))
-       (exported-event
-        `(,macro ,wrapper-name$ (,@formals)
-                 (declare (xargs :guard ,guard
-                                 :verify-guards ,verify-guards$))
-                 ,body)))
-    (mv local-event exported-event)))
+          (t (impossible)))))
+    (evmac-generate-defun
+     wrapper-name$
+     :formals formals
+     :guard guard
+     :body body
+     :verify-guards verify-guards$
+     :guard-hints guard-hints
+     :enable wrapper-enable$)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2192,20 +2180,17 @@
    <p>
    This function is called only if the @(':wrapper') input is @('t').
    </p>"
-  (b* ((macro (theorem-intro-macro old-to-wrapper-enable$))
-       (formals (formals old$ wrld))
+  (b* ((formals (formals old$ wrld))
        (formula (untranslate `(equal ,(apply-term old$ formals)
                                      ,(apply-term wrapper-name$ formals))
                              t wrld))
        (hints `(("Goal"
                  :in-theory '(,wrapper-unnorm-name)
-                 :use ,old-to-new-name$)))
-       (local-event `(local (,macro ,old-to-wrapper-name$
-                                    ,formula
-                                    :hints ,hints)))
-       (exported-event `(,macro ,old-to-wrapper-name$
-                                ,formula)))
-    (mv local-event exported-event)))
+                 :use ,old-to-new-name$))))
+    (evmac-generate-defthm old-to-wrapper-name$
+                           :formula formula
+                           :hints hints
+                           :enable old-to-wrapper-enable$)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2239,20 +2224,17 @@
    <p>
    This function is called only if the @(':wrapper') input is @('t').
    </p>"
-  (b* ((macro (theorem-intro-macro wrapper-to-old-enable$))
-       (formals (formals old$ wrld))
+  (b* ((formals (formals old$ wrld))
        (formula (untranslate `(equal ,(apply-term old$ formals)
                                      ,(apply-term wrapper-name$ formals))
                              t wrld))
        (hints `(("Goal"
                  :in-theory '(,wrapper-unnorm-name)
-                 :use ,old-to-new-name$)))
-       (local-event `(local (,macro ,wrapper-to-old-name$
-                                    ,formula
-                                    :hints ,hints)))
-       (exported-event `(,macro ,wrapper-to-old-name$
-                                ,formula)))
-    (mv local-event exported-event)))
+                 :use ,old-to-new-name$))))
+    (evmac-generate-defthm wrapper-to-old-name$
+                           :formula formula
+                           :hints hints
+                           :enable wrapper-to-old-enable$)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

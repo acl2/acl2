@@ -140,7 +140,8 @@
                    must have at least one argument, ~
                    but it has none instead."
                   ?f-call matrix old))
-       (y (genvar old (add-suffix ?f "-CALL") nil x-x1...xn))
+       (??f-call-string (concatenate 'string (symbol-name ?f) "-CALL"))
+       (y (genvar old ?f-call-string nil x-x1...xn))
        (iorel-body (subst-expr y ?f-call matrix))
        (iorel (make-lambda (append x-x1...xn (list y)) iorel-body)))
     (value (list old ?f x-x1...xn x-a1...am y iorel))))
