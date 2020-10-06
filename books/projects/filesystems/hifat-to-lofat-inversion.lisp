@@ -3653,7 +3653,9 @@
                        (hifat-to-lofat-helper
                         fat32-in-memory fs first-cluster)))
    (fat-length fat32-in-memory))
-  :hints (("goal" :in-theory (enable nth))))
+  :hints (("goal" :in-theory (e/d (nth)
+                                  ((:rewrite nfix-when-natp)
+                                   (:rewrite length-when-stringp))))))
 
 (defthm
   lofat-fs-p-of-hifat-to-lofat-helper-lemma-1
@@ -4902,7 +4904,8 @@
   (implies (and (hifat-subsetp m1-file-alist1 m1-file-alist2)
                 (alistp m1-file-alist2)
                 (consp (assoc-equal key m1-file-alist1)))
-           (consp (assoc-equal key m1-file-alist2))))
+           (consp (assoc-equal key m1-file-alist2)))
+  :hints (("Goal" :in-theory (enable hifat-subsetp))))
 
 ;; Not ideal...
 (defthm
@@ -7543,7 +7546,7 @@
      (iff (equal (hifat-entry-count fs) 0) (atom fs))
      :hints
      (("goal"
-       :in-theory (enable hifat-entry-count)))))
+       :in-theory (enable hifat-entry-count hifat-file-alist-fix)))))
 
   (defthmd
     hifat-to-lofat-inversion-lemma-16
@@ -7781,7 +7784,8 @@
       (e/d (lofat-to-hifat-helper
             (:definition hifat-no-dups-p)
             remove1-dir-ent not-intersectp-list
-            (:linear hifat-to-lofat-inversion-lemma-16))
+            (:linear hifat-to-lofat-inversion-lemma-16)
+            hifat-bounded-file-alist-p-of-cdr)
            ((:rewrite nth-of-nats=>chars)
             (:rewrite dir-ent-p-when-member-equal-of-dir-ent-list-p)
             (:rewrite fati-of-hifat-to-lofat-helper-disjoint-lemma-2)
@@ -8799,7 +8803,7 @@
                          (butlast fa-table 1)
                          b))))
 
-  (defthm non-free-index-listp-correctness-6-lemma-3
+  (defthmd non-free-index-listp-correctness-6-lemma-3
     (implies (and (lower-bounded-integer-listp x b)
                   (bounded-nat-listp x (len fa-table))
                   (no-duplicatesp-equal x)
@@ -8816,7 +8820,6 @@
            (<= (+ 2 (len x)) (len fa-table)))
   :hints
   (("goal"
-    :in-theory (disable non-free-index-listp-correctness-6-lemma-3)
     :use (:instance non-free-index-listp-correctness-6-lemma-3
                     (b *ms-first-data-cluster*)))))
 

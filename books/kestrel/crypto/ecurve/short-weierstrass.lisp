@@ -15,7 +15,6 @@
 (include-book "primes")
 (include-book "points")
 (include-book "kestrel/prime-fields/prime-fields" :dir :system)
-(include-book "xdoc/constructors" :dir :system)
 
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "short-weierstrass-closure-simp"))
@@ -65,7 +64,7 @@
              for an appropriate prime number @('p').")
    (xdoc::p "For details see "
             (xdoc::a :href "http://www.secg.org/sec1-v2.pdf"
-                     "Standards for Efficient Cryptography 1 (SEC 1)")
+              "Standards for Efficient Cryptography 1 (SEC 1)")
             ".")
    (xdoc::p "The arguments @('a') and @('b') to the functions below
              always refer to the coefficients in the equation above.")
@@ -101,7 +100,7 @@
          (fep a p)
          (fep b p)
          (posp (mod (+ (* 4 a a a) (* 27 b b)) p))))
-)
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -111,16 +110,16 @@
 
 ;; Tests if a point is on an elliptic curve of the form explained above.
 
-(defsection point-on-elliptic-curve-p
+(defsection point-on-weierstrass-elliptic-curve-p
   :parents (short-weierstrass)
   :short "Test if a point is on an elliptic curve."
-  :long "@(call point-on-elliptic-curve-p) tests whether
+  :long "@(call point-on-weierstrass-elliptic-curve-p) tests whether
           @('point') is on the Short Weierstrass elliptic curve
           defined by @('p'), @('a'), and @('b').
          <p/>
          @('point') is either the infinity point @(':infinity'),
          or an ordered pair (a cons) of two integers in @('\{0,..,p-1\}')."
-  (defund point-on-elliptic-curve-p (point p a b)
+  (defund point-on-weierstrass-elliptic-curve-p (point p a b)
     (declare (xargs :guard (and (rtl::primep p)
                                 (< 3 p)
                                 (fep a p)
@@ -144,10 +143,10 @@
 
 ;; The infinity point is on the curve.
 
-(defthm point-on-elliptic-curve-p-of-inf
+(defthm point-on-weierstrass-elliptic-curve-p-of-inf
   (implies (< 0 p)
-           (point-on-elliptic-curve-p :infinity p a b))
-  :hints (("Goal" :in-theory (enable point-on-elliptic-curve-p))))
+           (point-on-weierstrass-elliptic-curve-p :infinity p a b))
+  :hints (("Goal" :in-theory (enable point-on-weierstrass-elliptic-curve-p))))
 
 ;; Since the y^2 is symmetric over the x axis,
 ;; if the point (x1,y1) is on the curve,
@@ -188,14 +187,14 @@
                                 (pointp point2)
                                 (point-in-pxp-p point1 p)
                                 (point-in-pxp-p point2 p)
-                                (point-on-elliptic-curve-p point1 p a b)
-                                (point-on-elliptic-curve-p point2 p a b))
+                                (point-on-weierstrass-elliptic-curve-p point1 p a b)
+                                (point-on-weierstrass-elliptic-curve-p point2 p a b))
                     :guard-hints (("Goal"
                                    :in-theory
                                    (enable fep
                                            pointp
                                            point-in-pxp-p
-                                           point-on-elliptic-curve-p)))))
+                                           point-on-weierstrass-elliptic-curve-p)))))
     (declare (ignore b))
     (if (equal point1 :infinity)
         point2 ; handles rule 1 (O+O=O) and half of rule 2 (O+Q=Q)
@@ -241,7 +240,7 @@
                             y1
                             p)))
               (cons x3 y3)))))))
-)
+  )
 
 ;; The file short-weierstrass-validation.lisp contains theorems
 ;; that more explicitly link this definition to rules 1-5 in SEC 1.
@@ -291,7 +290,7 @@
 ;; included here.
 ;; Here we take the closure theorem from those files,
 ;; which is expressed in terms of "simplified" versions of
-;; point-on-elliptic-curve-p and curve-group-+,
+;; point-on-weierstrass-elliptic-curve-p and curve-group-+,
 ;; and "transfer" it to the versions of these two functions
 ;; as defined here in this file.
 
@@ -301,16 +300,16 @@
   (local (include-book "kestrel/prime-fields/prime-fields-rules" :dir :system))
 
   (local
-   (defthmd point-on-elliptic-curve-p-equivalence
+   (defthmd point-on-weierstrass-elliptic-curve-p-equivalence
      (implies (and (integerp a)
                    (integerp b)
                    (pointp pt))
-              (iff (point-on-elliptic-curve-p pt (prime) a b)
-                   (simp-point-on-elliptic-curve-p pt a b)))
+              (iff (point-on-weierstrass-elliptic-curve-p pt (prime) a b)
+                   (simp-point-on-weierstrass-elliptic-curve-p pt a b)))
      :hints (("Goal" :in-theory (e/d (P[X.Y]
-                                      simp-point-on-elliptic-curve-p
+                                      simp-point-on-weierstrass-elliptic-curve-p
                                       pointp
-                                      point-on-elliptic-curve-p
+                                      point-on-weierstrass-elliptic-curve-p
                                       =p
                                       modp
                                       i*
@@ -327,8 +326,8 @@
                    (pointp point2)
                    (point-in-pxp-p point1 (prime))
                    (point-in-pxp-p point2 (prime))
-                   (point-on-elliptic-curve-p point1 (prime) a b)
-                   (point-on-elliptic-curve-p point2 (prime) a b))
+                   (point-on-weierstrass-elliptic-curve-p point1 (prime) a b)
+                   (point-on-weierstrass-elliptic-curve-p point2 (prime) a b))
               (equal (curve-group-+ point1 point2 (prime) a b)
                      (simp-curve-group-+ point1 point2 a b)))
      :hints (("Goal"
@@ -362,8 +361,8 @@
                    (pointp point2)
                    (point-in-pxp-p point1 (prime))
                    (point-in-pxp-p point2 (prime))
-                   (point-on-elliptic-curve-p point1 (prime) a b)
-                   (point-on-elliptic-curve-p point2 (prime) a b))
+                   (point-on-weierstrass-elliptic-curve-p point1 (prime) a b)
+                   (point-on-weierstrass-elliptic-curve-p point2 (prime) a b))
               (and (pointp (curve-group-+ point1 point2 (prime) a b))
                    (point-in-pxp-p (curve-group-+ point1 point2 (prime) a b)
                                    (prime))))
@@ -373,28 +372,28 @@
                               (curve-group-+
                                pointp
                                point-in-pxp-p
-                               point-on-elliptic-curve-p))))))
+                               point-on-weierstrass-elliptic-curve-p))))))
 
   (local
-   (defthmd point-on-elliptic-curve-p-of-curve-group-+-abstract
+   (defthmd point-on-weierstrass-elliptic-curve-p-of-curve-group-+-abstract
      (implies (and (integerp a)
                    (integerp b)
                    (pointp point1)
                    (pointp point2)
                    (point-in-pxp-p point1 (prime))
                    (point-in-pxp-p point2 (prime))
-                   (point-on-elliptic-curve-p point1 (prime) a b)
-                   (point-on-elliptic-curve-p point2 (prime) a b))
-              (point-on-elliptic-curve-p (curve-group-+ point1 point2
-                                                        (prime) a b)
-                                         (prime) a b))
-     :hints (("Goal" :in-theory (e/d (point-on-elliptic-curve-p-equivalence
+                   (point-on-weierstrass-elliptic-curve-p point1 (prime) a b)
+                   (point-on-weierstrass-elliptic-curve-p point2 (prime) a b))
+              (point-on-weierstrass-elliptic-curve-p (curve-group-+ point1 point2
+                                                                    (prime) a b)
+                                                     (prime) a b))
+     :hints (("Goal" :in-theory (e/d (point-on-weierstrass-elliptic-curve-p-equivalence
                                       curve-group-+-equivalence)
-                                     (point-on-elliptic-curve-p
+                                     (point-on-weierstrass-elliptic-curve-p
                                       pointp
                                       point-in-pxp-p))
               :use (simp-closure-of-curve-group-+
-                    (:instance point-on-elliptic-curve-p-equivalence
+                    (:instance point-on-weierstrass-elliptic-curve-p-equivalence
                      (pt (simp-curve-group-+ point1 point2 a b))))))))
 
   (local
@@ -415,14 +414,14 @@
                   (pointp point2)
                   (point-in-pxp-p point1 p)
                   (point-in-pxp-p point2 p)
-                  (point-on-elliptic-curve-p point1 p a b)
-                  (point-on-elliptic-curve-p point2 p a b))
+                  (point-on-weierstrass-elliptic-curve-p point1 p a b)
+                  (point-on-weierstrass-elliptic-curve-p point2 p a b))
              (and (pointp (curve-group-+ point1 point2 p a b))
                   (point-in-pxp-p (curve-group-+ point1 point2 p a b) p)
-                  (point-on-elliptic-curve-p (curve-group-+ point1 point2 p a b)
-                                             p a b)))
+                  (point-on-weierstrass-elliptic-curve-p (curve-group-+ point1 point2 p a b)
+                                                         p a b)))
     :hints (("Goal" :use ((:functional-instance
-                           point-on-elliptic-curve-p-of-curve-group-+-abstract
+                           point-on-weierstrass-elliptic-curve-p-of-curve-group-+-abstract
                            (prime (lambda ()
                                     (if (not (and (rtl::primep p)
                                                   (> p 3)))
@@ -478,7 +477,7 @@
                                 (fep b p)
                                 (pointp point)
                                 (point-in-pxp-p point p)
-                                (point-on-elliptic-curve-p point p a b))
+                                (point-on-weierstrass-elliptic-curve-p point p a b))
                     :verify-guards nil)) ; done below
     (declare (xargs :measure (nfix s)))
     (if (zp s)
@@ -489,7 +488,7 @@
             (let ((half-curve-scalar-* (curve-scalar-* (/ s 2) point p a b)))
               (curve-group-+ half-curve-scalar-* half-curve-scalar-* p a b))
           (curve-group-+ point (curve-scalar-* (- s 1) point p a b) p a b)))))
-)
+  )
 
 ;; Prove closure of scalar multiplication by induction
 ;; (needed to verify guards).
@@ -502,12 +501,12 @@
                 (natp b)
                 (pointp point)
                 (point-in-pxp-p point p)
-                (point-on-elliptic-curve-p point p a b))
+                (point-on-weierstrass-elliptic-curve-p point p a b))
            (and (pointp (curve-scalar-* s point p a b))
                 (point-in-pxp-p (curve-scalar-* s point p a b) p)
-                (point-on-elliptic-curve-p (curve-scalar-* s point p a b) p a b)))
+                (point-on-weierstrass-elliptic-curve-p (curve-scalar-* s point p a b) p a b)))
   :hints (("Goal" :in-theory (e/d (curve-scalar-*)
-                                  (point-on-elliptic-curve-p
+                                  (point-on-weierstrass-elliptic-curve-p
                                    point-in-pxp-p
                                    pointp
                                    curve-group-+)))))
@@ -518,7 +517,7 @@
                            (closure-of-curve-scalar-*
                             pointp
                             point-in-pxp-p
-                            point-on-elliptic-curve-p curve-group-+))
+                            point-on-weierstrass-elliptic-curve-p curve-group-+))
            :use ((:instance closure-of-curve-scalar-* (s (1- s)))
                  (:instance closure-of-curve-scalar-* (s (* 1/2 s)))))))
 
@@ -569,7 +568,7 @@
     (if (equal point :infinity)
         point
       (cons (car point) (neg (cdr point) p))))
-)
+  )
 
 ;; Prove closure of negation.
 
@@ -583,14 +582,14 @@
                   (natp b)
                   (pointp point)
                   (point-in-pxp-p point p)
-                  (point-on-elliptic-curve-p point p a b))
+                  (point-on-weierstrass-elliptic-curve-p point p a b))
              (and (pointp (curve-negate point p))
                   (point-in-pxp-p (curve-negate point p) p)
-                  (point-on-elliptic-curve-p (curve-negate point p) p a b)))
+                  (point-on-weierstrass-elliptic-curve-p (curve-negate point p) p a b)))
     :hints (("Goal" :in-theory (e/d (curve-negate
                                      pointp
                                      point-in-pxp-p
-                                     point-on-elliptic-curve-p
+                                     point-on-weierstrass-elliptic-curve-p
                                      neg
                                      mul
                                      sub

@@ -549,13 +549,6 @@
 #+ccl
 (setq ccl::*record-source-file* nil)
 
-; Camm Maguire has suggested, on 9/22/2013, the following forms, which allowed
-; him to complete an ACL2 regression using 2.6.10pre.
-#+gcl
-(progn
-  (si::allocate 'contiguous 15000 t)
-  (si::allocate-sgc 'contiguous 15000 100000 10))
-
 ; The following avoids errors from extra right parentheses, but we leave it
 ; commented out since it doesn't seem important enough to merit messing around
 ; at this low level, and for just one Lisp.

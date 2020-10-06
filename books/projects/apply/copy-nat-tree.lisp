@@ -34,7 +34,7 @@
 (in-package "ACL2")
 
 (include-book "projects/apply/top" :dir :system)
-(include-book "std/testing/eval" :dir :system)
+(include-book "std/testing/must-fail" :dir :system)
 
 ; -----------------------------------------------------------------
 ; Definitions
@@ -292,4 +292,3 @@
   :hints (("Goal" :use ((:instance flagged-equivalence (flg t))
                         (:instance flagged-equivalence (flg nil)))))
   :rule-classes nil)
-

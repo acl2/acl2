@@ -35,11 +35,18 @@
 (include-book "restrict")
 (include-book "restrict-doc")
 
+(include-book "schemalg")
+(include-book "schemalg-doc")
+(include-book "schemalg-divconq-list-0-1-doc")
+
 (include-book "simplify")
 (include-book "simplify-defun-doc")
 (include-book "simplify-defun-sk-doc")
 (include-book "simplify-doc")
 (include-book "simplify-term-doc")
+
+(include-book "solve")
+(include-book "solve-doc")
 
 (include-book "tailrec")
 (include-book "tailrec-doc")
@@ -119,10 +126,12 @@
 (xdoc::order-subtopics apt (common-concepts
                             common-options
                             casesplit
+                            divconq
                             expdata
                             isodata
                             parteval
                             restrict
+                            schemalg
                             simplify
                             simplify-defun
                             simplify-defun+
@@ -131,6 +140,7 @@
                             simplify-defun-sk-programmatic
                             simplify-term
                             simplify-term-programmatic
+                            solve
                             tailrec
                             utilities))
 

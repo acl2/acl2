@@ -316,42 +316,13 @@
                             VALID-SC)))))||#
 
 
-(rp::add-meta-rules
- rp-equal-iter-pp+-meta-formula-checks
- (list
-  (make rp-meta-rule-rec
-        :fnc 'rp-equal-iter-pp+-meta
-        :trig-fnc 'equal
-        :dont-rw t
-        :valid-syntax t)))
 
-#|(mutual-recursion
-(defun
-rp-equal-for-pp+ (term1 term2)
-(declare (xargs :mode :logic
-:verify-guards t
-:guard t))
-"check syntactic equivalance of two terms by ignoring all the rp terms"
-(let* ((term1 (ex-from-rp-loose term1))
-(term2 (ex-from-rp-loose term2)))
-(cond ((or (atom term1)
-(atom term2)
-(acl2::fquotep term1)
-(acl2::fquotep term2))
-(equal term1 term2))
-((eq (car term1) 'pp+)
-(rp-eq term1 term2))
-(t (and (eq (car term1) (car term2))
-(rp-equal-for-pp+-subterms (cdr term1)
-(cdr term2)))))))
-(defun rp-equal-for-pp+-subterms (subterm1 subterm2)
-(declare (xargs :mode :logic
-:guard t))
-(if (or (atom subterm1) (atom subterm2))
-(equal subterm1 subterm2)
-(and (rp-equal-for-pp+ (car subterm1) (car subterm2))
-(rp-equal-for-pp+-subterms (cdr subterm1)
-(cdr subterm2))))))||#
 
-#|(local
-(make-flag  rp-equal-for-pp+ :defthm-macro-name defthm-rp-equal-for-pp+))||#
+(rp::add-meta-rule
+ :meta-fnc rp-equal-iter-pp+-meta
+ :trig-fnc equal
+ :valid-syntaxp t
+ :formula-checks rp-equal-iter-pp+-meta-formula-checks
+ :returns (mv term dont-rw))
+
+(disable-meta-rules rp-equal-meta)

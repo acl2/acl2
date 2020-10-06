@@ -20,7 +20,8 @@
 (in-package "MODAPP")
 (include-book "user-defs")
 (include-book "doppelgangers")
-(include-book "std/testing/eval" :dir :system)
+(include-book "std/testing/must-fail" :dir :system)
+(include-book "std/testing/must-succeed" :dir :system)
 
 (defattach badge-userfn badge-userfn!)
 (defattach apply$-userfn apply$-userfn!)
@@ -67,4 +68,3 @@
              (sumlist '((1 2 3) (4 5 6))
                       '(lambda (lst) (sumlist lst 'square)))
              91)
-

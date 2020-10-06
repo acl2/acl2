@@ -30,12 +30,12 @@
      boolean expressions, and
      commands,
      as free algebraic fixtypes."))
-  :order-subtopics t)
+  :order-subtopics t
+  :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum aexp
-  :parents (abstract-syntax)
   :short "Fixtype of Imp arithmetic expressions."
   :long
   (xdoc::topstring-p
@@ -49,7 +49,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum bexp
-  :parents (abstract-syntax)
   :short "Fixtype of Imp boolean expressions."
   (:const ((value bool)))
   (:equal ((left aexp) (right aexp)))
@@ -60,10 +59,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftypes comms
+(fty::deftypes command-fixtypes
+  :short "Mutually recursive fixtypes for Imp commands."
 
   (fty::deftagsum comm
-    :parents (abstract-syntax)
+    :parents (abstract-syntax command-fixtypes)
     :short "Fixtype of Imp commands."
     :long
     (xdoc::topstring
@@ -78,8 +78,8 @@
     :pred commp)
 
   (fty::deflist comm-list
-    :parents (abstract-syntax)
-    :short "Fixtype of true lists of Imp commands."
+    :parents (abstract-syntax command-fixtypes)
+    :short "Fixtype of lists of Imp commands."
     :long
     (xdoc::topstring
      (xdoc::p

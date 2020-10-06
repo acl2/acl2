@@ -38,9 +38,22 @@
                   (signum x))))
 
 (defthm numerator-of--
-  (implies (rationalp x)
-           (equal (numerator (- x))
-                  (- (numerator x)))))
+  (equal (numerator (- x))
+         (- (numerator x))))
+
+;move
+(local
+ (defthmd not-rationalp-of--
+   (implies (and (not (rationalp x))
+                 (complex-rationalp x))
+            (not (rationalp (- x))))))
+
+(defthm numerator-of-+-of---and--
+  (equal (numerator (+ (- x) (- y)))
+         (- (numerator (+ x y))))
+  :hints (("Goal" :use ((:instance not-rationalp-of-- (x (+ x y)))
+                        (:instance numerator-of-- (x (+ x y))))
+           :in-theory (disable numerator-of--))))
 
 (local (include-book "../../arithmetic/mod-gcd"))
 

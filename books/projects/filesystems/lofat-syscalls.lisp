@@ -57,7 +57,9 @@
                               (lofat-fs-p fat32-in-memory))
                   :stobjs fat32-in-memory))
   (b*
-      ((fd-table-entry (assoc-equal fd fd-table))
+      ((fd-table (mbe :logic (fd-table-fix fd-table) :exec fd-table))
+       (file-table (mbe :logic (file-table-fix file-table) :exec file-table))
+       (fd-table-entry (assoc-equal fd fd-table))
        ((unless (consp fd-table-entry))
         (mv "" -1 *ebadf*))
        (file-table-entry (assoc-equal (cdr fd-table-entry)
@@ -71,8 +73,9 @@
          fat32-in-memory
          root-dir-ent-list
          path))
-       ((unless (and (equal error-code 0)
-                     (lofat-regular-file-p file)))
+       ((unless (lofat-regular-file-p file))
+        (mv "" -1 *eisdir*))
+       ((unless (equal error-code 0))
         (mv "" -1 error-code))
        (file-contents (lofat-file->contents file))
        (new-offset (min (+ offset count)
@@ -193,36 +196,31 @@
 
 (defthm
   lofat-pread-refinement
-  (implies
-   (and (equal (mv-nth 1 (lofat-to-hifat fat32-in-memory))
-               0)
-        (lofat-fs-p fat32-in-memory))
-   (equal
-    (lofat-pread fd count offset
-                 fat32-in-memory fd-table file-table)
-    (hifat-pread fd count offset
-                 (mv-nth 0 (lofat-to-hifat fat32-in-memory))
-                 fd-table file-table)))
+  (implies (and (equal (mv-nth 1 (lofat-to-hifat fat32-in-memory))
+                       0)
+                (lofat-fs-p fat32-in-memory))
+           (equal (lofat-pread fd count offset
+                               fat32-in-memory fd-table file-table)
+                  (hifat-pread fd count offset
+                               (mv-nth 0 (lofat-to-hifat fat32-in-memory))
+                               fd-table file-table)))
   :hints
   (("goal"
-    :in-theory
-    (e/d (lofat-to-hifat lofat-pread hifat-pread)
-         ((:rewrite lofat-find-file-correctness-1)
-          (:rewrite lofat-directory-file-p-when-lofat-file-p)
-          (:rewrite m1-directory-file-p-when-m1-file-p)
-          (:rewrite lofat-pread-refinement-lemma-2)
-          ;; from accumulated-persistence
-          (:definition find-dir-ent)
-          (:definition lofat-find-file)))
+    :in-theory (e/d (lofat-to-hifat lofat-pread hifat-pread)
+                    ((:rewrite lofat-find-file-correctness-1)
+                     (:rewrite lofat-directory-file-p-when-lofat-file-p)
+                     (:rewrite m1-directory-file-p-when-m1-file-p)
+                     (:rewrite lofat-pread-refinement-lemma-2)
+                     (:definition find-dir-ent)
+                     (:definition lofat-find-file)))
     :use
     ((:instance
       (:rewrite lofat-find-file-correctness-1)
       (path
        (file-table-element->fid
-        (cdr (assoc-equal (cdr (assoc-equal fd fd-table))
-                          file-table))))
-      (dir-ent-list
-       (mv-nth 0 (root-dir-ent-list fat32-in-memory)))
+        (cdr (assoc-equal (cdr (assoc-equal fd (fd-table-fix fd-table)))
+                          (file-table-fix file-table)))))
+      (dir-ent-list (mv-nth 0 (root-dir-ent-list fat32-in-memory)))
       (entry-limit (max-entry-count fat32-in-memory)))
      (:instance
       (:rewrite lofat-directory-file-p-when-lofat-file-p)
@@ -233,32 +231,30 @@
          fat32-in-memory
          (mv-nth 0 (root-dir-ent-list fat32-in-memory))
          (file-table-element->fid
-          (cdr (assoc-equal (cdr (assoc-equal fd fd-table))
-                            file-table)))))))
+          (cdr (assoc-equal (cdr (assoc-equal fd (fd-table-fix fd-table)))
+                            (file-table-fix file-table))))))))
      (:instance
       (:rewrite m1-directory-file-p-when-m1-file-p)
       (x
        (mv-nth
         0
         (hifat-find-file
-         (mv-nth
-          0
-          (lofat-to-hifat-helper
-           fat32-in-memory
-           (mv-nth 0 (root-dir-ent-list fat32-in-memory))
-           (max-entry-count fat32-in-memory)))
+         (mv-nth 0
+                 (lofat-to-hifat-helper
+                  fat32-in-memory
+                  (mv-nth 0 (root-dir-ent-list fat32-in-memory))
+                  (max-entry-count fat32-in-memory)))
          (file-table-element->fid
-          (cdr (assoc-equal (cdr (assoc-equal fd fd-table))
-                            file-table)))))))
+          (cdr (assoc-equal (cdr (assoc-equal fd (fd-table-fix fd-table)))
+                            (file-table-fix file-table))))))))
      (:instance
       (:rewrite lofat-pread-refinement-lemma-2)
       (path
        (file-table-element->fid
-        (cdr (assoc-equal (cdr (assoc-equal fd fd-table))
-                          file-table))))
+        (cdr (assoc-equal (cdr (assoc-equal fd (fd-table-fix fd-table)))
+                          (file-table-fix file-table)))))
       (entry-limit (max-entry-count fat32-in-memory))
-      (dir-ent-list
-       (mv-nth 0 (root-dir-ent-list fat32-in-memory)))
+      (dir-ent-list (mv-nth 0 (root-dir-ent-list fat32-in-memory)))
       (fat32-in-memory fat32-in-memory))))))
 
 (defund lofat-lstat (fat32-in-memory path)
@@ -479,12 +475,12 @@
     :in-theory
     (e/d
      (update-dir-contents-correctness-1)
-     (no-duplicatesp-equal-of-fat32-build-index-list-of-effective-fat-of-update-dir-contents
+     (no-duplicatesp-of-fat32-build-index-list-of-effective-fat-of-update-dir-contents
       (:rewrite get-clusterchain-contents-correctness-2)))
     :expand (get-clusterchain-contents
              fat32-in-memory first-cluster 2097152)
     :use
-    (no-duplicatesp-equal-of-fat32-build-index-list-of-effective-fat-of-update-dir-contents
+    (no-duplicatesp-of-fat32-build-index-list-of-effective-fat-of-update-dir-contents
      (:instance
       (:rewrite get-clusterchain-contents-correctness-2)
       (length 2097152)
@@ -607,7 +603,9 @@
       (max-entry-count fat32-in-memory)))))
   :hints
   (("goal"
-    :in-theory (disable (:rewrite lofat-remove-file-correctness-1-lemma-1))
+    :do-not-induct t
+    :in-theory (e/d ()
+                    ((:rewrite lofat-remove-file-correctness-1-lemma-1)))
     :use
     (:instance
      (:rewrite lofat-remove-file-correctness-1-lemma-1)
@@ -684,7 +682,6 @@
                                   update-dir-contents-correctness-1)
                     ((:rewrite lofat-remove-file-correctness-1)
                      make-list-ac-removal
-                     (:rewrite lofat-remove-file-correctness-1-lemma-64)
                      (:rewrite lofat-find-file-correctness-1)
                      lofat-unlink-refinement-lemma-1
                      (:rewrite

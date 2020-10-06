@@ -5,10 +5,43 @@
  T
 ACL2 !>>(SET-INHIBITED-SUMMARY-TYPES '(TIME STEPS))
  (TIME STEPS)
-ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(PROOF-TREE))
- (PROOF-TREE)
+ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(PROVE PROOF-TREE EVENT))
+ (PROVE PROOF-TREE EVENT)
 ACL2 !>>(IN-PACKAGE "ACL2")
  "ACL2"
+ACL2 !>>(INCLUDE-BOOK "std/testing/must-fail"
+                      :DIR :SYSTEM)
+
+Summary
+Form:  ( INCLUDE-BOOK "std/testing/must-fail" ...)
+Rules: NIL
+ "[books]/std/testing/must-fail.lisp"
+ACL2 !>>(DEFMACRO
+         MF (FORM &KEY (EXPECTED ':SOFT))
+         (CONS
+          'MUST-FAIL
+          (CONS
+           FORM
+           (CONS
+            ':EXPECTED
+            (CONS
+             EXPECTED
+             (CONS
+                ':WITH-OUTPUT-OFF
+                (CONS (CONS 'PROOF-TREE
+                            (CONS 'PROVE
+                                  (CONS 'EVENT
+                                        (CONS 'SUMMARY
+                                              (CONS 'PROOF-BUILDER
+                                                    (CONS 'HISTORY 'NIL))))))
+                      'NIL)))))))
+
+Summary
+Form:  ( DEFMACRO MF ...)
+Rules: NIL
+ MF
+ACL2 !>>(SET-COMPILE-FNS T)
+ T
 ACL2 !>>(DEFUN FIB-LIMIT (N LIMIT)
                (DECLARE (TYPE (INTEGER 0 *) LIMIT)
                         (TYPE INTEGER N))
@@ -20,34 +53,9 @@ ACL2 !>>(DEFUN FIB-LIMIT (N LIMIT)
                             1
                             (+ (FIB-LIMIT (- N 1) LIMIT)
                                (FIB-LIMIT (- N 2) LIMIT))))))
-
-For the admission of FIB-LIMIT we will use the relation O< (which is
-known to be well-founded on the domain recognized by O-P) and the measure
-(NFIX LIMIT).  The non-trivial part of the measure conjecture is
-
-Goal
-(AND (O-P (NFIX LIMIT))
-     (IMPLIES (AND (NOT (ZP LIMIT))
-                   (NOT (OR (= N 0) (= N 1))))
-              (O< (NFIX (+ -1 LIMIT)) (NFIX LIMIT)))).
 Subgoal 2
 Subgoal 1
 Subgoal 1'
-
-Q.E.D.
-
-That completes the proof of the measure theorem for FIB-LIMIT.  Thus,
-we admit this function under the principle of definition.  We observe
-that the type of FIB-LIMIT is described by the theorem 
-(AND (INTEGERP (FIB-LIMIT N LIMIT)) (<= 0 (FIB-LIMIT N LIMIT))).  We
-used primitive type reasoning.
-
-Computing the guard conjecture for FIB-LIMIT....
-
-The guard conjecture for FIB-LIMIT is trivial to prove, given the :compound-
-recognizer rule ZP-COMPOUND-RECOGNIZER, primitive type reasoning and
-the :type-prescription rule FIB-LIMIT.  FIB-LIMIT is compliant with
-Common Lisp.
 
 Summary
 Form:  ( DEFUN FIB-LIMIT ...)
@@ -64,66 +72,15 @@ Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
  FIB-LIMIT
 ACL2 !>>(MEMOIZE-PARTIAL FIB)
 
-
-ACL2 !>>>(MAKE-EVENT
-          (ER-PROGN
-            (MEMOIZE-PARTIAL-BASIC-CHECKS
-                 '((FIB FIB-LIMIT
-                        FIB-LIMIT-CHANGE FIB-LIMIT-STABLE))
-                 'MEMOIZE-PARTIAL
-                 STATE)
-            (MV-LET
-                 (MSG DEFS TABLE-EVENT)
-                 (MEMOIZE-PARTIAL-SUPPORTING-EVENTS
-                      '((FIB FIB-LIMIT
-                             FIB-LIMIT-CHANGE FIB-LIMIT-STABLE))
-                      (W STATE))
-                 (COND (MSG (ER SOFT 'MEMOIZE-PARTIAL "~@0" MSG))
-                       (T (VALUE (CONS 'PROGN
-                                       (APPEND DEFS (LIST TABLE-EVENT))))))))
-          :ON-BEHALF-OF :QUIET!)
-
-
-ACL2 !>>>(DEFCHOOSE FIB-LIMIT-CHANGE (LARGE)
-                    (N LIMIT)
-                    (AND (NATP LARGE)
-                         (<= LIMIT LARGE)
-                         (NOT (EQUAL (FIB-LIMIT N LIMIT)
-                                     (FIB-LIMIT N LARGE)))))
-
 Summary
 Form:  ( DEFCHOOSE FIB-LIMIT-CHANGE ...)
 Rules: NIL
 FIB-LIMIT-CHANGE
 
-
-ACL2 !>>>(DEFCHOOSE FIB-LIMIT-STABLE (LIMIT)
-                    (N)
-                    (AND (NATP LIMIT)
-                         (EQUAL (FIB-LIMIT N LIMIT)
-                                (FIB-LIMIT N (FIB-LIMIT-CHANGE N LIMIT)))))
-
 Summary
 Form:  ( DEFCHOOSE FIB-LIMIT-STABLE ...)
 Rules: NIL
 FIB-LIMIT-STABLE
-
-
-ACL2 !>>>(DEFUN FIB (N)
-                (DECLARE (TYPE INTEGER N)
-                         (XARGS :GUARD T))
-                (FIB-LIMIT N (NFIX (FIB-LIMIT-STABLE N))))
-
-Since FIB is non-recursive, its admission is trivial.  We observe that
-the type of FIB is described by the theorem 
-(AND (INTEGERP (FIB N)) (<= 0 (FIB N))).  We used the :type-prescription
-rule FIB-LIMIT.
-
-Computing the guard conjecture for FIB....
-
-The guard conjecture for FIB is trivial to prove, given primitive type
-reasoning and the :type-prescription rule NFIX.  FIB is compliant with
-Common Lisp.
 
 Summary
 Form:  ( DEFUN FIB ...)
@@ -132,8 +89,59 @@ Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL)
         (:TYPE-PRESCRIPTION NFIX))
 FIB
 
+Summary
+Form:  ( TABLE PARTIAL-FUNCTIONS-TABLE ...)
+Rules: NIL
+PARTIAL-FUNCTIONS-TABLE
 
-ACL2 !>>>(TABLE
+Summary
+Form:  ( PROGN (DEFCHOOSE FIB-LIMIT-CHANGE ...) ...)
+Rules: NIL
+
+Summary
+Form:  ( MAKE-EVENT (ER-PROGN ...) ...)
+Rules: NIL
+PARTIAL-FUNCTIONS-TABLE
+
+Summary
+Form:  ( TABLE MEMOIZE-TABLE ...)
+Rules: NIL
+MEMOIZE-TABLE
+FIB
+
+Summary
+Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
+Rules: NIL
+FIB
+
+Summary
+Form:  ( PROGN (MAKE-EVENT ...) ...)
+Rules: NIL
+ FIB
+ACL2 !>>(ASSERT-EVENT (EQUAL (FIB 30) (FIB-LIMIT 30 50)))
+ :PASSED
+ACL2 !>>(ASSERT-EVENT (EQUAL (FIB 100) 573147844013817084101))
+ :PASSED
+ACL2 !>>(SET-ENFORCE-REDUNDANCY T)
+ T
+ACL2 !>>(ENCAPSULATE
+         NIL
+         (DEFCHOOSE FIB-LIMIT-CHANGE (LARGE)
+                    (N LIMIT)
+                    (AND (NATP LARGE)
+                         (<= LIMIT LARGE)
+                         (NOT (EQUAL (FIB-LIMIT N LIMIT)
+                                     (FIB-LIMIT N LARGE)))))
+         (DEFCHOOSE FIB-LIMIT-STABLE (LIMIT)
+                    (N)
+                    (AND (NATP LIMIT)
+                         (EQUAL (FIB-LIMIT N LIMIT)
+                                (FIB-LIMIT N (FIB-LIMIT-CHANGE N LIMIT)))))
+         (DEFUN FIB (N)
+                (DECLARE (TYPE INTEGER N)
+                         (XARGS :GUARD T))
+                (FIB-LIMIT N (NFIX (FIB-LIMIT-STABLE N))))
+         (TABLE
             PARTIAL-FUNCTIONS-TABLE 'FIB-LIMIT
             '((FIB FIB-LIMIT
                    FIB-LIMIT-CHANGE FIB-LIMIT-STABLE
@@ -150,48 +158,32 @@ ACL2 !>>>(TABLE
                                          1
                                          (+ (FIB-LIMIT (- N 1) LIMIT)
                                             (FIB-LIMIT (- N 2) LIMIT)))))))))
+         (MEMOIZE 'FIB :TOTAL 'FIB-LIMIT))
+
+Summary
+Form:  ( DEFCHOOSE FIB-LIMIT-CHANGE ...)
+Rules: NIL
+:REDUNDANT
+
+Summary
+Form:  ( DEFCHOOSE FIB-LIMIT-STABLE ...)
+Rules: NIL
+:REDUNDANT
+
+Summary
+Form:  ( DEFUN FIB ...)
+Rules: NIL
+:REDUNDANT
 
 Summary
 Form:  ( TABLE PARTIAL-FUNCTIONS-TABLE ...)
 Rules: NIL
-PARTIAL-FUNCTIONS-TABLE
-
-Summary
-Form:  ( PROGN (DEFCHOOSE FIB-LIMIT-CHANGE ...) ...)
-Rules: NIL
-
-Summary
-Form:  ( MAKE-EVENT (ER-PROGN ...) ...)
-Rules: NIL
-PARTIAL-FUNCTIONS-TABLE
-
-
-ACL2 !>>>(MEMOIZE 'FIB :TOTAL 'FIB-LIMIT)
-
-
-ACL2 !>>>(TABLE
-              MEMOIZE-TABLE
-              (DEREF-MACRO-NAME 'FIB
-                                (MACRO-ALIASES WORLD))
-              (LIST* (CONS :CONDITION-FN T)
-                     (CONS :INLINE T)
-                     (CONS :COMMUTATIVE NIL)
-                     (CONS :FORGET NIL)
-                     (CONS :MEMO-TABLE-INIT-SIZE (OR NIL *MHT-DEFAULT-SIZE*))
-                     (CONS :AOKP 'NIL)
-                     (CONS :STATS :DEFAULT)
-                     (CONS :TOTAL 'FIB-LIMIT)
-                     (AND (NOT (EQ ':DEFAULT :DEFAULT))
-                          (LIST (CONS :IDEAL-OKP ':DEFAULT)))))
+:REDUNDANT
 
 Summary
 Form:  ( TABLE MEMOIZE-TABLE ...)
 Rules: NIL
-MEMOIZE-TABLE
-
-
-ACL2 !>>>(VALUE-TRIPLE (DEREF-MACRO-NAME 'FIB
-                                         (MACRO-ALIASES (W STATE))))
+:REDUNDANT
 FIB
 
 Summary
@@ -199,98 +191,16 @@ Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
 Rules: NIL
 FIB
 
-Summary
-Form:  ( PROGN (MAKE-EVENT ...) ...)
-Rules: NIL
- FIB
-ACL2 !>>(ENCAPSULATE
-           NIL (SET-ENFORCE-REDUNDANCY T)
-           (DEFCHOOSE FIB-LIMIT-CHANGE (LARGE)
-                      (N LIMIT)
-                      (AND (NATP LARGE)
-                           (<= LIMIT LARGE)
-                           (NOT (EQUAL (FIB-LIMIT N LIMIT)
-                                       (FIB-LIMIT N LARGE)))))
-           (DEFCHOOSE FIB-LIMIT-STABLE (LIMIT)
-                      (N)
-                      (AND (NATP LIMIT)
-                           (EQUAL (FIB-LIMIT N LIMIT)
-                                  (FIB-LIMIT N (FIB-LIMIT-CHANGE N LIMIT)))))
-           (DEFUN FIB (N)
-                  (DECLARE (TYPE INTEGER N)
-                           (XARGS :GUARD T))
-                  (FIB-LIMIT N (NFIX (FIB-LIMIT-STABLE N)))))
-
-To verify that the four encapsulated events correctly extend the current
-theory we will evaluate them.  The theory thus constructed is only
-ephemeral.
-
-Encapsulated Events:
-
-
-ACL2 !>>>(SET-ENFORCE-REDUNDANCY T)
-T
-
-
-ACL2 !>>>(DEFCHOOSE FIB-LIMIT-CHANGE (LARGE)
-                    (N LIMIT)
-                    (AND (NATP LARGE)
-                         (<= LIMIT LARGE)
-                         (NOT (EQUAL (FIB-LIMIT N LIMIT)
-                                     (FIB-LIMIT N LARGE)))))
-
-The event ( DEFCHOOSE FIB-LIMIT-CHANGE ...) is redundant.  See :DOC
-redundant-events.
+ACL2 Observation in ( ENCAPSULATE NIL (DEFCHOOSE FIB-LIMIT-CHANGE ...)
+...):  The submitted encapsulate event has created no new ACL2 events,
+and thus is leaving the ACL2 logical world unchanged.  See :DOC encapsulate.
 
 Summary
-Form:  ( DEFCHOOSE FIB-LIMIT-CHANGE ...)
+Form:  ( ENCAPSULATE NIL (DEFCHOOSE FIB-LIMIT-CHANGE ...) ...)
 Rules: NIL
-:REDUNDANT
-
-
-ACL2 !>>>(DEFCHOOSE FIB-LIMIT-STABLE (LIMIT)
-                    (N)
-                    (AND (NATP LIMIT)
-                         (EQUAL (FIB-LIMIT N LIMIT)
-                                (FIB-LIMIT N (FIB-LIMIT-CHANGE N LIMIT)))))
-
-The event ( DEFCHOOSE FIB-LIMIT-STABLE ...) is redundant.  See :DOC
-redundant-events.
-
-Summary
-Form:  ( DEFCHOOSE FIB-LIMIT-STABLE ...)
-Rules: NIL
-:REDUNDANT
-
-
-ACL2 !>>>(DEFUN FIB (N)
-                (DECLARE (TYPE INTEGER N)
-                         (XARGS :GUARD T))
-                (FIB-LIMIT N (NFIX (FIB-LIMIT-STABLE N))))
-
-The event ( DEFUN FIB ...) is redundant.  See :DOC redundant-events.
-
-Summary
-Form:  ( DEFUN FIB ...)
-Rules: NIL
-:REDUNDANT
-
-End of Encapsulated Events.
-
-Having verified that the encapsulated events validate the signatures
-of the ENCAPSULATE event, we discard the ephemeral theory and extend
-the original theory as directed by the signatures and the non-LOCAL
-events.
-
-
-Summary
-Form:  ( ENCAPSULATE NIL (SET-ENFORCE-REDUNDANCY T) ...)
-Rules: NIL
- T
-ACL2 !>>(ASSERT-EVENT (EQUAL (FIB 30) (FIB-LIMIT 30 50)))
- :PASSED
-ACL2 !>>(ASSERT-EVENT (EQUAL (FIB 100) 573147844013817084101))
- :PASSED
+ :EMPTY-ENCAPSULATE
+ACL2 !>>(SET-ENFORCE-REDUNDANCY NIL)
+ NIL
 ACL2 !>>(DEFUN FIB2-CLOCK (N CLOCK)
                (DECLARE (XARGS :GUARD (NATP CLOCK))
                         (XARGS :GUARD (INTEGERP N)
@@ -304,28 +214,9 @@ ACL2 !>>(DEFUN FIB2-CLOCK (N CLOCK)
                             1
                             (+ (FIB2-CLOCK (- N 1) CLOCK)
                                (FIB2-CLOCK (- N 2) CLOCK))))))
-
-For the admission of FIB2-CLOCK we will use the relation O< (which
-is known to be well-founded on the domain recognized by O-P) and the
-measure (NFIX CLOCK).  The non-trivial part of the measure conjecture
-is
-
-Goal
-(AND (O-P (NFIX CLOCK))
-     (IMPLIES (AND (NOT (ZP CLOCK))
-                   (NOT (OR (= N 0) (= N 1))))
-              (O< (NFIX (+ -1 CLOCK)) (NFIX CLOCK)))).
 Subgoal 2
 Subgoal 1
 Subgoal 1'
-
-Q.E.D.
-
-That completes the proof of the measure theorem for FIB2-CLOCK.  Thus,
-we admit this function under the principle of definition.  We observe
-that the type of FIB2-CLOCK is described by the theorem 
-(AND (INTEGERP (FIB2-CLOCK N CLOCK)) (<= 0 (FIB2-CLOCK N CLOCK))).
-We used primitive type reasoning.
 
 Summary
 Form:  ( DEFUN FIB2-CLOCK ...)
@@ -341,13 +232,6 @@ Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
  FIB2-CLOCK
 ACL2 !>>(VERIFY-GUARDS FIB2-CLOCK)
 
-Computing the guard conjecture for FIB2-CLOCK....
-
-The guard conjecture for FIB2-CLOCK is trivial to prove, given the
-:compound-recognizer rules NATP-COMPOUND-RECOGNIZER and 
-ZP-COMPOUND-RECOGNIZER, primitive type reasoning and the :type-prescription
-rule FIB2-CLOCK.  FIB2-CLOCK is compliant with Common Lisp.
-
 Summary
 Form:  ( VERIFY-GUARDS FIB2-CLOCK)
 Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
@@ -361,71 +245,15 @@ ACL2 !>>(MEMOIZE-PARTIAL ((FIB2 FIB2-CLOCK
                                 :CONDITION '(EQL (MOD N 4) 0)))
                          :CONDITION T)
 
-
-ACL2 !>>>(MAKE-EVENT
-          (ER-PROGN
-            (MEMOIZE-PARTIAL-BASIC-CHECKS
-                 '((FIB2 FIB2-CLOCK
-                         FIB2-CLOCK-CHANGE0 FIB2-CLOCK-STABLE0
-                         :CONDITION '(EQL (MOD N 4) 0)))
-                 'MEMOIZE-PARTIAL
-                 STATE)
-            (MV-LET
-                 (MSG DEFS TABLE-EVENT)
-                 (MEMOIZE-PARTIAL-SUPPORTING-EVENTS
-                      '((FIB2 FIB2-CLOCK
-                              FIB2-CLOCK-CHANGE0 FIB2-CLOCK-STABLE0
-                              :CONDITION '(EQL (MOD N 4) 0)))
-                      (W STATE))
-                 (COND (MSG (ER SOFT 'MEMOIZE-PARTIAL "~@0" MSG))
-                       (T (VALUE (CONS 'PROGN
-                                       (APPEND DEFS (LIST TABLE-EVENT))))))))
-          :ON-BEHALF-OF :QUIET!)
-
-
-ACL2 !>>>(DEFCHOOSE FIB2-CLOCK-CHANGE0 (LARGE)
-                    (N CLOCK)
-                    (AND (NATP LARGE)
-                         (<= CLOCK LARGE)
-                         (NOT (EQUAL (FIB2-CLOCK N CLOCK)
-                                     (FIB2-CLOCK N LARGE)))))
-
 Summary
 Form:  ( DEFCHOOSE FIB2-CLOCK-CHANGE0 ...)
 Rules: NIL
 FIB2-CLOCK-CHANGE0
 
-
-ACL2 !>>>(DEFCHOOSE
-              FIB2-CLOCK-STABLE0 (CLOCK)
-              (N)
-              (AND (NATP CLOCK)
-                   (EQUAL (FIB2-CLOCK N CLOCK)
-                          (FIB2-CLOCK N (FIB2-CLOCK-CHANGE0 N CLOCK)))))
-
 Summary
 Form:  ( DEFCHOOSE FIB2-CLOCK-STABLE0 ...)
 Rules: NIL
 FIB2-CLOCK-STABLE0
-
-
-ACL2 !>>>(DEFUN
-              FIB2 (N)
-              (DECLARE (XARGS :GUARD (LET ((CLOCK 0))
-                                          (DECLARE (IGNORABLE CLOCK))
-                                          (AND (NATP CLOCK) (INTEGERP N)))))
-              (FIB2-CLOCK N (NFIX (FIB2-CLOCK-STABLE0 N))))
-
-Since FIB2 is non-recursive, its admission is trivial.  We observe
-that the type of FIB2 is described by the theorem 
-(AND (INTEGERP (FIB2 N)) (<= 0 (FIB2 N))).  We used the :type-prescription
-rule FIB2-CLOCK.
-
-Computing the guard conjecture for FIB2....
-
-The guard conjecture for FIB2 is trivial to prove, given the :compound-
-recognizer rule NATP-COMPOUND-RECOGNIZER and the :type-prescription
-rule NFIX.  FIB2 is compliant with Common Lisp.
 
 Summary
 Form:  ( DEFUN FIB2 ...)
@@ -433,24 +261,6 @@ Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
         (:TYPE-PRESCRIPTION FIB2-CLOCK)
         (:TYPE-PRESCRIPTION NFIX))
 FIB2
-
-
-ACL2 !>>>(TABLE
-          PARTIAL-FUNCTIONS-TABLE 'FIB2-CLOCK
-          '((FIB2 FIB2-CLOCK
-                  FIB2-CLOCK-CHANGE0 FIB2-CLOCK-STABLE0
-                  (DEFUN FIB2 (N)
-                         (DECLARE (IGNORABLE N))
-                         (FLET ((FIB2-CLOCK (N CLOCK)
-                                            (DECLARE (IGNORE CLOCK))
-                                            (FIB2 N)))
-                               (DECLARE (INLINE FIB2-CLOCK))
-                               (LET ((CLOCK 0))
-                                    (DECLARE (IGNORABLE CLOCK))
-                                    (IF (OR (= N 0) (= N 1))
-                                        1
-                                        (+ (FIB2-CLOCK (- N 1) CLOCK)
-                                           (FIB2-CLOCK (- N 2) CLOCK)))))))))
 
 Summary
 Form:  ( TABLE PARTIAL-FUNCTIONS-TABLE ...)
@@ -466,44 +276,10 @@ Form:  ( MAKE-EVENT (ER-PROGN ...) ...)
 Rules: NIL
 PARTIAL-FUNCTIONS-TABLE
 
-
-ACL2 !>>>(MEMOIZE 'FIB2
-                  :TOTAL 'FIB2-CLOCK
-                  :CONDITION '(EQL (MOD N 4) 0))
-
-
-ACL2 !>>>(DEFUN
-             FIB2-MEMOIZE-CONDITION (N)
-             (DECLARE
-                  (IGNORABLE N)
-                  (XARGS :GUARD ((LAMBDA (CLOCK N)
-                                         (IF (NATP CLOCK) (INTEGERP N) 'NIL))
-                                 '0
-                                 N)
-                         :VERIFY-GUARDS NIL))
-             (EQL (MOD N 4) 0))
-
-Since FIB2-MEMOIZE-CONDITION is non-recursive, its admission is trivial.
-We observe that the type of FIB2-MEMOIZE-CONDITION is described by
-the theorem 
-(OR (EQUAL (FIB2-MEMOIZE-CONDITION N) T)
-    (EQUAL (FIB2-MEMOIZE-CONDITION N) NIL)).
-We used primitive type reasoning.
-
 Summary
 Form:  ( DEFUN FIB2-MEMOIZE-CONDITION ...)
 Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
 FIB2-MEMOIZE-CONDITION
-
-
-ACL2 !>>>(VERIFY-GUARDS FIB2-MEMOIZE-CONDITION)
-
-Computing the guard conjecture for FIB2-MEMOIZE-CONDITION....
-
-The guard conjecture for FIB2-MEMOIZE-CONDITION is trivial to prove,
-given the :compound-recognizer rule NATP-COMPOUND-RECOGNIZER and the
-:executable-counterparts of EQL, EQLABLEP and NOT.  FIB2-MEMOIZE-CONDITION
-is compliant with Common Lisp.
 
 Summary
 Form:  ( VERIFY-GUARDS FIB2-MEMOIZE-CONDITION)
@@ -513,27 +289,10 @@ Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
         (:EXECUTABLE-COUNTERPART NOT))
 FIB2-MEMOIZE-CONDITION
 
-
-ACL2 !>>>(TABLE
-              MEMOIZE-TABLE 'FIB2
-              (LIST* (CONS :CONDITION-FN 'FIB2-MEMOIZE-CONDITION)
-                     (CONS :INLINE 'T)
-                     (CONS :COMMUTATIVE 'NIL)
-                     (CONS :FORGET 'NIL)
-                     (CONS :MEMO-TABLE-INIT-SIZE (OR NIL *MHT-DEFAULT-SIZE*))
-                     (CONS :AOKP 'NIL)
-                     (CONS :STATS :DEFAULT)
-                     (CONS :TOTAL 'FIB2-CLOCK)
-                     (AND (NOT (EQ ':DEFAULT :DEFAULT))
-                          (LIST (CONS :IDEAL-OKP ':DEFAULT)))))
-
 Summary
 Form:  ( TABLE MEMOIZE-TABLE ...)
 Rules: NIL
 MEMOIZE-TABLE
-
-
-ACL2 !>>>(VALUE-TRIPLE 'FIB2)
 FIB2
 
 Summary
@@ -569,71 +328,22 @@ ACL2 !>>(ENCAPSULATE
                                            (DECLARE (IGNORABLE CLOCK))
                                            (AND (NATP CLOCK) (INTEGERP N)))))
                (FIB2-CLOCK N (NFIX (FIB2-CLOCK-STABLE0 N)))))
-
-To verify that the four encapsulated events correctly extend the current
-theory we will evaluate them.  The theory thus constructed is only
-ephemeral.
-
-Encapsulated Events:
-
-
-ACL2 !>>>(SET-ENFORCE-REDUNDANCY T)
 T
-
-
-ACL2 !>>>(DEFCHOOSE FIB2-CLOCK-CHANGE0 (LARGE)
-                    (N CLOCK)
-                    (AND (NATP LARGE)
-                         (<= CLOCK LARGE)
-                         (NOT (EQUAL (FIB2-CLOCK N CLOCK)
-                                     (FIB2-CLOCK N LARGE)))))
-
-The event ( DEFCHOOSE FIB2-CLOCK-CHANGE0 ...) is redundant.  See :DOC
-redundant-events.
 
 Summary
 Form:  ( DEFCHOOSE FIB2-CLOCK-CHANGE0 ...)
 Rules: NIL
 :REDUNDANT
 
-
-ACL2 !>>>(DEFCHOOSE
-              FIB2-CLOCK-STABLE0 (CLOCK)
-              (N)
-              (AND (NATP CLOCK)
-                   (EQUAL (FIB2-CLOCK N CLOCK)
-                          (FIB2-CLOCK N (FIB2-CLOCK-CHANGE0 N CLOCK)))))
-
-The event ( DEFCHOOSE FIB2-CLOCK-STABLE0 ...) is redundant.  See :DOC
-redundant-events.
-
 Summary
 Form:  ( DEFCHOOSE FIB2-CLOCK-STABLE0 ...)
 Rules: NIL
 :REDUNDANT
 
-
-ACL2 !>>>(DEFUN
-              FIB2 (N)
-              (DECLARE (XARGS :GUARD (LET ((CLOCK 0))
-                                          (DECLARE (IGNORABLE CLOCK))
-                                          (AND (NATP CLOCK) (INTEGERP N)))))
-              (FIB2-CLOCK N (NFIX (FIB2-CLOCK-STABLE0 N))))
-
-The event ( DEFUN FIB2 ...) is redundant.  See :DOC redundant-events.
-
 Summary
 Form:  ( DEFUN FIB2 ...)
 Rules: NIL
 :REDUNDANT
-
-End of Encapsulated Events.
-
-Having verified that the encapsulated events validate the signatures
-of the ENCAPSULATE event, we discard the ephemeral theory and extend
-the original theory as directed by the signatures and the non-LOCAL
-events.
-
 
 Summary
 Form:  ( ENCAPSULATE NIL (SET-ENFORCE-REDUNDANCY T) ...)
@@ -658,30 +368,9 @@ ACL2 !>>(DEFUN FIB-MV-LIMIT (N LIMIT)
                                     (MV-LET (X2 Y2)
                                             (FIB-MV-LIMIT (- N 2) LIMIT)
                                             (MV (+ X1 X2) (+ Y1 Y2))))))))
-
-For the admission of FIB-MV-LIMIT we will use the relation O< (which
-is known to be well-founded on the domain recognized by O-P) and the
-measure (NFIX LIMIT).  The non-trivial part of the measure conjecture
-is
-
-Goal
-(AND (O-P (NFIX LIMIT))
-     (IMPLIES (AND (NOT (ZP LIMIT))
-                   (NOT (OR (= N 0) (= N 1))))
-              (O< (NFIX (+ -1 LIMIT)) (NFIX LIMIT)))).
 Subgoal 2
 Subgoal 1
 Subgoal 1'
-
-Q.E.D.
-
-That completes the proof of the measure theorem for FIB-MV-LIMIT. 
-Thus, we admit this function under the principle of definition.  We
-observe that the type of FIB-MV-LIMIT is described by the theorem 
-(AND (CONSP (FIB-MV-LIMIT N LIMIT)) (TRUE-LISTP (FIB-MV-LIMIT N LIMIT))).
-We used primitive type reasoning.
-
-(FIB-MV-LIMIT * *) => (MV * *).
 
 Summary
 Form:  ( DEFUN FIB-MV-LIMIT ...)
@@ -702,63 +391,12 @@ ACL2 !>>(DEFTHM NATP-FIB-MV-LIMIT-0
 ACL2 Observation in ( DEFTHM NATP-FIB-MV-LIMIT-0 ...):  Our heuristics
 choose (CAR (FIB-MV-LIMIT N LIMIT)) as the :TYPED-TERM.
 Subgoal 2
-
-([ A key checkpoint:
-
-Subgoal 2
-(INTEGERP (CAR (FIB-MV-LIMIT N LIMIT)))
-
-*1 (Subgoal 2) is pushed for proof by induction.
-
-])
 Subgoal 1
-
-([ A key checkpoint:
-
-Subgoal 1
-(<= 0 (CAR (FIB-MV-LIMIT N LIMIT)))
-
-Normally we would attempt to prove Subgoal 1 by induction.  However,
-we prefer in this instance to focus on the original input conjecture
-rather than this simplified special case.  We therefore abandon our
-previous work on this conjecture and reassign the name *1 to the original
-conjecture.  (See :DOC otf-flg.)
-
-])
-
-Perhaps we can prove *1 by induction.  One induction scheme is suggested
-by this conjecture.  
-
-We will induct according to a scheme suggested by (FIB-MV-LIMIT N LIMIT).
-This suggestion was produced using the :induction rule FIB-MV-LIMIT.
-If we let (:P LIMIT N) denote *1 above then the induction scheme we'll
-use is
-(AND (IMPLIES (AND (NOT (ZP LIMIT))
-                   (NOT (OR (= N 0) (= N 1)))
-                   (:P (+ -1 LIMIT) (+ -1 N))
-                   (:P (+ -1 LIMIT) (+ -2 N)))
-              (:P LIMIT N))
-     (IMPLIES (AND (NOT (ZP LIMIT))
-                   (OR (= N 0) (= N 1)))
-              (:P LIMIT N))
-     (IMPLIES (ZP LIMIT) (:P LIMIT N))).
-This induction is justified by the same argument used to admit FIB-MV-LIMIT.
-Note, however, that the unmeasured variable N is being instantiated.
-When applied to the goal at hand the above induction scheme produces
-three nontautological subgoals.
 Subgoal *1/3
 Subgoal *1/3'
 Subgoal *1/2
 Subgoal *1/2'
 Subgoal *1/1
-
-*1 is COMPLETED!
-Thus key checkpoint Goal is COMPLETED!
-
-Q.E.D.
-
-The storage of NATP-FIB-MV-LIMIT-0 depends upon the :compound-recognizer
-rule NATP-COMPOUND-RECOGNIZER.
 
 Summary
 Form:  ( DEFTHM NATP-FIB-MV-LIMIT-0 ...)
@@ -785,63 +423,12 @@ ACL2 !>>(DEFTHM NATP-FIB-MV-LIMIT-1
 ACL2 Observation in ( DEFTHM NATP-FIB-MV-LIMIT-1 ...):  Our heuristics
 choose (MV-NTH 1 (FIB-MV-LIMIT N LIMIT)) as the :TYPED-TERM.
 Subgoal 2
-
-([ A key checkpoint:
-
-Subgoal 2
-(INTEGERP (MV-NTH 1 (FIB-MV-LIMIT N LIMIT)))
-
-*1 (Subgoal 2) is pushed for proof by induction.
-
-])
 Subgoal 1
-
-([ A key checkpoint:
-
-Subgoal 1
-(<= 0 (MV-NTH 1 (FIB-MV-LIMIT N LIMIT)))
-
-Normally we would attempt to prove Subgoal 1 by induction.  However,
-we prefer in this instance to focus on the original input conjecture
-rather than this simplified special case.  We therefore abandon our
-previous work on this conjecture and reassign the name *1 to the original
-conjecture.  (See :DOC otf-flg.)
-
-])
-
-Perhaps we can prove *1 by induction.  One induction scheme is suggested
-by this conjecture.  
-
-We will induct according to a scheme suggested by (FIB-MV-LIMIT N LIMIT).
-This suggestion was produced using the :induction rule FIB-MV-LIMIT.
-If we let (:P LIMIT N) denote *1 above then the induction scheme we'll
-use is
-(AND (IMPLIES (AND (NOT (ZP LIMIT))
-                   (NOT (OR (= N 0) (= N 1)))
-                   (:P (+ -1 LIMIT) (+ -1 N))
-                   (:P (+ -1 LIMIT) (+ -2 N)))
-              (:P LIMIT N))
-     (IMPLIES (AND (NOT (ZP LIMIT))
-                   (OR (= N 0) (= N 1)))
-              (:P LIMIT N))
-     (IMPLIES (ZP LIMIT) (:P LIMIT N))).
-This induction is justified by the same argument used to admit FIB-MV-LIMIT.
-Note, however, that the unmeasured variable N is being instantiated.
-When applied to the goal at hand the above induction scheme produces
-three nontautological subgoals.
 Subgoal *1/3
 Subgoal *1/3'
 Subgoal *1/2
 Subgoal *1/2'
 Subgoal *1/1
-
-*1 is COMPLETED!
-Thus key checkpoint Goal is COMPLETED!
-
-Q.E.D.
-
-The storage of NATP-FIB-MV-LIMIT-1 depends upon the :compound-recognizer
-rule NATP-COMPOUND-RECOGNIZER.
 
 Summary
 Form:  ( DEFTHM NATP-FIB-MV-LIMIT-1 ...)
@@ -863,47 +450,7 @@ Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
         (:TYPE-PRESCRIPTION FIB-MV-LIMIT))
  NATP-FIB-MV-LIMIT-1
 ACL2 !>>(VERIFY-GUARDS FIB-MV-LIMIT)
-
-Computing the guard conjecture for FIB-MV-LIMIT....
-
-The non-trivial part of the guard conjecture for FIB-MV-LIMIT, given
-the :compound-recognizer rule ZP-COMPOUND-RECOGNIZER, is
-
-Goal
-(IMPLIES (AND (INTEGERP N)
-              (<= 0 LIMIT)
-              (INTEGERP LIMIT)
-              (NOT (ZP LIMIT)))
-         (LET ((LIMIT (+ -1 LIMIT)))
-              (AND (ACL2-NUMBERP N)
-                   (OR (NOT (= N 0)) (ACL2-NUMBERP N))
-                   (OR (= N 0) (ACL2-NUMBERP N))
-                   (OR (OR (= N 0) (= N 1))
-                       (ACL2-NUMBERP N))
-                   (OR (OR (= N 0) (= N 1))
-                       (INTEGERP LIMIT))
-                   (OR (OR (= N 0) (= N 1))
-                       (INTEGERP (+ -1 N)))
-                   (OR (OR (= N 0) (= N 1)) (<= 0 LIMIT))
-                   (OR (OR (= N 0) (= N 1))
-                       (MV-LET (X1 Y1)
-                               (FIB-MV-LIMIT (+ -1 N) LIMIT)
-                               (AND (ACL2-NUMBERP N)
-                                    (INTEGERP LIMIT)
-                                    (INTEGERP (+ -2 N))
-                                    (<= 0 LIMIT)
-                                    (MV-LET (X2 Y2)
-                                            (FIB-MV-LIMIT (+ -2 N) LIMIT)
-                                            (AND (ACL2-NUMBERP X1)
-                                                 (ACL2-NUMBERP X2)
-                                                 (ACL2-NUMBERP Y1)
-                                                 (ACL2-NUMBERP Y2))))))))).
 Goal'
-
-Q.E.D.
-
-That completes the proof of the guard theorem for FIB-MV-LIMIT.  
-FIB-MV-LIMIT is compliant with Common Lisp.
 
 Summary
 Form:  ( VERIFY-GUARDS FIB-MV-LIMIT)
@@ -920,69 +467,15 @@ Rules: ((:COMPOUND-RECOGNIZER ZP-COMPOUND-RECOGNIZER)
  FIB-MV-LIMIT
 ACL2 !>>(MEMOIZE-PARTIAL FIB-MV)
 
-
-ACL2 !>>>(MAKE-EVENT
-          (ER-PROGN
-            (MEMOIZE-PARTIAL-BASIC-CHECKS
-                 '((FIB-MV FIB-MV-LIMIT FIB-MV-LIMIT-CHANGE
-                           FIB-MV-LIMIT-STABLE))
-                 'MEMOIZE-PARTIAL
-                 STATE)
-            (MV-LET
-                 (MSG DEFS TABLE-EVENT)
-                 (MEMOIZE-PARTIAL-SUPPORTING-EVENTS
-                      '((FIB-MV FIB-MV-LIMIT FIB-MV-LIMIT-CHANGE
-                                FIB-MV-LIMIT-STABLE))
-                      (W STATE))
-                 (COND (MSG (ER SOFT 'MEMOIZE-PARTIAL "~@0" MSG))
-                       (T (VALUE (CONS 'PROGN
-                                       (APPEND DEFS (LIST TABLE-EVENT))))))))
-          :ON-BEHALF-OF :QUIET!)
-
-
-ACL2 !>>>(DEFCHOOSE FIB-MV-LIMIT-CHANGE (LARGE)
-                    (N LIMIT)
-                    (AND (NATP LARGE)
-                         (<= LIMIT LARGE)
-                         (NOT (EQUAL (FIB-MV-LIMIT N LIMIT)
-                                     (FIB-MV-LIMIT N LARGE)))))
-
 Summary
 Form:  ( DEFCHOOSE FIB-MV-LIMIT-CHANGE ...)
 Rules: NIL
 FIB-MV-LIMIT-CHANGE
 
-
-ACL2 !>>>(DEFCHOOSE
-              FIB-MV-LIMIT-STABLE (LIMIT)
-              (N)
-              (AND (NATP LIMIT)
-                   (EQUAL (FIB-MV-LIMIT N LIMIT)
-                          (FIB-MV-LIMIT N (FIB-MV-LIMIT-CHANGE N LIMIT)))))
-
 Summary
 Form:  ( DEFCHOOSE FIB-MV-LIMIT-STABLE ...)
 Rules: NIL
 FIB-MV-LIMIT-STABLE
-
-
-ACL2 !>>>(DEFUN FIB-MV (N)
-                (DECLARE (TYPE INTEGER N)
-                         (XARGS :GUARD T))
-                (FIB-MV-LIMIT N (NFIX (FIB-MV-LIMIT-STABLE N))))
-
-Since FIB-MV is non-recursive, its admission is trivial.  We observe
-that the type of FIB-MV is described by the theorem 
-(AND (CONSP (FIB-MV N)) (TRUE-LISTP (FIB-MV N))).  We used the :type-
-prescription rule FIB-MV-LIMIT.
-
-(FIB-MV *) => (MV * *).
-
-Computing the guard conjecture for FIB-MV....
-
-The guard conjecture for FIB-MV is trivial to prove, given primitive
-type reasoning and the :type-prescription rule NFIX.  FIB-MV is compliant
-with Common Lisp.
 
 Summary
 Form:  ( DEFUN FIB-MV ...)
@@ -990,31 +483,6 @@ Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL)
         (:TYPE-PRESCRIPTION FIB-MV-LIMIT)
         (:TYPE-PRESCRIPTION NFIX))
 FIB-MV
-
-
-ACL2 !>>>(TABLE
-          PARTIAL-FUNCTIONS-TABLE 'FIB-MV-LIMIT
-          '((FIB-MV
-             FIB-MV-LIMIT
-             FIB-MV-LIMIT-CHANGE FIB-MV-LIMIT-STABLE
-             (DEFUN
-              FIB-MV (N)
-              (DECLARE (IGNORABLE N))
-              (DECLARE (TYPE INTEGER N))
-              (FLET
-                   ((FIB-MV-LIMIT (N LIMIT)
-                                  (DECLARE (IGNORE LIMIT))
-                                  (FIB-MV N)))
-                   (DECLARE (INLINE FIB-MV-LIMIT))
-                   (LET ((LIMIT 0))
-                        (DECLARE (IGNORABLE LIMIT))
-                        (IF (OR (= N 0) (= N 1))
-                            (MV 1 1)
-                            (MV-LET (X1 Y1)
-                                    (FIB-MV-LIMIT (- N 1) LIMIT)
-                                    (MV-LET (X2 Y2)
-                                            (FIB-MV-LIMIT (- N 2) LIMIT)
-                                            (MV (+ X1 X2) (+ Y1 Y2)))))))))))
 
 Summary
 Form:  ( TABLE PARTIAL-FUNCTIONS-TABLE ...)
@@ -1030,33 +498,10 @@ Form:  ( MAKE-EVENT (ER-PROGN ...) ...)
 Rules: NIL
 PARTIAL-FUNCTIONS-TABLE
 
-
-ACL2 !>>>(MEMOIZE 'FIB-MV :TOTAL 'FIB-MV-LIMIT)
-
-
-ACL2 !>>>(TABLE
-              MEMOIZE-TABLE
-              (DEREF-MACRO-NAME 'FIB-MV
-                                (MACRO-ALIASES WORLD))
-              (LIST* (CONS :CONDITION-FN T)
-                     (CONS :INLINE T)
-                     (CONS :COMMUTATIVE NIL)
-                     (CONS :FORGET NIL)
-                     (CONS :MEMO-TABLE-INIT-SIZE (OR NIL *MHT-DEFAULT-SIZE*))
-                     (CONS :AOKP 'NIL)
-                     (CONS :STATS :DEFAULT)
-                     (CONS :TOTAL 'FIB-MV-LIMIT)
-                     (AND (NOT (EQ ':DEFAULT :DEFAULT))
-                          (LIST (CONS :IDEAL-OKP ':DEFAULT)))))
-
 Summary
 Form:  ( TABLE MEMOIZE-TABLE ...)
 Rules: NIL
 MEMOIZE-TABLE
-
-
-ACL2 !>>>(VALUE-TRIPLE (DEREF-MACRO-NAME 'FIB-MV
-                                         (MACRO-ALIASES (W STATE))))
 FIB-MV
 
 Summary
@@ -1090,20 +535,6 @@ ACL2 !>>(MUTUAL-RECURSION (DEFUN EVENLP-BDD (X BOUND)
                                               (EVENLP-BDD (CDR X) BOUND)
                                               NIL)))))
 
-The admission of EVENLP-BDD and ODDLP-BDD are trivial, using the relation
-O< (which is known to be well-founded on the domain recognized by O-P)
-and the measure (ACL2-COUNT X) for EVENLP-BDD and (ACL2-COUNT X) for
-ODDLP-BDD.  We observe that the type of EVENLP-BDD is described by
-the theorem (SYMBOLP (EVENLP-BDD X BOUND)) and the type of ODDLP-BDD
-is described by the theorem (SYMBOLP (ODDLP-BDD X BOUND)).
-
-Computing the guard conjecture for EVENLP-BDD and ODDLP-BDD....
-
-The guard conjecture for EVENLP-BDD and ODDLP-BDD is trivial to prove,
-given the :compound-recognizer rules NATP-COMPOUND-RECOGNIZER and 
-ZP-COMPOUND-RECOGNIZER and primitive type reasoning.  EVENLP-BDD and
-ODDLP-BDD are compliant with Common Lisp.
-
 Summary
 Form:  ( MUTUAL-RECURSION ( DEFUN EVENLP-BDD ...) ...)
 Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
@@ -1112,71 +543,15 @@ Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
  (EVENLP-BDD ODDLP-BDD)
 ACL2 !>>(MEMOIZE-PARTIAL ((EVENLP EVENLP-BDD) (ODDLP ODDLP-BDD)))
 
-
-ACL2 !>>>(MAKE-EVENT
-          (ER-PROGN
-            (MEMOIZE-PARTIAL-BASIC-CHECKS
-                 '((EVENLP EVENLP-BDD
-                           EVENLP-BDD-CHANGE EVENLP-BDD-STABLE)
-                   (ODDLP ODDLP-BDD
-                          ODDLP-BDD-CHANGE ODDLP-BDD-STABLE))
-                 'MEMOIZE-PARTIAL
-                 STATE)
-            (MV-LET
-                 (MSG DEFS TABLE-EVENT)
-                 (MEMOIZE-PARTIAL-SUPPORTING-EVENTS
-                      '((EVENLP EVENLP-BDD
-                                EVENLP-BDD-CHANGE EVENLP-BDD-STABLE)
-                        (ODDLP ODDLP-BDD
-                               ODDLP-BDD-CHANGE ODDLP-BDD-STABLE))
-                      (W STATE))
-                 (COND (MSG (ER SOFT 'MEMOIZE-PARTIAL "~@0" MSG))
-                       (T (VALUE (CONS 'PROGN
-                                       (APPEND DEFS (LIST TABLE-EVENT))))))))
-          :ON-BEHALF-OF :QUIET!)
-
-
-ACL2 !>>>(DEFCHOOSE EVENLP-BDD-CHANGE (LARGE)
-                    (X BOUND)
-                    (AND (NATP LARGE)
-                         (<= BOUND LARGE)
-                         (NOT (EQUAL (EVENLP-BDD X BOUND)
-                                     (EVENLP-BDD X LARGE)))))
-
 Summary
 Form:  ( DEFCHOOSE EVENLP-BDD-CHANGE ...)
 Rules: NIL
 EVENLP-BDD-CHANGE
 
-
-ACL2 !>>>(DEFCHOOSE EVENLP-BDD-STABLE (BOUND)
-                    (X)
-                    (AND (NATP BOUND)
-                         (EQUAL (EVENLP-BDD X BOUND)
-                                (EVENLP-BDD X (EVENLP-BDD-CHANGE X BOUND)))))
-
 Summary
 Form:  ( DEFCHOOSE EVENLP-BDD-STABLE ...)
 Rules: NIL
 EVENLP-BDD-STABLE
-
-
-ACL2 !>>>(DEFUN EVENLP (X)
-                (DECLARE (XARGS :GUARD (LET ((BOUND 0))
-                                            (DECLARE (IGNORABLE BOUND))
-                                            (NATP BOUND))))
-                (EVENLP-BDD X (NFIX (EVENLP-BDD-STABLE X))))
-
-Since EVENLP is non-recursive, its admission is trivial.  We observe
-that the type of EVENLP is described by the theorem (SYMBOLP (EVENLP X)).
-We used the :type-prescription rule EVENLP-BDD.
-
-Computing the guard conjecture for EVENLP....
-
-The guard conjecture for EVENLP is trivial to prove, given the :compound-
-recognizer rule NATP-COMPOUND-RECOGNIZER, the :executable-counterpart
-of NOT and the :type-prescription rule NFIX.  EVENLP is compliant with
-Common Lisp.
 
 Summary
 Form:  ( DEFUN EVENLP ...)
@@ -1186,48 +561,15 @@ Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
         (:TYPE-PRESCRIPTION NFIX))
 EVENLP
 
-
-ACL2 !>>>(DEFCHOOSE ODDLP-BDD-CHANGE (LARGE)
-                    (X BOUND)
-                    (AND (NATP LARGE)
-                         (<= BOUND LARGE)
-                         (NOT (EQUAL (ODDLP-BDD X BOUND)
-                                     (ODDLP-BDD X LARGE)))))
-
 Summary
 Form:  ( DEFCHOOSE ODDLP-BDD-CHANGE ...)
 Rules: NIL
 ODDLP-BDD-CHANGE
 
-
-ACL2 !>>>(DEFCHOOSE ODDLP-BDD-STABLE (BOUND)
-                    (X)
-                    (AND (NATP BOUND)
-                         (EQUAL (ODDLP-BDD X BOUND)
-                                (ODDLP-BDD X (ODDLP-BDD-CHANGE X BOUND)))))
-
 Summary
 Form:  ( DEFCHOOSE ODDLP-BDD-STABLE ...)
 Rules: NIL
 ODDLP-BDD-STABLE
-
-
-ACL2 !>>>(DEFUN ODDLP (X)
-                (DECLARE (XARGS :GUARD (LET ((BOUND 0))
-                                            (DECLARE (IGNORABLE BOUND))
-                                            (NATP BOUND))))
-                (ODDLP-BDD X (NFIX (ODDLP-BDD-STABLE X))))
-
-Since ODDLP is non-recursive, its admission is trivial.  We observe
-that the type of ODDLP is described by the theorem (SYMBOLP (ODDLP X)).
-We used the :type-prescription rule ODDLP-BDD.
-
-Computing the guard conjecture for ODDLP....
-
-The guard conjecture for ODDLP is trivial to prove, given the :compound-
-recognizer rule NATP-COMPOUND-RECOGNIZER, the :executable-counterpart
-of NOT and the :type-prescription rule NFIX.  ODDLP is compliant with
-Common Lisp.
 
 Summary
 Form:  ( DEFUN ODDLP ...)
@@ -1236,41 +578,6 @@ Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
         (:TYPE-PRESCRIPTION NFIX)
         (:TYPE-PRESCRIPTION ODDLP-BDD))
 ODDLP
-
-
-ACL2 !>>>(TABLE PARTIAL-FUNCTIONS-TABLE 'EVENLP-BDD
-                '((EVENLP EVENLP-BDD
-                          EVENLP-BDD-CHANGE EVENLP-BDD-STABLE
-                          (DEFUN EVENLP (X)
-                                 (DECLARE (IGNORABLE X))
-                                 (FLET ((EVENLP-BDD (X BOUND)
-                                                    (DECLARE (IGNORE BOUND))
-                                                    (EVENLP X))
-                                        (ODDLP-BDD (X BOUND)
-                                                   (DECLARE (IGNORE BOUND))
-                                                   (ODDLP X)))
-                                       (DECLARE (INLINE EVENLP-BDD))
-                                       (LET ((BOUND 0))
-                                            (DECLARE (IGNORABLE BOUND))
-                                            (IF (CONSP X)
-                                                (ODDLP-BDD (CDR X) BOUND)
-                                                T)))))
-                  (ODDLP ODDLP-BDD
-                         ODDLP-BDD-CHANGE ODDLP-BDD-STABLE
-                         (DEFUN ODDLP (X)
-                                (DECLARE (IGNORABLE X))
-                                (FLET ((EVENLP-BDD (X BOUND)
-                                                   (DECLARE (IGNORE BOUND))
-                                                   (EVENLP X))
-                                       (ODDLP-BDD (X BOUND)
-                                                  (DECLARE (IGNORE BOUND))
-                                                  (ODDLP X)))
-                                      (DECLARE (INLINE ODDLP-BDD))
-                                      (LET ((BOUND 0))
-                                           (DECLARE (IGNORABLE BOUND))
-                                           (IF (CONSP X)
-                                               (EVENLP-BDD (CDR X) BOUND)
-                                               NIL)))))))
 
 Summary
 Form:  ( TABLE PARTIAL-FUNCTIONS-TABLE ...)
@@ -1286,33 +593,10 @@ Form:  ( MAKE-EVENT (ER-PROGN ...) ...)
 Rules: NIL
 PARTIAL-FUNCTIONS-TABLE
 
-
-ACL2 !>>>(MEMOIZE 'EVENLP :TOTAL 'EVENLP-BDD)
-
-
-ACL2 !>>>(TABLE
-              MEMOIZE-TABLE
-              (DEREF-MACRO-NAME 'EVENLP
-                                (MACRO-ALIASES WORLD))
-              (LIST* (CONS :CONDITION-FN T)
-                     (CONS :INLINE T)
-                     (CONS :COMMUTATIVE NIL)
-                     (CONS :FORGET NIL)
-                     (CONS :MEMO-TABLE-INIT-SIZE (OR NIL *MHT-DEFAULT-SIZE*))
-                     (CONS :AOKP 'NIL)
-                     (CONS :STATS :DEFAULT)
-                     (CONS :TOTAL 'EVENLP-BDD)
-                     (AND (NOT (EQ ':DEFAULT :DEFAULT))
-                          (LIST (CONS :IDEAL-OKP ':DEFAULT)))))
-
 Summary
 Form:  ( TABLE MEMOIZE-TABLE ...)
 Rules: NIL
 MEMOIZE-TABLE
-
-
-ACL2 !>>>(VALUE-TRIPLE (DEREF-MACRO-NAME 'EVENLP
-                                         (MACRO-ALIASES (W STATE))))
 EVENLP
 
 Summary
@@ -1320,33 +604,10 @@ Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
 Rules: NIL
 EVENLP
 
-
-ACL2 !>>>(MEMOIZE 'ODDLP :TOTAL 'ODDLP-BDD)
-
-
-ACL2 !>>>(TABLE
-              MEMOIZE-TABLE
-              (DEREF-MACRO-NAME 'ODDLP
-                                (MACRO-ALIASES WORLD))
-              (LIST* (CONS :CONDITION-FN T)
-                     (CONS :INLINE T)
-                     (CONS :COMMUTATIVE NIL)
-                     (CONS :FORGET NIL)
-                     (CONS :MEMO-TABLE-INIT-SIZE (OR NIL *MHT-DEFAULT-SIZE*))
-                     (CONS :AOKP 'NIL)
-                     (CONS :STATS :DEFAULT)
-                     (CONS :TOTAL 'ODDLP-BDD)
-                     (AND (NOT (EQ ':DEFAULT :DEFAULT))
-                          (LIST (CONS :IDEAL-OKP ':DEFAULT)))))
-
 Summary
 Form:  ( TABLE MEMOIZE-TABLE ...)
 Rules: NIL
 MEMOIZE-TABLE
-
-
-ACL2 !>>>(VALUE-TRIPLE (DEREF-MACRO-NAME 'ODDLP
-                                         (MACRO-ALIASES (W STATE))))
 ODDLP
 
 Summary
@@ -1358,6 +619,8 @@ Summary
 Form:  ( PROGN (MAKE-EVENT ...) ...)
 Rules: NIL
  ODDLP
+ACL2 !>>(SET-ENFORCE-REDUNDANCY T)
+ T
 ACL2 !>>(ENCAPSULATE
          NIL
          (DEFCHOOSE EVENLP-BDD-CHANGE (LARGE)
@@ -1424,148 +687,66 @@ ACL2 !>>(ENCAPSULATE
                                            (DECLARE (IGNORABLE BOUND))
                                            (IF (CONSP X)
                                                (EVENLP-BDD (CDR X) BOUND)
-                                               NIL))))))))
-
-To verify that the seven encapsulated events correctly extend the current
-theory we will evaluate them.  The theory thus constructed is only
-ephemeral.
-
-Encapsulated Events:
-
-
-ACL2 !>>>(DEFCHOOSE EVENLP-BDD-CHANGE (LARGE)
-                    (X BOUND)
-                    (AND (NATP LARGE)
-                         (<= BOUND LARGE)
-                         (NOT (EQUAL (EVENLP-BDD X BOUND)
-                                     (EVENLP-BDD X LARGE)))))
-
-The event ( DEFCHOOSE EVENLP-BDD-CHANGE ...) is redundant.  See :DOC
-redundant-events.
+                                               NIL)))))))
+         (MEMOIZE 'EVENLP :TOTAL 'EVENLP-BDD)
+         (MEMOIZE 'ODDLP :TOTAL 'ODDLP-BDD))
 
 Summary
 Form:  ( DEFCHOOSE EVENLP-BDD-CHANGE ...)
 Rules: NIL
 :REDUNDANT
 
-
-ACL2 !>>>(DEFCHOOSE EVENLP-BDD-STABLE (BOUND)
-                    (X)
-                    (AND (NATP BOUND)
-                         (EQUAL (EVENLP-BDD X BOUND)
-                                (EVENLP-BDD X (EVENLP-BDD-CHANGE X BOUND)))))
-
-The event ( DEFCHOOSE EVENLP-BDD-STABLE ...) is redundant.  See :DOC
-redundant-events.
-
 Summary
 Form:  ( DEFCHOOSE EVENLP-BDD-STABLE ...)
 Rules: NIL
 :REDUNDANT
-
-
-ACL2 !>>>(DEFUN EVENLP (X)
-                (DECLARE (XARGS :GUARD (LET ((BOUND 0))
-                                            (DECLARE (IGNORABLE BOUND))
-                                            (NATP BOUND))))
-                (EVENLP-BDD X (NFIX (EVENLP-BDD-STABLE X))))
-
-The event ( DEFUN EVENLP ...) is redundant.  See :DOC redundant-events.
 
 Summary
 Form:  ( DEFUN EVENLP ...)
 Rules: NIL
 :REDUNDANT
 
-
-ACL2 !>>>(DEFCHOOSE ODDLP-BDD-CHANGE (LARGE)
-                    (X BOUND)
-                    (AND (NATP LARGE)
-                         (<= BOUND LARGE)
-                         (NOT (EQUAL (ODDLP-BDD X BOUND)
-                                     (ODDLP-BDD X LARGE)))))
-
-The event ( DEFCHOOSE ODDLP-BDD-CHANGE ...) is redundant.  See :DOC
-redundant-events.
-
 Summary
 Form:  ( DEFCHOOSE ODDLP-BDD-CHANGE ...)
 Rules: NIL
 :REDUNDANT
-
-
-ACL2 !>>>(DEFCHOOSE ODDLP-BDD-STABLE (BOUND)
-                    (X)
-                    (AND (NATP BOUND)
-                         (EQUAL (ODDLP-BDD X BOUND)
-                                (ODDLP-BDD X (ODDLP-BDD-CHANGE X BOUND)))))
-
-The event ( DEFCHOOSE ODDLP-BDD-STABLE ...) is redundant.  See :DOC
-redundant-events.
 
 Summary
 Form:  ( DEFCHOOSE ODDLP-BDD-STABLE ...)
 Rules: NIL
 :REDUNDANT
 
-
-ACL2 !>>>(DEFUN ODDLP (X)
-                (DECLARE (XARGS :GUARD (LET ((BOUND 0))
-                                            (DECLARE (IGNORABLE BOUND))
-                                            (NATP BOUND))))
-                (ODDLP-BDD X (NFIX (ODDLP-BDD-STABLE X))))
-
-The event ( DEFUN ODDLP ...) is redundant.  See :DOC redundant-events.
-
 Summary
 Form:  ( DEFUN ODDLP ...)
 Rules: NIL
 :REDUNDANT
-
-
-ACL2 !>>>(TABLE PARTIAL-FUNCTIONS-TABLE 'EVENLP-BDD
-                '((EVENLP EVENLP-BDD
-                          EVENLP-BDD-CHANGE EVENLP-BDD-STABLE
-                          (DEFUN EVENLP (X)
-                                 (DECLARE (IGNORABLE X))
-                                 (FLET ((EVENLP-BDD (X BOUND)
-                                                    (DECLARE (IGNORE BOUND))
-                                                    (EVENLP X))
-                                        (ODDLP-BDD (X BOUND)
-                                                   (DECLARE (IGNORE BOUND))
-                                                   (ODDLP X)))
-                                       (DECLARE (INLINE EVENLP-BDD))
-                                       (LET ((BOUND 0))
-                                            (DECLARE (IGNORABLE BOUND))
-                                            (IF (CONSP X)
-                                                (ODDLP-BDD (CDR X) BOUND)
-                                                T)))))
-                  (ODDLP ODDLP-BDD
-                         ODDLP-BDD-CHANGE ODDLP-BDD-STABLE
-                         (DEFUN ODDLP (X)
-                                (DECLARE (IGNORABLE X))
-                                (FLET ((EVENLP-BDD (X BOUND)
-                                                   (DECLARE (IGNORE BOUND))
-                                                   (EVENLP X))
-                                       (ODDLP-BDD (X BOUND)
-                                                  (DECLARE (IGNORE BOUND))
-                                                  (ODDLP X)))
-                                      (DECLARE (INLINE ODDLP-BDD))
-                                      (LET ((BOUND 0))
-                                           (DECLARE (IGNORABLE BOUND))
-                                           (IF (CONSP X)
-                                               (EVENLP-BDD (CDR X) BOUND)
-                                               NIL)))))))
-
-The event ( TABLE PARTIAL-FUNCTIONS-TABLE ...) is redundant.  See :DOC
-redundant-events.
 
 Summary
 Form:  ( TABLE PARTIAL-FUNCTIONS-TABLE ...)
 Rules: NIL
 :REDUNDANT
 
-End of Encapsulated Events.
+Summary
+Form:  ( TABLE MEMOIZE-TABLE ...)
+Rules: NIL
+:REDUNDANT
+EVENLP
+
+Summary
+Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
+Rules: NIL
+EVENLP
+
+Summary
+Form:  ( TABLE MEMOIZE-TABLE ...)
+Rules: NIL
+:REDUNDANT
+ODDLP
+
+Summary
+Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
+Rules: NIL
+ODDLP
 
 ACL2 Observation in ( ENCAPSULATE NIL (DEFCHOOSE EVENLP-BDD-CHANGE
 ...) ...):  The submitted encapsulate event has created no new ACL2
@@ -1576,6 +757,8 @@ Summary
 Form:  ( ENCAPSULATE NIL (DEFCHOOSE EVENLP-BDD-CHANGE ...) ...)
 Rules: NIL
  :EMPTY-ENCAPSULATE
+ACL2 !>>(SET-ENFORCE-REDUNDANCY NIL)
+ NIL
 ACL2 !>>(ASSERT-EVENT (EVENLP '(1 2 3 4 5 6)))
  :PASSED
 ACL2 !>>(ASSERT-EVENT (NOT (ODDLP '(1 2 3 4 5 6))))
@@ -1771,799 +954,13 @@ ACL2 !>>(MUTUAL-RECURSION
                                                                    TERM2 CLK)
                               (XX-WORSE-THAN-LST (CDR ARGS)
                                                  TERM2 CLK)))))))))
-
-For the admission of XX-WORSE-THAN-BUILTIN-CLOCKED, 
-XX-WORSE-THAN-OR-EQUAL-BUILTIN-CLOCKED, BASIC-XX-WORSE-THAN-LST1, 
-BASIC-XX-WORSE-THAN-LST2, BASIC-XX-WORSE-THAN, 
-SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL, SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST
-and XX-WORSE-THAN-LST we will use the relation O< (which is known to
-be well-founded on the domain recognized by O-P) and the measure (NFIX CLK)
-for XX-WORSE-THAN-BUILTIN-CLOCKED, (NFIX CLK) for 
-XX-WORSE-THAN-OR-EQUAL-BUILTIN-CLOCKED, (NFIX CLK) for 
-BASIC-XX-WORSE-THAN-LST1, (NFIX CLK) for BASIC-XX-WORSE-THAN-LST2,
-(NFIX CLK) for BASIC-XX-WORSE-THAN, (NFIX CLK) for 
-SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL, (NFIX CLK) for 
-SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST and (NFIX CLK) for XX-WORSE-THAN-LST.
-The non-trivial part of the measure conjecture is
-
-Goal
-(AND (O-P (NFIX CLK))
-     (IMPLIES (NOT (ZP CLK))
-              (O< (NFIX (+ -1 CLK)) (NFIX CLK)))).
 Subgoal 2
 Subgoal 1
 Subgoal 1'
-
-Q.E.D.
-
-That completes the proof of the measure theorem for 
-XX-WORSE-THAN-BUILTIN-CLOCKED, XX-WORSE-THAN-OR-EQUAL-BUILTIN-CLOCKED,
-BASIC-XX-WORSE-THAN-LST1, BASIC-XX-WORSE-THAN-LST2, BASIC-XX-WORSE-THAN,
-SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL, SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST
-and XX-WORSE-THAN-LST.  Thus, we admit these functions under the principle
-of definition.  We observe that the type of XX-WORSE-THAN-BUILTIN-CLOCKED
-is described by the theorem 
-(OR (EQUAL (XX-WORSE-THAN-BUILTIN-CLOCKED TERM1 TERM2 CLK)
-           T)
-    (EQUAL (XX-WORSE-THAN-BUILTIN-CLOCKED TERM1 TERM2 CLK)
-           NIL)),
-the type of XX-WORSE-THAN-OR-EQUAL-BUILTIN-CLOCKED is described by
-the theorem 
-(OR (EQUAL (XX-WORSE-THAN-OR-EQUAL-BUILTIN-CLOCKED TERM1 TERM2 CLK)
-           T)
-    (EQUAL (XX-WORSE-THAN-OR-EQUAL-BUILTIN-CLOCKED TERM1 TERM2 CLK)
-           NIL)),
-the type of BASIC-XX-WORSE-THAN-LST1 is described by the theorem 
-(OR (EQUAL (BASIC-XX-WORSE-THAN-LST1 ARGS1 ARGS2 CLK)
-           T)
-    (EQUAL (BASIC-XX-WORSE-THAN-LST1 ARGS1 ARGS2 CLK)
-           NIL)),
-the type of BASIC-XX-WORSE-THAN-LST2 is described by the theorem 
-(OR (EQUAL (BASIC-XX-WORSE-THAN-LST2 ARGS1 ARGS2 CLK)
-           T)
-    (EQUAL (BASIC-XX-WORSE-THAN-LST2 ARGS1 ARGS2 CLK)
-           NIL)),
-the type of BASIC-XX-WORSE-THAN is described by the theorem 
-(OR (EQUAL (BASIC-XX-WORSE-THAN TERM1 TERM2 CLK)
-           T)
-    (EQUAL (BASIC-XX-WORSE-THAN TERM1 TERM2 CLK)
-           NIL)),
-the type of SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL is described by the
-theorem 
-(OR (EQUAL (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL TERM1 TERM2 CLK)
-           T)
-    (EQUAL (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL TERM1 TERM2 CLK)
-           NIL)),
-the type of SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST is described by
-the theorem 
-(OR (EQUAL (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST ARGS TERM2 CLK)
-           T)
-    (EQUAL (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST ARGS TERM2 CLK)
-           NIL))
-and the type of XX-WORSE-THAN-LST is described by the theorem 
-(OR (EQUAL (XX-WORSE-THAN-LST ARGS TERM2 CLK)
-           T)
-    (EQUAL (XX-WORSE-THAN-LST ARGS TERM2 CLK)
-           NIL)).
-
-Computing the guard conjecture for XX-WORSE-THAN-BUILTIN-CLOCKED, 
-XX-WORSE-THAN-OR-EQUAL-BUILTIN-CLOCKED, BASIC-XX-WORSE-THAN-LST1, 
-BASIC-XX-WORSE-THAN-LST2, BASIC-XX-WORSE-THAN, 
-SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL, SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST
-and XX-WORSE-THAN-LST....
-
-The non-trivial part of the guard conjecture for 
-XX-WORSE-THAN-BUILTIN-CLOCKED, XX-WORSE-THAN-OR-EQUAL-BUILTIN-CLOCKED,
-BASIC-XX-WORSE-THAN-LST1, BASIC-XX-WORSE-THAN-LST2, BASIC-XX-WORSE-THAN,
-SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL, SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST
-and XX-WORSE-THAN-LST, given the :compound-recognizer rule 
-ZP-COMPOUND-RECOGNIZER, is
-
-Goal
-(AND
- (IMPLIES (AND (PSEUDO-TERMP TERM2)
-               (PSEUDO-TERMP TERM1)
-               (<= 0 CLK)
-               (INTEGERP CLK)
-               (NOT (ZP CLK)))
-          (LET ((CLK (+ -1 CLK)))
-               (AND (INTEGERP CLK)
-                    (PSEUDO-TERMP TERM1)
-                    (<= 0 CLK)
-                    (PSEUDO-TERMP TERM2)
-                    (OR (BASIC-XX-WORSE-THAN TERM1 TERM2 CLK)
-                        (PSEUDO-TERMP TERM1))
-                    (OR (BASIC-XX-WORSE-THAN TERM1 TERM2 CLK)
-                        (PSEUDO-TERMP TERM2))
-                    (OR (BASIC-XX-WORSE-THAN TERM1 TERM2 CLK)
-                        (PSEUDO-VARIANTP TERM1 TERM2)
-                        (ATOM TERM1)
-                        (CONSP TERM1)
-                        (EQUAL TERM1 NIL))
-                    (OR (BASIC-XX-WORSE-THAN TERM1 TERM2 CLK)
-                        (PSEUDO-VARIANTP TERM1 TERM2)
-                        (ATOM TERM1)
-                        (EQ 'QUOTE (CAR TERM1))
-                        (CONSP TERM1)
-                        (EQUAL TERM1 NIL))
-                    (OR (BASIC-XX-WORSE-THAN TERM1 TERM2 CLK)
-                        (PSEUDO-VARIANTP TERM1 TERM2)
-                        (ATOM TERM1)
-                        (EQ 'QUOTE (CAR TERM1))
-                        (INTEGERP CLK))
-                    (OR (BASIC-XX-WORSE-THAN TERM1 TERM2 CLK)
-                        (PSEUDO-VARIANTP TERM1 TERM2)
-                        (ATOM TERM1)
-                        (EQ 'QUOTE (CAR TERM1))
-                        (PSEUDO-TERM-LISTP (CDR TERM1)))
-                    (OR (BASIC-XX-WORSE-THAN TERM1 TERM2 CLK)
-                        (PSEUDO-VARIANTP TERM1 TERM2)
-                        (ATOM TERM1)
-                        (EQ 'QUOTE (CAR TERM1))
-                        (<= 0 CLK))
-                    (OR (BASIC-XX-WORSE-THAN TERM1 TERM2 CLK)
-                        (PSEUDO-VARIANTP TERM1 TERM2)
-                        (ATOM TERM1)
-                        (EQ 'QUOTE (CAR TERM1))
-                        (PSEUDO-TERMP TERM2)))))
- (IMPLIES (AND (PSEUDO-TERMP TERM2)
-               (PSEUDO-TERMP TERM1)
-               (<= 0 CLK)
-               (INTEGERP CLK)
-               (NOT (ZP CLK)))
-          (LET ((CLK (+ -1 CLK)))
-               (AND (PSEUDO-TERMP TERM1)
-                    (PSEUDO-TERMP TERM2)
-                    (OR (PSEUDO-VARIANTP TERM1 TERM2)
-                        (INTEGERP CLK))
-                    (OR (PSEUDO-VARIANTP TERM1 TERM2)
-                        (PSEUDO-TERMP TERM1))
-                    (OR (PSEUDO-VARIANTP TERM1 TERM2)
-                        (<= 0 CLK))
-                    (OR (PSEUDO-VARIANTP TERM1 TERM2)
-                        (PSEUDO-TERMP TERM2)))))
- (IMPLIES (AND (PSEUDO-TERMP TERM2)
-               (PSEUDO-TERMP TERM1)
-               (<= 0 CLK)
-               (INTEGERP CLK)
-               (NOT (ZP CLK)))
-          (LET ((CLK (+ -1 CLK)))
-               (AND (OR (NOT (ATOM TERM2))
-                        (SYMBOLP TERM1)
-                        (SYMBOLP TERM2))
-                    (OR (NOT (ATOM TERM2))
-                        (EQ TERM1 TERM2)
-                        (PSEUDO-TERMP TERM2))
-                    (OR (NOT (ATOM TERM2))
-                        (EQ TERM1 TERM2)
-                        (PSEUDO-TERMP TERM1))
-                    (OR (ATOM TERM2)
-                        (CONSP TERM2)
-                        (EQUAL TERM2 NIL))
-                    (OR (ATOM TERM2)
-                        (NOT (EQ 'QUOTE (CAR TERM2)))
-                        (ATOM TERM1)
-                        (CONSP TERM1)
-                        (EQUAL TERM1 NIL))
-                    (OR (ATOM TERM2)
-                        (NOT (EQ 'QUOTE (CAR TERM2)))
-                        (ATOM TERM1)
-                        (NOT (EQ 'QUOTE (CAR TERM1)))
-                        (CONSP TERM2)
-                        (EQUAL TERM2 NIL))
-                    (OR (ATOM TERM2)
-                        (NOT (EQ 'QUOTE (CAR TERM2)))
-                        (ATOM TERM1)
-                        (NOT (EQ 'QUOTE (CAR TERM1)))
-                        (CONSP (CDR TERM2))
-                        (EQUAL (CDR TERM2) NIL))
-                    (OR (ATOM TERM2)
-                        (NOT (EQ 'QUOTE (CAR TERM2)))
-                        (ATOM TERM1)
-                        (NOT (EQ 'QUOTE (CAR TERM1)))
-                        (CONSP TERM1)
-                        (EQUAL TERM1 NIL))
-                    (OR (ATOM TERM2)
-                        (NOT (EQ 'QUOTE (CAR TERM2)))
-                        (ATOM TERM1)
-                        (NOT (EQ 'QUOTE (CAR TERM1)))
-                        (CONSP (CDR TERM1))
-                        (EQUAL (CDR TERM1) NIL))
-                    (OR (ATOM TERM2)
-                        (NOT (EQ 'QUOTE (CAR TERM2)))
-                        (ATOM TERM1)
-                        (NOT (EQ 'QUOTE (CAR TERM1)))
-                        (UNSIGNED-BYTE-P 29 0))
-                    (OR (ATOM TERM2)
-                        (NOT (EQ 'QUOTE (CAR TERM2)))
-                        (ATOM TERM1)
-                        (NOT (EQ 'QUOTE (CAR TERM1)))
-                        (RATIONALP (FN-COUNT-EVG-REC (CADR TERM2) 0 0)))
-                    (OR (ATOM TERM2)
-                        (NOT (EQ 'QUOTE (CAR TERM2)))
-                        (ATOM TERM1)
-                        (NOT (EQ 'QUOTE (CAR TERM1)))
-                        (RATIONALP (FN-COUNT-EVG-REC (CADR TERM1) 0 0)))
-                    (OR (ATOM TERM2)
-                        (EQ 'QUOTE (CAR TERM2))
-                        (ATOM TERM1)
-                        (CONSP TERM1)
-                        (EQUAL TERM1 NIL))
-                    (OR (ATOM TERM2)
-                        (EQ 'QUOTE (CAR TERM2))
-                        (ATOM TERM1)
-                        (EQ 'QUOTE (CAR TERM1))
-                        (CONSP TERM1)
-                        (EQUAL TERM1 NIL))
-                    (OR (ATOM TERM2)
-                        (EQ 'QUOTE (CAR TERM2))
-                        (ATOM TERM1)
-                        (EQ 'QUOTE (CAR TERM1))
-                        (NOT (CONSP (CAR TERM1)))
-                        (CONSP TERM1)
-                        (EQUAL TERM1 NIL))
-                    (OR (ATOM TERM2)
-                        (EQ 'QUOTE (CAR TERM2))
-                        (ATOM TERM1)
-                        (EQ 'QUOTE (CAR TERM1))
-                        (NOT (CONSP (CAR TERM1)))
-                        (CONSP TERM2)
-                        (EQUAL TERM2 NIL))
-                    (OR (ATOM TERM2)
-                        (EQ 'QUOTE (CAR TERM2))
-                        (ATOM TERM1)
-                        (EQ 'QUOTE (CAR TERM1))
-                        (CONSP (CAR TERM1))
-                        (CONSP TERM1)
-                        (EQUAL TERM1 NIL))
-                    (OR (ATOM TERM2)
-                        (EQ 'QUOTE (CAR TERM2))
-                        (ATOM TERM1)
-                        (EQ 'QUOTE (CAR TERM1))
-                        (CONSP (CAR TERM1))
-                        (CONSP TERM2)
-                        (EQUAL TERM2 NIL))
-                    (OR (ATOM TERM2)
-                        (EQ 'QUOTE (CAR TERM2))
-                        (ATOM TERM1)
-                        (EQ 'QUOTE (CAR TERM1))
-                        (CONSP (CAR TERM1))
-                        (SYMBOLP (CAR TERM1))
-                        (SYMBOLP (CAR TERM2)))
-                    (OR (ATOM TERM2)
-                        (EQ 'QUOTE (CAR TERM2))
-                        (ATOM TERM1)
-                        (EQ 'QUOTE (CAR TERM1))
-                        (NOT (IF (CONSP (CAR TERM1))
-                                 (EQUAL (CAR TERM1) (CAR TERM2))
-                                 (EQ (CAR TERM1) (CAR TERM2))))
-                        (PSEUDO-TERMP TERM1))
-                    (OR (ATOM TERM2)
-                        (EQ 'QUOTE (CAR TERM2))
-                        (ATOM TERM1)
-                        (EQ 'QUOTE (CAR TERM1))
-                        (NOT (IF (CONSP (CAR TERM1))
-                                 (EQUAL (CAR TERM1) (CAR TERM2))
-                                 (EQ (CAR TERM1) (CAR TERM2))))
-                        (PSEUDO-TERMP TERM2))
-                    (OR (ATOM TERM2)
-                        (EQ 'QUOTE (CAR TERM2))
-                        (ATOM TERM1)
-                        (EQ 'QUOTE (CAR TERM1))
-                        (NOT (IF (CONSP (CAR TERM1))
-                                 (EQUAL (CAR TERM1) (CAR TERM2))
-                                 (EQ (CAR TERM1) (CAR TERM2))))
-                        (PSEUDO-VARIANTP TERM1 TERM2)
-                        (CONSP TERM1)
-                        (EQUAL TERM1 NIL))
-                    (OR (ATOM TERM2)
-                        (EQ 'QUOTE (CAR TERM2))
-                        (ATOM TERM1)
-                        (EQ 'QUOTE (CAR TERM1))
-                        (NOT (IF (CONSP (CAR TERM1))
-                                 (EQUAL (CAR TERM1) (CAR TERM2))
-                                 (EQ (CAR TERM1) (CAR TERM2))))
-                        (PSEUDO-VARIANTP TERM1 TERM2)
-                        (CONSP TERM2)
-                        (EQUAL TERM2 NIL))
-                    (OR (ATOM TERM2)
-                        (EQ 'QUOTE (CAR TERM2))
-                        (ATOM TERM1)
-                        (EQ 'QUOTE (CAR TERM1))
-                        (NOT (IF (CONSP (CAR TERM1))
-                                 (EQUAL (CAR TERM1) (CAR TERM2))
-                                 (EQ (CAR TERM1) (CAR TERM2))))
-                        (PSEUDO-VARIANTP TERM1 TERM2)
-                        (INTEGERP CLK))
-                    (OR (ATOM TERM2)
-                        (EQ 'QUOTE (CAR TERM2))
-                        (ATOM TERM1)
-                        (EQ 'QUOTE (CAR TERM1))
-                        (NOT (IF (CONSP (CAR TERM1))
-                                 (EQUAL (CAR TERM1) (CAR TERM2))
-                                 (EQ (CAR TERM1) (CAR TERM2))))
-                        (PSEUDO-VARIANTP TERM1 TERM2)
-                        (PSEUDO-TERM-LISTP (CDR TERM1)))
-                    (OR (ATOM TERM2)
-                        (EQ 'QUOTE (CAR TERM2))
-                        (ATOM TERM1)
-                        (EQ 'QUOTE (CAR TERM1))
-                        (NOT (IF (CONSP (CAR TERM1))
-                                 (EQUAL (CAR TERM1) (CAR TERM2))
-                                 (EQ (CAR TERM1) (CAR TERM2))))
-                        (PSEUDO-VARIANTP TERM1 TERM2)
-                        (<= 0 CLK))
-                    (OR (ATOM TERM2)
-                        (EQ 'QUOTE (CAR TERM2))
-                        (ATOM TERM1)
-                        (EQ 'QUOTE (CAR TERM1))
-                        (NOT (IF (CONSP (CAR TERM1))
-                                 (EQUAL (CAR TERM1) (CAR TERM2))
-                                 (EQ (CAR TERM1) (CAR TERM2))))
-                        (PSEUDO-VARIANTP TERM1 TERM2)
-                        (PSEUDO-TERM-LISTP (CDR TERM2)))
-                    (OR (ATOM TERM2)
-                        (EQ 'QUOTE (CAR TERM2))
-                        (ATOM TERM1)
-                        (EQ 'QUOTE (CAR TERM1))
-                        (NOT (IF (CONSP (CAR TERM1))
-                                 (EQUAL (CAR TERM1) (CAR TERM2))
-                                 (EQ (CAR TERM1) (CAR TERM2))))
-                        (PSEUDO-VARIANTP TERM1 TERM2)
-                        (BASIC-XX-WORSE-THAN-LST1 (CDR TERM1)
-                                                  (CDR TERM2)
-                                                  CLK)
-                        (CONSP TERM1)
-                        (EQUAL TERM1 NIL))
-                    (OR (ATOM TERM2)
-                        (EQ 'QUOTE (CAR TERM2))
-                        (ATOM TERM1)
-                        (EQ 'QUOTE (CAR TERM1))
-                        (NOT (IF (CONSP (CAR TERM1))
-                                 (EQUAL (CAR TERM1) (CAR TERM2))
-                                 (EQ (CAR TERM1) (CAR TERM2))))
-                        (PSEUDO-VARIANTP TERM1 TERM2)
-                        (BASIC-XX-WORSE-THAN-LST1 (CDR TERM1)
-                                                  (CDR TERM2)
-                                                  CLK)
-                        (CONSP TERM2)
-                        (EQUAL TERM2 NIL))
-                    (OR (ATOM TERM2)
-                        (EQ 'QUOTE (CAR TERM2))
-                        (ATOM TERM1)
-                        (EQ 'QUOTE (CAR TERM1))
-                        (NOT (IF (CONSP (CAR TERM1))
-                                 (EQUAL (CAR TERM1) (CAR TERM2))
-                                 (EQ (CAR TERM1) (CAR TERM2))))
-                        (PSEUDO-VARIANTP TERM1 TERM2)
-                        (BASIC-XX-WORSE-THAN-LST1 (CDR TERM1)
-                                                  (CDR TERM2)
-                                                  CLK)
-                        (INTEGERP CLK))
-                    (OR (ATOM TERM2)
-                        (EQ 'QUOTE (CAR TERM2))
-                        (ATOM TERM1)
-                        (EQ 'QUOTE (CAR TERM1))
-                        (NOT (IF (CONSP (CAR TERM1))
-                                 (EQUAL (CAR TERM1) (CAR TERM2))
-                                 (EQ (CAR TERM1) (CAR TERM2))))
-                        (PSEUDO-VARIANTP TERM1 TERM2)
-                        (BASIC-XX-WORSE-THAN-LST1 (CDR TERM1)
-                                                  (CDR TERM2)
-                                                  CLK)
-                        (PSEUDO-TERM-LISTP (CDR TERM1)))
-                    (OR (ATOM TERM2)
-                        (EQ 'QUOTE (CAR TERM2))
-                        (ATOM TERM1)
-                        (EQ 'QUOTE (CAR TERM1))
-                        (NOT (IF (CONSP (CAR TERM1))
-                                 (EQUAL (CAR TERM1) (CAR TERM2))
-                                 (EQ (CAR TERM1) (CAR TERM2))))
-                        (PSEUDO-VARIANTP TERM1 TERM2)
-                        (BASIC-XX-WORSE-THAN-LST1 (CDR TERM1)
-                                                  (CDR TERM2)
-                                                  CLK)
-                        (<= 0 CLK))
-                    (OR (ATOM TERM2)
-                        (EQ 'QUOTE (CAR TERM2))
-                        (ATOM TERM1)
-                        (EQ 'QUOTE (CAR TERM1))
-                        (NOT (IF (CONSP (CAR TERM1))
-                                 (EQUAL (CAR TERM1) (CAR TERM2))
-                                 (EQ (CAR TERM1) (CAR TERM2))))
-                        (PSEUDO-VARIANTP TERM1 TERM2)
-                        (BASIC-XX-WORSE-THAN-LST1 (CDR TERM1)
-                                                  (CDR TERM2)
-                                                  CLK)
-                        (PSEUDO-TERM-LISTP (CDR TERM2))))))
- (IMPLIES (AND (PSEUDO-TERMP TERM2)
-               (PSEUDO-TERMP TERM1)
-               (<= 0 CLK)
-               (INTEGERP CLK)
-               (NOT (ZP CLK)))
-          (LET ((CLK (+ -1 CLK)))
-               (AND (OR (NOT (ATOM TERM1))
-                        (SYMBOLP TERM1)
-                        (SYMBOLP TERM2))
-                    (OR (ATOM TERM1) (PSEUDO-TERMP TERM1))
-                    (OR (ATOM TERM1) (PSEUDO-TERMP TERM2))
-                    (OR (ATOM TERM1)
-                        (PSEUDO-VARIANTP TERM1 TERM2)
-                        (INTEGERP CLK))
-                    (OR (ATOM TERM1)
-                        (PSEUDO-VARIANTP TERM1 TERM2)
-                        (PSEUDO-TERMP TERM1))
-                    (OR (ATOM TERM1)
-                        (PSEUDO-VARIANTP TERM1 TERM2)
-                        (<= 0 CLK))
-                    (OR (ATOM TERM1)
-                        (PSEUDO-VARIANTP TERM1 TERM2)
-                        (PSEUDO-TERMP TERM2))
-                    (OR (ATOM TERM1)
-                        (IF (PSEUDO-VARIANTP TERM1 TERM2)
-                            (EQUAL TERM1 TERM2)
-                            (BASIC-XX-WORSE-THAN TERM1 TERM2 CLK))
-                        (CONSP TERM1)
-                        (EQUAL TERM1 NIL))
-                    (OR (ATOM TERM1)
-                        (IF (PSEUDO-VARIANTP TERM1 TERM2)
-                            (EQUAL TERM1 TERM2)
-                            (BASIC-XX-WORSE-THAN TERM1 TERM2 CLK))
-                        (EQ 'QUOTE (CAR TERM1))
-                        (CONSP TERM1)
-                        (EQUAL TERM1 NIL))
-                    (OR (ATOM TERM1)
-                        (IF (PSEUDO-VARIANTP TERM1 TERM2)
-                            (EQUAL TERM1 TERM2)
-                            (BASIC-XX-WORSE-THAN TERM1 TERM2 CLK))
-                        (EQ 'QUOTE (CAR TERM1))
-                        (INTEGERP CLK))
-                    (OR (ATOM TERM1)
-                        (IF (PSEUDO-VARIANTP TERM1 TERM2)
-                            (EQUAL TERM1 TERM2)
-                            (BASIC-XX-WORSE-THAN TERM1 TERM2 CLK))
-                        (EQ 'QUOTE (CAR TERM1))
-                        (PSEUDO-TERM-LISTP (CDR TERM1)))
-                    (OR (ATOM TERM1)
-                        (IF (PSEUDO-VARIANTP TERM1 TERM2)
-                            (EQUAL TERM1 TERM2)
-                            (BASIC-XX-WORSE-THAN TERM1 TERM2 CLK))
-                        (EQ 'QUOTE (CAR TERM1))
-                        (<= 0 CLK))
-                    (OR (ATOM TERM1)
-                        (IF (PSEUDO-VARIANTP TERM1 TERM2)
-                            (EQUAL TERM1 TERM2)
-                            (BASIC-XX-WORSE-THAN TERM1 TERM2 CLK))
-                        (EQ 'QUOTE (CAR TERM1))
-                        (PSEUDO-TERMP TERM2)))))
- (IMPLIES (AND (PSEUDO-TERMP TERM2)
-               (PSEUDO-TERM-LISTP ARGS)
-               (<= 0 CLK)
-               (INTEGERP CLK)
-               (NOT (ZP CLK)))
-          (LET ((CLK (+ -1 CLK)))
-               (AND (OR (CONSP ARGS) (EQ ARGS NIL))
-                    (OR (ENDP ARGS)
-                        (CONSP ARGS)
-                        (EQUAL ARGS NIL))
-                    (OR (ENDP ARGS) (INTEGERP CLK))
-                    (OR (ENDP ARGS)
-                        (PSEUDO-TERMP (CAR ARGS)))
-                    (OR (ENDP ARGS) (<= 0 CLK))
-                    (OR (ENDP ARGS) (PSEUDO-TERMP TERM2))
-                    (OR (ENDP ARGS)
-                        (NOT (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL (CAR ARGS)
-                                                                  TERM2 CLK))
-                        (CONSP ARGS)
-                        (EQUAL ARGS NIL))
-                    (OR (ENDP ARGS)
-                        (NOT (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL (CAR ARGS)
-                                                                  TERM2 CLK))
-                        (INTEGERP CLK))
-                    (OR (ENDP ARGS)
-                        (NOT (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL (CAR ARGS)
-                                                                  TERM2 CLK))
-                        (PSEUDO-TERMP (CAR ARGS)))
-                    (OR (ENDP ARGS)
-                        (NOT (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL (CAR ARGS)
-                                                                  TERM2 CLK))
-                        (<= 0 CLK))
-                    (OR (ENDP ARGS)
-                        (NOT (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL (CAR ARGS)
-                                                                  TERM2 CLK))
-                        (PSEUDO-TERMP TERM2))
-                    (OR (ENDP ARGS)
-                        (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL (CAR ARGS)
-                                                             TERM2 CLK)
-                        (CONSP ARGS)
-                        (EQUAL ARGS NIL))
-                    (OR (ENDP ARGS)
-                        (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL (CAR ARGS)
-                                                             TERM2 CLK)
-                        (INTEGERP CLK))
-                    (OR (ENDP ARGS)
-                        (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL (CAR ARGS)
-                                                             TERM2 CLK)
-                        (PSEUDO-TERM-LISTP (CDR ARGS)))
-                    (OR (ENDP ARGS)
-                        (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL (CAR ARGS)
-                                                             TERM2 CLK)
-                        (<= 0 CLK))
-                    (OR (ENDP ARGS)
-                        (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL (CAR ARGS)
-                                                             TERM2 CLK)
-                        (PSEUDO-TERMP TERM2)))))
- (IMPLIES (AND (PSEUDO-TERM-LISTP ARGS2)
-               (PSEUDO-TERM-LISTP ARGS1)
-               (<= 0 CLK)
-               (INTEGERP CLK)
-               (NOT (ZP CLK)))
-          (LET ((CLK (+ -1 CLK)))
-               (AND (OR (CONSP ARGS1) (EQ ARGS1 NIL))
-                    (OR (ENDP ARGS1)
-                        (CONSP ARGS1)
-                        (EQUAL ARGS1 NIL))
-                    (OR (ENDP ARGS1)
-                        (CONSP ARGS2)
-                        (EQUAL ARGS2 NIL))
-                    (OR (ENDP ARGS1) (INTEGERP CLK))
-                    (OR (ENDP ARGS1)
-                        (PSEUDO-TERMP (CAR ARGS1)))
-                    (OR (ENDP ARGS1) (<= 0 CLK))
-                    (OR (ENDP ARGS1)
-                        (PSEUDO-TERMP (CAR ARGS2)))
-                    (OR (ENDP ARGS1)
-                        (XX-WORSE-THAN-BUILTIN-CLOCKED (CAR ARGS1)
-                                                       (CAR ARGS2)
-                                                       CLK)
-                        (CONSP ARGS1)
-                        (EQUAL ARGS1 NIL))
-                    (OR (ENDP ARGS1)
-                        (XX-WORSE-THAN-BUILTIN-CLOCKED (CAR ARGS1)
-                                                       (CAR ARGS2)
-                                                       CLK)
-                        (CONSP ARGS2)
-                        (EQUAL ARGS2 NIL))
-                    (OR (ENDP ARGS1)
-                        (XX-WORSE-THAN-BUILTIN-CLOCKED (CAR ARGS1)
-                                                       (CAR ARGS2)
-                                                       CLK)
-                        (INTEGERP CLK))
-                    (OR (ENDP ARGS1)
-                        (XX-WORSE-THAN-BUILTIN-CLOCKED (CAR ARGS1)
-                                                       (CAR ARGS2)
-                                                       CLK)
-                        (PSEUDO-TERM-LISTP (CDR ARGS1)))
-                    (OR (ENDP ARGS1)
-                        (XX-WORSE-THAN-BUILTIN-CLOCKED (CAR ARGS1)
-                                                       (CAR ARGS2)
-                                                       CLK)
-                        (<= 0 CLK))
-                    (OR (ENDP ARGS1)
-                        (XX-WORSE-THAN-BUILTIN-CLOCKED (CAR ARGS1)
-                                                       (CAR ARGS2)
-                                                       CLK)
-                        (PSEUDO-TERM-LISTP (CDR ARGS2))))))
- (IMPLIES (AND (PSEUDO-TERM-LISTP ARGS2)
-               (PSEUDO-TERM-LISTP ARGS1)
-               (<= 0 CLK)
-               (INTEGERP CLK)
-               (NOT (ZP CLK)))
-          (LET ((CLK (+ -1 CLK)))
-               (AND (OR (CONSP ARGS1) (EQ ARGS1 NIL))
-                    (OR (ENDP ARGS1)
-                        (CONSP ARGS1)
-                        (EQ ARGS1 NIL))
-                    (OR (ENDP ARGS1)
-                        (CONSP ARGS1)
-                        (EQUAL ARGS1 NIL))
-                    (OR (ENDP ARGS1)
-                        (NOT (ATOM (CAR ARGS1)))
-                        (CONSP ARGS1)
-                        (EQUAL ARGS1 NIL))
-                    (OR (ENDP ARGS1)
-                        (ATOM (CAR ARGS1))
-                        (CONSP ARGS1)
-                        (EQUAL ARGS1 NIL))
-                    (OR (ENDP ARGS1)
-                        (ATOM (CAR ARGS1))
-                        (CONSP (CAR ARGS1))
-                        (EQUAL (CAR ARGS1) NIL))
-                    (OR (ENDP ARGS1)
-                        (NOT (OR (ATOM (CAR ARGS1))
-                                 (EQ 'QUOTE (CAR (CAR ARGS1)))))
-                        (CONSP ARGS2)
-                        (EQUAL ARGS2 NIL))
-                    (OR (ENDP ARGS1)
-                        (NOT (OR (ATOM (CAR ARGS1))
-                                 (EQ 'QUOTE (CAR (CAR ARGS1)))))
-                        (NOT (ATOM (CAR ARGS2)))
-                        (CONSP ARGS2)
-                        (EQUAL ARGS2 NIL))
-                    (OR (ENDP ARGS1)
-                        (NOT (OR (ATOM (CAR ARGS1))
-                                 (EQ 'QUOTE (CAR (CAR ARGS1)))))
-                        (ATOM (CAR ARGS2))
-                        (CONSP ARGS2)
-                        (EQUAL ARGS2 NIL))
-                    (OR (ENDP ARGS1)
-                        (NOT (OR (ATOM (CAR ARGS1))
-                                 (EQ 'QUOTE (CAR (CAR ARGS1)))))
-                        (ATOM (CAR ARGS2))
-                        (CONSP (CAR ARGS2))
-                        (EQUAL (CAR ARGS2) NIL))
-                    (OR (ENDP ARGS1)
-                        (NOT (AND (OR (ATOM (CAR ARGS1))
-                                      (EQ 'QUOTE (CAR (CAR ARGS1))))
-                                  (NOT (OR (ATOM (CAR ARGS2))
-                                           (EQ 'QUOTE (CAR (CAR ARGS2)))))))
-                        (CONSP ARGS1)
-                        (EQUAL ARGS1 NIL))
-                    (OR (ENDP ARGS1)
-                        (NOT (AND (OR (ATOM (CAR ARGS1))
-                                      (EQ 'QUOTE (CAR (CAR ARGS1))))
-                                  (NOT (OR (ATOM (CAR ARGS2))
-                                           (EQ 'QUOTE (CAR (CAR ARGS2)))))))
-                        (NOT (ATOM (CAR ARGS1)))
-                        (CONSP ARGS1)
-                        (EQUAL ARGS1 NIL))
-                    (OR (ENDP ARGS1)
-                        (NOT (AND (OR (ATOM (CAR ARGS1))
-                                      (EQ 'QUOTE (CAR (CAR ARGS1))))
-                                  (NOT (OR (ATOM (CAR ARGS2))
-                                           (EQ 'QUOTE (CAR (CAR ARGS2)))))))
-                        (ATOM (CAR ARGS1))
-                        (CONSP ARGS1)
-                        (EQUAL ARGS1 NIL))
-                    (OR (ENDP ARGS1)
-                        (NOT (AND (OR (ATOM (CAR ARGS1))
-                                      (EQ 'QUOTE (CAR (CAR ARGS1))))
-                                  (NOT (OR (ATOM (CAR ARGS2))
-                                           (EQ 'QUOTE (CAR (CAR ARGS2)))))))
-                        (ATOM (CAR ARGS1))
-                        (CONSP (CAR ARGS1))
-                        (EQUAL (CAR ARGS1) NIL))
-                    (OR (ENDP ARGS1)
-                        (NOT (AND (OR (ATOM (CAR ARGS1))
-                                      (EQ 'QUOTE (CAR (CAR ARGS1))))
-                                  (NOT (OR (ATOM (CAR ARGS2))
-                                           (EQ 'QUOTE (CAR (CAR ARGS2)))))))
-                        (NOT (OR (ATOM (CAR ARGS1))
-                                 (EQ 'QUOTE (CAR (CAR ARGS1)))))
-                        (CONSP ARGS2)
-                        (EQUAL ARGS2 NIL))
-                    (OR (ENDP ARGS1)
-                        (NOT (AND (OR (ATOM (CAR ARGS1))
-                                      (EQ 'QUOTE (CAR (CAR ARGS1))))
-                                  (NOT (OR (ATOM (CAR ARGS2))
-                                           (EQ 'QUOTE (CAR (CAR ARGS2)))))))
-                        (NOT (OR (ATOM (CAR ARGS1))
-                                 (EQ 'QUOTE (CAR (CAR ARGS1)))))
-                        (NOT (ATOM (CAR ARGS2)))
-                        (CONSP ARGS2)
-                        (EQUAL ARGS2 NIL))
-                    (OR (ENDP ARGS1)
-                        (NOT (AND (OR (ATOM (CAR ARGS1))
-                                      (EQ 'QUOTE (CAR (CAR ARGS1))))
-                                  (NOT (OR (ATOM (CAR ARGS2))
-                                           (EQ 'QUOTE (CAR (CAR ARGS2)))))))
-                        (NOT (OR (ATOM (CAR ARGS1))
-                                 (EQ 'QUOTE (CAR (CAR ARGS1)))))
-                        (ATOM (CAR ARGS2))
-                        (CONSP ARGS2)
-                        (EQUAL ARGS2 NIL))
-                    (OR (ENDP ARGS1)
-                        (NOT (AND (OR (ATOM (CAR ARGS1))
-                                      (EQ 'QUOTE (CAR (CAR ARGS1))))
-                                  (NOT (OR (ATOM (CAR ARGS2))
-                                           (EQ 'QUOTE (CAR (CAR ARGS2)))))))
-                        (NOT (OR (ATOM (CAR ARGS1))
-                                 (EQ 'QUOTE (CAR (CAR ARGS1)))))
-                        (ATOM (CAR ARGS2))
-                        (CONSP (CAR ARGS2))
-                        (EQUAL (CAR ARGS2) NIL))
-                    (OR (ENDP ARGS1)
-                        (AND (OR (ATOM (CAR ARGS1))
-                                 (EQ 'QUOTE (CAR (CAR ARGS1))))
-                             (NOT (OR (ATOM (CAR ARGS2))
-                                      (EQ 'QUOTE (CAR (CAR ARGS2))))))
-                        (CONSP ARGS2)
-                        (EQUAL ARGS2 NIL))
-                    (OR (ENDP ARGS1)
-                        (AND (OR (ATOM (CAR ARGS1))
-                                 (EQ 'QUOTE (CAR (CAR ARGS1))))
-                             (NOT (OR (ATOM (CAR ARGS2))
-                                      (EQ 'QUOTE (CAR (CAR ARGS2))))))
-                        (CONSP ARGS1)
-                        (EQUAL ARGS1 NIL))
-                    (OR (ENDP ARGS1)
-                        (AND (OR (ATOM (CAR ARGS1))
-                                 (EQ 'QUOTE (CAR (CAR ARGS1))))
-                             (NOT (OR (ATOM (CAR ARGS2))
-                                      (EQ 'QUOTE (CAR (CAR ARGS2))))))
-                        (INTEGERP CLK))
-                    (OR (ENDP ARGS1)
-                        (AND (OR (ATOM (CAR ARGS1))
-                                 (EQ 'QUOTE (CAR (CAR ARGS1))))
-                             (NOT (OR (ATOM (CAR ARGS2))
-                                      (EQ 'QUOTE (CAR (CAR ARGS2))))))
-                        (PSEUDO-TERMP (CAR ARGS2)))
-                    (OR (ENDP ARGS1)
-                        (AND (OR (ATOM (CAR ARGS1))
-                                 (EQ 'QUOTE (CAR (CAR ARGS1))))
-                             (NOT (OR (ATOM (CAR ARGS2))
-                                      (EQ 'QUOTE (CAR (CAR ARGS2))))))
-                        (<= 0 CLK))
-                    (OR (ENDP ARGS1)
-                        (AND (OR (ATOM (CAR ARGS1))
-                                 (EQ 'QUOTE (CAR (CAR ARGS1))))
-                             (NOT (OR (ATOM (CAR ARGS2))
-                                      (EQ 'QUOTE (CAR (CAR ARGS2))))))
-                        (PSEUDO-TERMP (CAR ARGS1)))
-                    (OR (ENDP ARGS1)
-                        (OR (AND (OR (ATOM (CAR ARGS1))
-                                     (EQ 'QUOTE (CAR (CAR ARGS1))))
-                                 (NOT (OR (ATOM (CAR ARGS2))
-                                          (EQ 'QUOTE (CAR (CAR ARGS2))))))
-                            (XX-WORSE-THAN-BUILTIN-CLOCKED (CAR ARGS2)
-                                                           (CAR ARGS1)
-                                                           CLK))
-                        (CONSP ARGS1)
-                        (EQUAL ARGS1 NIL))
-                    (OR (ENDP ARGS1)
-                        (OR (AND (OR (ATOM (CAR ARGS1))
-                                     (EQ 'QUOTE (CAR (CAR ARGS1))))
-                                 (NOT (OR (ATOM (CAR ARGS2))
-                                          (EQ 'QUOTE (CAR (CAR ARGS2))))))
-                            (XX-WORSE-THAN-BUILTIN-CLOCKED (CAR ARGS2)
-                                                           (CAR ARGS1)
-                                                           CLK))
-                        (CONSP ARGS2)
-                        (EQUAL ARGS2 NIL))
-                    (OR (ENDP ARGS1)
-                        (OR (AND (OR (ATOM (CAR ARGS1))
-                                     (EQ 'QUOTE (CAR (CAR ARGS1))))
-                                 (NOT (OR (ATOM (CAR ARGS2))
-                                          (EQ 'QUOTE (CAR (CAR ARGS2))))))
-                            (XX-WORSE-THAN-BUILTIN-CLOCKED (CAR ARGS2)
-                                                           (CAR ARGS1)
-                                                           CLK))
-                        (INTEGERP CLK))
-                    (OR (ENDP ARGS1)
-                        (OR (AND (OR (ATOM (CAR ARGS1))
-                                     (EQ 'QUOTE (CAR (CAR ARGS1))))
-                                 (NOT (OR (ATOM (CAR ARGS2))
-                                          (EQ 'QUOTE (CAR (CAR ARGS2))))))
-                            (XX-WORSE-THAN-BUILTIN-CLOCKED (CAR ARGS2)
-                                                           (CAR ARGS1)
-                                                           CLK))
-                        (PSEUDO-TERM-LISTP (CDR ARGS1)))
-                    (OR (ENDP ARGS1)
-                        (OR (AND (OR (ATOM (CAR ARGS1))
-                                     (EQ 'QUOTE (CAR (CAR ARGS1))))
-                                 (NOT (OR (ATOM (CAR ARGS2))
-                                          (EQ 'QUOTE (CAR (CAR ARGS2))))))
-                            (XX-WORSE-THAN-BUILTIN-CLOCKED (CAR ARGS2)
-                                                           (CAR ARGS1)
-                                                           CLK))
-                        (<= 0 CLK))
-                    (OR (ENDP ARGS1)
-                        (OR (AND (OR (ATOM (CAR ARGS1))
-                                     (EQ 'QUOTE (CAR (CAR ARGS1))))
-                                 (NOT (OR (ATOM (CAR ARGS2))
-                                          (EQ 'QUOTE (CAR (CAR ARGS2))))))
-                            (XX-WORSE-THAN-BUILTIN-CLOCKED (CAR ARGS2)
-                                                           (CAR ARGS1)
-                                                           CLK))
-                        (PSEUDO-TERM-LISTP (CDR ARGS2))))))).
 Subgoal 7
 Subgoal 7'
 Subgoal 6
 Subgoal 5
-
-Splitter note (see :DOC splitter) for Subgoal 5 (7 subgoals).
-  if-intro: ((:DEFINITION ATOM) (:DEFINITION NOT))
-
 Subgoal 5.7
 Subgoal 5.6
 Subgoal 5.5
@@ -2572,36 +969,18 @@ Subgoal 5.3
 Subgoal 5.2
 Subgoal 5.1
 Subgoal 4
-
-Splitter note (see :DOC splitter) for Subgoal 4 (3 subgoals).
-  if-intro: ((:DEFINITION ATOM))
-
 Subgoal 4.3
 Subgoal 4.2
 Subgoal 4.1
 Subgoal 3
-
-Splitter note (see :DOC splitter) for Subgoal 3 (2 subgoals).
-  if-intro: ((:DEFINITION ENDP) (:DEFINITION NOT))
-
 Subgoal 3.2
 Subgoal 3.1
 Subgoal 2
-
-Splitter note (see :DOC splitter) for Subgoal 2 (4 subgoals).
-  if-intro: ((:DEFINITION ENDP))
-
 Subgoal 2.4
 Subgoal 2.3
 Subgoal 2.2
 Subgoal 2.1
 Subgoal 1
-
-Splitter note (see :DOC splitter) for Subgoal 1 (20 subgoals).
-  if-intro: ((:DEFINITION ATOM)
-             (:DEFINITION ENDP)
-             (:DEFINITION NOT))
-
 Subgoal 1.20
 Subgoal 1.19
 Subgoal 1.18
@@ -2622,18 +1001,6 @@ Subgoal 1.4
 Subgoal 1.3
 Subgoal 1.2
 Subgoal 1.1
-
-Q.E.D.
-
-That completes the proof of the guard theorem for 
-XX-WORSE-THAN-BUILTIN-CLOCKED, XX-WORSE-THAN-OR-EQUAL-BUILTIN-CLOCKED,
-BASIC-XX-WORSE-THAN-LST1, BASIC-XX-WORSE-THAN-LST2, BASIC-XX-WORSE-THAN,
-SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL, SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST
-and XX-WORSE-THAN-LST.  XX-WORSE-THAN-BUILTIN-CLOCKED, 
-XX-WORSE-THAN-OR-EQUAL-BUILTIN-CLOCKED, BASIC-XX-WORSE-THAN-LST1, 
-BASIC-XX-WORSE-THAN-LST2, BASIC-XX-WORSE-THAN, 
-SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL, SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST
-and XX-WORSE-THAN-LST are compliant with Common Lisp.
 
 Summary
 Form:  ( MUTUAL-RECURSION ( DEFUN XX-WORSE-THAN-BUILTIN-CLOCKED ...)
@@ -2667,10 +1034,6 @@ Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
         (:TYPE-PRESCRIPTION OCCUR)
         (:TYPE-PRESCRIPTION PSEUDO-TERM-LISTP)
         (:TYPE-PRESCRIPTION PSEUDO-TERMP))
-Splitter rules (see :DOC splitter):
-  if-intro: ((:DEFINITION ATOM)
-             (:DEFINITION ENDP)
-             (:DEFINITION NOT))
  (XX-WORSE-THAN-BUILTIN-CLOCKED XX-WORSE-THAN-OR-EQUAL-BUILTIN-CLOCKED
                                 BASIC-XX-WORSE-THAN-LST1
                                 BASIC-XX-WORSE-THAN-LST2
@@ -2691,134 +1054,15 @@ ACL2 !>>(MEMOIZE-PARTIAL
                   SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST)
              (XX-WORSE-THAN-LST* XX-WORSE-THAN-LST)))
 
-
-ACL2 !>>>(MAKE-EVENT
-          (ER-PROGN
-           (MEMOIZE-PARTIAL-BASIC-CHECKS
-                '((XX-WORSE-THAN* XX-WORSE-THAN-BUILTIN-CLOCKED
-                                  XX-WORSE-THAN-BUILTIN-CLOCKED-CHANGE
-                                  XX-WORSE-THAN-BUILTIN-CLOCKED-STABLE
-                                  :CONDITION NIL)
-                  (XX-WORSE-THAN-OR-EQUAL*
-                       XX-WORSE-THAN-OR-EQUAL-BUILTIN-CLOCKED
-                       XX-WORSE-THAN-OR-EQUAL-BUILTIN-CLOCKED-CHANGE
-                       XX-WORSE-THAN-OR-EQUAL-BUILTIN-CLOCKED-STABLE)
-                  (BASIC-XX-WORSE-THAN-LST1* BASIC-XX-WORSE-THAN-LST1
-                                             BASIC-XX-WORSE-THAN-LST1-CHANGE
-                                             BASIC-XX-WORSE-THAN-LST1-STABLE)
-                  (BASIC-XX-WORSE-THAN-LST2* BASIC-XX-WORSE-THAN-LST2
-                                             BASIC-XX-WORSE-THAN-LST2-CHANGE
-                                             BASIC-XX-WORSE-THAN-LST2-STABLE)
-                  (BASIC-XX-WORSE-THAN* BASIC-XX-WORSE-THAN
-                                        BASIC-XX-WORSE-THAN-CHANGE
-                                        BASIC-XX-WORSE-THAN-STABLE)
-                  (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL*
-                       SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL
-                       SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-CHANGE
-                       SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-STABLE)
-                  (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST*
-                       SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST
-                       SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST-CHANGE
-                       SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST-STABLE)
-                  (XX-WORSE-THAN-LST* XX-WORSE-THAN-LST
-                                      XX-WORSE-THAN-LST-CHANGE
-                                      XX-WORSE-THAN-LST-STABLE))
-                'MEMOIZE-PARTIAL
-                STATE)
-           (MV-LET
-            (MSG DEFS TABLE-EVENT)
-            (MEMOIZE-PARTIAL-SUPPORTING-EVENTS
-                '((XX-WORSE-THAN* XX-WORSE-THAN-BUILTIN-CLOCKED
-                                  XX-WORSE-THAN-BUILTIN-CLOCKED-CHANGE
-                                  XX-WORSE-THAN-BUILTIN-CLOCKED-STABLE
-                                  :CONDITION NIL)
-                  (XX-WORSE-THAN-OR-EQUAL*
-                       XX-WORSE-THAN-OR-EQUAL-BUILTIN-CLOCKED
-                       XX-WORSE-THAN-OR-EQUAL-BUILTIN-CLOCKED-CHANGE
-                       XX-WORSE-THAN-OR-EQUAL-BUILTIN-CLOCKED-STABLE)
-                  (BASIC-XX-WORSE-THAN-LST1* BASIC-XX-WORSE-THAN-LST1
-                                             BASIC-XX-WORSE-THAN-LST1-CHANGE
-                                             BASIC-XX-WORSE-THAN-LST1-STABLE)
-                  (BASIC-XX-WORSE-THAN-LST2* BASIC-XX-WORSE-THAN-LST2
-                                             BASIC-XX-WORSE-THAN-LST2-CHANGE
-                                             BASIC-XX-WORSE-THAN-LST2-STABLE)
-                  (BASIC-XX-WORSE-THAN* BASIC-XX-WORSE-THAN
-                                        BASIC-XX-WORSE-THAN-CHANGE
-                                        BASIC-XX-WORSE-THAN-STABLE)
-                  (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL*
-                       SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL
-                       SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-CHANGE
-                       SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-STABLE)
-                  (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST*
-                       SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST
-                       SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST-CHANGE
-                       SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST-STABLE)
-                  (XX-WORSE-THAN-LST* XX-WORSE-THAN-LST
-                                      XX-WORSE-THAN-LST-CHANGE
-                                      XX-WORSE-THAN-LST-STABLE))
-                (W STATE))
-            (COND (MSG (ER SOFT 'MEMOIZE-PARTIAL "~@0" MSG))
-                  (T (VALUE (CONS 'PROGN
-                                  (APPEND DEFS (LIST TABLE-EVENT))))))))
-          :ON-BEHALF-OF :QUIET!)
-
-
-ACL2 !>>>(DEFCHOOSE
-          XX-WORSE-THAN-BUILTIN-CLOCKED-CHANGE
-          (LARGE)
-          (TERM1 TERM2 CLK)
-          (AND
-            (NATP LARGE)
-            (<= CLK LARGE)
-            (NOT (EQUAL (XX-WORSE-THAN-BUILTIN-CLOCKED TERM1 TERM2 CLK)
-                        (XX-WORSE-THAN-BUILTIN-CLOCKED TERM1 TERM2 LARGE)))))
-
 Summary
 Form:  ( DEFCHOOSE XX-WORSE-THAN-BUILTIN-CLOCKED-CHANGE ...)
 Rules: NIL
 XX-WORSE-THAN-BUILTIN-CLOCKED-CHANGE
 
-
-ACL2 !>>>(DEFCHOOSE
-          XX-WORSE-THAN-BUILTIN-CLOCKED-STABLE
-          (CLK)
-          (TERM1 TERM2)
-          (AND
-           (NATP CLK)
-           (EQUAL
-              (XX-WORSE-THAN-BUILTIN-CLOCKED TERM1 TERM2 CLK)
-              (XX-WORSE-THAN-BUILTIN-CLOCKED
-                   TERM1 TERM2
-                   (XX-WORSE-THAN-BUILTIN-CLOCKED-CHANGE TERM1 TERM2 CLK)))))
-
 Summary
 Form:  ( DEFCHOOSE XX-WORSE-THAN-BUILTIN-CLOCKED-STABLE ...)
 Rules: NIL
 XX-WORSE-THAN-BUILTIN-CLOCKED-STABLE
-
-
-ACL2 !>>>(DEFUN
-             XX-WORSE-THAN* (TERM1 TERM2)
-             (DECLARE (XARGS :GUARD (LET ((CLK 0))
-                                         (DECLARE (IGNORABLE CLK))
-                                         (AND (PSEUDO-TERMP TERM1)
-                                              (PSEUDO-TERMP TERM2)))))
-             (XX-WORSE-THAN-BUILTIN-CLOCKED
-                  TERM1 TERM2
-                  (NFIX (XX-WORSE-THAN-BUILTIN-CLOCKED-STABLE TERM1 TERM2))))
-
-Since XX-WORSE-THAN* is non-recursive, its admission is trivial.  We
-observe that the type of XX-WORSE-THAN* is described by the theorem
-(OR (EQUAL (XX-WORSE-THAN* TERM1 TERM2) T)
-    (EQUAL (XX-WORSE-THAN* TERM1 TERM2)
-           NIL)).
-We used the :type-prescription rule XX-WORSE-THAN-BUILTIN-CLOCKED.
-
-Computing the guard conjecture for XX-WORSE-THAN*....
-
-The guard conjecture for XX-WORSE-THAN* is trivial to prove, given
-primitive type reasoning and the :type-prescription rule NFIX.  
-XX-WORSE-THAN* is compliant with Common Lisp.
 
 Summary
 Form:  ( DEFUN XX-WORSE-THAN* ...)
@@ -2827,68 +1071,15 @@ Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL)
         (:TYPE-PRESCRIPTION XX-WORSE-THAN-BUILTIN-CLOCKED))
 XX-WORSE-THAN*
 
-
-ACL2 !>>>(DEFCHOOSE
-          XX-WORSE-THAN-OR-EQUAL-BUILTIN-CLOCKED-CHANGE
-          (LARGE)
-          (TERM1 TERM2 CLK)
-          (AND
-           (NATP LARGE)
-           (<= CLK LARGE)
-           (NOT
-            (EQUAL
-               (XX-WORSE-THAN-OR-EQUAL-BUILTIN-CLOCKED TERM1 TERM2 CLK)
-               (XX-WORSE-THAN-OR-EQUAL-BUILTIN-CLOCKED TERM1 TERM2 LARGE)))))
-
 Summary
 Form:  ( DEFCHOOSE XX-WORSE-THAN-OR-EQUAL-BUILTIN-CLOCKED-CHANGE ...)
 Rules: NIL
 XX-WORSE-THAN-OR-EQUAL-BUILTIN-CLOCKED-CHANGE
 
-
-ACL2 !>>>(DEFCHOOSE
-          XX-WORSE-THAN-OR-EQUAL-BUILTIN-CLOCKED-STABLE
-          (CLK)
-          (TERM1 TERM2)
-          (AND
-           (NATP CLK)
-           (EQUAL
-            (XX-WORSE-THAN-OR-EQUAL-BUILTIN-CLOCKED TERM1 TERM2 CLK)
-            (XX-WORSE-THAN-OR-EQUAL-BUILTIN-CLOCKED TERM1 TERM2
-                                                    (XX-WORSE-THAN-OR-EQUAL-BUILTIN-CLOCKED-CHANGE
-                                                         TERM1 TERM2 CLK)))))
-
 Summary
 Form:  ( DEFCHOOSE XX-WORSE-THAN-OR-EQUAL-BUILTIN-CLOCKED-STABLE ...)
 Rules: NIL
 XX-WORSE-THAN-OR-EQUAL-BUILTIN-CLOCKED-STABLE
-
-
-ACL2 !>>>(DEFUN
-          XX-WORSE-THAN-OR-EQUAL* (TERM1 TERM2)
-          (DECLARE (XARGS :GUARD (LET ((CLK 0))
-                                      (DECLARE (IGNORABLE CLK))
-                                      (AND (PSEUDO-TERMP TERM1)
-                                           (PSEUDO-TERMP TERM2)))))
-          (XX-WORSE-THAN-OR-EQUAL-BUILTIN-CLOCKED
-           TERM1 TERM2
-           (NFIX
-               (XX-WORSE-THAN-OR-EQUAL-BUILTIN-CLOCKED-STABLE TERM1 TERM2))))
-
-Since XX-WORSE-THAN-OR-EQUAL* is non-recursive, its admission is trivial.
-We observe that the type of XX-WORSE-THAN-OR-EQUAL* is described by
-the theorem 
-(OR (EQUAL (XX-WORSE-THAN-OR-EQUAL* TERM1 TERM2)
-           T)
-    (EQUAL (XX-WORSE-THAN-OR-EQUAL* TERM1 TERM2)
-           NIL)).
-We used the :type-prescription rule XX-WORSE-THAN-OR-EQUAL-BUILTIN-CLOCKED.
-
-Computing the guard conjecture for XX-WORSE-THAN-OR-EQUAL*....
-
-The guard conjecture for XX-WORSE-THAN-OR-EQUAL* is trivial to prove,
-given primitive type reasoning and the :type-prescription rule NFIX.
-XX-WORSE-THAN-OR-EQUAL* is compliant with Common Lisp.
 
 Summary
 Form:  ( DEFUN XX-WORSE-THAN-OR-EQUAL* ...)
@@ -2897,61 +1088,15 @@ Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL)
         (:TYPE-PRESCRIPTION XX-WORSE-THAN-OR-EQUAL-BUILTIN-CLOCKED))
 XX-WORSE-THAN-OR-EQUAL*
 
-
-ACL2 !>>>(DEFCHOOSE
-            BASIC-XX-WORSE-THAN-LST1-CHANGE (LARGE)
-            (ARGS1 ARGS2 CLK)
-            (AND (NATP LARGE)
-                 (<= CLK LARGE)
-                 (NOT (EQUAL (BASIC-XX-WORSE-THAN-LST1 ARGS1 ARGS2 CLK)
-                             (BASIC-XX-WORSE-THAN-LST1 ARGS1 ARGS2 LARGE)))))
-
 Summary
 Form:  ( DEFCHOOSE BASIC-XX-WORSE-THAN-LST1-CHANGE ...)
 Rules: NIL
 BASIC-XX-WORSE-THAN-LST1-CHANGE
 
-
-ACL2 !>>>(DEFCHOOSE
-          BASIC-XX-WORSE-THAN-LST1-STABLE (CLK)
-          (ARGS1 ARGS2)
-          (AND
-            (NATP CLK)
-            (EQUAL (BASIC-XX-WORSE-THAN-LST1 ARGS1 ARGS2 CLK)
-                   (BASIC-XX-WORSE-THAN-LST1
-                        ARGS1 ARGS2
-                        (BASIC-XX-WORSE-THAN-LST1-CHANGE ARGS1 ARGS2 CLK)))))
-
 Summary
 Form:  ( DEFCHOOSE BASIC-XX-WORSE-THAN-LST1-STABLE ...)
 Rules: NIL
 BASIC-XX-WORSE-THAN-LST1-STABLE
-
-
-ACL2 !>>>(DEFUN
-              BASIC-XX-WORSE-THAN-LST1* (ARGS1 ARGS2)
-              (DECLARE (XARGS :GUARD (LET ((CLK 0))
-                                          (DECLARE (IGNORABLE CLK))
-                                          (AND (PSEUDO-TERM-LISTP ARGS1)
-                                               (PSEUDO-TERM-LISTP ARGS2)))))
-              (BASIC-XX-WORSE-THAN-LST1
-                   ARGS1 ARGS2
-                   (NFIX (BASIC-XX-WORSE-THAN-LST1-STABLE ARGS1 ARGS2))))
-
-Since BASIC-XX-WORSE-THAN-LST1* is non-recursive, its admission is
-trivial.  We observe that the type of BASIC-XX-WORSE-THAN-LST1* is
-described by the theorem 
-(OR (EQUAL (BASIC-XX-WORSE-THAN-LST1* ARGS1 ARGS2)
-           T)
-    (EQUAL (BASIC-XX-WORSE-THAN-LST1* ARGS1 ARGS2)
-           NIL)).
-We used the :type-prescription rule BASIC-XX-WORSE-THAN-LST1.
-
-Computing the guard conjecture for BASIC-XX-WORSE-THAN-LST1*....
-
-The guard conjecture for BASIC-XX-WORSE-THAN-LST1* is trivial to prove,
-given primitive type reasoning and the :type-prescription rule NFIX.
-BASIC-XX-WORSE-THAN-LST1* is compliant with Common Lisp.
 
 Summary
 Form:  ( DEFUN BASIC-XX-WORSE-THAN-LST1* ...)
@@ -2960,61 +1105,15 @@ Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL)
         (:TYPE-PRESCRIPTION NFIX))
 BASIC-XX-WORSE-THAN-LST1*
 
-
-ACL2 !>>>(DEFCHOOSE
-            BASIC-XX-WORSE-THAN-LST2-CHANGE (LARGE)
-            (ARGS1 ARGS2 CLK)
-            (AND (NATP LARGE)
-                 (<= CLK LARGE)
-                 (NOT (EQUAL (BASIC-XX-WORSE-THAN-LST2 ARGS1 ARGS2 CLK)
-                             (BASIC-XX-WORSE-THAN-LST2 ARGS1 ARGS2 LARGE)))))
-
 Summary
 Form:  ( DEFCHOOSE BASIC-XX-WORSE-THAN-LST2-CHANGE ...)
 Rules: NIL
 BASIC-XX-WORSE-THAN-LST2-CHANGE
 
-
-ACL2 !>>>(DEFCHOOSE
-          BASIC-XX-WORSE-THAN-LST2-STABLE (CLK)
-          (ARGS1 ARGS2)
-          (AND
-            (NATP CLK)
-            (EQUAL (BASIC-XX-WORSE-THAN-LST2 ARGS1 ARGS2 CLK)
-                   (BASIC-XX-WORSE-THAN-LST2
-                        ARGS1 ARGS2
-                        (BASIC-XX-WORSE-THAN-LST2-CHANGE ARGS1 ARGS2 CLK)))))
-
 Summary
 Form:  ( DEFCHOOSE BASIC-XX-WORSE-THAN-LST2-STABLE ...)
 Rules: NIL
 BASIC-XX-WORSE-THAN-LST2-STABLE
-
-
-ACL2 !>>>(DEFUN
-              BASIC-XX-WORSE-THAN-LST2* (ARGS1 ARGS2)
-              (DECLARE (XARGS :GUARD (LET ((CLK 0))
-                                          (DECLARE (IGNORABLE CLK))
-                                          (AND (PSEUDO-TERM-LISTP ARGS1)
-                                               (PSEUDO-TERM-LISTP ARGS2)))))
-              (BASIC-XX-WORSE-THAN-LST2
-                   ARGS1 ARGS2
-                   (NFIX (BASIC-XX-WORSE-THAN-LST2-STABLE ARGS1 ARGS2))))
-
-Since BASIC-XX-WORSE-THAN-LST2* is non-recursive, its admission is
-trivial.  We observe that the type of BASIC-XX-WORSE-THAN-LST2* is
-described by the theorem 
-(OR (EQUAL (BASIC-XX-WORSE-THAN-LST2* ARGS1 ARGS2)
-           T)
-    (EQUAL (BASIC-XX-WORSE-THAN-LST2* ARGS1 ARGS2)
-           NIL)).
-We used the :type-prescription rule BASIC-XX-WORSE-THAN-LST2.
-
-Computing the guard conjecture for BASIC-XX-WORSE-THAN-LST2*....
-
-The guard conjecture for BASIC-XX-WORSE-THAN-LST2* is trivial to prove,
-given primitive type reasoning and the :type-prescription rule NFIX.
-BASIC-XX-WORSE-THAN-LST2* is compliant with Common Lisp.
 
 Summary
 Form:  ( DEFUN BASIC-XX-WORSE-THAN-LST2* ...)
@@ -3023,59 +1122,15 @@ Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL)
         (:TYPE-PRESCRIPTION NFIX))
 BASIC-XX-WORSE-THAN-LST2*
 
-
-ACL2 !>>>(DEFCHOOSE
-              BASIC-XX-WORSE-THAN-CHANGE (LARGE)
-              (TERM1 TERM2 CLK)
-              (AND (NATP LARGE)
-                   (<= CLK LARGE)
-                   (NOT (EQUAL (BASIC-XX-WORSE-THAN TERM1 TERM2 CLK)
-                               (BASIC-XX-WORSE-THAN TERM1 TERM2 LARGE)))))
-
 Summary
 Form:  ( DEFCHOOSE BASIC-XX-WORSE-THAN-CHANGE ...)
 Rules: NIL
 BASIC-XX-WORSE-THAN-CHANGE
 
-
-ACL2 !>>>(DEFCHOOSE
-            BASIC-XX-WORSE-THAN-STABLE (CLK)
-            (TERM1 TERM2)
-            (AND (NATP CLK)
-                 (EQUAL (BASIC-XX-WORSE-THAN TERM1 TERM2 CLK)
-                        (BASIC-XX-WORSE-THAN
-                             TERM1 TERM2
-                             (BASIC-XX-WORSE-THAN-CHANGE TERM1 TERM2 CLK)))))
-
 Summary
 Form:  ( DEFCHOOSE BASIC-XX-WORSE-THAN-STABLE ...)
 Rules: NIL
 BASIC-XX-WORSE-THAN-STABLE
-
-
-ACL2 !>>>(DEFUN BASIC-XX-WORSE-THAN* (TERM1 TERM2)
-                (DECLARE (XARGS :GUARD (LET ((CLK 0))
-                                            (DECLARE (IGNORABLE CLK))
-                                            (AND (PSEUDO-TERMP TERM1)
-                                                 (PSEUDO-TERMP TERM2)))))
-                (BASIC-XX-WORSE-THAN
-                     TERM1 TERM2
-                     (NFIX (BASIC-XX-WORSE-THAN-STABLE TERM1 TERM2))))
-
-Since BASIC-XX-WORSE-THAN* is non-recursive, its admission is trivial.
-We observe that the type of BASIC-XX-WORSE-THAN* is described by the
-theorem 
-(OR (EQUAL (BASIC-XX-WORSE-THAN* TERM1 TERM2)
-           T)
-    (EQUAL (BASIC-XX-WORSE-THAN* TERM1 TERM2)
-           NIL)).
-We used the :type-prescription rule BASIC-XX-WORSE-THAN.
-
-Computing the guard conjecture for BASIC-XX-WORSE-THAN*....
-
-The guard conjecture for BASIC-XX-WORSE-THAN* is trivial to prove,
-given primitive type reasoning and the :type-prescription rule NFIX.
-BASIC-XX-WORSE-THAN* is compliant with Common Lisp.
 
 Summary
 Form:  ( DEFUN BASIC-XX-WORSE-THAN* ...)
@@ -3084,69 +1139,15 @@ Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL)
         (:TYPE-PRESCRIPTION NFIX))
 BASIC-XX-WORSE-THAN*
 
-
-ACL2 !>>>(DEFCHOOSE
-          SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-CHANGE
-          (LARGE)
-          (TERM1 TERM2 CLK)
-          (AND
-           (NATP LARGE)
-           (<= CLK LARGE)
-           (NOT
-             (EQUAL
-                  (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL TERM1 TERM2 CLK)
-                  (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL TERM1 TERM2 LARGE)))))
-
 Summary
 Form:  ( DEFCHOOSE SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-CHANGE ...)
 Rules: NIL
 SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-CHANGE
 
-
-ACL2 !>>>(DEFCHOOSE
-          SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-STABLE
-          (CLK)
-          (TERM1 TERM2)
-          (AND
-           (NATP CLK)
-           (EQUAL
-            (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL TERM1 TERM2 CLK)
-            (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL
-             TERM1 TERM2
-             (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-CHANGE TERM1 TERM2 CLK)))))
-
 Summary
 Form:  ( DEFCHOOSE SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-STABLE ...)
 Rules: NIL
 SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-STABLE
-
-
-ACL2 !>>>(DEFUN
-          SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL*
-          (TERM1 TERM2)
-          (DECLARE (XARGS :GUARD (LET ((CLK 0))
-                                      (DECLARE (IGNORABLE CLK))
-                                      (AND (PSEUDO-TERMP TERM1)
-                                           (PSEUDO-TERMP TERM2)))))
-          (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL
-            TERM1 TERM2
-            (NFIX (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-STABLE TERM1 TERM2))))
-
-Since SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL* is non-recursive, its admission
-is trivial.  We observe that the type of 
-SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL* is described by the theorem 
-(OR (EQUAL (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL* TERM1 TERM2)
-           T)
-    (EQUAL (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL* TERM1 TERM2)
-           NIL)).
-We used the :type-prescription rule SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL.
-
-Computing the guard conjecture for SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL*....
-
-The guard conjecture for SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL* is trivial
-to prove, given primitive type reasoning and the :type-prescription
-rule NFIX.  SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL* is compliant with
-Common Lisp.
 
 Summary
 Form:  ( DEFUN SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL* ...)
@@ -3155,71 +1156,15 @@ Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL)
         (:TYPE-PRESCRIPTION SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL))
 SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL*
 
-
-ACL2 !>>>(DEFCHOOSE
-          SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST-CHANGE
-          (LARGE)
-          (ARGS TERM2 CLK)
-          (AND
-           (NATP LARGE)
-           (<= CLK LARGE)
-           (NOT
-            (EQUAL
-               (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST ARGS TERM2 CLK)
-               (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST ARGS TERM2 LARGE)))))
-
 Summary
 Form:  ( DEFCHOOSE SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST-CHANGE ...)
 Rules: NIL
 SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST-CHANGE
 
-
-ACL2 !>>>(DEFCHOOSE
-          SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST-STABLE
-          (CLK)
-          (ARGS TERM2)
-          (AND
-           (NATP CLK)
-           (EQUAL
-            (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST ARGS TERM2 CLK)
-            (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST ARGS TERM2
-                                                     (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST-CHANGE
-                                                          ARGS TERM2 CLK)))))
-
 Summary
 Form:  ( DEFCHOOSE SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST-STABLE ...)
 Rules: NIL
 SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST-STABLE
-
-
-ACL2 !>>>(DEFUN
-          SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST*
-          (ARGS TERM2)
-          (DECLARE (XARGS :GUARD (LET ((CLK 0))
-                                      (DECLARE (IGNORABLE CLK))
-                                      (AND (PSEUDO-TERM-LISTP ARGS)
-                                           (PSEUDO-TERMP TERM2)))))
-          (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST
-           ARGS TERM2
-           (NFIX
-               (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST-STABLE ARGS TERM2))))
-
-Since SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST* is non-recursive, its
-admission is trivial.  We observe that the type of 
-SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST* is described by the theorem
-(OR (EQUAL (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST* ARGS TERM2)
-           T)
-    (EQUAL (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST* ARGS TERM2)
-           NIL)).
-We used the :type-prescription rule SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST.
-
-Computing the guard conjecture for SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST*...\
-.
-
-The guard conjecture for SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST* is
-trivial to prove, given primitive type reasoning and the :type-prescription
-rule NFIX.  SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST* is compliant with
-Common Lisp.
 
 Summary
 Form:  ( DEFUN SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST* ...)
@@ -3228,59 +1173,15 @@ Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL)
         (:TYPE-PRESCRIPTION SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST))
 SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST*
 
-
-ACL2 !>>>(DEFCHOOSE XX-WORSE-THAN-LST-CHANGE (LARGE)
-                    (ARGS TERM2 CLK)
-                    (AND (NATP LARGE)
-                         (<= CLK LARGE)
-                         (NOT (EQUAL (XX-WORSE-THAN-LST ARGS TERM2 CLK)
-                                     (XX-WORSE-THAN-LST ARGS TERM2 LARGE)))))
-
 Summary
 Form:  ( DEFCHOOSE XX-WORSE-THAN-LST-CHANGE ...)
 Rules: NIL
 XX-WORSE-THAN-LST-CHANGE
 
-
-ACL2 !>>>(DEFCHOOSE
-          XX-WORSE-THAN-LST-STABLE (CLK)
-          (ARGS TERM2)
-          (AND
-           (NATP CLK)
-           (EQUAL
-             (XX-WORSE-THAN-LST ARGS TERM2 CLK)
-             (XX-WORSE-THAN-LST ARGS TERM2
-                                (XX-WORSE-THAN-LST-CHANGE ARGS TERM2 CLK)))))
-
 Summary
 Form:  ( DEFCHOOSE XX-WORSE-THAN-LST-STABLE ...)
 Rules: NIL
 XX-WORSE-THAN-LST-STABLE
-
-
-ACL2 !>>>(DEFUN
-            XX-WORSE-THAN-LST* (ARGS TERM2)
-            (DECLARE (XARGS :GUARD (LET ((CLK 0))
-                                        (DECLARE (IGNORABLE CLK))
-                                        (AND (PSEUDO-TERM-LISTP ARGS)
-                                             (PSEUDO-TERMP TERM2)))))
-            (XX-WORSE-THAN-LST ARGS TERM2
-                               (NFIX (XX-WORSE-THAN-LST-STABLE ARGS TERM2))))
-
-Since XX-WORSE-THAN-LST* is non-recursive, its admission is trivial.
-We observe that the type of XX-WORSE-THAN-LST* is described by the
-theorem 
-(OR (EQUAL (XX-WORSE-THAN-LST* ARGS TERM2)
-           T)
-    (EQUAL (XX-WORSE-THAN-LST* ARGS TERM2)
-           NIL)).
-We used the :type-prescription rule XX-WORSE-THAN-LST.
-
-Computing the guard conjecture for XX-WORSE-THAN-LST*....
-
-The guard conjecture for XX-WORSE-THAN-LST* is trivial to prove, given
-primitive type reasoning and the :type-prescription rule NFIX.  
-XX-WORSE-THAN-LST* is compliant with Common Lisp.
 
 Summary
 Form:  ( DEFUN XX-WORSE-THAN-LST* ...)
@@ -3288,409 +1189,6 @@ Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL)
         (:TYPE-PRESCRIPTION NFIX)
         (:TYPE-PRESCRIPTION XX-WORSE-THAN-LST))
 XX-WORSE-THAN-LST*
-
-
-ACL2 !>>>(TABLE
-          PARTIAL-FUNCTIONS-TABLE
-          'XX-WORSE-THAN-BUILTIN-CLOCKED
-          '((XX-WORSE-THAN*
-             XX-WORSE-THAN-BUILTIN-CLOCKED
-             XX-WORSE-THAN-BUILTIN-CLOCKED-CHANGE
-             XX-WORSE-THAN-BUILTIN-CLOCKED-STABLE
-             (DEFUN
-              XX-WORSE-THAN* (TERM1 TERM2)
-              (DECLARE (IGNORABLE TERM1 TERM2))
-              (FLET
-                ((XX-WORSE-THAN-BUILTIN-CLOCKED (TERM1 TERM2 CLK)
-                                                (DECLARE (IGNORE CLK))
-                                                (XX-WORSE-THAN* TERM1 TERM2))
-                 (XX-WORSE-THAN-OR-EQUAL-BUILTIN-CLOCKED
-                      (TERM1 TERM2 CLK)
-                      (DECLARE (IGNORE CLK))
-                      (XX-WORSE-THAN-OR-EQUAL* TERM1 TERM2))
-                 (BASIC-XX-WORSE-THAN-LST1
-                      (ARGS1 ARGS2 CLK)
-                      (DECLARE (IGNORE CLK))
-                      (BASIC-XX-WORSE-THAN-LST1* ARGS1 ARGS2))
-                 (BASIC-XX-WORSE-THAN-LST2
-                      (ARGS1 ARGS2 CLK)
-                      (DECLARE (IGNORE CLK))
-                      (BASIC-XX-WORSE-THAN-LST2* ARGS1 ARGS2))
-                 (BASIC-XX-WORSE-THAN (TERM1 TERM2 CLK)
-                                      (DECLARE (IGNORE CLK))
-                                      (BASIC-XX-WORSE-THAN* TERM1 TERM2))
-                 (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL
-                      (TERM1 TERM2 CLK)
-                      (DECLARE (IGNORE CLK))
-                      (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL* TERM1 TERM2))
-                 (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST
-                      (ARGS TERM2 CLK)
-                      (DECLARE (IGNORE CLK))
-                      (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST* ARGS TERM2))
-                 (XX-WORSE-THAN-LST (ARGS TERM2 CLK)
-                                    (DECLARE (IGNORE CLK))
-                                    (XX-WORSE-THAN-LST* ARGS TERM2)))
-                (DECLARE (INLINE XX-WORSE-THAN-BUILTIN-CLOCKED))
-                (LET ((CLK 0))
-                     (DECLARE (IGNORABLE CLK))
-                     (XX-WORSE-THAN-BUILTIN-CLOCKED-BODY CLK)))))
-            (XX-WORSE-THAN-OR-EQUAL*
-             XX-WORSE-THAN-OR-EQUAL-BUILTIN-CLOCKED
-             XX-WORSE-THAN-OR-EQUAL-BUILTIN-CLOCKED-CHANGE
-             XX-WORSE-THAN-OR-EQUAL-BUILTIN-CLOCKED-STABLE
-             (DEFUN
-              XX-WORSE-THAN-OR-EQUAL* (TERM1 TERM2)
-              (DECLARE (IGNORABLE TERM1 TERM2))
-              (FLET
-                ((XX-WORSE-THAN-BUILTIN-CLOCKED (TERM1 TERM2 CLK)
-                                                (DECLARE (IGNORE CLK))
-                                                (XX-WORSE-THAN* TERM1 TERM2))
-                 (XX-WORSE-THAN-OR-EQUAL-BUILTIN-CLOCKED
-                      (TERM1 TERM2 CLK)
-                      (DECLARE (IGNORE CLK))
-                      (XX-WORSE-THAN-OR-EQUAL* TERM1 TERM2))
-                 (BASIC-XX-WORSE-THAN-LST1
-                      (ARGS1 ARGS2 CLK)
-                      (DECLARE (IGNORE CLK))
-                      (BASIC-XX-WORSE-THAN-LST1* ARGS1 ARGS2))
-                 (BASIC-XX-WORSE-THAN-LST2
-                      (ARGS1 ARGS2 CLK)
-                      (DECLARE (IGNORE CLK))
-                      (BASIC-XX-WORSE-THAN-LST2* ARGS1 ARGS2))
-                 (BASIC-XX-WORSE-THAN (TERM1 TERM2 CLK)
-                                      (DECLARE (IGNORE CLK))
-                                      (BASIC-XX-WORSE-THAN* TERM1 TERM2))
-                 (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL
-                      (TERM1 TERM2 CLK)
-                      (DECLARE (IGNORE CLK))
-                      (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL* TERM1 TERM2))
-                 (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST
-                      (ARGS TERM2 CLK)
-                      (DECLARE (IGNORE CLK))
-                      (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST* ARGS TERM2))
-                 (XX-WORSE-THAN-LST (ARGS TERM2 CLK)
-                                    (DECLARE (IGNORE CLK))
-                                    (XX-WORSE-THAN-LST* ARGS TERM2)))
-                (DECLARE (INLINE XX-WORSE-THAN-OR-EQUAL-BUILTIN-CLOCKED))
-                (LET ((CLK 0))
-                     (DECLARE (IGNORABLE CLK))
-                     (IF (PSEUDO-VARIANTP TERM1 TERM2)
-                         (EQUAL TERM1 TERM2)
-                         (XX-WORSE-THAN-BUILTIN-CLOCKED TERM1 TERM2 CLK))))))
-            (BASIC-XX-WORSE-THAN-LST1*
-             BASIC-XX-WORSE-THAN-LST1
-             BASIC-XX-WORSE-THAN-LST1-CHANGE
-             BASIC-XX-WORSE-THAN-LST1-STABLE
-             (DEFUN
-              BASIC-XX-WORSE-THAN-LST1* (ARGS1 ARGS2)
-              (DECLARE (IGNORABLE ARGS1 ARGS2))
-              (FLET
-                ((XX-WORSE-THAN-BUILTIN-CLOCKED (TERM1 TERM2 CLK)
-                                                (DECLARE (IGNORE CLK))
-                                                (XX-WORSE-THAN* TERM1 TERM2))
-                 (XX-WORSE-THAN-OR-EQUAL-BUILTIN-CLOCKED
-                      (TERM1 TERM2 CLK)
-                      (DECLARE (IGNORE CLK))
-                      (XX-WORSE-THAN-OR-EQUAL* TERM1 TERM2))
-                 (BASIC-XX-WORSE-THAN-LST1
-                      (ARGS1 ARGS2 CLK)
-                      (DECLARE (IGNORE CLK))
-                      (BASIC-XX-WORSE-THAN-LST1* ARGS1 ARGS2))
-                 (BASIC-XX-WORSE-THAN-LST2
-                      (ARGS1 ARGS2 CLK)
-                      (DECLARE (IGNORE CLK))
-                      (BASIC-XX-WORSE-THAN-LST2* ARGS1 ARGS2))
-                 (BASIC-XX-WORSE-THAN (TERM1 TERM2 CLK)
-                                      (DECLARE (IGNORE CLK))
-                                      (BASIC-XX-WORSE-THAN* TERM1 TERM2))
-                 (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL
-                      (TERM1 TERM2 CLK)
-                      (DECLARE (IGNORE CLK))
-                      (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL* TERM1 TERM2))
-                 (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST
-                      (ARGS TERM2 CLK)
-                      (DECLARE (IGNORE CLK))
-                      (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST* ARGS TERM2))
-                 (XX-WORSE-THAN-LST (ARGS TERM2 CLK)
-                                    (DECLARE (IGNORE CLK))
-                                    (XX-WORSE-THAN-LST* ARGS TERM2)))
-                (DECLARE (INLINE BASIC-XX-WORSE-THAN-LST1))
-                (LET ((CLK 0))
-                     (DECLARE (IGNORABLE CLK))
-                     (COND ((ENDP ARGS1) NIL)
-                           ((ENDP ARGS1) NIL)
-                           ((OR (AND (OR (VARIABLEP (CAR ARGS1))
-                                         (FQUOTEP (CAR ARGS1)))
-                                     (NOT (OR (VARIABLEP (CAR ARGS2))
-                                              (FQUOTEP (CAR ARGS2)))))
-                                (XX-WORSE-THAN-BUILTIN-CLOCKED (CAR ARGS2)
-                                                               (CAR ARGS1)
-                                                               CLK))
-                            T)
-                           (T (BASIC-XX-WORSE-THAN-LST1 (CDR ARGS1)
-                                                        (CDR ARGS2)
-                                                        CLK)))))))
-            (BASIC-XX-WORSE-THAN-LST2*
-             BASIC-XX-WORSE-THAN-LST2
-             BASIC-XX-WORSE-THAN-LST2-CHANGE
-             BASIC-XX-WORSE-THAN-LST2-STABLE
-             (DEFUN
-              BASIC-XX-WORSE-THAN-LST2* (ARGS1 ARGS2)
-              (DECLARE (IGNORABLE ARGS1 ARGS2))
-              (FLET
-                ((XX-WORSE-THAN-BUILTIN-CLOCKED (TERM1 TERM2 CLK)
-                                                (DECLARE (IGNORE CLK))
-                                                (XX-WORSE-THAN* TERM1 TERM2))
-                 (XX-WORSE-THAN-OR-EQUAL-BUILTIN-CLOCKED
-                      (TERM1 TERM2 CLK)
-                      (DECLARE (IGNORE CLK))
-                      (XX-WORSE-THAN-OR-EQUAL* TERM1 TERM2))
-                 (BASIC-XX-WORSE-THAN-LST1
-                      (ARGS1 ARGS2 CLK)
-                      (DECLARE (IGNORE CLK))
-                      (BASIC-XX-WORSE-THAN-LST1* ARGS1 ARGS2))
-                 (BASIC-XX-WORSE-THAN-LST2
-                      (ARGS1 ARGS2 CLK)
-                      (DECLARE (IGNORE CLK))
-                      (BASIC-XX-WORSE-THAN-LST2* ARGS1 ARGS2))
-                 (BASIC-XX-WORSE-THAN (TERM1 TERM2 CLK)
-                                      (DECLARE (IGNORE CLK))
-                                      (BASIC-XX-WORSE-THAN* TERM1 TERM2))
-                 (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL
-                      (TERM1 TERM2 CLK)
-                      (DECLARE (IGNORE CLK))
-                      (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL* TERM1 TERM2))
-                 (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST
-                      (ARGS TERM2 CLK)
-                      (DECLARE (IGNORE CLK))
-                      (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST* ARGS TERM2))
-                 (XX-WORSE-THAN-LST (ARGS TERM2 CLK)
-                                    (DECLARE (IGNORE CLK))
-                                    (XX-WORSE-THAN-LST* ARGS TERM2)))
-                (DECLARE (INLINE BASIC-XX-WORSE-THAN-LST2))
-                (LET ((CLK 0))
-                     (DECLARE (IGNORABLE CLK))
-                     (COND ((ENDP ARGS1) NIL)
-                           ((XX-WORSE-THAN-BUILTIN-CLOCKED (CAR ARGS1)
-                                                           (CAR ARGS2)
-                                                           CLK)
-                            T)
-                           (T (BASIC-XX-WORSE-THAN-LST2 (CDR ARGS1)
-                                                        (CDR ARGS2)
-                                                        CLK)))))))
-            (BASIC-XX-WORSE-THAN*
-             BASIC-XX-WORSE-THAN
-             BASIC-XX-WORSE-THAN-CHANGE
-             BASIC-XX-WORSE-THAN-STABLE
-             (DEFUN
-              BASIC-XX-WORSE-THAN* (TERM1 TERM2)
-              (DECLARE (IGNORABLE TERM1 TERM2))
-              (FLET
-               ((XX-WORSE-THAN-BUILTIN-CLOCKED (TERM1 TERM2 CLK)
-                                               (DECLARE (IGNORE CLK))
-                                               (XX-WORSE-THAN* TERM1 TERM2))
-                (XX-WORSE-THAN-OR-EQUAL-BUILTIN-CLOCKED
-                     (TERM1 TERM2 CLK)
-                     (DECLARE (IGNORE CLK))
-                     (XX-WORSE-THAN-OR-EQUAL* TERM1 TERM2))
-                (BASIC-XX-WORSE-THAN-LST1
-                     (ARGS1 ARGS2 CLK)
-                     (DECLARE (IGNORE CLK))
-                     (BASIC-XX-WORSE-THAN-LST1* ARGS1 ARGS2))
-                (BASIC-XX-WORSE-THAN-LST2
-                     (ARGS1 ARGS2 CLK)
-                     (DECLARE (IGNORE CLK))
-                     (BASIC-XX-WORSE-THAN-LST2* ARGS1 ARGS2))
-                (BASIC-XX-WORSE-THAN (TERM1 TERM2 CLK)
-                                     (DECLARE (IGNORE CLK))
-                                     (BASIC-XX-WORSE-THAN* TERM1 TERM2))
-                (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL
-                     (TERM1 TERM2 CLK)
-                     (DECLARE (IGNORE CLK))
-                     (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL* TERM1 TERM2))
-                (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST
-                     (ARGS TERM2 CLK)
-                     (DECLARE (IGNORE CLK))
-                     (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST* ARGS TERM2))
-                (XX-WORSE-THAN-LST (ARGS TERM2 CLK)
-                                   (DECLARE (IGNORE CLK))
-                                   (XX-WORSE-THAN-LST* ARGS TERM2)))
-               (DECLARE (INLINE BASIC-XX-WORSE-THAN))
-               (LET
-                ((CLK 0))
-                (DECLARE (IGNORABLE CLK))
-                (COND
-                   ((VARIABLEP TERM2)
-                    (COND ((EQ TERM1 TERM2) NIL)
-                          (T (OCCUR TERM2 TERM1))))
-                   ((FQUOTEP TERM2)
-                    (COND ((VARIABLEP TERM1) T)
-                          ((FQUOTEP TERM1)
-                           (> (FN-COUNT-EVG (CADR TERM1))
-                              (FN-COUNT-EVG (CADR TERM2))))
-                          (T T)))
-                   ((VARIABLEP TERM1) NIL)
-                   ((FQUOTEP TERM1) NIL)
-                   ((COND ((FLAMBDA-APPLICATIONP TERM1)
-                           (EQUAL (FFN-SYMB TERM1)
-                                  (FFN-SYMB TERM2)))
-                          (T (EQ (FFN-SYMB TERM1) (FFN-SYMB TERM2))))
-                    (COND ((PSEUDO-VARIANTP TERM1 TERM2) NIL)
-                          (T (COND ((BASIC-XX-WORSE-THAN-LST1 (FARGS TERM1)
-                                                              (FARGS TERM2)
-                                                              CLK)
-                                    NIL)
-                                   (T (BASIC-XX-WORSE-THAN-LST2 (FARGS TERM1)
-                                                                (FARGS TERM2)
-                                                                CLK))))))
-                   (T NIL))))))
-            (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL*
-             SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL
-             SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-CHANGE
-             SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-STABLE
-             (DEFUN
-              SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL*
-              (TERM1 TERM2)
-              (DECLARE (IGNORABLE TERM1 TERM2))
-              (FLET
-               ((XX-WORSE-THAN-BUILTIN-CLOCKED (TERM1 TERM2 CLK)
-                                               (DECLARE (IGNORE CLK))
-                                               (XX-WORSE-THAN* TERM1 TERM2))
-                (XX-WORSE-THAN-OR-EQUAL-BUILTIN-CLOCKED
-                     (TERM1 TERM2 CLK)
-                     (DECLARE (IGNORE CLK))
-                     (XX-WORSE-THAN-OR-EQUAL* TERM1 TERM2))
-                (BASIC-XX-WORSE-THAN-LST1
-                     (ARGS1 ARGS2 CLK)
-                     (DECLARE (IGNORE CLK))
-                     (BASIC-XX-WORSE-THAN-LST1* ARGS1 ARGS2))
-                (BASIC-XX-WORSE-THAN-LST2
-                     (ARGS1 ARGS2 CLK)
-                     (DECLARE (IGNORE CLK))
-                     (BASIC-XX-WORSE-THAN-LST2* ARGS1 ARGS2))
-                (BASIC-XX-WORSE-THAN (TERM1 TERM2 CLK)
-                                     (DECLARE (IGNORE CLK))
-                                     (BASIC-XX-WORSE-THAN* TERM1 TERM2))
-                (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL
-                     (TERM1 TERM2 CLK)
-                     (DECLARE (IGNORE CLK))
-                     (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL* TERM1 TERM2))
-                (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST
-                     (ARGS TERM2 CLK)
-                     (DECLARE (IGNORE CLK))
-                     (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST* ARGS TERM2))
-                (XX-WORSE-THAN-LST (ARGS TERM2 CLK)
-                                   (DECLARE (IGNORE CLK))
-                                   (XX-WORSE-THAN-LST* ARGS TERM2)))
-               (DECLARE (INLINE SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL))
-               (LET
-                ((CLK 0))
-                (DECLARE (IGNORABLE CLK))
-                (COND
-                 ((VARIABLEP TERM1) (EQ TERM1 TERM2))
-                 ((IF (PSEUDO-VARIANTP TERM1 TERM2)
-                      (EQUAL TERM1 TERM2)
-                      (BASIC-XX-WORSE-THAN TERM1 TERM2 CLK))
-                  T)
-                 ((FQUOTEP TERM1) NIL)
-                 (T (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST (FARGS TERM1)
-                                                             TERM2 CLK)))))))
-            (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST*
-             SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST
-             SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST-CHANGE
-             SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST-STABLE
-             (DEFUN
-              SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST*
-              (ARGS TERM2)
-              (DECLARE (IGNORABLE ARGS TERM2))
-              (FLET
-               ((XX-WORSE-THAN-BUILTIN-CLOCKED (TERM1 TERM2 CLK)
-                                               (DECLARE (IGNORE CLK))
-                                               (XX-WORSE-THAN* TERM1 TERM2))
-                (XX-WORSE-THAN-OR-EQUAL-BUILTIN-CLOCKED
-                     (TERM1 TERM2 CLK)
-                     (DECLARE (IGNORE CLK))
-                     (XX-WORSE-THAN-OR-EQUAL* TERM1 TERM2))
-                (BASIC-XX-WORSE-THAN-LST1
-                     (ARGS1 ARGS2 CLK)
-                     (DECLARE (IGNORE CLK))
-                     (BASIC-XX-WORSE-THAN-LST1* ARGS1 ARGS2))
-                (BASIC-XX-WORSE-THAN-LST2
-                     (ARGS1 ARGS2 CLK)
-                     (DECLARE (IGNORE CLK))
-                     (BASIC-XX-WORSE-THAN-LST2* ARGS1 ARGS2))
-                (BASIC-XX-WORSE-THAN (TERM1 TERM2 CLK)
-                                     (DECLARE (IGNORE CLK))
-                                     (BASIC-XX-WORSE-THAN* TERM1 TERM2))
-                (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL
-                     (TERM1 TERM2 CLK)
-                     (DECLARE (IGNORE CLK))
-                     (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL* TERM1 TERM2))
-                (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST
-                     (ARGS TERM2 CLK)
-                     (DECLARE (IGNORE CLK))
-                     (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST* ARGS TERM2))
-                (XX-WORSE-THAN-LST (ARGS TERM2 CLK)
-                                   (DECLARE (IGNORE CLK))
-                                   (XX-WORSE-THAN-LST* ARGS TERM2)))
-               (DECLARE (INLINE SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST))
-               (LET
-                ((CLK 0))
-                (DECLARE (IGNORABLE CLK))
-                (COND
-                 ((ENDP ARGS) NIL)
-                 (T
-                  (OR
-                   (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL (CAR ARGS)
-                                                        TERM2 CLK)
-                   (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST (CDR ARGS)
-                                                            TERM2 CLK))))))))
-            (XX-WORSE-THAN-LST*
-             XX-WORSE-THAN-LST
-             XX-WORSE-THAN-LST-CHANGE
-             XX-WORSE-THAN-LST-STABLE
-             (DEFUN
-              XX-WORSE-THAN-LST* (ARGS TERM2)
-              (DECLARE (IGNORABLE ARGS TERM2))
-              (FLET
-               ((XX-WORSE-THAN-BUILTIN-CLOCKED (TERM1 TERM2 CLK)
-                                               (DECLARE (IGNORE CLK))
-                                               (XX-WORSE-THAN* TERM1 TERM2))
-                (XX-WORSE-THAN-OR-EQUAL-BUILTIN-CLOCKED
-                     (TERM1 TERM2 CLK)
-                     (DECLARE (IGNORE CLK))
-                     (XX-WORSE-THAN-OR-EQUAL* TERM1 TERM2))
-                (BASIC-XX-WORSE-THAN-LST1
-                     (ARGS1 ARGS2 CLK)
-                     (DECLARE (IGNORE CLK))
-                     (BASIC-XX-WORSE-THAN-LST1* ARGS1 ARGS2))
-                (BASIC-XX-WORSE-THAN-LST2
-                     (ARGS1 ARGS2 CLK)
-                     (DECLARE (IGNORE CLK))
-                     (BASIC-XX-WORSE-THAN-LST2* ARGS1 ARGS2))
-                (BASIC-XX-WORSE-THAN (TERM1 TERM2 CLK)
-                                     (DECLARE (IGNORE CLK))
-                                     (BASIC-XX-WORSE-THAN* TERM1 TERM2))
-                (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL
-                     (TERM1 TERM2 CLK)
-                     (DECLARE (IGNORE CLK))
-                     (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL* TERM1 TERM2))
-                (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST
-                     (ARGS TERM2 CLK)
-                     (DECLARE (IGNORE CLK))
-                     (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST* ARGS TERM2))
-                (XX-WORSE-THAN-LST (ARGS TERM2 CLK)
-                                   (DECLARE (IGNORE CLK))
-                                   (XX-WORSE-THAN-LST* ARGS TERM2)))
-               (DECLARE (INLINE XX-WORSE-THAN-LST))
-               (LET
-                 ((CLK 0))
-                 (DECLARE (IGNORABLE CLK))
-                 (COND ((ENDP ARGS) NIL)
-                       (T (OR (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL (CAR ARGS)
-                                                                   TERM2 CLK)
-                              (XX-WORSE-THAN-LST (CDR ARGS)
-                                                 TERM2 CLK))))))))))
 
 Summary
 Form:  ( TABLE PARTIAL-FUNCTIONS-TABLE ...)
@@ -3707,35 +1205,10 @@ Form:  ( MAKE-EVENT (ER-PROGN ...) ...)
 Rules: NIL
 PARTIAL-FUNCTIONS-TABLE
 
-
-ACL2 !>>>(MEMOIZE 'XX-WORSE-THAN*
-                  :TOTAL 'XX-WORSE-THAN-BUILTIN-CLOCKED
-                  :CONDITION NIL)
-
-
-ACL2 !>>>(TABLE
-              MEMOIZE-TABLE
-              (DEREF-MACRO-NAME 'XX-WORSE-THAN*
-                                (MACRO-ALIASES WORLD))
-              (LIST* (CONS :CONDITION-FN NIL)
-                     (CONS :INLINE T)
-                     (CONS :COMMUTATIVE NIL)
-                     (CONS :FORGET NIL)
-                     (CONS :MEMO-TABLE-INIT-SIZE (OR NIL *MHT-DEFAULT-SIZE*))
-                     (CONS :AOKP 'NIL)
-                     (CONS :STATS :DEFAULT)
-                     (CONS :TOTAL 'XX-WORSE-THAN-BUILTIN-CLOCKED)
-                     (AND (NOT (EQ ':DEFAULT :DEFAULT))
-                          (LIST (CONS :IDEAL-OKP ':DEFAULT)))))
-
 Summary
 Form:  ( TABLE MEMOIZE-TABLE ...)
 Rules: NIL
 MEMOIZE-TABLE
-
-
-ACL2 !>>>(VALUE-TRIPLE (DEREF-MACRO-NAME 'XX-WORSE-THAN*
-                                         (MACRO-ALIASES (W STATE))))
 XX-WORSE-THAN*
 
 Summary
@@ -3743,34 +1216,10 @@ Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
 Rules: NIL
 XX-WORSE-THAN*
 
-
-ACL2 !>>>(MEMOIZE 'XX-WORSE-THAN-OR-EQUAL*
-                  :TOTAL 'XX-WORSE-THAN-OR-EQUAL-BUILTIN-CLOCKED)
-
-
-ACL2 !>>>(TABLE
-              MEMOIZE-TABLE
-              (DEREF-MACRO-NAME 'XX-WORSE-THAN-OR-EQUAL*
-                                (MACRO-ALIASES WORLD))
-              (LIST* (CONS :CONDITION-FN T)
-                     (CONS :INLINE T)
-                     (CONS :COMMUTATIVE NIL)
-                     (CONS :FORGET NIL)
-                     (CONS :MEMO-TABLE-INIT-SIZE (OR NIL *MHT-DEFAULT-SIZE*))
-                     (CONS :AOKP 'NIL)
-                     (CONS :STATS :DEFAULT)
-                     (CONS :TOTAL 'XX-WORSE-THAN-OR-EQUAL-BUILTIN-CLOCKED)
-                     (AND (NOT (EQ ':DEFAULT :DEFAULT))
-                          (LIST (CONS :IDEAL-OKP ':DEFAULT)))))
-
 Summary
 Form:  ( TABLE MEMOIZE-TABLE ...)
 Rules: NIL
 MEMOIZE-TABLE
-
-
-ACL2 !>>>(VALUE-TRIPLE (DEREF-MACRO-NAME 'XX-WORSE-THAN-OR-EQUAL*
-                                         (MACRO-ALIASES (W STATE))))
 XX-WORSE-THAN-OR-EQUAL*
 
 Summary
@@ -3778,34 +1227,10 @@ Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
 Rules: NIL
 XX-WORSE-THAN-OR-EQUAL*
 
-
-ACL2 !>>>(MEMOIZE 'BASIC-XX-WORSE-THAN-LST1*
-                  :TOTAL 'BASIC-XX-WORSE-THAN-LST1)
-
-
-ACL2 !>>>(TABLE
-              MEMOIZE-TABLE
-              (DEREF-MACRO-NAME 'BASIC-XX-WORSE-THAN-LST1*
-                                (MACRO-ALIASES WORLD))
-              (LIST* (CONS :CONDITION-FN T)
-                     (CONS :INLINE T)
-                     (CONS :COMMUTATIVE NIL)
-                     (CONS :FORGET NIL)
-                     (CONS :MEMO-TABLE-INIT-SIZE (OR NIL *MHT-DEFAULT-SIZE*))
-                     (CONS :AOKP 'NIL)
-                     (CONS :STATS :DEFAULT)
-                     (CONS :TOTAL 'BASIC-XX-WORSE-THAN-LST1)
-                     (AND (NOT (EQ ':DEFAULT :DEFAULT))
-                          (LIST (CONS :IDEAL-OKP ':DEFAULT)))))
-
 Summary
 Form:  ( TABLE MEMOIZE-TABLE ...)
 Rules: NIL
 MEMOIZE-TABLE
-
-
-ACL2 !>>>(VALUE-TRIPLE (DEREF-MACRO-NAME 'BASIC-XX-WORSE-THAN-LST1*
-                                         (MACRO-ALIASES (W STATE))))
 BASIC-XX-WORSE-THAN-LST1*
 
 Summary
@@ -3813,34 +1238,10 @@ Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
 Rules: NIL
 BASIC-XX-WORSE-THAN-LST1*
 
-
-ACL2 !>>>(MEMOIZE 'BASIC-XX-WORSE-THAN-LST2*
-                  :TOTAL 'BASIC-XX-WORSE-THAN-LST2)
-
-
-ACL2 !>>>(TABLE
-              MEMOIZE-TABLE
-              (DEREF-MACRO-NAME 'BASIC-XX-WORSE-THAN-LST2*
-                                (MACRO-ALIASES WORLD))
-              (LIST* (CONS :CONDITION-FN T)
-                     (CONS :INLINE T)
-                     (CONS :COMMUTATIVE NIL)
-                     (CONS :FORGET NIL)
-                     (CONS :MEMO-TABLE-INIT-SIZE (OR NIL *MHT-DEFAULT-SIZE*))
-                     (CONS :AOKP 'NIL)
-                     (CONS :STATS :DEFAULT)
-                     (CONS :TOTAL 'BASIC-XX-WORSE-THAN-LST2)
-                     (AND (NOT (EQ ':DEFAULT :DEFAULT))
-                          (LIST (CONS :IDEAL-OKP ':DEFAULT)))))
-
 Summary
 Form:  ( TABLE MEMOIZE-TABLE ...)
 Rules: NIL
 MEMOIZE-TABLE
-
-
-ACL2 !>>>(VALUE-TRIPLE (DEREF-MACRO-NAME 'BASIC-XX-WORSE-THAN-LST2*
-                                         (MACRO-ALIASES (W STATE))))
 BASIC-XX-WORSE-THAN-LST2*
 
 Summary
@@ -3848,34 +1249,10 @@ Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
 Rules: NIL
 BASIC-XX-WORSE-THAN-LST2*
 
-
-ACL2 !>>>(MEMOIZE 'BASIC-XX-WORSE-THAN*
-                  :TOTAL 'BASIC-XX-WORSE-THAN)
-
-
-ACL2 !>>>(TABLE
-              MEMOIZE-TABLE
-              (DEREF-MACRO-NAME 'BASIC-XX-WORSE-THAN*
-                                (MACRO-ALIASES WORLD))
-              (LIST* (CONS :CONDITION-FN T)
-                     (CONS :INLINE T)
-                     (CONS :COMMUTATIVE NIL)
-                     (CONS :FORGET NIL)
-                     (CONS :MEMO-TABLE-INIT-SIZE (OR NIL *MHT-DEFAULT-SIZE*))
-                     (CONS :AOKP 'NIL)
-                     (CONS :STATS :DEFAULT)
-                     (CONS :TOTAL 'BASIC-XX-WORSE-THAN)
-                     (AND (NOT (EQ ':DEFAULT :DEFAULT))
-                          (LIST (CONS :IDEAL-OKP ':DEFAULT)))))
-
 Summary
 Form:  ( TABLE MEMOIZE-TABLE ...)
 Rules: NIL
 MEMOIZE-TABLE
-
-
-ACL2 !>>>(VALUE-TRIPLE (DEREF-MACRO-NAME 'BASIC-XX-WORSE-THAN*
-                                         (MACRO-ALIASES (W STATE))))
 BASIC-XX-WORSE-THAN*
 
 Summary
@@ -3883,35 +1260,10 @@ Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
 Rules: NIL
 BASIC-XX-WORSE-THAN*
 
-
-ACL2 !>>>(MEMOIZE 'SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL*
-                  :TOTAL 'SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL)
-
-
-ACL2 !>>>(TABLE
-              MEMOIZE-TABLE
-              (DEREF-MACRO-NAME 'SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL*
-                                (MACRO-ALIASES WORLD))
-              (LIST* (CONS :CONDITION-FN T)
-                     (CONS :INLINE T)
-                     (CONS :COMMUTATIVE NIL)
-                     (CONS :FORGET NIL)
-                     (CONS :MEMO-TABLE-INIT-SIZE (OR NIL *MHT-DEFAULT-SIZE*))
-                     (CONS :AOKP 'NIL)
-                     (CONS :STATS :DEFAULT)
-                     (CONS :TOTAL 'SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL)
-                     (AND (NOT (EQ ':DEFAULT :DEFAULT))
-                          (LIST (CONS :IDEAL-OKP ':DEFAULT)))))
-
 Summary
 Form:  ( TABLE MEMOIZE-TABLE ...)
 Rules: NIL
 MEMOIZE-TABLE
-
-
-ACL2 !>>>(VALUE-TRIPLE
-              (DEREF-MACRO-NAME 'SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL*
-                                (MACRO-ALIASES (W STATE))))
 SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL*
 
 Summary
@@ -3919,35 +1271,10 @@ Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
 Rules: NIL
 SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL*
 
-
-ACL2 !>>>(MEMOIZE 'SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST*
-                  :TOTAL 'SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST)
-
-
-ACL2 !>>>(TABLE
-              MEMOIZE-TABLE
-              (DEREF-MACRO-NAME 'SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST*
-                                (MACRO-ALIASES WORLD))
-              (LIST* (CONS :CONDITION-FN T)
-                     (CONS :INLINE T)
-                     (CONS :COMMUTATIVE NIL)
-                     (CONS :FORGET NIL)
-                     (CONS :MEMO-TABLE-INIT-SIZE (OR NIL *MHT-DEFAULT-SIZE*))
-                     (CONS :AOKP 'NIL)
-                     (CONS :STATS :DEFAULT)
-                     (CONS :TOTAL 'SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST)
-                     (AND (NOT (EQ ':DEFAULT :DEFAULT))
-                          (LIST (CONS :IDEAL-OKP ':DEFAULT)))))
-
 Summary
 Form:  ( TABLE MEMOIZE-TABLE ...)
 Rules: NIL
 MEMOIZE-TABLE
-
-
-ACL2 !>>>(VALUE-TRIPLE
-              (DEREF-MACRO-NAME 'SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST*
-                                (MACRO-ALIASES (W STATE))))
 SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST*
 
 Summary
@@ -3955,34 +1282,10 @@ Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
 Rules: NIL
 SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST*
 
-
-ACL2 !>>>(MEMOIZE 'XX-WORSE-THAN-LST*
-                  :TOTAL 'XX-WORSE-THAN-LST)
-
-
-ACL2 !>>>(TABLE
-              MEMOIZE-TABLE
-              (DEREF-MACRO-NAME 'XX-WORSE-THAN-LST*
-                                (MACRO-ALIASES WORLD))
-              (LIST* (CONS :CONDITION-FN T)
-                     (CONS :INLINE T)
-                     (CONS :COMMUTATIVE NIL)
-                     (CONS :FORGET NIL)
-                     (CONS :MEMO-TABLE-INIT-SIZE (OR NIL *MHT-DEFAULT-SIZE*))
-                     (CONS :AOKP 'NIL)
-                     (CONS :STATS :DEFAULT)
-                     (CONS :TOTAL 'XX-WORSE-THAN-LST)
-                     (AND (NOT (EQ ':DEFAULT :DEFAULT))
-                          (LIST (CONS :IDEAL-OKP ':DEFAULT)))))
-
 Summary
 Form:  ( TABLE MEMOIZE-TABLE ...)
 Rules: NIL
 MEMOIZE-TABLE
-
-
-ACL2 !>>>(VALUE-TRIPLE (DEREF-MACRO-NAME 'XX-WORSE-THAN-LST*
-                                         (MACRO-ALIASES (W STATE))))
 XX-WORSE-THAN-LST*
 
 Summary
@@ -4007,37 +1310,118 @@ ACL2 !>>(ASSERT-EVENT
                                              '(PERM Z X))
                     T))
  :PASSED
-ACL2 !>>(INCLUDE-BOOK "std/testing/must-fail"
-                      :DIR :SYSTEM)
+ACL2 !>>(U)
+ V        23:x(MUTUAL-RECURSION
+                   (DEFUN XX-WORSE-THAN-BUILTIN-CLOCKED
+                          (TERM1 TERM2 CLK)
+                          ...)
+                   (DEFUN XX-WORSE-THAN-OR-EQUAL-BUILTIN-CLOCKED
+                          (TERM1 TERM2 CLK)
+                          ...)
+                   (DEFUN BASIC-XX-WORSE-THAN-LST1
+                          (ARGS1 ARGS2 CLK)
+                          ...)
+                   (DEFUN BASIC-XX-WORSE-THAN-LST2
+                          (ARGS1 ARGS2 CLK)
+                          ...)
+                   (DEFUN BASIC-XX-WORSE-THAN (TERM1 TERM2 CLK)
+                          ...)
+                   (DEFUN SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL
+                          (TERM1 TERM2 CLK)
+                          ...)
+                   (DEFUN SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST
+                          (ARGS TERM2 CLK)
+                          ...)
+                   (DEFUN XX-WORSE-THAN-LST (ARGS TERM2 CLK)
+                          ...))
+ACL2 !>>(WITH-OUTPUT
+         :OFF
+         :ALL
+         (MEMOIZE-PARTIAL
+            ((XX-WORSE-THAN* XX-WORSE-THAN-BUILTIN-CLOCKED
+                             :RECURSIVE NIL)
+             (XX-WORSE-THAN-OR-EQUAL* XX-WORSE-THAN-OR-EQUAL-BUILTIN-CLOCKED)
+             (BASIC-XX-WORSE-THAN-LST1* BASIC-XX-WORSE-THAN-LST1)
+             (BASIC-XX-WORSE-THAN-LST2* BASIC-XX-WORSE-THAN-LST2)
+             (BASIC-XX-WORSE-THAN* BASIC-XX-WORSE-THAN)
+             (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL*
+                  SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL)
+             (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST*
+                  SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST)
+             (XX-WORSE-THAN-LST* XX-WORSE-THAN-LST))))
+ XX-WORSE-THAN-LST*
+ACL2 !>>(MF (ASSERT-EVENT (EQUAL (XX-WORSE-THAN* '(MEM (CAR (DEL A X)) X)
+                                                 '(MEM (CAR (DEL A X)) Y))
+                                 NIL))
+            :EXPECTED :HARD)
+
+
+ACL2 Error in HARD-ERROR-TO-SOFT-ERROR:  ACL2 cannot ev the call of
+non-executable function XX-WORSE-THAN-BUILTIN-CLOCKED-STABLE on argument
+list:
+
+((MEM (CAR (DEL A X)) X) (MEM (CAR (DEL A X)) Y))
+
+To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
+
 
 Summary
-Form:  ( INCLUDE-BOOK "std/testing/must-fail" ...)
+Form:  ( MAKE-EVENT (QUOTE ...) ...)
 Rules: NIL
- "[books]/std/testing/must-fail.lisp"
-ACL2 !>>(DEFMACRO
-         MF (FORM &KEY (EXPECTED ':SOFT))
-         (CONS
-          'MUST-FAIL
-          (CONS
-           FORM
-           (CONS
-            ':EXPECTED
-            (CONS
-             EXPECTED
-             (CONS
-                ':WITH-OUTPUT-OFF
-                (CONS (CONS 'PROOF-TREE
-                            (CONS 'PROVE
-                                  (CONS 'EVENT
-                                        (CONS 'SUMMARY
-                                              (CONS 'PROOF-BUILDER
-                                                    (CONS 'HISTORY 'NIL))))))
-                      'NIL)))))))
-
-Summary
-Form:  ( DEFMACRO MF ...)
-Rules: NIL
- MF
+ T
+ACL2 !>>(U)
+ V        23:x(MUTUAL-RECURSION
+                   (DEFUN XX-WORSE-THAN-BUILTIN-CLOCKED
+                          (TERM1 TERM2 CLK)
+                          ...)
+                   (DEFUN XX-WORSE-THAN-OR-EQUAL-BUILTIN-CLOCKED
+                          (TERM1 TERM2 CLK)
+                          ...)
+                   (DEFUN BASIC-XX-WORSE-THAN-LST1
+                          (ARGS1 ARGS2 CLK)
+                          ...)
+                   (DEFUN BASIC-XX-WORSE-THAN-LST2
+                          (ARGS1 ARGS2 CLK)
+                          ...)
+                   (DEFUN BASIC-XX-WORSE-THAN (TERM1 TERM2 CLK)
+                          ...)
+                   (DEFUN SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL
+                          (TERM1 TERM2 CLK)
+                          ...)
+                   (DEFUN SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST
+                          (ARGS TERM2 CLK)
+                          ...)
+                   (DEFUN XX-WORSE-THAN-LST (ARGS TERM2 CLK)
+                          ...))
+ACL2 !>>(WITH-OUTPUT
+         :OFF
+         :ALL
+         (MEMOIZE-PARTIAL
+            ((XX-WORSE-THAN* XX-WORSE-THAN-BUILTIN-CLOCKED)
+             (XX-WORSE-THAN-OR-EQUAL* XX-WORSE-THAN-OR-EQUAL-BUILTIN-CLOCKED)
+             (BASIC-XX-WORSE-THAN-LST1* BASIC-XX-WORSE-THAN-LST1)
+             (BASIC-XX-WORSE-THAN-LST2* BASIC-XX-WORSE-THAN-LST2)
+             (BASIC-XX-WORSE-THAN* BASIC-XX-WORSE-THAN)
+             (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL*
+                  SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL)
+             (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST*
+                  SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST)
+             (XX-WORSE-THAN-LST* XX-WORSE-THAN-LST))
+            :CONDITION NIL))
+ XX-WORSE-THAN-LST*
+ACL2 !>>(ASSERT-EVENT (EQUAL (XX-WORSE-THAN* '(MEM (CAR (DEL A X)) X)
+                                             '(MEM (CAR (DEL A X)) Y))
+                             NIL))
+ :PASSED
+ACL2 !>>(ASSERT-EVENT (EQUAL (XX-WORSE-THAN-OR-EQUAL* '(MEM (CAR Z) X)
+                                                      '(PERM Z Y))
+                             NIL))
+ :PASSED
+ACL2 !>>(ASSERT-EVENT
+             (EQUAL (XX-WORSE-THAN-OR-EQUAL* '(PERM (DEL (CAR Z) X) (CDR Z))
+                                             '(PERM Z X))
+                    T))
+ :PASSED
 ACL2 !>>(DEFUN BAD{WRONG-FORM}-LIMIT (N LIMIT)
                (DECLARE (TYPE (INTEGER 0 *) LIMIT)
                         (TYPE (INTEGER 0 *) N)
@@ -4050,43 +1434,11 @@ ACL2 !>>(DEFUN BAD{WRONG-FORM}-LIMIT (N LIMIT)
                             (+ (BAD{WRONG-FORM}-LIMIT (- N 1) LIMIT)
                                (BAD{WRONG-FORM}-LIMIT (- N 2)
                                                       LIMIT))))))
-
-For the admission of BAD{WRONG-FORM}-LIMIT we will use the relation
-O< (which is known to be well-founded on the domain recognized by O-P)
-and the measure (ACL2-COUNT N).  The non-trivial part of the measure
-conjecture is
-
-Goal
-(AND (IMPLIES (AND (NOT (ZP LIMIT))
-                   (NOT (OR (ZP N) (= N 1))))
-              (O< (ACL2-COUNT (+ -2 N))
-                  (ACL2-COUNT N)))
-     (IMPLIES (AND (NOT (ZP LIMIT))
-                   (NOT (OR (ZP N) (= N 1))))
-              (O< (ACL2-COUNT (+ -1 N))
-                  (ACL2-COUNT N)))).
 Subgoal 2
-
-Splitter note (see :DOC splitter) for Subgoal 2 (2 subgoals).
-  if-intro: ((:DEFINITION ACL2-COUNT)
-             (:DEFINITION INTEGER-ABS)
-             (:DEFINITION O<))
-
 Subgoal 2.2
 Subgoal 2.1
 Subgoal 1
 Subgoal 1'
-
-Q.E.D.
-
-That completes the proof of the measure theorem for BAD{WRONG-FORM}-LIMIT.
-Thus, we admit this function under the principle of definition.  We
-observe that the type of BAD{WRONG-FORM}-LIMIT is described by the
-theorem 
-(AND (INTEGERP (BAD{WRONG-FORM}-LIMIT N LIMIT))
-     (<= 0 (BAD{WRONG-FORM}-LIMIT N LIMIT))).
-We used the :compound-recognizer rule ZP-COMPOUND-RECOGNIZER and primitive
-type reasoning.
 
 Summary
 Form:  ( DEFUN BAD{WRONG-FORM}-LIMIT ...)
@@ -4101,10 +1453,6 @@ Rules: ((:COMPOUND-RECOGNIZER ZP-COMPOUND-RECOGNIZER)
         (:EXECUTABLE-COUNTERPART UNARY--)
         (:FAKE-RUNE-FOR-TYPE-SET NIL)
         (:REWRITE DISTRIBUTIVITY-OF-MINUS-OVER-+))
-Splitter rules (see :DOC splitter):
-  if-intro: ((:DEFINITION ACL2-COUNT)
-             (:DEFINITION INTEGER-ABS)
-             (:DEFINITION O<))
  BAD{WRONG-FORM}-LIMIT
 ACL2 !>>(MF (MEMOIZE-PARTIAL BAD{WRONG-FORM}))
 
@@ -4118,47 +1466,8 @@ Form:  ( MAKE-EVENT (QUOTE ...) ...)
 Rules: NIL
  T
 ACL2 !>>(VERIFY-GUARDS BAD{WRONG-FORM}-LIMIT)
-
-Computing the guard conjecture for BAD{WRONG-FORM}-LIMIT....
-
-The non-trivial part of the guard conjecture for BAD{WRONG-FORM}-LIMIT,
-given the :compound-recognizer rule ZP-COMPOUND-RECOGNIZER, is
-
-Goal
-(IMPLIES (AND (<= 0 N)
-              (INTEGERP N)
-              (<= 0 LIMIT)
-              (INTEGERP LIMIT)
-              (NOT (ZP LIMIT)))
-         (LET ((LIMIT (+ 1 LIMIT)))
-              (AND (INTEGERP N)
-                   (<= 0 N)
-                   (OR (NOT (ZP N)) (INTEGERP N))
-                   (OR (NOT (ZP N)) (<= 0 N))
-                   (OR (ZP N) (ACL2-NUMBERP N))
-                   (OR (OR (ZP N) (= N 1))
-                       (INTEGERP (+ -1 N)))
-                   (OR (OR (ZP N) (= N 1)) (<= 0 (+ -1 N)))
-                   (OR (OR (ZP N) (= N 1))
-                       (ACL2-NUMBERP N))
-                   (OR (OR (ZP N) (= N 1))
-                       (INTEGERP LIMIT))
-                   (OR (OR (ZP N) (= N 1))
-                       (INTEGERP (+ -2 N)))
-                   (OR (OR (ZP N) (= N 1)) (<= 0 LIMIT))
-                   (OR (OR (ZP N) (= N 1)) (<= 0 (+ -2 N)))
-                   (OR (OR (ZP N) (= N 1))
-                       (ACL2-NUMBERP (BAD{WRONG-FORM}-LIMIT (+ -1 N) LIMIT)))
-                   (OR (OR (ZP N) (= N 1))
-                       (ACL2-NUMBERP (BAD{WRONG-FORM}-LIMIT (+ -2 N)
-                                                            LIMIT)))))).
 Goal'
 Goal''
-
-Q.E.D.
-
-That completes the proof of the guard theorem for BAD{WRONG-FORM}-LIMIT.
-BAD{WRONG-FORM}-LIMIT is compliant with Common Lisp.
 
 Summary
 Form:  ( VERIFY-GUARDS BAD{WRONG-FORM}-LIMIT)
@@ -4199,37 +1508,9 @@ ACL2 !>>(DEFUN BAD{USES-LIMIT}-LIMIT (N LIMIT)
                                                       LIMIT)
                                (BAD{USES-LIMIT}-LIMIT (- N 2)
                                                       LIMIT))))))
-
-For the admission of BAD{USES-LIMIT}-LIMIT we will use the relation
-O< (which is known to be well-founded on the domain recognized by O-P)
-and the measure (NFIX LIMIT).  The non-trivial part of the measure
-conjecture is
-
-Goal
-(AND (O-P (NFIX LIMIT))
-     (IMPLIES (AND (NOT (ZP LIMIT))
-                   (NOT (OR (= N 0) (= N 1))))
-              (O< (NFIX (+ -1 LIMIT)) (NFIX LIMIT)))).
 Subgoal 2
 Subgoal 1
 Subgoal 1'
-
-Q.E.D.
-
-That completes the proof of the measure theorem for BAD{USES-LIMIT}-LIMIT.
-Thus, we admit this function under the principle of definition.  We
-observe that the type of BAD{USES-LIMIT}-LIMIT is described by the
-theorem 
-(AND (INTEGERP (BAD{USES-LIMIT}-LIMIT N LIMIT))
-     (<= 0 (BAD{USES-LIMIT}-LIMIT N LIMIT))).
-We used primitive type reasoning.
-
-Computing the guard conjecture for BAD{USES-LIMIT}-LIMIT....
-
-The guard conjecture for BAD{USES-LIMIT}-LIMIT is trivial to prove,
-given the :compound-recognizer rule ZP-COMPOUND-RECOGNIZER, primitive
-type reasoning and the :type-prescription rule BAD{USES-LIMIT}-LIMIT.
-BAD{USES-LIMIT}-LIMIT is compliant with Common Lisp.
 
 Summary
 Form:  ( DEFUN BAD{USES-LIMIT}-LIMIT ...)
@@ -4258,8 +1539,8 @@ value  = ((BAD{USES-LIMIT} BAD{USES-LIMIT}-LIMIT
                                   (DECLARE (TYPE INTEGER N))
                                   (FLET (#) (DECLARE #) (LET # # #)))))
 Reason:
-The limit variable LIMIT fails to occur free where expected in the
-body of the definition of function BAD{USES-LIMIT}-LIMIT (essentially,
+The limit variable LIMIT fails to occur free exactly where expected
+in the body of the definition of function BAD{USES-LIMIT}-LIMIT (essentially,
 as the last argument of each recursive call).
 
 (See :DOC set-iprint to be able to see elided values in this message.)
@@ -4296,21 +1577,6 @@ ACL2 !>>(DEFN BAD{ONE-FORMAL}-LIMIT (LIMIT)
                   LIMIT
                   (LET ((LIMIT (1- LIMIT)))
                        (BAD{ONE-FORMAL}-LIMIT LIMIT))))
-
-The admission of BAD{ONE-FORMAL}-LIMIT is trivial, using the relation
-O< (which is known to be well-founded on the domain recognized by O-P)
-and the measure (ACL2-COUNT LIMIT).  We observe that the type of 
-BAD{ONE-FORMAL}-LIMIT is described by the theorem 
-(NOT (AND (INTEGERP (BAD{ONE-FORMAL}-LIMIT LIMIT))
-          (< 0 (BAD{ONE-FORMAL}-LIMIT LIMIT)))).
-We used the :compound-recognizer rule ZP-COMPOUND-RECOGNIZER.
-
-Computing the guard conjecture for BAD{ONE-FORMAL}-LIMIT....
-
-The guard conjecture for BAD{ONE-FORMAL}-LIMIT is trivial to prove,
-given the :compound-recognizer rules NATP-COMPOUND-RECOGNIZER and 
-ZP-COMPOUND-RECOGNIZER and primitive type reasoning.  BAD{ONE-FORMAL}-LIMIT
-is compliant with Common Lisp.
 
 Summary
 Form:  ( DEFUN BAD{ONE-FORMAL}-LIMIT ...)
@@ -4382,25 +1648,6 @@ ACL2 !>>(MUTUAL-RECURSION
                                  (EVENLP{DIFFERENT-LIMIT-VARS}-BDD (CDR X)
                                                                    BOUND2)
                                  NIL)))))
-
-The admission of EVENLP{DIFFERENT-LIMIT-VARS}-BDD and 
-ODDLP{DIFFERENT-LIMIT-VARS}-BDD are trivial, using the relation O<
-(which is known to be well-founded on the domain recognized by O-P)
-and the measure (ACL2-COUNT X) for EVENLP{DIFFERENT-LIMIT-VARS}-BDD
-and (ACL2-COUNT X) for ODDLP{DIFFERENT-LIMIT-VARS}-BDD.  We observe
-that the type of EVENLP{DIFFERENT-LIMIT-VARS}-BDD is described by the
-theorem (SYMBOLP (EVENLP{DIFFERENT-LIMIT-VARS}-BDD X BOUND)) and the
-type of ODDLP{DIFFERENT-LIMIT-VARS}-BDD is described by the theorem
-(SYMBOLP (ODDLP{DIFFERENT-LIMIT-VARS}-BDD X BOUND2)).
-
-Computing the guard conjecture for EVENLP{DIFFERENT-LIMIT-VARS}-BDD
-and ODDLP{DIFFERENT-LIMIT-VARS}-BDD....
-
-The guard conjecture for EVENLP{DIFFERENT-LIMIT-VARS}-BDD and 
-ODDLP{DIFFERENT-LIMIT-VARS}-BDD is trivial to prove, given the :compound-
-recognizer rules NATP-COMPOUND-RECOGNIZER and ZP-COMPOUND-RECOGNIZER
-and primitive type reasoning.  EVENLP{DIFFERENT-LIMIT-VARS}-BDD and
-ODDLP{DIFFERENT-LIMIT-VARS}-BDD are compliant with Common Lisp.
 
 Summary
 Form:  ( MUTUAL-RECURSION ( DEFUN EVENLP{DIFFERENT-LIMIT-VARS}-BDD
@@ -4489,83 +1736,13 @@ ACL2 !>>(DEFUN BAD{WRONG-IF}-LIMIT (N LIMIT)
                                1
                                (+ (BAD{WRONG-IF}-LIMIT (- N 1) LIMIT)
                                   (BAD{WRONG-IF}-LIMIT (- N 2) LIMIT))))))
-
-For the admission of BAD{WRONG-IF}-LIMIT we will use the relation O<
-(which is known to be well-founded on the domain recognized by O-P)
-and the measure (ACL2-COUNT N).  The non-trivial part of the measure
-conjecture is
-
-Goal
-(AND (IMPLIES (AND (NOT (ZP LIMIT))
-                   (NOT (OR (ZP N) (= N 1))))
-              (O< (ACL2-COUNT (+ -2 N))
-                  (ACL2-COUNT N)))
-     (IMPLIES (AND (NOT (ZP LIMIT))
-                   (NOT (OR (ZP N) (= N 1))))
-              (O< (ACL2-COUNT (+ -1 N))
-                  (ACL2-COUNT N)))).
 Subgoal 2
-
-Splitter note (see :DOC splitter) for Subgoal 2 (2 subgoals).
-  if-intro: ((:DEFINITION ACL2-COUNT)
-             (:DEFINITION INTEGER-ABS)
-             (:DEFINITION O<))
-
 Subgoal 2.2
 Subgoal 2.1
 Subgoal 1
 Subgoal 1'
-
-Q.E.D.
-
-That completes the proof of the measure theorem for BAD{WRONG-IF}-LIMIT.
-Thus, we admit this function under the principle of definition.  We
-observe that the type of BAD{WRONG-IF}-LIMIT is described by the theorem
-(AND (INTEGERP (BAD{WRONG-IF}-LIMIT N LIMIT))
-     (<= 0 (BAD{WRONG-IF}-LIMIT N LIMIT))).
-We used the :compound-recognizer rule ZP-COMPOUND-RECOGNIZER and primitive
-type reasoning.
-
-Computing the guard conjecture for BAD{WRONG-IF}-LIMIT....
-
-The non-trivial part of the guard conjecture for BAD{WRONG-IF}-LIMIT,
-given the :compound-recognizer rule ZP-COMPOUND-RECOGNIZER, is
-
-Goal
-(IMPLIES (AND (<= 0 N)
-              (INTEGERP N)
-              (<= 0 LIMIT)
-              (INTEGERP LIMIT)
-              (NOT (ZP LIMIT)))
-         (LET ((LIMIT (+ -1 LIMIT)))
-              (AND (INTEGERP N)
-                   (<= 0 N)
-                   (OR (NOT (ZP N)) (INTEGERP N))
-                   (OR (NOT (ZP N)) (<= 0 N))
-                   (OR (ZP N) (ACL2-NUMBERP N))
-                   (OR (OR (ZP N) (= N 1))
-                       (INTEGERP (+ -1 N)))
-                   (OR (OR (ZP N) (= N 1)) (<= 0 (+ -1 N)))
-                   (OR (OR (ZP N) (= N 1))
-                       (ACL2-NUMBERP N))
-                   (OR (OR (ZP N) (= N 1))
-                       (INTEGERP LIMIT))
-                   (OR (OR (ZP N) (= N 1))
-                       (INTEGERP (+ -2 N)))
-                   (OR (OR (ZP N) (= N 1)) (<= 0 LIMIT))
-                   (OR (OR (ZP N) (= N 1)) (<= 0 (+ -2 N)))
-                   (OR (OR (ZP N) (= N 1))
-                       (ACL2-NUMBERP (BAD{WRONG-IF}-LIMIT (+ -1 N) LIMIT)))
-                   (OR (OR (ZP N) (= N 1))
-                       (ACL2-NUMBERP (BAD{WRONG-IF}-LIMIT (+ -2 N)
-                                                          LIMIT)))))).
 Goal'
 Goal''
-
-Q.E.D.
-
-That completes the proof of the guard theorem for BAD{WRONG-IF}-LIMIT.
-BAD{WRONG-IF}-LIMIT is compliant with Common Lisp.
 
 Summary
 Form:  ( DEFUN BAD{WRONG-IF}-LIMIT ...)
@@ -4584,10 +1761,6 @@ Rules: ((:COMPOUND-RECOGNIZER ZP-COMPOUND-RECOGNIZER)
         (:FAKE-RUNE-FOR-TYPE-SET NIL)
         (:REWRITE DISTRIBUTIVITY-OF-MINUS-OVER-+)
         (:TYPE-PRESCRIPTION BAD{WRONG-IF}-LIMIT))
-Splitter rules (see :DOC splitter):
-  if-intro: ((:DEFINITION ACL2-COUNT)
-             (:DEFINITION INTEGER-ABS)
-             (:DEFINITION O<))
  BAD{WRONG-IF}-LIMIT
 ACL2 !>>(MF (MEMOIZE-PARTIAL BAD{WRONG-IF}))
 
@@ -4613,83 +1786,13 @@ ACL2 !>>(DEFUN BAD{WRONG-ZP}-LIMIT (N LIMIT)
                             1
                             (+ (BAD{WRONG-ZP}-LIMIT (- N 1) LIMIT)
                                (BAD{WRONG-ZP}-LIMIT (- N 2) LIMIT))))))
-
-For the admission of BAD{WRONG-ZP}-LIMIT we will use the relation O<
-(which is known to be well-founded on the domain recognized by O-P)
-and the measure (ACL2-COUNT N).  The non-trivial part of the measure
-conjecture is
-
-Goal
-(AND (IMPLIES (AND (POSP LIMIT)
-                   (NOT (OR (ZP N) (= N 1))))
-              (O< (ACL2-COUNT (+ -2 N))
-                  (ACL2-COUNT N)))
-     (IMPLIES (AND (POSP LIMIT)
-                   (NOT (OR (ZP N) (= N 1))))
-              (O< (ACL2-COUNT (+ -1 N))
-                  (ACL2-COUNT N)))).
 Subgoal 2
-
-Splitter note (see :DOC splitter) for Subgoal 2 (2 subgoals).
-  if-intro: ((:DEFINITION ACL2-COUNT)
-             (:DEFINITION INTEGER-ABS)
-             (:DEFINITION O<))
-
 Subgoal 2.2
 Subgoal 2.1
 Subgoal 1
 Subgoal 1'
-
-Q.E.D.
-
-That completes the proof of the measure theorem for BAD{WRONG-ZP}-LIMIT.
-Thus, we admit this function under the principle of definition.  We
-observe that the type of BAD{WRONG-ZP}-LIMIT is described by the theorem
-(AND (INTEGERP (BAD{WRONG-ZP}-LIMIT N LIMIT))
-     (<= 0 (BAD{WRONG-ZP}-LIMIT N LIMIT))).
-We used the :compound-recognizer rule ZP-COMPOUND-RECOGNIZER and primitive
-type reasoning.
-
-Computing the guard conjecture for BAD{WRONG-ZP}-LIMIT....
-
-The non-trivial part of the guard conjecture for BAD{WRONG-ZP}-LIMIT,
-given the :compound-recognizer rule POSP-COMPOUND-RECOGNIZER, is
-
-Goal
-(IMPLIES (AND (<= 0 N)
-              (INTEGERP N)
-              (<= 0 LIMIT)
-              (INTEGERP LIMIT)
-              (POSP LIMIT))
-         (LET ((LIMIT (+ -1 LIMIT)))
-              (AND (INTEGERP N)
-                   (<= 0 N)
-                   (OR (NOT (ZP N)) (INTEGERP N))
-                   (OR (NOT (ZP N)) (<= 0 N))
-                   (OR (ZP N) (ACL2-NUMBERP N))
-                   (OR (OR (ZP N) (= N 1))
-                       (INTEGERP (+ -1 N)))
-                   (OR (OR (ZP N) (= N 1)) (<= 0 (+ -1 N)))
-                   (OR (OR (ZP N) (= N 1))
-                       (ACL2-NUMBERP N))
-                   (OR (OR (ZP N) (= N 1))
-                       (INTEGERP LIMIT))
-                   (OR (OR (ZP N) (= N 1))
-                       (INTEGERP (+ -2 N)))
-                   (OR (OR (ZP N) (= N 1)) (<= 0 LIMIT))
-                   (OR (OR (ZP N) (= N 1)) (<= 0 (+ -2 N)))
-                   (OR (OR (ZP N) (= N 1))
-                       (ACL2-NUMBERP (BAD{WRONG-ZP}-LIMIT (+ -1 N) LIMIT)))
-                   (OR (OR (ZP N) (= N 1))
-                       (ACL2-NUMBERP (BAD{WRONG-ZP}-LIMIT (+ -2 N)
-                                                          LIMIT)))))).
 Goal'
 Goal''
-
-Q.E.D.
-
-That completes the proof of the guard theorem for BAD{WRONG-ZP}-LIMIT.
-BAD{WRONG-ZP}-LIMIT is compliant with Common Lisp.
 
 Summary
 Form:  ( DEFUN BAD{WRONG-ZP}-LIMIT ...)
@@ -4710,10 +1813,6 @@ Rules: ((:COMPOUND-RECOGNIZER POSP-COMPOUND-RECOGNIZER)
         (:FAKE-RUNE-FOR-TYPE-SET NIL)
         (:REWRITE DISTRIBUTIVITY-OF-MINUS-OVER-+)
         (:TYPE-PRESCRIPTION BAD{WRONG-ZP}-LIMIT))
-Splitter rules (see :DOC splitter):
-  if-intro: ((:DEFINITION ACL2-COUNT)
-             (:DEFINITION INTEGER-ABS)
-             (:DEFINITION O<))
  BAD{WRONG-ZP}-LIMIT
 ACL2 !>>(MF (MEMOIZE-PARTIAL BAD{WRONG-ZP}))
 
@@ -4746,21 +1845,6 @@ ACL2 !>>(DEFUN BAD{NON-REC}-LIMIT (X LIMIT)
                    0
                    (LET ((LIMIT (1- LIMIT)))
                         (CONS X LIMIT))))
-
-Since BAD{NON-REC}-LIMIT is non-recursive, its admission is trivial.
-We observe that the type of BAD{NON-REC}-LIMIT is described by the
-theorem 
-(OR (EQUAL (BAD{NON-REC}-LIMIT X LIMIT) 0)
-    (AND (CONSP (BAD{NON-REC}-LIMIT X LIMIT))
-         (NOT (TRUE-LISTP (BAD{NON-REC}-LIMIT X LIMIT))))).
-We used the :compound-recognizer rule ZP-COMPOUND-RECOGNIZER and primitive
-type reasoning.
-
-Computing the guard conjecture for BAD{NON-REC}-LIMIT....
-
-The guard conjecture for BAD{NON-REC}-LIMIT is trivial to prove, given
-the :compound-recognizer rule ZP-COMPOUND-RECOGNIZER.  BAD{NON-REC}-LIMIT
-is compliant with Common Lisp.
 
 Summary
 Form:  ( DEFUN BAD{NON-REC}-LIMIT ...)
@@ -4810,28 +1894,8 @@ Form:  ( MAKE-EVENT (QUOTE ...) ...)
 Rules: NIL
  T
 ACL2 !>>(UNMEMOIZE 'EVENLP)
-
-
-ACL2 !>>>(TABLE MEMOIZE-TABLE
-                (DEREF-MACRO-NAME 'EVENLP
-                                  (MACRO-ALIASES WORLD))
-                NIL)
-
-
-ACL2 !>>>(VALUE-TRIPLE (DEREF-MACRO-NAME 'EVENLP
-                                         (MACRO-ALIASES (W STATE))))
  EVENLP
 ACL2 !>>(UNMEMOIZE 'ODDLP)
-
-
-ACL2 !>>>(TABLE MEMOIZE-TABLE
-                (DEREF-MACRO-NAME 'ODDLP
-                                  (MACRO-ALIASES WORLD))
-                NIL)
-
-
-ACL2 !>>>(VALUE-TRIPLE (DEREF-MACRO-NAME 'ODDLP
-                                         (MACRO-ALIASES (W STATE))))
  ODDLP
 ACL2 !>>(MF (MEMOIZE-PARTIAL ((EVENLP EVENLP-BDD))))
 
@@ -4986,20 +2050,6 @@ ACL2 !>>(MUTUAL-RECURSION (DEFUN EVENLP2-BDD (X BOUND)
                                           (IF (CONSP X)
                                               (EVENLP2-BDD (CDR X) BOUND)
                                               NIL)))))
-
-The admission of EVENLP2-BDD and ODDLP2-BDD are trivial, using the
-relation O< (which is known to be well-founded on the domain recognized
-by O-P) and the measure (ACL2-COUNT X) for EVENLP2-BDD and (ACL2-COUNT X)
-for ODDLP2-BDD.  We observe that the type of EVENLP2-BDD is described
-by the theorem (SYMBOLP (EVENLP2-BDD X BOUND)) and the type of ODDLP2-BDD
-is described by the theorem (SYMBOLP (ODDLP2-BDD X BOUND)).
-
-Computing the guard conjecture for EVENLP2-BDD and ODDLP2-BDD....
-
-The guard conjecture for EVENLP2-BDD and ODDLP2-BDD is trivial to prove,
-given the :compound-recognizer rules NATP-COMPOUND-RECOGNIZER and 
-ZP-COMPOUND-RECOGNIZER and primitive type reasoning.  EVENLP2-BDD and
-ODDLP2-BDD are compliant with Common Lisp.
 
 Summary
 Form:  ( MUTUAL-RECURSION ( DEFUN EVENLP2-BDD ...) ...)
@@ -5310,71 +2360,15 @@ ACL2 !>>(MEMOIZE-PARTIAL ((FIB2-NEW FIB2-CLOCK
                                     :CONDITION '(EQL (MOD N 4) 0)))
                          :CONDITION T)
 
-
-ACL2 !>>>(MAKE-EVENT
-          (ER-PROGN
-            (MEMOIZE-PARTIAL-BASIC-CHECKS
-                 '((FIB2-NEW FIB2-CLOCK FIB2-CLOCK-CHANGE0-NEW
-                             FIB2-CLOCK-STABLE0-NEW
-                             :CONDITION '(EQL (MOD N 4) 0)))
-                 'MEMOIZE-PARTIAL
-                 STATE)
-            (MV-LET
-                 (MSG DEFS TABLE-EVENT)
-                 (MEMOIZE-PARTIAL-SUPPORTING-EVENTS
-                      '((FIB2-NEW FIB2-CLOCK FIB2-CLOCK-CHANGE0-NEW
-                                  FIB2-CLOCK-STABLE0-NEW
-                                  :CONDITION '(EQL (MOD N 4) 0)))
-                      (W STATE))
-                 (COND (MSG (ER SOFT 'MEMOIZE-PARTIAL "~@0" MSG))
-                       (T (VALUE (CONS 'PROGN
-                                       (APPEND DEFS (LIST TABLE-EVENT))))))))
-          :ON-BEHALF-OF :QUIET!)
-
-
-ACL2 !>>>(DEFCHOOSE FIB2-CLOCK-CHANGE0-NEW (LARGE)
-                    (N CLOCK)
-                    (AND (NATP LARGE)
-                         (<= CLOCK LARGE)
-                         (NOT (EQUAL (FIB2-CLOCK N CLOCK)
-                                     (FIB2-CLOCK N LARGE)))))
-
 Summary
 Form:  ( DEFCHOOSE FIB2-CLOCK-CHANGE0-NEW ...)
 Rules: NIL
 FIB2-CLOCK-CHANGE0-NEW
 
-
-ACL2 !>>>(DEFCHOOSE
-              FIB2-CLOCK-STABLE0-NEW (CLOCK)
-              (N)
-              (AND (NATP CLOCK)
-                   (EQUAL (FIB2-CLOCK N CLOCK)
-                          (FIB2-CLOCK N (FIB2-CLOCK-CHANGE0-NEW N CLOCK)))))
-
 Summary
 Form:  ( DEFCHOOSE FIB2-CLOCK-STABLE0-NEW ...)
 Rules: NIL
 FIB2-CLOCK-STABLE0-NEW
-
-
-ACL2 !>>>(DEFUN
-              FIB2-NEW (N)
-              (DECLARE (XARGS :GUARD (LET ((CLOCK 0))
-                                          (DECLARE (IGNORABLE CLOCK))
-                                          (AND (NATP CLOCK) (INTEGERP N)))))
-              (FIB2-CLOCK N (NFIX (FIB2-CLOCK-STABLE0-NEW N))))
-
-Since FIB2-NEW is non-recursive, its admission is trivial.  We observe
-that the type of FIB2-NEW is described by the theorem 
-(AND (INTEGERP (FIB2-NEW N)) (<= 0 (FIB2-NEW N))).  We used the :type-
-prescription rule FIB2-CLOCK.
-
-Computing the guard conjecture for FIB2-NEW....
-
-The guard conjecture for FIB2-NEW is trivial to prove, given the :compound-
-recognizer rule NATP-COMPOUND-RECOGNIZER and the :type-prescription
-rule NFIX.  FIB2-NEW is compliant with Common Lisp.
 
 Summary
 Form:  ( DEFUN FIB2-NEW ...)
@@ -5382,25 +2376,6 @@ Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
         (:TYPE-PRESCRIPTION FIB2-CLOCK)
         (:TYPE-PRESCRIPTION NFIX))
 FIB2-NEW
-
-
-ACL2 !>>>(TABLE
-           PARTIAL-FUNCTIONS-TABLE 'FIB2-CLOCK
-           '((FIB2-NEW
-                  FIB2-CLOCK FIB2-CLOCK-CHANGE0-NEW
-                  FIB2-CLOCK-STABLE0-NEW
-                  (DEFUN FIB2-NEW (N)
-                         (DECLARE (IGNORABLE N))
-                         (FLET ((FIB2-CLOCK (N CLOCK)
-                                            (DECLARE (IGNORE CLOCK))
-                                            (FIB2-NEW N)))
-                               (DECLARE (INLINE FIB2-CLOCK))
-                               (LET ((CLOCK 0))
-                                    (DECLARE (IGNORABLE CLOCK))
-                                    (IF (OR (= N 0) (= N 1))
-                                        1
-                                        (+ (FIB2-CLOCK (- N 1) CLOCK)
-                                           (FIB2-CLOCK (- N 2) CLOCK)))))))))
 
 Summary
 Form:  ( TABLE PARTIAL-FUNCTIONS-TABLE ...)
@@ -5416,45 +2391,10 @@ Form:  ( MAKE-EVENT (ER-PROGN ...) ...)
 Rules: NIL
 PARTIAL-FUNCTIONS-TABLE
 
-
-ACL2 !>>>(MEMOIZE 'FIB2-NEW
-                  :TOTAL 'FIB2-CLOCK
-                  :CONDITION '(EQL (MOD N 4) 0))
-
-
-ACL2 !>>>(DEFUN
-             FIB2-NEW-MEMOIZE-CONDITION (N)
-             (DECLARE
-                  (IGNORABLE N)
-                  (XARGS :GUARD ((LAMBDA (CLOCK N)
-                                         (IF (NATP CLOCK) (INTEGERP N) 'NIL))
-                                 '0
-                                 N)
-                         :VERIFY-GUARDS NIL))
-             (EQL (MOD N 4) 0))
-
-Since FIB2-NEW-MEMOIZE-CONDITION is non-recursive, its admission is
-trivial.  We observe that the type of FIB2-NEW-MEMOIZE-CONDITION is
-described by the theorem 
-(OR (EQUAL (FIB2-NEW-MEMOIZE-CONDITION N) T)
-    (EQUAL (FIB2-NEW-MEMOIZE-CONDITION N)
-           NIL)).
-We used primitive type reasoning.
-
 Summary
 Form:  ( DEFUN FIB2-NEW-MEMOIZE-CONDITION ...)
 Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
 FIB2-NEW-MEMOIZE-CONDITION
-
-
-ACL2 !>>>(VERIFY-GUARDS FIB2-NEW-MEMOIZE-CONDITION)
-
-Computing the guard conjecture for FIB2-NEW-MEMOIZE-CONDITION....
-
-The guard conjecture for FIB2-NEW-MEMOIZE-CONDITION is trivial to prove,
-given the :compound-recognizer rule NATP-COMPOUND-RECOGNIZER and the
-:executable-counterparts of EQL, EQLABLEP and NOT.  
-FIB2-NEW-MEMOIZE-CONDITION is compliant with Common Lisp.
 
 Summary
 Form:  ( VERIFY-GUARDS FIB2-NEW-MEMOIZE-CONDITION)
@@ -5464,27 +2404,10 @@ Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
         (:EXECUTABLE-COUNTERPART NOT))
 FIB2-NEW-MEMOIZE-CONDITION
 
-
-ACL2 !>>>(TABLE
-              MEMOIZE-TABLE 'FIB2-NEW
-              (LIST* (CONS :CONDITION-FN 'FIB2-NEW-MEMOIZE-CONDITION)
-                     (CONS :INLINE 'T)
-                     (CONS :COMMUTATIVE 'NIL)
-                     (CONS :FORGET 'NIL)
-                     (CONS :MEMO-TABLE-INIT-SIZE (OR NIL *MHT-DEFAULT-SIZE*))
-                     (CONS :AOKP 'NIL)
-                     (CONS :STATS :DEFAULT)
-                     (CONS :TOTAL 'FIB2-CLOCK)
-                     (AND (NOT (EQ ':DEFAULT :DEFAULT))
-                          (LIST (CONS :IDEAL-OKP ':DEFAULT)))))
-
 Summary
 Form:  ( TABLE MEMOIZE-TABLE ...)
 Rules: NIL
 MEMOIZE-TABLE
-
-
-ACL2 !>>>(VALUE-TRIPLE 'FIB2-NEW)
 FIB2-NEW
 
 Summary
@@ -5670,43 +2593,20 @@ ACL2 !>>(DEFUN FIB-ST-LIMIT (N ST LIMIT)
                (DECLARE (TYPE (INTEGER 0 *) LIMIT)
                         (TYPE INTEGER N))
                (DECLARE (XARGS :MEASURE (NFIX LIMIT)
-                               :STOBJS ST
-                               :VERIFY-GUARDS NIL))
+                               :STOBJS ST))
                (IF (ZP LIMIT)
-                   (MV 0 ST)
+                   (PROG2$ (ER HARD? 'FIB-ST-LIMIT
+                               "Hit the limit: n=~x0 (fld st)=~x1."
+                               N (FLD ST))
+                           0)
                    (LET ((LIMIT (1- LIMIT)))
                         (IF (OR (= N 0) (= N 1))
-                            (MV 1 ST)
-                            (MV-LET (X1 ST)
-                                    (FIB-ST-LIMIT (- N 1) ST LIMIT)
-                                    (MV-LET (X2 ST)
-                                            (FIB-ST-LIMIT (- N 2) ST LIMIT)
-                                            (MV (+ X1 X2) ST)))))))
-
-For the admission of FIB-ST-LIMIT we will use the relation O< (which
-is known to be well-founded on the domain recognized by O-P) and the
-measure (NFIX LIMIT).  The non-trivial part of the measure conjecture
-is
-
-Goal
-(AND (O-P (NFIX LIMIT))
-     (IMPLIES (AND (NOT (ZP LIMIT))
-                   (NOT (OR (= N 0) (= N 1))))
-              (O< (NFIX (+ -1 LIMIT)) (NFIX LIMIT)))).
+                            1
+                            (+ (FIB-ST-LIMIT (- N 1) ST LIMIT)
+                               (FIB-ST-LIMIT (- N 2) ST LIMIT))))))
 Subgoal 2
 Subgoal 1
 Subgoal 1'
-
-Q.E.D.
-
-That completes the proof of the measure theorem for FIB-ST-LIMIT. 
-Thus, we admit this function under the principle of definition.  We
-observe that the type of FIB-ST-LIMIT is described by the theorem 
-(AND (CONSP (FIB-ST-LIMIT N ST LIMIT))
-     (TRUE-LISTP (FIB-ST-LIMIT N ST LIMIT))).
-We used primitive type reasoning.
-
-(FIB-ST-LIMIT * ST *) => (MV * ST).
 
 Summary
 Form:  ( DEFUN FIB-ST-LIMIT ...)
@@ -5718,81 +2618,111 @@ Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
         (:DEFINITION O-P)
         (:DEFINITION O<)
         (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
-        (:FAKE-RUNE-FOR-TYPE-SET NIL))
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:TYPE-PRESCRIPTION FIB-ST-LIMIT))
  FIB-ST-LIMIT
-ACL2 !>>(DEFTHM NATP-FIB-ST-LIMIT-0
-                (NATP (CAR (FIB-ST-LIMIT N LIMIT ST)))
+ACL2 !>>(MEMOIZE-PARTIAL FIB-ST)
+
+Summary
+Form:  ( DEFCHOOSE FIB-ST-LIMIT-CHANGE ...)
+Rules: NIL
+FIB-ST-LIMIT-CHANGE
+
+Summary
+Form:  ( DEFCHOOSE FIB-ST-LIMIT-STABLE ...)
+Rules: NIL
+FIB-ST-LIMIT-STABLE
+
+Summary
+Form:  ( DEFUN FIB-ST ...)
+Rules: ((:TYPE-PRESCRIPTION FIB-ST-LIMIT))
+FIB-ST
+
+Summary
+Form:  ( TABLE PARTIAL-FUNCTIONS-TABLE ...)
+Rules: NIL
+PARTIAL-FUNCTIONS-TABLE
+
+Summary
+Form:  ( PROGN (DEFCHOOSE FIB-ST-LIMIT-CHANGE ...) ...)
+Rules: NIL
+
+Summary
+Form:  ( MAKE-EVENT (ER-PROGN ...) ...)
+Rules: NIL
+PARTIAL-FUNCTIONS-TABLE
+
+Summary
+Form:  ( TABLE MEMOIZE-TABLE ...)
+Rules: NIL
+MEMOIZE-TABLE
+FIB-ST
+
+Summary
+Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
+Rules: NIL
+FIB-ST
+
+Summary
+Form:  ( PROGN (MAKE-EVENT ...) ...)
+Rules: NIL
+ FIB-ST
+ACL2 !>>(ASSERT-EVENT (EQUAL (FIB-ST 100 ST)
+                             573147844013817084101))
+ :PASSED
+ACL2 !>>(DEFUN
+             FIB-ST-OUT-LIMIT (N ST LIMIT)
+             (DECLARE (TYPE (INTEGER 0 *) LIMIT)
+                      (TYPE INTEGER N))
+             (DECLARE (XARGS :MEASURE (NFIX LIMIT)
+                             :STOBJS ST
+                             :VERIFY-GUARDS NIL))
+             (IF (ZP LIMIT)
+                 (MV 0 ST)
+                 (LET ((LIMIT (1- LIMIT)))
+                      (IF (OR (= N 0) (= N 1))
+                          (MV 1 ST)
+                          (MV-LET (X1 ST)
+                                  (FIB-ST-OUT-LIMIT (- N 1) ST LIMIT)
+                                  (MV-LET (X2 ST)
+                                          (FIB-ST-OUT-LIMIT (- N 2) ST LIMIT)
+                                          (MV (+ X1 X2) ST)))))))
+Subgoal 2
+Subgoal 1
+Subgoal 1'
+
+Summary
+Form:  ( DEFUN FIB-ST-OUT-LIMIT ...)
+Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
+        (:COMPOUND-RECOGNIZER ZP-COMPOUND-RECOGNIZER)
+        (:DEFINITION =)
+        (:DEFINITION NFIX)
+        (:DEFINITION O-FINP)
+        (:DEFINITION O-P)
+        (:DEFINITION O<)
+        (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL))
+ FIB-ST-OUT-LIMIT
+ACL2 !>>(DEFTHM NATP-FIB-ST-OUT-LIMIT-0
+                (NATP (CAR (FIB-ST-OUT-LIMIT N LIMIT ST)))
                 :RULE-CLASSES :TYPE-PRESCRIPTION)
 
-ACL2 Observation in ( DEFTHM NATP-FIB-ST-LIMIT-0 ...):  Our heuristics
-choose (CAR (FIB-ST-LIMIT N LIMIT ST)) as the :TYPED-TERM.
+ACL2 Observation in ( DEFTHM NATP-FIB-ST-OUT-LIMIT-0 ...):  Our heuristics
+choose (CAR (FIB-ST-OUT-LIMIT N LIMIT ST)) as the :TYPED-TERM.
 Subgoal 2
-
-([ A key checkpoint:
-
-Subgoal 2
-(INTEGERP (CAR (FIB-ST-LIMIT N LIMIT ST)))
-
-*1 (Subgoal 2) is pushed for proof by induction.
-
-])
 Subgoal 1
-
-([ A key checkpoint:
-
-Subgoal 1
-(<= 0 (CAR (FIB-ST-LIMIT N LIMIT ST)))
-
-Normally we would attempt to prove Subgoal 1 by induction.  However,
-we prefer in this instance to focus on the original input conjecture
-rather than this simplified special case.  We therefore abandon our
-previous work on this conjecture and reassign the name *1 to the original
-conjecture.  (See :DOC otf-flg.)
-
-])
-
-Perhaps we can prove *1 by induction.  One induction scheme is suggested
-by this conjecture.  
-
-We will induct according to a scheme suggested by (FIB-ST-LIMIT N LIMIT ST).
-This suggestion was produced using the :induction rule FIB-ST-LIMIT.
-If we let (:P LIMIT N ST) denote *1 above then the induction scheme
-we'll use is
-(AND (IMPLIES (AND (NOT (ZP ST))
-                   (NOT (OR (= N 0) (= N 1)))
-                   (:P LIMIT (+ -1 N) (+ -1 ST))
-                   (:P (MV-NTH 1
-                               (FIB-ST-LIMIT (+ -1 N) LIMIT (+ -1 ST)))
-                       (+ -2 N)
-                       (+ -1 ST)))
-              (:P LIMIT N ST))
-     (IMPLIES (AND (NOT (ZP ST)) (OR (= N 0) (= N 1)))
-              (:P LIMIT N ST))
-     (IMPLIES (ZP ST) (:P LIMIT N ST))).
-This induction is justified by the same argument used to admit FIB-ST-LIMIT.
-Note, however, that the unmeasured variables N and LIMIT are being
-instantiated.  When applied to the goal at hand the above induction
-scheme produces three nontautological subgoals.
 Subgoal *1/3
 Subgoal *1/3'
 Subgoal *1/2
 Subgoal *1/2'
 Subgoal *1/1
 
-*1 is COMPLETED!
-Thus key checkpoint Goal is COMPLETED!
-
-Q.E.D.
-
-The storage of NATP-FIB-ST-LIMIT-0 depends upon the :compound-recognizer
-rule NATP-COMPOUND-RECOGNIZER.
-
 Summary
-Form:  ( DEFTHM NATP-FIB-ST-LIMIT-0 ...)
+Form:  ( DEFTHM NATP-FIB-ST-OUT-LIMIT-0 ...)
 Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
         (:COMPOUND-RECOGNIZER ZP-COMPOUND-RECOGNIZER)
         (:DEFINITION =)
-        (:DEFINITION FIB-ST-LIMIT)
+        (:DEFINITION FIB-ST-OUT-LIMIT)
         (:DEFINITION MV-NTH)
         (:DEFINITION NATP)
         (:DEFINITION NOT)
@@ -5800,54 +2730,15 @@ Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
         (:EXECUTABLE-COUNTERPART NATP)
         (:EXECUTABLE-COUNTERPART ZP)
         (:FAKE-RUNE-FOR-TYPE-SET NIL)
-        (:INDUCTION FIB-ST-LIMIT)
+        (:INDUCTION FIB-ST-OUT-LIMIT)
         (:REWRITE CAR-CONS)
-        (:TYPE-PRESCRIPTION FIB-ST-LIMIT))
- NATP-FIB-ST-LIMIT-0
-ACL2 !>>(VERIFY-GUARDS FIB-ST-LIMIT)
-
-Computing the guard conjecture for FIB-ST-LIMIT....
-
-The non-trivial part of the guard conjecture for FIB-ST-LIMIT, given
-the :compound-recognizer rule ZP-COMPOUND-RECOGNIZER, is
-
-Goal
-(IMPLIES (AND (INTEGERP N)
-              (<= 0 LIMIT)
-              (INTEGERP LIMIT)
-              (STP ST)
-              (NOT (ZP LIMIT)))
-         (LET ((LIMIT (+ -1 LIMIT)))
-              (AND (ACL2-NUMBERP N)
-                   (OR (NOT (= N 0)) (ACL2-NUMBERP N))
-                   (OR (= N 0) (ACL2-NUMBERP N))
-                   (OR (OR (= N 0) (= N 1))
-                       (ACL2-NUMBERP N))
-                   (OR (OR (= N 0) (= N 1))
-                       (INTEGERP LIMIT))
-                   (OR (OR (= N 0) (= N 1))
-                       (INTEGERP (+ -1 N)))
-                   (OR (OR (= N 0) (= N 1)) (<= 0 LIMIT))
-                   (OR (OR (= N 0) (= N 1))
-                       (MV-LET (X1 ST)
-                               (FIB-ST-LIMIT (+ -1 N) ST LIMIT)
-                               (AND (ACL2-NUMBERP N)
-                                    (INTEGERP LIMIT)
-                                    (INTEGERP (+ -2 N))
-                                    (<= 0 LIMIT)
-                                    (MV-LET (X2)
-                                            (FIB-ST-LIMIT (+ -2 N) ST LIMIT)
-                                            (AND (ACL2-NUMBERP X1)
-                                                 (ACL2-NUMBERP X2))))))))).
+        (:TYPE-PRESCRIPTION FIB-ST-OUT-LIMIT))
+ NATP-FIB-ST-OUT-LIMIT-0
+ACL2 !>>(VERIFY-GUARDS FIB-ST-OUT-LIMIT)
 Goal'
 
-Q.E.D.
-
-That completes the proof of the guard theorem for FIB-ST-LIMIT.  
-FIB-ST-LIMIT is compliant with Common Lisp.
-
 Summary
-Form:  ( VERIFY-GUARDS FIB-ST-LIMIT)
+Form:  ( VERIFY-GUARDS FIB-ST-OUT-LIMIT)
 Rules: ((:COMPOUND-RECOGNIZER ZP-COMPOUND-RECOGNIZER)
         (:DEFINITION =)
         (:DEFINITION LENGTH)
@@ -5857,14 +2748,15 @@ Rules: ((:COMPOUND-RECOGNIZER ZP-COMPOUND-RECOGNIZER)
         (:EXECUTABLE-COUNTERPART ACL2-NUMBERP)
         (:EXECUTABLE-COUNTERPART ZP)
         (:FAKE-RUNE-FOR-TYPE-SET NIL)
-        (:TYPE-PRESCRIPTION FIB-ST-LIMIT)
-        (:TYPE-PRESCRIPTION NATP-FIB-ST-LIMIT-0))
- FIB-ST-LIMIT
-ACL2 !>>(MF (MEMOIZE-PARTIAL FIB-ST))
+        (:TYPE-PRESCRIPTION FIB-ST-OUT-LIMIT)
+        (:TYPE-PRESCRIPTION NATP-FIB-ST-OUT-LIMIT-0))
+ FIB-ST-OUT-LIMIT
+ACL2 !>>(MF (MEMOIZE-PARTIAL FIB-ST-OUT))
 
 
 ACL2 Error in MEMOIZE-PARTIAL:  
-The stobj ST is among the formals of FIB-ST-LIMIT.
+The stobj ST is returned by FIB-ST-OUT-LIMIT, which is illegal for
+memoization.
 See :DOC memoize-partial.
 
 
@@ -5890,31 +2782,9 @@ ACL2 !>>(DEFUN
                                 (MV-LET (X2 STATE)
                                         (FIB-STATE-LIMIT (- N 2) STATE LIMIT)
                                         (MV (+ X1 X2) STATE)))))))
-
-For the admission of FIB-STATE-LIMIT we will use the relation O< (which
-is known to be well-founded on the domain recognized by O-P) and the
-measure (NFIX LIMIT).  The non-trivial part of the measure conjecture
-is
-
-Goal
-(AND (O-P (NFIX LIMIT))
-     (IMPLIES (AND (NOT (ZP LIMIT))
-                   (NOT (OR (= N 0) (= N 1))))
-              (O< (NFIX (+ -1 LIMIT)) (NFIX LIMIT)))).
 Subgoal 2
 Subgoal 1
 Subgoal 1'
-
-Q.E.D.
-
-That completes the proof of the measure theorem for FIB-STATE-LIMIT.
-Thus, we admit this function under the principle of definition.  We
-observe that the type of FIB-STATE-LIMIT is described by the theorem
-(AND (CONSP (FIB-STATE-LIMIT N STATE LIMIT))
-     (TRUE-LISTP (FIB-STATE-LIMIT N STATE LIMIT))).
-We used primitive type reasoning.
-
-(FIB-STATE-LIMIT * STATE *) => (MV * STATE).
 
 Summary
 Form:  ( DEFUN FIB-STATE-LIMIT ...)
@@ -5935,68 +2805,12 @@ ACL2 !>>(DEFTHM NATP-FIB-STATE-LIMIT-0
 ACL2 Observation in ( DEFTHM NATP-FIB-STATE-LIMIT-0 ...):  Our heuristics
 choose (CAR (FIB-STATE-LIMIT N LIMIT STATE)) as the :TYPED-TERM.
 Subgoal 2
-
-([ A key checkpoint:
-
-Subgoal 2
-(INTEGERP (CAR (FIB-STATE-LIMIT N LIMIT STATE)))
-
-*1 (Subgoal 2) is pushed for proof by induction.
-
-])
 Subgoal 1
-
-([ A key checkpoint:
-
-Subgoal 1
-(<= 0 (CAR (FIB-STATE-LIMIT N LIMIT STATE)))
-
-Normally we would attempt to prove Subgoal 1 by induction.  However,
-we prefer in this instance to focus on the original input conjecture
-rather than this simplified special case.  We therefore abandon our
-previous work on this conjecture and reassign the name *1 to the original
-conjecture.  (See :DOC otf-flg.)
-
-])
-
-Perhaps we can prove *1 by induction.  One induction scheme is suggested
-by this conjecture.  
-
-We will induct according to a scheme suggested by 
-(FIB-STATE-LIMIT N LIMIT STATE).  This suggestion was produced using
-the :induction rule FIB-STATE-LIMIT.  If we let (:P LIMIT N STATE)
-denote *1 above then the induction scheme we'll use is
-(AND (IMPLIES (AND (NOT (ZP STATE))
-                   (NOT (OR (= N 0) (= N 1)))
-                   (:P LIMIT (+ -1 N) (+ -1 STATE))
-                   (:P (MV-NTH 1
-                               (FIB-STATE-LIMIT (+ -1 N)
-                                                LIMIT (+ -1 STATE)))
-                       (+ -2 N)
-                       (+ -1 STATE)))
-              (:P LIMIT N STATE))
-     (IMPLIES (AND (NOT (ZP STATE))
-                   (OR (= N 0) (= N 1)))
-              (:P LIMIT N STATE))
-     (IMPLIES (ZP STATE)
-              (:P LIMIT N STATE))).
-This induction is justified by the same argument used to admit 
-FIB-STATE-LIMIT.  Note, however, that the unmeasured variables N and
-LIMIT are being instantiated.  When applied to the goal at hand the
-above induction scheme produces three nontautological subgoals.
 Subgoal *1/3
 Subgoal *1/3'
 Subgoal *1/2
 Subgoal *1/2'
 Subgoal *1/1
-
-*1 is COMPLETED!
-Thus key checkpoint Goal is COMPLETED!
-
-Q.E.D.
-
-The storage of NATP-FIB-STATE-LIMIT-0 depends upon the :compound-recognizer
-rule NATP-COMPOUND-RECOGNIZER.
 
 Summary
 Form:  ( DEFTHM NATP-FIB-STATE-LIMIT-0 ...)
@@ -6016,47 +2830,7 @@ Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
         (:TYPE-PRESCRIPTION FIB-STATE-LIMIT))
  NATP-FIB-STATE-LIMIT-0
 ACL2 !>>(VERIFY-GUARDS FIB-STATE-LIMIT)
-
-Computing the guard conjecture for FIB-STATE-LIMIT....
-
-The non-trivial part of the guard conjecture for FIB-STATE-LIMIT, given
-the :compound-recognizer rule ZP-COMPOUND-RECOGNIZER, is
-
-Goal
-(IMPLIES
-    (AND (INTEGERP N)
-         (<= 0 LIMIT)
-         (INTEGERP LIMIT)
-         (STATE-P STATE)
-         (NOT (ZP LIMIT)))
-    (LET ((LIMIT (+ -1 LIMIT)))
-         (AND (ACL2-NUMBERP N)
-              (OR (NOT (= N 0)) (ACL2-NUMBERP N))
-              (OR (= N 0) (ACL2-NUMBERP N))
-              (OR (OR (= N 0) (= N 1))
-                  (ACL2-NUMBERP N))
-              (OR (OR (= N 0) (= N 1))
-                  (INTEGERP LIMIT))
-              (OR (OR (= N 0) (= N 1))
-                  (INTEGERP (+ -1 N)))
-              (OR (OR (= N 0) (= N 1)) (<= 0 LIMIT))
-              (OR (OR (= N 0) (= N 1))
-                  (MV-LET (X1 STATE)
-                          (FIB-STATE-LIMIT (+ -1 N) STATE LIMIT)
-                          (AND (ACL2-NUMBERP N)
-                               (INTEGERP LIMIT)
-                               (INTEGERP (+ -2 N))
-                               (<= 0 LIMIT)
-                               (MV-LET (X2)
-                                       (FIB-STATE-LIMIT (+ -2 N) STATE LIMIT)
-                                       (AND (ACL2-NUMBERP X1)
-                                            (ACL2-NUMBERP X2))))))))).
 Goal'
-
-Q.E.D.
-
-That completes the proof of the guard theorem for FIB-STATE-LIMIT.
-FIB-STATE-LIMIT is compliant with Common Lisp.
 
 Summary
 Form:  ( VERIFY-GUARDS FIB-STATE-LIMIT)
@@ -6075,7 +2849,8 @@ ACL2 !>>(MF (MEMOIZE-PARTIAL FIB-STATE))
 
 
 ACL2 Error in MEMOIZE-PARTIAL:  
-STATE is among the formals of FIB-STATE-LIMIT.
+STATE is among the formals of FIB-STATE-LIMIT, which is illegal for
+memoization.
 See :DOC memoize-partial.
 
 
@@ -6084,4 +2859,227 @@ Summary
 Form:  ( MAKE-EVENT (QUOTE ...) ...)
 Rules: NIL
  T
+ACL2 !>>(SET-COMPILE-FNS NIL)
+ NIL
+ACL2 !>>(DEFUN
+         COLLATZ-LIMIT (N LIMIT)
+         (DECLARE (XARGS :GUARD (AND (NATP N) (NATP LIMIT))
+                         :MEASURE (ACL2-COUNT LIMIT)))
+         (IF
+          (ZP LIMIT)
+          (PROG2$ (ER HARD? 'COLLATZ-LIMIT
+                      "Limit exceeded!")
+                  0)
+          (LET ((LIMIT (1- LIMIT)))
+               (IF (INT= N 1)
+                   0
+                   (1+ (COLLATZ-LIMIT (IF (EVENP N) (FLOOR N 2) (1+ (* 3 N)))
+                                      LIMIT))))))
+
+Summary
+Form:  ( DEFUN COLLATZ-LIMIT ...)
+Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
+        (:COMPOUND-RECOGNIZER ZP-COMPOUND-RECOGNIZER)
+        (:DEFINITION EQL)
+        (:DEFINITION EVENP)
+        (:DEFINITION FLOOR)
+        (:DEFINITION NATP)
+        (:DEFINITION NOT)
+        (:EXECUTABLE-COUNTERPART EQL)
+        (:EXECUTABLE-COUNTERPART EQLABLEP)
+        (:EXECUTABLE-COUNTERPART NOT)
+        (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
+        (:EXECUTABLE-COUNTERPART UNARY-/)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL))
+ COLLATZ-LIMIT
+ACL2 !>>(MEMOIZE-PARTIAL COLLATZ)
+
+Summary
+Form:  ( DEFCHOOSE COLLATZ-LIMIT-CHANGE ...)
+Rules: NIL
+COLLATZ-LIMIT-CHANGE
+
+Summary
+Form:  ( DEFCHOOSE COLLATZ-LIMIT-STABLE ...)
+Rules: NIL
+COLLATZ-LIMIT-STABLE
+
+Summary
+Form:  ( DEFUN COLLATZ ...)
+Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
+        (:TYPE-PRESCRIPTION COLLATZ-LIMIT)
+        (:TYPE-PRESCRIPTION NATP)
+        (:TYPE-PRESCRIPTION NFIX))
+COLLATZ
+
+Summary
+Form:  ( TABLE PARTIAL-FUNCTIONS-TABLE ...)
+Rules: NIL
+PARTIAL-FUNCTIONS-TABLE
+
+Summary
+Form:  ( PROGN (DEFCHOOSE COLLATZ-LIMIT-CHANGE ...) ...)
+Rules: NIL
+
+Summary
+Form:  ( MAKE-EVENT (ER-PROGN ...) ...)
+Rules: NIL
+PARTIAL-FUNCTIONS-TABLE
+
+Summary
+Form:  ( TABLE MEMOIZE-TABLE ...)
+Rules: NIL
+MEMOIZE-TABLE
+COLLATZ
+
+Summary
+Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
+Rules: NIL
+COLLATZ
+
+Summary
+Form:  ( PROGN (MAKE-EVENT ...) ...)
+Rules: NIL
+ COLLATZ
+ACL2 !>>(SET-ENFORCE-REDUNDANCY T)
+ T
+ACL2 !>>(ENCAPSULATE
+         NIL
+         (DEFCHOOSE COLLATZ-LIMIT-CHANGE (LARGE)
+                    (N LIMIT)
+                    (AND (NATP LARGE)
+                         (<= LIMIT LARGE)
+                         (NOT (EQUAL (COLLATZ-LIMIT N LIMIT)
+                                     (COLLATZ-LIMIT N LARGE)))))
+         (DEFCHOOSE
+              COLLATZ-LIMIT-STABLE (LIMIT)
+              (N)
+              (AND (NATP LIMIT)
+                   (EQUAL (COLLATZ-LIMIT N LIMIT)
+                          (COLLATZ-LIMIT N (COLLATZ-LIMIT-CHANGE N LIMIT)))))
+         (DEFUN COLLATZ (N)
+                (DECLARE (XARGS :GUARD (LET ((LIMIT 0))
+                                            (DECLARE (IGNORABLE LIMIT))
+                                            (AND (NATP N) (NATP LIMIT)))))
+                (COLLATZ-LIMIT N (NFIX (COLLATZ-LIMIT-STABLE N))))
+         (TABLE
+          PARTIAL-FUNCTIONS-TABLE 'COLLATZ-LIMIT
+          '((COLLATZ
+             COLLATZ-LIMIT COLLATZ-LIMIT-CHANGE
+             COLLATZ-LIMIT-STABLE
+             (DEFUN
+              COLLATZ (N)
+              (DECLARE (IGNORABLE N))
+              (FLET
+               ((COLLATZ-LIMIT (N LIMIT)
+                               (DECLARE (IGNORE LIMIT))
+                               (COLLATZ N)))
+               (DECLARE (INLINE COLLATZ-LIMIT))
+               (LET
+                ((LIMIT 0))
+                (DECLARE (IGNORABLE LIMIT))
+                (IF
+                   (INT= N 1)
+                   0
+                   (1+ (COLLATZ-LIMIT (IF (EVENP N) (FLOOR N 2) (1+ (* 3 N)))
+                                      LIMIT)))))))))
+         (MEMOIZE 'COLLATZ
+                  :TOTAL 'COLLATZ-LIMIT))
+
+Summary
+Form:  ( DEFCHOOSE COLLATZ-LIMIT-CHANGE ...)
+Rules: NIL
+:REDUNDANT
+
+Summary
+Form:  ( DEFCHOOSE COLLATZ-LIMIT-STABLE ...)
+Rules: NIL
+:REDUNDANT
+
+Summary
+Form:  ( DEFUN COLLATZ ...)
+Rules: NIL
+:REDUNDANT
+
+Summary
+Form:  ( TABLE PARTIAL-FUNCTIONS-TABLE ...)
+Rules: NIL
+:REDUNDANT
+
+Summary
+Form:  ( TABLE MEMOIZE-TABLE ...)
+Rules: NIL
+:REDUNDANT
+COLLATZ
+
+Summary
+Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
+Rules: NIL
+COLLATZ
+
+ACL2 Observation in ( ENCAPSULATE NIL (DEFCHOOSE COLLATZ-LIMIT-CHANGE
+...) ...):  The submitted encapsulate event has created no new ACL2
+events, and thus is leaving the ACL2 logical world unchanged.  See
+:DOC encapsulate.
+
+Summary
+Form:  ( ENCAPSULATE NIL (DEFCHOOSE COLLATZ-LIMIT-CHANGE ...) ...)
+Rules: NIL
+ :EMPTY-ENCAPSULATE
+ACL2 !>>(SET-ENFORCE-REDUNDANCY NIL)
+ NIL
+ACL2 !>>(DEFUN COLLATZ-SUM-REC (N ACC)
+               (DECLARE (XARGS :GUARD (AND (NATP N) (NATP ACC))))
+               (IF (ZP N)
+                   ACC
+                   (COLLATZ-SUM-REC (1- N)
+                                    (+ (COLLATZ N) ACC))))
+
+Summary
+Form:  ( DEFUN COLLATZ-SUM-REC ...)
+Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
+        (:COMPOUND-RECOGNIZER ZP-COMPOUND-RECOGNIZER)
+        (:EXECUTABLE-COUNTERPART NATP)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:TYPE-PRESCRIPTION COLLATZ))
+ COLLATZ-SUM-REC
+ACL2 !>>(DEFUN COLLATZ-SUM (N)
+               (COLLATZ-SUM-REC N 0))
+
+Summary
+Form:  ( DEFUN COLLATZ-SUM ...)
+Rules: ((:TYPE-PRESCRIPTION COLLATZ-SUM-REC))
+ COLLATZ-SUM
+ACL2 !>>(DEFUN
+             COLLATZ-LIMIT-SUM-REC (N ACC LIMIT)
+             (DECLARE (XARGS :GUARD (AND (NATP N) (NATP ACC) (NATP LIMIT))))
+             (IF (ZP N)
+                 ACC
+                 (COLLATZ-LIMIT-SUM-REC (1- N)
+                                        (+ (COLLATZ-LIMIT N LIMIT) ACC)
+                                        LIMIT)))
+
+Summary
+Form:  ( DEFUN COLLATZ-LIMIT-SUM-REC ...)
+Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
+        (:COMPOUND-RECOGNIZER ZP-COMPOUND-RECOGNIZER)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:TYPE-PRESCRIPTION COLLATZ-LIMIT))
+ COLLATZ-LIMIT-SUM-REC
+ACL2 !>>(DEFUN COLLATZ-LIMIT-SUM (N)
+               (COLLATZ-LIMIT-SUM-REC N 0 (1- (EXPT 2 60))))
+
+Summary
+Form:  ( DEFUN COLLATZ-LIMIT-SUM ...)
+Rules: ((:TYPE-PRESCRIPTION COLLATZ-LIMIT-SUM-REC))
+ COLLATZ-LIMIT-SUM
+ACL2 !>>(WITH-OUTPUT :OFF
+                     :ALL (PROGN (COMP T) (VALUE-TRIPLE NIL)))
+ NIL
+ACL2 !>>(ASSERT-EVENT (EQUAL (COLLATZ-SUM (EXPT 10 6))
+                             131434424))
+ :PASSED
+ACL2 !>>(ASSERT-EVENT (EQUAL (COLLATZ-LIMIT-SUM (EXPT 10 6))
+                             (COLLATZ-SUM (EXPT 10 6))))
+ :PASSED
 ACL2 !>>Bye.

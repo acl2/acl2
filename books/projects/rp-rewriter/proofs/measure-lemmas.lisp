@@ -693,8 +693,45 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+
+
+(defthm count-coung-compare-of-sums
+  (implies (and (< (cons-count x1)
+                   (cons-count x2))
+                (< (cons-count y1)
+                   (cons-count y2)))
+           (< (+ (cons-count x1)
+                 (cons-count y1))
+              (+ (cons-count x2)
+                 (cons-count y2)))))
+
+(defthm cons-count-of-cadddr
+  (implies (and (consp x)
+                (<= (cons-count x)
+                    (cons-count y)))
+           (< (cons-count (cadddr x))
+              (cons-count y)))
+  :hints (("Goal"
+           :in-theory (e/d (cons-count) ()))))
+
+(defthm cons-count-of-caddddr
+  (implies (and (consp x)
+                (<= (cons-count x)
+                    (cons-count y)))
+           (< (cons-count (car (cddddr x)))
+              (cons-count y)))
+  :hints (("Goal"
+           :in-theory (e/d (cons-count) ()))))
+
+
+
 (deftheory measure-lemmas
-  '(measure-lemma1
+  '(count-coung-compare-of-sums
+    cons-count-of-cadddr
+    cons-count-of-caddddr
+    
+
+    measure-lemma1
     measure-lemma1-2
     equality-measure-lemma1
     m-measure-lemma1

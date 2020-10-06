@@ -8,7 +8,8 @@
 
 ; cert_param: (non-acl2r)
 
-(include-book "std/testing/eval" :dir :system)
+(include-book "std/testing/must-eval-to-t" :dir :system)
+(include-book "std/testing/must-fail" :dir :system)
 
 (defun nat-< (x y)
   (declare (xargs :guard t))

@@ -12,6 +12,7 @@
 
 (include-book "defaults-table")
 (include-book "input-processing")
+(include-book "input-processing-soft")
 (include-book "pattern-matching")
 (include-book "pattern-matching-ext")
 (include-book "print-specifiers")

@@ -7,10 +7,11 @@
 
 (in-package "ACL2")
 
+; This is the definition familiar from books/demos/memoize-partial-input.lsp:
 (defun fib-limit (n limit)
-  (declare (type (integer 0 *) limit))
-  (declare (xargs :guard (integerp n)
-                  :measure (nfix limit)))
+  (declare (type (integer 0 *) limit)
+           (type integer n))
+  (declare (xargs :measure (nfix limit)))
   (if (zp limit)
       0 ; any term is fine here
     (let ((limit (1- limit)))
@@ -44,11 +45,14 @@
            (equal (fib-limit2 n limit)
                   (fib-limit n (+ limit (lim))))))
 
+; This lemma is proved by computation:
 (defthm fib-fact-lemma-1
   (equal (fib-limit2 5 7)
          8)
   :rule-classes nil)
 
+; This lemma follows by from fib-fact-lemma-1 by applying
+; fib-limit2-is-fib-limit:
 (defthm fib-fact-lemma-2
   (equal (fib-limit 5 (+ 7 (lim)))
          8)
@@ -57,6 +61,7 @@
            :in-theory (disable fib-limit (:e fib-limit2))))
   :rule-classes nil)
 
+; Now replace (lim) by lim in fib-fact-lemma-2:
 (defthm fib-fact-lemma-3
   (implies (natp lim)
            (equal (fib-limit 5 (+ 7 lim))
@@ -67,6 +72,7 @@
            :in-theory (disable fib-limit (:e fib-limit))))
   :rule-classes nil)
 
+; We conclude with a trivial consequence of the preceding lemma:
 (defthm fib-fact
   (implies (and (natp limit)
                 (<= 7 limit))

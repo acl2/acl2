@@ -216,3 +216,15 @@
   (equal (bvchop-list element-size (true-list-fix lst))
          (bvchop-list element-size lst))
   :hints (("Goal" :in-theory (enable bvchop-list))))
+
+(defthm bvchop-list-when-arg1-is-not-an-integer
+  (implies (not (integerp arg))
+           (equal (bvchop-list arg lst)
+                  (bvchop-list 0 lst)))
+  :hints (("Goal" :in-theory (enable bvchop-list))))
+
+(defthm bvchop-list-when-arg1-is-negative
+  (implies (< arg 0)
+           (equal (bvchop-list arg lst)
+                  (bvchop-list 0 lst)))
+  :hints (("Goal" :in-theory (enable bvchop-list))))

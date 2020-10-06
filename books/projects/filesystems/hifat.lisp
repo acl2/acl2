@@ -10,7 +10,6 @@
 (local (include-book "rtl/rel9/arithmetic/top" :dir :system))
 ;; This book happens to non-locally disable intersectp.
 (include-book "kestrel/utilities/strings/top" :dir :system)
-(include-book "std/strings/case-conversion" :dir :system)
 
 (include-book "insert-text")
 (include-book "fat32")
@@ -386,11 +385,86 @@
 ;; bytes.
 (local (include-book "std/typed-lists/integer-listp" :dir :system))
 
-(defthm subsetp-when-prefixp
-  (implies (prefixp x y)
-           (subsetp-equal x y))
-  :hints (("goal" :in-theory (enable subsetp-equal prefixp)
-           :induct (prefixp x y))))
+(defthm
+  subseq-of-implode-of-append
+  (equal (subseq (implode (append x y))
+                 start end)
+         (cond ((and (not (integerp (- (+ (len x) (len y)) start)))
+                     (null end))
+                "")
+               ((and (not (integerp start))
+                     (<= (len x)
+                         (- (+ (len x) (len y)) start))
+                     (integerp (- (+ (len x) (len y)) start))
+                     (null end))
+                (implode (append x (take (- (len y) start) y))))
+               ((and (integerp start)
+                     (< (len x) start)
+                     (null end))
+                (implode (take (- (+ (len x) (len y)) start)
+                               (nthcdr (- start (len x)) y))))
+               ((and (integerp start)
+                     (< start 0)
+                     (null end))
+                (implode (append x (take (- (len y) start) y))))
+               ((and (not (integerp start))
+                     (integerp (- (+ (len x) (len y)) start))
+                     (< (- (+ (len x) (len y)) start)
+                        (len x))
+                     (null end))
+                (implode (take (- (+ (len x) (len y)) start) x)))
+               ((null end)
+                (implode (append (nthcdr start x) y)))
+               ((stringp y)
+                (implode (take (- end start) (nthcdr start x))))
+               ((not (natp (- end start))) "")
+               ((and (< start 0)
+                     (< (- end start) (len x)))
+                (implode (take (- end start) x)))
+               ((and (not (integerp start))
+                     (< (- end start) (len x)))
+                (implode (take (- end start) x)))
+               ((not (integerp start))
+                (implode (append x (take (- end (+ start (len x))) y))))
+               ((and (<= 0 start)
+                     (<= end (len x))
+                     (not (integerp end)))
+                (implode (take (- end start) x)))
+               ((and (< start 0)
+                     (<= (len x) (- end start)))
+                (implode (append x (take (- end (+ start (len x))) y))))
+               ((< start 0)
+                (implode (take (- end start) x)))
+               ((< (len x) start)
+                (implode (take (- end start)
+                               (nthcdr (- start (len x)) y))))
+               ((<= end (len x))
+                (implode (take (- end start) (nthcdr start x))))
+               (t (implode (append (nthcdr start x)
+                                   (take (- end (len x)) y))))))
+  :hints (("goal" :in-theory (e/d (subseq subseq-list take)
+                                  ((:e force)))
+           :do-not-induct t
+           :use ((:theorem (equal (+ start (- start) (- (len x)))
+                                  (- (len x))))
+                 (:theorem (equal (+ (len x) (- (len x)) (len y))
+                                  (len y)))))))
+
+(encapsulate
+  ()
+
+  (local (include-book "std/lists/intersection" :dir :system))
+
+  (defthm
+    intersection$-when-subsetp
+    (implies (subsetp-equal x y)
+             (equal (intersection-equal x y)
+                    (true-list-fix x)))
+    :hints (("goal" :in-theory (enable subsetp-equal)))
+    :rule-classes
+    (:rewrite (:rewrite :corollary (implies (subsetp-equal x y)
+                                            (set-equiv (intersection-equal y x)
+                                                       x))))))
 
 (defthmd
   painful-debugging-lemma-14
@@ -1134,6 +1208,14 @@
   (implies (fat32-filename-p x)
            (equal (fat32-filename-fix x) x)))
 
+(defthm len-of-put-assoc-of-fat32-filename-fix
+  (equal (len (put-assoc-equal (fat32-filename-fix x)
+                               val alist))
+         (if (consp (assoc-equal (fat32-filename-fix x)
+                                 alist))
+             (len alist)
+             (+ 1 (len alist)))))
+
 (fty::deffixtype
  fat32-filename
  :pred fat32-filename-p
@@ -1422,6 +1504,24 @@
          (m1-file-alist-p contents))
   :hints (("goal" :in-theory (enable m1-file-contents-fix))))
 
+(defthm len-of-explode-when-m1-file-contents-p-1
+  (implies (m1-file-contents-p x)
+           (< (len (explode x)) (ash 1 32)))
+  :hints (("goal" :do-not-induct t
+           :in-theory (enable m1-file-contents-p m1-file-alist-p)))
+  :rule-classes :linear)
+
+(defthm
+  len-of-explode-of-m1-file-contents-fix
+  (< (len (explode (m1-file-contents-fix x)))
+     (ash 1 32))
+  :hints
+  (("goal" :do-not-induct t
+    :in-theory (disable len-of-explode-when-m1-file-contents-p-1)
+    :use (:instance len-of-explode-when-m1-file-contents-p-1
+                    (x (m1-file-contents-fix x)))))
+  :rule-classes :linear)
+
 (fty::deffixtype m1-file-contents
                  :pred m1-file-contents-p
                  :fix m1-file-contents-fix
@@ -1501,6 +1601,16 @@
   :hints (("goal" :in-theory (enable m1-regular-file-p))))
 
 (defthm
+  m1-regular-file-p-correctness-2
+  (implies (m1-regular-file-p file)
+           (< (len (explode (m1-file->contents file)))
+              (ash 1 32)))
+  :hints (("goal" :in-theory (e/d (m1-regular-file-p m1-directory-file-p)
+                                  (m1-regular-file-p-correctness-1))
+           :use m1-regular-file-p-correctness-1))
+  :rule-classes :linear)
+
+(defthm
   m1-directory-file-p-correctness-1
   (implies (m1-directory-file-p file)
            (and (m1-file-p file)
@@ -1524,8 +1634,8 @@
 
 (defthm
   m1-directory-file-p-of-m1-file
-  (implies (m1-file-alist-p contents)
-           (m1-directory-file-p (m1-file dir-ent contents)))
+  (equal (m1-directory-file-p (m1-file dir-ent contents))
+         (m1-file-alist-p contents))
   :hints (("goal" :in-theory (enable m1-directory-file-p))))
 
 (defthm
@@ -1653,7 +1763,8 @@
                     (ac1 (- ac 1))
                     (ac2 ac)))))
 
-(defthm hifat-bounded-file-alist-p-of-cdr
+;; Rules like this are just a lot of trouble, actually...
+(defthmd hifat-bounded-file-alist-p-of-cdr
   (implies (hifat-bounded-file-alist-p x)
            (hifat-bounded-file-alist-p (cdr x)))
   :hints (("goal" :in-theory (enable hifat-bounded-file-alist-p))))
@@ -1791,7 +1902,15 @@
            (no-duplicatesp-equal (strip-cars fs)))
   :hints (("goal" :in-theory (enable hifat-no-dups-p))))
 
-(defun hifat-file-alist-fix (hifat-file-alist)
+(defthm hifat-no-dups-p-of-put-assoc
+  (implies (and (m1-file-alist-p m1-file-alist)
+                (hifat-no-dups-p m1-file-alist)
+                (or (m1-regular-file-p file)
+                    (hifat-no-dups-p (m1-file->contents file))))
+           (hifat-no-dups-p (put-assoc-equal key file m1-file-alist)))
+  :hints (("goal" :in-theory (enable hifat-no-dups-p))))
+
+(defund hifat-file-alist-fix (hifat-file-alist)
   (declare (xargs :guard (and (m1-file-alist-p hifat-file-alist)
                               (hifat-no-dups-p hifat-file-alist))
                   :verify-guards nil))
@@ -1817,7 +1936,8 @@
        (cons head tail)))))
 
 (defthm m1-file-alist-p-of-hifat-file-alist-fix
-  (m1-file-alist-p (hifat-file-alist-fix hifat-file-alist)))
+  (m1-file-alist-p (hifat-file-alist-fix hifat-file-alist))
+  :hints (("goal" :in-theory (enable hifat-file-alist-fix))))
 
 (defthm
   hifat-file-alist-fix-when-hifat-no-dups-p
@@ -1825,14 +1945,14 @@
                 (m1-file-alist-p hifat-file-alist))
            (equal (hifat-file-alist-fix hifat-file-alist)
                   hifat-file-alist))
-  :hints (("goal" :in-theory (enable hifat-no-dups-p))))
+  :hints (("goal" :in-theory (enable hifat-no-dups-p hifat-file-alist-fix))))
 
 (defthm
   hifat-no-dups-p-of-hifat-file-alist-fix
   (hifat-no-dups-p (hifat-file-alist-fix hifat-file-alist))
   :hints
   (("goal"
-    :in-theory (enable hifat-no-dups-p)
+    :in-theory (enable hifat-no-dups-p hifat-file-alist-fix)
     :induct (hifat-file-alist-fix hifat-file-alist))))
 
 ;; This can't be made local.
@@ -1847,6 +1967,24 @@
   :hints (("goal" :in-theory (enable hifat-no-dups-p))))
 
 (verify-guards hifat-file-alist-fix)
+
+(defthmd strip-cars-of-hifat-file-alist-fix-lemma-1
+  (implies (and (case-split (not (null x)))
+                (equal (strip-cars alist)
+                       (remove-duplicates-equal l)))
+           (iff (member-equal x l)
+                (consp (assoc-equal x alist))))
+  :hints (("goal" :do-not-induct t
+           :in-theory (disable member-of-strip-cars)
+           :use member-of-strip-cars)))
+
+(defthm
+  strip-cars-of-hifat-file-alist-fix
+  (equal (strip-cars (hifat-file-alist-fix fs))
+         (remove-duplicates-equal (fat32-filename-list-fix (strip-cars fs))))
+  :hints
+  (("goal" :in-theory (enable hifat-file-alist-fix
+                              strip-cars-of-hifat-file-alist-fix-lemma-1))))
 
 ;; This function returns *ENOENT* when the root directory is asked for. There's
 ;; a simple reason: we want to return the whole file, including the directory
@@ -1897,9 +2035,9 @@
       (hifat-find-file fs path)
       (and (m1-file-p file)
            (integerp error-code))))
-   (:linear
+   (:type-prescription
     :corollary
-    (<= 0 (mv-nth 1 (hifat-find-file fs path))))))
+    (natp (mv-nth 1 (hifat-find-file fs path))))))
 
 (defthmd hifat-find-file-of-fat32-filename-list-fix
   (equal
@@ -1934,6 +2072,37 @@
      (mv (m1-file-fix nil) *enotdir*))
     ((atom x) (hifat-find-file fs y))
     (t (hifat-find-file fs x))))
+  :hints (("goal" :in-theory (enable hifat-find-file))))
+
+;; This can't be made local.
+(defthm
+  hifat-no-dups-p-of-m1-file->contents-of-hifat-find-file-lemma-1
+  (implies (and (m1-file-alist-p fs)
+                (hifat-no-dups-p fs))
+           (hifat-no-dups-p (m1-file->contents (cdr (assoc-equal key fs)))))
+  :hints (("goal" :in-theory (enable hifat-no-dups-p m1-file->contents
+                                     m1-file-contents-fix m1-file-contents-p
+                                     m1-directory-file-p))))
+
+(defthm
+  hifat-no-dups-p-of-m1-file->contents-of-hifat-find-file
+  (hifat-no-dups-p (m1-file->contents (mv-nth 0 (hifat-find-file fs path))))
+  :hints (("goal" :in-theory (enable hifat-no-dups-p
+                                     m1-file-alist-p hifat-find-file))))
+
+(defthmd hifat-find-file-correctness-2
+  (equal (hifat-find-file fs path)
+         (mv (mv-nth 0 (hifat-find-file fs path))
+             (mv-nth 1 (hifat-find-file fs path))))
+  :hints (("goal" :in-theory (enable hifat-find-file))))
+
+(defthmd
+  hifat-find-file-correctness-5
+  (implies
+   (not (zp (mv-nth 1 (hifat-find-file fs path))))
+   (equal (hifat-find-file fs path)
+          (mv (make-m1-file)
+              (mv-nth 1 (hifat-find-file fs path)))))
   :hints (("goal" :in-theory (enable hifat-find-file))))
 
 (defund
@@ -1999,10 +2168,15 @@
   (mv-let (fs error-code)
     (hifat-place-file fs path file)
     (and (m1-file-alist-p fs)
-         (integerp error-code)))
+         (natp error-code)))
   :hints
   (("goal" :in-theory (enable hifat-place-file)
-    :induct (hifat-place-file fs path file))))
+    :induct (hifat-place-file fs path file)))
+  :rule-classes
+  ((:rewrite :corollary (m1-file-alist-p (mv-nth 0 (hifat-place-file fs path file))))
+   (:type-prescription :corollary (not (stringp
+                                        (mv-nth 0 (hifat-place-file fs path file)))))
+   (:type-prescription :corollary (natp (mv-nth 1 (hifat-place-file fs path file))))))
 
 (defthmd
   hifat-place-file-of-fat32-filename-list-fix
@@ -2028,16 +2202,6 @@
           (:instance hifat-place-file-of-fat32-filename-list-fix
                      (path path-equiv))))))
 
-;; This can't be made local.
-(defthm
-  hifat-place-file-correctness-lemma-2
-  (implies (and (m1-file-alist-p fs)
-                (hifat-no-dups-p fs))
-           (hifat-no-dups-p (m1-file->contents (cdr (assoc-equal key fs)))))
-  :hints (("goal" :in-theory (enable hifat-no-dups-p m1-file->contents
-                                     m1-file-contents-fix m1-file-contents-p
-                                     m1-directory-file-p))))
-
 (defthm
   hifat-place-file-correctness-3
   (implies (not (zp (mv-nth 1 (hifat-place-file fs path file))))
@@ -2045,18 +2209,15 @@
                   (hifat-file-alist-fix fs)))
   :hints (("goal" :in-theory (enable hifat-place-file))))
 
+(defthmd hifat-place-file-correctness-5
+  (equal (hifat-place-file fs path file)
+         (mv (mv-nth 0 (hifat-place-file fs path file))
+             (mv-nth 1 (hifat-place-file fs path file))))
+  :hints (("goal" :in-theory (enable hifat-place-file))))
+
 (defcong m1-file-equiv equal
   (hifat-place-file fs path file) 3
   :hints (("goal" :in-theory (enable hifat-place-file))))
-
-;; Do not make this local, it's needed elsewhere.
-(defthm hifat-no-dups-p-of-put-assoc
-  (implies (and (m1-file-alist-p m1-file-alist)
-                (hifat-no-dups-p m1-file-alist)
-                (or (m1-regular-file-p file)
-                    (hifat-no-dups-p (m1-file->contents file))))
-           (hifat-no-dups-p (put-assoc-equal key file m1-file-alist)))
-  :hints (("goal" :in-theory (enable hifat-no-dups-p))))
 
 (defthm
   hifat-no-dups-p-of-hifat-place-file
@@ -2093,30 +2254,33 @@
 
 (defthm
   hifat-place-file-of-append-1
-  (implies
-   (and (zp (mv-nth 1 (hifat-find-file fs x)))
-        (m1-directory-file-p (mv-nth 0 (hifat-find-file fs x))))
-   (equal
-    (hifat-place-file fs (append x y) file)
-    (if
-        (consp y)
-        (mv
-         (mv-nth
-          0
-          (hifat-place-file
-           fs x
-           (make-m1-file
-            :contents
-            (mv-nth 0
-                    (hifat-place-file
-                     (m1-file->contents (mv-nth 0 (hifat-find-file fs x)))
-                     y file))
-            :dir-ent (m1-file->dir-ent (mv-nth 0 (hifat-find-file fs x))))))
-         (mv-nth
-          1
-          (hifat-place-file (m1-file->contents (mv-nth 0 (hifat-find-file fs x)))
-                            y file)))
-      (hifat-place-file fs x file))))
+  (equal
+   (hifat-place-file fs (append x y) file)
+   (cond
+    ((atom y) (hifat-place-file fs x file))
+    ((and (zp (mv-nth 1 (hifat-find-file fs x)))
+          (m1-directory-file-p (mv-nth 0 (hifat-find-file fs x))))
+     (mv
+      (mv-nth
+       0
+       (hifat-place-file
+        fs x
+        (make-m1-file
+         :contents
+         (mv-nth 0
+                 (hifat-place-file
+                  (m1-file->contents (mv-nth 0 (hifat-find-file fs x)))
+                  y file))
+         :dir-ent (m1-file->dir-ent (mv-nth 0 (hifat-find-file fs x))))))
+      (mv-nth
+       1
+       (hifat-place-file (m1-file->contents (mv-nth 0 (hifat-find-file fs x)))
+                         y file))))
+    ((or (zp (mv-nth 1 (hifat-find-file fs x)))
+         (consp x))
+     (mv (hifat-file-alist-fix fs)
+         *enotdir*))
+    (t (hifat-place-file fs y file))))
   :hints
   (("goal"
     :in-theory (enable hifat-place-file hifat-find-file)
@@ -2134,6 +2298,24 @@
                  y file)))))
      (append x y)
      (mv-nth 0 (hifat-find-file fs x))))))
+
+(defthmd hifat-place-file-no-change-loser
+  (implies (not (zp (mv-nth 1 (hifat-place-file fs path file))))
+           (equal (hifat-place-file fs path file)
+                  (mv (hifat-file-alist-fix fs)
+                      (mv-nth 1 (hifat-place-file fs path file)))))
+  :hints (("goal" :in-theory (enable hifat-place-file))))
+
+(defthm
+  len-of-hifat-place-file
+  (equal (len (mv-nth 0 (hifat-place-file fs path file)))
+         (if (and (consp path)
+                  (atom (cdr path))
+                  (atom (assoc-equal (fat32-filename-fix (car path))
+                                     (hifat-file-alist-fix fs))))
+             (+ 1 (len (hifat-file-alist-fix fs)))
+             (len (hifat-file-alist-fix fs))))
+  :hints (("goal" :in-theory (enable hifat-place-file))))
 
 (defund
   hifat-remove-file (fs path)
@@ -2265,6 +2447,18 @@
   :hints
   (("goal"
     :in-theory (enable fat32-filename-list-prefixp-alt))))
+
+(defthm
+  fat32-filename-list-prefixp-transitive
+  (implies (and (fat32-filename-list-prefixp x y)
+                (fat32-filename-list-prefixp y z))
+           (fat32-filename-list-prefixp x z))
+  :hints (("goal" :in-theory (enable fat32-filename-list-prefixp)))
+  :rule-classes
+  (:rewrite
+   (:rewrite :corollary (implies (and (fat32-filename-list-prefixp y z)
+                                      (fat32-filename-list-prefixp x y))
+                                 (fat32-filename-list-prefixp x z)))))
 
 (defthm
   m1-read-after-write-lemma-1
@@ -2688,7 +2882,7 @@
    (fat32-name-to-name-helper
     character-list n)))
 
-(defun fat32-name-to-name (character-list)
+(defund fat32-name-to-name (character-list)
   (declare (xargs :guard (and (character-listp character-list)
                               (equal (len character-list) 11))))
   (b*
@@ -2780,7 +2974,7 @@
 ;;            :expand (PATH-TO-FAT32-PATH (TAKE (+ -1 (LEN CHARACTER-LIST))
 ;;                                                      CHARACTER-LIST))) ))
 
-(defun fat32-path-to-path (string-list)
+(defund fat32-path-to-path (string-list)
   (declare (xargs :guard (fat32-filename-list-p string-list)))
   (if (atom string-list)
       nil
@@ -2802,4 +2996,5 @@
          "/bin/mkdir")))
 
 (defthm character-listp-of-fat32-path-to-path
-  (character-listp (fat32-path-to-path string-list)))
+  (character-listp (fat32-path-to-path string-list))
+  :hints (("goal" :in-theory (enable fat32-name-to-name fat32-path-to-path))))

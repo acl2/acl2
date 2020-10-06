@@ -26,7 +26,7 @@
    (error-val "Value to return in case of error.")
    (ctx "Context for errors.")
    state)
-  :returns (mv erp
+  :returns (mv (erp "@('nil') or @('error-erp').")
                (updated-event-names-to-avoid "A @(tsee symbol-listp).")
                state)
   :mode :program
@@ -61,8 +61,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro+ ensure-symbol-is-fresh-event-name$
-  (sym description type other-event-names-to-avoid error-erp error-val)
+(defmacro+ ensure-symbol-is-fresh-event-name$ (sym
+                                               description
+                                               type
+                                               other-event-names-to-avoid
+                                               error-erp
+                                               error-val)
+  :parents (ensure-symbol-is-fresh-event-name)
+  :short "Call @(tsee ensure-symbol-is-fresh-event-name)
+          with @('ctx') and @('state') as the last two arguments."
   `(ensure-symbol-is-fresh-event-name ,sym
                                       ,description
                                       ,type

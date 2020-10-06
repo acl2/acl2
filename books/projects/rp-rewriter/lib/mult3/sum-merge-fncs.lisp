@@ -48,6 +48,8 @@
 
 (include-book "std/util/defines" :dir :system)
 
+(include-book "equal-meta")
+
 (local
  (in-theory (disable +-IS-SUM)))
 
@@ -75,23 +77,7 @@
   (b* ((pp-lst (pp-to-pp-lst pp)))
     (if pp-lst
         (cons pp-lst pp-lst-lst)
-      pp-lst-lst))
-
-  #|(case-match pp
-  (('list . lst)
-  (if lst
-  (pp-cons lst pp-lst-lst)
-  pp-lst-lst))
-  (''nil
-  pp-lst-lst)
-  ;; (('quote x)
-  ;;  (if (true-listp x)
-  ;;      (honst
-  (& (progn$
-  (hard-error 'cons-pp-to-pp-lst-lst
-  "Unexpected pp instance : ~p0 ~%"
-  (list (cons #\0 pp)))
-  pp-lst-lst)))||#)
+      pp-lst-lst)))
 
 (define append-pp-lst-lsts (l1 l2)
   ;;(append l1 l2)

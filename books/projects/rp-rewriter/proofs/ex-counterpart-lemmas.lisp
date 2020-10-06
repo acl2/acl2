@@ -58,7 +58,7 @@
            :in-theory (e/d (rp-ex-counterpart
                             rp-statep
                             increment-rw-stack-size
-                            rp-stat-add-to-rules-used-ex-cnt)
+                            rp-stat-add-to-rules-used)
                            ()))))
 
 
@@ -76,9 +76,10 @@
                                                                state))))))
            :in-theory (e/d (rp-ex-counterpart
                             INCREMENT-RW-STACK-SIZE
-                            RP-STAT-ADD-TO-RULES-USED-EX-CNT
+                            RP-STAT-ADD-TO-RULES-USED
                             valid-rp-state-syntaxp)
                            (rp-statep
+                            RULES-USED-PUT
                             UPDATE-RW-STACK-SIZE
                             MAGIC-EV-FNCALL-WRAPPER
                             RW-STACK-SIZE
@@ -90,7 +91,7 @@
                             (:TYPE-PRESCRIPTION O<)
                             GET-GLOBAL
                             GLOBAL-TABLE
-                            UPDATE-RULES-USED
+                            ;;UPDATE-RULES-USED
                             )))))
 
 (defthm rp-ex-counterpart-return-valid-rp-statep
@@ -107,7 +108,7 @@
            :in-theory (e/d (rp-ex-counterpart
                             valid-rp-statep
                             INCREMENT-RW-STACK-SIZE
-                            RP-STAT-ADD-TO-RULES-USED-EX-CNT
+                            RP-STAT-ADD-TO-RULES-USED
                             valid-rp-state-syntaxp)
                            (rp-statep
                             UPDATE-RW-STACK-SIZE
@@ -128,7 +129,8 @@
                             (:DEFINITION NOT)
                             GET-GLOBAL
                             GLOBAL-TABLE
-                            UPDATE-RULES-USED
+                            RULES-USED-PUT
+                           ;; UPDATE-RULES-USED
                             )))))
 
 

@@ -12,9 +12,10 @@
 
 (include-book "kestrel/error-checking/ensure-value-is-boolean" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
+(include-book "kestrel/error-checking/ensure-value-is-untranslated-term" :dir :system)
 (include-book "kestrel/event-macros/applicability-conditions" :dir :system)
+(include-book "kestrel/event-macros/event-generation" :dir :system)
 (include-book "kestrel/event-macros/input-processing" :dir :system)
-(include-book "kestrel/event-macros/intro-macros" :dir :system)
 (include-book "kestrel/event-macros/proof-preparation" :dir :system)
 (include-book "kestrel/event-macros/restore-output" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
@@ -150,7 +151,8 @@
   :short "Process an element of the @('conditions') input."
   (b* ((wrld (w state))
        (description (msg "The ~n0 element of the second input" (list pos)))
-       ((er (list term stobjs-out)) (ensure-term$ cond description t nil))
+       ((er (list term stobjs-out))
+        (ensure-value-is-untranslated-term$ cond description t nil))
        (description (msg "The term ~x0 that denotes the ~n1 condition"
                          cond (list pos)))
        ((er &) (ensure-term-free-vars-subset$ term
@@ -426,12 +428,11 @@
     @(':verify-guards') is also used to process @('old'),
     but it is only tested for equality with @('t')
     (see @(tsee casesplit-process-old)).")
-  (b* ((wrld (w state))
-       ((er old$) (casesplit-process-old old verify-guards ctx state))
-       ((er verify-guards$) (ensure-boolean-or-auto-and-return-boolean$
-                             verify-guards
-                             (guard-verified-p old$ wrld)
-                             "The :VERIFY-GUARDS input" t nil))
+  (b* (((er old$) (casesplit-process-old old verify-guards ctx state))
+       ((er verify-guards$) (process-input-verify-guards verify-guards
+                                                         old$
+                                                         ctx
+                                                         state))
        ((er conditions$) (casesplit-process-conditions
                           conditions old$ verify-guards$ ctx state))
        ((er (list hyps news)) (casesplit-process-theorems
@@ -441,10 +442,7 @@
                                                                      nil
                                                                      ctx
                                                                      state))
-       ((er new-enable$) (ensure-boolean-or-auto-and-return-boolean$
-                          new-enable
-                          (fundef-enabledp old state)
-                          "The :NEW-ENABLE input" t nil))
+       ((er new-enable$) (process-input-new-enable new-enable old$ ctx state))
        ((er thm-name$) (casesplit-process-thm-name
                         thm-name old$ new-name$ ctx state))
        (names-to-avoid (cons thm-name$ names-to-avoid))
@@ -766,35 +764,24 @@
      We also use the guard theorem of @('old'),
      which may be needed to discharge the guard obligations
      within the guard term of @('old')."))
-  (b* ((macro (function-intro-macro new-enable$ nil))
-       (formals (formals old$ wrld))
-       (new0 (car (last news)))
-       (body
-        (casesplit-gen-new-fn-body (len conditions$) conditions$ news new0))
-       (body (untranslate body nil wrld))
-       (guard (uguard old$ wrld))
-       (guard-appcond-thm-names (nthcdr (len news) appcond-thm-names))
-       (guard-hints? (and verify-guards$
-                          `(("Goal"
-                             :in-theory nil
-                             :use (,@(strip-cdrs guard-appcond-thm-names)
-                                   (:guard-theorem ,old$))))))
-       (local-event
-        `(local
-          (,macro ,new-name$ (,@formals)
-                  (declare (xargs
-                            :guard ,guard
-                            :verify-guards ,verify-guards$
-                            ,@(if verify-guards$
-                                  (list :guard-hints guard-hints?)
-                                nil)))
-                  ,body)))
-       (exported-event
-        `(,macro ,new-name$ (,@formals)
-                 (declare (xargs :guard ,guard
-                                 :verify-guards ,verify-guards$))
-                 ,body)))
-    (mv local-event exported-event))
+  (evmac-generate-defun
+   new-name$
+   :formals (formals old$ wrld)
+   :guard (uguard old$ wrld)
+   :body (b* ((new0 (car (last news)))
+              (body (casesplit-gen-new-fn-body (len conditions$)
+                                               conditions$
+                                               news
+                                               new0)))
+           (untranslate body nil wrld))
+   :guard-hints (b* ((guard-appcond-thm-names (nthcdr (len news)
+                                                      appcond-thm-names)))
+                  `(("Goal"
+                     :in-theory nil
+                     :use (,@(strip-cdrs guard-appcond-thm-names)
+                           (:guard-theorem ,old$)))))
+   :verify-guards verify-guards$
+   :enable new-enable$)
 
   :prepwork
   ((local (include-book "std/typed-lists/pseudo-term-listp" :dir :system))
@@ -843,8 +830,7 @@
      these are all the applicability conditions,
      because there are no guard-related applicability conditions.
      We also use the theorem names specified in the @('theorems') input."))
-  (b* ((macro (theorem-intro-macro thm-enable$))
-       (formals (formals old$ wrld))
+  (b* ((formals (formals old$ wrld))
        (formula `(equal (,old$ ,@formals)
                         (,new-name$ ,@formals)))
        (formula (untranslate formula t wrld))
@@ -853,14 +839,12 @@
        (hints `(("Goal"
                  :in-theory '(,new-unnorm-name)
                  :use (,@(strip-cdrs thm-hyp-appcond-thm-names)
-                       ,@theorems$))))
-       (local-event `(local
-                      (,macro ,thm-name$
-                              ,formula
-                              :hints ,hints)))
-       (exported-event `(,macro ,thm-name$
-                                ,formula)))
-    (mv local-event exported-event)))
+                       ,@theorems$)))))
+    (evmac-generate-defthm
+     thm-name$
+     :formula formula
+     :hints hints
+     :enable thm-enable$)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

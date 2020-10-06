@@ -11240,7 +11240,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
     (cond ((null guard)
            (illegal nil
-                    "Illegal-type."
+                    "Illegal-type: ~x0."
                     (list (cons #\0 x))))
           (t
            `(let ((var ,y))
@@ -13611,6 +13611,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     update-enabled-structure-array
     update-enabled-structure
     #+acl2-devel apply$-lambda
+    #+acl2-devel apply$-prim
     fchecksum-obj2
     check-sum-obj
     verify-guards-fn1 ; to update *cl-cache*
@@ -13802,7 +13803,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     delete-file$
     set-bad-lisp-consp-memoize
     #-acl2-devel apply$-lambda
-    apply$-prim
+    #-acl2-devel apply$-prim
   ))
 
 (defconst *initial-macros-with-raw-code*
@@ -14258,6 +14259,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (iprint-soft-bound . ,*iprint-soft-bound-default*)
     (keep-tmp-files . nil)
     (last-event-data . nil)
+    (last-ld-result . nil)
     (last-make-event-expansion . nil)
     (last-step-limit . -1) ; any number should be OK
     (ld-level . 0)
@@ -14358,7 +14360,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
     (user-home-dir . nil) ; set first time entering lp
     (verbose-theory-warning . t)
-    (verify-termination-on-raw-program-okp . (apply$-lambda))
+    (verify-termination-on-raw-program-okp . (apply$-lambda apply$-prim))
     (walkabout-alist . nil)
     (waterfall-parallelism . nil) ; for #+acl2-par
     (waterfall-parallelism-timing-threshold

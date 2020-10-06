@@ -44,6 +44,9 @@
     ;;4vec-bitor-of-4vec-rsh
     integerp-4vec-plus
     integerp-4vec-rsh
+
+
+    rp::force$-of-t
     
     ;;bits-sbits.lisp
     4vec-bitnot$-of-bits-of-same-size

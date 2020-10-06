@@ -10,7 +10,13 @@
 
 (in-package "ACL2")
 
-(include-book "implementation")
+(include-book "defunvar")
+(include-book "defsoft")
+(include-book "defun2")
+(include-book "defchoose2")
+(include-book "defun-sk2")
+(include-book "defun-inst")
+(include-book "defthm-inst")
 
 (include-book "std/testing/assert-bang" :dir :system)
 (include-book "std/testing/assert-equal" :dir :system)

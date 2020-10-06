@@ -42,7 +42,7 @@
 (include-book "legal-variablep") ;for legal-variable-name-in-acl2-packagep
 (local (include-book "std/lists/last" :dir :system))
 (local (include-book "std/lists/union" :dir :system))
-(local (include-book "kestrel/lists-light/symbol-listp" :dir :system))
+(local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (include-book "std/alists/remove-assocs" :dir :system)
 

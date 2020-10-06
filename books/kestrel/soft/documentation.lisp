@@ -10,6 +10,8 @@
 
 (in-package "SOFT")
 
+(include-book "defequal-doc")
+
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1330,6 +1332,7 @@
     "(defthm-inst thm"
     "  (sothm (fvar1 . fun1) ... (fvarN . funN))"
     "  :rule-classes ..."
+    "  :enable ..."
     "  :print ...)")
 
    (xdoc::h3 "Inputs")
@@ -1361,6 +1364,12 @@
     "@(':rule-classes')"
     (xdoc::p
      "An option to specify the rule classes of @('thm')."))
+
+   (xdoc::desc
+    "@(':enable')"
+    (xdoc::p
+     "An option to enable or disable @('thm').
+      This is @('t') by default, i.e. enable."))
 
    (xdoc::desc
     "@(':print ...')"

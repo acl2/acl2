@@ -8,7 +8,7 @@
 
 (defxdoc run-script
   :parents (testing-utilities)
-  :short "Run a script"
+  :short "Run a script."
   :long "<p>@('Run-script') is a utility for testing evaluation of the forms in
  a given file, to check that the output is as expected.  The forms need not be
  embedded event forms (see @(see events)), and they need not all evaluate
@@ -25,7 +25,9 @@
              )
  })
 
- <p>where the keyword arguments are evaluated.</p>
+ <p>where the keyword arguments are evaluated.
+ For information on the keyword arguments, see @(tsee set-inhibited-summary-types),
+ @(tsee set-inhibit-output-lst), and @(tsee ld-error-action).</p>
 
  <p>Example form:</p>
 
@@ -33,9 +35,13 @@
  (run-script \"mini-proveall\")
  })
 
- <p>In order to call @('(run-script NAME)') (with or without keyword
- arguments), you will need four files corresponding to @('NAME'), as described
- below.  For an example, see the files @('books/demos/mini-proveall-*.*') in
+ <p>When you call @('(run-script NAME)'), the forms in @('NAME-input.lsp')
+ are evaluated and a transcript is written to @('NAME-log.out').
+ Forms that are @(see command)s change the logical world.</p>
+
+ <p>To use @('run-script') for regression testing, you will need
+ to create three files in addition to the input file, as described below.
+ For an example, see the files @('books/demos/mini-proveall-*.*') in
  the @(see community-books); there, @('NAME') is @('mini-proveall').</p>
 
  <ul>
@@ -56,6 +62,7 @@
  ; Help dependency scanner.
  #||
  (depends-on \"NAME-log.txt\")
+ (depends-on \"NAME-input.lsp\")
  (include-book ...)
  (include-book ...)
  ...

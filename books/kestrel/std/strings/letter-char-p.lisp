@@ -19,10 +19,10 @@
   (and (standard-char-p x)
        (alpha-char-p x))
   :parents (character-kinds)
-  :short "Recognize letters."
+  :short "Recognize ASCII letters."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The built-in @(tsee alpha-char-p) has a guard requiring
-     characters that are standard.
+    "The built-in @(tsee alpha-char-p)
+     has a guard requiring characters that are standard.
      In contrast, this recognizer has guard @('t').")))

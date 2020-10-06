@@ -93,25 +93,75 @@
     (declare (ignore changedp))
     ans))
 
+(defun form-of-rewrite-quoted-constant-rule (equiv lhs rhs)
+
+; The Essay on Rewriting Quoted Constants lists three possible forms, 1, 2, or
+; 3, of such rules and this function determines which form we're seeing, or nil
+; if lhs and rhs are incompatible with any of the forms.  Note that a Form 3
+; lhs must be unifiable with a quoted constant but we put no restrictions on
+; the rhs.  Indeed, rhs could be a free variable whose value is selected by
+; relieving some hyp!
+
+  (cond ((and (not (eq equiv 'equal))
+              (quotep lhs)
+              (quotep rhs))
+         1)
+        ((and (not (eq equiv 'equal))
+              (nvariablep lhs)
+              (not (fquotep lhs))
+              (symbolp (ffn-symb lhs))
+              (cdr lhs)
+              (null (cddr lhs))
+              (variablep (fargn lhs 1))
+              (eq (fargn lhs 1) rhs))
+         2)
+        ((or (variablep lhs)
+             (fquotep lhs)
+             (member-eq (ffn-symb lhs) *one-way-unify1-implicit-fns*))
+         3)
+        (t nil)))
+
 ; We use the following functions to determine the sense of the conclusion
 ; as a :REWRITE rule.
 
-(defun interpret-term-as-rewrite-rule2 (name hyps lhs rhs wrld)
+(defun interpret-term-as-rewrite-rule2 (qc-flg name hyps equiv lhs rhs wrld)
+
+; Qc-flg is t if we are processing for a :rewrite-quoted-constant rule rather
+; than a :rewrite rule.
+
   (cond
    ((equal lhs rhs)
     (msg
-     "A :REWRITE rule generated from ~x0 is illegal because it rewrites the ~
-      term ~x1 to itself!  This can happen even when you submit a rule whose ~
+     "A ~x0 rule generated from ~x1 is illegal because it rewrites the ~
+      term ~x2 to itself!  This can happen even when you submit a rule whose ~
       left and right sides appear to be different, in the case that those two ~
       sides represent the same term (for example, after macroexpansion).  For ~
       general information about rewrite rules in ACL2, see :DOC rewrite.  You ~
       may wish to consider submitting a DEFTHM event ending with ~
       :RULE-CLASSES NIL."
+     (if qc-flg :rewrite-quoted-constant :rewrite)
      name
      lhs))
-   ((or (variablep lhs)
-        (fquotep lhs)
-        (flambda-applicationp lhs))
+   ((and qc-flg
+         (not (form-of-rewrite-quoted-constant-rule equiv lhs rhs)))
+    (msg
+     "A :REWRITE-QUOTED-CONSTANT rule generated from ~x0 is illegal because ~
+      the conclusion is not compatible with any of the allowed forms.  To be ~
+      Form [1], the conclusion must be an equivalence (other than EQUAL) ~
+      between two quoted constants.  To be Form [2], the conclusion must be ~
+      an equivalence (other than EQUAL) between, on the left, a call of a ~
+      monadic function symbol on a variable symbol and, on the right, that ~
+      same variable symbol.  To be of Form [3], the conclusion must be an ~
+      equivalence relation and the left-hand side must be a variable, a ~
+      quoted constant, or a call of one of the function symbols in ~
+      *ONE-WAY-UNifY1-IMPLICIT-FNS* so that the left-hand side can match a ~
+      quoted constant.  But the conclusion of ~x0 is ~x1."
+     name
+     (list equiv lhs rhs)))
+   ((and (not qc-flg)
+         (or (variablep lhs)
+             (fquotep lhs)
+             (flambda-applicationp lhs)))
     (msg
      "A :REWRITE rule generated from ~x0 is illegal because it rewrites the ~
       ~@1 ~x2.  For general information about rewrite rules in ACL2, see :DOC ~
@@ -121,14 +171,16 @@
            ((fquotep lhs) "quoted constant")
            ((flambda-applicationp lhs) "LET-expression")
            (t (er hard 'interpret-term-as-rewrite-rule2
-                  "Implementation error: forgot a case.  LHS:~|~x0.")))
+                  "Implementation error: forgot a case.  LHS:~|~x0."
+                  lhs)))
      lhs))
    (t (let ((bad-synp-hyp-msg (bad-synp-hyp-msg
                                hyps (all-vars lhs) nil wrld)))
         (cond
          (bad-synp-hyp-msg
           (msg
-           "A rewrite rule generated from ~x0 is illegal because ~@1"
+           "A ~x0 rule generated from ~x1 is illegal because ~@2"
+           (if qc-flg :rewrite-quoted-constant :rewrite)
            name
            bad-synp-hyp-msg))
          (t nil))))))
@@ -178,10 +230,12 @@
                     (mv 'equal (remove-lambdas term) *t* ttree))
                    (t (mv 'iff (remove-lambdas term) *t* nil)))))))
 
-(defun interpret-term-as-rewrite-rule (name hyps term ctx ens wrld)
+(defun interpret-term-as-rewrite-rule (qc-flg name hyps term ctx ens wrld)
 
 ; NOTE: Term is assumed to have had remove-guard-holders applied, which in
 ; particular implies that term is in quote-normal form.
+
+; Qc-flg indicates that we are processing a :rewrite-quoted-constant rule.
 
 ; This function returns five values.  The first can be a msg for printing an
 ; error message.  Otherwise the first is nil, in which case the second is an
@@ -196,7 +250,14 @@
   (mv-let
     (eqv lhs rhs ttree)
     (interpret-term-as-rewrite-rule1 term t ens wrld)
-    (let ((msg (interpret-term-as-rewrite-rule2 name hyps lhs rhs wrld)))
+
+; Note that we are insensitive to the qc-flg in the above call.  We deconstruct
+; term the same way whether it's to be used as a :rewrite rule or
+; :rewrite-quoted-constant rule.  But we then check slightly different
+; restrictions.
+
+    (let ((msg (interpret-term-as-rewrite-rule2
+                qc-flg name hyps eqv lhs rhs wrld)))
       (cond
        (msg
 
@@ -220,7 +281,8 @@
           (eqv2 lhs2 rhs2 ttree2)
           (interpret-term-as-rewrite-rule1 term nil ens wrld)
           (cond
-           ((interpret-term-as-rewrite-rule2 name hyps lhs2 rhs2 wrld)
+           ((interpret-term-as-rewrite-rule2 qc-flg name hyps
+                                             eqv2 lhs2 rhs2 wrld)
             (mv msg eqv lhs rhs ttree))
            (t (prog2$
                (and ctx
@@ -693,19 +755,21 @@
                                       :initial-element
                                       limit))))))))
 
-(defun create-rewrite-rule (rune nume hyps equiv lhs rhs loop-stopper-lst
-                                 backchain-limit-lst match-free-value wrld)
+(defun create-rewrite-rule (qc-flg rune nume hyps equiv lhs rhs
+                                   loop-stopper-lst backchain-limit-lst
+                                   match-free-value wrld)
 
-; This function creates a :REWRITE rule of subclass 'backchain or
-; 'abbreviation from the basic ingredients, preprocessing the hyps and
-; computing the loop-stopper.  Equiv is an equivalence relation name.
+; Qc-flg indicates that we are creating a rewrite-quoted-constant rule.  Equiv
+; is an equivalence relation name.  This function creates a :REWRITE rule of
+; subclass 'backchain, 'abbreviation, or 'rewrite-quoted-constant from the
+; basic ingredients, preprocessing the hyps and computing the loop-stopper.
 
   (let ((hyps (preprocess-hyps hyps wrld))
         (loop-stopper (if loop-stopper-lst
                           (remove-irrelevant-loop-stopper-pairs
                            (cadr loop-stopper-lst)
                            (all-vars lhs))
-                        (loop-stopper lhs rhs))))
+                          (loop-stopper lhs rhs))))
     (make rewrite-rule
           :rune rune
           :nume nume
@@ -714,14 +778,19 @@
           :lhs lhs
           :var-info (free-varsp lhs nil)
           :rhs rhs
-          :subclass (cond ((and (null hyps)
+          :subclass (cond (qc-flg 'rewrite-quoted-constant)
+                          ((and (null hyps)
                                 (null loop-stopper)
                                 (abbreviationp nil
                                                (all-vars-bag lhs nil)
                                                rhs))
                            'abbreviation)
                           (t 'backchain))
-          :heuristic-info loop-stopper
+          :heuristic-info
+          (if qc-flg
+              (cons (form-of-rewrite-quoted-constant-rule equiv lhs rhs)
+                    loop-stopper)
+              loop-stopper)
 
 ; If backchain-limit-lst is given, then it is a keyword-alist whose second
 ; element is a list of values of length (length hyps), and we use this value.
@@ -846,7 +915,29 @@
 ; the first rule and determines whether there is some hypothesis that
 ; cannot possibly be matched against the hyps of the other rule.
 
-  (and (refinementp (access rewrite-rule rule1 :equiv)
+; The caller is responsible for insuring that both rules are ordinary
+; :rewrite rules (e.g., of :subclass abbreviation, backchain, etc) or
+; :rewrite-quoted-constant rules (e.g., :subclass rewrite-quoted-constant).
+; This is done by chk-rewrite-rule-warnings when it checks a new :rewrite
+; rule only against existing rules in the lemmas property of the top fn, but
+; checks a new :rewrite-quoted-constant rule against the rules in the global
+; var rewrite-quoted-constant-rules.
+
+; On subsumption of rewrite-quoted-constant rules.  Form [1] and [3] rules
+; can be treated just like ordinary :rewrite rules.  But form [2] rules are
+; different because they're of the form (equiv (fn x) x), where it is
+; actually x that is matched to the quoted constant and then (fn x) is used
+; to compute the new evg.  If a form [2] rule were ever party to a
+; subsumption check you'd have to swap the orientation of conclusion.
+; Furthermore, you'd find it would subsume any rule it was compared to, and
+; you would find that no rule (except another form [2] rule) would subsume
+; it.  It short, it seems pointless to include form [2] rules in subsumption
+; checks!  Recal that the :heuristic-info field of a rewrite-quoted-constant
+; rule is (n . loop-stopper), where n is the form number.
+
+  (and (not (eql (car (access rewrite-rule rule1 :heuristic-info)) 2))
+       (not (eql (car (access rewrite-rule rule2 :heuristic-info)) 2))
+       (refinementp (access rewrite-rule rule1 :equiv)
                     (access rewrite-rule rule2 :equiv)
                     wrld)
        (mv-let (ans unify-subst)
@@ -1409,17 +1500,31 @@
               "~@*, "      ; how to print all other elements
               lst))))))
 
-(defun chk-rewrite-rule-warnings (name match-free loop-stopper rule ctx ens
-                                       wrld state)
-  (let* ((token (if (eq (access rewrite-rule rule :subclass)
-                        'definition)
-                    :definition
-                  :rewrite))
+(defun chk-rewrite-rule-warnings (name match-free loop-stopper rule ctx
+                                       ens wrld state)
+  (let* ((token (cond
+                 ((eq (access rewrite-rule rule :subclass)
+                      'definition)
+                  :definition)
+                 ((eq (access rewrite-rule rule :subclass)
+                      'rewrite-quoted-constant)
+                  :rewrite-quoted-constant)
+                 (t :rewrite)))
+
+; Note, first, that the contents of the :subclass field of a rewrite-rule is a
+; non-keyword symbol but that token, above, is bound to a keyword.  Second,
+; there are five possible values for :subclass and they are: backchain,
+; abbreviation, meta, definition, and rewrite-quoted-constant.  But for this
+; processing, we lump backchain, abbreviation, and meta together under the
+; token :rewrite.  Finally, note that token is used below in some warning
+; messages as a stand-in for the original :rule-class of the lemma.
+
          (hyps (access rewrite-rule rule :hyps))
          (lhs (access rewrite-rule rule :lhs))
          (warn-non-rec (not (warning-disabled-p "Non-rec")))
          (non-rec-fns-lhs-alist
           (and warn-non-rec
+               (not (eq token :rewrite-quoted-constant))
                (non-recursive-fnnames-alist lhs ens wrld)))
          (lhs-vars (all-vars lhs))
          (rhs-vars (all-vars (access rewrite-rule rule :rhs)))
@@ -1433,20 +1538,32 @@
                (non-recursive-fnnames-alist-lst
                 (strip-top-level-nots-and-forces inst-hyps) ens wrld)))
          (subsume-check-enabled (not (warning-disabled-p "Subsume")))
+
+; We don't check subsumption between :rewrite-quoted-constant rules.  It's kind
+; of messy since Form [2] rules are ``backwards'' and if checked properly
+; (using the rhs as the pattern) would subsume all rules of that equivalence
+; class.
+
          (subsumed-rule-names
           (and subsume-check-enabled
-               (find-subsumed-rule-names (getpropc (ffn-symb lhs) 'lemmas nil
-                                                   wrld)
-                                         rule ens wrld)))
+               (find-subsumed-rule-names
+                (if (eq token :rewrite-quoted-constant)
+                    (global-val 'rewrite-quoted-constant-rules wrld)
+                    (getpropc (ffn-symb lhs) 'lemmas nil wrld))
+                rule ens wrld)))
          (subsuming-rule-names
           (and subsume-check-enabled
-               (find-subsuming-rule-names (getpropc (ffn-symb lhs) 'lemmas nil
-                                                    wrld)
-                                          rule ens wrld)))
+               (not (eq token :rewrite-quoted-constant))
+               (find-subsuming-rule-names
+                (if (eq token :rewrite-quoted-constant)
+                    (global-val 'rewrite-quoted-constant-rules wrld)
+                    (getpropc (ffn-symb lhs) 'lemmas nil wrld))
+                rule ens wrld)))
          (equiv (access rewrite-rule rule :equiv))
          (geneqv (cadr (geneqv-lst equiv nil nil wrld)))
          (double-rewrite-opportunities
           (and (not (warning-disabled-p "Double-rewrite"))
+               (not (eq token :rewrite-quoted-constant))
                (double-rewrite-opportunities
                 1
                 hyps
@@ -1581,14 +1698,19 @@
         (subsumed-rule-names
          (warning$ ctx ("Subsume")
                    `("A newly proposed ~x0 rule generated from ~x1 probably ~
-                     subsumes the previously added :REWRITE rule~#2~[~/s~] ~
+                     subsumes the previously added ~x3 rule~#2~[~/s~] ~
                      ~&2, in the sense that the new rule will now probably be ~
                      applied whenever the old rule~#2~[~/s~] would have been."
                      (:new-rule ,name)
                      (:rule-class-new ,token)
-                     (:rule-class-old :rewrite)
+                     (:rule-class-old ,(if (eq token :rewrite-quoted-constant)
+                                           :rewrite-quoted-constant
+                                           :rewrite))
                      (:subsumed-rules ,subsumed-rule-names))
-                   token name subsumed-rule-names))
+                   token name subsumed-rule-names
+                   (if (eq token :rewrite-quoted-constant)
+                       :rewrite-quoted-constant
+                       :rewrite)))
         (t state))
        (cond
         (subsuming-rule-names
@@ -1623,28 +1745,29 @@
               (t state)))))
        (value nil))))))
 
-(defun chk-acceptable-rewrite-rule2 (name match-free loop-stopper hyps concl
-                                          ctx ens wrld state)
+(defun chk-acceptable-rewrite-rule2 (qc-flg name match-free loop-stopper hyps
+                                            concl ctx ens wrld state)
 
-; This is the basic function for checking that (IMPLIES (AND . hyps)
-; concl) generates a useful :REWRITE rule.  If it does not, we cause an
-; error.  If it does, we may print some warnings regarding the rule
-; generated.  The superior functions, chk-acceptable-rewrite-rule1
-; and chk-acceptable-rewrite-rule just cycle down to this one after
-; flattening the IMPLIES/AND structure of the user's input term.  When
-; successful, this function returns a ttree justifying the storage of
-; the :REWRITE rule -- it sometimes depends on type-set information.
+; This is the basic function for checking that (IMPLIES (AND . hyps) concl)
+; generates a useful :REWRITE or :REWRITE-QUOTED-CONSTANT rule.  If it does
+; not, we cause an error.  If it does, we may print some warnings regarding the
+; rule generated.  The superior functions, chk-acceptable-rewrite-rule1 and
+; chk-acceptable-rewrite-rule just cycle down to this one after flattening the
+; IMPLIES/AND structure of the user's input term.  When successful, this
+; function returns a ttree justifying the storage of the :REWRITE rule -- it
+; sometimes depends on type-set information.
 
   (mv-let
    (msg eqv lhs rhs ttree)
-   (interpret-term-as-rewrite-rule name hyps concl ctx ens wrld)
+   (interpret-term-as-rewrite-rule qc-flg name hyps concl ctx ens wrld)
    (cond
     (msg (er soft ctx "~@0" msg))
     (t (let ((rewrite-rule
-              (create-rewrite-rule *fake-rune-for-anonymous-enabled-rule*
+              (create-rewrite-rule qc-flg
+                                   *fake-rune-for-anonymous-enabled-rule*
                                    nil hyps eqv lhs rhs nil nil nil wrld)))
 
-; The :REWRITE rule created above is used only for subsumption checking and
+; The rewrite-rule record created above is used only for subsumption checking and
 ; then discarded.  The rune, nume, loop-stopper-lst, and match-free used are
 ; irrelevant.  The warning messages, if any, concerning subsumption report the
 ; name of the rule as name.
@@ -1654,53 +1777,57 @@
                                      rewrite-rule ctx ens wrld state)
           (value ttree)))))))
 
-(defun chk-acceptable-rewrite-rule1 (name match-free loop-stopper lst ctx ens
-                                          wrld state)
+(defun chk-acceptable-rewrite-rule1 (qc-flg name match-free loop-stopper lst
+                                            ctx ens wrld state)
 
-; Each element of lst is a pair, (hyps . concl) and we check that each
-; such pair, when interpreted as the term (implies (and . hyps)
-; concl), generates a legal :REWRITE rule.  We return the accumulated
+; Each element of lst is a pair, (hyps . concl) and we check that each such
+; pair, when interpreted as the term (implies (and . hyps) concl), generates a
+; legal :REWRITE or :REWRITE-QUOTED-CONSTANT rule.  We return the accumulated
 ; ttrees.
 
   (cond
    ((null lst) (value nil))
    (t (er-let* ((ttree1
-                 (chk-acceptable-rewrite-rule2 name match-free loop-stopper
+                 (chk-acceptable-rewrite-rule2 qc-flg name match-free
+                                               loop-stopper
                                                (caar lst) (cdar lst)
                                                ctx ens wrld state))
                 (ttree
-                 (chk-acceptable-rewrite-rule1 name match-free loop-stopper
+                 (chk-acceptable-rewrite-rule1 qc-flg name match-free
+                                               loop-stopper
                                                (cdr lst) ctx ens wrld state)))
-               (value (cons-tag-trees ttree1 ttree))))))
+        (value (cons-tag-trees ttree1 ttree))))))
 
-(defun chk-acceptable-rewrite-rule (name match-free loop-stopper term ctx ens
-                                         wrld state)
+(defun chk-acceptable-rewrite-rule (qc-flg name match-free loop-stopper
+                                           term ctx ens wrld state)
 
-; We strip the conjuncts out of term and flatten those in the
-; hypotheses of implications to obtain a list of implications, each of
-; the form (IMPLIES (AND . hyps) concl), and each represented simply
-; by a pair (hyps . concl).  For each element of that list we then
-; determine whether it generates a legal :REWRITE rule.  See
-; chk-acceptable-rewrite-rule2 for the guts of this test.  We either
-; cause an error or return successfully.  We may print warning
-; messages without causing an error.  On successful returns the value
-; is a ttree that justifies the storage of all the :REWRITE rules.
+; We strip the conjuncts out of term and flatten those in the hypotheses of
+; implications to obtain a list of implications, each of the form (IMPLIES (AND
+; . hyps) concl), and each represented simply by a pair (hyps . concl).  For
+; each element of that list we then determine whether it generates a legal
+; :REWRITE or :rewrite-quoted-constant rule, as per qc-flg.  See
+; chk-acceptable-rewrite-rule2 for the guts of this test.  We either cause an
+; error or return successfully.  We may print warning messages without causing
+; an error.  On successful returns the value is a ttree that justifies the
+; storage of all the :REWRITE rules.
 
-  (chk-acceptable-rewrite-rule1 name match-free loop-stopper
+  (chk-acceptable-rewrite-rule1 qc-flg name match-free loop-stopper
                                 (unprettyify (remove-guard-holders term wrld))
                                 ctx ens wrld state))
 
 ; So now we work on actually generating and adding the rules.
 
-(defun add-rewrite-rule2 (rune nume hyps concl loop-stopper-lst
-                               backchain-limit-lst match-free ens wrld)
+(defun add-rewrite-rule2 (qc-flg rune nume hyps concl loop-stopper-lst
+                                 backchain-limit-lst match-free ens wrld)
 
 ; This is the basic function for generating and adding a rule named
 ; rune from the formula (IMPLIES (AND . hyps) concl).
 
   (mv-let
    (msg eqv lhs rhs ttree)
-   (interpret-term-as-rewrite-rule (base-symbol rune) hyps concl nil ens wrld)
+   (interpret-term-as-rewrite-rule qc-flg
+                                   (base-symbol rune)
+                                   hyps concl nil ens wrld)
    (declare (ignore ttree))
    (cond
     (msg
@@ -1741,42 +1868,48 @@
 
      (er hard 'add-rewrite-rule2
          "We believe that this error is occurring because the conclusion of a ~
-          proposed :REWRITE rule generated from ~x0 is of the form (equiv LHS ~
-          RHS), where equiv was a known equivalence relation when this rule ~
-          was originally processed, but that is no longer the case.  As a ~
-          result, the rule is now treated as rewriting (equiv LHS RHS) to t, ~
-          and yet a BIND-FREE hypothesis is attempting to bind a variable in ~
-          RHS.  Perhaps you can fix this problem by making equiv an ~
+          proposed :REWRITE or :REWRITE-QUOTED-CONSTANT rule generated from ~
+          ~x0 is of the form (equiv LHS RHS), where equiv was a known ~
+          equivalence relation when this rule was originally processed, but ~
+          that is no longer the case.  In any case, the rule is now ~
+          ill-formed. Perhaps you can fix this problem by making equiv an ~
           equivalence relation non-locally."
          (base-symbol rune)))
     (t
      (let* ((match-free-value (match-free-value match-free hyps lhs wrld))
-            (rewrite-rule (create-rewrite-rule rune nume hyps eqv
+            (rewrite-rule (create-rewrite-rule qc-flg rune nume hyps eqv
                                                lhs rhs
                                                loop-stopper-lst
                                                backchain-limit-lst
                                                match-free-value
                                                wrld))
-            (wrld1 (putprop (ffn-symb lhs)
+            (wrld1 (if qc-flg
+                       (global-set
+                        'rewrite-quoted-constant-rules
+                        (cons rewrite-rule
+                              (global-val 'rewrite-quoted-constant-rules
+                                          wrld))
+                        wrld)
+                       (putprop (ffn-symb lhs)
                             'lemmas
                             (cons rewrite-rule
                                   (getpropc (ffn-symb lhs) 'lemmas nil wrld))
-                            wrld)))
+                            wrld))))
        (put-match-free-value match-free-value rune wrld1))))))
 
-(defun add-rewrite-rule1 (rune nume lst loop-stopper-lst
-                               backchain-limit-lst match-free ens wrld)
+(defun add-rewrite-rule1 (qc-flg rune nume lst loop-stopper-lst
+                                 backchain-limit-lst match-free ens wrld)
 
 ; Each element of lst is a pair, (hyps . concl).  We generate and
 ; add to wrld a :REWRITE for each.
 
   (cond ((null lst) wrld)
-        (t (add-rewrite-rule1 rune nume (cdr lst)
+        (t (add-rewrite-rule1 qc-flg rune nume (cdr lst)
                               loop-stopper-lst
                               backchain-limit-lst
                               match-free
                               ens
-                              (add-rewrite-rule2 rune nume
+                              (add-rewrite-rule2 qc-flg rune nume
                                                  (caar lst)
                                                  (cdar lst)
                                                  loop-stopper-lst
@@ -1785,14 +1918,14 @@
                                                  ens
                                                  wrld)))))
 
-(defun add-rewrite-rule (rune nume loop-stopper-lst term
-                              backchain-limit-lst match-free ens wrld)
+(defun add-rewrite-rule (qc-flg rune nume loop-stopper-lst term
+                                backchain-limit-lst match-free ens wrld)
 
 ; This function might better be called "add-rewrite-rules" because we
 ; may get many :REWRITE rules from term.  But we are true to our naming
 ; convention.  "Consistency is the hobgoblin of small minds."  Emerson?
 
-  (add-rewrite-rule1 rune nume
+  (add-rewrite-rule1 qc-flg rune nume
                      (unprettyify (remove-guard-holders term wrld))
                      loop-stopper-lst backchain-limit-lst match-free ens wrld))
 
@@ -2100,8 +2233,18 @@
          (lst (external-linearize xconcl ens wrld state)))
     (cond ((null lst)
            (er soft ctx
-               "No :LINEAR rule can be generated from ~x0.  See :DOC linear."
-               name))
+               "No :LINEAR rule can be generated from ~x0.  See :DOC ~
+                linear.~@1"
+               name
+               (mv-let (flg x ttree)
+                 (eval-ground-subexpressions concl ens wrld state nil)
+                 (declare (ignore flg ttree))
+                 (if (quotep x)
+                     (msg "  Note that after ground evaluation, the ~
+                           conclusion, ~x0, was treated as the constant, ~x1."
+                          (untranslate concl t wrld)
+                          (untranslate x t wrld))
+                   ""))))
           ((not (null (cdr lst)))
            (er soft ctx
                "No :LINEAR rule can be generated from ~x0 because the ~
@@ -9127,11 +9270,13 @@
                      (value (cadr alist)))))
                   (:LOOP-STOPPER
                    (cond
-                    ((not (eq token :REWRITE))
+                    ((not (or (eq token :REWRITE)
+                              (eq token :REWRITE-QUOTED-CONSTANT)))
                      (er soft ctx
-                         "Only :REWRITE rule classes are permitted to have a ~
-                          :LOOP-STOPPER component.  Thus, ~x0 is illegal.  ~
-                          See :DOC rule-classes."
+                         "Only :REWRITE and :REWRITE-QUOTED-CONSTANT rule ~
+                          classes are permitted to have a :LOOP-STOPPER ~
+                          component.  Thus, ~x0 is illegal.  See :DOC ~
+                          rule-classes."
                          x))
                     (t (mv-let
                         (flg loop-stopper-alist)
@@ -9294,6 +9439,7 @@
 ; setting below to the form described there.
 
   (let ((rule-tokens '(:REWRITE
+                       :REWRITE-QUOTED-CONSTANT
                        :LINEAR            ; :TRIGGER-TERMS (optional)
                        :WELL-FOUNDED-RELATION
                        :BUILT-IN-CLAUSE
@@ -9473,7 +9619,16 @@
   (let ((term (cadr (assoc-keyword :COROLLARY (cdr class)))))
     (case (car class)
           (:REWRITE
-           (chk-acceptable-rewrite-rule name
+           (chk-acceptable-rewrite-rule nil ; = qc-flg
+                                        name
+                                        (cadr (assoc-keyword :MATCH-FREE
+                                                             (cdr class)))
+                                        (cadr (assoc-keyword :LOOP-STOPPER
+                                                             (cdr class)))
+                                        term ctx ens wrld state))
+          (:REWRITE-QUOTED-CONSTANT
+           (chk-acceptable-rewrite-rule t ; = qc-flg
+                                        name
                                         (cadr (assoc-keyword :MATCH-FREE
                                                              (cdr class)))
                                         (cadr (assoc-keyword :LOOP-STOPPER
@@ -9684,7 +9839,17 @@
   (let ((term (cadr (assoc-keyword :COROLLARY (cdr class)))))
     (case (car class)
           (:REWRITE
-           (add-rewrite-rule rune nume
+           (add-rewrite-rule nil ; qc-flg
+                             rune nume
+                             (assoc-keyword :LOOP-STOPPER (cdr class))
+                             term
+                             (assoc-keyword :BACKCHAIN-LIMIT-LST (cdr class))
+                             (cadr (assoc-keyword :MATCH-FREE (cdr class)))
+                             ens
+                             wrld))
+          (:REWRITE-QUOTED-CONSTANT
+           (add-rewrite-rule t ; qc-flg
+                             rune nume
                              (assoc-keyword :LOOP-STOPPER (cdr class))
                              term
                              (assoc-keyword :BACKCHAIN-LIMIT-LST (cdr class))
@@ -10132,6 +10297,9 @@
                           ((eq subclass 'definition)
                            `((:clique           ,(car heuristic-info))
                              (:controller-alist ,(cdr heuristic-info))))
+                          ((eq subclass 'rewrite-quoted-constant)
+                           `((:form ,(car heuristic-info))
+                             (:loop-stopper ,(cdr heuristic-info))))
                           (t
                            nil)))
                 (info-for-lemmas (cdr lemmas) numes ens wrld))
@@ -10453,6 +10621,8 @@
        (info-for-type-set-inverter-rules val numes ens wrld))
       (generalize-rules
        (info-for-generalize-rules val numes ens wrld))
+      (rewrite-quoted-constant-rules
+       (info-for-lemmas val numes ens wrld))
       (otherwise nil)))
    (t
     (case key
@@ -10505,9 +10675,8 @@
                                  (list (cons #\0 14)
                                        (cons #\1 (caar vals)))
                                  col chan state nil))
-                          (t (fmt1 " ~q1"
-                                   (list (cons #\0 14)
-                                         (cons #\1 (caar vals)))
+                          (t (fmt1 " ~q0"
+                                   (list (cons #\0 (caar vals)))
                                    col chan state nil)))
                     (declare (ignore col))
                     (print-info-for-rules-entry (cdr keys) (cdr vals) chan
@@ -10761,7 +10930,7 @@
                              (cons rune acc))))))))
 
 (defconst *monitorable-rune-types*
-  '(:rewrite :definition :linear))
+  '(:rewrite :rewrite-quoted-constant :definition :linear))
 
 (defun monitorable-runes (lst)
   (cond ((endp lst) nil)

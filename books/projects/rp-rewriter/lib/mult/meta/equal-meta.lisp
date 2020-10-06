@@ -250,14 +250,13 @@
                             VALID-SC)))))||#
 
 
-(rp::add-meta-rules
- rp-equal-iter-pp+-meta-formula-checks
- (list
-  (make rp-meta-rule-rec
-        :fnc 'rp-equal-iter-pp+-meta
-        :trig-fnc 'equal
-        :dont-rw t
-        :valid-syntax t)))
+
+(rp::add-meta-rule
+ :meta-fnc rp-equal-iter-pp+-meta
+ :trig-fnc equal
+ :valid-syntaxp t
+ :formula-checks rp-equal-iter-pp+-meta-formula-checks
+ :returns (mv term dont-rw))
 
 #|(mutual-recursion
 (defun

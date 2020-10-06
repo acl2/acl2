@@ -45,6 +45,7 @@
                          body
                          check-numbered-name
                          check-user-lambda
+                         check-user-term
                          clausify
                          clean-up-0ary-lambdas-in-untranslated-term
                          clean-up-and-of-t-in-untranslated-term
@@ -70,6 +71,7 @@
                          current-theory-fn
                          cw-event
                          def-error-checker
+                         def-process-input-fresh-function-name
                          defattach-system
                          defexists
                          deffilter
@@ -115,11 +117,13 @@
                          ens
                          ensure-boolean-or-auto-and-return-boolean$
                          ensure-doublet-list$
+                         ensure-function-arity$
                          ensure-function-defined$
                          ensure-function-guard-verified$
                          ensure-function-has-args$
                          ensure-function-known-measure$
                          ensure-function-logic-mode$
+                         ensure-function-name$
                          ensure-function-name-or-numbered-wildcard$
                          ensure-function-no-stobjs$
                          ensure-function-not-in-termination-thm$
@@ -157,12 +161,19 @@
                          ensure-value-is-not-in-list$
                          ensure-value-is-symbol$
                          ensure-value-is-symbol-list$
+                         ensure-value-is-true-list$
+                         ensure-value-is-untranslated-term$
                          equivalence-relationp
                          er-soft+
                          evmac-appcond-listp
                          evmac-appcond-theorem-list
                          evmac-appcond-theorems-no-extra-hints
                          evmac-appcondp
+                         evmac-generate-defthm
+                         evmac-generate-defun
+                         evmac-generate-soft-defun-sk2
+                         evmac-generate-soft-defun2
+                         evmac-generate-soft-defunvar
                          evmac-input-hints-p
                          evmac-input-print-p
                          evmac-prepare-proofs
@@ -170,7 +181,9 @@
                          evmac-process-input-hints$
                          evmac-process-input-print
                          evmac-process-input-show-only
+                         exists
                          expand-ruleset
+                         explode
                          ext-address-subterm-governors-lst
                          ext-address-subterm-governors-lst-state
                          ext-fdeposit-term
@@ -192,6 +205,7 @@
                          fn-is-fn-copy-name
                          fn-rune-nume
                          fn-ubody
+                         forall
                          formals
                          formals+
                          fquotep
@@ -214,10 +228,13 @@
                          get-vars-in-untranslated-term
                          guard-raw
                          guard-verified-p
+                         guard-verified-p+
                          ibody
+                         if-tree-leaf-terms
                          implicate
                          implicate-untranslated-terms
                          impliez
+                         implode
                          impossible
                          induction-machine
                          induction-machine-for-fn
@@ -261,6 +278,7 @@
                          next-numbered-name
                          non-executablep
                          number-of-results
+                         nvariablep
                          on-failure
                          pack$
                          packn
@@ -286,6 +304,7 @@
                          replace-in-untranslated-term
                          resolve-numbered-name-wildcard
                          restore-output?
+                         rewrite$
                          rewrite-if-avoid-swap
                          rewrite-if1
                          rewrite1
@@ -331,6 +350,7 @@
                          translate-hints
                          translate-term-lst
                          try-event
+                         tuple
                          ubody
                          uguard
                          unnormalized-body

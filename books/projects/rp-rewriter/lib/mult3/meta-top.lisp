@@ -155,7 +155,7 @@
 ;;                             rp-term-listp
 ;;                             valid-sc)))))
 
-(rp::add-meta-rules
+#|(rp::add-meta-rules
  mult-formula-checks
  (list
   (make rp-meta-rule-rec
@@ -182,7 +182,40 @@
         :fnc 'sort-sum-meta
         :trig-fnc 'sort-sum
         :dont-rw t
-        :valid-syntax t)))
+        :valid-syntax t)))||#
 
+(rp::add-meta-rule
+ :meta-fnc sort-sum-meta
+ :trig-fnc sort-sum
+ :valid-syntaxp t
+ :formula-checks mult-formula-checks
+ :returns (mv term dont-rw))
 
+(rp::add-meta-rule
+ :meta-fnc s-c-spec-meta
+ :trig-fnc s-spec
+ :valid-syntaxp t
+ :formula-checks mult-formula-checks
+ :returns (mv term dont-rw))
+
+(rp::add-meta-rule
+ :meta-fnc s-c-spec-meta
+ :trig-fnc c-spec
+ :valid-syntaxp t
+ :formula-checks mult-formula-checks
+ :returns (mv term dont-rw))
+
+(rp::add-meta-rule
+ :meta-fnc s-c-spec-meta
+ :trig-fnc s-c-spec
+ :valid-syntaxp t
+ :formula-checks mult-formula-checks
+ :returns (mv term dont-rw))
+
+(rp::add-meta-rule
+ :meta-fnc s-c-spec-meta
+ :trig-fnc c-s-spec
+ :valid-syntaxp t
+ :formula-checks mult-formula-checks
+ :returns (mv term dont-rw))
 

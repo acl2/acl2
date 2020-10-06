@@ -195,7 +195,7 @@
  (when #+ccl (fboundp 'ccl::rdtsc)
        #+sbcl
 
-; In SBCL 1.4.7, function sb-impl::read-cycle-counter is no longer defined, as
+; In SBCL 1.4.7, function sb-impl::read-cycle-counter was no longer defined, as
 ; it was in older versions (at least as recently as 1.4.2).  With (apropos
 ; "READ-CYCLE-COUNTER") we found sb-vm::%read-cycle-counter; actually, Keshav
 ; Kini first pointed us to sb-vm::%read-cycle-counter.  Oddly, fboundp returns
@@ -205,7 +205,17 @@
 ; a successful build and used it for (profile 'rewrite) followed by
 ; :mini-proveall and then (memsum), on top of both SBCL 1.1.11 and SBCL 1.4.7.
 
-       (ignore-errors (sb-vm::%read-cycle-counter))
+; But in SBCL 1.5.1 and probably beyond, sb-impl::read-cycle-counter was once
+; again defined, and in fact it was fboundp, hence much simpler to deal with.
+; After a report of a package-lock read error with a 32-bit version of SBCL on
+; 9/8/2020, we replaced "(sb-vm::%read-cycle-counter)" just below with
+; (sb-impl::read-cycle-counter), to avoid the package lock.  We call it with
+; funcall and intern, so as to avoid a package-lock read error when the symbol
+; sb-impl::read-cycle-counter does not exist at read time.
+
+       (ignore-errors (funcall (intern "READ-CYCLE-COUNTER" "SB-IMPL")))
+   (format t "; Note: pushing :RDTSC onto *features*.~&")
+   (finish-output)
    (pushnew :RDTSC *features*)))
 
 #+rdtsc
@@ -223,7 +233,7 @@
   #+sbcl
   '(multiple-value-bind
        (t1 t2)
-       (sb-vm::%read-cycle-counter)
+       (sb-impl::read-cycle-counter)
      (declare (fixnum t1 t2))
      (the fixnum (logior (the fixnum (ash (logand t1 *2^30-1-for-rdtsc*)
                                           32))
@@ -240,7 +250,7 @@
   #+sbcl
   '(multiple-value-bind
        (t1 t2)
-       (sb-vm::%read-cycle-counter)
+       (sb-impl::read-cycle-counter)
      (declare (fixnum t1 t2))
      (+ (ash t1 32) t2)))
 

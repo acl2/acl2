@@ -8,7 +8,7 @@
 (in-package "ACL2")
 
 (include-book "projects/apply/top" :dir :system)
-(include-book "std/testing/eval" :dir :system)
+(include-book "std/testing/must-eval-to" :dir :system)
 
 ; The book projects/apply/definductor-tests.lisp contains many (pathological)
 ; loop$-recursive functions -- most of which return 0 -- and inductive proofs
@@ -31,7 +31,7 @@
 ;                         (pseudo-term-listp x))))
 ;    :rule-classes nil)
 
-; where an example nat-treep is 
+; where an example nat-treep is
 
 ; (nat-treep '(NATS
 ;              (NATS 1 2 3)
@@ -61,7 +61,7 @@
 (must-eval-to (value (time$ (2^n-1 20)))
               (expt 2 19)
               :with-output-off nil)
-; (EV-REC *RETURN-LAST-ARG3* ...) took 
+; (EV-REC *RETURN-LAST-ARG3* ...) took
 ; 2.37 seconds realtime, 2.37 seconds runtime
 ; (151,011,360 bytes allocated).
 
@@ -70,7 +70,7 @@
 (must-eval-to (value (time$ (2^n-1 20)))
               (expt 2 19)
               :with-output-off nil)
-; (EV-REC *RETURN-LAST-ARG3* ...) took 
+; (EV-REC *RETURN-LAST-ARG3* ...) took
 ; 0.01 seconds realtime, 0.01 seconds runtime
 ; (16 bytes allocated).
 
@@ -234,5 +234,3 @@
                               (loop$ for e in term thereis (psoccur var (pssubst new var e))))
                          (psoccur var new))))
   :rule-classes nil)
-
-

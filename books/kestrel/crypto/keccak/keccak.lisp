@@ -1275,7 +1275,7 @@
            ;; f. trunc8[R] is their R[0..7] which is
            ;; our (getbit 8 ..) down to (getbit 1 ..).
            ;; We could do it as a slice or as a right shift by 1
-           (R-f (shr 9 R-e 1)))
+           (R-f (bvshr 9 R-e 1)))
       (k-rcbit-aux R-f (- num-iters 1)))))
 
 ;; This function might easily become more efficient if memoized.

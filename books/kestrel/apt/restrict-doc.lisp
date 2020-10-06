@@ -201,7 +201,7 @@
 
     (xdoc::desc-apt-input-thm-enable :never)
 
-    (xdoc::desc-apt-input-verify-guards :never)
+    (xdoc::desc-apt-input-verify-guards :plural-functions nil)
 
     (xdoc::evmac-input-hints)
 

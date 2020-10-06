@@ -42,6 +42,12 @@
              (denominator x)
            1)))
 
+(defthm denominator-of-+-of---and--
+  (equal (denominator (+ (- x) (- y)))
+         (denominator (+ x y)))
+  :hints (("Goal" :use (:instance denominator-of-- (x (+ x y)))
+           :in-theory (disable denominator-of--))))
+
 (local (include-book "../../arithmetic/mod-gcd"))
 
 (defthm <=-of-denominator-of-*-of-/

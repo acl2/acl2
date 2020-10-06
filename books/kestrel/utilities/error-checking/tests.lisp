@@ -637,32 +637,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (must-eval-to-t
- (b* (((er x) (ensure-term 'v "This" t nil 'test state)))
-   (value (and (equal (nth 0 x) 'v)
-               (equal (nth 1 x) '(nil))))))
-
-(must-eval-to-t
- (b* (((er x) (ensure-term 5/4 "This" t nil 'test state)))
-   (value (and (equal (nth 0 x) ''5/4)
-               (equal (nth 1 x) '(nil))))))
-
-(must-eval-to-t
- (b* (((er x) (ensure-term '(* x 4) "This" t nil 'test state)))
-   (value (and (equal (nth 0 x) '(binary-* x '4))
-               (equal (nth 1 x) '(nil))))))
-
-(must-eval-to-t
- (b* (((er x) (ensure-term '(mv state 33) "This" t nil 'test state)))
-   (value (and (equal (nth 0 x) '(cons state (cons '33 'nil)))
-               (equal (nth 1 x) '(state nil))))))
-
-(must-fail
- (ensure-term '(binary-* x y z) "This" t nil 'test state)
- :with-output-off nil)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(must-eval-to-t
  (b* (((er x) (ensure-function-logic-mode 'cons "This" t nil 'test state)))
    (value (equal x nil))))
 

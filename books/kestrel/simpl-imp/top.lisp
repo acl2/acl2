@@ -25,15 +25,20 @@
     "Imp is a simple programming language,
      used mainly for didactic purposes.
      It is found (with small variations) in textbooks and course materials,
-     such as "
-    (xdoc::ahref
-     "https://www.cs.cmu.edu/~mfredrik/15414/lectures/10-semantics.pdf"
-     "these lecture slides")
-    " and "
-    (xdoc::ahref
-     "https://softwarefoundations.cis.upenn.edu/current/lf-current/Imp.html"
-     "this textbook")
-    ".")
+     such as:")
+   (xdoc::ul
+    (xdoc::li
+     (xdoc::ahref
+      "https://www.cs.cmu.edu/~mfredrik/15414/lectures/10-semantics.pdf"
+      "The `Automatic Program Verification and Testing' lecture slides."))
+    (xdoc::li
+     (xdoc::ahref
+      "https://softwarefoundations.cis.upenn.edu/current/lf-current/Imp.html"
+      "The `Software Foundations' book series."))
+    (xdoc::li
+     (xdoc::ahref
+      "http://concrete-semantics.org"
+      "The `Concrete Semantics' book.")))
    (xdoc::p
     "This library contains a formalization of Imp in ACL2,
      and is expected to be extended with additional material
@@ -52,7 +57,7 @@
       consisting of
       integer constants (of any size),
       variables (i.e. symbolic names),
-      and a few arithmetic operators like addition multiplication.
+      and a few arithmetic operators like addition and multiplication.
       These expressions are always integer-valued,
       without any size limitations;
       the arithmetic operators are exact, i.e. not modular.")

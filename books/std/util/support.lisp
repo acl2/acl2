@@ -466,7 +466,7 @@ substitutions are reapplied to the result of other substitutions.</p>"
                    (generic-eval-requirement (caddr req) req-alist)
                  (generic-eval-requirement (cadddr req) req-alist)))
          (otherwise (er hard? 'generic-eval-requirement
-                        "malformed requirement term: ~x0~%")))))
+                        "malformed requirement term: ~x0~%" req)))))
    (defun generic-and-requirements (reqs req-alist)
      (if (atom reqs)
          t

@@ -46,11 +46,16 @@
     (:META RP::FAST-ALIST-FREE-META . FAST-ALIST-FREE)
     (:META RP::HONS-ACONS-META . HONS-ACONS)))
 
+(defconst *svex-simplify-meta-rules-outside-in*
+  'nil)
+
 
 (progn
   (defconst *svex-simplify-rules*
     '((:rewrite concat-of-rsh-with-0-to-bits)
 
+      (:rewrite rp::force$-of-t)
+      
       (:rewrite 4vec-part-select-is-bits)
       (:rewrite equal-of-4vec-concat$)
       (:rewrite 4vec-p-of-all-4vec-fncs)

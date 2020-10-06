@@ -10,7 +10,11 @@
 
 (in-package "ACL2")
 
-(include-book "implementation")
+(include-book "defunvar")
+(include-book "defun2")
+(include-book "defun-sk2")
+(include-book "defun-inst")
+(include-book "defthm-inst")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

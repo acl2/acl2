@@ -94,7 +94,7 @@ Lisps, most likely SBCL and LispWorks.</p>
 
 @({
     $ cd acl2
-    $ make LISP=ccl ACL2_HONS=h
+    $ make LISP=ccl
     $ cd acl2/books
     $ make USE_QUICKLISP=1 basic quicklisp
 })

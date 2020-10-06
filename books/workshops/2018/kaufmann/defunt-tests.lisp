@@ -7,7 +7,7 @@
 (in-package "ACL2")
 
 (include-book "defunt-top")
-(include-book "std/testing/eval" :dir :system) ; for must-fail
+(include-book "std/testing/must-fail" :dir :system)
 
 ; Below, we insert, as comments, "*Defunt note*" remarks from the output of
 ; defunt.  We use some multi-line comments so that the include-book forms will

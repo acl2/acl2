@@ -508,7 +508,7 @@
                                      (rp::rp 'sv::svex-env-p svex-env)))
          ((mv rw rp::rp-state)
           (rp::rp-rw
-           term nil context nil (rp::rw-step-limit rp::rp-state) rp::rp-state state))
+           term nil context nil nil (rp::rw-step-limit rp::rp-state) rp::rp-state state))
          (- (clear-memoize-table '4vec-to-svex))
          ((mv err node-new) (4vec-to-svex rw t nil))
          (- (and err
@@ -548,7 +548,7 @@
                                          (rp::rp 'sv::svex-env-p svex-env)))
          ((mv rw rp::rp-state)
           (rp::rp-rw
-           term nil context nil (rp::rw-step-limit rp::rp-state) rp::rp-state state))
+           term nil context nil nil (rp::rw-step-limit rp::rp-state) rp::rp-state state))
          ((mv err node-new) (4vec-to-svex-termlist rw t nil))
          (- (and err
                  (hard-error
@@ -743,7 +743,7 @@
                      rp::not-simplified-action
                      rp::update-not-simplified-action
                      rp::preprocess-then-rp-rw
-                     rp::rp-meta-rule-recs-p
+                     ;;rp::rp-meta-rule-recs-p
                      rp::rw-step-limit
                      table-alist
                      (:type-prescription natp-rp-rw-step-limit)
@@ -774,9 +774,9 @@
        ((mv runes runes-outside-in)
         (if (or runes runes-outside-in)
             (mv (acl2::append-without-guard
-                 (rp::get-enabled-meta-rules-from-table nil state) runes)
+                 *svex-simplify-meta-rules* runes)
                 (acl2::append-without-guard
-                 (rp::get-enabled-meta-rules-from-table t state)
+                 *svex-simplify-meta-rules-outside-in*
                  runes-outside-in))
           (mv nil nil)))
        
@@ -789,7 +789,7 @@
 
        ((mv context rp::rp-state)
         (rp::rp-rw-subterms
-         context nil nil (rp::rw-step-limit rp::rp-state)  rp::rp-state state))
+         context nil nil nil (rp::rw-step-limit rp::rp-state)  rp::rp-state state))
        (context (if (rp::context-syntaxp context) context nil))
 
        ((mv svexl rp::rp-state)
@@ -804,7 +804,7 @@
         (if only-local
             (mv term rp::rp-state)
           (rp::rp-rw
-           term nil context nil (rp::rw-step-limit rp::rp-state) rp::rp-state state)))
+           term nil context nil nil (rp::rw-step-limit rp::rp-state) rp::rp-state state)))
 
        ;; restore rp-state setting
        (rp::rp-state (rp::update-not-simplified-action
@@ -846,7 +846,7 @@
                      rp::not-simplified-action
                      rp::update-not-simplified-action
                      rp::preprocess-then-rp-rw
-                     rp::rp-meta-rule-recs-p
+                     
                      rp::rw-step-limit
                      table-alist
                      (:type-prescription natp-rp-rw-step-limit)
@@ -875,9 +875,9 @@
        ((mv runes runes-outside-in)
         (if (or runes runes-outside-in)
             (mv (acl2::append-without-guard
-                 (rp::get-enabled-meta-rules-from-table nil state) runes)
+                 *svex-simplify-meta-rules* runes)
                 (acl2::append-without-guard
-                 (rp::get-enabled-meta-rules-from-table t state)
+                 *svex-simplify-meta-rules-outside-in*
                  runes-outside-in))
           (mv nil nil)))
        
@@ -893,7 +893,7 @@
 
        ((mv context rp::rp-state)
         (rp::rp-rw-subterms
-         context nil nil (rp::rw-step-limit rp::rp-state) 
+         context nil nil nil (rp::rw-step-limit rp::rp-state) 
           rp::rp-state state))
        (context (if (rp::context-syntaxp context) context nil))
 
@@ -909,7 +909,7 @@
         (if only-local
             (mv term rp::rp-state)
           (rp::rp-rw
-           term nil context  nil (rp::rw-step-limit rp::rp-state) rp::rp-state state)))
+           term nil context  nil nil (rp::rw-step-limit rp::rp-state) rp::rp-state state)))
 
        ;; restore rp-state setting
        (rp::rp-state (rp::update-not-simplified-action

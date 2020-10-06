@@ -833,7 +833,7 @@ records book.  See @(see def-typed-record).</p>")
                   (append `((,field-key ,recog)) rest)))
               rest)
           rest))
-       ((unless (and (eq (len type) 3)
+       ((unless (and (eql (len type) 3)
                      (consp (third type))))
         (er hard? 'guards-for-top-level-acc/upd
             "~% Expected an array declaration for ~p0, but got ~p1 instead."
@@ -883,7 +883,7 @@ records book.  See @(see def-typed-record).</p>")
               (mbe :logic (,sw ,key nil ,vvar ,stname)
                    :exec  (,updater ,vvar ,stname))))))
 
-       ;; ((unless (and (eq (len type) 3)
+       ;; ((unless (and (eql (len type) 3)
        ;;               (consp (third type))))
        ;;  (er hard? 'mbe-accessor/updater-functions-aux
        ;;      "~% Expected an array declaration for ~p0, but got ~p1 instead."

@@ -1639,7 +1639,7 @@
   `(if (stringp ,s)
        (the string ,s)
      (er-hard-val "" ,ctx
-                  "Not a string:  ~s0."
+                  "Not a string:  ~x0."
                   ,s)))
 
 (defun xxxjoin-fixnum (fn args root)
@@ -6608,7 +6608,12 @@
            ,(if (eq test 'hons-equal)
                 #+hons 'eql #-hons 'equal
                 test)
-           ,@(and size `(:size ,size))
+           ,@(and size `(:size
+
+; The GCL implementation installed at UT CS on 9/16/2020 does not allow
+; hash-tables of size 0.
+
+                         ,(if (= size 0) 1 size)))
            ,@(and rehash-size `(:rehash-size ,(float rehash-size)))
            ,@(and rehash-threshold `(:rehash-threshold ,(float rehash-threshold))))))
 

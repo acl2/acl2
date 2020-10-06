@@ -1662,11 +1662,20 @@
                             
                             VALID-SC)))))||#
 
-(rp::add-meta-rules
+#|(rp::add-meta-rules
  sum-meta-formal-checks
  (list
   (make rp-meta-rule-rec
         :fnc 'resolve-b+-order
         :trig-fnc 'merge-b+
         :dont-rw t
-        :valid-syntax t)))
+        :valid-syntax t)))||#
+
+(rp::add-meta-rule
+ :meta-fnc resolve-b+-order
+ :trig-fnc merge-b+
+ :valid-syntaxp t
+ :formula-checks sum-meta-formal-checks
+ :returns (mv term dont-rw)
+ :hints (("Goal"
+          :in-theory (e/d () (resolve-b+-order)))))

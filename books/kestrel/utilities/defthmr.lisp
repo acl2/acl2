@@ -92,7 +92,13 @@
          ((inhibit-output-lst *valid-output-names*))
          (mv-let
            (erp val state)
-           (chk-acceptable-rewrite-rule name
+
+; J Moore 8/22/2020: Modified call below when new first argument, qc-flg, was
+; added.  By specifying qc-flg = nil we require name to be a :rewrite rule
+; rather than a :rewrite-quoted-constant rule.
+
+           (chk-acceptable-rewrite-rule nil ; qc-flg
+                                        name
                                         nil ; match-free
                                         nil ; loop-stopper
                                         tterm

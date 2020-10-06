@@ -291,25 +291,25 @@
 (defund rename-mv-let-vars (x mv-let-vars pkg-name)
   ;; Rename variables in the MV-LET forms appearing in term "x"
   (declare (xargs :mode :program))
-  (cond ((atom x) x)
-        ((member-equal (car x) '(mv-let mv?-let))
-         (acl2::b*
-          ((vars (cadr x))
-           (term (caddr x))
-           (body (cdddr x))
-           (renamed-vars (rename-with-count vars vars mv-let-vars pkg-name))
-           (renamed-body (rename-with-count body vars mv-let-vars pkg-name)))
-          (cons (car x)
-                (cons renamed-vars
-                      (cons (rename-mv-let-vars
-                             term
-                             (append mv-let-vars vars)
-                             pkg-name)
-                            (rename-mv-let-vars renamed-body
-                                                mv-let-vars
-                                                pkg-name))))))
-        (t (cons (rename-mv-let-vars (car x) mv-let-vars pkg-name)
-                 (rename-mv-let-vars (cdr x) mv-let-vars pkg-name)))))
+  (cond
+   ((atom x) x)
+   ((member-equal (car x) '(mv-let mv?-let))
+    (b* ((vars (cadr x))
+         (term (caddr x))
+         (body (cdddr x))
+         (renamed-vars (rename-with-count vars vars mv-let-vars pkg-name))
+         (renamed-body (rename-with-count body vars mv-let-vars pkg-name)))
+      (cons (car x)
+            (cons renamed-vars
+                  (cons (rename-mv-let-vars
+                         term
+                         (append mv-let-vars vars)
+                         pkg-name)
+                        (rename-mv-let-vars renamed-body
+                                            mv-let-vars
+                                            pkg-name))))))
+   (t (cons (rename-mv-let-vars (car x) mv-let-vars pkg-name)
+            (rename-mv-let-vars (cdr x) mv-let-vars pkg-name)))))
 
 (defund shrink-alist (preserved-keys alist)
   ;; Remove all elements from the association list "alist" except for the
@@ -606,145 +606,144 @@
   ;; If "inter-fns-enabledp" is non-nil, the generated intermediate functions
   ;; will be enabled.
   :mode :program
-  (acl2::b*
-   ((pkg-name (symbol-package-name fn))
-    (all-fns (strings-to-symbol pkg-name (symbol-name new-fn) "-ALL-FNS"))
-    (equiv-lemma (strings-to-symbol pkg-name (symbol-name fn) "-LEMMA"))
-    (fn-def (acl2::cltl-def-from-name fn (w state)))
-    (formal-args (caddr fn-def))
-    (updated-formals (replace-list-all formal-args
-                                       sub-pairs
-                                       formal-args))
-    (body (car (last fn-def)))
-    ;; Rename variables in the MV-LET forms appearing in "body"
-    (renamed-body (rename-mv-let-vars body formal-args pkg-name))
-    ;; "alist" contains all variable bindings extracted from "renamed-body"
-    ;; except for the variables in "preserved-vars".
-    (alist (bindings-extract renamed-body preserved-vars nil))
-    (vars (remove-equal '*** (strip-cars alist)))
-    (shrunk-body (shrink-bindings preserved-vars renamed-body))
-    (distinct-vars (remove-duplicates vars))
-    (renamed-alist (remove-assoc-equal
-                    '***
-                    (rename-keys-in-alist distinct-vars
-                                          (append formal-args vars)
-                                          alist
-                                          pkg-name)))
-    (renamed-vars (strip-cars renamed-alist))
-    ;; Simplify the MV-NTH forms in "renamed-alist"
-    (simplified-alist (pairlis$ renamed-vars
-                                (pairlis$
-                                 (simplify-mv-nth-forms
-                                  (strip-cars
-                                   (strip-cdrs renamed-alist)))
-                                 nil)))
-    ;; Extract variables that are not used in "new-fn"
-    (redundant-vars
-     (remove-all (used-syms-extract (list shrunk-body)
-                                    simplified-alist
-                                    nil)
-                 renamed-vars))
-    (no-redundant-alist (remove-assocs-equal
-                         redundant-vars
-                         simplified-alist))
-    (tmp-inter-names (inter-names-extract (remove-assocs-equal
-                                           redundant-vars
-                                           renamed-alist)))
-    (used-vars (strip-cars no-redundant-alist))
-    (sub-pairs-with-dots (pairlis$ (strip-cars sub-pairs)
-                                   (strip-cars (strip-cdrs sub-pairs))))
-    (updated-vars (replace-list-all (strip-cars sub-pairs)
-                                    sub-pairs-with-dots
-                                    used-vars))
-    (replaced-vars (remove-duplicates
-                    (append formal-args
-                            used-vars
-                            (strip-cars sub-pairs))))
-    (updated-alist
-     (pairlis$ updated-vars
-               (pairlis$
-                (replace-list-all replaced-vars
-                                  sub-pairs
-                                  (strip-cars
-                                   (strip-cdrs no-redundant-alist)))
-                nil)))
-    ;; Extract constant and unary bindings that will be eliminated from
-    ;; "updated-alist"
-    (elim-bindings (if optimized
-                       (elim-bindings-extract
-                        updated-alist
-                        nil nil)
-                     nil))
-    (elim-vars (strip-cars elim-bindings))
-    (elim-fns (pairlis$ elim-vars nil))
-    (excluded-fns (pairlis$ excluded-vars nil))
-    ;; Extract bindings that are excluded from generating their corresponding
-    ;; constant functions
-    (substd-bindings (replace-list-all
-                      elim-fns
-                      (pairlis$ elim-fns
-                                (strip-cdrs elim-bindings))
-                      (terms-substs excluded-vars
-                                    updated-alist
-                                    nil
+  (b* ((pkg-name (symbol-package-name fn))
+       (all-fns (strings-to-symbol pkg-name (symbol-name new-fn) "-ALL-FNS"))
+       (equiv-lemma (strings-to-symbol pkg-name (symbol-name fn) "-LEMMA"))
+       (fn-def (cltl-def-from-name fn (w state)))
+       (formal-args (caddr fn-def))
+       (updated-formals (replace-list-all formal-args
+                                          sub-pairs
+                                          formal-args))
+       (body (car (last fn-def)))
+       ;; Rename variables in the MV-LET forms appearing in "body"
+       (renamed-body (rename-mv-let-vars body formal-args pkg-name))
+       ;; "alist" contains all variable bindings extracted from "renamed-body"
+       ;; except for the variables in "preserved-vars".
+       (alist (bindings-extract renamed-body preserved-vars nil))
+       (vars (remove-equal '*** (strip-cars alist)))
+       (shrunk-body (shrink-bindings preserved-vars renamed-body))
+       (distinct-vars (remove-duplicates vars))
+       (renamed-alist (remove-assoc-equal
+                       '***
+                       (rename-keys-in-alist distinct-vars
+                                             (append formal-args vars)
+                                             alist
+                                             pkg-name)))
+       (renamed-vars (strip-cars renamed-alist))
+       ;; Simplify the MV-NTH forms in "renamed-alist"
+       (simplified-alist (pairlis$ renamed-vars
+                                   (pairlis$
+                                    (simplify-mv-nth-forms
+                                     (strip-cars
+                                      (strip-cdrs renamed-alist)))
                                     nil)))
-    ;; Eliminate "elim-bindings" and bindings with "excluded-vars" from
-    ;; "updated-alist"
-    (final-alist
-     (replace-list-all (append elim-fns excluded-fns)
-                       (append (pairlis$ elim-fns
-                                         (strip-cdrs elim-bindings))
-                               substd-bindings)
-                       (remove-assocs-equal
-                        (append elim-vars excluded-vars)
-                        updated-alist)))
-    (single-used-vars
-     (single-used-vars-extract (strip-cars final-alist)
-                               (strip-cars (strip-cdrs final-alist))
-                               nil))
-    (- (cw "Single used functions: ~x0~%" single-used-vars))
-    ;; The body of the top-level function "new-fn"
-    (new-body (replace-list-all
-               (remove-duplicates (append elim-vars excluded-vars
-                                          formal-args vars))
-               (append elim-bindings
-                       (pairlis$ excluded-vars
-                                 (strip-cdrs substd-bindings))
-                       sub-pairs)
-               shrunk-body))
-    (new-body (if (and (atom new-body) new-body)
-                  (list new-body)
-                new-body))
-    (inter-names (remove-all
-                  (append elim-vars excluded-vars)
-                  (replace-list-all (strip-cars sub-pairs)
-                                    sub-pairs-with-dots
-                                    tmp-inter-names)))
-    (all-fn-names (cons new-fn
-                        (strip-cars final-alist))))
+       ;; Extract variables that are not used in "new-fn"
+       (redundant-vars
+        (remove-all (used-syms-extract (list shrunk-body)
+                                       simplified-alist
+                                       nil)
+                    renamed-vars))
+       (no-redundant-alist (remove-assocs-equal
+                            redundant-vars
+                            simplified-alist))
+       (tmp-inter-names (inter-names-extract (remove-assocs-equal
+                                              redundant-vars
+                                              renamed-alist)))
+       (used-vars (strip-cars no-redundant-alist))
+       (sub-pairs-with-dots (pairlis$ (strip-cars sub-pairs)
+                                      (strip-cars (strip-cdrs sub-pairs))))
+       (updated-vars (replace-list-all (strip-cars sub-pairs)
+                                       sub-pairs-with-dots
+                                       used-vars))
+       (replaced-vars (remove-duplicates
+                       (append formal-args
+                               used-vars
+                               (strip-cars sub-pairs))))
+       (updated-alist
+        (pairlis$ updated-vars
+                  (pairlis$
+                   (replace-list-all replaced-vars
+                                     sub-pairs
+                                     (strip-cars
+                                      (strip-cdrs no-redundant-alist)))
+                   nil)))
+       ;; Extract constant and unary bindings that will be eliminated from
+       ;; "updated-alist"
+       (elim-bindings (if optimized
+                          (elim-bindings-extract
+                           updated-alist
+                           nil nil)
+                        nil))
+       (elim-vars (strip-cars elim-bindings))
+       (elim-fns (pairlis$ elim-vars nil))
+       (excluded-fns (pairlis$ excluded-vars nil))
+       ;; Extract bindings that are excluded from generating their
+       ;; corresponding constant functions
+       (substd-bindings (replace-list-all
+                         elim-fns
+                         (pairlis$ elim-fns
+                                   (strip-cdrs elim-bindings))
+                         (terms-substs excluded-vars
+                                       updated-alist
+                                       nil
+                                       nil)))
+       ;; Eliminate "elim-bindings" and bindings with "excluded-vars" from
+       ;; "updated-alist"
+       (final-alist
+        (replace-list-all (append elim-fns excluded-fns)
+                          (append (pairlis$ elim-fns
+                                            (strip-cdrs elim-bindings))
+                                  substd-bindings)
+                          (remove-assocs-equal
+                           (append elim-vars excluded-vars)
+                           updated-alist)))
+       (single-used-vars
+        (single-used-vars-extract (strip-cars final-alist)
+                                  (strip-cars (strip-cdrs final-alist))
+                                  nil))
+       (- (cw "Single used functions: ~x0~%" single-used-vars))
+       ;; The body of the top-level function "new-fn"
+       (new-body (replace-list-all
+                  (remove-duplicates (append elim-vars excluded-vars
+                                             formal-args vars))
+                  (append elim-bindings
+                          (pairlis$ excluded-vars
+                                    (strip-cdrs substd-bindings))
+                          sub-pairs)
+                  shrunk-body))
+       (new-body (if (and (atom new-body) new-body)
+                     (list new-body)
+                   new-body))
+       (inter-names (remove-all
+                     (append elim-vars excluded-vars)
+                     (replace-list-all (strip-cars sub-pairs)
+                                       sub-pairs-with-dots
+                                       tmp-inter-names)))
+       (all-fn-names (cons new-fn
+                           (strip-cars final-alist))))
 
-   `(encapsulate
-      ()
+    `(encapsulate
+       ()
 
-      (set-ignore-ok t) ;; will be treated as LOCAL
+       (set-ignore-ok t) ;; will be treated as LOCAL
 
-      ,@(append
-         (const-fns-gen-from-alist final-alist)
-         `((defundd ,new-fn ()
-             ,new-body)
+       ,@(append
+          (const-fns-gen-from-alist final-alist)
+          `((defundd ,new-fn ()
+              ,new-body)
 
-           ,@(if inter-fns-enabledp
-                 `((in-theory (enable ,@inter-names))
-                   (deftheory ,all-fns ',all-fn-names))
-               `((deftheory ,all-fns ',all-fn-names)))
+            ,@(if inter-fns-enabledp
+                  `((in-theory (enable ,@inter-names))
+                    (deftheory ,all-fns ',all-fn-names))
+                `((deftheory ,all-fns ',all-fn-names)))
 
-           (defthmd ,equiv-lemma
-             (equal (,new-fn)
-                    (,fn ,@updated-formals))
-             :hints (("Goal"
-                      :do-not '(preprocess)
-                      :expand :lambdas
-                      :in-theory '(,all-fns ,fn ,@rules)))))))))
+            (defthmd ,equiv-lemma
+              (equal (,new-fn)
+                     (,fn ,@updated-formals))
+              :hints (("Goal"
+                       :do-not '(preprocess)
+                       :expand :lambdas
+                       :in-theory '(,all-fns ,fn ,@rules)))))))))
 
 ;; ======================================================================
 
@@ -1001,125 +1000,125 @@
   ;; If "inter-fns-enabledp" is non-nil, the generated intermediate functions
   ;; will be enabled.
   :mode :program
-  (acl2::b*
-   ((pkg-name (symbol-package-name fn))
-    (all-fns (strings-to-symbol pkg-name (symbol-name fn) "-ALL-FNS"))
-    (?equiv-lemma (strings-to-symbol pkg-name (symbol-name fn) "-LEMMA"))
-    (fn-def (acl2::cltl-def-from-name fn (w state)))
-    (formal-args (caddr fn-def))
-    (body (car (last fn-def)))
-    ;; Rename variables in the MV-LET forms appearing in "body"
-    (renamed-body (rename-mv-let-vars body nil pkg-name))
-    ;; "alist" contains all variable bindings extracted from "renamed-body"
-    ;; except for the variables in "preserved-vars".
-    (alist (bindings-extract renamed-body preserved-vars nil))
-    (vars (remove-equal '*** (strip-cars alist)))
-    (shrunk-body (shrink-bindings preserved-vars renamed-body))
-    (distinct-vars (remove-duplicates vars))
-    (renamed-alist (rename-keys-in-alist distinct-vars
-                                         vars
-                                         alist
-                                         pkg-name))
-    (renamed-vars (strip-cars renamed-alist))
-    ;; Simplify the MV-NTH forms in "renamed-alist"
-    (simplified-alist (pairlis$ renamed-vars
-                                (pairlis$
-                                 (simplify-mv-nth-forms
-                                  (strip-cars
-                                   (strip-cdrs renamed-alist)))
-                                 nil)))
-    ;; Extract variables that are not used in "fn"
-    (redundant-vars
-     (remove-all (used-syms-extract (list shrunk-body)
-                                    simplified-alist
-                                    nil)
-                 renamed-vars))
-    (no-redundant-alist (remove-assocs-equal
-                         redundant-vars
-                         simplified-alist))
-    (tmp-inter-names (inter-names-extract (remove-assocs-equal
-                                           redundant-vars
-                                           renamed-alist)))
-    (used-vars (strip-cars no-redundant-alist))
-    (sub-pairs-with-dots (pairlis$ (strip-cars sub-pairs)
-                                   (strip-cars (strip-cdrs sub-pairs))))
-    (updated-vars (replace-list-all (strip-cars sub-pairs)
-                                    sub-pairs-with-dots
-                                    used-vars))
-    (replaced-vars (remove-duplicates
-                    (append formal-args
-                            used-vars
-                            (strip-cars sub-pairs))))
-    (updated-alist
-     (pairlis$ updated-vars
-               (pairlis$
-                (replace-list-all replaced-vars
-                                  sub-pairs
-                                  (strip-cars
-                                   (strip-cdrs no-redundant-alist)))
-                nil)))
-    ;; Extract constant and unary bindings that will be eliminated from
-    ;; "updated-alist"
-    (elim-bindings (if optimized
-                       (elim-bindings-extract
-                        updated-alist
-                        nil nil)
-                     nil))
-    (elim-vars (strip-cars elim-bindings))
-    (elim-fns (pairlis$ elim-vars nil))
-    (excluded-fns (pairlis$ excluded-vars nil))
-    ;; Extract bindings that are excluded from generating their corresponding
-    ;; mutually recursive functions
-    (substd-bindings (replace-list-all
-                      elim-fns
-                      (pairlis$ elim-fns
-                                (strip-cdrs elim-bindings))
-                      (terms-substs excluded-vars
-                                    updated-alist
-                                    nil
+  (b* ((pkg-name (symbol-package-name fn))
+       (all-fns (strings-to-symbol pkg-name (symbol-name fn) "-ALL-FNS"))
+       (?equiv-lemma (strings-to-symbol pkg-name (symbol-name fn) "-LEMMA"))
+       (fn-def (cltl-def-from-name fn (w state)))
+       (formal-args (caddr fn-def))
+       (body (car (last fn-def)))
+       ;; Rename variables in the MV-LET forms appearing in "body"
+       (renamed-body (rename-mv-let-vars body nil pkg-name))
+       ;; "alist" contains all variable bindings extracted from "renamed-body"
+       ;; except for the variables in "preserved-vars".
+       (alist (bindings-extract renamed-body preserved-vars nil))
+       (vars (remove-equal '*** (strip-cars alist)))
+       (shrunk-body (shrink-bindings preserved-vars renamed-body))
+       (distinct-vars (remove-duplicates vars))
+       (renamed-alist (rename-keys-in-alist distinct-vars
+                                            vars
+                                            alist
+                                            pkg-name))
+       (renamed-vars (strip-cars renamed-alist))
+       ;; Simplify the MV-NTH forms in "renamed-alist"
+       (simplified-alist (pairlis$ renamed-vars
+                                   (pairlis$
+                                    (simplify-mv-nth-forms
+                                     (strip-cars
+                                      (strip-cdrs renamed-alist)))
                                     nil)))
-    ;; Eliminate "elim-bindings" and bindings with "excluded-vars" from
-    ;; "updated-alist"
-    (final-alist
-     (replace-list-all (append elim-fns excluded-fns)
-                       (append (pairlis$ elim-fns
-                                         (strip-cdrs elim-bindings))
-                               substd-bindings)
-                       (remove-assocs-equal
-                        (append elim-vars excluded-vars)
-                        updated-alist)))
-    (final-vars (strip-cars final-alist))
-    (depend-graph (construct-depend-graph final-alist final-vars nil nil nil))
-    (weight-alist (depend-graph-to-weighted-nodes depend-graph nil))
-    (mutually-recur-fns (cons 'mutual-recursion
-                              (loop-fns-gen-from-alist
-                               loop-var
-                               final-alist final-vars weight-alist
-                               base-cond init-alist nil nil pkg-name)))
-    (single-used-vars
-     (single-used-vars-extract final-vars
-                               (strip-cars (strip-cdrs final-alist))
-                               nil))
-    (- (cw "Single used functions: ~x0~%" single-used-vars))
-    (inter-names (remove-all
-                  (append elim-vars excluded-vars)
-                  (replace-list-all (strip-cars sub-pairs)
-                                    sub-pairs-with-dots
-                                    tmp-inter-names)))
-    (all-fn-names (remove-equal '*** final-vars)))
+       ;; Extract variables that are not used in "fn"
+       (redundant-vars
+        (remove-all (used-syms-extract (list shrunk-body)
+                                       simplified-alist
+                                       nil)
+                    renamed-vars))
+       (no-redundant-alist (remove-assocs-equal
+                            redundant-vars
+                            simplified-alist))
+       (tmp-inter-names (inter-names-extract (remove-assocs-equal
+                                              redundant-vars
+                                              renamed-alist)))
+       (used-vars (strip-cars no-redundant-alist))
+       (sub-pairs-with-dots (pairlis$ (strip-cars sub-pairs)
+                                      (strip-cars (strip-cdrs sub-pairs))))
+       (updated-vars (replace-list-all (strip-cars sub-pairs)
+                                       sub-pairs-with-dots
+                                       used-vars))
+       (replaced-vars (remove-duplicates
+                       (append formal-args
+                               used-vars
+                               (strip-cars sub-pairs))))
+       (updated-alist
+        (pairlis$ updated-vars
+                  (pairlis$
+                   (replace-list-all replaced-vars
+                                     sub-pairs
+                                     (strip-cars
+                                      (strip-cdrs no-redundant-alist)))
+                   nil)))
+       ;; Extract constant and unary bindings that will be eliminated from
+       ;; "updated-alist"
+       (elim-bindings (if optimized
+                          (elim-bindings-extract
+                           updated-alist
+                           nil nil)
+                        nil))
+       (elim-vars (strip-cars elim-bindings))
+       (elim-fns (pairlis$ elim-vars nil))
+       (excluded-fns (pairlis$ excluded-vars nil))
+       ;; Extract bindings that are excluded from generating their
+       ;; corresponding mutually recursive functions
+       (substd-bindings (replace-list-all
+                         elim-fns
+                         (pairlis$ elim-fns
+                                   (strip-cdrs elim-bindings))
+                         (terms-substs excluded-vars
+                                       updated-alist
+                                       nil
+                                       nil)))
+       ;; Eliminate "elim-bindings" and bindings with "excluded-vars" from
+       ;; "updated-alist"
+       (final-alist
+        (replace-list-all (append elim-fns excluded-fns)
+                          (append (pairlis$ elim-fns
+                                            (strip-cdrs elim-bindings))
+                                  substd-bindings)
+                          (remove-assocs-equal
+                           (append elim-vars excluded-vars)
+                           updated-alist)))
+       (final-vars (strip-cars final-alist))
+       (depend-graph (construct-depend-graph final-alist final-vars
+                                             nil nil nil))
+       (weight-alist (depend-graph-to-weighted-nodes depend-graph nil))
+       (mutually-recur-fns (cons 'mutual-recursion
+                                 (loop-fns-gen-from-alist
+                                  loop-var
+                                  final-alist final-vars weight-alist
+                                  base-cond init-alist nil nil pkg-name)))
+       (single-used-vars
+        (single-used-vars-extract final-vars
+                                  (strip-cars (strip-cdrs final-alist))
+                                  nil))
+       (- (cw "Single used functions: ~x0~%" single-used-vars))
+       (inter-names (remove-all
+                     (append elim-vars excluded-vars)
+                     (replace-list-all (strip-cars sub-pairs)
+                                       sub-pairs-with-dots
+                                       tmp-inter-names)))
+       (all-fn-names (remove-equal '*** final-vars)))
 
-   `((include-book "ordinals/lexicographic-book" :dir :system)
+    `((include-book "ordinals/lexicographic-book" :dir :system)
 
-     (encapsulate
-       ()
+      (encapsulate
+        ()
 
-       (set-ignore-ok t) ;; will be treated as LOCAL
-       (set-well-founded-relation acl2::l<) ;; will be treated as LOCAL
-       ,mutually-recur-fns)
+        (set-ignore-ok t)              ;; will be treated as LOCAL
+        (set-well-founded-relation l<) ;; will be treated as LOCAL
+        ,mutually-recur-fns)
 
-     (deftheory ,all-fns ',all-fn-names)
+      (deftheory ,all-fns ',all-fn-names)
 
-     ,@(if inter-fns-enabledp
-           `((in-theory (disable ,@(pairlis$ all-fn-names nil)))
-             (in-theory (enable ,@inter-names)))
-         `((in-theory (disable ,@(pairlis$ all-fn-names nil))))))))
+      ,@(if inter-fns-enabledp
+            `((in-theory (disable ,@(pairlis$ all-fn-names nil)))
+              (in-theory (enable ,@inter-names)))
+          `((in-theory (disable ,@(pairlis$ all-fn-names nil))))))))

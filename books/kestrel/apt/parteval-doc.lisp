@@ -185,7 +185,7 @@
        and @('new') is enabled (as determined by the @(':new-enable') input),
        then @(':thm-enable') cannot be @('t')."))
 
-    (xdoc::desc-apt-input-verify-guards :never)
+    (xdoc::desc-apt-input-verify-guards :plural-functions nil)
 
     (xdoc::desc-apt-input-untranslate)
 

@@ -126,15 +126,6 @@ ifneq (,$(word 2, $(ACL2_WD)))
 $(error Illegal ACL2 build directory (contains a space): $(ACL2_WD)/)
 endif
 
-# ACL2 includes support for hash cons, function memoization, and
-# applicative hash tables (see :doc hons-and-memoization).  In order
-# to avoid including those features, you can try commenting out the
-# following line.  We do not claim to support such builds.  However,
-# you are welcome to try, and there is a reasonable chance that you
-# will succeed in building a usable executable.
-
-ACL2_HONS := h
-
 # The variable ACL2_REAL should be defined for the non-standard
 # version and not for the standard version.  Non-standard ACL2 images
 # will include the suffix "r", for example saved_acl2r rather than
@@ -144,18 +135,11 @@ ACL2_HONS := h
 # parallel or (for implementors only) have features :acl2-devel or
 # :write-arithmetic-goals, for special builds pertaining to
 # guard-verified functions or writing out arithmetic lemma data to
-# ~/write-arithmetic-goals.lisp.  Variable ACL2_HONS is h by default,
-# but when its value is the empty string, then suffix "c" is
-# generated, to create an ACL2(c) build -- BUT NOTE that after
-# Version_7.1, change ACL2-HONS at your own risk -- it might work, but
-# we no longer claim to support it!
+# ~/write-arithmetic-goals.lisp.
 
 # DO NOT EDIT ACL2_SUFFIX!  Edit the above-mentioned four variables instead.
 
 ACL2_SUFFIX :=
-ifeq ($(ACL2_HONS),)
-	ACL2_SUFFIX := $(ACL2_SUFFIX)c
-endif
 ifdef ACL2_PAR
 	ACL2_SUFFIX := $(ACL2_SUFFIX)p
 endif
@@ -244,9 +228,8 @@ sources := axioms.lisp memoize.lisp hons.lisp\
            defpkgs.lisp\
            apply-prim.lisp apply-constraints.lisp apply.lisp
 
-ifdef ACL2_HONS
-	sources := $(sources) hons-raw.lisp memoize-raw.lisp
-endif
+sources := $(sources) hons-raw.lisp memoize-raw.lisp
+
 ifdef ACL2_PAR
 	sources := $(sources) multi-threading-raw.lisp parallel-raw.lisp futures-raw.lisp
 endif
@@ -279,25 +262,33 @@ acl2r:
 	$(MAKE) acl2r.lisp
 
 acl2r.lisp:
-# It might be good to remove old compiled files acl2-fns.o etc., but at
-# the moment it seems painful to deal with all possible compiled file
-# extensions.
+# The various "startup" code below can be loaded as a first step in
+# building ACL2.  The first is actually always done in modern ACL2 builds.
 	@echo "" > $@
-	@if [ "$(ACL2_REAL)" != "" ] ; then \
-	echo '(or (member :non-standard-analysis *features*) (push :non-standard-analysis *features*))' >> $@ ;\
+	@if [ "$(ACL2_COMPILER_DISABLED)" != "" ] ; then \
+	echo '(DEFPARAMETER *ACL2-COMPILER-ENABLED* NIL)' >> $@ ;\
 	fi
-	@if [ "$(ACL2_HONS)" != "" ] ; then \
-	echo '(or (member :hons *features*) (push :hons *features*))' >> $@ ;\
+	@if [ "$(ACL2_EGC_ON)" != "" ] ; then \
+	echo '(DEFPARAMETER *ACL2-EGC-ON* $(ACL2_EGC_ON))' >> $@ ;\
 	fi
-	@if [ "$(ACL2_HONS)" = "h_hack" ] ; then \
-	echo '(or (member :memoize-hack *features*) (push :memoize-hack *features*))' >> $@ ;\
-	fi
-	@if [ "$(ACL2_PAR)" != "" ] ; then \
-	echo '(or (member :acl2-par *features*) (push :acl2-par *features*))' >> $@ ;\
-	fi
+# The next startup is something for developers only.  It is useful
+# from time to time to check the arrangement that certain source
+# functions come up as guard-verified.  See :DOC
+# verify-guards-for-system-functions.
 	@if [ "$(ACL2_DEVEL)" != "" ] ; then \
 	echo '(or (member :acl2-devel *features*) (push :acl2-devel *features*))' >> $@ ;\
 	fi
+# WARNING: The next two startups are for building ACL2(p) and ACL2(r),
+# respectively.
+	@if [ "$(ACL2_PAR)" != "" ] ; then \
+	echo '(or (member :acl2-par *features*) (push :acl2-par *features*))' >> $@ ;\
+	fi
+	@if [ "$(ACL2_REAL)" != "" ] ; then \
+	echo '(or (member :non-standard-analysis *features*) (push :non-standard-analysis *features*))' >> $@ ;\
+	fi
+# WARNING: The startups below should be used with care.  Don't use
+# them unless you know what you are doing!  They are not officially
+# supported.
 	@if [ "$(ACL2_WAG)" != "" ] ; then \
 	mv -f ~/write-arithmetic-goals.lisp.old ; \
 	mv -f ~/write-arithmetic-goals.lisp ~/write-arithmetic-goals.lisp.old ; \
@@ -312,14 +303,15 @@ acl2r.lisp:
 	@if [ "$(ACL2_SIZE)" != "" ] ; then \
 	echo '(or (find-package "ACL2") (#+(and gcl (not ansi-cl)) defpackage:defpackage #-(and gcl (not ansi-cl)) defpackage "ACL2" (:size $(ACL2_SIZE)) (:use)))' >> $@ ;\
 	fi
-	@if [ "$(ACL2_COMPILER_DISABLED)" != "" ] ; then \
-	echo '(DEFPARAMETER *ACL2-COMPILER-ENABLED* NIL)' >> $@ ;\
-	fi
-	@if [ "$(ACL2_EGC_ON)" != "" ] ; then \
-	echo '(DEFPARAMETER *ACL2-EGC-ON* $(ACL2_EGC_ON))' >> $@ ;\
-	fi
 	@if [ "$(ACL2_EXIT_LISP_HOOK)" != "" ] ; then \
 	echo '(DEFPARAMETER *ACL2-EXIT-LISP-HOOK* (QUOTE $(ACL2_EXIT_LISP_HOOK)))' >> $@ ;\
+	fi
+# WARNING: The startup below should be used with even more care than
+# those warned about above, since it allows you to put anything you
+# like into acl2r.lisp, whether reasonable or not!  Example:
+#   make ACL2_STARTUP_EXTRA='(push :acl2-save-unnormalized-bodies *features*)'
+	@if [ "$(ACL2_STARTUP_EXTRA)" != "" ] ; then \
+	echo '$(ACL2_STARTUP_EXTRA)' >> $@ ;\
 	fi
 
 .PHONY: chmod_image
@@ -754,32 +746,24 @@ certify-books-short: basic
 #   ./build/cert.pl -j 8 --acl2 `pwd`/../saved_acl2d system/top.cert
 .PHONY: devel-check
 devel-check:
-	@counter=0 ; \
-	while [ t ] ;\
-	do \
-	echo "(chk-new-verified-guards $$counter) ..." ;\
-	echo "(chk-new-verified-guards $$counter)" > workxxx.devel-check ;\
-	$(ACL2) < workxxx.devel-check > devel-check.out ;\
-	if [ "`fgrep CHK-NEW-VERIFIED-GUARDS-COMPLETE devel-check.out`" ] ; then \
+	@echo "(chk-new-verified-guards)" > workxxx.devel-check
+	@$(ACL2) < workxxx.devel-check > devel-check.out
+	@if [ "`fgrep CHK-NEW-VERIFIED-GUARDS-SUCCESS devel-check.out`" ] ; then \
 		rm -f workxxx.devel-check devel-check.out ;\
 		echo 'SUCCESS for chk-new-verified-guards' ;\
 		break ;\
-	fi ;\
-	if [ "`fgrep CHK-NEW-VERIFIED-GUARDS-SUCCESS devel-check.out`" ] ; then \
-		rm -f workxxx.devel-check devel-check.out ;\
-		counter=`expr $$counter + 1` ;\
 	else \
 		echo '**FAILED** for chk-new-verified-guards;' ;\
 		echo '           output log follows:' ;\
 		cat devel-check.out ;\
 		rm -f workxxx.devel-check ;\
 		exit 1 ;\
-	fi \
-	done
+	fi
 	@echo "(check-system-events)" > workxxx.devel-check
 	@$(ACL2) < workxxx.devel-check > devel-check.out
 	@if [ "`fgrep CHECK-SYSTEM-EVENTS-SUCCESS devel-check.out`" ] ; \
 		then \
+		rm -f workxxx.devel-check devel-check.out ;\
 		echo 'SUCCESS for check-system-events' ;\
 	else \
 		echo '**FAILED** for check-new-system-events;' ;\

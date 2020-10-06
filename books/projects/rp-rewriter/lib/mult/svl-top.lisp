@@ -568,4 +568,4 @@
            :in-theory (e/d (adder-and) ()))))
 
 
-(bump-all-enabled-meta-rules)
+(bump-all-meta-rules)

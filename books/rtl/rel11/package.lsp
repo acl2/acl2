@@ -8,7 +8,9 @@
 
 (defpkg "RTL"
   (union-eq
-   *acl2-exports*
+   (set-difference-eq *acl2-exports*
+; Matt K. mod: sum$ is defined in books/projects/curve25519/.
+                      '(sum$))
    *common-lisp-symbols-from-main-lisp-package*
    STD::*std-exports*
    '(defxdoc defsection

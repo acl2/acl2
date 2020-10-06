@@ -1,7 +1,8 @@
 (include-book "tools/run-script" :dir :system)
 ; There is no need to see proofs for this test.
-(set-inhibit-output-lst '(prove proof-tree))
-(run-script "memoize-partial")
+; We also turn off event output since guard objligations
+; seem to differ for ACL2 and ACL2(r).
+(run-script "memoize-partial" :inhibit-output-lst '(prove proof-tree event))
 
 ; Help dependency scanner.
 #||

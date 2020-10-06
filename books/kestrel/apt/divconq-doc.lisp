@@ -99,7 +99,7 @@
    (xdoc::evmac-section-form
     (xdoc::codeblock
      "(divconq old"
-     "         :schema             ; default :list-fold"
+     "         :schema             ; no default"
      "         :list-input         ; default :auto"
      "         :fvar-atom-name     ; default :auto"
      "         :fvar-cons-name     ; default :auto"
@@ -129,210 +129,145 @@
      (xdoc::p
       "@('old') must be a SOFT quantifier function
        (see `Classification' section in @(tsee soft::defsoft))
-       that depends on one function variable (call it @('?f')),
        that has no parameters,
+       that depends on one function variable (call it @('?f')),
        and whose body has the form")
      (xdoc::codeblock
-      "(forall (x0 x1 ... xn) (iorel x0 x1 ... xn (?f x0 x1 ... xn)))")
+      "(forall (x x1 ... xn)"
+      "        iorel<x,x1,...,xn,(?f x a1<x1,...,xn> ... am<x1,...,xn>)>)")
      (xdoc::p
-      "where @('iorel') is a function symbol
-       and @('n') may be 0.
-       If the @(':verify-guards') input is @('t'),
+      "where @('n') may be 0 and
+       @('iorel<...>') is a term that depends on the quantified variables
+       and that contains a single occurrence of
+       a call of @('?f') of the form shown above,
+       where @('m') may be 0 and
+       each @('aj<x1,...,xn>') is a term that depends on @('x1'), ..., @('xn')
+       (and must not depend on @('x')).
+       The variable @('x') does not actually have to be
+       the first quantified variable in the list after @('forall')
+       and the first argument of the call of @('?f'):
+       it may be anywhere in the list and in any argument position,
+       as it is identified by the @(':list-input') input (see below);
+       to ease exposition, in the rest of the documentation page
+       we assume that it is the first one, as shown above.")
+     (xdoc::p
+      "If the @(':verify-guards')input is @('t'),
        @('old') must be guard-verified.")
      (xdoc::p
       "In the " *divconq-design-notes* ",
+       in Section `More General List Fold Schema and Its Application',
        @('old') is denoted by @($S$),
        @('?f') is denoted by @($f$),
-       @('iorel') is denoted by @($R$), and
-       @('x0'), ..., @('xn') are denoted by the single variable @($x$)
-       (the generalization to multiple variables
-       is straighforward in the design notes)."))
+       @('x') is denoted by @($x$),
+       @('x1'), ..., @('xn') are denoted by @($\\overline{x}$),
+       @('a1<x1,...,xn>'), ..., @('am<x1,...,xn>') are denoted
+       by @($\\overline{\\alpha}(\\overline{x})$), and
+       @('(lambda (x x1 ... xn y) iorel<x,x1,...,xn,y>)') is denoted
+       by @($R$)."))
 
     (xdoc::desc
-     "@(':schema') &mdash; default @(':list-fold')"
+     "@(':schema') &mdash; no default"
      (xdoc::p
       "Indicates the divide-and-conquer schema to use.")
      (xdoc::p
       "Currenty, this must be @(':list-fold'):
        only the list fold schema is supported.
-       Support for more schemas is planned."))
+       Support for more schemas is planned.")
+     (xdoc::p
+      "In the " *divconq-design-notes* ", the schema is described
+       in Section `More General List Fold Schema and Its Application'."))
 
     (xdoc::desc
      "@(':list-input') &mdash; default @(':auto')"
      (xdoc::p
-      "Specifies the input of @('?f') that is treated as
-       the list on which @('fold[?g][?h]') operates.")
+      "Specifies the argument of the call of @('?f')
+       that is treated as the list on which @('fold[?g][?h]') operates.")
      (xdoc::p
       "It must be one of the following:")
      (xdoc::ul
       (xdoc::li
-       "@(':auto'), to specify @('x0').")
+       "@(':auto'), to specify the only argument of the call of @('?f'),
+        when the call has exactly one argument.
+        It is an error for @(':list-input') to be @(':auto')
+        when the call has more than argument.")
       (xdoc::li
-       "One of @('x0'), ..., @('xn'), to specify that variable."))
+       "An argument of the call of @('?f') that is a symbol,
+        to specify that argument."))
      (xdoc::p
-      "(See the required form of @('old') above.)")
-     (xdoc::p
-      "In the rest of this documentation page, for ease of exposition,
-       we assume that this is the variable @('x0').")
-     (xdoc::p
-      "In the " *divconq-design-notes* ",
-       this is the (only) variable @($x$).
-       However, it is easy to see how the design notes
-       can be generalized to multiple variables."))
+      "This is indicated as @('x')
+       in the description of the @('old') input above."))
 
-    (xdoc::desc
-     "@(':fvar-atom-name') &mdash; default @(':auto')"
-     (xdoc::p
-      "Determines the name of the generated function variable
-       for the sub-function called for @(tsee atom) inputs.")
-     (xdoc::p
-      "It must be one of the following:")
-     (xdoc::ul
-      (xdoc::li
-       "@(':auto'), to use @('?f') followed by @('-atom').")
-      (xdoc::li
-       "Any other symbol, to use as the name."))
-     (xdoc::p
-      "In the rest of this documentation page,
-       let @('?g') be this name."))
+    (xdoc::evmac-desc-input-name
+     "fvar-atom"
+     :desc "the generated function variable
+            for the sub-function called for @(tsee atom) inputs"
+     :auto-desc "@('?f') followed by @('-atom')"
+     :name-rest "?g")
 
-    (xdoc::desc
-     "@(':fvar-cons-name') &mdash; default @(':auto')"
-     (xdoc::p
-      "Determines the name of the generated function variable
-       for the sub-function called for @(tsee consp) inputs.")
-     (xdoc::p
-      "It must be one of the following:")
-     (xdoc::ul
-      (xdoc::li
-       "@(':auto'), to use @('?f') followed by @('-cons').")
-      (xdoc::li
-       "Any other symbol, to use as the name."))
-     (xdoc::p
-      "In the rest of this documentation page,
-       let @('?h') be this name."))
+    (xdoc::evmac-desc-input-name
+     "fvar-cons"
+     :desc "the generated function variable
+            for the sub-function called for @(tsee consp) inputs"
+     :auto-desc "@('?f') followed by @('-cons')"
+     :name-rest "?h")
 
-    (xdoc::desc
-     "@(':fold-name') &mdash; default @(':auto')"
-     (xdoc::p
-      "Determines the name of the generated
-       list fold second-order function.")
-     (xdoc::p
-      "It must be one of the following:")
-     (xdoc::ul
-      (xdoc::li
-       "@(':auto'), to use the symbol @('fold')
-        (in the same package as @('old')),
-        followed by the name of @('?g') between square brackets,
-        followed by the name of @('?h') between square brackets.")
-      (xdoc::li
-       "Any other symbol, to use as the name."))
-     (xdoc::p
-      "In the rest of this documentation page,
-       let @('fold[?g][?h]') be this name."))
+    (xdoc::evmac-desc-input-name
+     "fold"
+     :desc "the generated list fold second-order function"
+     :auto-desc "the symbol @('fold')
+                 (in the same package as @('old')),
+                 followed by the name of @('?g') between square brackets,
+                 followed by the name of @('?h') between square brackets"
+     :name-rest "fold[?g][?h]")
 
-    (xdoc::desc
-     "@(':fold-enable') &mdash; default @('nil')"
-     (xdoc::p
-      "Determines whether @('fold[?g][?h]') is enabled.")
-     (xdoc::p
-      "It must be one of the following:")
-     (xdoc::ul
-      (xdoc::li
-       "@('t'), to enable it.")
-      (xdoc::li
-       "@('nil'), to disable it.")))
+    (xdoc::evmac-desc-input-enable-t/nil
+     "fold"
+     :desc "@('fold[?g][?h]')")
 
-    (xdoc::desc
-     "@(':spec-atom-name') &mdash; @(':auto')"
-     (xdoc::p
-      "Determines the name of the generated sub-specification
-       second-order predicate for the function variable @('?g').")
-     (xdoc::ul
-      (xdoc::li
-       "@(':auto'), to use the symbol @('spec-atom')
-        (in the same package as @('old')),
-        followed by the name of @('?g') between square brackets.")
-      (xdoc::li
-       "Any other symbol, to use as the name."))
-     (xdoc::p
-      "In the rest of this documentation page,
-       let @('spec-atom[?g]') be this name."))
+    (xdoc::evmac-desc-input-name
+     "spec-atom"
+     :desc "the generated sub-specification
+            second-order predicate for the function variable @('?g')"
+     :auto-desc "the symbol @('spec-atom')
+                 (in the same package as @('old')),
+                 followed by the name of @('?g') between square brackets"
+     :name-rest "spec-atom[?g]")
 
-    (xdoc::desc
-     "@(':spec-atom-enable') &mdash; default @('nil')"
-     (xdoc::p
-      "Determines whether @('spec-atom[?g]'),
-       and its associated @(tsee defun-sk) rewrite rule,
-       are enabled.")
-     (xdoc::p
-      "It must be one of the following:")
-     (xdoc::ul
-      (xdoc::li
-       "@('t'), to enable them.")
-      (xdoc::li
-       "@('nil'), to disable them.")))
+    (xdoc::evmac-desc-input-enable-t/nil
+     "spec-atom"
+     :desc "@('spec-atom[?g]')
+            (along its associated @(tsee defun-sk) rewrite rule)")
 
-    (xdoc::desc
-     "@(':spec-cons-name') &mdash; @(':auto')"
-     (xdoc::p
-      "Determines the name of the generated sub-specification
-       second-order predicate for the function variable @('?h').")
-     (xdoc::ul
-      (xdoc::li
-       "@(':auto'), to use the symbol @('spec-cons')
-        (in the same package as @('old')),
-        followed by the name of @('?h') between square brackets.")
-      (xdoc::li
-       "Any other symbol, to use as the name."))
-     (xdoc::p
-      "In the rest of this documentation page,
-       let @('spec-cons[?h]') be this name."))
+    (xdoc::evmac-desc-input-name
+     "spec-cons"
+     :desc "the generated sub-specification
+            second-order predicate for the function variable @('?h')"
+     :auto-desc "the symbol @('spec-cons')
+                 (in the same package as @('old')),
+                 followed by the name of @('?h') between square brackets"
+     :name-rest "spec-cons[?h]")
 
-    (xdoc::desc
-     "@(':spec-cons-enable') &mdash; default @('nil')"
-     (xdoc::p
-      "Determines whether @('spec-cons[?h]'),
-       and its associated @(tsee defun-sk) rewrite rule,
-       are enabled.")
-     (xdoc::p
-      "It must be one of the following:")
-     (xdoc::ul
-      (xdoc::li
-       "@('t'), to enable them.")
-      (xdoc::li
-       "@('nil'), to disable them.")))
+    (xdoc::evmac-desc-input-enable-t/nil
+     "spec-cons"
+     :desc "@('spec-cons[?h]')
+            (along its associated @(tsee defun-sk) rewrite rule)")
 
-    (xdoc::desc
-     "@(':equal-fold-name') &mdash; @(':auto')"
-     (xdoc::p
-      "Determines the name of the generated second-order equality
-       between @('?f') and @('fold[?g][?h]').")
-     (xdoc::ul
-      (xdoc::li
-       "@(':auto'), to use the symbol @('equal')
-        (in the same package as @('old')),
-        followed by the name of @('?f') between square brackets,
-        followed by the name of @('fold[?g][?h]') between square brackets.")
-      (xdoc::li
-       "Any other symbol, to use as the name."))
-     (xdoc::p
-      "In the rest of this documentation page,
-       let @('equal[?f][fold[?g][?h]]') be this name."))
+    (xdoc::evmac-desc-input-name
+     "equal-fold"
+     :desc "the generated second-order equality
+            between @('?f') and @('fold[?g][?h]')"
+     :auto-desc "the symbol @('equal')
+                 (in the same package as @('old')),
+                 followed by
+                 the name of @('?f') between square brackets,
+                 followed by
+                 the name of @('fold[?g][?h]') between square brackets"
+     :name-rest "equal[?f][fold[?g][?h]]")
 
-    (xdoc::desc
-     "@(':equal-fold-enable') &mdash; default @('nil')"
-     (xdoc::p
-      "Determines whether @('equal[?f][fold[?g][?h]]'),
-       and its associated @(tsee defun-sk) rewrite rule,
-       are enabled.")
-     (xdoc::p
-      "It must be one of the following:")
-     (xdoc::ul
-      (xdoc::li
-       "@('t'), to enable them.")
-      (xdoc::li
-       "@('nil'), to disable them.")))
+    (xdoc::evmac-desc-input-enable-t/nil
+     "equal-fold"
+     :desc "@('equal[?f][fold[?g][?h]]')
+            (along its associated @(tsee defun-sk) rewrite rule)")
 
     (xdoc::desc
      "@(':cdr-output') &mdash; default @(':auto')"
@@ -363,21 +298,7 @@
 
     (xdoc::desc-apt-input-old-if-new-enable)
 
-    (xdoc::desc
-     "@(':verify-guards') &mdash; default @(':auto')"
-     (xdoc::p
-      "Determines whether the guards of the generated function(s)
-       are to be verified or not.")
-     (xdoc::p
-      "It must be one of the following:")
-     (xdoc::ul
-      (xdoc::li
-       "@('t'), to verify them.")
-      (xdoc::li
-       "@('nil'), to not verify them.")
-      (xdoc::li
-       "@(':auto'), to verify them if and only if
-        the guards of @('old') are verified.")))
+    (xdoc::desc-apt-input-verify-guards)
 
     (xdoc::evmac-input-print divconq)
 
@@ -395,7 +316,7 @@
      (xdoc::codeblock
       "(soft::defunvar ?g (* * ... *) => *)")
      (xdoc::p
-      "where the number of arguments is @('n+1'),
+      "where the number of arguments is @('m+1'),
        i.e. the same as @('?f').")
      (xdoc::p
       "In the " *divconq-design-notes* ",
@@ -409,7 +330,7 @@
      (xdoc::codeblock
       "(soft::defunvar ?h (* * ... * *) => *)")
      (xdoc::p
-      "where the number of arguments is @('n+2'),
+      "where the number of arguments is @('m+2'),
        i.e. the same as @('?f') plus one.")
      (xdoc::p
       "In the " *divconq-design-notes* ",
@@ -420,16 +341,17 @@
      (xdoc::p
       "List fold function:")
      (xdoc::codeblock
-      "(soft::defun2 fold[?g][?h] (x0 x1 ... xn)"
-      "  (cond ((atom x0) (?g x0 x1 ... xn))"
-      "        (t (?h (car x0)"
-      "               x1"
+      "(soft::defun2 fold[?g][?h] (x z1 ... zm)"
+      "  (cond ((atom x) (?g x z1 ... zm))"
+      "        (t (?h (car x)"
+      "               z1"
       "               ..."
-      "               xn"
-      "               (fold[?g][?h] (cdr x0) x1 ... xn)))))")
+      "               zm"
+      "               (fold[?g][?h] (cdr x) z1 ... zm)))))")
      (xdoc::p
       "In the " *divconq-design-notes* ",
-       @('fold[?g][?h]') is denoted by @($\\mathit{fold}(g,h)$)."))
+       @('fold[?g][?h]') is denoted by @($\\mathit{fold}(g,h)$)
+       and @('z1'), ..., @('zm') are denoted by @($\\overline{z}$)."))
 
     (xdoc::desc
      "@('spec-atom[?g]')"
@@ -437,9 +359,10 @@
       "Sub-specification for @('?g'):")
      (xdoc::codeblock
       "(soft::defun-sk2 spec-atom[?g] ()"
-      "  (forall (x0 x1 ... xn)"
-      "          (impliez (atom x0)"
-      "                   (iorel x0 x1 ... xn (?g x0 x1 ... xn)))))")
+      "  (forall (x x1 ... xn)"
+      "          (impliez (atom x)"
+      "                   iorel<x,x1,...,xn,"
+      "                         (?g x a1<x1,...,xn> ... am<x1,...,xn>))))")
      (xdoc::p
       "In the " *divconq-design-notes* ",
        @('spec-atom[?g]') is denoted by @($S_\\mathrm{g}(g)$)."))
@@ -450,10 +373,15 @@
       "Sub-specification for @('?h'):")
      (xdoc::codeblock
       "(soft::defun-sk2 spec-cons[?h] ()"
-      "  (forall (x0 x1 ... xn y)"
-      "          (impliez (and (consp x0)"
-      "                        (iorel (cdr x0) x1 ... xn y))"
-      "                   (iorel x0 x1 ... xn (?h (car x0) x1 ... xn y)))))")
+      "  (forall (x x1 ... xn y)"
+      "          (impliez (and (consp x)"
+      "                        iorel<(cdr x),x1,...,xn,y>)"
+      "                   iorel<x,x1,...,xn,"
+      "                         (?h (car x)"
+      "                             a1<x1,...,xn>"
+      "                             ..."
+      "                             am<x1,...,xn>"
+      "                             y))))")
      (xdoc::p
       "In the " *divconq-design-notes* ",
        @('spec-cons[?h]') is denoted by @($S_\\mathrm{h}(h)$)."))
@@ -463,14 +391,13 @@
      (xdoc::p
       "Equality between @('?f') and @('fold[?g][?h]'):")
      (xdoc::codeblock
-      "(soft::defun-sk2 equal[?f][fold[?g][?h]] ()"
-      "  (forall (x0 x1 ... xn)"
-      "          (equal (?f x0 x1 ... xn)"
-      "                 (fold[?g][?h] x0 x1 ... xn))))")
+      "(soft::defequal equal[?f][fold[?g][?h]]"
+      "  :left ?f"
+      "  :right fold[?g][?h]"
+      "  :vars (x z1 ... zm))")
      (xdoc::p
       "In the " *divconq-design-notes* ",
-       this equality is just denoted by @($f=\\mathit{fold}(g,h)$),
-       but this must be expressed as a second-order @(tsee defun-sk) in ACL2."))
+       this equality is denoted by @($f=\\mathit{fold}(g,h)$)."))
 
     (xdoc::desc
      "@('new')"

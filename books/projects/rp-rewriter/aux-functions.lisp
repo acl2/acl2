@@ -799,6 +799,23 @@
                                 (not (rp-rule-metap rule)))))
     (access custom-rewrite-rule rule :flg))
 
+  (defun meta-runep (rune)
+    (declare (xargs :guard t))
+    (case-match rune
+      ((':meta meta-fnc . trig-fnc)
+       (and (symbolp meta-fnc)
+            meta-fnc
+            (symbolp trig-fnc)
+            trig-fnc))))
+
+  (defun-inline meta-rune-fnc (rune)
+    (declare (xargs :guard (meta-runep rune)))
+    (cadr rune))
+  
+  (defun-inline meta-rune-trig-fnc (rune)
+    (declare (xargs :guard (meta-runep rune)))
+    (cddr rune))
+
   #|(defun-inline rp-rule-fnc (rule)
     (declare (xargs :guard (weak-custom-rewrite-rule-p rule)))
     (access custom-rewrite-rule rule :rule-fnc))||#)
@@ -1084,11 +1101,11 @@
      :enabled t
      (declare (xargs :mode :logic
                      :verify-guards nil
-                     :guard (and (integerp cnt)
+                     :guard (and (natp cnt)
                                  #|(rp-termp term1)||#
                                  #|(rp-termp term2)||#)))
      "Same as rp-equal but also runs equal after counter goes below 0."
-     (or (if (and (< cnt 0))
+     (or (if (and (zp cnt))
              (equal term1 term2)
            nil)
          (let* ((term1 (ex-from-rp term1))
@@ -1100,13 +1117,13 @@
              (equal term1 term2))
             (t ;(or (if (< cnt 0) (equal term1 term2) nil)
              (and (equal (car term1) (car term2))
-                  (rp-equal-cnt-subterms (cdr term1) (cdr term2) (1- cnt))))))))
+                  (rp-equal-cnt-subterms (cdr term1) (cdr term2) (nfix (1- cnt)))))))))
 
    (define rp-equal-cnt-subterms (subterm1 subterm2 cnt)
      :enabled t
      (declare (xargs :mode :logic
                      :verify-guards nil
-                     :guard (and (integerp cnt)
+                     :guard (and (natp cnt)
                                  #|(rp-term-listp subterm1)||#
                                  #|(rp-term-listp subterm2)||#)))
      (if (or (atom subterm1)
@@ -1296,37 +1313,39 @@
      (cons (ex-from-rp-all (car lst))
            (ex-from-rp-all-lst (cdr lst))))))
 
-(encapsulate
+#|(encapsulate
   nil
 
-  (defrec rp-meta-rule-rec
+  (defrec meta-rule-rec
     (trig-fnc ;; trigger function name
      fnc ;; function name that meta rule executes
      dont-rw ;; if meta rule also returns a structure for dont-rw
      valid-syntax ;; if meta rule returns valid-syntax (rp-valid-termp)
-     outside-in
+     outside-in ;; rewriting direction outside-in, inside-out or both
+     args ;; arguments of "fnc"
+     ret-vals ;; return vals of "fnc"
      )
     t)
 
   (defun rp-meta-fnc (rule)
     (declare (xargs :guard (weak-rp-meta-rule-rec-p rule)))
-    (access rp-meta-rule-rec rule :fnc))
+    (access meta-rule-rec rule :fnc))
 
   (defun rp-meta-trig-fnc (rule)
     (declare (xargs :guard (weak-rp-meta-rule-rec-p rule)))
-    (access rp-meta-rule-rec rule :trig-fnc))
+    (access meta-rule-rec rule :trig-fnc))
 
   (defun rp-meta-dont-rw (rule)
     (declare (xargs :guard (weak-rp-meta-rule-rec-p rule)))
-    (access rp-meta-rule-rec rule :dont-rw))
+    (access meta-rule-rec rule :dont-rw))
 
   (defun rp-meta-syntax-verified (rule)
     (declare (xargs :guard (weak-rp-meta-rule-rec-p rule)))
-    (access rp-meta-rule-rec rule :valid-syntax))
+    (access meta-rule-rec rule :valid-syntax))
 
   (defun rp-meta-outside-in (rule)
     (declare (xargs :guard (weak-rp-meta-rule-rec-p rule)))
-    (access rp-meta-rule-rec rule :outside-in))
+    (access meta-rule-rec rule :outside-in))
 
   #|(defun rp-meta-rule-syntaxp (term)
   "Returned term from meta rule functin should meet this syntax."
@@ -1424,7 +1443,7 @@
   (ignorable state))
   `(and (weak-rp-meta-rule-recs-p ,meta-rules)
   ;;(rp-meta-valid-syntax-listp ,meta-rules ,state)
-  ))||#)
+  ))||#)||#
 
 (mutual-recursion
  (defun subtermp (term subterm)
@@ -1547,7 +1566,7 @@
 
   (verify-guards merge-comperator-sort))
 
-(define remove-disabled-meta-rules ((meta-rules weak-rp-meta-rule-recs-p)
+#|(define remove-disabled-meta-rules ((meta-rules weak-rp-meta-rule-recs-p)
                                     (disabled-meta-rules ))
   :guard-hints (("Goal"
                  :in-theory (e/d (weak-rp-meta-rule-rec-p) ())))
@@ -1563,7 +1582,7 @@
                                              disabled-meta-rules)
                (cons (car meta-rules)
                      (remove-disabled-meta-rules (cdr meta-rules)
-                                                 disabled-meta-rules)))))))
+                                                 disabled-meta-rules)))))))||#
 
 
 (defund get-rune-name (fn state)
@@ -1666,17 +1685,18 @@
 
 (defstobj rp-state
 
-  (rules-alist-inside-out :type (hash-table eq) :initially nil)
-  (rules-alist-outside-in :type (hash-table eq) :initially nil)
-  (disabled-exc-rules :type (hash-table eq) :initially nil)
+  
   ;;(context :type (satisfies rp-term-listp)  :initially nil)
   ;;(iff-flg :type (satisfies booleanp) :initially nil)
   ;;(outside-in-flg :type (satisfies booleanp) :initially nil)
 
+  (rules-alist-inside-out :type (hash-table eq) :initially nil)
+  (rules-alist-outside-in :type (hash-table eq) :initially nil)
+  (disabled-exc-rules :type (hash-table eq) :initially nil) 
   
-  (show-used-rules-flg :type (satisfies booleanp) :initially nil)
+  (show-used-rules-flg :type (satisfies booleanp) :initially t)
   (count-used-rules-flg :type (satisfies booleanp) :initially nil)
-  (rules-used :type (satisfies alistp) :initially nil)
+  (rules-used :type (hash-table equal) :initially nil)
 
   (rp-brr :type (satisfies booleanp) :initially nil)
   (rw-stack-size :type (satisfies integerp) :initially 0)
@@ -1709,8 +1729,7 @@
 
 (defund rp-state-new-run (rp-state)
   (declare (xargs :stobjs (rp-state)))
-  (b* ((- (fast-alist-free (rules-used rp-state)))
-       (rp-state (update-rules-used nil rp-state))
+  (b* ((rp-state (rules-used-clear rp-state))
        (rp-state (update-rw-stack-size 0 rp-state))
        (rp-state (update-rw-stack nil rp-state))
        (rp-state (update-rule-frame-cnts nil rp-state)))
@@ -1728,8 +1747,6 @@
 
 ;; (defmacro unset-iff-flg ()
 ;;   `(update-iff-flg nil rp-state))
-
-
 
 
 (defun-sk valid-rp-state-syntaxp-aux (rp-state)
@@ -1753,10 +1770,24 @@
 
 ;; (define valid-rp-state-syntaxp-exec (rp-state)
 ;;   (b* ((
-  
-
 
 (define valid-rp-state-syntaxp (rp-state)
   (and (rp-statep rp-state)
        (valid-rp-state-syntaxp-aux rp-state)))
 
+(defun-sk rp-state-preservedp-sk (old-rp-state new-rp-state)
+  (declare (xargs :verify-guards nil))
+  (forall key
+          (or (not (symbolp key))
+              (and  (equal (rules-alist-outside-in-get key old-rp-state)
+                           (rules-alist-outside-in-get key new-rp-state))
+                    (equal (rules-alist-inside-out-get key old-rp-state)
+                           (rules-alist-inside-out-get key new-rp-state))))))
+              
+
+(define rp-state-preservedp (old-rp-state new-rp-state)
+  :verify-guards nil
+  (and (rp-statep new-rp-state)
+       (rp-state-preservedp-sk old-rp-state
+                               new-rp-state)))     
+       

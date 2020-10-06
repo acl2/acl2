@@ -36,7 +36,9 @@
 
 (in-package "RP")
 
-(include-book "summation-tree-meta-fncs")
+(include-book "fnc-defs")
+
+(include-book "pp-flatten-meta-fncs")
 
 (local
  (include-book "lemmas"))
@@ -351,16 +353,16 @@
 
 (progn
   (local
-   (defthmd pp-has-bitp-rp-implies-lemma
-     (implies (and (pp-has-bitp-rp term)
+   (defthmd has-bitp-rp-implies-lemma
+     (implies (and (has-bitp-rp term)
                    (mult-formula-checks state)
                    (rp-evl-meta-extract-global-facts)
                    (eval-and-all (context-from-rp term nil) a))
               (bitp (rp-evlt term a)))
      :hints (("goal"
-              :induct (pp-has-bitp-rp term)
+              :induct (has-bitp-rp term)
               :do-not-induct t
-              :in-theory (e/d (pp-has-bitp-rp
+              :in-theory (e/d (has-bitp-rp
                                is-rp
                                is-if
                                eval-and-all
@@ -369,31 +371,31 @@
                                ex-from-rp-lemma1
                                valid-sc))))))
 
-  (local
-   (defthm pp-has-bitp-rp-implies
-     (implies (and (pp-has-bitp-rp term)
-                   (mult-formula-checks state)
-                   (rp-evl-meta-extract-global-facts)
-                   (valid-sc term a))
-              (and (bitp (rp-evlt term a))
-                   (bitp (rp-evlt (ex-from-rp term) a))))
-     :hints (("goal"
-              :induct (pp-has-bitp-rp term)
-              :expand ((valid-sc term a))
-              :do-not-induct t
-              :in-theory (e/d (pp-has-bitp-rp
-                               pp-has-bitp-rp-implies-lemma
-                               is-rp
-                               is-if)
-                              (bitp
-                               rp-trans
-                               ex-from-rp-lemma1
-                               context-from-rp
-                               valid-sc-ex-from-rp-2
-                               not-include-rp
-                               rp-evl-of-rp-call
-                               valid-sc
-                               eval-and-all)))))))
+  
+  (defthm pp-has-bitp-rp-implies
+    (implies (and (has-bitp-rp term)
+                  (mult-formula-checks state)
+                  (rp-evl-meta-extract-global-facts)
+                  (valid-sc term a))
+             (and (bitp (rp-evlt term a))
+                  (bitp (rp-evlt (ex-from-rp term) a))))
+    :hints (("goal"
+             :induct (has-bitp-rp term)
+             :expand ((valid-sc term a))
+             :do-not-induct t
+             :in-theory (e/d (has-bitp-rp
+                              has-bitp-rp-implies-lemma
+                              is-rp
+                              is-if)
+                             (bitp
+                              rp-trans
+                              ex-from-rp-lemma1
+                              context-from-rp
+                              valid-sc-ex-from-rp-2
+                              not-include-rp
+                              rp-evl-of-rp-call
+                              valid-sc
+                              eval-and-all))))))
 
 (defthmd rp-evlt-of-ex-from-rp-reverse-only-atom-and-car
   (AND (IMPLIES (SYNTAXP (or (ATOM TERM)
@@ -2402,12 +2404,25 @@
 #|(RP-EVL-OF-TRANS-LIST (RP-TRANS-LST LST)
                                         A)||#
 
-(create-regular-eval-lemma -- 1 mult-formula-checks)
-(create-regular-eval-lemma bit-of 2 mult-formula-checks)
+
 
 ;; (local
 ;;  (defthm ...
 ;;    (RP-EVL-OF-TRANS-LIST (LIST (LIST '-- term)) A)
+
+
+
+
+
+(local
+ (progn
+   (create-regular-eval-lemma -- 1 mult-formula-checks)
+   (create-regular-eval-lemma bit-of 2 mult-formula-checks)
+   (create-regular-eval-lemma BINARY-? 3 mult-formula-checks)
+   (create-regular-eval-lemma BINARY-and 2 mult-formula-checks)
+   (create-regular-eval-lemma BINARY-or 2 mult-formula-checks)
+   (create-regular-eval-lemma BINARY-xor 2 mult-formula-checks)
+   (create-regular-eval-lemma BINARY-NOT 1 mult-formula-checks)))
 
 (local
  (defthmd and-list-to-binary-and
@@ -2417,7 +2432,90 @@
             :in-theory (e/d (and-list
                              and$) ())))))
 
+(defret pp-remove-extraneous-sc-correct
+  (implies (and (rp-evl-meta-extract-global-facts)
+                (mult-formula-checks state))
+           (equal (rp-evlt res-term a)
+                  (rp-evlt term a)))
+  :fn pp-remove-extraneous-sc
+  :hints (("Goal"
+           :do-not-induct t
+           :induct (pp-remove-extraneous-sc term)
+           :expand ((:free (term) (nth 3 term)))
+           :in-theory (e/d* (pp-remove-extraneous-sc
+                             rp-evlt-of-ex-from-rp-reverse-only-atom-and-car
+                             regular-eval-lemmas)
+                            (rp-trans
+                             rp-termp
+                             rp-evlt-of-ex-from-rp
+                             (:DEFINITION EX-FROM-RP)
+                             (:DEFINITION INCLUDE-FNC)
+                             (:REWRITE NOT-INCLUDE-RP)
+                             (:DEFINITION INCLUDE-FNC-SUBTERMS)
+                             (:DEFINITION RP-EQUAL)
+                             (:REWRITE RP-EQUAL-IS-SYMMETRIC)
+                             (:REWRITE RP-EVLT-OF-RP-EQUAL)
+                             (:REWRITE WHEN-EX-FROM-RP-IS-1)
+                             (:REWRITE WHEN-EX-FROM-RP-IS-0)
+                             (:TYPE-PRESCRIPTION BINARY-?-P$INLINE)
+                             )))))
+
+(defret pp-remove-extraneous-sc-correct-2
+  (implies (and (rp-evl-meta-extract-global-facts)
+                (mult-formula-checks state))
+           (and (equal (equal (ifix (rp-evlt res-term a))
+                              (ifix (rp-evlt term a)))
+                       t)
+                (equal (equal (rp-evlt res-term a)
+                              (rp-evlt term a))
+                       t)))
+  :fn pp-remove-extraneous-sc
+  :hints (("Goal"
+           :do-not-induct t
+           )))
+
+
 ;; A MAIN LEMMA
+(defthm pp-flatten-correct-lemma
+  (implies (and (mult-formula-checks state)
+                (pp-term-p term)
+                (booleanp sign)
+                (valid-sc term a)
+                (rp-evl-meta-extract-global-facts))
+           (and #|(equal (rp-evlt `(sum-list ,(create-list-instance (pp-flatten term sign))) a)
+            (if sign
+            (-- (rp-evlt term a))
+            (rp-evlt term a)))||#
+            (equal (sum-list (RP-EVLt-lst (pp-flatten term sign) a))
+                   (if sign
+                       (-- (rp-evlt (PP-REMOVE-EXTRANEOUS-SC term) a))
+                     (rp-evlt (PP-REMOVE-EXTRANEOUS-SC term) a)))
+            ))
+  :hints (("Goal"
+           :do-not-induct t
+; :use ((:instance pp-lists-to-term-pp-lst_of_pp-term-to-pp-lists))
+           :in-theory (e/d* (pp-flatten
+                             ;;rp-evlt-of-ex-from-rp-reverse-only-atom-and-car
+                             regular-eval-lemmas
+                            and-list-to-binary-and)
+                           (;pp-lists-to-term-pp-lst_of_pp-term-to-pp-lists
+                            PP-TERM-P
+                            RP-TRANS-IS-TERM-WHEN-LIST-IS-ABSENT
+                            pp-remove-extraneous-sc-correct
+                            ;;rp-evlt-of-ex-from-rp
+                            ;;RP-TRANS
+                            VALID-SC
+                            NOT-INCLUDE-RP-MEANS-VALID-SC
+                            rp-trans
+                            (:REWRITE EX-FROM-SYNP-LEMMA1)
+                            (:REWRITE ACL2::O-P-O-INFP-CAR)
+                            (:DEFINITION IS-SYNP$INLINE)
+                            (:REWRITE NOT-INCLUDE-RP)
+                            PP-TERM-TO-PP-LISTS-EXTRACT-SIGN
+                            (:DEFINITION RP-TERMP)
+                            ;;RP-TRANS-LST
+                            )))))
+
 (defthm pp-flatten-correct
   (implies (and (mult-formula-checks state)
                 (pp-term-p term)
@@ -2436,12 +2534,17 @@
   :hints (("Goal"
            :do-not-induct t
 ; :use ((:instance pp-lists-to-term-pp-lst_of_pp-term-to-pp-lists))
-           :in-theory (e/d (pp-flatten
+           :in-theory (e/d* (;;rp-evlt-of-ex-from-rp-reverse-only-atom-and-car
+                             regular-eval-lemmas
                             and-list-to-binary-and)
                            (;pp-lists-to-term-pp-lst_of_pp-term-to-pp-lists
                             PP-TERM-P
+                            RP-TRANS-IS-TERM-WHEN-LIST-IS-ABSENT
+                            ;;rp-evlt-of-ex-from-rp
                             ;;RP-TRANS
                             VALID-SC
+                            NOT-INCLUDE-RP-MEANS-VALID-SC
+                            rp-trans
                             (:REWRITE EX-FROM-SYNP-LEMMA1)
                             (:REWRITE ACL2::O-P-O-INFP-CAR)
                             (:DEFINITION IS-SYNP$INLINE)
@@ -2836,19 +2939,3 @@
   rp-term-listp
   valid-sc)))))||#)
 
-#|(defthm eval-of-sort-pp-flatten-main-is-correct
-(implies (and (mult-formula-checks state)
-(valid-sc term a)
-(rp-evl-meta-extract-global-facts))
-(equal (rp-evlt (flatten-pp-main term) a)
-(rp-evlt term a)))
-:hints (("Goal"
-:do-not-induct t
-:in-theory (e/d (flatten-pp-main
-eval-of---1)
-(floor
-pp-term-p
-bitp
-EVAL-OF----
---
-sum)))))||#

@@ -39,8 +39,7 @@
 ; Include the book whose certificate we want to check.
 (include-book "macros")
 
-; Define must-succeed (used below).
-(include-book "std/testing/eval" :dir :system)
+(include-book "std/testing/must-succeed" :dir :system)
 
 ; Define read-list (used below).
 (include-book "misc/file-io" :dir :system)
@@ -58,4 +57,3 @@
        (let ((erp (not (equal (cadr (member-eq :expansion-alist forms))
                               *macros-expansion-alist*))))
          (mv erp nil state))))))
-

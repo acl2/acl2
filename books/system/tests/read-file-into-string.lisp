@@ -9,7 +9,7 @@
 (in-package "ACL2")
 
 (include-book "std/testing/assert-bang" :dir :system)
-(include-book "std/testing/eval" :dir :system)
+(include-book "std/testing/must-eval-to-t" :dir :system)
 
 ; The file read-file-into-string-test.txt should be kept in sync with the
 ; following constant.

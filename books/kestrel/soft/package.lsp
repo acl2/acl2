@@ -15,7 +15,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defpkg "SOFT" (append *std-pkg-symbols*
-                       '(body
+                       '(*t*
+                         arity+
+                         body
                          control-screen-output
                          cw-event
                          defchoose-body
@@ -36,7 +38,17 @@
                          defun-sk-strengthen
                          defun-sk-witness
                          defxdoc+
+                         ensure-function-name$
+                         ensure-list-no-duplicates$
+                         ensure-symbol-is-fresh-event-name$
+                         ensure-value-is-boolean$
+                         ensure-value-is-symbol$
+                         ensure-value-is-symbol-list$
                          er-soft+
+                         evmac-input-print-p
+                         evmac-prepare-proofs
+                         evmac-process-input-print
+                         evmac-process-input-show-only
                          fail-event
                          fargs
                          flambdap
@@ -45,6 +57,7 @@
                          function-symbol-listp
                          fundef-enabledp
                          guard-verified-p
+                         guard-verified-p+
                          impossible
                          irecursivep
                          keywords-of-keyword-value-list
@@ -57,6 +70,7 @@
                          maybe-pseudo-event-formp
                          measure
                          o<
+                         packn-pos
                          pseudo-event-form-listp
                          pseudo-event-formp
                          recursivep
@@ -64,8 +78,10 @@
                          restore-output
                          restore-output?
                          restrict-alist
+                         run-when
                          strip-keyword-list
                          symbol-symbol-alistp
+                         table-alist+
                          ubody
                          uguard
                          variablep

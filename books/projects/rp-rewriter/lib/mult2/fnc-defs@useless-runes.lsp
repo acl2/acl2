@@ -88,31 +88,29 @@
                                (:REWRITE INTEGER-LISTP-IMPLIES-INTEGERP))
                             (2 2 (:REWRITE DEFAULT-<-2))
                             (2 2 (:REWRITE DEFAULT-<-1)))
-(RP::LEXORDER2 (296 5 (:REWRITE O<=-O-FINP-DEF))
-               (242 152 (:REWRITE RP::MEASURE-LEMMA1))
+(RP::LEXORDER2 (242 152 (:REWRITE RP::MEASURE-LEMMA1))
+               (170 5 (:REWRITE O<=-O-FINP-DEF))
                (150 10 (:DEFINITION RP::EX-FROM-RP))
                (84 24 (:REWRITE DEFAULT-CDR))
-               (68 4 (:REWRITE RP::MEASURE-LEMMA6-5))
-               (68 4 (:REWRITE RP::MEASURE-LEMMA6))
                (60 20 (:REWRITE DEFAULT-CAR))
                (48 48 (:REWRITE RP::MEASURE-LEMMA1-2))
-               (44 22 (:REWRITE DEFAULT-<-2))
-               (44 22 (:REWRITE DEFAULT-<-1))
+               (34 2 (:REWRITE RP::MEASURE-LEMMA6-5))
                (23 12 (:REWRITE DEFAULT-+-2))
                (23 5 (:REWRITE AC-<))
-               (22 22
-                   (:REWRITE RP::EQUALITY-MEASURE-LEMMA3))
-               (22 22
-                   (:REWRITE RP::EQUALITY-MEASURE-LEMMA1))
                (22 12 (:REWRITE DEFAULT-+-1))
                (16 4 (:REWRITE O-P-O-INFP-CAR))
-               (14 14
-                   (:REWRITE RP::EQUALITY-MEASURE-LEMMA2))
                (13 5 (:REWRITE O-INFP-O-FINP-O<=))
                (10 10
                    (:TYPE-PRESCRIPTION RP::IS-RP$INLINE))
-               (5 5
-                  (:REWRITE |a < b & b < c  =>  a < c|)))
+               (8 4 (:REWRITE DEFAULT-<-2))
+               (8 4 (:REWRITE DEFAULT-<-1))
+               (5 5 (:REWRITE |a < b & b < c  =>  a < c|))
+               (4 4
+                  (:REWRITE RP::EQUALITY-MEASURE-LEMMA3))
+               (4 4
+                  (:REWRITE RP::EQUALITY-MEASURE-LEMMA1))
+               (2 2
+                  (:REWRITE RP::EQUALITY-MEASURE-LEMMA2)))
 (RP::LEXORDER2-SANITY-LEMMA1 (84 48 (:REWRITE RP::MEASURE-LEMMA1))
                              (60 4 (:DEFINITION RP::EX-FROM-RP))
                              (42 18 (:REWRITE DEFAULT-CDR))

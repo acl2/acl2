@@ -65,28 +65,33 @@
 
 ;; TODO: Add support for supressing more kinds of reports.
 
+;; TODO: Suppress reasoning-based checks (like those involving types) on :program mode functions.
+
 (include-book "format-strings")
-(include-book "kestrel/utilities/quote" :dir :system)
-(include-book "kestrel/utilities/my-get-event" :dir :system)
-(include-book "kestrel/utilities/defun-events" :dir :system)
-(include-book "kestrel/utilities/world" :dir :system)
-(include-book "kestrel/utilities/substitution" :dir :system)
+(include-book "quote")
+(include-book "my-get-event")
+(include-book "defun-events")
+(include-book "world")
+(include-book "substitution")
 (include-book "std/strings/substrp" :dir :system)
 
-(defun all-defuns-in-world (wrld triple-to-stop-at acc)
-  (declare (xargs :guard (and (plist-worldp wrld)
+(defun all-defuns-in-world (world triple-to-stop-at whole-world acc)
+  (declare (xargs :guard (and (plist-worldp world)
+                              (plist-worldp whole-world)
                               (true-listp acc))))
-  (if (endp wrld)
+  (if (endp world)
       (reverse acc)
-    (let ((triple (first wrld)))
+    (let ((triple (first world)))
       (if (equal triple triple-to-stop-at)
           (prog2$ (cw "~%Note: Not checking anything in the linter itself, any books included before the linter, or the ACL2 system itself.  To override, use linter option :check :all.~%~%")
                   (reverse acc))
         (let ((symb (car triple))
               (prop (cadr triple)))
-          (if (eq prop 'unnormalized-body)
-              (all-defuns-in-world (rest wrld) triple-to-stop-at (cons symb acc))
-            (all-defuns-in-world (rest wrld) triple-to-stop-at acc)))))))
+          (if (and (eq prop 'unnormalized-body)
+                   (fgetprop symb 'unnormalized-body nil whole-world) ;todo: hack: make sure the function is still defined (why does this sometimes fail?)
+                   )
+              (all-defuns-in-world (rest world) triple-to-stop-at whole-world (cons symb acc))
+            (all-defuns-in-world (rest world) triple-to-stop-at whole-world acc)))))))
 
 ;dup
 (defun enquote-list (items)
@@ -164,28 +169,28 @@
 
 ;;test: (SYMBOLIC-STRIP-CARS '(CONS (CONS '#\0 'BLAH) 'NIL))
 
-(defun symbolic-strip-cdrs (term)
-  (declare (xargs :guard (pseudo-termp term)))
-  (if (variablep term)
-      (cw "Note: unable to get symbolic strip-cdrs of term ~x0.~%" term)
-    (if (quotep term) ; includes the case when term is 'nil
-        (if (alistp (unquote term))
-            (enquote-list (strip-cdrs (unquote term)))
-          (cw "Note: unable to get symbolic strip-cdrs of term ~x0.~%" term))
-      (let ((fn (ffn-symb term)))
-        (if (eq 'cons fn)
-            (let ((pair (farg1 term)))
-              (cons (symbolic-cdr pair)
-                    (symbolic-strip-cdrs (farg2 term))))
-          (if (eq 'acons fn)
-              (cons (farg2 term)
-                    (symbolic-strip-cdrs (farg3 term)))
-            (if (eq 'pairlis$ fn)
-                (take (symbolic-length (farg1 term))
-                      (symbolic-elements (farg2 term)))
-              (if (eq 'pairlis2 fn)
-                  (symbolic-elements (farg2 term))
-                (cw "Note: unable to get symbolic strip-cdrs of term ~x0.~%" term)))))))))
+;; (defun symbolic-strip-cdrs (term)
+;;   (declare (xargs :guard (pseudo-termp term)))
+;;   (if (variablep term)
+;;       (cw "Note: unable to get symbolic strip-cdrs of term ~x0.~%" term)
+;;     (if (quotep term) ; includes the case when term is 'nil
+;;         (if (alistp (unquote term))
+;;             (enquote-list (strip-cdrs (unquote term)))
+;;           (cw "Note: unable to get symbolic strip-cdrs of term ~x0.~%" term))
+;;       (let ((fn (ffn-symb term)))
+;;         (if (eq 'cons fn)
+;;             (let ((pair (farg1 term)))
+;;               (cons (symbolic-cdr pair)
+;;                     (symbolic-strip-cdrs (farg2 term))))
+;;           (if (eq 'acons fn)
+;;               (cons (farg2 term)
+;;                     (symbolic-strip-cdrs (farg3 term)))
+;;             (if (eq 'pairlis$ fn)
+;;                 (take (symbolic-length (farg1 term))
+;;                       (symbolic-elements (farg2 term)))
+;;               (if (eq 'pairlis2 fn)
+;;                   (symbolic-elements (farg2 term))
+;;                 (cw "Note: unable to get symbolic strip-cdrs of term ~x0.~%" term)))))))))
 
 (defun char-to-nat (char)
   (declare (xargs :guard (member char '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9))))
@@ -250,21 +255,24 @@
   (let* ((args-mentioned (args-in-format-string string)) ;these are chars
          (alist-keys (symbolic-strip-cars alist))
          (quoted-args-mentioned (enquote-list args-mentioned)))
-    (prog2$ (if (not (subsetp-equal quoted-args-mentioned alist-keys))
+    (progn$ (if (not (no-duplicatesp alist-keys))
+                (cw "(In ~s0, questionable format string use in ~x1. Duplicate keys in alist: ~x2)~%~%" (thing-being-checked-to-string thing-being-checked) call alist-keys)
+              nil)
+     (if (not (subsetp-equal quoted-args-mentioned alist-keys))
                 (cw "(In ~s0, questionable format string use in ~x1. Missing args? Mentioned args are ~x2 but alist keys are ~x3)~%~%" (thing-being-checked-to-string thing-being-checked) call quoted-args-mentioned alist-keys)
               nil)
             (if (not (subsetp-equal alist-keys quoted-args-mentioned))
                 (cw "(In ~s0, questionable format string use in ~x1. Extra args? Mentioned args are ~x2 but alist keys are ~x3)~%~%" (thing-being-checked-to-string thing-being-checked) call quoted-args-mentioned alist-keys)
               nil))))
 
-(defun check-vals-of-alist-wrt-format-string (string alist thing-being-checked call)
-  (let* ((args-mentioned (args-in-format-string string)) ;these are chars
-         (max-arg-mentioned (max-val-of-chars args-mentioned))
-         (alist-vals (symbolic-strip-cdrs alist))
-         (len-vals (len alist-vals)))
-    (if (<= len-vals max-arg-mentioned)
-        (cw "(In ~s0, questionable format string use in ~x1. Not enough args given?)~%~%" (thing-being-checked-to-string thing-being-checked) call)
-      nil)))
+;; (defun check-vals-of-alist-wrt-format-string (string alist thing-being-checked call)
+;;   (let* ((args-mentioned (args-in-format-string string)) ;these are chars
+;;          (max-arg-mentioned (max-val-of-chars args-mentioned))
+;;          (alist-vals (symbolic-strip-cdrs alist))
+;;          (len-vals (len alist-vals)))
+;;     (if (<= len-vals max-arg-mentioned)
+;;         (cw "(In ~s0, questionable format string use in ~x1. Not enough args given?)~%~%" (thing-being-checked-to-string thing-being-checked) call)
+;;       nil)))
 
 (defun check-call-of-fmt-function (call thing-being-checked)
   (let ((string (farg1 call)))
@@ -272,7 +280,7 @@
          (let ((string (unquote string))
                (alist (farg2 call)))
            ;; we check the vals of the alist since the keys are always the digits 0 through 9:
-           (check-vals-of-alist-wrt-format-string string alist thing-being-checked call)))))
+           (check-keys-of-alist-wrt-format-string string alist thing-being-checked call)))))
 
 (defun check-call-of-hard-error (call thing-being-checked suppress)
   (prog2$ (and (not (member-eq :context suppress))
@@ -328,7 +336,7 @@
           (progn$ (if arg1-symbolp
                       (if arg2-symbolp
                           (cw "(In ~s0, EQUAL test ~x1 could use EQ since both arguments are known to be symbols.)~%~%"
-                              (thing-being-checked-to-string thing-being-checked) orig-term arg1 arg2)
+                              (thing-being-checked-to-string thing-being-checked) orig-term)
                         (cw "(In ~s0, EQUAL test ~x1 could use EQ since ~x2 is known to be a symbol.)~%~%"
                             (thing-being-checked-to-string thing-being-checked) orig-term arg1))
                     (if arg2-symbolp
@@ -338,7 +346,7 @@
                   (and arg1-numberp
                        arg2-numberp
                        (cw "(In ~s0, EQUAL test ~x1 could use = since both arguments are known to be numbers.)~%~%"
-                           (thing-being-checked-to-string thing-being-checked) orig-term arg1 arg2))
+                           (thing-being-checked-to-string thing-being-checked) orig-term))
                   (and (not arg1-symbolp)
                        (not arg2-symbolp)
                        (not (and arg1-numberp
@@ -346,7 +354,7 @@
                        (if arg1-eqlablep
                            (if arg2-eqlablep
                                (cw "(In ~s0, EQUAL test ~x1 could use EQL since both arguments are known to be numbers, symbols, or characters.)~%~%"
-                                   (thing-being-checked-to-string thing-being-checked) orig-term arg1 arg2)
+                                   (thing-being-checked-to-string thing-being-checked) orig-term)
                              (cw "(In ~s0, EQUAL test ~x1 could use EQL since ~x2 is known to be a number, symbol, or character.)~%~%"
                                  (thing-being-checked-to-string thing-being-checked) orig-term arg1))
                          (if arg2-eqlablep
@@ -386,7 +394,7 @@
           (progn$ (if arg1-symbolp
                       (if arg2-symbolp
                           (cw "(In ~s0, EQL test ~x1 could use EQ since both arguments are known to be symbols.)~%~%"
-                              (thing-being-checked-to-string thing-being-checked) orig-term arg1 arg2)
+                              (thing-being-checked-to-string thing-being-checked) orig-term)
                         (cw "(In ~s0, EQL test ~x1 could use EQ since ~x2 is known to be a symbol.)~%~%"
                             (thing-being-checked-to-string thing-being-checked) orig-term arg1))
                     (if arg2-symbolp
@@ -396,7 +404,7 @@
                   (and arg1-numberp
                        arg2-numberp
                        (cw "(In ~s0, EQL test ~x1 could use = since both arguments are known to be numbers.)~%~%"
-                           (thing-being-checked-to-string thing-being-checked) orig-term arg1 arg2))
+                           (thing-being-checked-to-string thing-being-checked) orig-term))
                   (and (ts-disjointp type-set1 ts-eqlable)
                        (ts-disjointp type-set2 ts-eqlable)
                        (cw "(In ~s0, ill-guarded call ~x1 since both ~x2 and ~x3 are not numbers, symbols, or characters.)~%~%"
@@ -668,39 +676,46 @@
                         fn
                         suppress state))))
 
-(defun check-defuns (fns assume-guards suppress state)
+(defun check-defuns (fns assume-guards suppress skip-fns state)
   (declare (xargs :stobjs state
+                  :guard (and ;todo: more
+                          (symbol-listp skip-fns))
                   :mode :program))
   (if (atom fns)
       nil
-    (let* ((fn (first fns)))
-      (prog2$ (check-defun fn assume-guards suppress state)
-              (check-defuns (rest fns) assume-guards suppress state)))))
+    (let* ((fn (first fns))
+           (checkp (not (member-eq fn skip-fns))))
+      (prog2$ (and checkp
+                   (progn$ (cw "Checking ~x0.~%" fn)
+                           (check-defun fn assume-guards suppress state)))
+              (check-defuns (rest fns) assume-guards suppress skip-fns state)))))
 
 ;todo: add support for more here
 (defconst *warning-types*
   '(:ground-term :guard-debug :equality-variant :context :resolvable-test
                  :equal-self))
 
-(defun run-linter-fn (check assume-guards suppress state)
+(defun run-linter-fn (check assume-guards suppress skip-fns state)
   (declare (xargs :stobjs state
                   :guard (and (member-eq check '(:user :all))
                               (booleanp assume-guards)
-                              (subsetp-eq suppress *warning-types*))
+                              (subsetp-eq suppress *warning-types*)
+                              (symbol-listp skip-fns))
                   :mode :program))
-  (let* ((wrld (w state))
+  (let* ((world (w state))
          (triple-to-stop-at (if (eq check :user)
                                 '(end-of-linter label . t)
                               nil))
-         (all-defuns (all-defuns-in-world wrld triple-to-stop-at nil)))
+         (all-defuns (all-defuns-in-world world triple-to-stop-at world nil)))
     (prog2$ (cw "Applying linter to ~x0 defuns:~%~%" (len all-defuns))
-            (check-defuns all-defuns assume-guards suppress state))))
+            (check-defuns all-defuns assume-guards suppress skip-fns state))))
 
 ;; Call this macro to check every defun in the current ACL2 world.
 (defmacro run-linter (&key (check ':user)             ;; either :user or :all
                            (suppress '(:ground-term :context)) ;; types of check to skip
                            (assume-guards 't) ;; whether to assume guards when analyzing function bodies
+                           (skip-fns 'nil) ;; functions to skip checking
                            )
-  `(run-linter-fn ',check ',assume-guards ',suppress state))
+  `(run-linter-fn ',check ',assume-guards ',suppress ',skip-fns state))
 
 (deflabel end-of-linter)
