@@ -65,7 +65,7 @@
 (define elf-read-mem-null-term ((byte-list byte-listp)
                                 (offset natp))
   :short "Read a location at an @('offset') of a given @('byte-list')
-  and return the list of bytes until a null is encountered"
+  and return the list of bytes until a null is encountered (null not included)"
   :measure (nfix (- (len byte-list) offset))
   :guard (<= offset (len byte-list))
   :returns (bl byte-listp :hyp (and (natp offset) (byte-listp byte-list)))
@@ -73,10 +73,12 @@
       (if (< offset (len byte-list))
           (let* ((val (car (nthcdr offset byte-list))))
             (if (equal 0 val)
-                (cons 0 nil)
+                ;; (cons 0 nil)
+                nil
               (cons val
                     (elf-read-mem-null-term byte-list (1+ offset)))))
-        (cons 0 nil))
+        ;; (cons 0 nil)
+        nil)
     nil))
 
 (define elf-read-string-null-term ((byte-list byte-listp)
@@ -598,7 +600,7 @@
 ;; ----------------------------------------------------------------------
 
 (define get-section-header
-  ((name stringp "Name of a section header; null-terminated") ;; (e.g., ".symtab ")
+  ((name stringp "Name of a section header; e.g., \".symtab\"")
    (section-headers elf-section-headers-p))
   :short "Get the section header from @('section-headers') that corresponds to section @('name'), if it
   exists"
@@ -653,7 +655,7 @@
                             elf)
   :short "Get all symbol table entries, with names mapped to entries in the string table"
   :returns (elf-entries)
-  (b* ((symtab-header (get-section-header ".symtab " section-headers))
+  (b* ((symtab-header (get-section-header ".symtab" section-headers))
        ((elf-section-header symtab-header))
        (symtab-bytes (@symtab-bytes elf))
        (strtab-bytes (@strtab-bytes elf))
