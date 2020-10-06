@@ -1,9 +1,6 @@
-; Copyright (C) 2020, Regents of the University of Texas
-; Written by Matt Kaufmann and J Moore
+; Copyright (C) 2020, ForrestHunt, Inc.
+; Written by J Moore
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
-
-; Many thanks to ForrestHunt, Inc. for supporting the preponderance of this
-; work, and for permission to include it here.
 
 ; Lemmas Supporting the Examples of Rewrite-Quoted-Constant Rules in Use
 ; J Strother Moore
