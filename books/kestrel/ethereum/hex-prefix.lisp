@@ -10,8 +10,8 @@
 
 (in-package "ETHEREUM")
 
-(include-book "kestrel/utilities/define-sk" :dir :system)
 (include-book "kestrel/fty/deffixequiv-sk" :dir :system)
+(include-book "std/util/define-sk" :dir :system)
 
 (include-book "basics")
 
