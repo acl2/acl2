@@ -229,7 +229,7 @@
        ((when (and remake-name (not remake-body)))
         (raise "In ~x0: malformed product ~x1: :remake-name is ~x2 but ~
                 no :remake-body has been provided."
-               sumname kind remake-name))
+               sumname x remake-name))
        (fields (parse-flexprod-fields (getarg :fields nil kwd-alist) type-name our-fixtypes fixtypes))
        (guard (if sumkind
                   `(equal (,sumkind ,xvar) ,kind)
