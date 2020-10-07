@@ -542,7 +542,7 @@
      by adding parentheses, we ``change'' the rank of the actual expression
      into the bottom of the partial order,
      i.e. the rank corresponding to @('primary'),
-     which again lets the parenthesize expression be parsed
+     which again lets the parenthesized expression be parsed
      into an expression of the expected rank.")
    (xdoc::p
     "For instance, consider the abstract syntax tree for @('(x + y) * z'),
