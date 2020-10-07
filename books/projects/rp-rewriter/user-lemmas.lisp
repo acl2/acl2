@@ -128,7 +128,7 @@
 
 
 
-(def-rp-rule$ t nil
+#|(def-rp-rule$ t nil
   force-fail
   (implies
    (hard-error
@@ -143,7 +143,7 @@ Forced term was:~% ~p0 ~% "
     (list (cons #\0 forced-term)))
    (equal (force forced-term) t))
   :hints (("goal" 
-           :in-theory '(return-last hard-error hide))))
+           :in-theory '(return-last hard-error hide))))||#
 
 (def-rp-rule$ t nil
   force$-fail
