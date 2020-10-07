@@ -135,6 +135,16 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "c::c" "C Library"))
+
+   (xdoc::p
+    "This is a library about the C language.
+     It is being populated with
+     a formalization of some aspects of the C language
+     and ATC (`ACL2 To C'), a C code generator for ACL2.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "json::json" "JSON Library"))
 
    (xdoc::p
