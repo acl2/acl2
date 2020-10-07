@@ -8,7 +8,7 @@
                    ((:definition str::strprefixp$inline)
                     (:linear len-when-prefixp)
                     (:rewrite
-                     append-nthcdr-dirname-basename-under-fat32-filename-list-equiv-lemma-1
+                     append-nthcdr-dirname-basename-lemma-1
                      . 3)
                     (:linear listpos-upper-bound-strong-2)
                     (:rewrite <<-sort-consp)
@@ -2391,7 +2391,8 @@
                 (m1-file-alist-p fs))
            (hifat-subsetp (remove-assocs-equal keys fs)
                           fs))
-  :hints (("goal" :in-theory (enable remove-assocs-equal hifat-subsetp)))
+  :hints (("goal" :in-theory (enable remove-assocs-equal hifat-subsetp
+                                     hifat-equiv-of-cons-lemma-5)))
   :rule-classes
   (:rewrite
    (:linear
