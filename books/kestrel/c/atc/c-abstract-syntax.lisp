@@ -317,7 +317,7 @@
   (:uint ())
   (:ulong ())
   (:ullong ())
-  :pred tyspecp)
+  :pred tyspecseqp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -400,7 +400,7 @@
      (xdoc::p
       "We do not include the comma operator.
        It will be easy to include, if needed."))
-    (:iden ((get ident)))
+    (:ident ((get ident)))
     (:const ((get const)))
     (:call ((fun ident)
             (args expr-list)))
@@ -592,7 +592,8 @@
      Richer forms may be added in the future."))
   ((result tyspecseq)
    (name ident)
-   (params param-decl-list))
+   (params param-decl-list)
+   (body stmtp))
   :tag :fundef
   :pred fundefp)
 
@@ -607,7 +608,7 @@
      We add a placeholder for other top-level declarations,
      which we will flesh out later."))
   (:fundef ((get fundef)))
-  (:decl ((get decl)))
+  (:decl ())
   :pred ext-declp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
