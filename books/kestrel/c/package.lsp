@@ -16,7 +16,11 @@
 
 (defpkg "C" (append
              (set-difference-eq *std-pkg-symbols*
-                                '(byte))
+                                '(byte
+                                  pprint-indent))
              '(bool
                defxdoc+
+               implode
+               lnfix
+               msg-listp
                nat)))
