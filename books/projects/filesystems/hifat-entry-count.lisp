@@ -283,3 +283,29 @@
               (hifat-entry-count fs)))
   :hints (("goal" :in-theory (enable hifat-remove-file)))
   :rule-classes :linear)
+
+(defthm
+  hifat-entry-count-of-hifat-place-file
+  (implies
+   (m1-file-p file)
+   (equal
+    (hifat-entry-count (mv-nth 0 (hifat-place-file fs path file)))
+    (if
+     (zp (mv-nth 1 (hifat-place-file fs path file)))
+     (+
+      (hifat-entry-count fs)
+      (if (m1-regular-file-p file)
+          0
+          (hifat-entry-count (m1-file->contents file)))
+      (cond
+       ((not (zp (mv-nth 1 (hifat-find-file fs path))))
+        1)
+       ((m1-regular-file-p (mv-nth 0 (hifat-find-file fs path)))
+        0)
+       (t
+        (-
+         (hifat-entry-count
+          (m1-file->contents (mv-nth 0 (hifat-find-file fs path))))))))
+     (hifat-entry-count fs))))
+  :hints (("goal" :induct (hifat-place-file fs path file)
+           :in-theory (enable hifat-place-file hifat-find-file))))

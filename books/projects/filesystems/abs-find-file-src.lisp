@@ -83,7 +83,7 @@
         (mbe :exec (caar frame) :logic (nfix (caar frame)))))
     (abs-find-file-src (cdr frame) path)))
 
-(defthm
+(defthmd
   abs-find-file-src-correctness-2
   (implies
    (and (frame-p frame)
@@ -170,8 +170,7 @@
                (consp (assoc-equal (abs-find-file-src frame path)
                                    frame)))
       :hints
-      (("goal" :in-theory (disable
-                           abs-find-file-src-correctness-2)
+      (("goal"
         :use
         abs-find-file-src-correctness-2))))))
 

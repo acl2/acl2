@@ -1986,3 +1986,9 @@
   (implies (member-equal x lst)
            (consp lst))
   :rule-classes :forward-chaining)
+
+(encapsulate ()
+  (local (in-theory (disable min)))
+  (defthm painful-debugging-lemma-22
+    (implies (< z y) (iff (equal (min x y) z) (equal x z)))
+    :hints (("Goal" :in-theory (enable min)))))
