@@ -33,7 +33,7 @@
 ; they are not important to understanding the examples here.
 
 (include-book "rewrite-quoted-constant-examples-lemmas")
-(include-book "misc/eval" :dir :system)
+(include-book "std/testing/eval" :dir :system)
 
 ; We disable cardinality so we can't compute on constants.  We also disable the
 ; :rewrite rule (from the -lemmas book above) that rewrites (drop-dups-and-sort
