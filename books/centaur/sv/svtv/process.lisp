@@ -263,20 +263,29 @@
                       (prev-state svex-alist-p)
                       (updates svex-alist-p) (state-updates svex-alist-p)
                       (in-vars svarlist-p)
-                      (state-machine))
+                      (keep-final-state)
+                      (keep-all-states))
   :guard (<= phase nphases)
   :measure (nfix (- (nfix nphases) (nfix phase)))
   :returns (mv (outalist svex-alist-p)
-               (final-state svex-alist-p))
+               (final-state svex-alist-p)
+               (all-states svex-alistlist-p))
   (b* (((when (mbe :logic (zp (- (nfix nphases) (nfix phase)))
                    :exec (eql nphases phase)))
-        (mv nil (and state-machine (sv::svex-alist-fix prev-state))))
+        (mv nil
+            (and keep-final-state
+                 (sv::svex-alist-fix prev-state))
+            (and keep-all-states
+                 (list (sv::svex-alist-fix prev-state)))))
        ((mv phase-outs next-state)
         (svtv-compile-phase phase ins overrides outs prev-state updates state-updates in-vars))
-       ((mv rest-outs final-state)
+       ((mv rest-outs final-state all-states)
         (svtv-compile (+ 1 (lnfix phase)) nphases ins overrides outs next-state
-                          updates state-updates in-vars state-machine)))
-    (mv (append phase-outs rest-outs) final-state)))
+                          updates state-updates in-vars keep-final-state keep-all-states)))
+    (mv (append phase-outs rest-outs)
+        final-state
+        (and keep-all-states
+             (cons (sv::svex-alist-fix prev-state) all-states)))))
 
 
 (defthm svex-alist-p-of-nth
@@ -685,7 +694,9 @@
                       (design design-p)
                       (simplify)
                       (pre-simplify)
-                      (state-machine))
+                      (initial-state-vars)
+                      (keep-final-state)
+                      (keep-all-states))
   :parents (defsvtv)
   :short "Main subroutine of @(see defsvtv), which extracts output formulas from
           the provided design."
@@ -758,7 +769,7 @@
        ;; Compute an initial state of all Xes, or nil (meaning don't substitute
        ;; the states) if free-initst
        (states (svex-alist-keys next-states))
-       (initst (if state-machine
+       (initst (if initial-state-vars
                    (make-fast-alist (pairlis$ states (svarlist-svex-vars states)))
                  (make-fast-alist (pairlis$ states (replicate (len states) (svex-quote (4vec-x)))))))
 
@@ -783,11 +794,20 @@
        (- (fast-alist-free updates)
           (clear-memoize-table 'svex-compose))
        ;; Unroll the FSM and collect the formulas for the output signals.
-       ((mv outexprs final-state)
-        (cwtime
-         (svtv-compile-lazy
-          nphases ins ovlines outs initst updates-for-outs next-states in-vars state-machine)
-         :mintime 1))
+       ((mv outexprs final-state all-states)
+        (if keep-all-states
+            (cwtime
+             (svtv-compile
+              0 nphases ins ovlines outs initst updates-for-outs next-states in-vars
+              keep-final-state t)
+             :mintime 1)
+          (b* (((mv outexprs final-state)
+                (cwtime
+                 (svtv-compile-lazy
+                  nphases ins ovlines outs initst updates-for-outs next-states in-vars
+                  keep-final-state)
+                 :mintime 1)))
+            (mv outexprs final-state nil))))
 
        (has-duplicate-outputs (acl2::hons-dups-p (svex-alist-keys outexprs)))
        ((when has-duplicate-outputs)
@@ -804,7 +824,8 @@
     (fast-alist-free updates-for-outs)
     (mv (make-svtv :name           name
                    :outexprs       outexprs
-                   :nextstate     final-state
+                   :nextstate      final-state
+                   :states         all-states
                    :inmasks        (append inmasks override-inmasks)
                    :outmasks       outmasks
                    :orig-ins       orig-ins
@@ -1024,6 +1045,9 @@
                     simplify
                     pre-simplify
                     state-machine
+                    initial-state-vars
+                    keep-final-state
+                    keep-all-states
                     define-macros
                     parents short long)
   :guard (modalist-addr-p (design->modalist design))
@@ -1044,7 +1068,10 @@
                           (t              (progn$ (raise ":long must be a string.")
                                                   ""))))
 
-       (svtv (defsvtv-main name ins overrides outs internals design simplify pre-simplify state-machine))
+       (svtv (defsvtv-main name ins overrides outs internals design simplify pre-simplify
+               (or state-machine initial-state-vars)
+               (or state-machine keep-final-state)
+               keep-all-states))
        ((unless svtv)
         (raise "failed to generate svtv"))
 
@@ -1256,6 +1283,9 @@ defined with @(see sv::defsvtv).</p>"
                         short
                         long
                         state-machine
+                        initial-state-vars
+                        keep-final-state
+                        keep-all-states
                         (simplify 't)
                         (pre-simplify 't) ;; should this be t by default?
                         (define-macros 't))
@@ -1263,8 +1293,9 @@ defined with @(see sv::defsvtv).</p>"
         (er hard? 'defsvtv "DEFSVTV: Must provide either :design or :mod (interchangeable), but not both.~%")))
     `(make-event (defsvtv-fn ',name ,inputs ,overrides ,outputs ,internals
                    ,(or design mod) ',(or design mod) ,labels ,simplify
-                   ,pre-simplify ,state-machine ,define-macros
-                   ',parents ,short ,long))))
+                   ,pre-simplify
+                   ,state-machine ,initial-state-vars ,keep-final-state ,keep-all-states
+                   ,define-macros ',parents ,short ,long))))
 
 (defxdoc svtv-stimulus-format
   :parents (defsvtv)
@@ -1395,6 +1426,18 @@ then additional xdoc will also be generated to show a timing diagram.
 <li>@(':simplify') is T by default; it can be set to NIL to avoid rewriting the
 output svex expressions, which may be desirable if you are doing a
 decomposition proof.</li>
+
+<li>@(':initial-state-vars') is NIL by default; it can be set to T to set the
+initial state of the simulation to all free variables instead of all Xes.</li>
+
+<li>@(':keep-final-state') is NIL by default; it can be set to T to store the
+state after the final phase in the SVTV as @('(svtv->nextstate svtv)').</li>
+
+<li>@(':keep-all-states') is NIL by default; it can be set to T to store the
+sequence of @('nphases+1') states in the SVTV as @('(svtv->states svtv)').</li>
+
+<li>@(':state-machine') is NIL by default; if set to T, it is the same as
+setting @(':initial-state-vars') and @('keep-final-state') to T.</li>
 
 </ul>
 
