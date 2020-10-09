@@ -48,7 +48,11 @@
 
   (xdoc::evmac-topic-implementation-item-input "list-input" "schemalg")
 
+  (xdoc::evmac-topic-implementation-item-input "oset-input" "schemalg")
+
   (xdoc::evmac-topic-implementation-item-input "cdr-output" "schemalg")
+
+  (xdoc::evmac-topic-implementation-item-input "tail-output" "schemalg")
 
   (xdoc::evmac-topic-implementation-item-input "fvar-0-name" "schemalg")
 
@@ -149,7 +153,8 @@
 
 (defval *schemalg-schemas*
   :short "Allowed values of the @(':schema') input."
-  '(:divconq-list-0-1))
+  '(:divconq-list-0-1
+    :divconq-oset-0-1))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -161,8 +166,7 @@
     (if schema?
         (er-soft+ ctx t nil
                   "The :SCHEMA input must be ~v0, ~
-                   but it is ~x1 instead. ~
-                   More schemas will be supported in the future."
+                   but it is ~x1 instead."
                   *schemalg-schemas* schema)
       (er-soft+ ctx t nil
                 "The :SCHEMA input must be supplied."))))
@@ -188,6 +192,29 @@
                    the :SCHEMA input is ~&0, but that input is ~x1 instead."
                   schemas-allowed schema)))
     (process-input-select-old-soft-io list-input :list-input
+                                      old ?f x-x1...xn x-a1...am ctx state)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define schemalg-process-oset-input (oset-input
+                                     (oset-input? booleanp)
+                                     (schema keywordp)
+                                     (old symbolp)
+                                     (?f symbolp)
+                                     (x-x1...xn symbol-listp)
+                                     (x-a1...am pseudo-term-listp)
+                                     ctx
+                                     state)
+  :returns (mv erp (x symbolp) state)
+  :short "Process the @(':oset-input') input."
+  (b* ((schemas-allowed (list :divconq-oset-0-1))
+       ((when (and oset-input?
+                   (not (member-eq schema schemas-allowed))))
+        (er-soft+ ctx t nil
+                  "The :OSET-INPUT input can be present only if ~
+                   the :SCHEMA input is ~&0, but that input is ~x1 instead."
+                  schemas-allowed schema)))
+    (process-input-select-old-soft-io oset-input :oset-input
                                       old ?f x-x1...xn x-a1...am ctx state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -226,6 +253,46 @@
                 x-x1...xn
                 (msg "one of bound variables ~x0 of ~x1" x-x1...xn old)
                 "The :CDR-OUTPUT input"
+                t
+                nil)))
+    (value y)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define schemalg-process-tail-output (tail-output
+                                      (tail-output? booleanp)
+                                      (schema keywordp)
+                                      (old symbolp)
+                                      (x-x1...xn symbol-listp)
+                                      ctx
+                                      state)
+  :returns (mv erp
+               (y symbolp
+                  :hints
+                  (("Goal"
+                    :in-theory
+                    (enable acl2::ensure-value-is-legal-variable-name))))
+               state)
+  :short "Process the @(':tail-output') input."
+  (b* ((schemas-allowed (list :divconq-oset-0-1))
+       ((when (and tail-output?
+                   (not (member-eq schema schemas-allowed))))
+        (er-soft+ ctx t nil
+                  "The :TAIL-OUTPUT input can be present only if ~
+                   the :SCHEMA input is ~&0, but that input is ~x1 instead."
+                  schemas-allowed schema))
+       (y (if (eq tail-output :auto)
+              (intern-in-package-of-symbol "TAIL-OUTPUT" old)
+            tail-output))
+       ((er &) (ensure-value-is-legal-variable-name$ y
+                                                     "The :TAIL-OUTPUT input"
+                                                     t
+                                                     nil))
+       ((er &) (ensure-value-is-not-in-list$
+                y
+                x-x1...xn
+                (msg "one of bound variables ~x0 of ~x1" x-x1...xn old)
+                "The :TAIL-OUTPUT input"
                 t
                 nil)))
     (value y)))
@@ -344,7 +411,9 @@
 (define schemalg-process-inputs (old
                                  schema (schema? booleanp)
                                  list-input (list-input? booleanp)
+                                 oset-input (oset-input? booleanp)
                                  cdr-output (cdr-output? booleanp)
+                                 tail-output (tail-output? booleanp)
                                  fvar-0-name (fvar-0-name? booleanp)
                                  fvar-1-name (fvar-1-name? booleanp)
                                  algo-name
@@ -392,17 +461,41 @@
        ((er (list old ??f x-x1...xn x-a1...am out iorel))
         (process-input-old-soft-io-sel-mod old verify-guards ctx state))
        ((er &) (schemalg-process-schema schema schema? ctx state))
-       ((er x) (schemalg-process-list-input list-input list-input?
-                                            schema old ?f x-x1...xn x-a1...am
-                                            ctx state))
-       ((er y) (schemalg-process-cdr-output cdr-output cdr-output?
-                                            schema old x-x1...xn
-                                            ctx state))
-       ((er &) (schemalg-check-allowed-input fvar-0-name? :divconq-list-0-1))
+       ((er &) (schemalg-check-allowed-input list-input? :divconq-list-0-1))
+       ((er &) (schemalg-check-allowed-input oset-input? :divconq-oset-0-1))
+       ((er x) (case schema
+                 (:divconq-list-0-1 (schemalg-process-list-input
+                                     list-input list-input?
+                                     schema old ?f x-x1...xn x-a1...am
+                                     ctx state))
+                 (:divconq-oset-0-1 (schemalg-process-oset-input
+                                     oset-input oset-input?
+                                     schema old ?f x-x1...xn x-a1...am
+                                     ctx state))
+                 (t (value
+                     (raise "Internal error: unknown schema ~x0." schema)))))
+       ((er &) (schemalg-check-allowed-input cdr-output? :divconq-list-0-1))
+       ((er &) (schemalg-check-allowed-input tail-output? :divconq-oset-0-1))
+       ((er y) (case schema
+                 (:divconq-list-0-1 (schemalg-process-cdr-output
+                                     cdr-output cdr-output?
+                                     schema old x-x1...xn
+                                     ctx state))
+                 (:divconq-oset-0-1 (schemalg-process-tail-output
+                                     tail-output tail-output?
+                                     schema old x-x1...xn
+                                     ctx state))
+                 (t (value
+                     (raise "Internal error: unknown schema ~x0." schema)))))
+       ((er &) (schemalg-check-allowed-input fvar-0-name?
+                                             :divconq-list-0-1
+                                             :divconq-oset-0-1))
        ((er (list ??g names-to-avoid))
         (schemalg-process-fvar-0-name fvar-0-name
                                       ?f names-to-avoid ctx state))
-       ((er &) (schemalg-check-allowed-input fvar-1-name? :divconq-list-0-1))
+       ((er &) (schemalg-check-allowed-input fvar-1-name?
+                                             :divconq-list-0-1
+                                             :divconq-oset-0-1))
        ((er (list ??h names-to-avoid))
         (schemalg-process-fvar-1-name fvar-1-name
                                       ?f names-to-avoid ctx state))
@@ -413,20 +506,28 @@
                                          "The :ALGO-ENABLE input"
                                          t
                                          nil))
-       ((er &) (schemalg-check-allowed-input spec-0-name? :divconq-list-0-1))
+       ((er &) (schemalg-check-allowed-input spec-0-name?
+                                             :divconq-list-0-1
+                                             :divconq-oset-0-1))
        ((er (list spec-0 names-to-avoid))
         (schemalg-process-spec-0-name spec-0-name
                                       old ?g names-to-avoid ctx state))
-       ((er &) (schemalg-check-allowed-input spec-0-enable? :divconq-list-0-1))
+       ((er &) (schemalg-check-allowed-input spec-0-enable?
+                                             :divconq-list-0-1
+                                             :divconq-oset-0-1))
        ((er &) (ensure-value-is-boolean$ spec-0-enable
                                          "The :SPEC-0-ENABLE input"
                                          t
                                          nil))
-       ((er &) (schemalg-check-allowed-input spec-1-name? :divconq-list-0-1))
+       ((er &) (schemalg-check-allowed-input spec-1-name?
+                                             :divconq-list-0-1
+                                             :divconq-oset-0-1))
        ((er (list spec-1 names-to-avoid))
         (schemalg-process-spec-1-name spec-1-name
                                       old ?h names-to-avoid ctx state))
-       ((er &) (schemalg-check-allowed-input spec-1-enable? :divconq-list-0-1))
+       ((er &) (schemalg-check-allowed-input spec-1-enable?
+                                             :divconq-list-0-1
+                                             :divconq-oset-0-1))
        ((er &) (ensure-value-is-boolean$ spec-1-enable
                                          "The :SPEC-1-ENABLE input"
                                          t
@@ -498,9 +599,10 @@
   :returns (events pseudo-event-form-listp)
   :short "Generate the function variables @('?f1'), ..., @('?fp')."
   (case schema
-    (:divconq-list-0-1 (list
-                        (evmac-generate-soft-defunvar ?g (len x-a1...am))
-                        (evmac-generate-soft-defunvar ?h (1+ (len x-a1...am)))))
+    ((:divconq-list-0-1
+      :divconq-oset-0-1)
+     (list (evmac-generate-soft-defunvar ?g (len x-a1...am))
+           (evmac-generate-soft-defunvar ?h (1+ (len x-a1...am)))))
     (t (raise "Internal error: unknown schema ~x0." schema))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -608,6 +710,41 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define schemalg-gen-algo-divconq-oset-0-1 ((algo symbolp)
+                                            (algo-enable booleanp)
+                                            (x-z1...zm symbol-listp)
+                                            (x symbolp)
+                                            (?g symbolp)
+                                            (?h symbolp)
+                                            (verify-guards booleanp))
+  :returns (mv (local-event pseudo-event-formp)
+               (exported-event pseudo-event-formp))
+  :short "Generate the function @('algo[?g][?h]')
+          for the @(':divconq-oset-0-1') schema."
+  (b* ((head-x-z1...zm (loop$ for var of-type symbol in x-z1...zm
+                              collect (if (eq var x)
+                                          (list 'set::head var)
+                                        var)))
+       (tail-x-z1...zm (loop$ for var of-type symbol in x-z1...zm
+                              collect (if (eq var x)
+                                          (list 'set::tail var)
+                                        var))))
+    (evmac-generate-soft-defun2
+     algo
+     :formals x-z1...zm
+     :body `(cond ((or (not (set::setp ,x))
+                       (set::empty ,x))
+                   (,?g ,@x-z1...zm))
+                  (t (,?h ,@head-x-z1...zm
+                          (,algo ,@tail-x-z1...zm))))
+     :verify-guards verify-guards
+     :enable algo-enable
+     :measure `(acl2-count ,x)
+     :hints '(("Goal" :in-theory '(set::tail-count-built-in)))
+     :guard-hints '(("Goal" :in-theory nil)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define schemalg-gen-algo ((schema keywordp)
                            (algo symbolp)
                            (algo-enable booleanp)
@@ -621,6 +758,13 @@
   :short "Generate the function @('algo[?f1]...[?fp]')."
   (case schema
     (:divconq-list-0-1 (schemalg-gen-algo-divconq-list-0-1 algo
+                                                           algo-enable
+                                                           x-z1...zm
+                                                           x
+                                                           ?g
+                                                           ?h
+                                                           verify-guards))
+    (:divconq-oset-0-1 (schemalg-gen-algo-divconq-oset-0-1 algo
                                                            algo-enable
                                                            x-z1...zm
                                                            x
@@ -660,6 +804,36 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define schemalg-gen-spec-0-divconq-oset-0-1 ((spec-0 symbolp)
+                                              (spec-0-enable booleanp)
+                                              (old symbolp)
+                                              (x-x1...xn symbol-listp)
+                                              (x-a1...am pseudo-term-listp)
+                                              (x symbolp)
+                                              (iorel pseudo-lambdap)
+                                              (?g symbolp)
+                                              (verify-guards booleanp))
+  :returns (mv (local-event pseudo-event-formp)
+               (exported-event pseudo-event-formp))
+  :verify-guards nil
+  :short "Generate the function @('spec-0[?g]')
+          for the @(':divconq-oset-0-1') schema."
+  (b* ((iorel-term (apply-term iorel
+                               (append x-x1...xn (list `(,?g ,@x-a1...am))))))
+    (evmac-generate-soft-defun-sk2
+     spec-0
+     :formals ()
+     :guard t
+     :body `(forall ,x-x1...xn
+                    (impliez (or (not (set::setp ,x))
+                                 (set::empty ,x))
+                             ,iorel-term))
+     :verify-guards verify-guards
+     :enable spec-0-enable
+     :guard-hints `(("Goal" :use (:guard-theorem ,old))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define schemalg-gen-spec-0 ((schema keywordp)
                              (spec-0 symbolp)
                              (spec-0-enable booleanp)
@@ -676,6 +850,15 @@
   :short "Generate the function @('spec-0[?g]')."
   (case schema
     (:divconq-list-0-1 (schemalg-gen-spec-0-divconq-list-0-1 spec-0
+                                                             spec-0-enable
+                                                             old
+                                                             x-x1...xn
+                                                             x-a1...am
+                                                             x
+                                                             iorel
+                                                             ?g
+                                                             verify-guards))
+    (:divconq-oset-0-1 (schemalg-gen-spec-0-divconq-oset-0-1 spec-0
                                                              spec-0-enable
                                                              old
                                                              x-x1...xn
@@ -725,6 +908,48 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define schemalg-gen-spec-1-divconq-oset-0-1 ((spec-1 symbolp)
+                                              (spec-1-enable booleanp)
+                                              (old symbolp)
+                                              (x-x1...xn symbol-listp)
+                                              (x-a1...am pseudo-term-listp)
+                                              (x symbolp)
+                                              (y symbolp)
+                                              (iorel pseudo-lambdap)
+                                              (?h symbolp)
+                                              (verify-guards booleanp))
+  :returns (mv (local-event pseudo-event-formp)
+               (exported-event pseudo-event-formp))
+  :verify-guards nil
+  :short "Generate the function @('spec-cons[?h]')
+          for the @(':divconq-oset-0-1') schema."
+  (b* ((tail-x-x1...xn (loop$ for var in x-x1...xn
+                              collect (if (eq var x)
+                                          (list 'set::tail var)
+                                        var)))
+       (head-x-a1...am (loop$ for var in x-a1...am
+                              collect (if (eq var x)
+                                          (list 'set::head var)
+                                        var)))
+       (iorel-term1 (apply-term iorel (append tail-x-x1...xn (list y))))
+       (iorel-term2 (apply-term iorel (append x-x1...xn
+                                              (list
+                                               `(,?h ,@head-x-a1...am ,y))))))
+    (evmac-generate-soft-defun-sk2
+     spec-1
+     :formals ()
+     :guard t
+     :body `(forall (,@x-x1...xn ,y)
+                    (impliez (and (set::setp ,x)
+                                  (not (set::empty ,x))
+                                  ,iorel-term1)
+                             ,iorel-term2))
+     :verify-guards verify-guards
+     :enable spec-1-enable
+     :guard-hints `(("Goal" :use (:guard-theorem ,old))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define schemalg-gen-spec-1 ((schema keywordp)
                              (spec-1 symbolp)
                              (spec-1-enable booleanp)
@@ -742,6 +967,16 @@
   :short "Generate the function @('spec-1[?h]')."
   (case schema
     (:divconq-list-0-1 (schemalg-gen-spec-1-divconq-list-0-1 spec-1
+                                                             spec-1-enable
+                                                             old
+                                                             x-x1...xn
+                                                             x-a1...am
+                                                             x
+                                                             y
+                                                             iorel
+                                                             ?h
+                                                             verify-guards))
+    (:divconq-oset-0-1 (schemalg-gen-spec-1-divconq-oset-0-1 spec-1
                                                              spec-1-enable
                                                              old
                                                              x-x1...xn
@@ -861,6 +1096,55 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define schemalg-gen-algo-correct-divconq-oset-0-1
+  ((x-x1...xn symbol-listp)
+   (x-a1...am symbol-listp)
+   (x symbolp)
+   (y symbolp)
+   (iorel pseudo-lambdap)
+   (algo symbolp)
+   (spec-0 symbolp)
+   (spec-1 symbolp)
+   (names-to-avoid symbol-listp)
+   (wrld plist-worldp))
+  :returns (mv (event "A @(tsee pseudo-event-formp).")
+               (name "A @(tsee symbolp).")
+               (updated-names-to-avoid "A @(tsee symbol-listp)."))
+  :mode :program
+  :short "Generate a local theorem asserting
+          the correctness of @('algo[?f1]...[?fp]')
+          for the @(':divconq-oset-0-1') schema."
+  (b* (((mv name names-to-avoid)
+        (fresh-logical-name-with-$s-suffix 'algo-correct
+                                           nil
+                                           names-to-avoid
+                                           wrld))
+       (iorel-term (apply-term iorel
+                               (append x-x1...xn (list `(,algo ,@x-a1...am)))))
+       (spec-0-necc (add-suffix spec-0 "-NECC"))
+       (spec-1-necc (add-suffix spec-1 "-NECC"))
+       (tail-x-a1...am (loop$ for var in x-a1...am
+                              collect (if (eq var x)
+                                          (list 'set::tail var)
+                                        var)))
+       (hints `(("Goal"
+                 :in-theory '(,algo)
+                 :induct (,algo ,@x-a1...am))
+                '(:use (,spec-0-necc
+                        (:instance ,spec-1-necc
+                         (,y (,algo ,@tail-x-a1...am)))))))
+       (event
+        `(local
+          (defthm ,name
+            (implies (and (,spec-0)
+                          (,spec-1))
+                     ,iorel-term)
+            :rule-classes nil
+            :hints ,hints))))
+    (mv event name names-to-avoid)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define schemalg-gen-algo-correct ((schema keywordp)
                                    (x-x1...xn symbol-listp)
                                    (x-a1...am symbol-listp)
@@ -895,28 +1179,38 @@
                                                  spec-1
                                                  names-to-avoid
                                                  wrld))
+    (:divconq-oset-0-1
+     (schemalg-gen-algo-correct-divconq-oset-0-1 x-x1...xn
+                                                 x-a1...am
+                                                 x
+                                                 y
+                                                 iorel
+                                                 algo
+                                                 spec-0
+                                                 spec-1
+                                                 names-to-avoid
+                                                 wrld))
     (t (prog2$ (raise "Internal error: unknown schema ~x0." schema)
                (mv '(irrelevant) nil names-to-avoid)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define schemalg-gen-old-if-new-divconq-list-0-1 ((old-if-new symbolp)
-                                                  (old-if-new-enable booleanp)
-                                                  (old symbolp)
-                                                  (?f symbolp)
-                                                  (x-x1...xn symbol-listp)
-                                                  (x-z1...zm symbol-listp)
-                                                  (x-a1...am symbol-listp)
-                                                  (x symbolp)
-                                                  (equal-algo symbolp)
-                                                  (new symbolp)
-                                                  (algo symbolp)
-                                                  (algo-correct symbolp))
+(define schemalg-gen-old-if-new ((old-if-new symbolp)
+                                 (old-if-new-enable booleanp)
+                                 (old symbolp)
+                                 (?f symbolp)
+                                 (x-x1...xn symbol-listp)
+                                 (x-z1...zm symbol-listp)
+                                 (x-a1...am symbol-listp)
+                                 (x symbolp)
+                                 (equal-algo symbolp)
+                                 (new symbolp)
+                                 (algo symbolp)
+                                 (algo-correct symbolp))
   :returns (mv (local-event pseudo-event-formp)
                (exported-event pseudo-event-formp))
   :verify-guards nil
-  :short "Generate the theorem @('old-if-new')
-          for the @(':divconq-list-0-1') schema."
+  :short "Generate the theorem @('old-if-new')."
   (b* ((formula `(implies (,new) (,old)))
        (old-witness (add-suffix-to-fn old "-WITNESS"))
        (equal-algo-l2r (packn-pos (list ?f '-to- algo) equal-algo))
@@ -939,42 +1233,6 @@
                            :formula formula
                            :hints hints
                            :enable old-if-new-enable)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define schemalg-gen-old-if-new ((schema keywordp)
-                                 (old-if-new symbolp)
-                                 (old-if-new-enable booleanp)
-                                 (old symbolp)
-                                 (?f symbolp)
-                                 (x-x1...xn symbol-listp)
-                                 (x-z1...zm symbol-listp)
-                                 (x-a1...am symbol-listp)
-                                 (x symbolp)
-                                 (equal-algo symbolp)
-                                 (new symbolp)
-                                 (algo symbolp)
-                                 (algo-correct symbolp))
-  :returns (mv (local-event pseudo-event-formp)
-               (exported-event pseudo-event-formp))
-  :verify-guards nil
-  :short "Generate the theorem @('old-if-new')."
-  (case schema
-    (:divconq-list-0-1
-     (schemalg-gen-old-if-new-divconq-list-0-1 old-if-new
-                                               old-if-new-enable
-                                               old
-                                               ?f
-                                               x-x1...xn
-                                               x-z1...zm
-                                               x-a1...am
-                                               x
-                                               equal-algo
-                                               new
-                                               algo
-                                               algo-correct))
-    (t (prog2$ (raise "Internal error: unknown schema ~x0." schema)
-               (mv '(irrelevant) '(irrelevant))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1011,12 +1269,14 @@
   :short "Generate the top-level event."
   (b* ((spec1...specq (case schema
                         (:divconq-list-0-1 (list spec-0 spec-1))
+                        (:divconq-oset-0-1 (list spec-0 spec-1))
                         (t (raise "Internal error: unknown schema ~x0."
                                   schema))))
        (??f1...?fp-events (schemalg-gen-?f1...?fp schema ?g ?h x-a1...am))
        (x-z1...zm
         (case schema
           (:divconq-list-0-1 (schemalg-gen-x-z1...zm x-a1...am x-x1...xn x y))
+          (:divconq-oset-0-1 (schemalg-gen-x-z1...zm x-a1...am x-x1...xn x y))
           (t (raise "Internal error: unknown schema ~x0." schema))))
        ((mv algo-local-event
             algo-exported-event)
@@ -1046,7 +1306,7 @@
                                    names-to-avoid wrld))
        ((mv old-if-new-local-event
             old-if-new-exported-event)
-        (schemalg-gen-old-if-new schema old-if-new old-if-new-enable old ?f
+        (schemalg-gen-old-if-new old-if-new old-if-new-enable old ?f
                                  x-x1...xn x-z1...zm x-a1...am x
                                  equal-algo new algo algo-correct))
        (encapsulate-events
@@ -1095,7 +1355,9 @@
 (define schemalg-fn (old
                      schema (schema? booleanp)
                      list-input (list-input? booleanp)
+                     oset-input (oset-input? booleanp)
                      cdr-output (cdr-output? booleanp)
+                     tail-output (tail-output? booleanp)
                      fvar-0-name (fvar-0-name? booleanp)
                      fvar-1-name (fvar-1-name? booleanp)
                      algo-name
@@ -1148,7 +1410,9 @@
         (schemalg-process-inputs old
                                  schema schema?
                                  list-input list-input?
+                                 oset-input oset-input?
                                  cdr-output cdr-output?
+                                 tail-output tail-output?
                                  fvar-0-name fvar-0-name?
                                  fvar-1-name fvar-1-name?
                                  algo-name
@@ -1214,7 +1478,9 @@
                       &key
                       (schema ':no-default schema?)
                       (list-input ':auto list-input?)
+                      (oset-input ':auto oset-input?)
                       (cdr-output ':auto cdr-output?)
+                      (tail-output ':auto tail-output?)
                       (fvar-0-name ':auto fvar-0-name?)
                       (fvar-1-name ':auto fvar-1-name?)
                       (algo-name ':auto)
@@ -1235,7 +1501,9 @@
     `(make-event-terse (schemalg-fn ',old
                                     ',schema ',schema?
                                     ',list-input ',list-input?
+                                    ',oset-input ',oset-input?
                                     ',cdr-output ',cdr-output?
+                                    ',tail-output ',tail-output?
                                     ',fvar-0-name ',fvar-0-name?
                                     ',fvar-1-name ',fvar-1-name?
                                     ',algo-name

@@ -18,9 +18,6 @@
 (include-book "casesplit")
 (include-book "casesplit-doc")
 
-(include-book "divconq")
-(include-book "divconq-doc")
-
 (include-book "expdata")
 (include-book "expdata-doc")
 
@@ -38,6 +35,7 @@
 (include-book "schemalg")
 (include-book "schemalg-doc")
 (include-book "schemalg-divconq-list-0-1-doc")
+(include-book "schemalg-divconq-oset-0-1-doc")
 
 (include-book "simplify")
 (include-book "simplify-defun-doc")

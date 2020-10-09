@@ -35,3 +35,13 @@
   (implies (nat-listp lst)
            (all-natp lst))
   :hints (("Goal" :in-theory (enable all-natp nat-listp))))
+
+(defthm all-natp-of-set-difference-equal
+  (implies (all-natp x)
+           (all-natp (set-difference-equal x y))))
+
+(defthm integerp-of-car-when-all-natp-cheap
+  (implies (and (all-natp x)
+                (consp x))
+           (integerp (car x)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0 nil))))

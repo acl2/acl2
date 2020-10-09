@@ -15,7 +15,7 @@
 (include-book "primitive-functions")
 
 (include-book "kestrel/fty/deffixequiv-sk" :dir :system)
-(include-book "kestrel/utilities/define-sk" :dir :system)
+(include-book "std/util/define-sk" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

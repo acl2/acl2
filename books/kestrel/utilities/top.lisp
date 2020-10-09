@@ -18,7 +18,6 @@
 (include-book "bits-and-ubyte11s-as-digits")
 (include-book "bytes-as-digits")
 (include-book "copy-def")
-(include-book "define-sk")
 (include-book "defmacroq")
 (include-book "deftest")
 (include-book "defthmr")

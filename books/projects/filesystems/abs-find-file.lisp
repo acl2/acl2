@@ -1246,9 +1246,13 @@
     *enoent*))
   :hints
   (("goal"
-    :in-theory (e/d (abs-find-file-helper)
-                    (abs-find-file-correctness-1-lemma-6
-                     (:rewrite abs-find-file-correctness-1-lemma-18)))
+    :in-theory
+    (e/d
+     (abs-find-file-helper)
+     (abs-find-file-correctness-1-lemma-6
+      (:rewrite abs-find-file-correctness-1-lemma-18)
+      (:congruence
+       fat32-filename-list-equiv-implies-fat32-filename-list-equiv-take-2)))
     :do-not-induct t
     :cases
     ((equal
@@ -1280,14 +1284,12 @@
          (nthcdr (len (frame-val->path (cdr (assoc-equal (1st-complete frame)
                                                          frame))))
                  path))))
-      (y (names-at
-          (abs-fs-fix root)
-          (frame-val->path (cdr (assoc-equal (1st-complete frame)
-                                             frame)))))
-      (x (names-at
-          (frame-val->dir (cdr (assoc-equal (1st-complete frame)
-                                            frame)))
-          nil)))
+      (y (names-at (abs-fs-fix root)
+                   (frame-val->path (cdr (assoc-equal (1st-complete frame)
+                                                      frame)))))
+      (x (names-at (frame-val->dir (cdr (assoc-equal (1st-complete frame)
+                                                     frame)))
+                   nil)))
      (:instance
       abs-find-file-correctness-1-lemma-6
       (fs (abs-fs-fix root))
@@ -1310,25 +1312,21 @@
                                                      frame))))
              path)))
    ("subgoal 2.2"
-    :expand
-    (names-at (frame-val->dir (cdr (assoc-equal (1st-complete frame)
-                                                frame)))
-              nil))
+    :expand (names-at (frame-val->dir (cdr (assoc-equal (1st-complete frame)
+                                                        frame)))
+                      nil))
    ("subgoal 2.1"
-    :expand
-    (names-at (frame-val->dir (cdr (assoc-equal (1st-complete frame)
-                                                frame)))
-              nil))
+    :expand (names-at (frame-val->dir (cdr (assoc-equal (1st-complete frame)
+                                                        frame)))
+                      nil))
    ("subgoal 1.2"
-    :expand
-    (names-at (frame-val->dir (cdr (assoc-equal (1st-complete frame)
-                                                frame)))
-              nil))
+    :expand (names-at (frame-val->dir (cdr (assoc-equal (1st-complete frame)
+                                                        frame)))
+                      nil))
    ("subgoal 1.1"
-    :expand
-    (names-at (frame-val->dir (cdr (assoc-equal (1st-complete frame)
-                                                frame)))
-              nil))))
+    :expand (names-at (frame-val->dir (cdr (assoc-equal (1st-complete frame)
+                                                        frame)))
+                      nil))))
 
 (defthm
   abs-find-file-correctness-1-lemma-33
@@ -2193,11 +2191,15 @@
   :hints
   (("goal"
     :do-not-induct t
-    :in-theory (e/d (take-of-nthcdr abs-find-file-helper
-                                    abs-addrs-of-ctx-app-1-lemma-7)
-                    (nthcdr-of-fat32-filename-list-fix
-                     abs-separate-of-frame->frame-of-collapse-this-lemma-3
-                     (:rewrite abs-find-file-correctness-1-lemma-6)))
+    :in-theory
+    (e/d
+     (take-of-nthcdr abs-find-file-helper
+                     abs-addrs-of-ctx-app-1-lemma-7)
+     (nthcdr-of-fat32-filename-list-fix
+      abs-separate-of-frame->frame-of-collapse-this-lemma-3
+      (:rewrite abs-find-file-correctness-1-lemma-6)
+      (:congruence
+       fat32-filename-list-equiv-implies-fat32-filename-list-equiv-take-2)))
     :use
     ((:instance abs-separate-of-frame->frame-of-collapse-this-lemma-3
                 (x (1st-complete frame))

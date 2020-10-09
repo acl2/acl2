@@ -228,7 +228,8 @@
                             kwd-alist))
        ((when (and remake-name (not remake-body)))
         (raise "In ~x0: malformed product ~x1: :remake-name is ~x2 but ~
-                no :remake-body has been provided."))
+                no :remake-body has been provided."
+               sumname x remake-name))
        (fields (parse-flexprod-fields (getarg :fields nil kwd-alist) type-name our-fixtypes fixtypes))
        (guard (if sumkind
                   `(equal (,sumkind ,xvar) ,kind)
@@ -385,7 +386,7 @@
        (count   (flextype-get-count-fn name kwd-alist))
        (prods   (parse-flexprods orig-prods name kind kwd-alist xvar nil our-fixtypes fixtypes))
        ((when (atom prods))
-        (raise "Malformed SUM ~x0: Must have at least one product"))
+        (raise "Malformed SUM ~x0: Must have at least one product" x))
        (- (flexprods-check-xvar xvar prods))
        (recp   (some-flexprod-recursivep prods)))
     (make-flexsum :name name

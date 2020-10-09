@@ -20,8 +20,6 @@
                         (:linear len-of-remove-assoc-1)
                         (:definition position-equal-ac)
                         (:definition remove1-assoc-equal)
-                        (:rewrite
-                         abs-addrs-when-m1-file-alist-p-lemma-2)
                         (:rewrite m1-directory-file-p-correctness-1)
                         (:rewrite assoc-of-car-when-member)
                         (:rewrite integerp-of-car-when-integer-listp)
@@ -187,7 +185,6 @@
          (:rewrite abs-file-alist-p-when-m1-file-alist-p)
          (:rewrite abs-file-alist-p-correctness-1)
          (:rewrite abs-no-dups-p-when-m1-file-alist-p)
-         (:rewrite abs-addrs-when-m1-file-alist-p-lemma-2)
          (:rewrite abs-addrs-when-m1-file-alist-p)
          (:rewrite member-of-abs-addrs-when-natp . 2)
          (:rewrite member-of-abs-fs-fix-when-natp)

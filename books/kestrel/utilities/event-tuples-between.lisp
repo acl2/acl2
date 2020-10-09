@@ -10,7 +10,6 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/utilities/define-sk" :dir :system)
 (include-book "kestrel/std/system/definedp" :dir :system)
 (include-book "kestrel/std/system/event-landmark-names" :dir :system)
 (include-book "kestrel/std/system/function-symbol-listp" :dir :system)
@@ -22,6 +21,7 @@
 (include-book "kestrel/std/system/theorem-symbolp" :dir :system)
 (include-book "kestrel/std/system/ubody" :dir :system)
 (include-book "kestrel/std/system/well-founded-relation-plus" :dir :system)
+(include-book "std/util/define-sk" :dir :system)
 (include-book "system/pseudo-command-landmarkp" :dir :system)
 (include-book "system/pseudo-event-landmarkp" :dir :system)
 

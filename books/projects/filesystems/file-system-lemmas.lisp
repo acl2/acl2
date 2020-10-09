@@ -579,7 +579,7 @@
 (defthm
   assoc-of-remove1-assoc
   (implies
-   (and (not (null key1))
+   (and (case-split (not (null key1)))
         (not (consp (assoc-equal key1 alist))))
    (not (consp (assoc-equal key1
                             (remove1-assoc-equal key2 alist))))))
@@ -1981,3 +1981,14 @@
 (defthm nth-under-iff-1
   (implies (not (member-equal nil l))
            (iff (nth n l) (< (nfix n) (len l)))))
+
+(defthm consp-when-member
+  (implies (member-equal x lst)
+           (consp lst))
+  :rule-classes :forward-chaining)
+
+(encapsulate ()
+  (local (in-theory (disable min)))
+  (defthm painful-debugging-lemma-22
+    (implies (< z y) (iff (equal (min x y) z) (equal x z)))
+    :hints (("Goal" :in-theory (enable min)))))

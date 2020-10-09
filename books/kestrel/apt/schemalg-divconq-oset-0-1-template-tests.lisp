@@ -10,8 +10,8 @@
 
 (in-package "ACL2")
 
-(include-book "divconq")
-(include-book "divconq-template-generators")
+(include-book "schemalg")
+(include-book "schemalg-template-generators")
 
 (include-book "std/testing/must-succeed-star" :dir :system)
 
@@ -21,7 +21,7 @@
 
 (must-succeed*
  (gen-inputs 0 0 0 0)
- (apt::divconq old :schema :list-fold)
+ (apt::schemalg old :schema :divconq-oset-0-1)
  :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -30,22 +30,22 @@
 
 (must-succeed*
  (gen-inputs 1 0 1 0)
- (apt::divconq old :schema :list-fold :list-input x)
+ (apt::schemalg old :schema :divconq-oset-0-1 :oset-input x)
  :with-output-off nil)
 
 (must-succeed*
  (gen-inputs 1 1 1 0)
- (apt::divconq old :schema :list-fold :list-input x)
+ (apt::schemalg old :schema :divconq-oset-0-1 :oset-input x)
  :with-output-off nil)
 
 (must-succeed*
  (gen-inputs 1 0 1 1)
- (apt::divconq old :schema :list-fold :list-input x)
+ (apt::schemalg old :schema :divconq-oset-0-1 :oset-input x)
  :with-output-off nil)
 
 (must-succeed*
  (gen-inputs 1 1 1 1)
- (apt::divconq old :schema :list-fold :list-input x)
+ (apt::schemalg old :schema :divconq-oset-0-1 :oset-input x)
  :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -54,32 +54,32 @@
 
 (must-succeed*
  (gen-inputs 2 0 1 0)
- (apt::divconq old :schema :list-fold :list-input x)
+ (apt::schemalg old :schema :divconq-oset-0-1 :oset-input x)
  :with-output-off nil)
 
 (must-succeed*
  (gen-inputs 2 1 1 0)
- (apt::divconq old :schema :list-fold :list-input x)
+ (apt::schemalg old :schema :divconq-oset-0-1 :oset-input x)
  :with-output-off nil)
 
 (must-succeed*
  (gen-inputs 2 2 1 0)
- (apt::divconq old :schema :list-fold :list-input x)
+ (apt::schemalg old :schema :divconq-oset-0-1 :oset-input x)
  :with-output-off nil)
 
 (must-succeed*
  (gen-inputs 2 0 1 1)
- (apt::divconq old :schema :list-fold :list-input x)
+ (apt::schemalg old :schema :divconq-oset-0-1 :oset-input x)
  :with-output-off nil)
 
 (must-succeed*
  (gen-inputs 2 1 1 1)
- (apt::divconq old :schema :list-fold :list-input x)
+ (apt::schemalg old :schema :divconq-oset-0-1 :oset-input x)
  :with-output-off nil)
 
 (must-succeed*
  (gen-inputs 2 2 1 1)
- (apt::divconq old :schema :list-fold :list-input x)
+ (apt::schemalg old :schema :divconq-oset-0-1 :oset-input x)
  :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -88,32 +88,32 @@
 
 (must-succeed*
  (gen-inputs 1 0 2 0)
- (apt::divconq old :schema :list-fold :list-input x)
+ (apt::schemalg old :schema :divconq-oset-0-1 :oset-input x)
  :with-output-off nil)
 
 (must-succeed*
  (gen-inputs 1 1 2 0)
- (apt::divconq old :schema :list-fold :list-input x)
+ (apt::schemalg old :schema :divconq-oset-0-1 :oset-input x)
  :with-output-off nil)
 
 (must-succeed*
  (gen-inputs 1 0 2 1)
- (apt::divconq old :schema :list-fold :list-input x)
+ (apt::schemalg old :schema :divconq-oset-0-1 :oset-input x)
  :with-output-off nil)
 
 (must-succeed*
  (gen-inputs 1 1 2 1)
- (apt::divconq old :schema :list-fold :list-input x)
+ (apt::schemalg old :schema :divconq-oset-0-1 :oset-input x)
  :with-output-off nil)
 
 (must-succeed*
  (gen-inputs 1 0 2 2)
- (apt::divconq old :schema :list-fold :list-input x)
+ (apt::schemalg old :schema :divconq-oset-0-1 :oset-input x)
  :with-output-off nil)
 
 (must-succeed*
  (gen-inputs 1 1 2 2)
- (apt::divconq old :schema :list-fold :list-input x)
+ (apt::schemalg old :schema :divconq-oset-0-1 :oset-input x)
  :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -122,45 +122,45 @@
 
 (must-succeed*
  (gen-inputs 2 0 2 0)
- (apt::divconq old :schema :list-fold :list-input x)
+ (apt::schemalg old :schema :divconq-oset-0-1 :oset-input x)
  :with-output-off nil)
 
 (must-succeed*
  (gen-inputs 2 1 2 0)
- (apt::divconq old :schema :list-fold :list-input x)
+ (apt::schemalg old :schema :divconq-oset-0-1 :oset-input x)
  :with-output-off nil)
 
 (must-succeed*
  (gen-inputs 2 2 2 0)
- (apt::divconq old :schema :list-fold :list-input x)
+ (apt::schemalg old :schema :divconq-oset-0-1 :oset-input x)
  :with-output-off nil)
 
 (must-succeed*
  (gen-inputs 2 0 2 1)
- (apt::divconq old :schema :list-fold :list-input x)
+ (apt::schemalg old :schema :divconq-oset-0-1 :oset-input x)
  :with-output-off nil)
 
 (must-succeed*
  (gen-inputs 2 1 2 1)
- (apt::divconq old :schema :list-fold :list-input x)
+ (apt::schemalg old :schema :divconq-oset-0-1 :oset-input x)
  :with-output-off nil)
 
 (must-succeed*
  (gen-inputs 2 2 2 1)
- (apt::divconq old :schema :list-fold :list-input x)
+ (apt::schemalg old :schema :divconq-oset-0-1 :oset-input x)
  :with-output-off nil)
 
 (must-succeed*
  (gen-inputs 2 0 2 2)
- (apt::divconq old :schema :list-fold :list-input x)
+ (apt::schemalg old :schema :divconq-oset-0-1 :oset-input x)
  :with-output-off nil)
 
 (must-succeed*
  (gen-inputs 2 1 2 2)
- (apt::divconq old :schema :list-fold :list-input x)
+ (apt::schemalg old :schema :divconq-oset-0-1 :oset-input x)
  :with-output-off nil)
 
 (must-succeed*
  (gen-inputs 2 2 2 2)
- (apt::divconq old :schema :list-fold :list-input x)
+ (apt::schemalg old :schema :divconq-oset-0-1 :oset-input x)
  :with-output-off nil)

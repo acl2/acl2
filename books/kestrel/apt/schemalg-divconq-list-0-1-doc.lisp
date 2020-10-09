@@ -81,7 +81,7 @@
        "@(':auto'), to specify the only argument of the call of @('?f'),
         when the call has exactly one argument.
         It is an error for @(':list-input') to be @(':auto')
-        when the call has more than argument.")
+        when the call has more than one argument.")
       (xdoc::li
        "An argument of the call of @('?f') that is a symbol,
         to specify that argument."))
