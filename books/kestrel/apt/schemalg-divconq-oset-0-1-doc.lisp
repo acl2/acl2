@@ -14,12 +14,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc schemalg-divconq-list-0-1
+(defxdoc schemalg-divconq-oset-0-1
 
   :parents (schemalg)
 
   :short "APT schematic algorithm tranformation:
-          specifics for the divide-and-conquer list 0-1 schema."
+          specifics for the divide-and-conquer oset 0-1 schema."
 
   :long
 
@@ -30,18 +30,19 @@
    (xdoc::evmac-section-intro
 
     (xdoc::p
-     "This is a divide-and-conquer schema over (true or dotted) lists,
-      with one base case for lists of length 0
-      and one recursive case for list of length 1 or more."))
+     "This is a divide-and-conquer schema over "
+     (xdoc::seetopic "set::std/osets" "osets")
+     ", with one base case for osets with 0 elements
+      and one recursive case for osets with 1 or more elements."))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::evmac-section-form
     (xdoc::codeblock
      "(schemalg old"
-     "          :schema :divconq-list-0-1"
-     "          :list-input     ; default :auto"
-     "          :cdr-output     ; default :auto"
+     "          :schema :divconq-oset-0-1"
+     "          :oset-input     ; default :auto"
+     "          :tail-output    ; default :auto"
      "          :fvar-0-name    ; default :auto"
      "          :fvar-1-name    ; default :auto"
      "          :spec-0-name    ; default :auto"
@@ -70,17 +71,17 @@
        be as described there."))
 
     (xdoc::desc
-     "@(':list-input') &mdash; default @(':auto')"
+     "@(':oset-input') &mdash; default @(':auto')"
      (xdoc::p
       "Specifies the argument of the call of @('?f')
-       that is treated as the list on which @('algo[?f1]...[?fp]') operates.")
+       that is treated as the oset on which @('algo[?f1]...[?fp]') operates.")
      (xdoc::p
       "It must be one of the following:")
      (xdoc::ul
       (xdoc::li
        "@(':auto'), to specify the only argument of the call of @('?f'),
         when the call has exactly one argument.
-        It is an error for @(':list-input') to be @(':auto')
+        It is an error for @(':oset-input') to be @(':auto')
         when the call has more than one argument.")
       (xdoc::li
        "An argument of the call of @('?f') that is a symbol,
@@ -90,16 +91,16 @@
        in the description of the @('old') input above."))
 
     (xdoc::desc
-     "@(':cdr-output') &mdash; default @(':auto')"
+     "@(':tail-output') &mdash; default @(':auto')"
      (xdoc::p
       "Specifies the name of the variable to use for
-       the solution (i.e. output) for the @(tsee cdr) of the list,
+       the solution (i.e. output) for the @(tsee set::tail) of the oset,
        in the generated sub-specification for the recursive case.")
      (xdoc::p
       "It must be one of the following:")
      (xdoc::ul
       (xdoc::li
-       "@(':auto'), to use the symbol @('cdr-output'),
+       "@(':auto'), to use the symbol @('tail-output'),
         in the same package as @('old').")
       (xdoc::li
        "Any other symbol, to use as the name."))
@@ -170,7 +171,7 @@
     (xdoc::desc
      "@('?g')"
      (xdoc::p
-      "Function variable used for lists of length 0:")
+      "Function variable used for osets with 0 elements:")
      (xdoc::codeblock
       "(soft::defunvar ?g (* * ... *) => *)")
      (xdoc::p
@@ -183,7 +184,7 @@
     (xdoc::desc
      "@('?h')"
      (xdoc::p
-      "Function variable used for lists of length 1 or more:")
+      "Function variable used for osets with 1 or more elements:")
      (xdoc::codeblock
       "(soft::defunvar ?h (* * ... * *) => *)")
      (xdoc::p
@@ -199,12 +200,12 @@
       "Algorithm schema:")
      (xdoc::codeblock
       "(soft::defun2 algo[?g][?h] (x z1 ... zm)"
-      "  (cond ((atom x) (?g x z1 ... zm))"
-      "        (t (?h (car x)"
+      "  (cond ((or (not (set::setp x)) (set::empty x)) (?g x z1 ... zm))"
+      "        (t (?h (set::head x)"
       "               z1"
       "               ..."
       "               zm"
-      "               (algo[?g][?h] (cdr x) z1 ... zm)))))")
+      "               (algo[?g][?h] (set::tail x) z1 ... zm)))))")
      (xdoc::p
       "In the " *schemalg-design-notes* ",
        @('algo[?g][?h]') is denoted by @($A(g,h)$)
@@ -213,25 +214,26 @@
     (xdoc::desc
      "@('old-0[?g]')"
      (xdoc::p
-      "Sub-specification for lists of length 0:")
+      "Sub-specification for osets with 0 elements:")
      (xdoc::codeblock
       "(soft::defun-sk2 old-0[?g] ()"
       "  (forall (x x1 ... xn)"
-      "          (impliez (atom x)"
+      "          (impliez (or (not (set::setp x)) (set::empty x))"
       "                   iorel<x,x1,...,xn,"
       "                         (?g x a1<x1,...,xn> ... am<x1,...,xn>))))"))
 
     (xdoc::desc
      "@('old-1[?h]')"
      (xdoc::p
-      "Sub-specification for lists of length 1 or more:")
+      "Sub-specification for osets with 1 or more elements:")
      (xdoc::codeblock
       "(soft::defun-sk2 old-1[?h] ()"
       "  (forall (x x1 ... xn y)"
-      "          (impliez (and (consp x)"
-      "                        iorel<(cdr x),x1,...,xn,y>)"
+      "          (impliez (and (set::setp x)"
+      "                        (not (set::empty x))"
+      "                        iorel<(set::tail x),x1,...,xn,y>)"
       "                   iorel<x,x1,...,xn,"
-      "                         (?h (car x)"
+      "                         (?h (set::head x)"
       "                             a1<x1,...,xn>"
       "                             ..."
       "                             am<x1,...,xn>"

@@ -58,14 +58,14 @@
 
 ; Generate the function ALGO[?F][?G] described in the user documentation.
 
-(defmacro gen-algo (&key (name 'algo[?g][?h])
-                         (?g '?g)
-                         (?h '?h)
-                         (x 'x)
-                         z1...
-                         ...zm
-                         hints
-                         guard-hints)
+(defmacro gen-algo-divconq-list-0-1 (&key (name 'algo[?g][?h])
+                                          (?g '?g)
+                                          (?h '?h)
+                                          (x 'x)
+                                          z1...
+                                          ...zm
+                                          hints
+                                          guard-hints)
   (let ((x-z1...zm (append z1... (list x) ...zm)))
     `(defun2 ,name ,x-z1...zm
        (declare (xargs
@@ -80,19 +80,43 @@
                      ,@...zm
                      (,name ,@z1... (cdr ,x) ,@...zm)))))))
 
+(defmacro gen-algo-divconq-oset-0-1 (&key (name 'algo[?g][?h])
+                                          (?g '?g)
+                                          (?h '?h)
+                                          (x 'x)
+                                          z1...
+                                          ...zm
+                                          hints
+                                          guard-hints)
+  (let ((x-z1...zm (append z1... (list x) ...zm)))
+    `(defun2 ,name ,x-z1...zm
+       (declare (xargs
+                 :measure (acl2-count ,x)
+                 ,@(and hints (list :hints hints))
+                 :guard t
+                 :verify-guards t
+                 :guard-hints ,guard-hints))
+       (cond ((or (not (set::setp ,x))
+                  (set::empty ,x))
+              (,?g ,@x-z1...zm))
+             (t (,?h ,@z1...
+                     (set::head ,x)
+                     ,@...zm
+                     (,name ,@z1... (set::tail ,x) ,@...zm)))))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Generate the function SPEC-0[?G] described in the user documentation.
 
-(defmacro gen-spec-0 (&key (name 'spec-0[?g])
-                           (?g '?g)
-                           (x 'x)
-                           x1...
-                           ...xn
-                           a1...
-                           ...am
-                           (iorel 'iorel)
-                           guard-hints)
+(defmacro gen-spec-0-divconq-list-0-1 (&key (name 'spec-0[?g])
+                                            (?g '?g)
+                                            (x 'x)
+                                            x1...
+                                            ...xn
+                                            a1...
+                                            ...am
+                                            (iorel 'iorel)
+                                            guard-hints)
   (let ((x-x1...xn (append x1... (list x) ...xn))
         (x-a1...am (append a1... (list x) ...am)))
     `(defun-sk2 ,name  ()
@@ -103,20 +127,40 @@
                (impliez (atom ,x)
                         (,iorel ,@x-x1...xn (,?g ,@x-a1...am)))))))
 
+(defmacro gen-spec-0-divconq-oset-0-1 (&key (name 'spec-0[?g])
+                                            (?g '?g)
+                                            (x 'x)
+                                            x1...
+                                            ...xn
+                                            a1...
+                                            ...am
+                                            (iorel 'iorel)
+                                            guard-hints)
+  (let ((x-x1...xn (append x1... (list x) ...xn))
+        (x-a1...am (append a1... (list x) ...am)))
+    `(defun-sk2 ,name  ()
+       (declare (xargs :guard t
+                       :verify-guards t
+                       :guard-hints ,guard-hints))
+       (forall ,x-x1...xn
+               (impliez (or (not (set::setp ,x))
+                            (set::empty ,x))
+                        (,iorel ,@x-x1...xn (,?g ,@x-a1...am)))))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Generate the function SPEC-CONS[?H] described in the user documentation.
 
-(defmacro gen-spec-1 (&key (name 'spec-1[?h])
-                           (?h '?h)
-                           (x 'x)
-                           (y 'y)
-                           x1...
-                           ...xn
-                           a1...
-                           ...am
-                           (iorel 'iorel)
-                           guard-hints)
+(defmacro gen-spec-1-divconq-list-0-1 (&key (name 'spec-1[?h])
+                                            (?h '?h)
+                                            (x 'x)
+                                            (y 'y)
+                                            x1...
+                                            ...xn
+                                            a1...
+                                            ...am
+                                            (iorel 'iorel)
+                                            guard-hints)
   (let ((x-x1...xn (append x1... (list x) ...xn)))
     `(defun-sk2 ,name ()
        (declare (xargs :guard t
@@ -127,6 +171,28 @@
                              (,iorel ,@x1... (cdr ,x) ,@...xn ,y))
                         (iorel ,@x-x1...xn
                                (,?h ,@a1... (car ,x) ,@...am ,y)))))))
+
+(defmacro gen-spec-1-divconq-oset-0-1 (&key (name 'spec-1[?h])
+                                            (?h '?h)
+                                            (x 'x)
+                                            (y 'y)
+                                            x1...
+                                            ...xn
+                                            a1...
+                                            ...am
+                                            (iorel 'iorel)
+                                            guard-hints)
+  (let ((x-x1...xn (append x1... (list x) ...xn)))
+    `(defun-sk2 ,name ()
+       (declare (xargs :guard t
+                       :verify-guards t
+                       :guard-hints ,guard-hints))
+       (forall (,@x-x1...xn ,y)
+               (impliez (and (set::setp ,x)
+                             (not (set::empty ,x))
+                             (,iorel ,@x1... (set::tail ,x) ,@...xn ,y))
+                        (iorel ,@x-x1...xn
+                               (,?h ,@a1... (set::head ,x) ,@...am ,y)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
