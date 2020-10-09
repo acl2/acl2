@@ -1950,7 +1950,16 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
 ; Example:
 ; (export SBCL_USER_ARGS="--lose-on-corruption" ; ./sbcl-saved_acl2)
 
-         "~s --dynamic-space-size ~s --control-stack-size 64 ~
+; On October 9, 2020 we added --tls-limit 8192, because certification of
+; community book books/kestrel/apt/schemalg-template-proofs.lisp failed with
+; ACL2 built on SBCL.  The error was "Thread local storage exhausted", which we
+; apparently indicates too many special variables.  The SBCL 1.5.2 release
+; notes say that "command-line option "--tls-limit" can be used to alter the
+; maximum number of thread-local symbols from its default of 4096".  We chose
+; 8192 because it was sufficient for the book above, but perhaps it can be
+; increased significantly more without bad effect (not sure).
+
+         "~s --tls-limit 8192 --dynamic-space-size ~s --control-stack-size 64 ~
           --disable-ldb --core ~s~a ${SBCL_USER_ARGS} ~
           --end-runtime-options --no-userinit --eval '(acl2::sbcl-restart)'~a ~a~%"
          prog
