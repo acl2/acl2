@@ -1,4 +1,4 @@
-(RP::RP)
+(RP)
 (RP::FALIST)
 (RP::IS-NONNIL-FIX)
 (RP::NONNIL-P)

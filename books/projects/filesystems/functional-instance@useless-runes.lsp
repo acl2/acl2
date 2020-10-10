@@ -94,20 +94,20 @@
                         (2 2
                            (:TYPE-PRESCRIPTION REMOVE-ASSOC-EQUAL))
                         (1 1 (:REWRITE CONSP-OF-REMOVE-ASSOC-1)))
-(SUM-CDRS-OF-REMOVE-ASSOC (1482 494
+(SUM-CDRS-OF-REMOVE-ASSOC (1497 499
                                 (:TYPE-PRESCRIPTION ASSOC-WHEN-ZP-LEN))
-                          (728 38 (:DEFINITION MEMBER-EQUAL))
-                          (440 50 (:REWRITE SUBSETP-CAR-MEMBER))
-                          (357 264 (:REWRITE DEFAULT-CAR))
+                          (724 38 (:DEFINITION MEMBER-EQUAL))
+                          (431 50 (:REWRITE SUBSETP-CAR-MEMBER))
+                          (352 264 (:REWRITE DEFAULT-CAR))
                           (270 10 (:REWRITE ASSOC-OF-CAR-WHEN-MEMBER))
-                          (245 58 (:REWRITE SUBSETP-MEMBER . 3))
+                          (242 58 (:REWRITE SUBSETP-MEMBER . 3))
                           (220 84 (:REWRITE DEFAULT-+-2))
-                          (191 137
+                          (192 138
                                (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
-                          (164 62 (:REWRITE MEMBER-WHEN-ATOM))
-                          (147 72 (:REWRITE SUBSETP-WHEN-ATOM-RIGHT))
-                          (135 72 (:REWRITE SUBSETP-WHEN-ATOM-LEFT))
-                          (123 123 (:REWRITE CONSP-OF-STRIP-CARS))
+                          (152 62 (:REWRITE MEMBER-WHEN-ATOM))
+                          (141 72 (:REWRITE SUBSETP-WHEN-ATOM-RIGHT))
+                          (129 72 (:REWRITE SUBSETP-WHEN-ATOM-LEFT))
+                          (114 114 (:REWRITE CONSP-OF-STRIP-CARS))
                           (78 78 (:REWRITE SUBSETP-MEMBER . 2))
                           (74 74 (:REWRITE SUBSETP-TRANS2))
                           (72 72 (:REWRITE SUBSETP-TRANS))
@@ -115,7 +115,8 @@
                           (49 7
                               (:REWRITE SUBSETP-IMPLIES-SUBSETP-CDR))
                           (8 8 (:REWRITE CONSP-OF-REMOVE-ASSOC-1))
-                          (6 6 (:REWRITE FOLD-CONSTS-IN-+)))
+                          (6 6 (:REWRITE FOLD-CONSTS-IN-+))
+                          (5 1 (:REWRITE FIX-WHEN-ACL2-NUMBERP)))
 (LEMMA (78 26
            (:TYPE-PRESCRIPTION ASSOC-WHEN-ZP-LEN))
        (62 1 (:DEFINITION REMOVE-ASSOC-EQUAL))

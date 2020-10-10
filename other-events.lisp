@@ -16139,6 +16139,9 @@
 
 (defun useless-runes-value (useless-runes-r/w useless-runes-r/w-p ctx state)
 
+; Useless-runes-r/w is the value given to certify-book option :useless-runes,
+; if any; useless-runes-r/w-p is true when that option is supplied, else nil.
+
 ; We return an error triple whose value is a pair (envp . val), where: envp is
 ; the value of environment variable ACL2_USELESS_RUNES if that is responsible
 ; for the value, val, else nil; and val is WRITE, nil, or a non-zero rational
@@ -16151,7 +16154,15 @@
 ; (We could allow 0 but that would mean the same as nil, which could perhaps
 ; lead to confusion somehow.)
 
-  (er-let* ((str (getenv! "ACL2_USELESS_RUNES" state)))
+  (er-let* ((str
+
+; If :useless-runes nil was supplied explicitly to certify-book, then ignore
+; the value of the indicated environment variable.  Otherwise the environment
+; variable takes priority over the value of :useless-runes.
+
+             (if (and useless-runes-r/w-p (null useless-runes-r/w))
+                 (value nil)
+               (getenv! "ACL2_USELESS_RUNES" state))))
     (cond
      ((and str
            (string-equal str "WRITE"))
