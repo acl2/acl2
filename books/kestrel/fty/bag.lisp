@@ -11,7 +11,7 @@
 (in-package "OBAG")
 
 (include-book "centaur/fty/top" :dir :system)
-(include-book "kestrel/utilities/obags/core" :dir :system)
+(include-book "std/obags/core" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
