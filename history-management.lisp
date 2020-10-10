@@ -3873,9 +3873,9 @@
             iprint-fal            ;;; see just above
             iprint-soft-bound     ;;; see just above
             iprint-hard-bound     ;;; see just above
+            trace-co              ;;; see just above
+            trace-specs           ;;; see just above
             show-custom-keyword-hint-expansion
-            trace-specs                ;;; keep in sync with functions that are
-;;;   actually traced, e.g. trace! macro
             timer-alist                ;;; preserve accumulated summary info
             main-timer                 ;;; preserve accumulated summary info
             verbose-theory-warning     ;;; warn if disabling a *bbody-alist* key

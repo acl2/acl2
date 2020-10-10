@@ -946,6 +946,10 @@
     "See @(see rewrite$) for a flexible, convenient interface to the ACL2
      rewriter that can be called programmatically.")
 
+   (xdoc::p
+    "See @(see open-trace-file!) for a variant of @(tsee open-trace-file)
+     suitable for use within @(tsee make-event).")
+
    ))
 
 (defxdoc note-8-3-books

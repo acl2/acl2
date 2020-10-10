@@ -4541,10 +4541,13 @@
                        (not (ld-redefinition-action state)))
                   (er soft ctx
                       "Either the :check-expansion or :expansion? argument of ~
-                       make-event should be a consp in the present context.  ~
-                       Unless you called record-expansion explicitly, this is ~
-                       an ACL2 bug; please contact the ACL2 implementors.  ~
-                       Current form:~|~%~X01"
+                       make-event is normally a consp in the present context. ~
+                       ~ This is not surprising in some cases, for example, ~
+                       when including an uncertified book or calling ~x0 ~
+                       explicitly.  But other cases could be evidence of an ~
+                       ACL2 bug; consider contacting the ACL2 implementors.  ~
+                       Current form:~|~%~X12"
+                      'record-expansion
                       form
                       nil))
                  (t (value form))))
