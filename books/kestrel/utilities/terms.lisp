@@ -19,7 +19,7 @@
 (include-book "symbol-term-alistp")
 (include-book "expand-lambdas-in-term")
 (include-book "tools/flag" :dir :system)
-(local (include-book "kestrel/lists-light/symbol-listp" :dir :system))
+(local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/lists-light/member-equal" :dir :system))
 (local (include-book "kestrel/lists-light/add-to-set-equal" :dir :system))
 (local (include-book "kestrel/alists-light/pairlis-dollar" :dir :system))

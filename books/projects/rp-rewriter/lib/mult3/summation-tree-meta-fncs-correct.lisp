@@ -325,6 +325,10 @@
                 (VALID-SC-SUBTERMS (CDR LST) A)))
   :rule-classes :forward-chaining)
 
+(defthmd bitp-implies-integerp
+  (implies (bitp x)
+           (integerp x)))
+
 (std::defret-mutual
  get-max-min-val-correct
  (defret
@@ -361,7 +365,8 @@
                             regular-eval-lemmas-with-ex-from-rp
                             ;;rp-evlt-of-ex-from-rp-reverse
                             minus-to---
-                            get-max-min-val-lst)
+                            get-max-min-val-lst
+                            bitp-implies-integerp)
                            (;;RP-EVLT-OF-EX-FROM-RP
                             (:DEFINITION EQ)
 
@@ -1198,15 +1203,15 @@
 
   (local
    (defthm pp-termp-is-bitp-lemma
-     (implies (and (PP-HAS-BITP-RP TERM)
+     (implies (and (has-bitp-rp term)
                    (rp-evl-meta-extract-global-facts :state state)
-                   (VALID-SC TERM A)
-                   (MULT-FORMULA-CHECKS STATE))
-              (and (BITP (RP-EVLt TERM A))
-                   (BITP (RP-EVLt (EX-FROM-RP TERM) A))))
+                   (valid-sc term a)
+                   (mult-formula-checks state))
+              (and (bitp (rp-evlt term a))
+                   (bitp (rp-evlt (ex-from-rp term) a))))
      :otf-flg t
-     :hints (("Goal"
-              :induct (PP-HAS-BITP-RP TERM)
+     :hints (("goal"
+              :induct (has-bitp-rp term)
               :do-not-induct t
               :in-theory (e/d (is-if ;is-rp
                                valid-sc
@@ -1215,7 +1220,7 @@
                                is-rp-implies-fc
                                valid-sc-single-step
                                rp-trans-lst-of-consp
-                               PP-HAS-BITP-RP)
+                               HAS-BITP-RP)
                               (bitp
                                rp-trans
                                rp-trans-lst
@@ -1245,7 +1250,7 @@
                                (:REWRITE ACL2::O-P-O-INFP-CAR)
                                (:REWRITE NOT-INCLUDE-RP-MEANS-VALID-SC)
                                (:REWRITE EVL-OF-EXTRACT-FROM-RP-2)
-                               PP-HAS-BITP-RP
+                               HAS-BITP-RP
                                rp-trans
                                pp-term-p
                                RP-TRANS-IS-TERM-WHEN-LIST-IS-ABSENT
@@ -1277,11 +1282,11 @@
 
   (local
    (defthm PP-HAS-BITP-RP-EX-FROM-RP
-     (not (PP-HAS-BITP-RP (EX-FROM-RP TERM)))
+     (not (HAS-BITP-RP (EX-FROM-RP TERM)))
      :hints (("Goal"
               :induct (EX-FROM-RP TERM)
               :do-not-induct t
-              :in-theory (e/d (EX-FROM-RP pp-has-bitp-rp
+              :in-theory (e/d (EX-FROM-RP HAS-BITP-RP
                                           is-rp) ())))))
 
   (local
@@ -1651,9 +1656,7 @@
                             valid-sc-single-step)
                            (valid-sc)))))
 
-(defthmd bitp-implies-integerp
-  (implies (bitp a)
-           (integerp a)))
+
 
 (defthm m2-of-1-v2
   (and (equal (m2 (sum x 1 y))
@@ -4552,7 +4555,7 @@
                                          (CADR (EX-FROM-RP (CADR TERM)))))))
   :hints (("Goal"
            :in-theory (e/d (LIGHT-PP-TERM-LIST-P
-                            PP-HAS-BITP-RP
+                            HAS-BITP-RP
                             EX-FROM-RP
                             is-rp
                             LIGHT-PP-TERM-P)
@@ -4693,6 +4696,7 @@
            :do-not-induct t
            :induct (quarternaryp-sum-aux term)
            :in-theory (e/d* (quarternaryp-sum-aux
+                             bitp-implies-integerp
                              lte-dummy-lemma-1
                              (:REWRITE
                               REGULAR-RP-EVL-OF_AND-LIST_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP)

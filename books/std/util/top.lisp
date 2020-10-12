@@ -40,6 +40,7 @@
 (include-book "defprojection")
 (include-book "define")
 (include-book "defines")
+(include-book "define-sk")
 (include-book "defrule")
 (include-book "defredundant")
 (include-book "defsum")

@@ -3,7 +3,7 @@
 (in-package "ACL2")
 
 (include-book "norm")
-(include-book "kestrel/utilities/define-sk" :dir :system)
+(include-book "std/util/define-sk" :dir :system)
 
 (encapsulate
  nil

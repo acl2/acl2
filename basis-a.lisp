@@ -1639,7 +1639,7 @@
   `(if (stringp ,s)
        (the string ,s)
      (er-hard-val "" ,ctx
-                  "Not a string:  ~s0."
+                  "Not a string:  ~x0."
                   ,s)))
 
 (defun xxxjoin-fixnum (fn args root)

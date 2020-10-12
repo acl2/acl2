@@ -11,6 +11,8 @@
 (in-package "ACL2")
 
 (include-book "system/top" :dir :system)
+
+(include-book "acceptable-rewrite-rule-p")
 (include-book "non-parallel-book")
 
 (include-book "xdoc/constructors" :dir :system)

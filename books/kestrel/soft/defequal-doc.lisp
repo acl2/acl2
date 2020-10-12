@@ -66,7 +66,7 @@
      "          :left-to-right-enable ...  ; default nil"
      "          :right-to-left-name ...    ; default :auto"
      "          :right-to-left-enable ...  ; default nil"
-     "          :print                     ; default :result"
+     "          :print ...                 ; default :result"
      "          :show-only ...             ; default nil"
      "  )"))
 

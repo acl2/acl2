@@ -1964,3 +1964,23 @@
 
   (rp-attach-sc logbit-to-bits
                 logbit-to-bits-side-cond))
+
+
+(def-rp-rule 4vec-parity-of-bitp
+  (implies (bitp x)
+           (equal (sv::4vec-parity x)
+                  (- x)))
+  :hints (("Goal"
+           :in-theory (e/d (bitp) ()))))
+
+(def-rp-rule 4vec-parity-of-bits-to-4vec-bitxor
+  (implies (and (integerp x)
+                (natp start))
+           (and (equal (sv::4vec-parity (bits x start 2))
+                       (- (sv::4vec-bitxor (bits x start 1)
+                                           (bits x (1+ start) 1))))
+                (equal (sv::4vec-parity (bits x start 1))
+                       (- (bits x start 1)))))
+  :hints (("Goal"
+           :do-not-induct t
+           :use ((:instance 4vec-parity-of-4vec-part-select-to-4vec-bitxor)))))

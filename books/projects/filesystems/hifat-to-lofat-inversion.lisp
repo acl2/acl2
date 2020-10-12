@@ -1023,48 +1023,38 @@
        ;; deleted file, or a "." or ".."  entry, even though we won't include
        ;; these in the filesystem instance. The measure must strictly decrease.
        ;; If there isn't a full directory entry in dir-contents, we're done.
-       ((when
-            (atom dir-ent-list))
-        (mv nil 0 nil 0))
-       ((when (zp entry-limit))
-        (mv nil 0 nil *EIO*))
-       (dir-ent
-        (car dir-ent-list))
+       ((when (atom dir-ent-list)) (mv nil 0 nil 0))
+       ((when (zp entry-limit)) (mv nil 0 nil *EIO*))
+       (dir-ent (car dir-ent-list))
        ;; Learn about the file we're looking at.
        (first-cluster (dir-ent-first-cluster dir-ent))
        (filename (dir-ent-filename dir-ent))
-       (directory-p
-        (dir-ent-directory-p dir-ent))
+       (directory-p (dir-ent-directory-p dir-ent))
        ((mv contents error-code)
         (if
             ;; This clause is intended to make sure we don't try to explore the
             ;; contents of an empty file; that would cause a guard
             ;; violation. Unlike deleted file entries and dot or dotdot
-            ;; entries, though, these will be present in the m1 instance.
-            (or (< first-cluster
-                   *ms-first-data-cluster*)
+            ;; entries, though, empty file entries will be present in the hifat instance.
+            (or (< first-cluster *ms-first-data-cluster*)
                 (>=
                  first-cluster
                  (+ (count-of-clusters fat32-in-memory)
                     *ms-first-data-cluster*)))
             (mv "" 0)
-          (dir-ent-clusterchain-contents
-           fat32-in-memory dir-ent)))
+          (dir-ent-clusterchain-contents fat32-in-memory dir-ent)))
        ((mv clusterchain &)
         (if
             ;; This clause is intended to make sure we don't try to explore the
             ;; contents of an empty file; that would cause a guard
             ;; violation. Unlike deleted file entries and dot or dotdot
-            ;; entries, though, these will be present in the m1 instance.
-            (or (< first-cluster
-                   *ms-first-data-cluster*)
-                (>=
-                 first-cluster
-                 (+ (count-of-clusters fat32-in-memory)
-                    *ms-first-data-cluster*)))
+            ;; entries, though, empty file entries will be present in the hifat instance.
+            (or (< first-cluster *ms-first-data-cluster*)
+                (>= first-cluster
+                    (+ (count-of-clusters fat32-in-memory)
+                       *ms-first-data-cluster*)))
             (mv nil 0)
-          (dir-ent-clusterchain
-           fat32-in-memory dir-ent)))
+          (dir-ent-clusterchain fat32-in-memory dir-ent)))
        ;; head-entry-count and head-clusterchain-list, here, do not include the
        ;; entry or clusterchain respectively for the head itself. Those will be
        ;; added at the end.
@@ -1077,13 +1067,11 @@
           (mv contents 0 nil 0)))
        ;; we want entry-limit to serve both as a measure and an upper
        ;; bound on how many entries are found.
-       (tail-entry-limit (- entry-limit
-                            (+ 1 (nfix head-entry-count))))
+       (tail-entry-limit (- entry-limit (+ 1 (nfix head-entry-count))))
        ((mv tail tail-entry-count tail-clusterchain-list tail-error-code)
-        (lofat-to-hifat-helper
-         fat32-in-memory
-         (cdr dir-ent-list)
-         tail-entry-limit))
+        (lofat-to-hifat-helper fat32-in-memory
+                               (cdr dir-ent-list)
+                               tail-entry-limit))
        (error-code
         (if (and ;; get-clusterchain-contents returns an error code of 0.
              (equal error-code 0)
@@ -1093,20 +1081,18 @@
               ;; This is the weird case where we have a directory... and
               ;; it's 2^21 or fewer bytes long... but somehow it's managed
               ;; to skip either the . entry or the .. entry.
-              (and directory-p
-                   (not (subdir-contents-p contents))))
+              (and directory-p (not (subdir-contents-p contents))))
              ;; The three following clauses come around to the point that
              ;; the whole expression
              ;; (append (list clusterchain) head-clusterchain-list
              ;;         tail-clusterchain-list)
-             ;; should satsify disjoint-list-listp and
+             ;; should satisfy disjoint-list-listp and
              ;; no-duplicates-listp. See the flatten-disjoint-lists
              ;; theorem to understand what this means.
              (no-duplicatesp clusterchain)
-             (not-intersectp-list
-              clusterchain
-              (append head-clusterchain-list
-                      tail-clusterchain-list))
+             (not-intersectp-list clusterchain
+                                  (append head-clusterchain-list
+                                          tail-clusterchain-list))
              (not (member-intersectp-equal head-clusterchain-list
                                            tail-clusterchain-list)))
             0
@@ -1118,9 +1104,8 @@
         (mv tail tail-entry-count tail-clusterchain-list *EIO*)
       ;; We add the file to this m1 instance, having made sure it isn't a
       ;; duplicate.
-      (mv (list* (cons filename
-                       (make-m1-file :dir-ent dir-ent
-                                     :contents head))
+      (mv (list* (cons filename (make-m1-file :dir-ent dir-ent
+                                              :contents head))
                  tail)
           (+ 1 head-entry-count tail-entry-count)
           (append (list clusterchain) head-clusterchain-list
@@ -1356,7 +1341,9 @@
             (lofat-to-hifat-helper fat32-in-memory
                                    dir-ent-list entry-limit1))))))
 
-(defthmd hifat-to-lofat-inversion-lemma-17
+;; This lemma needs to be enabled, because there are proofs that get stuck
+;; without it even when lofat-to-hifat-helper is enabled.
+(defthm hifat-to-lofat-inversion-lemma-17
   (implies
    (atom dir-ent-list)
    (equal
@@ -4904,7 +4891,8 @@
   (implies (and (hifat-subsetp m1-file-alist1 m1-file-alist2)
                 (alistp m1-file-alist2)
                 (consp (assoc-equal key m1-file-alist1)))
-           (consp (assoc-equal key m1-file-alist2))))
+           (consp (assoc-equal key m1-file-alist2)))
+  :hints (("Goal" :in-theory (enable hifat-subsetp))))
 
 ;; Not ideal...
 (defthm
@@ -8124,7 +8112,6 @@
                        root-dir-ent-list
                        pseudo-root-dir-ent
                        not-intersectp-list
-                       hifat-to-lofat-inversion-lemma-17
                        hifat-to-lofat-inversion-lemma-20
                        painful-debugging-lemma-10
                        painful-debugging-lemma-11))))
@@ -9478,8 +9465,7 @@
     0))
   :hints
   (("goal"
-    :in-theory (e/d (lofat-to-hifat hifat-to-lofat
-                                    hifat-to-lofat-inversion-lemma-17)
+    :in-theory (e/d (lofat-to-hifat hifat-to-lofat)
                     (lofat-to-hifat-inversion-lemma-3 generate-index-list)))))
 
 (defthm
@@ -9690,7 +9676,6 @@
     :in-theory
     (e/d
      (lofat-to-hifat hifat-to-lofat
-                     hifat-to-lofat-inversion-lemma-17
                      lofat-to-hifat-inversion-lemma-4
                      lofat-to-hifat-helper-correctness-5-lemma-5
                      dir-ent-clusterchain pseudo-root-dir-ent)

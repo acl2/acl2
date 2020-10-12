@@ -229,7 +229,6 @@ four-lanes-hi and one-lane should be set to 1.~%")
 (defconst *out-binds*
   '(("result" result)))
 
-
 ;; Below is our first correctness proof of a multiplier module. SVL-RUN returns
 ;; an alist of all the variables stated  in *out-binds*. In this case, there is
 ;; only one entry whose key is 'result'. We state the expression of this signal
@@ -242,11 +241,11 @@ four-lanes-hi and one-lane should be set to 1.~%")
                 (integerp in2)
                 (integerp in3))
            (equal (svl::svl-run "Integrated_Multiplier"
-                                (make-fast-alist `((in1 . ,in1)
-                                                   (in2 . ,in2)
-                                                   (in3 . ,in3)
-                                                   (mode . ,(mode :one-lane t
-                                                                  :signed t))))
+                                `((in1 . ,in1)
+                                  (in2 . ,in2)
+                                  (in3 . ,in3)
+                                  (mode . ,(mode :one-lane t
+                                                 :signed t)))
                                 *in-binds-one-lane*
                                 *out-binds*
                                 *mult-svl-design*)
@@ -254,25 +253,22 @@ four-lanes-hi and one-lane should be set to 1.~%")
                                                   (sign-ext in2 64))
                                                in3)))))))
 
-
 ;; Alternatively, we can set certain inputs to constants. In this case, we can
 ;; set in3 to 0, and prove only the multiplication function (but not FMA).
 (defthmrp signed-one-lane-mult-is-correct-for-in3=0
   (implies (and (integerp in1)
                 (integerp in2))
            (equal (svl::svl-run "Integrated_Multiplier"
-                                (make-fast-alist `((in1 . ,in1)
-                                                   (in2 . ,in2)
-                                                   (in3 . 0)
-                                                   (mode . ,(mode :one-lane t
-                                                                  :signed t))))
+                                `((in1 . ,in1)
+                                  (in2 . ,in2)
+                                  (in3 . 0)
+                                  (mode . ,(mode :one-lane t
+                                                 :signed t)))
                                 *in-binds-one-lane*
                                 *out-binds*
                                 *mult-svl-design*)
                   `((result . ,(loghead 128 (* (sign-ext in1 64)
                                                (sign-ext in2 64))))))))
-
-
 
 ;; We can prove the same for mode for unsigned numbers by changing the
 ;; specification accordingly.
@@ -281,11 +277,11 @@ four-lanes-hi and one-lane should be set to 1.~%")
                 (integerp in2)
                 (integerp in3))
            (equal (svl::svl-run "Integrated_Multiplier"
-                                (make-fast-alist `((in1 . ,in1)
-                                                   (in2 . ,in2)
-                                                   (in3 . ,in3)
-                                                   (mode . ,(mode :one-lane t
-                                                                  :signed nil))))
+                                `((in1 . ,in1)
+                                  (in2 . ,in2)
+                                  (in3 . ,in3)
+                                  (mode . ,(mode :one-lane t
+                                                 :signed nil)))
                                 *in-binds-one-lane*
                                 *out-binds*
                                 *mult-svl-design*)
@@ -322,17 +318,17 @@ four-lanes-hi and one-lane should be set to 1.~%")
                 (integerp in2_3)
                 (integerp in3))
            (equal (svl::svl-run "Integrated_Multiplier"
-                                (make-fast-alist `((in1_0 . ,in1_0)
-                                                   (in2_0 . ,in2_0)
-                                                   (in1_1 . ,in1_1)
-                                                   (in2_1 . ,in2_1)
-                                                   (in1_2 . ,in1_2)
-                                                   (in2_2 . ,in2_2)
-                                                   (in1_3 . ,in1_3)
-                                                   (in2_3 . ,in2_3)
-                                                   (in3   . ,in3)
-                                                   (mode  . ,(mode :dot-product t
-                                                                   :signed t))))
+                                `((in1_0 . ,in1_0)
+                                  (in2_0 . ,in2_0)
+                                  (in1_1 . ,in1_1)
+                                  (in2_1 . ,in2_1)
+                                  (in1_2 . ,in1_2)
+                                  (in2_2 . ,in2_2)
+                                  (in1_3 . ,in1_3)
+                                  (in2_3 . ,in2_3)
+                                  (in3   . ,in3)
+                                  (mode  . ,(mode :dot-product t
+                                                  :signed t)))
                                 *in-binds-dot-product*
                                 *out-binds*
                                 *mult-svl-design*)
@@ -357,17 +353,17 @@ four-lanes-hi and one-lane should be set to 1.~%")
                 (integerp in2_3)
                 (integerp in3))
            (equal (svl::svl-run "Integrated_Multiplier"
-                                (make-fast-alist `((in1_0 . ,in1_0)
-                                                   (in2_0 . ,in2_0)
-                                                   (in1_1 . ,in1_1)
-                                                   (in2_1 . ,in2_1)
-                                                   (in1_2 . ,in1_2)
-                                                   (in2_2 . ,in2_2)
-                                                   (in1_3 . ,in1_3)
-                                                   (in2_3 . ,in2_3)
-                                                   (in3   . ,in3)
-                                                   (mode  . ,(mode :dot-product t
-                                                                   :signed nil))))
+                                `((in1_0 . ,in1_0)
+                                  (in2_0 . ,in2_0)
+                                  (in1_1 . ,in1_1)
+                                  (in2_1 . ,in2_1)
+                                  (in1_2 . ,in1_2)
+                                  (in2_2 . ,in2_2)
+                                  (in1_3 . ,in1_3)
+                                  (in2_3 . ,in2_3)
+                                  (in3   . ,in3)
+                                  (mode  . ,(mode :dot-product t
+                                                  :signed nil)))
                                 *in-binds-dot-product*
                                 *out-binds*
                                 *mult-svl-design*)
@@ -427,24 +423,24 @@ four-lanes-hi and one-lane should be set to 1.~%")
                 (integerp in2_3)
                 (integerp in3_3))
            (equal (svl::svl-run "Integrated_Multiplier"
-                                (make-fast-alist `((in1_0 . ,in1_0)
-                                                   (in2_0 . ,in2_0)
-                                                   (in3_0 . ,in3_0)
+                                `((in1_0 . ,in1_0)
+                                  (in2_0 . ,in2_0)
+                                  (in3_0 . ,in3_0)
 
-                                                   (in1_1 . ,in1_1)
-                                                   (in2_1 . ,in2_1)
-                                                   (in3_1 . ,in3_1)
+                                  (in1_1 . ,in1_1)
+                                  (in2_1 . ,in2_1)
+                                  (in3_1 . ,in3_1)
 
-                                                   (in1_2 . ,in1_2)
-                                                   (in2_2 . ,in2_2)
-                                                   (in3_2 . ,in3_2)
+                                  (in1_2 . ,in1_2)
+                                  (in2_2 . ,in2_2)
+                                  (in3_2 . ,in3_2)
 
-                                                   (in1_3 . ,in1_3)
-                                                   (in2_3 . ,in2_3)
-                                                   (in3_3 . ,in3_3)
+                                  (in1_3 . ,in1_3)
+                                  (in2_3 . ,in2_3)
+                                  (in3_3 . ,in3_3)
 
-                                                   (mode  . ,(mode :four-lanes-lo t
-                                                                   :signed t))))
+                                  (mode  . ,(mode :four-lanes-lo t
+                                                  :signed t)))
                                 *in-binds-four-lanes*
                                 *out-binds-four-lanes*
                                 *mult-svl-design*)
@@ -478,24 +474,24 @@ four-lanes-hi and one-lane should be set to 1.~%")
                 (integerp in2_3)
                 (integerp in3_3))
            (equal (svl::svl-run "Integrated_Multiplier"
-                                (make-fast-alist `((in1_0 . ,in1_0)
-                                                   (in2_0 . ,in2_0)
-                                                   (in3_0 . ,in3_0)
+                                `((in1_0 . ,in1_0)
+                                  (in2_0 . ,in2_0)
+                                  (in3_0 . ,in3_0)
 
-                                                   (in1_1 . ,in1_1)
-                                                   (in2_1 . ,in2_1)
-                                                   (in3_1 . ,in3_1)
+                                  (in1_1 . ,in1_1)
+                                  (in2_1 . ,in2_1)
+                                  (in3_1 . ,in3_1)
 
-                                                   (in1_2 . ,in1_2)
-                                                   (in2_2 . ,in2_2)
-                                                   (in3_2 . ,in3_2)
+                                  (in1_2 . ,in1_2)
+                                  (in2_2 . ,in2_2)
+                                  (in3_2 . ,in3_2)
 
-                                                   (in1_3 . ,in1_3)
-                                                   (in2_3 . ,in2_3)
-                                                   (in3_3 . ,in3_3)
+                                  (in1_3 . ,in1_3)
+                                  (in2_3 . ,in2_3)
+                                  (in3_3 . ,in3_3)
 
-                                                   (mode  . ,(mode :four-lanes-lo t
-                                                                   :signed nil))))
+                                  (mode  . ,(mode :four-lanes-lo t
+                                                  :signed nil)))
                                 *in-binds-four-lanes*
                                 *out-binds-four-lanes*
                                 *mult-svl-design*)
@@ -536,24 +532,24 @@ four-lanes-hi and one-lane should be set to 1.~%")
                 (integerp in2_3)
                 (integerp in3_3))
            (equal (svl::svl-run "Integrated_Multiplier"
-                                (make-fast-alist `((in1_0 . ,in1_0)
-                                                   (in2_0 . ,in2_0)
-                                                   (in3_0 . ,in3_0)
+                                `((in1_0 . ,in1_0)
+                                  (in2_0 . ,in2_0)
+                                  (in3_0 . ,in3_0)
 
-                                                   (in1_1 . ,in1_1)
-                                                   (in2_1 . ,in2_1)
-                                                   (in3_1 . ,in3_1)
+                                  (in1_1 . ,in1_1)
+                                  (in2_1 . ,in2_1)
+                                  (in3_1 . ,in3_1)
 
-                                                   (in1_2 . ,in1_2)
-                                                   (in2_2 . ,in2_2)
-                                                   (in3_2 . ,in3_2)
+                                  (in1_2 . ,in1_2)
+                                  (in2_2 . ,in2_2)
+                                  (in3_2 . ,in3_2)
 
-                                                   (in1_3 . ,in1_3)
-                                                   (in2_3 . ,in2_3)
-                                                   (in3_3 . ,in3_3)
+                                  (in1_3 . ,in1_3)
+                                  (in2_3 . ,in2_3)
+                                  (in3_3 . ,in3_3)
 
-                                                   (mode  . ,(mode :four-lanes-hi t
-                                                                   :signed t))))
+                                  (mode  . ,(mode :four-lanes-hi t
+                                                  :signed t)))
                                 *in-binds-four-lanes*
                                 *out-binds-four-lanes*
                                 *mult-svl-design*)
@@ -591,24 +587,24 @@ four-lanes-hi and one-lane should be set to 1.~%")
                 (integerp in2_3)
                 (integerp in3_3))
            (equal (svl::svl-run "Integrated_Multiplier"
-                                (make-fast-alist `((in1_0 . ,in1_0)
-                                                   (in2_0 . ,in2_0)
-                                                   (in3_0 . ,in3_0)
+                                `((in1_0 . ,in1_0)
+                                  (in2_0 . ,in2_0)
+                                  (in3_0 . ,in3_0)
 
-                                                   (in1_1 . ,in1_1)
-                                                   (in2_1 . ,in2_1)
-                                                   (in3_1 . ,in3_1)
+                                  (in1_1 . ,in1_1)
+                                  (in2_1 . ,in2_1)
+                                  (in3_1 . ,in3_1)
 
-                                                   (in1_2 . ,in1_2)
-                                                   (in2_2 . ,in2_2)
-                                                   (in3_2 . ,in3_2)
+                                  (in1_2 . ,in1_2)
+                                  (in2_2 . ,in2_2)
+                                  (in3_2 . ,in3_2)
 
-                                                   (in1_3 . ,in1_3)
-                                                   (in2_3 . ,in2_3)
-                                                   (in3_3 . ,in3_3)
+                                  (in1_3 . ,in1_3)
+                                  (in2_3 . ,in2_3)
+                                  (in3_3 . ,in3_3)
 
-                                                   (mode . ,(mode :four-lanes-hi t
-                                                                  :signed nil))))
+                                  (mode . ,(mode :four-lanes-hi t
+                                                 :signed nil)))
                                 *in-binds-four-lanes*
                                 *out-binds-four-lanes*
                                 *mult-svl-design*)
@@ -639,8 +635,7 @@ four-lanes-hi and one-lane should be set to 1.~%")
 ;; we  can  use  to  create  an 8-32x32-bit  dot  product  out  of  4-32x32-bit
 ;; dot-product module.
 
-
-;; Let's first define the specification for dot-product of any length. 
+;; Let's first define the specification for dot-product of any length.
 (define dot-product-spec ((in1-lst integer-listp)
                           (in2-lst integer-listp)
                           (dot-product-size natp)
@@ -696,6 +691,9 @@ An example run:
 ;; "dont-care"s instead  of zeros  but that  procedure entails  jumping through
 ;; hoops so we omit that for simplicity.
 
+;; With the simulation  pattern below, the accumulator (acc) will  be reset and
+;; loaded with "acc-init-val".  Then we perform 8 multiplications  in two clock
+;; cycles, and accumulate the results in acc.
 (defconst *in-binds-dot-product-with-acc*
   `(("clk" 0 1 ~)
     ("IN1[31:0]"   0 0 in1[0] 0 in1[4])
@@ -716,12 +714,11 @@ An example run:
 (defconst *out-binds-with-acc*
   '(("result" _ _ _ _ result)))
 
-
 (defthmrp signed-dot-product-with-acc-is-correct
   (b* ((signed t) ;; set up the parameters first.
        (acc-size 128)
        (dot-product-size 8))
-    (implies (and (integer-listp in1) 
+    (implies (and (integer-listp in1)
                   (integer-listp in2)
                   (integerp acc-init-val)
                   (equal (len in1) dot-product-size) ;; necessary to show that
@@ -729,37 +726,36 @@ An example run:
                   (equal (len in2) dot-product-size) ;; same as above.
                   )
              (equal (svl::svl-run "Integrated_Multiplier"
-                                  (make-fast-alist `(;; will be used in the
-                                                     ;; first cycle:
-                                                     (in1[0] . ,(nth 0 in1))
-                                                     (in2[0] . ,(nth 0 in2))
-                                                     (in1[1] . ,(nth 1 in1))
-                                                     (in2[1] . ,(nth 1 in2))
-                                                     (in1[2] . ,(nth 2 in1))
-                                                     (in2[2] . ,(nth 2 in2))
-                                                     (in1[3] . ,(nth 3 in1))
-                                                     (in2[3] . ,(nth 3 in2))
-                                                     ;; will be used in the
-                                                     ;; second cycle:
-                                                     (in1[4] . ,(nth 4 in1))
-                                                     (in2[4] . ,(nth 4 in2))
-                                                     (in1[5] . ,(nth 5 in1))
-                                                     (in2[5] . ,(nth 5 in2))
-                                                     (in1[6] . ,(nth 6 in1))
-                                                     (in2[6] . ,(nth 6 in2))
-                                                     (in1[7] . ,(nth 7 in1))
-                                                     (in2[7] . ,(nth 7 in2))
-                                                     
-                                                     (acc-init-val . ,acc-init-val)
-                                                     (mode   . ,(mode :dot-product t
-                                                                      :acc-on t
-                                                                      :signed signed))))
+                                  `(;; will be used in the
+                                    ;; first cycle:
+                                    (in1[0] . ,(nth 0 in1))
+                                    (in2[0] . ,(nth 0 in2))
+                                    (in1[1] . ,(nth 1 in1))
+                                    (in2[1] . ,(nth 1 in2))
+                                    (in1[2] . ,(nth 2 in1))
+                                    (in2[2] . ,(nth 2 in2))
+                                    (in1[3] . ,(nth 3 in1))
+                                    (in2[3] . ,(nth 3 in2))
+                                    ;; will be used in the
+                                    ;; second cycle:
+                                    (in1[4] . ,(nth 4 in1))
+                                    (in2[4] . ,(nth 4 in2))
+                                    (in1[5] . ,(nth 5 in1))
+                                    (in2[5] . ,(nth 5 in2))
+                                    (in1[6] . ,(nth 6 in1))
+                                    (in2[6] . ,(nth 6 in2))
+                                    (in1[7] . ,(nth 7 in1))
+                                    (in2[7] . ,(nth 7 in2))
+
+                                    (acc-init-val . ,acc-init-val)
+                                    (mode   . ,(mode :dot-product t
+                                                     :acc-on t
+                                                     :signed signed)))
                                   *in-binds-dot-product-with-acc*
                                   *out-binds-with-acc*
                                   *mult-svl-design*)
                     `((result . ,(dot-product-spec in1 in2 dot-product-size ;
                                                    signed acc-init-val acc-size)))))))
-
 
 (defthmrp unsigned-dot-product-with-acc-is-correct
   (b* ((signed nil) ;;signed=nil is the only difference here than the previous lemma
@@ -771,28 +767,28 @@ An example run:
                   (equal (len in1) dot-product-size)
                   (equal (len in2) dot-product-size))
              (equal (svl::svl-run "Integrated_Multiplier"
-                                  (make-fast-alist `((in1[0] . ,(nth 0 in1))
-                                                     (in2[0] . ,(nth 0 in2))
-                                                     (in1[1] . ,(nth 1 in1))
-                                                     (in2[1] . ,(nth 1 in2))
-                                                     (in1[2] . ,(nth 2 in1))
-                                                     (in2[2] . ,(nth 2 in2))
-                                                     (in1[3] . ,(nth 3 in1))
-                                                     (in2[3] . ,(nth 3 in2))
+                                  `((in1[0] . ,(nth 0 in1))
+                                    (in2[0] . ,(nth 0 in2))
+                                    (in1[1] . ,(nth 1 in1))
+                                    (in2[1] . ,(nth 1 in2))
+                                    (in1[2] . ,(nth 2 in1))
+                                    (in2[2] . ,(nth 2 in2))
+                                    (in1[3] . ,(nth 3 in1))
+                                    (in2[3] . ,(nth 3 in2))
 
-                                                     (in1[4] . ,(nth 4 in1))
-                                                     (in2[4] . ,(nth 4 in2))
-                                                     (in1[5] . ,(nth 5 in1))
-                                                     (in2[5] . ,(nth 5 in2))
-                                                     (in1[6] . ,(nth 6 in1))
-                                                     (in2[6] . ,(nth 6 in2))
-                                                     (in1[7] . ,(nth 7 in1))
-                                                     (in2[7] . ,(nth 7 in2))
+                                    (in1[4] . ,(nth 4 in1))
+                                    (in2[4] . ,(nth 4 in2))
+                                    (in1[5] . ,(nth 5 in1))
+                                    (in2[5] . ,(nth 5 in2))
+                                    (in1[6] . ,(nth 6 in1))
+                                    (in2[6] . ,(nth 6 in2))
+                                    (in1[7] . ,(nth 7 in1))
+                                    (in2[7] . ,(nth 7 in2))
 
-                                                     (acc-init-val . ,acc-init-val)
-                                                     (mode   . ,(mode :dot-product t
-                                                                      :acc-on t
-                                                                      :signed signed))))
+                                    (acc-init-val . ,acc-init-val)
+                                    (mode   . ,(mode :dot-product t
+                                                     :acc-on t
+                                                     :signed signed)))
                                   *in-binds-dot-product-with-acc*
                                   *out-binds-with-acc*
                                   *mult-svl-design*)

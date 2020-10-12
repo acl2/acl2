@@ -30,94 +30,14 @@
 ;; Also, an empty string right in the beginning indicates that the path began
 ;; with a "/". While not documented properly in the man page, for a path such
 ;; as "/home" or "/tmp", the dirname will be "/".
-(defund
-  basename-dirname-helper (path)
-  (declare (xargs :guard (fat32-filename-list-p path)
-                  :guard-hints (("Goal" :in-theory (disable
-                                                    make-list-ac-removal)))))
-  (b*
-      (;; Under the assumption that all paths begin with a /, this really
-       ;; is the case where there's a / and nothing else.
-       ((when (atom path))
-        (mv *empty-fat32-name* nil))
-       ((when (atom (cdr path)))
-        (mv
-         (fat32-filename-fix (car path))
-         nil))
-       ((mv tail-basename tail-dirname)
-        (basename-dirname-helper (cdr path))))
-    (mv tail-basename
-        (list* (fat32-filename-fix (car path))
-               tail-dirname))))
-
-(defthm
-  basename-dirname-helper-correctness-1
-  (mv-let (basename dirname)
-    (basename-dirname-helper path)
-    (and (fat32-filename-p basename)
-         (fat32-filename-list-p dirname)))
-  :hints
-  (("goal" :induct (basename-dirname-helper path)
-    :in-theory (enable basename-dirname-helper)))
-  :rule-classes
-  (:rewrite
-   (:type-prescription
-    :corollary
-    (stringp (mv-nth 0 (basename-dirname-helper path))))
-   (:type-prescription
-    :corollary
-    (true-listp (mv-nth 1 (basename-dirname-helper path))))))
-
-(defund basename (path)
-  (declare (xargs :guard (fat32-filename-list-p path)))
-  (mv-let (basename dirname)
-    (basename-dirname-helper path)
-    (declare (ignore dirname))
-    basename))
-
-(defthm fat32-filename-p-of-basename
-  (fat32-filename-p (basename path))
-  :hints (("goal" :in-theory (enable basename)))
-  :rule-classes (:rewrite
-                 (:type-prescription
-                  :corollary
-                  (stringp (basename path)))))
 
 (defund dirname (path)
   (declare (xargs :guard (fat32-filename-list-p path)))
-  (mv-let (basename dirname)
-    (basename-dirname-helper path)
-    (declare (ignore basename))
-    dirname))
+  (fat32-filename-list-fix (butlast path 1)))
 
 (defthm fat32-filename-list-p-of-dirname
   (fat32-filename-list-p (dirname path))
   :hints (("goal" :in-theory (enable dirname))))
-
-(defthmd
-  basename-dirname-helper-of-fat32-filename-list-fix
-  (equal (basename-dirname-helper (fat32-filename-list-fix path))
-         (basename-dirname-helper path))
-  :hints (("goal" :in-theory (enable basename-dirname-helper))))
-
-(defcong
-  fat32-filename-list-equiv equal
-  (basename-dirname-helper path)
-  1
-  :hints
-  (("goal"
-    :use
-    ((:instance
-      basename-dirname-helper-of-fat32-filename-list-fix
-      (path path-equiv))
-     basename-dirname-helper-of-fat32-filename-list-fix))))
-
-(defcong
-  fat32-filename-list-equiv equal
-  (basename path)
-  1
-  :hints
-  (("goal" :in-theory (enable basename))))
 
 (defcong
   fat32-filename-list-equiv equal
@@ -129,85 +49,69 @@
 (defthm len-of-dirname
   (equal (len (dirname path))
          (nfix (- (len path) 1)))
-  :hints (("goal" :in-theory (enable basename-dirname-helper
-                                     dirname))))
+  :hints (("goal" :in-theory (enable dirname))))
 
-(defthmd dirname-alt
-  (equal (dirname path)
-         (fat32-filename-list-fix (butlast path 1)))
-  :hints (("goal" :in-theory (enable dirname
-                                     basename-dirname-helper
-                                     fat32-filename-list-fix)
-           :induct (basename-dirname-helper path))))
+(defthm consp-of-dirname
+  (equal (consp (dirname path))
+         (consp (cdr path)))
+  :hints (("goal" :in-theory (enable dirname)
+           :expand ((len (cdr path)) (len path)))))
 
-(defthmd basename-alt
-  (equal (basename path)
-         (fat32-filename-fix (car (last path))))
-  :hints (("goal" :in-theory (enable basename
-                                     basename-dirname-helper
-                                     fat32-filename-list-fix)
-           :induct (basename-dirname-helper path))))
+(defund basename (path)
+  (declare (xargs :guard (fat32-filename-list-p path)
+                  :guard-debug t))
+  (mbe :logic (fat32-filename-fix (car (last path)))
+       :exec (if (consp path)
+                 (fat32-filename-fix (car (last path)))
+                 *empty-fat32-name*)))
 
-(defthm append-nthcdr-dirname-basename-under-fat32-filename-list-equiv-lemma-1
+(defthm fat32-filename-p-of-basename
+  (fat32-filename-p (basename path))
+  :hints (("goal" :in-theory (enable basename))))
+
+(defcong
+  fat32-filename-list-equiv equal
+  (basename path)
+  1
+  :hints
+  (("goal" :in-theory (enable basename))))
+
+(defthm
+  append-nthcdr-dirname-basename-lemma-1
   (implies (consp path)
-           (fat32-filename-list-equiv
-            (append (dirname path)
-                    (list (basename path)))
-            path))
-  :hints (("goal" :in-theory (enable dirname basename
-                                     basename-dirname-helper
-                                     fat32-filename-list-fix
+           (equal (append (dirname path)
+                          (list (basename path)))
+                  (fat32-filename-list-fix path)))
+  :hints (("goal" :in-theory (enable dirname basename fat32-filename-list-fix
                                      fat32-filename-list-equiv)))
   :rule-classes
   (:rewrite
    (:rewrite
-    :corollary
-    (iff (fat32-filename-list-equiv (dirname path)
-                                    path)
-         (atom path))
-    :instructions
-    ((:bash ("goal" :in-theory (enable dirname basename
-                                       basename-dirname-helper
-                                       fat32-filename-list-fix
-                                       fat32-filename-list-equiv)))
-     (:claim
-      (equal
-       (len (append (fat32-filename-list-fix path)
-                    (list (mv-nth 0
-                                  (basename-dirname-helper path)))))
-       (len path))
-      :hints :none)
-     (:change-goal nil t)
-     (:dive 1 1)
-     := :up
-     (:rewrite len-of-fat32-filename-list-fix)
-     :top
-     :s :bash))
+    :corollary (iff (fat32-filename-list-equiv (dirname path)
+                                               path)
+                    (atom path))
+    :hints
+    (("goal" :in-theory (e/d (basename dirname fat32-filename-list-equiv
+                                       fat32-filename-list-fix)
+                             (len-of-dirname))
+      :use len-of-dirname)))
    (:rewrite
-    :corollary
-    (implies (and (consp path) (nat-equiv n (len (dirname path))))
-             (fat32-filename-list-equiv
-              (nthcdr n path)
-              (list (basename path))))
-    :instructions (:split (:dive 1 2)
-                          (:= path
-                              (append (dirname path)
-                                      (list (basename path)))
-                              :equiv fat32-filename-list-equiv$inline)
-                          :top (:dive 1)
-                          (:= (append (nthcdr n (dirname path))
-                                      (list (basename path))))
-                          (:dive 1)
-                          (:= nil)
-                          :top :bash))))
+    :corollary (implies (and (consp path)
+                             (nat-equiv n (len (dirname path))))
+                        (fat32-filename-list-equiv (nthcdr n path)
+                                                   (list (basename path))))
+    :hints
+    (("goal" :in-theory (e/d (basename dirname fat32-filename-list-equiv
+                                       fat32-filename-list-fix)
+                             nil))))))
 
 (defthm
-  append-nthcdr-dirname-basename-under-fat32-filename-list-equiv
+  append-nthcdr-dirname-basename
   (implies (and (consp path)
                 (<= (nfix n) (len (dirname path))))
-           (fat32-filename-list-equiv (append (nthcdr n (dirname path))
-                                              (list (basename path)))
-                                      (nthcdr n path)))
+           (equal (append (nthcdr n (dirname path))
+                          (list (basename path)))
+                  (fat32-filename-list-fix (nthcdr n path))))
   :hints (("goal" :in-theory (disable (:rewrite nthcdr-of-append))
            :use (:instance (:rewrite nthcdr-of-append)
                            (b (list (basename path)))
@@ -415,16 +319,7 @@
    (xargs
     :guard (and (m1-file-alist-p fs)
                 (hifat-no-dups-p fs)
-                (fat32-filename-list-p path))
-    :guard-hints
-    (("goal"
-      :in-theory
-      (disable
-       (:rewrite basename-dirname-helper-correctness-1))
-      :use
-      (:instance
-       (:rewrite basename-dirname-helper-correctness-1)
-       (path path))))))
+                (fat32-filename-list-p path))))
   (b* ((dirname (dirname path))
        ;; Never pass relative paths to syscalls - make them always begin
        ;; with "/".
@@ -813,7 +708,7 @@
     :in-theory (enable m1-file-alist-p hifat-find-file))))
 
 (defthm
-  hifat-find-file-correctness-3-lemma-3
+  hifat-find-file-correctness-lemma-5
   (implies
    (and (m1-file-alist-p m1-file-alist1)
         (hifat-no-dups-p m1-file-alist1)
@@ -828,19 +723,13 @@
       (m1-directory-file-p file)
       (hifat-subsetp
        (m1-file->contents file)
-       (m1-file->contents
-        (mv-nth
-         0
-         (hifat-find-file m1-file-alist2 path)))))))
-  :hints
-  (("goal"
-    :induct
-    (mv
-     (mv-nth 1
-             (hifat-find-file m1-file-alist1 path))
-     (mv-nth 1
-             (hifat-find-file m1-file-alist2 path)))
-    :in-theory (enable m1-file-alist-p hifat-find-file))))
+       (m1-file->contents (mv-nth 0
+                                  (hifat-find-file m1-file-alist2 path)))))))
+  :hints (("goal" :induct (mv (mv-nth 1 (hifat-find-file m1-file-alist1 path))
+                              (mv-nth 1
+                                      (hifat-find-file m1-file-alist2 path)))
+           :in-theory (enable m1-file-alist-p
+                              hifat-find-file hifat-subsetp))))
 
 (defthm hifat-find-file-correctness-lemma-1
   (and (equal (hifat-equiv (hifat-file-alist-fix fs1)
@@ -850,23 +739,24 @@
               (hifat-equiv fs1 fs2)))
   :hints (("goal" :in-theory (enable hifat-equiv))))
 
-(defthm
-  hifat-find-file-correctness-lemma-2
-  (implies
-   (and
-    (hifat-equiv m1-file-alist1 m1-file-alist2)
-    (m1-file-alist-p m1-file-alist1)
-    (hifat-no-dups-p m1-file-alist1)
-    (m1-file-alist-p m1-file-alist2)
-    (hifat-no-dups-p m1-file-alist2)
-    (consp (assoc-equal (fat32-filename-fix (car path))
-                        m1-file-alist1))
+(local
+ (defthm
+   hifat-find-file-correctness-lemma-2
+   (implies
+    (and
+     (hifat-equiv m1-file-alist1 m1-file-alist2)
+     (m1-file-alist-p m1-file-alist1)
+     (hifat-no-dups-p m1-file-alist1)
+     (m1-file-alist-p m1-file-alist2)
+     (hifat-no-dups-p m1-file-alist2)
+     (consp (assoc-equal (fat32-filename-fix (car path))
+                         m1-file-alist1))
+     (m1-directory-file-p (cdr (assoc-equal (fat32-filename-fix (car path))
+                                            m1-file-alist1))))
     (m1-directory-file-p (cdr (assoc-equal (fat32-filename-fix (car path))
-                                           m1-file-alist1))))
-   (m1-directory-file-p (cdr (assoc-equal (fat32-filename-fix (car path))
-                                          m1-file-alist2))))
-  :hints (("goal" :in-theory (enable hifat-equiv)
-           :do-not-induct t)))
+                                           m1-file-alist2))))
+   :hints (("goal" :in-theory (enable hifat-equiv)
+            :do-not-induct t))))
 
 (defthm
   hifat-find-file-correctness-lemma-3
@@ -956,15 +846,18 @@
     :rule-classes :congruence))
 
 ;; This should be disabled because it causes infinite loops otherwise...
-(defthmd
-  hifat-find-file-correctness-3-lemma-1
+(defthm
+  hifat-find-file-correctness-lemma-6
   (implies
    (and (m1-file-alist-p m1-file-alist1)
         (hifat-subsetp m1-file-alist1 m1-file-alist2)
-        (m1-regular-file-p (cdr (assoc-equal name m1-file-alist1))))
-   (equal (m1-file->contents (cdr (assoc-equal name m1-file-alist2)))
-          (m1-file->contents (cdr (assoc-equal name m1-file-alist1)))))
-  :hints (("goal" :in-theory (enable m1-file-alist-p hifat-no-dups-p))))
+        (m1-regular-file-p (cdr (assoc-equal name m1-file-alist1)))
+        (syntaxp (not (term-order m1-file-alist1 m1-file-alist2))))
+   (equal (m1-file->contents (cdr (assoc-equal name m1-file-alist1)))
+          (m1-file->contents (cdr (assoc-equal name m1-file-alist2)))))
+  :hints (("goal" :in-theory (enable m1-file-alist-p
+                                     hifat-no-dups-p hifat-subsetp))))
+
 
 (defthmd
   hifat-find-file-correctness-3-lemma-5
@@ -997,14 +890,14 @@
     :in-theory
     (e/d
      (m1-file-alist-p hifat-find-file)
-     ()))
+     (hifat-find-file-correctness-lemma-6)))
    ("subgoal *1/3"
     :use
-    (:instance hifat-find-file-correctness-3-lemma-1
+    (:instance hifat-find-file-correctness-lemma-6
                (name (fat32-filename-fix (car path)))))
    ("subgoal *1/1"
     :use
-    (:instance hifat-find-file-correctness-3-lemma-1
+    (:instance hifat-find-file-correctness-lemma-6
                (name (fat32-filename-fix (car path)))))))
 
 (defthm

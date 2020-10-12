@@ -6,8 +6,15 @@
 (include-book "term-ordered-perms")
 (include-book "convert-perm-to-how-many")
 
+(local
+ (defthm term-order-total
+   (implies (not (term-order x y))
+            (term-order y x))))
+
 (defthm term-orderedp-merge-sort-term-order
-  (term-orderedp (merge-sort-term-order x)))
+  (term-orderedp (merge-sort-term-order x))
+  :hints (("Goal"
+           :in-theory (e/d () (term-order)))))
 
 (defthm true-listp-merge-sort-term-order
   (implies (true-listp x)

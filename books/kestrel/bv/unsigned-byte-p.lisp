@@ -263,3 +263,10 @@
                                   (x (+ k x)))
            :in-theory (enable ;unsigned-byte-p-from-bounds
                               ))))
+
+;rename
+(defthm unsigned-byte-p-false-when-not-longer
+  (implies (and (not (unsigned-byte-p free x))
+                (<= size free)
+                (natp free))
+           (not (unsigned-byte-p size x))))

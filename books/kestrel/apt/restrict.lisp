@@ -14,6 +14,7 @@
 (include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-untranslated-term" :dir :system)
 (include-book "kestrel/event-macros/applicability-conditions" :dir :system)
+(include-book "kestrel/event-macros/event-generation" :dir :system)
 (include-book "kestrel/event-macros/input-processing" :dir :system)
 (include-book "kestrel/event-macros/intro-macros" :dir :system)
 (include-book "kestrel/event-macros/proof-preparation" :dir :system)
@@ -299,22 +300,18 @@
    but it is only tested for equality with @('t')
    (see @(tsee restrict-process-old)).
    </p>"
-  (b* ((wrld (w state))
-       ((er old$) (restrict-process-old old verify-guards ctx state))
-       ((er verify-guards$) (ensure-boolean-or-auto-and-return-boolean$
-                             verify-guards
-                             (guard-verified-p old$ wrld)
-                             "The :VERIFY-GUARDS input" t nil))
+  (b* (((er old$) (restrict-process-old old verify-guards ctx state))
+       ((er verify-guards$) (process-input-verify-guards verify-guards
+                                                         old$
+                                                         ctx
+                                                         state))
        ((er restriction$) (restrict-process-restriction
                            restriction old$ verify-guards$ ctx state))
        ((er undefined$) (restrict-process-undefined
                          undefined old$ ctx state))
        ((er (list new-name$ names-to-avoid))
         (process-input-new-name new-name old$ nil ctx state))
-       ((er new-enable$) (ensure-boolean-or-auto-and-return-boolean$
-                          new-enable
-                          (fundef-enabledp old state)
-                          "The :NEW-ENABLE input" t nil))
+       ((er new-enable$) (process-input-new-enable new-enable old$ ctx state))
        ((er thm-name$) (restrict-process-thm-name
                         thm-name old$ new-name$ ctx state))
        (names-to-avoid (cons thm-name$ names-to-avoid))
@@ -586,8 +583,7 @@
    If the old and new functions are reflexive,
    we functionally instantiate the stub in that applicability condition.
    </p>"
-  (b* ((macro (theorem-intro-macro thm-enable$))
-       (formals (formals old$ wrld))
+  (b* ((formals (formals old$ wrld))
        (formula (implicate restriction$
                            `(equal (,old$ ,@formals)
                                    (,new-name$ ,@formals))))
@@ -608,14 +604,11 @@
                       '(:use ,lemma-instance)))
                 `(("Goal"
                    :in-theory '(,old-unnorm-name
-                                ,new-unnorm-name)))))
-       (local-event `(local
-                      (,macro ,thm-name$
-                              ,formula
-                              :hints ,hints)))
-       (exported-event `(,macro ,thm-name$
-                                ,formula)))
-    (mv local-event exported-event)))
+                                ,new-unnorm-name))))))
+    (evmac-generate-defthm thm-name$
+                           :formula formula
+                           :hints hints
+                           :enable thm-enable$)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

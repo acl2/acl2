@@ -59,10 +59,11 @@ void printIntArray (int* x, int n) {
 int main () {
 
   // static allows memory to be allocated on the heap instead of the
-  // stack.  Of course, segfault may still occur on some systems.
+  // stack.  Of course, segfault may still occur on some systems if
+  // numElems is too big.
   int i;
-  static int src[268435456], dst[268435456], numElems; // 268435456 = 2^28
-  numElems = 268435456; // 2^28 4-byte elements, i.e., 1GB
+  static int src[20], dst[20], numElems; 
+  numElems = 20; 
 
   // Source initialization:
   for (i = 0; i < numElems; i++)

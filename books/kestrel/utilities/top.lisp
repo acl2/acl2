@@ -10,7 +10,6 @@
 
 (in-package "ACL2")
 
-(include-book "acceptable-rewrite-rule-p")
 (include-book "apply-fn-if-known")
 (include-book "auto-instance")
 (include-book "auto-termination")
@@ -19,7 +18,6 @@
 (include-book "bits-and-ubyte11s-as-digits")
 (include-book "bytes-as-digits")
 (include-book "copy-def")
-(include-book "define-sk")
 (include-book "defmacroq")
 (include-book "deftest")
 (include-book "defthmr")

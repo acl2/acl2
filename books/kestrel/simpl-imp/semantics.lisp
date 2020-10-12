@@ -17,7 +17,7 @@
 
 (include-book "kestrel/fty/deffixequiv-sk" :dir :system)
 (include-book "kestrel/fty/defomap" :dir :system)
-(include-book "kestrel/utilities/define-sk" :dir :system)
+(include-book "std/util/define-sk" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

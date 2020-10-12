@@ -205,7 +205,8 @@
 (defprod svtv
   ((name           symbolp)
    (outexprs       svex-alist-p)
-   (nextstate      svex-alist-p "NIL if not defined with :state-machine t")
+   (nextstate      svex-alist-p "NIL if not defined with :state-machine t or :keep-final-state t")
+   (states         svex-alistlist-p "NIL if not defined with :keep-all-states t")
    (inmasks        svar-boolmasks-p)
    (outmasks       svar-boolmasks-p)
    (orig-ins       true-list-listp)

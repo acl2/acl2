@@ -396,7 +396,7 @@
 
 (encapsulate
   ()
-  
+
   (local
    (defthm subsetp-cons
      (implies (subsetp x y)
@@ -498,11 +498,11 @@
   (and
    (implies (and (consp tree)
                  (equal size (tree-size tree)))
-            (equal (- size (tree-size (car tree))) 
+            (equal (- size (tree-size (car tree)))
                    (tree-size (cdr tree))))
    (implies (and (consp tree)
                  (equal size (tree-size tree)))
-            (equal (- size (tree-size (cdr tree))) 
+            (equal (- size (tree-size (cdr tree)))
                    (tree-size (car tree))))))
 
 (defthmd make-list-append-tree-crock
@@ -663,17 +663,25 @@
             (not (equal x y)))
    :hints (("Goal" :in-theory (enable prefixp)))))
 
+;; Mihir M. mod: disabled a newly added lemma.
 (defthm prefixp-append-relation-1
   (implies (and (not (prefixp x y))
                 (not (prefixp y x)))
            (and (not (prefixp (append x a) (append y b)))
                 (not (prefixp (append y b) (append x a)))))
-  :hints (("Goal" :in-theory (enable prefixp))))
+  :hints
+  (("goal" :in-theory (e/d (prefixp)
+                           ((:rewrite acl2::prefixp-of-append-arg1)
+                            (:rewrite acl2::prefixp-of-append-arg2))))))
 
-(defthm prefixp-append-relation-2
- (implies (not (prefixp x y))
-          (not (prefixp (append x a) y)))
- :hints (("Goal" :in-theory (enable prefixp))))
+(defthm
+  prefixp-append-relation-2
+  (implies (not (prefixp x y))
+           (not (prefixp (append x a) y)))
+  :hints
+  (("goal" :in-theory (e/d (prefixp)
+                           ((:rewrite acl2::prefixp-of-append-arg1)
+                            (:rewrite acl2::prefixp-of-append-arg2))))))
 
 (local
  (defthm istrprefixp-prefixp-explode-relation
@@ -809,5 +817,3 @@
                     (sis s i n)))))
 
 (in-theory (disable sis))
-
-
