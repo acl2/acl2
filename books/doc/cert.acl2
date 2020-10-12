@@ -45,6 +45,12 @@
 (include-book "kestrel/hdwallet/portcullis" :dir :system)
 (include-book "kestrel/crypto/keccak/portcullis" :dir :system)
 (include-book "kestrel/abnf/portcullis" :dir :system)
+(include-book "kestrel/acl2pl/portcullis" :dir :system)
+(include-book "kestrel/c/portcullis" :dir :system)
+(include-book "kestrel/json/portcullis" :dir :system)
+(include-book "kestrel/simpl-imp/portcullis" :dir :system)
+(include-book "kestrel/solidity/portcullis" :dir :system)
+(include-book "projects/execloader/portcullis" :dir :system)
 (include-book "projects/x86isa/portcullis/portcullis" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
