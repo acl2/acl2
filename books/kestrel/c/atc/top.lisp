@@ -12,6 +12,7 @@
 
 (include-book "c-abstract-syntax")
 (include-book "c-pretty-printer")
+(include-book "c-integers")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
