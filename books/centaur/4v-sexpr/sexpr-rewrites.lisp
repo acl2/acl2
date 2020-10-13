@@ -107,7 +107,8 @@ environment."
 
   (defthm 4v-sexpr-vars-sexpr-rewrite-ground
     (implies (not (member-equal k (4v-sexpr-vars x)))
-             (not (member-equal k (4v-sexpr-vars (sexpr-rewrite-ground x))))))
+             (not (member-equal k (4v-sexpr-vars (sexpr-rewrite-ground x)))))
+    :hints (("Goal" :in-theory (disable intersectp-member))))
 
   (in-theory (disable sexpr-rewrite-ground)))
 
@@ -1360,7 +1361,9 @@ which rewrites to
     (defthm 4v-sexpr-vars-4v-shannon-expansion-few
       (implies (and (not (member-equal k (4v-sexpr-vars x)))
                     (atom var))
-               (not (member-equal k (4v-sexpr-vars (4v-shannon-expansion-few var x)))))))
+               (not (member-equal k (4v-sexpr-vars (4v-shannon-expansion-few
+                                                    var x)))))
+      :hints (("Goal" :in-theory (disable intersectp-member)))))
 
   (defthm 4v-shannon-expansion-few-correct
     (4v-<= (4v-sexpr-eval (4v-shannon-expansion-few var x) env)
@@ -1466,7 +1469,8 @@ which rewrites to
                    k (4v-sexpr-vars-list
                       (alist-vals (rewrite-with-shannon-expansion-alist-main
                                    vars x mode))))))
-    :hints(("Goal" :in-theory (disable rewrite-with-shannon-expansion))))
+    :hints(("Goal" :in-theory (disable rewrite-with-shannon-expansion
+                                       intersectp-member))))
 
   (defthm rewrite-with-shannon-expansion-alist-main-conservative
     (4v-sexpr-alist-<= (rewrite-with-shannon-expansion-alist-main vars x mode) x)
@@ -1608,6 +1612,8 @@ Memoization won't carry over.</p>"
 
   (memoize '4v-sexpr-restrict-with-rw :condition '(consp x))
 
+  (local (in-theory (e/d (member-equal) (intersectp-member))))
+
   (defthm-4v-sexpr-flag
     (defthm 4v-sexpr-restrict-with-rw-equiv-to-4v-sexpr-restrict
       (4v-sexpr-equiv (4v-sexpr-restrict-with-rw x al)
@@ -1618,6 +1624,8 @@ Memoization won't carry over.</p>"
                            (4v-sexpr-restrict-list x al))
       :hints ((witness :ruleset 4v-sexpr-list-equiv-witnessing))
       :flag sexpr-list))
+
+  (local (in-theory (e/d (intersectp-member) (member-equal))))
 
   (defthm-4v-sexpr-flag
     (defthm 4v-sexpr-vars-4v-sexpr-restrict-with-rw

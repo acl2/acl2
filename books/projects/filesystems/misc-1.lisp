@@ -761,10 +761,11 @@
                                               (:rewrite member-of-remove)
                                               (:rewrite car-of-nthcdr)
                                               (:rewrite nth-of-nthcdr)
-                                              (:rewrite take-when-prefixp)))
+                                              (:rewrite take-when-prefixp)
+                                              intersectp-member))
     :use
     ((:instance
-      (:rewrite intersectp-member)
+      intersectp-member
       (y (names-at (frame-val->dir (cdr (assoc-equal x frame)))
                    (nthcdr (len (frame-val->path (cdr (assoc-equal x frame))))
                            relpath)))
@@ -934,13 +935,14 @@
     :in-theory
     (e/d (list-equiv nthcdr-when->=-n-len-l len-of-fat32-filename-list-fix)
          (nth-of-fat32-filename-list-fix (:rewrite prefixp-when-equal-lengths)
-                                         member-of-remove))
+                                         member-of-remove
+                                         intersectp-member))
     :use
     ((:instance (:rewrite prefixp-when-equal-lengths)
                 (y (frame-val->path (cdr (assoc-equal x frame))))
                 (x (fat32-filename-list-fix relpath)))
      (:instance
-      (:rewrite intersectp-member)
+      intersectp-member
       (a (nth (len (frame-val->path (cdr (assoc-equal x frame))))
               (fat32-filename-list-fix path)))
       (y (names-at
