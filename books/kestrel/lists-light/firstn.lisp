@@ -89,11 +89,12 @@
   :hints (("Goal" :in-theory (enable firstn take))))
 
 (defthm firstn-becomes-take-gen
-  (implies (natp n)
-           (equal (firstn n lst)
-                  (if (<= n (len lst))
-                      (take n lst)
-                    (take (len lst) lst))))
+  (equal (firstn n lst)
+         (if (natp n)
+             (if (<= n (len lst))
+                 (take n lst)
+               (take (len lst) lst))
+           nil))
   :hints (("Goal" :in-theory (enable firstn take))))
 
 (defthm firstn-of-1
