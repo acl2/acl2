@@ -137,7 +137,7 @@
       "In the " *schemalg-design-notes* ",
        @('old') is denoted by @($S$),
        @('?f') is denoted by @($f$), and
-       the body of @('old') is denoted by @($\Phi[f]$).
+       the body of @('old') is denoted by @($\\Phi[f]$).
        Since currently SOFT function variables always return single values,
        it is always the case that @($m=1$), in the codomain of @($f$)."))
 
