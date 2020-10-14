@@ -62,6 +62,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define sint-plus ((x sintp))
+  :returns (result sintp)
+  :short "Unary plus of @('int') values [C:6.5.3.3]."
+  (sint-fix x)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define sint-minus ((x sintp))
+  :guard (acl2::sbyte32p (- (sint->get x)))
+  :returns (result sintp)
+  :short "Unary minus of @('int') values [C:6.5.3.3]."
+  (sint (- (sint->get x)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define sint-add ((x sintp) (y sintp))
   :guard (acl2::sbyte32p (+ (sint->get x) (sint->get y)))
   :returns (result sintp)
