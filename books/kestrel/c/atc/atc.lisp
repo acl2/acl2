@@ -353,7 +353,7 @@
 
 (define atc-process-function-list ((fns true-listp) ctx state)
   :returns (mv erp (nothing "Always @('nil').") state)
-  :short "Lift @(tsee atc-process-fn) to lists."
+  :short "Lift @(tsee atc-process-function) to lists."
   (b* (((when (endp fns)) (value nil))
        ((er &) (atc-process-function (car fns) ctx state)))
     (atc-process-function-list (cdr fns) ctx state)))
