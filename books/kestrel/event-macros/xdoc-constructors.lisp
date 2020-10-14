@@ -870,6 +870,7 @@
    (xdoc::@def "xdoc::evmac-topic-implementation"))
 
   (define xdoc::evmac-topic-implementation-li-wrap ((items true-listp))
+    :parents nil
     :returns (li-wrapped-items true-listp)
     (cond ((endp items) nil)
           (t (cons `(xdoc::li ,(car items))
@@ -919,17 +920,21 @@
 
   (define xdoc::evmac-topic-implementation-item-input ((name stringp)
                                                        (macro stringp))
+    :parents nil
     (xdoc::&& "@('" name "') is the homonymous input to @('" macro "')."))
 
   (define xdoc::evmac-topic-implementation-item-fn-doc ((name stringp))
+    :parents nil
     (xdoc::&& "@('" name "') is the homonymous function symbol "
               "described in the user documentation."))
 
   (define xdoc::evmac-topic-implementation-item-thm-doc ((name stringp))
+    :parents nil
     (xdoc::&& "@('" name "') is the homonymous theorem symbol "
               "described in the user documentation."))
 
   (define xdoc::evmac-topic-implementation-item-var-doc ((name stringp))
+    :parents nil
     (xdoc::&& "@('" name "') is the homonymous variable symbol "
               "described in the user documentation.")))
 
