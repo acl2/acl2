@@ -667,7 +667,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defttag :open-input-channel)
+(defttag :open-output-channel!)
 
 (define atc-gen-file ((fn1...fnp symbol-listp) (output-file stringp) ctx state)
   :returns (mv erp (nothing "Always @('nil').") state)
