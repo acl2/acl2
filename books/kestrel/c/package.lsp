@@ -20,6 +20,7 @@
                                   pprint-indent))
              '(bool
                defxdoc+
+               er-soft+
                implode
                lnfix
                msg-listp

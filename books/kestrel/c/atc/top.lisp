@@ -10,18 +10,5 @@
 
 (in-package "C")
 
-(include-book "c-abstract-syntax")
-(include-book "c-pretty-printer")
-(include-book "c-integers")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defxdoc+ atc
-  :parents (c)
-  :short "ATC (<b>A</b>CL2 <b>T</b>o <b>C</b>),
-          a C code generator for ACL2."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is just a placeholder for now."))
-  :order-subtopics t)
+(include-book "atc")
+(include-book "doc")

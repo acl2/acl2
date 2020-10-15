@@ -435,6 +435,15 @@
   :short "Fixtype of optional expressions."
   :pred expr-optionp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define irr-expr ()
+  :returns (expr exprp)
+  :short "An irrelevant expression, usable as a dummy return value."
+  (with-guard-checking :none (ec-call (expr-fix :irrelevant)))
+  ///
+  (in-theory (disable (:e irr-expr))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod decl
@@ -577,6 +586,15 @@
   :elementp-of-nil nil
   :pred param-decl-listp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define irr-param-decl ()
+  :returns (param param-declp)
+  :short "An irrelevant parameter declaration, usable as a dummy return value."
+  (with-guard-checking :none (ec-call (param-decl-fix :irrelevant)))
+  ///
+  (in-theory (disable (:e irr-param-decl))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod fundef
@@ -620,6 +638,15 @@
   :elementp-of-nil nil
   :pred ext-decl-listp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define irr-ext-decl ()
+  :returns (ext ext-declp)
+  :short "An irrelevant external declaration, usable as a dummy return value."
+  (with-guard-checking :none (ec-call (ext-decl-fix :irrelevant)))
+  ///
+  (in-theory (disable (:e irr-ext-decl))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod transunit
@@ -636,3 +663,12 @@
   ((decls ext-decl-list))
   :tag :transunit
   :pred transunitp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define irr-transunit ()
+  :returns (tunit transunitp)
+  :short "An irrelevant translation unit, usable as a dummy return value."
+  (with-guard-checking :none (ec-call (transunit-fix :irrelevant)))
+  ///
+  (in-theory (disable (:e irr-transunit))))

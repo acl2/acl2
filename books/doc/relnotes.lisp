@@ -143,6 +143,12 @@
      a formalization of some aspects of the C language
      and ATC (`ACL2 To C'), a C code generator for ACL2.")
 
+   (xdoc::h5 (xdoc::seetopic "c::atc" "ATC"))
+
+   (xdoc::p
+    "A first simple working version of the generator has been added,
+     with user documentation and a working test.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "json::json" "JSON Library"))

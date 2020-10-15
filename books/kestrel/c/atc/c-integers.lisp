@@ -62,6 +62,42 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define sint-const ((x natp))
+  :guard (acl2::sbyte32p x)
+  :returns (result sintp)
+  :short "Integer constant of type @('int') [C:6.4.4.1]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "According to [C:6.4.4.1/5], @('int') is
+     the first integer type assigned to an integer constant,
+     provided that the constant's value is representable.
+     The value is always non-negative.")
+   (xdoc::p
+    "This ACL2 function models an integer constant of type @('int').
+     It takes as argument a natural number, i.e. the constant's value,
+     whose representability as an @('int') is ensured by the guard."))
+  (sint x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define sint-plus ((x sintp))
+  :returns (result sintp)
+  :short "Unary plus of @('int') values [C:6.5.3.3]."
+  (sint-fix x)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define sint-minus ((x sintp))
+  :guard (acl2::sbyte32p (- (sint->get x)))
+  :returns (result sintp)
+  :short "Unary minus of @('int') values [C:6.5.3.3]."
+  (sint (- (sint->get x)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define sint-add ((x sintp) (y sintp))
   :guard (acl2::sbyte32p (+ (sint->get x) (sint->get y)))
   :returns (result sintp)
