@@ -818,6 +818,7 @@ about set equivalence.</p>"
       :in-theory (enable subsetp-equal)))
     :rule-classes :congruence))
 
+
 (encapsulate
   ()
 
