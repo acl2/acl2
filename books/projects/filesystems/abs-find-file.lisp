@@ -1252,7 +1252,8 @@
      (abs-find-file-correctness-1-lemma-6
       (:rewrite abs-find-file-correctness-1-lemma-18)
       (:congruence
-       fat32-filename-list-equiv-implies-fat32-filename-list-equiv-take-2)))
+       fat32-filename-list-equiv-implies-fat32-filename-list-equiv-take-2)
+      intersectp-member))
     :do-not-induct t
     :cases
     ((equal
@@ -1277,7 +1278,7 @@
       *enotdir*))
     :use
     ((:instance
-      (:rewrite intersectp-member)
+      intersectp-member
       (a
        (fat32-filename-fix
         (car
@@ -1417,7 +1418,8 @@
       :in-theory (e/d (abs-find-file-helper)
                       (nthcdr-of-fat32-filename-list-fix
                        nth-of-fat32-filename-list-fix
-                       (:rewrite abs-find-file-correctness-1-lemma-25)))
+                       (:rewrite abs-find-file-correctness-1-lemma-25)
+                       intersectp-member))
       :use
       ((:instance
         (:rewrite abs-find-file-correctness-1-lemma-25)
@@ -1431,7 +1433,7 @@
                   (fs (abs-fs-fix root))
                   (path (fat32-filename-list-fix path)))
        (:instance
-        (:rewrite intersectp-member)
+        intersectp-member
         (a
          (car
           (nthcdr (len (frame-val->path (cdr (assoc-equal (1st-complete frame)
@@ -2199,14 +2201,15 @@
       abs-separate-of-frame->frame-of-collapse-this-lemma-3
       (:rewrite abs-find-file-correctness-1-lemma-6)
       (:congruence
-       fat32-filename-list-equiv-implies-fat32-filename-list-equiv-take-2)))
+       fat32-filename-list-equiv-implies-fat32-filename-list-equiv-take-2)
+      intersectp-member))
     :use
     ((:instance abs-separate-of-frame->frame-of-collapse-this-lemma-3
                 (x (1st-complete frame))
                 (y (frame-val->src (cdr (assoc-equal (1st-complete frame)
                                                      frame)))))
      (:instance
-      (:rewrite intersectp-member)
+      intersectp-member
       (a
        (car
         (nthcdr (len (frame-val->path (cdr (assoc-equal (1st-complete frame)
