@@ -12,3 +12,5 @@
 
 (include-book "atc")
 (include-book "doc")
+
+(include-book "c-static-semantics")
