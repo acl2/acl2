@@ -104,9 +104,8 @@
 (defmacro+ xdoc::evmac-section-intro (&rest content)
   :short "Construct the introduction section
           of the user documentation of an event macro."
-  `(xdoc::&&
-    (xdoc::h3 xdoc::*evmac-section-intro-title*)
-    ,@content))
+  `(xdoc::evmac-section xdoc::*evmac-section-intro-title*
+                        ,@content))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -116,9 +115,8 @@
 (defmacro+ xdoc::evmac-section-form (&rest content)
   :short "Construct the general form section
           of the user documentation of an event macro."
-  `(xdoc::&&
-    (xdoc::h3 xdoc::*evmac-section-form-title*)
-    ,@content))
+  `(xdoc::evmac-section xdoc::*evmac-section-form-title*
+                        ,@content))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -128,9 +126,8 @@
 (defmacro+ xdoc::evmac-section-inputs (&rest content)
   :short "Construct the inputs section
           of the user documentation of an event macro."
-  `(xdoc::&&
-    (xdoc::h3 xdoc::*evmac-section-inputs-title*)
-    ,@content))
+  `(xdoc::evmac-section xdoc::*evmac-section-inputs-title*
+                        ,@content))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -153,8 +150,8 @@
                                 "`"
                                 xdoc::*evmac-section-inputs-title*
                                 "' section")))
-    `(xdoc::&&
-      (xdoc::h3 xdoc::*evmac-section-appconds-title*)
+    `(xdoc::evmac-section
+      xdoc::*evmac-section-appconds-title*
       (xdoc::p
        "In order for "
        ,macro-ref
@@ -183,9 +180,8 @@
 (defmacro+ xdoc::evmac-section-generated (&rest content)
   :short "Construct the generated events section
           of the user documentation of an event macro."
-  `(xdoc::&&
-    (xdoc::h3 xdoc::*evmac-section-generated-title*)
-    ,@content))
+  `(xdoc::evmac-section xdoc::*evmac-section-generated-title*
+                        ,@content))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -210,8 +206,8 @@
      the @('macro-ref') variable is not a link."))
   (b* ((macro-name (string-downcase (symbol-name macro)))
        (macro-ref (concatenate 'string "@('" macro-name "')")))
-    `(xdoc::&&
-      (xdoc::h3 xdoc::*evmac-section-redundancy-title*)
+    `(xdoc::evmac-section
+      xdoc::*evmac-section-redundancy-title*
       (xdoc::p
        (concatenate
         'string
