@@ -14,6 +14,8 @@
 (include-book "c-pretty-printer")
 (include-book "c-integers")
 
+(include-book "../language/keywords")
+
 (include-book "kestrel/error-checking/ensure-value-is-boolean" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-string" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
@@ -88,58 +90,6 @@
 
 (xdoc::evmac-topic-input-processing atc)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defval *atc-ckeywords*
-  :short "List of the C keywords, as ACL2 strings."
-  '("auto"
-    "break"
-    "case"
-    "char"
-    "const"
-    "continue"
-    "default"
-    "do"
-    "double"
-    "else"
-    "enum"
-    "extern"
-    "float"
-    "for"
-    "goto"
-    "if"
-    "inline"
-    "int"
-    "long"
-    "register"
-    "restrict"
-    "return"
-    "short"
-    "signed"
-    "sizeof"
-    "static"
-    "struct"
-    "switch"
-    "typedef"
-    "union"
-    "unsigned"
-    "void"
-    "volatile"
-    "while"
-    "_Alignas"
-    "_Alignof"
-    "_Atomic"
-    "_Bool"
-    "_Complex"
-    "_Generic"
-    "_Imaginary"
-    "_Noreturn"
-    "_Static_assert"
-    "_Thread_local")
-  ///
-  (assert-event (string-listp *atc-ckeywords*))
-  (assert-event (no-duplicatesp-equal *atc-ckeywords*)))
-
 ;;;;;;;;;;;;;;;;;;;;
 
 (define atc-letter/digit/uscore-char-p ((ch characterp))
@@ -185,7 +135,7 @@
   (xdoc::topstring-p
    "This is as defined in the @(tsee atc) user documentation.")
   (and (atc-ident-char-listp (str::explode str))
-       (not (member-equal str *atc-ckeywords*))))
+       (not (member-equal str *ckeywords*))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
