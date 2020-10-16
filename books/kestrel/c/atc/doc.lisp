@@ -211,7 +211,10 @@
       "do         long       union      _Imaginary"
       "double     register   unsigned   _Noreturn"
       "else       restrict   void       _Static_assert"
-      "enum       return     volatile   _Thread_local"))))
+      "enum       return     volatile   _Thread_local")))
+   (xdoc::p
+    "The C18 standard allows a possibly broader range of valid identifiers,
+     but the ones recognized by ATC are a portable subset."))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
