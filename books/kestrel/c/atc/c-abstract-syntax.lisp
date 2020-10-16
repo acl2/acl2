@@ -11,6 +11,7 @@
 (in-package "C")
 
 (include-book "centaur/fty/top" :dir :system)
+(include-book "std/util/defprojection" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -111,6 +112,15 @@
   ((get string))
   :tag :ident
   :pred identp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist ident-list
+  :short "Fixtype of lists of identifiers."
+  :elt-type ident
+  :true-listp t
+  :elementp-of-nil nil
+  :pred ident-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -597,6 +607,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(std::defprojection param-decl-list->name-list (x)
+  :guard (param-decl-listp x)
+  :returns (names ident-listp)
+  :short "Lift @(tsee param-decl->name) to lists."
+  (param-decl->name x)
+  ///
+  (fty::deffixequiv param-decl-list->name-list
+    :args ((x param-decl-listp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod fundef
   :short "Fixtype of function definitions [C:6.9.1]."
   :long
@@ -614,6 +635,26 @@
    (body stmtp))
   :tag :fundef
   :pred fundefp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist fundef-list
+  :short "Fixtype of lists of function definitions."
+  :elt-type fundef
+  :true-listp t
+  :elementp-of-nil nil
+  :pred fundef-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection fundef-list->name-list (x)
+  :guard (fundef-listp x)
+  :returns (names ident-listp)
+  :short "Lift @(tsee fundef->name) to lists."
+  (fundef->name x)
+  ///
+  (fty::deffixequiv fundef-list->name-list
+    :args ((x fundef-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -646,6 +687,24 @@
   (with-guard-checking :none (ec-call (ext-decl-fix :irrelevant)))
   ///
   (in-theory (disable (:e irr-ext-decl))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ext-decl-list->fundef-list ((exts ext-decl-listp))
+  :returns (defs fundef-listp)
+  :short "Extract from a list of external declarations
+          the list of function definitions, in the same order."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Declarations are discarded. Only function definitions are projected."))
+  (b* (((when (endp exts)) nil)
+       (ext (car exts)))
+    (ext-decl-case ext
+                   :fundef (cons (ext-decl-fundef->get ext)
+                                 (ext-decl-list->fundef-list (cdr exts)))
+                   :decl (ext-decl-list->fundef-list (cdr exts))))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
