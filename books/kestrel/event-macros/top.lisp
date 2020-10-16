@@ -12,6 +12,7 @@
 
 (include-book "applicability-conditions")
 (include-book "cw-event")
+(include-book "definedness")
 (include-book "event-generation")
 (include-book "event-generation-soft")
 (include-book "input-processing")

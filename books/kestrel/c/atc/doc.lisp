@@ -121,7 +121,7 @@
       (xdoc::li
        (xdoc::p
         "The function @('fni') has an "
-        (xdoc::seetopic "apt::definedness" "unnormalized body")
+        (xdoc::seetopic "acl2::function-definedness" "unnormalized body")
         " consisting exclusively of:")
        (xdoc::ul
         (xdoc::li
