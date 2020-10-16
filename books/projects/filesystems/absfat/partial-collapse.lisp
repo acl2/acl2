@@ -5,7 +5,7 @@
 
 (in-package "ACL2")
 
-(include-book "abstract-separate")
+(include-book "../abstract-separate")
 (local (include-book "std/lists/prefixp" :dir :system))
 (local (include-book "std/lists/intersection" :dir :system))
 
@@ -6533,7 +6533,7 @@
 (encapsulate
   ()
 
-  (local (include-book "tricks/chain-leading-to-complete"))
+  (local (include-book "chain-leading-to-complete"))
 
   (local
    (defthm

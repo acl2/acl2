@@ -2,7 +2,7 @@
 
 (in-package "ACL2")
 
-(include-book "abstract-separate")
+(include-book "../abstract-separate")
 (local (include-book "std/lists/prefixp" :dir :system))
 
 (local

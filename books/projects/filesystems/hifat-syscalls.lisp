@@ -5,7 +5,7 @@
 ; Syscalls for HiFAT. These syscalls usually return, among other things, a
 ; return value (corresponding to the C return value) and an errno.
 
-(include-book "hifat-equiv")
+(include-book "hifat/hifat-equiv")
 
 ;; This implementation of basename+dirname is not exactly compliant with the
 ;; man pages basename(3)/dirname(3) - it assumes all paths provided to it are

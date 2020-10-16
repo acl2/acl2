@@ -4,7 +4,7 @@
 
 ; Some definitions and theorems for the equivalence relation hifat-equiv.
 
-(include-book "hifat")
+(include-book "../hifat")
 
 (defund
     hifat-subsetp
