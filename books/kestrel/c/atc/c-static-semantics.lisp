@@ -11,8 +11,7 @@
 (in-package "C")
 
 (include-book "c-abstract-syntax")
-
-(include-book "../language/keywords")
+(include-book "portable-ascii-identifiers")
 
 (include-book "kestrel/fty/sbyte32" :dir :system)
 
@@ -59,64 +58,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ident-letter/digit/uscore-char-p ((ch characterp))
-  :returns (yes/no booleanp)
-  :short "Check if a character is a letter, digit, or underscore."
-  :long
-  (xdoc::topstring-p
-   "This is used for characters of identifiers,
-    hence the prefix `@('ident-')'.")
-  (or (and (standard-char-p ch)
-           (alpha-char-p ch))
-      (and (digit-char-p ch)
-           t)
-      (eql ch #\_)))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(std::deflist ident-letter/digit/uscore-char-listp (x)
-  (ident-letter/digit/uscore-char-p x)
-  :guard (character-listp x)
-  :short "Check if a list of characters
-          only consists of letters, digits, and underscores."
-  :long
-  (xdoc::topstring-p
-   "This is used for characters of identifiers,
-    hence the prefix `@('ident-')'.")
-  :true-listp t
-  :elementp-of-nil nil)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(define ident-char-listp ((chs character-listp))
-  :returns (yes/no booleanp)
-  :short "Check if a list of characters is not empty,
-          consists only of letters, digits, and underscores,
-          and does not start with a digit."
-  :long
-  (xdoc::topstring-p
-   "Sequences of characters satisfying these conditions may be C identifiers,
-    provided they are distinct from C keywords.")
-  (and (consp chs)
-       (ident-letter/digit/uscore-char-listp chs)
-       (not (digit-char-p (car chs)))))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(define ident-stringp ((str stringp))
-  :returns (yes/no booleanp)
-  :short "Check if a string is is not empty,
-          consists only of letters, digits, and underscores,
-          does not start with a digit,
-          and is not a C keyword."
-  :long
-  (xdoc::topstring-p
-   "These strings are valid C identifiers.")
-  (and (ident-char-listp (str::explode str))
-       (not (member-equal str *ckeywords*))))
-
-;;;;;;;;;;;;;;;;;;;;
-
 (define ident-wfp ((id identp))
   :returns (yes/no booleanp)
   :short "Check if an identifier is well-formed."
@@ -127,7 +68,7 @@
      described in Section `C identifiers' of @(tsee atc).
      As noted there, C18 allows a possibly broader range of valid identifiers,
      but ATC only generates this kind of portable identifiers."))
-  (ident-stringp (ident->get id))
+  (atc-ident-stringp (ident->get id))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

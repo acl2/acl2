@@ -13,8 +13,7 @@
 (include-book "c-abstract-syntax")
 (include-book "c-pretty-printer" :ttags ((:open-output-channel!)))
 (include-book "c-integers")
-
-(include-book "../language/keywords")
+(include-book "portable-ascii-identifiers")
 
 (include-book "kestrel/error-checking/ensure-value-is-boolean" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-string" :dir :system)
@@ -89,53 +88,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (xdoc::evmac-topic-input-processing atc)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(define atc-letter/digit/uscore-char-p ((ch characterp))
-  :returns (yes/no booleanp)
-  :short "Check if a character is a letter, digit, or underscore."
-  (or (and (standard-char-p ch)
-           (alpha-char-p ch))
-      (and (digit-char-p ch)
-           t)
-      (eql ch #\_)))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(std::deflist atc-letter/digit/uscore-char-listp (x)
-  (atc-letter/digit/uscore-char-p x)
-  :guard (character-listp x)
-  :short "Check if a list of characters
-          only consists of letters, digits, and underscores."
-  :true-listp t
-  :elementp-of-nil nil)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(define atc-ident-char-listp ((chs character-listp))
-  :returns (yes/no booleanp)
-  :short "Check if a list of characters is not empty,
-          consists only of letters, digits, and underscores,
-          and does not start with a digit."
-  :long
-  (xdoc::topstring-p
-   "Sequences of characters satisfying these conditions may be C identifiers,
-    provided they are distinct from C keywords.")
-  (and (consp chs)
-       (atc-letter/digit/uscore-char-listp chs)
-       (not (digit-char-p (car chs)))))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(define atc-ident-stringp ((str stringp))
-  :returns (yes/no booleanp)
-  :short "Check if a string is a valid C identifier."
-  :long
-  (xdoc::topstring-p
-   "This is as defined in the @(tsee atc) user documentation.")
-  (and (atc-ident-char-listp (str::explode str))
-       (not (member-equal str *ckeywords*))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
