@@ -146,7 +146,7 @@
    (xdoc::h5 (xdoc::seetopic "c::atc" "ATC"))
 
    (xdoc::p
-    "A first simple working version of the generator has been added,
+    "A first simple working version of the C code generator has been added,
      with user documentation and a working test.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
