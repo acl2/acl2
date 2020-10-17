@@ -35,6 +35,7 @@
 (include-book "bvxor")
 (include-book "bitxor")
 (include-book "bvplus")
+(include-book "bvminus")
 (include-book "defs-bitwise")
 (include-book "defs-shifts")
 (include-book "leftrotate")
