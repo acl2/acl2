@@ -11,6 +11,8 @@
 
 (in-package "ACL2")
 
+(include-book "bv-syntax")
+
 (include-book "bvchop-def")
 (include-book "bvchop")
 (include-book "unsigned-byte-p")
