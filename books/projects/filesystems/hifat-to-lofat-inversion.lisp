@@ -6,8 +6,8 @@
 ; well as its inverse transformation lofat-to-hifat.
 
 (include-book "generate-index-list")
-(include-book "hifat-entry-count")
-(include-book "update-data-region")
+(include-book "hifat/hifat-entry-count")
+(include-book "lofat/update-data-region")
 
 ;; These are some rules from other books which are either interacting badly
 ;; with the theory I've built up so far, or else causing a lot of unnecessary
@@ -2968,11 +2968,11 @@
                0)
         (equal first-cluster
                (dir-ent-first-cluster dir-ent2))
-        (equal length (dir-ent-file-size dir-ent2))
         (not (zp (length contents)))
-        (<= *ms-first-data-cluster* first-cluster)
+        (<= 2 first-cluster)
         (stringp contents)
-        (<= (length contents) length)
+        (<= (length contents)
+            (dir-ent-file-size dir-ent2))
         (lofat-fs-p fat32-in-memory)
         (not (equal (fat32-entry-mask (fati first-cluster fat32-in-memory))
                     0))
@@ -2990,7 +2990,7 @@
       (append
        (explode contents)
        (make-list
-        (+ (min length
+        (+ (min (dir-ent-file-size dir-ent2)
                 (* (len (make-clusters contents
                                        (cluster-size fat32-in-memory)))
                    (cluster-size fat32-in-memory)))

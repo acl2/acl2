@@ -5,7 +5,7 @@
 ; This is a proof of the invertibility of the lofat-to-string transformation.
 
 (include-book "hifat")
-(include-book "update-data-region")
+(include-book "lofat/update-data-region")
 
 ;; These are some rules from other books which are either interacting badly
 ;; with the theory I've built up so far, or else causing a lot of unnecessary

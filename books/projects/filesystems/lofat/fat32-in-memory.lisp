@@ -5,7 +5,7 @@
 ; These are the basic definitions and lemmas for a stobj model of the FAT32
 ; filesystem.
 
-(include-book "fat32")
+(include-book "../fat32")
 (include-book "std/typed-lists/unsigned-byte-listp" :dir :system)
 
 (make-event
