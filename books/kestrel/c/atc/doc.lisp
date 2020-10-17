@@ -184,91 +184,97 @@
      (xdoc::li
       "@('nil'), to suppress all the non-error output.")))
 
-   (xdoc::h4 "C Identifiers")
+   (xdoc::evmac-subsection
 
-   (xdoc::p
-    "For the purpose of ATC, we define C identifiers as
-     non-empty sequences of ASCII characters that:")
-   (xdoc::ul
-    (xdoc::li
-     "Consist of only
-      the 26 uppercase Latin letters,
-      the 26 lowercase Latin letters,
-      the 10 numeric digits,
-      and the underscore.")
-    (xdoc::li
-     "Start with a letter or underscore.")
-    (xdoc::li
-     "Differs from all the C keywords, which are"
-     (xdoc::codeblock
-      "auto       extern     short      while"
-      "break      float      signed     _Alignas"
-      "case       for        sizeof     _Alignof"
-      "char       goto       static     _Atomic"
-      "const      if         struct     _Bool"
-      "continue   inline     switch     _Complex"
-      "default    int        typedef    _Generic"
-      "do         long       union      _Imaginary"
-      "double     register   unsigned   _Noreturn"
-      "else       restrict   void       _Static_assert"
-      "enum       return     volatile   _Thread_local")))
-   (xdoc::p
-    "The C18 standard allows a possibly broader range of valid identifiers,
-     but the ones recognized by ATC are a portable subset."))
+    "C Identifiers"
+
+    (xdoc::p
+     "For the purpose of ATC, we define C identifiers as
+      non-empty sequences of ASCII characters that:")
+    (xdoc::ul
+     (xdoc::li
+      "Consist of only
+       the 26 uppercase Latin letters,
+       the 26 lowercase Latin letters,
+       the 10 numeric digits,
+       and the underscore.")
+     (xdoc::li
+      "Start with a letter or underscore.")
+     (xdoc::li
+      "Differs from all the C keywords, which are"
+      (xdoc::codeblock
+       "auto       extern     short      while"
+       "break      float      signed     _Alignas"
+       "case       for        sizeof     _Alignof"
+       "char       goto       static     _Atomic"
+       "const      if         struct     _Bool"
+       "continue   inline     switch     _Complex"
+       "default    int        typedef    _Generic"
+       "do         long       union      _Imaginary"
+       "double     register   unsigned   _Noreturn"
+       "else       restrict   void       _Static_assert"
+       "enum       return     volatile   _Thread_local")))
+    (xdoc::p
+     "The C18 standard allows a possibly broader range of valid identifiers,
+      but the ones recognized by ATC are a portable subset.")))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h3 "Generated C Code")
+   (xdoc::evmac-section
 
-   (xdoc::p
-    "ATC generates a single C file that contains
-     a C function for each target ACL2 function @('fni').
-     The C function is defined as follows:")
-   (xdoc::ul
-    (xdoc::li
-     "Its name is the symbol name of @('fni').
+    "Generated C Code"
+
+    (xdoc::p
+     "ATC generates a single C file that contains
+      a C function for each target ACL2 function @('fni').
+      The C function is defined as follows:")
+    (xdoc::ul
+     (xdoc::li
+      "Its name is the symbol name of @('fni').
       The package of the symbol is ignored.")
-    (xdoc::li
-     "Its formal parameters are the symbol names of
-      the formal parameters of @('fni').
-      The packages of the symbols are ignored.
-      The parameters are in the same order.")
-    (xdoc::li
-     "The types of the formal parameters are all @('int').")
-    (xdoc::li
-     "The result type is @('int').")
-    (xdoc::li
-     "The body of the function is obtained by translating
-      the ACL2 terms described earlier
-      to the corresponding C constructs."))
+     (xdoc::li
+      "Its formal parameters are the symbol names of
+       the formal parameters of @('fni').
+       The packages of the symbols are ignored.
+       The parameters are in the same order.")
+     (xdoc::li
+      "The types of the formal parameters are all @('int').")
+     (xdoc::li
+      "The result type is @('int').")
+     (xdoc::li
+      "The body of the function is obtained by translating
+       the ACL2 terms described earlier
+       to the corresponding C constructs."))
 
-   (xdoc::p
-    "The condition, stated earlier, that @('fni') is guard-verified
-     implies that the generated C operations
-     never exhibit undefined behavior,
-     provided that they are called with values
-     whose ACL2 counterparts satisfy the guard of @('fni').")
+    (xdoc::p
+     "The condition, stated earlier, that @('fni') is guard-verified
+      implies that the generated C operations
+      never exhibit undefined behavior,
+      provided that they are called with values
+      whose ACL2 counterparts satisfy the guard of @('fni').")
 
-   (xdoc::p
-    "The C functions are generated in the same order in which
-     the target functions are listed, i.e. @('fn1') first, etc.")
+    (xdoc::p
+     "The C functions are generated in the same order in which
+      the target functions are listed, i.e. @('fn1') first, etc."))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h3 "Compiling and Running the C Code")
+   (xdoc::evmac-section
 
-   (xdoc::p
-    "The generated C code can be compiled and run as any other C code.
-     For instance, one can use @('gcc') on macOS or Linux.")
+    "Compiling and Running the C Code"
 
-   (xdoc::p
-    "Just compiling the generated C file may result in an error
-     due to the lack of a @('main') function in the file.
-     The code generated by ATC is meant to be called by external C code,
-     where presumably a @('main') function will exist.
-     To test the generated code,
-     one can write a separate C file with a @('main') function
-     that calls the generated functions,
-     and compile both files together.
-     By default, an executable @('a.out') will be generated
-     (if using @('gcc') on macOS or Linux).")))
+    (xdoc::p
+     "The generated C code can be compiled and run as any other C code.
+      For instance, one can use @('gcc') on macOS or Linux.")
+
+    (xdoc::p
+     "Just compiling the generated C file may result in an error
+      due to the lack of a @('main') function in the file.
+      The code generated by ATC is meant to be called by external C code,
+      where presumably a @('main') function will exist.
+      To test the generated code,
+      one can write a separate C file with a @('main') function
+      that calls the generated functions,
+      and compile both files together.
+      By default, an executable @('a.out') will be generated
+      (if using @('gcc') on macOS or Linux)."))))
