@@ -11,7 +11,7 @@
 (in-package "C")
 
 (include-book "c-abstract-syntax")
-(include-book "c-pretty-printer")
+(include-book "c-pretty-printer" :ttags ((:open-output-channel!)))
 (include-book "c-integers")
 
 (include-book "../language/keywords")
@@ -605,32 +605,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-write-lines-to-channel ((lines msg-listp) (channel symbolp) state)
-  :returns state
-  :mode :program
-  :short "Write pretty-printed lines to an output channel."
-  (cond ((endp lines) state)
-        (t (b* (((mv & state) (fmt1! "~@0"
-                                     (list (cons #\0 (car lines)))
-                                     0 channel state nil)))
-             (atc-write-lines-to-channel (cdr lines) channel state)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defttag :open-output-channel!)
-
 (define atc-gen-file ((fn1...fnp symbol-listp) (output-file stringp) ctx state)
   :returns (mv erp (nothing "Always @('nil').") state)
   :mode :program
   :short "Generate the C file from the ACL2 target functions."
   (b* (((er tunit) (atc-gen-transunit fn1...fnp ctx state))
        (lines (pprint-transunit tunit))
-       ((mv channel state) (open-output-channel! output-file :character state))
-       (state (atc-write-lines-to-channel lines channel state))
-       (state (close-output-channel channel state)))
+       (state (pprinted-lines-to-file lines output-file state)))
     (mv nil nil state)))
-
-(defttag nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
