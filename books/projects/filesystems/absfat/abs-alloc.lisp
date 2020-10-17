@@ -4,7 +4,7 @@
 
 (in-package "ACL2")
 
-(include-book "abstract-separate")
+(include-book "../abstract-separate")
 (local (include-book "std/lists/intersectp" :dir :system))
 
 (local (in-theory (e/d (abs-file-p-when-m1-regular-file-p
