@@ -93,12 +93,14 @@
 
 (define atc-check-symbol-name ((sym symbolp) (desc msgp) ctx state)
   :returns (mv erp (nothing null) state)
-  :short "Check whether the name of a symbol is a C identifier."
+  :short "Check whether the name of a symbol is a portable ASCII C identifier."
   (b* ((name (symbol-name sym)))
     (if (atc-ident-stringp name)
         (value nil)
       (er-soft+ ctx t nil
-                "The name ~s0 of ~@1 must be a C identifier, but it is not."
+                "The name ~s0 of ~@1 must be ~
+                 a portable ASCII C identifier (see :DOC ATC), ~
+                 but it is not."
                 name desc))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -106,7 +108,7 @@
 (define atc-check-formals ((formals symbol-listp) (fn symbolp) ctx state)
   :returns (mv erp (nothing null) state)
   :short "Check whether the symbol names of the formal parameters of a function
-          are C identifiers."
+          are portable ASCII C identifiers."
   (b*  (((when (endp formals)) (value nil))
         (formal (car formals))
         ((er &) (atc-check-symbol-name
@@ -495,7 +497,8 @@
         (er-soft+ ctx t (irr-param-decl)
                   "The name ~s0 of the formal parameter ~x1 ~
                    of the function ~x2 ~
-                   must be a C identifier, but it is not."
+                   must be a portable ASCII C identifier (see :DOC ATC), ~
+                   but it is not."
                   name formal fn)))
     (value (make-param-decl :name (ident name)
                             :type (tyspecseq-sint)))))

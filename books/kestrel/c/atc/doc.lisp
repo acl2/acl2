@@ -106,10 +106,12 @@
      (xdoc::ul
       (xdoc::li
        "The name of the symbol @('fni')
-        is a C identifier as defined in Section `C Identifiers' below.")
+        is a portable ASCII C identifier
+        as defined in Section `Portable ASCII C Identifiers' below.")
       (xdoc::li
        "The name of each symbol that is a formal argument of @('fni')
-        is a C identifier as defined in Section `C Identifiers' below.")
+        is a portable ASCII C identifier
+        as defined in Section `Portable ASCII C Identifiers' below.")
       (xdoc::li
        "The formal arguments must have must have symbol names
         that are all distinct.
@@ -186,11 +188,11 @@
 
    (xdoc::evmac-subsection
 
-    "C Identifiers"
+    "Portable ASCII C Identifiers"
 
     (xdoc::p
-     "For the purpose of ATC, we define C identifiers as
-      non-empty sequences of ASCII characters that:")
+     "A portable ASCII C identifier is
+      a non-empty sequences of ASCII characters that:")
     (xdoc::ul
      (xdoc::li
       "Consist of only
@@ -214,9 +216,30 @@
        "double     register   unsigned   _Noreturn"
        "else       restrict   void       _Static_assert"
        "enum       return     volatile   _Thread_local")))
+
     (xdoc::p
-     "The C18 standard allows a possibly broader range of valid identifiers,
-      but the ones recognized by ATC are a portable subset.")))
+     "The C18 standard allows the following characters in identifiers:")
+    (xdoc::ol
+     (xdoc::li
+      "The ten digits (but not in the starting position).
+       Even though C18 does not prescribe the use of (a superset of) ASCII,
+       these have obvious ASCII counterparts.")
+     (xdoc::li
+      "The 26 uppercase Latin letters,
+       the 26 lowercase Latin letter,
+       and the underscore.
+       Even though C18 does not prescribe the use of (a superset of) ASCII,
+       these have obvious ASCII counterparts.")
+     (xdoc::li
+      "Some ranges of universal characters
+       (some of which cannot occur in the starting position),
+       none of which are ASCII.")
+     (xdoc::li
+      "Other implementation-defined characters.
+       These are not portable."))
+    (xdoc::p
+     "Thus, portable ASCII C identifiers consists of only 1 and 2 above,
+      excluding 3 (non-ASCII) and 4 (non-portable).")))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

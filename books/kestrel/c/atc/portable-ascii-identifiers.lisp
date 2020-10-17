@@ -24,22 +24,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The grammar in [C:6.4.2.1] allows three sets of characters
-     usable in C identifiers (besides the ten digits, except at the beginning):
-     (i) the lowercase and uppercase ASCII letters and underscore;
-     (ii) certain universal characters detailed in [C:D]; and
-     (iii) other implementation-defined characters.
-     The third set is not portable.
-     The second set consists of non-ASCII characters.
-     This leaves the first set,
-     whose characters correspond to ASCII characters
-     (even though the exact set of C source characters
-     is implementation-defined [C:5.2.1]):
-     identifiers consisting of only this set of characters plus the digits
-     are both portable (i.e. implementation-independent)
-     and ASCII (at least in the sense of a clear correspondence,
-     although in practice many C implementations use (supersets of) ASCII
-     as source characters."))
+    "This notion is defined in the user documentation of ATC (see @(tsee atc)).
+     Here we provide code to check whether an ACL2 string
+     is a portable ASCII C identifier."))
   :order-subtopics t
   :default-parent t)
 
@@ -73,7 +60,8 @@
           and does not start with a digit."
   :long
   (xdoc::topstring-p
-   "Sequences of characters satisfying these conditions may be C identifiers,
+   "Sequences of characters satisfying these conditions
+    may be portable ASCII C identifiers,
     provided they are distinct from C keywords.")
   (and (consp chs)
        (atc-letter/digit/uscore-char-listp chs)
@@ -84,8 +72,5 @@
 (define atc-ident-stringp ((str stringp))
   :returns (yes/no booleanp)
   :short "Check if an ACL2 string is a portable ASCII C identifier."
-  :long
-  (xdoc::topstring-p
-   "This is as defined in the @(tsee atc) user documentation.")
   (and (atc-ident-char-listp (str::explode str))
        (not (member-equal str *ckeywords*))))
