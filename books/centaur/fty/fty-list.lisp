@@ -31,6 +31,7 @@
 (in-package "FTY")
 (include-book "database")
 (include-book "fty-parseutils")
+(include-book "std/lists/list-defuns" :dir :system)
 (program)
 
 (defconst *flexlist-keywords*
@@ -261,7 +262,8 @@
        (foo-fix-under-iff (intern-in-package-of-symbol (cat (symbol-name x.fix) "-UNDER-IFF") x.fix))
        (foo-fix-of-cons   (intern-in-package-of-symbol (cat (symbol-name x.fix) "-OF-CONS") x.fix))
        (len-of-foo-fix    (intern-in-package-of-symbol (cat "LEN-OF-" (symbol-name x.fix)) x.fix))
-       (foo-fix-of-append (intern-in-package-of-symbol (cat (symbol-name x.fix) "-OF-APPEND") x.fix)))
+       (foo-fix-of-append (intern-in-package-of-symbol (cat (symbol-name x.fix) "-OF-APPEND") x.fix))
+       (foo-fix-of-repeat (intern-in-package-of-symbol (cat (symbol-name x.fix) "-OF-REPEAT") x.fix)))
     `((deffixcong ,x.equiv ,x.elt-equiv (car x) x
         :pkg ,x.equiv
         :hints (("goal" :expand ((,x.fix x))
@@ -344,7 +346,17 @@
                                    (:free (b) (append std::a b))
                                    (:free (b) (append nil b))
                                    (:free (a b c) (append (cons a b) c)))
-                          :in-theory (enable (:i append))))))))))
+                          :in-theory (enable (:i append)))))))
+
+      ,@(and (not x.non-emptyp)
+             `((defthm ,foo-fix-of-repeat
+                 (equal (,x.fix (repeat n x))
+                        (repeat n (,x.elt-fix x)))
+                 :hints (("goal" :induct (repeat n x)
+                          :expand ((repeat n x)
+                                   (repeat n (,x.elt-fix x))
+                                   (:free (a b) (,x.fix (cons a b))))
+                          :in-theory (enable (:i repeat))))))))))
 
 (define flexlist-fix-when-pred-thm (x flagp)
   (b* (((flexlist x))
