@@ -16,6 +16,7 @@
 
 (include-book "expt")
 (include-book "expt2")
+(include-book "integer-length")
 (include-book "minus")
 (include-book "denominator")
 (include-book "times")
