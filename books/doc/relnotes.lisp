@@ -552,6 +552,10 @@
    (xdoc::p
     "A fixtype @(tsee nat-set) of osets of natural numbers has been added.")
 
+   (xdoc::p
+    "@(tsee fty::deflist) has been extended to generate a theorem
+     about the list fixer applied to @(tsee repeat).")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "java::java" "Java Library"))
