@@ -954,7 +954,8 @@
 
    (xdoc::p
     "See @(see rewrite$) for a flexible, convenient interface to the ACL2
-     rewriter that can be called programmatically.")
+     rewriter that can be called programmatically.  See @(see rewrite$-hyps)
+     for a related utility that rewrites a list of hypotheses.")
 
    (xdoc::p
     "See @(see open-trace-file!) for a variant of @(tsee open-trace-file)
