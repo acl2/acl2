@@ -100,7 +100,7 @@
 
  <p>Notice the ``fake rune'' that is returned.  Fake runes are easy to remove;
  see for example the constant @('*fake-rune-alist*') in the ACL2 sources or
- function @(tsee drop-fake-runes) defined in community book
+ function @('drop-fake-runes') defined in community book
  @('kestrel/utilities/runes.lisp').</p>
 
  <p>Other simple examples may be found in community book
