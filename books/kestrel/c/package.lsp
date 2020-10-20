@@ -17,6 +17,7 @@
 (defpkg "C" (append
              (set-difference-eq *std-pkg-symbols*
                                 '(byte
+                                  error
                                   pprint-indent))
              '(bool
                defxdoc+

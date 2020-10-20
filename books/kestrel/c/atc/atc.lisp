@@ -605,7 +605,7 @@
      via @(tsee with-output) and @('(:on-behalf-of :quiet)').")
    (xdoc::@def "atc"))
   (defmacro atc (&rest args)
-    `(with-output :off :all :on error
+    `(with-output :off :all :on acl2::error
        (make-event
         (atc-fn ',args 'atc state)
         :on-behalf-of :quiet))))
