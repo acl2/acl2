@@ -14,3 +14,4 @@
 (include-book "doc")
 
 (include-book "c-static-semantics")
+(include-book "c-dynamic-semantics")
