@@ -645,6 +645,13 @@
   :elementp-of-nil nil
   :pred fundef-listp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption maybe-fundef
+  fundef
+  :short "Fixtype of optional function definitions."
+  :pred maybe-fundefp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::defprojection fundef-list->name-list (x)
