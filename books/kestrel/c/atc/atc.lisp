@@ -121,81 +121,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines atc-check-term
-  :short "Check whether a term in the unnormalized body of a target function
-          satisfies the conditions described in the documentation."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "At the top-level, we disallow quoted constants.
-     These are only allowed as arguments of @(tsee sint-const),
-     so they are checked and accepted as part of a call of this function.")
-   (xdoc::p
-    "We allow any variables,
-     because they must be formal parameters,
-     given that we disallow lambda expressions.")
-   (xdoc::p
-    "We allow only calls of the functions listed in the user documentation.
-     For calls of @(tsee sint-const), we check that the argument
-     is an integer quoted constant.
-     The fact that it is in the right range is guaranteed by guard verification,
-     so we do not need to check that."))
-
-  (define atc-check-term ((term pseudo-termp) (fn symbolp) ctx state)
-    :returns (mv erp (nothing null) state)
-    (b* (((when (acl2::variablep term)) (value nil))
-         ((when (acl2::fquotep term))
-          (er-soft+ ctx t nil
-                    "The quoted constant ~x0 in the body of ~x1 ~
-                     is disallowed. ~
-                     Only quoted integer constants are allowed, ~
-                     and only as arguments of SINT-CONST."
-                    term fn))
-         ((when (acl2::flambda-applicationp term))
-          (er-soft+ ctx t nil
-                    "Lambda expressions, such as ~x0 in the body of ~x1, ~
-                     are disallowed.
-                     Support for LET variables (i.e. lambda expressions) ~
-                     will be added later."
-                    (acl2::ffn-symb term) fn))
-         (op (acl2::ffn-symb term)))
-      (case op
-        (sint-const
-         (b* ((arg (acl2::fargn term 1)))
-           (if (and (quotep arg)
-                    (integerp (unquote arg)))
-               (value nil)
-             (er-soft+ ctx t nil
-                       "The call ~x0 in the body of ~x1 is disallowed. ~
-                        SINT-CONST may be called only on ~
-                        quoted integer constants."
-                       term fn))))
-        ((sint-plus
-          sint-minus
-          sint-add
-          sint-sub
-          sint-mul
-          sint-div
-          sint-rem)
-         (atc-check-term-list (acl2::fargs term) fn ctx state))
-        (otherwise
-         (er-soft+ ctx t nil
-                   "The function ~x0 in the body of ~x1 is disallowed. ~
-                    Support for calling more C operations, ~
-                    and for calling the target functions, ~
-                    will be added later."
-                   op fn)))))
-
-  (define atc-check-term-list ((terms pseudo-term-listp) (fn symbolp) ctx state)
-    :returns (mv erp (nothing null) state)
-    (b* (((when (endp terms)) (value nil))
-         ((er &) (atc-check-term (car terms) fn ctx state)))
-      (atc-check-term-list (cdr terms) fn ctx state)))
-
-  :prepwork ((set-state-ok t)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define atc-check-guard ((formals symbol-listp)
                          (fn symbolp)
                          (guard pseudo-termp)
@@ -418,6 +343,25 @@
   :returns (mv erp (expr exprp) state)
   :verify-guards :after-returns
   :short "Generate a C expression from an ACL2 term."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "At the same time, we check that the term satisfies
+     the restrictions stated in the user documentation.")
+   (xdoc::p
+    "At the top-level, we disallow quoted constants.
+     These are only allowed as arguments of @(tsee sint-const),
+     so they are checked and accepted as part of a call of this function.")
+   (xdoc::p
+    "We allow any variables,
+     because they must be formal parameters,
+     given that we disallow lambda expressions.")
+   (xdoc::p
+    "We allow only calls of the functions listed in the user documentation.
+     For calls of @(tsee sint-const), we check that the argument
+     is an integer quoted constant.
+     The fact that it is in the right range is guaranteed by guard verification,
+     so we do not need to check that."))
   (b* (((when (acl2::variablep term))
         (value (expr-ident (ident (symbol-name term)))))
        ((when (acl2::fquotep term))

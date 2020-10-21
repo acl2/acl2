@@ -13,6 +13,7 @@
 (include-book "c-abstract-syntax")
 (include-book "portable-ascii-identifiers")
 
+(include-book "kestrel/fty/defset" :dir :system)
 (include-book "kestrel/fty/sbyte32" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -166,13 +167,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines expr-wfp
+(fty::defset static-env
+  :short "Fixtype of static environments."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A static environment for now is just
+     a finite set of variables (i.e. identifiers)
+     that describes the variables in scope that may be used in expressions.
+     Since we only have @('int') values for now,
+     all of these variables implicitly have type @('int').
+     This will be extended to a more complex mathematical structure,
+     in particular associating types to variables."))
+  :elt-type ident
+  :elementp-of-nil nil
+  :pred static-envp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define expr-wfp ((e exprp) (env static-envp))
+  :returns (yes/no booleanp)
   :short "Check if an expression is well-formed."
   :long
   (xdoc::topstring
    (xdoc::p
     "For now we only allow
-     (well-formed) identifiers,
+     (well-formed) identifiers in scope,
      (well-formed) constants,
      unary expressions with well-formed operators and operands,
      and binary expressions with well-formed operators and operands.
@@ -185,40 +205,28 @@
     "Normally a static semantics would also return a type for each expression,
      but for now all our expressions have type @('int'),
      so there is no need to return this."))
-
-  (define expr-wfp ((e exprp))
-    :returns (yes/no booleanp)
-    (expr-case e
-               :ident (ident-wfp e.get)
-               :const (const-wfp e.get)
-               :call nil
-               :postinc nil
-               :postdec nil
-               :preinc nil
-               :predec nil
-               :unary (and (unop-wfp e.op)
-                           (expr-wfp e.arg))
-               :cast nil
-               :binary (and (binop-wfp e.op)
-                            (expr-wfp e.arg1)
-                            (expr-wfp e.arg2))
-               :cond nil)
-    :measure (expr-count e))
-
-  (define expr-list-wfp ((es expr-listp))
-    :returns (yes/no booleanp)
-    (or (endp es)
-        (and (expr-wfp (car es))
-             (expr-list-wfp (cdr es))))
-    :measure (expr-list-count es))
-
-  ///
-
-  (fty::deffixequiv-mutual expr-wfp))
+  (expr-case e
+             :ident (and (ident-wfp e.get)
+                         (set::in e.get (static-env-fix env)))
+             :const (const-wfp e.get)
+             :call nil
+             :postinc nil
+             :postdec nil
+             :preinc nil
+             :predec nil
+             :unary (and (unop-wfp e.op)
+                         (expr-wfp e.arg env))
+             :cast nil
+             :binary (and (binop-wfp e.op)
+                          (expr-wfp e.arg1 env)
+                          (expr-wfp e.arg2 env))
+             :cond nil)
+  :measure (expr-count e)
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define stmt-wfp ((s stmtp))
+(define stmt-wfp ((s stmtp) (env static-envp))
   :short "Check if a statement is well-formed."
   :long
   (xdoc::topstring
@@ -240,45 +248,49 @@
              :continue nil
              :break nil
              :return (and s.value
-                          (expr-wfp s.value)))
+                          (expr-wfp s.value env)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define param-decl-wfp ((param param-declp))
-  :returns (yes/no booleanp)
+(define param-decl-wfp ((param param-declp) (env static-envp))
+  :returns (mv (yes/no booleanp)
+               (new-env static-envp))
   :short "Check if a parameter declaration is well-formed."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We require its components to be well-formed."))
-  (b* (((param-decl param) param))
-    (and (tyspecseq-wfp param.type)
-         (ident-wfp param.name)))
+    "The static environment passed as input is the one
+     engendered by the parameter declarations that precede this one.
+     We ensure not only that its components are well-formed,
+     but also that its name is not already in the environment;
+     otherwise, it means that there is a duplicate parameter.
+     If all checks succeed, we return the static environment
+     updated with the parameter."))
+  (b* ((env (static-env-fix env))
+       ((param-decl param) param)
+       ((unless (tyspecseq-wfp param.type)) (mv nil env))
+       ((unless (ident-wfp param.name)) (mv nil env))
+       ((when (set::in param.name env)) (mv nil env)))
+    (mv t (set::insert param.name env)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define param-decl-list-wfp ((params param-decl-listp))
-  :returns (yes/no booleanp)
-  :short "Check if a list of parameter declarations is well-formed."
+(define param-decl-list-wfp ((params param-decl-listp) (env static-envp))
+  :returns (mv (yes/no booleanp)
+               (new-env static-envp))
+  :short "Check if a list of parameter declaration is well-formed."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Not only each parameter declaration must be well-formed,
-     but also the names must be all distinct."))
-  (and (param-decl-list-wfp-aux params)
-       (no-duplicatesp-equal (param-decl-list->name-list params)))
-  :hooks (:fix)
-
-  :prepwork
-  ((std::deflist param-decl-list-wfp-aux (x)
-     (param-decl-wfp x)
-     :guard (param-decl-listp x)
-     :elementp-of-nil nil
-     ///
-     (fty::deffixequiv param-decl-list-wfp-aux
-       :args ((x param-decl-listp))))))
+    "We go through each element of the list,
+     calling @(tsee param-decl-wfp) and threading the environment through."))
+  (b* (((when (endp params)) (mv t (static-env-fix env)))
+       ((mv okp env) (param-decl-wfp (car params) env))
+       ((when (not okp)) (mv nil env)))
+    (param-decl-list-wfp (cdr params) env))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -288,12 +300,15 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Its components must be well-formed."))
-  (b* (((fundef fundef) fundef))
-    (and (tyspecseq-wfp fundef.result)
-         (ident-wfp fundef.name)
-         (param-decl-list-wfp fundef.params)
-         (stmt-wfp fundef.body)))
+    "Starting with an empty static environment,
+     we process the parameter declarations and obtain the environment
+     in which the function body must be statically well-formed."))
+  (b* (((fundef fundef) fundef)
+       ((unless (tyspecseq-wfp fundef.result)) nil)
+       ((unless (ident-wfp fundef.name)) nil)
+       ((mv okp env) (param-decl-list-wfp fundef.params nil))
+       ((when (not okp)) nil))
+    (stmt-wfp fundef.body env))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
