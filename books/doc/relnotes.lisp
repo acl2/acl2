@@ -265,7 +265,7 @@
      this transformation partially determines the solution
      and generates sub-specifications that, once recursively solve,
      provide a solution to the initial specification.
-     In partciular, divide-and-conquer algorithm schemas are supported:
+     In particular, divide-and-conquer algorithm schemas are supported:
      the schema is a recursive function that
      decompose the input,
      solve the sub-input(s),

@@ -607,17 +607,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::defprojection param-decl-list->name-list (x)
-  :guard (param-decl-listp x)
-  :returns (names ident-listp)
-  :short "Lift @(tsee param-decl->name) to lists."
-  (param-decl->name x)
-  ///
-  (fty::deffixequiv param-decl-list->name-list
-    :args ((x param-decl-listp))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (fty::defprod fundef
   :short "Fixtype of function definitions [C:6.9.1]."
   :long
