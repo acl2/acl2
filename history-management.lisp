@@ -16881,25 +16881,28 @@
                               ctx wrld state)))
                            (cond
 
-; Hint-settings is of the form ((:key1 . val1) ...(:keyn . valn)).
-; If :key1 is :OR, we know n=1; translated :ORs always occur as
-; singletons.  But in ((:OR . val1)), val1 is always
-; (((key . val) ...) ... ), i.e., is a list of alists.
-; If there is only one alist in that list, then we're dealing
-; with an :OR with only one disjunct.
+; Hint-settings is of the form ((:key1 . val1) ...(:keyn . valn)).  If :key1 is
+; :OR, we know n=1; translated :ORs always occur as singletons.  But in ((:OR
+; . val1)), val1 is always a list of pairs.  If there is only one pair in that
+; list, then we're dealing with an :OR with only one disjunct: hint-settings is
+; of the form ((:OR (orig . hint-settings2))), where orig is what the user
+; typed (see translate-or-hint).
 
                             ((and (consp hint-settings)
                                   (eq (caar hint-settings) :OR)
                                   (consp (cdr (car hint-settings)))
                                   (null (cddr (car hint-settings))))
 
-; This is a singleton :OR.  We just drop the :OR.
+; This is a singleton :OR, as above.  We just drop the :OR and the "orig" shown
+; above to obtain the "hint-settings2" shown above.
 
                              (assert$
                               (null (cdr hint-settings))
                               (value@par
-                               (cons cl-id
-                                     (car (cdr (car hint-settings)))))))
+                               (let* ((pair ; (orig . hint-settings2)
+                                       (cadr (car hint-settings)))
+                                      (hint-settings2 (cdr pair)))
+                                 (cons cl-id hint-settings2)))))
                             (t (value@par
                                 (cons cl-id hint-settings))))))))))))))))))))
 )

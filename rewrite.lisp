@@ -8523,24 +8523,30 @@
 
 (defun backchain-limit-enforcers (position ancestors wrld)
 
-; Backchaining has failed due to a backchain-limit.  Find indices of all
-; ancestors whose backchain-limit could be the culprit, as reported by the
-; :ANCESTORS break-rewrite command.  Position is the position in the top-level
-; ancestors, which is 0 at the top level; it is a bound on how many times we
-; are allowed to backchain in order to avoid the current failure.
+; Backchaining has failed due to a backchain-limit, for a rule of class
+; :rewrite or :linear.  Find indices of all ancestors whose backchain-limit
+; could be the culprit, as reported by the :ANCESTORS break-rewrite command.
+; Position is the position in the top-level ancestors, which is 0 at the top
+; level; it is a bound on how many times we are allowed to backchain in order
+; to avoid the current failure.
 
   (cond ((endp ancestors) nil)
         (t (let* ((rune (ancestor-backchain-rune (car ancestors)))
                   (rule (and rune
                              (car (find-rules-of-rune rune wrld)))))
              (cond (rule
-                    (let* ((backchain-limit-lst
-                            (access rewrite-rule rule :backchain-limit-lst))
+                    (let* ((linearp (eq (car rune) :linear))
+                           (backchain-limit-lst
+                            (if linearp
+                                (access linear-lemma rule :backchain-limit-lst)
+                              (access rewrite-rule rule :backchain-limit-lst)))
                            (bkptr (access ancestor (car ancestors) :bkptr))
                            (hyp-backchain-limit
                             (and backchain-limit-lst
-                                 (if (eq (access rewrite-rule rule :subclass)
-                                         'meta)
+                                 (if (and (not linearp)
+                                          (eq (access rewrite-rule rule
+                                                      :subclass)
+                                              'meta))
                                      backchain-limit-lst ; a numeric limit
                                    (nth (1- bkptr)
                                         backchain-limit-lst)))))
@@ -8651,39 +8657,54 @@
        '(get-brr-local 'ancestors state)))
 
 (defun tilde-@-failure-reason-phrase1-backchain-limit (hyp-number
-                                                       info
+                                                       ancestors
                                                        state
                                                        evisc-tuple)
   (msg
    "a backchain limit was reached while processing :HYP ~x0.  ~@1"
    hyp-number
-   (cond
-    ((eq info :limit-0) ; see relieve-hyp
-     (msg "Note that the limit is 0 for that :HYP."))
-    (t ; info is a list of ancestors
-     (let ((pairs (backchain-limit-enforcers 0 info (w state))))
-       (cond
-        ((null pairs)
-         (let ((str "  Note that the brr command, :ANCESTORS, will show you ~
-                     the ancestors stack."))
-           (cond ((backchain-limit (w state) :rewrite)
-                  (msg "This appears to be due to the global backchain-limit ~
-                        of ~x0.~@1"
-                       (backchain-limit (w state) :rewrite)
-                       str))
-                 (t
-                  (msg "It is not clear how this could have happened.  ~
-                        Consider emailing a reproducible example to the ACL2 ~
-                        implementors.~@0"
-                       str)))))
-        (t
-         (msg "The ancestors stack is below.  The ~#0~[entry~/entries~] at ~
-               index ~&0 ~#0~[shows~/each show~] a rune whose ~
-               ~#0~[~/respective ~]backchain limit of ~v1 has been reached, ~
-               for backchaining through its indicated hypothesis.~|~%~@2"
-              (strip-cars pairs)
-              (strip-cdrs pairs)
-              (show-ancestors-stack-msg state evisc-tuple)))))))))
+   (let ((pairs (backchain-limit-enforcers 0 ancestors (w state))))
+     (cond
+      ((null pairs)
+       (let ((str "  Note that the brr command, :ANCESTORS, will show you the ~
+                   ancestors stack."))
+         (cond ((backchain-limit (w state) :rewrite)
+                (msg "This appears to be due to the global backchain-limit of ~
+                      ~x0.~@1"
+                     (backchain-limit (w state) :rewrite)
+                     str))
+               (t
+
+; If the global backchain-limit for :rewrite is nil, and no ancestor has a
+; relevant backchain-limit (i.e., pairs is nil), then the hypothesis at hand
+; must have a backchain-limit of 0.  Through Version_8.3 we did not handle this
+; case properly; it seems we assumed that if the hypothesis has a
+; backchain-limit of 0 then pairs must be nil, but that is not necessarily the
+; case as illustrated by the following example (inspired by a bug report from
+; Mihir Mehta).
+
+;   (defun p1 (x) (integerp x))
+;   (defun p2 (x) (integerp x))
+;   (defun p3 (x) (integerp x))
+;   (defthm p1->p2
+;     (implies (p1 x) (p2 x))
+;     :rule-classes ((:rewrite :backchain-limit-lst (0))))
+;   (defthm p2->p3
+;     (implies (p2 x) (p3 x)))
+;   (in-theory (disable p1 p2 p3))
+;   (brr t)
+;   (monitor '(:rewrite p1->p2) t)
+;   (thm (p3 a))
+
+                (msg "Note that the limit is 0 for that :HYP.")))))
+      (t
+       (msg "The ancestors stack is below.  The ~#0~[entry~/entries~] at ~
+             index ~&0 ~#0~[shows~/each show~] a rune whose ~#0~[~/respective ~
+             ~]backchain limit of ~v1 has been reached, for backchaining ~
+             through its indicated hypothesis.~|~%~@2"
+            (strip-cars pairs)
+            (strip-cdrs pairs)
+            (show-ancestors-stack-msg state evisc-tuple)))))))
 
 (mutual-recursion
 
@@ -14516,15 +14537,7 @@
                                           nil
                                           (if on-ancestorsp
                                               'ancestors
-                                            (cons 'backchain-limit
-                                                  (or ancestors
-
-; If there are no ancestors, then the failure may be because the rune specifies
-; a backchain-limit of 0.
-
-                                                      (and (eql backchain-limit
-                                                                0)
-                                                           :limit-0))))
+                                            (cons 'backchain-limit ancestors))
                                           unify-subst ttree)))))
                                   (t
                                    (mv-let
