@@ -28,40 +28,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(include-book "kestrel/std/system/check-if-call" :dir :system)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-check-and-call ((term pseudo-termp))
-  :returns (mv (yes/no booleanp)
-               (left pseudo-termp :hyp :guard)
-               (right pseudo-termp :hyp :guard))
-  :short "Check if a term is a (translated) call of @(tsee and)."
-  (b* (((mv ifp test then else) (acl2::check-if-call term))
-       ((when (not ifp)) (mv nil nil nil)))
-    (if (equal else acl2::*nil*)
-        (mv t test then)
-      (mv nil nil nil)))
-  ///
-
-  (defret acl2-count-of-atc-check-and-call.left
-    (implies yes/no
-             (< (acl2-count left)
-                (acl2-count term)))
-    :rule-classes :linear)
-
-  (defret acl2-count-of-atc-check-and-call.right
-    (implies yes/no
-             (< (acl2-count right)
-                (acl2-count term)))
-    :rule-classes :linear))
+(include-book "kestrel/std/system/check-and-call" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-flatten-conjuncts ((term pseudo-termp))
   :returns (conjuncts pseudo-term-listp :hyp :guard)
   :short "View a term as an @(tsee and) tree and return its leaves."
-  (b* (((mv andp left right) (atc-check-and-call term))
+  (b* (((mv andp left right) (check-and-call term))
        ((when (not andp)) (list term))
        (left-conjuncts (atc-flatten-conjuncts left))
        (right-conjuncts (atc-flatten-conjuncts right)))

@@ -20,6 +20,7 @@
                                   error
                                   pprint-indent))
              '(bool
+               check-and-call
                defxdoc+
                er-soft+
                implode
