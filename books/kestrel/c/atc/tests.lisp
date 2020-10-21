@@ -41,6 +41,9 @@
                                    :in-theory (enable sbyte32p
                                                       sbyte32-fix
                                                       c::sintp
+                                                      c::sint-add-okp
+                                                      c::sint-sub-okp
+                                                      c::sint-mul-okp
                                                       c::sint-add
                                                       c::sint-sub
                                                       c::sint->get)))))
