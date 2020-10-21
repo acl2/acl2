@@ -21,6 +21,10 @@
                        (equal x (car z))
                        (equal y (cdr z))))))
 
+(defthm equal-of-cons-and-cons
+  (equal (equal (cons a x) (cons b y))
+         (and (equal a b) (equal x y))))
+
 ;; Param names changed to match std
 (defthm true-listp-of-cons
   (equal (true-listp (cons a x))

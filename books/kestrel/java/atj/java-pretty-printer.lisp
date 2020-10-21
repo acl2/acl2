@@ -1264,7 +1264,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defttag :open-input-channel)
+(defttag :open-output-channel!)
 
 (define print-to-jfile ((lines msg-listp) (filename stringp) state)
   :returns state

@@ -32,3 +32,5 @@
 (include-book "packbv")
 (include-book "unpackbv")
 (include-book "packbv-and-unpackbv")
+
+(include-book "bv-arrayp")

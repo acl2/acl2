@@ -21,7 +21,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is a start towards a library that will contain:")
+    "This is a library that is being populated with:")
    (xdoc::ul
     (xdoc::li
      "A formalization of (some aspects of) the C language.")

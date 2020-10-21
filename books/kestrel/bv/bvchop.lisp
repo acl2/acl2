@@ -660,3 +660,10 @@
 
 (theory-invariant (incompatible (:definition bvchop)
                                 (:rewrite mod-of-expt-of-2)))
+
+(defthm unsigned-byte-p-of-bvchop-when-already
+  (implies (and (unsigned-byte-p n x)
+                (natp n)
+                (integerp x))
+          (unsigned-byte-p n (bvchop m x)))
+  :hints (("Goal" :in-theory (enable unsigned-byte-p))))

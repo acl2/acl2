@@ -1998,21 +1998,31 @@
 
 (defun defwarrant-fn1 (fn state)
   (declare (xargs :mode :program))
-  (let ((ens (ens state))
-        (wrld (w state))
-        (apply-lemmas-book
-         (extend-pathname :system "projects/apply/base.lisp" state)))
-    (mv-let (msg bdg)
-      (badger fn ens wrld)
-      (cond
-       (msg
-        (er soft 'defwarrant "~@0" msg))
-       ((and (not (assoc-equal
-                   apply-lemmas-book
-                   (global-val 'include-book-alist (w state))))
-             (not (equal apply-lemmas-book
-                         (active-book-name (w state) state)))
-             (not (global-val 'boot-strap-flg (w state))))
+  (cond
+   ((apply$-primp fn)
+    (pprogn (observation (cons 'defwarrant fn)
+                         "The function ~x0 is an APPLY$ primitive and hence ~
+                          does not need a warrant.  This event thus has no ~
+                          effect.~|~%"
+                         fn)
+            (value `(with-output
+                      :stack :pop
+                      (value-triple nil)))))
+   (t (let ((ens (ens state))
+            (wrld (w state))
+            (apply-lemmas-book
+             (extend-pathname :system "projects/apply/base.lisp" state)))
+        (mv-let (msg bdg)
+          (badger fn ens wrld)
+          (cond
+           (msg
+            (er soft 'defwarrant "~@0" msg))
+           ((and (not (assoc-equal
+                       apply-lemmas-book
+                       (global-val 'include-book-alist (w state))))
+                 (not (equal apply-lemmas-book
+                             (active-book-name (w state) state)))
+                 (not (global-val 'boot-strap-flg (w state))))
 
 ; In order to succeed, defwarrant needs base.lisp to have been included.  That
 ; is because defwarrant tries to prove congruence rules and at the very least
@@ -2025,46 +2035,46 @@
 ; We make an exception for the boot-strap, where we take responsibility for the
 ; necessary verification.
 
-        (er soft 'defwarrant
-            "Please execute~%~x0~|before the first defun$ or defwarrant.  ~
-             See :DOC defwarrant."
-            '(include-book
-              "projects/apply/top" :dir :system)))
-       (t
-        (value
+            (er soft 'defwarrant
+                "Please execute~%~x0~|before the first defun$ or defwarrant.  ~
+                 See :DOC defwarrant."
+                '(include-book
+                  "projects/apply/top" :dir :system)))
+           (t
+            (value
 
 ; WARNING: Be sure no event under this (encapsulate () ...) is local!  At one
 ; time we used (progn ...) instead.  However, we found that defwarrant events
 ; were never redundant because of the defattach below.
 
-         `(encapsulate ; Read the warning above before changing to progn.
-            ()
-            ,@(defwarrant-event fn (formals fn wrld)
-                bdg)
-            (table badge-table
-                   :badge-userfn-structure
-                   (cons ',(cons fn bdg)
-                         (cdr (assoc :badge-userfn-structure
-                                     (table-alist 'badge-table world))))
-                   :put)
-            ,(if (getpropc fn 'predefined nil wrld)
-                 `(defattach (,(warrant-name fn)
-                              true-apply$-warrant)
-                    :system-ok t)
-               `(defattach ,(warrant-name fn) true-apply$-warrant))
-            ,@(if (eq (access apply$-badge bdg :ilks) t)
-                  nil
-                (defcong-fn-equal-equal-events
-                  (cons fn (formals fn wrld))
-                  1
-                  (access apply$-badge bdg :ilks)))
-            (with-output
-              :stack :pop
-              (value-triple
-               (prog2$
-                (cw "~%~x0 is now warranted, with badge ~x1.~%~%"
-                    ',fn ',bdg)
-                :warranted))))))))))
+             `(encapsulate ; Read the warning above before changing to progn.
+                ()
+                ,@(defwarrant-event fn (formals fn wrld)
+                    bdg)
+                (table badge-table
+                       :badge-userfn-structure
+                       (cons ',(cons fn bdg)
+                             (cdr (assoc :badge-userfn-structure
+                                         (table-alist 'badge-table world))))
+                       :put)
+                ,(if (getpropc fn 'predefined nil wrld)
+                     `(defattach (,(warrant-name fn)
+                                  true-apply$-warrant)
+                        :system-ok t)
+                   `(defattach ,(warrant-name fn) true-apply$-warrant))
+                ,@(if (eq (access apply$-badge bdg :ilks) t)
+                      nil
+                    (defcong-fn-equal-equal-events
+                      (cons fn (formals fn wrld))
+                      1
+                      (access apply$-badge bdg :ilks)))
+                (with-output
+                  :stack :pop
+                  (value-triple
+                   (prog2$
+                    (cw "~%~x0 is now warranted, with badge ~x1.~%~%"
+                        ',fn ',bdg)
+                    :warranted))))))))))))
 
 (defun defwarrant-fn (fn)
   (declare (xargs :mode :logic :guard t)) ; for execution speed in safe-mode

@@ -5,7 +5,7 @@
 
 (in-package "ACL2")
 
-(include-book "hifat-equiv")
+(include-book "hifat/hifat-equiv")
 (local (include-book "std/lists/prefixp" :dir :system))
 (local (include-book "std/lists/intersection" :dir :system))
 
@@ -390,11 +390,7 @@
                 (<= 0 x)
                 (member-equal x (abs-addrs abs-file-alist2)))
            (intersectp-equal (abs-addrs abs-file-alist1)
-                             (abs-addrs abs-file-alist2)))
-  :hints (("goal" :use (:instance (:rewrite intersectp-member)
-                                  (a x)
-                                  (y (abs-addrs abs-file-alist2))
-                                  (x (abs-addrs abs-file-alist1))))))
+                             (abs-addrs abs-file-alist2))))
 
 (defthm
   abs-addrs-of-remove-lemma-2
@@ -407,14 +403,7 @@
           (abs-addrs (abs-file->contents (cdr (car abs-file-alist)))))))
    (not (member-equal
          x
-         (abs-addrs (abs-file->contents (cdr (car abs-file-alist)))))))
-  :hints
-  (("goal"
-    :use
-    (:instance (:rewrite intersectp-member)
-               (a x)
-               (y (abs-addrs (abs-file->contents (cdr (car abs-file-alist)))))
-               (x (abs-addrs (cdr abs-file-alist)))))))
+         (abs-addrs (abs-file->contents (cdr (car abs-file-alist))))))))
 
 (defthm abs-addrs-of-remove
   (implies (and (natp x)
@@ -1257,13 +1246,7 @@
                 (consp (assoc-equal (fat32-filename-fix (car relpath))
                                     abs-file-alist)))
            (intersectp-equal (remove-equal nil (strip-cars abs-file-alist))
-                             (remove-equal nil (strip-cars root))))
-  :hints
-  (("goal"
-    :use (:instance (:rewrite intersectp-member)
-                    (a (fat32-filename-fix (car relpath)))
-                    (y (remove-equal nil (strip-cars root)))
-                    (x (remove-equal nil (strip-cars abs-file-alist)))))))
+                             (remove-equal nil (strip-cars root)))))
 
 (defthm
   addrs-at-of-append
@@ -1686,14 +1669,7 @@
      (abs-addrs (abs-file->contents (cdr (car abs-file-alist1))))))
    (intersectp-equal
     (abs-addrs (cdr abs-file-alist1))
-    (abs-addrs (abs-file->contents (cdr (car abs-file-alist1))))))
-  :hints
-  (("goal"
-    :use (:instance
-          (:rewrite intersectp-member)
-          (a x)
-          (y (abs-addrs (abs-file->contents (cdr (car abs-file-alist1)))))
-          (x (abs-addrs (cdr abs-file-alist1)))))))
+    (abs-addrs (abs-file->contents (cdr (car abs-file-alist1)))))))
 
 (defthm
   abs-addrs-of-ctx-app-lemma-7
@@ -1707,14 +1683,7 @@
                                                  (cdr abs-file-alist1)))))
    (intersectp-equal
     (abs-addrs (cdr abs-file-alist1))
-    (abs-addrs (abs-file->contents (cdr (car abs-file-alist1))))))
-  :hints
-  (("goal"
-    :use (:instance
-          (:rewrite intersectp-member)
-          (a x)
-          (y (abs-addrs (abs-file->contents (cdr (car abs-file-alist1)))))
-          (x (abs-addrs (cdr abs-file-alist1)))))))
+    (abs-addrs (abs-file->contents (cdr (car abs-file-alist1)))))))
 
 (defthmd
   abs-addrs-of-ctx-app-1-lemma-11
@@ -2043,14 +2012,7 @@
     (not (intersectp-equal
           (abs-addrs (cdr abs-file-alist1))
           (abs-addrs (abs-file->contents (cdr (car abs-file-alist1)))))))
-   (not (member-equal x (abs-addrs (cdr abs-file-alist1)))))
-  :hints
-  (("goal"
-    :use (:instance
-          (:rewrite intersectp-member)
-          (a x)
-          (y (abs-addrs (abs-file->contents (cdr (car abs-file-alist1)))))
-          (x (abs-addrs (cdr abs-file-alist1)))))))
+   (not (member-equal x (abs-addrs (cdr abs-file-alist1))))))
 
 (defthm
   abs-addrs-of-ctx-app-lemma-3
@@ -2067,8 +2029,7 @@
    (not
     (member-equal
      x
-     (abs-addrs (abs-file->contents$inline (cdr (car abs-file-alist1)))))))
-  :hints (("goal" :in-theory (enable intersectp-member))))
+     (abs-addrs (abs-file->contents$inline (cdr (car abs-file-alist1))))))))
 
 (defthm
   abs-addrs-of-ctx-app-lemma-4

@@ -12051,98 +12051,565 @@
     (car alist))
    (t (assoc-symbol-name-equal sym (cdr alist)))))
 
-(defun parse-loop$-accum (args ans)
+(defun parse-loop$-accum (stmt args ans)
 
+; We're parsing the loop$ statement stmt and have gotten down to args, a tail of
+; stmt that is supposed to be a loop$ operator, optional :guard, and body.
 ; We add two things to ans, the op and the (unfinished) carton for the op's
-; term.  BTW: All the intermediate parsing functions accumulate the components
-; in reverse onto ans and the top-level parse-loop$ will reverse them.
+; term.  We return two results, (mv msg ans'), where msg is nil if the parse
+; was successful and an error msg otherwise, and ans' is the accumulated
+; answer.  BTW: All the intermediate parsing functions accumulate the
+; components in reverse onto ans and the top-level parse-loop$ will reverse
+; them.
+
+; Warning: It is critical that we not allow loop$s containing :guard as the
+; body, as in (loop$ for v in lst collect :guard).  See the warning in
+; remove-loop$-guards.
 
   (case-match args
     ((op ':GUARD gexpr expr)
-     (cond ((and (symbolp op)
-                 (not (null op))
-                 (assoc-symbol-name-equal op *loop$-keyword-info*))
-            (mv nil (cons
-                     (make-carton gexpr nil expr nil)
-                     (cons
-                      (car (assoc-symbol-name-equal op *loop$-keyword-info*))
-                      ans))))
-           (t (mv t args))))
+     (cond
+      ((and (symbolp op)
+            (not (null op))
+            (assoc-symbol-name-equal op *loop$-keyword-info*))
+       (mv nil (cons
+                (make-carton gexpr nil expr nil)
+                (cons
+                 (car (assoc-symbol-name-equal op *loop$-keyword-info*))
+                 ans))))
+      (t (mv (msg "Parsing stopped at position ~x0, where we read ~x1 but ~
+                   expected one of the loop$ operators ~*2."
+                  (- (length stmt) (length args))
+                  (nth 0 args)
+                  (list "" "~x*" "~x* or " "~x*, "
+                        (collect-non-x nil (strip-cars *loop$-keyword-info*))))
+             args))))
     ((op expr)
-     (cond ((and (symbolp op)
-                 (not (null op))
-                 (assoc-symbol-name-equal op *loop$-keyword-info*))
-            (mv nil (cons
-                     (make-carton T *T* expr nil)
-                     (cons
-                      (car (assoc-symbol-name-equal op *loop$-keyword-info*))
-                      ans))))
-           (t (mv t args))))
-    (& (mv t args))))
+     (cond
+      ((and (symbolp op)
+            (not (null op))
+            (assoc-symbol-name-equal op *loop$-keyword-info*)
+            (not (eq expr :guard)))
+       (mv nil
+           (cons
+            (make-carton T *T* expr nil)
+            (cons
+             (car (assoc-symbol-name-equal op *loop$-keyword-info*))
+             ans))))
+      ((and (symbolp op)
+            (not (null op))
+            (assoc-symbol-name-equal op *loop$-keyword-info*)
+            (eq expr :guard))
+       (mv (msg "Parsing stopped at position ~x0, where we read :GUARD but ~
+                 expected it to be followed by a guard test and loop$ body. ~
+                 If you really want :GUARD to be the loop$ body write ':GUARD ~
+                 instead."
+                (+ 1 (- (length stmt) (length args))))
+           args))
+      (t (mv (msg "Parsing stopped at position ~x0, where we read ~x1 but ~
+                   expected to see one of the loop$ operators ~*2."
+                  (- (length stmt) (length args))
+                  (nth 0 args)
+                  (list "" "~x*" "~x* or " "~x*, "
+                        (collect-non-x nil (strip-cars *loop$-keyword-info*))))
+             args))))
+    (& (cond
+        ((and (symbolp (car args))
+              (not (null (car args)))
+              (assoc-symbol-name-equal (car args) *loop$-keyword-info*))
+         (cond
+          ((and (eq (cadr args) :guard)
+                (null (cddr args)))
+           (mv (msg "Parsing stopped at position ~x0, where we read :GUARD ~
+                     but expected a loop$ body expression.  If you want the ~
+                     body to be :GUARD, use ':GUARD instead. The bare keyword ~
+                     :GUARD here must be followed by a guard test and a loop$ ~
+                     body expression."
+                    (+ 1 (- (length stmt) (length args))))
+               args))
+          (t (mv (msg "Parsing stopped just after position ~x0, where we read ~
+                       ~x1 while expecting it to be followed by either a ~
+                       single loop$ body expression or the keyword :GUARD ~
+                       followed by a guard test and a loop$ body expression.  ~
+                       But your loop$ has ``... ~*2)''."
+                      (- (length stmt) (length args))
+                      (car args)
+                      (list "" "~x*" "~x* " "~x* " args))
+                 args))))
+        ((car ans)
+; This means we've seen a WHEN, so all that's left is a loop$ operator.
+         (mv (msg "Parsing stopped at position ~x0, where we ~#1~[ran off the ~
+                   end of the loop$ statement~/read ~x2 but expected one of ~
+                   the loop$ operators ~*3~]."
+                  (- (length stmt) (length args))
+                  (if (null args) 0 1)
+                  (car args)
+                  (list "" "~x*" "~x* or " "~x*, "
+                        (collect-non-x nil (strip-cars *loop$-keyword-info*))))
+             args))
+        (t
+; This means we saw no WHEN, which may mean the culprit was meant to be part of
+; a when clause.
+         (mv (msg "Parsing stopped at position ~x0, where we ~#1~[ran off the ~
+                   end of the loop$ statement~/read ~x2 but expected WHEN or ~
+                   one of the loop$ operators ~*3~]."
+                  (- (length stmt) (length args))
+                  (if (null args) 0 1)
+                  (car args)
+                  (list "" "~x*" "~x* or " "~x*, "
+                        (collect-non-x nil (strip-cars *loop$-keyword-info*))))
+             args))))))
 
-(defun parse-loop$-when (args ans)
+(defun possible-typop (lst1 lst2)
+
+; Both arguments are lists of characters spelling out two symbol names.  We
+; think of the first symbol as something the user wrote and the second as what
+; he or she might have meant.  The question is whether the user made a simple
+; typo.  We check that the two lists contain the same chars in the same order
+; with just three exceptions: lst1 has exactly one extra char, lst1 is missing
+; exactly one char, or two adjacent chars have been swapped.
+
+  (cond
+   ((endp lst1)
+    (or (endp lst2)
+        (endp (cdr lst2))))
+   ((endp lst2)
+    (endp (cdr lst1)))
+   ((eql (car lst1) (car lst2))
+    (possible-typop (cdr lst1) (cdr lst2)))
+   (t (or (equal (cdr lst1) lst2)           ; this is an extra char in lst1
+          (equal lst1 (cdr lst2))           ; this is a missing char in lst1
+          (equal (cdr lst1) (cdr lst2))     ; lst1 used a different char here
+          (and (eql (car lst1) (cadr lst2)) ; swapped adjacent chars
+               (eql (cadr lst1) (car lst2))
+               (equal (cddr lst1) (cddr lst2)))))))
+
+(defun maybe-meant-but-didnt-write (written intended)
+
+; In a situation in which the second argument is a suitable input the user
+; wrote the first argument instead.  We determine whether this is likely just a
+; typo caused by different symbol packages or one trivial typing mistake:
+; adding or deleting a character or swapping two adjacent characters.
+
+  (and (symbolp written)
+       (symbolp intended)
+       (not (eq written intended))
+       (or (equal (symbol-name written)
+                  (symbol-name intended))
+           (possible-typop (coerce (symbol-name written) 'list)
+                           (coerce (symbol-name intended) 'list)))))
+
+(defun parse-loop$-when (stmt args ans)
 
 ; We add one entry to ans for the WHEN clause.  If there is a when clause, we
 ; add an unfinished carton.  If there's no WHEN clause we add nil.  One might
 ; think we could represent the absence of a WHEN clause with WHEN T but we need
 ; to know if a WHEN clause was present since it's illegal in CLTL to have a
 ; WHEN with an ALWAYS and we don't want to translate a loop$ that generates an
-; illegal CLTL loop in raw Lisp.
+; illegal CLTL loop in raw Lisp.  As explained in parse-loop$-accum, we return
+; (mv msg ans').
+
+; Warning: It is critical that we not allow loop$s containing :guard as the
+; test of a WHEN, as in (loop$ for v in lst when :guard collect v).  See the
+; warning in remove-loop$-guards.  We test expliticly for this below, but it
+; can only happen on loop$s that are ill-formed anyway!  See the comment below.
 
   (case-match args
     (((quote~ WHEN) ':GUARD gtest test . rest)
-     (parse-loop$-accum rest (cons (make-carton gtest nil test nil) ans)))
+     (parse-loop$-accum stmt rest
+                        (cons (make-carton gtest nil test nil) ans)))
     (((quote~ WHEN) test . rest)
-     (parse-loop$-accum rest (cons (make-carton T *T* test nil) ans)))
-    (& (parse-loop$-accum args (cons nil ans)))))
+     (cond
+      ((eq test :guard)
 
-(defun parse-loop$-until (args ans)
+; This test is meant to catch the case where the user specifies an un-guarded
+; WHEN test of :guard.  To do so requires writing something like (loop$ for v
+; in lst when :guard collect v).  Except that doesn't work because that is
+; parsed with a guarded when with test v (guarded by collect).  The only time
+; this test can succeed is if the user wrote something like (loop$ for v in lst
+; when :guard) or (loop$ for v in lst when :guard body) because if he or she
+; writes two or more things after ``when :guard'' it is parsed by the first
+; case above.  Note that both inputs that make this test true are ill-formed
+; anyway.  But our points in having this test here are to (a) make clear we
+; don't allow naked ... when :guard ... and (b) give what we think is a better
+; error message than just running off the end of the accumulator clause.
+
+       (mv (msg "Parsing stopped at position ~x0, where we read :GUARD as the ~
+                 WHEN test.  We prohibit this. If you really want to use ~
+                 :GUARD as the WHEN test then write ':GUARD instead, but we ~
+                 see no reason to use this idiom at all!  In addition, this ~
+                 loop$ statement ends without specifying an accumulator loop$ ~
+                 body."
+                (+ 1 (- (length stmt) (length args))))
+           args))
+
+      (t (mv-let (msg ans1)
+           (parse-loop$-accum stmt rest (cons (make-carton T *T* test nil) ans))
+           (cond
+            (msg
+             (cond
+              ((eq (cadr args) :GUARD)
+               (mv (msg "Parsing stopped at position ~x0, where we read ~
+                         :GUARD but expected it to be followed by an ~
+                         expression but the statement ends prematurely.  No ~
+                         WHEN test, loop$ accumulator, or loop$ body is ~
+                         provided!"
+                        (+ 1 (- (length stmt) (length args))))
+                   ans1))
+              ((maybe-meant-but-didnt-write test :GUARD)
+               (mv (msg "~@0~%~%This error might be due to an earlier problem ~
+                         with the purported loop$ statement.  You wrote ``... ~
+                         WHEN ~x1 ...'' and perhaps you meant ``... WHEN ~
+                         :GUARD ...''.  Given what you actually wrote, ~x1 is ~
+                         being parsed as the (unguarded) WHEN term."
+                        msg
+                        (cadr args))
+                   ans1))
+              (t (mv msg ans1))))
+            (t (mv msg ans1)))))))
+    (& (mv-let (msg ans1)
+         (parse-loop$-accum stmt args (cons nil ans))
+         (cond
+          (msg
+           (cond
+            ((and (eq (car args) 'when)
+                  (maybe-meant-but-didnt-write (cadr args) :GUARD))
+             (mv (msg "~@0~%~%This error might be due to an earlier problem ~
+                       with the purported loop$ statement.  You wrote ``... ~
+                       WHEN ~x1 ...'' and perhaps you meant ``... WHEN :GUARD ~
+                       ...''.  Given what you actually wrote, ~x1 is being ~
+                       parsed as the (unguarded) WHEN term."
+                      msg
+                      (cadr args))
+                 ans1))
+            ((maybe-meant-but-didnt-write (car args) 'when)
+             (mv (msg "~@0~%~%This error might be due to an earlier ~
+                          problem with the purported loop$ statement.  You ~
+                          wrote ``...  ~x1 ...'' and perhaps you meant ``... ~
+                          WHEN ...''."
+                      msg
+                      (car args))
+                 ans1))
+            (t (mv msg ans1))))
+          (t (mv msg ans1)))))))
+
+(defun parse-loop$-until (stmt args ans)
 
 ; We add one entry to ans for the UNTIL clause, an unfinished carton or nil.
+; As explained in parse-loop$-accum, we return (mv msg ans').
+
+; Warning: It is critical that we not allow loop$s containing :guard as the
+; test of a WHEN, as in (loop$ for v in lst when :guard collect v).  See the
+; warning in remove-loop$-guards.  We test expliticly for this below, but it
+; can only happen on loop$s that are ill-formed anyway!  See the comment below.
 
   (case-match args
     (((quote~ UNTIL) ':GUARD gtest test . rest)
-     (parse-loop$-when rest (cons (make-carton gtest nil test nil) ans)))
+     (parse-loop$-when stmt rest (cons (make-carton gtest nil test nil) ans)))
     (((quote~ UNTIL) test . rest)
-     (parse-loop$-when rest (cons (make-carton T *T* test nil) ans)))
-    (& (parse-loop$-when args (cons nil ans)))))
+     (cond
+      ((eq test :guard)
 
-(defun parse-loop$-vsts (args vsts ans)
+; This test is meant to catch the case where the user specifies an un-guarded
+; UNTIL test of :guard.  To do so requires writing something like (loop$ for v
+; in lst until :guard collect v).  Except that doesn't work because that is
+; parsed with a guarded until with test v (guarded by collect).  The only time
+; this test can succeed is if the user wrote something like (loop$ for v in lst
+; until :guard) or (loop$ for v in lst until :guard body) because if he or she
+; writes two or more things after ``until :guard'' it is parsed by the first case
+; above.  Note that both inputs that make this test true are ill-formed anyway.
+; But our points in having this test here are to (a) make clear we don't allow
+; naked ... until :guard ... and (b) give what we think is a better error
+; message than just running off the end of the accumulator clause.
 
-; Vsts stands for ``vars, specs, and targets'' and here we're looking for
-; multiple occurrences of the variations on ``v OF-TYPE spec IN/ON/FROM ...''
-; separated by ``AS''.  Each occurrence generates a ``vst tuple,'' e.g., (v
-; spec (IN lst)) and we collect them all in reverse order into vsts.  When we
-; have processed them all, we add the reverse of vsts to ans and start parsing
-; for an UNTIL clause.  If we find no vsts, we indicate parse error.  The
-; following case-match could be compacted but we prefer the explicit exhibition
-; of the allowed patterns.
+       (mv (msg "Parsing stopped at position ~x0, where we read :GUARD as the ~
+                 UNTIL test.  We prohibit this. If you really want to use ~
+                 :GUARD as the UNTIL test then write ':GUARD instead, but we ~
+                 see no reason to use this idiom at all!  In addition, this ~
+                 loop$ statement ends without specifying an accumulator loop$ ~
+                 body."
+                (+ 1 (- (length stmt) (length args))))
+           args))
+      (t
+       (mv-let (msg ans1)
+         (parse-loop$-when stmt rest (cons (make-carton T *T* test nil) ans))
+         (cond
+          (msg
+           (cond
+            ((eq (cadr args) :GUARD)
+             (mv (msg "Parsing stopped at position ~x0, where we read :GUARD ~
+                       but expected it to be followed by an expression but ~
+                       the statement ends prematurely.  No UNTIL test, loop$ ~
+                       accumulator, or loop$ body is provided!"
+                      (+ 1 (- (length stmt) (length args))))
+                 ans1))
+            ((maybe-meant-but-didnt-write test :GUARD)
+             (mv (msg "~@0~%~%This error might be due to an earlier problem ~
+                       with the purported loop$ statement.  You wrote ``... ~
+                       UNTIL ~x1 ...'' and perhaps you meant ``... UNTIL ~
+                       :GUARD ...''.  Given what you actually wrote, ~x1 is ~
+                       being parsed as the (unguarded) UNTIL term."
+                      msg
+                      (cadr args))
+                 ans1))
+            (t (mv msg ans1))))
+          (t (mv msg ans1)))))))
+    (& (mv-let (msg ans1)
+         (parse-loop$-when stmt args (cons nil ans))
+         (cond
+          (msg
+           (cond
+            ((and (eq (car args) 'until)
+                  (maybe-meant-but-didnt-write (cadr args) :GUARD))
+             (mv (msg "~@0~%~%This error might be due to an earlier problem ~
+                       with the purported loop$ statement.  You wrote ``... ~
+                       UNTIL ~x1 ...'' and perhaps you meant ``... UNTIL ~
+                       :GUARD ...''.  Given what you actually wrote, ~x1 is ~
+                       being parsed as the (unguarded) UNTIL term."
+                      msg
+                      (cadr args))
+                 ans1))
+            ((maybe-meant-but-didnt-write (car args) 'until)
+             (mv (msg "~@0~%~%This error might be due to an earlier ~
+                          problem with the purported loop$ statement.  You ~
+                          wrote ``...  ~x1 ...'' and perhaps you meant ``... ~
+                          UNTIL ...''."
+                      msg
+                      (car args))
+                 ans1))
+            (t (mv msg ans1))))
+          (t (mv msg ans1)))))))
 
-  (mv-let (args vsts)
+(defun parse-loop$-vsts-diagnose-failure (flg1 args args1)
+
+; We know that args was supposed to be a ``properly terminated iteration
+; variable phrase'' but failed to be.  Flg1 is t if we successfully parsed args
+; as an iteration variable phrase.  Args1, which is relevant only if flg1 is t,
+; is the rest of the alleged loop$ statement after the parse and so contains as
+; its first element the token that terminated the parse.  Return (mv
+; failure-type tail expected-msg), where failure-type is
+
+; 0 -- args is too short to parse as a phrase
+; 1 -- args parsed but the loop$ statement ended before we got to the 
+;      terminator token (AS, UNTIL, WHEN, or a loop$ operator)
+; 2 -- args parsed but is terminated by something other than AS, UNTIL,
+;      WHEN, or a loop$ operator,
+; 3 -- we encountered a mismatch during the parse, e.g., saw FORM instead
+;      of FROM (but not all reports are such misspellings).
+
+; Tail is nil (when we ran out tokens) or a non-empty tail of args (and thus, a
+; non-empty tail of the original loop$ statement we're trying to parse) where
+; the parse started going wrong.  Expected-message is a msg that describes what
+; we expected to see when we encountered culprit.
+
+  (cond
+   ((endp args1)
+
+; Our caller treats cases 0 and 1 identically: we ran out of tokens before
+; completing the parse.  We differentiate them here just to remind ourselves of
+; flg1.  Given that args1 is empty, flg1 = t means we parsed a complete
+; iteration variable phrase but ran out of tokens on the termination check; and
+; flg1 = nil means we ran out of tokens while parsing the phrase itself.
+
+    (mv (if flg1 1 0) nil nil))
+
+   (t
+    (let ((unusual-var-msg
+           (if (or (member-symbol-name (symbol-name (car args))
+                                       '(in on from to by as until when guard))
+                   (and (car args)
+                        (assoc-symbol-name-equal (car args) *loop$-keyword-info*)))
+               (msg ". The unusual variable name, ~x0, which is a reserved word ~
+                     in loop$ syntax, might indicate that you forgot to ~
+                     specify the iteration variable"
+                    (car args))
+               (msg ""))))
+      (cond
+       (flg1
+
+; We parsed a phrase but failed the termination check because we saw (car
+; args1) when we expected AS, UNTIL, WHEN, or a loop$ operator.
+
+; However, there is one special case: If the user typed (loop$ for i from 1 to
+; 10 bye 3 ...) flg1 is set and the iteration variable phrase was terminated by
+; BYE.  While the user might have meant something like (loop$ for i from 1 to
+; 10 collect 3) another possibility is that BYE should have been BY and the
+; iteration variable phrase wasn't actually terminated!  We check this here.
+; Note that if args is (& OF-TYPE & FROM ...) or (& FROM ...) then we're in this
+; case because flg1 is t so that part of the input parsed.
+
+        (mv 2
+            args1
+            (cond
+             ((case-match args
+                ((& (quote~ OF-TYPE) & (quote~ FROM) & (quote~ TO) & (quote~ BY)) t)
+                ((& (quote~ FROM) & (quote~ TO) & (quote~ BY)) t)
+                (& nil))
+              (msg "to read an expression after it, but the statement ends ~
+                    prematurely~@0"
+                   unusual-var-msg))
+             ((and (maybe-meant-but-didnt-write (car args1) 'BY)
+                   (case-match args
+                     ((& (quote~ OF-TYPE) & (quote~ FROM) . &) t)
+                     ((& (quote~ FROM) . &) t)
+                     (& nil)))
+              (msg "BY, AS, UNTIL, WHEN, or one of the loop$ operators ~*0~@1"
+                   (list "" "~x*" "~x* or " "~x*, "
+                         (collect-non-x nil (strip-cars *loop$-keyword-info*)))
+                   unusual-var-msg))
+             (t
+              (msg "AS, UNTIL, WHEN, or one of the loop$ operators ~*0~@1"
+                   (list "" "~x*" "~x* or " "~x*, "
+                         (collect-non-x nil (strip-cars *loop$-keyword-info*)))
+                   unusual-var-msg)))))
+       (t
+
+; We failed to parse the phrase.  Args1 is the same as args (and non-nil, so
+; there is at least an iteration variable) and we now have to discover where we
+; failed!  We start by looking at the token right after the variable, i.e., at
+; (nth 1 args), which should be an OF-TYPE, IN, OR, or FROM.  And then we just
+; keep working through the cases.  But at least we know there are enough tokens
+; to just look at each expected token with nth.
+
+        (cond
+         ((not
+           (or (symbol-name-equal (nth 1 args) "OF-TYPE")
+               (symbol-name-equal (nth 1 args) "IN")
+               (symbol-name-equal (nth 1 args) "ON")
+               (symbol-name-equal (nth 1 args) "FROM")))
+          (mv 3
+              (nthcdr 1 args)
+              (cond
+               ((maybe-meant-but-didnt-write (nth 1 args) 'OF-TYPE)
+                (msg "OF-TYPE, IN, ON, or FROM~@0"
+                     unusual-var-msg))
+               ((and (maybe-meant-but-didnt-write (nth 1 args) 'IN)
+                     (maybe-meant-but-didnt-write (nth 1 args) 'ON))
+                (msg "IN, ON, FROM, or OF-TYPE~@0"
+                     unusual-var-msg))
+               ((maybe-meant-but-didnt-write (nth 1 args) 'IN)
+                (msg "IN, ON, FROM, or OF-TYPE~@0"
+                     unusual-var-msg))
+               ((maybe-meant-but-didnt-write (nth 1 args) 'ON)
+                (msg "ON, IN, FROM, or OF-TYPE~@0"
+                     unusual-var-msg))
+               ((maybe-meant-but-didnt-write (nth 1 args) 'FROM)
+                (msg "FROM, IN, ON, or OF-TYPE~@0"
+                     unusual-var-msg))
+               (t (msg "OF-TYPE, IN, ON, or FROM~@0"
+                       unusual-var-msg)))))
+; Note:  If we get so far as confirming the presence of IN or ON or BY then the
+; only way the parse could have failed is that we ran out of tokens, which we've
+; already handled.  So we don't need to think about those three cases.
+         ((symbol-name-equal (nth 1 args) "FROM")
+
+; We could check (nth 3 args) and possibly (nth 5 args), looking for TO and possibly
+; BY.  But we know that TO is missing!  Why?  If TO is present then we would have
+; succeeded in parsing FROM/TO (since we didn't run out of tokens).
+
+          (mv 3
+              (nthcdr 3 args)
+              (msg "TO~@0"
+                   unusual-var-msg)))
+         ((and (symbol-name-equal (nth 1 args) "OF-TYPE")
+               (not
+                (or (symbol-name-equal (nth 3 args) "IN")
+                    (symbol-name-equal (nth 3 args) "ON")
+                    (symbol-name-equal (nth 3 args) "FROM"))))
+          (mv 3
+              (nthcdr 3 args)
+              (cond
+               ((and (maybe-meant-but-didnt-write (nth 3 args) 'IN)
+                     (maybe-meant-but-didnt-write (nth 3 args) 'ON))
+                (msg "IN, ON, or FROM~@0"
+                     unusual-var-msg))
+               ((maybe-meant-but-didnt-write (nth 3 args) 'IN)
+                (msg "IN, ON, or FROM~@0"
+                     unusual-var-msg))
+               ((maybe-meant-but-didnt-write (nth 3 args) 'ON)
+                (msg "ON, IN, or FROM~@0"
+                     unusual-var-msg))
+               ((maybe-meant-but-didnt-write (nth 3 args) 'FROM)
+                (msg "FROM, IN, or ON~@0"
+                     unusual-var-msg))
+               (t (msg "IN, ON, or FROM~@0"
+                       unusual-var-msg)))))
+         ((symbol-name-equal (nth 1 args) "FROM")
+          (mv 3 (nthcdr 3 args) (msg "TO~@0" unusual-var-msg)))
+         (t (mv 3
+                (nthcdr 1 args)
+                (msg "OF-TYPE, IN, OR, or FROM~0@"
+                     unusual-var-msg))))))))))
+
+(defun parse-loop$-vsts (stmt args vsts ans)
+
+; Stmt is a loop$ statement and args is some tail of it.  We try to parse a
+; sequence of vsts.  Vsts stands for ``vars, specs, and targets'' and here
+; we're looking for multiple occurrences of the variations on ``v OF-TYPE spec
+; IN/ON/FROM ...''  separated by ``AS''.  Each occurrence generates a ``vst
+; tuple,'' e.g., (v spec (IN lst)) and we collect them all in reverse order
+; into vsts.  When we have processed them all, we add the reverse of vsts to
+; ans and start parsing for an UNTIL clause.  If we find no vsts, we indicate
+; parse error.  The following case-match could be compacted but we prefer the
+; explicit exhibition of the allowed patterns.
+
+; Flg1 indicates whether we found a syntactically acceptable iteration var
+; clause.  But we can still fail here unless the next symbol is either AS,
+; UNTIL, WHEN, or a loop$ accumulator.  For example, if the user typed (loop$
+; for v from 1 to 10 bye 3 collect i) we succeed and treat the iteration var
+; clause as ``v from 1 to 10''.  But then the accumulator parse fails because
+; it sees BYE.  We want to blame that failure on the iteration var clause, not
+; any of the subsequent clauses.
+
+  (mv-let (flg1 args1 vsts1)
     (case-match args
       ((v (quote~ OF-TYPE) spec (quote~ IN) lst . rest)
-       (mv rest (cons `(,v ,spec (IN ,lst)) vsts)))
+       (mv t rest (cons `(,v ,spec (IN ,lst)) vsts)))
       ((v (quote~ OF-TYPE) spec (quote~ ON) lst . rest)
-       (mv rest (cons `(,v ,spec (ON ,lst)) vsts)))
-      ((v (quote~ OF-TYPE) spec (quote~ FROM) i (quote~ TO) j (quote~ BY) k . rest)
-       (mv rest (cons `(,v ,spec (FROM-TO-BY ,i ,j ,k)) vsts)))
+       (mv t rest (cons `(,v ,spec (ON ,lst)) vsts)))
+      ((v (quote~ OF-TYPE) spec (quote~ FROM) i (quote~ TO) j (quote~ BY) k
+          . rest)
+       (mv t rest (cons `(,v ,spec (FROM-TO-BY ,i ,j ,k)) vsts)))
       ((v (quote~ OF-TYPE) spec (quote~ FROM) i (quote~ TO) j . rest)
-       (mv rest (cons `(,v ,spec (FROM-TO-BY ,i ,j 1)) vsts)))
+       (mv t rest (cons `(,v ,spec (FROM-TO-BY ,i ,j 1)) vsts)))
       ((v (quote~ IN) lst . rest)
-       (mv rest (cons `(,v T (IN ,lst)) vsts)))
+       (mv t rest (cons `(,v T (IN ,lst)) vsts)))
       ((v (quote~ ON) lst . rest)
-       (mv rest (cons `(,v T (ON ,lst)) vsts)))
+       (mv t rest (cons `(,v T (ON ,lst)) vsts)))
       ((v (quote~ FROM) i (quote~ TO) j (quote~ BY) k . rest)
-       (mv rest (cons `(,v T (FROM-TO-BY ,i ,j ,k)) vsts)))
+       (mv t rest (cons `(,v T (FROM-TO-BY ,i ,j ,k)) vsts)))
       ((v (quote~ FROM) i (quote~ TO) j . rest)
-       (mv rest (cons `(,v T (FROM-TO-BY ,i ,j 1)) vsts)))
-      (& (mv args vsts)))
+       (mv t rest (cons `(,v T (FROM-TO-BY ,i ,j 1)) vsts)))
+      (& (mv nil args vsts)))
     (cond
-     ((null vsts) (mv t args))
-     ((and (consp args)
-           (symbol-name-equal (car args) "AS"))
-      (parse-loop$-vsts (cdr args) vsts ans))
-     (t (parse-loop$-until args (cons (revappend vsts nil) ans))))))
+     ((and flg1
+           (consp args1)
+           (car args1)
+           (symbolp (car args1))
+           (or (symbol-name-equal (car args1) "AS")
+               (symbol-name-equal (car args1) "UNTIL")
+               (symbol-name-equal (car args1) "WHEN")
+               (assoc-symbol-name-equal (car args1) *loop$-keyword-info*)))
+      (cond
+       ((and (consp args1)
+             (symbol-name-equal (car args1) "AS"))
+        (parse-loop$-vsts stmt (cdr args1) vsts1 ans))
+       (t (parse-loop$-until stmt args1 (cons (revappend vsts1 nil) ans)))))
+     (t (mv-let (failure-type tail expected-msg)
+          (parse-loop$-vsts-diagnose-failure flg1 args args1)
+          (cond ((or (eql failure-type 0)
+                     (eql failure-type 1))
+                 (mv (msg "Parsing stopped at position ~x0, where the loop$ ~
+                           statement ends prematurely.  No loop$ accumulator ~
+                           or body was provided."
+                          (length stmt))
+                     args))
+                (t (mv (msg "Parsing stopped at position ~x0, where we read ~
+                             ~x1 but expected ~@2."
+                            (- (length stmt) (length tail))
+                            (car tail)
+                            expected-msg)
+                       args))))))))
 
 (defun parse-loop$ (stmt)
 
@@ -12174,24 +12641,16 @@
               (eq (car stmt) 'LOOP$)
               (consp (cdr stmt))
               (symbol-name-equal (cadr stmt) "FOR"))
-         (mv-let (flg ans)
-           (parse-loop$-vsts (cddr stmt) nil nil)
-; When flg is T, ans is the unparsed part of the stmt.  Otherwise, ans is the reversed
-; parse and we reverse it before returning.
+         (mv-let (msg ans)
+           (parse-loop$-vsts stmt (cddr stmt) nil nil)
+; When msg is non-nil, it is an error message and ans is irrelevant.
+; Otherwise, ans is the reversed parse and we reverse it before returning.
            (cond
-            (flg (mv t
+            (msg (mv t
                      (msg
                       "Illegal LOOP$ Syntax.  The form ~X01 cannot be parsed ~
-                       as a LOOP$ statement.  The parsing failed when we ~
-                       reached ~#2~[the end of the~/the ~n3 element ~
-                       (zero-based), ~x4, ~] of the purported LOOP$ statement."
-                      stmt
-                      nil
-                      (if (null ans) 0 1)
-                      (if (null ans)
-                          0
-                          (list (- (length stmt) (length ans))))
-                      (if (null ans) 0 (car ans)))))
+                       as a LOOP$ statement.  ~@2"
+                      stmt nil msg)))
             (t (mv nil (revappend ans nil))))))
         (t (mv t
                (msg
@@ -12615,6 +13074,57 @@
 ; where the :guard clauses are optional and can only follow UNTIL, WHEN, and
 ; loop$ ops in *loop$-keyword-info*.  This function removes the :guard xxx
 ; entries.
+
+; Warning: It is critical that translate prohibit such forms as
+
+; (loop$ for v in lst UNTIL :guard collect v)
+; (loop$ for v in lst WHEN :guard collect v)
+; (loop$ for v in lst COLLECT :guard)
+
+; even though the corresponding CLTL loop statements are legal.  The reason we
+; must prohibit these is so that this function can easily strip out ... :guard
+; expr ... without changing the semantics of the CLTL loop.  If (loop$ for v in
+; lst COLLECT :guard) were allowed, then the raw Lisp loop$ macro would
+; transform it to (loop$ for v in lst COLLECT nil), which is incorrect.  For
+; what it's worth, the user wishing to write these prohibited loop$ statements
+; could merely use ':guard instead of :guard.
+
+; Note: This function is deceptively subtle because it doesn't re-parse args
+; (which is the tail of a successfully parsed loop$ statement).  It just finds
+; the left-most UNTIL, WHEN, and op followed by :GUARD and delete the :GUARD
+; and the next element!  But of course the user is free to choose arbitrary
+; legal variable names and those arbitrary symbols can appear where expressions
+; are expected.  E.g., this is a legal loop$
+
+; (loop$ for until in until until until collect until).
+
+; So can the user maliciously create an ``... until :guard x ...'' in a
+; well-formed loop$ without that subsequence actually being a guarded until
+; clause?  If so, this function would remove :guard and x, probably rendering
+; the statement ill-formed.
+
+; We think the answer is no.  Every freely chosen variable or expression MUST
+; be followed by a loop$ reserved word, e.g., ``for v IN lst AS ...''.  So no
+; maliciously inserted expression, UNTIL, can be followed by :GUARD,
+; ... except...  in our optional provision for :guards where two freely chosen
+; expressions in a row may occur, e.g., ... until :guard <expr1> <expr2> ...,
+; as in
+
+; (loop$ for v in lst until :guard UNTIL :GUARD collect v)  [1]
+
+; Here the UNTIL is the guard and :GUARD is the until-test.  This strange but
+; legal form is transformed by this function into
+
+; (loop$ for v in lst until :guard collect v)               [2]
+
+; But [2] is properly transformed because we just deleted the guard and left
+; the test.  So it's crucial (but almost natural) that this function sweep from
+; left-to-right.  If it found the ``UNTIL :GUARD collect'' first and removed
+; the ``:GUARD collect'' we'd be screwed:
+
+; (loop$ for v in lst until :guard UNTIL v)                [3]
+
+; [3] is ill-formed CLTL.
 
   (cond ((endp args) nil)
         ((and (symbolp (car args))

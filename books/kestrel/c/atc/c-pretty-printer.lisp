@@ -943,3 +943,29 @@
   :short "Pretty-print a translation units."
   (b* (((transunit tunit) tunit))
     (pprint-ext-decl-list tunit.decls)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define pprinted-lines-to-channel ((lines msg-listp) (channel symbolp) state)
+  :returns state
+  :mode :program
+  :short "Write pretty-printed lines to a channel."
+  (b* (((when (endp lines)) state)
+       ((mv & state)
+        (fmt1! "~@0" (list (cons #\0 (car lines))) 0 channel state nil)))
+    (pprinted-lines-to-channel (cdr lines) channel state)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defttag :open-output-channel!)
+
+(define pprinted-lines-to-file ((lines msg-listp) (filepath stringp) state)
+  :returns state
+  :mode :program
+  :short "Write pretty-printed lines to a file."
+  (b* (((mv channel state) (open-output-channel! filepath :character state))
+       (state (pprinted-lines-to-channel lines channel state))
+       (state (close-output-channel channel state)))
+    state))
+
+(defttag nil)

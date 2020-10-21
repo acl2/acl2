@@ -143,6 +143,12 @@
      a formalization of some aspects of the C language
      and ATC (`ACL2 To C'), a C code generator for ACL2.")
 
+   (xdoc::h5 (xdoc::seetopic "c::atc" "ATC"))
+
+   (xdoc::p
+    "A first simple working version of the C code generator has been added,
+     with user documentation and a working test.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "json::json" "JSON Library"))
@@ -259,7 +265,7 @@
      this transformation partially determines the solution
      and generates sub-specifications that, once recursively solve,
      provide a solution to the initial specification.
-     In partciular, divide-and-conquer algorithm schemas are supported:
+     In particular, divide-and-conquer algorithm schemas are supported:
      the schema is a recursive function that
      decompose the input,
      solve the sub-input(s),
@@ -545,6 +551,10 @@
 
    (xdoc::p
     "A fixtype @(tsee nat-set) of osets of natural numbers has been added.")
+
+   (xdoc::p
+    "@(tsee fty::deflist) has been extended to generate a theorem
+     about the list fixer applied to @(tsee repeat).")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -944,7 +954,12 @@
 
    (xdoc::p
     "See @(see rewrite$) for a flexible, convenient interface to the ACL2
-     rewriter that can be called programmatically.")
+     rewriter that can be called programmatically.  See @(see rewrite$-hyps)
+     for a related utility that rewrites a list of hypotheses.")
+
+   (xdoc::p
+    "See @(see open-trace-file!) for a variant of @(tsee open-trace-file)
+     suitable for use within @(tsee make-event).")
 
    ))
 

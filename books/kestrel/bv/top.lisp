@@ -11,6 +11,8 @@
 
 (in-package "ACL2")
 
+(include-book "bv-syntax")
+
 (include-book "bvchop-def")
 (include-book "bvchop")
 (include-book "unsigned-byte-p")
@@ -31,10 +33,13 @@
 (include-book "getbit")
 (include-book "slice-def")
 (include-book "slice")
+(include-book "slice2")
 (include-book "bvcat")
 (include-book "bvxor")
 (include-book "bitxor")
 (include-book "bvplus")
+(include-book "bvminus")
+(include-book "bvuminus")
 (include-book "defs-bitwise")
 (include-book "defs-shifts")
 (include-book "leftrotate")
@@ -42,3 +47,6 @@
 (include-book "ops32")
 (include-book "ops64")
 (include-book "putbits")
+
+(include-book "bvshl")
+(include-book "bvshr")

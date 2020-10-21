@@ -4541,10 +4541,13 @@
                        (not (ld-redefinition-action state)))
                   (er soft ctx
                       "Either the :check-expansion or :expansion? argument of ~
-                       make-event should be a consp in the present context.  ~
-                       Unless you called record-expansion explicitly, this is ~
-                       an ACL2 bug; please contact the ACL2 implementors.  ~
-                       Current form:~|~%~X01"
+                       make-event is normally a consp in the present context. ~
+                       ~ This is not surprising in some cases, for example, ~
+                       when including an uncertified book or calling ~x0 ~
+                       explicitly.  But other cases could be evidence of an ~
+                       ACL2 bug; consider contacting the ACL2 implementors.  ~
+                       Current form:~|~%~X12"
+                      'record-expansion
                       form
                       nil))
                  (t (value form))))
@@ -16136,6 +16139,9 @@
 
 (defun useless-runes-value (useless-runes-r/w useless-runes-r/w-p ctx state)
 
+; Useless-runes-r/w is the value given to certify-book option :useless-runes,
+; if any; useless-runes-r/w-p is true when that option is supplied, else nil.
+
 ; We return an error triple whose value is a pair (envp . val), where: envp is
 ; the value of environment variable ACL2_USELESS_RUNES if that is responsible
 ; for the value, val, else nil; and val is WRITE, nil, or a non-zero rational
@@ -16148,7 +16154,15 @@
 ; (We could allow 0 but that would mean the same as nil, which could perhaps
 ; lead to confusion somehow.)
 
-  (er-let* ((str (getenv! "ACL2_USELESS_RUNES" state)))
+  (er-let* ((str
+
+; If :useless-runes nil was supplied explicitly to certify-book, then ignore
+; the value of the indicated environment variable.  Otherwise the environment
+; variable takes priority over the value of :useless-runes.
+
+             (if (and useless-runes-r/w-p (null useless-runes-r/w))
+                 (value nil)
+               (getenv! "ACL2_USELESS_RUNES" state))))
     (cond
      ((and str
            (string-equal str "WRITE"))
