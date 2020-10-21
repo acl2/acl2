@@ -149,6 +149,7 @@
       "It must be one of the following:")
      (xdoc::ul
       (xdoc::li "@(':divconq-list-0-1')")
+      (xdoc::li "@(':divconq-list-0-1-2')")
       (xdoc::li "@(':divconq-oset-0-1')"))
      (xdoc::p
       "(More may be added in the future.)")
