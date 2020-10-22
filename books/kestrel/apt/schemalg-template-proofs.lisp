@@ -106,7 +106,7 @@
        (evmac-prepare-proofs)
        (gen-funvar :name ?g0 :arity ,(1+ m))
        (gen-funvar :name ?g1 :arity ,(+ 2 m))
-       (gen-funvar :name ?h :arity ,(+ 3 m))
+       (gen-funvar :name ?h :arity ,(+ 2 m))
        (gen-algo-divconq-list-0-1-2
         :z1... ,z1...
         :...zm ,@(list ...zm)

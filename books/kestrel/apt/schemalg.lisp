@@ -52,8 +52,6 @@
 
   (xdoc::evmac-topic-implementation-item-input "cdr-output" "schemalg")
 
-  (xdoc::evmac-topic-implementation-item-input "cddr-output" "schemalg")
-
   (xdoc::evmac-topic-implementation-item-input "tail-output" "schemalg")
 
   (xdoc::evmac-topic-implementation-item-input "fvar-0-name" "schemalg")
@@ -271,46 +269,6 @@
                 x-x1...xn
                 (msg "one of bound variables ~x0 of ~x1" x-x1...xn old)
                 "The :CDR-OUTPUT input"
-                t
-                nil)))
-    (value y)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define schemalg-process-cddr-output (cddr-output
-                                      (cddr-output? booleanp)
-                                      (schema keywordp)
-                                      (old symbolp)
-                                      (x-x1...xn symbol-listp)
-                                      ctx
-                                      state)
-  :returns (mv erp
-               (y symbolp
-                  :hints
-                  (("Goal"
-                    :in-theory
-                    (enable acl2::ensure-value-is-legal-variable-name))))
-               state)
-  :short "Process the @(':cddr-output') input."
-  (b* ((schemas-allowed (list :divconq-list-0-1-2))
-       ((when (and cddr-output?
-                   (not (member-eq schema schemas-allowed))))
-        (er-soft+ ctx t nil
-                  "The :CDDR-OUTPUT input can be present only if ~
-                   the :SCHEMA input is ~v0, but that input is ~x1 instead."
-                  schemas-allowed schema))
-       (y (if (eq cddr-output :auto)
-              (intern-in-package-of-symbol "CDDR-OUTPUT" old)
-            cddr-output))
-       ((er &) (ensure-value-is-legal-variable-name$ y
-                                                     "The :CDDR-OUTPUT input"
-                                                     t
-                                                     nil))
-       ((er &) (ensure-value-is-not-in-list$
-                y
-                x-x1...xn
-                (msg "one of bound variables ~x0 of ~x1" x-x1...xn old)
-                "The :CDDR-OUTPUT input"
                 t
                 nil)))
     (value y)))
@@ -537,8 +495,8 @@
 (define schemalg-process-divconq-list-0-1-2-inputs
   (list-input
    (list-input? booleanp)
-   cddr-output
-   (cddr-output? booleanp)
+   cdr-output
+   (cdr-output? booleanp)
    fvar-0-name
    fvar-1-name
    fvar-2-name
@@ -570,9 +528,9 @@
        ((er x) (schemalg-process-list-input list-input list-input?
                                             schema old ?f x-x1...xn x-a1...am
                                             ctx state))
-       ((er y) (schemalg-process-cddr-output cddr-output cddr-output?
-                                             schema old x-x1...xn
-                                             ctx state))
+       ((er y) (schemalg-process-cdr-output cdr-output cdr-output?
+                                            schema old x-x1...xn
+                                            ctx state))
        ((er (list ??g0 names-to-avoid))
         (schemalg-process-fvar-0-name fvar-0-name
                                       ?f names-to-avoid ctx state))
@@ -650,7 +608,6 @@
                                         list-input (list-input? booleanp)
                                         oset-input (oset-input? booleanp)
                                         cdr-output (cdr-output? booleanp)
-                                        cddr-output (cddr-output? booleanp)
                                         tail-output (tail-output? booleanp)
                                         fvar-0-name (fvar-0-name? booleanp)
                                         fvar-1-name (fvar-1-name? booleanp)
@@ -689,8 +646,7 @@
        ((er &) (schemalg-check-allowed-input oset-input?
                                              :divconq-oset-0-1))
        ((er &) (schemalg-check-allowed-input cdr-output?
-                                             :divconq-list-0-1))
-       ((er &) (schemalg-check-allowed-input cddr-output?
+                                             :divconq-list-0-1
                                              :divconq-list-0-1-2))
        ((er &) (schemalg-check-allowed-input tail-output?
                                              :divconq-oset-0-1))
@@ -760,8 +716,8 @@
        (b* (((er (list x y ??g0 ??g1 ??h spec-0 spec-1 spec-2 names-to-avoid))
              (schemalg-process-divconq-list-0-1-2-inputs list-input
                                                          list-input?
-                                                         cddr-output
-                                                         cddr-output?
+                                                         cdr-output
+                                                         cdr-output?
                                                          fvar-0-name
                                                          fvar-1-name
                                                          fvar-2-name
@@ -805,7 +761,6 @@
                                  list-input (list-input? booleanp)
                                  oset-input (oset-input? booleanp)
                                  cdr-output (cdr-output? booleanp)
-                                 cddr-output (cddr-output? booleanp)
                                  tail-output (tail-output? booleanp)
                                  fvar-0-name (fvar-0-name? booleanp)
                                  fvar-1-name (fvar-1-name? booleanp)
@@ -868,7 +823,6 @@
                                         list-input list-input?
                                         oset-input oset-input?
                                         cdr-output cdr-output?
-                                        cddr-output cddr-output?
                                         tail-output tail-output?
                                         fvar-0-name fvar-0-name?
                                         fvar-1-name fvar-1-name?
@@ -967,7 +921,7 @@
     (:divconq-list-0-1-2
      (list (evmac-generate-soft-defunvar ?g0 (len x-a1...am))
            (evmac-generate-soft-defunvar ?g1 (1+ (len x-a1...am)))
-           (evmac-generate-soft-defunvar ?h (+ 2 (len x-a1...am)))))
+           (evmac-generate-soft-defunvar ?h (1+ (len x-a1...am)))))
     (t (raise "Internal error: unknown schema ~x0." schema))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1092,20 +1046,19 @@
                                             (list (list 'car var)
                                                   (list 'cdr var))
                                           (list var))))
-       (car/cadr-x-z1...zm (loop$ for var of-type symbol in x-z1...zm
-                                  append (if (eq var x)
-                                             (list (list 'car var)
-                                                   (list 'cadr var))
-                                           (list var))))
-       (cddr-x-z1...zm (loop$ for var of-type symbol in x-z1...zm
-                              collect (if (eq var x) (list 'cddr var) var))))
+       (car-x-z1...zm (loop$ for var of-type symbol in x-z1...zm
+                             collect (if (eq var x)
+                                        (list 'car var)
+                                       var)))
+       (cdr-x-z1...zm (loop$ for var of-type symbol in x-z1...zm
+                             collect (if (eq var x) (list 'cdr var) var))))
     (evmac-generate-soft-defun2
      algo
      :formals x-z1...zm
      :body `(cond ((atom ,x) (,?g0 ,@x-z1...zm))
                   ((atom (cdr ,x)) (,?g1 ,@car/cdr-x-z1...zm))
-                  (t (,?h ,@car/cadr-x-z1...zm
-                          (,algo ,@cddr-x-z1...zm))))
+                  (t (,?h ,@car-x-z1...zm
+                          (,algo ,@cdr-x-z1...zm))))
      :verify-guards verify-guards
      :enable algo-enable
      :measure `(acl2-count ,x)
@@ -1518,17 +1471,16 @@
      (prog2$ (raise "Internal error: schema is ~x0." schema)
              (mv '(irrelevant) '(irrelevant))))
     (:divconq-list-0-1-2
-     (b* ((cddr-x-x1...xn (loop$ for var in x-x1...xn
-                                 collect (if (eq var x)
-                                             (list 'cddr var)
-                                           var)))
-          (car/cadr-x-a1...am (loop$ for term in x-a1...am
-                                     append (if (eq term x)
-                                                (list (list 'car term)
-                                                      (list 'cadr term))
-                                              term)))
-          (iorel-term1 (apply-term iorel (append cddr-x-x1...xn (list y))))
-          (??h-call `(,?h ,@car/cadr-x-a1...am ,y))
+     (b* ((cdr-x-x1...xn (loop$ for var in x-x1...xn
+                                collect (if (eq var x)
+                                            (list 'cdr var)
+                                          var)))
+          (car-x-a1...am (loop$ for term in x-a1...am
+                                collect (if (eq term x)
+                                           (list 'car term)
+                                         term)))
+          (iorel-term1 (apply-term iorel (append cdr-x-x1...xn (list y))))
+          (??h-call `(,?h ,@car-x-a1...am ,y))
           (iorel-term2 (apply-term iorel (append x-x1...xn (list ?h-call)))))
        (evmac-generate-soft-defun-sk2
         spec-2
@@ -1684,17 +1636,17 @@
        (spec-0-necc (add-suffix spec-0 "-NECC"))
        (spec-1-necc (add-suffix spec-1 "-NECC"))
        (spec-2-necc (add-suffix spec-2 "-NECC"))
-       (cddr-x-a1...am (loop$ for term in x-a1...am
-                              collect (if (eq term x)
-                                          (list 'cddr term)
-                                        term)))
+       (cdr-x-a1...am (loop$ for term in x-a1...am
+                             collect (if (eq term x)
+                                         (list 'cdr term)
+                                       term)))
        (hints `(("Goal"
                  :in-theory '(,algo)
                  :induct (,algo ,@x-a1...am))
                 '(:use (,spec-0-necc
                         ,spec-1-necc
                         (:instance ,spec-2-necc
-                         (,y (,algo ,@cddr-x-a1...am)))))))
+                         (,y (,algo ,@cdr-x-a1...am)))))))
        (event
         `(local
           (defthm ,name
@@ -1998,7 +1950,6 @@
                      list-input (list-input? booleanp)
                      oset-input (oset-input? booleanp)
                      cdr-output (cdr-output? booleanp)
-                     cddr-output (cddr-output? booleanp)
                      tail-output (tail-output? booleanp)
                      fvar-0-name (fvar-0-name? booleanp)
                      fvar-1-name (fvar-1-name? booleanp)
@@ -2061,7 +2012,6 @@
                                  list-input list-input?
                                  oset-input oset-input?
                                  cdr-output cdr-output?
-                                 cddr-output cddr-output?
                                  tail-output tail-output?
                                  fvar-0-name fvar-0-name?
                                  fvar-1-name fvar-1-name?
@@ -2137,7 +2087,6 @@
                       (list-input ':auto list-input?)
                       (oset-input ':auto oset-input?)
                       (cdr-output ':auto cdr-output?)
-                      (cddr-output ':auto cddr-output?)
                       (tail-output ':auto tail-output?)
                       (fvar-0-name ':auto fvar-0-name?)
                       (fvar-1-name ':auto fvar-1-name?)
@@ -2164,7 +2113,6 @@
                                     ',list-input ',list-input?
                                     ',oset-input ',oset-input?
                                     ',cdr-output ',cdr-output?
-                                    ',cddr-output ',cddr-output?
                                     ',tail-output ',tail-output?
                                     ',fvar-0-name ',fvar-0-name?
                                     ',fvar-1-name ',fvar-1-name?
