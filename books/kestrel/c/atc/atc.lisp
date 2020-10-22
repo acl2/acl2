@@ -65,36 +65,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-check-symbol-name ((sym symbolp) (desc msgp) ctx state)
-  :returns (mv erp (nothing null) state)
-  :short "Check whether the name of a symbol is a portable ASCII C identifier."
-  (b* ((name (symbol-name sym)))
-    (if (atc-ident-stringp name)
-        (value nil)
-      (er-soft+ ctx t nil
-                "The name ~s0 of ~@1 must be ~
-                 a portable ASCII C identifier (see :DOC ATC), ~
-                 but it is not."
-                name desc))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-check-formals ((formals symbol-listp) (fn symbolp) ctx state)
-  :returns (mv erp (nothing null) state)
-  :short "Check whether the symbol names of the formal parameters of a function
-          are portable ASCII C identifiers."
-  (b*  (((when (endp formals)) (value nil))
-        (formal (car formals))
-        ((er &) (atc-check-symbol-name
-                 formal
-                 (msg "The formal parameter ~x0 of the function ~x1" formal fn)
-                 ctx
-                 state)))
-    (atc-check-formals (cdr formals) fn ctx state))
-  :prepwork ((local (in-theory (enable atc-check-symbol-name)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define atc-check-guard ((formals symbol-listp)
                          (fn symbolp)
                          (guard pseudo-termp)
@@ -128,20 +98,7 @@
        ((er &) (acl2::ensure-function-logic-mode$ fn desc t nil))
        ((er &) (acl2::ensure-function-guard-verified$ fn desc t nil))
        ((er &) (acl2::ensure-function-defined$ fn desc t nil))
-       ((er &) (atc-check-symbol-name
-                fn
-                (msg "The symbol name of the function ~x0" fn)
-                ctx
-                state))
        (formals (acl2::formals+ fn wrld))
-       (names (symbol-name-lst formals))
-       ((er &) (acl2::ensure-list-no-duplicates$
-                names
-                (msg "The list ~x0 of symbol names of ~
-                      the formal parameters of the function ~x1"
-                     names fn)
-                t
-                nil))
        (guard (acl2::uguard+ fn wrld))
        (guard-conjuncts (atc-flatten-conjuncts guard))
        ((er &) (atc-check-guard formals fn guard guard-conjuncts ctx state)))
@@ -169,15 +126,7 @@
   (b* (((er &) (atc-process-function-list fn1...fnp ctx state))
        ((unless (consp fn1...fnp))
         (er-soft+ ctx t nil
-                  "At least one target function must be supplied."))
-       (names (symbol-name-lst fn1...fnp))
-       ((er &) (acl2::ensure-list-no-duplicates$
-                names
-                (msg "The list ~x0 of symbol names of ~
-                      the target functions ~x1"
-                     names fn1...fnp)
-                t
-                nil)))
+                  "At least one target function must be supplied.")))
     (value nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -412,10 +361,9 @@
   (b* ((name (symbol-name formal))
        ((unless (atc-ident-stringp name))
         (er-soft+ ctx t (irr-param-decl)
-                  "The name ~s0 of the formal parameter ~x1 ~
-                   of the function ~x2 ~
-                   must be a portable ASCII C identifier (see :DOC ATC), ~
-                   but it is not."
+                  "The symbol name ~s0 of ~
+                   the formal parameter ~x1 of the function ~x2 ~
+                   must be a portable ASCII C identifier, but it is not."
                   name formal fn)))
     (value (make-param-decl :name (ident name)
                             :type (tyspecseq-sint)))))
@@ -427,9 +375,19 @@
   :short "Generate a list of C parameter declarations
           from a list of ACL2 formal parameters."
   (b* (((when (endp formals)) (value nil))
-       ((mv erp param state) (atc-gen-param-decl (car formals) fn ctx state))
+       ((cons formal rest-formals) formals)
+       ((mv erp param state) (atc-gen-param-decl formal fn ctx state))
+       (dup? (member-eq formal rest-formals))
+       ((when dup?)
+        (er-soft+ ctx t nil
+                  "The formal parameters of the ~x0 function ~
+                   must have distinct symbol names ~
+                   (i.e. they may not differ only in the package names), ~
+                   but the formal parameters ~x1 and ~x2 ~
+                   have the same symbol name."
+                  fn formal (car dup?)))
        ((when erp) (mv erp nil state))
-       ((er params) (atc-gen-param-decl-list (cdr formals) fn ctx state)))
+       ((er params) (atc-gen-param-decl-list rest-formals fn ctx state)))
     (value (cons param params))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -438,7 +396,13 @@
   :returns (mv erp (ext ext-declp) state)
   :short "Generate a C external declaration (a function definition)
           from an ACL2 function."
-  (b* ((wrld (w state))
+  (b* ((name (symbol-name fn))
+       ((unless (atc-ident-stringp name))
+        (er-soft+ ctx t (irr-ext-decl)
+                  "The symbol name ~s0 of the function ~x1 ~
+                   must be a portable ASCII C identifier, but it is not."
+                  name fn))
+       (wrld (w state))
        (body (acl2::ubody+ fn wrld))
        ((mv erp expr state) (atc-gen-expr body fn ctx state))
        ((when erp) (mv erp (irr-ext-decl) state))
@@ -450,7 +414,7 @@
     (value
      (ext-decl-fundef
       (make-fundef :result (tyspecseq-sint)
-                   :name (ident (symbol-name fn))
+                   :name (ident name)
                    :params params
                    :body (stmt-compound
                           (list (block-item-stmt (stmt-return expr)))))))))
@@ -461,9 +425,18 @@
   :returns (mv erp (exts ext-decl-listp) state)
   :short "Lift @(tsee atc-gen-ext-decl) to lists."
   (b* (((when (endp fns)) (value nil))
-       ((mv erp ext state) (atc-gen-ext-decl (car fns) ctx state))
+       ((cons fn rest-fns) fns)
+       ((mv erp ext state) (atc-gen-ext-decl fn ctx state))
+       (dup? (member-eq fn rest-fns))
+       ((when dup?)
+        (er-soft+ ctx t nil
+                  "The target functions must have distinct symbol names ~
+                   (i.e. they may not differ only in the package names), ~
+                   but the functions ~x0 and ~x1 ~
+                   have the same symbol name."
+                  fn (car dup?)))
        ((when erp) (mv erp nil state))
-       ((er exts) (atc-gen-ext-decl-list (cdr fns) ctx state)))
+       ((er exts) (atc-gen-ext-decl-list rest-fns ctx state)))
     (value (cons ext exts))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
