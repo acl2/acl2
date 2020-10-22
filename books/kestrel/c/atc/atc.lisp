@@ -12,6 +12,7 @@
 
 (include-book "c-abstract-syntax")
 (include-book "c-pretty-printer" :ttags ((:open-output-channel!)))
+(include-book "c-static-semantics")
 (include-book "c-integers")
 (include-book "portable-ascii-identifiers")
 
@@ -43,10 +44,13 @@
 
   (xdoc::evmac-topic-implementation-item-input "const-name" "atc")
 
+  (xdoc::evmac-topic-implementation-item-input "thm-name" "atc")
+
   (xdoc::evmac-topic-implementation-item-input "output-file" "atc")
 
-  "@('const') is the name of the generated named constant
-   whose name is specified by @('const-name')."))
+  "@('const') is the symbol specified by @('const-name')."
+
+  "@('thm') is the symbol specified by @('thm-name')."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -109,6 +113,30 @@
                       specified by the :CONST-NAME input"
                      name)
                 'const
+                nil
+                t
+                nil)))
+    (value name)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-process-thm-name (thm-name (const symbolp) ctx state)
+  :returns (mv erp (thm "A @(tsee symbolp).") state)
+  :mode :program
+  :short "Process the @(':thm-name') input."
+  (b* (((er &) (acl2::ensure-value-is-symbol$ thm-name
+                                              "The :THM-NAME input"
+                                              t
+                                              nil))
+       (name (if (eq thm-name :auto)
+                 (add-suffix const "-THEOREM")
+               thm-name))
+       ((er &) (acl2::ensure-symbol-is-fresh-event-name$
+                name
+                (msg "The thmant name ~x0 ~
+                      specified by the :THM-NAME input"
+                     name)
+                'thm
                 nil
                 t
                 nil)))
@@ -188,6 +216,7 @@
 (defval *atc-allowed-options*
   :short "Keyword options accepted by @(tsee atc)."
   (list :const-name
+        :thm-name
         :output-file
         :verbose)
   ///
@@ -200,6 +229,7 @@
   :returns (mv erp
                (result "A @('(tuple (fn1...fnp symbol-listp)
                                     (const symbolp)
+                                    (thm symbolp)
                                     (output-file stringp)
                                     (verbose booleanp))').")
                state)
@@ -216,6 +246,10 @@
        (const-name (if const-name-option
                        (cdr const-name-option)
                      :auto))
+       (thm-name-option (assoc-eq :thm-name options))
+       (thm-name (if thm-name-option
+                     (cdr thm-name-option)
+                   :auto))
        (output-file-option (assoc-eq :output-file options))
        ((mv output-file output-file?)
         (if output-file-option
@@ -224,6 +258,7 @@
        (verbose (cdr (assoc-eq :verbose options)))
        ((er &) (atc-process-fn1...fnp fn1...fnp ctx state))
        ((er const) (atc-process-const-name const-name ctx state))
+       ((er thm) (atc-process-thm-name thm-name const ctx state))
        ((er &) (atc-process-output-file output-file
                                         output-file?
                                         ctx
@@ -234,6 +269,7 @@
                                                nil)))
     (value (list fn1...fnp
                  const
+                 thm
                  output-file
                  verbose))))
 
@@ -486,6 +522,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-gen-thm ((thm symbolp) (const symbolp))
+  :returns (event acl2::pseudo-event-formp)
+  :short "Generate the theorem asserting the properties
+          of the generated C code (referenced as the named constant)."
+  `(defthmd ,thm
+     (transunit-wfp ,const)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-gen-file ((tunit transunitp) (output-file stringp) state)
   :returns state
   :mode :program
@@ -504,14 +549,17 @@
   :parents (atc-implementation)
   :short "Process the inputs and
           generate the constant definition and the C file."
-  (b* (((er (list fn1...fnp const output-file ?verbose))
+  (b* (((er (list fn1...fnp const thm output-file ?verbose))
         (atc-process-inputs args ctx state))
        ((er tunit) (atc-gen-transunit fn1...fnp ctx state))
        (const-event (atc-gen-const const tunit))
        (- (cw "~%Generated named constant:~% ~x0~%" const))
+       (thm-event (atc-gen-thm thm const))
+       (- (cw "~%Generated theorem:~% ~x0~%" thm))
        (state (atc-gen-file tunit output-file state))
        (- (cw "~%Generated C file:~% ~x0~%" output-file)))
     (value `(progn ,const-event
+                   ,thm-event
                    (value-triple :invisible)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

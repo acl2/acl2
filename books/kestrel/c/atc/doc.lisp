@@ -89,6 +89,7 @@
     (xdoc::codeblock
      "(atc fn1 ... fn"
      "     :const-name  ...  ; default :auto"
+     "     :thm-name    ...  ; default :auto"
      "     :output-file ...  ; no default"
      "     :verbose     ...  ; default nil"
      "  )"))
@@ -162,13 +163,32 @@
        (the package names are ignored for this purpose)."))
 
     (xdoc::desc
-     "@(':const-name') &mdash; default @(':auto)"
+     "@(':const-name') &mdash; default @(':auto')"
      (xdoc::p
       "Name of the generated ACL2 named constant
-       that holds the abstract syntax tree of the generated C program.
-       If this is @(':auto'), the name of the constant is @('c::*program').")
+       that holds the abstract syntax tree of the generated C program.")
      (xdoc::p
-      "See the `" xdoc::*evmac-section-generated-title* "' section below."))
+      "This must be one of the following:")
+     (xdoc::ul
+      (xdoc::li
+       "@(':auto'), to use the symbol @('*program*')
+        in the @('\"C\"') package.")
+      (xdoc::li
+       "Any other symbol, to use as the name of the constant.")))
+
+    (xdoc::desc
+     "@(':thm-name') &mdash; default @(':auto')"
+     (xdoc::p
+      "Name of the generated ACL2 theorem
+       that proves properties of the generated C program.")
+     (xdoc::p
+      "It must be one of the following:")
+     (xdoc::ul
+      (xdoc::li
+       "@(':auto'), to use the symbol determined by the @(':const-name') input
+        followed by @('-theorem').")
+      (xdoc::li
+       "Any other symbol, to use as the name of the theorem.")))
 
     (xdoc::desc
      "@(':output-file') &mdash; no default"
@@ -255,16 +275,36 @@
 
    (xdoc::evmac-section-generated
 
-    (xdoc::p
-     "ATC generates an event")
-    (xdoc::codeblock
-     "(defconst <name> ...)")
-    (xdoc::p
-     "where @('<name>') is specified by the @(':const-name') input
-      and @('...') is the abstract syntax tree of
-      the generated C translation unit,
-      which ATC also pretty-prints and
-      writes to the file specified by the @(':output-file') input."))
+    (xdoc::evmac-subsection
+     "Constant"
+
+     (xdoc::p
+      "ATC generates an event")
+     (xdoc::codeblock
+      "(defconst <name> ...)")
+     (xdoc::p
+      "where @('<name>') is specified by the @(':const-name') input
+       and @('...') is the abstract syntax tree of
+       the generated C translation unit,
+       which ATC also pretty-prints and
+       writes to the file specified by the @(':output-file') input."))
+
+    (xdoc::evmac-subsection
+     "Theorem"
+
+     (xdoc::p
+      "ATC generates an event")
+     (xdoc::codeblock
+      "(defthm <name> ...)")
+     (xdoc::p
+      "where @('<name>') is specified by the @(':thm-name') input
+       and @('...') is a theorem about the named constant described above,
+       i.e. about the generated (abstract syntax tree of the) C program.
+       Currently, the theorem states that the program is statically well-formed,
+       i.e. it compiles according to the C18 standard.
+       We plan to extend the theorem to state
+       the C program's functional correctness
+       with respect to the ACL2 code from which it is generated.")))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
