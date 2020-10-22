@@ -88,8 +88,8 @@
 
     (xdoc::codeblock
      "(atc fn1 ... fn"
-     "     :output-file ..."
-     "     :verbose     ..."
+     "     :output-file ...  ; no default"
+     "     :verbose     ...  ; default nil"
      "  )"))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
