@@ -134,7 +134,6 @@
                 ctx
                 state))
        (formals (acl2::formals+ fn wrld))
-       ((er &) (atc-check-formals formals fn ctx state))
        (names (symbol-name-lst formals))
        ((er &) (acl2::ensure-list-no-duplicates$
                 names
