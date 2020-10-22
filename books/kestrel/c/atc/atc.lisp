@@ -20,28 +20,10 @@
 (include-book "kestrel/error-checking/ensure-value-is-string" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
+(include-book "kestrel/std/system/flatten-conjuncts" :dir :system)
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
 (include-book "oslib/dirname" :dir :system)
 (include-book "oslib/file-types" :dir :system)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; library extensions
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(include-book "kestrel/std/system/check-and-call" :dir :system)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-flatten-conjuncts ((term pseudo-termp))
-  :returns (conjuncts pseudo-term-listp :hyp :guard)
-  :short "View a term as an @(tsee and) tree and return its leaves."
-  (b* (((mv andp left right) (check-and-call term))
-       ((when (not andp)) (list term))
-       (left-conjuncts (atc-flatten-conjuncts left))
-       (right-conjuncts (atc-flatten-conjuncts right)))
-    (append left-conjuncts right-conjuncts)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -436,7 +418,7 @@
        (wrld (w state))
        (formals (acl2::formals+ fn wrld))
        (guard (acl2::uguard+ fn wrld))
-       (guard-conjuncts (atc-flatten-conjuncts guard))
+       (guard-conjuncts (flatten-conjuncts guard))
        ((mv erp & state) (atc-check-guard formals
                                           fn
                                           guard

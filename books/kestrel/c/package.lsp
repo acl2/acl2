@@ -20,9 +20,9 @@
                                   error
                                   pprint-indent))
              '(bool
-               check-and-call
                defxdoc+
                er-soft+
+               flatten-conjuncts
                implode
                lnfix
                msg-listp
