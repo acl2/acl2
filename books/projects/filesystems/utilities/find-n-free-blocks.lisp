@@ -2,7 +2,7 @@
 
 ;  find-n-free-blocks.lisp                     Mihir Mehta
 
-(local (include-book "file-system-lemmas"))
+(local (include-book "../file-system-lemmas"))
 (include-book "bounded-nat-listp")
 
 (defthm mv-nth-replacement
