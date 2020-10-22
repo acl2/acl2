@@ -88,7 +88,7 @@
 
     (xdoc::codeblock
      "(atc fn1 ... fn"
-     "     :const-name  ...  ; default c::*program*"
+     "     :const-name  ...  ; default :auto"
      "     :output-file ...  ; no default"
      "     :verbose     ...  ; default nil"
      "  )"))
@@ -162,10 +162,11 @@
        (the package names are ignored for this purpose)."))
 
     (xdoc::desc
-     "@(':const-name') &mdash; default @('c::*program*')"
+     "@(':const-name') &mdash; default @(':auto)"
      (xdoc::p
       "Name of the generated ACL2 named constant
-       that holds the abstract syntax tree of the generated C program.")
+       that holds the abstract syntax tree of the generated C program.
+       If this is @(':auto'), the name of the constant is @('c::*program').")
      (xdoc::p
       "See the `" xdoc::*evmac-section-generated-title* "' section below."))
 

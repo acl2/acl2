@@ -100,7 +100,9 @@
                                               "The :CONST-NAME input"
                                               t
                                               nil))
-       (name (or const-name 'c::*program*))
+       (name (if (eq const-name :auto)
+                 'c::*program*
+               const-name))
        ((er &) (acl2::ensure-symbol-is-fresh-event-name$
                 name
                 (msg "The constant name ~x0 ~
@@ -210,7 +212,10 @@
                               one or more target functions ~
                               followed by the options ~&0."
                              *atc-allowed-options*))
-       (const-name (cdr (assoc-eq :const-name options)))
+       (const-name-option (assoc-eq :const-name options))
+       (const-name (if const-name-option
+                       (cdr const-name-option)
+                     :auto))
        (output-file-option (assoc-eq :output-file options))
        ((mv output-file output-file?)
         (if output-file-option
