@@ -2601,6 +2601,7 @@
         (& (mv nil nil nil nil nil nil)))))))
 
 (defun flatten-ands-in-lit (term)
+  (declare (xargs :guard (pseudo-termp term)))
   (case-match term
               (('if t1 t2 t3)
                (cond ((equal t2 *nil*)
@@ -12390,7 +12391,7 @@
 ; failure-type tail expected-msg), where failure-type is
 
 ; 0 -- args is too short to parse as a phrase
-; 1 -- args parsed but the loop$ statement ended before we got to the 
+; 1 -- args parsed but the loop$ statement ended before we got to the
 ;      terminator token (AS, UNTIL, WHEN, or a loop$ operator)
 ; 2 -- args parsed but is terminated by something other than AS, UNTIL,
 ;      WHEN, or a loop$ operator,
