@@ -15,8 +15,10 @@
 (include-book "c-integers")
 (include-book "portable-ascii-identifiers")
 
+(include-book "kestrel/error-checking/ensure-symbol-is-fresh-event-name" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-boolean" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-string" :dir :system)
+(include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
 (include-book "oslib/dirname" :dir :system)
@@ -57,7 +59,12 @@
 
   "@('fn1...fnp') is the list @('(fn1 ... fnp)') of inputs to @(tsee atc)."
 
-  (xdoc::evmac-topic-implementation-item-input "output-file" "atc")))
+  (xdoc::evmac-topic-implementation-item-input "constant-name" "atc")
+
+  (xdoc::evmac-topic-implementation-item-input "output-file" "atc")
+
+  "@('program-const') is the name of the generated named constant
+   whose name is specified by @('constant-name')."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -100,6 +107,28 @@
         (er-soft+ ctx t nil
                   "At least one target function must be supplied.")))
     (value nil)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-process-constant-name (constant-name ctx state)
+  :returns (mv erp (program-const "A @(tsee symbolp).") state)
+  :mode :program
+  :short "Process the @(':constant-name') input."
+  (b* (((er &) (acl2::ensure-value-is-symbol$ constant-name
+                                              "The :CONSTANT-NAME input"
+                                              t
+                                              nil))
+       (name (or constant-name 'c::*program*))
+       ((er &) (acl2::ensure-symbol-is-fresh-event-name$
+                name
+                (msg "The constant name ~x0 ~
+                      specified by the :CONSTANT-NAME input"
+                     name)
+                'const
+                nil
+                t
+                nil)))
+    (value name)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -174,7 +203,8 @@
 
 (defval *atc-allowed-options*
   :short "Keyword options accepted by @(tsee atc)."
-  (list :output-file
+  (list :constant-name
+        :output-file
         :verbose)
   ///
   (assert-event (symbol-listp *atc-allowed-options*))
@@ -185,6 +215,7 @@
 (define atc-process-inputs ((args true-listp) ctx state)
   :returns (mv erp
                (result "A @('(tuple (fn1...fnp symbol-listp)
+                                    (program-const symbolp)
                                     (output-file stringp)
                                     (verbose booleanp))').")
                state)
@@ -197,6 +228,7 @@
                               one or more target functions ~
                               followed by the options ~&0."
                              *atc-allowed-options*))
+       (constant-name (cdr (assoc-eq :constant-name options)))
        (output-file-option (assoc-eq :output-file options))
        ((mv output-file output-file?)
         (if output-file-option
@@ -204,6 +236,7 @@
           (mv :irrelevant nil)))
        (verbose (cdr (assoc-eq :verbose options)))
        ((er &) (atc-process-fn1...fnp fn1...fnp ctx state))
+       ((er program-const) (atc-process-constant-name constant-name ctx state))
        ((er &) (atc-process-output-file output-file
                                         output-file?
                                         ctx
@@ -213,18 +246,21 @@
                                                t
                                                nil)))
     (value (list fn1...fnp
+                 program-const
                  output-file
                  verbose))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ atc-code-generation
+(defxdoc+ atc-event-and-code-generation
   :parents (atc-implementation)
-  :short "Code generation performed by @(tsee atc)."
+  :short "Event generation and code generation performed by @(tsee atc)."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We generate C abstract syntax, which we pretty-print to a file.")
+    "We generate C abstract syntax,
+     which we pretty-print to a file
+     and also assign to a named constant..")
    (xdoc::p
     "Given the restrictions on the target functions,
      the translation is straightforward -- intentionally so."))
@@ -455,14 +491,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-file ((fn1...fnp symbol-listp) (output-file stringp) ctx state)
-  :returns (mv erp (nothing "Always @('nil').") state)
+(define atc-gen-program-const ((program-const symbolp) (tunit transunitp))
+  :returns (event acl2::pseudo-event-formp)
+  :short "Generate the named constant for the abstract syntax tree
+          of the generated C code (i.e. translation unit)."
+  `(defconst ,program-const ',tunit))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-gen-file ((tunit transunitp) (output-file stringp) state)
+  :returns state
   :mode :program
-  :short "Generate the C file from the ACL2 target functions."
-  (b* (((er tunit) (atc-gen-transunit fn1...fnp ctx state))
-       (lines (pprint-transunit tunit))
-       (state (pprinted-lines-to-file lines output-file state)))
-    (mv nil nil state)))
+  :short "Pretty-print the generated C code (i.e. translation unit)
+          to the output file."
+  (b* ((lines (pprint-transunit tunit)))
+    (pprinted-lines-to-file lines output-file state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -472,21 +515,17 @@
                state)
   :mode :program
   :parents (atc-implementation)
-  :short "Process the inputs and generate the C file."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Since the result of this function is passed to @(tsee make-event),
-     this function must return an event form.
-     By returning @('(value-triple :invisible)'),
-     no return value is printed on the screen.
-     A message of successful completion is printed,
-     regardless of @(':verbose')."))
-  (b* (((er (list fn1...fnp output-file ?verbose))
+  :short "Process the inputs and
+          generate the constant definition and the C file."
+  (b* (((er (list fn1...fnp program-const output-file ?verbose))
         (atc-process-inputs args ctx state))
-       ((er &) (atc-gen-file fn1...fnp output-file ctx state))
+       ((er tunit) (atc-gen-transunit fn1...fnp ctx state))
+       (const-event (atc-gen-program-const program-const tunit))
+       (- (cw "~%Generated named constant:~% ~x0~%" program-const))
+       (state (atc-gen-file tunit output-file state))
        (- (cw "~%Generated C file:~% ~x0~%" output-file)))
-    (value '(value-triple :invisible))))
+    (value `(progn ,const-event
+                   (value-triple :invisible)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

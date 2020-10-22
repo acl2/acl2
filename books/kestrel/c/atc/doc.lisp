@@ -88,8 +88,9 @@
 
     (xdoc::codeblock
      "(atc fn1 ... fn"
-     "     :output-file ...  ; no default"
-     "     :verbose     ...  ; default nil"
+     "     :constant-name ...  ; default c::*program*"
+     "     :output-file   ...  ; no default"
+     "     :verbose       ...  ; default nil"
      "  )"))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -159,6 +160,14 @@
        Even if they are in different packages,
        they must have distinct symbol names
        (the package names are ignored for this purpose)."))
+
+    (xdoc::desc
+     "@(':constant-name') &mdash; default @('c::*program*')"
+     (xdoc::p
+      "Name of the generated ACL2 named constant
+       that holds the abstract syntax tree of the generated C program.")
+     (xdoc::p
+      "See the `" xdoc::*evmac-section-generated-title* "' section below."))
 
     (xdoc::desc
      "@(':output-file') &mdash; no default"
@@ -240,6 +249,21 @@
     (xdoc::p
      "Thus, portable ASCII C identifiers consists of only 1 and 2 above,
       excluding 3 (non-ASCII) and 4 (non-portable).")))
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::evmac-section-generated
+
+    (xdoc::p
+     "ATC generates an event")
+    (xdoc::codeblock
+     "(defconst <name> ...)")
+    (xdoc::p
+     "where @('<name>') is specified by the @(':constant-name') input
+      and @('...') is the abstract syntax tree of
+      the generated C translation unit,
+      which ATC also pretty-prints and
+      writes to the file specified by the @(':output-file') input."))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
