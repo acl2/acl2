@@ -226,30 +226,55 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define stmt-wfp ((s stmtp) (env static-envp))
+(defines stmt-wfp-fns
   :short "Check if a statement is well-formed."
   :long
   (xdoc::topstring
    (xdoc::p
     "For now we only allow
-     @('return') statements with (well-formed) expressions."))
-  (stmt-case s
-             :labeled nil
-             :compound nil
-             :expr nil
-             :null nil
-             :if nil
-             :ifelse nil
-             :switch nil
-             :while nil
-             :dowhile nil
-             :for nil
-             :goto nil
-             :continue nil
-             :break nil
-             :return (and s.value
-                          (expr-wfp s.value env)))
-  :hooks (:fix))
+     @('return') statements with (well-formed) expressions,
+     and compound statements of allowed statements (no declarations)."))
+
+  (define stmt-wfp ((s stmtp) (env static-envp))
+    :returns (yes/no booleanp)
+    :parents nil
+    (stmt-case s
+               :labeled nil
+               :compound (block-item-list-wfp s.items env)
+               :expr nil
+               :null nil
+               :if nil
+               :ifelse nil
+               :switch nil
+               :while nil
+               :dowhile nil
+               :for nil
+               :goto nil
+               :continue nil
+               :break nil
+               :return (and s.value
+                            (expr-wfp s.value env)))
+    :measure (stmt-count s))
+
+  (define block-item-wfp ((item block-itemp) (env static-envp))
+    :returns (yes/no booleanp)
+    :parents nil
+    (block-item-case item
+                     :decl nil
+                     :stmt (stmt-wfp item.get env))
+    :measure (block-item-count item))
+
+  (define block-item-list-wfp ((items block-item-listp) (env static-envp))
+    :returns (yes/no booleanp)
+    :parents nil
+    (or (endp items)
+        (and (block-item-wfp (car items) env)
+             (block-item-list-wfp (cdr items) env)))
+    :measure (block-item-list-count items))
+
+  ///
+
+  (fty::deffixequiv-mutual stmt-wfp-fns))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
