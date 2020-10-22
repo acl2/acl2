@@ -65,43 +65,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-check-guard ((formals symbol-listp)
-                         (fn symbolp)
-                         (guard pseudo-termp)
-                         (guard-conjuncts pseudo-term-listp)
-                         ctx
-                         state)
-  :returns (mv erp (nothing null) state)
-  :short "Check whether every formal parameter of a target function
-          has an associated guard conjunct that requires the parameter
-          to be (the ACL2 counterpart of) a C @('int') value."
-  (b* (((when (endp formals)) (value nil))
-       (formal (car formals))
-       (conjunct (acl2::fcons-term* 'sintp formal))
-       ((unless (member-equal conjunct guard-conjuncts))
-        (er-soft+ ctx t nil
-                  "The guard ~x0 of the ~x1 function does not have ~
-                   a recognizable conjunct ~x2 that requires ~
-                   the formal parameter ~x3 to be a C int value."
-                  guard fn conjunct formal)))
-    (atc-check-guard (cdr formals) fn guard guard-conjuncts ctx state)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define atc-process-function (fn ctx state)
   :returns (mv erp (nothing "Always @('nil').") state)
   :short "Process a target function @('fni') among @('fn1'), ..., @('fnp')."
-  (b* ((wrld (w state))
-       (desc (msg "The target ~x0 input" fn))
+  (b* ((desc (msg "The target ~x0 input" fn))
        ((er &) (acl2::ensure-function-name$ fn desc t nil))
        (desc (msg "The target function ~x0" fn))
        ((er &) (acl2::ensure-function-logic-mode$ fn desc t nil))
        ((er &) (acl2::ensure-function-guard-verified$ fn desc t nil))
-       ((er &) (acl2::ensure-function-defined$ fn desc t nil))
-       (formals (acl2::formals+ fn wrld))
-       (guard (acl2::uguard+ fn wrld))
-       (guard-conjuncts (atc-flatten-conjuncts guard))
-       ((er &) (atc-check-guard formals fn guard guard-conjuncts ctx state)))
+       ((er &) (acl2::ensure-function-defined$ fn desc t nil)))
     (value nil))
   :guard-hints (("Goal" :in-theory (enable
                                     acl2::ensure-function-name
@@ -392,6 +364,29 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-check-guard ((formals symbol-listp)
+                         (fn symbolp)
+                         (guard pseudo-termp)
+                         (guard-conjuncts pseudo-term-listp)
+                         ctx
+                         state)
+  :returns (mv erp (nothing null) state)
+  :short "Check whether every formal parameter of a target function
+          has an associated guard conjunct that requires the parameter
+          to be (the ACL2 counterpart of) a C @('int') value."
+  (b* (((when (endp formals)) (value nil))
+       (formal (car formals))
+       (conjunct (acl2::fcons-term* 'sintp formal))
+       ((unless (member-equal conjunct guard-conjuncts))
+        (er-soft+ ctx t nil
+                  "The guard ~x0 of the ~x1 function does not have ~
+                   a recognizable conjunct ~x2 that requires ~
+                   the formal parameter ~x3 to be a C int value."
+                  guard fn conjunct formal)))
+    (atc-check-guard (cdr formals) fn guard guard-conjuncts ctx state)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-gen-ext-decl ((fn symbolp) ctx state)
   :returns (mv erp (ext ext-declp) state)
   :short "Generate a C external declaration (a function definition)
@@ -403,13 +398,23 @@
                    must be a portable ASCII C identifier, but it is not."
                   name fn))
        (wrld (w state))
-       (body (acl2::ubody+ fn wrld))
-       ((mv erp expr state) (atc-gen-expr body fn ctx state))
+       (formals (acl2::formals+ fn wrld))
+       (guard (acl2::uguard+ fn wrld))
+       (guard-conjuncts (atc-flatten-conjuncts guard))
+       ((mv erp & state) (atc-check-guard formals
+                                          fn
+                                          guard
+                                          guard-conjuncts
+                                          ctx
+                                          state))
        ((when erp) (mv erp (irr-ext-decl) state))
-       ((mv erp params state) (atc-gen-param-decl-list (acl2::formals+ fn wrld)
+       ((mv erp params state) (atc-gen-param-decl-list formals
                                                        fn
                                                        ctx
                                                        state))
+       ((when erp) (mv erp (irr-ext-decl) state))
+       (body (acl2::ubody+ fn wrld))
+       ((mv erp expr state) (atc-gen-expr body fn ctx state))
        ((when erp) (mv erp (irr-ext-decl) state)))
     (value
      (ext-decl-fundef
