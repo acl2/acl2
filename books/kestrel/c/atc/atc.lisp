@@ -12,60 +12,19 @@
 
 (include-book "c-abstract-syntax")
 (include-book "c-pretty-printer" :ttags ((:open-output-channel!)))
+(include-book "c-static-semantics")
 (include-book "c-integers")
 (include-book "portable-ascii-identifiers")
 
+(include-book "kestrel/error-checking/ensure-symbol-is-fresh-event-name" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-boolean" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-string" :dir :system)
+(include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
+(include-book "kestrel/std/system/flatten-conjuncts" :dir :system)
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
 (include-book "oslib/dirname" :dir :system)
 (include-book "oslib/file-types" :dir :system)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; library extensions
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(include-book "kestrel/std/system/check-if-call" :dir :system)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-check-and-call ((term pseudo-termp))
-  :returns (mv (yes/no booleanp)
-               (left pseudo-termp :hyp :guard)
-               (right pseudo-termp :hyp :guard))
-  :short "Check if a term is a (translated) call of @(tsee and)."
-  (b* (((mv ifp test then else) (acl2::check-if-call term))
-       ((when (not ifp)) (mv nil nil nil)))
-    (if (equal else acl2::*nil*)
-        (mv t test then)
-      (mv nil nil nil)))
-  ///
-
-  (defret acl2-count-of-atc-check-and-call.left
-    (implies yes/no
-             (< (acl2-count left)
-                (acl2-count term)))
-    :rule-classes :linear)
-
-  (defret acl2-count-of-atc-check-and-call.right
-    (implies yes/no
-             (< (acl2-count right)
-                (acl2-count term)))
-    :rule-classes :linear))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-flatten-conjuncts ((term pseudo-termp))
-  :returns (conjuncts pseudo-term-listp :hyp :guard)
-  :short "View a term as an @(tsee and) tree and return its leaves."
-  (b* (((mv andp left right) (atc-check-and-call term))
-       ((when (not andp)) (list term))
-       (left-conjuncts (atc-flatten-conjuncts left))
-       (right-conjuncts (atc-flatten-conjuncts right)))
-    (append left-conjuncts right-conjuncts)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -83,7 +42,15 @@
 
   "@('fn1...fnp') is the list @('(fn1 ... fnp)') of inputs to @(tsee atc)."
 
-  (xdoc::evmac-topic-implementation-item-input "output-file" "atc")))
+  (xdoc::evmac-topic-implementation-item-input "const-name" "atc")
+
+  (xdoc::evmac-topic-implementation-item-input "thm-name" "atc")
+
+  (xdoc::evmac-topic-implementation-item-input "output-file" "atc")
+
+  "@('const') is the symbol specified by @('const-name')."
+
+  "@('thm') is the symbol specified by @('thm-name')."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -91,87 +58,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-check-symbol-name ((sym symbolp) (desc msgp) ctx state)
-  :returns (mv erp (nothing null) state)
-  :short "Check whether the name of a symbol is a portable ASCII C identifier."
-  (b* ((name (symbol-name sym)))
-    (if (atc-ident-stringp name)
-        (value nil)
-      (er-soft+ ctx t nil
-                "The name ~s0 of ~@1 must be ~
-                 a portable ASCII C identifier (see :DOC ATC), ~
-                 but it is not."
-                name desc))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-check-formals ((formals symbol-listp) (fn symbolp) ctx state)
-  :returns (mv erp (nothing null) state)
-  :short "Check whether the symbol names of the formal parameters of a function
-          are portable ASCII C identifiers."
-  (b*  (((when (endp formals)) (value nil))
-        (formal (car formals))
-        ((er &) (atc-check-symbol-name
-                 formal
-                 (msg "The formal parameter ~x0 of the function ~x1" formal fn)
-                 ctx
-                 state)))
-    (atc-check-formals (cdr formals) fn ctx state))
-  :prepwork ((local (in-theory (enable atc-check-symbol-name)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-check-guard ((formals symbol-listp)
-                         (fn symbolp)
-                         (guard pseudo-termp)
-                         (guard-conjuncts pseudo-term-listp)
-                         ctx
-                         state)
-  :returns (mv erp (nothing null) state)
-  :short "Check whether every formal parameter of a target function
-          has an associated guard conjunct that requires the parameter
-          to be (the ACL2 counterpart of) a C @('int') value."
-  (b* (((when (endp formals)) (value nil))
-       (formal (car formals))
-       (conjunct (acl2::fcons-term* 'sintp formal))
-       ((unless (member-equal conjunct guard-conjuncts))
-        (er-soft+ ctx t nil
-                  "The guard ~x0 of the ~x1 function does not have ~
-                   a recognizable conjunct ~x2 that requires ~
-                   the formal parameter ~x3 to be a C int value."
-                  guard fn conjunct formal)))
-    (atc-check-guard (cdr formals) fn guard guard-conjuncts ctx state)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define atc-process-function (fn ctx state)
   :returns (mv erp (nothing "Always @('nil').") state)
   :short "Process a target function @('fni') among @('fn1'), ..., @('fnp')."
-  (b* ((wrld (w state))
-       (desc (msg "The target ~x0 input" fn))
+  (b* ((desc (msg "The target ~x0 input" fn))
        ((er &) (acl2::ensure-function-name$ fn desc t nil))
        (desc (msg "The target function ~x0" fn))
        ((er &) (acl2::ensure-function-logic-mode$ fn desc t nil))
        ((er &) (acl2::ensure-function-guard-verified$ fn desc t nil))
-       ((er &) (acl2::ensure-function-defined$ fn desc t nil))
-       ((er &) (atc-check-symbol-name
-                fn
-                (msg "The symbol name of the function ~x0" fn)
-                ctx
-                state))
-       (formals (acl2::formals+ fn wrld))
-       ((er &) (atc-check-formals formals fn ctx state))
-       (names (symbol-name-lst formals))
-       ((er &) (acl2::ensure-list-no-duplicates$
-                names
-                (msg "The list ~x0 of symbol names of ~
-                      the formal parameters of the function ~x1"
-                     names fn)
-                t
-                nil))
-       (guard (acl2::uguard+ fn wrld))
-       (guard-conjuncts (atc-flatten-conjuncts guard))
-       ((er &) (atc-check-guard formals fn guard guard-conjuncts ctx state)))
+       ((er &) (acl2::ensure-function-defined$ fn desc t nil)))
     (value nil))
   :guard-hints (("Goal" :in-theory (enable
                                     acl2::ensure-function-name
@@ -196,16 +91,56 @@
   (b* (((er &) (atc-process-function-list fn1...fnp ctx state))
        ((unless (consp fn1...fnp))
         (er-soft+ ctx t nil
-                  "At least one target function must be supplied."))
-       (names (symbol-name-lst fn1...fnp))
-       ((er &) (acl2::ensure-list-no-duplicates$
-                names
-                (msg "The list ~x0 of symbol names of ~
-                      the target functions ~x1"
-                     names fn1...fnp)
+                  "At least one target function must be supplied.")))
+    (value nil)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-process-const-name (const-name ctx state)
+  :returns (mv erp (const "A @(tsee symbolp).") state)
+  :mode :program
+  :short "Process the @(':const-name') input."
+  (b* (((er &) (acl2::ensure-value-is-symbol$ const-name
+                                              "The :CONST-NAME input"
+                                              t
+                                              nil))
+       (name (if (eq const-name :auto)
+                 'c::*program*
+               const-name))
+       ((er &) (acl2::ensure-symbol-is-fresh-event-name$
+                name
+                (msg "The constant name ~x0 ~
+                      specified by the :CONST-NAME input"
+                     name)
+                'const
+                nil
                 t
                 nil)))
-    (value nil)))
+    (value name)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-process-thm-name (thm-name (const symbolp) ctx state)
+  :returns (mv erp (thm "A @(tsee symbolp).") state)
+  :mode :program
+  :short "Process the @(':thm-name') input."
+  (b* (((er &) (acl2::ensure-value-is-symbol$ thm-name
+                                              "The :THM-NAME input"
+                                              t
+                                              nil))
+       (name (if (eq thm-name :auto)
+                 (add-suffix const "-THEOREM")
+               thm-name))
+       ((er &) (acl2::ensure-symbol-is-fresh-event-name$
+                name
+                (msg "The thmant name ~x0 ~
+                      specified by the :THM-NAME input"
+                     name)
+                'thm
+                nil
+                t
+                nil)))
+    (value name)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -280,7 +215,9 @@
 
 (defval *atc-allowed-options*
   :short "Keyword options accepted by @(tsee atc)."
-  (list :output-file
+  (list :const-name
+        :thm-name
+        :output-file
         :verbose)
   ///
   (assert-event (symbol-listp *atc-allowed-options*))
@@ -291,6 +228,8 @@
 (define atc-process-inputs ((args true-listp) ctx state)
   :returns (mv erp
                (result "A @('(tuple (fn1...fnp symbol-listp)
+                                    (const symbolp)
+                                    (thm symbolp)
                                     (output-file stringp)
                                     (verbose booleanp))').")
                state)
@@ -303,6 +242,14 @@
                               one or more target functions ~
                               followed by the options ~&0."
                              *atc-allowed-options*))
+       (const-name-option (assoc-eq :const-name options))
+       (const-name (if const-name-option
+                       (cdr const-name-option)
+                     :auto))
+       (thm-name-option (assoc-eq :thm-name options))
+       (thm-name (if thm-name-option
+                     (cdr thm-name-option)
+                   :auto))
        (output-file-option (assoc-eq :output-file options))
        ((mv output-file output-file?)
         (if output-file-option
@@ -310,6 +257,8 @@
           (mv :irrelevant nil)))
        (verbose (cdr (assoc-eq :verbose options)))
        ((er &) (atc-process-fn1...fnp fn1...fnp ctx state))
+       ((er const) (atc-process-const-name const-name ctx state))
+       ((er thm) (atc-process-thm-name thm-name const ctx state))
        ((er &) (atc-process-output-file output-file
                                         output-file?
                                         ctx
@@ -319,18 +268,22 @@
                                                t
                                                nil)))
     (value (list fn1...fnp
+                 const
+                 thm
                  output-file
                  verbose))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ atc-code-generation
+(defxdoc+ atc-event-and-code-generation
   :parents (atc-implementation)
-  :short "Code generation performed by @(tsee atc)."
+  :short "Event generation and code generation performed by @(tsee atc)."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We generate C abstract syntax, which we pretty-print to a file.")
+    "We generate C abstract syntax,
+     which we pretty-print to a file
+     and also assign to a named constant..")
    (xdoc::p
     "Given the restrictions on the target functions,
      the translation is straightforward -- intentionally so."))
@@ -439,10 +392,9 @@
   (b* ((name (symbol-name formal))
        ((unless (atc-ident-stringp name))
         (er-soft+ ctx t (irr-param-decl)
-                  "The name ~s0 of the formal parameter ~x1 ~
-                   of the function ~x2 ~
-                   must be a portable ASCII C identifier (see :DOC ATC), ~
-                   but it is not."
+                  "The symbol name ~s0 of ~
+                   the formal parameter ~x1 of the function ~x2 ~
+                   must be a portable ASCII C identifier, but it is not."
                   name formal fn)))
     (value (make-param-decl :name (ident name)
                             :type (tyspecseq-sint)))))
@@ -454,10 +406,43 @@
   :short "Generate a list of C parameter declarations
           from a list of ACL2 formal parameters."
   (b* (((when (endp formals)) (value nil))
-       ((mv erp param state) (atc-gen-param-decl (car formals) fn ctx state))
+       ((cons formal rest-formals) formals)
+       ((mv erp param state) (atc-gen-param-decl formal fn ctx state))
+       (dup? (member-eq formal rest-formals))
+       ((when dup?)
+        (er-soft+ ctx t nil
+                  "The formal parameters of the ~x0 function ~
+                   must have distinct symbol names ~
+                   (i.e. they may not differ only in the package names), ~
+                   but the formal parameters ~x1 and ~x2 ~
+                   have the same symbol name."
+                  fn formal (car dup?)))
        ((when erp) (mv erp nil state))
-       ((er params) (atc-gen-param-decl-list (cdr formals) fn ctx state)))
+       ((er params) (atc-gen-param-decl-list rest-formals fn ctx state)))
     (value (cons param params))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-check-guard ((formals symbol-listp)
+                         (fn symbolp)
+                         (guard pseudo-termp)
+                         (guard-conjuncts pseudo-term-listp)
+                         ctx
+                         state)
+  :returns (mv erp (nothing null) state)
+  :short "Check whether every formal parameter of a target function
+          has an associated guard conjunct that requires the parameter
+          to be (the ACL2 counterpart of) a C @('int') value."
+  (b* (((when (endp formals)) (value nil))
+       (formal (car formals))
+       (conjunct (acl2::fcons-term* 'sintp formal))
+       ((unless (member-equal conjunct guard-conjuncts))
+        (er-soft+ ctx t nil
+                  "The guard ~x0 of the ~x1 function does not have ~
+                   a recognizable conjunct ~x2 that requires ~
+                   the formal parameter ~x3 to be a C int value."
+                  guard fn conjunct formal)))
+    (atc-check-guard (cdr formals) fn guard guard-conjuncts ctx state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -465,19 +450,35 @@
   :returns (mv erp (ext ext-declp) state)
   :short "Generate a C external declaration (a function definition)
           from an ACL2 function."
-  (b* ((wrld (w state))
-       (body (acl2::ubody+ fn wrld))
-       ((mv erp expr state) (atc-gen-expr body fn ctx state))
+  (b* ((name (symbol-name fn))
+       ((unless (atc-ident-stringp name))
+        (er-soft+ ctx t (irr-ext-decl)
+                  "The symbol name ~s0 of the function ~x1 ~
+                   must be a portable ASCII C identifier, but it is not."
+                  name fn))
+       (wrld (w state))
+       (formals (acl2::formals+ fn wrld))
+       (guard (acl2::uguard+ fn wrld))
+       (guard-conjuncts (flatten-conjuncts guard))
+       ((mv erp & state) (atc-check-guard formals
+                                          fn
+                                          guard
+                                          guard-conjuncts
+                                          ctx
+                                          state))
        ((when erp) (mv erp (irr-ext-decl) state))
-       ((mv erp params state) (atc-gen-param-decl-list (acl2::formals+ fn wrld)
+       ((mv erp params state) (atc-gen-param-decl-list formals
                                                        fn
                                                        ctx
                                                        state))
+       ((when erp) (mv erp (irr-ext-decl) state))
+       (body (acl2::ubody+ fn wrld))
+       ((mv erp expr state) (atc-gen-expr body fn ctx state))
        ((when erp) (mv erp (irr-ext-decl) state)))
     (value
      (ext-decl-fundef
       (make-fundef :result (tyspecseq-sint)
-                   :name (ident (symbol-name fn))
+                   :name (ident name)
                    :params params
                    :body (stmt-compound
                           (list (block-item-stmt (stmt-return expr)))))))))
@@ -488,9 +489,18 @@
   :returns (mv erp (exts ext-decl-listp) state)
   :short "Lift @(tsee atc-gen-ext-decl) to lists."
   (b* (((when (endp fns)) (value nil))
-       ((mv erp ext state) (atc-gen-ext-decl (car fns) ctx state))
+       ((cons fn rest-fns) fns)
+       ((mv erp ext state) (atc-gen-ext-decl fn ctx state))
+       (dup? (member-eq fn rest-fns))
+       ((when dup?)
+        (er-soft+ ctx t nil
+                  "The target functions must have distinct symbol names ~
+                   (i.e. they may not differ only in the package names), ~
+                   but the functions ~x0 and ~x1 ~
+                   have the same symbol name."
+                  fn (car dup?)))
        ((when erp) (mv erp nil state))
-       ((er exts) (atc-gen-ext-decl-list (cdr fns) ctx state)))
+       ((er exts) (atc-gen-ext-decl-list rest-fns ctx state)))
     (value (cons ext exts))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -504,14 +514,30 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-file ((fn1...fnp symbol-listp) (output-file stringp) ctx state)
-  :returns (mv erp (nothing "Always @('nil').") state)
+(define atc-gen-const ((const symbolp) (tunit transunitp))
+  :returns (event acl2::pseudo-event-formp)
+  :short "Generate the named constant for the abstract syntax tree
+          of the generated C code (i.e. translation unit)."
+  `(defconst ,const ',tunit))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-gen-thm ((thm symbolp) (const symbolp))
+  :returns (event acl2::pseudo-event-formp)
+  :short "Generate the theorem asserting the properties
+          of the generated C code (referenced as the named constant)."
+  `(defthmd ,thm
+     (transunit-wfp ,const)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-gen-file ((tunit transunitp) (output-file stringp) state)
+  :returns state
   :mode :program
-  :short "Generate the C file from the ACL2 target functions."
-  (b* (((er tunit) (atc-gen-transunit fn1...fnp ctx state))
-       (lines (pprint-transunit tunit))
-       (state (pprinted-lines-to-file lines output-file state)))
-    (mv nil nil state)))
+  :short "Pretty-print the generated C code (i.e. translation unit)
+          to the output file."
+  (b* ((lines (pprint-transunit tunit)))
+    (pprinted-lines-to-file lines output-file state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -521,21 +547,20 @@
                state)
   :mode :program
   :parents (atc-implementation)
-  :short "Process the inputs and generate the C file."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Since the result of this function is passed to @(tsee make-event),
-     this function must return an event form.
-     By returning @('(value-triple :invisible)'),
-     no return value is printed on the screen.
-     A message of successful completion is printed,
-     regardless of @(':verbose')."))
-  (b* (((er (list fn1...fnp output-file ?verbose))
+  :short "Process the inputs and
+          generate the constant definition and the C file."
+  (b* (((er (list fn1...fnp const thm output-file ?verbose))
         (atc-process-inputs args ctx state))
-       ((er &) (atc-gen-file fn1...fnp output-file ctx state))
+       ((er tunit) (atc-gen-transunit fn1...fnp ctx state))
+       (const-event (atc-gen-const const tunit))
+       (- (cw "~%Generated named constant:~% ~x0~%" const))
+       (thm-event (atc-gen-thm thm const))
+       (- (cw "~%Generated theorem:~% ~x0~%" thm))
+       (state (atc-gen-file tunit output-file state))
        (- (cw "~%Generated C file:~% ~x0~%" output-file)))
-    (value '(value-triple :invisible))))
+    (value `(progn ,const-event
+                   ,thm-event
+                   (value-triple :invisible)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

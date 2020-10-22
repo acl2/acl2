@@ -22,6 +22,7 @@
              '(bool
                defxdoc+
                er-soft+
+               flatten-conjuncts
                implode
                lnfix
                msg-listp
