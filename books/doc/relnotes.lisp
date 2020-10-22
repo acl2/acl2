@@ -811,8 +811,18 @@
 
    (xdoc::p
     "A new utility @(tsee check-if-call) has been added,
-     to check if a term is a all of @(tsee if)
+     to check if a term is a call of @(tsee if)
      and to return its three arguments if that is the case.")
+
+   (xdoc::p
+    "A new utility @(tsee check-and-call) has been added,
+     to check if a term is a (translated) call of @(tsee and)
+     and to return its two conjuncts if that is the case.")
+
+   (xdoc::p
+    "A new utility @(tsee flatten-conjuncts) has been added,
+     to view a (translated) term as a tree of @(tsee and)s
+     and to return the list of its leaves.")
 
    (xdoc::p
     "A new utility @(tsee fresh-name-listp-msg-weak) has been added,
