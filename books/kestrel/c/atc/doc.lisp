@@ -88,9 +88,9 @@
 
     (xdoc::codeblock
      "(atc fn1 ... fn"
-     "     :constant-name ...  ; default c::*program*"
-     "     :output-file   ...  ; no default"
-     "     :verbose       ...  ; default nil"
+     "     :const-name  ...  ; default c::*program*"
+     "     :output-file ...  ; no default"
+     "     :verbose     ...  ; default nil"
      "  )"))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -162,7 +162,7 @@
        (the package names are ignored for this purpose)."))
 
     (xdoc::desc
-     "@(':constant-name') &mdash; default @('c::*program*')"
+     "@(':const-name') &mdash; default @('c::*program*')"
      (xdoc::p
       "Name of the generated ACL2 named constant
        that holds the abstract syntax tree of the generated C program.")
@@ -259,7 +259,7 @@
     (xdoc::codeblock
      "(defconst <name> ...)")
     (xdoc::p
-     "where @('<name>') is specified by the @(':constant-name') input
+     "where @('<name>') is specified by the @(':const-name') input
       and @('...') is the abstract syntax tree of
       the generated C translation unit,
       which ATC also pretty-prints and
