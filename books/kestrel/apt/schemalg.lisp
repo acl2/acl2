@@ -250,7 +250,8 @@
                     (enable acl2::ensure-value-is-legal-variable-name))))
                state)
   :short "Process the @(':cdr-output') input."
-  (b* ((schemas-allowed (list :divconq-list-0-1))
+  (b* ((schemas-allowed (list :divconq-list-0-1
+                              :divconq-list-0-1-2))
        ((when (and cdr-output?
                    (not (member-eq schema schemas-allowed))))
         (er-soft+ ctx t nil
