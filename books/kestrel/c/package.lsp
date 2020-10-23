@@ -22,7 +22,7 @@
              '(bool
                defxdoc+
                er-soft+
-               flatten-conjuncts
+               flatten-ands-in-lit
                implode
                lnfix
                msg-listp

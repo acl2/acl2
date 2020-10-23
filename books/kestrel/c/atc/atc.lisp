@@ -21,10 +21,17 @@
 (include-book "kestrel/error-checking/ensure-value-is-string" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
-(include-book "kestrel/std/system/flatten-conjuncts" :dir :system)
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
 (include-book "oslib/dirname" :dir :system)
 (include-book "oslib/file-types" :dir :system)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule pseudo-term-listp-of-flatten-ands-in-lit
+  (implies (pseudo-termp term)
+           (pseudo-term-listp (flatten-ands-in-lit term)))
+  :prep-books
+  ((local (include-book "std/typed-lists/pseudo-term-listp" :dir :system))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -459,7 +466,7 @@
        (wrld (w state))
        (formals (acl2::formals+ fn wrld))
        (guard (acl2::uguard+ fn wrld))
-       (guard-conjuncts (flatten-conjuncts guard))
+       (guard-conjuncts (flatten-ands-in-lit guard))
        ((mv erp & state) (atc-check-guard formals
                                           fn
                                           guard
