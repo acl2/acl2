@@ -527,8 +527,16 @@
   :returns (event acl2::pseudo-event-formp)
   :short "Generate the theorem asserting the properties
           of the generated C code (referenced as the named constant)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Since this is a ground theorem,
+     we expect that it should be easily provable
+     via just the executable counterpart of @(tsee transunit-wfp),
+     which is an executable function."))
   `(defthmd ,thm
-     (transunit-wfp ,const)))
+     (transunit-wfp ,const)
+     :hints (("Goal" :in-theory '((:e transunit-wfp))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
