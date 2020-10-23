@@ -566,9 +566,13 @@
        (thm-event (atc-gen-thm thm const))
        (- (cw "~%Generated theorem:~% ~x0~%" thm))
        (state (atc-gen-file tunit output-file state))
-       (- (cw "~%Generated C file:~% ~x0~%" output-file)))
-    (value `(progn ,const-event
-                   ,thm-event
+       (- (cw "~%Generated C file:~% ~x0~%" output-file))
+       (encapsulate
+         `(encapsulate ()
+            (evmac-prepare-proofs)
+            ,const-event
+            ,thm-event)))
+    (value `(progn ,encapsulate
                    (value-triple :invisible)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

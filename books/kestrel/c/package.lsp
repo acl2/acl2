@@ -22,6 +22,7 @@
              '(bool
                defxdoc+
                er-soft+
+               evmac-prepare-proofs
                flatten-ands-in-lit
                implode
                lnfix
