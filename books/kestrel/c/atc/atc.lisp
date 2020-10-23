@@ -21,6 +21,7 @@
 (include-book "kestrel/error-checking/ensure-value-is-string" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
+(include-book "kestrel/std/system/fresh-logical-name-with-dollars-suffix" :dir :system)
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
 (include-book "oslib/dirname" :dir :system)
 (include-book "oslib/file-types" :dir :system)
@@ -523,20 +524,59 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-thm ((thm symbolp) (const symbolp))
+(define atc-gen-static-thm ((const symbolp)
+                            (names-to-avoid symbol-listp)
+                            (wrld plist-worldp))
+  :returns (mv (event "A @(tsee acl2::pseudo-event-formp).")
+               (name "A @(tsee symbolp).")
+               (formula "An untranslated term.")
+               (updated-names-to-avoid "A @(tsee symbol-listp)."))
+  :mode :program
+  :short "Generate a local theorem asserting
+          the static well-formedness of the generated C code
+          (referenced as the named constant)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We also return the name and formula of the theorem,
+     so that we can reference the theorem by name
+     and we can put the formula into the exported theorem.")
+   (xdoc::p
+    "Since this is a ground theorem,
+     we expect that it should be easily provable
+     using just the executable counterpart of @(tsee transunit-wfp),
+     which is an executable function."))
+  (b* (((mv name names-to-avoid)
+        (acl2::fresh-logical-name-with-$s-suffix 'static-thm
+                                                 nil
+                                                 names-to-avoid
+                                                 wrld))
+       (formula `(transunit-wfp ,const))
+       (event `(local
+                (defthm ,name
+                  ,formula
+                  :rule-classes nil
+                  :hints (("Goal" :in-theory '((:e transunit-wfp))))))))
+    (mv event name formula names-to-avoid)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-gen-thm ((thm symbolp)
+                     (static-thm-name symbolp)
+                     (static-thm-formula "An untranslated term."))
   :returns (event acl2::pseudo-event-formp)
   :short "Generate the theorem asserting the properties
           of the generated C code (referenced as the named constant)."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Since this is a ground theorem,
-     we expect that it should be easily provable
-     via just the executable counterpart of @(tsee transunit-wfp),
-     which is an executable function."))
+    "For now this just consists of
+     the formula of the static well-formedness theorem,
+     but we plan to extend this with dynamic correctness theorems
+     for the generated functions."))
   `(defthmd ,thm
-     (transunit-wfp ,const)
-     :hints (("Goal" :in-theory '((:e transunit-wfp))))))
+     ,static-thm-formula
+     :hints (("Goal" :in-theory nil :use (,static-thm-name)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -563,7 +603,9 @@
        ((er tunit) (atc-gen-transunit fn1...fnp ctx state))
        (const-event (atc-gen-const const tunit))
        (- (cw "~%Generated named constant:~% ~x0~%" const))
-       (thm-event (atc-gen-thm thm const))
+       ((mv static-thm-event static-thm-name static-thm-formula &)
+        (atc-gen-static-thm const nil (w state)))
+       (thm-event (atc-gen-thm thm static-thm-name static-thm-formula))
        (- (cw "~%Generated theorem:~% ~x0~%" thm))
        (state (atc-gen-file tunit output-file state))
        (- (cw "~%Generated C file:~% ~x0~%" output-file))
@@ -571,6 +613,7 @@
          `(encapsulate ()
             (evmac-prepare-proofs)
             ,const-event
+            ,static-thm-event
             ,thm-event)))
     (value `(progn ,encapsulate
                    (value-triple :invisible)))))
