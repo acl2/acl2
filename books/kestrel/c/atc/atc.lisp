@@ -25,13 +25,7 @@
 (include-book "oslib/dirname" :dir :system)
 (include-book "oslib/file-types" :dir :system)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defrule pseudo-term-listp-of-flatten-ands-in-lit
-  (implies (pseudo-termp term)
-           (pseudo-term-listp (flatten-ands-in-lit term)))
-  :prep-books
-  ((local (include-book "std/typed-lists/pseudo-term-listp" :dir :system))))
+(local (include-book "kestrel/std/system/flatten-ands-in-lit" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
