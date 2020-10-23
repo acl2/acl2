@@ -318,39 +318,68 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-stmt ((s stmtp) (store storep))
-  :returns (result maybe-value-resultp)
+(defines exec-stmt-fns
   :short "Execute a statement."
   :long
   (xdoc::topstring
    (xdoc::p
     "For now we only support the execution of @('return') statements.
      If there is no expression, no value is returned.
-     If there is an expression, its value is returned."))
-  (b* ((s (stmt-fix s)))
-    (stmt-case
-     s
-     :labeled (error (list :exec-stmt s))
-     :compound (error (list :exec-stmt s))
-     :expr (error (list :exec-stmt s))
-     :null (error (list :exec-stmt s))
-     :if (error (list :exec-stmt s))
-     :ifelse (error (list :exec-stmt s))
-     :switch (error (list :exec-stmt s))
-     :while (error (list :exec-stmt s))
-     :dowhile (error (list :exec-stmt s))
-     :for (error (list :exec-stmt s))
-     :goto (error (list :exec-stmt s))
-     :continue (error (list :exec-stmt s))
-     :break (error (list :exec-stmt s))
-     :return (if (exprp s.value)
-                 (b* ((eres (exec-expr s.value store)))
-                   (value-result-case
-                    eres
-                    :err eres.get
-                    :ok eres.get))
-               nil)))
-  :hooks (:fix))
+     If there is an expression, its value is returned.
+     We also support the execution of compound statments
+     that consists of supported statements."))
+
+  (define exec-stmt ((s stmtp) (store storep))
+    :returns (result maybe-value-resultp)
+    :parents nil
+    (b* ((s (stmt-fix s)))
+      (stmt-case
+       s
+       :labeled (error (list :exec-stmt s))
+       :compound (exec-block-item-list s.items store)
+       :expr (error (list :exec-stmt s))
+       :null (error (list :exec-stmt s))
+       :if (error (list :exec-stmt s))
+       :ifelse (error (list :exec-stmt s))
+       :switch (error (list :exec-stmt s))
+       :while (error (list :exec-stmt s))
+       :dowhile (error (list :exec-stmt s))
+       :for (error (list :exec-stmt s))
+       :goto (error (list :exec-stmt s))
+       :continue (error (list :exec-stmt s))
+       :break (error (list :exec-stmt s))
+       :return (if (exprp s.value)
+                   (b* ((eres (exec-expr s.value store)))
+                     (value-result-case
+                      eres
+                      :err eres.get
+                      :ok eres.get))
+                 nil)))
+    :measure (stmt-count s))
+
+  (define exec-block-item ((item block-itemp) (store storep))
+    :returns (result maybe-value-resultp)
+    :parents nil
+    (block-item-case item
+                     :decl (error (list :exec-block-item item.get))
+                     :stmt (exec-stmt item.get store))
+    :measure (block-item-count item))
+
+  (define exec-block-item-list ((items block-item-listp) (store storep))
+    :returns (result maybe-value-resultp)
+    :parents nil
+    (b* (((when (endp items)) nil)
+         (val? (exec-block-item (car items) store))
+         ((when (maybe-value-result-case val? :err)) val?)
+         ((when val?) val?))
+      (exec-block-item-list (cdr items) store))
+    :measure (block-item-list-count items))
+
+  :verify-guards nil ; done below
+  ///
+  (verify-guards exec-stmt)
+
+  (fty::deffixequiv-mutual exec-stmt-fns))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
