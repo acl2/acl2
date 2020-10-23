@@ -11,7 +11,7 @@
 
 (in-package "ACL2")
 
-(include-book "all-integerp")
+(include-book "../typed-lists-light/all-integerp")
 (include-book "kestrel/typed-lists-light/all-natp" :dir :system)
 (include-book "all-unsigned-byte-p")
 (local (include-book "kestrel/arithmetic-light/integer-length" :dir :system))

@@ -11,8 +11,6 @@
 
 (in-package "ACL2")
 
-(include-book "all-integerp")
-(include-book "all-integerp-of-repeat")
 (include-book "all-unsigned-byte-p")
 (include-book "all-unsigned-byte-p-of-reverse-list")
 (include-book "all-unsigned-byte-p-of-repeat")

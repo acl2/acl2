@@ -16,7 +16,7 @@
 ;; may allow for better congruence rules.  It also may be more efficient, since
 ;; it only calls expt once.
 
-(include-book "all-integerp")
+(include-book "../typed-lists-light/all-integerp")
 (local (include-book "../bv/unsigned-byte-p"))
 
 (in-theory (disable unsigned-byte-p)) ;todo
