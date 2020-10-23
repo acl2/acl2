@@ -820,9 +820,8 @@
      and to return its two conjuncts if that is the case.")
 
    (xdoc::p
-    "A new utility @(tsee flatten-conjuncts) has been added,
-     to view a (translated) term as a tree of @(tsee and)s
-     and to return the list of its leaves.")
+    "A theorem about the built-in @('flatten-ands-in-lit') has been added,
+     in @('[books]/kestrel/std/system/flatten-ands-in-lit').")
 
    (xdoc::p
     "A new utility @(tsee fresh-name-listp-msg-weak) has been added,
