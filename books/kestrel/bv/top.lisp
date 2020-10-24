@@ -72,6 +72,9 @@
 (include-book "bvshr")
 (include-book "defs-shifts")
 
+;; Trim (only for rewriting)
+(include-book "trim")
+
 ; Operations specialized to particular sizes:
 (include-book "ops32")
 (include-book "ops64")
