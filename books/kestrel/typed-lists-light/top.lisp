@@ -20,3 +20,5 @@
 (include-book "maxelem")
 (include-book "pseudo-term-listp")
 (include-book "symbol-listp")
+
+(include-book "all-less")
