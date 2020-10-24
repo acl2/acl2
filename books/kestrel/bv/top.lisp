@@ -11,12 +11,14 @@
 
 (in-package "ACL2")
 
+;; Syntaxp support:
 (include-book "bv-syntax")
 
-(include-book "bvchop-def")
-(include-book "bvchop")
+;; Recognizers for BVs:
 (include-book "unsigned-byte-p")
 (include-book "unsigned-byte-p-forced")
+
+;; Underlying functions:
 (include-book "lognot")
 (include-book "logand")
 (include-book "logand2")
@@ -29,27 +31,43 @@
 (include-book "logapp")
 (include-book "logtail")
 (include-book "logext")
-(include-book "bvcat-def")
-(include-book "bvcat2")
+
+;; Functions to break down and create BVs:
+(include-book "bvchop-def")
+(include-book "bvchop")
 (include-book "getbit-def")
 (include-book "getbit")
 (include-book "slice-def")
 (include-book "slice")
 (include-book "slice2")
+(include-book "bvcat-def")
 (include-book "bvcat")
-(include-book "bvxor")
+(include-book "bvcat2")
+(include-book "putbits")
+
+;; Bit-wise operations:
+(include-book "bvand")
 (include-book "bvor")
+(include-book "bvxor")
+(include-book "defs-bitwise")
+
+;; Single bit operations:
 (include-book "bitxor")
+
+;; Arithmetic operations:
 (include-book "bvplus")
 (include-book "bvminus")
 (include-book "bvuminus")
-(include-book "defs-bitwise")
-(include-book "defs-shifts")
+
+;; Rotate operations:
 (include-book "leftrotate")
 (include-book "rightrotate")
-(include-book "ops32")
-(include-book "ops64")
-(include-book "putbits")
 
+;; Shift operations:
 (include-book "bvshl")
 (include-book "bvshr")
+(include-book "defs-shifts")
+
+; Operations specialized to particular sizes:
+(include-book "ops32")
+(include-book "ops64")
