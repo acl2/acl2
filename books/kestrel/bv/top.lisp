@@ -28,6 +28,7 @@
 (include-book "logxor-b")
 (include-book "logapp")
 (include-book "logtail")
+(include-book "logext")
 (include-book "bvcat-def")
 (include-book "bvcat2")
 (include-book "getbit-def")
