@@ -498,9 +498,10 @@
 
 (define atc-gen-wf-thm ((const symbolp) ctx state)
   :returns (mv erp
-               (result "A @(tuple (name symbolp)
-                                  (local-event acl2::pseudo-event-formp)
-                                  (exported-event acl2::pseudo-event-formp)).")
+               (result
+                "A @('(tuple (name symbolp)
+                             (local-event acl2::pseudo-event-formp)
+                             (exported-event acl2::pseudo-event-formp))').")
                state)
   :mode :program
   :short "Generate the theorem asserting
@@ -537,9 +538,10 @@
 
 (define atc-gen-fn-thm ((fn symbolp) (const symbolp) ctx state)
   :returns (mv erp
-               (result "A @(tuple (name symbolp)
-                                  (local-event acl2::pseudo-event-formp)
-                                  (exported-event acl2::pseudo-event-formp)).")
+               (result
+                "A @('(tuple (name symbolp)
+                             (local-event acl2::pseudo-event-formp)
+                             (exported-event acl2::pseudo-event-formp))').")
                state)
   :mode :program
   :short "Generate the theorem asserting
@@ -624,9 +626,10 @@
 (define atc-gen-fn-thm-list ((fns symbol-listp) (const symbolp) ctx state)
   :returns (mv erp
                (result
-                "A @(tuple (names symbol-listp)
-                           (local-events acl2::pseudo-event-form-listp)
-                           (exported-events acl2::pseudo-event-form-listp)).")
+                "A @('(tuple
+                       (names symbol-listp)
+                       (local-events acl2::pseudo-event-form-listp)
+                       (exported-events acl2::pseudo-event-form-listp))').")
                state)
   :mode :program
   :short "Lift @(tsee atc-gen-fn-thm) to lists."
