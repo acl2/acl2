@@ -36,3 +36,5 @@
 (include-book "packbv-and-unpackbv")
 
 (include-book "bv-arrayp")
+(include-book "bv-array-read")
+(include-book "bv-array-write")
