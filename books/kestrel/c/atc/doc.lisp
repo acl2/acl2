@@ -278,7 +278,7 @@
        writes to the file specified by the @(':output-file') input."))
 
     (xdoc::evmac-subsection
-     "Theorem"
+     "Theorems"
 
      (xdoc::p
       "ATC generates an event")
@@ -288,10 +288,20 @@
       "where @('...') is a theorem about @('*const*') stating that
        the generated (abstract syntax tree of the) translation unit
        is statically well-formed,
-       i.e. it compiles according to the C18 standard.
-       We plan to extend the theorem to state
-       the C functions' functional correctness
-       with respect to the ACL2 functions from which they are generated.")))
+       i.e. it compiles according to the C18 standard.")
+
+     (xdoc::p
+      "For each target function @('fn'), ATC generates an event")
+     (xdoc::codeblock
+      "(defthm *const*-fn-correct ...)")
+     (xdoc::p
+      "where @('...') is a theorem about @('fn') and @('*const*') stating that,
+       under the guard of @('fn'),
+       executing the C dynamic semantics on
+       the C function generated from @('fn')
+       yields the same result as the function @('fn').
+       That is,
+       the C function is functionally equivalent to the ACL2 function.")))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

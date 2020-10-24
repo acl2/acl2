@@ -13,8 +13,7 @@
 (include-book "c-abstract-syntax")
 (include-book "c-pretty-printer" :ttags ((:open-output-channel!)))
 (include-book "c-static-semantics")
-(include-book "c-integers")
-(include-book "portable-ascii-identifiers")
+(include-book "c-dynamic-semantics")
 
 (include-book "kestrel/error-checking/ensure-symbol-is-fresh-event-name" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-boolean" :dir :system)
@@ -536,6 +535,112 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-gen-fn-thm ((fn symbolp) (const symbolp) ctx state)
+  :returns (mv erp
+               (result "A @(tuple (name symbolp)
+                                  (local-event acl2::pseudo-event-formp)
+                                  (exported-event acl2::pseudo-event-formp)).")
+               state)
+  :mode :program
+  :short "Generate the theorem asserting
+          the dynamic functional correctness of the C function
+          generated from the specified ACL2 function."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The execution of the C function according to the dynamic semantics
+     is expressed by calling @(tsee exec-fun) on
+     the name of @('fn'), the formals of @('fn'), and @('*const*').
+     This is equated to a call of @('fn') on its formals.
+     The guard of @('fn') is used as hypothesis.")
+   (xdoc::p
+    "The currently generated proof hints are simple:
+     we enable @(tsee exec-fun) and all the functions that it calls
+     in the dynamic execution;
+     we also use the guard theorem of @('fn').
+     Given that the translation unit is a constant,
+     this symbolically executes the C function.
+     Since the generated C code currently has no loops,
+     this strategy may be adequate,
+     but eventually we will likely need more elaborate proof hints.
+     The use of the guard theorem of @('fn') is critical
+     to ensure that the symbolic execution of the C operators
+     does not splits on the error case:
+     the fact that @('fn') is guard-verified
+     ensures that @(tsee sint-add) and similar functions are always called
+     on values such that the exact result fit into the type,
+     which is the same condition under which the dynamic semantics
+     does not error on the corresponding operators."))
+  (b* ((name (acl2::packn (list const "-" (symbol-name fn) "-CORRECT")))
+       ((er &) (acl2::ensure-symbol-is-fresh-event-name$
+                name
+                (msg "The constant name ~x0 ~
+                      specified by the :CONST-NAME input ~
+                      must be such that ~x1 is a fresh theorem name, ~
+                      but it is not."
+                     const name)
+                nil
+                nil
+                t
+                nil))
+       (wrld (w state))
+       (formals (acl2::formals+ fn wrld))
+       (guard (untranslate (acl2::uguard fn wrld) t wrld))
+       (lhs `(exec-fun (ident ,(symbol-name fn))
+                       (list ,@formals)
+                       ,const))
+       (rhs `(value-result-ok (,fn ,@formals)))
+       (hints `(("Goal"
+                 :in-theory (enable exec-fun
+                                    init-store
+                                    lookup-fun
+                                    lookup-fun-aux
+                                    exec-stmt
+                                    exec-block-item
+                                    exec-block-item-list
+                                    exec-expr
+                                    exec-binary
+                                    exec-unary
+                                    exec-ident
+                                    exec-const
+                                    exec-iconst
+                                    store-result-kind
+                                    store-result-ok->get
+                                    value-result-kind
+                                    value-result-ok->get
+                                    maybe-value-result-kind
+                                    maybe-value-result-ok->get)
+                 :use (:guard-theorem ,fn))))
+       ((mv local-event exported-event)
+        (acl2::evmac-generate-defthm
+         name
+         :formula `(implies ,guard (equal ,lhs ,rhs))
+         :hints hints
+         :enable nil)))
+    (value (list name local-event exported-event))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-gen-fn-thm-list ((fns symbol-listp) (const symbolp) ctx state)
+  :returns (mv erp
+               (result
+                "A @(tuple (names symbol-listp)
+                           (local-events acl2::pseudo-event-form-listp)
+                           (exported-events acl2::pseudo-event-form-listp)).")
+               state)
+  :mode :program
+  :short "Lift @(tsee atc-gen-fn-thm) to lists."
+  (b* (((when (endp fns)) (value (list nil nil nil)))
+       ((er (list name local-event exported-event))
+        (atc-gen-fn-thm (car fns) const ctx state))
+       ((er (list names local-events exported-events))
+        (atc-gen-fn-thm-list (cdr fns) const ctx state)))
+    (value (list (cons name names)
+                 (cons local-event local-events)
+                 (cons exported-event exported-events)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-gen-file ((tunit transunitp) (output-file stringp) state)
   :returns state
   :mode :program
@@ -560,6 +665,8 @@
        (const-event (atc-gen-const const tunit))
        ((er (list wf-thm-name wf-thm-local-event wf-thm-exported-event))
         (atc-gen-wf-thm const ctx state))
+       ((er (list fn-thm-names fn-thm-local-events fn-thm-exported-events))
+        (atc-gen-fn-thm-list fn1...fnp const ctx state))
        (state (atc-gen-file tunit output-file state))
        (- (cw "~%Generated C file:~% ~x0~%" output-file))
        (encapsulate
@@ -569,7 +676,11 @@
             (cw-event "~%Generated named constant:~% ~x0~%" ',const)
             ,wf-thm-local-event
             ,wf-thm-exported-event
-            (cw-event "~%Generated theorem:~% ~x0~%" ',wf-thm-name))))
+            ,@fn-thm-local-events
+            ,@fn-thm-exported-events
+            (cw-event "~%Generated theorem:~% ~x0~%" ',wf-thm-name)
+            ,@(loop$ for name in fn-thm-names
+                     collect `(cw-event " ~x0~%" ',name)))))
     (value `(progn ,encapsulate
                    (value-triple :invisible)))))
 
