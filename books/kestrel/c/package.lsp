@@ -20,6 +20,7 @@
                                   error
                                   pprint-indent))
              '(bool
+               cw-event
                defxdoc+
                er-soft+
                evmac-prepare-proofs

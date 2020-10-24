@@ -20,6 +20,7 @@
 (include-book "kestrel/error-checking/ensure-value-is-boolean" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-string" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
+(include-book "kestrel/event-macros/cw-event" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
 (include-book "kestrel/std/system/fresh-logical-name-with-dollars-suffix" :dir :system)
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
@@ -602,18 +603,18 @@
         (atc-process-inputs args ctx state))
        ((er tunit) (atc-gen-transunit fn1...fnp ctx state))
        (const-event (atc-gen-const const tunit))
-       (- (cw "~%Generated named constant:~% ~x0~%" const))
        ((mv static-thm-event static-thm-name static-thm-formula &)
         (atc-gen-static-thm const nil (w state)))
        (thm-event (atc-gen-thm thm static-thm-name static-thm-formula))
-       (- (cw "~%Generated theorem:~% ~x0~%" thm))
        (state (atc-gen-file tunit output-file state))
        (- (cw "~%Generated C file:~% ~x0~%" output-file))
        (encapsulate
          `(encapsulate ()
             (evmac-prepare-proofs)
             ,const-event
+            (cw-event "~%Generated named constant:~% ~x0~%" ',const)
             ,static-thm-event
+            (cw-event "~%Generated theorem:~% ~x0~%" ',thm)
             ,thm-event)))
     (value `(progn ,encapsulate
                    (value-triple :invisible)))))
