@@ -36,6 +36,7 @@
 (include-book "slice2")
 (include-book "bvcat")
 (include-book "bvxor")
+(include-book "bvor")
 (include-book "bitxor")
 (include-book "bvplus")
 (include-book "bvminus")
