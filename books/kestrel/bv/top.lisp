@@ -59,6 +59,10 @@
 (include-book "bvminus")
 (include-book "bvuminus")
 
+;; Comparison operations:
+(include-book "bvlt")
+(include-book "sbvlt")
+
 ;; Rotate operations:
 (include-book "leftrotate")
 (include-book "rightrotate")
