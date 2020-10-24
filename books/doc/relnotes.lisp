@@ -556,6 +556,9 @@
     "@(tsee fty::deflist) has been extended to generate a theorem
      about the list fixer applied to @(tsee repeat).")
 
+   (xdoc::p
+    "A macro @(tsee fty::defsubtype) has been added.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "java::java" "Java Library"))
