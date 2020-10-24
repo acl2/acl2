@@ -31,6 +31,7 @@
 (include-book "deflist-of-len")
 (include-book "defomap")
 (include-book "defset")
+(include-book "defsubtype")
 (include-book "map")
 (include-book "nat-set")
 (include-book "nati")
