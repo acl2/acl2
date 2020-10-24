@@ -19,6 +19,7 @@
 (include-book "unsigned-byte-p-forced")
 (include-book "lognot")
 (include-book "logand")
+(include-book "logand2")
 (include-book "logior")
 (include-book "logior-b")
 (include-book "logorc1")
