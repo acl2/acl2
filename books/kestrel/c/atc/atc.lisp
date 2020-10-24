@@ -21,8 +21,8 @@
 (include-book "kestrel/error-checking/ensure-value-is-string" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
 (include-book "kestrel/event-macros/cw-event" :dir :system)
+(include-book "kestrel/event-macros/event-generation" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
-(include-book "kestrel/std/system/fresh-logical-name-with-dollars-suffix" :dir :system)
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
 (include-book "oslib/dirname" :dir :system)
 (include-book "oslib/file-types" :dir :system)
@@ -47,13 +47,9 @@
 
   (xdoc::evmac-topic-implementation-item-input "const-name" "atc")
 
-  (xdoc::evmac-topic-implementation-item-input "thm-name" "atc")
-
   (xdoc::evmac-topic-implementation-item-input "output-file" "atc")
 
-  "@('const') is the symbol specified by @('const-name')."
-
-  "@('thm') is the symbol specified by @('thm-name')."))
+  "@('const') is the symbol specified by @('const-name')."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -116,30 +112,6 @@
                       specified by the :CONST-NAME input"
                      name)
                 'const
-                nil
-                t
-                nil)))
-    (value name)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-process-thm-name (thm-name (const symbolp) ctx state)
-  :returns (mv erp (thm "A @(tsee symbolp).") state)
-  :mode :program
-  :short "Process the @(':thm-name') input."
-  (b* (((er &) (acl2::ensure-value-is-symbol$ thm-name
-                                              "The :THM-NAME input"
-                                              t
-                                              nil))
-       (name (if (eq thm-name :auto)
-                 (add-suffix const "-THEOREM")
-               thm-name))
-       ((er &) (acl2::ensure-symbol-is-fresh-event-name$
-                name
-                (msg "The thmant name ~x0 ~
-                      specified by the :THM-NAME input"
-                     name)
-                'thm
                 nil
                 t
                 nil)))
@@ -219,7 +191,6 @@
 (defval *atc-allowed-options*
   :short "Keyword options accepted by @(tsee atc)."
   (list :const-name
-        :thm-name
         :output-file
         :verbose)
   ///
@@ -232,7 +203,6 @@
   :returns (mv erp
                (result "A @('(tuple (fn1...fnp symbol-listp)
                                     (const symbolp)
-                                    (thm symbolp)
                                     (output-file stringp)
                                     (verbose booleanp))').")
                state)
@@ -249,10 +219,6 @@
        (const-name (if const-name-option
                        (cdr const-name-option)
                      :auto))
-       (thm-name-option (assoc-eq :thm-name options))
-       (thm-name (if thm-name-option
-                     (cdr thm-name-option)
-                   :auto))
        (output-file-option (assoc-eq :output-file options))
        ((mv output-file output-file?)
         (if output-file-option
@@ -261,7 +227,6 @@
        (verbose (cdr (assoc-eq :verbose options)))
        ((er &) (atc-process-fn1...fnp fn1...fnp ctx state))
        ((er const) (atc-process-const-name const-name ctx state))
-       ((er thm) (atc-process-thm-name thm-name const ctx state))
        ((er &) (atc-process-output-file output-file
                                         output-file?
                                         ctx
@@ -272,7 +237,6 @@
                                                nil)))
     (value (list fn1...fnp
                  const
-                 thm
                  output-file
                  verbose))))
 
@@ -289,7 +253,15 @@
      and also assign to a named constant..")
    (xdoc::p
     "Given the restrictions on the target functions,
-     the translation is straightforward -- intentionally so."))
+     the translation is straightforward -- intentionally so.")
+   (xdoc::p
+    "Some events are generated in two slightly different variants:
+     one that is local to the generated @(tsee encapsulate),
+     and one that is exported from the  @(tsee encapsulate).
+     Proof hints are in the former but not in the latter,
+     thus keeping the ACL2 history ``clean'';
+     some proof hints may refer to events
+     that are generated only locally to the @(tsee encapsulate)."))
   :order-subtopics t
   :default-parent t)
 
@@ -525,59 +497,42 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-static-thm ((const symbolp)
-                            (names-to-avoid symbol-listp)
-                            (wrld plist-worldp))
-  :returns (mv (event "A @(tsee acl2::pseudo-event-formp).")
-               (name "A @(tsee symbolp).")
-               (formula "An untranslated term.")
-               (updated-names-to-avoid "A @(tsee symbol-listp)."))
+(define atc-gen-wf-thm ((const symbolp) ctx state)
+  :returns (mv erp
+               (result "A @(tuple (name symbolp)
+                                  (local-event acl2::pseudo-event-formp)
+                                  (exported-event acl2::pseudo-event-formp)).")
+               state)
   :mode :program
-  :short "Generate a local theorem asserting
+  :short "Generate the theorem asserting
           the static well-formedness of the generated C code
           (referenced as the named constant)."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We also return the name and formula of the theorem,
-     so that we can reference the theorem by name
-     and we can put the formula into the exported theorem.")
-   (xdoc::p
     "Since this is a ground theorem,
      we expect that it should be easily provable
      using just the executable counterpart of @(tsee transunit-wfp),
      which is an executable function."))
-  (b* (((mv name names-to-avoid)
-        (acl2::fresh-logical-name-with-$s-suffix 'static-thm
-                                                 nil
-                                                 names-to-avoid
-                                                 wrld))
-       (formula `(transunit-wfp ,const))
-       (event `(local
-                (defthm ,name
-                  ,formula
-                  :rule-classes nil
-                  :hints (("Goal" :in-theory '((:e transunit-wfp))))))))
-    (mv event name formula names-to-avoid)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-gen-thm ((thm symbolp)
-                     (static-thm-name symbolp)
-                     (static-thm-formula "An untranslated term."))
-  :returns (event acl2::pseudo-event-formp)
-  :short "Generate the theorem asserting the properties
-          of the generated C code (referenced as the named constant)."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "For now this just consists of
-     the formula of the static well-formedness theorem,
-     but we plan to extend this with dynamic correctness theorems
-     for the generated functions."))
-  `(defthmd ,thm
-     ,static-thm-formula
-     :hints (("Goal" :in-theory nil :use (,static-thm-name)))))
+  (b* ((name (add-suffix const "-WELL-FORMED"))
+       ((er &) (acl2::ensure-symbol-is-fresh-event-name$
+                name
+                (msg "The constant name ~x0 ~
+                      specified by the :CONST-NAME input ~
+                      must be such that ~x1 is a fresh theorem name, ~
+                      but it is not."
+                     const name)
+                nil
+                nil
+                t
+                nil))
+       ((mv local-event exported-event)
+        (acl2::evmac-generate-defthm
+         name
+         :formula `(transunit-wfp ,const)
+         :hints '(("Goal" :in-theory '((:e transunit-wfp))))
+         :enable nil)))
+    (value (list name local-event exported-event))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -599,13 +554,12 @@
   :parents (atc-implementation)
   :short "Process the inputs and
           generate the constant definition and the C file."
-  (b* (((er (list fn1...fnp const thm output-file ?verbose))
+  (b* (((er (list fn1...fnp const output-file ?verbose))
         (atc-process-inputs args ctx state))
        ((er tunit) (atc-gen-transunit fn1...fnp ctx state))
        (const-event (atc-gen-const const tunit))
-       ((mv static-thm-event static-thm-name static-thm-formula &)
-        (atc-gen-static-thm const nil (w state)))
-       (thm-event (atc-gen-thm thm static-thm-name static-thm-formula))
+       ((er (list wf-thm-name wf-thm-local-event wf-thm-exported-event))
+        (atc-gen-wf-thm const ctx state))
        (state (atc-gen-file tunit output-file state))
        (- (cw "~%Generated C file:~% ~x0~%" output-file))
        (encapsulate
@@ -613,9 +567,9 @@
             (evmac-prepare-proofs)
             ,const-event
             (cw-event "~%Generated named constant:~% ~x0~%" ',const)
-            ,static-thm-event
-            (cw-event "~%Generated theorem:~% ~x0~%" ',thm)
-            ,thm-event)))
+            ,wf-thm-local-event
+            ,wf-thm-exported-event
+            (cw-event "~%Generated theorem:~% ~x0~%" ',wf-thm-name))))
     (value `(progn ,encapsulate
                    (value-triple :invisible)))))
 

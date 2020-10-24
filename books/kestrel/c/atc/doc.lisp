@@ -62,7 +62,8 @@
       ATJ and ATC currently differ in their primary goals and emphases.
       ATJ was built to recognize, and translate to reasonable Java,
       essentially any ACL2 code (provided that it has known side effects);
-      ATJ also provides ways to extert finer-grained on the generated Java,
+      ATJ also provides ways to exert finer-grained control
+      on the generated Java,
       by using certain ACL2 types and operations
       that represent Java types and operations
       and that are translated to the corresponding Java constructs.
@@ -89,7 +90,6 @@
     (xdoc::codeblock
      "(atc fn1 ... fn"
      "     :const-name  ...  ; default :auto"
-     "     :thm-name    ...  ; default :auto"
      "     :output-file ...  ; no default"
      "     :verbose     ...  ; default nil"
      "  )"))
@@ -174,21 +174,10 @@
        "@(':auto'), to use the symbol @('*program*')
         in the @('\"C\"') package.")
       (xdoc::li
-       "Any other symbol, to use as the name of the constant.")))
-
-    (xdoc::desc
-     "@(':thm-name') &mdash; default @(':auto')"
+       "Any other symbol, to use as the name of the constant."))
      (xdoc::p
-      "Name of the generated ACL2 theorem
-       that proves properties of the generated C program.")
-     (xdoc::p
-      "It must be one of the following:")
-     (xdoc::ul
-      (xdoc::li
-       "@(':auto'), to use the symbol determined by the @(':const-name') input
-        followed by @('-theorem').")
-      (xdoc::li
-       "Any other symbol, to use as the name of the theorem.")))
+      "In the rest of this documentation page,
+       let @('*const*') be the symbol specified by this input."))
 
     (xdoc::desc
      "@(':output-file') &mdash; no default"
@@ -281,10 +270,9 @@
      (xdoc::p
       "ATC generates an event")
      (xdoc::codeblock
-      "(defconst <name> ...)")
+      "(defconst *const* ...)")
      (xdoc::p
-      "where @('<name>') is specified by the @(':const-name') input
-       and @('...') is the abstract syntax tree of
+      "where @('...') is the abstract syntax tree of
        the generated C translation unit,
        which ATC also pretty-prints and
        writes to the file specified by the @(':output-file') input."))
@@ -295,16 +283,15 @@
      (xdoc::p
       "ATC generates an event")
      (xdoc::codeblock
-      "(defthm <name> ...)")
+      "(defthm *const*-well-formed ...)")
      (xdoc::p
-      "where @('<name>') is specified by the @(':thm-name') input
-       and @('...') is a theorem about the named constant described above,
-       i.e. about the generated (abstract syntax tree of the) C program.
-       Currently, the theorem states that the program is statically well-formed,
+      "where @('...') is a theorem about @('*const*') stating that
+       the generated (abstract syntax tree of the) translation unit
+       is statically well-formed,
        i.e. it compiles according to the C18 standard.
        We plan to extend the theorem to state
-       the C program's functional correctness
-       with respect to the ACL2 code from which it is generated.")))
+       the C functions' functional correctness
+       with respect to the ACL2 functions from which they are generated.")))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
