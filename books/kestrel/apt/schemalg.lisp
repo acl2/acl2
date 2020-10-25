@@ -159,7 +159,10 @@
 
   (xdoc::evmac-topic-implementation-item-fn-doc "new")
 
-  (xdoc::evmac-topic-implementation-item-thm-doc "old-if-new")))
+  (xdoc::evmac-topic-implementation-item-thm-doc "old-if-new")
+
+  "@('names-to-avoid') is a cumulative list of names of generated events,
+   used to ensure the absence of name clashes in the generated events."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
