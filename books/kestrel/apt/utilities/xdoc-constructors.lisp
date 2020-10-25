@@ -11,6 +11,7 @@
 (in-package "APT")
 
 (include-book "kestrel/std/util/defmacro-plus" :dir :system)
+(include-book "std/util/define" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -613,3 +614,39 @@
        upon which this transformation is based.
        These notes should be read alongside this reference documentation,
        which refers to them in some places.")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define xdoc::apt-topic-implementation-item-new-enable ((macro stringp))
+  :short "Builds an item, for the XDOC implementation topic,
+          describing the @('new-enable') variable
+          used by the implementation."
+  (xdoc::&& "@('new-enable') is the homonymous input to @('"
+            macro
+            "') if it has no type;
+             otherwise, it the boolean
+             resulting from processing that input."))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define xdoc::apt-topic-implementation-item-verify-guards ((macro stringp))
+  :short "Builds an item, for the XDOC implementation topic,
+          describing the @('verify-guards') variable
+          used by the implementation."
+  (xdoc::&& "@('verify-guards') is the homonymous input to @('"
+            macro
+            "') if it has no type;
+             otherwise, it the boolean
+             resulting from processing that input."))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define xdoc::apt-topic-implementation-item-hints ((macro stringp))
+  :short "Builds an item, for the XDOC implementation topic,
+          describing the @('hints') variable
+          used by the implementation."
+  (xdoc::&& "@('hints') is the homonymous input to @('"
+            macro
+            "') if it has no type;
+             otherwise, it the @(tsee evmac-input-hints-p) value
+             resulting from processing that input."))
