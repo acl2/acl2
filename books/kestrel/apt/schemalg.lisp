@@ -100,6 +100,8 @@
 
   (xdoc::evmac-topic-implementation-item-input "show-only" "schemalg")
 
+  "@('call') is the call to @(tsee schemalg) supplied by the user."
+
   "@('x-x1...xn') is the list of variable symbols @('(x x1 ... xn)')
    described in the user documentation."
 
