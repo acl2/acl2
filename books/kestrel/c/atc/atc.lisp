@@ -17,6 +17,7 @@
 
 (include-book "kestrel/error-checking/ensure-symbol-is-fresh-event-name" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-boolean" :dir :system)
+(include-book "kestrel/error-checking/ensure-value-is-function-name" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-string" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
 (include-book "kestrel/event-macros/cw-event" :dir :system)
@@ -60,14 +61,14 @@
   :returns (mv erp (nothing "Always @('nil').") state)
   :short "Process a target function @('fni') among @('fn1'), ..., @('fnp')."
   (b* ((desc (msg "The target ~x0 input" fn))
-       ((er &) (acl2::ensure-function-name$ fn desc t nil))
+       ((er &) (acl2::ensure-value-is-function-name$ fn desc t nil))
        (desc (msg "The target function ~x0" fn))
        ((er &) (acl2::ensure-function-logic-mode$ fn desc t nil))
        ((er &) (acl2::ensure-function-guard-verified$ fn desc t nil))
        ((er &) (acl2::ensure-function-defined$ fn desc t nil)))
     (value nil))
   :guard-hints (("Goal" :in-theory (enable
-                                    acl2::ensure-function-name
+                                    acl2::ensure-value-is-function-name
                                     acl2::ensure-function-guard-verified
                                     acl2::ensure-function-logic-mode))))
 
