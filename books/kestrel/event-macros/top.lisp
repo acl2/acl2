@@ -20,6 +20,7 @@
 (include-book "make-event-terse")
 (include-book "proof-preparation")
 (include-book "restore-output")
+(include-book "template-generators")
 (include-book "try-event")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
