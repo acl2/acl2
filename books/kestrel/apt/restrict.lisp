@@ -31,6 +31,7 @@
 
 (include-book "utilities/input-processing")
 (include-book "utilities/transformation-table")
+(include-book "utilities/xdoc-constructors")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -59,9 +60,7 @@
 
   (xdoc::evmac-topic-implementation-item-input "new-name" "restrict")
 
-  "@('new-enable') is the homonymous input to @(tsee restrict)
-   if it has no type;
-   otherwise, it is the boolean resulting from processing that input."
+  (xdoc::apt-topic-implementation-item-new-enable "restrict")
 
   "@('thm-name') is the homonymous input to @(tsee restrict)
    if it has no type;
@@ -69,13 +68,9 @@
 
   (xdoc::evmac-topic-implementation-item-input "thm-enable" "restrict")
 
-  "@('verify-guards') is the homonymous input to @(tsee restrict)
-   if it has no type;
-   otherwise, it is the boolean resulting from processing that input."
+  (xdoc::apt-topic-implementation-item-verify-guards "restrict")
 
-  "@('hints') is the homonymous input to @(tsee restrict)
-   if it has no type;
-   otherwise, it is the boolean resulting from processing that input."
+  (xdoc::apt-topic-implementation-item-hints "restrict")
 
   (xdoc::evmac-topic-implementation-item-input "print" "restrict")
 
