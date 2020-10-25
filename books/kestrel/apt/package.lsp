@@ -123,7 +123,6 @@
                          ensure-function-has-args$
                          ensure-function-known-measure$
                          ensure-function-logic-mode$
-                         ensure-function-name$
                          ensure-function-name-or-numbered-wildcard$
                          ensure-function-no-stobjs$
                          ensure-function-not-in-termination-thm$
@@ -156,8 +155,9 @@
                          ensure-term-not-call-of$
                          ensure-tuple$
                          ensure-value-is-boolean$
-                         ensure-value-is-legal-variable-name$
+                         ensure-value-is-function-name$
                          ensure-value-is-in-list$
+                         ensure-value-is-legal-variable-name$
                          ensure-value-is-not-in-list$
                          ensure-value-is-symbol$
                          ensure-value-is-symbol-list$

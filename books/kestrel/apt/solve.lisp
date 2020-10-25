@@ -12,6 +12,7 @@
 
 (include-book "kestrel/error-checking/ensure-symbol-is-fresh-event-name" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-boolean" :dir :system)
+(include-book "kestrel/error-checking/ensure-value-is-function-name" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-symbol-list" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-true-list" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-untranslated-term" :dir :system)
@@ -264,7 +265,10 @@
                    only if :METHOD is :MANUAL, ~
                    but :METHOD is ~x0 instead."
                   method))
-       ((er &) (ensure-function-name$ solution "The :SOLUTION input" t nil))
+       ((er &) (ensure-value-is-function-name$ solution
+                                               "The :SOLUTION input"
+                                               t
+                                               nil))
        ((er &) (ensure-function-arity$
                 solution
                 (len x1...xn)
