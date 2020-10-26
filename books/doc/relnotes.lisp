@@ -356,7 +356,13 @@
       by removing the applicability condition that required
       the restriction predicate to be boolean-valued.
       The new function now uses @(tsee mbt$) instead of @(tsee mbt),
-      thus obviating the need for the removed applicability condition."))
+      thus obviating the need for the removed applicability condition.")
+    (xdoc::li
+     "The @(':thm-name') and @(':thm-enable') inputs have been renamed to
+      @(':old-to-new-name') and @(':old-to-new-enable'),
+      in line with other transformations.
+      Besides the name change, these two inputs now support
+      the APT defaults table."))
 
    (xdoc::p
     "The @(tsee apt::tailrec) transformation has been improved as follows:")

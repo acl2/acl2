@@ -58,15 +58,15 @@
     (xdoc::codeblock
      "(restrict old"
      "          restriction"
-     "          :undefined       ; default :undefined"
-     "          :new-name        ; default :auto"
-     "          :new-enable      ; default :auto"
-     "          :thm-name        ; default :auto"
-     "          :thm-enable      ; default t"
-     "          :verify-guards   ; default :auto"
-     "          :hints           ; default nil"
-     "          :print           ; default :result"
-     "          :show-only       ; default nil"
+     "          :undefined          ; default :undefined"
+     "          :new-name           ; default :auto"
+     "          :new-enable         ; default :auto"
+     "          :old-to-new-name    ; default :auto"
+     "          :old-to-new-enable  ; default t"
+     "          :verify-guards      ; default :auto"
+     "          :hints              ; default nil"
+     "          :print              ; default :result"
+     "          :show-only          ; default nil"
      "  )"))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -191,9 +191,9 @@
 
     (xdoc::desc-apt-input-new-enable)
 
-    (xdoc::desc-apt-input-thm-name :never)
+    (xdoc::desc-apt-input-old-to-new-name)
 
-    (xdoc::desc-apt-input-thm-enable :never)
+    (xdoc::desc-apt-input-old-to-new-enable)
 
     (xdoc::desc-apt-input-verify-guards :plural-functions nil)
 
