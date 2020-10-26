@@ -56,6 +56,7 @@
 (include-book "bitxor")
 (include-book "bitnot")
 (include-book "bitand")
+(include-book "bitor")
 
 ;; Arithmetic operations:
 (include-book "bvplus")
