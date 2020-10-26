@@ -1081,13 +1081,14 @@
 
 ;; Well, it might not be a great idea to borrow a numbering scheme from
 ;; set-indices.lisp
-(defthm set-indices-in-fa-table-correctness-3
-  (implies (and (natp n)
-                (nat-listp index-list)
-                (not (member-equal n index-list)))
-           (equal (nth n (set-indices-in-fa-table fa-table index-list value-list))
-                  (nth n fa-table)))
-  :hints (("Goal" :in-theory (enable set-indices-in-fa-table))))
+(defthm
+  set-indices-in-fa-table-correctness-3
+  (implies
+   (not (member-equal (nfix n) index-list))
+   (equal (nth n
+               (set-indices-in-fa-table fa-table index-list value-list))
+          (nth n fa-table)))
+  :hints (("goal" :in-theory (enable set-indices-in-fa-table))))
 
 (defthm set-indices-in-fa-table-correctness-4
   (implies (and (natp key)
@@ -1262,18 +1263,44 @@
                    (fat32-build-index-list fa-table masked-current-cluster
                                            length cluster-size))))))))
 
-(defthm
-  nth-of-set-indices-in-fa-table-when-member
-  (implies (and (bounded-nat-listp index-list (len fa-table))
-                (fat32-masked-entry-p val)
-                (member-equal n index-list))
-           (equal (nth n
-                       (set-indices-in-fa-table fa-table index-list
-                                                (make-list-ac (len index-list)
-                                                              val nil)))
-                  (fat32-update-lower-28 (nth n fa-table)
-                                         val)))
-  :hints (("goal" :in-theory (enable set-indices-in-fa-table))))
+(encapsulate ()
+
+  (local
+   (defthmd
+     lemma
+     (implies (and (bounded-nat-listp index-list (len fa-table))
+                   (fat32-masked-entry-p val)
+                   (member-equal n index-list))
+              (equal (nth n
+                          (set-indices-in-fa-table fa-table index-list
+                                                   (make-list-ac (len index-list)
+                                                                 val nil)))
+                     (fat32-update-lower-28 (nth n fa-table)
+                                            val)))
+     :hints (("goal" :in-theory (enable set-indices-in-fa-table)))))
+
+  (defthm
+    nth-of-set-indices-in-fa-table-when-member
+    (implies (and (bounded-nat-listp index-list (len fa-table))
+                  (fat32-masked-entry-p val))
+             (equal (nth n
+                         (set-indices-in-fa-table fa-table index-list
+                                                  (make-list-ac (len index-list)
+                                                                val nil)))
+                    (if (member-equal (nfix n) index-list)
+                        (fat32-update-lower-28 (nth n fa-table)
+                                               val)
+                        (nth n fa-table))))
+    :hints
+    (("goal"
+      :in-theory (e/d (set-indices-in-fa-table)
+                      ((:rewrite set-indices-in-fa-table-correctness-3)))
+      :use ((:instance (:rewrite set-indices-in-fa-table-correctness-3)
+                       (value-list (make-list-ac (len index-list) val nil))
+                       (index-list index-list)
+                       (fa-table fa-table)
+                       (n n))
+            (:instance lemma (n (nfix n))))))))
 
 (defthm
   fat32-build-index-list-correctness-2

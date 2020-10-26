@@ -1819,12 +1819,7 @@ the way.</li>
           :hints(("Goal" :in-theory (enable sv::svex-alist-vars))))))
 
 
-(fty::deflist vl-datatypelist :elt-type vl-datatype
-  ///
-  (defthm vl-datatypelist-fix-of-repeat
-    (equal (vl-datatypelist-fix (repeat n x))
-           (repeat n (vl-datatype-fix x)))
-    :hints(("Goal" :in-theory (enable repeat)))))
+(fty::deflist vl-datatypelist :elt-type vl-datatype)
 
 (define vl-datatypelist-resolved-p ((x vl-datatypelist-p))
   (if (atom x)

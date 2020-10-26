@@ -17,9 +17,14 @@
 (defpkg "C" (append
              (set-difference-eq *std-pkg-symbols*
                                 '(byte
+                                  error
                                   pprint-indent))
              '(bool
+               cw-event
                defxdoc+
+               er-soft+
+               evmac-prepare-proofs
+               flatten-ands-in-lit
                implode
                lnfix
                msg-listp

@@ -45,7 +45,6 @@
 (include-book "minimize-ruler-extenders")
 ; Skipping the following, because it requires a trust tag:
 ; (include-book "non-ascii-pathnames" :ttags (:non-ascii-pathnames))
-(include-book "obags/with-fixing-theorems")
 (include-book "omaps/with-fixing-theorems")
 (include-book "orelse")
 (include-book "oset-theorems")

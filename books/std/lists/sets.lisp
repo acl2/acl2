@@ -319,14 +319,20 @@ about set intersection.</p>"
   (defthm subsetp-of-cdr
     (subsetp (cdr x) x)))
 
-
-
-(defthmd intersectp-member
-  ;; BOZO what is this doing here?
-  (implies (and (member a x)
-                (member a y))
-           (equal (intersectp x y) t)))
-
+;; Mihir M. mod 14 Oct 2020: There wasn't much reason for this to be left
+;; disabled, and additional corollaries can help this match in more
+;; circumstances. One of these corollaries becomes redundant if intersectp is
+;; proved to be commutative - I'm not sure if this book has such a proof.
+(defthm intersectp-member
+  (implies (and (member a x) (member a y))
+           (equal (intersectp x y) t))
+  :rule-classes
+  (:rewrite (:rewrite :corollary (implies (and (not (intersectp x y))
+                                               (member a y))
+                                          (not (member a x))))
+            (:rewrite :corollary (implies (and (not (intersectp x y))
+                                               (member a x))
+                                          (not (member a y))))))
 
 (local (in-theory (enable subsetp-member)))
 

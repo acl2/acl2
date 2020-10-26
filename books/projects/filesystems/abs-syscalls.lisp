@@ -5,9 +5,9 @@
 
 (in-package "ACL2")
 
-(include-book "partial-collapse")
-(include-book "abs-find-file-src")
-(include-book "abs-alloc")
+(include-book "absfat/partial-collapse")
+(include-book "absfat/abs-find-file-src")
+(include-book "absfat/abs-alloc")
 (include-book "hifat-syscalls")
 (local (include-book "std/lists/prefixp" :dir :system))
 (local (include-book "std/lists/intersectp" :dir :system))

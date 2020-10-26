@@ -184,6 +184,7 @@
 (include-book "centaur/ubdds/param" :dir :system)
 
 (include-book "centaur/sv/top" :dir :system)
+(include-book "centaur/fgl/top" :dir :system)
 
 (ifdef "OS_HAS_GLUCOSE"
        (include-book "centaur/sv/tutorial/alu" :dir :system)

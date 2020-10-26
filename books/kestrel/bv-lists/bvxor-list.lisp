@@ -11,7 +11,7 @@
 
 (in-package "ACL2")
 
-(include-book "all-integerp")
+(include-book "../typed-lists-light/all-integerp")
 (include-book "all-unsigned-byte-p")
 (include-book "../bv/bvxor")
 

@@ -36,6 +36,7 @@
 (include-book "centaur/misc/hons-extra" :dir :system)
 (include-book "centaur/gl/gl-mbe" :dir :system)
 (include-book "centaur/gl/def-gl-rewrite" :dir :system)
+(include-book "centaur/fgl/def-fgl-rewrite" :dir :system)
 (local (include-book "centaur/misc/equal-sets" :dir :system))
 (local (include-book "std/osets/element-list" :dir :system))
 (local (include-book "std/osets/under-set-equiv" :dir :system))
@@ -559,7 +560,6 @@
   :guard-debug t
   :returns (outs svex-envlist-p)
   (svex-envlist-extract signals (svtv-fsm-eval (take (len signals) ins) prev-st x))
-
   ///
 
   ;; (defthm svtv-fsm-eval-of-take
@@ -575,6 +575,48 @@
              (equal (svex-env-lookup var (nth n (svtv-fsm-run ins initst svtv signals)))
                     (svex-env-lookup var (nth n (svtv-fsm-eval (take (len signals) ins) initst svtv)))))
     :hints(("Goal" :in-theory (enable svtv-fsm-run)))))
+
+(define svtv-fsm-print-run ((ins svex-envlist-p)
+                            (outs svex-envlist-p)
+                            (states svex-envlist-p)
+                            (cycle natp)
+                            print-ins
+                            print-outs
+                            print-states)
+  :measure (max (len outs) (len states))
+  (if (and (atom outs) (atom states))
+      nil
+    (progn$ (cw "Cycle ~x0: " cycle)
+            (and print-ins
+                 (prog2$ (cw "Inputs:~%")
+                         (svtv-print-alist-readable (car ins))))
+            (and print-outs
+                 (prog2$ (cw "Outputs:~%")
+                         (svtv-print-alist-readable (car outs))))
+            (and print-states
+                 (prog2$ (cw "States:~%")
+                         (svtv-print-alist-readable (car states))))
+            (svtv-fsm-print-run (cdr ins) (cdr outs) (cdr states) (1+ (lnfix cycle))
+                                print-ins print-outs print-states))))
+            
+
+(define svtv-fsm-run* ((ins svex-envlist-p)
+                       (prev-st svex-env-p)
+                       (x svtv-p)
+                       (signals svarlist-list-p)
+                       &key
+                       (print-initsts 'nil)
+                       (print-ins 't)
+                       (print-outs 't))
+  :guard (and (equal (alist-keys prev-st) (svex-alist-keys (svtv->nextstate x)))
+              (not (acl2::hons-dups-p (svex-alist-keys (svtv->nextstate x)))))
+  :enabled t
+  (b* ((ans (svtv-fsm-run ins prev-st x signals)))
+    (and print-initsts
+         (prog2$ (cw "Initial state:~%") (svtv-print-alist-readable prev-st)))
+    (and (or print-ins print-outs)
+         (svtv-fsm-print-run ins ans nil 0 print-ins print-outs nil))
+    ans))
 
 
 (define svtv-fsm-run-states ((ins svex-envlist-p)
@@ -603,6 +645,26 @@
                     (svex-env-lookup var (nth n (svtv-fsm-eval-states (take (len signals) ins) initst x)))))
     :hints(("Goal" :in-theory (enable svtv-fsm-run)))))
 
+
+(define svtv-fsm-run-states* ((ins svex-envlist-p)
+                              (prev-st svex-env-p)
+                              (x svtv-p)
+                              (signals svarlist-list-p)
+                              &key
+                              (print-initsts 'nil)
+                              (print-ins 't)
+                              (print-states 't))
+  :guard (and (equal (alist-keys prev-st) (svex-alist-keys (svtv->nextstate x)))
+              (not (acl2::hons-dups-p (svex-alist-keys (svtv->nextstate x)))))
+  :enabled t
+  (b* ((ans (svtv-fsm-run-states ins prev-st x signals)))
+    (and print-initsts
+         (prog2$ (cw "Initial state:~%") (svtv-print-alist-readable prev-st)))
+    (and (or print-ins print-states)
+         (svtv-fsm-print-run ins nil ans 0 print-ins nil print-states))
+    ans))
+
+
 (define svtv-fsm-run-outs-and-states ((ins svex-envlist-p)
                                       (prev-st svex-env-p)
                                       (svtv svtv-p)
@@ -613,6 +675,31 @@
               (not (acl2::hons-dups-p (svex-alist-keys (svtv->nextstate svtv)))))
   (mv (svtv-fsm-run ins prev-st svtv out-signals)
       (svtv-fsm-run-states ins prev-st svtv state-signals)))
+
+
+(define svtv-fsm-run-outs-and-states* ((ins svex-envlist-p)
+                                       (prev-st svex-env-p)
+                                       (svtv svtv-p)
+                                       &key
+                                       (out-signals svarlist-list-p)
+                                       (state-signals svarlist-list-p)
+                                       (print-initsts 'nil)
+                                       (print-ins 't)
+                                       (print-outs 't)
+                                       (print-states 't))
+  :guard (and (equal (alist-keys prev-st) (svex-alist-keys (svtv->nextstate svtv)))
+              (not (acl2::hons-dups-p (svex-alist-keys (svtv->nextstate svtv)))))
+  :guard-hints (("goal" :in-theory (enable svtv-fsm-run-outs-and-states)))
+  :enabled t
+  (b* (((mv outs states) (svtv-fsm-run-outs-and-states
+                          ins prev-st svtv :out-signals out-signals :state-signals state-signals)))
+    (and print-initsts
+         (prog2$ (cw "Initial state:~%") (svtv-print-alist-readable prev-st)))
+    (and (or print-ins print-outs print-states)
+         (svtv-fsm-print-run ins outs states 0 print-ins print-outs print-states))
+    (mv outs states)))
+
+
 
 
 
@@ -1116,8 +1203,18 @@
              outs))
     :hints(("Goal" :in-theory (enable svtv-fsm-run-outs-and-states))))
 
+  (fgl::add-fgl-rewrite svtv-fsm-run-is-symbolic)
+
   (gl::def-gl-rewrite svtv-fsm-run-states-is-symbolic
     (equal (svtv-fsm-run-states ins prev-st x signals)
            (b* (((mv ?outs states) (svtv-fsm-run-outs-and-states-symbolic ins prev-st x :state-signals signals)))
              states))
-    :hints(("Goal" :in-theory (enable svtv-fsm-run-outs-and-states)))))
+    :hints(("Goal" :in-theory (enable svtv-fsm-run-outs-and-states))))
+
+  (fgl::add-fgl-rewrite svtv-fsm-run-states-is-symbolic)
+
+  (gl::def-gl-rewrite svtv-fsm-run-outs-and-states-is-symbolic
+    (equal (svtv-fsm-run-outs-and-states ins prev-st x :out-signals out-signals :state-signals state-signals)
+           (svtv-fsm-run-outs-and-states-symbolic ins prev-st x :out-signals out-signals :state-signals state-signals)))
+
+  (fgl::add-fgl-rewrite svtv-fsm-run-outs-and-states-is-symbolic))

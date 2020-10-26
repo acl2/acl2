@@ -13,14 +13,14 @@
 
 ;; This book contains theorems that mix LOGIOR with BVCHOP and LOGTAIL.
 
-(include-book "kestrel/bv/logior" :dir :system)
-(include-book "kestrel/bv/bvchop-def" :dir :system)
-(include-book "kestrel/bv/logtail-def" :dir :system)
+(include-book "logior")
+(include-book "bvchop-def")
+(include-book "logtail-def")
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
-(local (include-book "kestrel/bv/logand" :dir :system)) ;;logior is defined in terms of logand
-(local (include-book "kestrel/bv/lognot" :dir :system)) ;;logior is defined in terms of lognot
+(local (include-book "logand")) ;;logior is defined in terms of logand
+(local (include-book "lognot")) ;;logior is defined in terms of lognot
 
 (defthm logtail-of-logior
   (equal (logtail n (logior i j))

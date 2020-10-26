@@ -22,6 +22,9 @@
 
 (include-book "points-fty")
 
+(include-book "bls12-377-domain-parameters")
+
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc elliptic-curves
@@ -35,4 +38,5 @@
    secp256k1-types
    secp256k1
    secp256k1-interface
-   secp256k1-attachment))
+   secp256k1-attachment
+   bls12-377-domain-parameters))
