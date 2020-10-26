@@ -11,9 +11,9 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/bv/getbit" :dir :system)
-(include-book "kestrel/bv/lognot" :dir :system)
-(include-book "kestrel/bv/unsigned-byte-p" :dir :system)
+(include-book "getbit")
+(include-book "lognot")
+(include-book "unsigned-byte-p")
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
