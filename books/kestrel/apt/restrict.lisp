@@ -446,7 +446,7 @@
    </p>
    <p>
    Guard verification is deferred;
-   see @(tsee restrict-gen-new-fn-verify-guards).
+   see @(tsee restrict-gen-verify-guards).
    </p>"
   (b* ((macro (function-intro-macro new-enable (non-executablep old wrld)))
        (formals (formals old wrld))
