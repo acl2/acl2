@@ -62,10 +62,15 @@
 (include-book "bvplus")
 (include-book "bvminus")
 (include-book "bvuminus")
+(include-book "bvmult")
+(include-book "bvmod")
 
 ;; Comparison operations:
 (include-book "bvlt")
 (include-book "sbvlt")
+
+;; If-then-else:
+(include-book "bvif")
 
 ;; Rotate operations:
 (include-book "leftrotate")
