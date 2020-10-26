@@ -74,7 +74,7 @@ allowing the user to use Smtlink inside of a Smtlink proof.</p>
          ((if (eq key (car kwd-alist)))
           (mv nil kwd-alist))
          ((unless (consp (cdr kwd-alist)))
-          (prog2$ (er hard? 'SMT-computed-hints=>my-split-kwd-alist "Something ~
+          (prog2$ (er hard? 'computed-hints=>my-split-kwd-alist "Something ~
   is wrong with the kwd-alist: ~q0" kwd-alist)
                   (mv nil nil)))
          ((mv pre post)

@@ -1,5 +1,5 @@
 ;; Copyright (C) 2015, University of British Columbia
-;; Written (originally) by Yan Peng (23rd May, 2018)
+;; Written (originally) by Yan Peng (Canada Day, 2019)
 ;;
 ;; License: A 3-clause BSD license.
 ;; See the LICENSE file distributed with ACL2
@@ -9,307 +9,457 @@
 (include-book "xdoc/top" :dir :system)
 (include-book "std/util/define" :dir :system)
 
-(include-book "../../verified/hint-interface")
-(include-book "../../verified/basics")
-(include-book "./datatypes")
+(include-book "translate-constant")
+(include-book "fixtype-precond-template")
 
-(defsection SMT-translate-fty
-  :parents (z3-py)
-  :short "Translating FTY declarations"
+(local (in-theory (enable int-to-rat-p
+                          string-or-symbol-p
+                          word-p)))
 
-  (local (in-theory (enable string-or-symbol-p)))
+;; -------------------------------------------------------
+;; translate a type name
+(define translate-type ((type symbolp)
+                        (sym symbolp)
+                        (int-to-rat int-to-rat-p)
+                        (fixinfo smt-fixtype-info-p))
+  :returns (translated word-p)
+  (b* ((type (symbol-fix type))
+       (name (name-of-recognizer type fixinfo))
+       (itr (int-to-rat-fix int-to-rat))
+       (kind (int-to-rat-kind itr))
+       (item (cond ((and (equal name 'integer)
+                         (or (and (equal kind :switch)
+                                  (equal (int-to-rat-switch->okp itr) 't))
+                             (and (equal kind :symbol-list)
+                                  (member-equal sym
+                                                (int-to-rat-symbol-list->lst
+                                                 itr)))))
+                    (assoc-equal 'rational *SMT-types*))
+                   (t (assoc-equal name *SMT-types*))))
+       ((unless (endp item)) (cdr item)))
+    (str::downcase-string (lisp-to-python-names name))))
 
-  (define translate-bool ((b booleanp) (nil-type symbolp))
-    :returns (translated paragraphp
-                         :hints (("Goal" :in-theory (enable paragraphp wordp))))
-    (cond
-     ;; Boolean: nil
-     ((and (equal b nil)
-           (equal nil-type nil))
-      (list "False"))
-     ;; A fty nil
-     ((equal b nil)
-      (list (str::downcase-string (concatenate 'string (lisp-to-python-names
-                                                        nil-type) ".nil"))))
-     ;; Boolean: t
-     (t (list "True"))))
+;; -------------------------------------------------------
+;; translate a type declaration
+(define translate-declaration ((name symbolp) (type symbolp)
+                               (int-to-rat int-to-rat-p)
+                               (fixinfo smt-fixtype-info-p))
+  :returns (translated paragraph-p)
+  (b* ((name (symbol-fix name))
+       (type (symbol-fix type))
+       (translated-name (translate-symbol name))
+       (translated-type
+        (translate-type type name int-to-rat fixinfo)))
+    `(,translated-name = "z3.Const" #\( #\' ,translated-name #\' #\, #\Space
+                       ,translated-type #\) #\Newline)))
 
-  (define translate-symbol ((sym symbolp))
-    :returns (translated paragraphp
-                         :hints (("Goal" :in-theory (enable paragraphp wordp))))
-    (str::downcase-string (lisp-to-python-names sym)))
+(define translate-type-decl-list ((type-decl-lst decl-list-p)
+                                  (fixinfo smt-fixtype-info-p)
+                                  (int-to-rat int-to-rat-p))
+  :returns (translated paragraph-p)
+  :measure (len type-decl-lst)
+  (b* ((type-decl-lst (decl-list-fix type-decl-lst))
+       ((unless (consp type-decl-lst)) nil)
+       ((cons first rest) type-decl-lst)
+       ((decl d) first)
+       ((hint-pair h) d.type)
+       ((unless (type-decl-p h.thm fixinfo))
+        (er hard? 'translate-type=>translate-type-decl-list
+            "Type theorem is not a type-decl-p: ~q0"
+            h.thm))
+       (translated-type-decl
+        (translate-declaration d.name (car h.thm) int-to-rat fixinfo)))
+    (cons translated-type-decl
+          (translate-type-decl-list rest fixinfo int-to-rat))))
 
-  (define translate-symbol-lst ((formals symbol-listp))
-    :returns (translated paragraphp
-                         :hints (("Goal" :in-theory (enable translate-symbol
-                                                            paragraphp
-                                                            wordp))))
-    :measure (len formals)
-    (b* ((formals (symbol-list-fix formals))
-         ((unless (consp formals)) nil)
-         ((unless (consp (cdr formals)))
-          (list (translate-symbol (car formals))))
-         ((cons first rest) formals)
-         (translated-name (translate-symbol first)))
-      (cons translated-name `(#\, #\Space ,@(translate-symbol-lst rest)))))
+;; -------------------------------------------------------
+;; translate symbol type
+(local
+ (defthm paragraph-p-of-car-of-string-list-fix
+   (paragraph-p (car (str::string-list-fix symbols)))
+   :hints (("Goal" :in-theory (e/d (paragraph-p word-p str::string-list-fix)
+                                   ()))))
+ )
 
-  (define translate-type ((type symbolp)
-                          (int-to-rat booleanp)
-                          (flag symbolp))
-    :returns (translated stringp)
-    (b* ((type (symbol-fix type))
-         (item (cond ((equal flag 'uninterpreted)
-                      (assoc-equal type *SMT-uninterpreted-types*))
-                     ((and (equal type 'integerp) int-to-rat)
-                      (assoc-equal 'rationalp *SMT-types*))
-                     (t (assoc-equal type *SMT-types*))))
-         ((unless (endp item)) (cdr item)))
-      (str::downcase-string (lisp-to-python-names type))))
+(define translate-symbol-declare ((symbols string-listp))
+  :returns (translated paragraph-p)
+  :measure (len symbols)
+  (b* ((symbols (str::string-list-fix symbols))
+       ((unless (consp symbols)) nil)
+       ((cons first rest) symbols))
+    (cons `(,first " = Symbol_z3.intern('" ,first "')" #\Newline)
+          (translate-symbol-declare rest))))
 
-  (define translate-fty-field-lst ((fields fty-field-alist-p)
-                                   (int-to-rat booleanp))
-    :returns (translated paragraphp
-                         :hints (("Goal" :in-theory (enable translate-type
-                                                            translate-symbol
-                                                            paragraphp wordp))))
-    :measure (len fields)
-    :hints (("Goal" :in-theory (e/d (fty-field-alist-fix) ())))
-    (b* ((fields (fty-field-alist-fix fields))
-         ((unless (consp fields)) nil)
-         ((cons first rest) fields)
-         (name (translate-symbol (car first)))
-         (type (translate-type (cdr first) int-to-rat nil))
-         (translated-field `(", ('" ,name "', " ,type ")")))
-      (cons translated-field
-            (translate-fty-field-lst rest int-to-rat))))
+(define translate-symbol-enumeration ((symbols string-listp))
+  :returns (translated paragraph-p)
+  (b* ((datatype-line '("Symbol_z3 = _SMT_.Symbol()" #\Newline))
+       (declarations (translate-symbol-declare symbols)))
+    `(,datatype-line
+      ,@declarations)))
 
-  (define translate-fty-prod ((name symbolp)
-                              (fields fty-field-alist-p)
-                              (int-to-rat booleanp))
-    :returns (translated paragraphp
-                         :hints (("Goal"
-                                  :in-theory (enable paragraphp wordp))))
-    (b* ((name (symbol-fix name))
-         (name (translate-symbol name))
-         (datatype-line `(,name "= z3.Datatype" #\( #\' ,name #\' #\) #\Newline))
-         (translated-fields (translate-fty-field-lst fields int-to-rat))
-         (fields-line `(,name ".declare('" ,name "'" ,@translated-fields ")"
-                              #\Newline))
-         (create-line `(,name " = " ,name ".create()" #\Newline)))
-      `(,datatype-line
-        ,fields-line
-        ,create-line)))
+;; -------------------------------------------------------
+;; translate fixtype definition
+;; translation template
+(define translate-abstract-template ((name paragraph-p))
+  :returns (translated paragraph-p)
+  (b* ((name (paragraph-fix name)))
+    `(,name " = DeclareSort('" ,name "')" #\Newline)))
 
-  (define translate-fty-option ((name symbolp)
-                                (some-type symbolp)
-                                (int-to-rat booleanp))
-    :returns (translated paragraphp
-                         :hints (("Goal"
-                                  :in-theory (enable paragraphp wordp))))
-    (b* ((name (symbol-fix name))
-         (name (translate-symbol name))
-         (datatype-line
-          `(,name "= z3.Datatype" #\( #\' ,name #\' #\) #\Newline))
-         (translated-type (translate-type some-type int-to-rat nil))
-         (declare-line1
-          `(,name ".declare('some', ('val', " ,translated-type "))" #\Newline))
-         (declare-line2
-          `(,name ".declare('nil')" #\Newline))
-         (create-line `(,name " = " ,name ".create()" #\Newline)))
-      `(,datatype-line
-        ,declare-line1
-        ,declare-line2
-        ,create-line)))
+(define translate-array-template ((name paragraph-p)
+                                  (key-type paragraph-p)
+                                  (val-type paragraph-p))
+  :returns (translated paragraph-p)
+  (b* ((name (paragraph-fix name))
+       (key-type (paragraph-fix key-type))
+       (val-type (paragraph-fix val-type)))
+    `(,name " = ArraySort(" ,key-type ", " ,val-type ")" #\Newline)))
 
-  (define translate-fty-list ((name symbolp)
-                              (elt-type symbolp)
-                              (int-to-rat booleanp))
-    :returns (translated paragraphp
-                         :hints (("Goal"
-                                  :in-theory (enable paragraphp wordp))))
-    (b* ((name (symbol-fix name))
-         (name (translate-symbol name))
-         (datatype-line
-          `(,name "= z3.Datatype" #\( #\' ,name #\' #\) #\Newline))
-         (translated-elt-type (translate-type elt-type int-to-rat nil))
-         (declare-line1
-          `(,name ".declare('cons', ('car', " ,translated-elt-type "), "
-                  "('cdr', " ,name "))" #\Newline))
-         (declare-line2
-          `(,name ".declare('nil')" #\Newline))
-         (consp-fn `("def " ,name "_consp(l): return Not(l == " ,name ".nil)"
-                     #\Newline))
-         (create-line `(,name " = " ,name ".create()" #\Newline)))
-      `(,datatype-line
-        ,declare-line1
-        ,declare-line2
-        ,create-line
-        ,consp-fn)))
+(define translate-destructor-template ((destructor paragraph-p)
+                                       (return-type paragraph-p))
+  :returns (translated paragraph-p)
+  (b* ((destructor (paragraph-fix destructor))
+       (return-type (paragraph-fix return-type)))
+    `("('" ,destructor "', " ,return-type ")")))
 
-  (define translate-fty-alist-assoc-return ((key-type symbolp)
-                                            (val-type symbolp)
-                                            (assoc-return paragraphp)
-                                            (int-to-rat booleanp))
-    :returns (translated paragraphp
-                         :hints (("Goal"
-                                  :in-theory (enable paragraphp wordp))))
-    (b* ((key-type (symbol-fix key-type))
-         (key-type (translate-type key-type int-to-rat nil))
-         (val-type (symbol-fix val-type))
-         (val-type (translate-type val-type int-to-rat nil))
-         (assoc-return (paragraph-fix assoc-return))
-         (datatype-line `(,assoc-return "= z3.Datatype('" ,assoc-return "')"
-                                        #\Newline))
-         (declare-line1 `(,assoc-return ".declare('cons', ('car', " ,key-type
-                                        "), ('cdr', " ,val-type "))" #\Newline))
-         (declare-line2 `(,assoc-return ".declare('nil')" #\Newline))
-         (consp-fn `("def " ,assoc-return "_consp(l): return Not(l == "
-                     ,assoc-return ".nil)" #\Newline))
-         (create-line `(,assoc-return " = " ,assoc-return ".create()" #\Newline))
-         )
-      `(,@datatype-line
-        ,@declare-line1
-        ,@declare-line2
-        ,create-line
-        ,@consp-fn)))
+(define translate-prod-template ((name paragraph-p)
+                                 (constructor paragraph-p)
+                                 (destructor-list paragraph-p))
+  :returns (translated paragraph-p)
+  (b* ((name (paragraph-fix name))
+       (constructor (paragraph-fix constructor))
+       (destructor-list (paragraph-fix destructor-list)))
+    `(,name ".declare('" ,constructor "'" ,destructor-list ")" #\Newline)))
 
-  (define translate-fty-alist-acons ((name symbolp)
-                                     (maybe-val symbolp))
-    :returns (translated paragraphp
-                         :hints (("Goal"
-                                  :in-theory (enable paragraphp wordp))))
-    (b* ((name (symbol-fix name))
-         (maybe-val (symbol-fix maybe-val))
-         (maybe-val (translate-symbol maybe-val))
-         (name (translate-symbol name))
-         (fn-name `(,name "_acons")))
-      `("def " ,fn-name "(key, value, alist): return Store(alist, key, "
-        ,maybe-val ".some(value))"
-        #\Newline)))
+(define translate-sum-template ((name paragraph-p)
+                                (declare-lines paragraph-p))
+  :returns (translated paragraph-p)
+  (b* ((name (paragraph-fix name))
+       (declare-lines (paragraph-fix declare-lines))
+       (datatype-line
+        `(,name "= z3.Datatype" #\( #\' ,name #\' #\) #\Newline))
+       (create-line
+        `(,name " = " ,name ".create()" #\Newline)))
+    `(,datatype-line
+      ,declare-lines
+      ,create-line)))
 
-  (define translate-fty-alist-assoc ((name symbolp)
-                                     (maybe-val symbolp)
-                                     (assoc-return paragraphp))
-    :returns (translated paragraphp
-                         :hints (("Goal"
-                                  :in-theory (enable paragraphp wordp))))
-    :guard-debug t
-    (b* ((name (symbol-fix name))
-         (name (translate-symbol name))
-         (maybe-val (symbol-fix maybe-val))
-         (maybe-val (translate-symbol maybe-val))
-         (assoc-return (paragraph-fix assoc-return))
-         (fn-name
-          `(,name "_" ,(translate-symbol 'ASSOC-EQUAL))))
-      `("def " ,fn-name "(key, alist): return If(Select(alist, key) == "
-        ,maybe-val ".nil, " ,assoc-return ".nil, "
-        ,assoc-return ".cons(key, " ,maybe-val
-        ".val(Select(alist, key))))" #\Newline)))
+(define translate-sum-declare ((name paragraph-p)
+                               (kind-fn paragraph-p)
+                               (name-val paragraph-p)
+                               (symbol-type paragraph-p))
+  :returns (translated paragraph-p)
+  (b* ((name (paragraph-fix name))
+       (kind-fn (paragraph-fix kind-fn))
+       (name-val (paragraph-fix name-val))
+       (symbol-type (paragraph-fix symbol-type))
+       (declare-line `(,name ".declare('make', ('" ,kind-fn "', "
+                             ,symbol-type "), ('value', " ,name-val "))"
+                             #\Newline)))
+    declare-line))
 
-  (define make-pair-type ((key-type symbolp)
-                          (val-type symbolp))
-    :returns (pair-type stringp)
-    (b* ((key-type (symbol-fix key-type))
-         (val-type (symbol-fix val-type))
-         (key-type-str (symbol-name key-type))
-         (val-type-str (symbol-name val-type))
-         (pair-type
-          (concatenate 'string key-type-str "_" val-type-str))
-         )
-      (str::downcase-string (lisp-to-python-names pair-type))))
+(define translate-sum-top-template ((val-type paragraph-p)
+                                    (type paragraph-p)
+                                    (declare-lines paragraph-p))
+  :returns (translated paragraph-p)
+  (b* ((val-type (paragraph-fix val-type))
+       (type (paragraph-fix type))
+       (declare-lines (paragraph-fix declare-lines))
+       (datatype-line1
+        `(,val-type "= z3.Datatype" #\( #\' ,val-type #\' #\) #\Newline))
+       (datatype-line2
+        `(,type "= z3.Datatype" #\( #\' ,type #\' #\) #\Newline))
+       (create-line `(,val-type ", " ,type " = CreateDatatypes("
+                                ,val-type ", " ,type ")" #\Newline)))
+    `(,datatype-line1
+      ,datatype-line2
+      ,declare-lines
+      ,create-line)))
 
-  (define translate-fty-alist-type ((name symbolp)
-                                    (key-type symbolp)
-                                    (maybe-val symbolp)
-                                    (int-to-rat booleanp))
-    :returns (translated paragraphp
-                         :hints (("Goal"
-                                  :in-theory (enable paragraphp wordp))))
-    (b* ((name (symbol-fix name))
-         (name (translate-symbol name))
-         (key-type (symbol-fix key-type))
-         (key-type (translate-type key-type int-to-rat nil))
-         (maybe-val (symbol-fix maybe-val))
-         (maybe-val (translate-type maybe-val int-to-rat nil))
-         )
-      `(,name " = ArraySort(" ,key-type ", " ,maybe-val ")" #\Newline)))
+(define translate-enum-template ((name paragraph-p)
+                                 (enum-lines paragraph-p))
+  :returns (translated paragraph-p)
+  (b* ((name (paragraph-fix name))
+       (enum-lines (paragraph-fix enum-lines))
+       (declare-line
+        `(,name "= z3.Datatype" #\( #\' ,name #\' #\) #\Newline))
+       (create-line `(,name " = " ,name ".create()" #\Newline)))
+    `(,declare-line
+      ,enum-lines
+      ,create-line)))
 
-  (define translate-fty-alist ((name symbolp)
-                               (key-type symbolp)
-                               (val-type symbolp)
-                               (int-to-rat booleanp))
-    :returns (translated paragraphp
-                         :hints (("Goal"
-                                  :in-theory (enable paragraphp wordp))))
-    :guard-hints (("Goal" :in-theory (e/d (paragraphp wordp) ())))
-    (b* ((name (symbol-fix name))
-         (key-type (symbol-fix key-type))
-         (val-type (symbol-fix val-type))
-         (val-type-pkg (symbol-package-name val-type))
-         (val-type-str (translate-type val-type int-to-rat nil))
-         (maybe-val-str (concatenate 'string "maybe_" val-type-str))
-         (maybe-val (intern$ maybe-val-str val-type-pkg))
-         (maybe-val-type
-          (translate-fty-option maybe-val val-type int-to-rat))
-         (assoc-return (make-pair-type key-type val-type))
-         (assoc-return-type
-          (translate-fty-alist-assoc-return key-type val-type assoc-return
-                                            int-to-rat))
-         (alist-equality
-          (translate-fty-alist-type name key-type maybe-val int-to-rat))
-         (acons-fn (translate-fty-alist-acons name maybe-val))
-         (assoc-fn
-          (translate-fty-alist-assoc name maybe-val assoc-return))
-         )
-      (append `(,maybe-val-type
-                ,alist-equality
-                ,assoc-return-type)
-              `(,acons-fn
-                ,assoc-fn))))
+(define translate-array ((name symbolp)
+                         (rec symbolp)
+                         (smt-type smt-type-p)
+                         (int-to-rat int-to-rat-p)
+                         (precond pseudo-term-list-listp)
+                         (fixinfo smt-fixtype-info-p))
+  :returns (mv (translated-fixtypes paragraph-p)
+               (fixtype-precond pseudo-term-list-listp))
+  :guard (equal (smt-type-kind smt-type) :array)
+  (b* ((name (symbol-fix name))
+       (smt-type (smt-type-fix smt-type))
+       ((smt-type-array a) smt-type)
+       (name-str (translate-symbol name))
+       (key-type (translate-type a.key-type name int-to-rat fixinfo))
+       (val-type (translate-type a.val-type name int-to-rat fixinfo))
+       (translated (translate-array-template name-str key-type val-type))
+       (precond (precond-array rec smt-type precond)))
+    (mv translated precond)))
 
+(define translate-constructor ((constructor type-function-p))
+  :returns (translated paragraph-p)
+  (b* ((constructor (type-function-fix constructor))
+       ((type-function f) constructor))
+    (translate-symbol f.name)))
 
-  (define translate-one-fty-type ((name symbolp)
-                                  (body fty-type-p)
-                                  (int-to-rat booleanp))
-    :returns (translated paragraphp
-                         :hints (("Goal"
-                                  :in-theory (enable paragraphp wordp))))
-    (b* ((body (fty-type-fix body)))
-      (cond ((equal (fty-type-kind body) :prod)
-             (translate-fty-prod name (fty-type-prod->fields body) int-to-rat))
-            ((equal (fty-type-kind body) :option)
-             (translate-fty-option name (fty-type-option->some-type body)
+(define translate-destructor-list ((name symbolp)
+                                   (name-origin symbolp)
+                                   (destructors type-function-list-p)
+                                   (fixinfo smt-fixtype-info-p)
+                                   (int-to-rat int-to-rat-p))
+  :returns (translated paragraph-p)
+  :measure (len destructors)
+  (b* ((name (symbol-fix name))
+       (destructors (type-function-list-fix destructors))
+       (fixinfo (smt-fixtype-info-fix fixinfo))
+       (int-to-rat (int-to-rat-fix int-to-rat))
+       ((unless (consp destructors)) nil)
+       ((cons first rest) destructors)
+       (destructor (translate-symbol (type-function->name first)))
+       (return-type-sym (type-function->return-type first))
+       (return-type (translate-type return-type-sym name int-to-rat
+                                    fixinfo))
+       (translated-destructor
+        (translate-destructor-template destructor return-type))
+       (translated-destructor-list
+        (translate-destructor-list name name-origin rest fixinfo int-to-rat)))
+    `(", " ,translated-destructor ,translated-destructor-list)))
+
+(define translate-prod ((name symbolp)
+                        (name-origin symbolp)
+                        (prod prod-p)
+                        (fixinfo smt-fixtype-info-p)
+                        (symbols symbol-string-alistp)
+                        (index natp)
+                        (avoid symbol-listp)
+                        (int-to-rat int-to-rat-p)
+                        (precond pseudo-term-list-listp)
+                        state)
+  :returns (mv (translated-fixtypes paragraph-p)
+               (fixtype-precond pseudo-term-list-listp)
+               (new-symbols symbol-string-alistp)
+               (index natp))
+  (b* ((name (symbol-fix name))
+       (fixinfo (smt-fixtype-info-fix fixinfo))
+       (prod (prod-fix prod))
+       ((prod p) prod)
+       ;; generate a symbol for kind
+       ((mv & new-index new-symbols)
+        (translate-constant `(quote ,p.kind) index symbols avoid))
+       (name-str (translate-symbol name))
+       (constructor (translate-constructor p.constructor))
+       (destructor-list
+        (translate-destructor-list name name-origin p.destructors fixinfo
                                    int-to-rat))
-            ((equal (fty-type-kind body) :list)
-             (translate-fty-list name (fty-type-list->elt-type body)
-                                 int-to-rat))
-            ((equal (fty-type-kind body) :alist)
-             (translate-fty-alist name (fty-type-alist->key-type body)
-                                  (fty-type-alist->val-type body) int-to-rat))
-            (t nil))))
+       (translated (translate-prod-template name-str constructor destructor-list))
+       (new-precond (precond-prod prod precond state)))
+    (mv translated new-precond new-symbols new-index)))
 
-  (define translate-fty-types-recur ((fty-types fty-types-p)
-                                     (int-to-rat booleanp))
-    :returns (translated paragraphp)
-    :measure (len fty-types)
-    :hints (("Goal" :in-theory (e/d (fty-types-fix)
-                                    ())))
-    (b* ((fty-types (fty-types-fix fty-types))
-         ((unless (consp fty-types)) nil)
-         ((cons first rest) fty-types)
-         ((cons name body) first)
-         (translated-first
-          (translate-one-fty-type name body int-to-rat))
-         (translated-rest
-          (translate-fty-types-recur rest int-to-rat))
-         (translated (cons translated-first translated-rest)))
-      translated))
+(define translate-prod-list ((name symbolp)
+                             (name-origin symbolp)
+                             (prod-list prod-list-p)
+                             (fixinfo smt-fixtype-info-p)
+                             (symbols symbol-string-alistp)
+                             (index natp)
+                             (avoid symbol-listp)
+                             (int-to-rat int-to-rat-p)
+                             (precond pseudo-term-list-listp)
+                             state)
+  :returns (mv (translated-fixtypes paragraph-p)
+               (fixtype-precond pseudo-term-list-listp)
+               (new-symbols symbol-string-alistp)
+               (index natp))
+  :measure (len prod-list)
+  (b* ((name (symbol-fix name))
+       (prod-list (prod-list-fix prod-list))
+       (fixinfo (smt-fixtype-info-fix fixinfo))
+       (precond (pseudo-term-list-list-fix precond))
+       (symbols (symbol-string-alist-fix symbols))
+       (index (nfix index))
+       ((unless (consp prod-list)) (mv nil precond symbols index))
+       ((cons first rest) prod-list)
+       ((mv first-translated first-precond first-symbols first-index)
+        (translate-prod name name-origin first fixinfo symbols index avoid
+                        int-to-rat precond state))
+       ((mv rest-translated rest-precond rest-symbols rest-index)
+        (translate-prod-list name name-origin rest fixinfo
+                             first-symbols first-index avoid int-to-rat
+                             first-precond state)))
+    (mv (cons first-translated rest-translated)
+        rest-precond rest-symbols rest-index)))
 
-  (define translate-fty-types ((fty-types fty-types-p)
-                               (int-to-rat booleanp))
-    :returns (translated paragraphp)
-    (translate-fty-types-recur fty-types int-to-rat))
-  )
+(define translate-sum-val ((name symbolp)
+                           (name-origin symbolp)
+                           (smt-type smt-type-p)
+                           (fixinfo smt-fixtype-info-p)
+                           (symbols symbol-string-alistp)
+                           (index natp)
+                           (avoid symbol-listp)
+                           (int-to-rat int-to-rat-p)
+                           (precond pseudo-term-list-listp)
+                           state)
+  :returns (mv (translated-fixtypes paragraph-p)
+               (fixtype-precond pseudo-term-list-listp)
+               (new-symbols symbol-string-alistp)
+               (index natp))
+  :guard (equal (smt-type-kind smt-type) :sum)
+  (b* ((name (symbol-fix name))
+       (fixinfo (smt-fixtype-info-fix fixinfo))
+       (smt-type (smt-type-fix smt-type))
+       ((smt-type-sum s) smt-type)
+       (name-str (translate-symbol name))
+       ((mv prod-list-line precond-prods new-symbols new-index)
+        (translate-prod-list name name-origin s.prods fixinfo
+                             symbols index avoid int-to-rat precond state))
+       ;; (kind-name (symbol-append name-origin '-kind))
+       ;; (kind-name-str (translate-symbol kind-name))
+       (kind-fn-str (translate-symbol (smt-type-kind-fn smt-type)))
+       (name-origin-str (translate-symbol name-origin))
+       (translated-sum
+        (translate-sum-declare name-origin-str kind-fn-str name-str
+                               (translate-type
+                                'symbolp nil (make-int-to-rat-switch)
+                                fixinfo))))
+    (mv `(,prod-list-line ,translated-sum) precond-prods
+        new-symbols new-index)))
+
+(define get-kinds ((prods prod-list-p))
+  :returns (kinds symbol-listp)
+  :measure (len prods)
+  (b* ((prods (prod-list-fix prods))
+       ((unless (consp prods)) nil)
+       ((cons first rest) prods)
+       ((prod p) first))
+    (cons p.kind (get-kinds rest))))
+
+(define translate-enum-list ((name symbolp)
+                             (kinds symbol-listp))
+  :returns (translated paragraph-p)
+  :measure (len kinds)
+  (b* ((name (symbol-fix name))
+       (name-str (translate-symbol name))
+       (kinds (symbol-list-fix kinds))
+       ((unless (consp kinds)) nil)
+       ((cons first rest) kinds))
+    (cons (translate-prod-template name-str (translate-symbol first) nil)
+          (translate-enum-list name rest))))
+
+(define translate-enum ((name symbolp)
+                        (kinds symbol-listp))
+  :returns (translated paragraph-p)
+  (b* ((name (symbol-fix name))
+       (kinds (symbol-list-fix kinds))
+       (name-str (translate-symbol name))
+       (enum-list-line (translate-enum-list name kinds))
+       (translated (translate-sum-template name-str enum-list-line)))
+    translated))
+
+(define translate-sum ((name symbolp)
+                       (smt-type smt-type-p)
+                       (fixinfo smt-fixtype-info-p)
+                       (symbols symbol-string-alistp)
+                       (index natp)
+                       (avoid symbol-listp)
+                       (int-to-rat int-to-rat-p)
+                       (precond pseudo-term-list-listp)
+                       state)
+  :returns (mv (translated-fixtypes paragraph-p)
+               (fixtype-precond pseudo-term-list-listp)
+               (symbols symbol-string-alistp)
+               (index natp))
+  :guard (equal (smt-type-kind smt-type) :sum)
+  (b* ((name (symbol-fix name))
+       (name-str (translate-symbol name))
+       (name-val-sym (symbol-append name '-val))
+       (name-val (translate-symbol name-val-sym))
+       (fixinfo (smt-fixtype-info-fix fixinfo))
+       (smt-type (smt-type-fix smt-type))
+       ((mv translated-sum-val precond-sum-val new-symbols new-index)
+        (translate-sum-val name-val-sym name smt-type fixinfo symbols index
+                           avoid int-to-rat precond state))
+       (translated-sum-top
+        (translate-sum-top-template name-str name-val translated-sum-val)))
+    (mv translated-sum-top precond-sum-val new-symbols new-index)))
+
+(define translate-fixtype ((fixtype smt-fixtype-p)
+                           (fixinfo smt-fixtype-info-p)
+                           (symbols symbol-string-alistp)
+                           (index natp)
+                           (avoid symbol-listp)
+                           (int-to-rat int-to-rat-p)
+                           (precond-acc pseudo-term-list-listp)
+                           state)
+  :returns (mv (translated-fixtypes paragraph-p)
+               (fixtype-precond pseudo-term-list-listp)
+               (new-symbols symbol-string-alistp)
+               (new-index natp))
+  (b* ((fixtype (smt-fixtype-fix fixtype))
+       (fixinfo (smt-fixtype-info-fix fixinfo))
+       (int-to-rat (int-to-rat-fix int-to-rat))
+       (symbols (symbol-string-alist-fix symbols))
+       (index (nfix index))
+       (precond-acc (pseudo-term-list-list-fix precond-acc))
+       ((smt-fixtype f) fixtype)
+       (kind (smt-type-kind f.kind)))
+    (case kind
+      (:abstract (mv (translate-abstract-template (translate-symbol f.name))
+                     precond-acc symbols index))
+      (:array (b* (((mv translated new-precond)
+                    (translate-array f.name f.recognizer f.kind int-to-rat
+                                     precond-acc fixinfo)))
+                (mv translated new-precond symbols index)))
+      (:sum (translate-sum f.name f.kind fixinfo
+                           symbols index avoid int-to-rat precond-acc state))
+      (t (mv nil precond-acc symbols index)))))
+
+(define translate-fixtype-list ((fixtypes smt-fixtype-list-p)
+                                (fixinfo smt-fixtype-info-p)
+                                (symbols symbol-string-alistp)
+                                (index natp)
+                                (avoid symbol-listp)
+                                (int-to-rat int-to-rat-p)
+                                (precond-acc pseudo-term-list-listp)
+                                (seen symbol-listp)
+                                state)
+  :returns (mv (translated-fixtypes paragraph-p)
+               (fixtype-precond pseudo-term-list-listp)
+               (new-symbols symbol-string-alistp)
+               (new-index natp))
+  :measure (len fixtypes)
+  (b* ((fixtypes (smt-fixtype-list-fix fixtypes))
+       (fixinfo (smt-fixtype-info-fix fixinfo))
+       (symbols (symbol-string-alist-fix symbols))
+       (index (nfix index))
+       (avoid (symbol-list-fix avoid))
+       (precond-acc (pseudo-term-list-list-fix precond-acc))
+       ((unless (consp fixtypes)) (mv nil precond-acc symbols index))
+       ((cons first rest) fixtypes)
+       ((smt-fixtype f) first)
+       ((if (member-equal f.name seen))
+        (translate-fixtype-list rest fixinfo symbols index avoid int-to-rat
+                                precond-acc seen state))
+       ((if (equal f.basicp t))
+        (translate-fixtype-list rest fixinfo symbols index avoid int-to-rat
+                                precond-acc seen state))
+       ((mv first-translated first-precond first-symbols first-index)
+        (translate-fixtype first fixinfo symbols index avoid int-to-rat
+                           precond-acc state))
+       ((mv rest-translated rest-precond rest-symbols rest-index)
+        (translate-fixtype-list rest fixinfo first-symbols first-index avoid
+                                int-to-rat first-precond (cons f.name seen)
+                                state)))
+    (mv (cons first-translated rest-translated) rest-precond
+        rest-symbols rest-index)))
 
 (defsection SMT-translate-abstract-sort
   :parents (z3-py)

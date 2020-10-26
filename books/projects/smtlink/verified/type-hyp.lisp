@@ -32,4 +32,13 @@
 (in-theory (disable (:d type-hyp)
                     (:e type-hyp)
                     (:t type-hyp)))
+
+(define is-type-hyp ((expr pseudo-termp))
+  :returns (is? booleanp)
+  (b* (((unless (equal (len expr) 3))
+        nil)
+       (fn-name (car expr))
+       ((unless (equal fn-name 'type-hyp)) nil))
+    t))
+
 )

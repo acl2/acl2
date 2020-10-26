@@ -54,7 +54,6 @@
   :measure (len tr)
   (b* ((sigs (sig-path-list-fix sigs))
        (tr (any-trace-fix tr))
-       ((unless (consp (sig-path-list-fix sigs))) t)
        ((unless (consp (any-trace-fix tr))) t)
        (first (car (any-trace-fix tr)))
        (rest (cdr (any-trace-fix tr)))

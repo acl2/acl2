@@ -17,16 +17,9 @@
   :short "Pretty printer for SMT formula. Currently only change line every 160
   characters."
 
-  (local
-   (defthm crock
-     (implies (and (paragraphp p)
-                   (not (consp p)))
-              (wordp p))
-     :hints (("Goal" :in-theory (e/d (paragraphp)
-                                     ()))))
-   )
+  (local (in-theory (enable paragraph-fix word-fix paragraph-p word-p)))
 
-  (define flatten-paragraph ((p paragraphp))
+  (define flatten-paragraph ((p paragraph-p))
     :returns (fp word-listp)
     (b* ((p (paragraph-fix p))
          ((if (null p)) p)
@@ -36,10 +29,7 @@
               (flatten-paragraph rest))))
 
   (define pretty-print-recur ((thm word-listp) (wlimit natp) (acc natp))
-    :returns (pretty-thm word-listp
-                         :hints (("Goal"
-                                  :in-theory (e/d (word-listp wordp)
-                                                  ()))))
+    :returns (pretty-thm word-listp)
     :measure (len thm)
     (b* ((thm (word-list-fix thm))
          (wlimit (nfix wlimit))
@@ -50,7 +40,7 @@
                    ,@(pretty-print-recur rest wlimit 0))))
       (cons first (pretty-print-recur rest wlimit (1+ acc)))))
 
-  (define pretty-print-theorem ((thm paragraphp) (wlimit natp))
+  (define pretty-print-theorem ((thm paragraph-p) (wlimit natp))
     :returns (pretty-thm word-listp)
     :guard (>= wlimit 76)
     (b* ((thm (paragraph-fix thm))

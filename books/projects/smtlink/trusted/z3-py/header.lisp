@@ -14,11 +14,11 @@
   :parents (z3-py)
   :short "SMT-header contains string definitions for the header of a Z3 file."
 
-  (local (in-theory (enable paragraphp wordp)))
+  (local (in-theory (enable paragraph-p word-p)))
 
   (define SMT-head ((smt-conf smtlink-config-p))
-    :returns (mv (head paragraphp)
-                 (import paragraphp))
+    :returns (mv (head paragraph-p)
+                 (import paragraph-p))
     (b* ((smt-conf (mbe :logic (smtlink-config-fix smt-conf) :exec smt-conf))
          ((smtlink-config c) smt-conf)
          ;; TODO: Need treatment for c.SMT-module

@@ -11,335 +11,430 @@
 (include-book "std/util/define" :dir :system)
 
 (include-book "../config")
-(include-book "fty")
+(include-book "../utils/basics")
+(include-book "../utils/pseudo-term")
 
-(defsection SMT-hint-interface
-  :parents (verified)
-  :short "Define default Smtlink hint interface"
-
-  ;; -------------------------------------------------------
-  ;;
-  ;; Define default Smtlink hint interface
-  ;;
-  ;;  One needs to attach to SMT-hint their own aggregate
-  ;;    to pass in a different hint.
-  ;;
-
-  (define pseudo-term-fix ((x pseudo-termp))
-    :returns (fixed pseudo-termp)
-    (mbe :logic (if (pseudo-termp x) x nil)
-         :exec x)
-    ///
-    (more-returns
-     (fixed (implies (pseudo-termp x) (equal fixed x))
-            :name equal-fixed-and-x-of-pseudo-termp)))
-
-  (defthm pseudo-term-fix-idempotent-lemma
-    (equal (pseudo-term-fix (pseudo-term-fix x))
-           (pseudo-term-fix x))
-    :hints (("Goal" :in-theory (enable pseudo-term-fix))))
-
-  (deffixtype pseudo-term
-    :fix pseudo-term-fix
-    :pred pseudo-termp
-    :equiv pseudo-term-equiv
-    :define t
-    :forward t
-    :topic pseudo-termp)
-
-  (define pseudo-term-list-fix ((x pseudo-term-listp))
-    :returns (new-x pseudo-term-listp)
-    (mbe :logic (if (consp x)
-                    (cons (pseudo-term-fix (car x))
-                          (pseudo-term-list-fix (cdr x)))
-                  nil)
-         :exec x)
-    ///
-    (more-returns
-     (new-x (<= (acl2-count new-x) (acl2-count x))
-            :name acl2-count-<=-pseudo-term-list-fix
-            :rule-classes :linear
-            :hints (("Goal" :in-theory (enable pseudo-term-fix))))
-     (new-x (implies (pseudo-term-listp x)
-                     (equal new-x x))
-            :name equal-pseudo-term-list-fix)
-     (new-x (implies (pseudo-term-listp x)
-                     (equal (len new-x) (len x)))
-            :name len-equal-pseudo-term-list-fix
-            :rule-classes :linear)))
-
-  (defthm pseudo-term-list-fix-idempotent-lemma
-    (equal (pseudo-term-list-fix (pseudo-term-list-fix x))
-           (pseudo-term-list-fix x))
-    :hints (("Goal" :in-theory (enable pseudo-term-list-fix))))
-
-  (deffixtype pseudo-term-list
-    :fix pseudo-term-list-fix
-    :pred pseudo-term-listp
-    :equiv pseudo-term-list-equiv
-    :define t)
-
-  (define pseudo-term-list-list-fix ((x pseudo-term-list-listp))
-    :returns (fixed pseudo-term-list-listp)
-    (mbe :logic (if (consp x)
-                    (cons (pseudo-term-list-fix (car x))
-                          (pseudo-term-list-list-fix (cdr x)))
-                  nil)
-         :exec x))
-
-  (defthm pseudo-term-list-list-fix-idempotent-lemma
-    (equal (pseudo-term-list-list-fix (pseudo-term-list-list-fix x))
-           (pseudo-term-list-list-fix x))
-    :hints (("Goal" :in-theory (enable pseudo-term-list-list-fix))))
-
-  (deffixtype pseudo-term-list-list
-    :fix pseudo-term-list-list-fix
-    :pred pseudo-term-list-listp
-    :equiv pseudo-term-list-list-equiv
-    :define t
-    :forward t
-    :topic pseudo-term-list-listp)
-
-  (defalist pseudo-term-alist
-    :key-type pseudo-term
-    :val-type pseudo-term
-    :pred pseudo-term-alistp
-    :true-listp t)
-
-  (define true-list-fix ((lst true-listp))
-    :parents (SMT-hint-interface)
-    :short "Fixing function for true-listp."
-    :returns (fixed-lst true-listp)
-    (mbe :logic (if (consp lst)
-                    (cons (car lst)
-                          (true-list-fix (cdr lst)))
-                  nil)
-         :exec lst))
-
-  (defthm true-list-fix-idempotent-lemma
-    (equal (true-list-fix (true-list-fix x))
-           (true-list-fix x))
-    :hints (("Goal" :in-theory (enable true-list-fix))))
-
-  (defthm true-list-fix-preserve-length
-    (equal (len (true-list-fix x))
-           (len x))
-    :hints (("Goal" :in-theory (enable true-list-fix))))
-
-  (deffixtype true-list
-    :fix true-list-fix
-    :pred true-listp
-    :equiv true-list-equiv
-    :define t
-    :forward t
-    :topic true-listp)
-
-  (local (in-theory (enable true-listp true-list-fix pseudo-termp
-                            pseudo-term-fix pseudo-term-listp pseudo-term-list-fix)))
-  ;; (define list-fix (x)
-  ;;   (declare (xargs :guard (listp x)))
-  ;;   :enabled t
-  ;;   (mbe :logic (if (listp x) x nil)
-  ;;        :exec x))
-
-  ;; (deffixtype list
-  ;;   :fix list-fix
-  ;;   :pred listp
-  ;;   :equiv list-equiv
-  ;;   :define t)
+;; (defsection SMT-hint-interface
+;;   :parents (verified)
+;;   :short "Define default Smtlink hint interface"
 
   (defprod hint-pair
     :parents (smtlink-hint)
-    ((thm pseudo-termp :default nil)       ;; a theorem statement about the variable
-     (hints true-listp :default nil)     ;; the hint for proving this theorem
-     )
-    :verbosep t)
+    ((thm pseudo-termp "A theorem statement"
+          :default nil)
+     (hints true-listp "The ACL2 hint for proving this theorem"
+            :default nil)
+     (name symbolp "The name of the theorem if already proven in ACL2"
+           :default nil)))
 
   (deflist hint-pair-list
     :parents (hint-pair)
     :elt-type hint-pair
-    :pred hint-pair-listp
     :true-listp t)
 
-  (define decl->type-reqfix ((x hint-pair-p))
-    :returns (fixed hint-pair-p)
-    (b* ((x (hint-pair-fix x))
-         (thm (hint-pair->thm x))
-         (hints (hint-pair->hints x)))
-      (make-hint-pair :thm (if (symbolp thm) thm nil)
-                      :hints (true-list-fix hints))))
+  (defalist symbol-hint-pair-alist
+    :parents (hint-pair)
+    :key-type symbolp
+    :val-type hint-pair-p
+    :true-listp t)
 
-  (local (in-theory (enable decl->type-reqfix)))
   (defprod decl
     :parents (smtlink-hint)
     ((name symbolp :default nil)
-     (type hint-pair-p :default (make-hint-pair) :reqfix (decl->type-reqfix type)))
-    :require (symbolp (hint-pair->thm type)))
+     (type hint-pair-p :default (make-hint-pair))
+     ;; The fixer should be found in types;
+     ;; So we don't need fixer in function hints.
+     ;; (fixer symbolp :default nil)
+     ))
 
   (deflist decl-list
     :parents (decl)
     :elt-type decl
-    :pred decl-listp
     :true-listp t)
 
-  ;; (defalist decl-alist
-  ;;   :key-type symbol
-  ;;   :val-type decl
-  ;;   :pred decl-alistp)
-
-  ;; (define make-alist-decl-list ((decl-lst decl-listp))
-  ;;   :returns (decl-alist decl-alistp)
-  ;;   :measure (len decl-lst)
-  ;;   (b* ((decl-lst (decl-list-fix decl-lst))
-  ;;        ((unless (consp decl-lst)) nil)
-  ;;        ((cons first rest) decl-lst)
-  ;;        ((decl d) first))
-  ;;     (cons (cons d.name d) (make-alist-decl-list rest))))
-
-  (defprod func
+  (defprod smt-function
     :parents (smtlink-hint)
     ((name symbolp :default nil)
-     (formals decl-listp :default nil)
+     (expansion-depth natp :default 0)
+     (formals decl-list-p :default nil)
+     (returns decl-list-p :default nil)
+     ;; I'm not sure what's good of having guard,
+     ;; currently the hint is generated but is not used in Smtlink.
      (guard hint-pair-p :default (make-hint-pair))
-     (returns decl-listp :default nil)            ;; belong to auxiliary hypotheses
-     (more-returns hint-pair-listp :default nil)  ;; belong to auxiliary hypotheses
-     (expansion-depth natp :default 1)
-     (flattened-formals symbol-listp :default nil)
-     (flattened-returns symbol-listp :default nil)))
+     (more-returns hint-pair-list-p :default nil)))
 
-  (deflist func-list
-    :parents (func)
-    :elt-type func
-    :pred func-listp
+  (defoption maybe-smt-function smt-function-p)
+
+  (deflist smt-function-list
+    :parents (smt-function)
+    :elt-type smt-function-p
     :true-listp t)
 
-  (defalist func-alist
-    :key-type symbol
-    :val-type func
-    :true-listp t
-    :pred func-alistp)
+  (defprod type-thm
+    ((name symbolp :default nil)
+     (hints true-listp :default nil)))
 
-  (defprod binding
-    :parents (smtlink-hint)
-    ((var symbolp :default nil)
-     (expr pseudo-termp :default nil)
-     (type symbolp :default nil)))
+  (defprod type-function
+    ((name symbolp :default nil)
+     (return-type symbolp :default nil)
+     (type-of-function-thm type-thm-p :default (make-type-thm))
+     (destructor-of-constructor-thm type-thm-p :default (make-type-thm))
+     ;; constructor doesn't use this field
+     ))
 
-  (deflist binding-list
-    :parents (binding)
-    :elt-type binding
-    :pred binding-listp
+(deflist type-function-list
+  :parents (type-function)
+  :elt-type type-function-p
+  :true-listp t)
+
+  (defprod prod
+    ((kind symbolp :default nil)
+     (constructor type-function-p :default (make-type-function))
+     (destructors type-function-list-p :default nil)))
+
+  (deflist prod-list
+    :elt-type prod-p
     :true-listp t)
 
-  (defprod let-binding
-    :parents (smtlink-hint)
-    ((bindings binding-listp :default nil)
-     (hypotheses hint-pair-listp :default nil)))
+(defalist symbol-prod-alist
+  :key-type symbolp
+  :val-type prod-p
+  :true-listp t)
 
-  ;; The hint structure that contain all hints for the verified clause
-  ;; processor.
-  ;;
-  ;; Fields:
-  ;; User fields:
-  ;; 1. functions: function definitions.
-  ;; 2. hypotheses: hypotheses to the G theorem.
-  ;; 3. main-hint: hints to the G' -> G theorem.
-  ;; 4. let-binding: binds expressions to variables, generalization.
-  ;; 5. fty: a list of fty types used in the theorem. Will be treated as
-  ;; algebraic datatypes in SMT solver.
-  ;; 6. int-to-rat: converts all integers to rationals.
-  ;; 7. smt-dir: where to put the generated python files. Default /tmp/z3_files
-  ;; 8. rm-file: configuration for whether to remove generated files.
-  ;; 9. smt-fname: configure the name of generated SMT theorem file.
-  ;; 10. smt-params: hints for parameter tuning of the SMT solver.
-  ;;
-  ;; Internal fields:
-  ;; 11. fty-info: an alist from fty functions to fty-info-p
-  ;; 12. fty-types: contains all fty type definitions for translation
-  ;; 13. fast-functions: internal field for storing a fast version of function
-  ;; definitions. Might be able to make the functions field a fast one after
-  ;; changing the user interface.
-  ;; 14. aux-hint-list: internal field for making a list of auxiliary hints.
-  ;; 15. type-decl-list: internal field for making a list of auxiliary type
-  ;; hints.
-  ;; 16. expanded-clause-w/-hint: internal field for storing the SMT theorem.
-  ;; 17. expanded-G/type: clause without type
-  ;; 18. smt-cnf: configuration for connection to the SMT solver.
-  ;; 19. wrld-fn-len: a number specifying the upper bound of the length of the
-  ;; current world. It sets a limit to the expansion depth to take care of
-  ;; recursive function expansion. This will only ensure termination proof of
-  ;; the expand function, but it doesn't guarantee performance since the world
-  ;; length can be extremely large, and expansion is exponential. Performance
-  ;; is replied upon user who will specify which functions are recursive and
-  ;; therefore will be expanded only by a given number of levels.
-  ;; 20. custom-p: Used custom version of Smtlink or not. Default nil.
-  ;;
-  (defprod smtlink-hint
-    :parents (SMT-hint-interface)
-    ((functions func-listp :default nil)
-     (hypotheses hint-pair-listp :default nil)
-     (main-hint true-listp :default nil)
-     (let-binding let-binding-p :default (make-let-binding))
-     (symbols symbol-listp :default nil)
-     (abs symbol-listp :default nil)
-     (fty symbol-listp :default nil)
-     (fty-info fty-info-alist-p :default nil)
-     (fty-types fty-types-p :default nil)
-     (int-to-rat booleanp :default nil)
-     (smt-dir stringp :default "")
-     (rm-file booleanp :default t)
-     (smt-fname stringp :default "")
-     (smt-params true-listp :default nil)
-     (fast-functions func-alistp :default nil)
-     (type-decl-list pseudo-termp :default nil)
-     (expanded-clause-w/-hint hint-pair-p :default (make-hint-pair))
-     (expanded-G/type pseudo-termp :default nil)
-     (smt-cnf smtlink-config-p :default (make-smtlink-config))
-     (wrld-fn-len natp :default 0)
-     (custom-p booleanp :default nil)))
-
-  (defoption maybe-smtlink-hint smtlink-hint-p
-    :parents (smtlink-hint))
-
-  (define flatten-formals/returns ((formal/return-lst decl-listp))
-    :returns (flattened-lst symbol-listp)
-    :measure (len formal/return-lst)
-    :hints (("Goal" :in-theory (enable decl-list-fix)))
-    (b* ((formal/return-lst (decl-list-fix formal/return-lst))
-         ((if (endp formal/return-lst)) nil)
-         ((cons first rest) formal/return-lst)
-         ((decl d) first))
-      (cons d.name (flatten-formals/returns rest))))
-
-  (define make-alist-fn-lst ((fn-lst func-listp))
-    :parents (SMT-hint-interface)
-    :short "@(call make-alist-fn-lst) makes fn-lst a fast alist"
-    :returns (fast-fn-lst func-alistp)
-    :measure (len fn-lst)
-    (b* ((fn-lst (func-list-fix fn-lst))
-         ((unless (consp fn-lst)) nil)
-         ((cons first rest) fn-lst)
-         ((func f) first)
-         (new-f (change-func f
-                             :flattened-formals (flatten-formals/returns f.formals)
-                             :flattened-returns (flatten-formals/returns f.returns))))
-      (cons (cons f.name new-f) (make-alist-fn-lst rest))))
-
-  (defconst *default-smtlink-hint*
-    (make-smtlink-hint))
-
-
-  ;; (defstub smt-hint () => *)
-  (encapsulate
-    (((smt-hint) => *))
-    (local (define smt-hint () (make-smtlink-hint)))
-    (defthm smtlink-p-of-smt-hint
-      (smtlink-hint-p (smt-hint)))
+  (deftagsum smt-type
+    (:abstract ())
+    (:array ((store type-function-p :default (make-type-function))
+             (select type-function-p :default (make-type-function))
+             (k type-function-p :default (make-type-function))
+             (key-type symbolp)
+             (val-type symbolp)
+             (array-thm type-thm-p :default (make-type-thm))))
+    ;; prod, list and option are all sums
+    (:sum ((kind-fn symbolp :default nil)
+           (prods prod-list-p :default nil)))
     )
 
-  (define default-smtlink-hint ()
-    (change-smtlink-hint *default-smtlink-hint*))
+  (define smt-type-kind-fn ((smt-type smt-type-p))
+    :guard (equal (smt-type-kind smt-type) :sum)
+    (b* ((smt-type (smt-type-fix smt-type))
+         (kind-fn (smt-type-sum->kind-fn smt-type))
+         ((if (null kind-fn)) 'kind))
+      kind-fn))
 
-  (defattach smt-hint default-smtlink-hint)
+  (defprod smt-fixtype
+    :parents (smtlink-hint)
+    ((name symbolp :default nil)
+     (recognizer symbolp :default nil)
+     (fixer symbolp :default nil)
+     (fixer-when-recognizer-thm type-thm-p :default (make-type-thm))
+     (basicp symbolp :default nil)
+     (kind smt-type-p :default (make-smt-type-abstract))))
 
-  )
+  (defoption maybe-smt-fixtype smt-fixtype-p)
+
+  (deflist smt-fixtype-list
+    :parents (smt-fixtype)
+    :elt-type smt-fixtype-p
+    :true-listp t)
+
+  (defprod info-pair
+    ((name symbolp)
+     (fn-type symbolp)
+     (kind symbolp))) ;; :store, :select, :recognizer, :fixer, :constructor,
+  ;; :destructor, :kind-fn
+
+  (defalist smt-fixtype-info
+    :key-type symbolp ;; function name
+    :val-type info-pair-p
+    :true-listp t)
+
+  (defprod smt-config
+    ((smt-cnf smtlink-config-p :default (make-smtlink-config))
+     (rm-file booleanp :default t)
+     (smt-dir stringp :default "")
+     (smt-fname stringp :default "")))
+
+  (deftagsum int-to-rat
+    (:switch ((okp booleanp :default nil)))
+    (:symbol-list ((lst symbol-listp :default nil))))
+
+  (local (in-theory (disable symbol-listp)))
+
+  (defprod smtlink-hint
+    :parents (SMT-hint-interface)
+    ((functions smt-function-list-p :default nil)
+     (types smt-fixtype-list-p :default nil)
+     (types-info smt-fixtype-info-p :default nil)
+     (hypotheses hint-pair-list-p :default nil)
+     (configurations smt-config-p :default (make-smt-config))
+
+     (int-to-rat int-to-rat-p :default (make-int-to-rat-switch :okp nil))
+     (use-uninterpreted booleanp :default t)
+     (under-induct symbolp :default nil)
+     (global-hint symbolp :default nil)
+     (wrld-fn-len natp :default 0)
+     (custom-p booleanp :default nil)
+     ))
+
+  (defalist smtlink-hint-alist
+    :key-type symbolp
+    :val-type smtlink-hint-p
+    :true-listp t)
+
+  (defthm assoc-equal-of-smtlink-hint-alist
+    (implies (and (smtlink-hint-alist-p x)
+                  (consp (assoc-equal name x)))
+             (and (smtlink-hint-p (cdr (assoc-equal name x)))
+                  (cdr (assoc-equal name x)))))
+  ;; ---------------------------------------------------------------
+  ;; Utility functions
+
+  ;; decl-list functions
+  (define get-thm-from-decl ((decl decl-p))
+    :returns (thm pseudo-termp)
+    (hint-pair->thm (decl->type (decl-fix decl))))
+
+  (define get-thms-from-decl-list ((dlst decl-list-p))
+    :returns (thms pseudo-term-listp)
+    :measure (len dlst)
+    (b* ((dlst (decl-list-fix dlst))
+         ((unless (consp dlst)) nil)
+         ((cons first rest) dlst))
+      (cons (get-thm-from-decl first)
+            (get-thms-from-decl-list rest))))
+
+  ;; smt-function-list functions
+  (define is-function ((name symbolp) (fn-lst smt-function-list-p))
+    :returns (f maybe-smt-function-p)
+    :measure (len fn-lst)
+    (b* ((fn-lst (smt-function-list-fix fn-lst))
+         ((unless (consp fn-lst)) nil)
+         ((cons first rest) fn-lst)
+         (first-name (smt-function->name first))
+         ((if (equal first-name name)) first))
+      (is-function name rest)))
+
+  ;; smt-fixtype-list functions
+  (define generate-info-pair ((fn symbolp)
+                              (name symbolp)
+                              (fn-type symbolp)
+                              (kind symbolp)
+                              (acc smt-fixtype-info-p))
+    :returns (info smt-fixtype-info-p)
+    (b* ((fn (symbol-fix fn))
+         (name (symbol-fix name))
+         (kind (symbol-fix kind))
+         (fn-type (symbol-fix fn-type))
+         (acc (smt-fixtype-info-fix acc)))
+      (acons fn
+             (make-info-pair :name name
+                             :fn-type fn-type
+                             :kind kind)
+             acc)))
+
+  (define generate-fixtype-info-array ((name symbolp)
+                                       (type smt-type-p)
+                                       (acc smt-fixtype-info-p))
+    :returns (info smt-fixtype-info-p)
+    :guard (equal (smt-type-kind type) :array)
+    (b* ((name (symbol-fix name))
+         (type (smt-type-fix type))
+         (acc (smt-fixtype-info-fix acc))
+         ((smt-type-array a) type)
+         (store-acc (generate-info-pair (type-function->name a.store)
+                                        name :store nil acc)))
+      (generate-info-pair (type-function->name a.select) name :select nil store-acc)))
+
+  (define generate-fixtype-info-destructors ((name symbolp)
+                                             (kind symbolp)
+                                             (destructors type-function-list-p)
+                                             (acc smt-fixtype-info-p))
+    :returns (info smt-fixtype-info-p)
+    :measure (len destructors)
+    (b* ((name (symbol-fix name))
+         (kind (symbol-fix kind))
+         (destructors (type-function-list-fix destructors))
+         (acc (smt-fixtype-info-fix acc))
+         ((unless (consp destructors)) acc)
+         ((cons first rest) destructors)
+         ((type-function f) first)
+         (first-acc (generate-info-pair f.name name :destructor kind acc)))
+      (generate-fixtype-info-destructors name kind rest first-acc)))
+
+  (define generate-fixtype-info-prod ((name symbolp)
+                                      (prod prod-p)
+                                      (acc smt-fixtype-info-p))
+    :returns (info smt-fixtype-info-p)
+    (b* ((name (symbol-fix name))
+         (prod (prod-fix prod))
+         ((prod p) prod)
+         (acc (smt-fixtype-info-fix acc))
+         (constructor-acc
+          (generate-info-pair (type-function->name p.constructor)
+                              name :constructor p.kind acc)))
+      (generate-fixtype-info-destructors name p.kind p.destructors
+                                         constructor-acc)))
+
+  (define generate-fixtype-info-prod-list ((name symbolp)
+                                           (prods prod-list-p)
+                                           (acc smt-fixtype-info-p))
+    :returns (info smt-fixtype-info-p)
+    :measure (len prods)
+    (b* ((name (symbol-fix name))
+         (prods (prod-list-fix prods))
+         (acc (smt-fixtype-info-fix acc))
+         ((unless (consp prods)) acc)
+         ((cons first rest) prods)
+         (first-acc (generate-fixtype-info-prod name first acc)))
+      (generate-fixtype-info-prod-list name rest first-acc)))
+
+  (define generate-fixtype-info-sum ((name symbolp)
+                                     (type smt-type-p)
+                                     (acc smt-fixtype-info-p))
+    :returns (info smt-fixtype-info-p)
+    :guard (equal (smt-type-kind type) :sum)
+    (b* ((type (smt-type-fix type))
+         (acc (smt-fixtype-info-fix acc))
+         ((smt-type-sum s) type)
+         ((if (null s.kind-fn))
+          (generate-fixtype-info-prod-list name s.prods acc))
+         (new-acc (generate-info-pair s.kind-fn name :kind-fn nil acc)))
+      (generate-fixtype-info-prod-list name s.prods new-acc)))
+
+  (define generate-fixtype-info-kind ((name symbolp)
+                                      (type smt-type-p)
+                                      (acc smt-fixtype-info-p))
+    :returns (info smt-fixtype-info-p)
+    (b* ((type (smt-type-fix type))
+         (acc (smt-fixtype-info-fix acc))
+         (kind (smt-type-kind type)))
+      (case kind
+        (:array (generate-fixtype-info-array name type acc))
+        (:sum (generate-fixtype-info-sum name type acc))
+        (:abstract acc))))
+
+  (define generate-one-fixtype-info ((type smt-fixtype-p)
+                                     (acc smt-fixtype-info-p))
+    :returns (info smt-fixtype-info-p)
+    (b* ((type (smt-fixtype-fix type))
+         (acc (smt-fixtype-info-fix acc))
+         ((smt-fixtype f) type)
+         (rec-acc (generate-info-pair f.recognizer f.name :recognizer nil acc))
+         (fix-acc (generate-info-pair f.fixer f.name :fixer nil rec-acc)))
+      (generate-fixtype-info-kind f.name f.kind fix-acc)))
+
+  (define generate-fixtype-info ((types smt-fixtype-list-p)
+                                 (acc smt-fixtype-info-p))
+    :returns (info smt-fixtype-info-p)
+    :measure (len types)
+    (b* ((types (smt-fixtype-list-fix types))
+         (acc (smt-fixtype-info-fix acc))
+         ((unless (consp types)) acc)
+         ((cons first rest) types)
+         (new-acc (generate-one-fixtype-info first acc)))
+      (generate-fixtype-info rest new-acc)))
+
+  (define add-fixtype-info ((hint smtlink-hint-p))
+    :returns (new-hint smtlink-hint-p)
+    (b* ((hint (smtlink-hint-fix hint))
+         ((smtlink-hint h) hint)
+         (info (generate-fixtype-info h.types nil)))
+      (change-smtlink-hint hint :types-info info)))
+
+  (define is-type ((x symbolp) (fixtypes smt-fixtype-list-p))
+    :returns (type maybe-smt-fixtype-p)
+    :measure (len fixtypes)
+    (b* ((fixtypes (smt-fixtype-list-fix fixtypes))
+         ((unless (consp fixtypes)) nil)
+         ((cons first rest) fixtypes)
+         ((if (equal x (smt-fixtype->recognizer first))) first))
+      (is-type x rest)))
+
+  (define is-recognizer ((x symbolp) (fixinfo smt-fixtype-info-p))
+    :returns (okp booleanp)
+    (b* ((fixinfo (smt-fixtype-info-fix fixinfo))
+         (item (assoc-equal x fixinfo))
+         ((unless item) nil)
+         ((info-pair p) (cdr item)))
+      (equal p.fn-type :recognizer)))
+
+  (define is-fixer ((x symbolp) (fixinfo smt-fixtype-info-p))
+    :returns (okp booleanp)
+    (b* ((fixinfo (smt-fixtype-info-fix fixinfo))
+         (item (assoc-equal x fixinfo))
+         ((unless item) nil)
+         ((info-pair p) (cdr item)))
+      (equal p.fn-type :fixer)))
+
+  (define name-of-recognizer ((x symbolp) (fixinfo smt-fixtype-info-p))
+    :returns (name symbolp)
+    (b* ((fixinfo (smt-fixtype-info-fix fixinfo))
+         (item (assoc-equal x fixinfo))
+         ((unless item) nil)
+         ((info-pair p) (cdr item)))
+      p.name))
+
+  (define fncall-of-fixtypes ((x symbolp) (fixinfo smt-fixtype-info-p))
+    :returns (ok booleanp)
+    (b* ((fixinfo (smt-fixtype-info-fix fixinfo)))
+      (not (null (assoc-equal x fixinfo)))))
+
+  (define fixer-of-recognizer ((x symbolp) (fixtypes smt-fixtype-list-p))
+    :returns (fixer symbolp)
+    :measure (len fixtypes)
+    (b* ((fixtypes (smt-fixtype-list-fix fixtypes))
+         ((unless (consp fixtypes)) nil)
+         ((cons first rest) fixtypes)
+         ((if (equal x (smt-fixtype->recognizer first)))
+          (smt-fixtype->fixer first)))
+      (fixer-of-recognizer x rest)))
+
+  (define recognizer-of-fixer ((x symbolp) (fixtypes smt-fixtype-list-p))
+    :returns (recognizer symbolp)
+    :measure (len fixtypes)
+    (b* ((fixtypes (smt-fixtype-list-fix fixtypes))
+         ((unless (consp fixtypes)) nil)
+         ((cons first rest) fixtypes)
+         ((if (equal x (smt-fixtype->fixer first)))
+          (smt-fixtype->recognizer first)))
+      (recognizer-of-fixer x rest)))
+
+  (define type-decl-p ((expr pseudo-termp)
+                       (fixinfo smt-fixtype-info-p))
+    :returns (is-decl? booleanp)
+    (b* (;; ((if (is-type-hyp-decl expr)) t)
+         ((unless (equal (len expr) 2))
+          nil)
+         (fn-name (car expr))
+         ((unless (symbolp fn-name)) nil)
+         ((unless (is-recognizer fn-name fixinfo))
+          nil)
+         ((unless (and (symbolp (cadr expr)) (cadr expr))) nil))
+      t)
+    ///
+    (more-returns
+     (is-decl?
+      (implies is-decl?
+               (and (consp expr)
+                    (consp (cdr expr))
+                    (symbolp (car expr))
+                    (is-recognizer (car expr) fixinfo)
+                    (symbolp (cadr expr)) (cadr expr)))
+      :name type-decl-p-definition)))
+
+  (define return-type-of-function ((f smt-function-p)
+                                   (fixinfo smt-fixtype-info-p))
+    :returns (type symbolp)
+    (b* ((f (smt-function-fix f))
+         ((smt-function f) f)
+         ((unless (and (consp f.returns)
+                       (null (cdr f.returns))))
+          (er hard? 'hint-interface=>return-type-of-function
+              "Smtlink only supports functions that return one value, but ~p0
+    returns two: ~p1~%" f.name f.returns))
+         (type-thm (hint-pair->thm (decl->type (car f.returns))))
+         ((unless (type-decl-p type-thm fixinfo))
+          (er hard? 'hint-interface=>return-type-of-function
+              "Not a type declaration: ~p0~%" type-thm)))
+      (car type-thm)))
+;;  )

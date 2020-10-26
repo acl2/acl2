@@ -58,6 +58,14 @@
       strip-cadrs
       bfix
       real/rationalp
+      sublis-var
+      sublis-var1
+      sublis-var1-lst
+      bool-fix
+      bool-fix$inline
+      realfix
+      rfix
+      ifix
 
       read-string
 
@@ -86,6 +94,7 @@
       fty::deffixtype
       fty::defalist
       fty::defoption
+      fty::deftagsum
 
       sv::def-saved-event
       sv::deftutorial

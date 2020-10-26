@@ -9,21 +9,15 @@
 (include-book "std/util/bstar" :dir :system)
 (include-book "xdoc/top" :dir :system)
 (include-book "std/util/define" :dir :system)
+(include-book "basics")
 (include-book "hint-please")
 (include-book "hint-interface")
 (include-book "computed-hints")
+(include-book "evaluator")
 
 (defsection add-hypo-cp
   :parents (verified)
   :short "Verified clause-processor for adding user hypotheses"
-
-  ;; -----------------------------------------------------------------
-  ;;       Define evaluators
-
-  (defevaluator ev-add-hypo ev-lst-add-hypo
-    ((not x) (if x y z) (hint-please hint)))
-
-  (def-join-thms ev-add-hypo)
 
   ;; -----------------------------------------------------------------
   ;; Defines the clause-processor for adding hypotheses
@@ -33,7 +27,7 @@
   ;; ...
   ;; Hn or G
 
-  (define add-hypo-subgoals ((hinted-hypos hint-pair-listp)
+  (define add-hypo-subgoals ((hinted-hypos hint-pair-list-p)
                              (G pseudo-termp))
     :returns (mv (list-of-H-thm pseudo-term-list-listp)
                  (list-of-not-Hs pseudo-term-listp))
@@ -55,16 +49,16 @@
     (defthm add-hypo-subgoals-correctness
       (implies (and (pseudo-termp G)
                     (alistp b)
-                    (hint-pair-listp hinted-hypos)
-                    (ev-add-hypo
+                    (hint-pair-list-p hinted-hypos)
+                    (ev-smtcp
                      (disjoin
                       (mv-nth 1 (add-hypo-subgoals hinted-hypos G)))
                      b)
-                    (ev-add-hypo
+                    (ev-smtcp
                      (conjoin-clauses
                       (mv-nth 0 (add-hypo-subgoals hinted-hypos G)))
                      b))
-               (ev-add-hypo G b))
+               (ev-smtcp G b))
       :hints (("Goal"
                :induct (add-hypo-subgoals hinted-hypos G)))))
 
@@ -88,8 +82,9 @@
          (hinted-hypos h.hypotheses)
          (next-cp (cdr (assoc-equal 'add-hypo *SMT-architecture*)))
          ((if (null next-cp)) (list cl))
+         ;; this one clause-processor has state, it's a bit ugly
          (the-hint
-          `(:clause-processor (,next-cp clause ',smtlink-hint)))
+          `(:clause-processor (,next-cp clause ',smtlink-hint state)))
          (G (disjoin cl))
          ((mv aux-hypo-clauses list-of-not-Hs)
           (add-hypo-subgoals hinted-hypos G))
@@ -102,12 +97,13 @@
   (defthm correctness-of-add-hypos
     (implies (and (pseudo-term-listp cl)
                   (alistp b)
-                  (ev-add-hypo
+                  (ev-smtcp
                    (conjoin-clauses (add-hypo-cp cl smtlink-hint))
                    b))
-             (ev-add-hypo (disjoin cl) b))
+             (ev-smtcp (disjoin cl) b))
     :hints (("Goal"
-             :in-theory (disable add-hypo-subgoals-correctness)
+             :in-theory (disable add-hypo-subgoals-correctness
+                                 ev-smtcp-of-disjoin)
              :use ((:instance add-hypo-subgoals-correctness
                               (g (disjoin cl))
                               (hinted-hypos (smtlink-hint->hypotheses smtlink-hint))

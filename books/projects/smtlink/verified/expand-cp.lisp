@@ -1,5 +1,5 @@
 ;; Copyright (C) 2015, University of British Columbia
-;; Written by Yan Peng (June 18th 2018)
+;; Written by Yan Peng (June 9th 2019)
 ;;
 ;; License: A 3-clause BSD license.
 ;; See the LICENSE file distributed with ACL2
@@ -13,19 +13,16 @@
 (include-book "centaur/fty/basetypes" :dir :system)
 ;; for symbol-list-fix
 (include-book "centaur/fty/baselists" :dir :system)
-
-;; Include SMT books
-(include-book "pseudo-lambda-lemmas")
-(include-book "hint-interface")
-(include-book "extractor")
-(include-book "basics")
-(include-book "hint-please")
-(include-book "computed-hints")
-
+(include-book "centaur/misc/hons-extra" :dir :system)
 ;; To be compatible with Arithmetic books
 (include-book "ordinals/lexicographic-ordering-without-arithmetic" :dir :system)
-
+;; Meta-extract stuff
 (include-book "clause-processors/just-expand" :dir :system)
+
+;; Include SMT books
+(include-book "generalize")
+
+(set-state-ok t)
 
 (defsection function-expansion
   :parents (verified)
@@ -85,66 +82,28 @@
     )
 
 
+  ;; val-type can be a list of pseudo-termp
+  ;; This will give us two benefits: multiple facts and when it's nil,
+  ;; fact-finder fails to find a fact.
+  (defalist fact-alist
+    :key-type pseudo-termp
+    :val-type pseudo-termp
+    :pred fact-alistp
+    :short "Value is the equivalence term about Key term."
+    :true-listp t)
+
   (defprod ex-args
     :parents (function-expansion)
     :short "Argument list for function expand"
-    :long "<p>@('Ex-args') stores the list of arguments passed into the
-    function @(see expand). We design this product type so that we don't have a
-    long list of arguments to write down every time there's a recursive call.
-    This document describes what each argument is about and more specifically,
-    why they exist necessarily. This document comes out because every time when
-    I read the @(see expand) function, I get confused and lost track about why I
-    designed such a argument in the first place.</p>
-
-    <p>@('Term-lst') is easy, it stores the list of terms to be expanded.
-    Recursively generated new terms are stored in this argument and gets used
-    in recursive calls. Using a list of terms allows us to use a single
-    recursive function instead of @(see mutual-recursion), even though every
-    time we call this function, we really just have one term to expand.</p>
-
-    <p>@('Fn-lst') stores a list of function definitions for use of expansion.
-    This list comes from the @(see smtlink-hint) stored in function stub @(see
-    smt-hint). Such a list initially comes from user inputs to @(see Smtlink).
-    So it can be, for example, some functions that the user wants to get
-    expanded specially.</p>
-
-    <p>@('Fn-lvls') stores a list of maximum number of times each function
-    needs to be expanded. This list doesn't take into account of functions that
-    are not specified by the user, which should oftenly be the case. In that
-    case, those functions will be expanded just once and a pair will be stored
-    into @('fn-lvls') indicating this function has already been expanded. This
-    is done by storing a level of 0 for such a function.</p>
-
-    <p>@('Wrld-fn-len') is the hardest to explain. But given some thought, I
-    found it to be necessary to have this argument. @('wrld-fn-len') represents
-    the length of current ACL2 @(see world), meaning the number of definitions
-    in total (might be more than that, I'm not completely sure about what the
-    @(see world) is composed of). This argument helps prove termination of
-    function @(see expand). See @(see expand-measure) for a discussion about
-    the measure function for proving termimation.</p>
-
-    <p>@('Expand-lst') stores all functions that are expanded in @(see expand).
-    This list gets used later for generating the @(':in-theory') hint for
-    proving that the expanded term implies the original unexpanded term.</p>"
-
-    ((term-lst pseudo-term-listp "List of terms to be expanded. The function
-    finishes when all of them are expanded to given level."
-               :default nil)
-     (fn-lst func-alistp "List of function definitions to use for
+    ((fn-lvls sym-nat-alistp "Levels to expand each functions to."
+              :default nil)
+     (fn-lst smt-function-list-p "List of function definitions to use for
       function expansion." :default nil)
-     (fn-lvls sym-nat-alistp "Levels to expand each functions to." :default
-              nil)
+     (facts fact-alistp "An alist of current learnt equivalence facts."
+            :default nil)
+     (fixinfo smt-fixtype-info-p "FTY information." :default nil)
      (wrld-fn-len natp "Number of function definitions in curent world."
-                  :default 0)
-     (expand-lst pseudo-term-alistp "An alist of expanded function symbols
-    associated with their function call" :default nil)))
-
-  (defprod ex-outs
-    :parents (function-expansion)
-    :short "Outputs for function expand"
-    ((expanded-term-lst pseudo-term-listp "List of expanded terms." :default nil)
-     (expanded-fn-lst pseudo-term-alistp "List of expanded function calls,
-    needed for expand hint for proving G' implies G theorem." :default nil)))
+                  :default 0)))
 
   (local
    (defthm natp-of-sum-lvls-lemma
@@ -156,9 +115,12 @@
    )
 
   (define sum-lvls ((fn-lvls sym-nat-alistp))
-    :returns (sum natp :hints (("Goal"
-                                :use ((:instance natp-of-sum-lvls-lemma
-                                                 (x (sum-lvls (cdr (sym-nat-alist-fix fn-lvls)))))))))
+    :returns
+    (sum natp
+         :hints (("Goal"
+                  :use ((:instance
+                         natp-of-sum-lvls-lemma
+                         (x (sum-lvls (cdr (sym-nat-alist-fix fn-lvls)))))))))
     :measure (len fn-lvls)
     :hints (("Goal" :in-theory (enable sym-nat-alist-fix)))
     (b* ((fn-lvls (sym-nat-alist-fix fn-lvls))
@@ -177,636 +139,736 @@
                   (sum-lvls fn-lvls)))
       :hints (("Goal" :in-theory (enable update-fn-lvls)))))
 
-  (define expand-measure ((expand-args ex-args-p))
-    :returns (m nat-listp)
-    :parents (function-expansion)
-    :short "@(see acl2::Measure) function for proving termination of function
-    @(see expand)."
+  (define function-substitution ((term pseudo-termp)
+                                 state)
+    :returns (subst-term
+              pseudo-termp
+              :hints (("Goal"
+                       :in-theory (e/d ()
+                                       (pseudo-termp
+                                        pseudo-term-listp
+                                        acl2::return-type-of-substitute-into-term.xx
+                                        acl2::return-type-of-simple-one-way-unify.a))
+                       :use ((:instance
+                              acl2::return-type-of-simple-one-way-unify.a
+                              (pat (cadr (acl2::meta-extract-formula-w
+                                          (symbol-fix fn-call)
+                                          (cdr (assoc-equal 'acl2::current-acl2-world
+                                                            (nth 2 state))))))
+                              (term (pseudo-term-fix term))
+                              (alist nil))))))
+    :guard-hints (("Goal"
+                   :in-theory (disable symbol-listp assoc-equal)))
+    (b* ((term (pseudo-term-fix term))
+         ((unless (and (not (acl2::variablep term))
+                       (not (acl2::fquotep term))
+                       (symbolp (car term))))
+          (prog2$
+           (er hard? 'expand-cp=>function-substitution "expand-cp: fn-call is nil
+                               or 'quote.")
+           nil))
+         ((cons fn-call &) term)
+         (formula (acl2::meta-extract-formula-w fn-call (w state)))
+         ((unless (pseudo-termp formula))
+          (prog2$
+           (er hard? 'expand-cp=>function-substitution "expand-cp: formula got by
+       meta-extract ~p0 is not a pseudo-termp." fn-call)
+           nil))
+         ((mv ok lhs rhs)
+          (case-match formula
+            (('equal lhs rhs)
+             (mv t lhs rhs))
+            (& (mv nil nil nil))))
+         ((unless (and ok (pseudo-termp lhs)))
+          (prog2$ (er hard? 'expand-cp=>function-substitution "expand-cp: formula got by
+       meta-extract ~p0 is not an equality." fn-call)
+                  nil))
+         ((mv match-ok subst)
+          (acl2::simple-one-way-unify lhs term nil))
+         ((unless match-ok)
+          (prog2$
+           (er hard? 'expand-cp=>function-substitution "expand-cp:
+       simple-one-way-unify failed.")
+           nil)))
+      `(equal ,term ,(acl2::substitute-into-term rhs subst))))
 
-    :long "<p>The measure is using the lexicographical order (see @(see
-    mutual-recursion)), using a list of three arguments, where the priority
-    goes from the first argument to the second, and then to the third.</p>
+  (encapsulate()
+    (local (in-theory (e/d (function-substitution) (w))))
 
-    <p>The first argument is @('wrld-fn-len') which appears in @(see ex-args).
-    It is necessary for decreasing the measure when we are expanding a function
-    that is not in @('fn-lst') (see @(see ex-args)). The second argument is a
-    summation of @('fn-lvls') which also appears in @(see ex-args). This list
-    remembers how many levels are left for each function. Since functions not
-    in @('fn-lst') are added to @('fn-lvls') with 0 level, this argument
-    doesn't decrease in that case. This is why it's necessary to have the first
-    argument @('wrld-fn-len'). The third argument is the @(see acl2-count) of
-    current @('term-lst') (also see @(see ex-args)). This argument decreases
-    every time the recursive function @('expand') goes into expand the @(see
-    cdr) of @('term-lst').</p>"
-
-    (b* ((expand-args (ex-args-fix expand-args))
-         ((ex-args a) expand-args)
-         (lvl-sum (sum-lvls a.fn-lvls)))
-      (list a.wrld-fn-len lvl-sum (acl2-count a.term-lst))))
-
-  (encapsulate ()
-    (local (defthm lemma-1
-             (implies (ex-args-p x)
-                      (pseudo-term-listp (ex-args->term-lst x)))))
-
-    (local (defthm lemma-2
-             (implies (and (pseudo-term-listp y) (consp y))
-                      (pseudo-termp (car y)))))
-
-    (local (defthm lemma-3
-             (implies (and (pseudo-termp z) (consp z) (not (equal (car z) 'quote)))
-                      (pseudo-term-listp (cdr z)))))
-
-    (defthm pseudo-term-list-of-cdar-of-ex-args->term-lst
-      (implies (and (ex-args-p expand-args)
-                    (consp (ex-args->term-lst expand-args))
-                    (consp (car (ex-args->term-lst expand-args)))
-                    (not (equal (caar (ex-args->term-lst expand-args)) 'quote)))
-               (pseudo-term-listp (cdar (ex-args->term-lst expand-args)))))
-
-    (local (defthm lemma-4
-             (implies (and (pseudo-term-listp y) (consp y))
-                      (pseudo-term-listp (cdr y)))))
-
-    (defthm pseudo-term-listp-of-cdr-of-ex-args->term-lst
-      (implies (and (ex-args-p expand-args)
-                    (consp (ex-args->term-lst expand-args)))
-               (pseudo-term-listp (cdr (ex-args->term-lst expand-args)))))
-
-    (local (defthm lemma-5
-             (implies (and (pseudo-term-listp y) (consp y) (not (consp (car y))))
-                      (symbolp (car y)))))
-
-    (defthm symbolp-of-car-of-ex-args->term-lst
-      (implies (and (ex-args-p expand-args)
-                    (consp (ex-args->term-lst expand-args))
-                    (not (consp (car (ex-args->term-lst expand-args)))))
-               (symbolp (car (ex-args->term-lst expand-args)))))
-
-    (defthm pseudo-termp-of-car-of-ex-args->term-lst
-      (implies (and (ex-args-p expand-args)
-                    (consp (ex-args->term-lst expand-args)))
-               (pseudo-termp (car (ex-args->term-lst expand-args))))
-      :hints (("Goal" :in-theory (enable pseudo-termp))))
-
-    (defthm len-equal-of-formals-of-pseudo-lambdap-and-actuals-of-pseudo-termp
-      (implies (and (ex-args-p expand-args)
-                    (pseudo-termp (car (ex-args->term-lst expand-args)))
-                    (pseudo-lambdap (car (car (ex-args->term-lst expand-args)))))
-               (equal (len (cadr (car (car (ex-args->term-lst expand-args)))))
-                      (len (cdr (car (ex-args->term-lst expand-args))))))
-      :hints (("Goal" :in-theory (e/d (pseudo-termp pseudo-lambdap)
-                                      (ACL2::FOLD-CONSTS-IN-+
-                                       ACL2::PSEUDO-TERMP-CAR)))))
-
-    (local (defthm lemma-6
-             (implies (and (pseudo-termp x) (not (symbolp x)) (not (pseudo-lambdap (car x))))
-                      (symbolp (car x)))
-             :hints (("Goal" :in-theory (enable pseudo-termp pseudo-lambdap)))))
-
-    (defthm symbolp-of-caar-of-ex-args->term-lst
-      (implies (and (ex-args-p expand-args)
-                    (consp (ex-args->term-lst expand-args))
-                    (not (symbolp (car (ex-args->term-lst expand-args))))
-                    (not (pseudo-lambdap (car (car (ex-args->term-lst expand-args))))))
-               (symbolp (car (car (ex-args->term-lst expand-args))))))
-
-    (local (defthm lemma-7
-             (implies (and (pseudo-termp x) (consp x) (equal (car x) 'quote))
-                      (and (not (cddr x)) (consp (cdr x))))))
-
-    (defthm not-cddr-of-car-of-pseudo-term-list-fix-of-expand-args->term-lst
-      (implies (and (consp (ex-args->term-lst expand-args))
-                    (consp (car (ex-args->term-lst expand-args)))
-                    (not (symbolp (car (ex-args->term-lst expand-args))))
-                    (equal (car (car (ex-args->term-lst expand-args))) 'quote))
-               (not (cddr (car (ex-args->term-lst expand-args))))))
-
-    (defthm consp-cdr-of-car-of-pseudo-term-list-fix-of-expand-args->term-lst
-      (implies (and (consp (ex-args->term-lst expand-args))
-                    (consp (car (ex-args->term-lst expand-args)))
-                    (not (symbolp (car (ex-args->term-lst expand-args))))
-                    (equal (car (car (ex-args->term-lst expand-args))) 'quote))
-               (consp (cdr (car (ex-args->term-lst expand-args))))))
-
-    (defthm pseudo-term-listp-of-pseudo-lambdap-of-cdar-ex-args->term-lst
-      (implies (and (ex-args-p expand-args)
-                    (consp (ex-args->term-lst expand-args))
-                    (consp (car (ex-args->term-lst expand-args)))
-                    (not (equal (caar (ex-args->term-lst expand-args)) 'quote)))
-               (pseudo-term-listp (cdar (ex-args->term-lst expand-args)))))
+    (defthm function-substitution-correct
+      (implies (and (ev-smtcp-meta-extract-global-facts)
+                    (pseudo-termp term)
+                    (alistp a)
+                    (function-substitution term state))
+               (ev-smtcp (function-substitution term state) a))
+      :hints (("Goal"
+               :in-theory (e/d ()
+                               (ev-smtcp-meta-extract-formula))
+               :use ((:instance
+                      ev-smtcp-meta-extract-formula
+                      (name (car term))
+                      (st state)
+                      (a (ev-smtcp-alist
+                          (mv-nth 1
+                                  (acl2::simple-one-way-unify
+                                   (cadr (meta-extract-formula (car term) state))
+                                   term nil))
+                          a)))))))
     )
 
   (encapsulate ()
-    (local (in-theory (enable pseudo-lambdap)))
+    (local
+     (defthm type-of-assoc-equal-of-sym-nat-alistp
+       (implies (and (sym-nat-alistp x)
+                     (symbolp y)
+                     (assoc-equal y x))
+                (and (symbolp (car (assoc-equal y x)))
+                     (natp (cdr (assoc-equal y x))))))
+     )
 
-    (defthm symbol-listp-of-formals-of-pseudo-lambdap
-      (implies (pseudo-lambdap x) (symbol-listp (cadr x))))
-
-    (defthm pseudo-termp-of-body-of-pseudo-lambdap
-      (implies (pseudo-lambdap x) (pseudo-termp (caddr x))))
-
-    (defthm consp-of-pseudo-lambdap
-      (implies (pseudo-lambdap x) (consp x)))
-
-    (defthm consp-of-cdr-of-pseudo-lambdap
-      (implies (pseudo-lambdap x) (consp (cdr x))))
-
-    (defthm consp-of-cddr-of-pseudo-lambdap
-      (implies (pseudo-lambdap x) (consp (cddr x))))
-
-    (defthm not-stringp-of-cadr-of-pseudo-lambdap
-      (implies (pseudo-lambdap x) (not (stringp (cadr x)))))
-    )
-
-  (encapsulate ()
-    (local (defthm lemma-1
-             (implies (ex-args-p x) (sym-nat-alistp (ex-args->fn-lvls x)))))
-
-    (local (defthm lemma-2
-             (implies (and (sym-nat-alistp y) (assoc-equal foo y))
-                      (natp (cdr (assoc-equal foo y))))))
-
-    (local (defthm lemma-3
-             (implies (and (sym-nat-alistp y) (assoc-equal foo y))
-                      (consp (assoc-equal foo y)))))
-
-    (local (defthm natp-of-cdr-of-assoc-equal-of-ex-args->fn-lvls-of-ex-args-p
-             (implies (and (ex-args-p x) (assoc-equal foo (ex-args->fn-lvls x)))
-                      (natp (cdr (assoc-equal foo (ex-args->fn-lvls x)))))))
-
-    (defthm integerp-of-cdr-of-assoc-equal-of-ex-args->fn-lvls-of-ex-args-p
-      (implies (and (ex-args-p x) (assoc-equal foo (ex-args->fn-lvls x)))
-               (integerp (cdr (assoc-equal foo (ex-args->fn-lvls x)))))
-      :hints(("Goal" :use ((:instance
-                            natp-of-cdr-of-assoc-equal-of-ex-args->fn-lvls-of-ex-args-p (x x))))))
-
-    (defthm non-neg-of-cdr-of-assoc-equal-of-ex-args->fn-lvls-of-ex-args-p
-      (implies (and (ex-args-p x) (assoc-equal foo (ex-args->fn-lvls x)))
-               (<= 0 (cdr (assoc-equal foo (ex-args->fn-lvls x)))))
-      :hints(("Goal" :use ((:instance
-                            natp-of-cdr-of-assoc-equal-of-ex-args->fn-lvls-of-ex-args-p (x x))))))
-
-    (defthm consp-of-assoc-equal-of-ex-args->fn-lvls-of-ex-args-p
-      (implies (and (ex-args-p x) (assoc-equal foo (ex-args->fn-lvls x)))
-               (consp (assoc-equal foo (ex-args->fn-lvls x)))))
-
-    (defthm last-<=
-      (<= (acl2-count (last x))
-          (acl2-count x)))
-
-    (defthm last-pseudo-term-list-is-pseudo-term-list
-      (implies (pseudo-term-listp x)
-               (pseudo-term-listp (last x))))
-    )
-
-  (local (in-theory (enable expand-measure)))
-  (encapsulate
-    ()
-    (set-well-founded-relation l<)
-    (local (in-theory (e/d
-                       ()
-                       (ACL2::PSEUDO-LAMBDAP-OF-CAR-WHEN-PSEUDO-TERMP
-                        ACL2::SUBSETP-CONS-2
-                        CONSP-OF-SYM-NAT-ALIST-FIX
-                        DEFAULT-CDR
-                        SYM-NAT-ALISTP-OF-CDR-WHEN-SYM-NAT-ALISTP
-                        NTH
-                        TRUE-LISTP
-                        ACL2::PSEUDO-LAMBDAP-OF-CAR-WHEN-PSEUDO-LAMBDA-LISTP
-                        ACL2::PSEUDO-LAMBDA-LISTP-OF-CDR-WHEN-PSEUDO-LAMBDA-LISTP
-                        ACL2::PSEUDO-TERMP-CDR-ASSOC-EQUAL
-                        SYM-NAT-ALISTP-WHEN-NOT-CONSP
-                        ACL2::SUBSETP-CAR-MEMBER
-                        STRIP-CDRS
-                        (:TYPE-PRESCRIPTION SYM-NAT-ALIST-FIX$INLINE)
-                        ACL2::SUBSETP-WHEN-ATOM-RIGHT
-                        RATIONAL-LISTP
-                        INTEGER-LISTP
-                        ATOM
-                        ACL2::SYMBOL-LISTP-WHEN-NOT-CONSP
-                        ACL2::PSEUDO-LAMBDAP-WHEN-MEMBER-EQUAL-OF-PSEUDO-LAMBDA-LISTP
-                        ACL2::SYMBOL-LISTP-CDR-ASSOC-EQUAL
-                        ACL2::SYMBOL-LIST-LISTP
-                        ACL2::RATIONALP-OF-CAR-WHEN-RATIONAL-LISTP
-                        ACL2::INTEGERP-OF-CAR-WHEN-INTEGER-LISTP
-                        CONSP-WHEN-MEMBER-EQUAL-OF-SYM-NAT-ALISTP
-                        ACL2::CONSP-WHEN-MEMBER-EQUAL-OF-SYMBOL-SYMBOL-ALISTP
-                        ACL2::PSEUDO-LAMBDAP-OF-NTH-WHEN-PSEUDO-LAMBDA-LISTP
-                        ACL2::PSEUDO-LAMBDA-LISTP-WHEN-NOT-CONSP
-                        ACL2::SUBSETP-WHEN-ATOM-LEFT))))
-
-    ;; Q FOR YAN:
-    ;; 1. merge expand-args->fn-lst and expand-args->fn-lvls
-    ;; 2. change update-fn-lvls function so that old items are not deleted and update the measure function
-    ;; 3. clean the code in a more structured way - treat lambdas in another function
-    ;; 4. clean up the above encapsulated theorems, maybe in another file
-    (define expand ((expand-args ex-args-p) (fty-info fty-info-alist-p)
-                    (abs symbol-listp) state)
-      :parents (function-expansion)
-      :returns (expanded-result ex-outs-p)
-      :measure (expand-measure expand-args)
-      :verify-guards nil
-      :hints
-      (("Goal"
-        :in-theory (e/d ()
-                        (last-<=
-                         sum-lvls-decrease-after-update))
-        :use ((:instance last-<=
-                         (x (cdr (car (ex-args->term-lst expand-args)))))
-              (:instance sum-lvls-decrease-after-update
-                         (fn (car (car (ex-args->term-lst expand-args))))
-                         (fn-lvls (ex-args->fn-lvls expand-args))))))
-      (b* ((expand-args (ex-args-fix expand-args))
-           (fty-info (fty-info-alist-fix fty-info))
-           ;; This binds expand-args to a, so that we can call a.term-lst ...
+    (define fact-finder ((term pseudo-termp)
+                         (expand-args ex-args-p)
+                         state)
+      :guard (and (not (acl2::variablep term))
+                  (not (acl2::fquotep term))
+                  (symbolp (car term))
+                  (not (assoc-equal term (ex-args->facts expand-args)))
+                  (not (zp (ex-args->wrld-fn-len expand-args))))
+      :guard-hints (("Goal"
+                     :in-theory (e/d ()
+                                     (type-of-assoc-equal-of-sym-nat-alistp))
+                     :use ((:instance type-of-assoc-equal-of-sym-nat-alistp
+                                      (x (ex-args->fn-lvls expand-args))
+                                      (y (car term))))))
+      :returns (mv (new-term pseudo-termp)
+                   (new-args ex-args-p))
+      :short "Find the definition fact for @('term')"
+      :long "<p>Given a pseudo-termp @('term') that is not a @('variablep'), not
+a @('fquotep'), nor a @('pseudo-lambdap'), and that it doesn't exist in the
+list of facts learnt @('(ex-args->facts expand-args)'), we want to find the
+definition fact of that term.</p>
+"
+      (b* ((term (pseudo-term-fix term))
+           (expand-args (ex-args-fix expand-args))
            ((ex-args a) expand-args)
-           ((unless (consp a.term-lst))
-            (make-ex-outs :expanded-term-lst nil :expanded-fn-lst a.expand-lst))
-           ((cons term rest) a.term-lst)
-           ;; If first term is a symbolp, return the symbol
-           ;; then recurse on the rest of the list
-           ((if (symbolp term))
-            (b* ((rest-res (expand (change-ex-args a :term-lst rest) fty-info
-                                   abs state))
-                 ((ex-outs o) rest-res))
-              (make-ex-outs :expanded-term-lst (cons term o.expanded-term-lst)
-                            :expanded-fn-lst o.expanded-fn-lst)))
-           ((if (equal (car term) 'quote))
-            (b* ((rest-res (expand (change-ex-args a :term-lst rest) fty-info
-                                   abs state))
-                 ((ex-outs o) rest-res))
-              (make-ex-outs :expanded-term-lst (cons term o.expanded-term-lst)
-                            :expanded-fn-lst o.expanded-fn-lst)))
-           ;; The first term is now a function call:
-           ;; Cons the function call and function actuals out of term
-           ((cons fn-call fn-actuals) term)
-
-           ;; If fn-call is a pseudo-lambdap
-           ((if (pseudo-lambdap fn-call))
-            (b* ((lambda-formals (lambda-formals fn-call))
-                 (body-res
-                  (expand (change-ex-args a
-                                          :term-lst (list (lambda-body
-                                                           fn-call)))
-                          fty-info abs state))
-                 ((ex-outs b) body-res)
-                 (lambda-body (car b.expanded-term-lst))
-                 (actuals-res
-                  (expand (change-ex-args a
-                                          :term-lst fn-actuals
-                                          :expand-lst b.expanded-fn-lst)
-                          fty-info abs state))
-                 ((ex-outs ac) actuals-res)
-                 (lambda-actuals ac.expanded-term-lst)
-                 ((unless (mbt (equal (len lambda-formals) (len lambda-actuals))))
-                  (make-ex-outs :expanded-term-lst a.term-lst :expanded-fn-lst a.expand-lst))
-                 (lambda-fn `((lambda ,lambda-formals ,lambda-body) ,@lambda-actuals))
-                 (rest-res
-                  (expand (change-ex-args a
-                                          :term-lst rest
-                                          :expand-lst ac.expanded-fn-lst)
-                          fty-info abs state))
-                 ((ex-outs r) rest-res))
-              (make-ex-outs :expanded-term-lst (cons lambda-fn r.expanded-term-lst)
-                            :expanded-fn-lst r.expanded-fn-lst)))
-
-           ;; If fn-call is neither a lambda expression nor a function call
-           ((unless (mbt (symbolp fn-call)))
-            (make-ex-outs :expanded-term-lst a.term-lst :expanded-fn-lst a.expand-lst))
-           ;; Try finding function call from fn-lst
-           (fn (hons-get fn-call a.fn-lst))
-           ;; If fn-call doesn't exist in fn-lst, it can be a basic function,
-           ;; in that case we don't do anything with it.
-           ;; Otherwise it can be a function that's forgotten to be added to fn-lst.
-           ;; We are going to expand all function like this for one level.
-           ;; If the function is basic or has already been expanded once.
-           ((unless fn)
-            (b* (((unless (function-symbolp fn-call (w state)))
-                  (prog2$
-                   (er hard? 'SMT-goal-generator=>expand "Should be a function call: ~q0" fn-call)
-                   (make-ex-outs :expanded-term-lst a.term-lst :expanded-fn-lst a.expand-lst)))
-                 (basic-function (member-equal fn-call *SMT-basics*))
-                 (flex? (fncall-of-flextype fn-call fty-info))
-                 (abs? (member-equal fn-call abs))
-                 (lvl-item (assoc-equal fn-call a.fn-lvls))
-                 (extract-res (meta-extract-formula fn-call state))
-                 ((if (equal fn-call 'return-last))
-                  (b* ((actuals-res
-                        (expand (change-ex-args a :term-lst (last fn-actuals))
-                                fty-info abs state))
-                       ((ex-outs ac) actuals-res)
-                       (rest-res
-                        (expand (change-ex-args a :term-lst rest
-                                                :expand-lst ac.expanded-fn-lst)
-                                fty-info abs state))
-                       ((ex-outs r) rest-res))
-                    (make-ex-outs
-                     :expanded-term-lst (cons
-                                         (car ac.expanded-term-lst)
-                                         r.expanded-term-lst)
-                     :expanded-fn-lst r.expanded-fn-lst)))
-                 ((if (or basic-function flex? abs?
-                          (<= a.wrld-fn-len 0) (and lvl-item (zp (cdr lvl-item)))
-                          (equal extract-res ''t)))
-                  (b* ((actuals-res
-                        (expand (change-ex-args a :term-lst fn-actuals)
-                                fty-info abs state))
-                       ((ex-outs ac) actuals-res)
-                       (rest-res
-                        (expand (change-ex-args a :term-lst rest
-                                                :expand-lst ac.expanded-fn-lst)
-                                fty-info abs state))
-                       ((ex-outs r) rest-res))
-                    (make-ex-outs :expanded-term-lst (cons (cons fn-call ac.expanded-term-lst) r.expanded-term-lst)
-
-                                  :expanded-fn-lst r.expanded-fn-lst)))
-                 (formals (formals fn-call (w state)))
-                 ((unless (symbol-listp formals))
-                  (prog2$
-                   (er hard? 'SMT-goal-generator=>expand "formals get a list that's not a symbol-listp for ~q0, the formals are ~q1" fn-call formals)
-                   (make-ex-outs :expanded-term-lst a.term-lst :expanded-fn-lst a.expand-lst)))
-                 ((unless (true-listp extract-res))
-                  (prog2$
-                   (er hard? 'SMT-goal-generator=>expand "meta-extract-formula returning a non-true-listp for ~q0The extracted result is ~q1" fn-call extract-res)
-                   (make-ex-outs :expanded-term-lst a.term-lst :expanded-fn-lst a.expand-lst)))
-                 (body (nth 2 extract-res))
-                 ((unless (pseudo-termp body))
-                  (prog2$
-                   (er hard? 'SMT-goal-generator=>expand "meta-extract-formula returning a non-pseudo-term for ~q0The body is ~q1" fn-call body)
-                   (make-ex-outs :expanded-term-lst a.term-lst :expanded-fn-lst a.expand-lst)))
-                 ;; (- (cw "SMT-goal-generator=>Expanding ... ~q0" fn-call))
-                 ;; Adding function symbol into expand-lst
-                 (updated-expand-lst
-                  (if (assoc-equal term a.expand-lst)
-                      a.expand-lst (cons `(,term . ,term) a.expand-lst)))
-                 (body-res
-                  (expand (change-ex-args a
-                                          :term-lst (list body)
-                                          :fn-lvls (cons `(,fn-call . 0) a.fn-lvls)
-                                          :wrld-fn-len (1- a.wrld-fn-len)
-                                          :expand-lst updated-expand-lst)
-                          fty-info abs state))
-                 ((ex-outs b) body-res)
-                 ;; Expand function
-                 (expanded-lambda-body (car b.expanded-term-lst))
-                 (expanded-lambda `(lambda ,formals ,expanded-lambda-body))
-                 (actuals-res
-                  (expand (change-ex-args a :term-lst fn-actuals
-                                          :expand-lst b.expanded-fn-lst)
-                          fty-info abs state))
-                 ((ex-outs ac) actuals-res)
-                 (expanded-term-list ac.expanded-term-lst)
-                 ((unless (equal (len formals) (len expanded-term-list)))
-                  (prog2$
-                   (er hard? 'SMT-goal-generator=>expand "You called your function with the wrong number of actuals: ~q0" term)
-                   (make-ex-outs :expanded-term-lst a.term-lst :expanded-fn-lst ac.expanded-fn-lst)) )
-                 (rest-res
-                  (expand (change-ex-args a :term-lst rest
-                                          :expand-lst ac.expanded-fn-lst)
-                          fty-info abs state))
-                 ((ex-outs r) rest-res))
-              (make-ex-outs :expanded-term-lst (cons `(,expanded-lambda ,@expanded-term-list) r.expanded-term-lst)
-                            :expanded-fn-lst r.expanded-fn-lst)))
-
-           ;; Now fn is a function in fn-lst
-           ;; If fn-call is already expanded to level 0, don't expand.
-           (lvl-item (assoc-equal fn-call a.fn-lvls))
-           ((unless lvl-item)
-            (prog2$
-             (er hard? 'SMT-goal-generator=>expand "Function ~q0 exists in the definition list but not in the levels list?" fn-call)
-             (make-ex-outs :expanded-term-lst a.term-lst :expanded-fn-lst a.expand-lst)) )
-           ((if (zp (cdr lvl-item)))
-            (b* ((actuals-res
-                  (expand (change-ex-args a :term-lst fn-actuals)
-                          fty-info abs state))
-                 ((ex-outs ac) actuals-res)
-                 (rest-res
-                  (expand (change-ex-args a :term-lst rest
-                                          :expand-lst ac.expanded-fn-lst)
-                          fty-info abs state))
-                 ((ex-outs r) rest-res))
-              (make-ex-outs :expanded-term-lst (cons (cons fn-call ac.expanded-term-lst) r.expanded-term-lst)
-
-                            :expanded-fn-lst r.expanded-fn-lst)))
-
-           ;; If fn-call is not expanded to level 0, still can expand.
-           (new-fn-lvls (update-fn-lvls fn-call a.fn-lvls))
-           ((func f) (cdr fn))
-           (extract-res (meta-extract-formula fn-call state))
-           ((unless (true-listp extract-res))
-            (prog2$
-             (er hard? 'SMT-goal-generator=>expand "meta-extract-formula returning a non-true-listp for ~q0The extracted result is ~q1" fn-call extract-res)
-             (make-ex-outs :expanded-term-lst a.term-lst :expanded-fn-lst a.expand-lst)))
-           (body (nth 2 extract-res))
-           ((unless (pseudo-termp body))
-            (prog2$
-             (er hard? 'SMT-goal-generator=>expand "meta-extract-formula returning a non-pseudo-term for ~q0The body is ~q1" fn-call body)
-             (make-ex-outs :expanded-term-lst a.term-lst :expanded-fn-lst a.expand-lst)))
-           ;; (- (cw "SMT-goal-generator=>Expanding ... ~q0" fn-call))
-           (updated-expand-lst
-            (if (assoc-equal term a.expand-lst)
-                a.expand-lst (cons `(,term . ,term) a.expand-lst)))
-           (formals f.flattened-formals)
-           (body-res
-            (expand (change-ex-args a :term-lst (list body)
-                                    :fn-lvls new-fn-lvls
-                                    :expand-lst updated-expand-lst)
-                    fty-info abs state))
-           ((ex-outs b) body-res)
-           (expanded-lambda-body (car b.expanded-term-lst))
-           (expanded-lambda `(lambda ,formals ,expanded-lambda-body))
-           (actuals-res
-            (expand (change-ex-args a :term-lst fn-actuals
-                                    :expand-lst b.expanded-fn-lst)
-                    fty-info abs state))
-           ((ex-outs ac) actuals-res)
-           (expanded-term-list ac.expanded-term-lst)
-           ((unless (equal (len formals) (len expanded-term-list)))
-            (prog2$
-             (er hard? 'SMT-goal-generator=>expand "You called your function with the wrong number of actuals: ~q0" term)
-             (make-ex-outs :expanded-term-lst a.term-lst :expanded-fn-lst ac.expanded-fn-lst)))
-           (rest-res
-            (expand (change-ex-args a :term-lst rest
-                                    :expand-lst ac.expanded-fn-lst)
-                    fty-info abs state))
-           ((ex-outs r) rest-res))
-        (make-ex-outs :expanded-term-lst (cons `(,expanded-lambda ,@expanded-term-list) r.expanded-term-lst)
-                      :expanded-fn-lst r.expanded-fn-lst))
+           ((cons fn &) term)
+           ;; There are three cases:
+           ;; 1. fn is a basic function (including fty functions) -- fn-lvls stays
+           ;; the same, nothing is expanded, no fact generated
+           ;; For 2 and 3, if fn-lvls is already 0, then do nothing; if fn-lvls is
+           ;; not 0, expand.
+           ;; 2. fn exists in user-defined fn-lvls -- fn-lvls decrease by 1, fn is
+           ;; expanded, one fact generated
+           ;; 3. otherwise, fn will be expanded once -- fn-lvls decrease by 1, fn
+           ;; is expanded, one fact generated
+           (basic-function (member-equal fn *SMT-basics*))
+           (flex? (fncall-of-fixtypes fn a.fixinfo))
+           ((if (or basic-function flex?))
+            (mv nil a))
+           (lvl (assoc-equal fn a.fn-lvls))
+           (user-defined (is-function fn a.fn-lst))
+           ((if (and lvl (zp (cdr lvl)) user-defined)) (mv nil a))
+           ((if (and lvl (zp (cdr lvl)) (null user-defined)))
+            (prog2$ (er hard? 'expand-cp=>fact-finder "Possibly
+                       encountered recursive functions that are not
+                       user-defined: ~q0" term)
+                    (mv nil a)))
+           (fact (function-substitution term state))
+           ((if (null fact)) (mv nil a))
+           ((if lvl)
+            (mv fact
+                (make-ex-args :fn-lvls (update-fn-lvls fn a.fn-lvls)
+                              :fn-lst a.fn-lst
+                              :facts (acons term fact a.facts)
+                              :fixinfo a.fixinfo
+                              :wrld-fn-len a.wrld-fn-len))))
+        ;; if not in fn-lvls
+        (mv fact
+            (make-ex-args :fn-lst a.fn-lst
+                          :fn-lvls (cons `(,fn . 0) a.fn-lvls)
+                          :facts (acons term fact a.facts)
+                          :fixinfo a.fixinfo
+                          :wrld-fn-len (1- a.wrld-fn-len))))
       ///
       (more-returns
-       (expanded-result (implies (ex-args-p expand-args)
-                                 (pseudo-term-alistp
-                                  (ex-outs->expanded-fn-lst expanded-result)))
-                        :name pseudo-term-alistp-of-expand)
-       (expanded-result (implies (ex-args-p expand-args)
-                                 (pseudo-term-listp
-                                  (ex-outs->expanded-term-lst expanded-result)))
-                        :name pseudo-term-listp-of-expand)
-       (expanded-result (implies (ex-args-p expand-args)
-                                 (pseudo-termp
-                                  (car (ex-outs->expanded-term-lst expanded-result))))
-                        :name pseudo-termp-of-car-of-expand)
-       (expanded-result (implies (ex-args-p expand-args)
-                                 (equal (len (ex-outs->expanded-term-lst expanded-result))
-                                        (len (ex-args->term-lst expand-args))))
-                        :name len-of-expand)
-       )
-      )
+       (new-args
+        (implies
+         (and (pseudo-termp term)
+              (ex-args-p expand-args)
+              (symbolp (car term))
+              new-term
+              (assoc-equal (car term)
+                           (ex-args->fn-lvls expand-args)))
+         (and (< (sum-lvls (ex-args->fn-lvls new-args))
+                 (sum-lvls (ex-args->fn-lvls expand-args)))
+              (equal (ex-args->wrld-fn-len new-args)
+                     (ex-args->wrld-fn-len expand-args))))
+        :hints (("Goal"
+                 :in-theory (e/d ()
+                                 (sum-lvls-decrease-after-update))
+                 :use ((:instance sum-lvls-decrease-after-update
+                                  (fn (car term))
+                                  (fn-lvls (ex-args->fn-lvls expand-args))))))
+        :name fact-finder-decrease-1)
+       (new-args
+        (implies
+         (and (pseudo-termp term)
+              (ex-args-p expand-args)
+              (symbolp (car term))
+              (not (zp (ex-args->wrld-fn-len expand-args)))
+              new-term
+              (not (assoc-equal (car term)
+                                (ex-args->fn-lvls expand-args))))
+         (< (ex-args->wrld-fn-len new-args)
+            (ex-args->wrld-fn-len expand-args)))
+        :name fact-finder-decrease-2)
+       (new-args
+        (implies (not new-term)
+                 (and (equal (ex-args->wrld-fn-len new-args)
+                             (ex-args->wrld-fn-len expand-args))
+                      (equal (sum-lvls (ex-args->fn-lvls new-args))
+                             (sum-lvls (ex-args->fn-lvls expand-args)))))
+        :name fact-finder-same-3)))
     )
 
-  (verify-guards expand
+  (encapsulate ()
+    (local
+     (defthm acl2-count-of-last-of-consp-decrease
+       (implies (consp x)
+                (< (acl2-count (pseudo-term-fix (car (last x))))
+                   (acl2-count x)))
+       :hints (("Goal"
+                :in-theory (enable pseudo-term-fix)))
+       ))
+
+    (defines transform
+      :well-founded-relation l<
+      :flag-local nil
+      :flag-defthm-macro defthm-transform
+      :verify-guards nil
+
+      (define transform-list ((term-lst pseudo-term-listp))
+        :returns (new-term-lst pseudo-term-listp)
+        :measure (acl2-count (pseudo-term-list-fix term-lst))
+        (b* ((term-lst (pseudo-term-list-fix term-lst))
+             ((unless (consp term-lst)) term-lst)
+             ((cons first rest) term-lst)
+             (first-term (transform first)))
+          (cons first-term
+                (transform-list rest))))
+
+      (define transform ((term pseudo-termp))
+        :returns (new-term pseudo-termp)
+        :measure (acl2-count (pseudo-term-fix term))
+        :hints (("Goal"
+                 :in-theory (e/d ()
+                                 (acl2-count-of-last-of-consp-decrease))
+                 :use ((:instance acl2-count-of-last-of-consp-decrease
+                                  (x (cdr (pseudo-term-fix term)))))))
+        (b* ((term (pseudo-term-fix term))
+             ;; If first term is a symbolp or is quoted, return the current facts
+             ((if (or (acl2::variablep term) (acl2::fquotep term))) term)
+             ;; The first term is now a function call:
+             ;; Cons the function call and function actuals out of term
+             ((cons fn-call fn-actuals) term)
+             ;; If fn-call is a pseudo-lambdap, transform the body
+             ((if (pseudo-lambdap fn-call))
+              (b* (((list 'lambda formal-lst body) fn-call)
+                   (transformed-body (transform body))
+                   (transformed-actuals (transform-list fn-actuals)))
+                (lambda-substitution `(lambda ,formal-lst
+                                        ,transformed-body)
+                                     transformed-actuals)))
+             ;; If fn-call is neither a lambda expression nor a function call
+             ((unless (mbt (symbolp fn-call))) nil)
+
+             ;; -----------------------------------------------------------
+             ;; Now the term is a function call
+             ((if (and (equal fn-call 'acl2::return-last)
+                       (equal (len fn-actuals) 3)))
+              (transform (car (last term)))))
+          (cons fn-call (transform-list fn-actuals))))
+      )
+
+    (local
+     (defthm tranform-list-maintain-length
+       (implies (pseudo-term-listp term-lst)
+                (equal (len (transform-list term-lst))
+                       (len term-lst)))
+       :hints (("Goal"
+                :expand (transform-list term-lst))))
+     )
+
+    (local
+     (defthm pseudo-lambdap-of-reconstruction
+       (implies (and (pseudo-termp term)
+                     (consp term)
+                     (not (equal 'quote (car term)))
+                     (pseudo-lambdap (car term)))
+                (pseudo-lambdap (list 'lambda
+                                      (cadr (car term))
+                                      (transform (caddr (car term))))))
+       :hints (("Goal"
+                :in-theory (e/d (pseudo-lambdap)
+                                (symbol-listp
+                                 pseudo-term-listp-of-cdr-of-pseudo-termp
+                                 pseudo-term-listp
+                                 pseudo-term-listp-of-symbol-listp))))))
+
+    (local
+     (defthm pseudo-termp-of-car-of-last-of-return-last
+       (implies (and (pseudo-term-listp x)
+                     (consp x))
+                (pseudo-termp (car (last x))))
+       :hints (("Goal"
+                :in-theory (enable pseudo-term-listp last)))
+       ))
+
+    (verify-guards transform)
+
+    (defines induction-scheme
+      :well-founded-relation l<
+      :flag-local nil
+      :verify-guards nil
+
+      (define induction-scheme-list ((term-lst pseudo-term-listp)
+                                     (al))
+        (declare (irrelevant al))
+        :measure (acl2-count (pseudo-term-list-fix term-lst))
+        (b* ((term-lst (pseudo-term-list-fix term-lst))
+             ((unless (consp term-lst)) term-lst)
+             ((cons first rest) term-lst))
+          (cons (induction-scheme first al)
+                (induction-scheme-list rest al))))
+
+      (define induction-scheme ((term pseudo-termp)
+                                (al))
+        (declare (irrelevant al))
+        :measure (acl2-count (pseudo-term-fix term))
+        :hints (("Goal"
+                 :in-theory (e/d ()
+                                 (acl2-count-of-last-of-consp-decrease
+                                  symbol-listp
+                                  acl2::pseudo-lambdap-of-car-when-pseudo-termp
+                                  consp-of-sym-nat-alist-fix
+                                  sym-nat-alist-fix-when-sym-nat-alistp))
+                 :use ((:instance acl2-count-of-last-of-consp-decrease
+                                  (x (cdr (pseudo-term-fix term)))))))
+        (b* ((term (pseudo-term-fix term))
+             ;; If first term is a symbolp or is quoted, return the current facts
+             ((if (or (acl2::variablep term) (acl2::fquotep term))) term)
+             ;; The first term is now a function call:
+             ;; Cons the function call and function actuals out of term
+             ((cons fn-call fn-actuals) term)
+             ;; If fn-call is a pseudo-lambdap, transform the body
+             ((if (pseudo-lambdap fn-call))
+              (b* (((list 'lambda formal-lst body) fn-call)
+                   ;; (transformed-body (transform body))
+                   ;; (transformed-actuals (transform-list fn-actuals)))
+                   )
+                (lambda-substitution
+                 (induction-scheme body
+                                   (pairlis$ formal-lst
+                                             (ev-smtcp-lst fn-actuals al)))
+                 (induction-scheme-list fn-actuals al))))
+             ;; If fn-call is neither a lambda expression nor a function call
+             ((unless (mbt (symbolp fn-call))) nil)
+
+             ;; -----------------------------------------------------------
+             ;; Now the term is a function call
+             ((if (and (equal fn-call 'acl2::return-last)
+                       (equal (len fn-actuals) 3)))
+              (induction-scheme (car (last term)) al)))
+          (induction-scheme-list fn-actuals al)))
+      )
+
+    (local
+     (defthm induction-scheme-list-maintain-length
+       (implies (pseudo-term-listp term-lst)
+                (equal (len (induction-scheme-list term-lst al))
+                       (len term-lst)))
+       :hints (("Goal"
+                :expand ((induction-scheme-list term-lst al)
+                         (induction-scheme-list nil al)))))
+     )
+
+    (local
+     (defthm cdr-of-transform-list
+       (implies (pseudo-term-listp x)
+                (equal (transform-list (cdr x))
+                       (cdr (transform-list x))))
+       :hints (("Goal"
+                :expand (transform-list x)))
+       ))
+
+    (local
+     (defthm crock1
+       (implies (equal (len x) 1)
+                (equal (car (last x))
+                       (car x)))
+       :hints (("Goal"
+                :in-theory (enable last len)))))
+
+    (defthm-induction-scheme-flag
+      (defthm transform-pseudo-termp
+        (implies (and (ev-smtcp-meta-extract-global-facts)
+                      (pseudo-termp term)
+                      (alistp a))
+                 (equal (ev-smtcp (transform term) a)
+                        (ev-smtcp term a)))
+        :hints ('(:expand ((transform term))
+                          :in-theory (e/d (ev-smtcp-of-fncall-args)
+                                          (lambda-substitution
+                                           symbol-listp
+                                           acl2::symbolp-of-car-when-symbol-listp
+                                           acl2::symbol-listp-of-cdr-when-symbol-listp
+                                           acl2::true-listp-of-car-when-true-list-listp
+                                           true-list-listp))))
+        :flag induction-scheme)
+      (defthm transform-pseudo-term-listp
+        (implies (and (ev-smtcp-meta-extract-global-facts)
+                      (pseudo-term-listp term-lst)
+                      (alistp a))
+                 (equal (ev-smtcp-lst (transform-list term-lst) a)
+                        (ev-smtcp-lst term-lst a)))
+        :hints ('(:expand ((transform-list term-lst)
+                           (transform-list nil))))
+        :flag induction-scheme-list)
+      :hints(("Goal" :induct (induction-scheme-flag flag term-lst term a))))
+
+    (defthm transform-implies-function-substitution
+      (implies (and (pseudo-termp term)
+                    (transform (function-substitution term state)))
+               (function-substitution term state))
+      :hints (("Goal"
+               :in-theory (e/d (transform)
+                               ()))))
+
+    (defthm transform-function-substitution-correct
+      (implies (and (ev-smtcp-meta-extract-global-facts)
+                    (pseudo-termp term)
+                    (alistp a)
+                    (transform (function-substitution term state)))
+               (ev-smtcp (transform (function-substitution term state)) a))
+      :hints (("Goal"
+               :in-theory (e/d (transform) ()))))
+
+    (defines expand
+      :well-founded-relation l<
+      :flag-local nil
+      :verify-guards nil
+      :flag-defthm-macro defthm-expand
+      :hints (("Goal"
+               :in-theory (e/d ()
+                               (fact-finder-decrease-1
+                                fact-finder-decrease-2
+                                fact-finder-same-3
+                                pseudo-termp
+                                symbol-listp
+                                pseudo-term-listp-of-symbol-listp
+                                consp-of-sym-nat-alist-fix
+                                pseudo-term-listp
+                                acl2::pseudo-termp-opener
+                                rational-listp
+                                integer-listp))
+               :use ((:instance fact-finder-decrease-1
+                                (term (pseudo-term-fix term))
+                                (expand-args (ex-args-fix expand-args)))
+                     (:instance fact-finder-decrease-2
+                                (term (pseudo-term-fix term))
+                                (expand-args (ex-args-fix expand-args)))
+                     (:instance fact-finder-same-3
+                                (term (pseudo-term-fix term))
+                                (expand-args (ex-args-fix expand-args)))
+                     (:instance acl2-count-of-last-of-consp-decrease
+                                (x (cdr (pseudo-term-fix term))))
+                     )))
+
+      (define expand-list ((term-lst pseudo-term-listp)
+                           (expand-args ex-args-p)
+                           state)
+        :returns (fact-alst fact-alistp)
+        :measure (list (ex-args->wrld-fn-len expand-args)
+                       (sum-lvls (ex-args->fn-lvls expand-args))
+                       (acl2-count (pseudo-term-list-fix term-lst)))
+        (b* ((term-lst (pseudo-term-list-fix term-lst))
+             (expand-args (ex-args-fix expand-args))
+             ((ex-args a) expand-args)
+             ((unless (consp term-lst)) a.facts)
+             ((cons first rest) term-lst)
+             (facts-first (expand first a state)))
+          (expand-list rest (change-ex-args a :facts facts-first) state)))
+
+      (define expand ((term pseudo-termp)
+                      (expand-args ex-args-p)
+                      state)
+        :returns (fact-alst fact-alistp)
+        :measure (list (ex-args->wrld-fn-len expand-args)
+                       (sum-lvls (ex-args->fn-lvls expand-args))
+                       (acl2-count (pseudo-term-fix term)))
+        (b* ((term (pseudo-term-fix term))
+             (expand-args (ex-args-fix expand-args))
+             ((ex-args a) expand-args)
+             ((if (zp a.wrld-fn-len)) a.facts)
+             ;; If first term is a symbolp or is quoted, return the current facts
+             ((if (or (acl2::variablep term) (acl2::fquotep term))) a.facts)
+             ;; The first term is now a function call:
+             ;; Cons the function call and function actuals out of term
+             ((cons fn-call fn-actuals) term)
+             ;; If fn-call is a pseudo-lambdap, substitute unbounded variables in the
+             ;; lambda and recurse to expand the substituted term.
+             ;; To ensure termination, wrld-fn-len needs to decrease, this means
+             ;; wrld-fn-len should include term size so that it's large enough.
+             ((if (pseudo-lambdap fn-call))
+              (expand (lambda-substitution fn-call fn-actuals)
+                      (change-ex-args a :wrld-fn-len (1- a.wrld-fn-len))
+                      state))
+             ;; If fn-call is neither a lambda expression nor a function call
+             ((unless (mbt (symbolp fn-call))) nil)
+
+             ;; -----------------------------------------------------------
+             ;; Now the term is a function call
+             ;; if fn-call is return-last, we can skill the term
+             ((if (equal fn-call 'acl2::return-last)) a.facts)
+             ;; we first test if term already exists in facts alist.
+             (exists? (assoc-equal term a.facts))
+             ;; I can skip the whole subtree because if such a term already exists in
+             ;; facts, then it's subterms, subsubterms ... must also exist in the
+             ;; facts. This is because we are doing a depth first travesal.
+             ((if exists?) a.facts)
+             ((mv new-term new-args) (fact-finder term a state))
+             ;; new-term being nil meaning there's no fact to prove
+             ((unless new-term)
+              (expand-list fn-actuals new-args state)))
+          (expand new-term new-args state)))
+      )
+
+    (verify-guards expand)
+    )
+
+  (define initialize-fn-lvls ((fn-lst smt-function-list-p))
+    :returns (fn-lvls sym-nat-alistp)
+    :measure (len fn-lst)
+    (b* ((fn-lst (smt-function-list-fix fn-lst))
+         ((unless (consp fn-lst)) nil)
+         ((cons first rest) fn-lst)
+         ((smt-function f) first))
+      (cons (cons f.name f.expansion-depth) (initialize-fn-lvls rest))))
+
+  (define generate-type ((term pseudo-termp)
+                         (fn-lst smt-function-list-p)
+                         state)
+    :returns (new-term pseudo-termp)
+    (b* ((term (pseudo-term-fix term))
+         (fn-lst (smt-function-list-fix fn-lst))
+         ((unless (consp term))
+          (er hard? 'expand-cp=>generate-type "Term is not a consp: ~q0"
+              term))
+         (fn (acl2::ffn-symb term))
+         ((unless (and fn (symbolp fn)))
+          (er hard? 'expand-cp=>generate-type "Term is not a function call: ~q0"
+              term))
+         (fc (is-function fn fn-lst))
+         ((unless fc)
+          (er hard? 'expand-cp=>generate-type "Function doesn't exist in the
+                       hint: ~q0" fn)))
+      (type-thm-full term fc state)))
+
+  (defthm generate-type-correct
+    (implies (and (ev-smtcp-meta-extract-global-facts)
+                  (pseudo-termp term)
+                  (alistp a)
+                  (generate-type term fn-lst state))
+             (ev-smtcp (generate-type term fn-lst state) a))
     :hints (("Goal"
-             :in-theory (e/d
-                         ()
-                         (NTH
-                          FGETPROP
-                          TRUE-LISTP
-                          DEFAULT-CDR
-                          ASSOC-EQUAL
-                          ACL2::SUBSETP-CONS-2
-                          ACL2::O-P-O-INFP-CAR
-                          CONSP-OF-SYM-NAT-ALIST-FIX
-                          ACL2::SYMBOL-LISTP-WHEN-NOT-CONSP
-                          ACL2::PSEUDO-LAMBDA-LISTP-WHEN-NOT-CONSP
-                          ACL2::PSEUDO-LAMBDAP-OF-CAR-WHEN-PSEUDO-TERMP
-                          CONSP-WHEN-MEMBER-EQUAL-OF-SYM-NAT-ALISTP
-                          SYM-NAT-ALISTP-OF-CDR-WHEN-SYM-NAT-ALISTP
-                          ACL2::PSEUDO-LAMBDAP-OF-NTH-WHEN-PSEUDO-LAMBDA-LISTP
-                          ACL2::PSEUDO-LAMBDA-LISTP-OF-CDR-WHEN-PSEUDO-LAMBDA-LISTP
-                          ACL2::PSEUDO-LAMBDAP-OF-CAR-WHEN-PSEUDO-LAMBDA-LISTP
-                          ACL2::CONSP-WHEN-MEMBER-EQUAL-OF-SYMBOL-SYMBOL-ALISTP
-                          ACL2::PSEUDO-LAMBDAP-WHEN-MEMBER-EQUAL-OF-PSEUDO-LAMBDA-LISTP))
-             :use ((:instance pseudo-term-listp-of-pseudo-lambdap-of-cdar-ex-args->term-lst)
-                   (:instance symbolp-of-caar-of-ex-args->term-lst)))))
+             :in-theory (e/d (generate-type)
+                             (type-thm-full-correct))
+             :use ((:instance
+                    type-thm-full-correct
+                    (term term)
+                    (func (is-function (car term)
+                                       (smt-function-list-fix fn-lst)))
+                    (state state)
+                    ))
+             ))
+    )
 
+  (define compose-goal ((cl pseudo-term-listp)
+                        (to-be-learnt pseudo-term-listp)
+                        (fn-lst smt-function-list-p)
+                        state)
+    :returns (new-goal pseudo-term-listp)
+    :measure (len (pseudo-term-list-fix to-be-learnt))
+    (b* ((cl (pseudo-term-list-fix cl))
+         (to-be-learnt (pseudo-term-list-fix to-be-learnt))
+         ((unless (consp to-be-learnt)) cl)
+         ((cons first-fact rest-facts) to-be-learnt)
+         ((unless (and (not (acl2::variablep first-fact))
+                       (not (acl2::fquotep first-fact))
+                       (symbolp (car first-fact))))
+          cl)
+         (learnt-fact (transform (function-substitution first-fact state)))
+         (learnt-type (generate-type first-fact fn-lst state))
+         ((if (null learnt-fact)) cl)
+         ((if (null learnt-type)) cl))
+      `((not ,learnt-type)
+        (not ,learnt-fact)
+        ,@(compose-goal cl rest-facts fn-lst state))))
+
+  (encapsulate ()
+    (local (in-theory (e/d (compose-goal) ())))
+
+    (defthm compose-goal-correct
+      (implies (and (ev-smtcp-meta-extract-global-facts)
+                    (pseudo-term-listp clause)
+                    (alistp a)
+                    (ev-smtcp (disjoin
+                               (compose-goal clause to-be-learnt fn-lst state))
+                              a))
+               (ev-smtcp (disjoin clause) a))
+      :hints (("Goal"
+               :expand (compose-goal clause to-be-learnt fn-lst state)
+               :in-theory (e/d ()
+                               (ev-smtcp-of-disjoin
+                                transform-pseudo-termp))
+               :use
+               ((:instance transform-pseudo-termp
+                           (term (function-substitution
+                                  (car (pseudo-term-list-fix to-be-learnt))
+                                  state))
+                           (a a))))))
+
+    (defthm compose-transformed-goal-correct
+      (implies (and (ev-smtcp-meta-extract-global-facts)
+                    (pseudo-term-listp clause)
+                    (alistp a)
+                    (ev-smtcp
+                     (disjoin
+                      (compose-goal (transform-list clause)
+                                    to-be-learnt fn-lst state))
+                     a))
+               (ev-smtcp (disjoin clause) a)))
+    )
+
+  (encapsulate ()
+    (local
+     (defthm pseudo-term-listp-of-strip-cars-of-fact-alistp
+       (implies (fact-alistp x)
+                (pseudo-term-listp (strip-cars x)))))
+
+    (define expand-cp-helper ((cl pseudo-term-listp)
+                              (smtlink-hint t)
+                              state)
+      ;; :returns (new-goal pseudo-term-listp)
+      (b* (((unless (pseudo-term-listp cl)) (mv nil nil))
+           ((unless (smtlink-hint-p smtlink-hint))
+            (mv cl nil))
+           ((smtlink-hint h) smtlink-hint)
+           (fn-lst h.functions)
+           (fn-lvls (initialize-fn-lvls fn-lst))
+           (wrld-fn-len h.wrld-fn-len)
+           (transformed-cl (transform-list cl))
+           ;; Do function expansion
+           (to-be-learnt
+            (expand (disjoin transformed-cl)
+                    (make-ex-args
+                     :fn-lvls fn-lvls
+                     :fn-lst fn-lst
+                     :facts nil
+                     :fixinfo h.types-info
+                     :wrld-fn-len wrld-fn-len)
+                    state))
+           (expanded-goal (compose-goal transformed-cl
+                                        (strip-cars to-be-learnt) fn-lst
+                                        state))
+           (next-cp (cdr (assoc-equal 'expand *SMT-architecture*)))
+           ((if (null next-cp)) (mv cl nil))
+           (the-hint
+            `(:clause-processor (,next-cp clause ',h)))
+           (hinted-goal `((hint-please ',the-hint) ,@expanded-goal)))
+        (mv hinted-goal (strip-cars to-be-learnt))))
+    )
+
+  (defthm expand-cp-helper-correct
+    (implies (and (ev-smtcp-meta-extract-global-facts)
+                  (pseudo-term-listp cl)
+                  (alistp a)
+                  (ev-smtcp
+                   (disjoin
+                    (mv-nth 0 (expand-cp-helper cl hint state)))
+                   a))
+             (ev-smtcp (disjoin cl) a))
+    :hints (("Goal"
+             :in-theory (e/d (expand-cp-helper) (ev-smtcp-of-disjoin)))))
+
+  (define expand-cp-generalize ((cl pseudo-term-listp)
+                                (smtlink-hint t)
+                                state)
+    ;; :returns (subgoal-lst pseudo-term-list-listp)
+    :verify-guards nil
+    (b* (((mv hinted-goal to-be-learnt)
+          (expand-cp-helper cl smtlink-hint state))
+         ((unless (pseudo-term-listp hinted-goal))
+          (prog2$ (er hard? 'expand-cp=>expand-cp-generalize "Return type of
+                              expand-cp-helper is not pseudo-term-listp.~%")
+                  (list cl)))
+         (generalize-hint (list to-be-learnt 'x)))
+      (acl2::generalize-termlist-cp hinted-goal generalize-hint))
+    ///
+    (define expand-cp-alist ((cl pseudo-term-listp)
+                             (smtlink-hint t)
+                             state a)
+      :verify-guards nil
+      (b* (((mv hinted-goal to-be-learnt)
+            (expand-cp-helper cl smtlink-hint state))
+           ((unless (pseudo-term-listp hinted-goal))
+            (prog2$ (er hard? 'expand-cp=>expand-cp-alist "Return type of
+                              expand-cp-helper is not pseudo-term-listp.~%")
+                    a))
+           (generalize-hint (list to-be-learnt 'x)))
+        (generalize-termlist-alist hinted-goal generalize-hint a))
+      ))
+
+  (defthm expand-cp-generalize-correct
+    (implies (and (ev-smtcp-meta-extract-global-facts)
+                  (pseudo-term-listp cl)
+                  (alistp a)
+                  (ev-smtcp
+                   (conjoin-clauses (expand-cp-generalize cl hint state))
+                   (expand-cp-alist cl hint state a)))
+             (ev-smtcp (disjoin cl) a))
+    :hints (("Goal"
+             :do-not-induct t
+             :in-theory (e/d (expand-cp-generalize expand-cp-alist)
+                             (acl2::generalize-termlist-alist
+                              generalize-termlist-cp-correct-expand
+                              ev-smtcp-of-disjoin))
+             :use ((:instance generalize-termlist-cp-correct-expand
+                              (clause (mv-nth 0 (expand-cp-helper cl hint state)))
+                              (acl2::hint (cons (mv-nth 1 (expand-cp-helper cl hint state))
+                                                '(x)))
+                              (acl2::env a)))
+             )))
+
+  (define expand-cp ((cl pseudo-term-listp)
+                     (hints t)
+                     state)
+    :verify-guards nil
+    (b* ((expanded-clause (expand-cp-generalize cl hints state)))
+      (value expanded-clause)))
+
+  (defthm correctness-of-expand-cp
+    (implies (and (ev-smtcp-meta-extract-global-facts)
+                  (pseudo-term-listp cl)
+                  (alistp a)
+                  (ev-smtcp
+                   (conjoin-clauses
+                    (acl2::clauses-result
+                     (expand-cp cl hint state)))
+                   (expand-cp-alist cl hint state a)))
+             (ev-smtcp (disjoin cl) a))
+    :hints (("Goal"
+             :in-theory (disable ev-smtcp-of-disjoin)
+             :expand ((expand-cp cl hint state))))
+    :rule-classes :clause-processor)
   )
-
-(define initialize-fn-lvls ((fn-lst func-alistp))
-  :returns (fn-lvls sym-nat-alistp)
-  :measure (len fn-lst)
-  :hints (("Goal" :in-theory (enable func-alist-fix)))
-  (b* ((fn-lst (func-alist-fix fn-lst))
-       ((unless (consp fn-lst)) nil)
-       ((cons first rest) fn-lst)
-       ((func f) (cdr first)))
-    (cons (cons f.name f.expansion-depth) (initialize-fn-lvls rest))))
-
-(define generate-fty-info-alist ((hints smtlink-hint-p)
-                                 (flextypes-table alistp))
-  :returns (updated-hints smtlink-hint-p)
-  (b* ((hints (smtlink-hint-fix hints))
-       ((smtlink-hint h) hints)
-       ((unless (alistp flextypes-table)) h)
-       (fty-info (generate-fty-info-alist-rec h.fty nil flextypes-table)))
-    (change-smtlink-hint h :fty-info fty-info)))
-
-(local
- (defthm crock-for-generate-fty-types-top
-   (implies (fty-types-p x)
-            (fty-types-p (reverse x)))))
-
-(define generate-fty-types-top ((hints smtlink-hint-p)
-                                (flextypes-table alistp))
-  :returns (updated-hints smtlink-hint-p)
-  (b* ((hints (smtlink-hint-fix hints))
-       ((smtlink-hint h) hints)
-       ((unless (alistp flextypes-table)) h)
-       ((mv & ordered-acc)
-        (generate-fty-type-list h.fty flextypes-table
-                                h.fty-info nil nil))
-       (fty-types (reverse ordered-acc)))
-    (change-smtlink-hint h :fty-types fty-types)))
-
-;; -----------------------------------------------------------------
-;;       Define evaluators
-
-(defevaluator ev-expand-cp ev-lst-expand-cp
-  ((not x) (if x y z) (hint-please hint)))
-
-(def-join-thms ev-expand-cp)
-
-;; -----------------------------------------------------------------
-
-;; Define the function expansion clause processor
-;; Expanded-G
-;; Expanded-G => G
-
-(define expand-cp-helper ((cl pseudo-term-listp)
-                          (smtlink-hint smtlink-hint-p)
-                          state)
-  :returns (new-hint smtlink-hint-p)
-  :guard-debug t
-  (b* ((cl (pseudo-term-list-fix cl))
-       (smtlink-hint (smtlink-hint-fix smtlink-hint))
-       ;; generate all fty related stuff
-       (flextypes-table (table-alist 'fty::flextypes-table (w state)))
-       ((unless (alistp flextypes-table)) smtlink-hint)
-       (h1 (generate-fty-info-alist smtlink-hint flextypes-table))
-       (h2 (generate-fty-types-top h1 flextypes-table))
-       ((smtlink-hint h) h2)
-       ;; Make an alist version of fn-lst
-       (fn-lst (make-alist-fn-lst h.functions))
-       (fn-lvls (initialize-fn-lvls fn-lst))
-       (wrld-fn-len h.wrld-fn-len)
-       (G (disjoin cl))
-       ;; Do function expansion
-       (expand-result
-        (with-fast-alist fn-lst (expand (make-ex-args
-                                         :term-lst (list G)
-                                         :fn-lst fn-lst
-                                         :fn-lvls fn-lvls
-                                         :wrld-fn-len wrld-fn-len)
-                                        h.fty-info h.abs state)))
-       ((ex-outs e) expand-result)
-       (expanded-G (car e.expanded-term-lst))
-       ;; generate expand hint
-       (fncall-lst (strip-cars e.expanded-fn-lst))
-       ((unless (alistp fncall-lst))
-        (prog2$
-         (er hard? 'expand=>expand-cp "Function call list should be an alistp: ~
-                   ~q0" fncall-lst)
-         h))
-       (expand-hint (remove-duplicates-equal (strip-cars fncall-lst)))
-       (hint-with-fn-expand (treat-in-theory-hint expand-hint h.main-hint))
-       (expanded-clause-w/-hint (make-hint-pair :thm expanded-G
-                                                :hints hint-with-fn-expand)))
-    (change-smtlink-hint h
-                         :expanded-clause-w/-hint expanded-clause-w/-hint)))
-
-(define expand-cp-fn ((cl pseudo-term-listp)
-                      (smtlink-hint t))
-  :returns (subgoal-lst pseudo-term-list-listp)
-  (b* (((unless (pseudo-term-listp cl)) nil)
-       ((unless (smtlink-hint-p smtlink-hint))
-        (list cl))
-       (G (disjoin cl))
-       (hinted-expanded-G
-        (smtlink-hint->expanded-clause-w/-hint smtlink-hint))
-       (expanded-G (hint-pair->thm hinted-expanded-G))
-       (main-hint (hint-pair->hints hinted-expanded-G))
-       ;; generate first clause
-       (next-cp (cdr (assoc-equal 'expand *SMT-architecture*)))
-       ((if (null next-cp)) (list cl))
-       (the-hint
-        `(:clause-processor (,next-cp clause ',smtlink-hint)))
-       (cl0 `((hint-please ',the-hint) ,expanded-G))
-       ;; generate-second clause
-       (cl1 `((hint-please ',main-hint) (not ,expanded-G) ,G))
-       )
-    `(,cl0 ,cl1)))
-
-(defmacro expand-cp (clause hint)
-  `(expand-cp-fn clause (expand-cp-helper ,clause ,hint state)))
-
-;; proving correctness of the expansion clause processor
-(local (in-theory (enable expand-cp-fn)))
-
-(defthm correctness-of-expand-cp
-  (implies (and (pseudo-term-listp cl)
-                (alistp b)
-                (ev-expand-cp
-                 (conjoin-clauses (expand-cp-fn cl smtlink-hint))
-                 b))
-           (ev-expand-cp (disjoin cl) b))
-  :rule-classes :clause-processor)

@@ -19,15 +19,12 @@
   :parents (trusted)
   :short "SMT-write writes out the translated string to a SMT file as configured."
 
-  (local (in-theory (enable characterp wordp)))
-  (define princ$-paragraph ((par paragraphp) (channel symbolp) (state))
+  (local (in-theory (enable characterp word-p paragraph-p paragraph-fix)))
+
+  (define princ$-paragraph ((par paragraph-p) (channel symbolp) (state))
     (declare (xargs :guard (open-output-channel-p channel :character state)
                     :stobjs state))
     :returns (state)
-    :hints (("Goal"
-             :use ((:instance acl2-count-of-fixed-smaller (x par))
-                   (:instance acl2-count-of-car-of-fixed-smaller (x par))
-                   (:instance acl2-count-of-cdr-of-fixed-smaller (x par)))))
     :verify-guards nil
     (b* ((par (paragraph-fix par))
          (channel (symbol-fix channel))
@@ -48,10 +45,10 @@
 
   (verify-guards princ$-paragraph
     :hints (("Goal"
-             :in-theory (enable paragraph-fix paragraphp)
-             :use ((:instance equal-of-fixed-to-x (x par))))))
+             :in-theory (enable paragraph-fix paragraph-p))))
 
-  (define SMT-write-file ((fname stringp) (acl22smt paragraphp) (smt-head paragraphp) (thm paragraphp) (state))
+  (define SMT-write-file ((fname stringp) (acl22smt paragraph-p)
+                          (smt-head paragraph-p) (thm paragraph-p) (state))
     :returns (state)
     (b* ((fname (str-fix fname))
          (acl22smt (paragraph-fix acl22smt))

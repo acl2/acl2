@@ -7,6 +7,7 @@
 
 (in-package "SMT")
 
+(include-book "std/util/bstar" :dir :system)
 (include-book "std/io/read-string" :dir :system)
 (include-book "centaur/misc/tshell" :dir :system)
 ;; Proves f-put-global is returning state-p1
@@ -26,7 +27,9 @@
   (define SMT-run ((fname stringp) (smt-conf smtlink-config-p))
     :returns (mv (exit-status natp)
                  (lines string-listp))
-    (let ((cmd (concatenate 'string (smtlink-config->smt-cmd smt-conf) " " fname)))
+    (b* ((cmd (concatenate 'string
+                           (smtlink-config->smt-cmd smt-conf)
+                           " " fname)))
       (time$ (tshell-call cmd
                           :print nil
                           :save t)
@@ -92,11 +95,15 @@ the check for (true-listp str) and (consp (car str)) failed: ~q0" str)
        :rule-classes nil)
      )
 
-    (verify-guards SMT-interpret :guard-debug t
+    (verify-guards SMT-interpret
       :hints (("goal"
                :in-theory (disable f-put-global)
-               :use ((:instance endp-of-not-consp-of-string-listp (x (mv-nth 1 (smt-run fname smt-conf))))
-                     (:instance stringp-of-consp-of-string-listp (x (mv-nth 1 (smt-run fname smt-conf))))))))
+               :use ((:instance
+                      endp-of-not-consp-of-string-listp
+                      (x (mv-nth 1 (smt-run fname smt-conf))))
+                     (:instance
+                      stringp-of-consp-of-string-listp
+                      (x (mv-nth 1 (smt-run fname smt-conf))))))))
     )
 )
 

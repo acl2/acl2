@@ -8,128 +8,66 @@
 (include-book "centaur/fty/top" :dir :system)
 (include-book "xdoc/top" :dir :system)
 (include-book "std/util/define" :dir :system)
-(include-book "../../verified/hint-interface")
-(include-book "../../verified/basics")
+(include-book "../../verified/extractor")
 
 (defsection SMT-recover-types
   :parents (z3-py)
   :short "Recovering types from type-hyp"
 
-  (define is-type-decl ((type symbolp)
-                        (fty-info fty-info-alist-p)
-                        (abs symbol-listp))
-    :returns (ok booleanp)
-    (b* ((type (symbol-fix type))
-         (fty-info (fty-info-alist-fix fty-info)))
-      (if (or ;; basic types
-           (member-equal type (strip-cars *SMT-types*))
-           ;; abstract types
-           (member-equal type abs)
-           ;; fty types
-           (typedecl-of-flextype type fty-info))
-          t nil)))
-
-  (define recover-type-decl-list ((hyp-lst t)
-                                  (fty-info fty-info-alist-p)
+  (define recover-type-decl-list ((hyp-lst pseudo-term-listp)
+                                  (fixinfo smt-fixtype-info-p)
                                   (abs symbol-listp))
-    :returns (type-decl-list decl-listp)
-    (b* ((fty-info (fty-info-alist-fix fty-info))
+    :returns (type-decl-list decl-list-p)
+    (b* ((fixinfo (smt-fixtype-info-fix fixinfo))
+         (hyp-lst (pseudo-term-list-fix hyp-lst))
          ((unless (consp hyp-lst)) nil)
          ((cons first rest) hyp-lst)
-         ((unless (and (equal (len first) 2)
-                       (symbolp (car first))
-                       (and (symbolp (cadr first)) (cadr first))))
+         ((unless (type-decl-p first fixinfo abs))
           (er hard? 'recover-type-hype=>recover-type-decl-list "ill-formed ~
                           type term: ~q0" first))
-         (type (car first))
-         (var (cadr first))
-         ((unless (is-type-decl type fty-info abs))
-          (er hard? 'recover-type-hyp=>recover-type-decl-list "not a type: ~q0"
-              type)))
-      (cons (make-decl :name var :type (make-hint-pair :thm type :hints nil))
-            (recover-type-decl-list rest fty-info abs))))
+         (var (cadr first)))
+      (cons (make-decl :name var :type (make-hint-pair :thm first))
+            (recover-type-decl-list rest fixinfo abs))))
 
-  (define recover-type-hyp ((decl-list pseudo-term-listp)
-                            (fn-alst func-alistp)
-                            (fty-info fty-info-p)
-                            (abs symbol-listp)
-                            (fn-decl-acc func-alistp)
-                            state)
-    ;; :returns (mv (fn-decl-list func-alistp)
-    ;;              (type-decl-list decl-listp))
-    :mode :program ;; because of untranslate
+  (define recover-type-hyp-main ((decl-list pseudo-term-listp)
+                                 (fixinfo smt-fixtype-info-p)
+                                 (abs symbol-listp))
+    :returns (type-decl-list decl-list-p)
     (b* ((decl-list (pseudo-term-list-fix decl-list))
-         ((unless (consp decl-list)) (mv fn-decl-acc nil))
+         ((unless (consp decl-list)) nil)
          ((cons first rest) decl-list))
       (case-match first
         (('type-hyp ('hide hyp-lst) tag)
          (cond ((equal tag '':type)
-                (b* ((untranslated-hyp-lst
-                      (untranslate hyp-lst nil (w state)))
-                     ((unless (and (consp untranslated-hyp-lst)
-                                   (equal (car untranslated-hyp-lst) 'list)))
-                      (prog2$
-                       (er hard? 'recover-type-hyp=>recover-type-hyp "untranslate ~
-                          hyp-lst returns something unrecognizable: ~q0"
-                           untranslated-hyp-lst)
-                       (mv fn-decl-acc nil)))
-                     (hyp-lst (cdr untranslated-hyp-lst))
-                     (first-type-decl (recover-type-decl-list hyp-lst fty-info abs))
-                     ((mv rest-fn-decl rest-type-decl)
-                      (recover-type-hyp rest fn-alst fty-info abs
-                                        fn-decl-acc state)))
-                  (mv rest-fn-decl
-                      (append first-type-decl rest-type-decl))))
-               ((equal tag '':return)
-                (case-match hyp-lst
-                  (('cons return-type-term ''nil)
-                   (b* (((unless (and (equal (len return-type-term) 2)
-                                      (symbolp (car return-type-term))
-                                      (consp (cadr return-type-term))
-                                      (symbolp (caadr return-type-term))))
-                         (prog2$
-                          (er hard? 'recover-type-hyp=>recover-type-hyp
-                              "ill-formed return-type-alist term: ~q0"
-                              return-type-term)
-                          (mv fn-decl-acc nil)))
-                        (return-type (car return-type-term))
-                        ((unless (is-type-decl return-type fty-info abs))
-                         (prog2$
-                          (er hard? 'recover-type-hyp=>recover-type-hyp "not a ~
-                          type: ~q0" return-type)
-                          (mv fn-decl-acc nil)))
-                        (fn-name (caadr return-type-term))
-                        ((if (assoc-equal fn-name fn-decl-acc))
-                         (recover-type-hyp rest fn-alst fty-info abs
-                                           fn-decl-acc state))
-                        (fn-in-hint (cdr (assoc-equal fn-name fn-alst)))
-                        ((unless fn-in-hint)
-                         (prog2$
-                          (er hard? 'recover-type-hype=>recover-type-hyp "function ~
-                          not found in smtlink-hint: ~q0" fn-name)
-                          (mv fn-decl-acc nil)))
-                        (return-name (decl->name (car (func->returns fn-in-hint))))
-                        (the-fn (make-func
-                                 :name fn-name
-                                 :formals (func->formals fn-in-hint)
-                                 :returns (list (make-decl
-                                                 :name return-name
-                                                 :type (make-hint-pair
-                                                        :thm return-type
-                                                        :hints nil)))))
-                        ((mv rest-fn-decl rest-type-decl)
-                         (recover-type-hyp rest fn-alst fty-info abs
-                                           (acons fn-name the-fn fn-decl-acc) state)))
-                     (mv rest-fn-decl rest-type-decl)))
-                  (& (prog2$ (er hard? 'recover-type-hyp=>recover-type-hyp
-                                 ":return type predicate ill-formed: ~q0"
-                                 hyp-lst)
-                             (mv fn-decl-acc nil)))))
-               (t (prog2$ (er hard? 'recover-type-hyp=>recover-type-hyp "tag ~
+                (b* (((unless (and (consp hyp-lst)
+                                   (equal (car hyp-lst) 'quote)
+                                   (consp (cdr hyp-lst))))
+                      (er hard? 'recover-type-hyp=>recover-type-hyp-main
+                          "Wrong form of decl-list: ~q0" decl-list))
+                     (hyp-lst (cadr hyp-lst))
+                     ((unless (pseudo-term-listp hyp-lst))
+                      (er hard? 'recover-type-hyp=>recover-type-hyp-main
+                          "Not a pseudo-term-listp: ~q0" hyp-lst))
+                     (first-type-decl (recover-type-decl-list hyp-lst fixinfo abs))
+                     (rest-type-decl (recover-type-hyp-main rest fixinfo abs)))
+                  (append first-type-decl rest-type-decl)))
+               (t (prog2$ (er hard? 'recover-type-hyp=>recover-type-hyp-main "tag ~
                           isn't recognized: ~q0" tag)
-                          (mv fn-decl-acc nil)))))
-        (& (prog2$ (er hard? 'recover-type-hyp=>recover-type-hyp
-                       "recover-type-hyp found a malformed type-hyp: ~q0"
+                          nil))))
+        (& (prog2$ (er hard? 'recover-type-hyp=>recover-type-hyp-main
+                       "recover-type-hyp-main found a malformed type-hyp: ~q0"
                        first)
-                   (mv fn-decl-acc nil))))))
+                   nil)))))
+
+  (define recover-type-hyp ((term pseudo-termp)
+                            (smtlink-hint smtlink-hint-p))
+    :returns (mv (type-decl-list decl-list-p)
+                 (untyped-theorem pseudo-termp))
+    (b* ((term (pseudo-term-fix term))
+         (smtlink-hint (smtlink-hint-fix smtlink-hint))
+         ((smtlink-hint h) smtlink-hint)
+         ((mv type-hyp-lst untyped-theorem)
+          (smt-extract term h.types-info h.abs)))
+      (mv (recover-type-hyp-main type-hyp-lst h.types-info h.abs)
+          untyped-theorem)))
   )

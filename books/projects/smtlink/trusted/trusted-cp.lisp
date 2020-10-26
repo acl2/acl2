@@ -34,21 +34,20 @@
 
     (define SMT-trusted-cp-main ((cl pseudo-term-listp)
                                  (smtlink-hint)
-                                 (custom-p booleanp)
                                  state)
       :stobjs state
       :mode :program
-      (b* ((smt-cnf (if custom-p (custom-smt-cnf) (default-smt-cnf)))
-           (smtlink-hint (change-smtlink-hint smtlink-hint :smt-cnf smt-cnf))
-           ((mv res smt-precond state)
+      (b* (((mv res precond state)
             (SMT-prove-stub (disjoin cl) smtlink-hint state))
-           (subgoal-lst `(((hint-please
-                            '(:in-theory (enable magic-fix
-                                                 hint-please
-                                                 type-hyp)
-                              :expand ((:free (x) (hide x)))))
-                           ,smt-precond
-                           ,(disjoin cl)))))
+           ;; should I return just precond, or precond and precond\or/goal?
+           (subgoal-lst `(,@precond
+                          ;; ((hint-please
+                          ;;   '(:in-theory (enable hint-please
+                          ;;                        type-hyp)
+                          ;;     :expand ((:free (x) (hide x)))))
+                          ;;  ,@precond
+                          ;;  ,(disjoin cl))
+                          )))
         (if res
             (prog2$ (cw "Proved!~%") (mv nil subgoal-lst state))
           (mv (cons "NOTE: Unable to prove goal with ~
@@ -66,7 +65,7 @@
     :mode :program
     :stobjs state
     (prog2$ (cw "Using default SMT-trusted-cp...~%")
-            (SMT-trusted-cp-main cl smtlink-hint nil state)))
+            (SMT-trusted-cp-main cl smtlink-hint state)))
 
   (define SMT-trusted-cp-custom ((cl pseudo-term-listp)
                                  (smtlink-hint smtlink-hint-p)
@@ -74,7 +73,7 @@
     :mode :program
     :stobjs state
     (prog2$ (cw "Using custom SMT-trusted-cp...~%")
-            (SMT-trusted-cp-main cl smtlink-hint t state)))
+            (SMT-trusted-cp-main cl smtlink-hint state)))
 
   (define-trusted-clause-processor
     SMT-trusted-cp
