@@ -60,4 +60,5 @@
                   (not (integerp (* 1/2 x)))))
   :hints (("Goal" :use (:instance integerp-of-*-of-/-becomes-equal-of-0-and-mod
                                   (x (- x 1))
-                                  (y 2)))))
+                                  (y 2))
+           :in-theory (enable mod-sum-cases))))

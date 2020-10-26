@@ -219,7 +219,7 @@
                                   (floor-of-*-of-/-and-1)))))
 
 ;from rtl:
-(defthm mod-sum-cases
+(defthmd mod-sum-cases
   (implies (and (<= 0 y)
                 (rationalp x)
                 (rationalp y)
@@ -648,7 +648,9 @@
                 (not (equal 0 y1)))
            (equal (mod (mod x y1) y2)
                   (mod x y2)))
-  :hints (("Goal" :in-theory (enable acl2::equal-of-0-and-mod))))
+  :hints (("Goal" :in-theory (enable acl2::equal-of-0-and-mod
+                                     mod-sum-cases ; why?
+                                     ))))
 
 (defthm mod-of-mod-when-multiple-safe
   (implies (and (syntaxp (and (quotep y1)
