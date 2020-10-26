@@ -54,6 +54,7 @@
 
 ;; Single bit operations:
 (include-book "bitxor")
+(include-book "bitnot")
 
 ;; Arithmetic operations:
 (include-book "bvplus")
