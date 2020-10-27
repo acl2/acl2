@@ -235,3 +235,113 @@
                          (nthcdr i x))
                   t))
   :hints (("Goal" :in-theory (e/d (subrange nthcdr) ()))))
+
+(defthmd take-of-cdr-becomes-subrange
+  (implies (and (integerp n)
+                (<= 0 n))
+           (equal (take n (cdr lst))
+                  (subrange 1 n lst)))
+  :hints (("Goal" :use (:instance take-of-nthcdr-becomes-subrange (n1 n) (n2 1))
+           :in-theory (e/d () (take-of-nthcdr-becomes-subrange)))))
+
+(theory-invariant (incompatible (:rewrite take-of-cdr-becomes-subrange) (:definition subrange)))
+
+(defthmd cdr-of-take-becomes-subrange-better
+  (implies (integerp n) ;drop?
+           (equal (cdr (take n lst))
+                  (subrange 1 (+ -1 n) lst)))
+  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+           :expand (subrange 1 (+ -2 n) (cdr lst))
+           :in-theory (e/d (take subrange) (take-of-nthcdr-becomes-subrange)))))
+
+(theory-invariant (incompatible (:rewrite cdr-of-take-becomes-subrange-better) (:definition subrange)))
+
+(defthm subrange-when-start-is-negative
+  (implies (< start 0)
+           (equal (subrange start end lst)
+                  (subrange 0 end lst)))
+  :hints (("Goal" :in-theory (e/d (subrange take) (take-of-nthcdr-becomes-subrange)))))
+
+(defthm subrange-when-end-is-negative
+  (implies (< end 0)
+           (equal (subrange start end lst)
+                  nil))
+  :hints (("Goal" :in-theory (e/d (subrange take) (take-of-nthcdr-becomes-subrange)))))
+
+(defthm cons-nth-onto-subrange
+  (implies (and (equal m (+ 1 k))
+                (<= m n)
+                (<= n (len lst))
+                (natp k)
+                (integerp m)
+                (natp n))
+           (equal (CONS (NTH k lst) (SUBRANGE m n lst))
+                  (SUBRANGE k n lst)))
+  :hints (("Goal" :in-theory (e/d () (TAKE-OF-NTHCDR-BECOMES-SUBRANGE)))))
+
+(defthm subrange-of-take
+  (implies (and (< high n)
+                (<= low high)
+                (natp low)
+                (natp high)
+                (natp n))
+           (equal (SUBRANGE low high (TAKE n x))
+                  (SUBRANGE low high x)))
+  :hints (("Goal" :in-theory (e/d (SUBRANGE) (TAKE-OF-NTHCDR-BECOMES-SUBRANGE)))))
+
+(defthmd subrange-of-cons
+  (implies (and (natp low)
+                (natp high)
+                )
+           (equal (subrange low high (cons a rest))
+                  (if (zp low)
+                      (cons a (subrange 0 (+ -1 high) rest))
+                    (subrange (+ -1 low) (+ -1 high) rest))))
+  :hints (("Goal" :in-theory (e/d (subrange) (take-of-nthcdr-becomes-subrange)))))
+
+;prevents case splits
+(defthm subrange-of-cons-constant-version
+  (implies (and (syntaxp (quotep low))
+                (natp low)
+                (natp high)
+                )
+           (equal (subrange low high (cons a rest))
+                  (if (zp low)
+                      (cons a (subrange 0 (+ -1 high) rest))
+                    (subrange (+ -1 low) (+ -1 high) rest))))
+  :hints (("Goal" :use (:instance subrange-of-cons))))
+
+;had to chose this direction due to the variable end not being the the rhs (so would be hard to make it the lhs)
+(defthm subrange-to-end-becomes-nthcdr
+  (IMPLIES (AND (EQUAL END (+ -1 (LEN LST)))
+                (NATP START)
+                (NATP END)
+                (TRUE-LISTP LST)
+                (<= START END)
+                )
+           (EQUAL (SUBRANGE START END LST)
+                  (NTHCDR START LST)))
+  :hints (("Goal" :in-theory (e/d (SUBRANGE) (TAKE-OF-NTHCDR-BECOMES-SUBRANGE)))))
+
+(defthm cons-nth-onto-subrange-alt
+  (implies (and (equal m (+ 1 k))
+                (<= m n)
+                (natp k)
+                (natp n))
+           (equal (cons (nth k lst) (append (subrange m n lst) y))
+                  (append (subrange k n lst) y))))
+
+(defthmd nthcdr-of-take-becomes-subrange
+  (implies (and (natp n)
+                (natp n2))
+           (equal (nthcdr n (take n2 lst))
+                  (if (<= n n2)
+                      (subrange n (+ -1 n2) lst)
+                    nil)))
+  :hints (("Goal" :in-theory (e/d (subrange)
+                                  (take-of-nthcdr-becomes-subrange
+                                   cdr-of-take-becomes-subrange-better
+                                   TAKE-OF-CDR-BECOMES-SUBRANGE
+                                   )))))
+
+(theory-invariant (incompatible (:rewrite NTHCDR-OF-TAKE-BECOMES-SUBRANGE) (:definition subrange)))
