@@ -1653,37 +1653,37 @@
                (1 1
                   (:REWRITE EQUAL-OF-+-COMBINE-CONSTANTS)))
 (MOD-OF-MOD-WHEN-MULT
-     (528586 223
+     (528399 223
              (:REWRITE *-OF-FLOOR-OF-SAME-WHEN-MULTIPLE))
-     (488396 2422
+     (488330 2422
              (:LINEAR <-OF-*-SAME-LINEAR-SPECIAL))
-     (103763 1297
+     (103741 1297
              (:LINEAR FLOOR-UPPER-BOUND-ALT-LINEAR))
-     (100022 760 (:DEFINITION NATP))
-     (43818 35849
+     (100000 760 (:DEFINITION NATP))
+     (43817 35848
             (:TYPE-PRESCRIPTION FLOOR-ZERO . 2))
-     (43818 35849
+     (43817 35848
             (:TYPE-PRESCRIPTION FLOOR-POSITIVE . 2))
-     (43818 35849
+     (43817 35848
             (:TYPE-PRESCRIPTION FLOOR-POSITIVE . 1))
-     (43818 35849
+     (43817 35848
             (:TYPE-PRESCRIPTION FLOOR-NEGATIVE . 2))
-     (43818 35849
+     (43817 35848
             (:TYPE-PRESCRIPTION FLOOR-NEGATIVE . 1))
-     (43817 35848
+     (43816 35847
             (:TYPE-PRESCRIPTION FLOOR-NONPOSITIVE-2))
-     (43817 35848
+     (43816 35847
             (:TYPE-PRESCRIPTION FLOOR-NONPOSITIVE-1))
-     (43817 35848
+     (43816 35847
             (:TYPE-PRESCRIPTION FLOOR-NONNEGATIVE-2))
-     (43817 35848
+     (43816 35847
             (:TYPE-PRESCRIPTION FLOOR-NONNEGATIVE-1))
      (41835 924 (:REWRITE FLOOR-WHEN-<))
-     (35849 35849
-            (:TYPE-PRESCRIPTION FLOOR-TYPE-1-PART-1-BETTER))
      (35848 35848
+            (:TYPE-PRESCRIPTION FLOOR-TYPE-1-PART-1-BETTER))
+     (35847 35847
             (:TYPE-PRESCRIPTION FLOOR-TYPE-NON-NEGATIVE))
-     (34613 5005 (:REWRITE DEFAULT-<-2))
+     (34594 4986 (:REWRITE DEFAULT-<-2))
      (30253 68 (:REWRITE |(< (if a b c) x)|))
      (28561 319
             (:REWRITE FLOOR-OF-+-WHEN-MULT-ARG2))
@@ -1715,10 +1715,10 @@
            (:LINEAR <=-OF-*-AND-*-SAME-ALT-LINEAR))
      (5662 5662
            (:REWRITE NORMALIZE-FACTORS-GATHER-EXPONENTS))
-     (5513 5513
+     (5494 5494
            (:REWRITE REMOVE-WEAK-INEQUALITIES-TWO))
-     (5437 5437 (:REWRITE |(< (- x) (- y))|))
-     (5225 5005 (:REWRITE DEFAULT-<-1))
+     (5418 5418 (:REWRITE |(< (- x) (- y))|))
+     (5206 4986 (:REWRITE DEFAULT-<-1))
      (4844 4844
            (:LINEAR <=-OF-*-AND-*-SAME-LINEAR))
      (4844 4844 (:LINEAR <-OF-*-AND-*))
@@ -1744,7 +1744,7 @@
            (:LINEAR <-OF-*-AND-*-SAME-LINEAR-2))
      (2422 2422
            (:LINEAR <-OF-*-AND-*-SAME-LINEAR-1))
-     (2345 2345
+     (2326 2326
            (:REWRITE REMOVE-WEAK-INEQUALITIES-ONE))
      (2120 2120 (:REWRITE |(integerp (* c x))|))
      (2073 1029 (:REWRITE FLOOR-MINUS-WEAK))
@@ -1755,13 +1755,13 @@
      (1708 924
            (:REWRITE FLOOR-WHEN-I-IS-NOT-AN-ACL2-NUMBERP))
      (1619 1023 (:REWRITE FLOOR-ZERO . 2))
-     (1505 1505 (:REWRITE |(< (- x) 0)|))
      (1497 1497 (:REWRITE |(equal (- x) (- y))|))
+     (1486 1486 (:REWRITE |(< (- x) 0)|))
      (1454 1454
            (:REWRITE NORMALIZE-TERMS-SUCH-AS-A/A+B-+-B/A+B))
-     (1378 1378
-           (:REWRITE SIMPLIFY-TERMS-SUCH-AS-A+AB-<-0))
      (1366 1366 (:REWRITE |(< 0 (- x))|))
+     (1359 1359
+           (:REWRITE SIMPLIFY-TERMS-SUCH-AS-A+AB-<-0))
      (1350 1350 (:REWRITE |(equal (- x) 0)|))
      (1345 1345 (:REWRITE |(* c (* d x))|))
      (1288 1288 (:TYPE-PRESCRIPTION NATP))
@@ -1828,7 +1828,6 @@
           (:REWRITE <-OF-+-ARG2-WHEN-NEGATIVE-CONSTANT))
      (268 268
           (:REWRITE INTEGERP-+-REDUCE-LEADING-RATIONAL-CONSTANT))
-     (224 20 (:REWRITE MOD-SUM-CASES))
      (206 30 (:LINEAR MOD-BOUNDS-3))
      (206 30 (:LINEAR MOD-BOUND-LINEAR-ARG2))
      (206 30 (:LINEAR MOD-BOUND-LINEAR-ARG1))
@@ -1873,109 +1872,112 @@
      (3 3 (:REWRITE EQUAL-OF-MOD-SAME-ARG1)))
 (MOD-OF-*-OF-MOD (3146 28 (:LINEAR MOD-BOUND-LINEAR-ARG1))
                  (2687 13 (:REWRITE <-OF-*-AND-0))
-                 (1431 52 (:LINEAR <-OF-*-SAME-LINEAR-SPECIAL))
-                 (1079 11 (:REWRITE MOD-X-Y-=-X . 3))
-                 (920 644 (:TYPE-PRESCRIPTION MOD-ZERO . 1))
-                 (803 667
+                 (1423 51 (:LINEAR <-OF-*-SAME-LINEAR-SPECIAL))
+                 (1081 17 (:REWRITE MOD-WHEN-<))
+                 (1078 10 (:REWRITE MOD-X-Y-=-X . 3))
+                 (910 642 (:TYPE-PRESCRIPTION MOD-ZERO . 1))
+                 (801 665
                       (:TYPE-PRESCRIPTION MOD-NEGATIVE . 2))
-                 (779 667
+                 (769 665
                       (:TYPE-PRESCRIPTION MOD-POSITIVE . 2))
-                 (667 667
+                 (665 665
                       (:TYPE-PRESCRIPTION MOD-POSITIVE . 1))
-                 (667 667
+                 (665 665
                       (:TYPE-PRESCRIPTION MOD-NEGATIVE . 1))
                  (616 616
                       (:TYPE-PRESCRIPTION NONNEG-OF-MOD-TYPE-2))
                  (616 616
                       (:TYPE-PRESCRIPTION NONNEG-OF-MOD-TYPE))
-                 (613 11 (:REWRITE MOD-ZERO . 3))
+                 (612 10 (:REWRITE MOD-ZERO . 3))
                  (512 56 (:LINEAR MOD-BOUNDS-2))
                  (512 56 (:LINEAR MOD-BOUNDS-1))
-                 (440 272 (:REWRITE DEFAULT-<-2))
-                 (403 11 (:REWRITE MOD-X-Y-=-X . 4))
-                 (401 401
+                 (437 269 (:REWRITE DEFAULT-<-2))
+                 (402 10 (:REWRITE MOD-X-Y-=-X . 4))
+                 (397 397
                       (:TYPE-PRESCRIPTION NOT-INTEGERP-3B))
-                 (368 272 (:REWRITE DEFAULT-<-1))
-                 (306 306
+                 (365 269 (:REWRITE DEFAULT-<-1))
+                 (302 302
                       (:REWRITE REMOVE-WEAK-INEQUALITIES-TWO))
-                 (302 302 (:REWRITE |(< (- x) (- y))|))
+                 (298 298 (:REWRITE |(< (- x) (- y))|))
                  (266 6 (:REWRITE |(equal (* x y) 0)|))
                  (256 28 (:LINEAR MOD-BOUND-LINEAR-ARG2))
                  (196 28 (:LINEAR MOD-BOUNDS-3))
-                 (164 108 (:REWRITE DEFAULT-*-2))
+                 (159 103 (:REWRITE DEFAULT-*-2))
                  (158 62
                       (:REWRITE PREFER-POSITIVE-ADDENDS-EQUAL))
                  (140 15 (:REWRITE INTEGERP-OF-*))
                  (134 62 (:REWRITE SIMPLIFY-SUMS-EQUAL))
                  (134 62
                       (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-EQUAL))
-                 (133 133
+                 (131 131
                       (:REWRITE REMOVE-WEAK-INEQUALITIES-ONE))
-                 (127 127 (:REWRITE |(< 0 (- x))|))
-                 (125 125
+                 (126 126 (:REWRITE |(< 0 (- x))|))
+                 (124 124
                       (:REWRITE SIMPLIFY-TERMS-SUCH-AS-0-<-A+AB))
-                 (122 104 (:LINEAR <=-OF-*-AND-*-SAME-LINEAR))
-                 (122 104
+                 (120 102 (:LINEAR <=-OF-*-AND-*-SAME-LINEAR))
+                 (120 102
                       (:LINEAR <=-OF-*-AND-*-SAME-ALT-LINEAR))
-                 (121 11 (:REWRITE MOD-ZERO . 2))
-                 (117 117 (:REWRITE |(< (- x) 0)|))
-                 (115 115
+                 (120 10 (:REWRITE MOD-ZERO . 2))
+                 (116 116 (:REWRITE |(< (- x) 0)|))
+                 (114 114
                       (:REWRITE SIMPLIFY-TERMS-SUCH-AS-A+AB-<-0))
-                 (108 108
+                 (103 103
                       (:REWRITE NORMALIZE-FACTORS-GATHER-EXPONENTS))
-                 (108 108 (:REWRITE DEFAULT-*-1))
-                 (104 104 (:LINEAR <-OF-*-AND-*))
+                 (103 103 (:REWRITE DEFAULT-*-1))
+                 (102 102 (:LINEAR <-OF-*-AND-*))
                  (78 46 (:META META-INTEGERP-CORRECT))
-                 (70 52 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-4))
-                 (70 52 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-3))
+                 (69 51 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-4))
+                 (69 51 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-3))
                  (65 57 (:REWRITE DEFAULT-+-2))
                  (62 62 (:REWRITE |(equal (- x) (- y))|))
-                 (62 50 (:REWRITE DEFAULT-UNARY-/))
-                 (61 52 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-2))
-                 (61 52 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-1))
                  (60 60
                      (:TYPE-PRESCRIPTION INTEGERP-OF-MOD-TYPE))
                  (60 60
                      (:REWRITE SIMPLIFY-TERMS-SUCH-AS-A+AB-=-0))
                  (60 60 (:REWRITE |(equal (- x) 0)|))
+                 (60 51 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-2))
+                 (60 51 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-1))
+                 (58 46 (:REWRITE DEFAULT-UNARY-/))
                  (57 57
                      (:REWRITE NORMALIZE-TERMS-SUCH-AS-A/A+B-+-B/A+B))
                  (57 57 (:REWRITE DEFAULT-+-1))
                  (52 4 (:REWRITE MOD-+-CANCEL-0-WEAK))
-                 (50 50
+                 (46 46
                      (:REWRITE NORMALIZE-TERMS-SUCH-AS-1/AX+BX))
                  (46 46 (:REWRITE INTEGERP-MINUS-X))
-                 (46 22 (:REWRITE MOD-COMPLETION))
+                 (44 20 (:REWRITE MOD-COMPLETION))
                  (42 42
                      (:TYPE-PRESCRIPTION RATIONALP-OF-MOD))
                  (42 6 (:REWRITE MOD-POSITIVE . 3))
                  (42 6 (:REWRITE MOD-NONPOSITIVE))
                  (42 6 (:REWRITE MOD-NONNEGATIVE))
                  (42 6 (:REWRITE MOD-NEGATIVE . 3))
-                 (35 11 (:REWRITE MOD-NEG))
-                 (35 11 (:REWRITE MOD-CANCEL-*))
+                 (34 10 (:REWRITE MOD-NEG))
+                 (34 10 (:REWRITE MOD-CANCEL-*))
                  (30 6 (:REWRITE MOD-POSITIVE . 2))
                  (30 6 (:REWRITE MOD-NEGATIVE . 2))
-                 (27 15 (:REWRITE SIMPLIFY-MOD-+-MOD-WEAK))
-                 (27 15 (:REWRITE SIMPLIFY-MOD-+-MINUS-MOD))
-                 (24 24 (:REWRITE |(* c (* d x))|))
-                 (19 19 (:REWRITE DEFAULT-UNARY-MINUS))
+                 (25 13 (:REWRITE SIMPLIFY-MOD-+-MOD-WEAK))
+                 (25 13 (:REWRITE SIMPLIFY-MOD-+-MINUS-MOD))
+                 (21 21 (:REWRITE |(* c (* d x))|))
+                 (18 18 (:REWRITE DEFAULT-UNARY-MINUS))
                  (16 16 (:TYPE-PRESCRIPTION NOT-INTEGERP-4E))
                  (16 16 (:TYPE-PRESCRIPTION NOT-INTEGERP-3E))
                  (16 16 (:TYPE-PRESCRIPTION NOT-INTEGERP-2E))
                  (16 16 (:TYPE-PRESCRIPTION NOT-INTEGERP-1E))
-                 (15 15 (:REWRITE *-OF-*-COMBINE-CONSTANTS))
                  (15 15 (:REWRITE |(integerp (* c x))|))
-                 (11 11 (:REWRITE MOD-X-Y-=-X . 2))
-                 (11 11 (:REWRITE MOD-MINUS-2))
-                 (10 10 (:REWRITE |(< (+ c x) d)|))
+                 (14 14 (:REWRITE *-OF-*-COMBINE-CONSTANTS))
+                 (11 11 (:REWRITE |(< (+ c x) d)|))
+                 (10 10 (:REWRITE MOD-X-Y-=-X . 2))
+                 (10 10 (:REWRITE MOD-MINUS-2))
                  (9 9 (:REWRITE |(< d (+ c x))|))
                  (6 6 (:REWRITE MOD-POSITIVE . 1))
                  (6 6 (:REWRITE MOD-NEGATIVE . 1))
+                 (4 4 (:REWRITE <-OF-+-COMBINE-CONSTANTS-2))
                  (4 4 (:REWRITE <-OF-+-COMBINE-CONSTANTS-1))
                  (4 4
                     (:REWRITE <-OF-+-ARG2-WHEN-NEGATIVE-CONSTANT))
-                 (4 4 (:REWRITE |(- (* c x))|))
+                 (4 4
+                    (:REWRITE <-OF-+-ARG1-WHEN-NEGATIVE-CONSTANT))
                  (3 3 (:TYPE-PRESCRIPTION FLOOR-ZERO . 3))
                  (3 3 (:TYPE-PRESCRIPTION FLOOR-ZERO . 2))
                  (3 3 (:TYPE-PRESCRIPTION FLOOR-ZERO . 1))
@@ -1999,9 +2001,7 @@
                     (:TYPE-PRESCRIPTION FLOOR-NEGATIVE . 2))
                  (3 3
                     (:TYPE-PRESCRIPTION FLOOR-NEGATIVE . 1))
-                 (3 3 (:REWRITE <-OF-+-COMBINE-CONSTANTS-2))
-                 (3 3
-                    (:REWRITE <-OF-+-ARG1-WHEN-NEGATIVE-CONSTANT))
+                 (3 3 (:REWRITE |(- (* c x))|))
                  (2 2 (:REWRITE MOD-ZERO . 1))
                  (2 2 (:REWRITE FOLD-CONSTS-IN-+))
                  (2 2 (:REWRITE +-COMBINE-CONSTANTS))
@@ -2120,73 +2120,74 @@
                 (255 255
                      (:TYPE-PRESCRIPTION NONNEG-OF-MOD-TYPE))
                 (170 7 (:REWRITE MOD-X-Y-=-X . 3))
-                (165 165
+                (168 168
                      (:REWRITE REMOVE-WEAK-INEQUALITIES-TWO))
-                (161 161 (:REWRITE |(< (- x) (- y))|))
+                (164 164 (:REWRITE |(< (- x) (- y))|))
                 (160 16 (:LINEAR MOD-BOUNDS-2))
                 (160 16 (:LINEAR MOD-BOUNDS-1))
                 (153 7 (:REWRITE MOD-ZERO . 3))
-                (142 142 (:REWRITE DEFAULT-<-2))
-                (142 142 (:REWRITE DEFAULT-<-1))
-                (130 32 (:LINEAR <-OF-*-SAME-LINEAR-SPECIAL))
+                (146 34 (:LINEAR <-OF-*-SAME-LINEAR-SPECIAL))
+                (145 145 (:REWRITE DEFAULT-<-2))
+                (145 145 (:REWRITE DEFAULT-<-1))
                 (125 53 (:REWRITE SIMPLIFY-SUMS-EQUAL))
                 (125 53
                      (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-EQUAL))
                 (125 53
                      (:REWRITE PREFER-POSITIVE-ADDENDS-EQUAL))
-                (83 83
-                    (:REWRITE REMOVE-WEAK-INEQUALITIES-ONE))
-                (82 64
-                    (:LINEAR <=-OF-*-AND-*-SAME-ALT-LINEAR))
+                (104 68
+                     (:LINEAR <=-OF-*-AND-*-SAME-ALT-LINEAR))
                 (80 8 (:LINEAR MOD-BOUND-LINEAR-ARG2))
-                (74 66 (:REWRITE DEFAULT-+-2))
-                (68 32 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-3))
-                (66 66
-                    (:REWRITE NORMALIZE-TERMS-SUCH-AS-A/A+B-+-B/A+B))
-                (66 66 (:REWRITE DEFAULT-+-1))
-                (65 65
+                (76 76
+                    (:REWRITE REMOVE-WEAK-INEQUALITIES-ONE))
+                (76 68 (:REWRITE DEFAULT-+-2))
+                (70 52 (:REWRITE DEFAULT-UNARY-/))
+                (70 34 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-4))
+                (70 34 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-3))
+                (69 69
                     (:REWRITE NORMALIZE-FACTORS-GATHER-EXPONENTS))
-                (65 65 (:REWRITE DEFAULT-*-2))
-                (65 65 (:REWRITE DEFAULT-*-1))
-                (64 64 (:LINEAR <=-OF-*-AND-*-SAME-LINEAR))
-                (64 64 (:LINEAR <-OF-*-AND-*))
-                (64 46 (:REWRITE DEFAULT-UNARY-/))
-                (60 60 (:REWRITE |(< 0 (- x))|))
-                (58 58
+                (69 69 (:REWRITE DEFAULT-*-2))
+                (69 69 (:REWRITE DEFAULT-*-1))
+                (68 68
+                    (:REWRITE NORMALIZE-TERMS-SUCH-AS-A/A+B-+-B/A+B))
+                (68 68 (:REWRITE DEFAULT-+-1))
+                (68 68 (:LINEAR <=-OF-*-AND-*-SAME-LINEAR))
+                (68 68 (:LINEAR <-OF-*-AND-*))
+                (64 64 (:REWRITE |(< 0 (- x))|))
+                (62 62
                     (:REWRITE SIMPLIFY-TERMS-SUCH-AS-0-<-A+AB))
                 (56 8 (:LINEAR MOD-BOUNDS-3))
                 (53 53 (:REWRITE |(equal (- x) (- y))|))
-                (51 51 (:REWRITE |(< (- x) 0)|))
+                (52 52
+                    (:REWRITE NORMALIZE-TERMS-SUCH-AS-1/AX+BX))
                 (50 50
                     (:TYPE-PRESCRIPTION INTEGERP-OF-MOD-TYPE))
                 (50 50
                     (:REWRITE SIMPLIFY-TERMS-SUCH-AS-A+AB-=-0))
                 (50 50 (:REWRITE |(equal (- x) 0)|))
-                (49 49
+                (47 47 (:REWRITE |(< (- x) 0)|))
+                (45 45
                     (:REWRITE SIMPLIFY-TERMS-SUCH-AS-A+AB-<-0))
-                (46 46
-                    (:REWRITE NORMALIZE-TERMS-SUCH-AS-1/AX+BX))
                 (44 44
                     (:TYPE-PRESCRIPTION RATIONALP-OF-MOD))
                 (41 1 (:REWRITE <-OF-*-AND-0))
                 (40 8 (:REWRITE |(* y (* x z))|))
                 (40 4 (:REWRITE MOD-+-CANCEL-0-WEAK))
-                (36 12 (:REWRITE SIMPLIFY-MOD-+-MOD-WEAK))
-                (36 12 (:REWRITE SIMPLIFY-MOD-+-MINUS-MOD))
+                (38 14 (:REWRITE SIMPLIFY-MOD-+-MOD-WEAK))
+                (38 14 (:REWRITE SIMPLIFY-MOD-+-MINUS-MOD))
+                (34 34 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-2))
+                (34 34 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-1))
                 (34 2 (:REWRITE |(* x (+ y z))|))
-                (32 32 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-4))
-                (32 32 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-2))
-                (32 32 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-1))
                 (31 7 (:REWRITE MOD-ZERO . 2))
-                (25 25 (:REWRITE |(< (+ c x) d)|))
+                (27 27 (:REWRITE |(< (+ c x) d)|))
+                (24 2 (:REWRITE MOD-OF-*-LEMMA))
                 (23 23 (:REWRITE INTEGERP-MINUS-X))
                 (23 23 (:META META-INTEGERP-CORRECT))
                 (22 8 (:REWRITE MOD-CANCEL-*))
+                (21 21 (:REWRITE DEFAULT-UNARY-MINUS))
                 (20 2 (:DEFINITION POSP))
-                (19 19 (:REWRITE DEFAULT-UNARY-MINUS))
-                (17 17
+                (19 19
                     (:REWRITE <-OF-+-COMBINE-CONSTANTS-2))
-                (17 17
+                (19 19
                     (:REWRITE <-OF-+-ARG1-WHEN-NEGATIVE-CONSTANT))
                 (14 14 (:REWRITE MOD-COMPLETION))
                 (9 9 (:REWRITE |(< d (+ c x))|))
@@ -2194,13 +2195,13 @@
                 (8 8 (:REWRITE MOD-MINUS-2))
                 (8 8 (:REWRITE |(* c (* d x))|))
                 (7 7 (:REWRITE MOD-X-Y-=-X . 2))
-                (5 5 (:REWRITE |(< (+ c x y) d)|))
+                (6 6 (:REWRITE |(< (+ c x y) d)|))
+                (6 6 (:REWRITE |(- (* c x))|))
                 (4 4 (:REWRITE FOLD-CONSTS-IN-+))
                 (4 4 (:REWRITE <-OF-+-COMBINE-CONSTANTS-1))
                 (4 4
                    (:REWRITE <-OF-+-ARG2-WHEN-NEGATIVE-CONSTANT))
                 (4 4 (:REWRITE +-COMBINE-CONSTANTS))
-                (4 4 (:REWRITE |(- (* c x))|))
                 (4 1 (:REWRITE INTEGERP-OF-*))
                 (4 1 (:REWRITE INSERT-0-*))
                 (3 3 (:TYPE-PRESCRIPTION FLOOR-ZERO . 3))
@@ -2997,403 +2998,422 @@
                    (1 1
                       (:TYPE-PRESCRIPTION MOD-NEGATIVE . 1)))
 (MOD-OF-+-OF-MOD-ARG1
-     (60480 192
+     (30147 98
             (:REWRITE *-OF-FLOOR-OF-SAME-WHEN-MULTIPLE))
-     (10660 60 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-2))
-     (10460 60 (:LINEAR <-OF-*-SAME-LINEAR-SPECIAL))
-     (9508 1908 (:TYPE-PRESCRIPTION MOD-ZERO . 1))
-     (9508 1908
-           (:TYPE-PRESCRIPTION MOD-POSITIVE . 2))
-     (9382 494
+     (28170 152 (:REWRITE MOD-WHEN-<))
+     (8446 42 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-2))
+     (8280 42 (:LINEAR <-OF-*-SAME-LINEAR-SPECIAL))
+     (7817 23 (:LINEAR MOD-BOUND-LINEAR-ARG1))
+     (7196 56 (:LINEAR FLOOR-BOUNDS-1))
+     (6888 152 (:REWRITE MOD-WHEN-MULTIPLE))
+     (6772 194
            (:REWRITE PREFER-POSITIVE-ADDENDS-EQUAL))
-     (8920 80 (:LINEAR FLOOR-BOUNDS-1))
-     (8374 75 (:LINEAR MOD-BOUND-LINEAR-ARG1))
-     (7696 7696
+     (4677 183 (:REWRITE CANCEL-FLOOR-+))
+     (4181 4181
            (:TYPE-PRESCRIPTION NOT-INTEGERP-3B))
-     (7696 7696
+     (4181 4181
            (:TYPE-PRESCRIPTION NOT-INTEGERP-2B))
-     (7696 7696
+     (4181 4181
            (:TYPE-PRESCRIPTION NOT-INTEGERP-1B))
-     (7064 420 (:REWRITE MOD-ZERO . 2))
-     (6886 313 (:REWRITE CANCEL-FLOOR-+))
-     (6513 399 (:REWRITE DEFAULT-+-2))
-     (4916 1594 (:REWRITE DEFAULT-*-2))
-     (4105 1270 (:REWRITE INTEGERP-OF-*))
-     (3742 494
-           (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-EQUAL))
-     (3640 40 (:LINEAR FLOOR-UPPER-BOUND-LINEAR))
-     (3510 2012
-           (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<))
-     (3440 420 (:REWRITE MOD-X-Y-=-X . 4))
-     (3440 420 (:REWRITE MOD-X-Y-=-X . 3))
-     (3344 152 (:REWRITE CANCEL-MOD-+))
-     (3142 454 (:REWRITE SIMPLIFY-SUMS-EQUAL))
-     (3043 313 (:REWRITE FLOOR-ZERO . 4))
-     (3043 313 (:REWRITE FLOOR-ZERO . 3))
-     (2915 1993 (:REWRITE SIMPLIFY-SUMS-<))
-     (2774 1990 (:REWRITE DEFAULT-<-2))
-     (2649 75 (:LINEAR MOD-BOUNDS-3))
-     (2456 174 (:REWRITE DEFAULT-UNARY-MINUS))
-     (2405 2405
-           (:TYPE-PRESCRIPTION FLOOR-ZERO . 3))
-     (2405 2405
-           (:TYPE-PRESCRIPTION FLOOR-ZERO . 2))
-     (2405 2405
-           (:TYPE-PRESCRIPTION FLOOR-ZERO . 1))
-     (2405 2405
-           (:TYPE-PRESCRIPTION FLOOR-TYPE-NON-NEGATIVE))
-     (2405 2405
-           (:TYPE-PRESCRIPTION FLOOR-TYPE-1-PART-1-BETTER))
-     (2405 2405
-           (:TYPE-PRESCRIPTION FLOOR-POSITIVE . 2))
-     (2405 2405
-           (:TYPE-PRESCRIPTION FLOOR-POSITIVE . 1))
-     (2405 2405
-           (:TYPE-PRESCRIPTION FLOOR-NONPOSITIVE-2))
-     (2405 2405
-           (:TYPE-PRESCRIPTION FLOOR-NONPOSITIVE-1))
-     (2405 2405
-           (:TYPE-PRESCRIPTION FLOOR-NONNEGATIVE-2))
-     (2405 2405
-           (:TYPE-PRESCRIPTION FLOOR-NONNEGATIVE-1))
-     (2405 2405
-           (:TYPE-PRESCRIPTION FLOOR-NEGATIVE . 2))
-     (2405 2405
-           (:TYPE-PRESCRIPTION FLOOR-NEGATIVE . 1))
-     (2405 2273 (:META META-INTEGERP-CORRECT))
-     (2273 2273 (:REWRITE REDUCE-INTEGERP-+))
-     (2273 2273 (:REWRITE INTEGERP-MINUS-X))
-     (2232 420 (:REWRITE MOD-ZERO . 3))
-     (2224 313 (:REWRITE FLOOR-WHEN-<))
-     (2142 1990 (:REWRITE DEFAULT-<-1))
-     (2012 2012
-           (:REWRITE REMOVE-WEAK-INEQUALITIES-TWO))
-     (2012 2012 (:REWRITE |(< (- x) (- y))|))
-     (1980 1908
-           (:TYPE-PRESCRIPTION INTEGERP-OF-MOD-TYPE))
-     (1980 1908 (:TYPE-PRESCRIPTION INTEGERP-MOD))
-     (1908 1908
-           (:TYPE-PRESCRIPTION MOD-POSITIVE . 1))
-     (1908 1908
-           (:TYPE-PRESCRIPTION MOD-NONPOSITIVE))
-     (1908 1908
-           (:TYPE-PRESCRIPTION MOD-NEGATIVE . 2))
-     (1908 1908
-           (:TYPE-PRESCRIPTION MOD-NEGATIVE . 1))
-     (1680 84 (:TYPE-PRESCRIPTION NOT-INTEGERP-4A))
-     (1594 1594
-           (:REWRITE NORMALIZE-FACTORS-GATHER-EXPONENTS))
-     (1594 1594 (:REWRITE DEFAULT-*-1))
-     (1565 313
-           (:REWRITE FLOOR-WHEN-NOT-RATIONALP-OF-QUOTIENT))
-     (1384 1384
-           (:REWRITE NORMALIZE-TERMS-SUCH-AS-1/AX+BX))
-     (1384 1384 (:REWRITE DEFAULT-UNARY-/))
-     (1357 1357
-           (:REWRITE REMOVE-WEAK-INEQUALITIES-ONE))
-     (1270 1270 (:REWRITE |(integerp (* c x))|))
-     (1147 399 (:REWRITE DEFAULT-+-1))
-     (1040 40 (:LINEAR FLOOR-BOUNDS-3))
-     (1040 40 (:LINEAR FLOOR-BOUNDS-2))
-     (1034 14
+     (3904 926
+           (:REWRITE PREFER-POSITIVE-ADDENDS-<))
+     (3778 762 (:TYPE-PRESCRIPTION MOD-ZERO . 1))
+     (3778 762
+           (:TYPE-PRESCRIPTION MOD-POSITIVE . 2))
+     (3259 145 (:REWRITE MOD-ZERO . 2))
+     (2964 28 (:LINEAR FLOOR-UPPER-BOUND-LINEAR))
+     (2505 255 (:REWRITE DEFAULT-+-2))
+     (2488 922 (:REWRITE DEFAULT-*-2))
+     (2312 665 (:REWRITE INTEGERP-OF-*))
+     (2193 94 (:REWRITE |(* (+ x y) z)|))
+     (1847 85
            (:REWRITE INTEGERP-OF-+-WHEN-INTEGERP-2))
-     (964 452
-          (:REWRITE MOD-WHEN-RATIONALP-ARG1-AND-NOT-RATIONALP-ARG2))
-     (964 452
-          (:REWRITE MOD-WHEN-NOT-RATIONALP-ARG1-AND-RATIONALP-ARG2))
-     (964 452
-          (:REWRITE MOD-WHEN-NOT-ACL2-NUMBERP-ARG1))
-     (926 18 (:REWRITE |(* (+ x y) z)|))
-     (840 840 (:REWRITE MOD-COMPLETION))
-     (728 728
-          (:REWRITE SIMPLIFY-TERMS-SUCH-AS-A+AB-<-0))
-     (728 728 (:REWRITE |(< (- x) 0)|))
-     (596 596
-          (:REWRITE SIMPLIFY-TERMS-SUCH-AS-0-<-A+AB))
-     (596 596 (:REWRITE |(< 0 (- x))|))
-     (494 494 (:REWRITE |(equal (- x) (- y))|))
-     (454 454 (:REWRITE |(equal (- x) 0)|))
-     (452 452
-          (:REWRITE MOD-WHEN-NOT-ACL2-NUMBERP-ARG2))
-     (440 40 (:LINEAR FLOOR-BOUND-ARG1-LINEAR))
-     (420 420 (:REWRITE MOD-X-Y-=-X . 2))
-     (414 414
-          (:REWRITE SIMPLIFY-TERMS-SUCH-AS-A+AB-=-0))
-     (399 399
-          (:REWRITE NORMALIZE-TERMS-SUCH-AS-A/A+B-+-B/A+B))
-     (320 20
-          (:LINEAR FLOOR-UPPER-BOUND-ALT-LINEAR))
-     (313 313 (:REWRITE FLOOR-ZERO . 2))
-     (313 313
-          (:REWRITE FLOOR-WHEN-NOT-RATIONALP-ARG1))
-     (313 313
-          (:REWRITE FLOOR-WHEN-NEGATIVE-AND-SMALL-CHEAP))
-     (313 313
-          (:REWRITE FLOOR-WHEN-I-IS-NOT-AN-ACL2-NUMBERP))
-     (313 313 (:REWRITE FLOOR-MINUS-WEAK))
-     (313 313
-          (:REWRITE FLOOR-MINUS-NEGATIVE-CONSTANT))
-     (313 313 (:REWRITE FLOOR-MINUS-ERIC-BETTER))
-     (313 313 (:REWRITE FLOOR-MINUS-2))
-     (313 313 (:REWRITE FLOOR-COMPLETION))
-     (313 313 (:REWRITE FLOOR-CANCEL-*-WEAK))
-     (280 20 (:DEFINITION NATP))
-     (271 14
-          (:REWRITE INTEGERP-OF-+-WHEN-INTEGERP-1))
-     (258 18
+     (1844 183 (:REWRITE FLOOR-ZERO . 4))
+     (1844 183 (:REWRITE FLOOR-ZERO . 3))
+     (1692 194
+           (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-EQUAL))
+     (1632 23 (:LINEAR MOD-BOUNDS-3))
+     (1498 926
+           (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<))
+     (1483 925 (:REWRITE SIMPLIFY-SUMS-<))
+     (1466 1334 (:META META-INTEGERP-CORRECT))
+     (1370 183 (:REWRITE FLOOR-WHEN-<))
+     (1334 1334 (:REWRITE REDUCE-INTEGERP-+))
+     (1334 1334 (:REWRITE INTEGERP-MINUS-X))
+     (1331 925 (:REWRITE DEFAULT-<-2))
+     (1317 169 (:REWRITE SIMPLIFY-SUMS-EQUAL))
+     (1252 145 (:REWRITE MOD-X-Y-=-X . 4))
+     (1252 145 (:REWRITE MOD-X-Y-=-X . 3))
+     (1162 1162
+           (:TYPE-PRESCRIPTION FLOOR-ZERO . 2))
+     (1162 1162
+           (:TYPE-PRESCRIPTION FLOOR-ZERO . 1))
+     (1162 1162
+           (:TYPE-PRESCRIPTION FLOOR-TYPE-NON-NEGATIVE))
+     (1162 1162
+           (:TYPE-PRESCRIPTION FLOOR-TYPE-1-PART-1-BETTER))
+     (1162 1162
+           (:TYPE-PRESCRIPTION FLOOR-POSITIVE . 2))
+     (1162 1162
+           (:TYPE-PRESCRIPTION FLOOR-POSITIVE . 1))
+     (1162 1162
+           (:TYPE-PRESCRIPTION FLOOR-NONPOSITIVE-2))
+     (1162 1162
+           (:TYPE-PRESCRIPTION FLOOR-NONPOSITIVE-1))
+     (1162 1162
+           (:TYPE-PRESCRIPTION FLOOR-NONNEGATIVE-2))
+     (1162 1162
+           (:TYPE-PRESCRIPTION FLOOR-NONNEGATIVE-1))
+     (1162 1162
+           (:TYPE-PRESCRIPTION FLOOR-NEGATIVE . 2))
+     (1162 1162
+           (:TYPE-PRESCRIPTION FLOOR-NEGATIVE . 1))
+     (1086 78 (:REWRITE DEFAULT-UNARY-MINUS))
+     (1084 85
+           (:REWRITE INTEGERP-OF-+-WHEN-INTEGERP-1))
+     (1077 925 (:REWRITE DEFAULT-<-1))
+     (996 28 (:LINEAR FLOOR-BOUNDS-3))
+     (996 28 (:LINEAR FLOOR-BOUNDS-2))
+     (960 48 (:TYPE-PRESCRIPTION NOT-INTEGERP-4A))
+     (926 926
+          (:REWRITE REMOVE-WEAK-INEQUALITIES-TWO))
+     (926 926 (:REWRITE |(< (- x) (- y))|))
+     (922 922
+          (:REWRITE NORMALIZE-FACTORS-GATHER-EXPONENTS))
+     (922 922 (:REWRITE DEFAULT-*-1))
+     (915 183
+          (:REWRITE FLOOR-WHEN-NOT-RATIONALP-OF-QUOTIENT))
+     (844 145 (:REWRITE MOD-ZERO . 3))
+     (834 762
+          (:TYPE-PRESCRIPTION INTEGERP-OF-MOD-TYPE))
+     (834 762 (:TYPE-PRESCRIPTION INTEGERP-MOD))
+     (762 762
+          (:TYPE-PRESCRIPTION MOD-POSITIVE . 1))
+     (762 762
+          (:TYPE-PRESCRIPTION MOD-NONPOSITIVE))
+     (762 762
+          (:TYPE-PRESCRIPTION MOD-NEGATIVE . 2))
+     (762 762
+          (:TYPE-PRESCRIPTION MOD-NEGATIVE . 1))
+     (742 742
+          (:REWRITE NORMALIZE-TERMS-SUCH-AS-1/AX+BX))
+     (742 742 (:REWRITE DEFAULT-UNARY-/))
+     (673 31 (:REWRITE FLOOR-OF-+-WHEN-MULT-ARG2))
+     (673 31 (:REWRITE FLOOR-OF-+-WHEN-MULT-ARG1))
+     (671 255 (:REWRITE DEFAULT-+-1))
+     (665 665 (:REWRITE |(integerp (* c x))|))
+     (602 602
+          (:REWRITE REMOVE-WEAK-INEQUALITIES-ONE))
+     (492 86
           (:REWRITE INTEGERP-OF-+-WHEN-INTEGERP-1-CHEAP))
-     (227 227 (:REWRITE |(+ c (+ d x))|))
-     (226 150 (:LINEAR MOD-BOUNDS-2))
-     (180 20 (:REWRITE FLOOR-POSITIVE . 2))
-     (152 152 (:REWRITE SIMPLIFY-MOD-+-MOD-WEAK))
-     (152 152 (:REWRITE SIMPLIFY-MOD-+-MINUS-MOD))
-     (152 152 (:REWRITE MOD-NEG))
-     (152 152 (:REWRITE MOD-MINUS-2))
-     (152 152 (:REWRITE MOD-CANCEL-*))
-     (152 152 (:REWRITE |(- (* c x))|))
-     (120 120 (:LINEAR <=-OF-*-AND-*-SAME-LINEAR))
-     (120 120
-          (:LINEAR <=-OF-*-AND-*-SAME-ALT-LINEAR))
-     (120 120 (:LINEAR <-OF-*-AND-*))
-     (112 112 (:REWRITE MOD-ZERO . 1))
-     (112 112 (:REWRITE MOD-+-CANCEL-0-WEAK))
-     (84 84 (:TYPE-PRESCRIPTION NOT-INTEGERP-3A))
-     (84 84 (:TYPE-PRESCRIPTION NOT-INTEGERP-2A))
-     (84 84 (:TYPE-PRESCRIPTION NOT-INTEGERP-1A))
-     (82 82 (:REWRITE FOLD-CONSTS-IN-+))
-     (82 82 (:REWRITE +-COMBINE-CONSTANTS))
-     (80 20 (:REWRITE <-OF-0-AND-FLOOR))
-     (60 60 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-4))
-     (60 60 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-3))
-     (60 60 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-1))
-     (40 40 (:REWRITE EQUAL-OF-*-AND-CONSTANT))
-     (40 40 (:REWRITE |(equal (+ c x) d)|))
-     (33 33 (:REWRITE |(< (+ c x) d)|))
-     (24 4 (:DEFINITION FIX))
+     (327 327
+          (:REWRITE SIMPLIFY-TERMS-SUCH-AS-A+AB-<-0))
+     (327 327 (:REWRITE |(< (- x) 0)|))
+     (320 28 (:LINEAR FLOOR-BOUND-ARG1-LINEAR))
+     (290 290 (:REWRITE MOD-COMPLETION))
+     (282 16
+          (:LINEAR FLOOR-UPPER-BOUND-ALT-LINEAR))
+     (280 152
+          (:REWRITE MOD-WHEN-RATIONALP-ARG1-AND-NOT-RATIONALP-ARG2))
+     (280 152
+          (:REWRITE MOD-WHEN-NOT-RATIONALP-ARG1-AND-RATIONALP-ARG2))
+     (280 152
+          (:REWRITE MOD-WHEN-NOT-ACL2-NUMBERP-ARG1))
+     (275 275
+          (:REWRITE SIMPLIFY-TERMS-SUCH-AS-0-<-A+AB))
+     (275 275 (:REWRITE |(< 0 (- x))|))
+     (255 255
+          (:REWRITE NORMALIZE-TERMS-SUCH-AS-A/A+B-+-B/A+B))
+     (250 16 (:DEFINITION NATP))
+     (194 194 (:REWRITE |(equal (- x) (- y))|))
+     (183 183 (:REWRITE FLOOR-ZERO . 2))
+     (183 183
+          (:REWRITE FLOOR-WHEN-NOT-RATIONALP-ARG1))
+     (183 183
+          (:REWRITE FLOOR-WHEN-NEGATIVE-AND-SMALL-CHEAP))
+     (183 183
+          (:REWRITE FLOOR-WHEN-I-IS-NOT-AN-ACL2-NUMBERP))
+     (183 183 (:REWRITE FLOOR-MINUS-WEAK))
+     (183 183
+          (:REWRITE FLOOR-MINUS-NEGATIVE-CONSTANT))
+     (183 183 (:REWRITE FLOOR-MINUS-ERIC-BETTER))
+     (183 183 (:REWRITE FLOOR-MINUS-2))
+     (183 183 (:REWRITE FLOOR-COMPLETION))
+     (183 183 (:REWRITE FLOOR-CANCEL-*-WEAK))
+     (169 169 (:REWRITE |(equal (- x) 0)|))
+     (152 152
+          (:REWRITE MOD-WHEN-NOT-ACL2-NUMBERP-ARG2))
+     (145 145 (:REWRITE MOD-X-Y-=-X . 2))
+     (144 144
+          (:REWRITE SIMPLIFY-TERMS-SUCH-AS-A+AB-=-0))
+     (136 136 (:REWRITE |(< (+ c x) d)|))
+     (135 135
+          (:REWRITE <-OF-+-COMBINE-CONSTANTS-2))
+     (135 135
+          (:REWRITE <-OF-+-ARG1-WHEN-NEGATIVE-CONSTANT))
+     (132 14 (:REWRITE FLOOR-POSITIVE . 2))
+     (122 46 (:LINEAR MOD-BOUNDS-2))
+     (86 86
+         (:REWRITE INTEGERP-+-REDUCE-LEADING-RATIONAL-CONSTANT))
+     (84 84 (:LINEAR <=-OF-*-AND-*-SAME-LINEAR))
+     (84 84
+         (:LINEAR <=-OF-*-AND-*-SAME-ALT-LINEAR))
+     (84 84 (:LINEAR <-OF-*-AND-*))
+     (76 14 (:REWRITE <-OF-0-AND-FLOOR))
+     (74 74 (:REWRITE SIMPLIFY-MOD-+-MINUS-MOD))
+     (69 69 (:REWRITE |(+ c (+ d x))|))
+     (68 68 (:REWRITE |(- (* c x))|))
+     (67 67 (:REWRITE MOD-NEG))
+     (67 67 (:REWRITE MOD-MINUS-2))
+     (67 67 (:REWRITE MOD-CANCEL-*))
+     (58 58 (:REWRITE |(equal (+ c x) d)|))
+     (57 57
+         (:REWRITE <-OF-+-COMBINE-CONSTANTS-1))
+     (57 57
+         (:REWRITE <-OF-+-ARG2-WHEN-NEGATIVE-CONSTANT))
+     (57 57 (:REWRITE |(< d (+ c x))|))
+     (48 48 (:TYPE-PRESCRIPTION NOT-INTEGERP-3A))
+     (48 48 (:TYPE-PRESCRIPTION NOT-INTEGERP-2A))
+     (48 48 (:TYPE-PRESCRIPTION NOT-INTEGERP-1A))
+     (42 42 (:REWRITE MOD-ZERO . 1))
+     (42 42 (:REWRITE MOD-+-CANCEL-0-WEAK))
+     (42 42 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-4))
+     (42 42 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-3))
+     (42 42 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-1))
+     (33 33
+         (:REWRITE EQUAL-OF-+-WHEN-NEGATIVE-CONSTANT))
+     (33 33
+         (:REWRITE EQUAL-OF-+-COMBINE-CONSTANTS))
+     (31 31 (:REWRITE FLOOR-PEEL-OFF-CONSTANT))
+     (31 31
+         (:REWRITE FLOOR-OF-PLUS-NORMALIZE-NEGATIVE-CONSTANT))
+     (25 25 (:REWRITE EQUAL-OF-*-AND-CONSTANT))
      (22 22
          (:TYPE-PRESCRIPTION NONNEG-OF-MOD-TYPE-2))
      (22 22
          (:TYPE-PRESCRIPTION NONNEG-OF-MOD-TYPE))
-     (20 20 (:TYPE-PRESCRIPTION NATP))
-     (20 20 (:REWRITE FLOOR-POSITIVE . 3))
-     (20 20 (:REWRITE FLOOR-POSITIVE . 1))
-     (19 19 (:REWRITE |(< d (+ c x))|))
-     (18 18
-         (:REWRITE INTEGERP-+-REDUCE-LEADING-RATIONAL-CONSTANT))
-     (16 16 (:REWRITE |(< (+ d x) (+ c y))|))
-     (16 16 (:REWRITE |(< (+ c x) (+ d y))|))
-     (16 16 (:REWRITE |(< (+ c x y) d)|))
-     (14 14
-         (:REWRITE <-OF-+-COMBINE-CONSTANTS-2))
-     (14 14
-         (:REWRITE <-OF-+-ARG1-WHEN-NEGATIVE-CONSTANT))
-     (11 11
-         (:REWRITE <-OF-+-COMBINE-CONSTANTS-1))
-     (11 11
-         (:REWRITE <-OF-+-ARG2-WHEN-NEGATIVE-CONSTANT))
+     (21 21 (:REWRITE FOLD-CONSTS-IN-+))
+     (21 21 (:REWRITE +-COMBINE-CONSTANTS))
+     (16 16 (:TYPE-PRESCRIPTION NATP))
+     (14 14 (:REWRITE FLOOR-POSITIVE . 3))
+     (14 14 (:REWRITE FLOOR-POSITIVE . 1))
      (10 10
          (:TYPE-PRESCRIPTION RATIONALP-OF-MOD))
-     (10 10 (:REWRITE |(* c (* d x))|))
-     (5 5 (:REWRITE |(< d (+ c x y))|)))
+     (9 1 (:DEFINITION FIX))
+     (4 4 (:REWRITE |(equal (+ c x y) d)|))
+     (3 3 (:REWRITE |(* c (* d x))|))
+     (1 1 (:REWRITE |(< (+ d x) (+ c y))|))
+     (1 1 (:REWRITE |(< (+ c x) (+ d y))|))
+     (1 1 (:REWRITE |(< (+ c x y) d)|)))
 (MOD-OF-+-OF-MOD-ARG2
-     (60480 192
+     (30147 98
             (:REWRITE *-OF-FLOOR-OF-SAME-WHEN-MULTIPLE))
-     (10660 60 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-2))
-     (10460 60 (:LINEAR <-OF-*-SAME-LINEAR-SPECIAL))
-     (9538 1914 (:TYPE-PRESCRIPTION MOD-ZERO . 1))
-     (9538 1914
-           (:TYPE-PRESCRIPTION MOD-POSITIVE . 2))
-     (9382 494
+     (28170 152 (:REWRITE MOD-WHEN-<))
+     (8446 42 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-2))
+     (8280 42 (:LINEAR <-OF-*-SAME-LINEAR-SPECIAL))
+     (7817 23 (:LINEAR MOD-BOUND-LINEAR-ARG1))
+     (7196 56 (:LINEAR FLOOR-BOUNDS-1))
+     (6780 152 (:REWRITE MOD-WHEN-MULTIPLE))
+     (6772 194
            (:REWRITE PREFER-POSITIVE-ADDENDS-EQUAL))
-     (8920 80 (:LINEAR FLOOR-BOUNDS-1))
-     (8374 75 (:LINEAR MOD-BOUND-LINEAR-ARG1))
-     (7708 7708
+     (4677 183 (:REWRITE CANCEL-FLOOR-+))
+     (4163 4163
            (:TYPE-PRESCRIPTION NOT-INTEGERP-3B))
-     (7708 7708
+     (4163 4163
            (:TYPE-PRESCRIPTION NOT-INTEGERP-2B))
-     (7708 7708
+     (4163 4163
            (:TYPE-PRESCRIPTION NOT-INTEGERP-1B))
-     (7064 420 (:REWRITE MOD-ZERO . 2))
-     (6886 313 (:REWRITE CANCEL-FLOOR-+))
-     (6438 392 (:REWRITE DEFAULT-+-2))
-     (4916 1594 (:REWRITE DEFAULT-*-2))
-     (4105 1270 (:REWRITE INTEGERP-OF-*))
-     (3742 494
-           (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-EQUAL))
-     (3640 40 (:LINEAR FLOOR-UPPER-BOUND-LINEAR))
-     (3510 2012
-           (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<))
-     (3440 420 (:REWRITE MOD-X-Y-=-X . 4))
-     (3440 420 (:REWRITE MOD-X-Y-=-X . 3))
-     (3344 152 (:REWRITE CANCEL-MOD-+))
-     (3142 454 (:REWRITE SIMPLIFY-SUMS-EQUAL))
-     (3043 313 (:REWRITE FLOOR-ZERO . 4))
-     (3043 313 (:REWRITE FLOOR-ZERO . 3))
-     (2915 1993 (:REWRITE SIMPLIFY-SUMS-<))
-     (2774 1990 (:REWRITE DEFAULT-<-2))
-     (2647 75 (:LINEAR MOD-BOUNDS-3))
-     (2456 174 (:REWRITE DEFAULT-UNARY-MINUS))
-     (2405 2273 (:META META-INTEGERP-CORRECT))
-     (2392 2392
-           (:TYPE-PRESCRIPTION FLOOR-ZERO . 3))
-     (2392 2392
-           (:TYPE-PRESCRIPTION FLOOR-ZERO . 2))
-     (2392 2392
-           (:TYPE-PRESCRIPTION FLOOR-ZERO . 1))
-     (2392 2392
-           (:TYPE-PRESCRIPTION FLOOR-TYPE-NON-NEGATIVE))
-     (2392 2392
-           (:TYPE-PRESCRIPTION FLOOR-TYPE-1-PART-1-BETTER))
-     (2392 2392
-           (:TYPE-PRESCRIPTION FLOOR-POSITIVE . 2))
-     (2392 2392
-           (:TYPE-PRESCRIPTION FLOOR-POSITIVE . 1))
-     (2392 2392
-           (:TYPE-PRESCRIPTION FLOOR-NONPOSITIVE-2))
-     (2392 2392
-           (:TYPE-PRESCRIPTION FLOOR-NONPOSITIVE-1))
-     (2392 2392
-           (:TYPE-PRESCRIPTION FLOOR-NONNEGATIVE-2))
-     (2392 2392
-           (:TYPE-PRESCRIPTION FLOOR-NONNEGATIVE-1))
-     (2392 2392
-           (:TYPE-PRESCRIPTION FLOOR-NEGATIVE . 2))
-     (2392 2392
-           (:TYPE-PRESCRIPTION FLOOR-NEGATIVE . 1))
-     (2273 2273 (:REWRITE REDUCE-INTEGERP-+))
-     (2273 2273 (:REWRITE INTEGERP-MINUS-X))
-     (2232 420 (:REWRITE MOD-ZERO . 3))
-     (2224 313 (:REWRITE FLOOR-WHEN-<))
-     (2142 1990 (:REWRITE DEFAULT-<-1))
-     (2012 2012
-           (:REWRITE REMOVE-WEAK-INEQUALITIES-TWO))
-     (2012 2012 (:REWRITE |(< (- x) (- y))|))
-     (1986 1914
-           (:TYPE-PRESCRIPTION INTEGERP-OF-MOD-TYPE))
-     (1986 1914 (:TYPE-PRESCRIPTION INTEGERP-MOD))
-     (1914 1914
-           (:TYPE-PRESCRIPTION MOD-POSITIVE . 1))
-     (1914 1914
-           (:TYPE-PRESCRIPTION MOD-NONPOSITIVE))
-     (1914 1914
-           (:TYPE-PRESCRIPTION MOD-NEGATIVE . 2))
-     (1914 1914
-           (:TYPE-PRESCRIPTION MOD-NEGATIVE . 1))
-     (1680 84 (:TYPE-PRESCRIPTION NOT-INTEGERP-4A))
-     (1594 1594
-           (:REWRITE NORMALIZE-FACTORS-GATHER-EXPONENTS))
-     (1594 1594 (:REWRITE DEFAULT-*-1))
-     (1565 313
-           (:REWRITE FLOOR-WHEN-NOT-RATIONALP-OF-QUOTIENT))
-     (1384 1384
-           (:REWRITE NORMALIZE-TERMS-SUCH-AS-1/AX+BX))
-     (1384 1384 (:REWRITE DEFAULT-UNARY-/))
-     (1357 1357
-           (:REWRITE REMOVE-WEAK-INEQUALITIES-ONE))
-     (1270 1270 (:REWRITE |(integerp (* c x))|))
-     (1140 392 (:REWRITE DEFAULT-+-1))
-     (1040 40 (:LINEAR FLOOR-BOUNDS-3))
-     (1040 40 (:LINEAR FLOOR-BOUNDS-2))
-     (1031 14
+     (3904 926
+           (:REWRITE PREFER-POSITIVE-ADDENDS-<))
+     (3778 762 (:TYPE-PRESCRIPTION MOD-ZERO . 1))
+     (3778 762
+           (:TYPE-PRESCRIPTION MOD-POSITIVE . 2))
+     (3259 145 (:REWRITE MOD-ZERO . 2))
+     (2964 28 (:LINEAR FLOOR-UPPER-BOUND-LINEAR))
+     (2488 922 (:REWRITE DEFAULT-*-2))
+     (2400 248 (:REWRITE DEFAULT-+-2))
+     (2306 659 (:REWRITE INTEGERP-OF-*))
+     (2185 94 (:REWRITE |(* (+ x y) z)|))
+     (1844 183 (:REWRITE FLOOR-ZERO . 4))
+     (1844 183 (:REWRITE FLOOR-ZERO . 3))
+     (1844 85
            (:REWRITE INTEGERP-OF-+-WHEN-INTEGERP-2))
-     (964 452
-          (:REWRITE MOD-WHEN-RATIONALP-ARG1-AND-NOT-RATIONALP-ARG2))
-     (964 452
-          (:REWRITE MOD-WHEN-NOT-RATIONALP-ARG1-AND-RATIONALP-ARG2))
-     (964 452
-          (:REWRITE MOD-WHEN-NOT-ACL2-NUMBERP-ARG1))
-     (918 18 (:REWRITE |(* (+ x y) z)|))
-     (840 840 (:REWRITE MOD-COMPLETION))
-     (728 728
-          (:REWRITE SIMPLIFY-TERMS-SUCH-AS-A+AB-<-0))
-     (728 728 (:REWRITE |(< (- x) 0)|))
-     (596 596
-          (:REWRITE SIMPLIFY-TERMS-SUCH-AS-0-<-A+AB))
-     (596 596 (:REWRITE |(< 0 (- x))|))
-     (494 494 (:REWRITE |(equal (- x) (- y))|))
-     (454 454 (:REWRITE |(equal (- x) 0)|))
-     (452 452
-          (:REWRITE MOD-WHEN-NOT-ACL2-NUMBERP-ARG2))
-     (440 40 (:LINEAR FLOOR-BOUND-ARG1-LINEAR))
-     (420 420 (:REWRITE MOD-X-Y-=-X . 2))
-     (414 414
-          (:REWRITE SIMPLIFY-TERMS-SUCH-AS-A+AB-=-0))
-     (392 392
-          (:REWRITE NORMALIZE-TERMS-SUCH-AS-A/A+B-+-B/A+B))
-     (320 20
-          (:LINEAR FLOOR-UPPER-BOUND-ALT-LINEAR))
-     (313 313 (:REWRITE FLOOR-ZERO . 2))
-     (313 313
-          (:REWRITE FLOOR-WHEN-NOT-RATIONALP-ARG1))
-     (313 313
-          (:REWRITE FLOOR-WHEN-NEGATIVE-AND-SMALL-CHEAP))
-     (313 313
-          (:REWRITE FLOOR-WHEN-I-IS-NOT-AN-ACL2-NUMBERP))
-     (313 313 (:REWRITE FLOOR-MINUS-WEAK))
-     (313 313
-          (:REWRITE FLOOR-MINUS-NEGATIVE-CONSTANT))
-     (313 313 (:REWRITE FLOOR-MINUS-ERIC-BETTER))
-     (313 313 (:REWRITE FLOOR-MINUS-2))
-     (313 313 (:REWRITE FLOOR-COMPLETION))
-     (313 313 (:REWRITE FLOOR-CANCEL-*-WEAK))
-     (280 20 (:DEFINITION NATP))
-     (274 14
+     (1692 194
+           (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-EQUAL))
+     (1630 23 (:LINEAR MOD-BOUNDS-3))
+     (1498 926
+           (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<))
+     (1483 925 (:REWRITE SIMPLIFY-SUMS-<))
+     (1460 1328 (:META META-INTEGERP-CORRECT))
+     (1370 183 (:REWRITE FLOOR-WHEN-<))
+     (1331 925 (:REWRITE DEFAULT-<-2))
+     (1328 1328 (:REWRITE REDUCE-INTEGERP-+))
+     (1328 1328 (:REWRITE INTEGERP-MINUS-X))
+     (1317 169 (:REWRITE SIMPLIFY-SUMS-EQUAL))
+     (1252 145 (:REWRITE MOD-X-Y-=-X . 4))
+     (1252 145 (:REWRITE MOD-X-Y-=-X . 3))
+     (1155 1155
+           (:TYPE-PRESCRIPTION FLOOR-ZERO . 2))
+     (1155 1155
+           (:TYPE-PRESCRIPTION FLOOR-ZERO . 1))
+     (1155 1155
+           (:TYPE-PRESCRIPTION FLOOR-TYPE-NON-NEGATIVE))
+     (1155 1155
+           (:TYPE-PRESCRIPTION FLOOR-TYPE-1-PART-1-BETTER))
+     (1155 1155
+           (:TYPE-PRESCRIPTION FLOOR-POSITIVE . 2))
+     (1155 1155
+           (:TYPE-PRESCRIPTION FLOOR-POSITIVE . 1))
+     (1155 1155
+           (:TYPE-PRESCRIPTION FLOOR-NONPOSITIVE-2))
+     (1155 1155
+           (:TYPE-PRESCRIPTION FLOOR-NONPOSITIVE-1))
+     (1155 1155
+           (:TYPE-PRESCRIPTION FLOOR-NONNEGATIVE-2))
+     (1155 1155
+           (:TYPE-PRESCRIPTION FLOOR-NONNEGATIVE-1))
+     (1155 1155
+           (:TYPE-PRESCRIPTION FLOOR-NEGATIVE . 2))
+     (1155 1155
+           (:TYPE-PRESCRIPTION FLOOR-NEGATIVE . 1))
+     (1086 78 (:REWRITE DEFAULT-UNARY-MINUS))
+     (1077 925 (:REWRITE DEFAULT-<-1))
+     (996 28 (:LINEAR FLOOR-BOUNDS-3))
+     (996 28 (:LINEAR FLOOR-BOUNDS-2))
+     (985 85
           (:REWRITE INTEGERP-OF-+-WHEN-INTEGERP-1))
-     (258 18
+     (960 48 (:TYPE-PRESCRIPTION NOT-INTEGERP-4A))
+     (926 926
+          (:REWRITE REMOVE-WEAK-INEQUALITIES-TWO))
+     (926 926 (:REWRITE |(< (- x) (- y))|))
+     (922 922
+          (:REWRITE NORMALIZE-FACTORS-GATHER-EXPONENTS))
+     (922 922 (:REWRITE DEFAULT-*-1))
+     (915 183
+          (:REWRITE FLOOR-WHEN-NOT-RATIONALP-OF-QUOTIENT))
+     (844 145 (:REWRITE MOD-ZERO . 3))
+     (834 762
+          (:TYPE-PRESCRIPTION INTEGERP-OF-MOD-TYPE))
+     (834 762 (:TYPE-PRESCRIPTION INTEGERP-MOD))
+     (762 762
+          (:TYPE-PRESCRIPTION MOD-POSITIVE . 1))
+     (762 762
+          (:TYPE-PRESCRIPTION MOD-NONPOSITIVE))
+     (762 762
+          (:TYPE-PRESCRIPTION MOD-NEGATIVE . 2))
+     (762 762
+          (:TYPE-PRESCRIPTION MOD-NEGATIVE . 1))
+     (742 742
+          (:REWRITE NORMALIZE-TERMS-SUCH-AS-1/AX+BX))
+     (742 742 (:REWRITE DEFAULT-UNARY-/))
+     (673 31 (:REWRITE FLOOR-OF-+-WHEN-MULT-ARG2))
+     (673 31 (:REWRITE FLOOR-OF-+-WHEN-MULT-ARG1))
+     (664 248 (:REWRITE DEFAULT-+-1))
+     (659 659 (:REWRITE |(integerp (* c x))|))
+     (602 602
+          (:REWRITE REMOVE-WEAK-INEQUALITIES-ONE))
+     (492 86
           (:REWRITE INTEGERP-OF-+-WHEN-INTEGERP-1-CHEAP))
-     (226 150 (:LINEAR MOD-BOUNDS-2))
-     (209 209 (:REWRITE |(+ c (+ d x))|))
-     (180 20 (:REWRITE FLOOR-POSITIVE . 2))
-     (152 152 (:REWRITE SIMPLIFY-MOD-+-MOD-WEAK))
-     (152 152 (:REWRITE SIMPLIFY-MOD-+-MINUS-MOD))
-     (152 152 (:REWRITE MOD-NEG))
-     (152 152 (:REWRITE MOD-MINUS-2))
-     (152 152 (:REWRITE MOD-CANCEL-*))
-     (152 152 (:REWRITE |(- (* c x))|))
-     (120 120 (:LINEAR <=-OF-*-AND-*-SAME-LINEAR))
-     (120 120
-          (:LINEAR <=-OF-*-AND-*-SAME-ALT-LINEAR))
-     (120 120 (:LINEAR <-OF-*-AND-*))
-     (112 112 (:REWRITE MOD-ZERO . 1))
-     (112 112 (:REWRITE MOD-+-CANCEL-0-WEAK))
-     (84 84 (:TYPE-PRESCRIPTION NOT-INTEGERP-3A))
-     (84 84 (:TYPE-PRESCRIPTION NOT-INTEGERP-2A))
-     (84 84 (:TYPE-PRESCRIPTION NOT-INTEGERP-1A))
-     (80 20 (:REWRITE <-OF-0-AND-FLOOR))
-     (76 76 (:REWRITE FOLD-CONSTS-IN-+))
-     (76 76 (:REWRITE +-COMBINE-CONSTANTS))
-     (60 60 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-4))
-     (60 60 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-3))
-     (60 60 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-1))
-     (40 40 (:REWRITE EQUAL-OF-*-AND-CONSTANT))
-     (40 40 (:REWRITE |(equal (+ c x) d)|))
-     (33 33 (:REWRITE |(< (+ c x) d)|))
-     (24 4 (:DEFINITION FIX))
+     (340 36 (:REWRITE |(+ y (+ x z))|))
+     (327 327
+          (:REWRITE SIMPLIFY-TERMS-SUCH-AS-A+AB-<-0))
+     (327 327 (:REWRITE |(< (- x) 0)|))
+     (320 28 (:LINEAR FLOOR-BOUND-ARG1-LINEAR))
+     (290 290 (:REWRITE MOD-COMPLETION))
+     (282 16
+          (:LINEAR FLOOR-UPPER-BOUND-ALT-LINEAR))
+     (280 152
+          (:REWRITE MOD-WHEN-RATIONALP-ARG1-AND-NOT-RATIONALP-ARG2))
+     (280 152
+          (:REWRITE MOD-WHEN-NOT-RATIONALP-ARG1-AND-RATIONALP-ARG2))
+     (280 152
+          (:REWRITE MOD-WHEN-NOT-ACL2-NUMBERP-ARG1))
+     (275 275
+          (:REWRITE SIMPLIFY-TERMS-SUCH-AS-0-<-A+AB))
+     (275 275 (:REWRITE |(< 0 (- x))|))
+     (250 16 (:DEFINITION NATP))
+     (248 248
+          (:REWRITE NORMALIZE-TERMS-SUCH-AS-A/A+B-+-B/A+B))
+     (194 194 (:REWRITE |(equal (- x) (- y))|))
+     (183 183 (:REWRITE FLOOR-ZERO . 2))
+     (183 183
+          (:REWRITE FLOOR-WHEN-NOT-RATIONALP-ARG1))
+     (183 183
+          (:REWRITE FLOOR-WHEN-NEGATIVE-AND-SMALL-CHEAP))
+     (183 183
+          (:REWRITE FLOOR-WHEN-I-IS-NOT-AN-ACL2-NUMBERP))
+     (183 183 (:REWRITE FLOOR-MINUS-WEAK))
+     (183 183
+          (:REWRITE FLOOR-MINUS-NEGATIVE-CONSTANT))
+     (183 183 (:REWRITE FLOOR-MINUS-ERIC-BETTER))
+     (183 183 (:REWRITE FLOOR-MINUS-2))
+     (183 183 (:REWRITE FLOOR-COMPLETION))
+     (183 183 (:REWRITE FLOOR-CANCEL-*-WEAK))
+     (169 169 (:REWRITE |(equal (- x) 0)|))
+     (152 152
+          (:REWRITE MOD-WHEN-NOT-ACL2-NUMBERP-ARG2))
+     (145 145 (:REWRITE MOD-X-Y-=-X . 2))
+     (144 144
+          (:REWRITE SIMPLIFY-TERMS-SUCH-AS-A+AB-=-0))
+     (136 136 (:REWRITE |(< (+ c x) d)|))
+     (135 135
+          (:REWRITE <-OF-+-COMBINE-CONSTANTS-2))
+     (135 135
+          (:REWRITE <-OF-+-ARG1-WHEN-NEGATIVE-CONSTANT))
+     (132 14 (:REWRITE FLOOR-POSITIVE . 2))
+     (122 46 (:LINEAR MOD-BOUNDS-2))
+     (86 86
+         (:REWRITE INTEGERP-+-REDUCE-LEADING-RATIONAL-CONSTANT))
+     (84 84 (:LINEAR <=-OF-*-AND-*-SAME-LINEAR))
+     (84 84
+         (:LINEAR <=-OF-*-AND-*-SAME-ALT-LINEAR))
+     (84 84 (:LINEAR <-OF-*-AND-*))
+     (76 14 (:REWRITE <-OF-0-AND-FLOOR))
+     (74 74 (:REWRITE SIMPLIFY-MOD-+-MINUS-MOD))
+     (68 68 (:REWRITE |(- (* c x))|))
+     (67 67 (:REWRITE MOD-NEG))
+     (67 67 (:REWRITE MOD-MINUS-2))
+     (67 67 (:REWRITE MOD-CANCEL-*))
+     (63 63 (:REWRITE |(+ c (+ d x))|))
+     (58 58 (:REWRITE |(equal (+ c x) d)|))
+     (57 57
+         (:REWRITE <-OF-+-COMBINE-CONSTANTS-1))
+     (57 57
+         (:REWRITE <-OF-+-ARG2-WHEN-NEGATIVE-CONSTANT))
+     (57 57 (:REWRITE |(< d (+ c x))|))
+     (48 48 (:TYPE-PRESCRIPTION NOT-INTEGERP-3A))
+     (48 48 (:TYPE-PRESCRIPTION NOT-INTEGERP-2A))
+     (48 48 (:TYPE-PRESCRIPTION NOT-INTEGERP-1A))
+     (42 42 (:REWRITE MOD-ZERO . 1))
+     (42 42 (:REWRITE MOD-+-CANCEL-0-WEAK))
+     (42 42 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-4))
+     (42 42 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-3))
+     (42 42 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-1))
+     (33 33
+         (:REWRITE EQUAL-OF-+-WHEN-NEGATIVE-CONSTANT))
+     (33 33
+         (:REWRITE EQUAL-OF-+-COMBINE-CONSTANTS))
+     (31 31 (:REWRITE FLOOR-PEEL-OFF-CONSTANT))
+     (31 31
+         (:REWRITE FLOOR-OF-PLUS-NORMALIZE-NEGATIVE-CONSTANT))
+     (25 25 (:REWRITE EQUAL-OF-*-AND-CONSTANT))
      (22 22
          (:TYPE-PRESCRIPTION NONNEG-OF-MOD-TYPE-2))
      (22 22
          (:TYPE-PRESCRIPTION NONNEG-OF-MOD-TYPE))
-     (20 20 (:TYPE-PRESCRIPTION NATP))
-     (20 20 (:REWRITE FLOOR-POSITIVE . 3))
-     (20 20 (:REWRITE FLOOR-POSITIVE . 1))
-     (19 19 (:REWRITE |(< d (+ c x))|))
-     (18 18
-         (:REWRITE INTEGERP-+-REDUCE-LEADING-RATIONAL-CONSTANT))
-     (16 16 (:REWRITE |(< (+ d x) (+ c y))|))
-     (16 16 (:REWRITE |(< (+ c x) (+ d y))|))
-     (16 16 (:REWRITE |(< (+ c x y) d)|))
-     (14 14
-         (:REWRITE <-OF-+-COMBINE-CONSTANTS-2))
-     (14 14
-         (:REWRITE <-OF-+-ARG1-WHEN-NEGATIVE-CONSTANT))
-     (11 11
-         (:REWRITE <-OF-+-COMBINE-CONSTANTS-1))
-     (11 11
-         (:REWRITE <-OF-+-ARG2-WHEN-NEGATIVE-CONSTANT))
+     (21 21 (:REWRITE FOLD-CONSTS-IN-+))
+     (21 21 (:REWRITE +-COMBINE-CONSTANTS))
+     (16 16 (:TYPE-PRESCRIPTION NATP))
+     (14 14 (:REWRITE FLOOR-POSITIVE . 3))
+     (14 14 (:REWRITE FLOOR-POSITIVE . 1))
      (10 10
          (:TYPE-PRESCRIPTION RATIONALP-OF-MOD))
-     (10 10 (:REWRITE |(* c (* d x))|))
-     (5 5 (:REWRITE |(< d (+ c x y))|)))
+     (9 1 (:DEFINITION FIX))
+     (4 4 (:REWRITE |(equal (+ c x y) d)|))
+     (3 3 (:REWRITE |(* c (* d x))|))
+     (1 1 (:REWRITE |(< (+ d x) (+ c y))|))
+     (1 1 (:REWRITE |(< (+ c x) (+ d y))|))
+     (1 1 (:REWRITE |(< (+ c x y) d)|)))
 (EQUAL-OF-MOD-OF-+-AND-MOD-OF-+-CANCEL
      (2713 565 (:TYPE-PRESCRIPTION MOD-ZERO . 1))
      (2713 565
@@ -3776,81 +3796,86 @@
      (16 16 (:REWRITE |(< 0 (* x y))|))
      (12 12 (:LINEAR MOD-BOUNDS-2)))
 (MOD-OF-+-OF---SAME
-     (462 21 (:REWRITE CANCEL-MOD-+))
-     (367 83 (:TYPE-PRESCRIPTION MOD-ZERO . 1))
-     (367 83
+     (655 21 (:REWRITE MOD-WHEN-MULTIPLE))
+     (300 14 (:REWRITE MOD-ZERO . 2))
+     (297 69 (:TYPE-PRESCRIPTION MOD-ZERO . 1))
+     (297 69
           (:TYPE-PRESCRIPTION MOD-POSITIVE . 2))
-     (348 348
+     (294 294
           (:TYPE-PRESCRIPTION NOT-INTEGERP-3B))
-     (348 348
+     (294 294
           (:TYPE-PRESCRIPTION NOT-INTEGERP-2B))
-     (348 348
+     (294 294
           (:TYPE-PRESCRIPTION NOT-INTEGERP-1B))
-     (307 21 (:REWRITE MOD-ZERO . 2))
+     (289 21 (:REWRITE MOD-WHEN-<))
+     (227 60 (:REWRITE PREFER-POSITIVE-ADDENDS-<))
      (198 9
           (:REWRITE INTEGERP-+-REDUCE-LEADING-RATIONAL-CONSTANT))
-     (172 58 (:REWRITE INTEGERP-OF-*))
-     (151 21 (:REWRITE MOD-X-Y-=-X . 4))
-     (151 21 (:REWRITE MOD-X-Y-=-X . 3))
+     (148 52 (:REWRITE INTEGERP-OF-*))
      (148 4 (:LINEAR MOD-BOUNDS-3))
+     (144 14 (:REWRITE MOD-X-Y-=-X . 4))
+     (144 14 (:REWRITE MOD-X-Y-=-X . 3))
      (127 9 (:REWRITE |(* (+ x y) z)|))
-     (112 21 (:REWRITE MOD-WHEN-<))
-     (105 105 (:META META-INTEGERP-CORRECT))
-     (99 21 (:REWRITE MOD-ZERO . 3))
-     (96 96 (:REWRITE REDUCE-INTEGERP-+))
-     (96 96 (:REWRITE INTEGERP-MINUS-X))
-     (85 53 (:REWRITE PREFER-POSITIVE-ADDENDS-<))
-     (83 83
-         (:TYPE-PRESCRIPTION MOD-POSITIVE . 1))
-     (83 83 (:TYPE-PRESCRIPTION MOD-NONPOSITIVE))
-     (83 83
-         (:TYPE-PRESCRIPTION MOD-NEGATIVE . 2))
-     (83 83
-         (:TYPE-PRESCRIPTION MOD-NEGATIVE . 1))
-     (83 83
-         (:TYPE-PRESCRIPTION INTEGERP-OF-MOD-TYPE))
-     (83 83 (:TYPE-PRESCRIPTION INTEGERP-MOD))
-     (72 72
-         (:REWRITE NORMALIZE-TERMS-SUCH-AS-1/AX+BX))
-     (72 72 (:REWRITE DEFAULT-UNARY-/))
+     (93 93 (:META META-INTEGERP-CORRECT))
+     (92 14 (:REWRITE MOD-ZERO . 3))
+     (84 84 (:REWRITE REDUCE-INTEGERP-+))
+     (84 84 (:REWRITE INTEGERP-MINUS-X))
      (72 4 (:LINEAR MOD-BOUND-LINEAR-ARG1))
-     (58 58
-         (:REWRITE NORMALIZE-FACTORS-GATHER-EXPONENTS))
-     (58 58 (:REWRITE DEFAULT-*-2))
-     (58 58 (:REWRITE DEFAULT-*-1))
-     (58 58 (:REWRITE |(integerp (* c x))|))
-     (53 53
+     (69 69
+         (:TYPE-PRESCRIPTION MOD-POSITIVE . 1))
+     (69 69 (:TYPE-PRESCRIPTION MOD-NONPOSITIVE))
+     (69 69
+         (:TYPE-PRESCRIPTION MOD-NEGATIVE . 2))
+     (69 69
+         (:TYPE-PRESCRIPTION MOD-NEGATIVE . 1))
+     (69 69
+         (:TYPE-PRESCRIPTION INTEGERP-OF-MOD-TYPE))
+     (69 69 (:TYPE-PRESCRIPTION INTEGERP-MOD))
+     (66 66
+         (:REWRITE NORMALIZE-TERMS-SUCH-AS-1/AX+BX))
+     (66 66 (:REWRITE DEFAULT-UNARY-/))
+     (60 60
          (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<))
-     (53 53
+     (60 60
          (:REWRITE REMOVE-WEAK-INEQUALITIES-TWO))
-     (53 53 (:REWRITE |(< (- x) (- y))|))
+     (60 60 (:REWRITE |(< (- x) (- y))|))
+     (59 59
+         (:REWRITE NORMALIZE-FACTORS-GATHER-EXPONENTS))
+     (59 59 (:REWRITE DEFAULT-*-2))
+     (59 59 (:REWRITE DEFAULT-*-1))
+     (52 52 (:REWRITE |(integerp (* c x))|))
+     (52 16 (:REWRITE DEFAULT-+-2))
      (51 51 (:REWRITE SIMPLIFY-SUMS-<))
      (51 51 (:REWRITE DEFAULT-<-2))
      (51 51 (:REWRITE DEFAULT-<-1))
-     (46 10 (:REWRITE DEFAULT-+-2))
-     (42 42 (:REWRITE MOD-COMPLETION))
-     (40 40
+     (33 33
          (:REWRITE REMOVE-WEAK-INEQUALITIES-ONE))
-     (28 28
-         (:REWRITE MOD-WHEN-RATIONALP-ARG1-AND-NOT-RATIONALP-ARG2))
-     (28 28
-         (:REWRITE MOD-WHEN-NOT-RATIONALP-ARG1-AND-RATIONALP-ARG2))
-     (28 28
-         (:REWRITE MOD-WHEN-NOT-ACL2-NUMBERP-ARG2))
-     (28 28
-         (:REWRITE MOD-WHEN-NOT-ACL2-NUMBERP-ARG1))
-     (24 24 (:REWRITE |(< (- x) 0)|))
-     (22 22
-         (:REWRITE SIMPLIFY-TERMS-SUCH-AS-A+AB-<-0))
+     (28 28 (:REWRITE MOD-COMPLETION))
+     (28 7 (:REWRITE |(+ x x)|))
+     (24 8 (:REWRITE BUBBLE-DOWN-+-MATCH-3))
      (21 21 (:REWRITE SIMPLIFY-MOD-+-MOD-WEAK))
      (21 21 (:REWRITE SIMPLIFY-MOD-+-MINUS-MOD))
-     (21 21 (:REWRITE MOD-X-Y-=-X . 2))
-     (21 21 (:REWRITE MOD-NEG))
-     (21 21 (:REWRITE MOD-MINUS-2))
-     (21 21 (:REWRITE MOD-CANCEL-*))
-     (18 12 (:REWRITE NORMALIZE-ADDENDS))
+     (21 21
+         (:REWRITE MOD-WHEN-RATIONALP-ARG1-AND-NOT-RATIONALP-ARG2))
+     (21 21
+         (:REWRITE MOD-WHEN-NOT-RATIONALP-ARG1-AND-RATIONALP-ARG2))
+     (21 21
+         (:REWRITE MOD-WHEN-NOT-ACL2-NUMBERP-ARG2))
+     (21 21
+         (:REWRITE MOD-WHEN-NOT-ACL2-NUMBERP-ARG1))
+     (17 17 (:REWRITE |(< (- x) 0)|))
+     (16 16
+         (:REWRITE NORMALIZE-TERMS-SUCH-AS-A/A+B-+-B/A+B))
+     (16 16 (:REWRITE DEFAULT-+-1))
+     (15 15
+         (:REWRITE SIMPLIFY-TERMS-SUCH-AS-A+AB-<-0))
+     (15 15 (:REWRITE |(+ c (+ d x))|))
      (14 14
          (:REWRITE SIMPLIFY-TERMS-SUCH-AS-0-<-A+AB))
+     (14 14 (:REWRITE MOD-X-Y-=-X . 2))
+     (14 14 (:REWRITE MOD-NEG))
+     (14 14 (:REWRITE MOD-MINUS-2))
+     (14 14 (:REWRITE MOD-CANCEL-*))
      (14 14 (:REWRITE |(< 0 (- x))|))
      (13 13
          (:REWRITE SIMPLIFY-TERMS-SUCH-AS-A+AB-=-0))
@@ -3865,257 +3890,256 @@
          (:TYPE-PRESCRIPTION NONNEG-OF-MOD-TYPE-2))
      (12 12
          (:TYPE-PRESCRIPTION NONNEG-OF-MOD-TYPE))
-     (10 10
-         (:REWRITE NORMALIZE-TERMS-SUCH-AS-A/A+B-+-B/A+B))
-     (10 10 (:REWRITE DEFAULT-+-1))
+     (9 9 (:REWRITE |(< (+ c x) d)|))
+     (8 8 (:REWRITE DEFAULT-UNARY-MINUS))
      (8 8 (:LINEAR MOD-BOUNDS-2))
-     (6 6 (:TYPE-PRESCRIPTION RATIONALP-OF-MOD))
-     (6 2 (:REWRITE BUBBLE-DOWN-+-MATCH-3))
-     (4 4 (:REWRITE |(- (- x))|))
-     (2 2 (:REWRITE |(< (+ c x) d)|))
-     (2 2 (:REWRITE |(+ x (- x))|))
-     (2 2 (:REWRITE |(+ c (+ d x))|))
-     (1 1 (:REWRITE DEFAULT-UNARY-MINUS)))
+     (6 6
+        (:TYPE-PRESCRIPTION RATIONALP-OF-MOD)))
 (MOD-OF-+-OF---OF-MOD-SAME-ARG1
-     (13452 198 (:REWRITE MOD-WHEN-MULTIPLE))
-     (6024 1900 (:TYPE-PRESCRIPTION MOD-ZERO . 1))
-     (4880 286
-           (:TYPE-PRESCRIPTION NOT-INTEGERP-4A))
-     (4041 576 (:REWRITE INTEGERP-MINUS-X))
-     (2988 2988
+     (9390 83 (:REWRITE MOD-WHEN-<))
+     (7284 302
+           (:REWRITE PREFER-POSITIVE-ADDENDS-<))
+     (5987 83 (:REWRITE MOD-WHEN-MULTIPLE))
+     (2774 22 (:LINEAR MOD-BOUND-LINEAR-ARG1))
+     (2668 540 (:TYPE-PRESCRIPTION MOD-ZERO . 1))
+     (2668 540
+           (:TYPE-PRESCRIPTION MOD-POSITIVE . 2))
+     (2288 76 (:REWRITE CANCEL-MOD-+))
+     (2271 556 (:REWRITE INTEGERP-MINUS-X))
+     (2185 76 (:REWRITE MOD-ZERO . 2))
+     (2176 2176
            (:TYPE-PRESCRIPTION NOT-INTEGERP-3B))
-     (2988 2988
+     (2176 2176
            (:TYPE-PRESCRIPTION NOT-INTEGERP-2B))
-     (2988 2988
+     (2176 2176
            (:TYPE-PRESCRIPTION NOT-INTEGERP-1B))
-     (2595 7 (:LINEAR MOD-BOUND-LINEAR-ARG1))
-     (2461 169 (:REWRITE DEFAULT-+-2))
-     (1972 1900
-           (:TYPE-PRESCRIPTION INTEGERP-OF-MOD-TYPE))
-     (1972 1900 (:TYPE-PRESCRIPTION INTEGERP-MOD))
-     (1900 1900
-           (:TYPE-PRESCRIPTION MOD-NONPOSITIVE))
-     (1900 1900
-           (:TYPE-PRESCRIPTION MOD-NEGATIVE . 2))
-     (1900 1900
-           (:TYPE-PRESCRIPTION MOD-NEGATIVE . 1))
-     (1794 14
+     (1999 37
            (:REWRITE INTEGERP-OF-+-WHEN-INTEGERP-2))
-     (1760 112 (:REWRITE CANCEL-MOD-+))
-     (1564 112 (:REWRITE MOD-ZERO . 2))
-     (1495 58 (:REWRITE |(* (- x) y)|))
-     (1373 373
-           (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<))
-     (1321 366 (:REWRITE DEFAULT-*-2))
-     (1215 65 (:REWRITE |(* y x)|))
-     (1172 112 (:REWRITE MOD-X-Y-=-X . 4))
-     (1172 112 (:REWRITE MOD-X-Y-=-X . 3))
-     (1103 115 (:REWRITE DEFAULT-UNARY-MINUS))
-     (1099 7 (:LINEAR MOD-BOUNDS-3))
-     (1039 1039
-           (:TYPE-PRESCRIPTION MOD-POSITIVE . 1))
-     (921 318 (:REWRITE INTEGERP-OF-*))
-     (894 14 (:REWRITE |(* (+ x y) z)|))
-     (816 165
-          (:REWRITE MOD-WHEN-RATIONALP-ARG1-AND-NOT-RATIONALP-ARG2))
-     (816 165
-          (:REWRITE MOD-WHEN-NOT-RATIONALP-ARG1-AND-RATIONALP-ARG2))
-     (816 165
-          (:REWRITE MOD-WHEN-NOT-ACL2-NUMBERP-ARG1))
-     (576 576 (:META META-INTEGERP-CORRECT))
-     (557 348 (:REWRITE DEFAULT-<-1))
-     (533 533 (:REWRITE REDUCE-INTEGERP-+))
-     (522 169 (:REWRITE DEFAULT-+-1))
-     (508 112 (:REWRITE MOD-ZERO . 3))
-     (485 348 (:REWRITE DEFAULT-<-2))
-     (384 384
-          (:REWRITE REMOVE-WEAK-INEQUALITIES-TWO))
-     (373 373 (:REWRITE |(< (- x) (- y))|))
-     (366 366
-          (:REWRITE NORMALIZE-FACTORS-GATHER-EXPONENTS))
-     (366 366 (:REWRITE DEFAULT-*-1))
-     (366 14
+     (1800 90 (:TYPE-PRESCRIPTION NOT-INTEGERP-4A))
+     (1578 22 (:LINEAR MOD-BOUNDS-3))
+     (1492 37 (:REWRITE |(* (+ x y) z)|))
+     (998 76 (:REWRITE MOD-X-Y-=-X . 4))
+     (998 76 (:REWRITE MOD-X-Y-=-X . 3))
+     (917 85 (:REWRITE DEFAULT-+-2))
+     (887 278 (:REWRITE INTEGERP-OF-*))
+     (861 51 (:REWRITE |(* (- x) y)|))
+     (829 164 (:REWRITE |(- (- x))|))
+     (721 37
           (:REWRITE INTEGERP-OF-+-WHEN-INTEGERP-1))
-     (352 352
+     (676 76 (:REWRITE MOD-ZERO . 3))
+     (644 302
+          (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<))
+     (612 540
+          (:TYPE-PRESCRIPTION INTEGERP-OF-MOD-TYPE))
+     (612 540 (:TYPE-PRESCRIPTION INTEGERP-MOD))
+     (556 556 (:META META-INTEGERP-CORRECT))
+     (540 540
+          (:TYPE-PRESCRIPTION MOD-POSITIVE . 1))
+     (540 540
+          (:TYPE-PRESCRIPTION MOD-NONPOSITIVE))
+     (540 540
+          (:TYPE-PRESCRIPTION MOD-NEGATIVE . 2))
+     (540 540
+          (:TYPE-PRESCRIPTION MOD-NEGATIVE . 1))
+     (518 518 (:REWRITE REDUCE-INTEGERP-+))
+     (475 304 (:REWRITE DEFAULT-*-2))
+     (468 74 (:REWRITE DEFAULT-UNARY-MINUS))
+     (423 252 (:REWRITE SIMPLIFY-SUMS-<))
+     (423 252 (:REWRITE DEFAULT-<-2))
+     (304 304
+          (:REWRITE NORMALIZE-FACTORS-GATHER-EXPONENTS))
+     (304 304 (:REWRITE DEFAULT-*-1))
+     (302 302
+          (:REWRITE REMOVE-WEAK-INEQUALITIES-TWO))
+     (302 302 (:REWRITE |(< (- x) (- y))|))
+     (281 281
           (:REWRITE NORMALIZE-TERMS-SUCH-AS-1/AX+BX))
-     (352 352 (:REWRITE DEFAULT-UNARY-/))
-     (318 318 (:REWRITE |(integerp (* c x))|))
-     (286 286
-          (:TYPE-PRESCRIPTION NOT-INTEGERP-3A))
-     (286 286
-          (:TYPE-PRESCRIPTION NOT-INTEGERP-2A))
-     (286 286
-          (:TYPE-PRESCRIPTION NOT-INTEGERP-1A))
-     (278 278
+     (281 281 (:REWRITE DEFAULT-UNARY-/))
+     (278 278 (:REWRITE |(integerp (* c x))|))
+     (252 252 (:REWRITE DEFAULT-<-1))
+     (243 87
+          (:REWRITE PREFER-POSITIVE-ADDENDS-EQUAL))
+     (233 85 (:REWRITE DEFAULT-+-1))
+     (216 83
+          (:REWRITE MOD-WHEN-RATIONALP-ARG1-AND-NOT-RATIONALP-ARG2))
+     (216 83
+          (:REWRITE MOD-WHEN-NOT-RATIONALP-ARG1-AND-RATIONALP-ARG2))
+     (216 83
+          (:REWRITE MOD-WHEN-NOT-ACL2-NUMBERP-ARG1))
+     (207 9 (:REWRITE |(* y x)|))
+     (201 201
           (:REWRITE REMOVE-WEAK-INEQUALITIES-ONE))
-     (224 224 (:REWRITE MOD-COMPLETION))
-     (169 169
-          (:REWRITE NORMALIZE-TERMS-SUCH-AS-A/A+B-+-B/A+B))
-     (165 165
-          (:REWRITE MOD-WHEN-NOT-ACL2-NUMBERP-ARG2))
-     (144 144 (:REWRITE |(+ c (+ d x))|))
-     (124 124 (:REWRITE |(< (- x) 0)|))
-     (121 121
-          (:REWRITE SIMPLIFY-TERMS-SUCH-AS-A+AB-<-0))
-     (112 112 (:REWRITE SIMPLIFY-MOD-+-MOD-WEAK))
-     (112 112 (:REWRITE SIMPLIFY-MOD-+-MINUS-MOD))
-     (112 112 (:REWRITE MOD-X-Y-=-X . 2))
-     (112 112 (:REWRITE MOD-NEG))
-     (112 112 (:REWRITE MOD-MINUS-2))
-     (112 112 (:REWRITE MOD-CANCEL-*))
-     (107 107
-          (:REWRITE SIMPLIFY-TERMS-SUCH-AS-0-<-A+AB))
-     (107 107 (:REWRITE |(< 0 (- x))|))
-     (90 14 (:LINEAR MOD-BOUNDS-2))
-     (88 88
-         (:REWRITE SIMPLIFY-TERMS-SUCH-AS-A+AB-=-0))
-     (88 88 (:REWRITE SIMPLIFY-SUMS-EQUAL))
-     (88 88
+     (186 62 (:REWRITE BUBBLE-DOWN-+-MATCH-3))
+     (185 37
+          (:REWRITE INTEGERP-OF-+-WHEN-INTEGERP-1-CHEAP))
+     (152 152 (:REWRITE MOD-COMPLETION))
+     (120 44 (:LINEAR MOD-BOUNDS-2))
+     (96 96 (:REWRITE |(< (- x) 0)|))
+     (95 95 (:REWRITE |(+ c (+ d x))|))
+     (90 90 (:TYPE-PRESCRIPTION NOT-INTEGERP-3A))
+     (90 90 (:TYPE-PRESCRIPTION NOT-INTEGERP-2A))
+     (90 90 (:TYPE-PRESCRIPTION NOT-INTEGERP-1A))
+     (87 87
          (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-EQUAL))
-     (88 88
-         (:REWRITE PREFER-POSITIVE-ADDENDS-EQUAL))
-     (88 88 (:REWRITE |(equal (- x) 0)|))
-     (88 88 (:REWRITE |(equal (- x) (- y))|))
-     (70 14
-         (:REWRITE INTEGERP-OF-+-WHEN-INTEGERP-1-CHEAP))
-     (47 47 (:REWRITE |(- (* c x))|))
-     (32 32 (:REWRITE FOLD-CONSTS-IN-+))
-     (32 32 (:REWRITE +-COMBINE-CONSTANTS))
-     (25 25 (:REWRITE |(< (+ c x) d)|))
+     (87 87 (:REWRITE |(equal (- x) (- y))|))
+     (85 85
+         (:REWRITE NORMALIZE-TERMS-SUCH-AS-A/A+B-+-B/A+B))
+     (83 83
+         (:REWRITE MOD-WHEN-NOT-ACL2-NUMBERP-ARG2))
+     (79 79
+         (:REWRITE SIMPLIFY-TERMS-SUCH-AS-A+AB-<-0))
+     (76 76 (:REWRITE SIMPLIFY-MOD-+-MOD-WEAK))
+     (76 76 (:REWRITE MOD-X-Y-=-X . 2))
+     (76 76 (:REWRITE MOD-NEG))
+     (76 76 (:REWRITE MOD-MINUS-2))
+     (76 76 (:REWRITE MOD-CANCEL-*))
+     (75 75 (:REWRITE |(< 0 (- x))|))
+     (74 74 (:REWRITE SIMPLIFY-SUMS-EQUAL))
+     (74 74 (:REWRITE |(equal (- x) 0)|))
+     (62 62
+         (:REWRITE SIMPLIFY-TERMS-SUCH-AS-0-<-A+AB))
+     (61 61
+         (:REWRITE SIMPLIFY-TERMS-SUCH-AS-A+AB-=-0))
+     (51 51 (:REWRITE |(- (* c x))|))
+     (37 37
+         (:REWRITE INTEGERP-+-REDUCE-LEADING-RATIONAL-CONSTANT))
+     (37 37 (:REWRITE |(< (+ c x) d)|))
+     (33 33 (:REWRITE |(< d (+ c x))|))
      (22 22
          (:TYPE-PRESCRIPTION NONNEG-OF-MOD-TYPE-2))
      (22 22
          (:TYPE-PRESCRIPTION NONNEG-OF-MOD-TYPE))
-     (22 22 (:REWRITE MOD-+-CANCEL-0-WEAK))
-     (14 14
-         (:REWRITE INTEGERP-+-REDUCE-LEADING-RATIONAL-CONSTANT))
-     (11 11 (:REWRITE |(< d (+ c x))|))
-     (11 11 (:REWRITE |(< (+ d x) (+ c y))|))
-     (11 11 (:REWRITE |(< (+ c x) (+ d y))|))
-     (11 11 (:REWRITE |(< (+ c x y) d)|))
-     (10 10
-         (:TYPE-PRESCRIPTION RATIONALP-OF-MOD)))
-(MOD-OF-+-OF---OF-MOD-SAME-ARG2
-     (13449 198 (:REWRITE MOD-WHEN-MULTIPLE))
-     (6024 1900 (:TYPE-PRESCRIPTION MOD-ZERO . 1))
-     (4880 286
-           (:TYPE-PRESCRIPTION NOT-INTEGERP-4A))
-     (4041 576 (:REWRITE INTEGERP-MINUS-X))
-     (2988 2988
-           (:TYPE-PRESCRIPTION NOT-INTEGERP-3B))
-     (2988 2988
-           (:TYPE-PRESCRIPTION NOT-INTEGERP-2B))
-     (2988 2988
-           (:TYPE-PRESCRIPTION NOT-INTEGERP-1B))
-     (2603 7 (:LINEAR MOD-BOUND-LINEAR-ARG1))
-     (2452 160 (:REWRITE DEFAULT-+-2))
-     (1972 1900
-           (:TYPE-PRESCRIPTION INTEGERP-OF-MOD-TYPE))
-     (1972 1900 (:TYPE-PRESCRIPTION INTEGERP-MOD))
-     (1900 1900
-           (:TYPE-PRESCRIPTION MOD-NONPOSITIVE))
-     (1900 1900
-           (:TYPE-PRESCRIPTION MOD-NEGATIVE . 2))
-     (1900 1900
-           (:TYPE-PRESCRIPTION MOD-NEGATIVE . 1))
-     (1794 14
-           (:REWRITE INTEGERP-OF-+-WHEN-INTEGERP-2))
-     (1760 112 (:REWRITE CANCEL-MOD-+))
-     (1564 112 (:REWRITE MOD-ZERO . 2))
-     (1495 58 (:REWRITE |(* (- x) y)|))
-     (1373 373
-           (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<))
-     (1321 366 (:REWRITE DEFAULT-*-2))
-     (1215 65 (:REWRITE |(* y x)|))
-     (1172 112 (:REWRITE MOD-X-Y-=-X . 4))
-     (1172 112 (:REWRITE MOD-X-Y-=-X . 3))
-     (1103 115 (:REWRITE DEFAULT-UNARY-MINUS))
-     (1098 7 (:LINEAR MOD-BOUNDS-3))
-     (1039 1039
-           (:TYPE-PRESCRIPTION MOD-POSITIVE . 1))
-     (921 318 (:REWRITE INTEGERP-OF-*))
-     (890 14 (:REWRITE |(* (+ x y) z)|))
-     (816 165
-          (:REWRITE MOD-WHEN-RATIONALP-ARG1-AND-NOT-RATIONALP-ARG2))
-     (816 165
-          (:REWRITE MOD-WHEN-NOT-RATIONALP-ARG1-AND-RATIONALP-ARG2))
-     (816 165
-          (:REWRITE MOD-WHEN-NOT-ACL2-NUMBERP-ARG1))
-     (576 576 (:META META-INTEGERP-CORRECT))
-     (557 348 (:REWRITE DEFAULT-<-1))
-     (533 533 (:REWRITE REDUCE-INTEGERP-+))
-     (513 160 (:REWRITE DEFAULT-+-1))
-     (508 112 (:REWRITE MOD-ZERO . 3))
-     (485 348 (:REWRITE DEFAULT-<-2))
-     (384 384
-          (:REWRITE REMOVE-WEAK-INEQUALITIES-TWO))
-     (373 373 (:REWRITE |(< (- x) (- y))|))
-     (366 366
-          (:REWRITE NORMALIZE-FACTORS-GATHER-EXPONENTS))
-     (366 366 (:REWRITE DEFAULT-*-1))
-     (366 14
-          (:REWRITE INTEGERP-OF-+-WHEN-INTEGERP-1))
-     (352 352
-          (:REWRITE NORMALIZE-TERMS-SUCH-AS-1/AX+BX))
-     (352 352 (:REWRITE DEFAULT-UNARY-/))
-     (318 318 (:REWRITE |(integerp (* c x))|))
-     (286 286
-          (:TYPE-PRESCRIPTION NOT-INTEGERP-3A))
-     (286 286
-          (:TYPE-PRESCRIPTION NOT-INTEGERP-2A))
-     (286 286
-          (:TYPE-PRESCRIPTION NOT-INTEGERP-1A))
-     (278 278
-          (:REWRITE REMOVE-WEAK-INEQUALITIES-ONE))
-     (224 224 (:REWRITE MOD-COMPLETION))
-     (165 165
-          (:REWRITE MOD-WHEN-NOT-ACL2-NUMBERP-ARG2))
-     (160 160
-          (:REWRITE NORMALIZE-TERMS-SUCH-AS-A/A+B-+-B/A+B))
-     (126 126 (:REWRITE |(+ c (+ d x))|))
-     (124 124 (:REWRITE |(< (- x) 0)|))
-     (121 121
-          (:REWRITE SIMPLIFY-TERMS-SUCH-AS-A+AB-<-0))
-     (112 112 (:REWRITE SIMPLIFY-MOD-+-MOD-WEAK))
-     (112 112 (:REWRITE SIMPLIFY-MOD-+-MINUS-MOD))
-     (112 112 (:REWRITE MOD-X-Y-=-X . 2))
-     (112 112 (:REWRITE MOD-NEG))
-     (112 112 (:REWRITE MOD-MINUS-2))
-     (112 112 (:REWRITE MOD-CANCEL-*))
-     (107 107
-          (:REWRITE SIMPLIFY-TERMS-SUCH-AS-0-<-A+AB))
-     (107 107 (:REWRITE |(< 0 (- x))|))
-     (90 14 (:LINEAR MOD-BOUNDS-2))
-     (88 88
-         (:REWRITE SIMPLIFY-TERMS-SUCH-AS-A+AB-=-0))
-     (88 88 (:REWRITE SIMPLIFY-SUMS-EQUAL))
-     (88 88
-         (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-EQUAL))
-     (88 88
-         (:REWRITE PREFER-POSITIVE-ADDENDS-EQUAL))
-     (88 88 (:REWRITE |(equal (- x) 0)|))
-     (88 88 (:REWRITE |(equal (- x) (- y))|))
-     (70 14
-         (:REWRITE INTEGERP-OF-+-WHEN-INTEGERP-1-CHEAP))
-     (47 47 (:REWRITE |(- (* c x))|))
-     (25 25 (:REWRITE |(< (+ c x) d)|))
-     (23 23 (:REWRITE FOLD-CONSTS-IN-+))
-     (23 23 (:REWRITE +-COMBINE-CONSTANTS))
-     (22 22
-         (:TYPE-PRESCRIPTION NONNEG-OF-MOD-TYPE-2))
-     (22 22
-         (:TYPE-PRESCRIPTION NONNEG-OF-MOD-TYPE))
-     (22 22 (:REWRITE MOD-+-CANCEL-0-WEAK))
-     (14 14
-         (:REWRITE INTEGERP-+-REDUCE-LEADING-RATIONAL-CONSTANT))
-     (11 11 (:REWRITE |(< d (+ c x))|))
-     (11 11 (:REWRITE |(< (+ d x) (+ c y))|))
-     (11 11 (:REWRITE |(< (+ c x) (+ d y))|))
-     (11 11 (:REWRITE |(< (+ c x y) d)|))
+     (20 20
+         (:REWRITE <-OF-+-COMBINE-CONSTANTS-1))
+     (20 20
+         (:REWRITE <-OF-+-ARG2-WHEN-NEGATIVE-CONSTANT))
+     (13 13 (:REWRITE |(equal (+ c x) d)|))
      (10 10
          (:TYPE-PRESCRIPTION RATIONALP-OF-MOD))
-     (7 4 (:REWRITE BUBBLE-DOWN-+-MATCH-1))
-     (5 1 (:REWRITE BUBBLE-DOWN-+-BUBBLE-DOWN)))
+     (6 6 (:REWRITE FOLD-CONSTS-IN-+))
+     (6 6 (:REWRITE +-COMBINE-CONSTANTS)))
+(MOD-OF-+-OF---OF-MOD-SAME-ARG2
+     (9495 86 (:REWRITE MOD-WHEN-<))
+     (7532 322
+           (:REWRITE PREFER-POSITIVE-ADDENDS-<))
+     (6329 86 (:REWRITE MOD-WHEN-MULTIPLE))
+     (2807 23 (:LINEAR MOD-BOUND-LINEAR-ARG1))
+     (2628 532 (:TYPE-PRESCRIPTION MOD-ZERO . 1))
+     (2628 532
+           (:TYPE-PRESCRIPTION MOD-POSITIVE . 2))
+     (2486 79 (:REWRITE CANCEL-MOD-+))
+     (2474 598 (:REWRITE INTEGERP-MINUS-X))
+     (2368 79 (:REWRITE MOD-ZERO . 2))
+     (2283 2283
+           (:TYPE-PRESCRIPTION NOT-INTEGERP-3B))
+     (2283 2283
+           (:TYPE-PRESCRIPTION NOT-INTEGERP-2B))
+     (2283 2283
+           (:TYPE-PRESCRIPTION NOT-INTEGERP-1B))
+     (2086 44
+           (:REWRITE INTEGERP-OF-+-WHEN-INTEGERP-2))
+     (1800 90 (:TYPE-PRESCRIPTION NOT-INTEGERP-4A))
+     (1692 23 (:LINEAR MOD-BOUNDS-3))
+     (1673 44 (:REWRITE |(* (+ x y) z)|))
+     (1085 79 (:REWRITE MOD-X-Y-=-X . 4))
+     (1085 79 (:REWRITE MOD-X-Y-=-X . 3))
+     (961 61 (:REWRITE |(* (- x) y)|))
+     (943 292 (:REWRITE INTEGERP-OF-*))
+     (890 197 (:REWRITE |(- (- x))|))
+     (868 44
+          (:REWRITE INTEGERP-OF-+-WHEN-INTEGERP-1))
+     (745 79 (:REWRITE MOD-ZERO . 3))
+     (715 83 (:REWRITE DEFAULT-+-2))
+     (664 322
+          (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<))
+     (604 532
+          (:TYPE-PRESCRIPTION INTEGERP-OF-MOD-TYPE))
+     (604 532 (:TYPE-PRESCRIPTION INTEGERP-MOD))
+     (598 598 (:META META-INTEGERP-CORRECT))
+     (553 553 (:REWRITE REDUCE-INTEGERP-+))
+     (532 532
+          (:TYPE-PRESCRIPTION MOD-POSITIVE . 1))
+     (532 532
+          (:TYPE-PRESCRIPTION MOD-NONPOSITIVE))
+     (532 532
+          (:TYPE-PRESCRIPTION MOD-NEGATIVE . 2))
+     (532 532
+          (:TYPE-PRESCRIPTION MOD-NEGATIVE . 1))
+     (521 87 (:REWRITE DEFAULT-UNARY-MINUS))
+     (495 324 (:REWRITE DEFAULT-*-2))
+     (433 262 (:REWRITE SIMPLIFY-SUMS-<))
+     (433 262 (:REWRITE DEFAULT-<-2))
+     (324 324
+          (:REWRITE NORMALIZE-FACTORS-GATHER-EXPONENTS))
+     (324 324 (:REWRITE DEFAULT-*-1))
+     (322 322
+          (:REWRITE REMOVE-WEAK-INEQUALITIES-TWO))
+     (322 322 (:REWRITE |(< (- x) (- y))|))
+     (297 93
+          (:REWRITE PREFER-POSITIVE-ADDENDS-EQUAL))
+     (294 294
+          (:REWRITE NORMALIZE-TERMS-SUCH-AS-1/AX+BX))
+     (294 294 (:REWRITE DEFAULT-UNARY-/))
+     (292 292 (:REWRITE |(integerp (* c x))|))
+     (262 262 (:REWRITE DEFAULT-<-1))
+     (259 83 (:REWRITE DEFAULT-+-1))
+     (220 44
+          (:REWRITE INTEGERP-OF-+-WHEN-INTEGERP-1-CHEAP))
+     (219 86
+          (:REWRITE MOD-WHEN-RATIONALP-ARG1-AND-NOT-RATIONALP-ARG2))
+     (219 86
+          (:REWRITE MOD-WHEN-NOT-RATIONALP-ARG1-AND-RATIONALP-ARG2))
+     (219 86
+          (:REWRITE MOD-WHEN-NOT-ACL2-NUMBERP-ARG1))
+     (215 215
+          (:REWRITE REMOVE-WEAK-INEQUALITIES-ONE))
+     (207 9 (:REWRITE |(* y x)|))
+     (175 67 (:REWRITE BUBBLE-DOWN-+-MATCH-3))
+     (158 158 (:REWRITE MOD-COMPLETION))
+     (122 46 (:LINEAR MOD-BOUNDS-2))
+     (100 100 (:REWRITE |(< (- x) 0)|))
+     (93 93
+         (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-EQUAL))
+     (93 93 (:REWRITE |(equal (- x) (- y))|))
+     (90 90 (:TYPE-PRESCRIPTION NOT-INTEGERP-3A))
+     (90 90 (:TYPE-PRESCRIPTION NOT-INTEGERP-2A))
+     (90 90 (:TYPE-PRESCRIPTION NOT-INTEGERP-1A))
+     (90 90 (:REWRITE |(+ c (+ d x))|))
+     (86 86
+         (:REWRITE MOD-WHEN-NOT-ACL2-NUMBERP-ARG2))
+     (83 83
+         (:REWRITE NORMALIZE-TERMS-SUCH-AS-A/A+B-+-B/A+B))
+     (79 79
+         (:REWRITE SIMPLIFY-TERMS-SUCH-AS-A+AB-<-0))
+     (79 79 (:REWRITE SIMPLIFY-MOD-+-MOD-WEAK))
+     (79 79 (:REWRITE MOD-X-Y-=-X . 2))
+     (79 79 (:REWRITE MOD-NEG))
+     (79 79 (:REWRITE MOD-MINUS-2))
+     (79 79 (:REWRITE MOD-CANCEL-*))
+     (78 78 (:REWRITE |(< 0 (- x))|))
+     (77 77 (:REWRITE SIMPLIFY-SUMS-EQUAL))
+     (77 77 (:REWRITE |(equal (- x) 0)|))
+     (65 13 (:REWRITE BUBBLE-DOWN-+-BUBBLE-DOWN))
+     (62 62
+         (:REWRITE SIMPLIFY-TERMS-SUCH-AS-0-<-A+AB))
+     (61 61
+         (:REWRITE SIMPLIFY-TERMS-SUCH-AS-A+AB-=-0))
+     (61 61 (:REWRITE |(- (* c x))|))
+     (44 44
+         (:REWRITE INTEGERP-+-REDUCE-LEADING-RATIONAL-CONSTANT))
+     (44 44 (:REWRITE |(< (+ c x) d)|))
+     (39 39 (:REWRITE |(< d (+ c x))|))
+     (23 23
+         (:REWRITE <-OF-+-COMBINE-CONSTANTS-1))
+     (23 23
+         (:REWRITE <-OF-+-ARG2-WHEN-NEGATIVE-CONSTANT))
+     (22 22
+         (:TYPE-PRESCRIPTION NONNEG-OF-MOD-TYPE-2))
+     (22 22
+         (:TYPE-PRESCRIPTION NONNEG-OF-MOD-TYPE))
+     (16 16 (:REWRITE |(equal (+ c x) d)|))
+     (10 10
+         (:TYPE-PRESCRIPTION RATIONALP-OF-MOD)))
 (MOD-OF-+-SAME-ARG1
      (462 21 (:REWRITE CANCEL-MOD-+))
      (367 83 (:TYPE-PRESCRIPTION MOD-ZERO . 1))
@@ -4216,80 +4240,82 @@
         (:REWRITE <-OF-+-ARG1-WHEN-NEGATIVE-CONSTANT))
      (2 2 (:REWRITE |(< (+ c x) d)|)))
 (MOD-OF-+-SAME-ARG2
-     (462 21 (:REWRITE CANCEL-MOD-+))
-     (367 83 (:TYPE-PRESCRIPTION MOD-ZERO . 1))
-     (367 83
-          (:TYPE-PRESCRIPTION MOD-POSITIVE . 2))
-     (348 348
+     (654 21 (:REWRITE MOD-WHEN-MULTIPLE))
+     (315 21 (:REWRITE MOD-WHEN-<))
+     (306 306
           (:TYPE-PRESCRIPTION NOT-INTEGERP-3B))
-     (348 348
+     (306 306
           (:TYPE-PRESCRIPTION NOT-INTEGERP-2B))
-     (348 348
+     (306 306
           (:TYPE-PRESCRIPTION NOT-INTEGERP-1B))
-     (307 21 (:REWRITE MOD-ZERO . 2))
+     (300 14 (:REWRITE MOD-ZERO . 2))
+     (297 69 (:TYPE-PRESCRIPTION MOD-ZERO . 1))
+     (297 69
+          (:TYPE-PRESCRIPTION MOD-POSITIVE . 2))
+     (212 58 (:REWRITE SIMPLIFY-SUMS-<))
      (198 9
           (:REWRITE INTEGERP-+-REDUCE-LEADING-RATIONAL-CONSTANT))
      (172 58 (:REWRITE INTEGERP-OF-*))
-     (151 21 (:REWRITE MOD-X-Y-=-X . 4))
-     (151 21 (:REWRITE MOD-X-Y-=-X . 3))
      (148 4 (:LINEAR MOD-BOUNDS-3))
+     (144 14 (:REWRITE MOD-X-Y-=-X . 4))
+     (144 14 (:REWRITE MOD-X-Y-=-X . 3))
      (126 9 (:REWRITE |(* (+ x y) z)|))
-     (112 21 (:REWRITE MOD-WHEN-<))
      (106 106 (:META META-INTEGERP-CORRECT))
-     (99 21 (:REWRITE MOD-ZERO . 3))
      (97 97 (:REWRITE REDUCE-INTEGERP-+))
      (97 97 (:REWRITE INTEGERP-MINUS-X))
-     (83 83
-         (:TYPE-PRESCRIPTION MOD-POSITIVE . 1))
-     (83 83 (:TYPE-PRESCRIPTION MOD-NONPOSITIVE))
-     (83 83
-         (:TYPE-PRESCRIPTION MOD-NEGATIVE . 2))
-     (83 83
-         (:TYPE-PRESCRIPTION MOD-NEGATIVE . 1))
-     (83 83
-         (:TYPE-PRESCRIPTION INTEGERP-OF-MOD-TYPE))
-     (83 83 (:TYPE-PRESCRIPTION INTEGERP-MOD))
+     (92 14 (:REWRITE MOD-ZERO . 3))
      (72 72
          (:REWRITE NORMALIZE-TERMS-SUCH-AS-1/AX+BX))
      (72 72 (:REWRITE DEFAULT-UNARY-/))
+     (69 69
+         (:TYPE-PRESCRIPTION MOD-POSITIVE . 1))
+     (69 69 (:TYPE-PRESCRIPTION MOD-NONPOSITIVE))
+     (69 69
+         (:TYPE-PRESCRIPTION MOD-NEGATIVE . 2))
+     (69 69
+         (:TYPE-PRESCRIPTION MOD-NEGATIVE . 1))
+     (69 69
+         (:TYPE-PRESCRIPTION INTEGERP-OF-MOD-TYPE))
+     (69 69 (:TYPE-PRESCRIPTION INTEGERP-MOD))
+     (58 58
+         (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<))
+     (58 58
+         (:REWRITE REMOVE-WEAK-INEQUALITIES-TWO))
+     (58 58 (:REWRITE PREFER-POSITIVE-ADDENDS-<))
      (58 58
          (:REWRITE NORMALIZE-FACTORS-GATHER-EXPONENTS))
      (58 58 (:REWRITE DEFAULT-*-2))
      (58 58 (:REWRITE DEFAULT-*-1))
      (58 58 (:REWRITE |(integerp (* c x))|))
-     (51 51 (:REWRITE SIMPLIFY-SUMS-<))
-     (51 51
-         (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<))
-     (51 51
-         (:REWRITE REMOVE-WEAK-INEQUALITIES-TWO))
-     (51 51 (:REWRITE PREFER-POSITIVE-ADDENDS-<))
+     (58 58 (:REWRITE |(< (- x) (- y))|))
      (51 51 (:REWRITE DEFAULT-<-2))
      (51 51 (:REWRITE DEFAULT-<-1))
-     (51 51 (:REWRITE |(< (- x) (- y))|))
      (50 4 (:LINEAR MOD-BOUND-LINEAR-ARG1))
+     (49 7 (:REWRITE |(+ y (+ x z))|))
      (46 10 (:REWRITE DEFAULT-+-2))
-     (42 42 (:REWRITE MOD-COMPLETION))
-     (38 38
+     (31 31
          (:REWRITE REMOVE-WEAK-INEQUALITIES-ONE))
-     (28 28
-         (:REWRITE MOD-WHEN-RATIONALP-ARG1-AND-NOT-RATIONALP-ARG2))
-     (28 28
-         (:REWRITE MOD-WHEN-NOT-RATIONALP-ARG1-AND-RATIONALP-ARG2))
-     (28 28
-         (:REWRITE MOD-WHEN-NOT-ACL2-NUMBERP-ARG2))
-     (28 28
-         (:REWRITE MOD-WHEN-NOT-ACL2-NUMBERP-ARG1))
+     (28 28 (:REWRITE MOD-COMPLETION))
      (24 24
          (:REWRITE SIMPLIFY-TERMS-SUCH-AS-A+AB-<-0))
      (24 24 (:REWRITE |(< (- x) 0)|))
      (21 21 (:REWRITE SIMPLIFY-MOD-+-MOD-WEAK))
      (21 21 (:REWRITE SIMPLIFY-MOD-+-MINUS-MOD))
-     (21 21 (:REWRITE MOD-X-Y-=-X . 2))
-     (21 21 (:REWRITE MOD-NEG))
-     (21 21 (:REWRITE MOD-MINUS-2))
-     (21 21 (:REWRITE MOD-CANCEL-*))
+     (21 21
+         (:REWRITE MOD-WHEN-RATIONALP-ARG1-AND-NOT-RATIONALP-ARG2))
+     (21 21
+         (:REWRITE MOD-WHEN-NOT-RATIONALP-ARG1-AND-RATIONALP-ARG2))
+     (21 21
+         (:REWRITE MOD-WHEN-NOT-ACL2-NUMBERP-ARG2))
+     (21 21
+         (:REWRITE MOD-WHEN-NOT-ACL2-NUMBERP-ARG1))
+     (21 21 (:REWRITE DEFAULT-UNARY-MINUS))
      (14 14
          (:REWRITE SIMPLIFY-TERMS-SUCH-AS-0-<-A+AB))
+     (14 14 (:REWRITE MOD-X-Y-=-X . 2))
+     (14 14 (:REWRITE MOD-NEG))
+     (14 14 (:REWRITE MOD-MINUS-2))
+     (14 14 (:REWRITE MOD-CANCEL-*))
      (14 14 (:REWRITE |(< 0 (- x))|))
      (13 13
          (:REWRITE SIMPLIFY-TERMS-SUCH-AS-A+AB-=-0))
@@ -4306,14 +4332,14 @@
          (:TYPE-PRESCRIPTION NONNEG-OF-MOD-TYPE))
      (10 10
          (:REWRITE NORMALIZE-TERMS-SUCH-AS-A/A+B-+-B/A+B))
-     (10 10 (:REWRITE NORMALIZE-ADDENDS))
      (10 10 (:REWRITE DEFAULT-+-1))
+     (9 9 (:REWRITE |(< (+ c x) d)|))
      (8 8 (:LINEAR MOD-BOUNDS-2))
+     (7 7 (:REWRITE |(+ c (+ d x))|))
      (6 6 (:TYPE-PRESCRIPTION RATIONALP-OF-MOD))
      (2 2 (:REWRITE <-OF-+-COMBINE-CONSTANTS-2))
      (2 2
-        (:REWRITE <-OF-+-ARG1-WHEN-NEGATIVE-CONSTANT))
-     (2 2 (:REWRITE |(< (+ c x) d)|)))
+        (:REWRITE <-OF-+-ARG1-WHEN-NEGATIVE-CONSTANT)))
 (MULTIPLE-WHEN-MOD-0-CHEAP
      (20 2 (:LINEAR MOD-BOUNDS-2))
      (20 2 (:LINEAR MOD-BOUNDS-1))
@@ -6400,20 +6426,20 @@
      (163 115 (:META META-INTEGERP-CORRECT))
      (158 86 (:LINEAR MOD-BOUNDS-2))
      (158 86 (:LINEAR MOD-BOUNDS-1))
-     (155 155
+     (153 153
           (:REWRITE REMOVE-WEAK-INEQUALITIES-TWO))
-     (147 147 (:REWRITE |(< (- x) (- y))|))
+     (145 145 (:REWRITE |(< (- x) (- y))|))
      (142 110 (:REWRITE DEFAULT-+-1))
-     (139 139
+     (137 137
           (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-<))
-     (123 123 (:REWRITE DEFAULT-<-2))
-     (123 123 (:REWRITE DEFAULT-<-1))
+     (121 121 (:REWRITE DEFAULT-<-2))
+     (121 121 (:REWRITE DEFAULT-<-1))
      (115 115 (:REWRITE INTEGERP-MINUS-X))
      (110 110
           (:REWRITE NORMALIZE-TERMS-SUCH-AS-A/A+B-+-B/A+B))
      (103 103
           (:REWRITE NORMALIZE-TERMS-SUCH-AS-1/AX+BX))
-     (98 98
+     (96 96
          (:REWRITE REMOVE-WEAK-INEQUALITIES-ONE))
      (96 4
          (:REWRITE INTEGERP-OF-+-WHEN-INTEGERP-2))
@@ -6424,9 +6450,9 @@
      (67 43 (:LINEAR MOD-BOUNDS-3))
      (61 61 (:REWRITE |(integerp (* c x))|))
      (56 56 (:REWRITE MOD-COMPLETION))
-     (49 49 (:REWRITE |(< (- x) 0)|))
+     (47 47 (:REWRITE |(< (- x) 0)|))
      (46 28 (:REWRITE MOD-ZERO . 2))
-     (45 45
+     (43 43
          (:REWRITE SIMPLIFY-TERMS-SUCH-AS-A+AB-<-0))
      (42 24
          (:LINEAR <=-OF-*-AND-*-SAME-ALT-LINEAR))
@@ -6455,7 +6481,6 @@
      (25 25 (:REWRITE MOD-+-CANCEL-0-WEAK))
      (24 24 (:LINEAR <=-OF-*-AND-*-SAME-LINEAR))
      (24 24 (:LINEAR <-OF-*-AND-*))
-     (22 2 (:REWRITE MOD-SUM-CASES))
      (18 18 (:REWRITE |(< (+ c x) d)|))
      (12 12 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-2))
      (12 12 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-1))
