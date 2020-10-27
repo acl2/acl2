@@ -934,6 +934,14 @@
     :parents nil
     (xdoc::&& "@('" name "') is the homonymous input to @('" macro "')."))
 
+  (define xdoc::evmac-topic-implementation-item-input-untyped/typed
+    ((name stringp)
+     (macro stringp))
+    (xdoc::&& "@('" name "') is the homonymous input
+               to @('" macro "') if it has no type;
+               otherwise, it the (possibly different) typed value
+               resulting from processing that input."))
+
   (define xdoc::evmac-topic-implementation-item-fn-doc ((name stringp))
     :parents nil
     (xdoc::&& "@('" name "') is the homonymous function symbol "
