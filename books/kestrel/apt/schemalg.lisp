@@ -41,8 +41,7 @@
 
   xdoc::*evmac-topic-implementation-item-ctx*
 
-  "@('old') is the homonymous input to @(tsee schemalg) when it has no type;
-   otherwise, it is the function symbol denoted by that input."
+  (xdoc::evmac-topic-implementation-item-input-untyped/typed "old" "schemalg")
 
   (xdoc::evmac-topic-implementation-item-input "schema" "schemalg")
 
@@ -82,19 +81,16 @@
 
   (xdoc::evmac-topic-implementation-item-input "new-name" "schemalg")
 
-  "@('new-enable') is the homonymous input to @(tsee schemalg)
-   if it has no type;
-   otherwise, it is the boolean resulting from processing that input."
+  (xdoc::evmac-topic-implementation-item-input-untyped/typed "new-enable"
+                                                             "schemalg")
 
   (xdoc::evmac-topic-implementation-item-input "old-if-new-name" "schemalg")
 
-  "@('old-if-new-enable') is the homonymous input to @(tsee schemalg)
-   if it has no type;
-   otherwise, it is the boolean resulting from processing that input."
+  (xdoc::evmac-topic-implementation-item-input-untyped/typed "old-if-new-enable"
+                                                             "schemalg")
 
-  "@('verify-guards') is the homonymous input to @(tsee schemalg)
-   if it has no type;
-   otherwise, it is the boolean resulting from processing that input."
+  (xdoc::evmac-topic-implementation-item-input-untyped/typed "verify-guards"
+                                                             "schemalg")
 
   (xdoc::evmac-topic-implementation-item-input "print" "schemalg")
 
@@ -322,93 +318,93 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-process-input-fresh-function-name
- fvar-0-name
- :macro schemalg
- :other-args ((?f symbolp))
- :auto-code (add-suffix ?f "-0"))
+  fvar-0-name
+  :macro schemalg
+  :other-args ((?f symbolp))
+  :auto-code (add-suffix ?f "-0"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-process-input-fresh-function-name
- fvar-1-name
- :macro schemalg
- :other-args ((?f symbolp))
- :auto-code (add-suffix ?f "-1"))
+  fvar-1-name
+  :macro schemalg
+  :other-args ((?f symbolp))
+  :auto-code (add-suffix ?f "-1"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-process-input-fresh-function-name
- fvar-2-name
- :macro schemalg
- :other-args ((?f symbolp))
- :auto-code (add-suffix ?f "-2"))
+  fvar-2-name
+  :macro schemalg
+  :other-args ((?f symbolp))
+  :auto-code (add-suffix ?f "-2"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-process-input-fresh-function-name
- algo-name
- :macro schemalg
- :other-args ((?f symbolp)
-              (?f1...?fp symbol-listp))
- :auto-code (b* ((??f-chars (explode (symbol-name ?f)))
-                 (algo-chars (if (and (consp ?f-chars)
-                                      (eql (car ?f-chars) #\?))
-                                 (cdr ?f-chars)
-                               ?f-chars))
-                 ([?f1]...[?fp]-chars
-                  (schemalg-process-algo-name-aux ?f1...?fp)))
-              (intern-in-package-of-symbol
-               (implode (append algo-chars [?f1]...[?fp]-chars))
-               ?f))
- :prepwork
- ((define schemalg-process-algo-name-aux ((?f1...?fp symbol-listp))
-    :returns ([?f1]...[?fp]-chars)
-    ;; use this above eventually and avoid this auxiliary function:
-    ;; (loop$ for ?fk in ?f1...?fp
-    ;;        append (append (list #\[)
-    ;;                       (explode (symbol-name ?fk))
-    ;;                       (list #\])))
-    (cond ((endp ?f1...?fp) nil)
-          (t (append (list #\[)
-                     (explode (symbol-name (car ?f1...?fp)))
-                     (list #\])
-                     (schemalg-process-algo-name-aux (cdr ?f1...?fp))))))))
+  algo-name
+  :macro schemalg
+  :other-args ((?f symbolp)
+               (?f1...?fp symbol-listp))
+  :auto-code (b* ((??f-chars (explode (symbol-name ?f)))
+                  (algo-chars (if (and (consp ?f-chars)
+                                       (eql (car ?f-chars) #\?))
+                                  (cdr ?f-chars)
+                                ?f-chars))
+                  ([?f1]...[?fp]-chars
+                   (schemalg-process-algo-name-aux ?f1...?fp)))
+               (intern-in-package-of-symbol
+                (implode (append algo-chars [?f1]...[?fp]-chars))
+                ?f))
+  :prepwork
+  ((define schemalg-process-algo-name-aux ((?f1...?fp symbol-listp))
+     :returns ([?f1]...[?fp]-chars)
+     ;; use this above eventually and avoid this auxiliary function:
+     ;; (loop$ for ?fk in ?f1...?fp
+     ;;        append (append (list #\[)
+     ;;                       (explode (symbol-name ?fk))
+     ;;                       (list #\])))
+     (cond ((endp ?f1...?fp) nil)
+           (t (append (list #\[)
+                      (explode (symbol-name (car ?f1...?fp)))
+                      (list #\])
+                      (schemalg-process-algo-name-aux (cdr ?f1...?fp))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-process-input-fresh-function-name
- spec-0-name
- :macro schemalg
- :other-args ((old symbolp)
-              (?g/?g0 symbolp))
- :auto-code (packn-pos (list old "-0" "[" ?g/?g0 "]") old))
+  spec-0-name
+  :macro schemalg
+  :other-args ((old symbolp)
+               (?g/?g0 symbolp))
+  :auto-code (packn-pos (list old "-0" "[" ?g/?g0 "]") old))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-process-input-fresh-function-name
- spec-1-name
- :macro schemalg
- :other-args ((old symbolp)
-              (?h/?g2 symbolp))
- :auto-code (packn-pos (list old "-1" "[" ?h/?g2 "]") old))
+  spec-1-name
+  :macro schemalg
+  :other-args ((old symbolp)
+               (?h/?g2 symbolp))
+  :auto-code (packn-pos (list old "-1" "[" ?h/?g2 "]") old))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-process-input-fresh-function-name
- spec-2-name
- :macro schemalg
- :other-args ((old symbolp)
-              (?h symbolp))
- :auto-code (packn-pos (list old "-2" "[" ?h "]") old))
+  spec-2-name
+  :macro schemalg
+  :other-args ((old symbolp)
+               (?h symbolp))
+  :auto-code (packn-pos (list old "-2" "[" ?h "]") old))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-process-input-fresh-function-name
- equal-algo-name
- :macro schemalg
- :other-args ((?f symbolp)
-              (algo symbolp))
- :auto-code (packn-pos (list "EQUAL[" ?f "][" algo "]") ?f))
+  equal-algo-name
+  :macro schemalg
+  :other-args ((?f symbolp)
+               (algo symbolp))
+  :auto-code (packn-pos (list "EQUAL[" ?f "][" algo "]") ?f))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1054,7 +1050,7 @@
                                           (list var))))
        (car-x-z1...zm (loop$ for var of-type symbol in x-z1...zm
                              collect (if (eq var x)
-                                        (list 'car var)
+                                         (list 'car var)
                                        var)))
        (cdr-x-z1...zm (loop$ for var of-type symbol in x-z1...zm
                              collect (if (eq var x) (list 'cdr var) var))))
@@ -1509,8 +1505,8 @@
                                           var)))
           (car-x-a1...am (loop$ for term in x-a1...am
                                 collect (if (eq term x)
-                                           (list 'car term)
-                                         term)))
+                                            (list 'car term)
+                                          term)))
           (iorel-term1 (apply-term iorel (append cdr-x-x1...xn (list y))))
           (??h-call `(,?h ,@car-x-a1...am ,y))
           (iorel-term2 (apply-term iorel (append x-x1...xn (list ?h-call))))

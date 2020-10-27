@@ -31,7 +31,6 @@
 (include-book "utilities/defaults-table")
 (include-book "utilities/input-processing")
 (include-book "utilities/transformation-table")
-(include-book "utilities/xdoc-constructors")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -47,32 +46,34 @@
 
   xdoc::*evmac-topic-implementation-item-ctx*
 
-  "@('old') is the homonymous input to @(tsee restrict) when it has no type;
-   otherwise, it is the function symbol denoted by that input."
+  (xdoc::evmac-topic-implementation-item-input-untyped/typed "old" "restrict")
 
-  "@('restriction') is the homonymous input to @(tsee restrict)
-   when it has no type;
-   otherwise, it is the term denoted by that input."
+  (xdoc::evmac-topic-implementation-item-input-untyped/typed "restriction"
+                                                             "restrict")
 
-  "@('undefined') is the homonymous input to @(tsee restrict)
-   when it has no type;
-   otherwise, it is the term denoted by that input."
+  (xdoc::evmac-topic-implementation-item-input-untyped/typed "undefined"
+                                                             "restrict")
 
   (xdoc::evmac-topic-implementation-item-input "new-name" "restrict")
 
-  (xdoc::apt-topic-implementation-item-new-enable "restrict")
+  (xdoc::evmac-topic-implementation-item-input-untyped/typed "new-enable"
+                                                             "restrict")
 
   (xdoc::evmac-topic-implementation-item-input "old-to-new-name" "restrict")
 
-  (xdoc::evmac-topic-implementation-item-input "old-to-new-enable" "restrict")
+  (xdoc::evmac-topic-implementation-item-input-untyped/typed "old-to-new-enable"
+                                                             "restrict")
 
   (xdoc::evmac-topic-implementation-item-input "new-to-old-name" "restrict")
 
-  (xdoc::evmac-topic-implementation-item-input "new-to-old-enable" "restrict")
+  (xdoc::evmac-topic-implementation-item-input-untyped/typed "new-to-old-enable"
+                                                             "restrict")
 
-  (xdoc::apt-topic-implementation-item-verify-guards "restrict")
+  (xdoc::evmac-topic-implementation-item-input-untyped/typed "verify-guards"
+                                                             "restrict")
 
-  (xdoc::apt-topic-implementation-item-hints "restrict")
+  (xdoc::evmac-topic-implementation-item-input-untyped/typed "hints"
+                                                             "restrict")
 
   (xdoc::evmac-topic-implementation-item-input "print" "restrict")
 
@@ -83,6 +84,8 @@
   (xdoc::evmac-topic-implementation-item-fn-doc "new")
 
   (xdoc::evmac-topic-implementation-item-thm-doc "old-to-new")
+
+  (xdoc::evmac-topic-implementation-item-thm-doc "new--to-old")
 
   "@('stub?') is the stub called @('?f') in the documentation
    if @('old') is a reflexive function,

@@ -45,8 +45,7 @@
 
   xdoc::*evmac-topic-implementation-item-ctx*
 
-  "@('old') is the homonymous input to @(tsee solve) when it has no type;
-   otherwise, it is the function symbol denoted by that input."
+  (xdoc::evmac-topic-implementation-item-input-untyped/typed "old" "solve")
 
   (xdoc::evmac-topic-implementation-item-input "method" "solve")
 
@@ -68,19 +67,16 @@
 
   (xdoc::evmac-topic-implementation-item-input "new-name" "solve")
 
-  "@('new-enable') is the homonymous input to @(tsee solve)
-   if it has no type;
-   otherwise, it is the boolean resulting from processing that input."
+  (xdoc::evmac-topic-implementation-item-input-untyped/typed "new-enable"
+                                                             "solve")
 
   (xdoc::evmac-topic-implementation-item-input "old-if-new-name" "solve")
 
-  "@('old-if-new-enable') is the homonymous input to @(tsee solve)
-   if it has no type;
-   otherwise, it is the boolean resulting from processing that input."
+  (xdoc::evmac-topic-implementation-item-input-untyped/typed "old-if-new-enable"
+                                                             "solve")
 
-  "@('verify-guards') is the homonymous input to @(tsee solve)
-   if it has no type;
-   otherwise, it is the boolean resulting from processing that input."
+  (xdoc::evmac-topic-implementation-item-input-untyped/typed "verify-guards"
+                                                             "solve")
 
   (xdoc::evmac-topic-implementation-item-input "print" "solve")
 
