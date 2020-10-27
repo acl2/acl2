@@ -66,6 +66,10 @@
 
   (xdoc::evmac-topic-implementation-item-input "old-to-new-enable" "restrict")
 
+  (xdoc::evmac-topic-implementation-item-input "new-to-old-name" "restrict")
+
+  (xdoc::evmac-topic-implementation-item-input "new-to-old-enable" "restrict")
+
   (xdoc::apt-topic-implementation-item-verify-guards "restrict")
 
   (xdoc::apt-topic-implementation-item-hints "restrict")
@@ -219,6 +223,8 @@
                                  new-enable
                                  old-to-new-name (old-to-new-name? booleanp)
                                  old-to-new-enable (old-to-new-enable? booleanp)
+                                 new-to-old-name (new-to-old-name? booleanp)
+                                 new-to-old-enable (new-to-old-enable? booleanp)
                                  verify-guards
                                  hints
                                  print
@@ -233,6 +239,8 @@
                                     (new-enable$ booleanp)
                                     (old-to-new symbolp)
                                     (old-to-new-enable symbolp)
+                                    (new-to-old symbolp)
+                                    (new-to-old-enable symbolp)
                                     (verify-guards$ booleanp)
                                     (hints$ evmac-input-hints-p)
                                     (names-to-avoid symbol-listp))').")
@@ -266,6 +274,19 @@
                                 old-to-new-enable?
                                 ctx
                                 state))
+       ((er (list new-to-old names-to-avoid))
+        (process-input-new-to-old-name new-to-old-name
+                                       new-to-old-name?
+                                       old
+                                       new
+                                       names-to-avoid
+                                       ctx
+                                       state))
+       ((er new-to-old-enable) (process-input-new-to-old-enable
+                                new-to-old-enable
+                                new-to-old-enable?
+                                ctx
+                                state))
        ((er hints) (evmac-process-input-hints hints ctx state))
        ((er &) (evmac-process-input-print print ctx state))
        ((er &) (evmac-process-input-show-only show-only ctx state)))
@@ -276,6 +297,8 @@
                  new-enable
                  old-to-new
                  old-to-new-enable
+                 new-to-old
+                 new-to-old-enable
                  verify-guards
                  hints
                  names-to-avoid))))
@@ -562,6 +585,43 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define restrict-gen-new-to-old ((old symbolp)
+                                 (restriction pseudo-termp)
+                                 (new symbolp)
+                                 (new-to-old symbolp)
+                                 (new-to-old-enable booleanp)
+                                 (old-to-new symbolp)
+                                 (wrld plist-worldp))
+  :returns (mv (local-event "A @(tsee pseudo-event-formp).")
+               (exported-event "A @(tsee pseudo-event-formp)."))
+  :mode :program
+  :short "Generate the theorem that relates the new and old functions."
+  :long
+  "<p>
+   The macro used to introduce the theorem is determined by
+   whether the theorem must be enabled or not.
+   </p>
+   <p>
+   The formula of the theorem equates new and old functions
+   under the restricting predicate,
+   as described in the documentation.
+   </p>
+   <p>
+   The theorem is easily proved from the @('old-to-new') one.
+   </p>"
+  (b* ((formals (formals old wrld))
+       (formula (implicate restriction
+                           `(equal (,new ,@formals)
+                                   (,old ,@formals))))
+       (formula (untranslate formula t wrld))
+       (hints `(("Goal" :in-theory '(,old-to-new)))))
+    (evmac-generate-defthm new-to-old
+                           :formula formula
+                           :hints hints
+                           :enable new-to-old-enable)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define restrict-gen-verify-guards ((old symbolp)
                                     (new symbolp)
                                     (old-to-new symbolp)
@@ -639,6 +699,8 @@
                                  (new-enable booleanp)
                                  (old-to-new symbolp)
                                  (old-to-new-enable booleanp)
+                                 (new-to-old symbolp)
+                                 (new-to-old-enable booleanp)
                                  (verify-guards booleanp)
                                  (hints symbol-alistp)
                                  (print evmac-input-print-p)
@@ -775,6 +837,15 @@
                                  old-unnorm
                                  new-unnorm
                                  wrld))
+       ((mv new-to-old-local-event
+            new-to-old-exported-event)
+        (restrict-gen-new-to-old old
+                                 restriction
+                                 new
+                                 new-to-old
+                                 new-to-old-enable
+                                 old-to-new
+                                 wrld))
        (verify-guards-event? (and verify-guards
                                   (list
                                    (restrict-gen-verify-guards
@@ -784,6 +855,9 @@
                                     appcond-thm-names
                                     stub?
                                     wrld))))
+       (theory-inv-event `(theory-invariant (incompatible
+                                             (:rewrite ,old-to-new)
+                                             (:rewrite ,new-to-old))))
        (numbered-name-event `(add-numbered-name-in-use ,new))
        (encapsulate-events `((logic)
                              (set-ignore-ok t)
@@ -795,9 +869,12 @@
                              ,new-local-event
                              ,new-unnorm-event
                              ,old-to-new-local-event
+                             ,new-to-old-local-event
                              ,@verify-guards-event?
                              ,new-exported-event
                              ,old-to-new-exported-event
+                             ,new-to-old-exported-event
+                             ,theory-inv-event
                              ,numbered-name-event))
        (encapsulate `(encapsulate () ,@encapsulate-events))
        ((when show-only)
@@ -813,7 +890,8 @@
                       `(,@(and (member-eq print '(:info :all))
                                '((cw-event "~%")))
                         (cw-event "~x0~|" ',new-exported-event)
-                        (cw-event "~x0~|" ',old-to-new-exported-event)))))
+                        (cw-event "~x0~|" ',old-to-new-exported-event)
+                        (cw-event "~x0~|" ',new-to-old-exported-event)))))
     (value
      `(progn
         ,encapsulate+
@@ -830,6 +908,8 @@
                      new-enable
                      old-to-new-name (old-to-new-name? booleanp)
                      old-to-new-enable (old-to-new-enable? booleanp)
+                     new-to-old-name (new-to-old-name? booleanp)
+                     new-to-old-enable (new-to-old-enable? booleanp)
                      verify-guards
                      hints
                      print
@@ -864,6 +944,8 @@
                   new-enable
                   old-to-new
                   old-to-new-enable
+                  new-to-old
+                  new-to-old-enable
                   verify-guards
                   hints
                   names-to-avoid))
@@ -874,6 +956,8 @@
                                  new-enable
                                  old-to-new-name old-to-new-name?
                                  old-to-new-enable old-to-new-enable?
+                                 new-to-old-name new-to-old-name?
+                                 new-to-old-enable new-to-old-enable?
                                  verify-guards
                                  hints
                                  print
@@ -887,6 +971,8 @@
                                             new-enable
                                             old-to-new
                                             old-to-new-enable
+                                            new-to-old
+                                            new-to-old-enable
                                             verify-guards
                                             hints
                                             print
@@ -918,7 +1004,9 @@
                       (new-name ':auto)
                       (new-enable ':auto)
                       (old-to-new-name 'nil old-to-new-name?)
-                      (old-to-new-enable 't old-to-new-enable?)
+                      (old-to-new-enable 'nil old-to-new-enable?)
+                      (new-to-old-name 'nil new-to-old-name?)
+                      (new-to-old-enable 'nil new-to-old-enable?)
                       (verify-guards ':auto)
                       (hints 'nil)
                       (print ':result)
@@ -932,6 +1020,10 @@
                                     ',old-to-new-name?
                                     ',old-to-new-enable
                                     ',old-to-new-enable?
+                                    ',new-to-old-name
+                                    ',new-to-old-name?
+                                    ',new-to-old-enable
+                                    ',new-to-old-enable?
                                     ',verify-guards
                                     ',hints
                                     ',print

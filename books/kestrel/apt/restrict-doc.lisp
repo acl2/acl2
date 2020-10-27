@@ -61,8 +61,10 @@
      "          :undefined          ; default :undefined"
      "          :new-name           ; default :auto"
      "          :new-enable         ; default :auto"
-     "          :old-to-new-name    ; default :auto"
-     "          :old-to-new-enable  ; default t"
+     "          :old-to-new-name    ; default from table"
+     "          :old-to-new-enable  ; default from table"
+     "          :new-to-old-name    ; default from table"
+     "          :new-to-old-enable  ; default from table"
      "          :verify-guards      ; default :auto"
      "          :hints              ; default nil"
      "          :print              ; default :result"
@@ -195,6 +197,10 @@
 
     (xdoc::desc-apt-input-old-to-new-enable)
 
+    (xdoc::desc-apt-input-new-to-old-name)
+
+    (xdoc::desc-apt-input-new-to-old-enable)
+
     (xdoc::desc-apt-input-verify-guards :plural-functions nil)
 
     (xdoc::evmac-input-hints)
@@ -304,7 +310,25 @@
       "                  (new x1 ... xn))))")
      (xdoc::p
       "In the " *restrict-design-notes* ",
-       @('old-to-new') is denoted by @($\\mathit{ff}'$).")))
+       @('old-to-new') is denoted by @($\\mathit{ff}'$)."))
+
+    (xdoc::desc
+     "@('new-to-old')"
+     (xdoc::p
+      "Theorem that relates @('new') to @('old'):")
+     (xdoc::codeblock
+      "(defthm new-to-old"
+      "  (implies restriction<x1,...,xn>"
+      "           (equal (new x1 ... xn)"
+      "                  (old x1 ... xn))))")
+     (xdoc::p
+      "In the " *restrict-design-notes* ",
+       @('new-to-old') is denoted by @($f'f$)."))
+
+    (xdoc::p
+     "A theory invariant is also generated to prevent
+      both @('new-to-old') and @('old-to-new')
+      from being enabled at the same time."))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

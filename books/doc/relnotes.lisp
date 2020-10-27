@@ -362,7 +362,19 @@
       @(':old-to-new-name') and @(':old-to-new-enable'),
       in line with other transformations.
       Besides the name change, these two inputs now support
-      the APT defaults table."))
+      the APT defaults table.")
+    (xdoc::li
+     "A new @(':new-to-old-name') input has been added
+      to specify the name of the theorem @('new-to-old')
+      that rewrites calls of the new functions
+      to terms calls of the old function.
+      This theorem is now generated along with the converse one.
+      If the @(':new-to-old-name') input is absent,
+      it is taken from the APT defaults table.")
+    (xdoc::li
+     "A new @(':new-to-old-enable') input has been added
+      to specify whether the @('new-to-old') theorem is enabled or not.
+      If this input is absent, it is taken from the APT defaults table."))
 
    (xdoc::p
     "The @(tsee apt::tailrec) transformation has been improved as follows:")
