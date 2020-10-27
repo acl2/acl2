@@ -1166,20 +1166,23 @@
                                               (x symbolp)
                                               (iorel pseudo-lambdap)
                                               (?g symbolp)
-                                              (verify-guards booleanp))
-  :returns (mv (local-event pseudo-event-formp)
-               (exported-event pseudo-event-formp))
-  :verify-guards nil
+                                              (verify-guards booleanp)
+                                              (wrld plist-worldp))
+  :returns (mv (local-event "A @(tsee pseudo-event-formp).")
+               (exported-event "A @(tsee pseudo-event-formp)."))
+  :mode :program
   :short "Generate the function @('spec-0[?g]')
           for the @(':divconq-list-0-1') schema."
   (b* ((iorel-term (apply-term iorel
-                               (append x-x1...xn (list `(,?g ,@x-a1...am))))))
+                               (append x-x1...xn (list `(,?g ,@x-a1...am)))))
+       (iorel-term (untranslate iorel-term t wrld)))
     (evmac-generate-soft-defun-sk2
      spec-0
      :formals ()
      :guard t
      :body `(forall ,x-x1...xn
-                    (impliez (atom ,x) ,iorel-term))
+                    (impliez (atom ,x)
+                             ,iorel-term))
      :verify-guards verify-guards
      :enable spec-0-enable
      :guard-hints `(("Goal" :use (:guard-theorem ,old))))))
@@ -1194,20 +1197,23 @@
                                                 (x symbolp)
                                                 (iorel pseudo-lambdap)
                                                 (?g0 symbolp)
-                                                (verify-guards booleanp))
-  :returns (mv (local-event pseudo-event-formp)
-               (exported-event pseudo-event-formp))
-  :verify-guards nil
+                                                (verify-guards booleanp)
+                                                (wrld plist-worldp))
+  :returns (mv (local-event "A @(tsee pseudo-event-formp).")
+               (exported-event "A @(tsee pseudo-event-formp)."))
+  :mode :program
   :short "Generate the function @('spec-0[?g0]')
           for the @(':divconq-list-0-1-2') schema."
   (b* ((iorel-term (apply-term iorel
-                               (append x-x1...xn (list `(,?g0 ,@x-a1...am))))))
+                               (append x-x1...xn (list `(,?g0 ,@x-a1...am)))))
+       (iorel-term (untranslate iorel-term t wrld)))
     (evmac-generate-soft-defun-sk2
      spec-0
      :formals ()
      :guard t
      :body `(forall ,x-x1...xn
-                    (impliez (atom ,x) ,iorel-term))
+                    (impliez (atom ,x)
+                             ,iorel-term))
      :verify-guards verify-guards
      :enable spec-0-enable
      :guard-hints `(("Goal" :use (:guard-theorem ,old))))))
@@ -1222,14 +1228,16 @@
                                               (x symbolp)
                                               (iorel pseudo-lambdap)
                                               (?g symbolp)
-                                              (verify-guards booleanp))
-  :returns (mv (local-event pseudo-event-formp)
-               (exported-event pseudo-event-formp))
-  :verify-guards nil
+                                              (verify-guards booleanp)
+                                              (wrld plist-worldp))
+  :returns (mv (local-event "A @(tsee pseudo-event-formp).")
+               (exported-event "A @(tsee pseudo-event-formp)."))
+  :mode :program
   :short "Generate the function @('spec-0[?g]')
           for the @(':divconq-oset-0-1') schema."
   (b* ((iorel-term (apply-term iorel
-                               (append x-x1...xn (list `(,?g ,@x-a1...am))))))
+                               (append x-x1...xn (list `(,?g ,@x-a1...am)))))
+       (iorel-term (untranslate iorel-term t wrld)))
     (evmac-generate-soft-defun-sk2
      spec-0
      :formals ()
@@ -1254,10 +1262,11 @@
                              (iorel pseudo-lambdap)
                              (?g symbolp)
                              (?g0 symbolp)
-                             (verify-guards booleanp))
-  :returns (mv (local-event pseudo-event-formp)
-               (exported-event pseudo-event-formp))
-  :verify-guards nil
+                             (verify-guards booleanp)
+                             (wrld plist-worldp))
+  :returns (mv (local-event "A @(tsee pseudo-event-formp).")
+               (exported-event "A @(tsee pseudo-event-formp)."))
+  :mode :program
   :short "Generate the function @('spec-0[?g]') or @('spec-0[?g0]')."
   (case schema
     (:divconq-list-0-1 (schemalg-gen-spec-0-divconq-list-0-1 spec-0
@@ -1268,16 +1277,18 @@
                                                              x
                                                              iorel
                                                              ?g
-                                                             verify-guards))
+                                                             verify-guards
+                                                             wrld))
     (:divconq-list-0-1-2 (schemalg-gen-spec-0-divconq-list-0-1-2 spec-0
-                                                             spec-0-enable
-                                                             old
-                                                             x-x1...xn
-                                                             x-a1...am
-                                                             x
-                                                             iorel
-                                                             ?g0
-                                                             verify-guards))
+                                                                 spec-0-enable
+                                                                 old
+                                                                 x-x1...xn
+                                                                 x-a1...am
+                                                                 x
+                                                                 iorel
+                                                                 ?g0
+                                                                 verify-guards
+                                                                 wrld))
     (:divconq-oset-0-1 (schemalg-gen-spec-0-divconq-oset-0-1 spec-0
                                                              spec-0-enable
                                                              old
@@ -1286,7 +1297,8 @@
                                                              x
                                                              iorel
                                                              ?g
-                                                             verify-guards))
+                                                             verify-guards
+                                                             wrld))
     (t (prog2$ (raise "Internal error: unknown schema ~x0." schema)
                (mv '(irrelevant) '(irrelevant))))))
 
@@ -1301,10 +1313,11 @@
                                               (y symbolp)
                                               (iorel pseudo-lambdap)
                                               (?h symbolp)
-                                              (verify-guards booleanp))
-  :returns (mv (local-event pseudo-event-formp)
-               (exported-event pseudo-event-formp))
-  :verify-guards nil
+                                              (verify-guards booleanp)
+                                              (wrld plist-worldp))
+  :returns (mv (local-event "A @(tsee pseudo-event-formp).")
+               (exported-event "A @(tsee pseudo-event-formp)."))
+  :mode :program
   :short "Generate the function @('spec-1[?h]')
           for the @(':divconq-list-0-1') schema."
   (b* ((cdr-x-x1...xn (loop$ for var in x-x1...xn
@@ -1314,13 +1327,16 @@
        (iorel-term1 (apply-term iorel (append cdr-x-x1...xn (list y))))
        (iorel-term2 (apply-term iorel (append x-x1...xn
                                               (list
-                                               `(,?h ,@car-x-a1...am ,y))))))
+                                               `(,?h ,@car-x-a1...am ,y)))))
+       (iorel-term1 (untranslate iorel-term1 t wrld))
+       (iorel-term2 (untranslate iorel-term2 t wrld)))
     (evmac-generate-soft-defun-sk2
      spec-1
      :formals ()
      :guard t
      :body `(forall (,@x-x1...xn ,y)
-                    (impliez (and (consp ,x) ,iorel-term1)
+                    (impliez (and (consp ,x)
+                                  ,iorel-term1)
                              ,iorel-term2))
      :verify-guards verify-guards
      :enable spec-1-enable
@@ -1336,10 +1352,11 @@
                                                 (x symbolp)
                                                 (iorel pseudo-lambdap)
                                                 (?g1 symbolp)
-                                                (verify-guards booleanp))
-  :returns (mv (local-event pseudo-event-formp)
-               (exported-event pseudo-event-formp))
-  :verify-guards nil
+                                                (verify-guards booleanp)
+                                                (wrld plist-worldp))
+  :returns (mv (local-event "A @(tsee pseudo-event-formp).")
+               (exported-event "A @(tsee pseudo-event-formp)."))
+  :mode :program
   :short "Generate the function @('spec-1[?g1]')
           for the @(':divconq-list-0-1-2') schema."
   (b* ((car/cdr-x-a1...am (loop$ for term in x-a1...am
@@ -1349,7 +1366,8 @@
                                           (list term))))
        (iorel-term (apply-term iorel (append x-x1...xn
                                              (list
-                                              `(,?g1 ,@car/cdr-x-a1...am))))))
+                                              `(,?g1 ,@car/cdr-x-a1...am)))))
+       (iorel-term (untranslate iorel-term t wrld)))
     (evmac-generate-soft-defun-sk2
      spec-1
      :formals ()
@@ -1373,10 +1391,11 @@
                                               (y symbolp)
                                               (iorel pseudo-lambdap)
                                               (?h symbolp)
-                                              (verify-guards booleanp))
-  :returns (mv (local-event pseudo-event-formp)
-               (exported-event pseudo-event-formp))
-  :verify-guards nil
+                                              (verify-guards booleanp)
+                                              (wrld plist-worldp))
+  :returns (mv (local-event "A @(tsee pseudo-event-formp).")
+               (exported-event "A @(tsee pseudo-event-formp)."))
+  :mode :program
   :short "Generate the function @('spec-1[?h]')
           for the @(':divconq-oset-0-1') schema."
   (b* ((tail-x-x1...xn (loop$ for var in x-x1...xn
@@ -1390,7 +1409,9 @@
        (iorel-term1 (apply-term iorel (append tail-x-x1...xn (list y))))
        (iorel-term2 (apply-term iorel (append x-x1...xn
                                               (list
-                                               `(,?h ,@head-x-a1...am ,y))))))
+                                               `(,?h ,@head-x-a1...am ,y)))))
+       (iorel-term1 (untranslate iorel-term1 t wrld))
+       (iorel-term2 (untranslate iorel-term2 t wrld)))
     (evmac-generate-soft-defun-sk2
      spec-1
      :formals ()
@@ -1417,10 +1438,11 @@
                              (iorel pseudo-lambdap)
                              (?g1 symbolp)
                              (?h symbolp)
-                             (verify-guards booleanp))
-  :returns (mv (local-event pseudo-event-formp)
-               (exported-event pseudo-event-formp))
-  :verify-guards nil
+                             (verify-guards booleanp)
+                             (wrld plist-worldp))
+  :returns (mv (local-event "A @(tsee pseudo-event-formp).")
+               (exported-event "A @(tsee pseudo-event-formp)."))
+  :mode :program
   :short "Generate the function @('spec-1[?g1]') or @('spec-1[?h]')."
   (case schema
     (:divconq-list-0-1 (schemalg-gen-spec-1-divconq-list-0-1 spec-1
@@ -1432,7 +1454,8 @@
                                                              y
                                                              iorel
                                                              ?h
-                                                             verify-guards))
+                                                             verify-guards
+                                                             wrld))
     (:divconq-list-0-1-2 (schemalg-gen-spec-1-divconq-list-0-1-2 spec-1
                                                                  spec-1-enable
                                                                  old
@@ -1441,7 +1464,8 @@
                                                                  x
                                                                  iorel
                                                                  ?g1
-                                                                 verify-guards))
+                                                                 verify-guards
+                                                                 wrld))
     (:divconq-oset-0-1 (schemalg-gen-spec-1-divconq-oset-0-1 spec-1
                                                              spec-1-enable
                                                              old
@@ -1451,7 +1475,8 @@
                                                              y
                                                              iorel
                                                              ?h
-                                                             verify-guards))
+                                                             verify-guards
+                                                             wrld))
     (t (prog2$ (raise "Internal error: unknown schema ~x0." schema)
                (mv '(irrelevant) '(irrelevant))))))
 
@@ -1467,10 +1492,11 @@
                              (y symbolp)
                              (iorel pseudo-lambdap)
                              (?h symbolp)
-                             (verify-guards booleanp))
-  :returns (mv (local-event pseudo-event-formp)
-               (exported-event pseudo-event-formp))
-  :verify-guards nil
+                             (verify-guards booleanp)
+                             (wrld plist-worldp))
+  :returns (mv (local-event "A @(tsee pseudo-event-formp).")
+               (exported-event "A @(tsee pseudo-event-formp)."))
+  :mode :program
   :short "Generate the function @('spec-2[?h]')."
   (case schema
     (:divconq-list-0-1
@@ -1487,7 +1513,9 @@
                                          term)))
           (iorel-term1 (apply-term iorel (append cdr-x-x1...xn (list y))))
           (??h-call `(,?h ,@car-x-a1...am ,y))
-          (iorel-term2 (apply-term iorel (append x-x1...xn (list ?h-call)))))
+          (iorel-term2 (apply-term iorel (append x-x1...xn (list ?h-call))))
+          (iorel-term1 (untranslate iorel-term1 t wrld))
+          (iorel-term2 (untranslate iorel-term2 t wrld)))
        (evmac-generate-soft-defun-sk2
         spec-2
         :formals ()
@@ -1876,18 +1904,18 @@
             spec-0-exported-event)
         (schemalg-gen-spec-0 schema spec-0 spec-0-enable
                              old x-x1...xn x-a1...am x
-                             iorel ?g ?g0 verify-guards))
+                             iorel ?g ?g0 verify-guards wrld))
        ((mv spec-1-local-event
             spec-1-exported-event)
         (schemalg-gen-spec-1 schema spec-1 spec-1-enable
                              old x-x1...xn x-a1...am x y
-                             iorel ?g1 ?h verify-guards))
+                             iorel ?g1 ?h verify-guards wrld))
        ((mv spec-2-local-event?
             spec-2-exported-event?)
         (if (eq schema :divconq-list-0-1-2)
             (schemalg-gen-spec-2 schema spec-2 spec-2-enable
                                  old x-x1...xn x-a1...am x y
-                                 iorel ?h verify-guards)
+                                 iorel ?h verify-guards wrld)
           (mv nil nil)))
        (equal-algo-event
         (schemalg-gen-equal-algo equal-algo equal-algo-enable
