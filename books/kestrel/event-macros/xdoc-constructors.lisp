@@ -50,61 +50,92 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection xdoc::evmac-section-intro
+(defmacro+ xdoc::evmac-section (title &rest content)
+  :short "Construct a section
+          of the user documentation of an event macro."
+  :long
+  (xdoc::topstring-p
+   "This provides more abstraction than using a specific heading.")
+  `(xdoc::&&
+    (xdoc::h3 ,title)
+    ,@content))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defmacro+ xdoc::evmac-subsection (title &rest content)
+  :short "Construct a subsection
+          of the user documentation of an event macro."
+  :long
+  (xdoc::topstring-p
+   "This provides more abstraction than using a specific heading.")
+  `(xdoc::&&
+    (xdoc::h4 ,title)
+    ,@content))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defmacro+ xdoc::evmac-subsubsection (title &rest content)
+  :short "Construct a subsubsection
+          of the user documentation of an event macro."
+  :long
+  (xdoc::topstring-p
+   "This provides more abstraction than using a specific heading.")
+  `(xdoc::&&
+    (xdoc::h5 ,title)
+    ,@content))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defmacro+ xdoc::evmac-subsubsubsection (title &rest content)
+  :short "Construct a subsubsubsection
+          of the user documentation of an event macro."
+  :long
+  (xdoc::topstring-p
+   "This provides more abstraction than using a specific heading.")
+  `(xdoc::&&
+    (xdoc::h6 ,title)
+    ,@content))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defconst xdoc::*evmac-section-intro-title*
+  "Introduction")
+
+(defmacro+ xdoc::evmac-section-intro (&rest content)
   :short "Construct the introduction section
           of the user documentation of an event macro."
-  :long
-  (xdoc::topstring
-   (xdoc::@def "xdoc::*evmac-section-intro-title*")
-   (xdoc::@def "xdoc::evmac-section-intro"))
-
-  (defconst xdoc::*evmac-section-intro-title*
-    "Introduction")
-
-  (defmacro xdoc::evmac-section-intro (&rest content)
-    `(xdoc::&&
-      (xdoc::h3 xdoc::*evmac-section-intro-title*)
-      ,@content)))
+  `(xdoc::evmac-section xdoc::*evmac-section-intro-title*
+                        ,@content))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection xdoc::evmac-section-form
+(defconst xdoc::*evmac-section-form-title*
+  "General Form")
+
+(defmacro+ xdoc::evmac-section-form (&rest content)
   :short "Construct the general form section
           of the user documentation of an event macro."
-  :long
-  (xdoc::topstring
-   (xdoc::@def "xdoc::*evmac-section-form-title*")
-   (xdoc::@def "xdoc::evmac-section-form"))
-
-  (defconst xdoc::*evmac-section-form-title*
-    "General Form")
-
-  (defmacro xdoc::evmac-section-form (&rest content)
-    `(xdoc::&&
-      (xdoc::h3 xdoc::*evmac-section-form-title*)
-      ,@content)))
+  `(xdoc::evmac-section xdoc::*evmac-section-form-title*
+                        ,@content))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection xdoc::evmac-section-inputs
+(defconst xdoc::*evmac-section-inputs-title*
+  "Inputs")
+
+(defmacro+ xdoc::evmac-section-inputs (&rest content)
   :short "Construct the inputs section
           of the user documentation of an event macro."
-  :long
-  (xdoc::topstring
-   (xdoc::@def "xdoc::*evmac-section-inputs-title*")
-   (xdoc::@def "xdoc::evmac-section-inputs"))
-
-  (defconst xdoc::*evmac-section-inputs-title*
-    "Inputs")
-
-  (defmacro xdoc::evmac-section-inputs (&rest content)
-    `(xdoc::&&
-      (xdoc::h3 xdoc::*evmac-section-inputs-title*)
-      ,@content)))
+  `(xdoc::evmac-section xdoc::*evmac-section-inputs-title*
+                        ,@content))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection xdoc::evmac-section-appconds
+(defconst xdoc::*evmac-section-appconds-title*
+  "Applicability Conditions")
+
+(defmacro+ xdoc::evmac-section-appconds (macro &rest content)
+  (declare (xargs :guard (symbolp macro)))
   :short "Construct the applicability conditions section
           of the user documentation of an event macro."
   :long
@@ -112,65 +143,53 @@
    (xdoc::p
     "Since this documentation is part of the XDOC topic
      whose name is the name of the macro,
-     the @('macro-ref') variable is not a link.")
-   (xdoc::@def "xdoc::*evmac-section-appconds-title*")
-   (xdoc::@def "xdoc::evmac-section-appconds"))
-
-  (defconst xdoc::*evmac-section-appconds-title*
-    "Applicability Conditions")
-
-  (defmacro xdoc::evmac-section-appconds (macro &rest content)
-    (declare (xargs :guard (symbolp macro)))
-    (b* ((macro-name (string-downcase (symbol-name macro)))
-         (macro-ref (concatenate 'string "@('" macro-name "')"))
-         (inputs-ref (concatenate 'string
-                                  "`"
-                                  xdoc::*evmac-section-inputs-title*
-                                  "' section")))
-      `(xdoc::&&
-        (xdoc::h3 xdoc::*evmac-section-appconds-title*)
-        (xdoc::p
-         "In order for "
-         ,macro-ref
-         " to apply,
-          in addition to the requirements on the inputs
-          stated in the "
-         ,inputs-ref
-         ", the following "
-         (xdoc::seetopic "acl2::event-macro-applicability-conditions"
-                         "applicability conditions")
-         " must be proved.
-          The proofs are attempted when "
-         ,macro-ref
-         " is called,
-          using the hints optionally supplied as the @(':hints') input
-          described in the "
-         ,inputs-ref
-         ".")
-        ,@content))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defsection xdoc::evmac-section-generated
-  :short "Construct the generated events section
-          of the user documentation of an event macro."
-  :long
-  (xdoc::topstring
-   (xdoc::@def "xdoc::*evmac-section-generated-title*")
-   (xdoc::@def "xdoc::evmac-section-generated"))
-
-  (defconst xdoc::*evmac-section-generated-title*
-    "Generated Events")
-
-  (defmacro xdoc::evmac-section-generated (&rest content)
-    `(xdoc::&&
-      (xdoc::h3 xdoc::*evmac-section-generated-title*)
+     the @('macro-ref') variable is not a link."))
+  (b* ((macro-name (string-downcase (symbol-name macro)))
+       (macro-ref (concatenate 'string "@('" macro-name "')"))
+       (inputs-ref (concatenate 'string
+                                "`"
+                                xdoc::*evmac-section-inputs-title*
+                                "' section")))
+    `(xdoc::evmac-section
+      xdoc::*evmac-section-appconds-title*
+      (xdoc::p
+       "In order for "
+       ,macro-ref
+       " to apply,
+        in addition to the requirements on the inputs
+        stated in the "
+       ,inputs-ref
+       ", the following "
+       (xdoc::seetopic "acl2::event-macro-applicability-conditions"
+                       "applicability conditions")
+       " must be proved.
+         The proofs are attempted when "
+       ,macro-ref
+       " is called,
+        using the hints optionally supplied as the @(':hints') input
+        described in the "
+       ,inputs-ref
+       ".")
       ,@content)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection xdoc::evmac-section-redundancy
-  :returns (text xdoc::treep)
+(defconst xdoc::*evmac-section-generated-title*
+  "Generated Events")
+
+(defmacro+ xdoc::evmac-section-generated (&rest content)
+  :short "Construct the generated events section
+          of the user documentation of an event macro."
+  `(xdoc::evmac-section xdoc::*evmac-section-generated-title*
+                        ,@content))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defconst xdoc::*evmac-section-redundancy-title*
+  "Redundancy")
+
+(defmacro+ xdoc::evmac-section-redundancy (macro)
+  (declare (xargs :guard (symbolp macro)))
   :short "Construct the redundancy section
           of the user documentation of an event macro."
   :long
@@ -184,40 +203,32 @@
    (xdoc::p
     "Since this documentation is part of the XDOC topic
      whose name is the name of the macro,
-     the @('macro-ref') variable is not a link.")
-   (xdoc::@def "xdoc::*evmac-section-redundancy-title*")
-   (xdoc::@def "xdoc::evmac-section-redundancy"))
-
-  (defconst xdoc::*evmac-section-redundancy-title*
-    "Redundancy")
-
-  (defmacro xdoc::evmac-section-redundancy (macro)
-    (declare (xargs :guard (symbolp macro)))
-    (b* ((macro-name (string-downcase (symbol-name macro)))
-         (macro-ref (concatenate 'string "@('" macro-name "')")))
-      `(xdoc::&&
-        (xdoc::h3 xdoc::*evmac-section-redundancy-title*)
-        (xdoc::p
-         (concatenate
-          'string
-          "A call of "
-          ,macro-ref
-          " is redundant if and only if
-           it is identical to a previous successful call of "
-          ,macro-ref
-          " whose @(':show-only') input is not @('t'),
-           except that the two calls may differ in
-           their @(':print') and @(':show-only') inputs.
-           These inputs do not affect the generated events,
-           and thus they are ignored for the purpose of redundancy."))
-        (xdoc::p
-         (concatenate
-          'string
-          "A call of "
-          ,macro-ref
-          " whose @(':show-only') input is @('t')
-           does not generate any event.
-           Thus, no successive call may be redundant with such a call."))))))
+     the @('macro-ref') variable is not a link."))
+  (b* ((macro-name (string-downcase (symbol-name macro)))
+       (macro-ref (concatenate 'string "@('" macro-name "')")))
+    `(xdoc::evmac-section
+      xdoc::*evmac-section-redundancy-title*
+      (xdoc::p
+       (concatenate
+        'string
+        "A call of "
+        ,macro-ref
+        " is redundant if and only if
+         it is identical to a previous successful call of "
+        ,macro-ref
+        " whose @(':show-only') input is not @('t'),
+         except that the two calls may differ in
+         their @(':print') and @(':show-only') inputs.
+         These inputs do not affect the generated events,
+         and thus they are ignored for the purpose of redundancy."))
+      (xdoc::p
+       (concatenate
+        'string
+        "A call of "
+        ,macro-ref
+        " whose @(':show-only') input is @('t')
+         does not generate any event.
+         Thus, no successive call may be redundant with such a call.")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -870,6 +881,7 @@
    (xdoc::@def "xdoc::evmac-topic-implementation"))
 
   (define xdoc::evmac-topic-implementation-li-wrap ((items true-listp))
+    :parents nil
     :returns (li-wrapped-items true-listp)
     (cond ((endp items) nil)
           (t (cons `(xdoc::li ,(car items))
@@ -919,17 +931,21 @@
 
   (define xdoc::evmac-topic-implementation-item-input ((name stringp)
                                                        (macro stringp))
+    :parents nil
     (xdoc::&& "@('" name "') is the homonymous input to @('" macro "')."))
 
   (define xdoc::evmac-topic-implementation-item-fn-doc ((name stringp))
+    :parents nil
     (xdoc::&& "@('" name "') is the homonymous function symbol "
               "described in the user documentation."))
 
   (define xdoc::evmac-topic-implementation-item-thm-doc ((name stringp))
+    :parents nil
     (xdoc::&& "@('" name "') is the homonymous theorem symbol "
               "described in the user documentation."))
 
   (define xdoc::evmac-topic-implementation-item-var-doc ((name stringp))
+    :parents nil
     (xdoc::&& "@('" name "') is the homonymous variable symbol "
               "described in the user documentation.")))
 

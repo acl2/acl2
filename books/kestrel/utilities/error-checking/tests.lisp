@@ -418,34 +418,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (must-eval-to-t
- (b* (((er x) (ensure-function-name 'cons "This" t nil 'test state)))
-   (value (equal x nil))))
-
-(must-eval-to-t
- (b* (((er x) (ensure-function-name 'len "This" t nil 'test state)))
-   (value (equal x nil))))
-
-(must-succeed*
- (defun g (x) x)
- (must-eval-to-t
-  (b* (((er x) (ensure-function-name 'g "This" t nil 'test state)))
-    (value (equal x nil)))))
-
-(must-fail
- (ensure-function-name #\w "This" t nil 'test state)
- :with-output-off nil)
-
-(must-fail
- (ensure-function-name 'lenn "This" t nil 'test state)
- :with-output-off nil)
-
-(must-fail
- (ensure-function-name 'car-cdr-elim "This" t nil 'test state)
- :with-output-off nil)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(must-eval-to-t
  (b* (((er x) (ensure-function-name-list nil "This" t nil 'test state)))
    (value (equal x nil))))
 

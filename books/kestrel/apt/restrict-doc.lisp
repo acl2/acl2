@@ -83,7 +83,7 @@
      (xdoc::p
       "@('old') must
        be in logic mode,
-       be " (xdoc::seetopic "definedness" "defined") ",
+       be " (xdoc::seetopic "acl2::function-definedness" "defined") ",
        have at least one formal argument,
        return a non-" (xdoc::seetopic "mv" "multiple") " value, and
        have no input or output " (xdoc::seetopic "acl2::stobj" "stobjs") "."

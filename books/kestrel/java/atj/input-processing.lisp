@@ -16,6 +16,7 @@
 (include-book "test-structures")
 
 (include-book "kestrel/error-checking/ensure-value-is-boolean" :dir :system)
+(include-book "kestrel/error-checking/ensure-value-is-function-name" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-in-list" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-string" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-untranslated-term" :dir :system)
@@ -138,9 +139,11 @@
   (b* (((er &) (case (len targets)
                  (0 (er-soft+ ctx t nil
                               "At least one target function must be supplied."))
-                 (1 (ensure-function-name$ (car targets)
-                                           (msg "The ~x0 input" (car targets))
-                                           t nil))
+                 (1 (ensure-value-is-function-name$
+                     (car targets)
+                     (msg "The ~x0 input" (car targets))
+                     t
+                     nil))
                  (t (ensure-list-functions$ targets
                                             (msg "The ~&0 inputs" targets)
                                             t nil))))

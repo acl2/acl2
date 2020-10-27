@@ -11,6 +11,7 @@
 (in-package "C")
 
 (include-book "centaur/fty/top" :dir :system)
+(include-book "std/util/defprojection" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -111,6 +112,15 @@
   ((get string))
   :tag :ident
   :pred identp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist ident-list
+  :short "Fixtype of lists of identifiers."
+  :elt-type ident
+  :true-listp t
+  :elementp-of-nil nil
+  :pred ident-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -435,6 +445,15 @@
   :short "Fixtype of optional expressions."
   :pred expr-optionp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define irr-expr ()
+  :returns (expr exprp)
+  :short "An irrelevant expression, usable as a dummy return value."
+  (with-guard-checking :none (ec-call (expr-fix :irrelevant)))
+  ///
+  (in-theory (disable (:e irr-expr))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod decl
@@ -577,6 +596,15 @@
   :elementp-of-nil nil
   :pred param-decl-listp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define irr-param-decl ()
+  :returns (param param-declp)
+  :short "An irrelevant parameter declaration, usable as a dummy return value."
+  (with-guard-checking :none (ec-call (param-decl-fix :irrelevant)))
+  ///
+  (in-theory (disable (:e irr-param-decl))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod fundef
@@ -596,6 +624,33 @@
    (body stmtp))
   :tag :fundef
   :pred fundefp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist fundef-list
+  :short "Fixtype of lists of function definitions."
+  :elt-type fundef
+  :true-listp t
+  :elementp-of-nil nil
+  :pred fundef-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption maybe-fundef
+  fundef
+  :short "Fixtype of optional function definitions."
+  :pred maybe-fundefp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection fundef-list->name-list (x)
+  :guard (fundef-listp x)
+  :returns (names ident-listp)
+  :short "Lift @(tsee fundef->name) to lists."
+  (fundef->name x)
+  ///
+  (fty::deffixequiv fundef-list->name-list
+    :args ((x fundef-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -620,6 +675,33 @@
   :elementp-of-nil nil
   :pred ext-decl-listp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define irr-ext-decl ()
+  :returns (ext ext-declp)
+  :short "An irrelevant external declaration, usable as a dummy return value."
+  (with-guard-checking :none (ec-call (ext-decl-fix :irrelevant)))
+  ///
+  (in-theory (disable (:e irr-ext-decl))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ext-decl-list->fundef-list ((exts ext-decl-listp))
+  :returns (defs fundef-listp)
+  :short "Extract from a list of external declarations
+          the list of function definitions, in the same order."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Declarations are discarded. Only function definitions are projected."))
+  (b* (((when (endp exts)) nil)
+       (ext (car exts)))
+    (ext-decl-case ext
+                   :fundef (cons (ext-decl-fundef->get ext)
+                                 (ext-decl-list->fundef-list (cdr exts)))
+                   :decl (ext-decl-list->fundef-list (cdr exts))))
+  :hooks (:fix))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod transunit
@@ -636,3 +718,12 @@
   ((decls ext-decl-list))
   :tag :transunit
   :pred transunitp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define irr-transunit ()
+  :returns (tunit transunitp)
+  :short "An irrelevant translation unit, usable as a dummy return value."
+  (with-guard-checking :none (ec-call (transunit-fix :irrelevant)))
+  ///
+  (in-theory (disable (:e irr-transunit))))

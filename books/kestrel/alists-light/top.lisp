@@ -29,3 +29,6 @@
 (include-book "pairlis-dollar")
 (include-book "pairlis-dollar-fast")
 (include-book "uniquify-alist-eq")
+
+;; Typed alists (TODO: Consider moving to a new dir):
+(include-book "symbol-alistp")

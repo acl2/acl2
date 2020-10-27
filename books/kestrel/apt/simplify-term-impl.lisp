@@ -16,28 +16,20 @@
                                 untranslate must-simplify ctx state)
   (b* ((wrld (w state))
        (fn-runes 'acl2::*simplify-term-runes*)
-       (hints-from-theory (theory+expand-to-hints theory expand))
        ((er thyps) (translate-hyp-list hyps nil ctx wrld state))
-       ((er runes-hyps/simp-hyps)
-        (if hyps
-            (simplify-hyp-list thyps theory expand ctx state)
-          (value nil)))
-       (runes-hyps (car runes-hyps/simp-hyps))
-       (simp-hyps (cdr runes-hyps/simp-hyps))
        ((er address-subterm-governors-lst)
         (if (not (booleanp simplify-body)) ; then non-nil value (or, error)
             (ext-address-subterm-governors-lst-state
              simplify-body tterm ctx state)
           (value (list (list* nil tterm nil nil)))))
+       (hints-from-theory+expand (theory+expand-to-hints theory expand))
+       ((er thints)
+        (translate-hints ctx hints-from-theory+expand ctx wrld state))
        ((er body-result)
-        (fn-simp-body nil nil nil simplify-body tterm
-                      simp-hyps theory expand
-                      hints-from-theory
+        (fn-simp-body nil nil nil simplify-body tterm thyps
                       address-subterm-governors-lst
                       (geneqv-from-g?equiv equiv wrld)
-                      must-simplify
-                      nil
-                      ctx wrld state))
+                      thints must-simplify nil ctx wrld state))
        (sterm (access fn-simp-body-result body-result :body))
        (new-uterm
         (let ((iff-flg
@@ -72,16 +64,14 @@
                     must-simplify)
                (check-simplified uterm tterm new-uterm sterm "" ctx state))
               (t (value nil))))
-       (runes (merge-sort-lexorder
-               (union$ (access fn-simp-body-result body-result :runes)
-                       runes-hyps
-                       :test 'equal))))
+       (runes (merge-sort-lexorder (access fn-simp-body-result body-result
+                                           :runes))))
     (value
      (list new-uterm
            `(defconst ,fn-runes
 ; WARNING: Do not change the caddr of this form without considering the effect
 ; on the printing of runes done in simplify-term-form.
-              ',runes)))))
+              ',(acl2::drop-fake-runes runes))))))
 
 (defconst *simplify-term-fn*
   'acl2::simplify-term-thm)

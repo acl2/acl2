@@ -12,7 +12,7 @@
 (in-package "ACL2")
 
 (include-book "../bv/bvchop")
-(include-book "all-integerp")
+(include-book "../typed-lists-light/all-integerp")
 (include-book "all-unsigned-byte-p")
 (include-book "unsigned-byte-listp")
 (local (include-book "../lists-light/cons"))

@@ -10,7 +10,7 @@
 
 (in-package "C")
 
-(include-book "xdoc/defxdoc-plus" :dir :system)
+(include-book "keywords")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -20,5 +20,5 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is just a placeholder for now."))
+    "This is being populated."))
   :order-subtopics t)

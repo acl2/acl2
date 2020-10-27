@@ -41,6 +41,11 @@
            (symbol-alistp (cdr alist)))
   :hints (("Goal" :in-theory (enable symbol-alistp))))
 
+(defthm symbol-alistp-of-nthcdr
+  (implies (symbol-alistp alist)
+           (symbol-alistp (nthcdr n alist)))
+  :hints (("Goal" :in-theory (enable symbol-alistp nthcdr))))
+
 (defthmd symbolp-of-car-of-car-when-symbol-alistp
   (implies (symbol-alistp alist)
            (symbolp (car (car alist))))

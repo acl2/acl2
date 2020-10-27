@@ -16,6 +16,8 @@
 
 (include-book "expt")
 (include-book "expt2")
+(include-book "integer-length")
+(include-book "ceiling-of-lg")
 (include-book "minus")
 (include-book "denominator")
 (include-book "times")
@@ -28,6 +30,7 @@
 (include-book "mod-expt-fast")
 (include-book "mod-and-expt")
 (include-book "mod")
+(include-book "mod2")
 (include-book "floor")
 (include-book "divides")
 (include-book "times-and-divides")
@@ -35,3 +38,4 @@
 (include-book "less-than")
 (include-book "realpart")
 (include-book "imagpart")
+(include-book "even-and-odd")

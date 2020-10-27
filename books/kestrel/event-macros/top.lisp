@@ -12,6 +12,7 @@
 
 (include-book "applicability-conditions")
 (include-book "cw-event")
+(include-book "definedness")
 (include-book "event-generation")
 (include-book "event-generation-soft")
 (include-book "input-processing")
@@ -19,6 +20,7 @@
 (include-book "make-event-terse")
 (include-book "proof-preparation")
 (include-book "restore-output")
+(include-book "template-generators")
 (include-book "try-event")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

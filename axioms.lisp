@@ -15590,18 +15590,20 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 #-acl2-loop-only
 (defmacro state-free-global-let* (bindings body)
 
-; This variant of state-global-let* is only for use in raw Lisp.  See also
-; state-free-global-let*-safe for a safer, but probably less efficient,
-; alternative.  That alternative must be used inside the ACL2 loop when any
-; call of state-global-let* (or similar call of acl2-unwind-protect could bind
-; a variable of bindings during the evaluation of body.  Otherwise, the wrong
-; value will be stored in *acl2-unwind-protect-stack*, causing the wrong value
-; to be restored after an abort during that evaluation.
+; This variant of state-global-let* is only for use in #-acl2-loop-only code.
+; See also state-free-global-let*-safe for a safer, but probably less
+; efficient, alternative.
 
-; WARNING: If this macro is used when accessible in body, then the value read
-; for a variable bound in bindings may not be justified in the logic.  So state
-; should not be accessible in body unless you (think you) know what you are
-; doing!
+; WARNING 1: This macro probably needs to be avoided when a call of
+; state-global-let* (or similar call of acl2-unwind-protect) could bind a
+; variable of bindings during the evaluation of body; otherwise, the wrong
+; value may be restored from *acl2-unwind-protect-stack* after an abort during
+; that evaluation.
+
+; WARNING 2: If this macro is used when state accessible in body, then in body,
+; the value read for a state global bound in bindings may not be justified
+; logically.  State should not be accessible in body unless you know what you
+; are doing!
 
 ; Comment for #+acl2-par: When using state-free-global-let* inside functions
 ; that might execute in parallel (for example, functions that occur inside the
@@ -15625,28 +15627,23 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 #-acl2-loop-only
 (defmacro state-free-global-let*-safe (bindings body)
 
-; Warning: Keep in sync with the #-acl2-loop-only code for acl2-unwind-protect.
-; We omit comments here; see state-global-let*.
-
-; This variant of state-global-let* is only for use in raw Lisp.  See also
-; state-free-global-let* for a more efficient alternative that can be used in
-; some situations.
-
-; WARNING: If this macro is used when accessible in body, then the value read
-; for a variable bound in bindings may not be justified in the logic.  So state
-; should not be accessible in body unless you (think you) know what you are
-; doing!
+; This variant of state-free-global-let* deals properly with the
+; *acl2-unwind-protect-stack* when inside the ACL2 loop, thus avoiding
+; restoration of state globals to incorrect values after an error if
+; state-global-let* is used within body.  But like state-free-global-let*, it
+; should be used with care if state is accessible in body.  See
+; state-free-global-let* (a more efficient alternative when state globals are
+; not set inside body) for relevant comments, including warnings.  Note that if
+; body returns multiple values then this returns only the first value when in
+; the ACL2 loop; that's unimportant of course if this function is called only
+; for side-effect or if body returns only one value.
 
   `(if #-acl2-par *acl2-unwind-protect-stack* #+acl2-par nil
-       (let* ((state *the-live-state*)
-              (state-global-let*-cleanup-lst
-               (list ,@(state-global-let*-get-globals bindings))))
-         ,@(and (null bindings)
-                '((declare (ignore state-global-let*-cleanup-lst))))
-         (acl2-unwind-protect-raw
-          "state-free-global-let*"
-          (check-vars-not-free (state-global-let*-cleanup-lst) ,body)
-          (progn ,@(state-global-let*-cleanup bindings 0))))
+       (with-live-state
+        (mv-let (erp val state)
+          (state-global-let* ,bindings (value ,body))
+          (declare (ignore erp state))
+          val))
        (state-free-global-let* ,bindings ,body)))
 
 ; With state-global-let* defined, we may now define a few more primitives and

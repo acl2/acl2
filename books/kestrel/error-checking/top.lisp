@@ -15,6 +15,7 @@
 (include-book "ensure-function-is-pure-if-raw")
 (include-book "ensure-symbol-is-fresh-event-name")
 (include-book "ensure-value-is-boolean")
+(include-book "ensure-value-is-function-name")
 (include-book "ensure-value-is-in-list")
 (include-book "ensure-value-is-legal-variable-name")
 (include-book "ensure-value-is-nil")

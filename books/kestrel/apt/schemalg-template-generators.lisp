@@ -56,7 +56,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Generate the function ALGO[?F][?G] described in the user documentation.
+; Generate the function ALGO[?F1]...[?FP] described in the user documentation.
 
 (defmacro gen-algo-divconq-list-0-1 (&key (name 'algo[?g][?h])
                                           (?g '?g)
@@ -79,6 +79,30 @@
                      (car ,x)
                      ,@...zm
                      (,name ,@z1... (cdr ,x) ,@...zm)))))))
+
+(defmacro gen-algo-divconq-list-0-1-2 (&key (name 'algo[?g0][?g1][?h])
+                                            (?g0 '?g0)
+                                            (?g1 '?g1)
+                                            (?h '?h)
+                                            (x 'x)
+                                            z1...
+                                            ...zm
+                                            hints
+                                            guard-hints)
+  (let ((x-z1...zm (append z1... (list x) ...zm)))
+    `(defun2 ,name ,x-z1...zm
+       (declare (xargs
+                 :measure (acl2-count ,x)
+                 ,@(and hints (list :hints hints))
+                 :guard t
+                 :verify-guards t
+                 :guard-hints ,guard-hints))
+       (cond ((atom ,x) (,?g0 ,@x-z1...zm))
+             ((atom (cdr ,x)) (,?g1 ,@z1... (car ,x) (cdr ,x) ,@...zm))
+             (t (,?h ,@z1...
+                     (car ,x)
+                     ,@...zm
+                     (,name ,@z1... (cddr ,x) ,@...zm)))))))
 
 (defmacro gen-algo-divconq-oset-0-1 (&key (name 'algo[?g][?h])
                                           (?g '?g)
@@ -106,7 +130,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Generate the function SPEC-0[?G] described in the user documentation.
+; Generate the function SPEC-0[?G] or SPEC-0[?G0]
+; described in the user documentation.
 
 (defmacro gen-spec-0-divconq-list-0-1 (&key (name 'spec-0[?g])
                                             (?g '?g)
@@ -126,6 +151,25 @@
        (forall ,x-x1...xn
                (impliez (atom ,x)
                         (,iorel ,@x-x1...xn (,?g ,@x-a1...am)))))))
+
+(defmacro gen-spec-0-divconq-list-0-1-2 (&key (name 'spec-0[?g0])
+                                              (?g0 '?g0)
+                                              (x 'x)
+                                              x1...
+                                              ...xn
+                                              a1...
+                                              ...am
+                                              (iorel 'iorel)
+                                              guard-hints)
+  (let ((x-x1...xn (append x1... (list x) ...xn))
+        (x-a1...am (append a1... (list x) ...am)))
+    `(defun-sk2 ,name  ()
+       (declare (xargs :guard t
+                       :verify-guards t
+                       :guard-hints ,guard-hints))
+       (forall ,x-x1...xn
+               (impliez (atom ,x)
+                        (,iorel ,@x-x1...xn (,?g0 ,@x-a1...am)))))))
 
 (defmacro gen-spec-0-divconq-oset-0-1 (&key (name 'spec-0[?g])
                                             (?g '?g)
@@ -149,7 +193,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Generate the function SPEC-CONS[?H] described in the user documentation.
+; Generate the function SPEC-1[?H] or SPEC-1[?G1]
+; described in the user documentation.
 
 (defmacro gen-spec-1-divconq-list-0-1 (&key (name 'spec-1[?h])
                                             (?h '?h)
@@ -171,6 +216,27 @@
                              (,iorel ,@x1... (cdr ,x) ,@...xn ,y))
                         (iorel ,@x-x1...xn
                                (,?h ,@a1... (car ,x) ,@...am ,y)))))))
+
+(defmacro gen-spec-1-divconq-list-0-1-2 (&key (name 'spec-1[?g1])
+                                              (?g1 '?g1)
+                                              (x 'x)
+                                              x1...
+                                              ...xn
+                                              a1...
+                                              ...am
+                                              (iorel 'iorel)
+                                              guard-hints)
+  (let ((x-x1...xn (append x1... (list x) ...xn)))
+    `(defun-sk2 ,name ()
+       (declare (xargs :guard t
+                       :verify-guards t
+                       :guard-hints ,guard-hints))
+       (forall (,@x-x1...xn)
+               (impliez (and (consp ,x)
+                             (atom (cdr ,x)))
+                        (,iorel
+                         ,@x-x1...xn
+                         (,?g1 ,@a1... (car ,x) (cdr ,x) ,@...am)))))))
 
 (defmacro gen-spec-1-divconq-oset-0-1 (&key (name 'spec-1[?h])
                                             (?h '?h)
@@ -196,15 +262,66 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Generate the function EQUAL[?F][ALGO[?G][?H]]
+; Generate the function SPEC-2[?H] described in the user documentation.
+
+(defmacro gen-spec-2-divconq-list-0-1-2 (&key (name 'spec-2[?h])
+                                              (?h '?h)
+                                              (x 'x)
+                                              (y 'y)
+                                              x1...
+                                              ...xn
+                                              a1...
+                                              ...am
+                                              (iorel 'iorel)
+                                              guard-hints)
+  (let ((x-x1...xn (append x1... (list x) ...xn)))
+    `(defun-sk2 ,name ()
+       (declare (xargs :guard t
+                       :verify-guards t
+                       :guard-hints ,guard-hints))
+       (forall (,@x-x1...xn ,y)
+               (impliez (and (consp ,x)
+                             (consp (cdr ,x))
+                             (,iorel ,@x1... (cddr ,x) ,@...xn ,y))
+                        (iorel ,@x-x1...xn
+                               (,?h ,@a1... (car ,x) ,@...am ,y)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Generate the function EQUAL[?F][ALGO[?F1]...[?FP]]
 ; described in the user documentation.
 
-(defmacro gen-equal-algo (&key (name 'equal[?f][algo[?g][?h]])
-                               (?f '?f)
-                               (algo 'algo[?g][?h])
-                               (x 'x)
-                               z1...
-                               ...zm)
+(defmacro gen-equal-algo-divconq-list-0-1 (&key (name 'equal[?f][algo[?g][?h]])
+                                                (?f '?f)
+                                                (algo 'algo[?g][?h])
+                                                (x 'x)
+                                                z1...
+                                                ...zm)
+  (let ((x-z1...zm (append z1... (list x) ...zm)))
+    `(defequal ,name
+       :left ,?f
+       :right ,algo
+       :vars ,x-z1...zm)))
+
+(defmacro gen-equal-algo-divconq-list-0-1-2
+    (&key (name 'equal[?f][algo[?g0][?g1][?h]])
+          (?f '?f)
+          (algo 'algo[?g0][?g1][?h])
+          (x 'x)
+          z1...
+          ...zm)
+  (let ((x-z1...zm (append z1... (list x) ...zm)))
+    `(defequal ,name
+       :left ,?f
+       :right ,algo
+       :vars ,x-z1...zm)))
+
+(defmacro gen-equal-algo-divconq-oset-0-1 (&key (name 'equal[?f][algo[?g][?h]])
+                                                (?f '?f)
+                                                (algo 'algo[?g][?h])
+                                                (x 'x)
+                                                z1...
+                                                ...zm)
   (let ((x-z1...zm (append z1... (list x) ...zm)))
     `(defequal ,name
        :left ,?f
@@ -215,11 +332,36 @@
 
 ; Generate the function NEW described in the user documentation.
 
-(defmacro gen-new (&key (name 'new)
-                        (equal-algo 'equal[?f][algo[?g][?h]])
-                        (spec-0 'spec-0[?g])
-                        (spec-1 'spec-1[?h])
-                        guard-hints)
+(defmacro gen-new-divconq-list-0-1 (&key (name 'new)
+                                         (equal-algo 'equal[?f][algo[?g][?h]])
+                                         (spec-0 'spec-0[?g])
+                                         (spec-1 'spec-1[?h])
+                                         guard-hints)
+  `(defun2 ,name ()
+     (declare (xargs :guard t :verify-guards t :guard-hints ,guard-hints))
+     (and (,equal-algo)
+          (,spec-0)
+          (,spec-1))))
+
+(defmacro gen-new-divconq-list-0-1-2
+    (&key (name 'new)
+          (equal-algo 'equal[?f][algo[?g0][?g1][?h]])
+          (spec-0 'spec-0[?g0])
+          (spec-1 'spec-1[?g1])
+          (spec-2 'spec-2[?h])
+          guard-hints)
+  `(defun2 ,name ()
+     (declare (xargs :guard t :verify-guards t :guard-hints ,guard-hints))
+     (and (,equal-algo)
+          (,spec-0)
+          (,spec-1)
+          (,spec-2))))
+
+(defmacro gen-new-divconq-oset-0-1 (&key (name 'new)
+                                         (equal-algo 'equal[?f][algo[?g][?h]])
+                                         (spec-0 'spec-0[?g])
+                                         (spec-1 'spec-1[?h])
+                                         guard-hints)
   `(defun2 ,name ()
      (declare (xargs :guard t :verify-guards t :guard-hints ,guard-hints))
      (and (,equal-algo)
@@ -231,17 +373,57 @@
 ; Generate the internal theorem ALGO-CORRECT
 ; (not described in the user documentation).
 
-(defmacro gen-algo-correct (&key (name 'algo-correct)
-                                 (spec-0 'spec-0[?g])
-                                 (spec-1 'spec-1[?h])
-                                 (algo 'algo[?g][?h])
-                                 (x 'x)
-                                 x1...
-                                 ...xn
-                                 a1...
-                                 ...am
-                                 (iorel 'iorel)
-                                 hints)
+(defmacro gen-algo-correct-divconq-list-0-1 (&key (name 'algo-correct)
+                                                  (spec-0 'spec-0[?g])
+                                                  (spec-1 'spec-1[?h])
+                                                  (algo 'algo[?g][?h])
+                                                  (x 'x)
+                                                  x1...
+                                                  ...xn
+                                                  a1...
+                                                  ...am
+                                                  (iorel 'iorel)
+                                                  hints)
+  (let ((x-x1...xn (append x1... (list x) ...xn))
+        (x-a1...am (append a1... (list x) ...am)))
+    `(defthm ,name
+       (implies (and (,spec-0)
+                     (,spec-1))
+                (,iorel ,@x-x1...xn (,algo ,@x-a1...am)))
+       :hints ,hints)))
+
+(defmacro gen-algo-correct-divconq-list-0-1-2 (&key (name 'algo-correct)
+                                                    (spec-0 'spec-0[?g0])
+                                                    (spec-1 'spec-1[?g1])
+                                                    (spec-2 'spec-2[?h])
+                                                    (algo 'algo[?g0][?g1][?h])
+                                                    (x 'x)
+                                                    x1...
+                                                    ...xn
+                                                    a1...
+                                                    ...am
+                                                    (iorel 'iorel)
+                                                    hints)
+  (let ((x-x1...xn (append x1... (list x) ...xn))
+        (x-a1...am (append a1... (list x) ...am)))
+    `(defthm ,name
+       (implies (and (,spec-0)
+                     (,spec-1)
+                     (,spec-2))
+                (,iorel ,@x-x1...xn (,algo ,@x-a1...am)))
+       :hints ,hints)))
+
+(defmacro gen-algo-correct-divconq-oset-0-1 (&key (name 'algo-correct)
+                                                  (spec-0 'spec-0[?g])
+                                                  (spec-1 'spec-1[?h])
+                                                  (algo 'algo[?g][?h])
+                                                  (x 'x)
+                                                  x1...
+                                                  ...xn
+                                                  a1...
+                                                  ...am
+                                                  (iorel 'iorel)
+                                                  hints)
   (let ((x-x1...xn (append x1... (list x) ...xn))
         (x-a1...am (append a1... (list x) ...am)))
     `(defthm ,name

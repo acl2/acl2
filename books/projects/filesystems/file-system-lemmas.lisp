@@ -1992,3 +1992,8 @@
   (defthm painful-debugging-lemma-22
     (implies (< z y) (iff (equal (min x y) z) (equal x z)))
     :hints (("Goal" :in-theory (enable min)))))
+
+(defthm member-of-nth-when-not-intersectp
+  (implies (and (not (intersectp-equal l x))
+                (< (nfix n) (len l)))
+           (not (member-equal (nth n l) x))))

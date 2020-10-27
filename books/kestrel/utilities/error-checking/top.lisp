@@ -213,14 +213,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(def-error-checker ensure-function-name
-  ((x "Value to check."))
-  :short
-  "Cause an error if a value is not the name of an existing function."
-  :body
-  (((function-namep x (w state))
-    "~@0 must be the name of an existing function." description)))
-
 (def-error-checker ensure-function-name-list
   ((x "Value to check."))
   :short

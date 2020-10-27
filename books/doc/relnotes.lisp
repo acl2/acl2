@@ -143,6 +143,12 @@
      a formalization of some aspects of the C language
      and ATC (`ACL2 To C'), a C code generator for ACL2.")
 
+   (xdoc::h5 (xdoc::seetopic "c::atc" "ATC"))
+
+   (xdoc::p
+    "A first simple working version of the C code generator has been added,
+     with user documentation and a working test.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "json::json" "JSON Library"))
@@ -259,7 +265,7 @@
      this transformation partially determines the solution
      and generates sub-specifications that, once recursively solve,
      provide a solution to the initial specification.
-     In partciular, divide-and-conquer algorithm schemas are supported:
+     In particular, divide-and-conquer algorithm schemas are supported:
      the schema is a recursive function that
      decompose the input,
      solve the sub-input(s),
@@ -457,6 +463,19 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "crypto::cryptography" "Cryptographic Library"))
+
+   (xdoc::p
+    "In the "
+    (xdoc::seetopic "ecurve::elliptic-curves" "sub-library for elliptic curves")
+    ", the files @('[books]/kestrel/crypto/ecurve/bls12-377-domain-parameters.lisp')
+    and @('[books]/kestrel/crypto/ecurve/bls12-377-prime.lisp') have been
+    added.  They introduce some parameters of the BLS12-377 elliptic curve,
+    and introduce a Pratt certificate of primality for the scalar field size @($r$)
+    of that elliptic curve.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "error-checking" "Error Checking Library"))
 
    (xdoc::p
@@ -545,6 +564,13 @@
 
    (xdoc::p
     "A fixtype @(tsee nat-set) of osets of natural numbers has been added.")
+
+   (xdoc::p
+    "@(tsee fty::deflist) has been extended to generate a theorem
+     about the list fixer applied to @(tsee repeat).")
+
+   (xdoc::p
+    "A macro @(tsee fty::defsubtype) has been added.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -801,8 +827,17 @@
 
    (xdoc::p
     "A new utility @(tsee check-if-call) has been added,
-     to check if a term is a all of @(tsee if)
+     to check if a term is a call of @(tsee if)
      and to return its three arguments if that is the case.")
+
+   (xdoc::p
+    "A new utility @(tsee check-and-call) has been added,
+     to check if a term is a (translated) call of @(tsee and)
+     and to return its two conjuncts if that is the case.")
+
+   (xdoc::p
+    "A theorem about the built-in @('flatten-ands-in-lit') has been added,
+     in @('[books]/kestrel/std/system/flatten-ands-in-lit').")
 
    (xdoc::p
     "A new utility @(tsee fresh-name-listp-msg-weak) has been added,
@@ -944,7 +979,8 @@
 
    (xdoc::p
     "See @(see rewrite$) for a flexible, convenient interface to the ACL2
-     rewriter that can be called programmatically.")
+     rewriter that can be called programmatically.  See @(see rewrite$-hyps)
+     for a related utility that rewrites a list of hypotheses.")
 
    (xdoc::p
     "See @(see open-trace-file!) for a variant of @(tsee open-trace-file)

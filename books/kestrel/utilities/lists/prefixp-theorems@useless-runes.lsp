@@ -52,28 +52,30 @@
                        (:REWRITE PREFIXP-WHEN-NOT-CONSP-LEFT))
                     (1 1 (:REWRITE DEFAULT-CAR))
                     (1 1 (:REWRITE CDR-CONS)))
-(PREFIXP-OF-RCONS (267 6 (:REWRITE PREFIXP-OF-CDR-CDR))
-                  (206 107 (:REWRITE DEFAULT-+-2))
-                  (176 176 (:LINEAR LEN-WHEN-PREFIXP))
-                  (128 8 (:REWRITE LEN-OF-APPEND))
-                  (115 107 (:REWRITE DEFAULT-+-1))
-                  (84 3
-                      (:REWRITE PREFIXP-OF-APPEND-WHEN-SAME-LENGTH))
-                  (76 72 (:REWRITE DEFAULT-CAR))
-                  (39 39
-                      (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 2))
-                  (39 39
-                      (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
-                  (38 38 (:REWRITE PREFIXP-TRANSITIVE . 2))
-                  (38 38 (:REWRITE PREFIXP-TRANSITIVE . 1))
-                  (38 20
-                      (:REWRITE LIST-EQUIV-WHEN-ATOM-RIGHT))
-                  (34 34
-                      (:REWRITE APPEND-ATOM-UNDER-LIST-EQUIV))
-                  (32 8 (:REWRITE COMMUTATIVITY-OF-+))
-                  (12 3 (:REWRITE CAR-OF-APPEND))
-                  (8 2 (:REWRITE FOLD-CONSTS-IN-+))
-                  (3 3 (:REWRITE CDR-OF-APPEND-WHEN-CONSP)))
+(PREFIXP-OF-RCONS (2283 19 (:REWRITE TAKE-WHEN-PREFIXP))
+                  (1399 764 (:REWRITE DEFAULT-+-2))
+                  (1310 1118 (:LINEAR LEN-WHEN-PREFIXP))
+                  (1101 1034 (:REWRITE DEFAULT-CDR))
+                  (896 44 (:REWRITE TAKE-OF-LEN-FREE))
+                  (812 44 (:DEFINITION NTHCDR))
+                  (791 764 (:REWRITE DEFAULT-+-1))
+                  (472 59 (:REWRITE ZP-OPEN))
+                  (392 343 (:REWRITE DEFAULT-CAR))
+                  (304 19 (:REWRITE LEN-OF-APPEND))
+                  (287 27 (:REWRITE LIST-FIX-WHEN-LEN-ZERO))
+                  (204 204
+                       (:REWRITE APPEND-ATOM-UNDER-LIST-EQUIV))
+                  (181 27 (:REWRITE LIST-FIX-WHEN-TRUE-LISTP))
+                  (174 169
+                       (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 1))
+                  (145 71
+                       (:REWRITE LIST-EQUIV-WHEN-ATOM-RIGHT))
+                  (135 69 (:REWRITE DEFAULT-<-2))
+                  (110 22 (:DEFINITION TRUE-LISTP))
+                  (79 69 (:REWRITE DEFAULT-<-1))
+                  (27 27 (:REWRITE LIST-FIX-WHEN-NOT-CONSP))
+                  (14 14 (:REWRITE CDR-OF-APPEND-WHEN-CONSP))
+                  (6 3 (:REWRITE DEFAULT-UNARY-MINUS)))
 (PREFIXP-OF-BUTLAST-1-RIGHT (5238 309
                                   (:REWRITE PREFIXP-ONE-WAY-OR-ANOTHER . 2))
                             (1853 984 (:REWRITE DEFAULT-+-2))
