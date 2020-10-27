@@ -160,7 +160,7 @@
                 (natp amt2))
            (equal (leftrotate width amt1 (leftrotate width amt2 val))
                   (leftrotate width (+ amt1 amt2) val)))
-  :hints (("Goal" :in-theory (enable leftrotate))))
+  :hints (("Goal" :in-theory (enable leftrotate mod-sum-cases))))
 
 ;gen
 (defthm leftrotate-32-of-bvchop-5
