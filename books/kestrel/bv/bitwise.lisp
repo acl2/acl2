@@ -30,16 +30,6 @@
 
 ;; todo: move all this library stuff:
 
-;; this  one uses evenp
-(local
- (defthmd floor-of-2-cases-2
-   (implies (integerp i)
-            (equal (floor i 2)
-                   (if (evenp i)
-                       (/ i 2)
-                     (+ -1/2 (/ i 2)))))
-   :hints (("Goal" :in-theory (enable floor-of-2-cases evenp)))))
-
 ;dup in bv.lisp
 (local
  (defthm evenp-of-expt2
@@ -70,19 +60,7 @@
 ;;                  (not (evenp x))))
 ;;  :hints (("Goal" :in-theory (enable evenp))))
 
-
-;move
 ;see also one in thms.lisp
-(local
- (defthm unsigned-byte-p-of-floor-by-2-strong
-  (implies (integerp x)
-           (equal (unsigned-byte-p len (floor x 2))
-                  (and (natp len)
-                       (unsigned-byte-p (+ 1 len) x))))
-  :hints (("Goal" :in-theory (enable unsigned-byte-p
-                                     expt-of-+
-                                     <-of-floor-arg1
-                                     )))))
 
 ;; De Morgan
 (defthmd bvnot-of-bvand
