@@ -19,6 +19,8 @@
 (local (include-book "divides"))
 (local (include-book "times-and-divides"))
 (local (include-book "nonnegative-integer-quotient"))
+(local (include-book "integerp"))
+(local (include-book "expt"))
 (local (include-book "../../meta/meta-plus-lessp"))
 
 (in-theory (disable floor))
@@ -1076,3 +1078,41 @@
            (equal (floor x y)
                   0))
   :hints (("Goal" :in-theory (enable floor))))
+
+(defthm split-low-bit
+  (implies (rationalp i)
+           (equal i (+ (* 2 (floor i 2)) (mod i 2))))
+  :rule-classes nil
+  :hints (("Goal" :in-theory (enable mod))))
+
+(defthmd floor-of-2-cases
+  (implies (integerp i)
+           (equal (floor i 2)
+                  (if (equal 0 (mod i 2))
+                      (/ i 2)
+                    (+ -1/2 (/ i 2)))))
+  :hints (("Goal" :use ((:instance floor-unique
+                                   (j 2)
+                                   (n (if (equal 0 (mod i 2))
+                                          (/ i 2)
+                                        (+ 1/2 (/ i 2)))))
+                        (:instance split-low-bit)))))
+
+;; this one uses evenp
+(defthmd floor-of-2-cases-2
+   (implies (integerp i)
+            (equal (floor i 2)
+                   (if (evenp i)
+                       (/ i 2)
+                     (+ -1/2 (/ i 2)))))
+   :hints (("Goal" :in-theory (enable floor-of-2-cases evenp))))
+
+(defthm unsigned-byte-p-of-floor-by-2-strong
+  (implies (integerp x)
+           (equal (unsigned-byte-p n (floor x 2))
+                  (and (natp n)
+                       (unsigned-byte-p (+ 1 n) x))))
+  :hints (("Goal" :in-theory (enable unsigned-byte-p
+                                     expt-of-+
+                                     <-of-floor-arg1
+                                     ))))
