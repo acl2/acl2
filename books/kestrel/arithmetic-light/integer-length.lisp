@@ -16,6 +16,7 @@
 ;; TODO: which do we prefer, lg or integer-length?  i think i like lg best,
 ;; but my current rules may target integer-length?
 
+(include-book "power-of-2p")
 (local (include-book "ihs/logops-lemmas" :dir :system)) ;include less?
 (local (include-book "ihs/quotient-remainder-lemmas" :dir :system)) ;include less?
 (local (include-book "arithmetic/equalities" :dir :system)) ;include less?
@@ -36,12 +37,7 @@
                            (floor-bound
                             ;;COLLECT-CONSTANTS-TIMES-EQUAL ;bozo looped
                             )))))
-;dup
-;define in terms of lg?
-(defund power-of-2p (x)
-  (declare (xargs :guard t))
-  (and (natp x) ;otherwise, this would count 1/2 but not 1/4
-       (= x (expt 2 (+ -1 (integer-length x))))))
+
 
 (defthm integer-length-of-expt2
   (implies (integerp n)
