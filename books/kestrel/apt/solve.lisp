@@ -101,7 +101,9 @@
 
   (xdoc::evmac-topic-implementation-item-fn-doc "new")
 
-  (xdoc::evmac-topic-implementation-item-thm-doc "old-if-new")))
+  (xdoc::evmac-topic-implementation-item-thm-doc "old-if-new")
+
+  xdoc::*evmac-topic-implementation-item-names-to-avoid*))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -111,7 +113,7 @@
 
 (define solve-process-old (old verify-guards ctx state)
   :returns (mv erp
-               (result "A tuple @('(old$ ?f x1...xn matrix)') satisfying
+               (result "A tuple @('(old ?f x1...xn matrix)') satisfying
                         @('(typed-tuplep symbolp
                                          symbolp
                                          symbol-listp
@@ -525,17 +527,17 @@
                               ctx
                               state)
   :returns (mv erp
-               (result "A tuple @('(old$
+               (result "A tuple @('(old
                                     ?f
                                     x1...xn
                                     matrix
                                     f-existsp
                                     f
                                     new
-                                    new-enable$
+                                    new-enable
                                     old-if-new
-                                    old-if-new-enable$
-                                    verify-guards$
+                                    old-if-new-enable
+                                    verify-guards
                                     names-to-avoid)')
                         satisfying
                         @('(typed-tuplep symbolp

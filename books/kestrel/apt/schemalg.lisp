@@ -93,7 +93,7 @@
 
   (xdoc::evmac-topic-implementation-item-input "show-only")
 
-  "@('call') is the call to @(tsee schemalg) supplied by the user."
+  xdoc::*evmac-topic-implementation-item-call*
 
   "@('x-x1...xn') is the list of variable symbols @('(x x1 ... xn)')
    described in the user documentation."
@@ -154,8 +154,7 @@
 
   (xdoc::evmac-topic-implementation-item-thm-doc "old-if-new")
 
-  "@('names-to-avoid') is a cumulative list of names of generated events,
-   used to ensure the absence of name clashes in the generated events."))
+  xdoc::*evmac-topic-implementation-item-names-to-avoid*))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -784,7 +783,7 @@
                                  ctx
                                  state)
   :returns (mv erp
-               (result "A @('(tuple (old$ symbolp)
+               (result "A @('(tuple (old symbolp)
                                     (?f symbolp)
                                     (x-x1...xn symbolp)
                                     (x-a1...am symbolp)
@@ -803,10 +802,10 @@
                                     (spec-2 symbolp)
                                     (equal-algo symbolp)
                                     (new symbolp)
-                                    (new-enable$ booleanp)
+                                    (new-enable booleanp)
                                     (old-if-new symbolp)
-                                    (old-if-new-enable$ booleanp)
-                                    (verify-guards$ booleanp)
+                                    (old-if-new-enable booleanp)
+                                    (verify-guards booleanp)
                                     (updated-names-to-avoid symbol-listp))').")
                state)
   :mode :program

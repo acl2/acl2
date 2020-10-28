@@ -72,21 +72,19 @@
 
   (xdoc::evmac-topic-implementation-item-input "show-only")
 
-  "@('call') is the call to @(tsee restrict) supplied by the user."
+  xdoc::*evmac-topic-implementation-item-call*
 
   (xdoc::evmac-topic-implementation-item-fn-doc "new")
 
   (xdoc::evmac-topic-implementation-item-thm-doc "old-to-new")
 
-  (xdoc::evmac-topic-implementation-item-thm-doc "new--to-old")
+  (xdoc::evmac-topic-implementation-item-thm-doc "new-to-old")
 
   "@('stub?') is the stub called @('?f') in the documentation
    if @('old') is a reflexive function,
    or @('nil') otherwise."
 
-  "@('appcond-thm-names') is an alist
-   from the keywords that identify the applicability conditions
-   to the corresponding generated theorem names."
+  xdoc::*evmac-topic-implementation-item-appcond-thm-names*
 
   "@('old-unnorm') is the name of the generated theorem
    that installs the non-normalized definition of the target function."
@@ -94,8 +92,7 @@
   "@('new-unnorm') is the name of the generated theorem
    that installs the non-normalized definition of the new function."
 
-  "@('names-to-avoid') is a cumulative list of names of generated events,
-   used to ensure the absence of name clashes in the generated events."))
+  xdoc::*evmac-topic-implementation-item-names-to-avoid*))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -105,10 +102,10 @@
 
 (define restrict-process-old (old verify-guards ctx state)
   :returns (mv erp
-               (old$ "A @(tsee symbolp) that is
-                      the name of the target function
-                      of the transformation,
-                      denoted by the @('old') input.")
+               (old "A @(tsee symbolp) that is
+                     the name of the target function
+                     of the transformation,
+                     denoted by the @('old') input.")
                state)
   :mode :program
   :short "Process the @('old') input."
@@ -148,8 +145,8 @@
                                       ctx
                                       state)
   :returns (mv erp
-               (restriction$ "A @(tsee pseudo-termp) that is
-                              the translation of @('restriction').")
+               (restriction "A @(tsee pseudo-termp) that is
+                             the translation of @('restriction').")
                state)
   :mode :program
   :short "Process the @('restriction') input."
@@ -187,8 +184,8 @@
                                     ctx
                                     state)
   :returns (mv erp
-               (undefined$ "A @(tsee pseudo-termp) that is
-                            the translation of @('undefined').")
+               (undefined "A @(tsee pseudo-termp) that is
+                           the translation of @('undefined').")
                state)
   :mode :program
   :short "Process the @(':undefined') input."
@@ -228,17 +225,17 @@
                                  ctx
                                  state)
   :returns (mv erp
-               (result "A @('(tuple (old$ symbolp)
-                                    (restriction$ pseudo-termp)
-                                    (undefined$ pseudo-termp)
+               (result "A @('(tuple (old symbolp)
+                                    (restriction pseudo-termp)
+                                    (undefined pseudo-termp)
                                     (new symbolp)
-                                    (new-enable$ booleanp)
+                                    (new-enable booleanp)
                                     (old-to-new symbolp)
                                     (old-to-new-enable symbolp)
                                     (new-to-old symbolp)
                                     (new-to-old-enable symbolp)
-                                    (verify-guards$ booleanp)
-                                    (hints$ evmac-input-hints-p)
+                                    (verify-guards booleanp)
+                                    (hints evmac-input-hints-p)
                                     (names-to-avoid symbol-listp))').")
                state)
   :mode :program
