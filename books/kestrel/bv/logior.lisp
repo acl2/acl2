@@ -152,7 +152,7 @@
                 (integerp j))
            (equal (mod (logior i j) 2)
                   (logior (mod i 2) (mod j 2))))
-  :hints (("Goal" :in-theory (enable logior lognot))))
+  :hints (("Goal" :in-theory (enable logior lognot mod-sum-cases))))
 
 (defthm mod-of-logior-expt
   (implies (and (integerp i)

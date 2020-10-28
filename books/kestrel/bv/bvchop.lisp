@@ -374,7 +374,8 @@
            :in-theory (enable (:i expt)
                               bvchop ;mod-cancel
                               mod-of-mod-when-mult
-                              unsigned-byte-p))))
+                              unsigned-byte-p
+                              mod-sum-cases))))
 
 ;make a constant version? maybe not for this one?
 (defthm bvchop-of-mask-gen
@@ -612,14 +613,16 @@
                 (natp size))
            (equal (bvchop size (+ (* x (expt 2 size)) y))
                   (bvchop size y)))
-  :hints (("Goal" :in-theory (enable bvchop equal-of-0-and-mod))))
+  :hints (("Goal" :in-theory (enable bvchop equal-of-0-and-mod
+                                     mod-sum-cases))))
 
 (defthm bvchop-of-+-of-minus-of-expt
   (implies (and (integerp x)
                 (natp size))
            (equal (bvchop size (+ x (- (expt 2 size))))
                   (bvchop size x)))
-  :hints (("Goal" :in-theory (enable bvchop))))
+  :hints (("Goal" :in-theory (enable bvchop
+                                     mod-sum-cases))))
 
 (defthm bvchop-of-mod-of-expt-2
   (implies (and (< j size)

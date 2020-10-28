@@ -259,7 +259,7 @@
                 (integerp p))
            (equal (equal x (add x y p))
                   (equal 0 y)))
-  :hints (("Goal" :in-theory (enable add))))
+  :hints (("Goal" :in-theory (enable add acl2::mod-sum-cases))))
 
 ;; For use when x and y are constants but p is not.
 (defthm add-of-constants
@@ -410,7 +410,7 @@
                 (integerp p))
            (equal (sub x (sub x y p) p)
                   y))
-  :hints (("Goal" :in-theory (enable sub neg add))))
+  :hints (("Goal" :in-theory (enable sub neg add acl2::mod-sum-cases))))
 
 (defthm equal-of-0-and-sub
   (implies (and (fep x p)
@@ -418,7 +418,7 @@
                 (integerp p))
            (equal (equal 0 (sub x y p))
                   (equal x y)))
-  :hints (("Goal" :in-theory (enable sub add neg))))
+  :hints (("Goal" :in-theory (enable sub add neg acl2::mod-sum-cases))))
 
 (defthm equal-of-sub-and-sub-cancel-1
   (implies (and (fep x p)
@@ -439,7 +439,7 @@
            (equal (equal k1 (sub k2 x p))
                   (equal x (sub k2 k1 p))))
   :rule-classes ((:rewrite :loop-stopper nil))
-  :hints (("Goal" :in-theory (enable sub add neg))))
+  :hints (("Goal" :in-theory (enable sub add neg acl2::mod-sum-cases))))
 
 ;; Can be useful when p is not a constant
 (defthm sub-when-constants

@@ -146,12 +146,14 @@
 (defthm mod-of-len-of-sha-256-pad-message-and-512
   (equal (mod (len (sha-256-pad-message msg)) 512)
          0)
-  :hints (("Goal" :in-theory (enable sha-256-pad-message))))
+  :hints (("Goal" :in-theory (enable sha-256-pad-message
+                                     acl2::mod-sum-cases))))
 
 (defthm mod-of-len-of-sha-256-pad-message-and-32
   (equal (mod (len (sha-256-pad-message msg)) 32)
          0)
-  :hints (("Goal" :in-theory (enable sha-256-pad-message))))
+  :hints (("Goal" :in-theory (enable sha-256-pad-message
+                                     acl2::mod-sum-cases))))
 
 ;; Divide MSG (a sequence of bits) into a sequence of 32-bit words.  See
 ;; Section 5.2.1.

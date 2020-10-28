@@ -63,7 +63,8 @@
   (equal (mod (len (pad-to-896 msg)) 1024)
          896)
   :hints (("Goal" :in-theory (enable pad-to-896
-                                     pad-to-896-number-of-zeros))))
+                                     pad-to-896-number-of-zeros
+                                     acl2::mod-sum-cases))))
 
 ;; Padding adds no more bits than necessary (adds at most 1024 bits).  Note that
 ;; it can't add 0 bits, because it must always at least add a single 1.
@@ -84,4 +85,5 @@
   (equal (mod (len (pad-to-896 msg)) 64)
          0)
   :hints (("Goal" :in-theory (enable pad-to-896
-                                     pad-to-896-number-of-zeros))))
+                                     pad-to-896-number-of-zeros
+                                     acl2::mod-sum-cases))))
