@@ -929,17 +929,17 @@
   (defconst xdoc::*evmac-topic-implementation-item-ctx*
     "@('ctx') is the context used for errors.")
 
-  (define xdoc::evmac-topic-implementation-item-input ((name stringp)
-                                                       (macro stringp))
+  (define xdoc::evmac-topic-implementation-item-input ((name stringp))
     :parents nil
-    (xdoc::&& "@('" name "') is the homonymous input to @('" macro "')."))
+    (xdoc::&&
+     "@('" name "') is the homonymous input to the event macro."))
 
   (define xdoc::evmac-topic-implementation-item-input-untyped/typed
-    ((name stringp)
-     (macro stringp))
-    (xdoc::&& "@('" name "') is the homonymous input
-               to @('" macro "') if it has no type;
-               otherwise, it the (possibly different) typed value
+    ((name stringp))
+    :parents nil
+    (xdoc::&& "@('" name "') is the homonymous input to the event macro
+               if it has no type;
+               otherwise, it is the (possibly different) typed value
                resulting from processing that input."))
 
   (define xdoc::evmac-topic-implementation-item-fn-doc ((name stringp))
