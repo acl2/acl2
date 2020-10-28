@@ -45,42 +45,39 @@
 
   xdoc::*evmac-topic-implementation-item-ctx*
 
-  (xdoc::evmac-topic-implementation-item-input-untyped/typed "old" "solve")
+  (xdoc::evmac-topic-implementation-item-input-untyped/typed "old")
 
-  (xdoc::evmac-topic-implementation-item-input "method" "solve")
+  (xdoc::evmac-topic-implementation-item-input "method")
 
-  (xdoc::evmac-topic-implementation-item-input "method-rules" "solve")
+  (xdoc::evmac-topic-implementation-item-input "method-rules")
 
-  (xdoc::evmac-topic-implementation-item-input "solution" "solve")
+  (xdoc::evmac-topic-implementation-item-input "solution")
 
-  (xdoc::evmac-topic-implementation-item-input "solution-name" "solve")
+  (xdoc::evmac-topic-implementation-item-input "solution-name")
 
-  (xdoc::evmac-topic-implementation-item-input "solution-enable" "solve")
+  (xdoc::evmac-topic-implementation-item-input "solution-enable")
 
-  (xdoc::evmac-topic-implementation-item-input "solution-guard" "solve")
+  (xdoc::evmac-topic-implementation-item-input "solution-guard")
 
-  (xdoc::evmac-topic-implementation-item-input "solution-guard-hints" "solve")
+  (xdoc::evmac-topic-implementation-item-input "solution-guard-hints")
 
-  (xdoc::evmac-topic-implementation-item-input "solution-body" "solve")
+  (xdoc::evmac-topic-implementation-item-input "solution-body")
 
-  (xdoc::evmac-topic-implementation-item-input "solution-hints" "solve")
+  (xdoc::evmac-topic-implementation-item-input "solution-hints")
 
-  (xdoc::evmac-topic-implementation-item-input "new-name" "solve")
+  (xdoc::evmac-topic-implementation-item-input "new-name")
 
-  (xdoc::evmac-topic-implementation-item-input-untyped/typed "new-enable"
-                                                             "solve")
+  (xdoc::evmac-topic-implementation-item-input-untyped/typed "new-enable")
 
-  (xdoc::evmac-topic-implementation-item-input "old-if-new-name" "solve")
+  (xdoc::evmac-topic-implementation-item-input "old-if-new-name")
 
-  (xdoc::evmac-topic-implementation-item-input-untyped/typed "old-if-new-enable"
-                                                             "solve")
+  (xdoc::evmac-topic-implementation-item-input-untyped/typed "old-if-new-enable")
 
-  (xdoc::evmac-topic-implementation-item-input-untyped/typed "verify-guards"
-                                                             "solve")
+  (xdoc::evmac-topic-implementation-item-input-untyped/typed "verify-guards")
 
-  (xdoc::evmac-topic-implementation-item-input "print" "solve")
+  (xdoc::evmac-topic-implementation-item-input "print")
 
-  (xdoc::evmac-topic-implementation-item-input "show-only" "solve")
+  (xdoc::evmac-topic-implementation-item-input "show-only")
 
   (xdoc::evmac-topic-implementation-item-fn-doc "?f")
 

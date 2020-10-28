@@ -41,60 +41,57 @@
 
   xdoc::*evmac-topic-implementation-item-ctx*
 
-  (xdoc::evmac-topic-implementation-item-input-untyped/typed "old" "schemalg")
+  (xdoc::evmac-topic-implementation-item-input-untyped/typed "old")
 
-  (xdoc::evmac-topic-implementation-item-input "schema" "schemalg")
+  (xdoc::evmac-topic-implementation-item-input "schema")
 
-  (xdoc::evmac-topic-implementation-item-input "list-input" "schemalg")
+  (xdoc::evmac-topic-implementation-item-input "list-input")
 
-  (xdoc::evmac-topic-implementation-item-input "oset-input" "schemalg")
+  (xdoc::evmac-topic-implementation-item-input "oset-input")
 
-  (xdoc::evmac-topic-implementation-item-input "cdr-output" "schemalg")
+  (xdoc::evmac-topic-implementation-item-input "cdr-output")
 
-  (xdoc::evmac-topic-implementation-item-input "tail-output" "schemalg")
+  (xdoc::evmac-topic-implementation-item-input "tail-output")
 
-  (xdoc::evmac-topic-implementation-item-input "fvar-0-name" "schemalg")
+  (xdoc::evmac-topic-implementation-item-input "fvar-0-name")
 
-  (xdoc::evmac-topic-implementation-item-input "fvar-1-name" "schemalg")
+  (xdoc::evmac-topic-implementation-item-input "fvar-1-name")
 
-  (xdoc::evmac-topic-implementation-item-input "fvar-2-name" "schemalg")
+  (xdoc::evmac-topic-implementation-item-input "fvar-2-name")
 
-  (xdoc::evmac-topic-implementation-item-input "algo-name" "schemalg")
+  (xdoc::evmac-topic-implementation-item-input "algo-name")
 
-  (xdoc::evmac-topic-implementation-item-input "algo-enable" "schemalg")
+  (xdoc::evmac-topic-implementation-item-input "algo-enable")
 
-  (xdoc::evmac-topic-implementation-item-input "spec-0-name" "schemalg")
+  (xdoc::evmac-topic-implementation-item-input "spec-0-name")
 
-  (xdoc::evmac-topic-implementation-item-input "spec-0-enable" "schemalg")
+  (xdoc::evmac-topic-implementation-item-input "spec-0-enable")
 
-  (xdoc::evmac-topic-implementation-item-input "spec-1-name" "schemalg")
+  (xdoc::evmac-topic-implementation-item-input "spec-1-name")
 
-  (xdoc::evmac-topic-implementation-item-input "spec-1-enable" "schemalg")
+  (xdoc::evmac-topic-implementation-item-input "spec-1-enable")
 
-  (xdoc::evmac-topic-implementation-item-input "spec-2-name" "schemalg")
+  (xdoc::evmac-topic-implementation-item-input "spec-2-name")
 
-  (xdoc::evmac-topic-implementation-item-input "spec-2-enable" "schemalg")
+  (xdoc::evmac-topic-implementation-item-input "spec-2-enable")
 
-  (xdoc::evmac-topic-implementation-item-input "equal-algo-name" "schemalg")
+  (xdoc::evmac-topic-implementation-item-input "equal-algo-name")
 
-  (xdoc::evmac-topic-implementation-item-input "equal-algo-enable" "schemalg")
+  (xdoc::evmac-topic-implementation-item-input "equal-algo-enable")
 
-  (xdoc::evmac-topic-implementation-item-input "new-name" "schemalg")
+  (xdoc::evmac-topic-implementation-item-input "new-name")
 
-  (xdoc::evmac-topic-implementation-item-input-untyped/typed "new-enable"
-                                                             "schemalg")
+  (xdoc::evmac-topic-implementation-item-input-untyped/typed "new-enable")
 
-  (xdoc::evmac-topic-implementation-item-input "old-if-new-name" "schemalg")
+  (xdoc::evmac-topic-implementation-item-input "old-if-new-name")
 
-  (xdoc::evmac-topic-implementation-item-input-untyped/typed "old-if-new-enable"
-                                                             "schemalg")
+  (xdoc::evmac-topic-implementation-item-input-untyped/typed "old-if-new-enable")
 
-  (xdoc::evmac-topic-implementation-item-input-untyped/typed "verify-guards"
-                                                             "schemalg")
+  (xdoc::evmac-topic-implementation-item-input-untyped/typed "verify-guards")
 
-  (xdoc::evmac-topic-implementation-item-input "print" "schemalg")
+  (xdoc::evmac-topic-implementation-item-input "print")
 
-  (xdoc::evmac-topic-implementation-item-input "show-only" "schemalg")
+  (xdoc::evmac-topic-implementation-item-input "show-only")
 
   "@('call') is the call to @(tsee schemalg) supplied by the user."
 

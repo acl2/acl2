@@ -46,38 +46,31 @@
 
   xdoc::*evmac-topic-implementation-item-ctx*
 
-  (xdoc::evmac-topic-implementation-item-input-untyped/typed "old" "restrict")
+  (xdoc::evmac-topic-implementation-item-input-untyped/typed "old")
 
-  (xdoc::evmac-topic-implementation-item-input-untyped/typed "restriction"
-                                                             "restrict")
+  (xdoc::evmac-topic-implementation-item-input-untyped/typed "restriction")
 
-  (xdoc::evmac-topic-implementation-item-input-untyped/typed "undefined"
-                                                             "restrict")
+  (xdoc::evmac-topic-implementation-item-input-untyped/typed "undefined")
 
-  (xdoc::evmac-topic-implementation-item-input "new-name" "restrict")
+  (xdoc::evmac-topic-implementation-item-input "new-name")
 
-  (xdoc::evmac-topic-implementation-item-input-untyped/typed "new-enable"
-                                                             "restrict")
+  (xdoc::evmac-topic-implementation-item-input-untyped/typed "new-enable")
 
-  (xdoc::evmac-topic-implementation-item-input "old-to-new-name" "restrict")
+  (xdoc::evmac-topic-implementation-item-input "old-to-new-name")
 
-  (xdoc::evmac-topic-implementation-item-input-untyped/typed "old-to-new-enable"
-                                                             "restrict")
+  (xdoc::evmac-topic-implementation-item-input-untyped/typed "old-to-new-enable")
 
-  (xdoc::evmac-topic-implementation-item-input "new-to-old-name" "restrict")
+  (xdoc::evmac-topic-implementation-item-input "new-to-old-name")
 
-  (xdoc::evmac-topic-implementation-item-input-untyped/typed "new-to-old-enable"
-                                                             "restrict")
+  (xdoc::evmac-topic-implementation-item-input-untyped/typed "new-to-old-enable")
 
-  (xdoc::evmac-topic-implementation-item-input-untyped/typed "verify-guards"
-                                                             "restrict")
+  (xdoc::evmac-topic-implementation-item-input-untyped/typed "verify-guards")
 
-  (xdoc::evmac-topic-implementation-item-input-untyped/typed "hints"
-                                                             "restrict")
+  (xdoc::evmac-topic-implementation-item-input-untyped/typed "hints")
 
-  (xdoc::evmac-topic-implementation-item-input "print" "restrict")
+  (xdoc::evmac-topic-implementation-item-input "print")
 
-  (xdoc::evmac-topic-implementation-item-input "show-only" "restrict")
+  (xdoc::evmac-topic-implementation-item-input "show-only")
 
   "@('call') is the call to @(tsee restrict) supplied by the user."
 
