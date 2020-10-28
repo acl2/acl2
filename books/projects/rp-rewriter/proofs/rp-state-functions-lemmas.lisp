@@ -111,7 +111,7 @@
                      (update-rw-stack-size
                       (+ 1 (nth *rw-stack-size* rp-state))
                       (update-rw-stack (cons (list (nth *rw-stack-size* rp-state)
-                                                   '(:type trying)
+                                                   '(:type :trying)
                                                    (list :rune (cdddr rule))
                                                    (list :lhs (cdr (car rule)))
                                                    (list :rhs (caddr rule))
@@ -124,7 +124,7 @@
                      (update-rw-stack-size
                       (+ 1 (nth *rw-stack-size* rp-state))
                       (update-rw-stack (cons (list (nth *rw-stack-size* rp-state)
-                                                   '(:type trying)
+                                                   '(:type :trying)
                                                    (list :rune (cdddr rule))
                                                    (list :lhs (cdr (car rule)))
                                                    (list :rhs (caddr rule))
@@ -139,7 +139,7 @@
                                   (update-rw-stack-size
                                    (+ 1 (nth *rw-stack-size* rp-state))
                                    (update-rw-stack (cons (list (nth *rw-stack-size* rp-state)
-                                                                '(:type trying)
+                                                                '(:type :trying)
                                                                 (list :rune (cdddr rule))
                                                                 (list :lhs (cdr (car rule)))
                                                                 (list :rhs (caddr rule))
@@ -153,7 +153,7 @@
                                   (update-rw-stack-size
                                    (+ 1 (nth *rw-stack-size* rp-state))
                                    (update-rw-stack (cons (list (nth *rw-stack-size* rp-state)
-                                                                '(:type trying)
+                                                                '(:type :trying)
                                                                 (list :rune (cdddr rule))
                                                                 (list :lhs (cdr (car rule)))
                                                                 (list :rhs (caddr rule))

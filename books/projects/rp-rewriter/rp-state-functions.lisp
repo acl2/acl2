@@ -196,7 +196,7 @@ which submits an event.
            (new-rw-stack
             (acons index
                    (list
-                    (list ':type 'trying)
+                    (list ':type ':trying)
                     (list ':rune (rp-rune rule))
                     (list ':lhs (rp-lhs rule))
                     (list ':rhs (rp-rhs rule))
@@ -218,7 +218,7 @@ which submits an event.
            (index (rw-stack-size rp-state))
            (new-rw-stack (acons index
                                 (list
-                                 (list ':type 'meta-applied)
+                                 (list ':type ':meta-applied)
                                  (list ':meta-fnc (rp-rule-meta-fnc meta-rule))
                                  (list ':trig-fnc (rp-rule-trig-fnc meta-rule))
                                  (list ':new-term new-term)
@@ -249,10 +249,10 @@ which submits an event.
            (old-rw-stack (rw-stack rp-state))
            (new-rw-stack (acons index
                                 (list*
-                                 (cons 'type failed)
-                                 (list 'rune rune)
-                                 (if new-term (list (list 'new-term new-term)
-                                                    (list 'old-term old-term))
+                                 (cons ':type failed)
+                                 (list ':rune rune)
+                                 (if new-term (list (list ':new-term new-term)
+                                                    (list ':old-term old-term))
                                    nil))
                                 old-rw-stack)))
         (update-rw-stack new-rw-stack rp-state))
@@ -274,14 +274,14 @@ which submits an event.
   (if (atom keys)
       nil
     (acons (car keys)
-           (cond ((or (equal (car keys) 'new-term)
-                      (equal (car keys) 'old-term)
-                      (equal (car keys) 'rhs)
-                      (equal (car keys) 'lhs)
-                      (equal (car keys) 'hyp))
+           (cond ((or (equal (car keys) ':new-term)
+                      (equal (car keys) ':old-term)
+                      (equal (car keys) ':rhs)
+                      (equal (car keys) ':lhs)
+                      (equal (car keys) ':hyp))
                   (list (untranslate (cadr (assoc-eq (car keys) alist)) t (w
                                                                            state))))
-                 ((equal (car keys) 'var-bindings)
+                 ((equal (car keys) ':var-bindings)
                   (list (untranslate-var-bindinds (cadr (assoc-eq (car keys) alist)) t
                                                   (w state))))
                  (t (cdr (assoc-eq (car keys) alist))))
@@ -300,11 +300,11 @@ which submits an event.
   (if (atom rw-stack)
       nil
     (b* ((current (car rw-stack))
-         (type (cdr (assoc-equal 'type (cdr current))))
-         ((unless (or (eq type 'success)
-                      (eq type 'meta-applied)))
+         (type (cdr (assoc-equal ':type (cdr current))))
+         ((unless (or (eq type ':success)
+                      (eq type ':meta-applied)))
           (search-source-in-stack (cdr rw-stack) term)))
-      (if (subtermp (cadr (assoc-equal 'new-term (cdr current))) term)
+      (if (subtermp (cadr (assoc-equal ':new-term (cdr current))) term)
           (car current)
         (search-source-in-stack (cdr rw-stack) term)))))
 
@@ -326,11 +326,11 @@ which submits an event.
         state
       (b* ((entry (car rw-stack))
            ((when (and only
-                       (not (or (member-equal (cdr (assoc-equal 'type (cdr entry)))
+                       (not (or (member-equal (cdr (assoc-equal ':type (cdr entry)))
                                               only)
-                                (member-equal (cadr (assoc-equal 'rune (cdr entry)))
+                                (member-equal (cadr (assoc-equal ':rune (cdr entry)))
                                               only)
-                                (member-equal (cadr (assoc-equal 'meta-fnc (cdr entry)))
+                                (member-equal (cadr (assoc-equal ':meta-fnc (cdr entry)))
                                               only)))))
             (pp-rw-stack-aux (cdr rw-stack)
                              omit
@@ -339,11 +339,11 @@ which submits an event.
                              untranslate
                              search-source
                              state))
-           ((when (or (member-equal (cdr (assoc-equal 'type (cdr entry)))
+           ((when (or (member-equal (cdr (assoc-equal ':type (cdr entry)))
                                     omit)
-                      (member-equal (cadr (assoc-equal 'rune (cdr entry)))
+                      (member-equal (cadr (assoc-equal ':rune (cdr entry)))
                                     omit)
-                      (member-equal (cadr (assoc-equal 'meta-fnc (cdr entry)))
+                      (member-equal (cadr (assoc-equal ':meta-fnc (cdr entry)))
                                     omit)))
             (pp-rw-stack-aux (cdr rw-stack)
                              omit
@@ -362,23 +362,23 @@ which submits an event.
                                           omit)
                          (cdr entry))))
            (sub-entries (if (and search-source
-                                 (equal (cdr (assoc-equal 'type (cdr entry))) 'trying))
+                                 (equal (cdr (assoc-equal ':type (cdr entry))) ':trying))
                             (append
                              sub-entries
-                             (list (cons 'var-bindings-sources
+                             (list (cons ':var-bindings
                                          (search-source-in-stack-var-bindings
                                           rw-stack
-                                          (cadr (assoc-equal 'var-bindings
+                                          (cadr (assoc-equal ':var-bindings
                                                              (cdr entry)))))))
                           sub-entries))
            (sub-entries (if (and search-source
-                                 (equal (cdr (assoc-equal 'type (cdr entry))) 'meta-applied))
+                                 (equal (cdr (assoc-equal ':type (cdr entry))) ':meta-applied))
                             (append
                              sub-entries
-                             (list (cons 'old-term-source
+                             (list (cons ':old-term
                                          (search-source-in-stack
                                           rw-stack
-                                          (cadr (assoc-equal 'old-term
+                                          (cadr (assoc-equal ':old-term
                                                              (cdr entry)))))))
                           sub-entries))
            (state (fms "~p0~%"
