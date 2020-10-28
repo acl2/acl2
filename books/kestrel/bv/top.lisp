@@ -91,3 +91,6 @@
 ; Operations specialized to particular sizes:
 (include-book "ops32")
 (include-book "ops64")
+
+;; Rules about bitwise operations:
+(include-book "bitwise")
