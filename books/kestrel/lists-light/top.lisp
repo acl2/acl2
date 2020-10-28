@@ -57,3 +57,8 @@
 (include-book "subrange")
 (include-book "subsequencep-equal")
 (include-book "update-nth2")
+(include-book "last-elem")
+(include-book "finalcdr")
+(include-book "all-equal-dollar")
+(include-book "all-equal-dollar2")
+(include-book "all-same")

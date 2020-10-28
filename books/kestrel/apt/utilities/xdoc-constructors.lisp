@@ -11,6 +11,7 @@
 (in-package "APT")
 
 (include-book "kestrel/std/util/defmacro-plus" :dir :system)
+(include-book "std/util/define" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -590,3 +591,26 @@
      (xdoc::seetopic "untranslate-specifier" "untranslate specifier")
      "; see that documentation topic for details.")
     ,@additional))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defmacro+ xdoc::apt-design-notes-ref (macro)
+  (declare (xargs :guard (symbolp macro)))
+  :short "Builds text that references the design notes
+          of an APT transformation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This should be normally put at or towards the end of
+     the introduction section of the user documentation.")
+   (xdoc::p
+    "It is assumed that there is a named constant
+     with text hyperlinked to the design notes file."))
+  (b* ((const-design-notes (packn-pos (list "*" macro "-DESIGN-NOTES*") macro)))
+    `(xdoc::p
+      "The " ,const-design-notes ", which use "
+      (xdoc::a :href "res/kestrel-design-notes/notation.pdf" "this notation")
+      ", provide the mathematical concepts and template proofs
+       upon which this transformation is based.
+       These notes should be read alongside this reference documentation,
+       which refers to them in some places.")))

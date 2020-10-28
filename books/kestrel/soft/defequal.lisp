@@ -35,13 +35,13 @@
 
  :items
 
- ((xdoc::evmac-topic-implementation-item-input "name" "defequal")
+ ((xdoc::evmac-topic-implementation-item-input "name")
 
-  (xdoc::evmac-topic-implementation-item-input "left" "defequal")
+  (xdoc::evmac-topic-implementation-item-input "left")
 
-  (xdoc::evmac-topic-implementation-item-input "right" "defequal")
+  (xdoc::evmac-topic-implementation-item-input "right")
 
-  (xdoc::evmac-topic-implementation-item-input "vars" "defequal")
+  (xdoc::evmac-topic-implementation-item-input "vars")
 
   "@('n') is the arity of @('left') and @('right'),
    as described in the user documentation."

@@ -46,6 +46,7 @@
 (include-book "putbits")
 
 ;; Bit-wise operations:
+(include-book "bvnot")
 (include-book "bvand")
 (include-book "bvor")
 (include-book "bvxor")
@@ -53,15 +54,23 @@
 
 ;; Single bit operations:
 (include-book "bitxor")
+(include-book "bitnot")
+(include-book "bitand")
+(include-book "bitor")
 
 ;; Arithmetic operations:
 (include-book "bvplus")
 (include-book "bvminus")
 (include-book "bvuminus")
+(include-book "bvmult")
+(include-book "bvmod")
 
 ;; Comparison operations:
 (include-book "bvlt")
 (include-book "sbvlt")
+
+;; If-then-else:
+(include-book "bvif")
 
 ;; Rotate operations:
 (include-book "leftrotate")

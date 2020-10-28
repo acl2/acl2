@@ -45,46 +45,39 @@
 
   xdoc::*evmac-topic-implementation-item-ctx*
 
-  "@('old') is the homonymous input to @(tsee solve) when it has no type;
-   otherwise, it is the function symbol denoted by that input."
+  (xdoc::evmac-topic-implementation-item-input-untyped/typed "old")
 
-  (xdoc::evmac-topic-implementation-item-input "method" "solve")
+  (xdoc::evmac-topic-implementation-item-input "method")
 
-  (xdoc::evmac-topic-implementation-item-input "method-rules" "solve")
+  (xdoc::evmac-topic-implementation-item-input "method-rules")
 
-  (xdoc::evmac-topic-implementation-item-input "solution" "solve")
+  (xdoc::evmac-topic-implementation-item-input "solution")
 
-  (xdoc::evmac-topic-implementation-item-input "solution-name" "solve")
+  (xdoc::evmac-topic-implementation-item-input "solution-name")
 
-  (xdoc::evmac-topic-implementation-item-input "solution-enable" "solve")
+  (xdoc::evmac-topic-implementation-item-input "solution-enable")
 
-  (xdoc::evmac-topic-implementation-item-input "solution-guard" "solve")
+  (xdoc::evmac-topic-implementation-item-input "solution-guard")
 
-  (xdoc::evmac-topic-implementation-item-input "solution-guard-hints" "solve")
+  (xdoc::evmac-topic-implementation-item-input "solution-guard-hints")
 
-  (xdoc::evmac-topic-implementation-item-input "solution-body" "solve")
+  (xdoc::evmac-topic-implementation-item-input "solution-body")
 
-  (xdoc::evmac-topic-implementation-item-input "solution-hints" "solve")
+  (xdoc::evmac-topic-implementation-item-input "solution-hints")
 
-  (xdoc::evmac-topic-implementation-item-input "new-name" "solve")
+  (xdoc::evmac-topic-implementation-item-input "new-name")
 
-  "@('new-enable') is the homonymous input to @(tsee solve)
-   if it has no type;
-   otherwise, it is the boolean resulting from processing that input."
+  (xdoc::evmac-topic-implementation-item-input-untyped/typed "new-enable")
 
-  (xdoc::evmac-topic-implementation-item-input "old-if-new-name" "solve")
+  (xdoc::evmac-topic-implementation-item-input "old-if-new-name")
 
-  "@('old-if-new-enable') is the homonymous input to @(tsee solve)
-   if it has no type;
-   otherwise, it is the boolean resulting from processing that input."
+  (xdoc::evmac-topic-implementation-item-input-untyped/typed "old-if-new-enable")
 
-  "@('verify-guards') is the homonymous input to @(tsee solve)
-   if it has no type;
-   otherwise, it is the boolean resulting from processing that input."
+  (xdoc::evmac-topic-implementation-item-input-untyped/typed "verify-guards")
 
-  (xdoc::evmac-topic-implementation-item-input "print" "solve")
+  (xdoc::evmac-topic-implementation-item-input "print")
 
-  (xdoc::evmac-topic-implementation-item-input "show-only" "solve")
+  (xdoc::evmac-topic-implementation-item-input "show-only")
 
   (xdoc::evmac-topic-implementation-item-fn-doc "?f")
 
@@ -108,7 +101,9 @@
 
   (xdoc::evmac-topic-implementation-item-fn-doc "new")
 
-  (xdoc::evmac-topic-implementation-item-thm-doc "old-if-new")))
+  (xdoc::evmac-topic-implementation-item-thm-doc "old-if-new")
+
+  xdoc::*evmac-topic-implementation-item-names-to-avoid*))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -118,7 +113,7 @@
 
 (define solve-process-old (old verify-guards ctx state)
   :returns (mv erp
-               (result "A tuple @('(old$ ?f x1...xn matrix)') satisfying
+               (result "A tuple @('(old ?f x1...xn matrix)') satisfying
                         @('(typed-tuplep symbolp
                                          symbolp
                                          symbol-listp
@@ -532,17 +527,17 @@
                               ctx
                               state)
   :returns (mv erp
-               (result "A tuple @('(old$
+               (result "A tuple @('(old
                                     ?f
                                     x1...xn
                                     matrix
                                     f-existsp
                                     f
                                     new
-                                    new-enable$
+                                    new-enable
                                     old-if-new
-                                    old-if-new-enable$
-                                    verify-guards$
+                                    old-if-new-enable
+                                    verify-guards
                                     names-to-avoid)')
                         satisfying
                         @('(typed-tuplep symbolp

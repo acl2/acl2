@@ -45,3 +45,16 @@
 (defund rightrotate64 (amt val)
   (declare (type integer amt val))
   (rightrotate 64 amt val))
+
+(defthmd rightrotate-open-when-constant-shift-amount
+  (implies (and (syntaxp (quotep amt))
+                (syntaxp (quotep width)))
+           (equal (rightrotate width amt val)
+                  (if (equal 0 width)
+                      0
+                    (let* ((amt (mod (nfix amt) width) ;(bvchop (integer-length (+ -1 width)) amt)
+                                ))
+                      (bvcat amt (slice (+ -1 amt) 0 val)
+                             (- width amt)
+                             (slice (+ -1 width) amt val))))))
+  :hints (("Goal" :in-theory (e/d (rightrotate) ()))))

@@ -219,7 +219,7 @@
                                   (floor-of-*-of-/-and-1)))))
 
 ;from rtl:
-(defthm mod-sum-cases
+(defthmd mod-sum-cases
   (implies (and (<= 0 y)
                 (rationalp x)
                 (rationalp y)
@@ -530,25 +530,6 @@
                     i)))
   :hints (("Goal" :in-theory (enable))))
 
-(defthm split-low-bit
-  (implies (rationalp i)
-           (equal i (+ (* 2 (floor i 2)) (mod i 2))))
-  :rule-classes nil
-  :hints (("Goal" :in-theory (enable mod))))
-
-(defthmd floor-of-2-cases
-  (implies (integerp i)
-           (equal (floor i 2)
-                  (if (equal 0 (mod i 2))
-                      (/ i 2)
-                    (+ -1/2 (/ i 2)))))
-  :hints (("Goal" :use ((:instance floor-unique
-                                   (j 2)
-                                   (n (if (equal 0 (mod i 2))
-                                          (/ i 2)
-                                        (+ 1/2 (/ i 2)))))
-                        (:instance split-low-bit)))))
-
 ;two ways of saying that i is even
 (defthmd equal-of-*-2-of-floor-of-2-same
   (equal (equal (* 2 (floor i 2)) i)
@@ -648,7 +629,9 @@
                 (not (equal 0 y1)))
            (equal (mod (mod x y1) y2)
                   (mod x y2)))
-  :hints (("Goal" :in-theory (enable acl2::equal-of-0-and-mod))))
+  :hints (("Goal" :in-theory (enable acl2::equal-of-0-and-mod
+                                     mod-sum-cases ; why?
+                                     ))))
 
 (defthm mod-of-mod-when-multiple-safe
   (implies (and (syntaxp (and (quotep y1)

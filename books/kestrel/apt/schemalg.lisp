@@ -41,64 +41,59 @@
 
   xdoc::*evmac-topic-implementation-item-ctx*
 
-  "@('old') is the homonymous input to @(tsee schemalg) when it has no type;
-   otherwise, it is the function symbol denoted by that input."
+  (xdoc::evmac-topic-implementation-item-input-untyped/typed "old")
 
-  (xdoc::evmac-topic-implementation-item-input "schema" "schemalg")
+  (xdoc::evmac-topic-implementation-item-input "schema")
 
-  (xdoc::evmac-topic-implementation-item-input "list-input" "schemalg")
+  (xdoc::evmac-topic-implementation-item-input "list-input")
 
-  (xdoc::evmac-topic-implementation-item-input "oset-input" "schemalg")
+  (xdoc::evmac-topic-implementation-item-input "oset-input")
 
-  (xdoc::evmac-topic-implementation-item-input "cdr-output" "schemalg")
+  (xdoc::evmac-topic-implementation-item-input "cdr-output")
 
-  (xdoc::evmac-topic-implementation-item-input "tail-output" "schemalg")
+  (xdoc::evmac-topic-implementation-item-input "tail-output")
 
-  (xdoc::evmac-topic-implementation-item-input "fvar-0-name" "schemalg")
+  (xdoc::evmac-topic-implementation-item-input "fvar-0-name")
 
-  (xdoc::evmac-topic-implementation-item-input "fvar-1-name" "schemalg")
+  (xdoc::evmac-topic-implementation-item-input "fvar-1-name")
 
-  (xdoc::evmac-topic-implementation-item-input "fvar-2-name" "schemalg")
+  (xdoc::evmac-topic-implementation-item-input "fvar-2-name")
 
-  (xdoc::evmac-topic-implementation-item-input "algo-name" "schemalg")
+  (xdoc::evmac-topic-implementation-item-input "algo-name")
 
-  (xdoc::evmac-topic-implementation-item-input "algo-enable" "schemalg")
+  (xdoc::evmac-topic-implementation-item-input "algo-enable")
 
-  (xdoc::evmac-topic-implementation-item-input "spec-0-name" "schemalg")
+  (xdoc::evmac-topic-implementation-item-input "spec-0-name")
 
-  (xdoc::evmac-topic-implementation-item-input "spec-0-enable" "schemalg")
+  (xdoc::evmac-topic-implementation-item-input "spec-0-enable")
 
-  (xdoc::evmac-topic-implementation-item-input "spec-1-name" "schemalg")
+  (xdoc::evmac-topic-implementation-item-input "spec-1-name")
 
-  (xdoc::evmac-topic-implementation-item-input "spec-1-enable" "schemalg")
+  (xdoc::evmac-topic-implementation-item-input "spec-1-enable")
 
-  (xdoc::evmac-topic-implementation-item-input "spec-2-name" "schemalg")
+  (xdoc::evmac-topic-implementation-item-input "spec-2-name")
 
-  (xdoc::evmac-topic-implementation-item-input "spec-2-enable" "schemalg")
+  (xdoc::evmac-topic-implementation-item-input "spec-2-enable")
 
-  (xdoc::evmac-topic-implementation-item-input "equal-algo-name" "schemalg")
+  (xdoc::evmac-topic-implementation-item-input "equal-algo-name")
 
-  (xdoc::evmac-topic-implementation-item-input "equal-algo-enable" "schemalg")
+  (xdoc::evmac-topic-implementation-item-input "equal-algo-enable")
 
-  (xdoc::evmac-topic-implementation-item-input "new-name" "schemalg")
+  (xdoc::evmac-topic-implementation-item-input "new-name")
 
-  "@('new-enable') is the homonymous input to @(tsee schemalg)
-   if it has no type;
-   otherwise, it is the boolean resulting from processing that input."
+  (xdoc::evmac-topic-implementation-item-input-untyped/typed "new-enable")
 
-  (xdoc::evmac-topic-implementation-item-input "old-if-new-name" "schemalg")
+  (xdoc::evmac-topic-implementation-item-input "old-if-new-name")
 
-  "@('old-if-new-enable') is the homonymous input to @(tsee schemalg)
-   if it has no type;
-   otherwise, it is the boolean resulting from processing that input."
+  (xdoc::evmac-topic-implementation-item-input-untyped/typed "old-if-new-enable")
 
-  "@('verify-guards') is the homonymous input to @(tsee schemalg)
-   if it has no type;
-   otherwise, it is the boolean resulting from processing that input."
+  (xdoc::evmac-topic-implementation-item-input-untyped/typed "verify-guards")
 
-  (xdoc::evmac-topic-implementation-item-input "print" "schemalg")
+  (xdoc::evmac-topic-implementation-item-input "print")
 
-  (xdoc::evmac-topic-implementation-item-input "show-only" "schemalg")
+  (xdoc::evmac-topic-implementation-item-input "show-only")
+
+  xdoc::*evmac-topic-implementation-item-call*
 
   "@('x-x1...xn') is the list of variable symbols @('(x x1 ... xn)')
    described in the user documentation."
@@ -157,7 +152,9 @@
 
   (xdoc::evmac-topic-implementation-item-fn-doc "new")
 
-  (xdoc::evmac-topic-implementation-item-thm-doc "old-if-new")))
+  (xdoc::evmac-topic-implementation-item-thm-doc "old-if-new")
+
+  xdoc::*evmac-topic-implementation-item-names-to-avoid*))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -317,93 +314,93 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-process-input-fresh-function-name
- fvar-0-name
- :macro schemalg
- :other-args ((?f symbolp))
- :auto-code (add-suffix ?f "-0"))
+  fvar-0-name
+  :macro schemalg
+  :other-args ((?f symbolp))
+  :auto-code (add-suffix ?f "-0"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-process-input-fresh-function-name
- fvar-1-name
- :macro schemalg
- :other-args ((?f symbolp))
- :auto-code (add-suffix ?f "-1"))
+  fvar-1-name
+  :macro schemalg
+  :other-args ((?f symbolp))
+  :auto-code (add-suffix ?f "-1"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-process-input-fresh-function-name
- fvar-2-name
- :macro schemalg
- :other-args ((?f symbolp))
- :auto-code (add-suffix ?f "-2"))
+  fvar-2-name
+  :macro schemalg
+  :other-args ((?f symbolp))
+  :auto-code (add-suffix ?f "-2"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-process-input-fresh-function-name
- algo-name
- :macro schemalg
- :other-args ((?f symbolp)
-              (?f1...?fp symbol-listp))
- :auto-code (b* ((??f-chars (explode (symbol-name ?f)))
-                 (algo-chars (if (and (consp ?f-chars)
-                                      (eql (car ?f-chars) #\?))
-                                 (cdr ?f-chars)
-                               ?f-chars))
-                 ([?f1]...[?fp]-chars
-                  (schemalg-process-algo-name-aux ?f1...?fp)))
-              (intern-in-package-of-symbol
-               (implode (append algo-chars [?f1]...[?fp]-chars))
-               ?f))
- :prepwork
- ((define schemalg-process-algo-name-aux ((?f1...?fp symbol-listp))
-    :returns ([?f1]...[?fp]-chars)
-    ;; use this above eventually and avoid this auxiliary function:
-    ;; (loop$ for ?fk in ?f1...?fp
-    ;;        append (append (list #\[)
-    ;;                       (explode (symbol-name ?fk))
-    ;;                       (list #\])))
-    (cond ((endp ?f1...?fp) nil)
-          (t (append (list #\[)
-                     (explode (symbol-name (car ?f1...?fp)))
-                     (list #\])
-                     (schemalg-process-algo-name-aux (cdr ?f1...?fp))))))))
+  algo-name
+  :macro schemalg
+  :other-args ((?f symbolp)
+               (?f1...?fp symbol-listp))
+  :auto-code (b* ((??f-chars (explode (symbol-name ?f)))
+                  (algo-chars (if (and (consp ?f-chars)
+                                       (eql (car ?f-chars) #\?))
+                                  (cdr ?f-chars)
+                                ?f-chars))
+                  ([?f1]...[?fp]-chars
+                   (schemalg-process-algo-name-aux ?f1...?fp)))
+               (intern-in-package-of-symbol
+                (implode (append algo-chars [?f1]...[?fp]-chars))
+                ?f))
+  :prepwork
+  ((define schemalg-process-algo-name-aux ((?f1...?fp symbol-listp))
+     :returns ([?f1]...[?fp]-chars)
+     ;; use this above eventually and avoid this auxiliary function:
+     ;; (loop$ for ?fk in ?f1...?fp
+     ;;        append (append (list #\[)
+     ;;                       (explode (symbol-name ?fk))
+     ;;                       (list #\])))
+     (cond ((endp ?f1...?fp) nil)
+           (t (append (list #\[)
+                      (explode (symbol-name (car ?f1...?fp)))
+                      (list #\])
+                      (schemalg-process-algo-name-aux (cdr ?f1...?fp))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-process-input-fresh-function-name
- spec-0-name
- :macro schemalg
- :other-args ((old symbolp)
-              (?g/?g0 symbolp))
- :auto-code (packn-pos (list old "-0" "[" ?g/?g0 "]") old))
+  spec-0-name
+  :macro schemalg
+  :other-args ((old symbolp)
+               (?g/?g0 symbolp))
+  :auto-code (packn-pos (list old "-0" "[" ?g/?g0 "]") old))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-process-input-fresh-function-name
- spec-1-name
- :macro schemalg
- :other-args ((old symbolp)
-              (?h/?g2 symbolp))
- :auto-code (packn-pos (list old "-1" "[" ?h/?g2 "]") old))
+  spec-1-name
+  :macro schemalg
+  :other-args ((old symbolp)
+               (?h/?g2 symbolp))
+  :auto-code (packn-pos (list old "-1" "[" ?h/?g2 "]") old))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-process-input-fresh-function-name
- spec-2-name
- :macro schemalg
- :other-args ((old symbolp)
-              (?h symbolp))
- :auto-code (packn-pos (list old "-2" "[" ?h "]") old))
+  spec-2-name
+  :macro schemalg
+  :other-args ((old symbolp)
+               (?h symbolp))
+  :auto-code (packn-pos (list old "-2" "[" ?h "]") old))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-process-input-fresh-function-name
- equal-algo-name
- :macro schemalg
- :other-args ((?f symbolp)
-              (algo symbolp))
- :auto-code (packn-pos (list "EQUAL[" ?f "][" algo "]") ?f))
+  equal-algo-name
+  :macro schemalg
+  :other-args ((?f symbolp)
+               (algo symbolp))
+  :auto-code (packn-pos (list "EQUAL[" ?f "][" algo "]") ?f))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -786,7 +783,7 @@
                                  ctx
                                  state)
   :returns (mv erp
-               (result "A @('(tuple (old$ symbolp)
+               (result "A @('(tuple (old symbolp)
                                     (?f symbolp)
                                     (x-x1...xn symbolp)
                                     (x-a1...am symbolp)
@@ -805,10 +802,10 @@
                                     (spec-2 symbolp)
                                     (equal-algo symbolp)
                                     (new symbolp)
-                                    (new-enable$ booleanp)
+                                    (new-enable booleanp)
                                     (old-if-new symbolp)
-                                    (old-if-new-enable$ booleanp)
-                                    (verify-guards$ booleanp)
+                                    (old-if-new-enable booleanp)
+                                    (verify-guards booleanp)
                                     (updated-names-to-avoid symbol-listp))').")
                state)
   :mode :program
@@ -1049,7 +1046,7 @@
                                           (list var))))
        (car-x-z1...zm (loop$ for var of-type symbol in x-z1...zm
                              collect (if (eq var x)
-                                        (list 'car var)
+                                         (list 'car var)
                                        var)))
        (cdr-x-z1...zm (loop$ for var of-type symbol in x-z1...zm
                              collect (if (eq var x) (list 'cdr var) var))))
@@ -1161,20 +1158,23 @@
                                               (x symbolp)
                                               (iorel pseudo-lambdap)
                                               (?g symbolp)
-                                              (verify-guards booleanp))
-  :returns (mv (local-event pseudo-event-formp)
-               (exported-event pseudo-event-formp))
-  :verify-guards nil
+                                              (verify-guards booleanp)
+                                              (wrld plist-worldp))
+  :returns (mv (local-event "A @(tsee pseudo-event-formp).")
+               (exported-event "A @(tsee pseudo-event-formp)."))
+  :mode :program
   :short "Generate the function @('spec-0[?g]')
           for the @(':divconq-list-0-1') schema."
   (b* ((iorel-term (apply-term iorel
-                               (append x-x1...xn (list `(,?g ,@x-a1...am))))))
+                               (append x-x1...xn (list `(,?g ,@x-a1...am)))))
+       (iorel-term (untranslate iorel-term t wrld)))
     (evmac-generate-soft-defun-sk2
      spec-0
      :formals ()
      :guard t
      :body `(forall ,x-x1...xn
-                    (impliez (atom ,x) ,iorel-term))
+                    (impliez (atom ,x)
+                             ,iorel-term))
      :verify-guards verify-guards
      :enable spec-0-enable
      :guard-hints `(("Goal" :use (:guard-theorem ,old))))))
@@ -1189,20 +1189,23 @@
                                                 (x symbolp)
                                                 (iorel pseudo-lambdap)
                                                 (?g0 symbolp)
-                                                (verify-guards booleanp))
-  :returns (mv (local-event pseudo-event-formp)
-               (exported-event pseudo-event-formp))
-  :verify-guards nil
+                                                (verify-guards booleanp)
+                                                (wrld plist-worldp))
+  :returns (mv (local-event "A @(tsee pseudo-event-formp).")
+               (exported-event "A @(tsee pseudo-event-formp)."))
+  :mode :program
   :short "Generate the function @('spec-0[?g0]')
           for the @(':divconq-list-0-1-2') schema."
   (b* ((iorel-term (apply-term iorel
-                               (append x-x1...xn (list `(,?g0 ,@x-a1...am))))))
+                               (append x-x1...xn (list `(,?g0 ,@x-a1...am)))))
+       (iorel-term (untranslate iorel-term t wrld)))
     (evmac-generate-soft-defun-sk2
      spec-0
      :formals ()
      :guard t
      :body `(forall ,x-x1...xn
-                    (impliez (atom ,x) ,iorel-term))
+                    (impliez (atom ,x)
+                             ,iorel-term))
      :verify-guards verify-guards
      :enable spec-0-enable
      :guard-hints `(("Goal" :use (:guard-theorem ,old))))))
@@ -1217,14 +1220,16 @@
                                               (x symbolp)
                                               (iorel pseudo-lambdap)
                                               (?g symbolp)
-                                              (verify-guards booleanp))
-  :returns (mv (local-event pseudo-event-formp)
-               (exported-event pseudo-event-formp))
-  :verify-guards nil
+                                              (verify-guards booleanp)
+                                              (wrld plist-worldp))
+  :returns (mv (local-event "A @(tsee pseudo-event-formp).")
+               (exported-event "A @(tsee pseudo-event-formp)."))
+  :mode :program
   :short "Generate the function @('spec-0[?g]')
           for the @(':divconq-oset-0-1') schema."
   (b* ((iorel-term (apply-term iorel
-                               (append x-x1...xn (list `(,?g ,@x-a1...am))))))
+                               (append x-x1...xn (list `(,?g ,@x-a1...am)))))
+       (iorel-term (untranslate iorel-term t wrld)))
     (evmac-generate-soft-defun-sk2
      spec-0
      :formals ()
@@ -1249,10 +1254,11 @@
                              (iorel pseudo-lambdap)
                              (?g symbolp)
                              (?g0 symbolp)
-                             (verify-guards booleanp))
-  :returns (mv (local-event pseudo-event-formp)
-               (exported-event pseudo-event-formp))
-  :verify-guards nil
+                             (verify-guards booleanp)
+                             (wrld plist-worldp))
+  :returns (mv (local-event "A @(tsee pseudo-event-formp).")
+               (exported-event "A @(tsee pseudo-event-formp)."))
+  :mode :program
   :short "Generate the function @('spec-0[?g]') or @('spec-0[?g0]')."
   (case schema
     (:divconq-list-0-1 (schemalg-gen-spec-0-divconq-list-0-1 spec-0
@@ -1263,16 +1269,18 @@
                                                              x
                                                              iorel
                                                              ?g
-                                                             verify-guards))
+                                                             verify-guards
+                                                             wrld))
     (:divconq-list-0-1-2 (schemalg-gen-spec-0-divconq-list-0-1-2 spec-0
-                                                             spec-0-enable
-                                                             old
-                                                             x-x1...xn
-                                                             x-a1...am
-                                                             x
-                                                             iorel
-                                                             ?g0
-                                                             verify-guards))
+                                                                 spec-0-enable
+                                                                 old
+                                                                 x-x1...xn
+                                                                 x-a1...am
+                                                                 x
+                                                                 iorel
+                                                                 ?g0
+                                                                 verify-guards
+                                                                 wrld))
     (:divconq-oset-0-1 (schemalg-gen-spec-0-divconq-oset-0-1 spec-0
                                                              spec-0-enable
                                                              old
@@ -1281,7 +1289,8 @@
                                                              x
                                                              iorel
                                                              ?g
-                                                             verify-guards))
+                                                             verify-guards
+                                                             wrld))
     (t (prog2$ (raise "Internal error: unknown schema ~x0." schema)
                (mv '(irrelevant) '(irrelevant))))))
 
@@ -1296,10 +1305,11 @@
                                               (y symbolp)
                                               (iorel pseudo-lambdap)
                                               (?h symbolp)
-                                              (verify-guards booleanp))
-  :returns (mv (local-event pseudo-event-formp)
-               (exported-event pseudo-event-formp))
-  :verify-guards nil
+                                              (verify-guards booleanp)
+                                              (wrld plist-worldp))
+  :returns (mv (local-event "A @(tsee pseudo-event-formp).")
+               (exported-event "A @(tsee pseudo-event-formp)."))
+  :mode :program
   :short "Generate the function @('spec-1[?h]')
           for the @(':divconq-list-0-1') schema."
   (b* ((cdr-x-x1...xn (loop$ for var in x-x1...xn
@@ -1309,13 +1319,16 @@
        (iorel-term1 (apply-term iorel (append cdr-x-x1...xn (list y))))
        (iorel-term2 (apply-term iorel (append x-x1...xn
                                               (list
-                                               `(,?h ,@car-x-a1...am ,y))))))
+                                               `(,?h ,@car-x-a1...am ,y)))))
+       (iorel-term1 (untranslate iorel-term1 t wrld))
+       (iorel-term2 (untranslate iorel-term2 t wrld)))
     (evmac-generate-soft-defun-sk2
      spec-1
      :formals ()
      :guard t
      :body `(forall (,@x-x1...xn ,y)
-                    (impliez (and (consp ,x) ,iorel-term1)
+                    (impliez (and (consp ,x)
+                                  ,iorel-term1)
                              ,iorel-term2))
      :verify-guards verify-guards
      :enable spec-1-enable
@@ -1331,10 +1344,11 @@
                                                 (x symbolp)
                                                 (iorel pseudo-lambdap)
                                                 (?g1 symbolp)
-                                                (verify-guards booleanp))
-  :returns (mv (local-event pseudo-event-formp)
-               (exported-event pseudo-event-formp))
-  :verify-guards nil
+                                                (verify-guards booleanp)
+                                                (wrld plist-worldp))
+  :returns (mv (local-event "A @(tsee pseudo-event-formp).")
+               (exported-event "A @(tsee pseudo-event-formp)."))
+  :mode :program
   :short "Generate the function @('spec-1[?g1]')
           for the @(':divconq-list-0-1-2') schema."
   (b* ((car/cdr-x-a1...am (loop$ for term in x-a1...am
@@ -1344,7 +1358,8 @@
                                           (list term))))
        (iorel-term (apply-term iorel (append x-x1...xn
                                              (list
-                                              `(,?g1 ,@car/cdr-x-a1...am))))))
+                                              `(,?g1 ,@car/cdr-x-a1...am)))))
+       (iorel-term (untranslate iorel-term t wrld)))
     (evmac-generate-soft-defun-sk2
      spec-1
      :formals ()
@@ -1368,10 +1383,11 @@
                                               (y symbolp)
                                               (iorel pseudo-lambdap)
                                               (?h symbolp)
-                                              (verify-guards booleanp))
-  :returns (mv (local-event pseudo-event-formp)
-               (exported-event pseudo-event-formp))
-  :verify-guards nil
+                                              (verify-guards booleanp)
+                                              (wrld plist-worldp))
+  :returns (mv (local-event "A @(tsee pseudo-event-formp).")
+               (exported-event "A @(tsee pseudo-event-formp)."))
+  :mode :program
   :short "Generate the function @('spec-1[?h]')
           for the @(':divconq-oset-0-1') schema."
   (b* ((tail-x-x1...xn (loop$ for var in x-x1...xn
@@ -1385,7 +1401,9 @@
        (iorel-term1 (apply-term iorel (append tail-x-x1...xn (list y))))
        (iorel-term2 (apply-term iorel (append x-x1...xn
                                               (list
-                                               `(,?h ,@head-x-a1...am ,y))))))
+                                               `(,?h ,@head-x-a1...am ,y)))))
+       (iorel-term1 (untranslate iorel-term1 t wrld))
+       (iorel-term2 (untranslate iorel-term2 t wrld)))
     (evmac-generate-soft-defun-sk2
      spec-1
      :formals ()
@@ -1412,10 +1430,11 @@
                              (iorel pseudo-lambdap)
                              (?g1 symbolp)
                              (?h symbolp)
-                             (verify-guards booleanp))
-  :returns (mv (local-event pseudo-event-formp)
-               (exported-event pseudo-event-formp))
-  :verify-guards nil
+                             (verify-guards booleanp)
+                             (wrld plist-worldp))
+  :returns (mv (local-event "A @(tsee pseudo-event-formp).")
+               (exported-event "A @(tsee pseudo-event-formp)."))
+  :mode :program
   :short "Generate the function @('spec-1[?g1]') or @('spec-1[?h]')."
   (case schema
     (:divconq-list-0-1 (schemalg-gen-spec-1-divconq-list-0-1 spec-1
@@ -1427,7 +1446,8 @@
                                                              y
                                                              iorel
                                                              ?h
-                                                             verify-guards))
+                                                             verify-guards
+                                                             wrld))
     (:divconq-list-0-1-2 (schemalg-gen-spec-1-divconq-list-0-1-2 spec-1
                                                                  spec-1-enable
                                                                  old
@@ -1436,7 +1456,8 @@
                                                                  x
                                                                  iorel
                                                                  ?g1
-                                                                 verify-guards))
+                                                                 verify-guards
+                                                                 wrld))
     (:divconq-oset-0-1 (schemalg-gen-spec-1-divconq-oset-0-1 spec-1
                                                              spec-1-enable
                                                              old
@@ -1446,7 +1467,8 @@
                                                              y
                                                              iorel
                                                              ?h
-                                                             verify-guards))
+                                                             verify-guards
+                                                             wrld))
     (t (prog2$ (raise "Internal error: unknown schema ~x0." schema)
                (mv '(irrelevant) '(irrelevant))))))
 
@@ -1462,10 +1484,11 @@
                              (y symbolp)
                              (iorel pseudo-lambdap)
                              (?h symbolp)
-                             (verify-guards booleanp))
-  :returns (mv (local-event pseudo-event-formp)
-               (exported-event pseudo-event-formp))
-  :verify-guards nil
+                             (verify-guards booleanp)
+                             (wrld plist-worldp))
+  :returns (mv (local-event "A @(tsee pseudo-event-formp).")
+               (exported-event "A @(tsee pseudo-event-formp)."))
+  :mode :program
   :short "Generate the function @('spec-2[?h]')."
   (case schema
     (:divconq-list-0-1
@@ -1478,11 +1501,13 @@
                                           var)))
           (car-x-a1...am (loop$ for term in x-a1...am
                                 collect (if (eq term x)
-                                           (list 'car term)
-                                         term)))
+                                            (list 'car term)
+                                          term)))
           (iorel-term1 (apply-term iorel (append cdr-x-x1...xn (list y))))
           (??h-call `(,?h ,@car-x-a1...am ,y))
-          (iorel-term2 (apply-term iorel (append x-x1...xn (list ?h-call)))))
+          (iorel-term2 (apply-term iorel (append x-x1...xn (list ?h-call))))
+          (iorel-term1 (untranslate iorel-term1 t wrld))
+          (iorel-term2 (untranslate iorel-term2 t wrld)))
        (evmac-generate-soft-defun-sk2
         spec-2
         :formals ()
@@ -1871,18 +1896,18 @@
             spec-0-exported-event)
         (schemalg-gen-spec-0 schema spec-0 spec-0-enable
                              old x-x1...xn x-a1...am x
-                             iorel ?g ?g0 verify-guards))
+                             iorel ?g ?g0 verify-guards wrld))
        ((mv spec-1-local-event
             spec-1-exported-event)
         (schemalg-gen-spec-1 schema spec-1 spec-1-enable
                              old x-x1...xn x-a1...am x y
-                             iorel ?g1 ?h verify-guards))
+                             iorel ?g1 ?h verify-guards wrld))
        ((mv spec-2-local-event?
             spec-2-exported-event?)
         (if (eq schema :divconq-list-0-1-2)
             (schemalg-gen-spec-2 schema spec-2 spec-2-enable
                                  old x-x1...xn x-a1...am x y
-                                 iorel ?h verify-guards)
+                                 iorel ?h verify-guards wrld)
           (mv nil nil)))
        (equal-algo-event
         (schemalg-gen-equal-algo equal-algo equal-algo-enable
