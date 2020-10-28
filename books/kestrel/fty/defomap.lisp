@@ -226,7 +226,12 @@
        (val-pred-of-cdr-of-in-pred (acl2::packn-pos
                                     (list val-pred '-of-cdr-of-in- pred)
                                     pkg-witness))
-       (empty-of-fix (acl2::packn-pos (list 'empty-of- fix) pkg-witness))
+       (empty-of-fix (acl2::packn-pos (list 'empty-of-
+                                            fix
+                                            '-to-not-
+                                            pred
+                                            '-or-empty)
+                                      pkg-witness))
        ;; reference to the fixtype for the generated XDOC documentation:
        (type-ref (concatenate 'string
                               "@(tsee "
