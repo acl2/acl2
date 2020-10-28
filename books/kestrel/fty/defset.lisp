@@ -34,10 +34,22 @@
    (xdoc::h3 "Introduction")
 
    (xdoc::p
-    "This is analogous to @(tsee fty::deflist) and @(tsee fty::defalist).
+    "This is analogous to
+     @(tsee fty::deflist),
+     @(tsee fty::defalist), and
+     @(tsee fty::defomap).
      Besides the fixtype itself,
      this macro also generates some theorems about the fixtype.
      Future versions of this macro may generate more theorems, as needed.")
+
+   (xdoc::p
+    "Aside from the recognizer, fixer, and equivalence for the fixtype,
+     this macro does not generate any operations on the typed osets.
+     Instead, the "
+    (xdoc::seetopic "acl2::std/osets" "generic oset operations")
+    " can be used on typed osets.
+     This macro generates theorems about
+     the use of these generic operations on typed osets.")
 
    (xdoc::p
     "Future versions of this macro may be modularized to provide

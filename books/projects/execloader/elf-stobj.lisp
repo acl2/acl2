@@ -118,6 +118,16 @@
     (text-bytes                     :type (satisfies byte-listp)
                                     :initially nil :fix (ec-call (acl2::byte-list-fix x)))
 
+    ;; text.init or .init.text section
+    (text-init-addr                 :type (integer 0 *)
+                                    :initially 0 :fix (nfix x))
+    (text-init-size                 :type (integer 0 *)
+                                    :initially 0 :fix (nfix x))
+    (text-init-offset               :type (integer 0 *)
+                                    :initially 0 :fix (nfix x))
+    (text-init-bytes                :type (satisfies byte-listp)
+                                    :initially nil :fix (ec-call (acl2::byte-list-fix x)))
+
     ;; fini section
     (fini-addr                      :type (integer 0 *)
                                     :initially 0 :fix (nfix x))

@@ -33,10 +33,21 @@
 
    (xdoc::p
     "This is analogous to
-     @(tsee fty::deflist), @(tsee fty::defalist), and @(tsee fty::defset).
+     @(tsee fty::deflist),
+     @(tsee fty::defalist), and
+     @(tsee fty::defset).
      Besides the fixtype itself,
      this macro also generates some theorems about the fixtype.
      Future versions of this macro may generate more theorems, as needed.")
+
+   (xdoc::p
+    "Aside from the recognizer, fixer, and equivalence for the fixtype,
+     this macro does not generate any operations on the typed omaps.
+     Instead, the "
+    (xdoc::seetopic "omap::omaps" "generic omap operations")
+    " can be used on typed omaps.
+     This macro generates theorems about
+     the use of these generic operations on typed omaps.")
 
    (xdoc::p
     "Future versions of this macro may be modularized to provide
@@ -226,7 +237,12 @@
        (val-pred-of-cdr-of-in-pred (acl2::packn-pos
                                     (list val-pred '-of-cdr-of-in- pred)
                                     pkg-witness))
-       (empty-of-fix (acl2::packn-pos (list 'empty-of- fix) pkg-witness))
+       (empty-of-fix (acl2::packn-pos (list 'empty-of-
+                                            fix
+                                            '-to-not-
+                                            pred
+                                            '-or-empty)
+                                      pkg-witness))
        ;; reference to the fixtype for the generated XDOC documentation:
        (type-ref (concatenate 'string
                               "@(tsee "

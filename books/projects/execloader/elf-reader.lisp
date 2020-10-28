@@ -400,6 +400,18 @@
                  (elf (!text-bytes bytes elf)))
               elf))
 
+           ((or (equal name-bytes *elf-text-init*)
+                (equal name-bytes *elf-init-text*))
+            (b* (((when (@text-init-bytes elf))
+                  (prog2$
+                   (raise "Non-empty text-init-bytes section!")
+                   elf))
+                 (elf (!text-init-addr addr elf))
+                 (elf (!text-init-offset offset elf))
+                 (elf (!text-init-size size elf))
+                 (elf (!text-init-bytes bytes elf)))
+              elf))
+
            ((equal name-bytes *fini*)
             (b* ((elf (!fini-addr addr elf))
                  (elf (!fini-offset offset elf))
@@ -700,5 +712,16 @@
        (elf64 (equal (elf-header->class elf-header) 2))
        (addr (find-label-address-from-elf-symtab-info elf64 label entries)))
     addr))
+
+(define get-label-addresses ((labels string-listp)
+                             (elf-header elf-header-p)
+                             (section-headers elf-section-headers-p)
+                             elf)
+  :short "Return the addresses of each valid label in @('labels') by searching in the sym/str table information"
+  :returns (addrs true-listp :hyp :guard)
+  (if (atom labels)
+      nil
+    (cons (get-label-address (car labels) elf-header section-headers elf)
+          (get-label-addresses (cdr labels) elf-header section-headers elf))))
 
 ;; ----------------------------------------------------------------------
