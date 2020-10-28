@@ -57,6 +57,8 @@
 (defconst *init*               (merge-bytes (string->bytes ".init")))
 (defconst *plt*                (merge-bytes (string->bytes ".plt")))
 (defconst *elf-text*           (merge-bytes (string->bytes ".text")))
+(defconst *elf-text-init*      (merge-bytes (string->bytes ".text.init")))
+(defconst *elf-init-text*      (merge-bytes (string->bytes ".init.text")))
 (defconst *fini*               (merge-bytes (string->bytes ".fini")))
 (defconst *rodata*             (merge-bytes (string->bytes ".rodata")))
 (defconst *eh_frame*           (merge-bytes (string->bytes ".eh_frame")))
