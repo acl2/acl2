@@ -929,6 +929,18 @@
   (defconst xdoc::*evmac-topic-implementation-item-ctx*
     "@('ctx') is the context used for errors.")
 
+  (defconst xdoc::*evmac-topic-implementation-item-call*
+    "@('call') is the call of the event macro.")
+
+  (defconst xdoc::*evmac-topic-implementation-item-names-to-avoid*
+    "@('names-to-avoid') is a cumulative list of names of generated events,
+     used to ensure the absence of name clashes in the generated events.")
+
+  (defconst xdoc::*evmac-topic-implementation-item-appcond-thm-names*
+    "@('appcond-thm-names') is an alist
+     from the keywords that identify the applicability conditions
+     to the corresponding generated theorem names.")
+
   (define xdoc::evmac-topic-implementation-item-input ((name stringp))
     :parents nil
     (xdoc::&&
