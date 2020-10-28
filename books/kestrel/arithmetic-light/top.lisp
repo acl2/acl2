@@ -33,6 +33,7 @@
 (include-book "mod")
 (include-book "mod2")
 (include-book "floor")
+(include-book "floor2")
 (include-book "divides")
 (include-book "times-and-divides")
 (include-book "complex")
