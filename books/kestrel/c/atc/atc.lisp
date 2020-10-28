@@ -45,9 +45,9 @@
 
   "@('fn1...fnp') is the list @('(fn1 ... fnp)') of inputs to @(tsee atc)."
 
-  (xdoc::evmac-topic-implementation-item-input "const-name" "atc")
+  (xdoc::evmac-topic-implementation-item-input "const-name")
 
-  (xdoc::evmac-topic-implementation-item-input "output-file" "atc")
+  (xdoc::evmac-topic-implementation-item-input "output-file")
 
   "@('const') is the symbol specified by @('const-name')."))
 
