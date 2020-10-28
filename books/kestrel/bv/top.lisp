@@ -64,6 +64,10 @@
 (include-book "bvuminus")
 (include-book "bvmult")
 (include-book "bvmod")
+(include-book "bvdiv")
+
+;; Signed arithmetic operations:
+(include-book "sbvdiv")
 
 ;; Comparison operations:
 (include-book "bvlt")
