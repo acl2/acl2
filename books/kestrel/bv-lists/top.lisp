@@ -36,6 +36,7 @@
 
 (include-book "packbv-def")
 (include-book "packbv")
+(include-book "packbv-theorems")
 (include-book "unpackbv")
 (include-book "packbv-and-unpackbv")
 
