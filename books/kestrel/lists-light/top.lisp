@@ -65,3 +65,5 @@
 (include-book "update-subrange")
 (include-book "add-to-end")
 (include-book "first-non-member")
+
+(include-book "group")
