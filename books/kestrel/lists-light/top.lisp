@@ -69,3 +69,4 @@
 (include-book "group")
 (include-book "group2")
 (include-book "ungroup")
+(include-book "group-and-ungroup")
