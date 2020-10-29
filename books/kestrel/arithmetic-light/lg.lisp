@@ -75,18 +75,6 @@
                   (+ -1 (integer-length i))))
   :hints (("Goal" :in-theory (enable integer-length))))
 
-(defthm integerp-when-power-of-2p
-  (implies (power-of-2p x)
-           (integerp x))
-  :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :hints (("Goal" :in-theory (enable power-of-2p))))
-
-(defthm natp-when-power-of-2p
-  (implies (power-of-2p x)
-           (natp x))
-  :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :hints (("Goal" :in-theory (enable power-of-2p))))
-
 ;enable?
 (defthmd floor-when-multiple
   (implies (integerp (/ i j))

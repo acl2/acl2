@@ -17,3 +17,15 @@
   (declare (xargs :guard t))
   (and (natp x) ;otherwise, this would count 1/2 but not 1/4
        (= x (expt 2 (+ -1 (integer-length x))))))
+
+(defthm integerp-when-power-of-2p
+  (implies (power-of-2p x)
+           (integerp x))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable power-of-2p))))
+
+(defthm natp-when-power-of-2p
+  (implies (power-of-2p x)
+           (natp x))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable power-of-2p))))
