@@ -63,3 +63,4 @@
 (include-book "all-equal-dollar2")
 (include-book "all-same")
 (include-book "update-subrange")
+(include-book "add-to-end")
