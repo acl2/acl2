@@ -106,6 +106,16 @@
            :use ((:instance positive (x (- x2 x1)))
                  (:instance positive (x (- x1 x2)))))))
 
+(defthm <-of-*-and-*-cancel-arg1-and-arg1
+  (implies (and (< 0 y) ;move to conc
+                (rationalp x1)
+                (rationalp x2)
+                (rationalp y))
+           (equal (< (* y x1) (* y x2))
+                  (< x1 x2)))
+  :hints (("Goal" :use (:instance <-of-*-and-*-cancel)
+           :in-theory (disable <-of-*-and-*-cancel))))
+
 (local
  ;; note: no rationalp hyps on x1,x2
  (defthm <-of-*-and-*-same-helper
@@ -312,6 +322,17 @@
   :hints (("Goal" :use (:instance <=-of-*-and-*-same-linear)
            :in-theory (disable <=-of-*-and-*-same-linear)))
   :rule-classes :linear)
+
+(defthm <-of-*-cancel-1
+  (implies (and (< 0 y)
+                (rationalp y)
+                (rationalp x))
+           (equal (< y (* x y))
+                  (< 1 x)))
+  :hints (("Goal" :use (:instance <-of-*-and-*-cancel
+                                  (x1 1)
+                                  (x2 x))
+           :in-theory (disable <-of-*-and-*-cancel))))
 
 (defthm <-of-*-cancel-2
   (implies (and (< 0 y)
