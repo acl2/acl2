@@ -69,6 +69,11 @@
 ;; Signed arithmetic operations:
 (include-book "sbvdiv")
 
+;; Sign extension and masks
+(include-book "repeatbit")
+(include-book "bvsx-def")
+(include-book "bvsx")
+
 ;; Comparison operations:
 (include-book "bvlt")
 (include-book "sbvlt")
