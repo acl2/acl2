@@ -64,3 +64,4 @@
 (include-book "all-same")
 (include-book "update-subrange")
 (include-book "add-to-end")
+(include-book "first-non-member")
