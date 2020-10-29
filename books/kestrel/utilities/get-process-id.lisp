@@ -87,10 +87,10 @@
     (mv-let (erp pid state)
       (call-script "get-process-id.sh" nil state)
       (if erp
-          (mv-let (erp kestrel-acl2 state)
-            (getenv$ "KESTREL_ACL2" state)
+          (mv-let (erp acl2_root state)
+            (getenv$ "ACL2_ROOT" state)
             (declare (ignore erp)) ;always nil in practice
-            (prog2$ (er hard? 'get-process-id "Error getting process ID.  PID is ~x0. KESTREL_ACL2 is ~x1" pid kestrel-acl2)
+            (prog2$ (er hard? 'get-process-id "Error getting process ID.  PID is ~x0. ACL2_ROOT is ~x1" pid acl2_root)
                     (mv "ERROR-BAD-PROCESS-ID" state)))
         (let* ((pid (strip-final-newline pid))
                ;; Store it so the next call is fast:
