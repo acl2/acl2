@@ -67,4 +67,5 @@
 (include-book "first-non-member")
 
 (include-book "group")
+(include-book "group2")
 (include-book "ungroup")
