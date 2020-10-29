@@ -25,8 +25,12 @@
 (include-book "byte-to-bits-little")
 (include-book "bytes-to-bits")
 (include-book "bytes-to-bits-little")
+
 (include-book "bvxor-list")
+(include-book "bvnot-list")
 (include-book "bvchop-list")
+(include-book "getbit-list")
+(include-book "map-slice")
 
 (include-book "width-of-widest-int")
 
