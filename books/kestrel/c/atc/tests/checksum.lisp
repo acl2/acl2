@@ -14,6 +14,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; This example is inspired by a checksum computation,
+; where bytes are read in pairs from a byte array,
+; each pair is turned into a 16-bit value (with a high byte and a low byte),
+; and the latter is added to the current checksum modulo 2^16.
+; For now we use C int values because this is what C currently supports,
+; and we use guards to constrain
+; the current checksum to be 16 bits,
+; the high byte to be 8 bits, and
+; the low byte to be 8 bits.
+; When ATC supports additional integer types,
+; we will change this example, or create a new one,
+; that uses unsigned types of the appropriate sizes.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (encapsulate ()
 
   (local (include-book "arithmetic-5/top" :dir :system))
