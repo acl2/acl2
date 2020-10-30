@@ -334,14 +334,33 @@
                                 :base (iconst-base-dec)
                                 :unsignedp nil
                                 :type (iconst-tysuffix-none)))))))
-       ((when (member-eq op '(sint-plus sint-minus)))
+       ((when (member-eq op '(sint-plus
+                              sint-minus
+                              sint-bitnot
+                              sint-lognot)))
         (b* (((er arg) (atc-gen-expr (acl2::fargn term 1) fn ctx state))
              (unop (case op
                      (sint-plus (unop-plus))
                      (sint-minus (unop-minus))
-                     (t (acl2::impossible)))))
+                     (sint-bitnot (unop-bitnot))
+                     (sint-lognot (unop-lognot)))))
           (value (make-expr-unary :op unop :arg arg))))
-       ((when (member-eq op '(sint-add sint-sub sint-mul sint-div sint-rem)))
+       ((when (member-eq op '(sint-add
+                              sint-sub
+                              sint-mul
+                              sint-div
+                              sint-rem
+                              sint-shl-sint
+                              sint-shr-sint
+                              sint-lt
+                              sint-gt
+                              sint-le
+                              sint-ge
+                              sint-eq
+                              sint-ne
+                              sint-bitand
+                              sint-bitxor
+                              sint-bitior)))
         (b* (((er arg1) (atc-gen-expr (acl2::fargn term 1) fn ctx state))
              ((er arg2) (atc-gen-expr (acl2::fargn term 2) fn ctx state))
              (binop (case op
@@ -350,7 +369,17 @@
                       (sint-mul (binop-mul))
                       (sint-div (binop-div))
                       (sint-rem (binop-rem))
-                      (t (acl2::impossible)))))
+                      (sint-shl-sint (binop-shl))
+                      (sint-shr-sint (binop-shr))
+                      (sint-lt (binop-lt))
+                      (sint-gt (binop-gt))
+                      (sint-le (binop-le))
+                      (sint-ge (binop-ge))
+                      (sint-eq (binop-eq))
+                      (sint-ne (binop-ne))
+                      (sint-bitand (binop-bitand))
+                      (sint-bitxor (binop-bitxor))
+                      (sint-bitior (binop-bitior)))))
           (value (make-expr-binary :op binop :arg1 arg1 :arg2 arg2)))))
     (er-soft+ ctx t (irr-expr)
               "The function ~x0 in the body of ~x1 is disallowed. ~
