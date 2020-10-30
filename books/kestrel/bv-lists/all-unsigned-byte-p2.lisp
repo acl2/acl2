@@ -16,6 +16,7 @@
 (include-book "all-unsigned-byte-p")
 (include-book "../lists-light/repeat")
 (include-book "../lists-light/reverse-list-def")
+(include-book "kestrel/lists-light/firstn" :dir :system)
 
 (defthm all-unsigned-byte-p-of-repeat
   (equal (all-unsigned-byte-p width (repeat n x))
@@ -27,3 +28,8 @@
   (equal (all-unsigned-byte-p width (reverse-list x))
          (all-unsigned-byte-p width x))
   :hints (("Goal" :in-theory (enable reverse-list all-unsigned-byte-p))))
+
+(defthm all-unsigned-byte-p-of-firstn
+  (implies (all-unsigned-byte-p size lst)
+           (all-unsigned-byte-p size (firstn n lst)))
+  :hints (("Goal" :in-theory (enable all-unsigned-byte-p firstn))))
