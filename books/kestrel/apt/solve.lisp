@@ -51,8 +51,6 @@
 
   (xdoc::evmac-topic-implementation-item-input "method-rules")
 
-  (xdoc::evmac-topic-implementation-item-input "solution")
-
   (xdoc::evmac-topic-implementation-item-input "solution-name")
 
   (xdoc::evmac-topic-implementation-item-input "solution-enable")
@@ -89,14 +87,13 @@
 
   (xdoc::evmac-topic-implementation-item-fn-doc "f")
 
-  "@('f-existsp') is a boolean indicating whether @('f') already exists,
-   i.e. it is supplied as the @(':solution') input,
-   and thus @('f') is not generated."
+  "@('f-existsp') is a boolean indicating whether @('f') already exists
+   (as opposed to being generated)."
 
   "@('f-body') is the obtained body of the solution function @('f'),
    when this function is generated."
 
-  "@('solution-correct') is the name of the generated theorem
+  "@('solution-correct') is the name of the locally generated theorem
    asserting the correctness of the solution."
 
   (xdoc::evmac-topic-implementation-item-fn-doc "new")
@@ -113,12 +110,10 @@
 
 (define solve-process-old (old verify-guards ctx state)
   :returns (mv erp
-               (result "A tuple @('(old ?f x1...xn matrix)') satisfying
-                        @('(typed-tuplep symbolp
-                                         symbolp
-                                         symbol-listp
-                                         pseudo-termp
-                                         result)').")
+               (result "@('(tuple (old symbolp)
+                                  (?f symbolp)
+                                  (x1...xn symbol-listp)
+                                  (matrix pseudo-termp))').")
                state)
   :mode :program
   :short "Process the @('old') input."
@@ -197,7 +192,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define solve-process-method (method (method-present booleanp) ctx state)
+(define solve-process-method (method (method? booleanp) ctx state)
   :returns (mv erp (nothing null) state)
   :short "Process the @(':method') input."
   (cond ((eq method :acl2-rewriter)
@@ -219,9 +214,9 @@
              (available inside Kestrel).")))
         ((eq method :manual)
          (value nil))
-        (method-present
+        (method?
          (er-soft+ ctx t nil
-                   "The :METHOD inputs must be ~
+                   "The :METHOD input must be ~
                     :ACL2-REWRITER, :AXE-REWRITER, or :MANUAL, ~
                     but it is ~x0 instead. ~
                     More methods will be supported in the future."
@@ -243,120 +238,96 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define solve-process-solution (solution
-                                (solution-present booleanp)
-                                (x1...xn symbol-listp)
-                                (method keywordp)
-                                verify-guards
-                                ctx
-                                state)
-  :returns (mv erp (f-existsp booleanp) state)
-  :verify-guards nil
-  :short "Process the @(':solution') input."
-  (b* (((when (not solution-present)) (value nil))
-       ((unless (eq method :manual))
-        (er-soft+ ctx t nil
-                  "The :SOLUTION input may be present ~
-                   only if :METHOD is :MANUAL, ~
-                   but :METHOD is ~x0 instead."
-                  method))
-       ((er &) (ensure-value-is-function-name$ solution
-                                               "The :SOLUTION input"
-                                               t
-                                               nil))
-       ((er &) (ensure-function-arity$
-                solution
-                (len x1...xn)
-                (msg "The function ~x0 specified by the :SOLUTION input"
-                     solution)
-                t
-                nil))
-       ((er &) (ensure-function-number-of-results$
-                solution
-                1
-                (msg "The function ~x0 specified by the :SOLUTION input"
-                     solution)
-                t
-                nil))
-       ((when (and (eq verify-guards t)
-                   (not (guard-verified-p+ solution (w state)))))
-        (er-soft+ ctx t nil
-                  "Since the :VERIFY-GUARDS input is T, ~
-                   the function ~x0 specified by the :SOLUTION input ~
-                   must be guard-verified, but it is not."
-                  solution)))
-    (value t)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define solve-process-solution-name (solution-name
-                                     (solution-name-present booleanp)
+                                     (method keywordp)
                                      (?f symbolp)
-                                     (solution symbolp)
-                                     (solution-present booleanp)
+                                     (x1...xn symbol-listp)
+                                     (verify-guards booleanp)
                                      (names-to-avoid symbol-listp)
                                      ctx
                                      state)
   :returns (mv erp
-               (result "A tuple @('(f updated-names-to-avoid)') satisfying
-                        @('(typed-tuplep symbolp symbol-listp result)').")
+               (result "@('(tuple (f symbolp)
+                                  (f-existsp booleanp)
+                                  (updated-names-to-avoid symbol-listp))')")
                state)
   :mode :program
   :short "Process the @(':solution-name') input."
-  :long
-  (xdoc::topstring-p
-   "If this input is absent and the @(':solution') input is present,
-    we return the value of the latter as the @('f') result.
-    This way, @(tsee solve-process-inputs) can obtain @('f') from this function
-    in all cases.")
-  (if solution-present
-      (if solution-name-present
-          (er-soft+ ctx t nil
-                    "Since the :SOLUTION input is present, ~
-                     the :SOLUTION-NAME input must be absent.")
-        (value (list solution names-to-avoid)))
-    (b* (((er &) (ensure-value-is-symbol$ solution-name
-                                          "The :SOLUTION-NAME input"
-                                          t nil))
-         ((er f) (if (eq solution-name :auto)
-                     (b* ((chars (explode (symbol-name ?f)))
-                          ((unless (and (consp chars)
-                                        (eql (car chars) #\?)))
-                           (er-soft+ ctx t nil
-                                     "The :SOLUTION-NAME input is :AUTO ~
-                                      (perhaps by default). ~
-                                      This is allowed only if ~
-                                      the name of ~x0 starts with ?, ~
-                                      but it does not."
-                                     ?f))
-                          (f (intern-in-package-of-symbol
-                              (implode (cdr chars))
-                              ?f)))
-                       (value f))
-                   (value solution-name)))
-         ((er names-to-avoid)
-          (ensure-symbol-is-fresh-event-name$
-           f
-           (msg "The name ~x0 specified by :SOLUTION-NAME" f)
-           'function
-           names-to-avoid
-           t
-           nil)))
-      (value (list f names-to-avoid)))))
+  (b* (((er &) (ensure-value-is-symbol$ solution-name
+                                        "The :SOLUTION-NAME input"
+                                        t
+                                        nil)))
+    (if (function-symbolp solution-name (w state))
+        (b* (((unless (eq method :manual))
+              (er-soft+ ctx t nil
+                        "The :SOLUTION-NAME input specifies ~
+                         an existing function, ~x0. ~
+                         This is allowed only if ~
+                         the :METHOD input is :MANUAL, ~
+                         but it is ~x1 instead."
+                        solution-name method))
+             (desc (msg "The function ~x0 specified by the :SOLUTION-INPUT"
+                        solution-name))
+             ((er &) (ensure-function-logic-mode$ solution-name desc t nil))
+             ((er &) (ensure-function-defined$ solution-name desc t nil))
+             ((er &) (ensure-function-arity$ solution-name
+                                             (len x1...xn)
+                                             desc
+                                             t
+                                             nil))
+             ((er &) (ensure-function-number-of-results$ solution-name
+                                                         1
+                                                         desc
+                                                         t
+                                                         nil))
+             ((er &) (if verify-guards
+                         (ensure-function-guard-verified$ solution-name
+                                                          desc
+                                                          t
+                                                          nil)
+                       (value nil))))
+          (value (list solution-name t names-to-avoid)))
+      (b* (((er f) (if (eq solution-name :auto)
+                       (b* ((chars (explode (symbol-name ?f)))
+                            ((unless (and (consp chars)
+                                          (eql (car chars) #\?)))
+                             (er-soft+ ctx t nil
+                                       "The :SOLUTION-NAME input is :AUTO ~
+                                        (perhaps by default). ~
+                                        This is allowed only if ~
+                                        the name of ~x0 starts with ?, ~
+                                        but it does not."
+                                       ?f)))
+                         (value
+                          (intern-in-package-of-symbol (implode (cdr chars))
+                                                       ?f)))
+                     (value solution-name)))
+           ((er &)
+            (ensure-symbol-is-fresh-event-name$ f
+                                                (msg "The name ~x0 specified ~
+                                                      (perhaps by default) ~
+                                                      by :SOLUTION-NAME"
+                                                     f)
+                                                'function
+                                                names-to-avoid
+                                                t
+                                                nil)))
+        (value (list f nil names-to-avoid))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define solve-process-solution-enable (solution-enable
-                                       (solution-enable-present booleanp)
-                                       (solution-present booleanp)
+                                       (solution-enable? booleanp)
+                                       (f-existsp booleanp)
                                        ctx
                                        state)
   :returns (mv erp (nothing null) state)
   :short "Process the @(':solution-enable') input."
-  (if (and solution-enable-present
-           solution-present)
+  (if (and solution-enable?
+           f-existsp)
       (er-soft+ ctx t nil
-                "Since the :SOLUTION input is present, ~
+                "Since the :SOLUTION-name input ~
+                 specifies an existing function, ~
                  the :SOLUTION-ENABLE input must be absent.")
     (ensure-value-is-boolean$ solution-enable
                               "The :SOLUTION-ENABLE input"
@@ -367,22 +338,25 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define solve-process-solution-guard (solution-guard
-                                      (solution-guard-present booleanp)
+                                      (solution-guard? booleanp)
                                       (x1...xn symbol-listp)
-                                      (solution-present booleanp)
+                                      (f-existsp booleanp)
                                       ctx
                                       state)
   :returns (mv erp (nothing "Always @('nil').") state)
   :mode :program
   :short "Process the @(':solution-guard') input."
-  (b* (((when (and solution-guard-present
-                   solution-present))
+  (b* (((when (and solution-guard?
+                   f-existsp))
         (er-soft+ ctx t nil
-                  "Since the :SOLUTION input is present, ~
+                  "Since the :SOLUTION-NAME input ~
+                   specifies an existing function, ~
                    the :SOLUTION-GUARD input must be absent."))
        ((er (list term stobjs-out))
         (ensure-value-is-untranslated-term$ solution-guard
-                                            "The :SOLUTION-GUARD input" t nil))
+                                            "The :SOLUTION-GUARD input"
+                                            t
+                                            nil))
        (description (msg "The :SOLUTION-GUARD term ~x0" solution-guard))
        ((er &) (ensure-function/lambda/term-number-of-results$ stobjs-out
                                                                1
@@ -397,9 +371,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define solve-process-solution-guard-hints (solution-guard-hints
-                                            (solution-guard-hints-present
-                                             booleanp)
-                                            (solution-present booleanp)
+                                            (solution-guard-hints? booleanp)
+                                            (f-existsp booleanp)
                                             ctx
                                             state)
   :returns (mv erp (nothing null) state)
@@ -409,10 +382,11 @@
    "For now we just check that this is a true list,
     which may be enough to catch simple mistakes.
     We may extend this input processor with more validity checks.")
-  (if (and solution-guard-hints-present
-           solution-present)
+  (if (and solution-guard-hints?
+           f-existsp)
       (er-soft+ ctx t nil
-                "Since the :SOLUTION input is present, ~
+                "Since the :SOLUTION-NAME input ~
+                 specifies an existing function, ~
                  the :SOLUTION-GUARD-HINTS input must be absent.")
     (ensure-value-is-true-list$ solution-guard-hints
                                 "The :SOLUTION-GUARD-HINTS input"
@@ -423,44 +397,48 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define solve-process-solution-body (solution-body
-                                     (solution-body-present booleanp)
-                                     (x1...xn symbol-listp)
+                                     (solution-body? booleanp)
                                      (method keywordp)
-                                     (solution-present booleanp)
+                                     (x1...xn symbol-listp)
+                                     (f-existsp booleanp)
                                      ctx
                                      state)
   :returns (mv erp (nothing "Always @('nil').") state)
   :mode :program
   :short "Process the @(':solution-body') input."
   (if (eq method :manual)
-      (if solution-present
-          (if solution-body-present
+      (if f-existsp
+          (if solution-body?
               (er-soft+ ctx t nil
-                        "The :SOLUTION and :SOLUTION-BODY inputs ~
-                         cannot be both present.")
+                        "Since the :SOLUTION-NAME input ~
+                         specifies an existing function, ~
+                         the :SOLUTION-BODY input must be absent, ~
+                         but instead ~x0 has been supplied.")
             (value nil))
-        (if (not solution-body-present)
+        (if (not solution-body?)
             (er-soft+ ctx t nil
-                      "Since the :METHOD input is :MANUAL, ~
-                       one of the :SOLUTION and :SOLUTION-BODY inputs ~
-                       must be supplied.")
+                      "Since the :METHOD input is :MANUAL ~
+                       and the :SOLUTION-NAME input specifies ~
+                       the name of a function to be generated, ~
+                       the :SOLUTION-BODY input must be supplied.")
           (b* (((er (list term stobjs-out))
                 (ensure-value-is-untranslated-term$ solution-body
                                                     "The :SOLUTION-BODY input"
-                                                    t nil))
+                                                    t
+                                                    nil))
                (description (msg "The :SOLUTION-BODY term ~x0" solution-body))
-               ((er &) (ensure-function/lambda/term-number-of-results$
-                        stobjs-out
-                        1
-                        description
-                        t
-                        nil))
+               ((er &)
+                (ensure-function/lambda/term-number-of-results$ stobjs-out
+                                                                1
+                                                                description
+                                                                t
+                                                                nil))
                ((er &) (ensure-term-free-vars-subset$ term
                                                       x1...xn
                                                       description
                                                       t nil)))
             (value nil))))
-    (if solution-body-present
+    (if solution-body?
         (er-soft+ ctx t nil
                   "Since the :METHOD input is not :MANUAL, ~
                    the :SOLUTION-BODY input must be absent, ~
@@ -471,7 +449,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define solve-process-solution-hints (solution-hints
-                                      (solution-hints-present booleanp)
+                                      (solution-hints? booleanp)
                                       (method keywordp)
                                       ctx
                                       state)
@@ -486,7 +464,7 @@
       (ensure-value-is-true-list$ solution-hints
                                   "The :SOLUTION-HINTS input"
                                   t nil)
-    (if solution-hints-present
+    (if solution-hints?
         (er-soft+ ctx t nil
                   "Since the :METHOD input is not :MANUAL, ~
                    the :SOLUTION-HINTS input must be absent, ~
@@ -498,61 +476,37 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define solve-process-inputs (old
-                              method
-                              (method-present booleanp)
+                              method (method? booleanp)
                               method-rules
-                              solution
-                              (solution-present booleanp)
                               solution-name
-                              (solution-name-present booleanp)
-                              solution-enable
-                              (solution-enable-present booleanp)
-                              solution-guard
-                              (solution-guard-present booleanp)
-                              solution-guard-hints
-                              (solution-guard-hints-present booleanp)
-                              solution-body
-                              (solution-body-present booleanp)
-                              solution-hints
-                              (solution-hints-present booleanp)
+                              solution-enable (solution-enable? booleanp)
+                              solution-guard (solution-guard? booleanp)
+                              solution-guard-hints (solution-guard-hints?
+                                                    booleanp)
+                              solution-body (solution-body? booleanp)
+                              solution-hints (solution-hints? booleanp)
                               new-name
                               new-enable
-                              old-if-new-name
-                              (old-if-new-name-present booleanp)
-                              old-if-new-enable
-                              (old-if-new-enable-present booleanp)
+                              old-if-new-name (old-if-new-name? booleanp)
+                              old-if-new-enable (old-if-new-enable? booleanp)
                               verify-guards
                               print
                               show-only
                               ctx
                               state)
   :returns (mv erp
-               (result "A tuple @('(old
-                                    ?f
-                                    x1...xn
-                                    matrix
-                                    f-existsp
-                                    f
-                                    new
-                                    new-enable
-                                    old-if-new
-                                    old-if-new-enable
-                                    verify-guards
-                                    names-to-avoid)')
-                        satisfying
-                        @('(typed-tuplep symbolp
-                                         symbolp
-                                         symbol-listp
-                                         pseudo-termp
-                                         booleanp
-                                         symbolp
-                                         symbolp
-                                         booleanp
-                                         symbolp
-                                         booleanp
-                                         booleanp
-                                         symbol-listp
-                                         result)').")
+               (result "@('(tuple (old symbolp)
+                                  (?f symbolp)
+                                  (x1...xn symbol-listp)
+                                  (matrix pseudo-termp)
+                                  (f symbolp)
+                                  (f-existsp symbolp)
+                                  (new symbolp)
+                                  (new-enable booleanp)
+                                  (old-if-new symbolp)
+                                  (old-if-new-enable booleanp)
+                                  (verify-guards booleanp)
+                                  (names-to-avoid symbol-listp))').")
                state)
   :mode :program
   :short "Process all the inputs."
@@ -561,61 +515,59 @@
                                                               verify-guards
                                                               ctx
                                                               state))
-       ((er &) (solve-process-method method method-present ctx state))
+       ((er verify-guards) (process-input-verify-guards verify-guards
+                                                        old
+                                                        ctx
+                                                        state))
+       ((er &) (solve-process-method method method? ctx state))
        ((er &) (solve-process-method-rules method-rules ctx state))
-       ((er f-existsp) (solve-process-solution solution
-                                               solution-present
-                                               x1...xn
-                                               method
-                                               verify-guards
-                                               ctx
-                                               state))
-       ((er (list f names-to-avoid))
+       ((er (list f f-existsp names-to-avoid))
         (solve-process-solution-name solution-name
-                                     solution-name-present
+                                     method
                                      ?f
-                                     solution
-                                     solution-present
+                                     x1...xn
+                                     verify-guards
                                      names-to-avoid
                                      ctx
                                      state))
        ((er &) (solve-process-solution-enable solution-enable
-                                              solution-enable-present
-                                              solution-present
+                                              solution-enable?
+                                              f-existsp
                                               ctx
                                               state))
        ((er &) (solve-process-solution-guard solution-guard
-                                             solution-guard-present
+                                             solution-guard?
                                              x1...xn
-                                             solution-present
+                                             f-existsp
                                              ctx
                                              state))
        ((er &) (solve-process-solution-guard-hints solution-guard-hints
-                                                   solution-guard-hints-present
-                                                   solution-present
+                                                   solution-guard-hints?
+                                                   f-existsp
                                                    ctx
                                                    state))
        ((er &) (solve-process-solution-body solution-body
-                                            solution-body-present
-                                            x1...xn
+                                            solution-body?
                                             method
-                                            solution-present
+                                            x1...xn
+                                            f-existsp
                                             ctx
                                             state))
        ((er &) (solve-process-solution-hints solution-hints
-                                             solution-hints-present
+                                             solution-hints?
                                              method
                                              ctx
                                              state))
-       ((er (list new names-to-avoid)) (process-input-new-name new-name
-                                                               old
-                                                               names-to-avoid
-                                                               ctx
-                                                               state))
+       ((er (list new names-to-avoid))
+        (process-input-new-name new-name
+                                old
+                                names-to-avoid
+                                ctx
+                                state))
        ((er new-enable) (process-input-new-enable new-enable old ctx state))
        ((er (list old-if-new names-to-avoid))
         (process-input-old-if-new-name old-if-new-name
-                                       old-if-new-name-present
+                                       old-if-new-name?
                                        old
                                        new
                                        names-to-avoid
@@ -623,21 +575,17 @@
                                        state))
        ((er old-if-new-enable)
         (process-input-old-if-new-enable old-if-new-enable
-                                         old-if-new-enable-present
+                                         old-if-new-enable?
                                          ctx
                                          state))
-       ((er verify-guards) (process-input-verify-guards verify-guards
-                                                        old
-                                                        ctx
-                                                        state))
        ((er &) (evmac-process-input-print print ctx state))
        ((er &) (evmac-process-input-show-only show-only ctx state)))
     (value (list old
                  ?f
                  x1...xn
                  matrix
-                 f-existsp
                  f
+                 f-existsp
                  new
                  new-enable
                  old-if-new
@@ -1193,8 +1141,8 @@
                               (matrix pseudo-termp)
                               (method keywordp)
                               (method-rules symbol-listp)
-                              (f-existsp booleanp)
                               (f symbolp)
+                              (f-existsp booleanp)
                               (solution-enable booleanp)
                               (solution-guard "An untranslated term.")
                               (solution-guard-hints true-listp)
@@ -1297,29 +1245,18 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define solve-fn (old
-                  method
-                  (method-present booleanp)
+                  method (method? booleanp)
                   method-rules
-                  solution
-                  (solution-present booleanp)
                   solution-name
-                  (solution-name-present booleanp)
-                  solution-enable
-                  (solution-enable-present booleanp)
-                  solution-guard
-                  (solution-guard-present booleanp)
-                  solution-guard-hints
-                  (solution-guard-hints-present booleanp)
-                  solution-body
-                  (solution-body-present booleanp)
-                  solution-hints
-                  (solution-hints-present booleanp)
+                  solution-enable (solution-enable? booleanp)
+                  solution-guard (solution-guard? booleanp)
+                  solution-guard-hints (solution-guard-hints? booleanp)
+                  solution-body (solution-body? booleanp)
+                  solution-hints (solution-hints? booleanp)
                   new-name
                   new-enable
-                  old-if-new-name
-                  (old-if-new-name-present booleanp)
-                  old-if-new-enable
-                  (old-if-new-enable-present booleanp)
+                  old-if-new-name (old-if-new-name? booleanp)
+                  old-if-new-enable (old-if-new-enable? booleanp)
                   verify-guards
                   print
                   show-only
@@ -1339,8 +1276,8 @@
                   ??f
                   x1...xn
                   matrix
-                  f-existsp
                   f
+                  f-existsp
                   new
                   new-enable
                   old-if-new
@@ -1348,19 +1285,18 @@
                   verify-guards
                   names-to-avoid))
         (solve-process-inputs old
-                              method method-present
+                              method method?
                               method-rules
-                              solution solution-present
-                              solution-name solution-name-present
-                              solution-enable solution-enable-present
-                              solution-guard solution-guard-present
-                              solution-guard-hints solution-guard-hints-present
-                              solution-body solution-body-present
-                              solution-hints solution-hints-present
+                              solution-name
+                              solution-enable solution-enable?
+                              solution-guard solution-guard?
+                              solution-guard-hints solution-guard-hints?
+                              solution-body solution-body?
+                              solution-hints solution-hints?
                               new-name
                               new-enable
-                              old-if-new-name old-if-new-name-present
-                              old-if-new-enable old-if-new-enable-present
+                              old-if-new-name old-if-new-name?
+                              old-if-new-enable old-if-new-enable?
                               verify-guards
                               print
                               show-only
@@ -1372,8 +1308,8 @@
                                          matrix
                                          method
                                          method-rules
-                                         f-existsp
                                          f
+                                         f-existsp
                                          solution-enable
                                          solution-guard
                                          solution-guard-hints
@@ -1408,46 +1344,42 @@
                    old
                    ;; optional inputs:
                    &key
-                   (method ':no-default method-present)
+                   (method ':no-default method?)
                    (method-rules 'nil)
-                   (solution ':no-default solution-present)
-                   (solution-name ':auto solution-name-present)
-                   (solution-enable 'nil solution-enable-present)
-                   (solution-guard 't solution-guard-present)
-                   (solution-guard-hints 'nil solution-guard-hints-present)
-                   (solution-body ':no-default solution-body-present)
-                   (solution-hints 'nil solution-hints-present)
+                   (solution-name ':auto)
+                   (solution-enable 'nil solution-enable?)
+                   (solution-guard 't solution-guard?)
+                   (solution-guard-hints 'nil solution-guard-hints?)
+                   (solution-body ':no-default solution-body?)
+                   (solution-hints 'nil solution-hints?)
                    (new-name ':auto)
                    (new-enable ':auto)
-                   (old-if-new-name ':irrelevant old-if-new-name-present)
-                   (old-if-new-enable ':irrelevant old-if-new-enable-present)
+                   (old-if-new-name ':irrelevant old-if-new-name?)
+                   (old-if-new-enable ':irrelevant old-if-new-enable?)
                    (verify-guards ':auto)
                    (print ':result)
                    (show-only 'nil))
     `(make-event-terse (solve-fn ',old
                                  ',method
-                                 ',method-present
+                                 ',method?
                                  ',method-rules
-                                 ',solution
-                                 ',solution-present
                                  ',solution-name
-                                 ',solution-name-present
                                  ',solution-enable
-                                 ',solution-enable-present
+                                 ',solution-enable?
                                  ',solution-guard
-                                 ',solution-guard-present
+                                 ',solution-guard?
                                  ',solution-guard-hints
-                                 ',solution-guard-hints-present
+                                 ',solution-guard-hints?
                                  ',solution-body
-                                 ',solution-body-present
+                                 ',solution-body?
                                  ',solution-hints
-                                 ',solution-hints-present
+                                 ',solution-hints?
                                  ',new-name
                                  ',new-enable
                                  ',old-if-new-name
-                                 ',old-if-new-name-present
+                                 ',old-if-new-name?
                                  ',old-if-new-enable
-                                 ',old-if-new-enable-present
+                                 ',old-if-new-enable?
                                  ',verify-guards
                                  ',print
                                  ',show-only
