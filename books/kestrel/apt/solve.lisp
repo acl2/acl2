@@ -16,6 +16,8 @@
 (include-book "kestrel/error-checking/ensure-value-is-symbol-list" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-true-list" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-untranslated-term" :dir :system)
+(include-book "kestrel/event-macros/event-generation" :dir :system)
+(include-book "kestrel/event-macros/event-generation-soft" :dir :system)
 (include-book "kestrel/event-macros/input-processing" :dir :system)
 (include-book "kestrel/event-macros/proof-preparation" :dir :system)
 (include-book "kestrel/event-macros/restore-output" :dir :system)
@@ -995,26 +997,13 @@
                (exported-event "A @(tsee pseudo-event-formp)."))
   :mode :program
   :short "Generate the @('f') function."
-  (b* ((macro (if solution-enable 'defun 'defund))
-       (f-body (untranslate f-body nil wrld))
-       (local-event
-        `(local
-          (,macro ,f ,x1...xn
-                  (declare
-                   (ignorable ,@x1...xn)
-                   (xargs ,@(and verify-guards
-                                 (list :guard solution-guard))
-                          ,@(and verify-guards
-                                 (list :guard-hints solution-guard-hints))
-                          :verify-guards ,verify-guards))
-                  ,f-body)))
-       (exported-event
-        `(,macro ,f ,x1...xn
-                 (declare (xargs ,@(and verify-guards
-                                        (list :guard solution-guard))
-                                 :verify-guards ,verify-guards))
-                 ,f-body)))
-    (mv local-event exported-event)))
+  (evmac-generate-defun f
+                        :formals x1...xn
+                        :body (untranslate f-body nil wrld)
+                        :enable solution-enable
+                        :guard solution-guard
+                        :guard-hints solution-guard-hints
+                        :verify-guards verify-guards))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1061,27 +1050,15 @@
   :returns (mv (local-event pseudo-event-formp)
                (exported-event pseudo-event-formp))
   :short "Generate the @('new') function."
-  (b* ((macro (if new-enable 'soft::defun-sk2 'soft::defund-sk2))
-       (body `(forall ,x1...xn
-                      (equal (,?f ,@x1...xn)
-                             (,f ,@x1...xn))))
-       (local-event
-        `(local
-          (,macro ,new ()
-                  (declare
-                   (xargs ,@(and verify-guards '(:guard t))
-                          ,@(and verify-guards
-                                 '(:guard-hints (("Goal" :in-theory nil))))
-                          :verify-guards ,verify-guards))
-                  ,body
-                  :rewrite :direct)))
-       (exported-event
-        `(,macro ,new ()
-                 (declare (xargs ,@(and verify-guards '(:guard t))
-                                 :verify-guards ,verify-guards))
-                 ,body
-                 :rewrite :direct)))
-    (mv local-event exported-event)))
+  (evmac-generate-soft-defun-sk2 new
+                                 :formals ()
+                                 :body `(forall ,x1...xn
+                                                (equal (,?f ,@x1...xn)
+                                                       (,f ,@x1...xn)))
+                                 :enable new-enable
+                                 :rewrite :direct
+                                 :guard-hints '(("Goal" :in-theory nil))
+                                 :verify-guards verify-guards))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1105,8 +1082,7 @@
     the theorem @('solution-correct') mentions @('f'), as does @('new'),
     and so there is no need to enable it
     (and in fact, enabling it might even sabotage the proof).")
-  (b* ((macro (if old-if-new-enable 'defthm 'defthmd))
-       (formula `(implies (,new) (,old)))
+  (b* ((formula `(implies (,new) (,old)))
        (new-necc (add-suffix new "-NECC"))
        (old-witness (add-suffix-to-fn old "-WITNESS"))
        (instantiation (if (>= (len x1...xn) 2)
@@ -1117,10 +1093,11 @@
                  (list old new-necc f)))
        (hints `(("Goal"
                  :in-theory ',theory
-                 :use (:instance ,solution-correct ,@instantiation))))
-       (local-event `(local (,macro ,old-if-new ,formula :hints ,hints)))
-       (exported-event `(,macro ,old-if-new ,formula)))
-    (mv local-event exported-event))
+                 :use (:instance ,solution-correct ,@instantiation)))))
+    (evmac-generate-defthm old-if-new
+                           :enable old-if-new-enable
+                           :formula formula
+                           :hints hints))
 
   :prepwork
   ((define solve-gen-old-if-new-thm-aux ((vars symbol-listp)
@@ -1211,6 +1188,8 @@
        (encapsulate-events
         `((logic)
           (evmac-prepare-proofs)
+          (set-ignore-ok t)
+          (set-irrelevant-formals-ok t)
           ,@solution-correct-events
           ,@(and f-local-event? (list f-local-event?))
           ,new-local-event
