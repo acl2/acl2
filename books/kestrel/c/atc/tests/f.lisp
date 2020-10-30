@@ -67,7 +67,7 @@
 
 On macOS or Linux, you can compile and run this code as follows:
 
-  gcc f.c f-test.c
-  ./a.out
+  gcc -o f f.c f-test.c
+  ./f
 
 |#
