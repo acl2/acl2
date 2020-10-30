@@ -19,7 +19,7 @@
 (local (include-book "kestrel/bv-lists/unpackbv" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))
-(local (include-book "kestrel/bv-lists/all-unsigned-byte-p-of-repeat" :dir :system))
+(local (include-book "kestrel/bv-lists/all-unsigned-byte-p2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))

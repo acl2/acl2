@@ -12,8 +12,7 @@
 (in-package "ACL2")
 
 (include-book "all-unsigned-byte-p")
-(include-book "all-unsigned-byte-p-of-reverse-list")
-(include-book "all-unsigned-byte-p-of-repeat")
+(include-book "all-unsigned-byte-p2")
 (include-book "all-all-unsigned-byte-p")
 (include-book "unsigned-byte-listp")
 (include-book "len-mult-of-8p")
