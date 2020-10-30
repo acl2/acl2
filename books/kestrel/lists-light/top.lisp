@@ -66,6 +66,8 @@
 (include-book "add-to-end")
 (include-book "first-non-member")
 
+(include-book "take2")
+
 (include-book "group")
 (include-book "group2")
 (include-book "ungroup")

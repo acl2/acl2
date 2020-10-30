@@ -23,7 +23,7 @@
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
-(local (include-book "kestrel/bv-lists/all-unsigned-byte-p-of-repeat" :dir :system))
+(local (include-book "kestrel/bv-lists/all-unsigned-byte-p2" :dir :system))
 
 (defund pad-to-448-number-of-zeros (l)
   (declare (xargs :guard (natp l)))
