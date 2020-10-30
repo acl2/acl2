@@ -90,7 +90,11 @@
                                        ((body "A term.") ':absent)
                                        ((verify-guards booleanp) ':absent)
                                        ((enable booleanp) ':absent)
-                                       ((guard-hints true-listp) 'nil))
+                                       ((guard-hints true-listp) 'nil)
+                                       ((rewrite "A term
+                                                  or @(':direct')
+                                                  or @(':default').")
+                                        ':default))
   :returns (mv (loc-event pseudo-event-formp)
                (event pseudo-event-formp))
   :short "Generate a SOFT @('defun-sk2') or @('defund-sk2') function definition
@@ -116,9 +120,11 @@
                             (declare (xargs ,@guard-decl
                                             ,@verify-guards-decl
                                             ,@guard-hints-decl))
-                            ,body)))
+                            ,body
+                            :rewrite ,rewrite)))
        (event `(,macro ,name ,formals
                        (declare (xargs ,@guard-decl
                                        ,@verify-guards-decl))
-                       ,body)))
+                       ,body
+                       :rewrite ,rewrite)))
     (mv loc-event event)))
