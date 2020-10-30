@@ -151,9 +151,9 @@
         (xdoc::li
          "Calls of @(tsee sint-rem) on recursively allowed terms.")
         (xdoc::li
-         "Calls of @(tsee sint-shl) on recursively allowed terms.")
+         "Calls of @(tsee sint-shl-sint) on recursively allowed terms.")
         (xdoc::li
-         "Calls of @(tsee sint-shr) on recursively allowed terms.")
+         "Calls of @(tsee sint-shr-sint) on recursively allowed terms.")
         (xdoc::li
          "Calls of @(tsee sint-lt) on recursively allowed terms.")
         (xdoc::li
