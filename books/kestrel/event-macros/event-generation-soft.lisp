@@ -27,6 +27,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(local (xdoc::set-default-parents event-macro-event-generators))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define evmac-generate-soft-defunvar ((name symbolp) (arity natp))
   :returns (event pseudo-event-formp)
   :short "Generate a SOFT function variable with specified name and arity."
