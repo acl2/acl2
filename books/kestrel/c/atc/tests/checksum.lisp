@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "atc" :ttags ((:quicklisp) (:quicklisp.osicat) (:oslib) (:open-output-channel!)))
+(include-book "kestrel/c/atc/atc" :dir :system :ttags ((:quicklisp) (:quicklisp.osicat) (:oslib) (:open-output-channel!)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
