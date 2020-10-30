@@ -25,13 +25,18 @@
 (include-book "byte-to-bits-little")
 (include-book "bytes-to-bits")
 (include-book "bytes-to-bits-little")
+
 (include-book "bvxor-list")
+(include-book "bvnot-list")
 (include-book "bvchop-list")
+(include-book "getbit-list")
+(include-book "map-slice")
 
 (include-book "width-of-widest-int")
 
 (include-book "packbv-def")
 (include-book "packbv")
+(include-book "packbv-theorems")
 (include-book "unpackbv")
 (include-book "packbv-and-unpackbv")
 

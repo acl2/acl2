@@ -16,7 +16,6 @@
 ;; TODO: which do we prefer, lg or integer-length?  i think i like lg best,
 ;; but my current rules may target integer-length?
 
-(include-book "power-of-2p")
 (local (include-book "ihs/logops-lemmas" :dir :system)) ;include less?
 (local (include-book "ihs/quotient-remainder-lemmas" :dir :system)) ;include less?
 (local (include-book "arithmetic/equalities" :dir :system)) ;include less?
@@ -94,19 +93,6 @@
            (equal (integer-length (floor i 2))
                   (+ -1 (integer-length i))))
   :hints (("Goal" :in-theory (enable integer-length))))
-
-(defthm integerp-when-power-of-2p
-  (implies (power-of-2p x)
-           (integerp x))
-  :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :hints (("Goal" :in-theory (enable power-of-2p))))
-
-(defthm natp-when-power-of-2p
-  (implies (power-of-2p x)
-           (natp x))
-  :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :hints (("Goal" :in-theory (enable power-of-2p))))
-
 
 ;enable?
 (defthmd floor-when-multiple
