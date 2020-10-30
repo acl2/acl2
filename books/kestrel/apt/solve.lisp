@@ -22,6 +22,7 @@
 (include-book "kestrel/event-macros/proof-preparation" :dir :system)
 (include-book "kestrel/event-macros/restore-output" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
+(include-book "kestrel/soft/defequal" :dir :system)
 (include-book "kestrel/soft/defun-sk2" :dir :system)
 (include-book "kestrel/soft/defund-sk2" :dir :system)
 (include-book "kestrel/std/system/fresh-logical-name-with-dollars-suffix" :dir :system)
@@ -1047,24 +1048,21 @@
                        (?f symbolp)
                        (f symbolp)
                        (verify-guards booleanp))
-  :returns (mv (local-event pseudo-event-formp)
-               (exported-event pseudo-event-formp))
+  :returns (event pseudo-event-formp)
   :short "Generate the @('new') function."
-  (evmac-generate-soft-defun-sk2 new
-                                 :formals ()
-                                 :body `(forall ,x1...xn
-                                                (equal (,?f ,@x1...xn)
-                                                       (,f ,@x1...xn)))
-                                 :enable new-enable
-                                 :rewrite :direct
-                                 :guard-hints '(("Goal" :in-theory nil))
-                                 :verify-guards verify-guards))
+  `(soft::defequal ,new
+                   :left ,?f
+                   :right ,f
+                   :vars ,x1...xn
+                   :enable ,new-enable
+                   :verify-guards ,verify-guards))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define solve-gen-old-if-new ((old-if-new symbolp)
                               (old-if-new-enable booleanp)
                               (old symbolp)
+                              (?f symbolp)
                               (x1...xn symbol-listp)
                               (new symbolp)
                               (f-existsp booleanp)
@@ -1083,14 +1081,14 @@
     and so there is no need to enable it
     (and in fact, enabling it might even sabotage the proof).")
   (b* ((formula `(implies (,new) (,old)))
-       (new-necc (add-suffix new "-NECC"))
+       (new-rwrule (packn-pos (list ?f '-to- f) new))
        (old-witness (add-suffix-to-fn old "-WITNESS"))
        (instantiation (if (>= (len x1...xn) 2)
                           (solve-gen-old-if-new-thm-aux x1...xn 0 old-witness)
                         `((,(car x1...xn) (,old-witness)))))
        (theory (if f-existsp
-                   (list old new-necc)
-                 (list old new-necc f)))
+                   (list old new-rwrule)
+                 (list old new-rwrule f)))
        (hints `(("Goal"
                  :in-theory ',theory
                  :use (:instance ,solution-correct ,@instantiation)))))
@@ -1174,12 +1172,12 @@
                        solution-enable
                        verify-guards
                        wrld)))
-       ((mv new-local-event new-exported-event)
-        (solve-gen-new new new-enable x1...xn ?f f verify-guards))
+       (new-event (solve-gen-new new new-enable x1...xn ?f f verify-guards))
        ((mv old-if-new-local-event old-if-new-exported-event)
         (solve-gen-old-if-new old-if-new
                               old-if-new-enable
                               old
+                              ?f
                               x1...xn
                               new
                               f-existsp
@@ -1192,10 +1190,9 @@
           (set-irrelevant-formals-ok t)
           ,@solution-correct-events
           ,@(and f-local-event? (list f-local-event?))
-          ,new-local-event
-          ,old-if-new-local-event
           ,@(and f-exported-event? (list f-exported-event?))
-          ,new-exported-event
+          ,new-event
+          ,old-if-new-local-event
           ,old-if-new-exported-event))
        (encapsulate `(encapsulate () ,@encapsulate-events))
        ((when show-only)
@@ -1212,7 +1209,7 @@
                                '((cw-event "~%")))
                         ,@(and (not f-existsp)
                                `((cw-event "~x0~|" ',f-exported-event?)))
-                        (cw-event "~x0~|" ',new-exported-event)
+                        (cw-event "~x0~|" ',new-event)
                         (cw-event "~x0~|" ',old-if-new-exported-event)))))
     (value
      `(progn
