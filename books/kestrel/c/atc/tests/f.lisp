@@ -14,6 +14,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; This is a simple artificial example.
+; A function with three inputs,
+; whose values are in small ranges,
+; and are combined with some arithmetic operations.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (encapsulate ()
 
   (local (include-book "arithmetic-5/top" :dir :system))
