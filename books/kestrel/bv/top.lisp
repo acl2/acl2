@@ -99,3 +99,6 @@
 
 ;; Rules about bitwise operations:
 (include-book "bitwise")
+
+;; Collections of definitions:
+(include-book "defs-arith")

@@ -12,13 +12,16 @@
 
 (include-book "character-listp")
 (include-book "rational-listp")
+(include-book "nat-listp")
+(include-book "pseudo-term-listp")
+(include-book "symbol-listp")
+
 (include-book "all-true-listp")
 (include-book "all-natp")
 (include-book "all-integerp")
-(include-book "all-integerp-of-repeat")
+(include-book "all-integerp2")
+(include-book "all-integerp-of-repeat") ;todo: combine with all-integerp2
 (include-book "items-have-len")
 (include-book "maxelem")
-(include-book "pseudo-term-listp")
-(include-book "symbol-listp")
 
 (include-book "all-less")
