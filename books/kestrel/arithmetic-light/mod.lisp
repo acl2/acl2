@@ -644,3 +644,20 @@
            (equal (mod (mod x y1) y2)
                   (mod x y2)))
   :hints (("Goal" :use (:instance mod-of-mod-when-multiple))))
+
+(defthm unsigned-byte-p-of-mod-when-<=-of-expt
+  (implies (and (<= y (expt 2 size))
+                (integerp x)
+                (posp y)
+                (natp size))
+           (unsigned-byte-p size (mod x y)))
+  :hints (("Goal" :in-theory (enable unsigned-byte-p))))
+
+(defthm unsigned-byte-p-of-mod
+  (implies (and (unsigned-byte-p size y)
+                (< 0 y)
+                (natp size)
+                (natp x))
+           (unsigned-byte-p size (mod x y)))
+  :hints (("Goal"
+           :in-theory (enable unsigned-byte-p))))

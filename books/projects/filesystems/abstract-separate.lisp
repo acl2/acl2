@@ -383,28 +383,6 @@
                                       (equal (abs-addrs abs-file-alist) nil))
                                  (not (member-equal x abs-file-alist))))))
 
-(defthm
-  abs-addrs-of-remove-lemma-1
-  (implies (and (member-equal x abs-file-alist1)
-                (integerp x)
-                (<= 0 x)
-                (member-equal x (abs-addrs abs-file-alist2)))
-           (intersectp-equal (abs-addrs abs-file-alist1)
-                             (abs-addrs abs-file-alist2))))
-
-(defthm
-  abs-addrs-of-remove-lemma-2
-  (implies
-   (and
-    (natp x)
-    (member-equal x (cdr abs-file-alist))
-    (not (intersectp-equal
-          (abs-addrs (cdr abs-file-alist))
-          (abs-addrs (abs-file->contents (cdr (car abs-file-alist)))))))
-   (not (member-equal
-         x
-         (abs-addrs (abs-file->contents (cdr (car abs-file-alist))))))))
-
 (defthm abs-addrs-of-remove
   (implies (and (natp x)
                 (member-equal x abs-file-alist)
@@ -1648,45 +1626,15 @@
 ;; Important - says clearly that the variable's name (or number, whatever) must
 ;; exist for context application to go right.
 (defthmd
-  abs-addrs-of-ctx-app-1-lemma-7
+  abs-addrs-of-ctx-app-lemma-2
   (implies (not (member-equal (nfix x)
                               (abs-addrs (abs-fs-fix abs-file-alist1))))
            (not (ctx-app-ok abs-file-alist1 x x-path)))
   :hints (("goal" :in-theory (e/d (abs-addrs addrs-at ctx-app ctx-app-ok)
                                   (nfix)))))
 
-(defthm
-  abs-addrs-of-ctx-app-1-lemma-8
-  (implies
-   (and
-    (abs-directory-file-p (cdr (assoc-equal name (cdr abs-file-alist1))))
-    (member-equal
-     x
-     (abs-addrs
-      (abs-file->contents (cdr (assoc-equal name (cdr abs-file-alist1))))))
-    (member-equal
-     x
-     (abs-addrs (abs-file->contents (cdr (car abs-file-alist1))))))
-   (intersectp-equal
-    (abs-addrs (cdr abs-file-alist1))
-    (abs-addrs (abs-file->contents (cdr (car abs-file-alist1)))))))
-
-(defthm
-  abs-addrs-of-ctx-app-lemma-7
-  (implies
-   (and
-    (member-equal
-     x
-     (abs-addrs (abs-file->contents (cdr (car abs-file-alist1)))))
-    (member-equal x
-                  (abs-addrs (remove-assoc-equal (car (car abs-file-alist1))
-                                                 (cdr abs-file-alist1)))))
-   (intersectp-equal
-    (abs-addrs (cdr abs-file-alist1))
-    (abs-addrs (abs-file->contents (cdr (car abs-file-alist1)))))))
-
 (defthmd
-  abs-addrs-of-ctx-app-1-lemma-11
+  abs-addrs-of-ctx-app-lemma-3
   (implies
    (and
     (abs-directory-file-p (cdr (assoc-equal name abs-file-alist1)))
@@ -1781,15 +1729,15 @@
         (ctx-app (abs-file->contents (cdr (assoc-equal name abs-file-alist1)))
                  abs-file-alist2 x x-path))))
      (:instance
-      (:rewrite abs-addrs-of-ctx-app-1-lemma-7)
+      (:rewrite abs-addrs-of-ctx-app-lemma-2)
       (abs-file-alist1
        (abs-file->contents (cdr (assoc-equal name abs-file-alist1)))))
-     (:rewrite abs-addrs-of-ctx-app-1-lemma-11))
+     (:rewrite abs-addrs-of-ctx-app-lemma-3))
     :do-not-induct t)))
 
 ;; This just might be made obsolete soon...
 (defthm
-  abs-addrs-of-ctx-app-2-lemma-1
+  abs-addrs-of-ctx-app-lemma-5
   (implies (not (intersectp-equal (abs-addrs abs-file-alist1)
                                   y))
            (not (intersectp-equal (abs-addrs (remove-equal x abs-file-alist1))
@@ -2001,35 +1949,6 @@
        (ctx-app
         (abs-file->contents$inline (cdr (assoc-equal name abs-file-alist1)))
         abs-file-alist2 x (cdr x-path))))))))
-
-(defthm
-  abs-addrs-of-ctx-app-lemma-2
-  (implies
-   (and
-    (member-equal
-     x
-     (abs-addrs (abs-file->contents (cdr (car abs-file-alist1)))))
-    (not (intersectp-equal
-          (abs-addrs (cdr abs-file-alist1))
-          (abs-addrs (abs-file->contents (cdr (car abs-file-alist1)))))))
-   (not (member-equal x (abs-addrs (cdr abs-file-alist1))))))
-
-(defthm
-  abs-addrs-of-ctx-app-lemma-3
-  (implies
-   (and
-    (member-equal
-     x
-     (abs-addrs
-      (abs-file->contents (cdr (assoc-equal name (cdr abs-file-alist1))))))
-    (abs-directory-file-p (cdr (assoc-equal name (cdr abs-file-alist1))))
-    (not (intersectp-equal
-          (abs-addrs (cdr abs-file-alist1))
-          (abs-addrs (abs-file->contents (cdr (car abs-file-alist1)))))))
-   (not
-    (member-equal
-     x
-     (abs-addrs (abs-file->contents$inline (cdr (car abs-file-alist1))))))))
 
 (defthm
   abs-addrs-of-ctx-app-lemma-4
@@ -5079,7 +4998,7 @@
      (frame-val->dir (cdr (assoc-equal x (frame->frame frame))))))
    (abs-separate (frame->frame (collapse-this frame x))))
   :hints (("goal" :in-theory (enable collapse-this
-                                     abs-addrs-of-ctx-app-1-lemma-7))))
+                                     abs-addrs-of-ctx-app-lemma-2))))
 
 (defthm
   abs-separate-of-frame->frame-of-collapse-this-lemma-6
@@ -5122,7 +5041,7 @@
      (frame-val->path (cdr (assoc-equal x (frame->frame frame)))))))
   :hints
   (("goal" :in-theory
-    (e/d (collapse abs-addrs-of-ctx-app-1-lemma-7)
+    (e/d (collapse abs-addrs-of-ctx-app-lemma-2)
          ((:rewrite remove-assoc-of-put-assoc)
           (:rewrite remove-assoc-of-remove-assoc)
           (:rewrite abs-file-alist-p-when-m1-file-alist-p)))
@@ -6313,10 +6232,10 @@
                nil
                (frame->frame (collapse-this frame x))))
   :hints (("goal" :in-theory (enable collapse-this
-                                     abs-addrs-of-ctx-app-1-lemma-7))))
+                                     abs-addrs-of-ctx-app-lemma-2))))
 
 (defthm
-  abs-separate-correctness-1-lemma-28
+  abs-separate-correctness-lemma-4
   (implies
    (and (equal (frame-val->src (cdr (assoc-equal x (frame->frame frame))))
                0)
@@ -6391,7 +6310,7 @@
    (subsetp-equal (abs-addrs (frame->root frame))
                   (frame-addrs-root (frame->frame (collapse-this frame x)))))
   :hints (("goal" :in-theory (enable collapse-this
-                                     abs-addrs-of-ctx-app-1-lemma-7))))
+                                     abs-addrs-of-ctx-app-lemma-2))))
 
 (defthm
   abs-separate-correctness-lemma-1
@@ -6486,7 +6405,7 @@
      (frame-val->src$inline (cdr (assoc-equal x (frame->frame frame)))))))
   :hints
   (("goal" :in-theory
-    (e/d (collapse abs-separate abs-addrs-of-ctx-app-1-lemma-7)
+    (e/d (collapse abs-separate abs-addrs-of-ctx-app-lemma-2)
          ((:definition remove-assoc-equal)
           (:rewrite remove-assoc-when-absent-1)
           (:definition member-equal)
@@ -6651,7 +6570,7 @@
                         (1st-complete (frame->frame frame)))
          (1st-complete (frame->frame (collapse-iter frame n))))))))
   :hints
-  (("goal" :in-theory (e/d (collapse collapse-iter abs-addrs-of-ctx-app-1-lemma-7)
+  (("goal" :in-theory (e/d (collapse collapse-iter abs-addrs-of-ctx-app-lemma-2)
                            ((:definition strip-cars)
                             (:definition assoc-equal)
                             (:rewrite nthcdr-when->=-n-len-l)
