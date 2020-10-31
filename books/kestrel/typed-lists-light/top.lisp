@@ -24,6 +24,8 @@
 (include-book "items-have-len")
 
 (include-book "maxelem")
+(include-book "maxelem2")
 (include-book "minelem")
+(include-book "minelem2")
 
 (include-book "all-less")
