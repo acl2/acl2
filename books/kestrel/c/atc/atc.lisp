@@ -711,7 +711,7 @@
             ,wf-thm-exported-event
             ,@fn-thm-local-events
             ,@fn-thm-exported-events
-            (cw-event "~%Generated theorem:~% ~x0~%" ',wf-thm-name)
+            (cw-event "~%Generated theorems:~% ~x0~%" ',wf-thm-name)
             ,@(loop$ for name in fn-thm-names
                      collect `(cw-event " ~x0~%" ',name)))))
     (value `(progn ,encapsulate
