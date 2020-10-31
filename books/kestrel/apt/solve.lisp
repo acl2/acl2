@@ -1042,6 +1042,77 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define solve-gen-solution ((?f symbolp)
+                            (x1...xn symbol-listp)
+                            (matrix pseudo-termp)
+                            (method keywordp)
+                            (method-rules symbol-listp)
+                            (f symbolp)
+                            (f-existsp booleanp)
+                            (solution-enable booleanp)
+                            (solution-guard "An untranslated term.")
+                            (solution-guard-hints true-listp)
+                            (solution-body "An untranslated term.")
+                            (solution-hints true-listp)
+                            (verify-guards booleanp)
+                            (names-to-avoid symbol-listp)
+                            ctx
+                            state)
+  :returns (mv erp
+               (result "@('(tuple (local-events pseudo-form-listp)
+                                  (exported-events pseudo-form-listp)
+                                  (solution-correct symbolp))')")
+               state)
+  :mode :program
+  :short "Attempt to generate the events that provide the solution."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are events that depend on the solving method.
+     In contrast, the event for @('new') and @('old-if-new')
+     are the same for every method."))
+  (b* ((wrld (w state))
+       ((er (list f-body? solution-correct-events solution-correct))
+        (if f-existsp
+            (b* (((mv solution-correct-event solution-correct &)
+                  (solve-gen-theorem-for-solution matrix
+                                                  ?f
+                                                  x1...xn
+                                                  f
+                                                  solution-hints
+                                                  names-to-avoid
+                                                  wrld)))
+              (value (list (list solution-correct-event) solution-correct)))
+          (b* (((er (list f-body solution-correct-events solution-correct &))
+                (solve-gen-solution-and-theorem matrix
+                                                ?f
+                                                x1...xn
+                                                method
+                                                method-rules
+                                                solution-body
+                                                solution-hints
+                                                names-to-avoid
+                                                ctx
+                                                state)))
+            (value (list f-body solution-correct-events solution-correct)))))
+       ((mv f-local-event? f-exported-event?)
+        (if f-existsp
+            (mv nil nil)
+          (solve-gen-f f
+                       x1...xn
+                       f-body?
+                       solution-guard
+                       solution-guard-hints
+                       solution-enable
+                       verify-guards
+                       wrld))))
+    (value (list (append solution-correct-events
+                         (and f-local-event? (list f-local-event?)))
+                 (and f-exported-event? (list f-exported-event?))
+                 solution-correct))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define solve-gen-new ((new symbolp)
                        (new-enable booleanp)
                        (x1...xn symbol-listp)
@@ -1138,40 +1209,25 @@
   :mode :program
   :short "Generate the top-level event."
   (b* ((wrld (w state))
-       ((er (list f-body? solution-correct-events solution-correct))
-        (if f-existsp
-            (b* (((mv solution-correct-event solution-correct &)
-                  (solve-gen-theorem-for-solution matrix
-                                                  ?f
-                                                  x1...xn
-                                                  f
-                                                  solution-hints
-                                                  names-to-avoid
-                                                  wrld)))
-              (value (list (list solution-correct-event) solution-correct)))
-          (b* (((er (list f-body solution-correct-events solution-correct &))
-                (solve-gen-solution-and-theorem matrix
-                                                ?f
-                                                x1...xn
-                                                method
-                                                method-rules
-                                                solution-body
-                                                solution-hints
-                                                names-to-avoid
-                                                ctx
-                                                state)))
-            (value (list f-body solution-correct-events solution-correct)))))
-       ((mv f-local-event? f-exported-event?)
-        (if f-existsp
-            (mv nil nil)
-          (solve-gen-f f
-                       x1...xn
-                       f-body?
-                       solution-guard
-                       solution-guard-hints
-                       solution-enable
-                       verify-guards
-                       wrld)))
+       ((er (list solution-local-events
+                  solution-exported-events
+                  solution-correct))
+        (solve-gen-solution ?f
+                            x1...xn
+                            matrix
+                            method
+                            method-rules
+                            f
+                            f-existsp
+                            solution-enable
+                            solution-guard
+                            solution-guard-hints
+                            solution-body
+                            solution-hints
+                            verify-guards
+                            names-to-avoid
+                            ctx
+                            state))
        (new-event (solve-gen-new new new-enable x1...xn ?f f verify-guards))
        ((mv old-if-new-local-event old-if-new-exported-event)
         (solve-gen-old-if-new old-if-new
@@ -1188,9 +1244,8 @@
           (evmac-prepare-proofs)
           (set-ignore-ok t)
           (set-irrelevant-formals-ok t)
-          ,@solution-correct-events
-          ,@(and f-local-event? (list f-local-event?))
-          ,@(and f-exported-event? (list f-exported-event?))
+          ,@solution-local-events
+          ,@solution-exported-events
           ,new-event
           ,old-if-new-local-event
           ,old-if-new-exported-event))
@@ -1208,7 +1263,8 @@
                       `(,@(and (member-eq print '(:info :all))
                                '((cw-event "~%")))
                         ,@(and (not f-existsp)
-                               `((cw-event "~x0~|" ',f-exported-event?)))
+                               `((cw-event "~x0~|"
+                                           ',(car solution-exported-events))))
                         (cw-event "~x0~|" ',new-event)
                         (cw-event "~x0~|" ',old-if-new-exported-event)))))
     (value
