@@ -1118,7 +1118,8 @@
                        (x1...xn symbol-listp)
                        (?f symbolp)
                        (f symbolp)
-                       (verify-guards booleanp))
+                       (verify-guards booleanp)
+                       (print evmac-input-print-p))
   :returns (event pseudo-event-formp)
   :short "Generate the @('new') function."
   `(soft::defequal ,new
@@ -1126,7 +1127,8 @@
                    :right ,f
                    :vars ,x1...xn
                    :enable ,new-enable
-                   :verify-guards ,verify-guards))
+                   :verify-guards ,verify-guards
+                   :print ,(and (eq print :all) :all)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1228,7 +1230,13 @@
                             names-to-avoid
                             ctx
                             state))
-       (new-event (solve-gen-new new new-enable x1...xn ?f f verify-guards))
+       (new-event (solve-gen-new new
+                                 new-enable
+                                 x1...xn
+                                 ?f
+                                 f
+                                 verify-guards
+                                 print))
        ((mv old-if-new-local-event old-if-new-exported-event)
         (solve-gen-old-if-new old-if-new
                               old-if-new-enable
