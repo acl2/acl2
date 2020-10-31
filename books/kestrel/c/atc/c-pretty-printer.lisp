@@ -218,7 +218,7 @@
   (unop-case op
              :plus "+"
              :minus "-"
-             :bitnot "~"
+             :bitnot "~~" ; a single ~ is interpreted as a directive
              :lognot "!")
   :hooks (:fix))
 
