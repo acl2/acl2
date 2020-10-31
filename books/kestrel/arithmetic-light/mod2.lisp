@@ -83,14 +83,7 @@
 
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system)) ;move?!
 
-(defthm unsigned-byte-p-of-mod
-  (implies (and (unsigned-byte-p size y)
-                (< 0 y)
-                (natp size)
-                (natp x))
-           (unsigned-byte-p size (mod x y)))
-  :hints (("Goal"
-           :in-theory (enable unsigned-byte-p))))
+
 
 (local (in-theory (disable mod-minus)))
 
