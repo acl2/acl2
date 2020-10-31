@@ -2,3 +2,5 @@ f.c
 f
 checksum.c
 checksum
+operators.c
+operators
