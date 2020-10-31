@@ -178,18 +178,18 @@
   (declare (type t x))
   (or (not x) (equal x acl2::*nil*)))
       
-(defun subset (x y)
+(defun subset-p (x y)
   (declare (xargs :guard (and (symbol-listp x)
                               (symbol-listp y))))
   (if (not (consp x)) t
     (and (member (car x) y)
-         (subset (cdr x) y))))
+         (subset-p (cdr x) y))))
 
-(defun perm (x y)
+(defun perm-p (x y)
   (declare (xargs :guard (and (symbol-listp x)
                               (symbol-listp y))))
-  (and (subset x y)
-       (subset y x)))
+  (and (subset-p x y)
+       (subset-p y x)))
 
 (defun subs (alist list)
   (declare (type (satisfies alistp) alist))
@@ -249,7 +249,7 @@
            (ignorable quantifier)
            (xargs :guard (and (equal quantifier :forall)
                               (equal (len args) 2)
-                              (or (unbound formals) (perm formals (append args parms))))))
+                              (or (unbound formals) (perm-p formals (append args parms))))))
   (let* ((formals (if (unbound formals) (append args parms) formals))
          (parms  (if (unbound parms) nil parms))
          (x (nth 0 args))
