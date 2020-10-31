@@ -62,3 +62,14 @@
 (include-book "all-equal-dollar")
 (include-book "all-equal-dollar2")
 (include-book "all-same")
+(include-book "update-subrange")
+(include-book "add-to-end")
+(include-book "first-non-member")
+
+(include-book "take2")
+(include-book "memberp2")
+
+(include-book "group")
+(include-book "group2")
+(include-book "ungroup")
+(include-book "group-and-ungroup")

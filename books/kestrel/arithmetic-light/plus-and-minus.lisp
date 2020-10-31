@@ -29,7 +29,12 @@
            (equal (equal 0 (+ (- y) x))
                   (equal x y))))
 
-(defthm <-of-+-of---and-0
+(defthm <-of-+-of---and-0-arg2
+  (equal (< (+ x (- y)) 0)
+         (< x y))
+  :hints (("Goal" :cases ((< x y)))))
+
+(defthm <-of-+-of---and-0-arg1
   (equal (< (+ (- x) y) 0)
          (< y x))
   :hints (("Goal" :cases ((< y x)))))

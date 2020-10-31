@@ -122,8 +122,9 @@
   (xdoc::topstring
    (xdoc::p
     "In C they are all well-formed of course,
-     but for now we only allow unary plus and minus."))
-  (and (member-eq (unop-kind op) '(:plus :minus)) t)
+     but having this predicate lets us limit the supported ones if desired.
+     Currently we support all the ones in the abstract syntax."))
+  (and (member-eq (unop-kind op) '(:plus :minus :bitnot :lognot)) t)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -135,9 +136,15 @@
   (xdoc::topstring
    (xdoc::p
     "In C they are all well-formed of course,
-     but for now we only allow
-     addition, subtraction, multiplication, division, and remainder."))
-  (and (member-eq (binop-kind op) '(:add :sub :mul :div :rem)) t)
+     but having this predicate lets us limit the supported ones if desired.
+     Currently we support all the ones in the abstract syntax."))
+  (and (member-eq (binop-kind op) '(:mul :div :rem
+                                    :add :sub
+                                    :shl :shr
+                                    :lt :gt :le :ge
+                                    :eq :ne
+                                    :bitand :bitxor :bitior))
+       t)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

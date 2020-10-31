@@ -1,6 +1,6 @@
 (in-package "ACL2")
 
-(local (include-book "file-system-lemmas"))
+(local (include-book "../file-system-lemmas"))
 (include-book "bounded-nat-listp")
 
 (defun set-indices (v index-list value-list)

@@ -21,7 +21,6 @@
 (local (include-book "../arithmetic-light/plus"))
 (local (include-book "../arithmetic-light/expt2"))
 (local (include-book "../arithmetic-light/floor-and-expt"))
-(local (include-book "../arithmetic-light/floor"))
 
 (in-theory (disable logtail))
 

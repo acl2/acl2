@@ -5,7 +5,7 @@
 ; Here we define some utility functions and related lemmas for a string
 ; representation of FAT32 clusters.
 
-(local (include-book "file-system-lemmas"))
+(local (include-book "../file-system-lemmas"))
 (include-book "kestrel/utilities/strings/top" :dir :system)
 (local (in-theory (disable make-list-ac-removal)))
 

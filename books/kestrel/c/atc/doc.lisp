@@ -137,6 +137,10 @@
         (xdoc::li
          "Calls of @(tsee sint-minus) on recursively allowed terms.")
         (xdoc::li
+         "Calls of @(tsee sint-bitnot) on recursively allowed terms.")
+        (xdoc::li
+         "Calls of @(tsee sint-lognot) on recursively allowed terms.")
+        (xdoc::li
          "Calls of @(tsee sint-add) on recursively allowed terms.")
         (xdoc::li
          "Calls of @(tsee sint-sub) on recursively allowed terms.")
@@ -145,7 +149,29 @@
         (xdoc::li
          "Calls of @(tsee sint-div) on recursively allowed terms.")
         (xdoc::li
-         "Calls of @(tsee sint-rem) on recursively allowed terms.")))
+         "Calls of @(tsee sint-rem) on recursively allowed terms.")
+        (xdoc::li
+         "Calls of @(tsee sint-shl-sint) on recursively allowed terms.")
+        (xdoc::li
+         "Calls of @(tsee sint-shr-sint) on recursively allowed terms.")
+        (xdoc::li
+         "Calls of @(tsee sint-lt) on recursively allowed terms.")
+        (xdoc::li
+         "Calls of @(tsee sint-gt) on recursively allowed terms.")
+        (xdoc::li
+         "Calls of @(tsee sint-le) on recursively allowed terms.")
+        (xdoc::li
+         "Calls of @(tsee sint-ge) on recursively allowed terms.")
+        (xdoc::li
+         "Calls of @(tsee sint-eq) on recursively allowed terms.")
+        (xdoc::li
+         "Calls of @(tsee sint-ne) on recursively allowed terms.")
+        (xdoc::li
+         "Calls of @(tsee sint-bitand) on recursively allowed terms.")
+        (xdoc::li
+         "Calls of @(tsee sint-bitxor) on recursively allowed terms.")
+        (xdoc::li
+         "Calls of @(tsee sint-bitior) on recursively allowed terms.")))
       (xdoc::li
        "The guard of @('fni') includes conjuncts of the form
         @('(sintp x)') for every formal parameter @('x').
