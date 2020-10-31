@@ -11,9 +11,9 @@
 
 (in-package "ACL2")
 
+(include-book "minelem")
 (include-book "kestrel/lists-light/subrange" :dir :system)
 (include-book "kestrel/lists-light/memberp-def" :dir :system)
-(include-book "kestrel/typed-lists-light/minelem" :dir :system)
 (local (include-book "kestrel/lists-light/memberp" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))

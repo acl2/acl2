@@ -11,7 +11,7 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/typed-lists-light/maxelem" :dir :system)
+(include-book "maxelem")
 (include-book "kestrel/lists-light/memberp-def" :dir :system)
 (include-book "kestrel/lists-light/reverse-list" :dir :system)
 (local (include-book "kestrel/lists-light/remove1-equal" :dir :system))
