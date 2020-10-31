@@ -664,7 +664,15 @@
     "The function to pretty-print lists of expressions
      takes a single grade argument,
      because we only need to pretty-print lists of expressions
-     that all have the same required grade."))
+     that all have the same required grade.")
+   (xdoc::p
+    "When printing unary expressions,
+     we need to be careful about not printing
+     two nested @('-') expressions as @('--') or
+     two nested @('+') expressions ad @('++'),
+     otherwise they are interpreted as predecrement or postincrement
+     by the C compiler.
+     Thus, we interpose a space when these two situations occur."))
 
   (define pprint-expr ((expr exprp) (expected-grade expr-gradep))
     :returns (part msgp)
@@ -685,8 +693,18 @@
                              (pprint-expr expr.arg (expr-grade-unary)))
                 :predec (msg "--~@0)"
                              (pprint-expr expr.arg (expr-grade-unary)))
-                :unary (msg "~@0~@1"
+                :unary (msg "~@0~s1~@2"
                             (pprint-unop expr.op)
+                            (if (or (and (unop-case expr.op :minus)
+                                         (expr-case expr.arg :unary)
+                                         (unop-case (expr-unary->op expr.arg)
+                                                    :minus))
+                                    (and (unop-case expr.op :plus)
+                                         (expr-case expr.arg :unary)
+                                         (unop-case (expr-unary->op expr.arg)
+                                                    :plus)))
+                                " "
+                              "")
                             (pprint-expr expr.arg (expr-grade-cast)))
                 :cast (msg "(~@0) ~@1"
                            (pprint-tyname expr.type)
