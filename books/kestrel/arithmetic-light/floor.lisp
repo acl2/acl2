@@ -855,6 +855,16 @@
   :hints (("Goal" :in-theory (enable floor)
            :cases ((rationalp j)))))
 
+(defthm floor-type-when-nonpositive-and-nonnegative
+  (implies (and (<= i 0)
+                (<= 0 j)
+                (or (rationalp i)
+                    (rationalp j)))
+           (<= (floor i j) 0))
+  :rule-classes (:type-prescription)
+  :hints (("Goal" :in-theory (enable floor)
+           :cases ((rationalp j)))))
+
 ;almost subsumed by <-of-floor-and-0
 (defthm <-of-floor-and-0-2
   (implies (and (<= 0 i)
@@ -895,6 +905,21 @@
                 (<= 0 j))
            (<= (floor i j) i))
   :rule-classes ((:linear :trigger-terms ((floor i j)))))
+
+;todo
+;; (defthm equal-of-floor-and-i
+;;   (implies (and (integerp i)
+;;                 (< 1 j)
+;;                 (integerp j))
+;;            (equal (equal (floor i j) i)
+;;                   (if (<= 0 i)
+;;                       (equal i 0)
+;;                     (equal i -1))))
+;;   :hints (("Goal"
+;;            :use (:instance floor-upper-bound-strict)
+;;            :in-theory (disable floor-upper-bound-strict
+;;                                <-of-times-of-floor-and-same
+;;                                floor-mod-elim))))
 
 (defthm equal-of-floor-and-i
   (implies (and (natp i)
@@ -1116,3 +1141,7 @@
                                      expt-of-+
                                      <-of-floor-arg1
                                      ))))
+
+(defthm equal-of-floor-and-*-of-/
+  (equal (equal (floor i j) (* i (/ j)))
+         (integerp (* i (/ j)))))

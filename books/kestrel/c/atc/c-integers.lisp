@@ -332,9 +332,9 @@
                                            acl2::sbyte32p
                                            sint->get
                                            sintp)))
-  :prepwork ((local (include-book "arithmetic-5/top" :dir :system))
-             (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
-             (local (include-book "centaur/bitops/signed-byte-p" :dir :system))))
+  :prepwork
+  ((local (include-book "kestrel/arithmetic-light/expt" :dir :system))
+   (local (include-book "kestrel/arithmetic-light/truncate" :dir :system))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

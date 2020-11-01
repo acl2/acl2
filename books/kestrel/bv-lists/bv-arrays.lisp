@@ -64,64 +64,6 @@
                             len) (len-of-cdr
                                   )))))
 
-(defthmd bv-array-write-opener
-  (implies (and (natp index)
-                (< index len)
-                (natp len))
-           (equal (bv-array-write element-size len index val data)
-                  (bvchop-list element-size
-                ;this calls take, but in many cases that is wasted work:
-                (update-nth2 len index val data))))
-  :hints (("Goal" :in-theory (enable bv-array-write ceiling-of-lg))))
-
-(defthm len-of-bv-array-write
-  (equal (len (bv-array-write element-size len key val lst))
-         (nfix len))
-  :hints (("Goal" :in-theory (e/d (bv-array-write update-nth2) ()))))
-
-(defthm consp-of-bv-array-write
-  (implies (natp len)
-           (equal (consp (bv-array-write element-size len key val lst))
-                  (< 0 (nfix len))))
-  :hints (("Goal" :in-theory (enable UPDATE-NTH2 bv-array-write))))
-
-(defthm all-unsigned-byte-p-of-bv-array-write-same
-    (implies (natp size)
-             (all-unsigned-byte-p size (bv-array-write size len key val lst)))
- :hints (("Goal" :cases ((natp size))
-          :in-theory (enable bv-array-write))))
-
-(defthm bv-array-write-not-nil1
-  (implies (and (natp len)
-                (< 0 len))
-           (not (equal nil (bv-array-write element-size len key val lst))))
-  :hints (("Goal" :in-theory (enable bv-array-write))))
-
-(defthm bv-array-write-not-nil2
-  (implies (and (natp len)
-                (< 0 len))
-           (not (equal (bv-array-write element-size len key val lst) nil)))
-  :hints (("Goal" :in-theory (enable bv-array-write))))
-
-;fixme drop the two above in favor of this?
-(defthm equal-of-nil-and-bv-array-write
-  (equal (equal nil (bv-array-write element-size len index val data))
-         (not (posp len)))
-  :hints (("Goal" :in-theory (enable bv-array-write))))
-
-;; Probably only needed for Axe since ACL2 will use equal-of-nil-and-bv-array-write.
-(defthmd equal-of-bv-array-write-and-nil
-  (equal (equal (bv-array-write element-size len index val data) nil)
-         (not (posp len)))
-  :hints (("Goal" :in-theory (enable bv-array-write))))
-
-(defthm bv-array-write-when-index-not-integer-cheap
-  (implies (not (integerp index))
-           (equal (bv-array-write element-size len index val data)
-                  (bv-array-write element-size len 0 val data)))
-  :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :hints (("Goal" :in-theory (e/d (bv-array-write update-nth2) ()))))
-
 ;not true any more?
 ;; (defthm bv-array-write-when-index-not-positive-cheap
 ;;   (implies (< index 0)
@@ -129,18 +71,6 @@
 ;;                   (bv-array-write element-size len 0 val data)))
 ;;   :rule-classes ((:rewrite :backchain-limit-lst (0)))
 ;;   :hints (("Goal" :in-theory (e/d (bv-array-write update-nth2) ()))))
-
-(defthm bv-array-write-of-0
-  (equal (bv-array-write width 0 index val x)
-         nil)
-  :hints (("Goal" :in-theory (enable bv-array-write))))
-
-(defthm all-unsigned-byte-p-of-bv-array-write
-  (implies (and (<= element-size size)
-                (integerp size)
-                (natp element-size))
-           (all-unsigned-byte-p size (bv-array-write element-size len key val lst)))
-  :hints (("Goal" :in-theory (enable bv-array-write))))
 
 ;for axe?
 (defthm integerp-of-bv-array-read
@@ -383,7 +313,6 @@
   (("Goal"
     :in-theory (enable bvchop-list all-unsigned-byte-p))))
 
-
 (defthm bvchop-list-does-nothing-rewrite
   (equal (equal x (bvchop-list size x))
          (and (true-listp x)
@@ -397,13 +326,6 @@
   :hints (("Goal" :use (:instance bvchop-list-does-nothing-rewrite)
            :in-theory (disable bvchop-list-does-nothing-rewrite
                                bvchop-list-does-nothing-better))))
-
-
-
-(defthm iff-bv-array-write
-  (iff (bv-array-write ELEMENT-SIZE LEN INDEX VAL DATA)
-       (posp len))
-  :hints (("Goal" :in-theory (e/d (bv-array-write update-nth2) ()))))
 
 (defthm all-unsigned-byte-p-of-update-nth
   (implies (and (unsigned-byte-p m val)
@@ -612,6 +534,7 @@
                   t))
   :hints (("Goal" :use (:instance equal-of-bvchop-and-bv-array-read))))
 
+;move
 (defthm bv-array-write-of-bvchop-arg3
   (implies (and (<= (ceiling-of-lg len) size)
                 (integerp size))
@@ -619,6 +542,7 @@
                   (bv-array-write element-size len index val data)))
   :hints (("Goal" :in-theory (enable bv-array-write))))
 
+;move
 (defthm bv-array-write-of-bvchop-arg4
   (implies (and (<= element-size size)
                 (integerp size))
@@ -671,16 +595,6 @@
            (equal (bv-array-read width len index data)
                   0))
   :hints (("Goal" :in-theory (e/d (bv-array-read) ()))))
-
-;;Do not remove.  This helps justify te correctness of the translation to STP.
-;a write out of bounds has essentially no effect
-;note that the index is chopped down before the comparison
-(defthmd bv-array-write-when-index-is-too-large
-  (implies (and (<= len (bvchop (ceiling-of-lg len) index))
-                (natp len))
-           (equal (bv-array-write width len index value data)
-                  (bvchop-list width (take len data))))
-  :hints (("Goal" :in-theory (e/d (bv-array-write) ()))))
 
 ;splits into cases
 ;does not require that the indices be in bounds
@@ -769,19 +683,7 @@
            :in-theory (e/d (ALL-EQUAL$-WHEN-TRUE-LISTP)
                            (bv-array-clear-range-of-repeat-same)))))
 
-;; A bv-array-write to an array of length 1 always acts as if the index is 0,
-;; The result does not depend on the original contents of the array,
-;; because the single element gets overwritten.
-(defthm bv-array-write-of-1-arg2
-  (implies (syntaxp (not (equal index ''0))) ;prevents loops
-           (equal (bv-array-write size 1 index val data)
-                  (bv-array-write size 1 0 val '(0))))
-  :hints (("Goal" :in-theory (e/d (bv-array-write update-nth2 UPDATE-NTH)
-                                  ( ;update-nth-becomes-update-nth2-extend-gen
-                                   ;LIST::UPDATE-NTH-EQUAL-REWRITE
-                                   ;LIST::UPDATE-NTH-EQUAL-UPDATE-NTH-REWRITE
-                                   )))))
-
+;move
 (defthm equal-of-bv-array-write-of-1
   (equal (equal k (bv-array-write size 1 index val data))
          (and (true-listp k)
@@ -794,6 +696,7 @@
                             ;LIST::UPDATE-NTH-EQUAL-UPDATE-NTH-REWRITE
                             )))))
 
+;move
 (defthm equal-of-bv-array-write-of-1-constant-version
   (implies (syntaxp (quotep k))
            (equal (equal k (bv-array-write size 1 index val data))
@@ -875,12 +778,6 @@
                               ceiling-of-lg
                               ;list::update-nth-update-nth-diff
                               bv-array-write))))
-
-(defthm BV-ARRAY-WRITE-when-len-is-not-natp
-  (implies (not (natp len))
-           (equal (BV-ARRAY-WRITE ELEMENT-SIZE LEN INDEX VAL DATA)
-                  nil))
-  :hints (("Goal" :in-theory (enable BV-ARRAY-WRITE))))
 
 ;would like this not to mention len, but we have to know that the indices (after trimming down to the number of bits indicated by len) are in fact different.
 (defthm bv-array-write-of-bv-array-write-diff-constant-indices
@@ -976,7 +873,6 @@
 ;;          (zp len))
 ;;   :hints (("Goal" :in-theory (enable update-nth2 bv-array-write))))
 
-
 (defthm bv-array-read-when-element-size-is-0
   (equal (bv-array-read 0 len index data)
          0)
@@ -1045,6 +941,8 @@
   :hints (("Goal" :use (:instance bitxor-of-bv-array-read-and-bv-array-read-constant-arrays)
            :in-theory (disable bitxor-of-bv-array-read-and-bv-array-read-constant-arrays))))
 
+;move
+;; breaks the abstraction
 (defthm car-of-bv-array-write
   (implies (and (<= 1 len)
                 (integerp len)
@@ -1057,6 +955,7 @@
                     (bvchop element-size (car lst)))))
   :hints (("Goal" :in-theory (e/d (bv-array-write-opener update-nth2) ()))))
 
+;move
 (defthm car-of-bv-array-write-gen
   (implies (posp len)
            (equal (car (bv-array-write element-size len key val lst))
