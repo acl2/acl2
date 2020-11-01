@@ -19,16 +19,16 @@
 
 ;read characters up to but not including TERMINATOR
 ;returns (mv chars-before-item rest-chars)
-(defund read-chars-to-terminator-aux (char-lst terminator acc)
-  (declare (xargs :measure (len char-lst)
-                  :guard (and (character-listp char-lst)
+(defund read-chars-to-terminator-aux (chars terminator acc)
+  (declare (xargs :measure (len chars)
+                  :guard (and (character-listp chars)
                               (characterp terminator)
                               (character-listp acc))))
-  (if (endp char-lst)
+  (if (endp chars)
       (mv (reverse acc) nil)
-    (if (eql (car char-lst) terminator)
-        (mv (reverse acc) char-lst)
-      (read-chars-to-terminator-aux (cdr char-lst) terminator (cons (car char-lst) acc)))))
+    (if (eql (car chars) terminator)
+        (mv (reverse acc) chars)
+      (read-chars-to-terminator-aux (cdr chars) terminator (cons (car chars) acc)))))
 
 (defthm character-listp-of-mv-nth-0-of-read-chars-to-terminator-aux
   (implies (and (character-listp chars)
@@ -61,10 +61,10 @@
   :hints (("Goal" :in-theory (enable read-chars-to-terminator-aux))))
 
 ;returns (mv chars-before-item rest-chars)
-(defund read-chars-to-terminator (char-lst terminator)
-  (declare (xargs :guard (and (character-listp char-lst)
+(defund read-chars-to-terminator (chars terminator)
+  (declare (xargs :guard (and (character-listp chars)
                               (characterp terminator))))
-  (read-chars-to-terminator-aux char-lst terminator nil))
+  (read-chars-to-terminator-aux chars terminator nil))
 
 ;(READ-CHARS-TO-TERMINATOR '(#\a #\b #\c #\d #\e) #\c)
 
