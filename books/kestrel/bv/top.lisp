@@ -50,7 +50,6 @@
 (include-book "bvand")
 (include-book "bvor")
 (include-book "bvxor")
-(include-book "defs-bitwise")
 
 ;; Single bit operations:
 (include-book "bitxor")
@@ -102,3 +101,5 @@
 
 ;; Collections of definitions:
 (include-book "defs-arith")
+(include-book "defs-bitwise")
+(include-book "defs")
