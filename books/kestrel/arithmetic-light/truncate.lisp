@@ -12,8 +12,25 @@
 (in-package "ACL2")
 
 (local (include-book "floor"))
+(local (include-book "numerator"))
 
 (in-theory (disable truncate))
+
+(defthm truncate-of-0-arg1
+  (equal (truncate 0 y)
+         0)
+  :hints (("Goal" :in-theory (enable truncate))))
+
+(defthm truncate-of-0-arg2
+  (equal (truncate i 0)
+         0)
+  :hints (("Goal" :in-theory (enable truncate))))
+
+(defthm truncate-of-1-when-integerp-arg2
+  (implies (integerp i)
+           (equal (truncate i 1)
+                  i))
+  :hints (("Goal" :in-theory (enable truncate))))
 
 (defthmd truncate-becomes-floor
   (implies (and ;(rationalp i)
@@ -68,3 +85,68 @@
   :rule-classes :linear
   :hints (("Goal" :cases ((< j 0))
            :in-theory (enable truncate-becomes-floor))))
+
+;; in this case, the quotient is positive
+(defthmd truncate-becomes-floor-gen1
+  (implies (and (or (and (<= 0 i) (<= 0 j))
+                    (and (< i 0) (< j 0)))
+                (rationalp i)
+                (rationalp j))
+           (equal (truncate i j)
+                  (floor i j)))
+  :hints (("Goal" :in-theory (enable floor truncate))))
+
+;; in this case, the quotient is negative
+(defthmd truncate-becomes-floor-gen2
+  (implies (and (or (and (<= i 0) (<= 0 j))
+                    (and (<= 0 i) (<= j 0)))
+                (not (integerp (/ i j)))
+                (rationalp i)
+                (rationalp j)
+                )
+           (equal (truncate i j)
+                  (+ 1 (floor i j))))
+  :hints (("Goal" :in-theory (enable floor truncate))))
+
+(defthmd truncate-becomes-floor-gen3
+  (implies (and (integerp (/ i j))
+                (rationalp i)
+                (rationalp j))
+           (equal (truncate i j)
+                  (floor i j)))
+  :hints (("Goal" :in-theory (enable floor truncate))))
+
+;better in some cases
+(defthmd truncate-becomes-floor-other
+  (implies (and (rationalp i)
+                (rationalp j))
+           (equal (truncate i j)
+                  (if (integerp (/ i j))
+                      (floor i j)
+                    (if (or (and (<= 0 i) (<= 0 j))
+                            (and (< i 0) (< j 0)))
+                        (floor i j)
+                      (+ 1 (floor i j))))))
+  :hints (("Goal" :in-theory (enable floor truncate))))
+
+(defthmd truncate-becomes-floor-gen
+  (implies (and (rationalp i)
+                (rationalp j))
+           (equal (truncate i j)
+                  (if (equal (floor i j) (/ i j))
+                      (floor i j)
+                      (if (or (and (<= 0 i) (<= 0 j))
+                              (and (< i 0) (< j 0)))
+                          (floor i j)
+                          (+ 1 (floor i j))))))
+  :hints (("Goal" :in-theory (enable truncate-becomes-floor-gen1
+                                     truncate-becomes-floor-gen2
+                                     truncate-becomes-floor-gen3))))
+
+(defthm equal-of-truncate-same
+  (implies (and (natp i) ;gen
+                (integerp j)
+                (< 1 j))
+           (equal (equal (truncate i j) i)
+                  (equal i 0)))
+  :hints (("Goal" :in-theory (enable truncate-becomes-floor-gen))))
