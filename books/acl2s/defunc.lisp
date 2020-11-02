@@ -290,7 +290,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
       'acl2s::acl2s-undefined)))
 
 (defun make-defun-body/logic
-    (name formals ic oc body wrld make-staticp d? typed-undef pkg)
+    (name formals ic oc body make-staticp d? typed-undef pkg wrld)
   (b* ((ptbl (pred-alias-table wrld))
        (with-ic-body
         (if (c-is-t ic)
@@ -306,7 +306,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
         with-ic-body
       (add-output-contract-check with-ic-body oc name formals wrld))))
 
-(defun make-defun-body/exec (name formals oc body wrld make-staticp)
+(defun make-defun-body/exec (name formals oc body make-staticp wrld)
   (if make-staticp
       body
     (add-output-contract-check body oc name formals wrld)))
@@ -320,7 +320,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
 (verify-termination get-undef-name (declare (xargs :verify-guards nil)))
 
 (defun make-generic-typed-defunc-events
-    (name formals ic oc decls body kwd-alist wrld make-staticp d? pkg)
+    (name formals ic oc decls body kwd-alist make-staticp d? pkg wrld)
   "Generate events which simulate a typed ACL2s language."
   (declare (ignorable wrld d? decls))
   (declare (xargs :mode :program))
@@ -1073,11 +1073,11 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
                          (value '(value-triple :invisible)))))
 
 (defun make-defun-no-guard-ev
-    (name formals ic oc decls body kwd-alist wrld make-staticp d? pkg)
+    (name formals ic oc decls body kwd-alist make-staticp d? pkg wrld)
   (declare (xargs :mode :program))
   (b* ((typed-undef (get1 :typed-undef kwd-alist))
-       (lbody (make-defun-body/logic name formals ic oc body wrld make-staticp d? typed-undef pkg))
-       (ebody (make-defun-body/exec name formals oc body wrld make-staticp))
+       (lbody (make-defun-body/logic name formals ic oc body make-staticp d? typed-undef pkg wrld))
+       (ebody (make-defun-body/exec name formals oc body make-staticp wrld))
        (skip-admissibilityp
         (get1 :skip-admissibilityp kwd-alist))
        (termination-strictp
@@ -1136,14 +1136,15 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
                   (timeout-abort-fn ,start-time ,timeout-secs ,debug state)))))
 
 (defun defunc-events-with-staticp-flag
-    (name formals ic oc decls body kwd-alist wrld make-staticp d? pkg)
-  "Depending on flag make-staticp, we generate either events with static contract or with dynamic contract (run-time checking)."
+    (name formals ic oc decls body kwd-alist make-staticp d? pkg wrld)
+  "Depending on flag make-staticp, we generate either events with
+    static contracts or with dynamic contracts (contracts checked at runtime)."
   (declare (xargs :mode :program))
   (if (get1 :program-mode-p kwd-alist)
       '(mv t nil state) ;skip/abort
     (b* ((defun/ng
            (make-defun-no-guard-ev
-            name formals ic oc decls body kwd-alist wrld make-staticp d? pkg))
+            name formals ic oc decls body kwd-alist make-staticp d? pkg wrld))
          (contract-defthm
           (make-contract-ev name formals ic oc kwd-alist make-staticp d? pkg wrld))
          (contract-defthm
@@ -1213,7 +1214,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
 #|          (me-assign defunc-failure-reason :generic-ev)
 
           ,@(make-generic-typed-defunc-events
-             name formals ic oc decls body kwd-alist wrld make-staticp d? pkg)
+             name formals ic oc decls body kwd-alist make-staticp d? pkg wrld)
 
 
           (make-event
@@ -1223,10 +1224,10 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
           ))))))
 
 (defun program-mode-defunc-events
-    (name formals ic oc decls body kwd-alist d? wrld pkg)
+    (name formals ic oc decls body kwd-alist d? pkg wrld)
   (declare (xargs :mode :program))
   (b* ((typed-undef (get1 :typed-undef kwd-alist))
-       (dynamic-body (make-defun-body/logic name formals ic oc body wrld nil d? typed-undef pkg))
+       (dynamic-body (make-defun-body/logic name formals ic oc body nil d? typed-undef pkg wrld))
        (decls (update-xargs-decls decls :guard ic :mode :program))
        (debug? (or (get1 :debug kwd-alist) (get1 :verbose kwd-alist)))
        (timeout-secs (get1 :timeout kwd-alist)))
@@ -1441,12 +1442,12 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
               (er hard? 'defunc
                   "~|Submit the events shown above to replicate the failure."))))))))))
 
-(defun events-seen-list (parsed wrld make-staticp d? pkg)
+(defun events-seen-list (parsed make-staticp d? pkg wrld)
   (declare (xargs :mode :program))
   (b* (((list name formals ic oc decls body kwd-alist) parsed)
        (defun/ng
          (make-defun-no-guard-ev name formals ic oc decls body
-                                 kwd-alist wrld make-staticp d? pkg))
+                                 kwd-alist make-staticp d? pkg wrld))
        (typed-undef (get1 :typed-undef kwd-alist))
        (contract-defthm (make-contract-defthm name ic oc kwd-alist formals d? typed-undef pkg wrld))
        (verify-guards-ev (make-verify-guards-ev name kwd-alist))
@@ -1657,6 +1658,23 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
 
     (list name formals input-contract output-contract decls body kwd-alist)))
 
+#|
+ make-undefined-aux takes as arguments:
+
+ parsed: generated by parse-defunc which includes the signature,
+  declarations, body, etc
+
+ d?: if t, then the :logic part of the mbe form generated uses a 0-ary
+ function for the case where the input contract is satisfied. that
+ means that outside of the intended domain, the function always
+ returns some, unspecified, element of the co-domain, assuming we can
+ identify a co-domain.
+
+ do-it: if t force the generation of the definition, unless we would
+ wind up with acl2s-undefined or acl2s-d-undefined.
+
+|#
+
 (defun make-undefined-aux (parsed d? do-it pkg w)
   (declare (xargs :mode :program))
   (b* (((list name formals & oc & & kwd-alist) parsed)
@@ -1749,14 +1767,14 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
        ((er &) (assign defunc-failure-reason :none))
        (static-defunc-ev
         (defunc-events-with-staticp-flag
-          name formals ic oc decls body kwd-alist wrld t d? pkg))
+          name formals ic oc decls body kwd-alist t d? pkg wrld))
        (wrld (w state))
        (dynamic-defunc-ev
         (defunc-events-with-staticp-flag
-          name formals ic oc decls body kwd-alist wrld nil d? pkg))
+          name formals ic oc decls body kwd-alist nil d? pkg wrld))
        (program-mode-defunc-ev
         (program-mode-defunc-events
-         name formals ic oc decls body kwd-alist d? wrld pkg))
+         name formals ic oc decls body kwd-alist d? pkg wrld))
        (termination-strictp
         (and (get1 :termination-strictp kwd-alist)
              (not (get1 :program-mode-p kwd-alist))))
@@ -1764,8 +1782,8 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
        (function-contract-strictp
         (get1 :function-contract-strictp kwd-alist))
        (make-undef (make-undefined-aux parsed d? t pkg wrld))
-       (events-seen-t   (cons make-undef (events-seen-list parsed wrld t d? pkg)))
-       (events-seen-nil (cons make-undef (events-seen-list parsed wrld nil d? pkg))))
+       (events-seen-t   (cons make-undef (events-seen-list parsed t d? pkg wrld)))
+       (events-seen-nil (cons make-undef (events-seen-list parsed nil d? pkg wrld))))
     (value
      (cond
       ((and termination-strictp function-contract-strictp)
@@ -1806,7 +1824,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
                 ,(make-show-failure-msg-ev
                   start kwd-alist
                   (list (make-defun-no-guard-ev name formals ic oc
-                                                decls body kwd-alist wrld t d? pkg)))))
+                                                decls body kwd-alist t d? pkg wrld)))))
          (me-assign defunc-failure-reason :none)
          (make-event ,(print-summary-ev name oc kwd-alist pkg))))))))
 
@@ -1844,7 +1862,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
            (with-output
             ,@(and (not debug?) '(:off :all)) :on (error)
             (make-event
-             (make-undefined ',parsed nil (current-package state) (w state))))
+             (make-undefined ',parsed ',d? (current-package state) (w state))))
            (make-event
             (er-progn
              ;; Test phase using trans-eval/make-event
@@ -1862,7 +1880,8 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
 
 (defxdoc defunc
   :parents (acl2::acl2-sedan acl2::macro-libraries)
-  :short "Function definitions with contracts @(see acl2::defun)"
+  :short "Function definitions with contracts @(see acl2::defun). See
+  also @(see definec)."
   :long
   "
 <h3>Examples</h3>
@@ -1906,10 +1925,12 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
 
 })
 
-<h3>Purpose</h3>
-<p>
-The macro @('defunc') is an extension of @('acl2::defun') with <b>contracts</b>.
-</p>
+<h3>Purpose</h3> 
+
+<p> The macro @('defunc') is an extension of @('acl2::defun') with
+<b>contracts</b>.  We recommend the use of @('definec'), a macro based
+on @('defunc'), which is as powerful as @('defunc'), but allows one to
+write more concise definitions.  </p>
 
 <p> Using @('defunc') one can specify input and output
 contracts (pre and post conditions) for a function. The following
