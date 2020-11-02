@@ -16,6 +16,7 @@
 
 ;; Recognizers for BVs:
 (include-book "unsigned-byte-p")
+(include-book "unsigned-byte-p2")
 (include-book "unsigned-byte-p-forced")
 
 ;; Underlying functions:
