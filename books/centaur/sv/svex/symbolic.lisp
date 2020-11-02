@@ -302,7 +302,8 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
     (==??      a4vec-symwildeq      (x y)                       "symmetric wildcard equality")
     (?         a3vec-?              ((3v test) (3vp then) (3vp else)) "if-then-else")
     (?*        a3vec-?*             ((3v test) (3vp then) (3vp else)) "if-then-else")
-    (bit?      a3vec-bit?           ((3v test) (3vp then) (3vp else)) "bitwise if-then-else")))
+    (bit?      a3vec-bit?           ((3v test) (3vp then) (3vp else)) "bitwise if-then-else")
+    (bit?!     a4vec-bit?!          ((3v test) (3vp then) (3vp else)) "bitwise if-then-else")))
 
 #||
 (loop for lst in sv::*svex-aig-op-table* do
@@ -386,7 +387,10 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
 
 
 
-
+(local (defthm 4vec-bit?!-of-3vec-fix
+         (equal (4vec-bit?! (3vec-fix test) then else)
+                (4vec-bit?! test then else))
+         :hints(("Goal" :in-theory (enable 4vec-bit?! 3vec-fix)))))
 
 
 

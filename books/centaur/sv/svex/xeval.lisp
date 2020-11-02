@@ -140,6 +140,7 @@ and we get, for instance:</p>
       (let ((expr.fn (case expr.fn
                        (=== '==)
                        (==? 'safer-==?)
+                       (bit?! 'bit?)
                        (otherwise expr.fn))))
         (mbe :logic
              (svex-apply expr.fn (svexlist-xeval expr.args))

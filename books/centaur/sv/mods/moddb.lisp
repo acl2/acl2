@@ -6704,8 +6704,8 @@ checked to see if it is a valid bitselect and returned as a separate value."
     (b* ((addr (svar->address x))
          ((address addr))
          ((unless (eql 0 addr.scope))
-          (mv nil (change-svar
-                   x :name (change-address addr :index nil))))
+          (mv nil (change-svar x :name (change-address addr :index nil)
+                               :override-test nil :override-val nil)))
          (idx (moddb-path->wireidx addr.path modidx moddb))
          ((unless idx)
           (mv (msg "Did not find wire: ~x0 in module ~s1~%"
@@ -6714,10 +6714,10 @@ checked to see if it is a valid bitselect and returned as a separate value."
                               (name)
                               (elab-mod->name elab-mod)
                               name))
-              (change-svar
-               x :name (change-address addr :index nil)))))
-      (mv nil (change-svar
-               x :name (change-address addr :index idx))))
+              (change-svar x :name (change-address addr :index nil)
+                           :override-test nil :override-val nil))))
+      (mv nil (change-svar x  :name (change-address addr :index idx)
+                           :override-test nil :override-val nil)))
     ///
     (deffixequiv svar-named->indexed)
 
