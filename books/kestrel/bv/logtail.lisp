@@ -234,9 +234,13 @@
   :hints (("Goal" :in-theory (e/d (expt logtail <-of-floor-arg1)
                                   (expt-hack)))))
 
+(defthm <=-of-logtail-same
+  (implies (natp x)
+           (<= (logtail n x) x))
+  :hints (("Goal" :in-theory (enable logtail))))
+
 (defthm <=-of-logtail-same-linear
-  (implies (and (natp x)
-                (posp n))
+  (implies (natp x)
            (<= (logtail n x) x))
   :rule-classes ((:linear))
   :hints (("Goal" :in-theory (enable logtail <-of-floor-arg1))))
