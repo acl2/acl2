@@ -15,7 +15,10 @@
 (include-book "all-unsigned-byte-p2")
 (include-book "all-all-unsigned-byte-p")
 (include-book "unsigned-byte-listp")
+(include-book "all-signed-byte-p")
+
 (include-book "len-mult-of-8p")
+
 (include-book "bits-to-byte")
 (include-book "bits-to-byte-little")
 (include-book "bits-to-bytes")
