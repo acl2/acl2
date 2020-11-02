@@ -148,14 +148,6 @@
            (equal (take n (cons a b))
                   (cons a (take (1- n) b)))))
 
-(defthm equal-of-take-and-take-same
-  (implies (and (natp n)
-                (natp m))
-           (equal (EQUAL (TAKE m x)
-                         (TAKE N x))
-                  (equal m n)))
-  :hints (("Goal" :in-theory (e/d (take) ()))))
-
 (defthm take-when-equal-of-takes
   (implies (and (equal (take n x) (take n free))
                 (syntaxp (smaller-termp free x))
