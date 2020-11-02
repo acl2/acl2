@@ -300,3 +300,23 @@
   (equal (memberp a (add-to-set-equal x l))
          (or (equal a x)
              (memberp a l))))
+
+(defthm memberp-nth-of-self-helper
+  (implies (< n (len lst))
+           (equal (memberp (nth n lst) lst)
+                  (if (<= 0 n)
+                      t
+                    (consp lst)
+                    )))
+  :hints (("Goal" :in-theory (enable memberp))))
+
+(defthm memberp-nth-of-self
+  (equal (memberp (nth n lst) lst)
+         (if (<= 0 n)
+             (if (< n (len lst))
+                 t
+               (if (integerp n)
+                   (memberp nil lst)
+                 (consp lst))) ;clean this up?
+           (consp lst)))
+  :hints (("Goal" :in-theory (enable memberp ))))

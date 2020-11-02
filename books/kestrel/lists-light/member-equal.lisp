@@ -134,3 +134,12 @@
   (iff (consp (member-equal a x))
        (member-equal a x))
   :hints (("Goal" :in-theory (enable member-equal))))
+
+(defthm member-equal-of-constant-when-not-equal-car
+  (implies (and (syntaxp (and (quotep x)
+                              (consp (unquote x))))
+                (not (equal a (car x))))
+           (equal (member-equal a x)
+                  (member-equal a (cdr x))))
+  :rule-classes ((:rewrite :backchain-limit-lst (nil 0)))
+  :hints (("Goal" :in-theory (enable member-equal))))
