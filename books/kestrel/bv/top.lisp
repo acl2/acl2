@@ -87,6 +87,7 @@
 ;; Rotate operations:
 (include-book "leftrotate")
 (include-book "rightrotate")
+(include-book "rotate")
 
 ;; Shift operations:
 (include-book "bvshl")
