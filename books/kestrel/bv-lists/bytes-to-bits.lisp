@@ -14,10 +14,12 @@
 (include-book "byte-to-bits")
 (local (include-book "../arithmetic-light/floor"))
 (local (include-book "../arithmetic-light/mod"))
+(local (include-book "../arithmetic-light/times"))
 (local (include-book "../lists-light/append"))
 (local (include-book "../lists-light/nthcdr"))
 (local (include-book "../lists-light/nth"))
 (local (include-book "../lists-light/len"))
+(local (include-book "../lists-light/take"))
 
 ;; Convert a sequence of 8-bit bytes to a sequence of bits.  The bits from
 ;; earlier bytes come earlier in the result.  For a given byte, the most
@@ -96,3 +98,47 @@
   (equal (bytes-to-bits nil)
          nil)
   :hints (("Goal" :in-theory (enable bytes-to-bits))))
+
+(defun sub1-cdr-induct (n lst)
+  (if (endp lst)
+      (list n lst)
+    (sub1-cdr-induct (+ -1 n) (cdr lst))))
+
+(local
+ (defthm <-of-times-8
+   (implies (integerp n)
+            (equal (< 0 (* 8 n))
+                   (< 0 n)))
+   :hints (("Goal" :cases ((< 0 N))))))
+
+;move?
+(defthm take-of-times-8-and-bytes-to-bits
+  (implies (and (natp n)
+                (<= n (len lst))
+                (consp lst))
+           (equal (take (* 8 n) (bytes-to-bits lst))
+                  (bytes-to-bits (take n lst))))
+  :hints (("Goal"
+           :induct (sub1-cdr-induct n lst)
+           :do-not '(generalize eliminate-destructors)
+           :in-theory (e/d (zp byte-to-bits bytes-to-bits take
+                               consp-to-len-bound)
+                           (;;list::len-pos-rewrite
+                            ;;list::len-when-at-most-1
+                            ;;list::len-equal-0-rewrite
+                            )))))
+
+;move?
+(defthm nthcdr-of-times-8-and-bytes-to-bits
+  (implies (and (natp n)
+                (<= n (len lst))
+                (consp lst))
+           (equal (nthcdr (* 8 n) (bytes-to-bits lst))
+                  (bytes-to-bits (nthcdr n lst))))
+  :hints (("Goal"
+           :induct (sub1-cdr-induct n lst)
+           :in-theory (e/d (bytes-to-bits byte-to-bits
+                                          ;;list::nthcdr-of-cons
+                                          )
+                           (;len-of-cdr-better
+                            )))))
