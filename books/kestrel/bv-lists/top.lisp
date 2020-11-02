@@ -38,6 +38,7 @@
 (include-book "packbv-theorems")
 (include-book "unpackbv")
 (include-book "packbv-and-unpackbv")
+(include-book "map-packbv")
 
 (include-book "bv-arrayp")
 (include-book "bv-array-read")
@@ -45,3 +46,5 @@
 (include-book "bv-arrays")
 
 (include-book "bvnth")
+
+(include-book "list-patterns")
