@@ -107,3 +107,5 @@
 (include-book "defs-arith")
 (include-book "defs-bitwise")
 (include-book "defs")
+
+(include-book "bool-to-bit")
