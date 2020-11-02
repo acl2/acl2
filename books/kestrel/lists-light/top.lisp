@@ -65,6 +65,7 @@
 (include-book "update-subrange")
 (include-book "add-to-end")
 (include-book "first-non-member")
+(include-book "count-occs")
 
 (include-book "take2")
 (include-book "memberp2")
