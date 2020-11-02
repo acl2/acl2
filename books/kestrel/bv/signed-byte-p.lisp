@@ -18,3 +18,15 @@
          (or (equal 0 x)
              (equal -1 x)))
   :hints (("Goal" :in-theory (enable signed-byte-p))))
+
+(defthm signed-byte-when-not-integerp-cheap
+  (implies (not (integerp bits))
+           (not (signed-byte-p bits x)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable signed-byte-p))))
+
+(defthm signed-byte-when-<=-of-0-cheap
+  (implies (<= bits 0)
+           (not (signed-byte-p bits x)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable signed-byte-p))))
