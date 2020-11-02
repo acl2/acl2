@@ -7859,14 +7859,16 @@
         fs)))))
   :hints
   (("goal"
-    :in-theory (enable lofat-to-hifat
-                       hifat-to-lofat
-                       root-dir-ent-list
-                       pseudo-root-dir-ent
-                       not-intersectp-list
-                       hifat-to-lofat-inversion-lemma-20
-                       painful-debugging-lemma-10
-                       painful-debugging-lemma-11))))
+    :in-theory (e/d
+                (lofat-to-hifat
+                 hifat-to-lofat
+                 root-dir-ent-list
+                 pseudo-root-dir-ent
+                 not-intersectp-list
+                 hifat-to-lofat-inversion-lemma-20
+                 painful-debugging-lemma-10
+                 painful-debugging-lemma-11)
+                ((:rewrite find-n-free-clusters-when-zp))))))
 
 ;; In the subdirectory case, we need to place all the entries (32 bytes each)
 ;; and two entries (dot and dotdot). The space taken up for these things is
