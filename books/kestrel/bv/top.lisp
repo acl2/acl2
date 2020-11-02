@@ -19,6 +19,8 @@
 (include-book "unsigned-byte-p2")
 (include-book "unsigned-byte-p-forced")
 
+(include-book "signed-byte-p")
+
 ;; Underlying functions:
 (include-book "lognot")
 (include-book "logand")
