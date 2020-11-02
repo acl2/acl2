@@ -12,3 +12,4 @@
 
 (include-book "packbv-tests")
 (include-book "map-packbv-tests")
+(include-book "bv-array-conversions2-tests")
