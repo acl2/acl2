@@ -47,6 +47,8 @@
 (include-book "bv-array-read")
 (include-book "bv-array-write")
 (include-book "bv-arrays")
+(include-book "bv-array-conversions")
+(include-book "bv-array-conversions2")
 
 (include-book "bvnth")
 
