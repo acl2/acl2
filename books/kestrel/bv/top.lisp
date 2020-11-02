@@ -109,3 +109,4 @@
 (include-book "defs")
 
 (include-book "bool-to-bit")
+(include-book "bit-to-bool")
