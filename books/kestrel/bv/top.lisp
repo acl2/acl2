@@ -92,6 +92,7 @@
 ;; Shift operations:
 (include-book "bvshl")
 (include-book "bvshr")
+(include-book "bvashr")
 (include-book "defs-shifts")
 
 ;; Trim (only for rewriting)
