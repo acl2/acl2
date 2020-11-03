@@ -437,3 +437,18 @@
                                            sint->get)))
   :prepwork
   ((local (include-book "centaur/bitops/ihs-extensions" :dir :system))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define sint-nonzerop ((x sintp))
+  :returns (yes/no booleanp)
+  :short "Check if an @('int') value is not 0."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This can be used to turn an ACL2 term that returns a C @('int') value
+     into an ACL2 boolean term that may be the test of an @(tsee if).
+     This way, we can represent in ACL2 shallowly embedded C conditionals,
+     whose tests must be integers (0 for false, non-0 for true)."))
+  (/= (sint->get x) 0)
+  :hooks (:fix))
