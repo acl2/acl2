@@ -285,8 +285,13 @@
      because they must be formal parameters,
      given that we disallow lambda expressions.")
    (xdoc::p
-    "We allow only calls of the functions listed in the user documentation.
-     For calls of @(tsee sint-const), we check that the argument
+    "We allow only calls of the functions listed in the user documentation,
+     and subject to the constraints stated there.")
+   (xdoc::p
+    "We translate @(tsee if) calls to conditional expressions for now;
+     later we will translate some of them to conditional statements.")
+   (xdoc::p
+    "For calls of @(tsee sint-const), we check that the argument
      is an integer quoted constant.
      The fact that it is in the right range is guaranteed by guard verification,
      so we do not need to check that."))
@@ -307,6 +312,25 @@
                    will be added later."
                   (acl2::ffn-symb term) fn))
        (op (acl2::ffn-symb term))
+       ((when (eq op 'if))
+        (b* ((test (acl2::fargn term 1))
+             (then (acl2::fargn term 2))
+             (else (acl2::fargn term 3))
+             ((unless (and (acl2::nvariablep test)
+                           (not (acl2::fquotep test))
+                           (not (acl2::flambda-applicationp term))
+                           (eq (acl2::ffn-symb test) 'sint-nonzerop)))
+              (er-soft+ ctx t (irr-expr)
+                        "Tests of IF must be calls of ~x0 on allowed terms, ~
+                         but an IF test is ~x1 instead."
+                        'sint-nonzerop test))
+             (test-arg (acl2::fargn test 1))
+             ((er test-expr) (atc-gen-expr test-arg fn ctx state))
+             ((er then-expr) (atc-gen-expr then fn ctx state))
+             ((er else-expr) (atc-gen-expr else fn ctx state)))
+          (value (make-expr-cond :test test-expr
+                                 :then then-expr
+                                 :else else-expr))))
        ((when (eq op 'sint-const))
         (b* ((arg (acl2::fargn term 1))
              ((unless (quotep arg))

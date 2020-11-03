@@ -172,7 +172,12 @@
         (xdoc::li
          "Calls of @(tsee sint-bitxor) on recursively allowed terms.")
         (xdoc::li
-         "Calls of @(tsee sint-bitior) on recursively allowed terms.")))
+         "Calls of @(tsee sint-bitior) on recursively allowed terms.")
+        (xdoc::li
+         "Calls of @(tsee if) on
+          (i) tests that are call of @(tsee sint-nonzerop)
+          on recursively allowed terms, and
+          (ii) branches that are recursively allowed terms.")))
       (xdoc::li
        "The guard of @('fni') includes conjuncts of the form
         @('(sintp x)') for every formal parameter @('x').
