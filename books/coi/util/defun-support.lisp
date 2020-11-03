@@ -1806,7 +1806,8 @@
     `(,equiv (,fn ,@args) (,fn ,@alt-args))))
 
 (defund make-congruence-theorem (n fn fn-induct args congruence hint )
-  (declare (type (satisfies wf-congruence-hint) hint)
+  (declare (type symbol fn)
+           (type (satisfies wf-congruence-hint) hint)
 	   (type (satisfies symbol-listp) args)
 	   (type (satisfies congruence-spec) congruence))
   (let ((equiv    (congruence-equiv congruence))
@@ -1816,7 +1817,7 @@
         (let ((arg-equiv (arg-equiv pattern pattern))
               (alt-arg   (arg-equiv pattern alt-args))
               (arg       (arg-equiv pattern args)))
-          (let ((thm-name (symbol-fns::suffix arg-equiv '- n '-implies- equiv '- fn)))
+          (let ((thm-name (symbol-fns::join-symbols fn (symbol-fns::suffix arg-equiv '- n '-implies- equiv '- fn))))
             (let ((hint (make-congruence-hint fn fn-induct args alt-args hint)))
               (let ((hints (and hint `(:hints ,hint))))
                 `(defthm ,thm-name
@@ -1828,7 +1829,8 @@
 
 (defun make-congruence-theorems (n fn fn-induct args pairs )
   (declare (type integer n)
-	   (type (satisfies congruence-pairing) pairs)
+	   (type symbol fn)
+           (type (satisfies congruence-pairing) pairs)
 	   (type (satisfies symbol-listp) args))
   (if (consp pairs)
       (let ((pattern (cdar pairs))
