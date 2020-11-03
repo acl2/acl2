@@ -76,3 +76,6 @@
 (include-book "group2")
 (include-book "ungroup")
 (include-book "group-and-ungroup")
+
+(include-book "rules")
+(include-book "rules2")
