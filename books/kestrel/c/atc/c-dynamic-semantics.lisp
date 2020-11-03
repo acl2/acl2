@@ -316,7 +316,12 @@
      :binary (b* ((arg1 (exec-expr e.arg1 store))
                   (arg2 (exec-expr e.arg2 store)))
                (exec-binary e.op arg1 arg2))
-     :cond (error (list :exec-expr e))))
+     :cond (b* ((test (exec-expr e.test store)))
+             (value-result-case test
+                                :ok (if (sint-nonzerop test.get)
+                                        (exec-expr e.then store)
+                                      (exec-expr e.else store))
+                                :err test.get))))
   :measure (expr-count e)
   :hooks (:fix))
 
