@@ -22,6 +22,9 @@
 (include-book "all-integerp2")
 (include-book "all-integerp-of-repeat") ;todo: combine with all-integerp2
 (include-book "all-all-integerp")
+
+(include-book "integer-lists")
+
 (include-book "items-have-len")
 
 (include-book "maxelem")
