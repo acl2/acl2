@@ -47,8 +47,8 @@
       (+ -1 (expt 2 n)))))
 
 ;perhaps this should be called xshr (for sign-extending shift), but jvm has a function or macro with that name already (get rid of it first!)
-;ffixme this may be wrong if we shift all the way out! consider: (acl2::shr-with-sign 32 -1 32)
-(defun shr-with-sign (width x shift-amount)
+;ffixme this may be wrong if we shift all the way out! consider: (acl2::bvashr 32 -1 32)
+(defun bvashr (width x shift-amount)
   (declare (type (integer 0 *) shift-amount)
            (type integer x)
            (type integer width)
