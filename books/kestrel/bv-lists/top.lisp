@@ -15,7 +15,10 @@
 (include-book "all-unsigned-byte-p2")
 (include-book "all-all-unsigned-byte-p")
 (include-book "unsigned-byte-listp")
+(include-book "all-signed-byte-p")
+
 (include-book "len-mult-of-8p")
+
 (include-book "bits-to-byte")
 (include-book "bits-to-byte-little")
 (include-book "bits-to-bytes")
@@ -23,6 +26,7 @@
 (include-book "byte-to-bits")
 (include-book "byte-to-bits-little")
 (include-book "bytes-to-bits")
+(include-book "bytes-to-bits2")
 (include-book "bytes-to-bits-little")
 
 (include-book "bvxor-list")
@@ -38,10 +42,15 @@
 (include-book "packbv-theorems")
 (include-book "unpackbv")
 (include-book "packbv-and-unpackbv")
+(include-book "map-packbv")
 
 (include-book "bv-arrayp")
 (include-book "bv-array-read")
 (include-book "bv-array-write")
 (include-book "bv-arrays")
+(include-book "bv-array-conversions")
+(include-book "bv-array-conversions2")
 
 (include-book "bvnth")
+
+(include-book "list-patterns")

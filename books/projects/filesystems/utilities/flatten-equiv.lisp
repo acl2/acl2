@@ -163,3 +163,7 @@
   (flatten-equiv (list* x y z)
                  (list* y x z))
   :hints (("goal" :in-theory (enable flatten-equiv))))
+
+(defcong flatten-equiv flatten-equiv (append x y) 2
+  :hints (("goal" :in-theory (e/d (flatten-equiv)
+                                  ()))))

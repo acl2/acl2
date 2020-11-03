@@ -962,6 +962,13 @@
                            (len-of-find-n-free-clusters))
            :use len-of-find-n-free-clusters)))
 
+(defthm find-n-free-clusters-when-zp
+  (implies (zp n)
+           (equal (find-n-free-clusters fa-table n)
+                  nil))
+  :hints (("goal" :in-theory (enable find-n-free-clusters
+                                     find-n-free-clusters-helper))))
+
 (defthmd
   fat32-masked-entry-list-p-alt
   (equal (fat32-masked-entry-list-p x)

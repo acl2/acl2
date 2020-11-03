@@ -19,6 +19,9 @@
 (local (include-book "take"))
 (local (include-book "append"))
 (local (include-book "true-list-fix"))
+(local (include-book "kestrel/arithmetic-light/minus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/plus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 
 (defthm true-listp-of-subrange-type-prescription
   (true-listp (subrange start end lst))
@@ -345,3 +348,87 @@
                                    )))))
 
 (theory-invariant (incompatible (:rewrite NTHCDR-OF-TAKE-BECOMES-SUBRANGE) (:definition subrange)))
+
+;rename
+(defthm subrange-split-top
+  (implies (and (natp i)
+                (<= low i)
+                (natp low)
+                (< i (len x)))
+           (equal (append (subrange low (+ -1 i) x) (list (nth i x)))
+                  (subrange low i x)))
+  :hints (("Goal" :in-theory (enable equal-of-append))))
+
+(defthm append-of-take-and-subrange
+  (implies (and (natp n)
+                (<= m n)
+                (natp m))
+           (equal (append (take m x) (subrange m n x))
+                  (take (+ 1 n) x)))
+  :hints (("Goal" :in-theory (enable subrange equal-of-append))))
+
+(defthm subrange-of-append-lemma
+  (implies (and (<= (len x) m)
+                (natp m))
+           (equal (subrange m n (append x y))
+                  (subrange (- m (len x))
+                            (- n (len x))
+                            y)))
+  :hints (("Goal" :in-theory (e/d (subrange take-when-zp) ()))))
+
+(defthm subrange-of-cdr
+  (implies (and ;(natp low)
+            (natp high))
+           (equal (subrange low high (cdr lst))
+                  (subrange (+ 1 (nfix low)) (+ 1 high) lst)))
+  :hints (("Goal" :in-theory (e/d (subrange)
+                                  (take-of-nthcdr-becomes-subrange
+                                   nthcdr-of-take-becomes-subrange
+                                   cdr-of-take-becomes-subrange-better
+                                   TAKE-OF-CDR-BECOMES-SUBRANGE)))))
+
+(defthm subrange-of-append-irrel
+  (implies (and (natp low)
+                (natp high)
+                (< high (len x))
+                )
+           (equal (subrange low high (append x y))
+                  (subrange low high x)))
+  :hints (("Goal" :in-theory (e/d (subrange TAKE-OF-NTHCDR)
+                                  (NTHCDR-OF-TAKE
+                                   CDR-OF-TAKE-BECOMES-SUBRANGE-BETTER
+                                   NTHCDR-OF-TAKE-BECOMES-SUBRANGE
+                                   TAKE-OF-NTHCDR-BECOMES-SUBRANGE
+                                   TAKE-OF-CDR-BECOMES-SUBRANGE)))))
+
+(defthm subrange-of-append-lemma2
+  (implies (and (< m (len x))
+                (natp n)
+                (< n (+ (len x) (len y)))
+                (<= m n)
+                (natp m)
+                (true-listp x)
+                )
+           (equal (subrange m n (append x y))
+                  (append (subrange m (min n (+ -1 (len x))) x)
+                          (subrange (- m (len x))
+                                    (- n (len x))
+                                    y))))
+  :hints (("Goal" :in-theory (e/d (subrange posp NTHCDR-WHEN-NOT-POSP) ()))))
+
+;can we avoid the case splits?
+(defthm subrange-of-append
+  (implies (and (natp start)
+                (natp end))
+           (equal (subrange start end (append x y))
+                  (if (< end (len x))
+                      (subrange start end x)
+                    (if (<= (len x) start)
+                        (subrange (- start (len x))
+                                  (- end (len x))
+                                  y)
+                      (append (subrange start (+ -1 (len x)) x)
+                              (subrange (- start (len x))
+                                        (- end (len x))
+                                        y))))))
+  :hints (("Goal" :in-theory (enable equal-of-append))))

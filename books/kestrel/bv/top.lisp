@@ -16,7 +16,10 @@
 
 ;; Recognizers for BVs:
 (include-book "unsigned-byte-p")
+(include-book "unsigned-byte-p2")
 (include-book "unsigned-byte-p-forced")
+
+(include-book "signed-byte-p")
 
 ;; Underlying functions:
 (include-book "lognot")
@@ -50,13 +53,13 @@
 (include-book "bvand")
 (include-book "bvor")
 (include-book "bvxor")
-(include-book "defs-bitwise")
 
 ;; Single bit operations:
 (include-book "bitxor")
 (include-book "bitnot")
 (include-book "bitand")
 (include-book "bitor")
+(include-book "bitxnor")
 
 ;; Arithmetic operations:
 (include-book "bvplus")
@@ -84,6 +87,7 @@
 ;; Rotate operations:
 (include-book "leftrotate")
 (include-book "rightrotate")
+(include-book "rotate")
 
 ;; Shift operations:
 (include-book "bvshl")
@@ -102,3 +106,8 @@
 
 ;; Collections of definitions:
 (include-book "defs-arith")
+(include-book "defs-bitwise")
+(include-book "defs")
+
+(include-book "bool-to-bit")
+(include-book "bit-to-bool")
