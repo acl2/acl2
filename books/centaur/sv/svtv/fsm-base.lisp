@@ -43,6 +43,28 @@
 (local (in-theory (disable acl2::hons-dups-p)))
 
 
+(define svtv-fsm-step-env ((in svex-env-p)
+                           (prev-st svex-env-p)
+                           (x svtv-p))
+  :guard (and (equal (alist-keys prev-st) (svex-alist-keys (svtv->nextstate x)))
+              (not (acl2::hons-dups-p (svex-alist-keys (svtv->nextstate x)))))
+  :returns (step-env svex-env-p)
+  (b* (((svtv x)))
+    (make-fast-alist (append (mbe :logic (svex-env-extract (svex-alist-keys x.nextstate)
+                                                           prev-st)
+                                  :exec prev-st)
+                             (svex-env-fix in))))
+  ///
+  (defthm svtv-fsm-step-env-of-extract-states-from-prev-st
+    (equal (svtv-fsm-step-env ins (svex-env-extract (svex-alist-keys (svtv->nextstate x)) prev-st) x)
+           (svtv-fsm-step-env ins prev-st x)))
+
+  (defthm svtv-fsm-step-env-of-reduce-states-from-prev-st
+    (equal (svtv-fsm-step-env ins (svex-env-reduce (svex-alist-keys (svtv->nextstate x)) prev-st) x)
+           (svtv-fsm-step-env ins prev-st x))))
+  
+
+
 (define svtv-fsm-step ((in svex-env-p)
                        (prev-st svex-env-p)
                        (x svtv-p))
@@ -50,10 +72,7 @@
               (not (acl2::hons-dups-p (svex-alist-keys (svtv->nextstate x)))))
   :returns (next-st svex-env-p)
   (b* (((svtv x))
-       (current-cycle-env (make-fast-alist (append (mbe :logic (svex-env-extract (svex-alist-keys x.nextstate)
-                                                                                 prev-st)
-                                                        :exec prev-st)
-                                                   (svex-env-fix in)))))
+       (current-cycle-env (svtv-fsm-step-env in prev-st x)))
     (svex-alist-eval x.nextstate current-cycle-env))
   ///
   (defret alist-keys-of-svtv-fsm-step
@@ -78,10 +97,7 @@
               (not (acl2::hons-dups-p (svex-alist-keys (svtv->nextstate x)))))
   :returns (next-st svex-env-p)
   (b* (((svtv x))
-       (current-cycle-env (make-fast-alist (append (mbe :logic (svex-env-extract (svex-alist-keys x.nextstate)
-                                                                                 prev-st)
-                                                        :exec prev-st)
-                                                   (svex-env-fix in)))))
+       (current-cycle-env (svtv-fsm-step-env in prev-st x)))
     (svex-alist-eval x.outexprs current-cycle-env))
   ///
   (defthm svtv-fsm-step-outs-of-extract-states-from-prev-st
@@ -139,10 +155,7 @@
                                      x))
          :exec
          (b* (((svtv x))
-              (current-cycle-env (make-fast-alist (append (mbe :logic (svex-env-extract (svex-alist-keys x.nextstate)
-                                                                                        prev-st)
-                                                               :exec prev-st)
-                                                          (svex-env-fix (car ins)))))
+              (current-cycle-env (svtv-fsm-step-env (car ins) prev-st x))
               (outs (svex-alist-eval x.outexprs current-cycle-env))
               ((when (atom (cdr ins)))
                (clear-memoize-table 'svex-eval)
@@ -202,10 +215,7 @@
 
   (local (defun svtv-fsm-eval-+-n-m-ind (n m ins prev-st x)
            (b* (((svtv x))
-                (current-cycle-env (make-fast-alist (append (mbe :logic (svex-env-extract (svex-alist-keys x.nextstate)
-                                                                                          prev-st)
-                                                                 :exec prev-st)
-                                                            (svex-env-fix (car ins)))))
+                (current-cycle-env (svtv-fsm-step-env (car ins) prev-st x))
                 ((when (zp n))
                  (list n m ins prev-st x))
                 (next-st (svex-alist-eval x.nextstate current-cycle-env)))
@@ -240,10 +250,7 @@
          (let ((next (svtv-fsm-step (car ins) prev-st x)))
            (cons next (svtv-fsm-eval-states (cdr ins) next x)))
          :exec (b* (((svtv x))
-                    (current-cycle-env (make-fast-alist (append (mbe :logic (svex-env-extract (svex-alist-keys x.nextstate)
-                                                                                              prev-st)
-                                                                     :exec prev-st)
-                                                                (svex-env-fix (car ins)))))
+                    (current-cycle-env (svtv-fsm-step-env (car ins) prev-st x))
                     (next-st (svex-alist-eval x.nextstate current-cycle-env)))
                  (clear-memoize-table 'svex-eval)
                  (fast-alist-free current-cycle-env)
@@ -290,10 +297,7 @@
 
   (local (defun svtv-fsm-eval-states-+-n-m-ind (n m ins prev-st x)
            (b* (((svtv x))
-                (current-cycle-env (make-fast-alist (append (mbe :logic (svex-env-extract (svex-alist-keys x.nextstate)
-                                                                                          prev-st)
-                                                                 :exec prev-st)
-                                                            (svex-env-fix (car ins)))))
+                (current-cycle-env (svtv-fsm-step-env (car ins) prev-st x))
                 ((when (zp n))
                  (list n m ins prev-st x))
                 (next-st (svex-alist-eval x.nextstate current-cycle-env)))
