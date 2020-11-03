@@ -227,7 +227,9 @@
              :binary (and (binop-wfp e.op)
                           (expr-wfp e.arg1 env)
                           (expr-wfp e.arg2 env))
-             :cond nil)
+             :cond (and (expr-wfp e.test env)
+                        (expr-wfp e.then env)
+                        (expr-wfp e.else env)))
   :measure (expr-count e)
   :hooks (:fix))
 

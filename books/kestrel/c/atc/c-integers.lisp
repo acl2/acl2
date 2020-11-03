@@ -27,6 +27,10 @@
      which should support the generation of proofs
      for an initial version of ATC.")
    (xdoc::p
+    "This model also provides a target for APT derivations.
+     ATC recognizes the ACL2 functions that form this model
+     and translates them to the corresponding C constructs.")
+   (xdoc::p
     "This preliminary model may be extended in the future,
      and may be replaced by a more comprehensive model
      that we will be developing as part of the "
@@ -433,3 +437,18 @@
                                            sint->get)))
   :prepwork
   ((local (include-book "centaur/bitops/ihs-extensions" :dir :system))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define sint-nonzerop ((x sintp))
+  :returns (yes/no booleanp)
+  :short "Check if an @('int') value is not 0."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This can be used to turn an ACL2 term that returns a C @('int') value
+     into an ACL2 boolean term that may be the test of an @(tsee if).
+     This way, we can represent in ACL2 shallowly embedded C conditionals,
+     whose tests must be integers (0 for false, non-0 for true)."))
+  (/= (sint->get x) 0)
+  :hooks (:fix))
