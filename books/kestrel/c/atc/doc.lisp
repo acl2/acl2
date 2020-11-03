@@ -124,10 +124,9 @@
       (xdoc::li
        "The function @('fni') is in logic mode and guard-verified.")
       (xdoc::li
-       (xdoc::p
-        "The function @('fni') has an "
-        (xdoc::seetopic "acl2::function-definedness" "unnormalized body")
-        " consisting exclusively of:")
+       "The function @('fni') has an "
+       (xdoc::seetopic "acl2::function-definedness" "unnormalized body")
+       " consisting exclusively of:"
        (xdoc::ul
         (xdoc::li
          "The formal parameters of the function.")
