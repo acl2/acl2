@@ -308,15 +308,24 @@
         (mv (cons err1 errs) nil)
       (mv nil (append first rest)))))
 
+(define svtv-wire->lhs! ((x stringp)
+                         (modidx natp)
+                         (moddb moddb-ok)
+                         aliases)
+  :guard (svtv-mod-alias-guard modidx moddb aliases)
+  :returns (mv errs
+               (lhs lhs-p))
+  (b* ((toks (str::strtok x '(#\, #\Newline #\Tab #\Space #\{ #\})))
+       ((mv errs lhs) (svtv-concat->lhs toks modidx moddb aliases)))
+    (mv errs (lhs-norm lhs))))
+
 (define svtv-wire->lhs (x (modidx natp) (moddb moddb-ok) aliases)
   :guard (svtv-mod-alias-guard modidx moddb aliases)
   :returns (mv errs
                (lhs lhs-p))
   (b* (((unless (stringp x))
-        (mv (list (msg "SVTV wirenames must be strings; ~x0 is not" x)) nil))
-       (toks (str::strtok x '(#\, #\Newline #\Tab #\Space #\{ #\})))
-       ((mv errs lhs) (svtv-concat->lhs toks modidx moddb aliases)))
-    (mv errs (lhs-norm lhs))))
+        (mv (list (msg "SVTV wirenames must be strings; ~x0 is not" x)) nil)))
+    (svtv-wire->lhs! x modidx moddb aliases)))
 
 
 (define msg-list ((x "list of msg objects"))

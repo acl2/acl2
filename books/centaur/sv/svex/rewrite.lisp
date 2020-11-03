@@ -1875,4 +1875,23 @@ functions) and that it is being given the right number of arguments.</p>
       (equal (svexlist-eval xx env)
              (svexlist-eval (svexlist-compose x a) env))
       :hints ('(:expand (<call>)))
-      :fn svexlist-compose-rw)))
+      :fn svexlist-compose-rw))
+
+  (deffixequiv-mutual svex-compose-rw))
+
+(define svex-alist-compose-rw ((x svex-alist-p) (a svex-alist-p))
+  :returns (xx svex-alist-p)
+  (if (atom x)
+      nil
+    (if (mbt (and (consp (car x))
+                  (svar-p (caar x))))
+        (cons (cons (caar x) (svex-compose-rw (cdar x) a))
+              (svex-alist-compose-rw (cdr x) a))
+      (svex-alist-compose-rw (cdr x) a)))
+  ///
+  (defret svex-alist-compose-rw-correct
+    (equal (svex-alist-eval xx env)
+           (svex-alist-eval (svex-alist-compose x a) env))
+    :hints(("Goal" :in-theory (enable svex-alist-eval svex-alist-compose))))
+
+  (local (in-theory (enable svex-alist-fix))))

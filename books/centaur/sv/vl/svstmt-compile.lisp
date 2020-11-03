@@ -348,7 +348,11 @@ substitution are left in place."
   (defret vars-of-svstate-clean
     (implies (not (member v (svstate-vars x)))
              (not (member v (svstate-vars new-x))))
-    :hints(("Goal" :in-theory (enable svstate-vars)))))
+    :hints(("Goal" :in-theory (enable svstate-vars))))
+
+  (defretd nonblkst-of-svstate-clean
+    (equal (svstate->nonblkst new-x)
+           (fast-alist-clean (svstate->nonblkst x)))))
 
 (define svstate-fork ((x svstate-p))
   :returns (new-x svstate-p)
