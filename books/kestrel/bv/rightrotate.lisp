@@ -34,13 +34,14 @@
            (unsigned-byte-p size (rightrotate size x y)))
   :hints (("Goal" :in-theory (enable rightrotate natp))))
 
+(defthm rightrotate-of-0-arg2
+  (equal (rightrotate width 0 val)
+         (bvchop width val))
+  :hints (("Goal" :in-theory (enable rightrotate))))
+
 (defund rightrotate16 (amt val)
   (declare (type integer amt val))
   (rightrotate 16 amt val))
-
-(defund rightrotate32 (amt val)
-  (declare (type integer amt val))
-  (rightrotate 32 amt val))
 
 (defund rightrotate64 (amt val)
   (declare (type integer amt val))

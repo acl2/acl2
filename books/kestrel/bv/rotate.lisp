@@ -13,6 +13,7 @@
 
 (include-book "leftrotate")
 (include-book "rightrotate")
+(include-book "rightrotate32")
 (include-book "bvif")
 (include-book "bvminus") ;todo
 (include-book "kestrel/arithmetic-light/lg" :dir :system)
