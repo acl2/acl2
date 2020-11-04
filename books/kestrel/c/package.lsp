@@ -21,6 +21,7 @@
                                   pprint-indent))
              '(bool
                cw-event
+               define-sk
                defxdoc+
                er-soft+
                evmac-prepare-proofs
