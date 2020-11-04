@@ -12,7 +12,7 @@
 
 (include-book "factorial")
 
-(include-book "../implementation" :ttags (:open-output-channel! :oslib :quicklisp :quicklisp.osicat))
+(include-book "../atj" :ttags (:open-output-channel! :oslib :quicklisp :quicklisp.osicat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
