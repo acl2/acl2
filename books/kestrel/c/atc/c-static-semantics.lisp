@@ -137,7 +137,10 @@
    (xdoc::p
     "In C they are all well-formed of course,
      but having this predicate lets us limit the supported ones if desired.
-     Currently we support all the ones in the abstract syntax."))
+     Currently we support
+     all the strict, non-side-effecting ones in the abstract syntax
+     (i.e. not the non-strict conjunction and disjunction,
+     and not the assignment operators."))
   (and (member-eq (binop-kind op) '(:mul :div :rem
                                     :add :sub
                                     :shl :shr
