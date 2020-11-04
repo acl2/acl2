@@ -2142,6 +2142,23 @@
               (mv-nth 1 (hifat-find-file fs path)))))
   :hints (("goal" :in-theory (enable hifat-find-file))))
 
+;; Kinda general
+(defthm
+  abs-find-file-correctness-1-lemma-40
+  (implies
+   (and (not (equal (mv-nth 1 (hifat-find-file fs path))
+                    0))
+        (not (equal (mv-nth 1 (hifat-find-file fs path))
+                    *enoent*)))
+   (equal (mv-nth 1 (hifat-find-file fs path))
+          *enotdir*))
+  :hints (("goal" :in-theory (enable hifat-find-file)))
+  :rule-classes
+  (:rewrite
+   (:type-prescription
+    :corollary
+    (natp (mv-nth 1 (hifat-find-file fs path))))))
+
 (defund
   hifat-place-file
   (fs path file)

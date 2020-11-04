@@ -14,7 +14,7 @@
 (include-book "centaur/fty/top" :dir :system)
 
 (include-book "file-system-lemmas")
-(include-book "bounded-nat-listp")
+(include-book "utilities/bounded-nat-listp")
 
 (defconst *expt-2-28* (expt 2 28))
 
@@ -952,6 +952,22 @@
         (nfix n)))))
 
 (in-theory (disable (:linear len-of-find-n-free-clusters)))
+
+(defthm consp-of-find-n-free-clusters
+  (equal (consp (find-n-free-clusters fa-table n))
+         (and (not (zp (count-free-clusters fa-table)))
+              (not (zp n))))
+  :hints (("goal" :do-not-induct t
+           :in-theory (e/d (len-when-consp)
+                           (len-of-find-n-free-clusters))
+           :use len-of-find-n-free-clusters)))
+
+(defthm find-n-free-clusters-when-zp
+  (implies (zp n)
+           (equal (find-n-free-clusters fa-table n)
+                  nil))
+  :hints (("goal" :in-theory (enable find-n-free-clusters
+                                     find-n-free-clusters-helper))))
 
 (defthmd
   fat32-masked-entry-list-p-alt

@@ -275,6 +275,20 @@
        (consp (cdr body))
        (signature-declaration-p (cddr body))))
 
+(defun function-declaration (name args values)
+  (declare (type t args values))
+  `(function ,name ,args ,@values))
+
+(defthm function-declaration-p-function-declaration
+  (implies
+   (and
+    (true-listp args)
+    (true-listp values)
+    (force (consp values)))
+   (function-declaration-p (function-declaration name args values))))
+
+(in-theory (disable function-declaration))
+
 (defund signature-to-declaration (sig)
   (declare (type t sig))
   (cons 'function (cons 'function sig)))
@@ -292,6 +306,11 @@
 (defun function-declaration-vals (decl)
   (declare (type (satisfies function-declaration-p) decl))
   (cdddr decl))
+
+(defthm consp-function-declaration-vals
+  (implies
+   (function-declaration-p decl)
+   (consp (function-declaration-vals decl))))
 
 (defun xarg-p (decl)
   (declare (type t decl))
@@ -496,23 +515,29 @@
 (defun extract-function-declaration (decls)
   (declare (type (satisfies declaration-listp) decls))
   (met ((declaration signature sig-hints decls) (extract-function-declaration-rec decls nil nil nil nil))
-    (let ((signature (if (and (consp signature)
-			      (coi-debug::assert (and (< (len signature) 2)
-						  (signature-declaration-p (car signature))
-						  (not declaration))
-					     :message "Malformed/Multiple signature specification(s)"))
-			 (signature-to-declaration (car signature))
-		       nil))
-	  (sig-hints (and (consp sig-hints)
-			  (coi-debug::assert (< (len signature) 2) :value (car sig-hints)
-					 :message "Multiple :sig-hints Bindings")))
-	  (declaration (if (and declaration
-				(coi-debug::assert (function-declaration-p declaration)
-					       :message "Malformed function declaration"))
-			   declaration
-			 nil))
-	  (decls (revappend decls nil)))
-      (mv declaration signature sig-hints decls))))
+    (met ((fty-sig decls) (extract-xarg-key-from-decls :fty decls))
+      (let ((signature (and (consp signature)
+                            (coi-debug::assert (and (< (len signature) 2)
+                                                    (signature-declaration-p (car signature))
+                                                    (not declaration))
+                                               :message "Malformed/Multiple signature specification(s)")
+                            (signature-to-declaration (car signature))))
+            (fty-sig   (and (consp fty-sig)
+                            (coi-debug::assert (and (< (len fty-sig) 2)
+                                                    (signature-declaration-p (car fty-sig))
+                                                    (not declaration))
+                                               :message "Malformed/Multiple fty signature specification(s)")
+                            (signature-to-declaration (car fty-sig))))
+            (sig-hints (and (consp sig-hints)
+                            (coi-debug::assert (< (len signature) 2) :value (car sig-hints)
+                                               :message "Multiple :sig-hints Bindings")))
+            (declaration (if (and declaration
+                                  (coi-debug::assert (function-declaration-p declaration)
+                                                     :message "Malformed function declaration"))
+                             declaration
+                           nil))
+            (decls (revappend decls nil)))
+        (mv declaration signature fty-sig sig-hints decls)))))
 
 (defthm function-declaration-p-val-0-extract-function-declaration
   (implies
@@ -526,8 +551,14 @@
    (function-declaration-p (val 1 (extract-function-declaration decls))))
   :rule-classes (:forward-chaining))
 
-(defthm true-listp-val-3-extract-function-declaration
-  (true-listp (val 3 (extract-function-declaration decls))))
+(defthm function-declaration-p-val-2-extract-function-declaration
+  (implies
+   (val 2 (extract-function-declaration decls))
+   (function-declaration-p (val 2 (extract-function-declaration decls))))
+  :rule-classes (:forward-chaining))
+
+(defthm true-listp-val-4-extract-function-declaration
+  (true-listp (val 4 (extract-function-declaration decls))))
 
 (defthm declaration-listp-revappend
   (implies
@@ -536,10 +567,10 @@
     (declaration-listp y))
    (declaration-listp (revappend x y))))
 
-(defthm declaration-listp-val-3-extract-function-declaration
+(defthm declaration-listp-val-4-extract-function-declaration
   (implies
    (declaration-listp decls)
-   (declaration-listp (val 3 (extract-function-declaration decls)))))
+   (declaration-listp (val 4 (extract-function-declaration decls)))))
 
 (in-theory (disable extract-function-declaration))
 
@@ -1219,8 +1250,12 @@
   (declare (type symbol name)
 	   (type (satisfies true-listp) args)
 	   (type (satisfies declaration-listp) decls))
-  (met ((typespec signature sig-hints decls) (extract-function-declaration decls))
-    (declare (ignore sig-hints decls))
+  (met ((typespec signature fty-sig sig-hints decls) (extract-function-declaration decls))
+    ;;
+    ;; DAG - we shouldn't ignore fty-sig here .. but I don't think
+    ;; this ever gets used ..
+    ;;
+    (declare (ignore fty-sig sig-hints decls))
     (let ((typespec (or typespec signature)))
       (and typespec
 	   (function-declaration-to-type-statement name args typespec)))))
@@ -1236,8 +1271,9 @@
   (declare (type (satisfies wf-defun) defun))
   (let ((body (defun-body defun)))
     (met ((doc decls body) (decompose-defun-body body))
-      (met ((typespec signature sig-hints decls) (extract-function-declaration decls))
-	(declare (ignore typespec sig-hints))
+      (met ((typespec signature fty-sig sig-hints decls) (extract-function-declaration decls))
+        ;; Also, clean-defun appears unused ..
+	(declare (ignore typespec fty-sig sig-hints))
 	(let ((decls (if signature
 			 (cons `(declare
 				 (xargs :guard
@@ -1737,17 +1773,17 @@
    (true-listp hint)
    (true-listp (add-to-goal-hint hint value res))))
 
-(defund make-congruence-hint (fn-induct args alt-args hint)
+(defund make-congruence-hint (fn fn-induct args alt-args hint)
   (declare (type (satisfies wf-congruence-hint) hint)
 	   (type (satisfies true-listp) args alt-args))
   (if fn-induct
       (add-to-goal-hint hint `(:induct (,fn-induct ,@args ,@alt-args)) nil)
-    hint))
+    (add-to-goal-hint hint `(:expand ((,fn ,@args) (,fn ,@alt-args))) nil)))
 
 (defthm true-listp-make-congruence-hint
   (implies
    (true-listp hint)
-   (true-listp (make-congruence-hint fn-induct args alt-args hint)))
+   (true-listp (make-congruence-hint fn fn-induct args alt-args hint)))
   :hints (("Goal" :in-theory (enable make-congruence-hint))))
 
 (defund indexed-equiv-prefix (cong)
@@ -1770,7 +1806,8 @@
     `(,equiv (,fn ,@args) (,fn ,@alt-args))))
 
 (defund make-congruence-theorem (n fn fn-induct args congruence hint )
-  (declare (type (satisfies wf-congruence-hint) hint)
+  (declare (type symbol fn)
+           (type (satisfies wf-congruence-hint) hint)
 	   (type (satisfies symbol-listp) args)
 	   (type (satisfies congruence-spec) congruence))
   (let ((equiv    (congruence-equiv congruence))
@@ -1780,8 +1817,8 @@
         (let ((arg-equiv (arg-equiv pattern pattern))
               (alt-arg   (arg-equiv pattern alt-args))
               (arg       (arg-equiv pattern args)))
-          (let ((thm-name (symbol-fns::suffix arg-equiv '- n '-implies- equiv '- fn)))
-            (let ((hint (make-congruence-hint fn-induct args alt-args hint)))
+          (let ((thm-name (symbol-fns::join-symbols fn (symbol-fns::suffix arg-equiv '- n '-implies- equiv '- fn))))
+            (let ((hint (make-congruence-hint fn fn-induct args alt-args hint)))
               (let ((hints (and hint `(:hints ,hint))))
                 `(defthm ,thm-name
                    (implies
@@ -1792,7 +1829,8 @@
 
 (defun make-congruence-theorems (n fn fn-induct args pairs )
   (declare (type integer n)
-	   (type (satisfies congruence-pairing) pairs)
+	   (type symbol fn)
+           (type (satisfies congruence-pairing) pairs)
 	   (type (satisfies symbol-listp) args))
   (if (consp pairs)
       (let ((pattern (cdar pairs))

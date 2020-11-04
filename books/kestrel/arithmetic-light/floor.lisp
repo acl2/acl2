@@ -19,6 +19,8 @@
 (local (include-book "divides"))
 (local (include-book "times-and-divides"))
 (local (include-book "nonnegative-integer-quotient"))
+(local (include-book "integerp"))
+(local (include-book "expt"))
 (local (include-book "../../meta/meta-plus-lessp"))
 
 (in-theory (disable floor))
@@ -853,6 +855,16 @@
   :hints (("Goal" :in-theory (enable floor)
            :cases ((rationalp j)))))
 
+(defthm floor-type-when-nonpositive-and-nonnegative
+  (implies (and (<= i 0)
+                (<= 0 j)
+                (or (rationalp i)
+                    (rationalp j)))
+           (<= (floor i j) 0))
+  :rule-classes (:type-prescription)
+  :hints (("Goal" :in-theory (enable floor)
+           :cases ((rationalp j)))))
+
 ;almost subsumed by <-of-floor-and-0
 (defthm <-of-floor-and-0-2
   (implies (and (<= 0 i)
@@ -893,6 +905,21 @@
                 (<= 0 j))
            (<= (floor i j) i))
   :rule-classes ((:linear :trigger-terms ((floor i j)))))
+
+;todo
+;; (defthm equal-of-floor-and-i
+;;   (implies (and (integerp i)
+;;                 (< 1 j)
+;;                 (integerp j))
+;;            (equal (equal (floor i j) i)
+;;                   (if (<= 0 i)
+;;                       (equal i 0)
+;;                     (equal i -1))))
+;;   :hints (("Goal"
+;;            :use (:instance floor-upper-bound-strict)
+;;            :in-theory (disable floor-upper-bound-strict
+;;                                <-of-times-of-floor-and-same
+;;                                floor-mod-elim))))
 
 (defthm equal-of-floor-and-i
   (implies (and (natp i)
@@ -1076,3 +1103,45 @@
            (equal (floor x y)
                   0))
   :hints (("Goal" :in-theory (enable floor))))
+
+(defthm split-low-bit
+  (implies (rationalp i)
+           (equal i (+ (* 2 (floor i 2)) (mod i 2))))
+  :rule-classes nil
+  :hints (("Goal" :in-theory (enable mod))))
+
+(defthmd floor-of-2-cases
+  (implies (integerp i)
+           (equal (floor i 2)
+                  (if (equal 0 (mod i 2))
+                      (/ i 2)
+                    (+ -1/2 (/ i 2)))))
+  :hints (("Goal" :use ((:instance floor-unique
+                                   (j 2)
+                                   (n (if (equal 0 (mod i 2))
+                                          (/ i 2)
+                                        (+ 1/2 (/ i 2)))))
+                        (:instance split-low-bit)))))
+
+;; this one uses evenp
+(defthmd floor-of-2-cases-2
+   (implies (integerp i)
+            (equal (floor i 2)
+                   (if (evenp i)
+                       (/ i 2)
+                     (+ -1/2 (/ i 2)))))
+   :hints (("Goal" :in-theory (enable floor-of-2-cases evenp))))
+
+(defthm unsigned-byte-p-of-floor-by-2-strong
+  (implies (integerp x)
+           (equal (unsigned-byte-p n (floor x 2))
+                  (and (natp n)
+                       (unsigned-byte-p (+ 1 n) x))))
+  :hints (("Goal" :in-theory (enable unsigned-byte-p
+                                     expt-of-+
+                                     <-of-floor-arg1
+                                     ))))
+
+(defthm equal-of-floor-and-*-of-/
+  (equal (equal (floor i j) (* i (/ j)))
+         (integerp (* i (/ j)))))

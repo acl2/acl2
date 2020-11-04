@@ -149,7 +149,7 @@
      (if (mbt$ (natp x))
          (if (and (integerp x) (<= 0 x)) x 0)
        :undefined))
-   (defthm nfix-~>-nfix{1} (implies (natp x) (equal (nfix x) (nfix{1} x))))))
+   (defthm nfix-to-nfix{1} (implies (natp x) (equal (nfix x) (nfix{1} x))))))
 
  ;; recursive, with guard verification:
  (must-succeed*
@@ -162,7 +162,7 @@
      (if (mbt$ (true-listp x))
          (if (consp x) (+ 1 (len{1} (cdr x))) 0)
        :undefined))
-   (defthm len-~>-len{1} (implies (true-listp x) (equal (len x) (len{1} x))))))
+   (defthm len-to-len{1} (implies (true-listp x) (equal (len x) (len{1} x))))))
 
  ;; non-recursive, without guard verification:
  (must-succeed*
@@ -174,7 +174,7 @@
      (if (mbt$ (natp x))
          x
        :undefined))
-   (defthm f-~>-f{1} (implies (natp x) (equal (f x) (f{1} x))))))
+   (defthm f-to-f{1} (implies (natp x) (equal (f x) (f{1} x))))))
 
  ;; recursive, without guard verification:
  (must-succeed*
@@ -187,7 +187,7 @@
      (if (mbt$ (natp x))
          (and (not (zp x)) (f{1} (+ -1 x)))
        :undefined))
-   (defthm f-~>-f{1} (implies (natp x) (equal (f x) (f{1} x)))))))
+   (defthm f-to-f{1} (implies (natp x) (equal (f x) (f{1} x)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -331,68 +331,65 @@
 
 (must-succeed*
 
- (test-title "Test the :THM-NAME option.")
+ (test-title "Test the :OLD-TO-NEW-NAME option.")
 
  ;; not a symbol:
- (must-fail (restrict nfix (natp x) :thm-name 33))
+ (must-fail (restrict nfix (natp x) :old-to-new-name 33))
 
  ;; in the main Lisp package:
- (must-fail (restrict nfix (natp x) :thm-name cons))
-
- ;; keyword (other than :AUTO):
- (must-fail (restrict nfix (natp x) :thm-name :f))
+ (must-fail (restrict nfix (natp x) :old-to-new-name cons))
 
  ;; name that already exists:
- (must-fail (restrict nfix (natp x) :thm-name car-cdr-elim))
+ (must-fail (restrict nfix (natp x) :old-to-new-name car-cdr-elim))
 
  ;; determining a name that already exists:
  (must-succeed*
   (defun nfix-becomes-nfix{1} () nil)
-  (must-fail (restrict nfix (natp x) :thm-name :becomes)))
+  (must-fail (restrict nfix (natp x) :old-to-new-name :-becomes-)))
 
  ;; determining, by default, a name that already exists:
  (must-succeed*
-  (defun nfix-~>-nfix{1} () nil)
+  (defun nfix-to-nfix{1} () nil)
   (must-fail (restrict nfix (natp x))))
 
  ;; default:
  (must-succeed*
   (restrict nfix (natp x))
-  (assert! (theorem-namep 'nfix-~>-nfix{1} (w state))))
+  (assert! (theorem-namep 'nfix-to-nfix{1} (w state))))
 
  ;; automatic:
  (must-succeed*
-  (restrict nfix (natp x) :thm-name :auto)
-  (assert! (theorem-namep 'nfix-~>-nfix{1} (w state))))
+  (restrict nfix (natp x) :old-to-new-name :-rewrites-to-)
+  (assert! (theorem-namep 'nfix-rewrites-to-nfix{1} (w state))))
 
  ;; specified:
  (must-succeed*
-  (restrict nfix (natp x) :thm-name nfix-thm)
+  (restrict nfix (natp x) :old-to-new-name nfix-thm)
   (assert! (theorem-namep 'nfix-thm (w state)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (must-succeed*
 
- (test-title "Test the :THM-ENABLE option.")
+ (test-title "Test the :OLD-TO-NEW-ENABLE option.")
 
  ;; not T or NIL:
- (must-fail (restrict nfix (natp x) :thm-enable 7))
+ (must-fail (restrict nfix (natp x) :old-to-new-enable 7))
 
  ;; default:
  (must-succeed*
   (restrict nfix (natp x))
-  (assert! (rune-enabledp '(:rewrite nfix-~>-nfix{1}) state)))
+  (assert! (rune-disabledp '(:rewrite nfix-to-nfix{1}) state)))
 
  ;; enable:
  (must-succeed*
-  (restrict nfix (natp x) :thm-enable t)
-  (assert! (rune-enabledp '(:rewrite nfix-~>-nfix{1}) state)))
+  (restrict nfix (natp x) :old-to-new-enable t)
+  (assert! (rune-enabledp '(:rewrite nfix-to-nfix{1}) state)))
 
  ;; disable:
  (must-succeed*
-  (restrict nfix (natp x) :thm-enable nil)
-  (assert! (rune-disabledp '(:rewrite nfix-~>-nfix{1}) state))))
+  (restrict nfix (natp x) :old-to-new-enable nil)
+  (assert! (rune-disabledp '(:rewrite nfix-to-nfix{1}) state))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

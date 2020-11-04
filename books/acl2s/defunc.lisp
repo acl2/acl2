@@ -431,8 +431,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
                                         `(;;;(:induction ,name)
                                           ;;;(:definition ,fun-ind-name)
                                           )))))
-        ))))))
-
+           ))))))
 
 (logic)
 
@@ -1629,7 +1628,6 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
         (er hard ctx
             "~|The output contract has to be a term. ~x0 is not.~%"
             output-contract))
-;       (signature (get1 :sig kwd-alist))
 
        (kwd-alist
         (replace-assoc-equal :input-contract *input-contract-alias*
@@ -1659,7 +1657,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
 
     (list name formals input-contract output-contract decls body kwd-alist)))
 
-(defun make-undefined-aux (parsed w d? do-it pkg)
+(defun make-undefined-aux (parsed d? do-it pkg w)
   (declare (xargs :mode :program))
   (b* (((list name formals & oc & & kwd-alist) parsed)
        (tbl (type-metadata-table w))
@@ -1738,7 +1736,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
 
 (defun make-undefined (parsed d? pkg w)
   (declare (xargs :mode :program))
-  (make-undefined-aux parsed w d? nil pkg))
+  (make-undefined-aux parsed d? nil pkg w))
 
 (defun defunc-events (parsed d? state)
   (declare (xargs :mode :program :stobjs (state)))
@@ -1765,7 +1763,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
        ;;program-mode overrides termination-strictp
        (function-contract-strictp
         (get1 :function-contract-strictp kwd-alist))
-       (make-undef (make-undefined-aux parsed wrld d? t pkg))
+       (make-undef (make-undefined-aux parsed d? t pkg wrld))
        (events-seen-t   (cons make-undef (events-seen-list parsed wrld t d? pkg)))
        (events-seen-nil (cons make-undef (events-seen-list parsed wrld nil d? pkg))))
     (value

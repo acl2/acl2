@@ -11,6 +11,7 @@
 (in-package "C")
 
 (include-book "keywords")
+(include-book "character-sets")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

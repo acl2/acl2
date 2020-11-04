@@ -23,7 +23,7 @@
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
-(local (include-book "kestrel/bv-lists/all-unsigned-byte-p-of-repeat" :dir :system))
+(local (include-book "kestrel/bv-lists/all-unsigned-byte-p2" :dir :system))
 
 (defund pad-to-448-number-of-zeros (l)
   (declare (xargs :guard (natp l)))
@@ -63,7 +63,8 @@
   (equal (mod (len (pad-to-448 msg)) 512)
          448)
   :hints (("Goal" :in-theory (enable pad-to-448
-                                     pad-to-448-number-of-zeros))))
+                                     pad-to-448-number-of-zeros
+                                     acl2::mod-sum-cases))))
 
 ;; Padding adds no more bits than necessary (adds at most 512 bits).  Note that
 ;; it can't add 0 bits, because it must always at least add a single 1.
@@ -84,4 +85,5 @@
   (equal (mod (len (pad-to-448 msg)) 32)
          0)
   :hints (("Goal" :in-theory (enable pad-to-448
-                                     pad-to-448-number-of-zeros))))
+                                     pad-to-448-number-of-zeros
+                                     acl2::mod-sum-cases))))

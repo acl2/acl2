@@ -27,6 +27,10 @@
      which should support the generation of proofs
      for an initial version of ATC.")
    (xdoc::p
+    "This model also provides a target for APT derivations.
+     ATC recognizes the ACL2 functions that form this model
+     and translates them to the corresponding C constructs.")
+   (xdoc::p
     "This preliminary model may be extended in the future,
      and may be replaced by a more comprehensive model
      that we will be developing as part of the "
@@ -35,13 +39,15 @@
    (xdoc::p
     "We define fixtypes for various C integer values
      and functions for various C integer operations.
-     When the exact result of an operation on signed integers
+     When the exact result of an aritmetic operation on signed integers
      is not representable in the signed integer type,
      the behavior is undefined [C:6.5/5]:
      our functions for signed integer operations
      have guards requiring the results to be representable.
      For division and remainder,
-     the guard also requires the divisor to be non-zero."))
+     the guard also requires the divisor to be non-zero.
+     The bitwise operations assume a two's complement representation;
+     these operations depend on the representation of integers [C:6.5/4]."))
   :order-subtopics t
   :default-parent t)
 
@@ -107,6 +113,27 @@
   :short "Unary minus of @('int') values [C:6.5.3.3]."
   (sint (- (sint->get x)))
   :guard-hints (("Goal" :in-theory (enable sint-minus-okp)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define sint-bitnot ((x sintp))
+  :returns (result sintp)
+  :short "Bitwise complement of @('int') values [C:6.5.3]."
+  (sint (lognot (sint->get x)))
+  :hooks (:fix)
+  :guard-hints (("Goal" :in-theory (enable acl2::sbyte32p
+                                           sint->get
+                                           sintp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define sint-lognot ((x sintp))
+  :returns (result sintp)
+  :short "Logical complement of @('int') values [C:6.5.3]."
+  (if (= (sint->get x) 0)
+      (sint 1)
+    (sint 0))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -234,3 +261,194 @@
                                            sint->get
                                            sintp)))
   :prepwork ((local (include-book "arithmetic-5/top" :dir :system))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define sint-shl-sint-okp ((x sintp) (y sintp))
+  :returns (yes/no booleanp)
+  :short "Check if the left shift of two @('int') values is well-defined."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The right operand must be non-negative
+     and below the bit size of the left operand
+     [C:6.5.7/3].
+     The bit size of @('int') is currently 32 in our model.")
+   (xdoc::p
+    "Since the left operand is signed here,
+     it must be non-negative,
+     and its product with 2 raised to the right operand must fit @('int')
+     [C:6.5.7/4]."))
+  (and (integer-range-p 0 32 (sint->get y))
+       (>= (sint->get x) 0)
+       (acl2::sbyte32p (* (sint->get x)
+                          (expt 2 (sint->get y)))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define sint-shl-sint ((x sintp) (y sintp))
+  :guard (sint-shl-sint-okp x y)
+  :returns (result sintp)
+  :short "Left shift of @('int') values."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The result is described in [C:6.5.7/4]."))
+  (sint (* (sint->get x)
+           (expt 2 (sint->get y))))
+  :hooks (:fix)
+  :guard-hints (("Goal" :in-theory (enable sint-shl-sint-okp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define sint-shr-sint-okp ((x sintp) (y sintp))
+  :returns (yes/no booleanp)
+  :short "Check if the right shift of two @('int') values is well-defined."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The right operand must be non-negative
+     and below the bit size of the left operand
+     [C:6.5.7/3].
+     The bit size of @('int') is currently 32 in our model.")
+   (xdoc::p
+    "Since the left operand is signed here,
+     it must be non-negative [C:6.5.7/5]."))
+  (and (integer-range-p 0 32 (sint->get y))
+       (>= (sint->get x) 0))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define sint-shr-sint ((x sintp) (y sintp))
+  :guard (sint-shr-sint-okp x y)
+  :returns (result sintp)
+  :short "Right shift of @('int') values."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The result is described in [C:6.5.7/4\5]."))
+  (sint (truncate (sint->get x)
+                  (expt 2 (sint->get y))))
+  :hooks (:fix)
+  :guard-hints (("Goal" :in-theory (enable sint-shr-sint-okp
+                                           acl2::sbyte32p
+                                           sint->get
+                                           sintp)))
+  :prepwork
+  ((local (include-book "kestrel/arithmetic-light/expt" :dir :system))
+   (local (include-book "kestrel/arithmetic-light/truncate" :dir :system))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define sint-lt ((x sintp) (y sintp))
+  :returns (result sintp)
+  :short "Less than on @('int') values."
+  (if (< (sint->get x) (sint->get y))
+      (sint 1)
+    (sint 0))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define sint-gt ((x sintp) (y sintp))
+  :returns (result sintp)
+  :short "Greater than on @('int') values."
+  (if (> (sint->get x) (sint->get y))
+      (sint 1)
+    (sint 0))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define sint-le ((x sintp) (y sintp))
+  :returns (result sintp)
+  :short "Less than or equal to on @('int') values."
+  (if (<= (sint->get x) (sint->get y))
+      (sint 1)
+    (sint 0))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define sint-ge ((x sintp) (y sintp))
+  :returns (result sintp)
+  :short "Greater than or equal to on @('int') values."
+  (if (>= (sint->get x) (sint->get y))
+      (sint 1)
+    (sint 0))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define sint-eq ((x sintp) (y sintp))
+  :returns (result sintp)
+  :short "Equality on @('int') values."
+  (if (= (sint->get x) (sint->get y))
+      (sint 1)
+    (sint 0))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define sint-ne ((x sintp) (y sintp))
+  :returns (result sintp)
+  :short "Non-equality on @('int') values."
+  (if (/= (sint->get x) (sint->get y))
+      (sint 1)
+    (sint 0))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define sint-bitand ((x sintp) (y sintp))
+  :returns (result sintp)
+  :short "Bitwise conjunction on @('int') values."
+  (sint (logand (sint->get x) (sint->get y)))
+  :hooks (:fix)
+  :guard-hints (("Goal" :in-theory (enable acl2::sbyte32p
+                                           sintp
+                                           sint->get)))
+  :prepwork ((local (include-book "ihs/logops-lemmas" :dir :system))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define sint-bitxor ((x sintp) (y sintp))
+  :returns (result sintp)
+  :short "Bitwise exclusive disjunction on @('int') values."
+  (sint (logxor (sint->get x) (sint->get y)))
+  :hooks (:fix)
+  :guard-hints (("Goal" :in-theory (enable acl2::sbyte32p
+                                           sintp
+                                           sint->get)))
+  :prepwork
+  ((local (include-book "centaur/bitops/ihs-extensions" :dir :system))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define sint-bitior ((x sintp) (y sintp))
+  :returns (result sintp)
+  :short "Bitwise inclusive disjunction on @('int') values."
+  (sint (logior (sint->get x) (sint->get y)))
+  :hooks (:fix)
+  :guard-hints (("Goal" :in-theory (enable acl2::sbyte32p
+                                           sintp
+                                           sint->get)))
+  :prepwork
+  ((local (include-book "centaur/bitops/ihs-extensions" :dir :system))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define sint-nonzerop ((x sintp))
+  :returns (yes/no booleanp)
+  :short "Check if an @('int') value is not 0."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This can be used to turn an ACL2 term that returns a C @('int') value
+     into an ACL2 boolean term that may be the test of an @(tsee if).
+     This way, we can represent in ACL2 shallowly embedded C conditionals,
+     whose tests must be integers (0 for false, non-0 for true)."))
+  (/= (sint->get x) 0)
+  :hooks (:fix))

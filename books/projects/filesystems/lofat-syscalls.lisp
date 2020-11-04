@@ -679,14 +679,14 @@
   :hints
   (("goal"
     :in-theory (e/d (lofat-unlink lofat-to-hifat root-dir-ent-list
-                                  update-dir-contents-correctness-1)
+                                  update-dir-contents-correctness-1
+                                  (:rewrite lofat-remove-file-correctness-lemma-14))
                     ((:rewrite lofat-remove-file-correctness-1)
                      make-list-ac-removal
                      (:rewrite lofat-find-file-correctness-1)
                      lofat-unlink-refinement-lemma-1
                      (:rewrite
                       dir-ent-clusterchain-contents-of-lofat-place-file-coincident-lemma-15)
-                     (:rewrite lofat-place-file-correctness-1-lemma-6)
                      (:linear
                       dir-ent-clusterchain-contents-of-lofat-remove-file-disjoint-lemma-12)))
     :do-not-induct t
@@ -740,7 +740,8 @@
                          (dir-ent-clusterchain-contents
                           fat32-in-memory
                           (pseudo-root-dir-ent fat32-in-memory))))
-                (max-entry-count fat32-in-memory)))))))))
+                (max-entry-count fat32-in-memory))))))))
+  :otf-flg t)
 
 (defund lofat-rmdir (fat32-in-memory path)
   (declare (xargs :stobjs fat32-in-memory

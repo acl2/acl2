@@ -193,7 +193,7 @@
                 (fep y))
            (equal (equal x (add x y))
                   (equal 0 y)))
-  :hints (("Goal" :in-theory (enable add))))
+  :hints (("Goal" :in-theory (enable add acl2::mod-sum-cases))))
 
 ;;;
 ;;; sub
@@ -245,7 +245,7 @@
                 (fep y))
            (equal (equal 0 (sub x y))
                   (equal x y)))
-  :hints (("Goal" :in-theory (enable sub fep))))
+  :hints (("Goal" :in-theory (enable sub fep acl2::mod-sum-cases))))
 
 (defthm equal-of-sub-and-sub-cancel-1
   (implies (and (fep x)
@@ -493,7 +493,7 @@
                 (fep y))
            (equal (equal 0 (add y x))
                   (equal x (sub 0 y))))
-  :hints (("Goal" :in-theory (enable add sub))))
+  :hints (("Goal" :in-theory (enable add sub acl2::mod-sum-cases))))
 
 (defthm equal-of-0-and-add-safe
   (implies (and (syntaxp (quotep y))
@@ -501,7 +501,7 @@
                 (fep y))
            (equal (equal 0 (add y x))
                   (equal x (sub 0 y))))
-  :hints (("Goal" :in-theory (enable add sub))))
+  :hints (("Goal" :in-theory (enable equal-of-0-and-add))))
 
 (defthm equal-of-add-combine-constants
   (implies (and (syntaxp (and (quotep k1)
@@ -602,4 +602,4 @@
   (implies (fep x)
            (equal (mul (minus1) x)
                   (neg x)))
-  :hints (("Goal" :in-theory (enable mul neg sub minus1 fep))))
+  :hints (("Goal" :in-theory (enable mul neg sub minus1 fep acl2::mod-sum-cases))))

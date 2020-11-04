@@ -42,16 +42,16 @@
       Thus, ATC can be used at the end of an APT derivation.")
 
     (xdoc::p
-     "Currently ATC recognizes and translates
-      a very limited subset of ACL2 to a very limited subset of C.
+     "Currently ATC recognizes  a very limited subset of ACL2
+      and translates it to a very limited subset of C.
       This is just a first step (the development of ATC has just started);
       we plan to extend ATC to increasingly larger subsets of ACL2 and C.")
 
     (xdoc::p
-     "We also aim at generating, along with the C code,
-      an ACL2 proof of the correctness of
+     "We also generate, along with the C code,
+      ACL2 proofs of the correctness of
       the output C code with respect to the input ACL2 code.
-      This requires a formal semantics of C,
+      This is based on a formal semantics of C,
       which we are also developing.")
 
     (xdoc::p
@@ -61,7 +61,8 @@
       Aside from the obvious difference in target languages,
       ATJ and ATC currently differ in their primary goals and emphases.
       ATJ was built to recognize, and translate to reasonable Java,
-      essentially any ACL2 code (provided that it has known side effects);
+      essentially any ACL2 code
+      (provided that it has side effects known to ATJ);
       ATJ also provides ways to exert finer-grained control
       on the generated Java,
       by using certain ACL2 types and operations
@@ -73,11 +74,11 @@
       and that are translated to the corresponding Java constructs;
       ATC does not attempt to turn any ACL2 into C.
       As a result, ATC is much simpler,
-      and should thus make the generation of proofs easier.
+      thus making the generation of proofs easier.
       While there are plans to have ATJ generate proofs too,
       that is a larger task.
-      Furthermore, ATC may be extended
-      towards recognizing any ACL2 code and translating it to reasonable C,
+      In the future, ATC may be extended towards
+      recognizing any ACL2 code and translating it to reasonable C,
       analogously to ATJ.
       Thus, while eventually ATJ and ATC may provide similar features,
       their starting points were different,
@@ -123,10 +124,9 @@
       (xdoc::li
        "The function @('fni') is in logic mode and guard-verified.")
       (xdoc::li
-       (xdoc::p
-        "The function @('fni') has an "
-        (xdoc::seetopic "acl2::function-definedness" "unnormalized body")
-        " consisting exclusively of:")
+       "The function @('fni') has an "
+       (xdoc::seetopic "acl2::function-definedness" "unnormalized body")
+       " consisting exclusively of:"
        (xdoc::ul
         (xdoc::li
          "The formal parameters of the function.")
@@ -137,6 +137,10 @@
         (xdoc::li
          "Calls of @(tsee sint-minus) on recursively allowed terms.")
         (xdoc::li
+         "Calls of @(tsee sint-bitnot) on recursively allowed terms.")
+        (xdoc::li
+         "Calls of @(tsee sint-lognot) on recursively allowed terms.")
+        (xdoc::li
          "Calls of @(tsee sint-add) on recursively allowed terms.")
         (xdoc::li
          "Calls of @(tsee sint-sub) on recursively allowed terms.")
@@ -145,7 +149,34 @@
         (xdoc::li
          "Calls of @(tsee sint-div) on recursively allowed terms.")
         (xdoc::li
-         "Calls of @(tsee sint-rem) on recursively allowed terms.")))
+         "Calls of @(tsee sint-rem) on recursively allowed terms.")
+        (xdoc::li
+         "Calls of @(tsee sint-shl-sint) on recursively allowed terms.")
+        (xdoc::li
+         "Calls of @(tsee sint-shr-sint) on recursively allowed terms.")
+        (xdoc::li
+         "Calls of @(tsee sint-lt) on recursively allowed terms.")
+        (xdoc::li
+         "Calls of @(tsee sint-gt) on recursively allowed terms.")
+        (xdoc::li
+         "Calls of @(tsee sint-le) on recursively allowed terms.")
+        (xdoc::li
+         "Calls of @(tsee sint-ge) on recursively allowed terms.")
+        (xdoc::li
+         "Calls of @(tsee sint-eq) on recursively allowed terms.")
+        (xdoc::li
+         "Calls of @(tsee sint-ne) on recursively allowed terms.")
+        (xdoc::li
+         "Calls of @(tsee sint-bitand) on recursively allowed terms.")
+        (xdoc::li
+         "Calls of @(tsee sint-bitxor) on recursively allowed terms.")
+        (xdoc::li
+         "Calls of @(tsee sint-bitior) on recursively allowed terms.")
+        (xdoc::li
+         "Calls of @(tsee if) on
+          (i) tests that are call of @(tsee sint-nonzerop)
+          on recursively allowed terms, and
+          (ii) branches that are recursively allowed terms.")))
       (xdoc::li
        "The guard of @('fni') includes conjuncts of the form
         @('(sintp x)') for every formal parameter @('x').
@@ -211,16 +242,16 @@
 
     (xdoc::p
      "A portable ASCII C identifier is
-      a non-empty sequences of ASCII characters that:")
+      a non-empty sequence of ASCII characters that:")
     (xdoc::ul
      (xdoc::li
-      "Consist of only
+      "Consists of only
        the 26 uppercase Latin letters,
        the 26 lowercase Latin letters,
        the 10 numeric digits,
        and the underscore.")
      (xdoc::li
-      "Start with a letter or underscore.")
+      "Starts with a letter or underscore.")
      (xdoc::li
       "Differs from all the C keywords, which are"
       (xdoc::codeblock
@@ -311,12 +342,13 @@
 
     (xdoc::p
      "ATC generates a single C file that contains
+      a translation unit that contains
       a C function for each target ACL2 function @('fni').
       The C function is defined as follows:")
     (xdoc::ul
      (xdoc::li
       "Its name is the symbol name of @('fni').
-      The package of the symbol is ignored.")
+       The package of the symbol is ignored.")
      (xdoc::li
       "Its formal parameters are the symbol names of
        the formal parameters of @('fni').
@@ -340,7 +372,8 @@
 
     (xdoc::p
      "The C functions are generated in the same order in which
-      the target functions are listed, i.e. @('fn1') first, etc."))
+      the target functions are listed,
+      i.e. first @('fn1'), then @('fn2'), etc."))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -362,4 +395,9 @@
       that calls the generated functions,
       and compile both files together.
       By default, an executable @('a.out') will be generated
-      (if using @('gcc') on macOS or Linux)."))))
+      (if using @('gcc') on macOS or Linux).")
+
+    (xdoc::p
+     "The directory @('[books]/kestrel/c/atc/tests')
+      contains some examples of generated C code
+      and handwritten C code to test it."))))

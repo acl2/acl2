@@ -403,7 +403,9 @@
                 (natp high1))
            (equal (bvcat size1 (slice high1 low1 x) 1 (getbit n x))
                   (slice high1 n x)))
-  :hints (("Goal" :use (:instance bvcat-of-slice-and-slice-adjacent (low2 n) (high2 n) (size2 1)))))
+  :hints (("Goal" :use (:instance bvcat-of-slice-and-slice-adjacent (low2 n) (high2 n) (size2 1))
+           :in-theory (disable <-of-+-of---and-0-arg1
+                               <-of-+-of---and-0-arg2))))
 
 (defthm bvcat-of-getbit-and-getbit-adjacent
   (implies (and (equal n (+ 1 m))

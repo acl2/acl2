@@ -133,3 +133,10 @@
 (defthm equal-of-nth-2-and-caddr
   (equal (equal (nth 2 x) (caddr x))
          t))
+
+;;in case we are not rewriting either to the other
+(defthm not-<-of-car-and-nth-of-0
+  (not (< (car x) (nth 0 x))))
+
+(defthm not-<-of-nth-of-0-and-car
+  (not (< (nth 0 x) (car x))))

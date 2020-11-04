@@ -201,6 +201,11 @@
    (:rewrite
     :corollary (implies (and (subsetp x y) (not (member a y)))
                         (not (member a x))))))
+(defthm subsetp-trans2
+  (implies (and (subsetp y z)
+                (subsetp x y))
+           (subsetp x z))
+  :hints(("Goal" :in-theory (enable subsetp-member))))
 
 ;; The following is redundant with the eponymous theorem in
 ;; books/std/lists/nth.lisp, from where it was taken with thanks.
@@ -1997,3 +2002,21 @@
   (implies (and (not (intersectp-equal l x))
                 (< (nfix n) (len l)))
            (not (member-equal (nth n l) x))))
+
+(defthm true-list-listp-of-remove
+  (implies (true-list-listp l)
+           (true-list-listp (remove-equal x l))))
+
+(defthm subsetp-of-set-difference$-when-subsetp
+  (implies (subsetp-equal x y)
+           (subsetp-equal (set-difference-equal x z)
+                          (set-difference-equal y z)))
+  :hints (("goal" :induct (mv (set-difference-equal x z)
+                              (subsetp-equal x y))
+           :in-theory (e/d nil (intersectp-is-commutative)))))
+
+(defthm
+  true-list-listp-of-set-difference
+  (implies (true-list-listp l1)
+           (true-list-listp (set-difference-equal l1 l2)))
+  :hints (("goal" :in-theory (enable set-difference-equal true-list-listp))))

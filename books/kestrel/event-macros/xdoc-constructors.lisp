@@ -929,10 +929,30 @@
   (defconst xdoc::*evmac-topic-implementation-item-ctx*
     "@('ctx') is the context used for errors.")
 
-  (define xdoc::evmac-topic-implementation-item-input ((name stringp)
-                                                       (macro stringp))
+  (defconst xdoc::*evmac-topic-implementation-item-call*
+    "@('call') is the call of the event macro.")
+
+  (defconst xdoc::*evmac-topic-implementation-item-names-to-avoid*
+    "@('names-to-avoid') is a cumulative list of names of generated events,
+     used to ensure the absence of name clashes in the generated events.")
+
+  (defconst xdoc::*evmac-topic-implementation-item-appcond-thm-names*
+    "@('appcond-thm-names') is an alist
+     from the keywords that identify the applicability conditions
+     to the corresponding generated theorem names.")
+
+  (define xdoc::evmac-topic-implementation-item-input ((name stringp))
     :parents nil
-    (xdoc::&& "@('" name "') is the homonymous input to @('" macro "')."))
+    (xdoc::&&
+     "@('" name "') is the homonymous input to the event macro."))
+
+  (define xdoc::evmac-topic-implementation-item-input-untyped/typed
+    ((name stringp))
+    :parents nil
+    (xdoc::&& "@('" name "') is the homonymous input to the event macro
+               if it has no type;
+               otherwise, it is the (possibly different) typed value
+               resulting from processing that input."))
 
   (define xdoc::evmac-topic-implementation-item-fn-doc ((name stringp))
     :parents nil
@@ -992,13 +1012,10 @@
                            "."))
        (long `(xdoc::topstring
                (xdoc::p
-                "This involves validating the inputs.
-                   When validation fails, "
-                (xdoc::seetopic "acl2::er" "soft errors")
-                " occur.
-                   Thus, generally the input processing functions return "
-                (xdoc::seetopic "acl2::error-triple" "error triples")
-                ".")
+                "See "
+                (xdoc::seetopic "acl2::event-macro-input-processing"
+                                "input processing")
+                " for general background.")
                ,@additional)))
     `(defxdoc+ ,this-topic
        :parents (,parent-topic)

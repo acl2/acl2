@@ -3690,7 +3690,8 @@
    ("subgoal *1/5" :in-theory (enable l6-stricter-fs-p
                                       l6-list-all-ok-indices))
    ("subgoal *1/4"
-    :in-theory (enable l6-file-index-list set-indices-in-alv))
+    :in-theory (e/d (l6-file-index-list set-indices-in-alv)
+                    (consp-of-find-n-free-clusters)))
    ("subgoal *1/3"
     :in-theory (e/d (l6-file-index-list)
                     (find-n-free-clusters-correctness-1))
@@ -3973,8 +3974,9 @@
               (mv-nth 2
                       (l6-wrchs hns fs disk fa-table start text)))))
     :hints
-    (("goal" :in-theory (enable l6-list-all-ok-indices
-                                l6-file-index-list))
+    (("goal" :in-theory (e/d (l6-list-all-ok-indices
+                              l6-file-index-list)
+                             (consp-of-find-n-free-clusters)))
      ("subgoal *1/6" :in-theory (disable l6-file-index-list))
      ("subgoal *1/6.2'"
       :expand

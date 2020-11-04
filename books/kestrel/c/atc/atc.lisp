@@ -45,9 +45,9 @@
 
   "@('fn1...fnp') is the list @('(fn1 ... fnp)') of inputs to @(tsee atc)."
 
-  (xdoc::evmac-topic-implementation-item-input "const-name" "atc")
+  (xdoc::evmac-topic-implementation-item-input "const-name")
 
-  (xdoc::evmac-topic-implementation-item-input "output-file" "atc")
+  (xdoc::evmac-topic-implementation-item-input "output-file")
 
   "@('const') is the symbol specified by @('const-name')."))
 
@@ -285,8 +285,13 @@
      because they must be formal parameters,
      given that we disallow lambda expressions.")
    (xdoc::p
-    "We allow only calls of the functions listed in the user documentation.
-     For calls of @(tsee sint-const), we check that the argument
+    "We allow only calls of the functions listed in the user documentation,
+     and subject to the constraints stated there.")
+   (xdoc::p
+    "We translate @(tsee if) calls to conditional expressions for now;
+     later we will translate some of them to conditional statements.")
+   (xdoc::p
+    "For calls of @(tsee sint-const), we check that the argument
      is an integer quoted constant.
      The fact that it is in the right range is guaranteed by guard verification,
      so we do not need to check that."))
@@ -307,6 +312,25 @@
                    will be added later."
                   (acl2::ffn-symb term) fn))
        (op (acl2::ffn-symb term))
+       ((when (eq op 'if))
+        (b* ((test (acl2::fargn term 1))
+             (then (acl2::fargn term 2))
+             (else (acl2::fargn term 3))
+             ((unless (and (acl2::nvariablep test)
+                           (not (acl2::fquotep test))
+                           (not (acl2::flambda-applicationp term))
+                           (eq (acl2::ffn-symb test) 'sint-nonzerop)))
+              (er-soft+ ctx t (irr-expr)
+                        "Tests of IF must be calls of ~x0 on allowed terms, ~
+                         but an IF test is ~x1 instead."
+                        'sint-nonzerop test))
+             (test-arg (acl2::fargn test 1))
+             ((er test-expr) (atc-gen-expr test-arg fn ctx state))
+             ((er then-expr) (atc-gen-expr then fn ctx state))
+             ((er else-expr) (atc-gen-expr else fn ctx state)))
+          (value (make-expr-cond :test test-expr
+                                 :then then-expr
+                                 :else else-expr))))
        ((when (eq op 'sint-const))
         (b* ((arg (acl2::fargn term 1))
              ((unless (quotep arg))
@@ -334,14 +358,33 @@
                                 :base (iconst-base-dec)
                                 :unsignedp nil
                                 :type (iconst-tysuffix-none)))))))
-       ((when (member-eq op '(sint-plus sint-minus)))
+       ((when (member-eq op '(sint-plus
+                              sint-minus
+                              sint-bitnot
+                              sint-lognot)))
         (b* (((er arg) (atc-gen-expr (acl2::fargn term 1) fn ctx state))
              (unop (case op
                      (sint-plus (unop-plus))
                      (sint-minus (unop-minus))
-                     (t (acl2::impossible)))))
+                     (sint-bitnot (unop-bitnot))
+                     (sint-lognot (unop-lognot)))))
           (value (make-expr-unary :op unop :arg arg))))
-       ((when (member-eq op '(sint-add sint-sub sint-mul sint-div sint-rem)))
+       ((when (member-eq op '(sint-add
+                              sint-sub
+                              sint-mul
+                              sint-div
+                              sint-rem
+                              sint-shl-sint
+                              sint-shr-sint
+                              sint-lt
+                              sint-gt
+                              sint-le
+                              sint-ge
+                              sint-eq
+                              sint-ne
+                              sint-bitand
+                              sint-bitxor
+                              sint-bitior)))
         (b* (((er arg1) (atc-gen-expr (acl2::fargn term 1) fn ctx state))
              ((er arg2) (atc-gen-expr (acl2::fargn term 2) fn ctx state))
              (binop (case op
@@ -350,7 +393,17 @@
                       (sint-mul (binop-mul))
                       (sint-div (binop-div))
                       (sint-rem (binop-rem))
-                      (t (acl2::impossible)))))
+                      (sint-shl-sint (binop-shl))
+                      (sint-shr-sint (binop-shr))
+                      (sint-lt (binop-lt))
+                      (sint-gt (binop-gt))
+                      (sint-le (binop-le))
+                      (sint-ge (binop-ge))
+                      (sint-eq (binop-eq))
+                      (sint-ne (binop-ne))
+                      (sint-bitand (binop-bitand))
+                      (sint-bitxor (binop-bitxor))
+                      (sint-bitior (binop-bitior)))))
           (value (make-expr-binary :op binop :arg1 arg1 :arg2 arg2)))))
     (er-soft+ ctx t (irr-expr)
               "The function ~x0 in the body of ~x1 is disallowed. ~
@@ -682,7 +735,7 @@
             ,wf-thm-exported-event
             ,@fn-thm-local-events
             ,@fn-thm-exported-events
-            (cw-event "~%Generated theorem:~% ~x0~%" ',wf-thm-name)
+            (cw-event "~%Generated theorems:~% ~x0~%" ',wf-thm-name)
             ,@(loop$ for name in fn-thm-names
                      collect `(cw-event " ~x0~%" ',name)))))
     (value `(progn ,encapsulate

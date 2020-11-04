@@ -7,9 +7,9 @@
 ; file-system operations.
 
 (include-book "std/testing/assert-bang" :dir :system)
-(include-book "bounded-nat-listp")
-(include-book "block-listp")
-(include-book "generate-index-list")
+(include-book "utilities/bounded-nat-listp")
+(include-book "utilities/block-listp")
+(include-book "utilities/generate-index-list")
 (include-book "file-system-2")
 
 ;; This function serves to get the specified blocks from a disk. If the block
