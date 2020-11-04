@@ -90,6 +90,7 @@
 
 ;; If-then-else:
 (include-book "bvif")
+(include-book "bvif2")
 
 ;; Rotate operations:
 (include-book "leftrotate")
