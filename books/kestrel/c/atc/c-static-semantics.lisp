@@ -245,7 +245,9 @@
    (xdoc::p
     "For now we only allow
      @('return') statements with (well-formed) expressions,
-     and compound statements of allowed statements (no declarations)."))
+     compound statements of allowed statements (no declarations),
+     and conditional statements with well-formed tests,
+     and allowed statements as branches."))
 
   (define stmt-wfp ((s stmtp) (env static-envp))
     :returns (yes/no booleanp)
@@ -255,8 +257,11 @@
                :compound (block-item-list-wfp s.items env)
                :expr nil
                :null nil
-               :if nil
-               :ifelse nil
+               :if (and (expr-wfp s.test env)
+                        (stmt-wfp s.then env))
+               :ifelse (and (expr-wfp s.test env)
+                            (stmt-wfp s.then env)
+                            (stmt-wfp s.else env))
                :switch nil
                :while nil
                :dowhile nil
