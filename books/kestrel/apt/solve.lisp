@@ -10,6 +10,7 @@
 
 (in-package "APT")
 
+(include-book "kestrel/error-checking/ensure-function-is-logic-mode" :dir :system)
 (include-book "kestrel/error-checking/ensure-symbol-is-fresh-event-name" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-boolean" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-function-name" :dir :system)
@@ -271,7 +272,7 @@
                         solution-name method))
              (desc (msg "The function ~x0 specified by the :SOLUTION-INPUT"
                         solution-name))
-             ((er &) (ensure-function-logic-mode$ solution-name desc t nil))
+             ((er &) (ensure-function-is-logic-mode$ solution-name desc t nil))
              ((er &) (ensure-function-defined$ solution-name desc t nil))
              ((er &) (ensure-function-arity$ solution-name
                                              (len x1...xn)

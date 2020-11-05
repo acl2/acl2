@@ -121,8 +121,8 @@
                          ensure-function-defined$
                          ensure-function-guard-verified$
                          ensure-function-has-args$
+                         ensure-function-is-logic-mode$
                          ensure-function-known-measure$
-                         ensure-function-logic-mode$
                          ensure-function-name-or-numbered-wildcard$
                          ensure-function-no-stobjs$
                          ensure-function-not-in-termination-thm$

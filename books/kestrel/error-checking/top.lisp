@@ -12,6 +12,7 @@
 
 (include-book "def-error-checker")
 
+(include-book "ensure-function-is-logic-mode")
 (include-book "ensure-function-is-pure-if-raw")
 (include-book "ensure-symbol-is-fresh-event-name")
 (include-book "ensure-value-is-boolean")
