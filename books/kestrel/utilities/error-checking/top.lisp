@@ -18,6 +18,7 @@
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
 (include-book "kestrel/error-checking/def-error-checker" :dir :system)
+(include-book "kestrel/error-checking/ensure-function-is-logic-mode" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -403,14 +404,6 @@
         ,x ,description ,error-erp ,error-val ctx state))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(def-error-checker ensure-function-logic-mode
-  ((fn (function-namep fn (w state)) "Function to check."))
-  :short
-  "Cause an error if a function is in program mode."
-  :body
-  (((logicp fn (w state))
-    "~@0 must be in logic mode." description)))
 
 (def-error-checker ensure-function-program-mode
   ((fn (function-namep fn (w state)) "Function to check."))
@@ -810,7 +803,7 @@
    should describe the function or lambda expression.
    </p>"
   (if (symbolp fn/lambda)
-      (ensure-function-logic-mode$ fn/lambda description error-erp error-val)
+      (ensure-function-is-logic-mode$ fn/lambda description error-erp error-val)
     (ensure-lambda-logic-mode$ fn/lambda description error-erp error-val))
   ///
 
