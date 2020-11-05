@@ -43,10 +43,31 @@
       (c::sint-mul |x| (c::sint-const 10))
     (c::sint-sub |x| (c::sint-const 1000000))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun |cond3| (|a| |b|)
+  (declare (xargs :guard (and (c::sintp |a|)
+                              (c::sintp |b|))
+                  :guard-hints (("Goal" :in-theory (enable
+                                                    c::sint-nonzerop
+                                                    c::sint-gt
+                                                    c::sint-sub-okp
+                                                    c::sint->get
+                                                    sbyte32p
+                                                    sbyte32-fix
+                                                    )))))
+  (if (c::sint-nonzerop (c::sint-gt |a| |b|))
+      (c::sint-sub |a|
+                   (if (c::sint-nonzerop (c::sint-eq |b| (c::sint-const 3)))
+                       (c::sint-const 0)
+                     (c::sint-const 1)))
+    |b|))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (c::atc |cond1|
         |cond2|
+        |cond3|
         :output-file "conditionals.c")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
