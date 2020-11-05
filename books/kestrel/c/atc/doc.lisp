@@ -361,7 +361,21 @@
      (xdoc::li
       "The body of the function is obtained by translating
        the ACL2 terms described earlier
-       to the corresponding C constructs."))
+       to the corresponding C constructs.
+       If the body has no @(tsee if)s, it is translated to
+       a single C @('return') statement
+       with the expression derived from the body.
+       If the body is an @(tsee if),
+       it is turned into a C @('if') statement,
+       whose test expression is derived from the ACL2 test term
+       and whose branches are recursively translated
+       in the same manner as the body.
+       Thus, if a branch is also an @(tsee if),
+       it is turned into a nested @('if') statement.
+       Eventually non-@(tsee if) branches are reached,
+       and they are turned into @('return') statements.
+       Other calls of @(tsee if), e.g. arguments of non-@(tsee if) functions,
+       are turned into C conditional expressions @('... ? ... : ...')."))
 
     (xdoc::p
      "The condition, stated earlier, that @('fni') is guard-verified
