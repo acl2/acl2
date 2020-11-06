@@ -15,6 +15,7 @@
 (include-book "c-static-semantics")
 (include-book "c-dynamic-semantics")
 
+(include-book "kestrel/error-checking/ensure-function-is-guard-verified" :dir :system)
 (include-book "kestrel/error-checking/ensure-function-is-logic-mode" :dir :system)
 (include-book "kestrel/error-checking/ensure-symbol-is-fresh-event-name" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-boolean" :dir :system)
@@ -66,12 +67,12 @@
        ((er &) (acl2::ensure-value-is-function-name$ fn desc t nil))
        (desc (msg "The target function ~x0" fn))
        ((er &) (acl2::ensure-function-is-logic-mode$ fn desc t nil))
-       ((er &) (acl2::ensure-function-guard-verified$ fn desc t nil))
+       ((er &) (acl2::ensure-function-is-guard-verified$ fn desc t nil))
        ((er &) (acl2::ensure-function-defined$ fn desc t nil)))
     (value nil))
   :guard-hints (("Goal" :in-theory (enable
                                     acl2::ensure-value-is-function-name
-                                    acl2::ensure-function-guard-verified
+                                    acl2::ensure-function-is-guard-verified
                                     acl2::ensure-function-is-logic-mode))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
