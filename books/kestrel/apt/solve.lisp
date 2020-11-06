@@ -10,6 +10,7 @@
 
 (in-package "APT")
 
+(include-book "kestrel/error-checking/ensure-function-is-guard-verified" :dir :system)
 (include-book "kestrel/error-checking/ensure-function-is-logic-mode" :dir :system)
 (include-book "kestrel/error-checking/ensure-symbol-is-fresh-event-name" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-boolean" :dir :system)
@@ -285,10 +286,10 @@
                                                          t
                                                          nil))
              ((er &) (if verify-guards
-                         (ensure-function-guard-verified$ solution-name
-                                                          desc
-                                                          t
-                                                          nil)
+                         (ensure-function-is-guard-verified$ solution-name
+                                                             desc
+                                                             t
+                                                             nil)
                        (value nil))))
           (value (list solution-name t names-to-avoid)))
       (b* (((er f) (if (eq solution-name :auto)

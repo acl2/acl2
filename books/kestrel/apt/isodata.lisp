@@ -10,6 +10,7 @@
 
 (in-package "APT")
 
+(include-book "kestrel/error-checking/ensure-function-is-guard-verified" :dir :system)
 (include-book "kestrel/error-checking/ensure-function-is-logic-mode" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-boolean" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-not-in-list" :dir :system)
@@ -288,7 +289,7 @@
                                                             description t nil)
                  (value nil)))
        ((er &) (if (eq verify-guards t)
-                   (ensure-function-guard-verified$
+                   (ensure-function-is-guard-verified$
                     old$
                     (msg "Since the :VERIFY-GUARDS input is T, ~
                           the target function ~x0" old$)
