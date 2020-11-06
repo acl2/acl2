@@ -18,6 +18,7 @@
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
 (include-book "kestrel/error-checking/def-error-checker" :dir :system)
+(include-book "kestrel/error-checking/ensure-function-is-guard-verified" :dir :system)
 (include-book "kestrel/error-checking/ensure-function-is-logic-mode" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
 
@@ -520,14 +521,6 @@
    The function must not be one whose @(tsee stobjs-out) are invalid.
    </p>")
 
-(def-error-checker ensure-function-guard-verified
-  ((fn (function-namep fn (w state)) "Function to check."))
-  :short
-  "Cause an error if a function is not guard-verified."
-  :body
-  (((guard-verified-p fn (w state))
-    "~@0 must be guard-verified." description)))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-error-checker ensure-term-logic-mode
@@ -842,7 +835,7 @@
    should describe the function or lambda expression.
    </p>"
   (if (symbolp fn/lambda)
-      (ensure-function-guard-verified$
+      (ensure-function-is-guard-verified$
        fn/lambda description error-erp error-val)
     (ensure-lambda-guard-verified-fns$
      fn/lambda description error-erp error-val))
@@ -884,7 +877,7 @@
    should describe the function or lambda expression.
    </p>"
   (if (symbolp fn/lambda)
-      (ensure-function-guard-verified$
+      (ensure-function-is-guard-verified$
        fn/lambda description error-erp error-val)
     (ensure-lambda-guard-verified-exec-fns$
      fn/lambda description error-erp error-val))

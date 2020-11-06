@@ -816,23 +816,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (must-eval-to-t
- (b* (((er x) (ensure-function-guard-verified 'cons "This" t nil 'test state)))
-   (value (equal x nil))))
-
-(must-eval-to-t
- (b* (((er x) (ensure-function-guard-verified 'len "This" t nil 'test state)))
-   (value (equal x nil))))
-
-(must-succeed*
- (defun h (x) (declare (xargs :verify-guards nil)) x)
- (must-fail
-  (ensure-function-guard-verified 'h "This" t nil 'test state)
-  :with-output-off nil)
- :with-output-off nil)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(must-eval-to-t
  (b* (((er x) (ensure-term-logic-mode
                '(binary-+ (cons x '3) yy) "This" t nil 'test state)))
    (value (equal x nil))))
