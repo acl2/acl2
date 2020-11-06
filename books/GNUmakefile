@@ -545,7 +545,7 @@ BROKEN_BOOKS :=
 # cert.pl to do its thing.
 
 ifneq ($(ACL2_HAS_HONS), )
-ifneq ($(filter CCL ALLEGRO SBCL, $(ACL2_HOST_LISP)), )
+ifeq ($(filter CCL ALLEGRO SBCL, $(ACL2_HOST_LISP)), )
 
 # When the Lisp is not one of those mentioned on the line above, we
 # skip the models/y86/ books, even for the "all" target.  In
@@ -558,10 +558,9 @@ ifneq ($(filter CCL ALLEGRO SBCL, $(ACL2_HOST_LISP)), )
 # def-gl-thm.  Moreover, LispWorks has too small a value for
 # array-dimension-limit to support these certifications.
 
-  BROKEN_BOOKS += $(filter models/y86/%, $(OK_CERTS))
+BROKEN_BOOKS += $(filter models/y86/%, $(OK_CERTS))
 endif # ifneq ($(filter CCL ALLEGRO SBCL, $(ACL2_HOST_LISP)), )
 endif # ifneq ($(ACL2_HAS_HONS), )
-
 
 OK_CERTS := $(filter-out $(BROKEN_BOOKS), $(OK_CERTS))
 

@@ -2125,7 +2125,7 @@
                                            ',guard
                                            (stobjs-in ',fn (w *the-live-state*))
                                            (list ,@formals)
-                                           ',wrld)
+                                           (w *the-live-state*))
                   (er hard! 'program-only
                     "~@0"
                     (program-only-er-msg ',fn
