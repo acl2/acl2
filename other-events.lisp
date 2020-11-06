@@ -16026,9 +16026,8 @@
   (mv-let (eof obj state)
     (read-file-iterate channel acc state)
     (mv eof (remove-eq nil obj) state))
-  #+cltl2
+  #+(and cltl2 acl2-loop-only)
   (mv-let (eof obj state)
-    #+acl2-loop-only
     (mv-let (erp val state)
       (read-acl2-oracle state)
       (declare (ignore erp))
@@ -16037,31 +16036,40 @@
                    (mv eof nil state)))
             (t
              (read-object channel state))))
-    #-acl2-loop-only
-    (let ((pos (file-position (get-input-stream-from-channel channel))))
-      (handler-case (read-object channel state)
-        (error (condition)
-               (declare (ignore condition))
-               (progn (setq error-start-pos pos)
-                      (mv nil nil state)))))
     (cond (eof (mv (reverse acc) state))
           (t
-           #-acl2-loop-only
-           (when error-start-pos
+           (read-file-iterate-safe channel
+                                   (if (eq obj nil)
+                                       acc
+                                     (cons obj acc))
+                                   state))))
+  #+(and cltl2 (not acl2-loop-only))
+  (mv
+   (loop
+    (let ((pos (file-position (get-input-stream-from-channel channel))))
+      (mv-let (eof obj state)
+        (handler-case (read-object channel state)
+          (error (condition)
+                 (declare (ignore condition))
+                 (progn (setq error-start-pos pos)
+                        (mv nil nil state))))
+        (cond
+         (eof (return (reverse acc)))
+         (t
+          (when error-start-pos
 
 ; When read breaks in the middle of an expression it seems to leave the
 ; file-pointer there rather than to proceed to the end of the original
 ; expression.  So we go back to where we were, and then read the entire object,
 ; throwing it away.
 
-             (file-position (get-input-stream-from-channel channel)
-                            error-start-pos)
-             (read-object-suppress channel state))
-           (read-file-iterate-safe channel
-                                   (if (eq obj nil)
-                                       acc
-                                     (cons obj acc))
-                                   state)))))
+            (file-position (get-input-stream-from-channel channel)
+                           error-start-pos)
+            (read-object-suppress channel state))
+          (setq acc (if (eq obj nil)
+                        acc
+                      (cons obj acc))))))))
+   state))
 
 (defun read-useless-runes (full-book-name envp useless-runes-r/w val ctx state)
 

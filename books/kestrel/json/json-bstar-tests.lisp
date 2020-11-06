@@ -46,7 +46,7 @@
 
 ;; It is only json::match? that is let-bound to the full matching form
 (assert-event (not (json-patternp '(:string match?))))
-(assert-event (json-patternp '(:string acl2::::match?)))
+(assert-event (json-patternp '(:string acl2::match?)))
 
 (assert-event (json-patternp '(:number 4)))
 (assert-event (json-patternp '(:number 4/5)))
