@@ -545,7 +545,7 @@ BROKEN_BOOKS :=
 # cert.pl to do its thing.
 
 ifneq ($(ACL2_HAS_HONS), )
-ifneq ($(filter CCL ALLEGRO SBCL, $(ACL2_HOST_LISP)), )
+ifeq ($(filter CCL ALLEGRO SBCL, $(ACL2_HOST_LISP)), )
 
 # When the Lisp is not one of those mentioned on the line above, we
 # skip the models/y86/ books, even for the "all" target.  In
@@ -558,10 +558,9 @@ ifneq ($(filter CCL ALLEGRO SBCL, $(ACL2_HOST_LISP)), )
 # def-gl-thm.  Moreover, LispWorks has too small a value for
 # array-dimension-limit to support these certifications.
 
-  BROKEN_BOOKS += $(filter models/y86/%, $(OK_CERTS))
+BROKEN_BOOKS += $(filter models/y86/%, $(OK_CERTS))
 endif # ifneq ($(filter CCL ALLEGRO SBCL, $(ACL2_HOST_LISP)), )
 endif # ifneq ($(ACL2_HAS_HONS), )
-
 
 OK_CERTS := $(filter-out $(BROKEN_BOOKS), $(OK_CERTS))
 
@@ -1644,7 +1643,7 @@ ETAGS=etags --language=none \
 TAGS : $(CERT_PL_SOURCES)
 	@echo "Making TAGS"
 	@rm -f TAGS
-	cat $(BUILD_DIR)/Makefile-sources | xargs -n 100 --delimiter='\n' $(ETAGS) -a
+	cat $(BUILD_DIR)/Makefile-sources | tr '\n' '\0' | xargs -0 -n 100 $(ETAGS) -a
 
 
 ##############################
@@ -1661,7 +1660,7 @@ git_status:
                       --write-sources $(BUILD_DIR)/git_source_deps \
                       --write-otherdeps $(BUILD_DIR)/git_other_deps \
                       --targets $(BUILD_DIR)/git_lisp_sources
-	cat $(BUILD_DIR)/git_source_deps $(BUILD_DIR)/git_other_deps | xargs --delimiter='\n' git status -u --
+	cat $(BUILD_DIR)/git_source_deps $(BUILD_DIR)/git_other_deps | tr '\n' '\0' | xargs -0 git status -u --
 
 
 ##############################

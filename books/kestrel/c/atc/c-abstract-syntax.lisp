@@ -571,6 +571,15 @@
     :elementp-of-nil nil
     :pred block-item-listp))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define irr-stmt ()
+  :returns (stmt stmtp)
+  :short "An irrelevant statement, usable as a dummy return value."
+  (with-guard-checking :none (ec-call (stmt-fix :irrelevant)))
+  ///
+  (in-theory (disable (:e irr-stmt))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod param-decl

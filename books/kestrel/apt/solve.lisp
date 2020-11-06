@@ -10,6 +10,8 @@
 
 (in-package "APT")
 
+(include-book "kestrel/error-checking/ensure-function-is-guard-verified" :dir :system)
+(include-book "kestrel/error-checking/ensure-function-is-logic-mode" :dir :system)
 (include-book "kestrel/error-checking/ensure-symbol-is-fresh-event-name" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-boolean" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-function-name" :dir :system)
@@ -271,7 +273,7 @@
                         solution-name method))
              (desc (msg "The function ~x0 specified by the :SOLUTION-INPUT"
                         solution-name))
-             ((er &) (ensure-function-logic-mode$ solution-name desc t nil))
+             ((er &) (ensure-function-is-logic-mode$ solution-name desc t nil))
              ((er &) (ensure-function-defined$ solution-name desc t nil))
              ((er &) (ensure-function-arity$ solution-name
                                              (len x1...xn)
@@ -284,10 +286,10 @@
                                                          t
                                                          nil))
              ((er &) (if verify-guards
-                         (ensure-function-guard-verified$ solution-name
-                                                          desc
-                                                          t
-                                                          nil)
+                         (ensure-function-is-guard-verified$ solution-name
+                                                             desc
+                                                             t
+                                                             nil)
                        (value nil))))
           (value (list solution-name t names-to-avoid)))
       (b* (((er f) (if (eq solution-name :auto)

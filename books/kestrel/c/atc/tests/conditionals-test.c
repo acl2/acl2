@@ -10,9 +10,16 @@ void cond2_test(int x) {
   printf("cond2(%d) = %d\n", x, r);
 }
 
+void cond3_test(int a, int b) {
+  int r = cond3(a, b);
+  printf("cond3(%d, %d) = %d\n", a, b, r);
+}
+
 int main(void) {
   cond1_test(11, 8888, -220);
   cond1_test(0, 888, -220);
   cond2_test(20000);
   cond2_test(23);
+  cond3_test(1700, 3);
+  cond3_test(1700, -99);
 }
