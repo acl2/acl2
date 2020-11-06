@@ -1644,7 +1644,7 @@ ETAGS=etags --language=none \
 TAGS : $(CERT_PL_SOURCES)
 	@echo "Making TAGS"
 	@rm -f TAGS
-	cat $(BUILD_DIR)/Makefile-sources | xargs -n 100 --delimiter='\n' $(ETAGS) -a
+	cat $(BUILD_DIR)/Makefile-sources | tr '\n' '\0' | xargs -0 -n 100 $(ETAGS) -a
 
 
 ##############################
@@ -1661,7 +1661,7 @@ git_status:
                       --write-sources $(BUILD_DIR)/git_source_deps \
                       --write-otherdeps $(BUILD_DIR)/git_other_deps \
                       --targets $(BUILD_DIR)/git_lisp_sources
-	cat $(BUILD_DIR)/git_source_deps $(BUILD_DIR)/git_other_deps | xargs --delimiter='\n' git status -u --
+	cat $(BUILD_DIR)/git_source_deps $(BUILD_DIR)/git_other_deps | tr '\n' '\0' | xargs -0 git status -u --
 
 
 ##############################
