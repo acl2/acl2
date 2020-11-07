@@ -672,6 +672,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define fundef-list-lookup ((fun identp) (defs fundef-listp))
+  :returns (fundef? maybe-fundefp)
+  :short "Lookup a function definition in a list, by name."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We return the first function definition in the list.
+     Well-formed lists have unique names,
+     so returning the first one is as good as returning any.
+     We return @('nil') if the function is not found."))
+  (cond ((endp defs) nil)
+        (t (b* ((def (car defs)))
+             (if (ident-equiv fun (fundef->name def))
+                 (fundef-fix def)
+               (fundef-list-lookup fun (cdr defs))))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deftagsum ext-decl
   :short "Fixtype of external declarations [C:6.9]."
   :long
