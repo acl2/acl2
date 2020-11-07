@@ -79,19 +79,31 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defoption maybe-value
-  sint
-  :short "Fixtype of optional values."
-  :pred maybe-valuep)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (fty::deflist value-list
   :short "Fixtype of lists of values."
   :elt-type sint
   :true-listp t
   :elementp-of-nil nil
   :pred value-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(encapsulate ()
+
+  (local (in-theory (enable sintp)))
+
+  (fty::defflatsum value-list-result
+    :short "Fixtype of lists of values and errors."
+    (:ok value-list)
+    (:err error)
+    :pred value-list-resultp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption maybe-value
+  sint
+  :short "Fixtype of optional values."
+  :pred maybe-valuep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
