@@ -453,7 +453,9 @@
                                                      new-indices
                                                      (binary-append
                                                       (cdr new-indices)
-                                                      (list *MS-END-OF-CLUSTERCHAIN*))) read-error-code)
+                                                      (list
+                                                       *MS-END-OF-CC*)))
+                            read-error-code)
                       (mv (cons (cons (car sd)
                                       (l6-make-regular-file
                                        ;; 0 is chosen by default
@@ -504,7 +506,7 @@
                                                    (binary-append
                                                     (cdr indices)
                                                     (list
-                                                     *MS-END-OF-CLUSTERCHAIN*)))
+                                                     *MS-END-OF-CC*)))
                           0)
                     (mv (cons (cons (car hns)
                                     (l6-make-regular-file
@@ -1818,7 +1820,7 @@
            (set-indices-in-fa-table
             fa-table file-index-list
             (append (cdr file-index-list)
-                    (list *ms-end-of-clusterchain*)))
+                    (list *ms-end-of-cc*)))
            (car file-index-list)
            file-length *blocksize*)
           (mv file-index-list 0)))
@@ -2347,7 +2349,7 @@
                                           fa-table)))
              (l6-regular-file-length (cdr (assoc-equal (car hns) fs2))))
             start text)))))
-       (list *ms-end-of-clusterchain*))))))
+       (list *ms-end-of-cc*))))))
   :instructions
   (:promote (:dive 2)
             (:rewrite (:rewrite l6-wrchs-correctness-1-lemma-31 . 1))
@@ -3938,7 +3940,7 @@
            (set-indices-in-fa-table
             fa-table file-index-list
             (append (cdr file-index-list)
-                    (list *ms-end-of-clusterchain*))))
+                    (list *ms-end-of-cc*))))
           (mv file-index-list 0)))
   :hints
   (("goal" :in-theory
