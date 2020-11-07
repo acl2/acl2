@@ -215,8 +215,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define expr-wfp ((e exprp) (env static-envp))
-  :returns (yes/no booleanp)
+(defines expr-wfp
   :short "Check if an expression is well-formed."
   :long
   (xdoc::topstring
@@ -235,26 +234,44 @@
     "Normally a static semantics would also return a type for each expression,
      but for now all our expressions have type @('int'),
      so there is no need to return this."))
-  (expr-case e
-             :ident (and (ident-wfp e.get)
-                         (set::in e.get (static-env->variables env)))
-             :const (const-wfp e.get)
-             :call nil
-             :postinc nil
-             :postdec nil
-             :preinc nil
-             :predec nil
-             :unary (and (unop-wfp e.op)
-                         (expr-wfp e.arg env))
-             :cast nil
-             :binary (and (binop-wfp e.op)
-                          (expr-wfp e.arg1 env)
-                          (expr-wfp e.arg2 env))
-             :cond (and (expr-wfp e.test env)
-                        (expr-wfp e.then env)
-                        (expr-wfp e.else env)))
-  :measure (expr-count e)
-  :hooks (:fix))
+
+  (define expr-wfp ((e exprp) (env static-envp))
+    :returns (yes/no booleanp)
+    (expr-case e
+               :ident (and (ident-wfp e.get)
+                           (set::in e.get (static-env->variables env)))
+               :const (const-wfp e.get)
+               :call (b* ((fundef (fundef-list-lookup
+                                   e.fun
+                                   (static-env->functions env))))
+                       (and fundef
+                            (= (len (fundef->params fundef))
+                               (len e.args))))
+               :postinc nil
+               :postdec nil
+               :preinc nil
+               :predec nil
+               :unary (and (unop-wfp e.op)
+                           (expr-wfp e.arg env))
+               :cast nil
+               :binary (and (binop-wfp e.op)
+                            (expr-wfp e.arg1 env)
+                            (expr-wfp e.arg2 env))
+               :cond (and (expr-wfp e.test env)
+                          (expr-wfp e.then env)
+                          (expr-wfp e.else env)))
+    :measure (expr-count e))
+
+  (define expr-list-wfp ((es expr-listp) (env static-envp))
+    :returns (yes/no booleanp)
+    (or (endp es)
+        (and (expr-wfp (car es) env)
+             (expr-list-wfp (cdr es) env)))
+    :measure (expr-list-count es))
+
+  ///
+
+  (fty::deffixequiv-mutual expr-wfp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
