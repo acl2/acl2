@@ -176,21 +176,42 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defset static-env
+(fty::defprod static-env
   :short "Fixtype of static environments."
   :long
   (xdoc::topstring
    (xdoc::p
-    "A static environment for now is just
-     a finite set of variables (i.e. identifiers)
-     that describes the variables in scope that may be used in expressions.
+    "A static environment consists of
+     the function definitions in scope
+     and the variables in scope.")
+   (xdoc::p
+    "The function definitions in scope are organized as a list,
+     in the same order in which they appear in the translation unit;
+     as defined later, we build the list as we traverse the tranlation unit.
+     The scope of a function identifier goes from its declaration
+     to the end of the translation unit [C:6.2.1/4],
+     thus this construction and use of the list of functions in scope
+     is consistent with that.")
+   (xdoc::p
+    "The variables in scope for now are just a finite set of identifiers,
+     which is collected starting from function parameters
+     (we have no global variables yet)
+     and adding local variables
+     (which we still have to support in this static semantics).
      Since we only have @('int') values for now,
-     all of these variables implicitly have type @('int').
-     This will be extended to a more complex mathematical structure,
-     in particular associating types to variables."))
-  :elt-type ident
-  :elementp-of-nil nil
+     all of these variables implicitly have type @('int')."))
+  ((functions fundef-list)
+   (variables ident-set))
   :pred static-envp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define irr-static-env ()
+  :returns (env static-envp)
+  :short "An irrelevant static environment, usable as a dummy return value."
+  (with-guard-checking :none (ec-call (static-env-fix :irrelevant)))
+  ///
+  (in-theory (disable (:e irr-static-env))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -216,7 +237,7 @@
      so there is no need to return this."))
   (expr-case e
              :ident (and (ident-wfp e.get)
-                         (set::in e.get (static-env-fix env)))
+                         (set::in e.get (static-env->variables env)))
              :const (const-wfp e.get)
              :call nil
              :postinc nil
@@ -308,12 +329,14 @@
      otherwise, it means that there is a duplicate parameter.
      If all checks succeed, we return the static environment
      updated with the parameter."))
-  (b* ((env (static-env-fix env))
+  (b* (((static-env env) env)
        ((param-decl param) param)
-       ((unless (tyspecseq-wfp param.type)) (mv nil env))
-       ((unless (ident-wfp param.name)) (mv nil env))
-       ((when (set::in param.name env)) (mv nil env)))
-    (mv t (set::insert param.name env)))
+       ((unless (tyspecseq-wfp param.type)) (mv nil (irr-static-env)))
+       ((unless (ident-wfp param.name)) (mv nil (irr-static-env)))
+       ((when (set::in param.name env.variables)) (mv nil (irr-static-env))))
+    (mv t
+        (change-static-env env
+                           :variables (set::insert param.name env.variables))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -347,7 +370,9 @@
   (b* (((fundef fundef) fundef)
        ((unless (tyspecseq-wfp fundef.result)) nil)
        ((unless (ident-wfp fundef.name)) nil)
-       ((mv okp env) (param-decl-list-wfp fundef.params nil))
+       ((mv okp env) (param-decl-list-wfp fundef.params
+                                          (make-static-env :functions nil
+                                                           :variables nil)))
        ((when (not okp)) nil))
     (stmt-wfp fundef.body env))
   :hooks (:fix))
