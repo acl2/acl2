@@ -358,46 +358,84 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define fundef-wfp ((fundef fundefp))
-  :returns (yes/no booleanp)
+(define fundef-wfp ((fundef fundefp) (env static-envp))
+  :guard (set::empty (static-env->variables env))
+  :returns (mv (yes/no booleanp)
+               (new-env static-envp))
   :short "Check if a function definition is well-formed."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Starting with an empty static environment,
+    "Starting with an empty variable environment (see guard),
      we process the parameter declarations and obtain the environment
-     in which the function body must be statically well-formed."))
+     in which the function body must be statically well-formed.
+     If a function with the same name is already in the environment,
+     it is an error: there is a duplicate function name.
+     Otherwise, we return the initial environment
+     updated with the function definition."))
   (b* (((fundef fundef) fundef)
-       ((unless (tyspecseq-wfp fundef.result)) nil)
-       ((unless (ident-wfp fundef.name)) nil)
-       ((mv okp env) (param-decl-list-wfp fundef.params
-                                          (make-static-env :functions nil
-                                                           :variables nil)))
-       ((when (not okp)) nil))
-    (stmt-wfp fundef.body env))
-  :hooks (:fix))
+       ((unless (tyspecseq-wfp fundef.result)) (mv nil (irr-static-env)))
+       ((unless (ident-wfp fundef.name)) (mv nil (irr-static-env)))
+       ((when (member-equal fundef.name
+                            (fundef-list->name-list
+                             (static-env->functions env))))
+        (mv nil (irr-static-env)))
+       ((mv okp env) (param-decl-list-wfp fundef.params env))
+       ((when (not okp)) (mv nil (irr-static-env)))
+       ((unless (stmt-wfp fundef.body env)) (mv nil (irr-static-env))))
+    (mv t (make-static-env :functions (append (static-env->functions env)
+                                              (list fundef))
+                           :variables nil)))
+  :hooks (:fix)
+  ///
+
+  (defret empty-of-static-env->variables-of-fundef-wfp
+    (implies yes/no
+             (set::empty (static-env->variables new-env)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ext-decl-wfp ((ext ext-declp))
-  :returns (yes/no booleanp)
+(define ext-decl-wfp ((ext ext-declp) (env static-envp))
+  :guard (set::empty (static-env->variables env))
+  :returns (mv (yes/no booleanp)
+               (new-env static-envp))
   :short "Check if an external declaration is well-formed."
   :long
   (xdoc::topstring
    (xdoc::p
     "For now we only allow well-formed function definitions."))
   (ext-decl-case ext
-                 :fundef (fundef-wfp ext.get)
-                 :decl nil)
-  :hooks (:fix))
+                 :fundef (fundef-wfp ext.get env)
+                 :decl (mv nil (irr-static-env)))
+  :hooks (:fix)
+  ///
+
+  (defret empty-of-static-env->variables-of-ext-decl-wfp
+    (implies yes/no
+             (set::empty (static-env->variables new-env)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::deflist ext-decl-list-wfp (x)
-  (ext-decl-wfp x)
-  :guard (ext-decl-listp x)
-  :short "Lift @(tsee ext-decl-wfp) to lists."
-  :elementp-of-nil nil)
+(define ext-decl-list-wfp ((exts ext-decl-listp) (env static-envp))
+  :guard (set::empty (static-env->variables env))
+  :returns (mv (yes/no booleanp)
+               (new-env static-envp))
+  :short "Check if a list of external declarations are well-formed."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We thread the environment through."))
+  (b* (((when (endp exts)) (mv t (static-env-fix env)))
+       ((mv okp env) (ext-decl-wfp (car exts) env))
+       ((unless okp) (mv nil (irr-static-env))))
+    (ext-decl-list-wfp (cdr exts) env))
+  :hooks (:fix)
+  ///
+
+  (defret empty-of-static-env->variables-of-ext-decl-list-wfp
+    (implies (and yes/no
+                  (set::empty (static-env->variables env)))
+             (set::empty (static-env->variables new-env)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -407,12 +445,12 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Not only each external declaration must be well-formed,
-     but also the names of the functions must be all distinct."))
-  (b* (((transunit tunit) tunit))
-    (and (ext-decl-list-wfp tunit.decls)
-         (no-duplicatesp-equal
-          (fundef-list->name-list
-           (ext-decl-list->fundef-list
-            tunit.decls)))))
+    "Starting from the empty environment,
+     we check all the external declarations,
+     threading the environment through,
+     and discarding the final one (it served its pupose)."))
+  (b* (((transunit tunit) tunit)
+       (env (make-static-env :functions nil :variables nil))
+       ((mv okp &) (ext-decl-list-wfp tunit.decls env)))
+    okp)
   :hooks (:fix))
