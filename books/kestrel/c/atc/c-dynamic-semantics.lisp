@@ -150,6 +150,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod env
+  :short "Fixtype of environments."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "An environment consists of
+     the function definitions in the program
+     and a variable store.")
+   (xdoc::p
+    "The function definitions are organized as a list,
+     as in a static environment (see @(tsee static-env))."))
+  ((functions fundef-listp)
+   (store storep))
+  :pred envp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define exec-iconst ((ic iconstp))
   :returns (result value-resultp)
   :short "Execute an integer constant."
@@ -190,18 +207,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-ident ((id identp) (store storep))
+(define exec-ident ((id identp) (env envp))
   :returns (result value-resultp)
   :short "Execute a variable."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The execution of expressions takes place in the context of a store.
+    "The execution of expressions takes place in the context of an environment.
      We look up the variable's value in the store,
      defensively returning an error if the variable is not in the store,
      which means that the variable is not in scope."))
   (b* ((id (ident-fix id))
-       (store (store-fix store))
+       (store (env->store env))
        (pair? (omap::in id store))
        ((when (not pair?)) (error (list :exec-ident-not-in-scope id))))
     (cdr pair?))
@@ -303,7 +320,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-expr ((e exprp) (store storep))
+(define exec-expr ((e exprp) (env envp))
   :returns (result value-resultp)
   :verify-guards :after-returns
   :short "Execute an expression."
@@ -315,24 +332,24 @@
   (b* ((e (expr-fix e)))
     (expr-case
      e
-     :ident (exec-ident e.get store)
+     :ident (exec-ident e.get env)
      :const (exec-const e.get)
      :call (error (list :exec-expr e))
      :postinc (error (list :exec-expr e))
      :postdec (error (list :exec-expr e))
      :preinc (error (list :exec-expr e))
      :predec (error (list :exec-expr e))
-     :unary (b* ((arg (exec-expr e.arg store)))
+     :unary (b* ((arg (exec-expr e.arg env)))
               (exec-unary e.op arg))
      :cast (error (list :exec-expr e))
-     :binary (b* ((arg1 (exec-expr e.arg1 store))
-                  (arg2 (exec-expr e.arg2 store)))
+     :binary (b* ((arg1 (exec-expr e.arg1 env))
+                  (arg2 (exec-expr e.arg2 env)))
                (exec-binary e.op arg1 arg2))
-     :cond (b* ((test (exec-expr e.test store)))
+     :cond (b* ((test (exec-expr e.test env)))
              (value-result-case test
                                 :ok (if (sint-nonzerop test.get)
-                                        (exec-expr e.then store)
-                                      (exec-expr e.else store))
+                                        (exec-expr e.then env)
+                                      (exec-expr e.else env))
                                 :err test.get))))
   :measure (expr-count e)
   :hooks (:fix))
@@ -350,27 +367,27 @@
      We also support the execution of compound statments
      that consists of supported statements."))
 
-  (define exec-stmt ((s stmtp) (store storep))
+  (define exec-stmt ((s stmtp) (env envp))
     :returns (result maybe-value-resultp)
     :parents nil
     (b* ((s (stmt-fix s)))
       (stmt-case
        s
        :labeled (error (list :exec-stmt s))
-       :compound (exec-block-item-list s.items store)
+       :compound (exec-block-item-list s.items env)
        :expr (error (list :exec-stmt s))
        :null (error (list :exec-stmt s))
-       :if (b* ((test (exec-expr s.test store)))
+       :if (b* ((test (exec-expr s.test env)))
              (value-result-case test
                                 :ok (if (sint-nonzerop test.get)
-                                        (exec-stmt s.then store)
+                                        (exec-stmt s.then env)
                                       nil)
                                 :err test.get))
-       :ifelse (b* ((test (exec-expr s.test store)))
+       :ifelse (b* ((test (exec-expr s.test env)))
                  (value-result-case test
                                     :ok (if (sint-nonzerop test.get)
-                                            (exec-stmt s.then store)
-                                          (exec-stmt s.else store))
+                                            (exec-stmt s.then env)
+                                          (exec-stmt s.else env))
                                     :err test.get))
        :switch (error (list :exec-stmt s))
        :while (error (list :exec-stmt s))
@@ -380,7 +397,7 @@
        :continue (error (list :exec-stmt s))
        :break (error (list :exec-stmt s))
        :return (if (exprp s.value)
-                   (b* ((eres (exec-expr s.value store)))
+                   (b* ((eres (exec-expr s.value env)))
                      (value-result-case
                       eres
                       :err eres.get
@@ -388,22 +405,22 @@
                  nil)))
     :measure (stmt-count s))
 
-  (define exec-block-item ((item block-itemp) (store storep))
+  (define exec-block-item ((item block-itemp) (env envp))
     :returns (result maybe-value-resultp)
     :parents nil
     (block-item-case item
                      :decl (error (list :exec-block-item item.get))
-                     :stmt (exec-stmt item.get store))
+                     :stmt (exec-stmt item.get env))
     :measure (block-item-count item))
 
-  (define exec-block-item-list ((items block-item-listp) (store storep))
+  (define exec-block-item-list ((items block-item-listp) (env envp))
     :returns (result maybe-value-resultp)
     :parents nil
     (b* (((when (endp items)) nil)
-         (val? (exec-block-item (car items) store))
+         (val? (exec-block-item (car items) env))
          ((when (maybe-value-result-case val? :err)) val?)
          ((when val?) val?))
-      (exec-block-item-list (cdr items) store))
+      (exec-block-item-list (cdr items) env))
     :measure (block-item-list-count items))
 
   :verify-guards nil ; done below
@@ -491,15 +508,17 @@
        (fundef (lookup-fun fun tunit))
        ((when (not fundef)) (error (list :exec-fun :undefined fun)))
        ((fundef fundef) fundef)
-       (store (init-store (fundef->params fundef) args)))
+       (store (init-store fundef.params args)))
     (store-result-case
      store
      :err store.get
-     :ok (b* ((val? (exec-stmt fundef.body store.get)))
+     :ok (b* ((fundefs (ext-decl-list->fundef-list (transunit->decls tunit)))
+              (env (make-env :functions fundefs :store store.get))
+              (val? (exec-stmt fundef.body env)))
            (maybe-value-result-case
             val?
             :err val?.get
-            :ok (if (not val?.get)
-                    (error (list :exec-fun :no-value-returned))
-                  val?.get)))))
+            :ok (if (sintp val?)
+                    val?
+                  (error (list :exec-fun :no-value-returned)))))))
   :hooks (:fix))
