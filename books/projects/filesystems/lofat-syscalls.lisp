@@ -664,99 +664,103 @@
                                     (pseudo-root-d-e fat32$c)
                                     path))))))))))
 
-(defthm
-  lofat-unlink-refinement
-  (implies
-   (and (lofat-fs-p fat32$c)
-        (fat32-filename-list-p path)
-        (equal (mv-nth 1 (lofat-to-hifat fat32$c))
-               0))
-   (and
-    (equal
-     (mv-nth
-      1
-      (lofat-to-hifat (mv-nth 0
-                              (lofat-unlink fat32$c path))))
-     0)
-    (equal
-     (mv-nth
-      0
-      (lofat-to-hifat (mv-nth 0
-                              (lofat-unlink fat32$c path))))
-     (mv-nth 0
-             (hifat-unlink (mv-nth 0 (lofat-to-hifat fat32$c))
-                           path)))
-    (equal (mv-nth 1
-                   (lofat-unlink fat32$c path))
-           (mv-nth 1
-                   (hifat-unlink (mv-nth 0 (lofat-to-hifat fat32$c))
-                                 path)))))
-  :hints
-  (("goal"
-    :in-theory (e/d (lofat-unlink lofat-to-hifat root-d-e-list
-                                  update-dir-contents-correctness-1
-                                  (:rewrite lofat-remove-file-correctness-lemma-14))
-                    ((:rewrite lofat-remove-file-correctness-1)
-                     make-list-ac-removal
-                     (:rewrite lofat-find-file-correctness-1)
-                     lofat-unlink-refinement-lemma-8
-                     (:rewrite
-                      d-e-cc-contents-of-lofat-place-file-coincident-lemma-15)
-                     (:linear
-                      d-e-cc-contents-of-lofat-remove-file-disjoint-lemma-12)))
-    :do-not-induct t
-    :use
-    ((:instance (:rewrite lofat-remove-file-correctness-1)
-                (entry-limit (max-entry-count fat32$c))
-                (path path)
-                (root-d-e (pseudo-root-d-e fat32$c))
-                (fat32$c fat32$c))
-     (:instance
-      (:rewrite lofat-find-file-correctness-1)
-      (d-e-list
-       (make-d-e-list
-        (mv-nth 0
-                (d-e-cc-contents
-                 fat32$c
-                 (pseudo-root-d-e fat32$c)))))
-      (entry-limit (max-entry-count fat32$c)))
-     (:instance
-      (:rewrite lofat-unlink-refinement-lemma-3)
-      (fs
-       (mv-nth 0
-               (lofat-to-hifat-helper
-                fat32$c
-                (make-d-e-list
-                 (mv-nth 0
-                         (d-e-cc-contents
-                          fat32$c
-                          (pseudo-root-d-e fat32$c))))
-                (max-entry-count fat32$c)))))
-     (:instance
-      (:rewrite lofat-unlink-refinement-lemma-2)
-      (fs
-       (mv-nth 0
-               (lofat-to-hifat-helper
-                fat32$c
-                (make-d-e-list
-                 (mv-nth 0
-                         (d-e-cc-contents
-                          fat32$c
-                          (pseudo-root-d-e fat32$c))))
-                (max-entry-count fat32$c)))))
-     (:instance
-      lofat-unlink-refinement-lemma-8
-      (fs
-       (mv-nth 0
-               (lofat-to-hifat-helper
-                fat32$c
-                (make-d-e-list
-                 (mv-nth 0
-                         (d-e-cc-contents
-                          fat32$c
-                          (pseudo-root-d-e fat32$c))))
-                (max-entry-count fat32$c))))))))
-  :otf-flg t)
+(encapsulate
+  ()
+
+  (local
+   (in-theory
+    (e/d (lofat-unlink lofat-to-hifat root-d-e-list
+                       update-dir-contents-correctness-1
+                       (:rewrite lofat-remove-file-correctness-lemma-14))
+         ((:rewrite lofat-remove-file-correctness-1)
+          make-list-ac-removal
+          (:rewrite lofat-find-file-correctness-1)
+          lofat-unlink-refinement-lemma-8
+          (:rewrite d-e-cc-contents-of-lofat-place-file-coincident-lemma-15)
+          (:linear d-e-cc-contents-of-lofat-remove-file-disjoint-lemma-12)))))
+
+  ;; This lemma is local because it really only solves one problem that arises
+  ;; in certifying this book with useless-runes enabled.
+  (local
+   (defthm lemma
+     (implies
+      (equal (mv-nth 1
+                     (d-e-cc-contents fat32$c (pseudo-root-d-e fat32$c)))
+             0)
+      (intersectp-equal (mv-nth 0
+                                (d-e-cc fat32$c (pseudo-root-d-e fat32$c)))
+                        (mv-nth 0
+                                (d-e-cc fat32$c (pseudo-root-d-e fat32$c)))))))
+
+  (defthm
+    lofat-unlink-refinement
+    (implies
+     (and (lofat-fs-p fat32$c)
+          (fat32-filename-list-p path)
+          (equal (mv-nth 1 (lofat-to-hifat fat32$c))
+                 0))
+     (and
+      (equal (mv-nth 1
+                     (lofat-to-hifat (mv-nth 0 (lofat-unlink fat32$c path))))
+             0)
+      (equal (mv-nth 0
+                     (lofat-to-hifat (mv-nth 0 (lofat-unlink fat32$c path))))
+             (mv-nth 0
+                     (hifat-unlink (mv-nth 0 (lofat-to-hifat fat32$c))
+                                   path)))
+      (equal (mv-nth 1 (lofat-unlink fat32$c path))
+             (mv-nth 1
+                     (hifat-unlink (mv-nth 0 (lofat-to-hifat fat32$c))
+                                   path)))))
+    :hints
+    (("goal"
+      :do-not-induct t
+      :use
+      ((:instance (:rewrite lofat-remove-file-correctness-1)
+                  (entry-limit (max-entry-count fat32$c))
+                  (path path)
+                  (root-d-e (pseudo-root-d-e fat32$c))
+                  (fat32$c fat32$c))
+       (:instance
+        (:rewrite lofat-find-file-correctness-1)
+        (d-e-list
+         (make-d-e-list
+          (mv-nth 0
+                  (d-e-cc-contents fat32$c (pseudo-root-d-e fat32$c)))))
+        (entry-limit (max-entry-count fat32$c)))
+       (:instance
+        (:rewrite lofat-unlink-refinement-lemma-3)
+        (fs
+         (mv-nth
+          0
+          (lofat-to-hifat-helper
+           fat32$c
+           (make-d-e-list
+            (mv-nth 0
+                    (d-e-cc-contents fat32$c (pseudo-root-d-e fat32$c))))
+           (max-entry-count fat32$c)))))
+       (:instance
+        (:rewrite lofat-unlink-refinement-lemma-2)
+        (fs
+         (mv-nth
+          0
+          (lofat-to-hifat-helper
+           fat32$c
+           (make-d-e-list
+            (mv-nth 0
+                    (d-e-cc-contents fat32$c (pseudo-root-d-e fat32$c))))
+           (max-entry-count fat32$c)))))
+       (:instance
+        lofat-unlink-refinement-lemma-8
+        (fs
+         (mv-nth
+          0
+          (lofat-to-hifat-helper
+           fat32$c
+           (make-d-e-list
+            (mv-nth 0
+                    (d-e-cc-contents fat32$c (pseudo-root-d-e fat32$c))))
+           (max-entry-count fat32$c))))))))))
 
 (defund lofat-rmdir (fat32$c path)
   (declare (xargs :stobjs fat32$c
