@@ -11,6 +11,7 @@
 (in-package "C")
 
 (include-book "centaur/fty/top" :dir :system)
+(include-book "kestrel/fty/defset" :dir :system)
 (include-book "std/util/defprojection" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
@@ -121,6 +122,14 @@
   :true-listp t
   :elementp-of-nil nil
   :pred ident-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defset ident-set
+  :short "Fixtype of osets of identifiers."
+  :elt-type ident
+  :elementp-of-nil nil
+  :pred ident-setp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

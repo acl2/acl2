@@ -13,7 +13,6 @@
 (include-book "c-abstract-syntax")
 (include-book "portable-ascii-identifiers")
 
-(include-book "kestrel/fty/defset" :dir :system)
 (include-book "kestrel/fty/sbyte32" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
