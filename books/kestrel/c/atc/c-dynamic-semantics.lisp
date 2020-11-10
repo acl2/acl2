@@ -79,13 +79,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defoption maybe-value
-  sint
-  :short "Fixtype of optional values."
-  :pred maybe-valuep)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (fty::deflist value-list
   :short "Fixtype of lists of values."
   :elt-type sint
@@ -99,11 +92,39 @@
 
   (local (in-theory (enable sintp)))
 
+  (fty::defflatsum value-list-result
+    :short "Fixtype of lists of values and errors."
+    (:ok value-list)
+    (:err error)
+    :pred value-list-resultp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption maybe-value
+  sint
+  :short "Fixtype of optional values."
+  :pred maybe-valuep)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(encapsulate ()
+
+  (local (in-theory (enable sintp)))
+
   (fty::defflatsum maybe-value-result
     :short "Fixtype of optional values and errors."
     (:ok maybe-value)
     (:err error)
     :pred maybe-value-resultp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define irr-value-result ()
+  :returns (result value-resultp)
+  :short "An irrelevant value result, usable as a dummy return value."
+  (with-guard-checking :none (ec-call (value-result-fix :irrelevant)))
+  ///
+  (in-theory (disable (:e irr-value-result))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -135,6 +156,23 @@
            (storep store))
   :enable (store-resultp
            store-result-kind))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod env
+  :short "Fixtype of environments."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "An environment consists of
+     the function definitions in the program
+     and a variable store.")
+   (xdoc::p
+    "The function definitions are organized as a list,
+     as in a static environment (see @(tsee static-env))."))
+  ((functions fundef-listp)
+   (store storep))
+  :pred envp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -178,18 +216,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-ident ((id identp) (store storep))
+(define exec-ident ((id identp) (env envp))
   :returns (result value-resultp)
   :short "Execute a variable."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The execution of expressions takes place in the context of a store.
+    "The execution of expressions takes place in the context of an environment.
      We look up the variable's value in the store,
      defensively returning an error if the variable is not in the store,
      which means that the variable is not in scope."))
   (b* ((id (ident-fix id))
-       (store (store-fix store))
+       (store (env->store env))
        (pair? (omap::in id store))
        ((when (not pair?)) (error (list :exec-ident-not-in-scope id))))
     (cdr pair?))
@@ -223,65 +261,60 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-binary ((op binopp) (arg1 value-resultp) (arg2 value-resultp))
+(define exec-binary-strict ((op binopp)
+                            (arg1 value-resultp)
+                            (arg2 value-resultp))
+  :guard (member-eq (binop-kind op) (list :mul :div :rem :add :sub :shl :shr
+                                          :lt :gt :le :ge :eq :ne
+                                          :bitand :bitior :bitxor))
   :returns (result value-resultp)
-  :short "Execute a binary expression."
+  :short "Execute a binary expression with
+          a strict non-side-effecting operator."
   :long
   (xdoc::topstring
    (xdoc::p
     "The arguments are the results of
-     recursively executing the operand expressions.
-     For now we only support some binary operators."))
+     recursively executing the operand expressions,
+     both of which must be considered because the operator is non-strict.
+     These operators are non-side-effecting,
+     so we just return a value as result (if there is no error)."))
   (b* ((op (binop-fix op))
        (arg1 (value-result-fix arg1))
        (arg2 (value-result-fix arg2)))
     (if (value-result-case arg1 :ok)
         (if (value-result-case arg2 :ok)
-            (binop-case
-             op
-             :mul (if (sint-mul-okp arg1 arg2)
-                      (sint-mul arg1 arg2)
-                    (error (list :exec-binary op arg1 arg2)))
-             :div (if (sint-div-okp arg1 arg2)
-                      (sint-div arg1 arg2)
-                    (error (list :exec-binary op arg1 arg2)))
-             :rem (if (sint-rem-okp arg1 arg2)
-                      (sint-rem arg1 arg2)
-                    (error (list :exec-binary op arg1 arg2)))
-             :add (if (sint-add-okp arg1 arg2)
-                      (sint-add arg1 arg2)
-                    (error (list :exec-binary op arg1 arg2)))
-             :sub (if (sint-sub-okp arg1 arg2)
-                      (sint-sub arg1 arg2)
-                    (error (list :exec-binary op arg1 arg2)))
-             :shl (if (sint-shl-sint-okp arg1 arg2)
-                      (sint-shl-sint arg1 arg2)
-                    (error (list :exec-binary op arg1 arg2)))
-             :shr (if (sint-shr-sint-okp arg1 arg2)
-                      (sint-shr-sint arg1 arg2)
-                    (error (list :exec-binary op arg1 arg2)))
-             :lt (sint-lt arg1 arg2)
-             :gt (sint-gt arg1 arg2)
-             :le (sint-le arg1 arg2)
-             :ge (sint-ge arg1 arg2)
-             :eq (sint-eq arg1 arg2)
-             :ne (sint-ne arg1 arg2)
-             :bitand (sint-bitand arg1 arg2)
-             :bitxor (sint-bitxor arg1 arg2)
-             :bitior (sint-bitior arg1 arg2)
-             :logand (error (list :exec-binary op arg1 arg2))
-             :logor (error (list :exec-binary op arg1 arg2))
-             :asg (error (list :exec-binary op arg1 arg2))
-             :asg-mul (error (list :exec-binary op arg1 arg2))
-             :asg-div (error (list :exec-binary op arg1 arg2))
-             :asg-rem (error (list :exec-binary op arg1 arg2))
-             :asg-add (error (list :exec-binary op arg1 arg2))
-             :asg-sub (error (list :exec-binary op arg1 arg2))
-             :asg-shl (error (list :exec-binary op arg1 arg2))
-             :asg-shr (error (list :exec-binary op arg1 arg2))
-             :asg-and (error (list :exec-binary op arg1 arg2))
-             :asg-xor (error (list :exec-binary op arg1 arg2))
-             :asg-ior (error (list :exec-binary op arg1 arg2)))
+            (case (binop-kind op)
+              (:mul (if (sint-mul-okp arg1 arg2)
+                        (sint-mul arg1 arg2)
+                      (error (list :exec-binary op arg1 arg2))))
+              (:div (if (sint-div-okp arg1 arg2)
+                        (sint-div arg1 arg2)
+                      (error (list :exec-binary op arg1 arg2))))
+              (:rem (if (sint-rem-okp arg1 arg2)
+                        (sint-rem arg1 arg2)
+                      (error (list :exec-binary op arg1 arg2))))
+              (:add (if (sint-add-okp arg1 arg2)
+                        (sint-add arg1 arg2)
+                      (error (list :exec-binary op arg1 arg2))))
+              (:sub (if (sint-sub-okp arg1 arg2)
+                        (sint-sub arg1 arg2)
+                      (error (list :exec-binary op arg1 arg2))))
+              (:shl (if (sint-shl-sint-okp arg1 arg2)
+                        (sint-shl-sint arg1 arg2)
+                      (error (list :exec-binary op arg1 arg2))))
+              (:shr (if (sint-shr-sint-okp arg1 arg2)
+                        (sint-shr-sint arg1 arg2)
+                      (error (list :exec-binary op arg1 arg2))))
+              (:lt (sint-lt arg1 arg2))
+              (:gt (sint-gt arg1 arg2))
+              (:le (sint-le arg1 arg2))
+              (:ge (sint-ge arg1 arg2))
+              (:eq (sint-eq arg1 arg2))
+              (:ne (sint-ne arg1 arg2))
+              (:bitand (sint-bitand arg1 arg2))
+              (:bitxor (sint-bitxor arg1 arg2))
+              (:bitior (sint-bitior arg1 arg2))
+              (t (prog2$ (impossible) (irr-value-result))))
           arg2)
       (if (value-result-case arg2 :ok)
           arg1
@@ -289,9 +322,89 @@
   :guard-hints (("Goal" :in-theory (enable value-result-kind)))
   :hooks (:fix))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec-binary-logand ((arg1 value-resultp) (arg2 value-resultp))
+  :returns (result value-resultp)
+  :short "Execute a binary logical conjunction expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The arguments are the results of
+     recursively executing the operand expressions.
+     However, since this operator is non-strict,
+     we ignore the result of the second operand
+     if the result of the first operand is 0,
+     and return 0 in this case.
+     Otherwise, we look at the result of the second operand,
+     and return 0 or 1 depending on whether it is 0 or non-0."))
+  (value-result-case
+   arg1
+   :err arg1.get
+   :ok (if (sint-equiv arg1.get (sint 0))
+           (sint 0)
+         (value-result-case
+          arg2
+          :err arg2.get
+          :ok (if (sint-equiv arg2.get (sint 0))
+                  (sint 0)
+                (sint 1)))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec-binary-logor ((arg1 value-resultp) (arg2 value-resultp))
+  :returns (result value-resultp)
+  :short "Execute a binary logical disjunction expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The arguments are the results of
+     recursively executing the operand expressions.
+     However, since this operator is non-strict,
+     we ignore the result of the second operand
+     if the result of the first operand is non-0,
+     and return 1 in this case.
+     Otherwise, we look at the result of the second operand,
+     and return 0 or 1 depending on whether it is 0 or non-0."))
+  (value-result-case
+   arg1
+   :err arg1.get
+   :ok (if (not (sint-equiv arg1.get (sint 0)))
+           (sint 1)
+         (value-result-case
+          arg2
+          :err arg2.get
+          :ok (if (sint-equiv arg2.get (sint 0))
+                  (sint 0)
+                (sint 1)))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec-binary ((op binopp) (arg1 value-resultp) (arg2 value-resultp))
+  :returns (result value-resultp)
+  :short "Execute a binary expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The assignment operators are not supported yet."))
+  (case (binop-kind op)
+    ((:mul :div :rem :add :sub :shl :shr
+      :lt :gt :le :ge :eq :ne
+      :bitand :bitior :bitxor)
+     (exec-binary-strict op arg1 arg2))
+    (:logand (exec-binary-logand arg1 arg2))
+    (:logor (exec-binary-logor arg1 arg2))
+    (t (error (list :exec-binary
+                (binop-fix op)
+                (value-result-fix arg1)
+                (value-result-fix arg2)))))
+  :hooks (:fix))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-expr ((e exprp) (store storep))
+(define exec-expr ((e exprp) (env envp))
   :returns (result value-resultp)
   :verify-guards :after-returns
   :short "Execute an expression."
@@ -303,20 +416,25 @@
   (b* ((e (expr-fix e)))
     (expr-case
      e
-     :ident (exec-ident e.get store)
+     :ident (exec-ident e.get env)
      :const (exec-const e.get)
      :call (error (list :exec-expr e))
      :postinc (error (list :exec-expr e))
      :postdec (error (list :exec-expr e))
      :preinc (error (list :exec-expr e))
      :predec (error (list :exec-expr e))
-     :unary (b* ((arg (exec-expr e.arg store)))
+     :unary (b* ((arg (exec-expr e.arg env)))
               (exec-unary e.op arg))
      :cast (error (list :exec-expr e))
-     :binary (b* ((arg1 (exec-expr e.arg1 store))
-                  (arg2 (exec-expr e.arg2 store)))
+     :binary (b* ((arg1 (exec-expr e.arg1 env))
+                  (arg2 (exec-expr e.arg2 env)))
                (exec-binary e.op arg1 arg2))
-     :cond (error (list :exec-expr e))))
+     :cond (b* ((test (exec-expr e.test env)))
+             (value-result-case test
+                                :ok (if (sint-nonzerop test.get)
+                                        (exec-expr e.then env)
+                                      (exec-expr e.else env))
+                                :err test.get))))
   :measure (expr-count e)
   :hooks (:fix))
 
@@ -333,18 +451,28 @@
      We also support the execution of compound statments
      that consists of supported statements."))
 
-  (define exec-stmt ((s stmtp) (store storep))
+  (define exec-stmt ((s stmtp) (env envp))
     :returns (result maybe-value-resultp)
     :parents nil
     (b* ((s (stmt-fix s)))
       (stmt-case
        s
        :labeled (error (list :exec-stmt s))
-       :compound (exec-block-item-list s.items store)
+       :compound (exec-block-item-list s.items env)
        :expr (error (list :exec-stmt s))
        :null (error (list :exec-stmt s))
-       :if (error (list :exec-stmt s))
-       :ifelse (error (list :exec-stmt s))
+       :if (b* ((test (exec-expr s.test env)))
+             (value-result-case test
+                                :ok (if (sint-nonzerop test.get)
+                                        (exec-stmt s.then env)
+                                      nil)
+                                :err test.get))
+       :ifelse (b* ((test (exec-expr s.test env)))
+                 (value-result-case test
+                                    :ok (if (sint-nonzerop test.get)
+                                            (exec-stmt s.then env)
+                                          (exec-stmt s.else env))
+                                    :err test.get))
        :switch (error (list :exec-stmt s))
        :while (error (list :exec-stmt s))
        :dowhile (error (list :exec-stmt s))
@@ -353,7 +481,7 @@
        :continue (error (list :exec-stmt s))
        :break (error (list :exec-stmt s))
        :return (if (exprp s.value)
-                   (b* ((eres (exec-expr s.value store)))
+                   (b* ((eres (exec-expr s.value env)))
                      (value-result-case
                       eres
                       :err eres.get
@@ -361,22 +489,22 @@
                  nil)))
     :measure (stmt-count s))
 
-  (define exec-block-item ((item block-itemp) (store storep))
+  (define exec-block-item ((item block-itemp) (env envp))
     :returns (result maybe-value-resultp)
     :parents nil
     (block-item-case item
                      :decl (error (list :exec-block-item item.get))
-                     :stmt (exec-stmt item.get store))
+                     :stmt (exec-stmt item.get env))
     :measure (block-item-count item))
 
-  (define exec-block-item-list ((items block-item-listp) (store storep))
+  (define exec-block-item-list ((items block-item-listp) (env envp))
     :returns (result maybe-value-resultp)
     :parents nil
     (b* (((when (endp items)) nil)
-         (val? (exec-block-item (car items) store))
+         (val? (exec-block-item (car items) env))
          ((when (maybe-value-result-case val? :err)) val?)
          ((when val?) val?))
-      (exec-block-item-list (cdr items) store))
+      (exec-block-item-list (cdr items) env))
     :measure (block-item-list-count items))
 
   :verify-guards nil ; done below
@@ -464,15 +592,17 @@
        (fundef (lookup-fun fun tunit))
        ((when (not fundef)) (error (list :exec-fun :undefined fun)))
        ((fundef fundef) fundef)
-       (store (init-store (fundef->params fundef) args)))
+       (store (init-store fundef.params args)))
     (store-result-case
      store
      :err store.get
-     :ok (b* ((val? (exec-stmt fundef.body store.get)))
+     :ok (b* ((fundefs (ext-decl-list->fundef-list (transunit->decls tunit)))
+              (env (make-env :functions fundefs :store store.get))
+              (val? (exec-stmt fundef.body env)))
            (maybe-value-result-case
             val?
             :err val?.get
-            :ok (if (not val?.get)
-                    (error (list :exec-fun :no-value-returned))
-                  val?.get)))))
+            :ok (if (sintp val?)
+                    val?
+                  (error (list :exec-fun :no-value-returned)))))))
   :hooks (:fix))

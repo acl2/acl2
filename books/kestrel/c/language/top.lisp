@@ -11,6 +11,8 @@
 (in-package "C")
 
 (include-book "keywords")
+(include-book "character-sets")
+(include-book "bytes")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -20,5 +22,5 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is being populated."))
+    "This is work in progress."))
   :order-subtopics t)

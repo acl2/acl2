@@ -1,11 +1,11 @@
-;; 
+;;
 ;; Copyright (C) 2018, Rockwell Collins
 ;; All rights reserved.
-;; 
+;;
 ;; This software may be modified and distributed under the terms
 ;; of the 3-clause BSD license.  See the LICENSE file for details.
-;; 
-;; 
+;;
+;;
 (in-package "ACL2")
 (include-book "poly")
 
@@ -610,10 +610,12 @@
 
 (def::signature bound-varid (t) varid-p)
 
-(defthm bound-varid-variablerelation
-  (equal (bound-varid (variableRelation op var poly))
+(defthm
+  bound-varid-variablerelation
+  (equal (bound-varid (variablerelation op var poly))
          (varid-fix var))
-  :hints (("Goal" :in-theory (enable relation-bound-poly bound-varid))))
+  :hints (("goal" :in-theory (e/d (relation-bound-poly bound-varid)
+                                  ((:definition relation-bound-poly))))))
 
 (defthmd bound-varid-to-relation-bound-poly
   (implies
@@ -643,7 +645,38 @@
 
 (def::signature bounding-variables (t) varid-listp)
 
-(defthm boundin-variables-variablerelation
+;; Mihir M. mod Nov. 2020: I added the following 4 helper lemmas.
+(defthm bounding-variables-variablerelation-lemma-1
+  (consp (cdr (polyrelation op (varid-fix varid)
+                            poly)))
+  :hints (("goal" :do-not-induct t
+           :in-theory (enable polyrelation)))
+  :rule-classes :type-prescription)
+
+(defthm bounding-variables-variablerelation-lemma-2
+  (consp (cddr (polyrelation op (varid-fix varid)
+                             poly)))
+  :hints (("goal" :do-not-induct t
+           :in-theory (enable polyrelation)))
+  :rule-classes :type-prescription)
+
+(defthm bounding-variables-variablerelation-lemma-3
+  (equal
+   (pair-list-nz-keys (poly->coeff (caddr (polyrelation op (varid-fix varid)
+                                                        poly))))
+   (pair-list-nz-keys (poly->coeff poly)))
+  :hints (("goal" :do-not-induct t
+           :in-theory (enable polyrelation))))
+
+(defthm bounding-variables-variablerelation-lemma-4
+  (equal (cdddr (polyrelation op (varid-fix varid)
+                              poly))
+         nil)
+  :hints (("goal" :do-not-induct t
+           :in-theory (enable polyrelation)))
+  :rule-classes :type-prescription)
+
+(defthm bounding-variables-variablerelation
   (equal (bounding-variables (variablerelation op varid poly))
          (get-poly-variables poly))
   :hints (("Goal" :in-theory (enable get-poly-variables relation-bounding-poly))))
@@ -727,15 +760,15 @@
 
 (defthm normalized-variableBound-p-variableinterval
   (implies
-   (force 
-    (and 
+   (force
+    (and
      (equal (bound-varid x) (bound-varid y))
      (variablegreater-p x)
      (variableless-p y)
      (normalized-variableBound-p x)
      (normalized-variableBound-p y)))
    (normalized-variableBound-p (variableinterval x y)))
-  :hints (("Goal" :in-theory (e/d nil 
+  :hints (("Goal" :in-theory (e/d nil
                                   (variablegreater-p
                                    variableless-p
                                    VARIABLEBOUND-P
@@ -779,7 +812,7 @@
            ;;:do-not-induct t)
            ;;(and stable-under-simplificationp
            ;;'(
-           :in-theory (enable eval-ineq relation-op relation-bound-poly relation-bounding-poly variableRelation-p 
+           :in-theory (enable eval-ineq relation-op relation-bound-poly relation-bounding-poly variableRelation-p
                               polyGreater-p polyLess-p bound-bound-poly bound-poly-fix bound-poly-p polyRelation-p
                               polyInterval-p
                               variableEquality-p variableInequality-p variableLess-p variableGreater-p))))
@@ -1004,7 +1037,7 @@
    (trapezoid-p list)
    (normalized-variableBound-listp list))
   :rule-classes :forward-chaining)
-           
+
 (def::un eval-zoid (list env)
   (declare (xargs :signature ((t t) booleanp)))
   (let ((env (env-fix-type! env)))
@@ -1055,7 +1088,3 @@
            :use broken-abstraction-rule)
           (and stable-under-simplificationp
                '(:in-theory (current-theory :here)))))
-
-
-
-

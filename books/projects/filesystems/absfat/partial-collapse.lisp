@@ -633,7 +633,7 @@
         (consp (car x)))
    (abs-file-alist-p
     (list (cons (car (car x))
-                (abs-file (abs-file->dir-ent (cdr (car x)))
+                (abs-file (abs-file->d-e (cdr (car x)))
                           (abs-fs-fix (abs-file->contents (cdr (car x)))))))))
   :hints (("goal" :in-theory (enable abs-file-alist-p abs-file))))
 
@@ -650,7 +650,7 @@
    (absfat-subsetp
     (abs-fs-fix (append (cdr x) y))
     (cons (cons (car (car x))
-                (abs-file (abs-file->dir-ent (cdr (car x)))
+                (abs-file (abs-file->d-e (cdr (car x)))
                           (abs-fs-fix (abs-file->contents (cdr (car x))))))
           (abs-fs-fix (append (cdr x) z)))))
   :hints
@@ -664,7 +664,7 @@
      (y
       (list
        (cons (car (car x))
-             (abs-file (abs-file->dir-ent (cdr (car x)))
+             (abs-file (abs-file->d-e (cdr (car x)))
                        (abs-fs-fix (abs-file->contents (cdr (car x))))))))
      (x (abs-fs-fix (append (cdr x) y)))))))
 
@@ -2474,7 +2474,7 @@
      (:type-prescription assoc-when-zp-len)
      (:definition nth)
      (:rewrite nat-listp-when-unsigned-byte-listp)
-     (:linear nth-when-dir-ent-p)
+     (:linear nth-when-d-e-p)
      (:rewrite ctx-app-ok-when-abs-complete)
      (:rewrite fat32-filename-list-p-of-names-at))))
 
@@ -7766,7 +7766,7 @@
     (put-assoc-equal
      (fat32-filename-fix (car y-path))
      (abs-file
-      (abs-file->dir-ent (cdr (assoc-equal (fat32-filename-fix (car y-path))
+      (abs-file->d-e (cdr (assoc-equal (fat32-filename-fix (car y-path))
                                            x)))
       (ctx-app
        (ctx-app (abs-file->contents
@@ -7778,7 +7778,7 @@
     (put-assoc-equal
      (fat32-filename-fix (car y-path))
      (abs-file
-      (abs-file->dir-ent (cdr (assoc-equal (fat32-filename-fix (car y-path))
+      (abs-file->d-e (cdr (assoc-equal (fat32-filename-fix (car y-path))
                                            x)))
       (ctx-app
        (ctx-app (abs-file->contents
@@ -7798,7 +7798,7 @@
        (put-assoc-equal
         (fat32-filename-fix (car y-path))
         (abs-file
-         (abs-file->dir-ent
+         (abs-file->d-e
           (cdr (assoc-equal (fat32-filename-fix (car y-path))
                             x)))
          (ctx-app
@@ -7812,7 +7812,7 @@
       (abs-file-alist1 x)
       (val
        (abs-file
-        (abs-file->dir-ent (cdr (assoc-equal (fat32-filename-fix (car y-path))
+        (abs-file->d-e (cdr (assoc-equal (fat32-filename-fix (car y-path))
                                              x)))
         (ctx-app
          (ctx-app
@@ -7960,7 +7960,7 @@
      (put-assoc-equal
       (fat32-filename-fix (car z-path))
       (abs-file
-       (abs-file->dir-ent (cdr (assoc-equal (fat32-filename-fix (car z-path))
+       (abs-file->d-e (cdr (assoc-equal (fat32-filename-fix (car z-path))
                                             x)))
        (append
         (remove-equal z-var
@@ -7981,7 +7981,7 @@
        (put-assoc-equal
         (fat32-filename-fix (car z-path))
         (abs-file
-         (abs-file->dir-ent
+         (abs-file->d-e
           (cdr (assoc-equal (fat32-filename-fix (car z-path))
                             x)))
          (append (remove-equal

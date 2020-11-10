@@ -15,6 +15,8 @@
 (include-book "c-static-semantics")
 (include-book "c-dynamic-semantics")
 
+(include-book "kestrel/error-checking/ensure-function-is-guard-verified" :dir :system)
+(include-book "kestrel/error-checking/ensure-function-is-logic-mode" :dir :system)
 (include-book "kestrel/error-checking/ensure-symbol-is-fresh-event-name" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-boolean" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-function-name" :dir :system)
@@ -23,6 +25,7 @@
 (include-book "kestrel/event-macros/cw-event" :dir :system)
 (include-book "kestrel/event-macros/event-generation" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
+(include-book "kestrel/std/system/check-if-call" :dir :system)
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
 (include-book "oslib/dirname" :dir :system)
 (include-book "oslib/file-types" :dir :system)
@@ -63,14 +66,14 @@
   (b* ((desc (msg "The target ~x0 input" fn))
        ((er &) (acl2::ensure-value-is-function-name$ fn desc t nil))
        (desc (msg "The target function ~x0" fn))
-       ((er &) (acl2::ensure-function-logic-mode$ fn desc t nil))
-       ((er &) (acl2::ensure-function-guard-verified$ fn desc t nil))
+       ((er &) (acl2::ensure-function-is-logic-mode$ fn desc t nil))
+       ((er &) (acl2::ensure-function-is-guard-verified$ fn desc t nil))
        ((er &) (acl2::ensure-function-defined$ fn desc t nil)))
     (value nil))
   :guard-hints (("Goal" :in-theory (enable
                                     acl2::ensure-value-is-function-name
-                                    acl2::ensure-function-guard-verified
-                                    acl2::ensure-function-logic-mode))))
+                                    acl2::ensure-function-is-guard-verified
+                                    acl2::ensure-function-is-logic-mode))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -267,6 +270,42 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-check-if-test ((term pseudo-termp) (fn symbolp) ctx state)
+  :returns (mv erp (arg pseudo-termp) state)
+  :short "Check if the test of an @(tsee if) has the right form."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "ATC requires all the test terms of @(tsee if) calls
+     to be calls of @(tsee c::sint-nonzerop),
+     which converts C @('int') values to ACL2 booleans.
+     Thus, it works for ACL2 tests,
+     but at the same time its argument directly represents a C test.
+     Here we check that a term is a call of this function,
+     and we return its argument if it does."))
+  (if (and (acl2::nvariablep term)
+           (not (acl2::fquotep term))
+           (not (acl2::flambda-applicationp term))
+           (eq (acl2::ffn-symb term) 'sint-nonzerop))
+      (b* ((arg (acl2::fargn term 1)))
+        (if (pseudo-termp arg)
+            (value arg)
+          (value (raise "Internal error: the term ~x0 is not well-formed."
+                        term))))
+    (er-soft+ ctx t nil
+              "Tests of IF must be calls of ~x0 on allowed terms, ~
+               but an IF test in function ~x1 is ~x2 instead."
+              'sint-nonzerop fn term))
+  :hooks (:fix)
+  ///
+  (defret acl2-count-of-atc-check-if-test
+    (implies (not erp)
+             (< (acl2-count arg)
+                (acl2-count term)))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-gen-expr ((term pseudo-termp) (fn symbolp) ctx state)
   :returns (mv erp (expr exprp) state)
   :verify-guards :after-returns
@@ -285,8 +324,17 @@
      because they must be formal parameters,
      given that we disallow lambda expressions.")
    (xdoc::p
-    "We allow only calls of the functions listed in the user documentation.
-     For calls of @(tsee sint-const), we check that the argument
+    "We allow only calls of the functions listed in the user documentation,
+     and subject to the constraints stated there.")
+   (xdoc::p
+    "We translate @(tsee if) calls to conditional expressions.
+     This is done for the ``inner'' @(tsee if) calls,
+     i.e. the ones that are arguments of non-@(tsee if) functions
+     or test (not branch) arguments of @(tsee if).
+     Before getting here, @(tsee atc-gen-stmt) has already generated statements
+     for the ``outer'' @(tsee if) calls, i.e. the other such calls.")
+   (xdoc::p
+    "For calls of @(tsee sint-const), we check that the argument
      is an integer quoted constant.
      The fact that it is in the right range is guaranteed by guard verification,
      so we do not need to check that."))
@@ -307,6 +355,18 @@
                    will be added later."
                   (acl2::ffn-symb term) fn))
        (op (acl2::ffn-symb term))
+       ((when (eq op 'if))
+        (b* ((test (acl2::fargn term 1))
+             (then (acl2::fargn term 2))
+             (else (acl2::fargn term 3))
+             ((mv erp test-arg state) (atc-check-if-test test fn ctx state))
+             ((when erp) (mv erp (irr-expr) state))
+             ((er test-expr) (atc-gen-expr test-arg fn ctx state))
+             ((er then-expr) (atc-gen-expr then fn ctx state))
+             ((er else-expr) (atc-gen-expr else fn ctx state)))
+          (value (make-expr-cond :test test-expr
+                                 :then then-expr
+                                 :else else-expr))))
        ((when (eq op 'sint-const))
         (b* ((arg (acl2::fargn term 1))
              ((unless (quotep arg))
@@ -387,6 +447,37 @@
                and for calling the target functions, ~
                will be added later."
               op fn)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-gen-stmt ((term pseudo-termp) (fn symbolp) ctx state)
+  :returns (mv erp (stmt stmtp) state)
+  :verify-guards :after-returns
+  :short "Generate a C statement from an ACL2 term."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is called on the body term of an ACL2 function.
+     If the term is not a conditional,
+     we generate a C expression for the term
+     and generate a @('return') statement with that expression.
+     Otherwise, we generate an @('if') statement,
+     with recursively generated statements as branches;
+     the test expression is generated from the test term."))
+  (b* (((mv ifp test then else) (acl2::check-if-call term)))
+    (if ifp
+        (b* (((mv erp test-arg state) (atc-check-if-test test fn ctx state))
+             ((when erp) (mv erp (irr-stmt) state))
+             ((mv erp test-expr state) (atc-gen-expr test-arg fn ctx state))
+             ((when erp) (mv erp (irr-stmt) state))
+             ((er then-stmt) (atc-gen-stmt then fn ctx state))
+             ((er else-stmt) (atc-gen-stmt else fn ctx state)))
+          (value
+           (make-stmt-ifelse :test test-expr :then then-stmt :else else-stmt)))
+      (b* (((mv erp expr state) (atc-gen-expr term fn ctx state))
+           ((when erp) (mv erp (irr-stmt) state)))
+        (value
+         (make-stmt-return :value expr))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -477,15 +568,14 @@
                                                        state))
        ((when erp) (mv erp (irr-ext-decl) state))
        (body (acl2::ubody+ fn wrld))
-       ((mv erp expr state) (atc-gen-expr body fn ctx state))
+       ((mv erp stmt state) (atc-gen-stmt body fn ctx state))
        ((when erp) (mv erp (irr-ext-decl) state)))
     (value
      (ext-decl-fundef
       (make-fundef :result (tyspecseq-sint)
                    :name (ident name)
                    :params params
-                   :body (stmt-compound
-                          (list (block-item-stmt (stmt-return expr)))))))))
+                   :body (stmt-compound (list (block-item-stmt stmt))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -632,6 +722,9 @@
                                     exec-block-item-list
                                     exec-expr
                                     exec-binary
+                                    exec-binary-strict
+                                    exec-binary-logand
+                                    exec-binary-logor
                                     exec-unary
                                     exec-ident
                                     exec-const

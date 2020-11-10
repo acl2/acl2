@@ -10,6 +10,6 @@
 
 (in-package "JAVA")
 
-(include-book "documentation")
-(include-book "implementation")
+(include-book "atj")
+(include-book "doc")
 (include-book "tutorial")

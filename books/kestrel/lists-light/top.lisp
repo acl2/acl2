@@ -65,6 +65,9 @@
 (include-book "update-subrange")
 (include-book "add-to-end")
 (include-book "first-non-member")
+(include-book "count-occs")
+(include-book "prefixp")
+(include-book "prefixp2")
 
 (include-book "take2")
 (include-book "memberp2")
@@ -73,3 +76,6 @@
 (include-book "group2")
 (include-book "ungroup")
 (include-book "group-and-ungroup")
+
+(include-book "rules")
+(include-book "rules2")

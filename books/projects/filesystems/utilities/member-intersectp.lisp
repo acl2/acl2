@@ -238,3 +238,13 @@
     (implies (not (member-intersectp-equal x y))
              (equal (member-intersectp-equal z (set-difference-equal x y))
                     (member-intersectp-equal z x))))))
+
+;; Rename later.
+(defthm
+  lofat-place-file-correctness-lemma-73
+  (implies (and (member-equal i y)
+                (not-intersectp-list y l))
+           (not-intersectp-list (list i) l))
+  :hints (("goal" :in-theory (disable not-intersectp-list-when-subsetp-1)
+           :use (:instance not-intersectp-list-when-subsetp-1
+                           (x (list i))))))

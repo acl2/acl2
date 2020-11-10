@@ -163,3 +163,22 @@
   (flatten-equiv (list* x y z)
                  (list* y x z))
   :hints (("goal" :in-theory (enable flatten-equiv))))
+
+(defcong flatten-equiv flatten-equiv (append x y) 2
+  :hints (("goal" :in-theory (e/d (flatten-equiv)
+                                  ()))))
+
+(defthm flatten-equiv-of-remove-of-nil
+  (flatten-equiv (remove-equal nil x) x)
+  :hints (("goal" :in-theory (e/d (flatten-equiv)
+                                  ()))))
+
+(defthm flatten-equiv-of-cons-when-atom
+  (implies (atom x)
+           (flatten-equiv (cons x y) y))
+  :hints (("goal" :in-theory (e/d (flatten-equiv)
+                                  ()))))
+
+(defcong flatten-equiv flatten-equiv (cons x y) 2
+  :hints (("goal" :in-theory (e/d (flatten-equiv)
+                                  ()))))

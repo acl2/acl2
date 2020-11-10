@@ -529,7 +529,7 @@
   (implies
    (equal (abs-find-file (partial-collapse frame path)
                          path)
-          (list '((dir-ent 0 0 0 0 0 0 0 0 0 0 0 0
+          (list '((d-e 0 0 0 0 0 0 0 0 0 0 0 0
                            0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
                   (contents))
                 (mv-nth 1

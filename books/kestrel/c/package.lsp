@@ -21,11 +21,13 @@
                                   pprint-indent))
              '(bool
                cw-event
+               define-sk
                defxdoc+
                er-soft+
                evmac-prepare-proofs
                flatten-ands-in-lit
                implode
+               impossible
                lnfix
                msg-listp
                nat)))
