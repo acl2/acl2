@@ -722,6 +722,9 @@
                                     exec-block-item-list
                                     exec-expr
                                     exec-binary
+                                    exec-binary-strict
+                                    exec-binary-logand
+                                    exec-binary-logor
                                     exec-unary
                                     exec-ident
                                     exec-const

@@ -27,6 +27,7 @@
                evmac-prepare-proofs
                flatten-ands-in-lit
                implode
+               impossible
                lnfix
                msg-listp
                nat)))

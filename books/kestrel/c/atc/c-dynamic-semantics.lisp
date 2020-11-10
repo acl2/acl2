@@ -117,6 +117,15 @@
     (:err error)
     :pred maybe-value-resultp))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define irr-value-result ()
+  :returns (result value-resultp)
+  :short "An irrelevant value result, usable as a dummy return value."
+  (with-guard-checking :none (ec-call (value-result-fix :irrelevant)))
+  ///
+  (in-theory (disable (:e irr-value-result))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defomap store
@@ -252,15 +261,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-binary ((op binopp) (arg1 value-resultp) (arg2 value-resultp))
+(define exec-binary-strict ((op binopp)
+                            (arg1 value-resultp)
+                            (arg2 value-resultp))
+  :guard (member-eq (binop-kind op) (list :mul :div :rem :add :sub :shl :shr
+                                          :lt :gt :le :ge :eq :ne
+                                          :bitand :bitior :bitxor))
   :returns (result value-resultp)
-  :short "Execute a binary expression."
+  :short "Execute a binary expression with
+          a strict non-side-effecting operator."
   :long
   (xdoc::topstring
    (xdoc::p
     "The arguments are the results of
-     recursively executing the operand expressions.
-     For now we only support some binary operators."))
+     recursively executing the operand expressions,
+     both of which must be considered because the operator is non-strict.
+     These operators are non-side-effecting,
+     so we just return a value as result (if there is no error)."))
   (b* ((op (binop-fix op))
        (arg1 (value-result-fix arg1))
        (arg2 (value-result-fix arg2)))
@@ -298,24 +315,104 @@
              :bitand (sint-bitand arg1 arg2)
              :bitxor (sint-bitxor arg1 arg2)
              :bitior (sint-bitior arg1 arg2)
-             :logand (error (list :exec-binary op arg1 arg2))
-             :logor (error (list :exec-binary op arg1 arg2))
-             :asg (error (list :exec-binary op arg1 arg2))
-             :asg-mul (error (list :exec-binary op arg1 arg2))
-             :asg-div (error (list :exec-binary op arg1 arg2))
-             :asg-rem (error (list :exec-binary op arg1 arg2))
-             :asg-add (error (list :exec-binary op arg1 arg2))
-             :asg-sub (error (list :exec-binary op arg1 arg2))
-             :asg-shl (error (list :exec-binary op arg1 arg2))
-             :asg-shr (error (list :exec-binary op arg1 arg2))
-             :asg-and (error (list :exec-binary op arg1 arg2))
-             :asg-xor (error (list :exec-binary op arg1 arg2))
-             :asg-ior (error (list :exec-binary op arg1 arg2)))
+             :logand (prog2$ (impossible) (irr-value-result))
+             :logor (prog2$ (impossible) (irr-value-result))
+             :asg (prog2$ (impossible) (irr-value-result))
+             :asg-mul (prog2$ (impossible) (irr-value-result))
+             :asg-div (prog2$ (impossible) (irr-value-result))
+             :asg-rem (prog2$ (impossible) (irr-value-result))
+             :asg-add (prog2$ (impossible) (irr-value-result))
+             :asg-sub (prog2$ (impossible) (irr-value-result))
+             :asg-shl (prog2$ (impossible) (irr-value-result))
+             :asg-shr (prog2$ (impossible) (irr-value-result))
+             :asg-and (prog2$ (impossible) (irr-value-result))
+             :asg-xor (prog2$ (impossible) (irr-value-result))
+             :asg-ior (prog2$ (impossible) (irr-value-result)))
           arg2)
       (if (value-result-case arg2 :ok)
           arg1
         (error (list :exec-binary op arg1 arg2)))))
   :guard-hints (("Goal" :in-theory (enable value-result-kind)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec-binary-logand ((arg1 value-resultp) (arg2 value-resultp))
+  :returns (result value-resultp)
+  :short "Execute a binary logical conjunction expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The arguments are the results of
+     recursively executing the operand expressions.
+     However, since this operator is non-strict,
+     we ignore the result of the second operand
+     if the result of the first operand is 0,
+     and return 0 in this case.
+     Otherwise, we look at the result of the second operand,
+     and return 0 or 1 depending on whether it is 0 or non-0."))
+  (value-result-case
+   arg1
+   :err arg1.get
+   :ok (if (sint-equiv arg1.get (sint 0))
+           (sint 0)
+         (value-result-case
+          arg2
+          :err arg2.get
+          :ok (if (sint-equiv arg2.get (sint 0))
+                  (sint 0)
+                (sint 1)))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec-binary-logor ((arg1 value-resultp) (arg2 value-resultp))
+  :returns (result value-resultp)
+  :short "Execute a binary logical disjunction expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The arguments are the results of
+     recursively executing the operand expressions.
+     However, since this operator is non-strict,
+     we ignore the result of the second operand
+     if the result of the first operand is non-0,
+     and return 1 in this case.
+     Otherwise, we look at the result of the second operand,
+     and return 0 or 1 depending on whether it is 0 or non-0."))
+  (value-result-case
+   arg1
+   :err arg1.get
+   :ok (if (not (sint-equiv arg1.get (sint 0)))
+           (sint 1)
+         (value-result-case
+          arg2
+          :err arg2.get
+          :ok (if (sint-equiv arg2.get (sint 0))
+                  (sint 0)
+                (sint 1)))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec-binary ((op binopp) (arg1 value-resultp) (arg2 value-resultp))
+  :returns (result value-resultp)
+  :short "Execute a binary expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The assignment operators are not supported yet."))
+  (case (binop-kind op)
+    ((:mul :div :rem :add :sub :shl :shr
+      :lt :gt :le :ge :eq :ne
+      :bitand :bitior :bitxor)
+     (exec-binary-strict op arg1 arg2))
+    (:logand (exec-binary-logand arg1 arg2))
+    (:logor (exec-binary-logor arg1 arg2))
+    (t (error (list :exec-binary
+                (binop-fix op)
+                (value-result-fix arg1)
+                (value-result-fix arg2)))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
