@@ -19,6 +19,7 @@
 (local (include-book "../lists-light/len"))
 (local (include-book "../lists-light/nthcdr"))
 (local (include-book "../lists-light/take"))
+(local (include-book "../lists-light/append"))
 (local (include-book "../arithmetic-light/ceiling"))
 (local (include-book "../arithmetic-light/minus"))
 (local (include-book "../arithmetic-light/floor"))
@@ -45,3 +46,11 @@
 
 (defthm all-unsigned-byte-p-8-of-bits-to-bytes
   (all-unsigned-byte-p 8 (bits-to-bytes bits)))
+
+(defthm bits-to-bytes-of-append
+  (implies (len-mult-of-8p bits1)
+           (equal (bits-to-bytes (append bits1 bits2))
+                  (append (bits-to-bytes bits1)
+                          (bits-to-bytes bits2))))
+  :hints (("Goal" :in-theory (enable bits-to-bytes)
+           :expand (bits-to-bytes (append bits1 bits2)))))
