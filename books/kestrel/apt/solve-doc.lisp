@@ -446,9 +446,9 @@
        This should suffice to generate an ACL2 proof
        of the @('old-if-new') refinement theorem in principle,
        but in practice there may be technical difficulties in some cases.
-       Difficulties seem unlikely to happen when using the ACL2 rewriter,
+       Difficulties seem less likely to happen when using the ACL2 rewriter,
        because the same rewrites should apply during the generated proof.
-       Difficulties may be possible when using the Axe rewriter,
+       Difficulties may be more likely when using the Axe rewriter,
        because its rewriting may not exactly correspond to ACL2's rewriting.
        Future extensions of this transformation may address this issue,
        e.g. by having the Axe rewriter produce an ACL2 proof
@@ -464,7 +464,7 @@
       "                term<x1,...,xn>)"
       "         matrix<(?f x1 ... xn)>)")
      (xdoc::p
-      "which essentially says that the matrix of @('old')
+      "which essentially says that the matrix of @('old') holds
        if we replace @('(?f x1 ... xn)') with @('term<x1,...,xn>'),
        i.e. that the inferred solution body satisfies the initial specification.
        It is the latter theorem that is used to prove @('old-if-new').
