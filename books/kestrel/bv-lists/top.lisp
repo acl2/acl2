@@ -29,6 +29,7 @@
 (include-book "bytes-to-bits")
 (include-book "bytes-to-bits2")
 (include-book "bytes-to-bits-little")
+(include-book "bytes-to-bits-little2")
 (include-book "bits-and-bytes-inversions")
 
 (include-book "bvxor-list")
