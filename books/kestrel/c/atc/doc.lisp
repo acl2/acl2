@@ -42,7 +42,7 @@
       Thus, ATC can be used at the end of an APT derivation.")
 
     (xdoc::p
-     "Currently ATC recognizes  a very limited subset of ACL2
+     "Currently ATC recognizes a very limited subset of ACL2
       and translates it to a very limited subset of C.
       This is just a first step (the development of ATC has just started);
       we plan to extend ATC to increasingly larger subsets of ACL2 and C.")
@@ -250,7 +250,7 @@
        and that result is an @('int') value.")
      (xdoc::li
       "Calls of @(tsee if) on
-       (i) tests that are call of @(tsee sint-nonzerop)
+       (i) tests that are calls of @(tsee sint-nonzerop)
        on recursively allowed terms, and
        (ii) branches that are recursively allowed terms.
        The function @(tsee sint-nonzerop) serves to convert
