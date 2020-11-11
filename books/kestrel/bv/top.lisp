@@ -44,6 +44,7 @@
 (include-book "bvchop")
 (include-book "getbit-def")
 (include-book "getbit")
+(include-book "getbit2")
 (include-book "slice-def")
 (include-book "slice")
 (include-book "slice2")
