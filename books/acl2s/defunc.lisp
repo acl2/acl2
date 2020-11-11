@@ -1881,7 +1881,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
 (defxdoc defunc
   :parents (acl2::acl2-sedan acl2::macro-libraries)
   :short "Function definitions with contracts @(see acl2::defun). See
-  also @(see definec)."
+  also @(see acl2s::definec)."
   :long
   "
 <h3>Examples</h3>
