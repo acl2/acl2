@@ -10,12 +10,12 @@
 
 (in-package "ACL2")
 
-(defun keyword-to-acl2-package (keyword)
+(defund keyword-to-acl2-package (keyword)
   (declare (xargs :guard (keywordp keyword)))
   (intern-in-package-of-symbol (symbol-name keyword)
                                'defthm))
 
-(defun keywords-to-acl2-package-aux (keywords acc)
+(defund keywords-to-acl2-package-aux (keywords acc)
   (declare (xargs :guard (acl2::keyword-listp keywords)))
   (if (endp keywords)
       acc
@@ -23,25 +23,32 @@
                                   (cons (keyword-to-acl2-package (first keywords))
                                         acc))))
 
-(defthm len-of-keywords-to-acl2-package-aux
+;; Disabled since this is hung on len
+(defthmd len-of-keywords-to-acl2-package-aux
   (equal (len (keywords-to-acl2-package-aux keywords acc))
-         (+ (len keywords) (len acc))))
+         (+ (len keywords) (len acc)))
+  :hints (("Goal" :in-theory (enable keywords-to-acl2-package-aux))))
 
 (defthm symbol-listp-of-keywords-to-acl2-package-aux
   (equal (symbol-listp (keywords-to-acl2-package-aux keywords acc))
-         (symbol-listp acc)))
+         (symbol-listp acc))
+  :hints (("Goal" :in-theory (enable keywords-to-acl2-package-aux))))
 
 (defthm true-listp-of-keywords-to-acl2-package-aux
   (equal (true-listp (keywords-to-acl2-package-aux keywords acc))
-         (true-listp acc)))
+         (true-listp acc))
+  :hints (("Goal" :in-theory (enable keywords-to-acl2-package-aux))))
 
-(defun keywords-to-acl2-package (keywords)
+(defund keywords-to-acl2-package (keywords)
   (declare (xargs :guard (acl2::keyword-listp keywords)))
   (keywords-to-acl2-package-aux keywords nil))
 
 (defthm len-of-keywords-to-acl2-package
   (equal (len (keywords-to-acl2-package keywords))
-         (len keywords)))
+         (len keywords))
+  :hints (("Goal" :in-theory (enable keywords-to-acl2-package
+                                     len-of-keywords-to-acl2-package-aux))))
 
 (defthm symbol-listp-of-keywords-to-acl2-package
-  (symbol-listp (keywords-to-acl2-package keywords)))
+  (symbol-listp (keywords-to-acl2-package keywords))
+  :hints (("Goal" :in-theory (enable keywords-to-acl2-package))))
