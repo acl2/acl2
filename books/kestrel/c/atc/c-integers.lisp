@@ -452,3 +452,20 @@
      whose tests must be integers (0 for false, non-0 for true)."))
   (/= (sint->get x) 0)
   :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define sint01 ((b booleanp))
+  :returns (x sintp)
+  :short "Turn an ACL2 boolean into an @('int') value 0 or 1."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is essentially (but not exactly) the inverse of @(tsee sint-nonzerop).
+     Together with @(tsee sint-nonzerop),
+     it can be used to represent in ACL2
+     shallowly embedded C logical conjunctions and disjunctions,
+     which must be integers in C,
+     but must be booleans in ACL2 to represent their non-strictness."))
+  (if b (sint 1) (sint 0))
+  :hooks (:fix))
