@@ -123,6 +123,8 @@
 (include-book "bool-to-bit")
 (include-book "bit-to-bool")
 
+(include-book "idioms")
+
 (include-book "rules0")
 (include-book "rules")
 (include-book "rules2")
