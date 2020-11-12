@@ -120,13 +120,17 @@
 (include-book "defs-bitwise")
 (include-book "defs")
 
+;; Conversions between booleans and bits
 (include-book "bool-to-bit")
 (include-book "bit-to-bool")
 
+;; Rules to replace BV ops with more common BV ops and sizes:
 (include-book "idioms")
 
+;; Proof of a ripple-carry adder:
 (include-book "adder")
 
+;; Mixed rules:
 (include-book "rules0")
 (include-book "rules")
 (include-book "rules2")
