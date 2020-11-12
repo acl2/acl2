@@ -125,6 +125,8 @@
 
 (include-book "idioms")
 
+(include-book "adder")
+
 (include-book "rules0")
 (include-book "rules")
 (include-book "rules2")
