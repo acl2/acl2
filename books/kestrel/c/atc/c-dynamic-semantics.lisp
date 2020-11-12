@@ -341,14 +341,12 @@
   (value-result-case
    arg1
    :err arg1.get
-   :ok (if (sint-equiv arg1.get (sint 0))
-           (sint 0)
-         (value-result-case
-          arg2
-          :err arg2.get
-          :ok (if (sint-equiv arg2.get (sint 0))
-                  (sint 0)
-                (sint 1)))))
+   :ok (if (sint-nonzerop arg1.get)
+           (value-result-case
+            arg2
+            :err arg2.get
+            :ok (sint01 (sint-nonzerop arg2.get)))
+         (sint 0)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -370,14 +368,12 @@
   (value-result-case
    arg1
    :err arg1.get
-   :ok (if (not (sint-equiv arg1.get (sint 0)))
+   :ok (if (sint-nonzerop arg1.get)
            (sint 1)
          (value-result-case
           arg2
           :err arg2.get
-          :ok (if (sint-equiv arg2.get (sint 0))
-                  (sint 0)
-                (sint 1)))))
+          :ok (sint01 (sint-nonzerop arg2.get)))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
