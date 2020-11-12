@@ -12,6 +12,7 @@
 (in-package "ACL2")
 
 (include-book "bytes-to-bits")
+(include-book "kestrel/utilities/defopeners" :dir :system)
 (include-book "bvchop-list")
 
 (defthm bytes-to-bits-of-bvchop-list
@@ -20,3 +21,5 @@
   :hints (("Goal" :in-theory (enable bytes-to-bits
                                      byte-to-bits ;why?
                                      bvchop-list))))
+
+(defopeners bytes-to-bits :disable t)
