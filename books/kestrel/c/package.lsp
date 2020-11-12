@@ -30,4 +30,5 @@
                impossible
                lnfix
                msg-listp
-               nat)))
+               nat
+               tuple)))

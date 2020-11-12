@@ -744,3 +744,7 @@
            (equal (mul x y p)
                   (neg y p)))
   :hints (("Goal" :in-theory (enable mul neg sub acl2::mod-sum-cases))))
+
+(defthmd integerp-when-fep
+  (implies (fep x p)
+           (integerp x)))

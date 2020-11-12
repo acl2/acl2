@@ -750,19 +750,16 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define solve-gen-theorem-acl2-rewriter ((matrix pseudo-termp)
-                                         (?f symbolp)
-                                         (x1...xn symbol-listp)
                                          (rewritten-term pseudo-termp)
-                                         (f-body pseudo-termp)
                                          (used-rules symbol-listp)
                                          (names-to-avoid symbol-listp)
                                          (wrld plist-worldp))
-  :returns (mv (events "A @(tsee pseudo-event-form-listp).")
+  :returns (mv (event "A @(tsee pseudo-event-formp).")
                (name "A @(tsee symbolp).")
                (updated-names-to-avoid "A @(tsee symbol-listp)."))
   :mode :program
   :short "Generate a local theorem for
-          the correctness of the solution found by the ACL2 rewriter."
+          the rewriting performed by the ACL2 rewriter."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -783,63 +780,33 @@
      assuming that ACL2 will perform the same rewrites in the theorem.
      Note, however, that the returned list of rules may include
      the ``fake'' rules for linear arithmetic and other proof methods.
-     Thus, we use a utility to drop all of those.")
-   (xdoc::p
-    "For uniformity with other solving methods,
-     we also generate a theorem of the form")
-   (xdoc::codeblock
-    "(implies (equal (?f x1 ... xn)"
-    "                f-body)"
-    "         term<(?f x1 ... xn)>)")
-   (xdoc::p
-    "(see the user documentation).
-     This is why this function returns a list of events.
-     The list has always length 2:
-     the first event is a lemma about ACL2's rewriting;
-     the second event is the main theorem @('matrix<f-body>')."))
-  (b* (((mv lemma-name names-to-avoid)
-        (fresh-logical-name-with-$s-suffix 'acl2-rewriting-correct
+     Thus, we use a utility to drop all of those."))
+  (b* (((mv name names-to-avoid)
+        (fresh-logical-name-with-$s-suffix 'acl2-rewriting
                                            nil
                                            names-to-avoid
                                            wrld))
        (used-rules (acl2::drop-fake-runes used-rules))
-       (lemma-event
+       (event
         `(local
-          (defthmd ,lemma-name
+          (defthmd ,name
             (equal ,matrix ,rewritten-term)
-            :hints (("Goal" :in-theory ',used-rules)))))
-       ((mv main-name names-to-avoid)
-        (fresh-logical-name-with-$s-suffix 'solution-correct
-                                           nil
-                                           names-to-avoid
-                                           wrld))
-       (main-event
-        `(local
-          (defthmd ,main-name
-            (implies (equal (,?f ,@x1...xn)
-                            ,f-body)
-                     ,matrix)
-            :hints (("Goal" :in-theory nil :use ,lemma-name))))))
-    (mv (list lemma-event main-event)
-        main-name
-        names-to-avoid)))
+            :hints (("Goal" :in-theory ',used-rules))))))
+    (mv event name names-to-avoid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define solve-gen-theorem-axe-rewriter ((matrix pseudo-termp)
-                                        (?f symbolp)
-                                        (x1...xn symbol-listp)
                                         (rewritten-term pseudo-termp)
-                                        (f-body pseudo-termp)
                                         (method-rules symbol-listp)
                                         (names-to-avoid symbol-listp)
                                         (wrld plist-worldp))
-  :returns (mv (events "A @(tsee pseudo-event-form-listp).")
+  :returns (mv (event "A @(tsee pseudo-event-formp).")
                (name "A @(tsee symbolp).")
                (updated-names-to-avoid "A @(tsee symbol-listp)."))
   :mode :program
   :short "Generate a local theorem for
-          the correctness of the solution found by the Axe rewriter."
+          the rewriting performed by the Axe rewriter."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -857,45 +824,18 @@
      hoping that ACL2 can perform the same rewritings.
      We add these to the current ACL2 theory,
      just in case we may need some other basic rules.
-     Clearly, this strategy should be refined significantly.")
-   (xdoc::p
-    "For uniformity with other solving methods,
-     we also generate a theorem of the form")
-   (xdoc::codeblock
-    "(implies (equal (?f x1 ... xn)"
-    "                f-body)"
-    "         term<(?f x1 ... xn)>)")
-   (xdoc::p
-    "(see the user documentation).
-     This is why this function returns a list of events.
-     The list has always length 2:
-     the first event is a lemma about Axe's rewriting;
-     the second event is the main theorem @('matrix<f-body>')."))
-  (b* (((mv lemma-name names-to-avoid)
-        (fresh-logical-name-with-$s-suffix 'axe-rewriting-correct
+     Clearly, this strategy should be refined significantly."))
+  (b* (((mv name names-to-avoid)
+        (fresh-logical-name-with-$s-suffix 'axe-rewriting
                                            nil
                                            names-to-avoid
                                            wrld))
-       (lemma-event
+       (event
         `(local
-          (defthmd ,lemma-name
+          (defthmd ,name
             (equal ,matrix ,rewritten-term)
-            :hints (("Goal" :in-theory (enable ,@method-rules))))))
-       ((mv main-name names-to-avoid)
-        (fresh-logical-name-with-$s-suffix 'solution-correct
-                                           nil
-                                           names-to-avoid
-                                           wrld))
-       (main-event
-        `(local
-          (defthmd ,main-name
-            (implies (equal (,?f ,@x1...xn)
-                            ,f-body)
-                     ,matrix)
-            :hints (("Goal" :in-theory nil :use ,lemma-name))))))
-    (mv (list lemma-event main-event)
-        main-name
-        names-to-avoid)))
+            :hints (("Goal" :in-theory (enable ,@method-rules)))))))
+    (mv event name names-to-avoid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -932,17 +872,26 @@
                                                  method-rules
                                                  ctx
                                                  state))
-              ((mv solution-correct-events solution-correct names-to-avoid)
+              ((mv rewriting-correct-event rewriting-correct names-to-avoid)
                (solve-gen-theorem-acl2-rewriter matrix
-                                                ?f
-                                                x1...xn
                                                 rewritten-term
-                                                f-body
                                                 used-rules
                                                 names-to-avoid
-                                                (w state))))
+                                                (w state)))
+              ((mv solution-correct names-to-avoid)
+               (fresh-logical-name-with-$s-suffix 'solution-correct
+                                                  nil
+                                                  names-to-avoid
+                                                  (w state)))
+              (solution-correct-event
+               `(local
+                 (defthmd ,solution-correct
+                   (implies (equal (,?f ,@x1...xn)
+                                   ,f-body)
+                            ,matrix)
+                   :hints (("Goal" :in-theory nil :use ,rewriting-correct))))))
            (value (list f-body
-                        solution-correct-events
+                        (list rewriting-correct-event solution-correct-event)
                         solution-correct
                         names-to-avoid))))
         ((eq method :axe-rewriter)
@@ -953,17 +902,26 @@
                                                 method-rules
                                                 ctx
                                                 state))
-              ((mv solution-correct-events solution-correct names-to-avoid)
-               (solve-gen-theorem-axe-rewriter matrix
-                                               ?f
-                                               x1...xn
-                                               rewritten-term
-                                               f-body
-                                               method-rules
-                                               names-to-avoid
-                                               (w state))))
+              ((mv rewriting-correct-event rewriting-correct names-to-avoid)
+               (solve-gen-theorem-acl2-rewriter matrix
+                                                rewritten-term
+                                                method-rules
+                                                names-to-avoid
+                                                (w state)))
+              ((mv solution-correct names-to-avoid)
+               (fresh-logical-name-with-$s-suffix 'solution-correct
+                                                  nil
+                                                  names-to-avoid
+                                                  (w state)))
+              (solution-correct-event
+               `(local
+                 (defthmd ,solution-correct
+                   (implies (equal (,?f ,@x1...xn)
+                                   ,f-body)
+                            ,matrix)
+                   :hints (("Goal" :in-theory nil :use ,rewriting-correct))))))
            (value (list f-body
-                        solution-correct-events
+                        (list rewriting-correct-event solution-correct-event)
                         solution-correct
                         names-to-avoid))))
         ((eq method :manual)

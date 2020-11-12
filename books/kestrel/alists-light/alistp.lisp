@@ -63,3 +63,8 @@
            (equal (consp (car x))
                   (consp x)))
   :hints (("Goal" :in-theory (enable alistp))))
+
+(defthm alistp-of-remove1-equal
+  (implies (alistp alist)
+           (alistp (remove1-equal pair alist)))
+  :hints (("Goal" :in-theory (enable remove1-equal))))

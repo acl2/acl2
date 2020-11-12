@@ -26,6 +26,7 @@
 (include-book "kestrel/event-macros/event-generation" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
 (include-book "kestrel/std/system/check-if-call" :dir :system)
+(include-book "kestrel/std/util/tuple" :dir :system)
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
 (include-book "oslib/dirname" :dir :system)
 (include-book "oslib/file-types" :dir :system)
@@ -270,37 +271,255 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-check-if-test ((term pseudo-termp) (fn symbolp) ctx state)
-  :returns (mv erp (arg pseudo-termp) state)
-  :short "Check if the test of an @(tsee if) has the right form."
+(define atc-check-sint-const ((term pseudo-termp))
+  :returns (mv (yes/no booleanp)
+               (val acl2::sbyte32p))
+  :short "Check if a term represents an @('int') constant."
   :long
   (xdoc::topstring
    (xdoc::p
-    "ATC requires all the test terms of @(tsee if) calls
-     to be calls of @(tsee c::sint-nonzerop),
-     which converts C @('int') values to ACL2 booleans.
-     Thus, it works for ACL2 tests,
-     but at the same time its argument directly represents a C test.
-     Here we check that a term is a call of this function,
-     and we return its argument if it does."))
-  (if (and (acl2::nvariablep term)
-           (not (acl2::fquotep term))
-           (not (acl2::flambda-applicationp term))
-           (eq (acl2::ffn-symb term) 'sint-nonzerop))
-      (b* ((arg (acl2::fargn term 1)))
-        (if (pseudo-termp arg)
-            (value arg)
-          (value (raise "Internal error: the term ~x0 is not well-formed."
-                        term))))
-    (er-soft+ ctx t nil
-              "Tests of IF must be calls of ~x0 on allowed terms, ~
-               but an IF test in function ~x1 is ~x2 instead."
-              'sint-nonzerop fn term))
-  :hooks (:fix)
+    "If the term is a call of @(tsee sint-const) on a quoted integer constant
+     whose value is non-negative and representable as an @('int'),
+     we return the value.
+     This way, the caller can generate the appropriate C integer constant."))
+  (case-match term
+    (('sint-const ('quote val))
+     (if (and (natp val)
+              (acl2::sbyte32p val))
+         (mv t val)
+       (mv nil 0)))
+    (& (mv nil 0)))
   ///
-  (defret acl2-count-of-atc-check-if-test
-    (implies (not erp)
+  (defret natp-of-atc-check-sint-const
+    (natp val)
+    :rule-classes :type-prescription))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-check-sint-unop ((term pseudo-termp))
+  :returns (mv (yes/no booleanp)
+               (op unopp)
+               (arg pseudo-termp :hyp :guard))
+  :short "Check if a term represents
+          an @('int') unary expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the term is a call of one of the ACL2 functions
+     that represent C unary operators,
+     we return the operator and the argument term.
+     This way, the caller can translate the argument term to a C expression
+     and apply the operator to the expression.")
+   (xdoc::p
+    "If the term does not have that form, we return an indication of failure.
+     The term may represent some other kind of C expression."))
+  (case-match term
+    ((fn arg)
+     (case fn
+       (sint-plus (mv t (unop-plus) arg))
+       (sint-minus (mv t (unop-minus) arg))
+       (sint-bitnot (mv t (unop-bitnot) arg))
+       (sint-lognot (mv t (unop-lognot) arg))
+       (t (mv nil (irr-unop) nil))))
+    (& (mv nil (irr-unop) nil)))
+  ///
+
+  (defret acl2-count-of-atc-check-sint-unop-arg
+    (implies yes/no
              (< (acl2-count arg)
+                (acl2-count term)))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-check-sint-binop ((term pseudo-termp))
+  :returns (mv (yes/no booleanp)
+               (op binopp)
+               (arg1 pseudo-termp :hyp :guard)
+               (arg2 pseudo-termp :hyp :guard))
+  :short "Check if a term represents
+          an @('int') strict non-side-effecting binary expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the term is a call of one of the ACL2 functions
+     that represent C strict non-side-effecting binary operators,
+     we return the operator and the argument terms.
+     This way, the caller can translate the argument terms to C expressions
+     and apply the operator to the expressions.")
+   (xdoc::p
+    "If the term does not have that form, we return an indication of failure.
+     The term may represent some other kind of C expression."))
+  (case-match term
+    ((fn arg1 arg2)
+     (case fn
+       (sint-add (mv t (binop-add) arg1 arg2))
+       (sint-sub (mv t (binop-sub) arg1 arg2))
+       (sint-mul (mv t (binop-mul) arg1 arg2))
+       (sint-div (mv t (binop-div) arg1 arg2))
+       (sint-rem (mv t (binop-rem) arg1 arg2))
+       (sint-shl-sint (mv t (binop-shl) arg1 arg2))
+       (sint-shr-sint (mv t (binop-shr) arg1 arg2))
+       (sint-lt (mv t (binop-lt) arg1 arg2))
+       (sint-le (mv t (binop-le) arg1 arg2))
+       (sint-gt (mv t (binop-gt) arg1 arg2))
+       (sint-ge (mv t (binop-ge) arg1 arg2))
+       (sint-eq (mv t (binop-eq) arg1 arg2))
+       (sint-ne (mv t (binop-ne) arg1 arg2))
+       (sint-bitand (mv t (binop-bitand) arg1 arg2))
+       (sint-bitxor (mv t (binop-bitxor) arg1 arg2))
+       (sint-bitior (mv t (binop-bitior) arg1 arg2))
+       (t (mv nil (irr-binop) nil nil))))
+    (& (mv nil (irr-binop) nil nil)))
+  ///
+
+  (defret acl2-count-of-atc-check-sint-binop-arg1
+    (implies yes/no
+             (< (acl2-count arg1)
+                (acl2-count term)))
+    :rule-classes :linear)
+
+  (defret acl2-count-of-atc-check-sint-binop-arg2
+    (implies yes/no
+             (< (acl2-count arg2)
+                (acl2-count term)))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-check-sint-logand ((term pseudo-termp))
+  :returns (mv  (yes/no booleanp)
+                (arg1 pseudo-termp :hyp :guard)
+                (arg2 pseudo-termp :hyp :guard))
+  :short "Check if a term represents
+          an @('int') logical conjunction expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "As described in the user documentation,
+     logical conjunction expressions, whch are non-strict,
+     are represented as")
+   (xdoc::codeblock
+    "(sint01 (and (sint-nonzerop a) (sint-nonzerop b)))")
+   (xdoc::p
+    "In translated terms, this is")
+   (xdoc::codeblock
+    "(sint01 (if (sint-nonzerop a) (sint-nonzerop b) 'nil))")
+   (xdoc::p
+    "If the term has this form, we return @('a') and @('b').
+     This way, the caller can translate them to C expressions
+     and apply @('&&') to the expressions.")
+   (xdoc::p
+    "If the term does not have that form, we return an indication of failure.
+     The term may represent some other kind of C expression."))
+  (case-match term
+    (('sint01 ('if ('sint-nonzerop arg1)
+                  ('sint-nonzerop arg2)
+                ''nil))
+     (mv t arg1 arg2))
+    (& (mv nil nil nil)))
+  ///
+
+  (defret acl2-count-of-atc-check-sint-logand-arg1
+    (implies yes/no
+             (< (acl2-count arg1)
+                (acl2-count term)))
+    :rule-classes :linear)
+
+  (defret acl2-count-of-atc-check-sint-logand-arg2
+    (implies yes/no
+             (< (acl2-count arg2)
+                (acl2-count term)))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-check-sint-logor ((term pseudo-termp))
+  :returns (mv  (yes/no booleanp)
+                (arg1 pseudo-termp :hyp :guard)
+                (arg2 pseudo-termp :hyp :guard))
+  :short "Check if a term represents
+          an @('int') logical disjunction expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "As described in the user documentation,
+     logical disjunction expressions, whch are non-strict,
+     are represented as")
+   (xdoc::codeblock
+    "(sint01 (or (sint-nonzerop a) (sint-nonzerop b)))")
+   (xdoc::p
+    "In translated terms, this is")
+   (xdoc::codeblock
+    "(sint01 (if (sint-nonzerop a) (sint-nonzerop a) (sint-nonzerop b)))")
+   (xdoc::p
+    "If the term has this form, we return @('a') and @('b').
+     This way, the caller can translate them to C expressions
+     and apply @('||') to the expressions.")
+   (xdoc::p
+    "If the term does not have that form, we return an indication of failure.
+     The term may represent some other kind of C expression."))
+  (case-match term
+    (('sint01 ('if ('sint-nonzerop arg1)
+                  ('sint-nonzerop arg1)
+                ('sint-nonzerop arg2)))
+     (mv t arg1 arg2))
+    (& (mv nil nil nil)))
+  ///
+
+  (defret acl2-count-of-atc-check-sint-logor-arg1
+    (implies yes/no
+             (< (acl2-count arg1)
+                (acl2-count term)))
+    :rule-classes :linear)
+
+  (defret acl2-count-of-atc-check-sint-logor-arg2
+    (implies yes/no
+             (< (acl2-count arg2)
+                (acl2-count term)))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-check-conditional ((term pseudo-termp))
+  :returns (mv (yes/no booleanp)
+               (test pseudo-termp :hyp :guard)
+               (then pseudo-termp :hyp :guard)
+               (else pseudo-termp :hyp :guard))
+  :short "Check if a term represents a conditional expression or statement."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the term is a call of @(tsee if)
+     whose test is a call of @(tsee sint-nonzerop),
+     we return the argument of @(tsee sint-nonzerop) in the test
+     and the two branch terms.
+     This way, the caller can translate these terms to C expressions
+     and construct a conditional expression or statement.")
+   (xdoc::p
+    "If the term does not have that form, we return an indication of failure.
+     The term may represent some other kind of C expression."))
+  (case-match term
+    (('if ('sint-nonzerop test) then else)
+     (mv t test then else))
+    (& (mv nil nil nil nil)))
+  ///
+
+  (defret acl2-count-of-atc-check-conditional-test
+    (implies yes/no
+             (< (acl2-count test)
+                (acl2-count term)))
+    :rule-classes :linear)
+
+  (defret acl2-count-of-atc-check-conditional-then
+    (implies yes/no
+             (< (acl2-count then)
+                (acl2-count term)))
+    :rule-classes :linear)
+
+  (defret acl2-count-of-atc-check-conditional-else
+    (implies yes/no
+             (< (acl2-count else)
                 (acl2-count term)))
     :rule-classes :linear))
 
@@ -316,137 +535,55 @@
     "At the same time, we check that the term satisfies
      the restrictions stated in the user documentation.")
    (xdoc::p
-    "At the top-level, we disallow quoted constants.
-     These are only allowed as arguments of @(tsee sint-const),
-     so they are checked and accepted as part of a call of this function.")
+    "We see if the term matches the allowed patterns,
+     recursively translating and matching subterms.")
    (xdoc::p
-    "We allow any variables,
+    "We also allow any variables,
      because they must be formal parameters,
-     given that we disallow lambda expressions.")
-   (xdoc::p
-    "We allow only calls of the functions listed in the user documentation,
-     and subject to the constraints stated there.")
-   (xdoc::p
-    "We translate @(tsee if) calls to conditional expressions.
-     This is done for the ``inner'' @(tsee if) calls,
-     i.e. the ones that are arguments of non-@(tsee if) functions
-     or test (not branch) arguments of @(tsee if).
-     Before getting here, @(tsee atc-gen-stmt) has already generated statements
-     for the ``outer'' @(tsee if) calls, i.e. the other such calls.")
-   (xdoc::p
-    "For calls of @(tsee sint-const), we check that the argument
-     is an integer quoted constant.
-     The fact that it is in the right range is guaranteed by guard verification,
-     so we do not need to check that."))
+     given that we disallow lambda expressions."))
   (b* (((when (acl2::variablep term))
         (value (expr-ident (ident (symbol-name term)))))
-       ((when (acl2::fquotep term))
-        (er-soft+ ctx t (irr-expr)
-                  "The quoted constant ~x0 in the body of ~x1 ~
-                   is disallowed. ~
-                   Only quoted integer constants are allowed, ~
-                   and only as arguments of SINT-CONST."
-                  term fn))
-       ((when (acl2::flambda-applicationp term))
-        (er-soft+ ctx t (irr-expr)
-                  "Lambda expressions, such as ~x0 in the body of ~x1, ~
-                   are disallowed.
-                   Support for LET variables (i.e. lambda expressions) ~
-                   will be added later."
-                  (acl2::ffn-symb term) fn))
-       (op (acl2::ffn-symb term))
-       ((when (eq op 'if))
-        (b* ((test (acl2::fargn term 1))
-             (then (acl2::fargn term 2))
-             (else (acl2::fargn term 3))
-             ((mv erp test-arg state) (atc-check-if-test test fn ctx state))
-             ((when erp) (mv erp (irr-expr) state))
-             ((er test-expr) (atc-gen-expr test-arg fn ctx state))
+       ((mv okp val) (atc-check-sint-const term))
+       ((when okp)
+        (value
+         (expr-const (const-int (make-iconst :value val
+                                             :base (iconst-base-dec)
+                                             :unsignedp nil
+                                             :type (iconst-tysuffix-none))))))
+       ((mv okp op arg) (atc-check-sint-unop term))
+       ((when okp)
+        (b* (((er arg-expr) (atc-gen-expr arg fn ctx state)))
+          (value (make-expr-unary :op op :arg arg-expr))))
+       ((mv okp op arg1 arg2) (atc-check-sint-binop term))
+       ((when okp)
+        (b* (((er arg1-expr) (atc-gen-expr arg1 fn ctx state))
+             ((er arg2-expr) (atc-gen-expr arg2 fn ctx state)))
+          (value (make-expr-binary :op op :arg1 arg1-expr :arg2 arg2-expr))))
+       ((mv okp arg1 arg2) (atc-check-sint-logand term))
+       ((when okp)
+        (b* (((er arg1-expr) (atc-gen-expr arg1 fn ctx state))
+             ((er arg2-expr) (atc-gen-expr arg2 fn ctx state)))
+          (value (make-expr-binary :op (binop-logand)
+                                   :arg1 arg1-expr
+                                   :arg2 arg2-expr))))
+       ((mv okp arg1 arg2) (atc-check-sint-logor term))
+       ((when okp)
+        (b* (((er arg1-expr) (atc-gen-expr arg1 fn ctx state))
+             ((er arg2-expr) (atc-gen-expr arg2 fn ctx state)))
+          (value (make-expr-binary :op (binop-logor)
+                                   :arg1 arg1-expr
+                                   :arg2 arg2-expr))))
+       ((mv okp test then else) (atc-check-conditional term))
+       ((when okp)
+        (b* (((er test-expr) (atc-gen-expr test fn ctx state))
              ((er then-expr) (atc-gen-expr then fn ctx state))
              ((er else-expr) (atc-gen-expr else fn ctx state)))
           (value (make-expr-cond :test test-expr
                                  :then then-expr
-                                 :else else-expr))))
-       ((when (eq op 'sint-const))
-        (b* ((arg (acl2::fargn term 1))
-             ((unless (quotep arg))
-              (er-soft+ ctx t (irr-expr)
-                        "The call x0 in the body of ~x1 is disallowed. ~
-                         SINT-CONST may be called only on ~
-                         quoted constants."
-                        term fn))
-             (val (unquote arg))
-             ((unless (integerp val))
-              (er-soft+ ctx t (irr-expr)
-                        "The call x0 in the body of ~x1 is disallowed. ~
-                         The quoted constant ~x2 argument of SINT-CONST ~
-                         must be an integer."
-                        term fn arg))
-             ((unless (and (>= val 0)
-                           (acl2::sbyte32p val)))
-              (raise "Internal error: the value ~x0 of the quoted constant ~
-                      in the argument of the call ~x1 in the body of ~x2 ~
-                      is out of range.")
-              (value (irr-expr))))
-          (value (expr-const
-                  (const-int
-                   (make-iconst :value (unquote arg)
-                                :base (iconst-base-dec)
-                                :unsignedp nil
-                                :type (iconst-tysuffix-none)))))))
-       ((when (member-eq op '(sint-plus
-                              sint-minus
-                              sint-bitnot
-                              sint-lognot)))
-        (b* (((er arg) (atc-gen-expr (acl2::fargn term 1) fn ctx state))
-             (unop (case op
-                     (sint-plus (unop-plus))
-                     (sint-minus (unop-minus))
-                     (sint-bitnot (unop-bitnot))
-                     (sint-lognot (unop-lognot)))))
-          (value (make-expr-unary :op unop :arg arg))))
-       ((when (member-eq op '(sint-add
-                              sint-sub
-                              sint-mul
-                              sint-div
-                              sint-rem
-                              sint-shl-sint
-                              sint-shr-sint
-                              sint-lt
-                              sint-gt
-                              sint-le
-                              sint-ge
-                              sint-eq
-                              sint-ne
-                              sint-bitand
-                              sint-bitxor
-                              sint-bitior)))
-        (b* (((er arg1) (atc-gen-expr (acl2::fargn term 1) fn ctx state))
-             ((er arg2) (atc-gen-expr (acl2::fargn term 2) fn ctx state))
-             (binop (case op
-                      (sint-add (binop-add))
-                      (sint-sub (binop-sub))
-                      (sint-mul (binop-mul))
-                      (sint-div (binop-div))
-                      (sint-rem (binop-rem))
-                      (sint-shl-sint (binop-shl))
-                      (sint-shr-sint (binop-shr))
-                      (sint-lt (binop-lt))
-                      (sint-gt (binop-gt))
-                      (sint-le (binop-le))
-                      (sint-ge (binop-ge))
-                      (sint-eq (binop-eq))
-                      (sint-ne (binop-ne))
-                      (sint-bitand (binop-bitand))
-                      (sint-bitxor (binop-bitxor))
-                      (sint-bitior (binop-bitior)))))
-          (value (make-expr-binary :op binop :arg1 arg1 :arg2 arg2)))))
+                                 :else else-expr)))))
     (er-soft+ ctx t (irr-expr)
-              "The function ~x0 in the body of ~x1 is disallowed. ~
-               Support for calling more C operations, ~
-               and for calling the target functions, ~
-               will be added later."
-              op fn)))
+              "The term ~x0 in the body of ~x1 is disallowed."
+              term fn)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -464,11 +601,9 @@
      Otherwise, we generate an @('if') statement,
      with recursively generated statements as branches;
      the test expression is generated from the test term."))
-  (b* (((mv ifp test then else) (acl2::check-if-call term)))
+  (b* (((mv ifp test then else) (atc-check-conditional term)))
     (if ifp
-        (b* (((mv erp test-arg state) (atc-check-if-test test fn ctx state))
-             ((when erp) (mv erp (irr-stmt) state))
-             ((mv erp test-expr state) (atc-gen-expr test-arg fn ctx state))
+        (b* (((mv erp test-expr state) (atc-gen-expr test fn ctx state))
              ((when erp) (mv erp (irr-stmt) state))
              ((er then-stmt) (atc-gen-stmt then fn ctx state))
              ((er else-stmt) (atc-gen-stmt else fn ctx state)))
