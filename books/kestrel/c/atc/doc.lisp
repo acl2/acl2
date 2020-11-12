@@ -42,7 +42,7 @@
       Thus, ATC can be used at the end of an APT derivation.")
 
     (xdoc::p
-     "Currently ATC recognizes  a very limited subset of ACL2
+     "Currently ATC recognizes a very limited subset of ACL2
       and translates it to a very limited subset of C.
       This is just a first step (the development of ATC has just started);
       we plan to extend ATC to increasingly larger subsets of ACL2 and C.")
@@ -250,7 +250,7 @@
        and that result is an @('int') value.")
      (xdoc::li
       "Calls of @(tsee if) on
-       (i) tests that are call of @(tsee sint-nonzerop)
+       (i) tests that are calls of @(tsee sint-nonzerop)
        on recursively allowed terms, and
        (ii) branches that are recursively allowed terms.
        The function @(tsee sint-nonzerop) serves to convert
@@ -263,7 +263,29 @@
        An ACL2 @(tsee if) represents
        either a C @('if') conditional statement
        or a C @('?:') conditional expression,
-       as explained below."))
+       as explained below.")
+     (xdoc::li
+      "Calls @('(sint01 (and (sint-nonzerop a) (sint-nonzerop b)))')
+       where @('a) and @('b') are recursively allowed terms.
+       These calls represent the C non-strict @('&&') operator,
+       applied to the C expressions represented by @('a') and @('b').
+       The conversion @(tsee sint-nonzerop) of the operands to ACL2 booleans
+       is necessary to represent C's non-strictness in ACL2,
+       but the result must be converted back via @(tsee sint01)
+       to a C @('int'), which is what @('&&') returns.
+       (Note that, in ACL2's translated terms,
+       @('(and x y)') is @('(if x y \'nil)').)")
+     (xdoc::li
+      "Calls @('(sint01 (or (sint-nonzerop a) (sint-nonzerop b)))')
+       where @('a) and @('b') are recursively allowed terms.
+       These calls represent the C non-strict @('||') operator,
+       applied to the C expressions represented by @('a') and @('b').
+       The conversion @(tsee sint-nonzerop) of the operands to ACL2 booleans
+       is necessary to represent C's non-strictness in ACL2,
+       but the result must be converted back via @(tsee sint01)
+       to a C @('int'), which is what @('||') returns.
+       (Note that, in ACL2's translated terms,
+       @('(or x y)') is @('(or x x y)').)"))
     (xdoc::p
      "The above restrictions imply that @('fni') returns a single result,
       i.e. not an @(tsee mv) result.
