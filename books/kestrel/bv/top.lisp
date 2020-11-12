@@ -44,6 +44,7 @@
 (include-book "bvchop")
 (include-book "getbit-def")
 (include-book "getbit")
+(include-book "getbit2")
 (include-book "slice-def")
 (include-book "slice")
 (include-book "slice2")
@@ -121,6 +122,8 @@
 
 (include-book "bool-to-bit")
 (include-book "bit-to-bool")
+
+(include-book "idioms")
 
 (include-book "rules0")
 (include-book "rules")
