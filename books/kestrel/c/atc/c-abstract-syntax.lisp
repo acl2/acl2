@@ -247,6 +247,15 @@
   (:lognot ())
   :pred unopp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define irr-unop ()
+  :returns (op unopp)
+  :short "An irrelevant unary operator, usable as a dummy return value."
+  (with-guard-checking :none (ec-call (unop-fix :irrelevant)))
+  ///
+  (in-theory (disable (:e irr-unop))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum binop
@@ -305,6 +314,15 @@
   (:asg-xor ())
   (:asg-ior ())
   :pred binopp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define irr-binop ()
+  :returns (op binopp)
+  :short "An irrelevant binary operator, usable as a dummy return value."
+  (with-guard-checking :none (ec-call (binop-fix :irrelevant)))
+  ///
+  (in-theory (disable (:e irr-binop))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
