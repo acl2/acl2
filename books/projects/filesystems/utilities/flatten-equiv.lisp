@@ -41,7 +41,8 @@
            (set-equiv (remove-equal nil (remove-equal x l))
                       (remove-equal nil l)))
   :hints (("goal" :in-theory (enable not-intersectp-list
-                                     remove-equal intersectp-equal))))
+                                     remove-equal intersectp-equal
+                                     member-intersectp-of-set-difference$-lemma-2))))
 
 (defequiv flatten-equiv
   :hints (("goal" :in-theory (enable flatten-equiv))))

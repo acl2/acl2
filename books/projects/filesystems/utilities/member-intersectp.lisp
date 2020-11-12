@@ -4,7 +4,7 @@
 
 (include-book "not-intersectp-list")
 
-(defun disjoint-list-listp (x)
+(defund disjoint-list-listp (x)
   (if (atom x)
       (equal x nil)
     (and (not-intersectp-list (car x) (cdr x))
@@ -18,7 +18,8 @@
 (defthm flatten-disjoint-lists
   (implies (true-listp l)
            (equal (no-duplicatesp-equal (flatten l))
-                  (and (disjoint-list-listp l) (no-duplicates-listp l)))))
+                  (and (disjoint-list-listp l) (no-duplicates-listp l))))
+  :hints (("Goal" :in-theory (enable disjoint-list-listp))))
 
 (defthm not-intersectp-list-of-append-2
   (equal (not-intersectp-list (binary-append x y) l)
@@ -59,7 +60,8 @@
   (equal (disjoint-list-listp (binary-append x y))
          (and (disjoint-list-listp (true-list-fix x))
               (disjoint-list-listp y)
-              (not (member-intersectp-equal x y)))))
+              (not (member-intersectp-equal x y))))
+  :hints (("Goal" :in-theory (enable disjoint-list-listp))))
 
 (defthm member-intersectp-with-subset
   (implies (and (member-intersectp-equal z x)
@@ -220,7 +222,7 @@
                     (:with member-intersectp-is-commutative
                            (member-intersectp-equal y x1))))))
 
-(defthm member-intersectp-of-set-difference$-lemma-2
+(defthmd member-intersectp-of-set-difference$-lemma-2
   (implies (and (member-equal x y)
                 (case-split (consp x)))
            (not (not-intersectp-list x y)))
@@ -231,6 +233,8 @@
            (equal (member-intersectp-equal (set-difference-equal x y)
                                            z)
                   (member-intersectp-equal x z)))
+  :hints
+  (("Goal" :in-theory (enable member-intersectp-of-set-difference$-lemma-2)))
   :rule-classes
   (:rewrite
    (:rewrite
