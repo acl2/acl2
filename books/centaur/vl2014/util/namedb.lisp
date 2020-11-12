@@ -136,8 +136,8 @@ vl-pgenstr->val).</p>"
                   (force (natp n)))
              (vl-pgenstr-p prefix (vl-pgenstr prefix n))))
 
-  (local (defthm nth-underscore-when-digit-listp
-           (implies (str::digit-listp chars)
+  (local (defthm nth-underscore-when-dec-digit-char-listp
+           (implies (str::dec-digit-char-listp chars)
                     (not (equal (nth n chars) #\_)))))
 
   (local (in-theory (disable nthcdr-of-increment)))
@@ -928,5 +928,3 @@ printed.</p>"
                       (vl-namedb-allnames db))))
 
   (deffixequiv vl-namedb-plain-names))
-
-

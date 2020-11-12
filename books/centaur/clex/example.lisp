@@ -136,7 +136,7 @@ compact, which is useful when running the examples.</p>"
   :short "Recognize upper- and lower-case letters.")
 
 (defcharset number
-  (str::digitp x)
+  (str::dec-digit-char-p x)
   :in-package-of foo
   :parents (example-lexer)
   :short "Recognize digits 0-9.")

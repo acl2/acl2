@@ -118,10 +118,10 @@
     istreqv-is-an-equivalence
 
     ;; decimal.lisp
-    digitp
-    nonzero-digitp
+    dec-digit-char-p
+    nonzero-dec-digit-char-p
     digit-val
-    digit-listp
+    dec-digit-char-listp
     digit-list-value1
     digit-list-value
     skip-leading-digits
@@ -145,8 +145,8 @@
     strval
 
     ;; binary.lisp
-    bit-digitp
-    bit-digit-listp
+    bin-digit-char-p
+    bin-digit-char-listp
     bit-digit-val
     bit-digit-list-value1
     bit-digit-list-value
@@ -167,8 +167,8 @@
     strval2
 
     ;; hex.lisp
-    hex-digitp
-    hex-digit-listp
+    hex-digit-char-p
+    hex-digit-char-listp
     hex-digit-val
     hex-digit-list-value1
     hex-digit-list-value
@@ -191,10 +191,10 @@
     strval16
 
     ;; octal
-    octal-digitp
-    nonzero-octal-digitp
+    oct-digit-char-p
+    nonzero-oct-digit-char-p
     octal-digit-val
-    octal-digit-listp
+    oct-digit-char-listp
     octal-digit-list-value1
     octal-digit-list-value
     skip-leading-octal-digits
@@ -343,4 +343,3 @@
 
     strrange-equiv
     ))
-

@@ -12,7 +12,7 @@
 ;; frames and tries.
 (local
  (in-theory (disable take-of-too-many make-list-ac-removal
-                     revappend-removal str::hex-digit-listp-of-cons
+                     revappend-removal str::hex-digit-char-listp-of-cons
                      loghead logtail nth-when->=-n-len-l)))
 
 (local

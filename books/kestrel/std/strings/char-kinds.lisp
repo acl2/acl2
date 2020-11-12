@@ -11,10 +11,10 @@
 (in-package "STR")
 
 (include-book "letter-char-p")
-(include-book "bin-digit-char-p")
-(include-book "dec-digit-char-p")
-(include-book "hex-digit-char-p")
-(include-book "oct-digit-char-p")
+;; (include-book "bin-digit-char-p")
+;; (include-book "dec-digit-char-p")
+;; (include-book "hex-digit-char-p")
+;; (include-book "oct-digit-char-p")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

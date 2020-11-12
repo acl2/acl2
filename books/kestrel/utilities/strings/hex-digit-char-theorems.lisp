@@ -26,9 +26,9 @@
                     n)))
 
   (defrule str::hex-digit-to-char-of-hex-digit-val
-    (implies (str::hex-digitp char)
+    (implies (str::hex-digit-char-p char)
              (equal (str::hex-digit-to-char (str::hex-digit-val char))
                     (str::upcase-char char)))
     :prep-books ((include-book "arithmetic-5/top" :dir :system))
     :enable (str::hex-digit-val
-             str::hex-digitp)))
+             str::hex-digit-char-p)))

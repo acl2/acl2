@@ -14,7 +14,7 @@
 ;; frames and tries.
 (local
  (in-theory (disable take-of-too-many take-when-atom make-list-ac-removal
-                     revappend-removal str::hex-digit-listp-of-cons
+                     revappend-removal str::hex-digit-char-listp-of-cons
                      loghead logtail
                      (:rewrite member-of-nth-when-not-intersectp)
                      (:rewrite
