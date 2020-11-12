@@ -1881,7 +1881,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
 (defxdoc defunc
   :parents (acl2::acl2-sedan acl2::macro-libraries)
   :short "Function definitions with contracts. See also 
-          @(see definec) and @(see defun)."
+          @(see? definec) and @(see defun)."
   :long
   "
 <h3>Examples</h3>
@@ -1928,7 +1928,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
 <h3>Purpose</h3> 
 
 <p> The macro @(see defunc) is an extension of @(see defun) with
-<b>contracts</b>.  We recommend the use of @(see definec), a macro based
+<b>contracts</b>.  We recommend the use of @(see? definec), a macro based
 on @(see defunc), which is as powerful as @(see defunc), but allows one to
 write more concise definitions.  </p>
 
