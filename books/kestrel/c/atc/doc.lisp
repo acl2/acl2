@@ -207,21 +207,26 @@
       is guaranteed by the restrictions given below.")
 
     (xdoc::p
-     "Each function @('fni') must be in logic-mode and guard-verified.
+     "Each function @('fni') must be in logic mode and guard-verified.
       It must have an "
      (xdoc::seetopic "acl2::function-definedness" "unnormalized body")
-     " consisting exclusively of:")
+     " consisting exclusively of
+      <i>allowed non-boolean terms</i> and
+      <i>allowed boolean terms</i>,
+      which are inductively defined as follows:")
     (xdoc::ul
      (xdoc::li
       "The formal parameters of the function.
-       These represent the corresponding C formal parameters.")
+       These represent the corresponding C formal parameters.
+       These are allowed non-boolean terms.")
      (xdoc::li
       "Calls of @(tsee sint-const) on quoted integers.
        These represent C integer constants of type @('int').
        The guard verification requirement ensures that
-       the quoted integer is within the range of type @('int').")
+       the quoted integer is within the range of type @('int').
+       These calls are allowed non-boolean terms.")
      (xdoc::li
-      "Calls of the following functions on recursively allowed terms:"
+      "Calls of the following functions on allowed non-boolean terms:"
       (xdoc::ul
        (xdoc::li "@(tsee sint-plus)")
        (xdoc::li "@(tsee sint-minus)")
@@ -247,45 +252,56 @@
        applied to C @('int') values.
        The guard verification requirement ensures that
        they are always applied to values with a well-defined result,
-       and that result is an @('int') value.")
+       and that result is an @('int') value.
+       These calls are allowed non-boolean terms.")
+     (xdoc::li
+      "Calls of @(tsee sint01) on allowed boolean terms.
+       Each such call converts an allowed boolean term
+       to an allowed non-boolean term.
+       These calls are allowed non-boolean terms.")
+     (xdoc::li
+      "Calls of @(tsee sint-nonzerop) on allowed non-boolean terms.
+       Each such call converts an allowed non-boolean term
+       to an allowed boolean term.
+       These calls are allowed boolean terms.")
      (xdoc::li
       "Calls of @(tsee if) on
-       (i) tests that are calls of @(tsee sint-nonzerop)
-       on recursively allowed terms, and
-       (ii) branches that are recursively allowed terms.
-       The function @(tsee sint-nonzerop) serves to convert
-       (the ACL2 representation of) a C @('int') to an ACL2 boolean,
-       which is needed for the ACL2 @(tsee if) calls.
-       An ACL2 call of @(tsee sint-nonzerop) represents, in C,
-       what its ACL2 argument represents:
-       that is, the @(tsee sint-nonzerop) is dropped in the translation to C,
-       so that the C test has type @('int').
+       (i) tests that are allowed boolean terms and
+       (ii) branches that are allowed non-boolean terms.
        An ACL2 @(tsee if) represents
-       either a C @('if') conditional statement
-       or a C @('?:') conditional expression,
-       as explained below.")
+       either an C @('if') conditional statement
+       or a C @('?:') conditional expression;
+       the choice is explained below.
+       These calls are allowed non-boolean terms.")
      (xdoc::li
-      "Calls @('(sint01 (and (sint-nonzerop a) (sint-nonzerop b)))')
-       where @('a) and @('b') are recursively allowed terms.
-       These calls represent the C non-strict @('&&') operator,
-       applied to the C expressions represented by @('a') and @('b').
-       The conversion @(tsee sint-nonzerop) of the operands to ACL2 booleans
-       is necessary to represent C's non-strictness in ACL2,
-       but the result must be converted back via @(tsee sint01)
-       to a C @('int'), which is what @('&&') returns.
-       (Note that, in ACL2's translated terms,
-       @('(and x y)') is @('(if x y \'nil)').)")
-     (xdoc::li
-      "Calls @('(sint01 (or (sint-nonzerop a) (sint-nonzerop b)))')
-       where @('a) and @('b') are recursively allowed terms.
-       These calls represent the C non-strict @('||') operator,
-       applied to the C expressions represented by @('a') and @('b').
-       The conversion @(tsee sint-nonzerop) of the operands to ACL2 booleans
-       is necessary to represent C's non-strictness in ACL2,
-       but the result must be converted back via @(tsee sint01)
-       to a C @('int'), which is what @('||') returns.
-       (Note that, in ACL2's translated terms,
-       @('(or x y)') is @('(or x x y)').)"))
+      "Calls of the following functions and macros on allowed boolean terms:"
+      (xdoc::ul
+       (xdoc::li
+        (xdoc::li "@(tsee not)")
+        (xdoc::li "@(tsee and)")
+        (xdoc::li "@(tsee or)")))
+      "The first one is a function, while the other two are macros.
+       In translated terms, @('(and x y)') and @('(or x y)') are
+       @('(if x y \'nil)') and @('(or x x y)'):
+       these are the patterns that ATC looks for.
+       Each such call represents the corresponding C logical operator
+       (negation @('!'), conjunction @('&&'), disjunction @('||'));
+       conjunction and disjunctions are represented non-strictly.
+       These calls are allowed boolean terms."))
+    (xdoc::p
+     "Note that the allowed boolean terms return ACL2 boolean values,
+      while the allowed non-boolean terms return ACL2 non-boolean values
+      that represent C values.
+      The distinction between these two kinds of allowed terms
+      stems from the need to represent C's non-strictness in ACL2:
+      C's non-strict constructs are
+      @('if') statements,
+      @('?:') expressions,
+      @('&&') expressions, and
+      @('||') expressions;
+      C's only non-strict construct is @(tsee if)
+      (which the macros @(tsee and) and @(tsee or) expand to, see above).")
+
     (xdoc::p
      "The above restrictions imply that @('fni') returns a single result,
       i.e. not an @(tsee mv) result.

@@ -387,203 +387,272 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-check-sint-logand ((term pseudo-termp))
-  :returns (mv  (yes/no booleanp)
-                (arg1 pseudo-termp :hyp :guard)
-                (arg2 pseudo-termp :hyp :guard))
-  :short "Check if a term represents
-          an @('int') logical conjunction expression."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "As described in the user documentation,
-     logical conjunction expressions, whch are non-strict,
-     are represented as")
-   (xdoc::codeblock
-    "(sint01 (and (sint-nonzerop a) (sint-nonzerop b)))")
-   (xdoc::p
-    "In translated terms, this is")
-   (xdoc::codeblock
-    "(sint01 (if (sint-nonzerop a) (sint-nonzerop b) 'nil))")
-   (xdoc::p
-    "If the term has this form, we return @('a') and @('b').
-     This way, the caller can translate them to C expressions
-     and apply @('&&') to the expressions.")
-   (xdoc::p
-    "If the term does not have that form, we return an indication of failure.
-     The term may represent some other kind of C expression."))
-  (case-match term
-    (('sint01 ('if ('sint-nonzerop arg1)
-                  ('sint-nonzerop arg2)
-                ''nil))
-     (mv t arg1 arg2))
-    (& (mv nil nil nil)))
-  ///
+;; (define atc-check-sint-logand ((term pseudo-termp))
+;;   :returns (mv  (yes/no booleanp)
+;;                 (arg1 pseudo-termp :hyp :guard)
+;;                 (arg2 pseudo-termp :hyp :guard))
+;;   :short "Check if a term represents
+;;           an @('int') logical conjunction expression."
+;;   :long
+;;   (xdoc::topstring
+;;    (xdoc::p
+;;     "As described in the user documentation,
+;;      logical conjunction expressions, whch are non-strict,
+;;      are represented as")
+;;    (xdoc::codeblock
+;;     "(sint01 (and (sint-nonzerop a) (sint-nonzerop b)))")
+;;    (xdoc::p
+;;     "In translated terms, this is")
+;;    (xdoc::codeblock
+;;     "(sint01 (if (sint-nonzerop a) (sint-nonzerop b) 'nil))")
+;;    (xdoc::p
+;;     "If the term has this form, we return @('a') and @('b').
+;;      This way, the caller can translate them to C expressions
+;;      and apply @('&&') to the expressions.")
+;;    (xdoc::p
+;;     "If the term does not have that form, we return an indication of failure.
+;;      The term may represent some other kind of C expression."))
+;;   (case-match term
+;;     (('sint01 ('if ('sint-nonzerop arg1)
+;;                   ('sint-nonzerop arg2)
+;;                 ''nil))
+;;      (mv t arg1 arg2))
+;;     (& (mv nil nil nil)))
+;;   ///
 
-  (defret acl2-count-of-atc-check-sint-logand-arg1
-    (implies yes/no
-             (< (acl2-count arg1)
-                (acl2-count term)))
-    :rule-classes :linear)
+;;   (defret acl2-count-of-atc-check-sint-logand-arg1
+;;     (implies yes/no
+;;              (< (acl2-count arg1)
+;;                 (acl2-count term)))
+;;     :rule-classes :linear)
 
-  (defret acl2-count-of-atc-check-sint-logand-arg2
-    (implies yes/no
-             (< (acl2-count arg2)
-                (acl2-count term)))
-    :rule-classes :linear))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-check-sint-logor ((term pseudo-termp))
-  :returns (mv  (yes/no booleanp)
-                (arg1 pseudo-termp :hyp :guard)
-                (arg2 pseudo-termp :hyp :guard))
-  :short "Check if a term represents
-          an @('int') logical disjunction expression."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "As described in the user documentation,
-     logical disjunction expressions, whch are non-strict,
-     are represented as")
-   (xdoc::codeblock
-    "(sint01 (or (sint-nonzerop a) (sint-nonzerop b)))")
-   (xdoc::p
-    "In translated terms, this is")
-   (xdoc::codeblock
-    "(sint01 (if (sint-nonzerop a) (sint-nonzerop a) (sint-nonzerop b)))")
-   (xdoc::p
-    "If the term has this form, we return @('a') and @('b').
-     This way, the caller can translate them to C expressions
-     and apply @('||') to the expressions.")
-   (xdoc::p
-    "If the term does not have that form, we return an indication of failure.
-     The term may represent some other kind of C expression."))
-  (case-match term
-    (('sint01 ('if ('sint-nonzerop arg1)
-                  ('sint-nonzerop arg1)
-                ('sint-nonzerop arg2)))
-     (mv t arg1 arg2))
-    (& (mv nil nil nil)))
-  ///
-
-  (defret acl2-count-of-atc-check-sint-logor-arg1
-    (implies yes/no
-             (< (acl2-count arg1)
-                (acl2-count term)))
-    :rule-classes :linear)
-
-  (defret acl2-count-of-atc-check-sint-logor-arg2
-    (implies yes/no
-             (< (acl2-count arg2)
-                (acl2-count term)))
-    :rule-classes :linear))
+;;   (defret acl2-count-of-atc-check-sint-logand-arg2
+;;     (implies yes/no
+;;              (< (acl2-count arg2)
+;;                 (acl2-count term)))
+;;     :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-check-conditional ((term pseudo-termp))
-  :returns (mv (yes/no booleanp)
-               (test pseudo-termp :hyp :guard)
-               (then pseudo-termp :hyp :guard)
-               (else pseudo-termp :hyp :guard))
-  :short "Check if a term represents a conditional expression or statement."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "If the term is a call of @(tsee if)
-     whose test is a call of @(tsee sint-nonzerop),
-     we return the argument of @(tsee sint-nonzerop) in the test
-     and the two branch terms.
-     This way, the caller can translate these terms to C expressions
-     and construct a conditional expression or statement.")
-   (xdoc::p
-    "If the term does not have that form, we return an indication of failure.
-     The term may represent some other kind of C expression."))
-  (case-match term
-    (('if ('sint-nonzerop test) then else)
-     (mv t test then else))
-    (& (mv nil nil nil nil)))
-  ///
+;; (define atc-check-sint-logor ((term pseudo-termp))
+;;   :returns (mv  (yes/no booleanp)
+;;                 (arg1 pseudo-termp :hyp :guard)
+;;                 (arg2 pseudo-termp :hyp :guard))
+;;   :short "Check if a term represents
+;;           an @('int') logical disjunction expression."
+;;   :long
+;;   (xdoc::topstring
+;;    (xdoc::p
+;;     "As described in the user documentation,
+;;      logical disjunction expressions, whch are non-strict,
+;;      are represented as")
+;;    (xdoc::codeblock
+;;     "(sint01 (or (sint-nonzerop a) (sint-nonzerop b)))")
+;;    (xdoc::p
+;;     "In translated terms, this is")
+;;    (xdoc::codeblock
+;;     "(sint01 (if (sint-nonzerop a) (sint-nonzerop a) (sint-nonzerop b)))")
+;;    (xdoc::p
+;;     "If the term has this form, we return @('a') and @('b').
+;;      This way, the caller can translate them to C expressions
+;;      and apply @('||') to the expressions.")
+;;    (xdoc::p
+;;     "If the term does not have that form, we return an indication of failure.
+;;      The term may represent some other kind of C expression."))
+;;   (case-match term
+;;     (('sint01 ('if ('sint-nonzerop arg1)
+;;                   ('sint-nonzerop arg1)
+;;                 ('sint-nonzerop arg2)))
+;;      (mv t arg1 arg2))
+;;     (& (mv nil nil nil)))
+;;   ///
 
-  (defret acl2-count-of-atc-check-conditional-test
-    (implies yes/no
-             (< (acl2-count test)
-                (acl2-count term)))
-    :rule-classes :linear)
+;;   (defret acl2-count-of-atc-check-sint-logor-arg1
+;;     (implies yes/no
+;;              (< (acl2-count arg1)
+;;                 (acl2-count term)))
+;;     :rule-classes :linear)
 
-  (defret acl2-count-of-atc-check-conditional-then
-    (implies yes/no
-             (< (acl2-count then)
-                (acl2-count term)))
-    :rule-classes :linear)
-
-  (defret acl2-count-of-atc-check-conditional-else
-    (implies yes/no
-             (< (acl2-count else)
-                (acl2-count term)))
-    :rule-classes :linear))
+;;   (defret acl2-count-of-atc-check-sint-logor-arg2
+;;     (implies yes/no
+;;              (< (acl2-count arg2)
+;;                 (acl2-count term)))
+;;     :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-expr ((term pseudo-termp) (fn symbolp) ctx state)
-  :returns (mv erp (expr exprp) state)
-  :verify-guards :after-returns
-  :short "Generate a C expression from an ACL2 term."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "At the same time, we check that the term satisfies
-     the restrictions stated in the user documentation.")
-   (xdoc::p
-    "We see if the term matches the allowed patterns,
-     recursively translating and matching subterms.")
-   (xdoc::p
-    "We also allow any variables,
-     because they must be formal parameters,
-     given that we disallow lambda expressions."))
-  (b* (((when (acl2::variablep term))
-        (value (expr-ident (ident (symbol-name term)))))
-       ((mv okp val) (atc-check-sint-const term))
-       ((when okp)
-        (value
-         (expr-const (const-int (make-iconst :value val
-                                             :base (iconst-base-dec)
-                                             :unsignedp nil
-                                             :type (iconst-tysuffix-none))))))
-       ((mv okp op arg) (atc-check-sint-unop term))
-       ((when okp)
-        (b* (((er arg-expr) (atc-gen-expr arg fn ctx state)))
-          (value (make-expr-unary :op op :arg arg-expr))))
-       ((mv okp op arg1 arg2) (atc-check-sint-binop term))
-       ((when okp)
-        (b* (((er arg1-expr) (atc-gen-expr arg1 fn ctx state))
-             ((er arg2-expr) (atc-gen-expr arg2 fn ctx state)))
-          (value (make-expr-binary :op op :arg1 arg1-expr :arg2 arg2-expr))))
-       ((mv okp arg1 arg2) (atc-check-sint-logand term))
-       ((when okp)
-        (b* (((er arg1-expr) (atc-gen-expr arg1 fn ctx state))
-             ((er arg2-expr) (atc-gen-expr arg2 fn ctx state)))
-          (value (make-expr-binary :op (binop-logand)
-                                   :arg1 arg1-expr
-                                   :arg2 arg2-expr))))
-       ((mv okp arg1 arg2) (atc-check-sint-logor term))
-       ((when okp)
-        (b* (((er arg1-expr) (atc-gen-expr arg1 fn ctx state))
-             ((er arg2-expr) (atc-gen-expr arg2 fn ctx state)))
-          (value (make-expr-binary :op (binop-logor)
-                                   :arg1 arg1-expr
-                                   :arg2 arg2-expr))))
-       ((mv okp test then else) (atc-check-conditional term))
-       ((when okp)
-        (b* (((er test-expr) (atc-gen-expr test fn ctx state))
-             ((er then-expr) (atc-gen-expr then fn ctx state))
-             ((er else-expr) (atc-gen-expr else fn ctx state)))
-          (value (make-expr-cond :test test-expr
-                                 :then then-expr
-                                 :else else-expr)))))
-    (er-soft+ ctx t (irr-expr)
-              "The term ~x0 in the body of ~x1 is disallowed."
-              term fn)))
+;; (define atc-check-conditional ((term pseudo-termp))
+;;   :returns (mv (yes/no booleanp)
+;;                (test pseudo-termp :hyp :guard)
+;;                (then pseudo-termp :hyp :guard)
+;;                (else pseudo-termp :hyp :guard))
+;;   :short "Check if a term represents a conditional expression or statement."
+;;   :long
+;;   (xdoc::topstring
+;;    (xdoc::p
+;;     "If the term is a call of @(tsee if)
+;;      whose test is a call of @(tsee sint-nonzerop),
+;;      we return the argument of @(tsee sint-nonzerop) in the test
+;;      and the two branch terms.
+;;      This way, the caller can translate these terms to C expressions
+;;      and construct a conditional expression or statement.")
+;;    (xdoc::p
+;;     "If the term does not have that form, we return an indication of failure.
+;;      The term may represent some other kind of C expression."))
+;;   (case-match term
+;;     (('if ('sint-nonzerop test) then else)
+;;      (mv t test then else))
+;;     (& (mv nil nil nil nil)))
+;;   ///
+
+;;   (defret acl2-count-of-atc-check-conditional-test
+;;     (implies yes/no
+;;              (< (acl2-count test)
+;;                 (acl2-count term)))
+;;     :rule-classes :linear)
+
+;;   (defret acl2-count-of-atc-check-conditional-then
+;;     (implies yes/no
+;;              (< (acl2-count then)
+;;                 (acl2-count term)))
+;;     :rule-classes :linear)
+
+;;   (defret acl2-count-of-atc-check-conditional-else
+;;     (implies yes/no
+;;              (< (acl2-count else)
+;;                 (acl2-count term)))
+;;     :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defines atc-gen-expr-fns
+  :short "Mutually recursive functions to
+          generate C expressions from ACL terms."
+
+  (define atc-gen-expr-nonbool ((term pseudo-termp) (fn symbolp) ctx state)
+    :returns (mv erp (expr exprp) state)
+    :parents (atc-event-and-code-generation atc-gen-expr-fns)
+    :short "Generate a C expression from a ACL2 term
+            that must be an allowed non-boolean term."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "At the same time, we check that the term is an allowed non-boolean term,
+       as described in the user documentation.")
+     (xdoc::p
+      "An ACL2 variable is translated to a C variable.")
+     (xdoc::p
+      "If the term fits the @(tsee sint-const) pattern
+       we translate it to a C integer constant.")
+     (xdoc::p
+      "If the term fits the pattern of a unary or binary operation,
+       we translate it to the application of the operator
+       to the recursively generated expressions.")
+     (xdoc::p
+      "If the term is a call of @(tsee c::sint01),
+       we call the mutually recursive function
+       that translates the argument, which must be an allowed boolean term,
+       to an expression, which we return.")
+     (xdoc::p
+      "If the term is an @(tsee if) call,
+       we call the mutually recursive function on the test,
+       we call this function on the branches,
+       and we construct a conditional expression.")
+     (xdoc::p
+      "In all other cases, we fail with an error.
+       The term is not an allowed non-boolean term.
+       We could extend this code to provide
+       more information to the user at some point."))
+    (b* (((when (acl2::variablep term))
+          (value (expr-ident (ident (symbol-name term)))))
+         ((mv okp val) (atc-check-sint-const term))
+         ((when okp)
+          (value
+           (expr-const (const-int (make-iconst :value val
+                                               :base (iconst-base-dec)
+                                               :unsignedp nil
+                                               :type (iconst-tysuffix-none))))))
+         ((mv okp op arg) (atc-check-sint-unop term))
+         ((when okp)
+          (b* (((er arg-expr) (atc-gen-expr-nonbool arg fn ctx state)))
+            (value (make-expr-unary :op op :arg arg-expr))))
+         ((mv okp op arg1 arg2) (atc-check-sint-binop term))
+         ((when okp)
+          (b* (((er arg1-expr) (atc-gen-expr-nonbool arg1 fn ctx state))
+               ((er arg2-expr) (atc-gen-expr-nonbool arg2 fn ctx state)))
+            (value (make-expr-binary :op op :arg1 arg1-expr :arg2 arg2-expr)))))
+      (case-match term
+        (('c::sint01 arg)
+         (atc-gen-expr-bool arg fn ctx state))
+        (('if test then else)
+         (b* (((er test-expr) (atc-gen-expr-bool test fn ctx state))
+              ((er then-expr) (atc-gen-expr-nonbool then fn ctx state))
+              ((er else-expr) (atc-gen-expr-nonbool else fn ctx state)))
+           (value
+            (make-expr-cond :test test-expr :then then-expr :else else-expr))))
+        (& (er-soft+ ctx t (irr-expr)
+                     "When generating C code for the function ~x0, ~
+                      at a point where
+                      an allowed non-boolean ACL2 term is expected, ~
+                      the term ~x1 is encountered instead."
+                     fn term)))))
+
+  (define atc-gen-expr-bool ((term pseudo-termp) (fn symbolp) ctx state)
+    :returns (mv erp (expr exprp) state)
+    :parents (atc-event-and-code-generation atc-gen-expr-fns)
+    :short "Generate a C expression from a ACL2 term
+            that must be an allowed boolean term."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "At the same time, we check that the term is an allowed boolen term,
+       as described in the user documentation.")
+     (xdoc::p
+      "If the term is a call of @(tsee not), @(tsee and), or @(tsee or),
+       we recursively translate the arguments,
+       which must be an allowed boolean terms,
+       and we construct a logical expression
+       with the corresponding C operators.")
+     (xdoc::p
+      "If the term is a call of @(tsee sint-nonzerop),
+       we call the mutually recursive function
+       that translates the argument, which must be an allowed non-boolean term,
+       to an expression, which we return.")
+     (xdoc::p
+      "In all other cases, we fail with an error.
+       The term is not an allowed non-boolean term.
+       We could extend this code to provide
+       more information to the user at some point."))
+    (case-match term
+      (('not arg)
+       (b* (((er arg-expr) (atc-gen-expr-bool arg fn ctx state)))
+         (value (make-expr-unary :op (unop-lognot) :arg arg-expr))))
+      (('if arg1 arg2 ''nil)
+       (b* (((er arg1-expr) (atc-gen-expr-bool arg1 fn ctx state))
+            ((er arg2-expr) (atc-gen-expr-bool arg2 fn ctx state)))
+         (value (make-expr-binary :op (binop-logand)
+                                  :arg1 arg1-expr
+                                  :arg2 arg2-expr))))
+      (('if arg1 arg1 arg2)
+       (b* (((er arg1-expr) (atc-gen-expr-bool arg1 fn ctx state))
+            ((er arg2-expr) (atc-gen-expr-bool arg2 fn ctx state)))
+         (value (make-expr-binary :op (binop-logor)
+                                  :arg1 arg1-expr
+                                  :arg2 arg2-expr))))
+      (('c::sint-nonzerop arg)
+       (atc-gen-expr-nonbool arg fn ctx state))
+      (& (er-soft+ ctx t (irr-expr)
+                   "When generating C code for the function ~x0, ~
+                    at a point where
+                    an allowed boolean ACL2 term is expected, ~
+                    the term ~x1 is encountered instead."
+                   fn term))))
+
+  :prepwork ((set-state-ok t))
+
+  :verify-guards nil ; done below
+  ///
+  (verify-guards atc-gen-expr-nonbool))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -601,18 +670,17 @@
      Otherwise, we generate an @('if') statement,
      with recursively generated statements as branches;
      the test expression is generated from the test term."))
-  (b* (((mv ifp test then else) (atc-check-conditional term)))
-    (if ifp
-        (b* (((mv erp test-expr state) (atc-gen-expr test fn ctx state))
-             ((when erp) (mv erp (irr-stmt) state))
-             ((er then-stmt) (atc-gen-stmt then fn ctx state))
-             ((er else-stmt) (atc-gen-stmt else fn ctx state)))
-          (value
-           (make-stmt-ifelse :test test-expr :then then-stmt :else else-stmt)))
-      (b* (((mv erp expr state) (atc-gen-expr term fn ctx state))
-           ((when erp) (mv erp (irr-stmt) state)))
-        (value
-         (make-stmt-return :value expr))))))
+  (case-match term
+    (('if test then else)
+     (b* (((mv erp test-expr state) (atc-gen-expr-bool test fn ctx state))
+          ((when erp) (mv erp (irr-stmt) state))
+          ((er then-stmt) (atc-gen-stmt then fn ctx state))
+          ((er else-stmt) (atc-gen-stmt else fn ctx state)))
+       (value
+        (make-stmt-ifelse :test test-expr :then then-stmt :else else-stmt))))
+    (& (b* (((mv erp expr state) (atc-gen-expr-nonbool term fn ctx state))
+            ((when erp) (mv erp (irr-stmt) state)))
+         (value (make-stmt-return :value expr))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
