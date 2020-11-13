@@ -469,3 +469,33 @@
                                            sint->get)))
   :prepwork
   ((local (include-book "centaur/bitops/ihs-extensions" :dir :system))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define sint-logand ((x sintp) (y sintp))
+  :returns (result sintp)
+  :short "Logical conjunction on @('int') values."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is a strict version of this operator,
+     because it takes two values.
+     Non-strict versions are represented differently;
+     see @(tsee atc)."))
+  (sint01 (and (sint-nonzerop x) (sint-nonzerop y)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define sint-logor ((x sintp) (y sintp))
+  :returns (result sintp)
+  :short "Logical disjunction on @('int') values."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is a strict version of this operator,
+     because it takes two values.
+     Non-strict versions are represented differently;
+     see @(tsee atc)."))
+  (sint01 (or (sint-nonzerop x) (sint-nonzerop y)))
+  :hooks (:fix))
