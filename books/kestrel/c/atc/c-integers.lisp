@@ -87,6 +87,38 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define sint-nonzerop ((x sintp))
+  :returns (yes/no booleanp)
+  :short "Check if an @('int') value is not 0."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This can be used to turn an ACL2 term that returns a C @('int') value
+     into an ACL2 boolean term that may be the test of an @(tsee if).
+     This way, we can represent in ACL2 shallowly embedded C conditionals,
+     whose tests must be integers (0 for false, non-0 for true)."))
+  (/= (sint->get x) 0)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define sint01 ((b booleanp))
+  :returns (x sintp)
+  :short "Turn an ACL2 boolean into an @('int') value 0 or 1."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is essentially (but not exactly) the inverse of @(tsee sint-nonzerop).
+     Together with @(tsee sint-nonzerop),
+     it can be used to represent in ACL2
+     shallowly embedded C logical conjunctions and disjunctions,
+     which must be integers in C,
+     but must be booleans in ACL2 to represent their non-strictness."))
+  (if b (sint 1) (sint 0))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define sint-plus ((x sintp))
   :returns (result sintp)
   :short "Unary plus of @('int') values [C:6.5.3.3]."
@@ -437,35 +469,3 @@
                                            sint->get)))
   :prepwork
   ((local (include-book "centaur/bitops/ihs-extensions" :dir :system))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define sint-nonzerop ((x sintp))
-  :returns (yes/no booleanp)
-  :short "Check if an @('int') value is not 0."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This can be used to turn an ACL2 term that returns a C @('int') value
-     into an ACL2 boolean term that may be the test of an @(tsee if).
-     This way, we can represent in ACL2 shallowly embedded C conditionals,
-     whose tests must be integers (0 for false, non-0 for true)."))
-  (/= (sint->get x) 0)
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define sint01 ((b booleanp))
-  :returns (x sintp)
-  :short "Turn an ACL2 boolean into an @('int') value 0 or 1."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is essentially (but not exactly) the inverse of @(tsee sint-nonzerop).
-     Together with @(tsee sint-nonzerop),
-     it can be used to represent in ACL2
-     shallowly embedded C logical conjunctions and disjunctions,
-     which must be integers in C,
-     but must be booleans in ACL2 to represent their non-strictness."))
-  (if b (sint 1) (sint 0))
-  :hooks (:fix))
