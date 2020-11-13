@@ -971,7 +971,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-file ((tunit transunitp) (output-file stringp) state)
-  :returns state
+  :returns (mv erp val state)
   :mode :program
   :short "Pretty-print the generated C code (i.e. translation unit)
           to the output file."
@@ -996,7 +996,7 @@
         (atc-gen-wf-thm const ctx state))
        ((er (list fn-thm-names fn-thm-local-events fn-thm-exported-events))
         (atc-gen-fn-thm-list fn1...fnp const ctx state))
-       (state (atc-gen-file tunit output-file state))
+       ((er &) (atc-gen-file tunit output-file state))
        (- (cw "~%Generated C file:~% ~x0~%" output-file))
        (encapsulate
          `(encapsulate ()

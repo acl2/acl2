@@ -978,12 +978,25 @@
 (defttag :open-output-channel!)
 
 (define pprinted-lines-to-file ((lines msg-listp) (filepath stringp) state)
-  :returns state
+  :returns (mv erp val state)
   :mode :program
   :short "Write pretty-printed lines to a file."
-  (b* (((mv channel state) (open-output-channel! filepath :character state))
-       (state (pprinted-lines-to-channel lines channel state))
-       (state (close-output-channel channel state)))
-    state))
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We set the soft and hard right margins to very large values
+     to avoid line breaks in virtually all cases.
+     Setting these margins to ``infinity'' is not supported.")
+   (xdoc::p
+    "In the future, we may improve the pretty-printer
+     to take into consideration a specified right margin,
+     breaking and identing lines appropriately."))
+  (state-global-let*
+   ((fmt-soft-right-margin 1000000 set-fmt-soft-right-margin)
+    (fmt-hard-right-margin 1000000 set-fmt-hard-right-margin))
+   (b* (((mv channel state) (open-output-channel! filepath :character state))
+        (state (pprinted-lines-to-channel lines channel state))
+        (state (close-output-channel channel state)))
+     (value nil))))
 
 (defttag nil)
