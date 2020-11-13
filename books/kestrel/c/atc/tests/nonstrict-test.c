@@ -30,6 +30,11 @@ void condor_test(int x) {
   printf("condor(%d) = %d\n", x, r);
 }
 
+void notandor_test(int x) {
+  int r = notandor(x);
+  printf("notandor(%d) = %d\n", x, r);
+}
+
 int main(void) {
   and_test(0, 0);
   and_test(0, 2);
@@ -47,4 +52,6 @@ int main(void) {
   condand_test(500);
   condor_test(-60);
   condor_test(3);
+  notandor_test(3);
+  notandor_test(150);
 }

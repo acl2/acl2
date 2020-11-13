@@ -34,10 +34,8 @@
 
 (defun |ifand| (|x| |y|)
   (declare (xargs :guard (and (c::sintp |x|) (c::sintp |y|))))
-  (if (c::sint-nonzerop
-       (c::sint01
-        (and (c::sint-nonzerop (c::sint-lt |x| |y|))
-             (c::sint-nonzerop (c::sint-lt |y| (c::sint-const 100))))))
+  (if (and (c::sint-nonzerop (c::sint-lt |x| |y|))
+           (c::sint-nonzerop (c::sint-lt |y| (c::sint-const 100))))
       |x|
     |y|))
 
@@ -45,10 +43,8 @@
 
 (defun |ifor| (|x| |y|)
   (declare (xargs :guard (and (c::sintp |x|) (c::sintp |y|))))
-  (if (c::sint-nonzerop
-       (c::sint01
-        (or (c::sint-nonzerop (c::sint-lt |x| |y|))
-            (c::sint-nonzerop (c::sint-ge |y| (c::sint-const 100))))))
+  (if (or (c::sint-nonzerop (c::sint-lt |x| |y|))
+          (c::sint-nonzerop (c::sint-ge |y| (c::sint-const 100))))
       |x|
     |y|))
 
@@ -57,12 +53,10 @@
 (defun |condand| (|x|)
   (declare (xargs :guard (c::sintp |x|)))
   (c::sint-eq |x|
-              (if (c::sint-nonzerop
-                   (c::sint01
-                    (and (c::sint-nonzerop
-                          (c::sint-le (c::sint-const 0) |x|))
-                         (c::sint-nonzerop
-                          (c::sint-le |x| (c::sint-const 10))))))
+              (if (and (c::sint-nonzerop
+                        (c::sint-le (c::sint-const 0) |x|))
+                       (c::sint-nonzerop
+                        (c::sint-le |x| (c::sint-const 10))))
                   (c::sint-const 10)
                 (c::sint-const 20))))
 
@@ -71,14 +65,30 @@
 (defun |condor| (|x|)
   (declare (xargs :guard (c::sintp |x|)))
   (c::sint-eq |x|
-              (if (c::sint-nonzerop
-                   (c::sint01
-                    (or (c::sint-nonzerop
-                         (c::sint-lt |x| (c::sint-const 0)))
-                        (c::sint-nonzerop
-                         (c::sint-gt |x| (c::sint-const 10))))))
+              (if (or (c::sint-nonzerop
+                       (c::sint-lt |x| (c::sint-const 0)))
+                      (c::sint-nonzerop
+                       (c::sint-gt |x| (c::sint-const 10))))
                   (c::sint-const 10)
                 (c::sint-const 20))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun |notandor| (|x|)
+  (declare (xargs :guard (c::sintp |x|)))
+  (c::sint01
+   (and (or (and (c::sint-nonzerop (c::sint-le (c::sint-const 10)
+                                               |x|))
+                 (c::sint-nonzerop (c::sint-le |x|
+                                               (c::sint-const 20))))
+            (and (c::sint-nonzerop (c::sint-le (c::sint-const 100)
+                                               |x|))
+                 (c::sint-nonzerop (c::sint-le |x|
+                                               (c::sint-const 200)))))
+        (not (and (c::sint-nonzerop (c::sint-le (c::sint-const 4)
+                                                |x|))
+                  (c::sint-nonzerop (c::sint-le |x|
+                                                (c::sint-const 6))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -88,6 +98,7 @@
         |ifor|
         |condand|
         |condor|
+        |notandor|
         :output-file "nonstrict.c")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
