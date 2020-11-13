@@ -248,7 +248,7 @@
        (xdoc::li "@(tsee sint-bitand)")
        (xdoc::li "@(tsee sint-bitxor)")
        (xdoc::li "@(tsee sint-bitior)")
-       (xdoc::li "@(tsee sint-logandr)")
+       (xdoc::li "@(tsee sint-logand)")
        (xdoc::li "@(tsee sint-logor)"))
       "Each such call represents the corresponding C operator,
        applied to C @('int') values.
