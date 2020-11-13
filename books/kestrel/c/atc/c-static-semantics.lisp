@@ -68,7 +68,7 @@
      described in Section `C identifiers' of @(tsee atc).
      As noted there, C18 allows a possibly broader range of valid identifiers,
      but ATC only generates this kind of portable identifiers."))
-  (atc-ident-stringp (ident->get id))
+  (atc-ident-stringp (ident->name id))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

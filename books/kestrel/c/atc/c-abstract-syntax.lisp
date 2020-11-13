@@ -110,7 +110,7 @@
      generate identifiers of 31 characters or less,
      which may not be a significant limitation.
      In the future, we may add this constraint to this fixtype."))
-  ((get string))
+  ((name string))
   :tag :ident
   :pred identp)
 

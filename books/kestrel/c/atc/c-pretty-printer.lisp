@@ -104,7 +104,7 @@
 (define pprint-ident ((id identp))
   :returns (part msgp)
   :short "Pretty-print an identifier."
-  (ident->get id)
+  (ident->name id)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
