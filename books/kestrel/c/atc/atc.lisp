@@ -564,7 +564,7 @@
        We could extend this code to provide
        more information to the user at some point."))
     (b* (((when (acl2::variablep term))
-          (value (expr-ident (ident (symbol-name term)))))
+          (value (expr-ident (make-ident :name (symbol-name term)))))
          ((mv okp val) (atc-check-sint-const term))
          ((when okp)
           (value
@@ -694,7 +694,7 @@
                    the formal parameter ~x1 of the function ~x2 ~
                    must be a portable ASCII C identifier, but it is not."
                   name formal fn)))
-    (value (make-param-decl :name (ident name)
+    (value (make-param-decl :name (make-ident :name name)
                             :type (tyspecseq-sint)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -776,7 +776,7 @@
     (value
      (ext-decl-fundef
       (make-fundef :result (tyspecseq-sint)
-                   :name (ident name)
+                   :name (make-ident :name name)
                    :params params
                    :body (stmt-compound (list (block-item-stmt stmt))))))))
 

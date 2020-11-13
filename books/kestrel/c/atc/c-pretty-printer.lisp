@@ -305,9 +305,9 @@
    (xdoc::codeblock
     "(expr-binary (binop-mul)"
     "             (expr-binary (binop-add)"
-    "                          (expr-ident (ident \"x\"))"
-    "                          (expr-ident (ident \"y\")))"
-    "             (expr-ident (ident \"z\")))")
+    "                          (expr-ident (make-ident :name \"x\"))"
+    "                          (expr-ident (make-ident :name \"y\")))"
+    "             (expr-ident (make-ident :name \"z\")))")
    (xdoc::p
     "represents the expression @('(x + y) * z').
      Note that, when this expression is written in concrete syntax as just done,
