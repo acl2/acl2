@@ -315,7 +315,7 @@ get as much automated polymorphic support as possible.
        )
 
     (case-match sig
-      ((name arg-type-list 'ACL2::=> return-type)
+      ((name arg-type-list 'ACL2S-SHARED::=> return-type)
        (b* (((unless (proper-symbolp name))
              (er hard? ctx "~| Name ~x0 should be a symbol.~%" name))
 ;simple syntax checks
