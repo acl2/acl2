@@ -338,15 +338,19 @@
                (arg1 pseudo-termp :hyp :guard)
                (arg2 pseudo-termp :hyp :guard))
   :short "Check if a term represents
-          an @('int') strict non-side-effecting binary expression."
+          an @('int') non-side-effecting binary expression."
   :long
   (xdoc::topstring
    (xdoc::p
     "If the term is a call of one of the ACL2 functions
-     that represent C strict non-side-effecting binary operators,
+     that represent C non-side-effecting binary operators,
      we return the operator and the argument terms.
      This way, the caller can translate the argument terms to C expressions
      and apply the operator to the expressions.")
+   (xdoc::p
+    "Note that when @('&&') and @('||') are represented this way,
+     their ACL2 representation is strict,
+     which may be acceptable in some cases.")
    (xdoc::p
     "If the term does not have that form, we return an indication of failure.
      The term may represent some other kind of C expression."))
@@ -369,6 +373,8 @@
        (sint-bitand (mv t (binop-bitand) arg1 arg2))
        (sint-bitxor (mv t (binop-bitxor) arg1 arg2))
        (sint-bitior (mv t (binop-bitior) arg1 arg2))
+       (sint-logand (mv t (binop-logand) arg1 arg2))
+       (sint-logor (mv t (binop-logor) arg1 arg2))
        (t (mv nil (irr-binop) nil nil))))
     (& (mv nil (irr-binop) nil nil)))
   ///

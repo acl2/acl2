@@ -247,12 +247,18 @@
        (xdoc::li "@(tsee sint-ne)")
        (xdoc::li "@(tsee sint-bitand)")
        (xdoc::li "@(tsee sint-bitxor)")
-       (xdoc::li "@(tsee sint-bitior)"))
+       (xdoc::li "@(tsee sint-bitior)")
+       (xdoc::li "@(tsee sint-logandr)")
+       (xdoc::li "@(tsee sint-logor)"))
       "Each such call represents the corresponding C operator,
        applied to C @('int') values.
        The guard verification requirement ensures that
        they are always applied to values with a well-defined result,
        and that result is an @('int') value.
+       If the operator is @('&&') or @('||'),
+       this represents a strict (i.e. not non-strict) use of them;
+       see below for how to represent non-strict uses of them,
+       but the strict use is slightly simpler when usable.
        These calls are allowed non-boolean terms.")
      (xdoc::li
       "Calls of @(tsee sint01) on allowed boolean terms.
