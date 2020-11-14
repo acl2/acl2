@@ -28,10 +28,10 @@
 
      (include-book "smtlink/doc")
      (ifdef "OS_HAS_SMTLINK"
-            (include-book "examples/examples")
+            (include-book "smtlink/examples/examples")
             :endif)
      (ifdef "OS_HAS_SMTLINK"
-            (include-book "examples/ringosc")
+            (include-book "smtlink/examples/ringosc")
             :endif)
 
 
