@@ -783,40 +783,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define solve-gen-theorem-for-solution ((matrix pseudo-termp)
-                                        (?f symbolp)
-                                        (x1...xn symbol-listp)
-                                        (f symbolp)
-                                        (solution-hints true-listp)
-                                        (names-to-avoid symbol-listp)
-                                        (wrld plist-worldp))
-  :returns (mv (solution-correct-event "A @(tsee pseudo-event-formp).")
-               (solution-correct "A @(tsee symbolp).")
-               (updated-names-to-avoid "A @(tsee symbol-listp)."))
-  :mode :program
-  :short "Attempt to generate a theorem for the supplied solution."
-  :long
-  (xdoc::topstring-p
-   "This is used when @('f-existsp') is @('t').
-    In this case, @('f') is not generated (it already exists),
-    so we only generate the theorem asserting its correctness
-    (see the user documentation).")
-  (b* (((mv thm-name names-to-avoid)
-        (fresh-logical-name-with-$s-suffix 'solution-correct
-                                           nil
-                                           names-to-avoid
-                                           wrld))
-       (thm-event
-        `(local
-          (defthmd ,thm-name
-            (implies (equal (,?f ,@x1...xn)
-                            (,f ,@x1...xn))
-                     ,matrix)
-            :hints ,solution-hints))))
-    (mv thm-event thm-name names-to-avoid)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define solve-gen-solution-acl2-rewriter ((?f symbolp)
                                           (x1...xn symbol-listp)
                                           (matrix pseudo-termp)
@@ -999,53 +965,45 @@
   :short "Attempt to generate the events that provide the solution,
           when using the manual method."
   (b* ((wrld (w state))
-       ((er (list f-body? solution-correct-events solution-correct names-to-avoid))
-        (if f-existsp
-            (b* (((mv solution-correct-event solution-correct names-to-avoid)
-                  (solve-gen-theorem-for-solution matrix
-                                                  ?f
-                                                  x1...xn
-                                                  f
-                                                  solution-hints
-                                                  names-to-avoid
-                                                  wrld)))
-              (value (list nil
-                           (list solution-correct-event)
-                           solution-correct
-                           names-to-avoid)))
-          (b* ((f-body solution-body)
-               ((mv solution-correct names-to-avoid)
-                (fresh-logical-name-with-$s-suffix 'solution-correct
-                                                   nil
-                                                   names-to-avoid
-                                                   (w state)))
-               (solution-correct-event
-                `(local
-                  (defthmd ,solution-correct
-                    (implies (equal (,?f ,@x1...xn)
-                                    ,f-body)
-                             ,matrix)
-                    :hints ,solution-hints))))
-            (value (list f-body
-                         (list solution-correct-event)
-                         solution-correct
-                         names-to-avoid)))))
-       ((mv f-local-event? f-exported-event?)
-        (if f-existsp
-            (mv nil nil)
-          (solve-gen-f f
-                       x1...xn
-                       f-body?
-                       solution-guard
-                       solution-guard-hints
-                       solution-enable
-                       verify-guards
-                       wrld))))
-    (value (list (append solution-correct-events
-                         (and f-local-event? (list f-local-event?)))
-                 (and f-exported-event? (list f-exported-event?))
-                 solution-correct
-                 names-to-avoid))))
+       ((mv solution-correct names-to-avoid)
+        (fresh-logical-name-with-$s-suffix 'solution-correct
+                                           nil
+                                           names-to-avoid
+                                           wrld)))
+    (if f-existsp
+        (b* ((solution-correct-event
+              `(local
+                (defthmd ,solution-correct
+                  (implies (equal (,?f ,@x1...xn)
+                                  (,f ,@x1...xn))
+                           ,matrix)
+                  :hints ,solution-hints))))
+          (value (list (list solution-correct-event)
+                       nil
+                       solution-correct
+                       names-to-avoid)))
+      (b* ((f-body solution-body)
+           (solution-correct-event
+            `(local
+              (defthmd ,solution-correct
+                (implies (equal (,?f ,@x1...xn)
+                                ,f-body)
+                         ,matrix)
+                :hints ,solution-hints)))
+           ((mv f-local-event f-exported-event)
+            (solve-gen-f f
+                         x1...xn
+                         f-body
+                         solution-guard
+                         solution-guard-hints
+                         solution-enable
+                         verify-guards
+                         wrld)))
+        (value (list (list solution-correct-event
+                           f-local-event)
+                     (list f-exported-event)
+                     solution-correct
+                     names-to-avoid))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
