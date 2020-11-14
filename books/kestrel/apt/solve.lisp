@@ -671,84 +671,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define solve-gen-solution-acl2-rewriter ((matrix pseudo-termp)
-                                          (?f symbolp)
-                                          (x1...xn symbol-listp)
-                                          (method-rules symbol-listp)
-                                          ctx
-                                          state)
-  :returns (mv erp
-               (result "A tuple @('(rewritten-term f-body used-rules)')
-                        satisfying
-                        @('(typed-tuplep pseudo-termp
-                                         pseudo-termp
-                                         symbol-listp
-                                         result)').")
-               state)
-  :mode :program
-  :short "Attempt to generate a solution,
-          i.e. to solve @('old') for @('?f') using the ACL2 rewriter."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We reflectively call a function that calls the ACL2 rewriter.
-     This function is in a separate file,
-     which can be included, along with its dependency on @(tsee rewrite$),
-     only if desired.
-     The input validation performed by this transformation ensures that
-     we call the function only if its file is included.")
-   (xdoc::p
-    "If the call is successful, we attempt to extract a solution,
-     and we return it along with the rewritten term and the used rules."))
-  (b* (((er (list rewritten-term used-rules))
-        (trans-eval-error-triple `(,*solve-call-acl2-rewriter*
-                                   ,@(kwote-lst (list matrix method-rules ctx))
-                                   state)
-                                 ctx
-                                 state))
-       ((er f-body) (solve-gen-solution-from-rewritten-term matrix
-                                                            rewritten-term
-                                                            ?f
-                                                            x1...xn
-                                                            ctx
-                                                            state)))
-    (value (list rewritten-term f-body used-rules))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define solve-gen-solution-axe-rewriter ((matrix pseudo-termp)
-                                         (?f symbolp)
-                                         (x1...xn symbol-listp)
-                                         (method-rules symbol-listp)
-                                         ctx
-                                         state)
-  :returns (mv erp
-               (result "A tuple @('(rewritten-term f-body)') satisfying
-                        @('(typed-tuplep pseudo-termp pseudo-termp result)').")
-               state)
-  :mode :program
-  :short "Attempt to generate a solution,
-          i.e. to solve @('old') for @('?f') using the Axe rewriter."
-  :long
-  (xdoc::topstring-p
-   "This is similar to @(tsee solve-gen-solution-acl2-rewriter).
-    See its documentation.")
-  (b* (((er rewritten-term)
-        (trans-eval-error-triple `(,*solve-call-axe-rewriter*
-                                   ,@(kwote-lst (list matrix method-rules ctx))
-                                   state)
-                                 ctx
-                                 state))
-       ((er f-body) (solve-gen-solution-from-rewritten-term matrix
-                                                            rewritten-term
-                                                            ?f
-                                                            x1...xn
-                                                            ctx
-                                                            state)))
-    (value (list rewritten-term f-body))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define solve-gen-theorem-acl2-rewriter ((matrix pseudo-termp)
                                          (rewritten-term pseudo-termp)
                                          (used-rules symbol-listp)
@@ -839,113 +761,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define solve-gen-solution-and-theorem ((matrix pseudo-termp)
-                                        (?f symbolp)
-                                        (x1...xn symbol-listp)
-                                        (method keywordp)
-                                        (method-rules symbol-listp)
-                                        (solution-body "An untranslated term.")
-                                        (solution-hints true-listp)
-                                        (names-to-avoid symbol-listp)
-                                        ctx
-                                        state)
-  :returns (mv erp
-               (result "A tuple @('(f-body
-                                    solution-correct-events
-                                    solution-correct
-                                    updated-names-to-avoid)')
-                        satisfying @('(typed-tuplep pseudo-termp
-                                                    pseudo-event-form-listp
-                                                    symbolp
-                                                    symbol-listp)').")
-               state)
-  :mode :program
-  :short "Attempt to generate a solution, and a theorem for its correctness."
-  :long
-  (xdoc::topstring-p
-   "This is used when @('f-existsp') is @('nil').")
-  (cond ((eq method :acl2-rewriter)
-         (b* (((er (list rewritten-term f-body used-rules))
-               (solve-gen-solution-acl2-rewriter matrix
-                                                 ?f
-                                                 x1...xn
-                                                 method-rules
-                                                 ctx
-                                                 state))
-              ((mv rewriting-correct-event rewriting-correct names-to-avoid)
-               (solve-gen-theorem-acl2-rewriter matrix
-                                                rewritten-term
-                                                used-rules
-                                                names-to-avoid
-                                                (w state)))
-              ((mv solution-correct names-to-avoid)
-               (fresh-logical-name-with-$s-suffix 'solution-correct
-                                                  nil
-                                                  names-to-avoid
-                                                  (w state)))
-              (solution-correct-event
-               `(local
-                 (defthmd ,solution-correct
-                   (implies (equal (,?f ,@x1...xn)
-                                   ,f-body)
-                            ,matrix)
-                   :hints (("Goal" :in-theory nil :use ,rewriting-correct))))))
-           (value (list f-body
-                        (list rewriting-correct-event solution-correct-event)
-                        solution-correct
-                        names-to-avoid))))
-        ((eq method :axe-rewriter)
-         (b* (((er (list rewritten-term f-body))
-               (solve-gen-solution-axe-rewriter matrix
-                                                ?f
-                                                x1...xn
-                                                method-rules
-                                                ctx
-                                                state))
-              ((mv rewriting-correct-event rewriting-correct names-to-avoid)
-               (solve-gen-theorem-acl2-rewriter matrix
-                                                rewritten-term
-                                                method-rules
-                                                names-to-avoid
-                                                (w state)))
-              ((mv solution-correct names-to-avoid)
-               (fresh-logical-name-with-$s-suffix 'solution-correct
-                                                  nil
-                                                  names-to-avoid
-                                                  (w state)))
-              (solution-correct-event
-               `(local
-                 (defthmd ,solution-correct
-                   (implies (equal (,?f ,@x1...xn)
-                                   ,f-body)
-                            ,matrix)
-                   :hints (("Goal" :in-theory nil :use ,rewriting-correct))))))
-           (value (list f-body
-                        (list rewriting-correct-event solution-correct-event)
-                        solution-correct
-                        names-to-avoid))))
-        ((eq method :manual)
-         (b* ((f-body solution-body)
-              ((mv thm-name names-to-avoid)
-               (fresh-logical-name-with-$s-suffix 'solution-correct
-                                                  nil
-                                                  names-to-avoid
-                                                  (w state)))
-              (thm-event
-               `(local
-                 (defthmd ,thm-name
-                   (implies (equal (,?f ,@x1...xn)
-                                   ,f-body)
-                            ,matrix)
-                   :hints ,solution-hints))))
-           (value (list f-body
-                        (list thm-event)
-                        thm-name
-                        names-to-avoid))))
-        (t (value (raise "Internal error: unknown method ~x0." method)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define solve-gen-f ((f symbolp)
                      (x1...xn symbol-listp)
                      (f-body pseudo-termp)
@@ -1002,39 +817,74 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define solve-gen-solution-rewriter ((?f symbolp)
-                                     (x1...xn symbol-listp)
-                                     (matrix pseudo-termp)
-                                     (method keywordp)
-                                     (method-rules symbol-listp)
-                                     (f symbolp)
-                                     (solution-enable booleanp)
-                                     (solution-guard "An untranslated term.")
-                                     (solution-guard-hints true-listp)
-                                     (verify-guards booleanp)
-                                     (names-to-avoid symbol-listp)
-                                     ctx
-                                     state)
+(define solve-gen-solution-acl2-rewriter ((?f symbolp)
+                                          (x1...xn symbol-listp)
+                                          (matrix pseudo-termp)
+                                          (method-rules symbol-listp)
+                                          (f symbolp)
+                                          (solution-enable booleanp)
+                                          (solution-guard "An untranslated term.")
+                                          (solution-guard-hints true-listp)
+                                          (verify-guards booleanp)
+                                          (names-to-avoid symbol-listp)
+                                          ctx
+                                          state)
   :returns (mv erp
                (result "@('(tuple (local-events pseudo-form-listp)
                                   (exported-events pseudo-form-listp)
-                                  (solution-correct symbolp))')")
+                                  (solution-correct symbolp)
+                                  (updated-names-to-avoid symbol-listp))')")
                state)
   :mode :program
-  :short "Attempt to generate the events that provide the solution,
-          when using one of the rewriting methods."
-  (b* ((wrld (w state))
-       ((er (list f-body solution-correct-events solution-correct &))
-        (solve-gen-solution-and-theorem matrix
-                                        ?f
-                                        x1...xn
-                                        method
-                                        method-rules
-                                        nil
-                                        nil
-                                        names-to-avoid
-                                        ctx
-                                        state))
+  :short "Attempt to generate a solution using the ACL2 rewriter."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We reflectively call a function that calls the ACL2 rewriter.
+     This function is in a separate file,
+     which can be included, along with its dependency on @(tsee rewrite$),
+     only if desired.
+     The input validation performed by this transformation ensures that
+     we call the function only if its file is included.")
+   (xdoc::p
+    "If the call is successful, we attempt to extract a solution,
+     i.e. the body to use for the function @('f') to generate.")
+   (xdoc::p
+    "We generate the rewriting theorem and the solution correctness theorem,
+     along with the solution function.")
+   (xdoc::p
+    "We return all the events,
+     and the name of the solution correctness theorem."))
+  (b* (((er (list rewritten-term used-rules))
+        (trans-eval-error-triple `(,*solve-call-acl2-rewriter*
+                                   ,@(kwote-lst (list matrix method-rules ctx))
+                                   state)
+                                 ctx
+                                 state))
+       ((er f-body) (solve-gen-solution-from-rewritten-term matrix
+                                                            rewritten-term
+                                                            ?f
+                                                            x1...xn
+                                                            ctx
+                                                            state))
+       ((mv rewriting-correct-event rewriting-correct names-to-avoid)
+        (solve-gen-theorem-acl2-rewriter matrix
+                                         rewritten-term
+                                         used-rules
+                                         names-to-avoid
+                                         (w state)))
+       ((mv solution-correct names-to-avoid)
+        (fresh-logical-name-with-$s-suffix 'solution-correct
+                                           nil
+                                           names-to-avoid
+                                           (w state)))
+       (solution-correct-event
+        `(local
+          (defthmd ,solution-correct
+            (implies (equal (,?f ,@x1...xn)
+                            ,f-body)
+                     ,matrix)
+            :hints (("Goal" :in-theory nil :use ,rewriting-correct)))))
        ((mv f-local-event f-exported-event)
         (solve-gen-f f
                      x1...xn
@@ -1043,11 +893,86 @@
                      solution-guard-hints
                      solution-enable
                      verify-guards
-                     wrld)))
-    (value (list (append solution-correct-events
-                         (list f-local-event))
+                     (w state))))
+    (value (list (list rewriting-correct-event
+                       solution-correct-event
+                       f-local-event)
                  (list f-exported-event)
-                 solution-correct))))
+                 solution-correct
+                 names-to-avoid))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define solve-gen-solution-axe-rewriter ((?f symbolp)
+                                         (x1...xn symbol-listp)
+                                         (matrix pseudo-termp)
+                                         (method-rules symbol-listp)
+                                         (f symbolp)
+                                         (solution-enable booleanp)
+                                         (solution-guard "An untranslated term.")
+                                         (solution-guard-hints true-listp)
+                                         (verify-guards booleanp)
+                                         (names-to-avoid symbol-listp)
+                                         ctx
+                                         state)
+  :returns (mv erp
+               (result "@('(tuple (local-events pseudo-form-listp)
+                                  (exported-events pseudo-form-listp)
+                                  (solution-correct symbolp)
+                                  (updated-names-to-avoid symbol-listp))')")
+               state)
+  :mode :program
+  :short "Attempt to generate a solution using the Axe rewriter."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is analogous to @(tsee solve-gen-solution-acl2-rewriter).
+     See that function for more details."))
+  (b* (((er rewritten-term)
+        (trans-eval-error-triple `(,*solve-call-axe-rewriter*
+                                   ,@(kwote-lst (list matrix method-rules ctx))
+                                   state)
+                                 ctx
+                                 state))
+       ((er f-body) (solve-gen-solution-from-rewritten-term matrix
+                                                            rewritten-term
+                                                            ?f
+                                                            x1...xn
+                                                            ctx
+                                                            state))
+       ((mv rewriting-correct-event rewriting-correct names-to-avoid)
+        (solve-gen-theorem-axe-rewriter matrix
+                                        rewritten-term
+                                        method-rules
+                                        names-to-avoid
+                                        (w state)))
+       ((mv solution-correct names-to-avoid)
+        (fresh-logical-name-with-$s-suffix 'solution-correct
+                                           nil
+                                           names-to-avoid
+                                           (w state)))
+       (solution-correct-event
+        `(local
+          (defthmd ,solution-correct
+            (implies (equal (,?f ,@x1...xn)
+                            ,f-body)
+                     ,matrix)
+            :hints (("Goal" :in-theory nil :use ,rewriting-correct)))))
+       ((mv f-local-event f-exported-event)
+        (solve-gen-f f
+                     x1...xn
+                     f-body
+                     solution-guard
+                     solution-guard-hints
+                     solution-enable
+                     verify-guards
+                     (w state))))
+    (value (list (list rewriting-correct-event
+                       solution-correct-event
+                       f-local-event)
+                 (list f-exported-event)
+                 solution-correct
+                 names-to-avoid))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1063,20 +988,20 @@
                                    (solution-hints true-listp)
                                    (verify-guards booleanp)
                                    (names-to-avoid symbol-listp)
-                                   ctx
                                    state)
   :returns (mv erp
                (result "@('(tuple (local-events pseudo-form-listp)
                                   (exported-events pseudo-form-listp)
-                                  (solution-correct symbolp))')")
+                                  (solution-correct symbolp)
+                                  (updated-names-to-avoid symbol-listp))')")
                state)
   :mode :program
   :short "Attempt to generate the events that provide the solution,
           when using the manual method."
   (b* ((wrld (w state))
-       ((er (list f-body? solution-correct-events solution-correct))
+       ((er (list f-body? solution-correct-events solution-correct names-to-avoid))
         (if f-existsp
-            (b* (((mv solution-correct-event solution-correct &)
+            (b* (((mv solution-correct-event solution-correct names-to-avoid)
                   (solve-gen-theorem-for-solution matrix
                                                   ?f
                                                   x1...xn
@@ -1084,19 +1009,27 @@
                                                   solution-hints
                                                   names-to-avoid
                                                   wrld)))
-              (value (list nil (list solution-correct-event) solution-correct)))
-          (b* (((er (list f-body solution-correct-events solution-correct &))
-                (solve-gen-solution-and-theorem matrix
-                                                ?f
-                                                x1...xn
-                                                :manual
-                                                nil
-                                                solution-body
-                                                solution-hints
-                                                names-to-avoid
-                                                ctx
-                                                state)))
-            (value (list f-body solution-correct-events solution-correct)))))
+              (value (list nil
+                           (list solution-correct-event)
+                           solution-correct
+                           names-to-avoid)))
+          (b* ((f-body solution-body)
+               ((mv solution-correct names-to-avoid)
+                (fresh-logical-name-with-$s-suffix 'solution-correct
+                                                   nil
+                                                   names-to-avoid
+                                                   (w state)))
+               (solution-correct-event
+                `(local
+                  (defthmd ,solution-correct
+                    (implies (equal (,?f ,@x1...xn)
+                                    ,f-body)
+                             ,matrix)
+                    :hints ,solution-hints))))
+            (value (list f-body
+                         (list solution-correct-event)
+                         solution-correct
+                         names-to-avoid)))))
        ((mv f-local-event? f-exported-event?)
         (if f-existsp
             (mv nil nil)
@@ -1111,7 +1044,8 @@
     (value (list (append solution-correct-events
                          (and f-local-event? (list f-local-event?)))
                  (and f-exported-event? (list f-exported-event?))
-                 solution-correct))))
+                 solution-correct
+                 names-to-avoid))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1134,7 +1068,8 @@
   :returns (mv erp
                (result "@('(tuple (local-events pseudo-form-listp)
                                   (exported-events pseudo-form-listp)
-                                  (solution-correct symbolp))')")
+                                  (solution-correct symbolp)
+                                  (updated-names-to-avoid symbol-listp))')")
                state)
   :mode :program
   :short "Attempt to generate the events that provide the solution."
@@ -1145,20 +1080,32 @@
      In contrast, the events for @('new') and @('old-if-new')
      are the same for every method."))
   (case method
-    ((:acl2-rewriter :axe-rewriter)
-     (solve-gen-solution-rewriter ?f
-                                  x1...xn
-                                  matrix
-                                  method
-                                  method-rules
-                                  f
-                                  solution-enable
-                                  solution-guard
-                                  solution-guard-hints
-                                  verify-guards
-                                  names-to-avoid
-                                  ctx
-                                  state))
+    (:acl2-rewriter
+     (solve-gen-solution-acl2-rewriter ?f
+                                       x1...xn
+                                       matrix
+                                       method-rules
+                                       f
+                                       solution-enable
+                                       solution-guard
+                                       solution-guard-hints
+                                       verify-guards
+                                       names-to-avoid
+                                       ctx
+                                       state))
+    (:axe-rewriter
+     (solve-gen-solution-axe-rewriter ?f
+                                      x1...xn
+                                      matrix
+                                      method-rules
+                                      f
+                                      solution-enable
+                                      solution-guard
+                                      solution-guard-hints
+                                      verify-guards
+                                      names-to-avoid
+                                      ctx
+                                      state))
     (:manual
      (solve-gen-solution-manual ?f
                                 x1...xn
@@ -1172,7 +1119,6 @@
                                 solution-hints
                                 verify-guards
                                 names-to-avoid
-                                ctx
                                 state))
     (t (value (raise "Internal error: unknown method ~x0." method)))))
 
@@ -1278,7 +1224,8 @@
   (b* ((wrld (w state))
        ((er (list solution-local-events
                   solution-exported-events
-                  solution-correct))
+                  solution-correct
+                  &))
         (solve-gen-solution ?f
                             x1...xn
                             matrix
