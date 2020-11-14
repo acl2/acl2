@@ -671,7 +671,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define solve-gen-theorem-acl2-rewriter ((matrix pseudo-termp)
+(define solve-gen-acl2-rewriter-theorem ((matrix pseudo-termp)
                                          (rewritten-term pseudo-termp)
                                          (used-rules symbol-listp)
                                          (names-to-avoid symbol-listp)
@@ -718,7 +718,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define solve-gen-theorem-axe-rewriter ((matrix pseudo-termp)
+(define solve-gen-axe-rewriter-theorem ((matrix pseudo-termp)
                                         (rewritten-term pseudo-termp)
                                         (method-rules symbol-listp)
                                         (names-to-avoid symbol-listp)
@@ -834,7 +834,7 @@
                                                             ctx
                                                             state))
        ((mv rewriting-correct-event rewriting-correct names-to-avoid)
-        (solve-gen-theorem-acl2-rewriter matrix
+        (solve-gen-acl2-rewriter-theorem matrix
                                          rewritten-term
                                          used-rules
                                          names-to-avoid
@@ -907,7 +907,7 @@
                                                             ctx
                                                             state))
        ((mv rewriting-correct-event rewriting-correct names-to-avoid)
-        (solve-gen-theorem-axe-rewriter matrix
+        (solve-gen-axe-rewriter-theorem matrix
                                         rewritten-term
                                         method-rules
                                         names-to-avoid
