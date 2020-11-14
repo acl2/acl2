@@ -783,6 +783,35 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define solve-gen-solution-correct-from-rewriting-theorem
+  ((?f symbolp)
+   (x1...xn symbol-listp)
+   (matrix pseudo-termp)
+   (f-body pseudo-termp)
+   (rewriting-correct symbolp)
+   (names-to-avoid symbol-listp)
+   (wrld plist-worldp))
+  :returns (mv (solution-correct-event "A @(tsee pseudo-event-formp).")
+               (solution-correct "A @(tsee symbolp).")
+               (updated-names-to-avoid "A @(tsee symbol-listp)."))
+  :mode :program
+  :short "Generate the solution correctness theorem from the rewriting theorem."
+  (b* (((mv solution-correct names-to-avoid)
+        (fresh-logical-name-with-$s-suffix 'solution-correct
+                                           nil
+                                           names-to-avoid
+                                           wrld))
+       (solution-correct-event
+        `(local
+          (defthmd ,solution-correct
+            (implies (equal (,?f ,@x1...xn)
+                            ,f-body)
+                     ,matrix)
+            :hints (("Goal" :in-theory nil :use ,rewriting-correct))))))
+    (mv solution-correct-event solution-correct names-to-avoid)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define solve-gen-solution-acl2-rewriter ((?f symbolp)
                                           (x1...xn symbol-listp)
                                           (matrix pseudo-termp)
@@ -839,18 +868,14 @@
                                          used-rules
                                          names-to-avoid
                                          (w state)))
-       ((mv solution-correct names-to-avoid)
-        (fresh-logical-name-with-$s-suffix 'solution-correct
-                                           nil
-                                           names-to-avoid
-                                           (w state)))
-       (solution-correct-event
-        `(local
-          (defthmd ,solution-correct
-            (implies (equal (,?f ,@x1...xn)
-                            ,f-body)
-                     ,matrix)
-            :hints (("Goal" :in-theory nil :use ,rewriting-correct)))))
+       ((mv solution-correct-event solution-correct names-to-avoid)
+        (solve-gen-solution-correct-from-rewriting-theorem ?f
+                                                           x1...xn
+                                                           matrix
+                                                           f-body
+                                                           rewriting-correct
+                                                           names-to-avoid
+                                                           (w state)))
        ((mv f-local-event f-exported-event)
         (solve-gen-f f
                      x1...xn
@@ -912,18 +937,14 @@
                                         method-rules
                                         names-to-avoid
                                         (w state)))
-       ((mv solution-correct names-to-avoid)
-        (fresh-logical-name-with-$s-suffix 'solution-correct
-                                           nil
-                                           names-to-avoid
-                                           (w state)))
-       (solution-correct-event
-        `(local
-          (defthmd ,solution-correct
-            (implies (equal (,?f ,@x1...xn)
-                            ,f-body)
-                     ,matrix)
-            :hints (("Goal" :in-theory nil :use ,rewriting-correct)))))
+       ((mv solution-correct-event solution-correct names-to-avoid)
+        (solve-gen-solution-correct-from-rewriting-theorem ?f
+                                                           x1...xn
+                                                           matrix
+                                                           f-body
+                                                           rewriting-correct
+                                                           names-to-avoid
+                                                           (w state)))
        ((mv f-local-event f-exported-event)
         (solve-gen-f f
                      x1...xn
