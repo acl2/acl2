@@ -48,6 +48,7 @@
 (include-book "unpackbv")
 (include-book "packbv-and-unpackbv")
 (include-book "map-packbv")
+(include-book "packing")
 
 (include-book "bv-arrayp")
 (include-book "bv-array-read")
