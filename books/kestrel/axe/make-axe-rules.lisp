@@ -23,11 +23,11 @@
 (include-book "kestrel/utilities/conjuncts-and-disjuncts" :dir :system)
 (include-book "kestrel/utilities/quote" :dir :system)
 (include-book "kestrel/utilities/acons-fast" :dir :system)
-;(include-book "kestrel/axe/all-consp" :dir :system)
-(include-book "kestrel/axe/known-booleans" :dir :system)
+;(include-book "all-consp")
+(include-book "known-booleans")
 (include-book "axe-rules")
 (include-book "stored-rules")
-(include-book "kestrel/axe/axe-syntax" :dir :system) ;since this book knows about axe-syntaxp and axe-bind-free
+(include-book "axe-syntax") ;since this book knows about axe-syntaxp and axe-bind-free
 (include-book "kestrel/std/system/theorem-symbolp" :dir :system)
 (include-book "kestrel/utilities/erp" :dir :system)
 (local (include-book "kestrel/std/system/all-vars" :dir :system))
