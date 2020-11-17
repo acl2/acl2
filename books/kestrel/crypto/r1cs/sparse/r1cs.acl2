@@ -10,5 +10,3 @@
 
 (ld "rtl/rel11/package.lsp" :dir :system)
 (include-book "../portcullis")
-
-; cert-flags: ? T
