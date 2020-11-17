@@ -1,0 +1,12 @@
+; Portcullis commands for proof-utils.lisp
+;
+; Copyright (C) 2019-2020 Kestrel Institute
+;
+; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
+;
+; Author: Eric Smith (eric.smith@kestrel.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(include-book "kestrel/crypto/r1cs/portcullis" :dir :system)
+(include-book "kestrel/prime-fields/portcullis" :dir :system)
