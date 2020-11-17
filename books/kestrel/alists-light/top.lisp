@@ -19,6 +19,7 @@
 
 ;; Books about new functions:
 (include-book "acons-unique")
+(include-book "clear-key")
 (include-book "lookup-eq")
 (include-book "lookup-equal")
 (include-book "lookup")

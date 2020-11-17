@@ -105,6 +105,9 @@
 (include-book "bvashr")
 (include-book "defs-shifts")
 
+;; Counting one bits:
+(include-book "bvcount")
+
 ;; Trim (only for rewriting)
 (include-book "trim")
 
