@@ -295,7 +295,10 @@
 
   (xdoc::p
    "Generators for ACL2 of code in other programming languages (than Java)
-    may be developed similarly to ATJ."))
+    may be developed similarly to ATJ.
+    An example is "
+   (xdoc::seetopic "c::atc" "ATC")
+   ", a C code generator for ACL2."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
