@@ -823,7 +823,7 @@
    (print evmac-input-print-p)
    (names-to-avoid symbol-listp)
    (wrld plist-worldp))
-  :returns (mv (events "A @(tsee pseudo-event-list-formp).")
+  :returns (mv (events "A @(tsee pseudo-event-form-listp).")
                (name "A @(tsee symbolp).")
                (updated-names-to-avoid "A @(tsee symbol-listp)."))
   :mode :program
