@@ -12,7 +12,7 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/axe/stored-rules" :dir :system)
+(include-book "stored-rules")
 (include-book "kestrel/typed-lists-light/all-integerp" :dir :system)
 
 ;; The rule-limits is a map from rule names to the number of additional times we can try them
