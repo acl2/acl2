@@ -1431,21 +1431,6 @@
       (:linear
        d-e-cc-contents-of-lofat-remove-file-disjoint-lemma-12)))))
 
-  (local
-   (defthm
-     lemma
-     (implies
-      (equal
-       (mv-nth
-        1
-        (d-e-cc-contents fat32$c (pseudo-root-d-e fat32$c)))
-       0)
-      (intersectp-equal
-       (mv-nth 0
-               (d-e-cc fat32$c (pseudo-root-d-e fat32$c)))
-       (mv-nth 0
-               (d-e-cc fat32$c (pseudo-root-d-e fat32$c)))))))
-
   (defthm
     lofat-unlink-refinement
     (implies
