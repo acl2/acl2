@@ -341,7 +341,7 @@
         " is redundant
            (as defined in the "
         ,redundancy-ref
-        "), a message to that effect is printed on the screen,
+        "), an indication to that effect is printed on the screen,
            unless @(':print') is @('nil')."))
       ,@additional)))
 
