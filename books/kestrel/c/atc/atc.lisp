@@ -26,6 +26,8 @@
 (include-book "kestrel/event-macros/event-generation" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
 (include-book "kestrel/std/system/check-if-call" :dir :system)
+(include-book "kestrel/std/system/maybe-pseudo-event-formp" :dir :system)
+(include-book "kestrel/std/system/table-alist-plus" :dir :system)
 (include-book "kestrel/std/util/tuple" :dir :system)
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
 (include-book "oslib/dirname" :dir :system)
@@ -243,6 +245,62 @@
                  const
                  output-file
                  verbose))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc+ atc-table
+  :parents (atc-implementation)
+  :short "Table of @(tsee atc) calls."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "In order to support proper redundancy checking,
+     every successful call of @(tsee atc) is recorded in a table.
+     If a call is performed that is already in the table,
+     it is considered redundant."))
+  :order-subtopics t
+  :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defval *atc-table*
+  :short "Name of the table of @(tsee atc) calls."
+  'atc-table)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atc-table-definition
+  :short "Definition of the table of @(tsee atc) calls."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The keys of the table are calls of @(tsee atc).
+     The values of the table are the generated expansions."))
+
+  (make-event
+   `(table ,*atc-table* nil nil
+      :guard (and (acl2::pseudo-event-formp acl2::key)
+                  (acl2::pseudo-event-formp acl2::val)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-table-lookup ((call acl2::pseudo-event-formp) (wrld plist-worldp))
+  :returns (expansion? acl2::maybe-pseudo-event-formp)
+  :short "Look up an @(tsee atc) call in the table."
+  (b* ((table (acl2::table-alist+ *atc-table* wrld))
+       (expansion? (cdr (assoc-equal call table))))
+    (if (acl2::maybe-pseudo-event-formp expansion?)
+        expansion?
+      (raise "Internal error: value ~x0 of key ~x1 in the ATC table.")))
+  :prepwork ((local (include-book "std/alists/top" :dir :system))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-table-record-event ((call acl2::pseudo-event-formp)
+                                (expansion acl2::pseudo-event-formp))
+  :returns (event acl2::pseudo-event-formp)
+  :short "Event to update the table of @(tsee atc) calls."
+  `(table ,*atc-table* ',call ',expansion))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -986,7 +1044,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-fn ((args true-listp) ctx state)
+(define atc-fn ((args true-listp) (call acl2::pseudo-event-formp) ctx state)
   :returns (mv erp
                (result "Always @('(value-triple :invisible)').")
                state)
@@ -994,7 +1052,9 @@
   :parents (atc-implementation)
   :short "Process the inputs and
           generate the constant definition and the C file."
-  (b* (((er (list fn1...fnp const output-file ?verbose))
+  (b* (((when (atc-table-lookup call (w state)))
+        (value '(value-triple :redundant)))
+       ((er (list fn1...fnp const output-file ?verbose))
         (atc-process-inputs args ctx state))
        ((er tunit) (atc-gen-transunit fn1...fnp ctx state))
        (const-event (atc-gen-const const tunit))
@@ -1015,8 +1075,10 @@
             ,@fn-thm-exported-events
             (cw-event "~%Generated theorems:~% ~x0~%" ',wf-thm-name)
             ,@(loop$ for name in fn-thm-names
-                     collect `(cw-event " ~x0~%" ',name)))))
+                     collect `(cw-event " ~x0~%" ',name))))
+       (table-event (atc-table-record-event call encapsulate)))
     (value `(progn ,encapsulate
+                   ,table-event
                    (value-triple :invisible)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1030,8 +1092,8 @@
     "We suppress the extra output produced by @(tsee make-event)
      via @(tsee with-output) and @('(:on-behalf-of :quiet)').")
    (xdoc::@def "atc"))
-  (defmacro atc (&rest args)
+  (defmacro atc (&whole call &rest args)
     `(with-output :off :all :on acl2::error
        (make-event
-        (atc-fn ',args 'atc state)
+        (atc-fn ',args ',call 'atc state)
         :on-behalf-of :quiet))))

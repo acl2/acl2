@@ -481,4 +481,13 @@
      (xdoc::p
       "The directory @('[books]/kestrel/c/atc/tests')
        contains some examples of generated C code
-       and handwritten C code to test it.")))))
+       and handwritten C code to test it.")))
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::evmac-section
+    "Redundancy"
+
+    (xdoc::p
+     "A call of @('atc') is redundant if an only if
+      it is identical to a previous successful call of @('atc')."))))
