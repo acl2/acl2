@@ -1078,7 +1078,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define solve-gen-solution-manual ((?f symbolp)
+(define solve-gen-solution-manual ((old symbolp)
+                                   (?f symbolp)
                                    (x1...xn symbol-listp)
                                    (matrix pseudo-termp)
                                    (f symbolp)
@@ -1089,6 +1090,7 @@
                                    (solution-body "An untranslated term.")
                                    (solution-hints true-listp)
                                    (verify-guards booleanp)
+                                   (print evmac-input-print-p)
                                    (names-to-avoid symbol-listp)
                                    state)
   :returns (mv erp
@@ -1105,6 +1107,21 @@
         (fresh-logical-name-with-$s-suffix 'solution-correct
                                            nil
                                            names-to-avoid
+                                           wrld))
+       ((mv appcond names-to-avoid)
+        (fresh-logical-name-with-$s-suffix 'appcond
+                                           nil
+                                           names-to-avoid
+                                           wrld))
+       ((mv old-instance names-to-avoid)
+        (fresh-logical-name-with-$s-suffix 'old-instance
+                                           'function
+                                           names-to-avoid
+                                           wrld))
+       ((mv solution-theorem names-to-avoid)
+        (fresh-logical-name-with-$s-suffix 'solution-theorem
+                                           nil
+                                           names-to-avoid
                                            wrld)))
     (if f-existsp
         (b* ((solution-correct-event
@@ -1113,8 +1130,26 @@
                   (implies (equal (,?f ,@x1...xn)
                                   (,f ,@x1...xn))
                            ,matrix)
-                  :hints ,solution-hints))))
-          (value (list (list solution-correct-event)
+                  :hints ,solution-hints)))
+             (appcond-event
+              `(local
+                (defthmd ,appcond
+                  ,(acl2::sublis-fn-simple (list (cons ?f f)) matrix)
+                  :hints ,solution-hints)))
+             (old-instance-event
+              `(local
+                (soft::defun-inst ,old-instance
+                  (,old (,?f . ,f))
+                  :print ,(and (eq print :all) :all))))
+             (solution-theorem-event
+              `(local
+                (defthm ,solution-theorem
+                  (,old-instance)
+                  :hints (("Goal" :in-theory '(,old-instance ,appcond)))))))
+          (value (list (list solution-correct-event
+                             appcond-event
+                             old-instance-event
+                             solution-theorem-event)
                        nil
                        solution-correct
                        names-to-avoid)))
@@ -1126,6 +1161,17 @@
                                 ,f-body)
                          ,matrix)
                 :hints ,solution-hints)))
+           ((mv & matrix-instance)
+            (acl2::fsublis-fn-rec (list (cons ?f (make-lambda x1...xn
+                                                              solution-body)))
+                                  matrix
+                                  nil
+                                  nil))
+           (appcond-event
+            `(local
+              (defthmd ,appcond
+                ,matrix-instance
+                :hints ,solution-hints)))
            ((mv f-local-event f-exported-event)
             (solve-gen-f f
                          x1...xn
@@ -1134,9 +1180,22 @@
                          solution-guard-hints
                          solution-enable
                          verify-guards
-                         wrld)))
+                         wrld))
+           (old-instance-event
+            `(local
+              (soft::defun-inst ,old-instance
+                (,old (,?f . ,f))
+                :print ,(and (eq print :all) :all))))
+           (solution-theorem-event
+            `(local
+              (defthm ,solution-theorem
+                (,old-instance)
+                :hints (("Goal" :in-theory '(,old-instance ,f ,appcond)))))))
         (value (list (list solution-correct-event
-                           f-local-event)
+                           appcond-event
+                           f-local-event
+                           old-instance-event
+                           solution-theorem-event)
                      (list f-exported-event)
                      solution-correct
                      names-to-avoid))))))
@@ -1207,7 +1266,8 @@
                                       ctx
                                       state))
     (:manual
-     (solve-gen-solution-manual ?f
+     (solve-gen-solution-manual old
+                                ?f
                                 x1...xn
                                 matrix
                                 f
@@ -1218,6 +1278,7 @@
                                 solution-body
                                 solution-hints
                                 verify-guards
+                                print
                                 names-to-avoid
                                 state))
     (t (value (raise "Internal error: unknown method ~x0." method)))))
