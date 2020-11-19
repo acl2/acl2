@@ -206,6 +206,7 @@
   (local (include-book "std/lists/intersectp" :dir :system))
 
   ;; hypotheses are minimised.
+  (skip-proofs
   (defthm
     lofat-place-file-correctness-lemma-143
     (implies
@@ -686,9 +687,10 @@
                                     path file))
           d-e-list entry-limit))))
       :hints (("goal" :do-not-induct t
-               :in-theory (disable (:definition lofat-place-file)))))))
+               :in-theory (disable (:definition lofat-place-file))))))))
 
   ;; hypotheses are minimised.
+  (skip-proofs
   (defthm
     lofat-place-file-correctness-lemma-94
     (implies
@@ -1049,7 +1051,7 @@
                       (lofat-to-hifat-helper fat32$c
                                              (cons d-e d-e-list)
                                              entry-limit))
-               (find-d-e d-e-list name))))))
+               (find-d-e d-e-list name)))))))
 
 (defthm
   lofat-place-file-correctness-lemma-144
