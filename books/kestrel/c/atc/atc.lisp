@@ -279,26 +279,26 @@
 
   (make-event
    `(table ,*atc-table* nil nil
-      :guard (and (acl2::pseudo-event-formp acl2::key)
-                  (acl2::pseudo-event-formp acl2::val)))))
+      :guard (and (pseudo-event-formp acl2::key)
+                  (pseudo-event-formp acl2::val)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-table-lookup ((call acl2::pseudo-event-formp) (wrld plist-worldp))
-  :returns (expansion? acl2::maybe-pseudo-event-formp)
+(define atc-table-lookup ((call pseudo-event-formp) (wrld plist-worldp))
+  :returns (expansion? maybe-pseudo-event-formp)
   :short "Look up an @(tsee atc) call in the table."
   (b* ((table (acl2::table-alist+ *atc-table* wrld))
        (expansion? (cdr (assoc-equal call table))))
-    (if (acl2::maybe-pseudo-event-formp expansion?)
+    (if (maybe-pseudo-event-formp expansion?)
         expansion?
       (raise "Internal error: value ~x0 of key ~x1 in the ATC table.")))
   :prepwork ((local (include-book "std/alists/top" :dir :system))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-table-record-event ((call acl2::pseudo-event-formp)
-                                (expansion acl2::pseudo-event-formp))
-  :returns (event acl2::pseudo-event-formp)
+(define atc-table-record-event ((call pseudo-event-formp)
+                                (expansion pseudo-event-formp))
+  :returns (event pseudo-event-formp)
   :short "Event to update the table of @(tsee atc) calls."
   `(table ,*atc-table* ',call ',expansion))
 
@@ -876,7 +876,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-const ((const symbolp) (tunit transunitp))
-  :returns (event acl2::pseudo-event-formp)
+  :returns (event pseudo-event-formp)
   :short "Generate the named constant for the abstract syntax tree
           of the generated C code (i.e. translation unit)."
   `(defconst ,const ',tunit))
@@ -887,8 +887,8 @@
   :returns (mv erp
                (result
                 "A @('(tuple (name symbolp)
-                             (local-event acl2::pseudo-event-formp)
-                             (exported-event acl2::pseudo-event-formp))').")
+                             (local-event pseudo-event-formp)
+                             (exported-event pseudo-event-formp))').")
                state)
   :mode :program
   :short "Generate the theorem asserting
@@ -927,8 +927,8 @@
   :returns (mv erp
                (result
                 "A @('(tuple (name symbolp)
-                             (local-event acl2::pseudo-event-formp)
-                             (exported-event acl2::pseudo-event-formp))').")
+                             (local-event pseudo-event-formp)
+                             (exported-event pseudo-event-formp))').")
                state)
   :mode :program
   :short "Generate the theorem asserting
@@ -1018,8 +1018,8 @@
                (result
                 "A @('(tuple
                        (names symbol-listp)
-                       (local-events acl2::pseudo-event-form-listp)
-                       (exported-events acl2::pseudo-event-form-listp))').")
+                       (local-events pseudo-event-form-listp)
+                       (exported-events pseudo-event-form-listp))').")
                state)
   :mode :program
   :short "Lift @(tsee atc-gen-fn-thm) to lists."
@@ -1044,7 +1044,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-fn ((args true-listp) (call acl2::pseudo-event-formp) ctx state)
+(define atc-fn ((args true-listp) (call pseudo-event-formp) ctx state)
   :returns (mv erp
                (result "Always @('(value-triple :invisible)').")
                state)

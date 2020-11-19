@@ -29,6 +29,9 @@
                implode
                impossible
                lnfix
+               maybe-pseudo-event-formp
                msg-listp
                nat
+               pseudo-event-form-listp
+               pseudo-event-formp
                tuple)))
