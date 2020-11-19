@@ -958,21 +958,19 @@
   (b* ((lines (pprint-transunit tunit)))
     (pprinted-lines-to-file lines output-file state)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-fn ((args true-listp) (call pseudo-event-formp) ctx state)
-  :returns (mv erp
-               (result "Always @('(value-triple :invisible)').")
-               state)
+(define atc-gen-everything ((fn1...fnp symbol-listp)
+                            (const symbolp)
+                            (output-file stringp)
+                            (verbose booleanp)
+                            (call pseudo-event-formp)
+                            ctx
+                            state)
+  :returns (mv erp (event "A @(tsee pseudo-event-formp).") state)
   :mode :program
-  :parents (atc-implementation)
-  :short "Process the inputs and
-          generate the constant definition and the C file."
-  (b* (((when (atc-table-lookup call (w state)))
-        (value '(value-triple :redundant)))
-       ((er (list fn1...fnp const output-file verbose))
-        (atc-process-inputs args ctx state))
-       ((er tunit) (atc-gen-transunit fn1...fnp ctx state))
+  :short "Generate the file and the events."
+  (b* (((er tunit) (atc-gen-transunit fn1...fnp ctx state))
        ((mv local-const-event exported-const-event)
         (atc-gen-const const tunit verbose))
        ((er (list & wf-thm-local-event wf-thm-exported-event))
@@ -996,6 +994,22 @@
     (value `(progn ,encapsulate
                    ,table-event
                    (value-triple :invisible)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-fn ((args true-listp) (call pseudo-event-formp) ctx state)
+  :returns (mv erp
+               (result "Always @('(value-triple :invisible)').")
+               state)
+  :mode :program
+  :parents (atc-implementation)
+  :short "Process the inputs and
+          generate the constant definition and the C file."
+  (b* (((when (atc-table-lookup call (w state)))
+        (value '(value-triple :redundant)))
+       ((er (list fn1...fnp const output-file verbose))
+        (atc-process-inputs args ctx state)))
+    (atc-gen-everything fn1...fnp const output-file verbose call ctx state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
