@@ -10,10 +10,10 @@
 
 (in-package "C")
 
-(include-book "c-abstract-syntax")
-(include-book "c-pretty-printer" :ttags ((:open-output-channel!)))
-(include-book "c-static-semantics")
-(include-book "c-dynamic-semantics")
+(include-book "abstract-syntax")
+(include-book "pretty-printer" :ttags ((:open-output-channel!)))
+(include-book "static-semantics")
+(include-book "dynamic-semantics")
 
 (include-book "kestrel/error-checking/ensure-function-is-guard-verified" :dir :system)
 (include-book "kestrel/error-checking/ensure-function-is-logic-mode" :dir :system)

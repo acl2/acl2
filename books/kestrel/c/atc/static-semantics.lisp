@@ -10,14 +10,14 @@
 
 (in-package "C")
 
-(include-book "c-abstract-syntax")
+(include-book "abstract-syntax")
 (include-book "portable-ascii-identifiers")
 
 (include-book "kestrel/fty/sbyte32" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ atc-c-static-semantics
+(defxdoc+ atc-static-semantics
   :parents (atc)
   :short "A static semantics of C for ATC."
   :long

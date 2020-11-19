@@ -10,7 +10,7 @@
 
 (in-package "C")
 
-(include-book "c-abstract-syntax")
+(include-book "abstract-syntax")
 
 (include-book "kestrel/utilities/messages" :dir :system)
 (include-book "std/strings/decimal" :dir :system)
@@ -36,7 +36,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ atc-c-pretty-printer
+(defxdoc+ atc-pretty-printer
   :parents (atc)
   :short "A pretty-printer of C abstract syntax for ATC."
   :long

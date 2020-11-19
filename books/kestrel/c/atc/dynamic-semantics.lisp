@@ -10,15 +10,15 @@
 
 (in-package "C")
 
-(include-book "c-abstract-syntax")
-(include-book "c-integers")
+(include-book "abstract-syntax")
+(include-book "integers")
 
 (include-book "kestrel/fty/defflatsum" :dir :system)
 (include-book "kestrel/fty/defomap" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ atc-c-dynamic-semantics
+(defxdoc+ atc-dynamic-semantics
   :parents (atc)
   :short "A dynamic semantics of C for ATC."
   :long
