@@ -540,6 +540,54 @@
    (not (or (zp length) (zp cluster-size))))
   :hints (("goal" :in-theory (enable fat32-build-index-list))))
 
+(encapsulate
+  ()
+
+  (local (include-book "arithmetic-3/top" :dir :system))
+
+  (local (in-theory (enable nfix)))
+
+  (local
+   (set-default-hints
+    '((nonlinearp-default-hint stable-under-simplificationp
+                               hist pspv))))
+
+  (defthm
+    len-of-fat32-build-index-list-1
+    (implies
+     (not (zp cluster-size))
+     (<= (len (mv-nth 0
+                      (fat32-build-index-list fa-table masked-current-cluster
+                                              length cluster-size)))
+         (ceiling (nfix length) cluster-size)))
+    :hints
+    (("goal" :induct (fat32-build-index-list fa-table masked-current-cluster
+                                             length cluster-size)
+      :in-theory (enable fat32-build-index-list)))
+    :rule-classes
+    (:linear
+     (:linear
+      :corollary
+      (implies
+       (not (zp cluster-size))
+       (<= (*
+            cluster-size
+            (len (mv-nth 0
+                         (fat32-build-index-list fa-table masked-current-cluster
+                                                 length cluster-size))))
+           (* cluster-size
+              (ceiling (nfix length) cluster-size)))))
+     (:linear
+      :corollary
+      (implies
+       (not (zp cluster-size))
+       (< (*
+           cluster-size
+           (len (mv-nth 0
+                        (fat32-build-index-list fa-table masked-current-cluster
+                                                length cluster-size))))
+          (+ (nfix length) cluster-size)))))))
+
 (defun count-free-clusters-helper (fa-table n)
   (declare (xargs :guard (and (fat32-entry-list-p fa-table)
                               (natp n)

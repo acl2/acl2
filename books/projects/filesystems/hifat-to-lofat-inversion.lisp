@@ -1485,14 +1485,13 @@
 (defthm
   disjoint-list-listp-of-lofat-to-hifat-helper
   (b* (((mv & & cc-list error-code)
-        (lofat-to-hifat-helper fat32$c
-                               d-e-list entry-limit)))
+        (lofat-to-hifat-helper fat32$c d-e-list entry-limit)))
     (implies (equal error-code 0)
              (disjoint-list-listp cc-list)))
-  :hints
-  (("goal" :in-theory (enable lofat-to-hifat-helper)
-    :induct (lofat-to-hifat-helper fat32$c
-                                   d-e-list entry-limit))))
+  :hints (("goal" :in-theory (enable lofat-to-hifat-helper
+                                     disjoint-list-listp)
+           :induct (lofat-to-hifat-helper fat32$c d-e-list entry-limit)
+           :do-not-induct t)))
 
 (defthm
   no-duplicatesp-of-flatten-of-lofat-to-hifat-helper

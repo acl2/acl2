@@ -287,17 +287,13 @@
           (and (indices-marked-listp l1 alv)
                (indices-marked-listp l2 alv)))))
 
-;; this should be where the encapsulate ends
-
-(defthm l4-wrchs-returns-stricter-fs-lemma-1
-  (implies
-   (and
-    (consp (assoc-equal name fs))
-    (not (l3-regular-file-entry-p (cdr (assoc-equal name fs))))
-    (l3-fs-p fs)
-    (disjoint-list-listp (l4-collect-all-index-lists fs)))
-   (disjoint-list-listp
-    (l4-collect-all-index-lists (cdr (assoc-equal name fs))))))
+(defthm
+  l4-wrchs-returns-stricter-fs-lemma-1
+  (implies (and (not (l3-regular-file-entry-p (cdr (assoc-equal name fs))))
+                (disjoint-list-listp (l4-collect-all-index-lists fs)))
+           (disjoint-list-listp
+            (l4-collect-all-index-lists (cdr (assoc-equal name fs)))))
+  :hints (("goal" :in-theory (enable disjoint-list-listp))))
 
 (defthm l4-wrchs-returns-stricter-fs-lemma-2
   (implies
@@ -346,12 +342,13 @@
             (l4-collect-all-index-lists (remove1-assoc-equal name fs))))
   :hints (("Goal" :in-theory (enable not-intersectp-list))))
 
-(defthm l4-wrchs-returns-stricter-fs-lemma-7
-  (implies
-   (and (l3-fs-p fs)
-        (disjoint-list-listp (l4-collect-all-index-lists fs)))
-   (disjoint-list-listp
-    (l4-collect-all-index-lists (remove1-assoc-equal name fs)))))
+(defthm
+  l4-wrchs-returns-stricter-fs-lemma-7
+  (implies (and (l3-fs-p fs)
+                (disjoint-list-listp (l4-collect-all-index-lists fs)))
+           (disjoint-list-listp
+            (l4-collect-all-index-lists (remove1-assoc-equal name fs))))
+  :hints (("goal" :in-theory (enable disjoint-list-listp))))
 
 (defthm l4-wrchs-returns-stricter-fs-lemma-8
   (implies
@@ -410,7 +407,8 @@
            (not-intersectp-list
             (cadr (assoc-equal name fs))
             (l4-collect-all-index-lists (remove1-assoc-equal name fs))))
-  :hints (("Goal" :in-theory (enable not-intersectp-list))))
+  :hints (("goal" :in-theory (enable not-intersectp-list
+                                     disjoint-list-listp))))
 
 (defthm l4-wrchs-returns-stricter-fs-lemma-15
   (implies (indices-marked-p l alv)
@@ -681,13 +679,17 @@
    (and (consp (assoc-equal name fs))
         (not (l3-regular-file-entry-p (cdr (assoc-equal name fs))))
         (l3-fs-p fs)
-        (disjoint-list-listp (l4-collect-all-index-lists fs))
-        (no-duplicates-listp (l4-collect-all-index-lists fs)))
+        (disjoint-list-listp (l4-collect-all-index-lists fs)))
    (not (member-intersectp-equal
          (l4-collect-all-index-lists (remove1-assoc-equal name fs))
          (l4-collect-all-index-lists (cdr (assoc-equal name fs))))))
   :hints
-  (("Subgoal *1/7''"
+  (("goal" :induct (mv (l4-collect-all-index-lists fs)
+                       (l3-fs-p fs)
+                       (assoc-equal name fs))
+    :do-not-induct t
+    :in-theory (enable disjoint-list-listp))
+   ("subgoal *1/7''"
     :in-theory (disable member-intersectp-is-commutative)
     :use
     (:instance
@@ -696,8 +698,7 @@
      (y
       (cons
        (cadr (car fs))
-       (l4-collect-all-index-lists (remove1-assoc-equal name
-                                                       (cdr fs)))))))))
+       (l4-collect-all-index-lists (remove1-assoc-equal name (cdr fs)))))))))
 
 (defthm
   l4-wrchs-returns-stricter-fs-lemma-31
@@ -859,8 +860,8 @@
  :hints (("goal" :induct (indices-marked-listp l alv))
          ("subgoal *1/2" :expand (flatten l))))
 
-;; find a simpler problem that doesn't have all these details, that shows the
-;; same kind of issue
+;; Find a simpler problem that doesn't have all these details, that shows the
+;; same kind of issue.
 (defthm l4-wrchs-returns-stricter-fs
   (implies (and (symbol-listp hns)
                 (l4-stricter-fs-p fs alv)
@@ -872,7 +873,9 @@
              (l4-wrchs hns fs disk alv start text)
              (declare (ignore new-disk))
              (l4-stricter-fs-p new-fs new-alv)))
-  :hints (("Subgoal *1/6" :in-theory (enable L3-REGULAR-FILE-ENTRY-P))))
+  :hints (("goal" :in-theory (enable disjoint-list-listp)
+           :induct (l4-wrchs hns fs disk alv start text)
+           :do-not-induct t)))
 
 (defun l4-to-l2-fs (fs disk)
   (declare (xargs :guard (and (l4-fs-p fs) (block-listp disk))

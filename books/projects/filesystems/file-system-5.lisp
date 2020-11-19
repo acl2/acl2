@@ -550,11 +550,6 @@
            (equal (remove1-assoc-equal name (l5-to-l4-fs fs))
                   (l5-to-l4-fs (remove1-assoc-equal name fs)))))
 
-;; not provable
-;; (thm
-;;  (implies (l4-stricter-fs-p (l5-to-l4-fs fs) alv)
-;;           (l5-fs-p fs)))
-
 (defthm
   l5-wrchs-correctness-1-lemma-2
   (implies
@@ -571,12 +566,11 @@
 (defthm
   l5-wrchs-correctness-1-lemma-3
   (implies
-   (and (consp (assoc-equal name fs))
-        (l5-fs-p (cdr (assoc-equal name fs)))
-        (l5-fs-p fs)
+   (and (l5-fs-p (cdr (assoc-equal name fs)))
         (disjoint-list-listp (l4-collect-all-index-lists (l5-to-l4-fs fs))))
    (disjoint-list-listp
-    (l4-collect-all-index-lists (l5-to-l4-fs (cdr (assoc-equal name fs)))))))
+    (l4-collect-all-index-lists (l5-to-l4-fs (cdr (assoc-equal name fs))))))
+  :hints (("goal" :in-theory (enable disjoint-list-listp))))
 
 (defthm
   l5-wrchs-correctness-1-lemma-4
