@@ -55,6 +55,8 @@
 
   (xdoc::evmac-topic-implementation-item-input "output-file")
 
+  xdoc::*evmac-topic-implementation-item-call*
+
   "@('const') is the symbol specified by @('const-name')."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
