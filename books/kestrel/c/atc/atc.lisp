@@ -780,8 +780,7 @@
 (define atc-gen-wf-thm ((const symbolp) (verbose booleanp) ctx state)
   :returns (mv erp
                (result
-                "A @('(tuple (name symbolp)
-                             (local-event pseudo-event-formp)
+                "A @('(tuple (local-event pseudo-event-formp)
                              (exported-event pseudo-event-formp))').")
                state)
   :mode :program
@@ -820,7 +819,7 @@
        (local-event `(progn ,@progress-start?
                             ,local-event
                             ,@progress-end?)))
-    (value (list name local-event exported-event))))
+    (value (list local-event exported-event))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -831,8 +830,7 @@
                         state)
   :returns (mv erp
                (result
-                "A @('(tuple (name symbolp)
-                             (local-event pseudo-event-formp)
+                "A @('(tuple (local-event pseudo-event-formp)
                              (exported-event pseudo-event-formp))').")
                state)
   :mode :program
@@ -921,7 +919,7 @@
        (local-event `(progn ,@progress-start?
                             ,local-event
                             ,@progress-end?)))
-    (value (list name local-event exported-event))))
+    (value (list local-event exported-event))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -933,19 +931,17 @@
   :returns (mv erp
                (result
                 "A @('(tuple
-                       (names symbol-listp)
                        (local-events pseudo-event-form-listp)
                        (exported-events pseudo-event-form-listp))').")
                state)
   :mode :program
   :short "Lift @(tsee atc-gen-fn-thm) to lists."
   (b* (((when (endp fns)) (value (list nil nil nil)))
-       ((er (list name local-event exported-event))
+       ((er (list local-event exported-event))
         (atc-gen-fn-thm (car fns) const verbose ctx state))
-       ((er (list names local-events exported-events))
+       ((er (list local-events exported-events))
         (atc-gen-fn-thm-list (cdr fns) const verbose ctx state)))
-    (value (list (cons name names)
-                 (cons local-event local-events)
+    (value (list (cons local-event local-events)
                  (cons exported-event exported-events)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -973,9 +969,9 @@
   (b* (((er tunit) (atc-gen-transunit fn1...fnp ctx state))
        ((mv local-const-event exported-const-event)
         (atc-gen-const const tunit verbose))
-       ((er (list & wf-thm-local-event wf-thm-exported-event))
+       ((er (list wf-thm-local-event wf-thm-exported-event))
         (atc-gen-wf-thm const verbose ctx state))
-       ((er (list & fn-thm-local-events fn-thm-exported-events))
+       ((er (list fn-thm-local-events fn-thm-exported-events))
         (atc-gen-fn-thm-list fn1...fnp const verbose ctx state))
        ((acl2::run-when verbose) (cw "~%Generating file ~x0..." output-file))
        ((er &) (atc-gen-file tunit output-file state))
