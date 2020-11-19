@@ -186,9 +186,8 @@
         @('[books]/kestrel/apt/solve-method-acl2-rewriter.lisp').")
       (xdoc::li
        "@(':axe-rewriter'), to use the Axe rewriter.
-        Until Axe is open-sourced in the community books,
-        this method is only available inside Kestrel, by including
-        @('kestrel-acl2/transformations/solve-method-axe-rewriter.lisp').")
+        This method is available by including
+        @('[books]/kestrel/apt/solve-method-axe-rewriter.lisp').")
       (xdoc::li
        "@(':manual'), to manually supply a solution."))
      (xdoc::p

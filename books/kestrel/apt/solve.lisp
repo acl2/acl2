@@ -217,8 +217,7 @@
             ctx t nil
             "In order to use the Axe rewriter as the solving method ~
              it is necessary to include ~
-             kestrel-acl2/transformations/solve-method-axe-rewriter.lisp
-             (available inside Kestrel).")))
+             [books]/kestrel/apt/solve-method-axe-rewriter.lisp.")))
         ((eq method :manual)
          (value nil))
         (method?
