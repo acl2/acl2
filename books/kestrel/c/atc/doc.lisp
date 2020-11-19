@@ -92,7 +92,7 @@
      "(atc fn1 ... fn"
      "     :const-name  ...  ; default :auto"
      "     :output-file ...  ; no default"
-     "     :verbose     ...  ; default nil"
+     "     :verbose     ...  ; default t"
      "  )"))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -142,7 +142,7 @@
        The file must include a @('.c') extension."))
 
     (xdoc::desc
-     "@(':verbose') &mdash; default @('nil')"
+     "@(':verbose') &mdash; default @('t')"
      (xdoc::p
       "Controls the amount of screen output:")
      (xdoc::ul
