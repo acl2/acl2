@@ -101,7 +101,7 @@
 (acl2::ensure-rules-known (lift-r1cs-rules))
 
 ;; Returns (mv erp event state).
-(defun lift-r1cs-fn (base-name extra-rules remove-rules rules monitor memoizep count-hitsp produce-function function-type vars produce-theorem whole-form state)
+(defun lift-r1cs-fn (base-name extra-rules remove-rules rules monitor memoizep count-hitsp produce-function function-type vars produce-theorem prime whole-form state)
   (declare (xargs :guard (and (symbolp base-name)
                               (symbol-listp extra-rules)
                               (symbol-listp remove-rules)
@@ -111,7 +111,9 @@
                               (booleanp count-hitsp)
                               (acl2::keyword-listp vars)
                               (booleanp produce-function)
-                              (booleanp produce-theorem))
+                              (booleanp produce-theorem)
+                              (natp prime) ;;(rtl::primep prime) ;todo, slow!
+                              )
                   :mode :program
                   :stobjs state))
   (let ((constraints-fn-name (acl2::pack$ base-name '-constraints)))
@@ -119,7 +121,7 @@
                                 `(r1cs::r1cs-constraints-holdp (,constraints-fn-name)
                                                                ,(acl2::make-valuation-from-keyword-vars2 vars)
                                                                ;;todo: gen:
-                                                               21888242871839275222246405745257275088548364400416034343698204186575808495617)
+                                                               ',prime)
                                 ;; The extra rules:
                                 (if rules
                                     nil ;rules are given below, so extra-rules are not allowed
@@ -130,7 +132,7 @@
                                 rules ;to override the default
                                 ;; nil ;rule-alists
                                 ;; drop? but we need to know that all lookups of vars give integers:
-                                (make-fep-assumptions-from-keyword-vars vars 21888242871839275222246405745257275088548364400416034343698204186575808495617)
+                                (make-fep-assumptions-from-keyword-vars vars prime)
                                 ;; TODO: Add more functions to this?
                                 ;; TODO: Make this once and store it?
                                 (acl2::make-interpreted-function-alist '(r1cs::r1cs-constraint->a$inline
@@ -172,7 +174,9 @@
                             (count-hitsp 'nil)
                             (produce-function 't)
                             (produce-theorem 'nil)
-                            (function-type ':auto))
+                            (function-type ':auto)
+                            (prime '21888242871839275222246405745257275088548364400416034343698204186575808495617) ;todo: think about this
+                            )
   `(acl2::make-event-quiet (lift-r1cs-fn ',base-name
                                          ,extra-rules
                                          ,remove-rules
@@ -189,5 +193,6 @@
                                          (,(acl2::pack$ base-name '-vars))
                                          ,produce-theorem
                                          ;; ,print
+                                         ,prime
                                          ',whole-form
                                          state)))
