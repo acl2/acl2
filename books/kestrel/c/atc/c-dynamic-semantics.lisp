@@ -49,7 +49,26 @@
      if we have a prove of functional equivalence between some ACL2 code
      and some C code according to this restriction dynamic semantics,
      it means that the C code only uses the constructs that we cover,
-     which is a subset of valid C."))
+     which is a subset of valid C.")
+   (xdoc::p
+    "We formalize a big-step operational interpretive semantics.
+     To ensure the termination of the ACL2 mutually recursive functions
+     that formalize the execution of expressions, statements, etc.,
+     these functions take a limit on the depth of the recursive calls,
+     which ends the recursion with an error when it reaches 0,
+     which is decremented at each recursive call,
+     and which is used as termination measure.
+     Thus, a proof of total correctness
+     (i.e. the code terminates and produces correct results)
+     involves showing the existence of sufficiently large limit values,
+     while a proof of partial correctness
+     (i.e. the code produces correct results if it terminates)
+     is relativized to the limit value not running out.
+     The limit is an artifact of the formalization;
+     it has no explicit counterpart in the execution state of the C code.
+     (Currently the mutually recursive functions terminate without the limit,
+     but this will change when we extend our dynamic semantics
+     with function calls, loops, etc.)"))
   :order-subtopics t
   :default-parent t)
 
@@ -400,7 +419,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-expr ((e exprp) (env envp))
+(define exec-expr ((e exprp) (env envp) (limit natp))
   :returns (result value-resultp)
   :verify-guards :after-returns
   :short "Execute an expression."
@@ -409,7 +428,8 @@
    (xdoc::p
     "For now we only support the execution of
      variables, (some) constants, and (some) unary and binary expressions."))
-  (b* ((e (expr-fix e)))
+  (b* (((when (zp limit)) (error :limit))
+       (e (expr-fix e)))
     (expr-case
      e
      :ident (exec-ident e.get env)
@@ -419,19 +439,19 @@
      :postdec (error (list :exec-expr e))
      :preinc (error (list :exec-expr e))
      :predec (error (list :exec-expr e))
-     :unary (b* ((arg (exec-expr e.arg env)))
+     :unary (b* ((arg (exec-expr e.arg env (1- limit))))
               (exec-unary e.op arg))
      :cast (error (list :exec-expr e))
-     :binary (b* ((arg1 (exec-expr e.arg1 env))
-                  (arg2 (exec-expr e.arg2 env)))
+     :binary (b* ((arg1 (exec-expr e.arg1 env (1- limit)))
+                  (arg2 (exec-expr e.arg2 env (1- limit))))
                (exec-binary e.op arg1 arg2))
-     :cond (b* ((test (exec-expr e.test env)))
+     :cond (b* ((test (exec-expr e.test env (1- limit))))
              (value-result-case test
                                 :ok (if (sint-nonzerop test.get)
-                                        (exec-expr e.then env)
-                                      (exec-expr e.else env))
+                                        (exec-expr e.then env (1- limit))
+                                      (exec-expr e.else env (1- limit)))
                                 :err test.get))))
-  :measure (expr-count e)
+  :measure (nfix limit)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -447,27 +467,28 @@
      We also support the execution of compound statments
      that consists of supported statements."))
 
-  (define exec-stmt ((s stmtp) (env envp))
+  (define exec-stmt ((s stmtp) (env envp) (limit natp))
     :returns (result maybe-value-resultp)
     :parents nil
-    (b* ((s (stmt-fix s)))
+    (b* (((when (zp limit)) (error :limit))
+         (s (stmt-fix s)))
       (stmt-case
        s
        :labeled (error (list :exec-stmt s))
-       :compound (exec-block-item-list s.items env)
+       :compound (exec-block-item-list s.items env (1- limit))
        :expr (error (list :exec-stmt s))
        :null (error (list :exec-stmt s))
-       :if (b* ((test (exec-expr s.test env)))
+       :if (b* ((test (exec-expr s.test env (1- limit))))
              (value-result-case test
                                 :ok (if (sint-nonzerop test.get)
-                                        (exec-stmt s.then env)
+                                        (exec-stmt s.then env (1- limit))
                                       nil)
                                 :err test.get))
-       :ifelse (b* ((test (exec-expr s.test env)))
+       :ifelse (b* ((test (exec-expr s.test env (1- limit))))
                  (value-result-case test
                                     :ok (if (sint-nonzerop test.get)
-                                            (exec-stmt s.then env)
-                                          (exec-stmt s.else env))
+                                            (exec-stmt s.then env (1- limit))
+                                          (exec-stmt s.else env (1- limit)))
                                     :err test.get))
        :switch (error (list :exec-stmt s))
        :while (error (list :exec-stmt s))
@@ -477,31 +498,35 @@
        :continue (error (list :exec-stmt s))
        :break (error (list :exec-stmt s))
        :return (if (exprp s.value)
-                   (b* ((eres (exec-expr s.value env)))
+                   (b* ((eres (exec-expr s.value env (1- limit))))
                      (value-result-case
                       eres
                       :err eres.get
                       :ok eres.get))
                  nil)))
-    :measure (stmt-count s))
+    :measure (nfix limit))
 
-  (define exec-block-item ((item block-itemp) (env envp))
+  (define exec-block-item ((item block-itemp) (env envp) (limit natp))
     :returns (result maybe-value-resultp)
     :parents nil
-    (block-item-case item
-                     :decl (error (list :exec-block-item item.get))
-                     :stmt (exec-stmt item.get env))
-    :measure (block-item-count item))
+    (b* (((when (zp limit)) (error :limit)))
+      (block-item-case item
+                       :decl (error (list :exec-block-item item.get))
+                       :stmt (exec-stmt item.get env (1- limit))))
+    :measure (nfix limit))
 
-  (define exec-block-item-list ((items block-item-listp) (env envp))
+  (define exec-block-item-list ((items block-item-listp)
+                                (env envp)
+                                (limit natp))
     :returns (result maybe-value-resultp)
     :parents nil
-    (b* (((when (endp items)) nil)
-         (val? (exec-block-item (car items) env))
+    (b* (((when (zp limit)) (error :limit))
+         ((when (endp items)) nil)
+         (val? (exec-block-item (car items) env (1- limit)))
          ((when (maybe-value-result-case val? :err)) val?)
          ((when val?) val?))
-      (exec-block-item-list (cdr items) env))
-    :measure (block-item-list-count items))
+      (exec-block-item-list (cdr items) env (1- limit)))
+    :measure (nfix limit))
 
   :verify-guards nil ; done below
   ///
@@ -583,7 +608,12 @@
    (xdoc::p
     "We look up the function definition in the translation unit.
      We build the initial store and we execute the function body.
-     We ensure that a value is returned."))
+     We ensure that a value is returned.")
+   (xdoc::p
+    "For now we just pass a large number as the recursive limit,
+     which should suffice for our current programs of interest.
+     Eventually, this should be a parameter of this ACL2 function,
+     and proofs about programs should take the liimt value into account."))
   (b* ((fun (ident-fix fun))
        (fundef (lookup-fun fun tunit))
        ((when (not fundef)) (error (list :exec-fun :undefined fun)))
@@ -594,7 +624,7 @@
      :err store.get
      :ok (b* ((fundefs (ext-decl-list->fundef-list (transunit->decls tunit)))
               (env (make-env :functions fundefs :store store.get))
-              (val? (exec-stmt fundef.body env)))
+              (val? (exec-stmt fundef.body env 1000000000))) ; 10^9
            (maybe-value-result-case
             val?
             :err val?.get
