@@ -256,10 +256,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "In order to support proper redundancy checking,
-     every successful call of @(tsee atc) is recorded in a table.
-     If a call is performed that is already in the table,
-     it is considered redundant."))
+    "Every successful call of @(tsee atc) is recorded in a table.
+     This is used to support redundancy checking (see @(tsee atc-fn))."))
   :order-subtopics t
   :default-parent t)
 
@@ -271,38 +269,58 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(std::defaggregate atc-call-info
+  :short "Information associated to an @(tsee atc) call
+          in the table of @(tsee atc) calls."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now we only record the generated encapsulate.
+     More information may be recorded in the future."))
+  ((encapsulate pseudo-event-formp))
+  :pred atc-call-infop)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-maybe-call-infop (x)
+  :short "Optional information associated to an @(tsee atc) call
+          in the table of @(tsee atc) calls."
+  (or (atc-call-infop x)
+      (eq x nil)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection atc-table-definition
   :short "Definition of the table of @(tsee atc) calls."
   :long
   (xdoc::topstring
    (xdoc::p
     "The keys of the table are calls of @(tsee atc).
-     The values of the table are the generated expansions."))
+     The values of the table are the associated information."))
 
   (make-event
    `(table ,*atc-table* nil nil
       :guard (and (pseudo-event-formp acl2::key)
-                  (pseudo-event-formp acl2::val)))))
+                  (atc-call-infop acl2::val)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-table-lookup ((call pseudo-event-formp) (wrld plist-worldp))
-  :returns (expansion? maybe-pseudo-event-formp)
+  :returns (info? atc-maybe-call-infop)
   :short "Look up an @(tsee atc) call in the table."
   (b* ((table (acl2::table-alist+ *atc-table* wrld))
-       (expansion? (cdr (assoc-equal call table))))
-    (if (maybe-pseudo-event-formp expansion?)
-        expansion?
+       (info? (cdr (assoc-equal call table))))
+    (if (atc-maybe-call-infop info?)
+        info?
       (raise "Internal error: value ~x0 of key ~x1 in the ATC table.")))
   :prepwork ((local (include-book "std/alists/top" :dir :system))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-table-record-event ((call pseudo-event-formp)
-                                (expansion pseudo-event-formp))
+(define atc-table-record-event ((call pseudo-event-formp) (info atc-call-infop))
   :returns (event pseudo-event-formp)
   :short "Event to update the table of @(tsee atc) calls."
-  `(table ,*atc-table* ',call ',expansion))
+  `(table ,*atc-table* ',call ',info))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -940,7 +958,8 @@
             (cw-event "~%Generated theorems:~% ~x0~%" ',wf-thm-name)
             ,@(loop$ for name in fn-thm-names
                      collect `(cw-event " ~x0~%" ',name))))
-       (table-event (atc-table-record-event call encapsulate)))
+       (info (make-atc-call-info :encapsulate encapsulate))
+       (table-event (atc-table-record-event call info)))
     (value `(progn ,encapsulate
                    ,table-event
                    (value-triple :invisible)))))
