@@ -178,20 +178,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod env
-  :short "Fixtype of environments."
+(fty::defprod denv
+  :short "Fixtype of dynamic environments."
   :long
   (xdoc::topstring
    (xdoc::p
-    "An environment consists of
+    "A dynamic environment consists of
      the function definitions in the program
      and a variable store.")
    (xdoc::p
-    "The function definitions are organized as a list,
-     as in a static environment (see @(tsee static-env))."))
+    "The function definitions are organized as a list."))
   ((functions fundef-listp)
    (store storep))
-  :pred envp)
+  :pred denvp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -235,18 +234,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-ident ((id identp) (env envp))
+(define exec-ident ((id identp) (env denvp))
   :returns (result value-resultp)
   :short "Execute a variable."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The execution of expressions takes place in the context of an environment.
+    "The execution of expressions takes place
+     in the context of a dynamic environment.
      We look up the variable's value in the store,
      defensively returning an error if the variable is not in the store,
      which means that the variable is not in scope."))
   (b* ((id (ident-fix id))
-       (store (env->store env))
+       (store (denv->store env))
        (pair? (omap::in id store))
        ((when (not pair?)) (error (list :exec-ident-not-in-scope id))))
     (cdr pair?))
@@ -419,7 +419,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-expr ((e exprp) (env envp) (limit natp))
+(define exec-expr ((e exprp) (env denvp) (limit natp))
   :returns (result value-resultp)
   :verify-guards :after-returns
   :short "Execute an expression."
@@ -467,7 +467,7 @@
      We also support the execution of compound statments
      that consists of supported statements."))
 
-  (define exec-stmt ((s stmtp) (env envp) (limit natp))
+  (define exec-stmt ((s stmtp) (env denvp) (limit natp))
     :returns (result maybe-value-resultp)
     :parents nil
     (b* (((when (zp limit)) (error :limit))
@@ -506,7 +506,7 @@
                  nil)))
     :measure (nfix limit))
 
-  (define exec-block-item ((item block-itemp) (env envp) (limit natp))
+  (define exec-block-item ((item block-itemp) (env denvp) (limit natp))
     :returns (result maybe-value-resultp)
     :parents nil
     (b* (((when (zp limit)) (error :limit)))
@@ -516,7 +516,7 @@
     :measure (nfix limit))
 
   (define exec-block-item-list ((items block-item-listp)
-                                (env envp)
+                                (env denvp)
                                 (limit natp))
     :returns (result maybe-value-resultp)
     :parents nil
@@ -623,7 +623,7 @@
      store
      :err store.get
      :ok (b* ((fundefs (ext-decl-list->fundef-list (transunit->decls tunit)))
-              (env (make-env :functions fundefs :store store.get))
+              (env (make-denv :functions fundefs :store store.get))
               (val? (exec-stmt fundef.body env 1000000000))) ; 10^9
            (maybe-value-result-case
             val?
