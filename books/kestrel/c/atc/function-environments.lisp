@@ -100,18 +100,19 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define fun-env-extend ((fundef fundefp) (fenv fun-envp))
-  :returns (mv (okp booleanp) (new-fenv fun-envp))
+  :returns (result fun-env-resultp)
   :short "Extend a function environment with a function definition."
   :long
   (xdoc::topstring
    (xdoc::p
     "If the environment already has a function with the same name,
-     this operation fails."))
+     this operation returns an error."))
   (b* ((fenv (fun-env-fix fenv))
        ((fundef fundef) fundef)
-       ((when (fun-env-lookup fundef.name fenv)) (mv nil fenv))
+       ((when (fun-env-lookup fundef.name fenv))
+        (error (list :duplicate-function fundef.name)))
        (info (make-fun-info :params fundef.params
                             :result fundef.result
                             :body fundef.body)))
-    (mv t (omap::update fundef.name info fenv)))
+    (omap::update fundef.name info fenv))
   :hooks (:fix))

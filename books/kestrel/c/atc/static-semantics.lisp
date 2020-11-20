@@ -396,8 +396,12 @@
        (env (make-senv :functions fenv :variables nil))
        ((mv okp env) (param-decl-list-wfp fundef.params env))
        ((when (not okp)) (mv nil (irr-fun-env)))
-       ((unless (stmt-wfp fundef.body env)) (mv nil (irr-fun-env))))
-    (fun-env-extend fundef fenv))
+       ((unless (stmt-wfp fundef.body env)) (mv nil (irr-fun-env)))
+       (fenv (fun-env-extend fundef fenv)))
+    (fun-env-result-case
+     fenv
+     :err (mv nil nil)
+     :ok (mv t fenv.get)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

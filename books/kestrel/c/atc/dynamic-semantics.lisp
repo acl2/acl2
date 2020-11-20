@@ -583,10 +583,11 @@
        (ext-decl-case
         decl
         :decl (error :external-declaration-is-not-a-function)
-        :fundef (b* (((mv okp fenv) (fun-env-extend decl.get fenv))
-                     ((unless okp)
-                      (error (list :duplicate-function-definition decl.get))))
-                  (init-fun-env-aux (cdr decls) fenv))))
+        :fundef (b* ((fenv (fun-env-extend decl.get fenv)))
+                  (fun-env-result-case
+                   fenv
+                   :err (error fenv.get)
+                   :ok (init-fun-env-aux (cdr decls) fenv.get)))))
      :hooks (:fix))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
