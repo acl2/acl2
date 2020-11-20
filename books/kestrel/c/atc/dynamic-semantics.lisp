@@ -12,6 +12,7 @@
 
 (include-book "abstract-syntax")
 (include-book "integers")
+(include-book "function-environments")
 
 (include-book "kestrel/fty/defflatsum" :dir :system)
 (include-book "kestrel/fty/defomap" :dir :system)
@@ -178,20 +179,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod env
-  :short "Fixtype of environments."
+(fty::defprod denv
+  :short "Fixtype of dynamic environments."
   :long
   (xdoc::topstring
    (xdoc::p
-    "An environment consists of
-     the function definitions in the program
+    "A dynamic environment consists of
+     a function environment
      and a variable store.")
    (xdoc::p
-    "The function definitions are organized as a list,
-     as in a static environment (see @(tsee static-env))."))
-  ((functions fundef-listp)
-   (store storep))
-  :pred envp)
+    "The function environment consists of
+     information about the functions that may be called by the code."))
+  ((functions fun-env)
+   (store store))
+  :pred denvp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -235,18 +236,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-ident ((id identp) (env envp))
+(define exec-ident ((id identp) (env denvp))
   :returns (result value-resultp)
   :short "Execute a variable."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The execution of expressions takes place in the context of an environment.
+    "The execution of expressions takes place
+     in the context of a dynamic environment.
      We look up the variable's value in the store,
      defensively returning an error if the variable is not in the store,
      which means that the variable is not in scope."))
   (b* ((id (ident-fix id))
-       (store (env->store env))
+       (store (denv->store env))
        (pair? (omap::in id store))
        ((when (not pair?)) (error (list :exec-ident-not-in-scope id))))
     (cdr pair?))
@@ -419,7 +421,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-expr ((e exprp) (env envp) (limit natp))
+(define exec-expr ((e exprp) (env denvp) (limit natp))
   :returns (result value-resultp)
   :verify-guards :after-returns
   :short "Execute an expression."
@@ -467,7 +469,7 @@
      We also support the execution of compound statments
      that consists of supported statements."))
 
-  (define exec-stmt ((s stmtp) (env envp) (limit natp))
+  (define exec-stmt ((s stmtp) (env denvp) (limit natp))
     :returns (result maybe-value-resultp)
     :parents nil
     (b* (((when (zp limit)) (error :limit))
@@ -506,7 +508,7 @@
                  nil)))
     :measure (nfix limit))
 
-  (define exec-block-item ((item block-itemp) (env envp) (limit natp))
+  (define exec-block-item ((item block-itemp) (env denvp) (limit natp))
     :returns (result maybe-value-resultp)
     :parents nil
     (b* (((when (zp limit)) (error :limit)))
@@ -516,7 +518,7 @@
     :measure (nfix limit))
 
   (define exec-block-item-list ((items block-item-listp)
-                                (env envp)
+                                (env denvp)
                                 (limit natp))
     :returns (result maybe-value-resultp)
     :parents nil
@@ -533,33 +535,6 @@
   (verify-guards exec-stmt)
 
   (fty::deffixequiv-mutual exec-stmt-fns))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define lookup-fun ((fun identp) (tunit transunitp))
-  :returns (fundef? maybe-fundefp)
-  :short "Look up a function definition by name."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "In well-formed translation units,
-     function definitions have unique names.
-     We return the first matching function definition, if any,
-     as it is the only one with that name."))
-  (lookup-fun-aux fun (transunit->decls tunit))
-  :hooks (:fix)
-
-  :prepwork
-  ((define lookup-fun-aux ((fun identp) (decls ext-decl-listp))
-     :returns (fundef? maybe-fundefp)
-     (b* (((when (endp decls)) nil)
-          (decl (car decls))
-          ((when (and (ext-decl-case decl :fundef)
-                      (ident-equiv fun
-                                   (fundef->name (ext-decl-fundef->get decl)))))
-           (ext-decl-fundef->get decl)))
-       (lookup-fun-aux fun (cdr decls)))
-     :hooks (:fix))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -600,13 +575,46 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define init-fun-env ((tunit transunitp))
+  :returns (mv (okp booleanp) (fenv fun-envp))
+  :short "Initialize the function environment for a translation unit."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We go though the external declarations that form the translation unit
+     and we build the function environment for the function definitions,
+     starting from the empty environment.
+     If an external declaration that is not a function definition is found,
+     we defensively return an error."))
+  (init-fun-env-aux (transunit->decls tunit) nil)
+  :hooks (:fix)
+
+  :prepwork
+  ((define init-fun-env-aux ((decls ext-decl-listp) (fenv fun-envp))
+     :returns (mv (okp booleanp) (new-fenv fun-envp))
+     :parents nil
+     (b* (((when (endp decls)) (mv t (fun-env-fix fenv)))
+          (decl (car decls)))
+       (ext-decl-case
+        decl
+        :decl (mv nil (irr-fun-env))
+        :fundef (b* (((when (fun-env-lookup (fundef->name decl.get) fenv))
+                      (mv nil (irr-fun-env)))
+                     ((mv okp fenv) (fun-env-extend decl.get fenv))
+                     ((unless okp) (mv nil (irr-fun-env))))
+                  (init-fun-env-aux (cdr decls) fenv))))
+     :hooks (:fix))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define exec-fun ((fun identp) (args value-listp) (tunit transunitp))
   :returns (result value-resultp)
   :short "Execute a function call."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We look up the function definition in the translation unit.
+    "We initialize the function environment from the translation unit.
+     We look up the function definition in the environment.
      We build the initial store and we execute the function body.
      We ensure that a value is returned.")
    (xdoc::p
@@ -614,17 +622,17 @@
      which should suffice for our current programs of interest.
      Eventually, this should be a parameter of this ACL2 function,
      and proofs about programs should take the liimt value into account."))
-  (b* ((fun (ident-fix fun))
-       (fundef (lookup-fun fun tunit))
-       ((when (not fundef)) (error (list :exec-fun :undefined fun)))
-       ((fundef fundef) fundef)
-       (store (init-store fundef.params args)))
+  (b* (((mv okp fenv) (init-fun-env tunit))
+       ((unless okp) (error (list :no-function-environment
+                              (transunit-fix tunit))))
+       (info (fun-env-lookup fun fenv))
+       ((when (not info)) (error (list :exec-fun :undefined (ident-fix fun))))
+       (store (init-store (fun-info->params info) args)))
     (store-result-case
      store
      :err store.get
-     :ok (b* ((fundefs (ext-decl-list->fundef-list (transunit->decls tunit)))
-              (env (make-env :functions fundefs :store store.get))
-              (val? (exec-stmt fundef.body env 1000000000))) ; 10^9
+     :ok (b* ((env (make-denv :functions fenv :store store.get))
+              (val? (exec-stmt (fun-info->body info) env 1000000000))) ; 10^9
            (maybe-value-result-case
             val?
             :err val?.get
