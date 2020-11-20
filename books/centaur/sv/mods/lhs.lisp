@@ -249,9 +249,9 @@
   :parents (lhrange)
   :returns (s svex-p)
   (b* (((lhrange x) x))
-    (svex-call 'concat (list (svex-quote (2vec x.w))
-                             (lhatom->svex x.atom)
-                             (svex-quote (4vec-z)))))
+    (svcall* concat (svex-quote (2vec x.w))
+             (lhatom->svex x.atom)
+             (svex-quote (4vec-z))))
   ///
   (deffixequiv lhrange->svex)
 
@@ -1947,13 +1947,14 @@ bits of @('foo'):</p>
       (svex-z)
     (if (atom (cdr x))
         (svex-fix (car x))
-      (svex-call 'res (list (car x)
-                            (svexlist-resolve (cdr x))))))
+      (svcall* res (car x) (svexlist-resolve (cdr x)))))
   ///
   (defthm svex-vars-of-svexlist-resolve
     (set-equiv (svex-vars (svexlist-resolve x))
                (svexlist-vars x))
-    :hints(("Goal" :in-theory (enable svexlist-vars)))))
+    :hints(("Goal" :in-theory (enable svexlist-vars svex-call* svexlist-quotesp))))
+
+  (local (in-theory (enable svexlist-fix))))
 
 (define driverlist-values-of-strength ((x driverlist-p) (strength natp))
   ;; Works only when sorted!
@@ -2014,7 +2015,7 @@ bits of @('foo'):</p>
        (rest1 (driverlist-rest-after-strength x strength1))
        (res1 (svexlist-resolve vals1))
        ((when (atom rest1)) res1))
-    (svex-call 'override (list res1 (driverlist->svex rest1))))
+    (svcall* override res1 (driverlist->svex rest1)))
   ///
   (verify-guards driverlist->svex)
   (defthm vars-of-driverlist->svex
@@ -2264,7 +2265,7 @@ bits of @('foo'):</p>
   :fix svex-fix$inline
   :type-decl (satisfies svex-p)
   :pkg-sym sv::svex
-  :default-val '(-1 . 0))
+  :default-val (-1 . 0))
 
 (defthm svexarrp-is-svexlist-p
   (equal (svexarrp x)

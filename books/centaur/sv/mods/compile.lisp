@@ -730,11 +730,12 @@ svex-assigns-compose)).</li>
                                      (aliases-normorderedp new-aliases))))
   :guard (svarlist-addr-p (modalist-vars (design->modalist x)))
   :verify-guards nil
-  :prepwork ((local (in-theory (enable modscope->top modscope->modidx modscope-okp
-                                       modscope-top-bound modscope-okp))))
+  :prepwork ((local (in-theory (e/d (modscope->top modscope->modidx modscope-okp
+                                                   modscope-top-bound modscope-okp)
+                                    ((moddb-clear))))))
 
   (b* ((moddb (moddb-clear moddb))
-       (aliases (aliases-fix aliases))
+       (aliases (resize-lhss 0 aliases))
        ((design x) x)
        (modalist x.modalist)
        (topmod x.top)
@@ -756,7 +757,6 @@ svex-assigns-compose)).</li>
         ((elab-mod (moddb->modsi modidx moddb)))
         (elab-mod->totalwires elab-mod))
        ;; (- (cw "Total wires: ~x0~%" totalwires))
-       (aliases (resize-lhss 0 aliases))
        (aliases (resize-lhss totalwires aliases))
 
        ;; ((unless modidx)
@@ -821,7 +821,13 @@ svex-assigns-compose)).</li>
            (svarlist-boundedp (constraintlist-vars flat-constraints) bound)
            (svarlist-boundedp (assigns-vars flat-fixups) bound)
            ;; (svarlist-boundedp (svar-map-vars res-delays) (len aliases))
-           ))))
+           )))
+
+  (defretd normalize-stobjs-of-<fn>
+    (implies (syntaxp (not (and (equal aliases ''nil)
+                                (equal moddb ''nil))))
+             (equal <call>
+                    (let ((moddb nil) (aliases nil)) <call>)))))
 
 
 (local (include-book "tools/trivial-ancestors-check" :dir :system))
@@ -1107,7 +1113,14 @@ should address this again later.</p>"
   (defret vars-of-svex-design-flatten-and-normalize-constraints
     (implies (and (modalist-addr-p (design->modalist x))
                   (not indexedp))
-             (svarlist-addr-p (constraintlist-vars flat-constraints)))))
+             (svarlist-addr-p (constraintlist-vars flat-constraints))))
+
+  (defretd normalize-stobjs-of-<fn>
+    (implies (syntaxp (not (and (equal aliases ''nil)
+                                (equal moddb ''nil))))
+             (equal <call>
+                    (let ((moddb nil) (aliases nil)) <call>)))
+    :hints(("Goal" :in-theory (enable normalize-stobjs-of-svex-design-flatten)))))
 
 
 (define svex-design-compile ((x design-p)

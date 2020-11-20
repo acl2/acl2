@@ -133,6 +133,71 @@ have only a few variables, so we don't use a fast alist here.</p>
       :flag svexlist-subst
       :hints ('(:expand ((svexlist-subst pat al)))))))
 
+(define svex-alist-subst-nrev ((x svex-alist-p)
+                                 (a svex-alist-p)
+                                 (nrev))
+  :hooks nil
+  (if (atom x)
+      (acl2::nrev-fix nrev)
+    (if (mbt (and (consp (car x)) (svar-p (caar x))))
+        (b* ((nrev (acl2::nrev-push (cons (caar x) (svex-subst (cdar x) a)) nrev)))
+          (svex-alist-subst-nrev (cdr x) a nrev))
+      (svex-alist-subst-nrev (cdr x) a nrev))))
+
+(define svex-alist-subst ((x svex-alist-p) (a svex-alist-p))
+  :prepwork ((local (in-theory (enable svex-alist-p))))
+  :returns (xx svex-alist-p)
+  :verify-guards nil
+  (if (atom x)
+      nil
+    (mbe :logic
+         (if (mbt (and (consp (car x)) (svar-p (caar x))))
+             (svex-acons (caar x) (svex-subst (cdar x) a)
+                         (svex-alist-subst (cdr x) a))
+           (svex-alist-subst (cdr x) a))
+         :exec
+         (acl2::with-local-nrev
+           (svex-alist-subst-nrev x a acl2::nrev))))
+  ///
+  (local (defthm svex-alist-subst-nrev-elim
+           (equal (svex-alist-subst-nrev x a nrev)
+                  (append nrev (svex-alist-subst x a)))
+           :hints(("Goal" :in-theory (enable svex-alist-subst-nrev
+                                             svex-acons)))))
+  (verify-guards svex-alist-subst)
+
+  (fty::deffixequiv svex-alist-subst
+    :hints(("Goal" :in-theory (enable svex-alist-fix))))
+
+  (defthm svex-alist-eval-of-svex-subst
+    (equal (svex-alist-eval (svex-alist-subst x subst) env)
+           (svex-alist-eval x (svex-alist-eval subst env)))
+    :hints(("Goal" :in-theory (enable svex-alist-eval svex-acons
+                                      svex-alist-subst
+                                      svex-env-acons))))
+
+  (defthm vars-of-svex-alist-subst
+      (implies (and (not (member v (svex-alist-vars x)))
+                    (not (member v (svex-alist-vars a))))
+               (not (member v (svex-alist-vars (svex-alist-subst x a)))))
+      :hints(("goal" :in-theory (enable svex-alist-vars))))
+
+  (local (defthm svex-subst-under-iff
+           (svex-subst x a)
+           :hints (("goal" :use RETURN-TYPE-OF-SVEX-SUBST.X
+                    :in-theory (disable RETURN-TYPE-OF-SVEX-SUBST.X)))))
+
+  (local (defthm svex-fix-under-iff
+           (svex-fix x)
+           :hints (("goal" :use RETURN-TYPE-OF-SVEX-FIX.NEW-X
+                    :in-theory (disable RETURN-TYPE-OF-SVEX-FIX.NEW-X)))))
+
+  (defthm svex-lookup-of-svex-alist-subst
+    (iff (svex-lookup v (svex-alist-subst x a))
+         (svex-lookup v x))
+    :hints(("Goal" :in-theory (e/d (svex-lookup svex-alist-fix svex-acons)
+                                   (svex-alist-p))))))
+
 
 (defines svex-subst-memo
   :verify-guards nil

@@ -3560,8 +3560,15 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
                                                      moddb-find-bad-mod
                                                      moddb-indices-ok
                                                      moddb-find-bad-index))))
-  (b* ((moddb (moddb->modname-idxes-clear moddb)))
-    (update-moddb->nmods 0 moddb)))
+  (b* ((moddb (moddb->modname-idxes-clear moddb))
+       (moddb (update-moddb->nmods 0 moddb)))
+    (resize-moddb->mods 0 moddb))
+  ///
+  (defthm moddb-clear-normalize
+    (implies (syntaxp (not (equal moddb ''nil)))
+             (equal (moddb-clear moddb)
+                    (moddb-clear nil)))
+    :hints(("Goal" :in-theory (e/d (moddb-fix) ((moddb-fix)))))))
 
 (define moddb-maybe-grow (moddb)
   (b* ((moddb (moddb-fix moddb))

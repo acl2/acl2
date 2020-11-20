@@ -777,16 +777,25 @@ is being given the right number of arguments.</p>
 (define svexlist-unquote ((x svexlist-p))
   :prepwork ((local (in-theory (enable svexlist-quotesp))))
   :guard (svexlist-quotesp x)
+  :verify-guards nil
   :returns (objs 4veclist-p)
   :hooks ((:fix :hints (("goal" :expand ((svexlist-fix x))))))
-  (if (atom x)
-      nil
-    (cons (svex-quote->val (car x))
-          (svexlist-unquote (cdr x))))
+  (mbe :logic (if (atom x)
+                  nil
+                (cons (svex-quote->val (car x))
+                      (svexlist-unquote (cdr x))))
+       :exec x)
   ///
+  (local (defret <fn>-is-4veclist-fix
+           (implies (svexlist-quotesp x)
+                    (equal objs (svexlist-fix x)))
+           :hints(("Goal" :in-theory (enable svexlist-quotesp svexlist-fix svex-fix svex-quote->val)))))
+  (verify-guards svexlist-unquote
+    :hints(("Goal" :in-theory (enable svex-quote->val svex-kind svexlist-p svex-p))))
 
   (defthm svexlist-unquote-correct
     (implies (svexlist-quotesp x)
              (equal (svexlist-eval x env)
                     (svexlist-unquote x)))
-    :hints(("Goal" :in-theory (enable svexlist-eval svex-eval)))))
+    :hints(("Goal" :in-theory (e/d (svexlist-eval svex-eval)
+                                   (svexlist-unquote-is-4veclist-fix))))))

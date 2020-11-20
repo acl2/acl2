@@ -288,6 +288,15 @@ typically be @(see memoize)d in some way or another.</p>"
                       (implies (svar-p x)
                                (not (4vec-p x)))
                       :hints(("Goal" :in-theory (enable 4vec-p svar-p)))))
+             (local (defthm car-of-4vec-fix-type
+                      (or (integerp (car (4vec-fix x)))
+                          (not (car (4vec-fix x))))
+                      :hints(("Goal" :in-theory (enable 4vec-fix 4vec)))
+                      :rule-classes ((:type-prescription :typed-term (car (4vec-fix x))))))
+             (local (defthm car-of-4vec-fix-integerp
+                      (implies (consp (4vec-fix x))
+                               (integerp (car (4vec-fix x))))
+                      :hints(("Goal" :in-theory (enable 4vec-fix 4vec)))))
              (local (defthm cons-fnsym-not-svar-p
                       (implies (not (eq x :var))
                                (not (svar-p (cons x y))))
@@ -304,13 +313,10 @@ typically be @(see memoize)d in some way or another.</p>"
     (:quote
      :short "A ``quoted constant'' @(see 4vec), which represents itself."
      :cond (or (atom x)
-               (eq (car x) 'quote))
-     :shape (or (atom x) (and (consp (cdr x))
-                              (consp (cadr x))
-                              (not (cddr x))))
-     :fields ((val :acc-body (if (atom x) x (cadr x))
+               (integerp (car x)))
+     :fields ((val :acc-body x
                    :type 4vec))
-     :ctor-body (if (atom val) val (hons 'quote (hons val nil))))
+     :ctor-body val)
     (:call
      :short "A function applied to some expressions."
      :cond t
@@ -364,6 +370,17 @@ typically be @(see memoize)d in some way or another.</p>"
 (defthm len-of-svexlist-fix
   (equal (len (svexlist-fix x))
          (len x)))
+
+
+(define svarlist->svexes ((x svarlist-p))
+  :returns (svexes svexlist-p)
+  (if (atom x)
+      nil
+    (cons (make-svex-var :name (car x))
+          (svarlist->svexes (cdr x))))
+  ///
+  (defret len-of-svarlist->svexes
+    (equal (len svexes) (len x))))
 
 (defthm svex-count-of-car-weak
   (<= (svex-count (car args))
