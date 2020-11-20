@@ -59,7 +59,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod static-env
+(fty::defprod senv
   :short "Fixtype of static environments."
   :long
   (xdoc::topstring
@@ -82,16 +82,16 @@
      all of these variables implicitly have type @('int')."))
   ((functions fun-env)
    (variables ident-set))
-  :pred static-envp)
+  :pred senvp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define irr-static-env ()
-  :returns (env static-envp)
+(define irr-senv ()
+  :returns (env senvp)
   :short "An irrelevant static environment, usable as a dummy return value."
-  (with-guard-checking :none (ec-call (static-env-fix :irrelevant)))
+  (with-guard-checking :none (ec-call (senv-fix :irrelevant)))
   ///
-  (in-theory (disable (:e irr-static-env))))
+  (in-theory (disable (:e irr-senv))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -233,14 +233,14 @@
      but for now all our expressions have type @('int'),
      so there is no need to return this."))
 
-  (define expr-wfp ((e exprp) (env static-envp))
+  (define expr-wfp ((e exprp) (env senvp))
     :returns (yes/no booleanp)
     (expr-case e
                :ident (and (ident-wfp e.get)
-                           (set::in e.get (static-env->variables env)))
+                           (set::in e.get (senv->variables env)))
                :const (const-wfp e.get)
                :call (b* ((info (fun-lookup e.fun
-                                            (static-env->functions env))))
+                                            (senv->functions env))))
                        (and info
                             (= (len (fun-info->params info))
                                (len e.args))))
@@ -259,7 +259,7 @@
                           (expr-wfp e.else env)))
     :measure (expr-count e))
 
-  (define expr-list-wfp ((es expr-listp) (env static-envp))
+  (define expr-list-wfp ((es expr-listp) (env senvp))
     :returns (yes/no booleanp)
     (or (endp es)
         (and (expr-wfp (car es) env)
@@ -283,7 +283,7 @@
      and conditional statements with well-formed tests,
      and allowed statements as branches."))
 
-  (define stmt-wfp ((s stmtp) (env static-envp))
+  (define stmt-wfp ((s stmtp) (env senvp))
     :returns (yes/no booleanp)
     :parents nil
     (stmt-case s
@@ -307,7 +307,7 @@
                             (expr-wfp s.value env)))
     :measure (stmt-count s))
 
-  (define block-item-wfp ((item block-itemp) (env static-envp))
+  (define block-item-wfp ((item block-itemp) (env senvp))
     :returns (yes/no booleanp)
     :parents nil
     (block-item-case item
@@ -315,7 +315,7 @@
                      :stmt (stmt-wfp item.get env))
     :measure (block-item-count item))
 
-  (define block-item-list-wfp ((items block-item-listp) (env static-envp))
+  (define block-item-list-wfp ((items block-item-listp) (env senvp))
     :returns (yes/no booleanp)
     :parents nil
     (or (endp items)
@@ -329,9 +329,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define param-decl-wfp ((param param-declp) (env static-envp))
+(define param-decl-wfp ((param param-declp) (env senvp))
   :returns (mv (yes/no booleanp)
-               (new-env static-envp))
+               (new-env senvp))
   :short "Check if a parameter declaration is well-formed."
   :long
   (xdoc::topstring
@@ -343,28 +343,27 @@
      otherwise, it means that there is a duplicate parameter.
      If all checks succeed, we return the static environment
      updated with the parameter."))
-  (b* (((static-env env) env)
+  (b* (((senv env) env)
        ((param-decl param) param)
-       ((unless (tyspecseq-wfp param.type)) (mv nil (irr-static-env)))
-       ((unless (ident-wfp param.name)) (mv nil (irr-static-env)))
-       ((when (set::in param.name env.variables)) (mv nil (irr-static-env))))
+       ((unless (tyspecseq-wfp param.type)) (mv nil (irr-senv)))
+       ((unless (ident-wfp param.name)) (mv nil (irr-senv)))
+       ((when (set::in param.name env.variables)) (mv nil (irr-senv))))
     (mv t
-        (change-static-env env
-                           :variables (set::insert param.name env.variables))))
+        (change-senv env :variables (set::insert param.name env.variables))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define param-decl-list-wfp ((params param-decl-listp) (env static-envp))
+(define param-decl-list-wfp ((params param-decl-listp) (env senvp))
   :returns (mv (yes/no booleanp)
-               (new-env static-envp))
+               (new-env senvp))
   :short "Check if a list of parameter declaration is well-formed."
   :long
   (xdoc::topstring
    (xdoc::p
     "We go through each element of the list,
      calling @(tsee param-decl-wfp) and threading the environment through."))
-  (b* (((when (endp params)) (mv t (static-env-fix env)))
+  (b* (((when (endp params)) (mv t (senv-fix env)))
        ((mv okp env) (param-decl-wfp (car params) env))
        ((when (not okp)) (mv nil env)))
     (param-decl-list-wfp (cdr params) env))
@@ -395,7 +394,7 @@
   (b* (((fundef fundef) fundef)
        ((unless (tyspecseq-wfp fundef.result)) (mv nil (irr-fun-env)))
        ((unless (ident-wfp fundef.name)) (mv nil (irr-fun-env)))
-       (env (make-static-env :functions fenv :variables nil))
+       (env (make-senv :functions fenv :variables nil))
        ((mv okp env) (param-decl-list-wfp fundef.params env))
        ((when (not okp)) (mv nil (irr-fun-env)))
        ((unless (stmt-wfp fundef.body env)) (mv nil (irr-fun-env))))
