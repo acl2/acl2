@@ -414,14 +414,6 @@
   (((programp fn (w state))
     "~@0 must be in program mode." description)))
 
-(def-error-checker ensure-function-defined
-  ((fn (logic-function-namep fn (w state)) "Function to check."))
-  :short
-  "Cause an error if a function is not defined."
-  :body
-  (((definedp fn (w state))
-    "~@0 must be defined." description)))
-
 (def-error-checker ensure-function-non-recursive
   ((fn (logic-function-namep fn (w state)) "Function to check."))
   :short
