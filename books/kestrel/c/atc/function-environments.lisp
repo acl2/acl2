@@ -73,6 +73,15 @@
   :val-type fun-info
   :pred fun-envp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define irr-fun-env ()
+  :returns (fenv fun-envp)
+  :short "An irrelevant function environment, usable as a dummy return value."
+  (with-guard-checking :none (ec-call (fun-env-fix :irrelevant)))
+  ///
+  (in-theory (disable (:e irr-fun-env))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define fun-lookup ((name identp) (fenv fun-envp))
@@ -81,4 +90,23 @@
   (cdr (omap::in (ident-fix name)
                  (fun-env-fix fenv)))
   :prepwork ((local (in-theory (enable fun-info-optionp))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define fun-env-extend ((fundef fundefp) (fenv fun-envp))
+  :returns (mv (okp booleanp) (new-fenv fun-envp))
+  :short "Extend a function environment with a function definition."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the environment already has a function with the same name,
+     this operation fails."))
+  (b* ((fenv (fun-env-fix fenv))
+       ((fundef fundef) fundef)
+       ((when (fun-lookup fundef.name fenv)) (mv nil fenv))
+       (info (make-fun-info :params fundef.params
+                            :result fundef.result
+                            :body fundef.body)))
+    (mv t (omap::update fundef.name info fenv)))
   :hooks (:fix))
