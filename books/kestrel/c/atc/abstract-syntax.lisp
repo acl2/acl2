@@ -657,7 +657,7 @@
   ((result tyspecseq)
    (name ident)
    (params param-decl-list)
-   (body stmtp))
+   (body stmt))
   :tag :fundef
   :pred fundefp)
 
