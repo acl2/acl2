@@ -561,7 +561,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define init-fun-env ((tunit transunitp))
-  :returns (mv (okp booleanp) (fenv fun-envp))
+  :returns (result fun-env-resultp)
   :short "Initialize the function environment for a translation unit."
   :long
   (xdoc::topstring
@@ -576,17 +576,16 @@
 
   :prepwork
   ((define init-fun-env-aux ((decls ext-decl-listp) (fenv fun-envp))
-     :returns (mv (okp booleanp) (new-fenv fun-envp))
+     :returns (result fun-env-resultp)
      :parents nil
-     (b* (((when (endp decls)) (mv t (fun-env-fix fenv)))
+     (b* (((when (endp decls)) (fun-env-fix fenv))
           (decl (car decls)))
        (ext-decl-case
         decl
-        :decl (mv nil (irr-fun-env))
-        :fundef (b* (((when (fun-env-lookup (fundef->name decl.get) fenv))
-                      (mv nil (irr-fun-env)))
-                     ((mv okp fenv) (fun-env-extend decl.get fenv))
-                     ((unless okp) (mv nil (irr-fun-env))))
+        :decl (error :external-declaration-is-not-a-function)
+        :fundef (b* (((mv okp fenv) (fun-env-extend decl.get fenv))
+                     ((unless okp)
+                      (error (list :duplicate-function-definition decl.get))))
                   (init-fun-env-aux (cdr decls) fenv))))
      :hooks (:fix))))
 
@@ -607,21 +606,23 @@
      which should suffice for our current programs of interest.
      Eventually, this should be a parameter of this ACL2 function,
      and proofs about programs should take the liimt value into account."))
-  (b* (((mv okp fenv) (init-fun-env tunit))
-       ((unless okp) (error (list :no-function-environment
-                              (transunit-fix tunit))))
-       (info (fun-env-lookup fun fenv))
-       ((when (not info)) (error (list :exec-fun :undefined (ident-fix fun))))
-       (store (init-store (fun-info->params info) args)))
+  (b* ((fenv (init-fun-env tunit)))
+    (fun-env-result-case
+     fenv
+     :err (error fenv.get)
+     :ok (b* ((info (fun-env-lookup fun fenv.get))
+              ((when (not info))
+               (error (list :exec-fun :undefined (ident-fix fun))))
+              (store (init-store (fun-info->params info) args)))
     (store-result-case
      store
      :err store.get
-     :ok (b* ((env (make-denv :functions fenv :store store.get))
+     :ok (b* ((env (make-denv :functions fenv.get :store store.get))
               (val? (exec-stmt (fun-info->body info) env 1000000000))) ; 10^9
            (maybe-value-result-case
             val?
             :err val?.get
             :ok (if (sintp val?)
                     val?
-                  (error (list :exec-fun :no-value-returned)))))))
+                  (error (list :exec-fun :no-value-returned)))))))))
   :hooks (:fix))

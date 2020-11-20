@@ -11,6 +11,7 @@
 (in-package "C")
 
 (include-book "abstract-syntax")
+(include-book "errors")
 
 (include-book "kestrel/fty/defomap" :dir :system)
 
@@ -72,6 +73,10 @@
   :key-type ident
   :val-type fun-info
   :pred fun-envp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult fun-env "function environments")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
