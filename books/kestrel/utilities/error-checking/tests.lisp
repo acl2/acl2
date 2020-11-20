@@ -623,16 +623,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (must-eval-to-t
- (b* (((er x) (ensure-function-defined 'len "This" t nil 'test state)))
-   (value (equal x nil))))
-
-(must-fail
- (ensure-function-defined 'cons "This" t nil 'test state)
- :with-output-off nil)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(must-eval-to-t
  (b* (((er x) (ensure-function-non-recursive 'cons "This" t nil 'test state)))
    (value (equal x nil))))
 
