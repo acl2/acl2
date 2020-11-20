@@ -885,7 +885,6 @@
        (hints `(("Goal"
                  :in-theory (enable exec-fun
                                     init-store
-                                    fun-lookup
                                     exec-stmt
                                     exec-block-item
                                     exec-block-item-list
