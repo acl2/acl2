@@ -15,7 +15,6 @@
 (include-book "function-environments")
 (include-book "errors")
 
-(include-book "kestrel/fty/defflatsum" :dir :system)
 (include-book "kestrel/fty/defomap" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -94,14 +93,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (encapsulate ()
-
   (local (in-theory (enable sintp)))
-
-  (fty::defflatsum value-list-result
-    :short "Fixtype of lists of values and errors."
-    (:ok value-list)
-    (:err error)
-    :pred value-list-resultp))
+  (fty::defresult value-list "lists of values"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -113,14 +106,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (encapsulate ()
-
   (local (in-theory (enable sintp)))
-
-  (fty::defflatsum maybe-value-result
-    :short "Fixtype of optional values and errors."
-    (:ok maybe-value)
-    (:err error)
-    :pred maybe-value-resultp))
+  (fty::defresult maybe-value "optional values"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -147,11 +134,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defflatsum store-result
-  :short "Fixtype of stores and errors."
-  (:ok store)
-  (:err error)
-  :pred store-resultp)
+(fty::defresult store "stores")
 
 ;;;;;;;;;;;;;;;;;;;;
 
