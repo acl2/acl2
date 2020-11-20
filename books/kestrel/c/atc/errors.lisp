@@ -33,7 +33,13 @@
      both those values and error values.")
    (xdoc::p
     "We introduce a fixtype for error values,
-     which will be used in all those ACL2 functions."))
+     which will be used in all those ACL2 functions.")
+   (xdoc::p
+    "We also introduce a macro to generate a fixtype that consists of
+     a specified fixtype for the non-error values
+     and the error fixtype.
+     This is somewhat analogous to Rust's @('Result') type,
+     but with a fixed type for the error type parameter."))
   :order-subtopics t
   :default-parent t)
 
@@ -50,3 +56,21 @@
   ((info any))
   :tag :error
   :pred errorp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defmacro+ fty::defresult (type desc)
+  :short "Introduce a fixtype of result types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is a flat sum of the specified fixtype
+     and the error fixtype.
+     Thus, the specified fixtype must be disjoint from the error fixtype,
+     which is easily satisfied if values of the specified fixtype
+     do not start with @(':error')."))
+  `(fty::defflatsum ,(add-suffix type "-RESULT")
+     :short ,(str::cat "Fixtype of " desc " and errors.")
+     (:ok ,type)
+     (:err error)
+     :pred ,(add-suffix type "-RESULTP")))
