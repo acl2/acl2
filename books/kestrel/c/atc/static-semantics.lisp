@@ -58,6 +58,45 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod static-env
+  :short "Fixtype of static environments."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A static environment consists of
+     the function definitions in scope
+     and the variables in scope.")
+   (xdoc::p
+    "The function definitions in scope are organized as a list,
+     in the same order in which they appear in the translation unit;
+     as defined later, we build the list as we traverse the tranlation unit.
+     The scope of a function identifier goes from its declaration
+     to the end of the translation unit [C:6.2.1/4],
+     thus this construction and use of the list of functions in scope
+     is consistent with that.")
+   (xdoc::p
+    "The variables in scope for now are just a finite set of identifiers,
+     which is collected starting from function parameters
+     (we have no global variables yet)
+     and adding local variables
+     (which we still have to support in this static semantics).
+     Since we only have @('int') values for now,
+     all of these variables implicitly have type @('int')."))
+  ((functions fundef-list)
+   (variables ident-set))
+  :pred static-envp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define irr-static-env ()
+  :returns (env static-envp)
+  :short "An irrelevant static environment, usable as a dummy return value."
+  (with-guard-checking :none (ec-call (static-env-fix :irrelevant)))
+  ///
+  (in-theory (disable (:e irr-static-env))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define ident-wfp ((id identp))
   :returns (yes/no booleanp)
   :short "Check if an identifier is well-formed."
@@ -173,45 +212,6 @@
     "We check that the underlying sequence of type specifiers is well-formed."))
   (tyspecseq-wfp (tyname->specs tn))
   :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defprod static-env
-  :short "Fixtype of static environments."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "A static environment consists of
-     the function definitions in scope
-     and the variables in scope.")
-   (xdoc::p
-    "The function definitions in scope are organized as a list,
-     in the same order in which they appear in the translation unit;
-     as defined later, we build the list as we traverse the tranlation unit.
-     The scope of a function identifier goes from its declaration
-     to the end of the translation unit [C:6.2.1/4],
-     thus this construction and use of the list of functions in scope
-     is consistent with that.")
-   (xdoc::p
-    "The variables in scope for now are just a finite set of identifiers,
-     which is collected starting from function parameters
-     (we have no global variables yet)
-     and adding local variables
-     (which we still have to support in this static semantics).
-     Since we only have @('int') values for now,
-     all of these variables implicitly have type @('int')."))
-  ((functions fundef-list)
-   (variables ident-set))
-  :pred static-envp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define irr-static-env ()
-  :returns (env static-envp)
-  :short "An irrelevant static environment, usable as a dummy return value."
-  (with-guard-checking :none (ec-call (static-env-fix :irrelevant)))
-  ///
-  (in-theory (disable (:e irr-static-env))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
