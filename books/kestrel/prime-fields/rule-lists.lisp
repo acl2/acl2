@@ -36,4 +36,6 @@
     pfield::add-commutative-axe
     pfield::add-commutative-2-axe
     pfield::mul-associative
-    ))
+    pfield::mul-of-mod-arg1
+    pfield::mul-of-mod-arg2
+    pfield::integerp-when-fep))

@@ -24,7 +24,7 @@
 ;; try this rule last since it has a free var (do we really need it at all?):
 (table acl2::axe-rule-priorities-table 'pfield::integerp-when-fep 10)
 
-(defun more-r1cs-proof-rules ()
+(defun more-prime-fields-rules ()
   (declare (xargs :guard t))
   '(acl2::mod-of-1-arg1
     acl2::rationalp-of-mod
@@ -88,15 +88,16 @@
             mul-normalize-constant-arg1
             add-of-constant-normalize-to-fep ;todo: normalize to small pos or eg numbers instead
             pfield::mul-of--1-becomes-neg-gen ;todo: be consistent about negative constants
-            ;primes::primep-of-bn-254-group-prime-constant
+            ;;primes::primep-of-bn-254-group-prime-constant
             ;;bitp-of-add-of-constant-negated-special ;;caused problems, possibly a loop, after adding fns to the evaluator.  TODO: why?
             pfield::neg-of-add
             pfield::neg-of-mul-when-constant
             xor-idiom-3
             xor-idiom-3-alt
             acl2::lookup-equal-of-acons)
-          (more-r1cs-proof-rules) ;todo
-          (r1cs-proof-rules)))
+          (pfield::prime-field-proof-rules)
+          (more-prime-fields-rules) ;todo
+          (r1cs-rules)))
 
 (acl2::ensure-rules-known (lift-r1cs-rules))
 
