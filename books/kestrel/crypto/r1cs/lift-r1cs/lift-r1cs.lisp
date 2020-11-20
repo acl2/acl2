@@ -164,6 +164,8 @@
                                 whole-form
                                 state)))
 
+;; Expects the functions <BASE-NAME>-constraints and <BASE-NAME>-vars to
+;; exist.  Creates a constant DAG named *<BASE-NAME>-holdsp*.
 (defmacro lift-r1cs (&whole whole-form
                             base-name
                             &key
