@@ -84,7 +84,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define fun-lookup ((name identp) (fenv fun-envp))
+(define fun-env-lookup ((name identp) (fenv fun-envp))
   :returns (info? fun-info-optionp)
   :short "Look up a function in an environment by name."
   (cdr (omap::in (ident-fix name)
@@ -104,7 +104,7 @@
      this operation fails."))
   (b* ((fenv (fun-env-fix fenv))
        ((fundef fundef) fundef)
-       ((when (fun-lookup fundef.name fenv)) (mv nil fenv))
+       ((when (fun-env-lookup fundef.name fenv)) (mv nil fenv))
        (info (make-fun-info :params fundef.params
                             :result fundef.result
                             :body fundef.body)))

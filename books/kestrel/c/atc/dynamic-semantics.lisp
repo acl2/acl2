@@ -598,7 +598,7 @@
        (ext-decl-case
         decl
         :decl (mv nil (irr-fun-env))
-        :fundef (b* (((when (fun-lookup (fundef->name decl.get) fenv))
+        :fundef (b* (((when (fun-env-lookup (fundef->name decl.get) fenv))
                       (mv nil (irr-fun-env)))
                      ((mv okp fenv) (fun-env-extend decl.get fenv))
                      ((unless okp) (mv nil (irr-fun-env))))
@@ -625,7 +625,7 @@
   (b* (((mv okp fenv) (init-fun-env tunit))
        ((unless okp) (error (list :no-function-environment
                               (transunit-fix tunit))))
-       (info (fun-lookup fun fenv))
+       (info (fun-env-lookup fun fenv))
        ((when (not info)) (error (list :exec-fun :undefined (ident-fix fun))))
        (store (init-store (fun-info->params info) args)))
     (store-result-case

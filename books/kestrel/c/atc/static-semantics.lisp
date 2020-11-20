@@ -239,8 +239,7 @@
                :ident (and (ident-wfp e.get)
                            (set::in e.get (senv->variables env)))
                :const (const-wfp e.get)
-               :call (b* ((info (fun-lookup e.fun
-                                            (senv->functions env))))
+               :call (b* ((info (fun-env-lookup e.fun (senv->functions env))))
                        (and info
                             (= (len (fun-info->params info))
                                (len e.args))))
