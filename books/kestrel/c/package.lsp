@@ -19,9 +19,11 @@
                                 '(byte
                                   error
                                   pprint-indent))
-             '(bool
+             '(any
+               bool
                cw-event
                define-sk
+               defmacro+
                defxdoc+
                er-soft+
                evmac-prepare-proofs

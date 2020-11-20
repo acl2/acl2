@@ -13,6 +13,7 @@
 (include-book "abstract-syntax")
 (include-book "integers")
 (include-book "function-environments")
+(include-book "errors")
 
 (include-book "kestrel/fty/defflatsum" :dir :system)
 (include-book "kestrel/fty/defomap" :dir :system)
@@ -72,22 +73,6 @@
      with function calls, loops, etc.)"))
   :order-subtopics t
   :default-parent t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defprod error
-  :short "Fixtype of errors."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We formalize a defensive dynamic semantics
-     that returns error indications when any defensive check fails,
-     such as the fact that the operand of an operation has the right type.")
-   (xdoc::p
-    "In order to be flexible in the kind of error information we return,
-     we define this fixtype as a wrapper of any ACL2 value."))
-  ((info acl2::any))
-  :pred errorp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
