@@ -35,7 +35,9 @@
      ACL2 provides several such macros
      (e.g. @(tsee defun), @(tsee defthm), @(tsee defun-sk)),
      and many more such macros are provided by the community books
-     (e.g. @(tsee std::deflist), @(tsee fty::defprod), @(tsee apt::tailrec)).")
+     (e.g. @(tsee std::deflist), @(tsee fty::defprod), @(tsee apt::tailrec)).
+     Event macros often generate events (via other event macros),
+     and sometimes generate files (e.g. @(tsee java::atj), @(tsee c::atc)).")
    (xdoc::p
     "Amid the wide variety of these event macros,
      there are certain commonalities.
