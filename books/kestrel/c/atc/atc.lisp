@@ -903,8 +903,8 @@
                                     store-result-ok->get
                                     value-result-kind
                                     value-result-ok->get
-                                    maybe-value-result-kind
-                                    maybe-value-result-ok->get)
+                                    value-option-result-kind
+                                    value-option-result-ok->get)
                  :use (:guard-theorem ,fn))))
        ((mv local-event exported-event)
         (acl2::evmac-generate-defthm

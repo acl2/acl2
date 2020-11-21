@@ -97,16 +97,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defoption maybe-value
+(fty::defoption value-option
   sint
   :short "Fixtype of optional values."
-  :pred maybe-valuep)
+  :pred value-optionp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (encapsulate ()
   (local (in-theory (enable sintp)))
-  (fty::defresult maybe-value "optional values"))
+  (fty::defresult value-option "optional values"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -499,7 +499,7 @@
 
   (define exec-stmt ((s stmtp) (env denvp) (limit natp))
     :guard (denv-nonempty-stack-p env)
-    :returns (result maybe-value-resultp)
+    :returns (result value-option-resultp)
     :parents nil
     (b* (((when (zp limit)) (error :limit))
          (s (stmt-fix s)))
@@ -539,7 +539,7 @@
 
   (define exec-block-item ((item block-itemp) (env denvp) (limit natp))
     :guard (denv-nonempty-stack-p env)
-    :returns (result maybe-value-resultp)
+    :returns (result value-option-resultp)
     :parents nil
     (b* (((when (zp limit)) (error :limit)))
       (block-item-case item
@@ -551,12 +551,12 @@
                                 (env denvp)
                                 (limit natp))
     :guard (denv-nonempty-stack-p env)
-    :returns (result maybe-value-resultp)
+    :returns (result value-option-resultp)
     :parents nil
     (b* (((when (zp limit)) (error :limit))
          ((when (endp items)) nil)
          (val? (exec-block-item (car items) env (1- limit)))
-         ((when (maybe-value-result-case val? :err)) val?)
+         ((when (value-option-result-case val? :err)) val?)
          ((when val?) val?))
       (exec-block-item-list (cdr items) env (1- limit)))
     :measure (nfix limit))
@@ -667,7 +667,7 @@
      :ok (b* ((frame (make-frame :function fun :store store.get))
               (env (make-denv :functions fenv.get :call-stack (list frame)))
               (val? (exec-stmt (fun-info->body info) env 1000000000))) ; 10^9
-           (maybe-value-result-case
+           (value-option-result-case
             val?
             :err val?.get
             :ok (if (sintp val?)
