@@ -2185,10 +2185,11 @@
                                                 index-list value-list))))
   :hints (("goal" :in-theory (enable stobj-set-indices-in-fa-table))))
 
-(defthm
-  stobj-set-indices-in-fa-table-of-stobj-set-indices-in-fa-table-lemma-4
-  (implies (and (member-equal x l) (>= x b))
-           (not (bounded-nat-listp l b))))
+(local
+ (defthm
+   stobj-set-indices-in-fa-table-of-stobj-set-indices-in-fa-table-lemma-4
+   (implies (and (member-equal x l) (>= x b))
+            (not (bounded-nat-listp l b)))))
 
 (defthm
   stobj-set-indices-in-fa-table-of-stobj-set-indices-in-fa-table-lemma-3
@@ -4271,25 +4272,26 @@
   :hints (("goal" :in-theory (enable non-free-index-listp
                                      place-contents nfix))))
 
-(defthm
-  non-free-index-listp-correctness-4-lemma-1
-  (implies
-   (and (lofat-fs-p fat32$c)
-        (< (nfix n2)
-           (len (find-n-free-clusters (effective-fat fat32$c)
-                                      n1))))
-   (equal
-    (fat32-entry-mask
-     (fati (nth n2
-                (find-n-free-clusters (effective-fat fat32$c)
-                                      n1))
-           fat32$c))
-    0))
-  :hints
-  (("goal" :do-not-induct t
-    :in-theory (disable find-n-free-clusters-correctness-5)
-    :use ((:instance find-n-free-clusters-correctness-5
-                     (fa-table (effective-fat fat32$c)))))))
+(local
+ (defthm
+   non-free-index-listp-correctness-4-lemma-1
+   (implies
+    (and (lofat-fs-p fat32$c)
+         (< (nfix n2)
+            (len (find-n-free-clusters (effective-fat fat32$c)
+                                       n1))))
+    (equal
+     (fat32-entry-mask
+      (fati (nth n2
+                 (find-n-free-clusters (effective-fat fat32$c)
+                                       n1))
+            fat32$c))
+     0))
+   :hints
+   (("goal" :do-not-induct t
+     :in-theory (disable find-n-free-clusters-correctness-5)
+     :use ((:instance find-n-free-clusters-correctness-5
+                      (fa-table (effective-fat fat32$c))))))))
 
 (defthm
   non-free-index-listp-correctness-4
@@ -8662,13 +8664,14 @@
                               b))
   :hints (("goal" :induct (remove-assoc-equal b l))))
 
-(defthm
-  non-free-index-listp-correctness-6-lemma-2
-  (implies
-   (non-free-index-listp x fa-table)
-   (and
-    (bounded-nat-listp x (len fa-table))
-    (lower-bounded-integer-listp x *ms-first-data-cluster*))))
+(local
+ (defthm
+   non-free-index-listp-correctness-6-lemma-2
+   (implies
+    (non-free-index-listp x fa-table)
+    (and
+     (bounded-nat-listp x (len fa-table))
+     (lower-bounded-integer-listp x *ms-first-data-cluster*)))))
 
 (encapsulate
   ()
