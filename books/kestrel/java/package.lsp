@@ -60,7 +60,7 @@
                          ensure-doublet-list$
                          ensure-function-name-list$
                          ensure-list-functions$
-                         ensure-list-no-duplicates$
+                         ensure-list-has-no-duplicates$
                          ensure-string-or-nil$
                          ensure-term-ground$
                          ensure-value-is-boolean$
