@@ -898,6 +898,7 @@
                                     exec-ident
                                     exec-const
                                     exec-iconst
+                                    top-frame
                                     store-result-kind
                                     store-result-ok->get
                                     value-result-kind

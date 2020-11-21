@@ -146,6 +146,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod frame
+  :short "Fixtype of frames."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Every time a function is called, a frame is created,
+     which contains information about
+     the function and its variables' values.")
+   (xdoc::p
+    "As defined later, the call stack is represented as
+     a stack (i.e. list) of frames."))
+  ((function ident)
+   (store store))
+  :pred framep)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist frame-list
+  :short "Fixtype of lists of frames."
+  :elt-type frame
+  :true-listp t
+  :elementp-of-nil nil
+  :pred frame-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod denv
   :short "Fixtype of dynamic environments."
   :long
@@ -153,13 +179,45 @@
    (xdoc::p
     "A dynamic environment consists of
      a function environment
-     and a variable store.")
+     and a stack of frames.")
    (xdoc::p
     "The function environment consists of
-     information about the functions that may be called by the code."))
+     information about the functions that may be called by the code.")
+   (xdoc::p
+    "The stack grows leftward and shrinks rightward,
+     i.e. push is @(tsee cons), pop is @(tsee cdr), and top is @(tsee car)."))
   ((functions fun-env)
-   (store store))
+   (call-stack frame-list))
   :pred denvp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define denv-nonempty-stack-p ((env denvp))
+  :returns (yes/no booleanp)
+  :short "Check if a dynamic environment has a non-empty call stack."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is always satisfied when executing statements and expressions,
+     because those statements and expressions must be
+     in the body of some function that is executing."))
+  (consp (denv->call-stack env))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define top-frame ((env denvp))
+  :guard (denv-nonempty-stack-p env)
+  :returns (frame framep)
+  :short "Return the top call frame of a dynamic environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The additional guard is needed to guarantee
+     the existence of any frame, and thus of the top frame."))
+  (frame-fix (car (denv->call-stack env)))
+  :guard-hints (("Goal" :in-theory (enable denv-nonempty-stack-p)))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -204,6 +262,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define exec-ident ((id identp) (env denvp))
+  :guard (denv-nonempty-stack-p env)
   :returns (result value-resultp)
   :short "Execute a variable."
   :long
@@ -215,7 +274,8 @@
      defensively returning an error if the variable is not in the store,
      which means that the variable is not in scope."))
   (b* ((id (ident-fix id))
-       (store (denv->store env))
+       (frame (top-frame env))
+       (store (frame->store frame))
        (pair? (omap::in id store))
        ((when (not pair?)) (error (list :exec-ident-not-in-scope id))))
     (cdr pair?))
@@ -389,6 +449,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define exec-expr ((e exprp) (env denvp) (limit natp))
+  :guard (denv-nonempty-stack-p env)
   :returns (result value-resultp)
   :verify-guards :after-returns
   :short "Execute an expression."
@@ -437,6 +498,7 @@
      that consists of supported statements."))
 
   (define exec-stmt ((s stmtp) (env denvp) (limit natp))
+    :guard (denv-nonempty-stack-p env)
     :returns (result maybe-value-resultp)
     :parents nil
     (b* (((when (zp limit)) (error :limit))
@@ -476,6 +538,7 @@
     :measure (nfix limit))
 
   (define exec-block-item ((item block-itemp) (env denvp) (limit natp))
+    :guard (denv-nonempty-stack-p env)
     :returns (result maybe-value-resultp)
     :parents nil
     (b* (((when (zp limit)) (error :limit)))
@@ -487,6 +550,7 @@
   (define exec-block-item-list ((items block-item-listp)
                                 (env denvp)
                                 (limit natp))
+    :guard (denv-nonempty-stack-p env)
     :returns (result maybe-value-resultp)
     :parents nil
     (b* (((when (zp limit)) (error :limit))
@@ -600,7 +664,8 @@
     (store-result-case
      store
      :err store.get
-     :ok (b* ((env (make-denv :functions fenv.get :store store.get))
+     :ok (b* ((frame (make-frame :function fun :store store.get))
+              (env (make-denv :functions fenv.get :call-stack (list frame)))
               (val? (exec-stmt (fun-info->body info) env 1000000000))) ; 10^9
            (maybe-value-result-case
             val?
@@ -608,4 +673,5 @@
             :ok (if (sintp val?)
                     val?
                   (error (list :exec-fun :no-value-returned)))))))))
+  :guard-hints (("Goal" :in-theory (enable denv-nonempty-stack-p)))
   :hooks (:fix))
