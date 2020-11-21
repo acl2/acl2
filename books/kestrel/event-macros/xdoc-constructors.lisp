@@ -232,7 +232,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro+ xdoc::evmac-input-hints (&rest additional)
+(defmacro+ xdoc::evmac-input-hints (&key additional)
   :short "Construct a description of the @(':hints') input
           for the user documentation of an event macro."
   (let ((appconds-ref (concatenate 'string
@@ -273,7 +273,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro+ xdoc::evmac-input-print (macro &rest additional)
+(defmacro+ xdoc::evmac-input-print (macro &key additional)
   :short "Construct a description of the @(':print') input
           for the user documentation of an event macro."
   :long
@@ -347,7 +347,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro+ xdoc::evmac-input-show-only (macro &rest additional)
+(defmacro+ xdoc::evmac-input-show-only (macro &key additional)
   :short "Construct a description of the @(':show-only') input
           for the user documentation of an event macro."
   :long
