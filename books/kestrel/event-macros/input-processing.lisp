@@ -13,6 +13,7 @@
 (include-book "evmac-input-hints-p")
 (include-book "evmac-input-print-p")
 
+(include-book "kestrel/error-checking/ensure-list-has-no-duplicates" :dir :system)
 (include-book "kestrel/error-checking/ensure-symbol-is-fresh-event-name" :dir :system)
 (include-book "kestrel/std/util/defmacro-plus" :dir :system)
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
@@ -120,12 +121,12 @@
       (b* ((hints$ (keyword-value-list-to-alist hints))
            (kwds (strip-cars hints$))
            ((er &)
-            (ensure-list-no-duplicates$ kwds
-                                        (msg "The list of keywords ~x0 ~
-                                              in the keyword-value list ~
-                                              that forms the :HINTS input"
-                                             kwds)
-                                        t nil)))
+            (ensure-list-has-no-duplicates$ kwds
+                                            (msg "The list of keywords ~x0 ~
+                                                  in the keyword-value list ~
+                                                  that forms the :HINTS input"
+                                                 kwds)
+                                            t nil)))
         (value hints$))
     (if (true-listp hints)
         (value hints)

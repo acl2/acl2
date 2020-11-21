@@ -63,14 +63,6 @@
   (((not (eq symb symb1))
     "~@0 must be different from ~@1." description description1)))
 
-(def-error-checker ensure-list-no-duplicates
-  ((list true-listp "List to check."))
-  :short
-  "Cause an error if a true list has duplicates."
-  :body
-  (((no-duplicatesp-equal list)
-    "~@0 must have no duplicates." description)))
-
 (def-error-checker ensure-list-subset
   ((list true-listp "List to check.")
    (super true-listp "List that must include all the elements of @('list')."))

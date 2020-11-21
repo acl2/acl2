@@ -13,6 +13,7 @@
 (include-book "kestrel/error-checking/ensure-function-is-defined" :dir :system)
 (include-book "kestrel/error-checking/ensure-function-is-guard-verified" :dir :system)
 (include-book "kestrel/error-checking/ensure-function-is-logic-mode" :dir :system)
+(include-book "kestrel/error-checking/ensure-list-has-no-duplicates" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-boolean" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-not-in-list" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
@@ -377,7 +378,7 @@
                           is not an atom, it"
                          (list k))
                     t nil))
-           ((er &) (ensure-list-no-duplicates$
+           ((er &) (ensure-list-has-no-duplicates$
                     arg/res-list
                     (msg "The list ~x0 that is ~
                           the ~n1 ARG/RES-LIST component of the second input"
