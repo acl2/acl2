@@ -17,7 +17,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ atc-c-abstract-syntax
+(defxdoc+ atc-abstract-syntax
   :parents (atc)
   :short "An abstract syntax of C for ATC."
   :long
