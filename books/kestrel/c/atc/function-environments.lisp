@@ -110,7 +110,7 @@
   (b* ((fenv (fun-env-fix fenv))
        ((fundef fundef) fundef)
        ((when (fun-env-lookup fundef.name fenv))
-        (error (list :duplicate-function fundef.name)))
+        (error (list :duplicate-function-definition fundef.name)))
        (info (make-fun-info :params fundef.params
                             :result fundef.result
                             :body fundef.body)))
