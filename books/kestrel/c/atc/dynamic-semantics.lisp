@@ -13,7 +13,6 @@
 (include-book "abstract-syntax")
 (include-book "integers")
 (include-book "function-environments")
-(include-book "errors")
 
 (include-book "kestrel/fty/defomap" :dir :system)
 
