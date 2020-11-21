@@ -137,7 +137,7 @@
                          ensure-function/macro/lambda$
                          ensure-keyword-value-list
                          ensure-keyword-value-list$
-                         ensure-list-no-duplicates$
+                         ensure-list-has-no-duplicates$
                          ensure-list-subset$
                          ensure-named-formulas
                          ensure-symbol-different$
