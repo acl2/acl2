@@ -243,9 +243,8 @@
              (equal (member-intersectp-equal z (set-difference-equal x y))
                     (member-intersectp-equal z x))))))
 
-;; Rename later.
-(defthm
-  lofat-place-file-correctness-lemma-73
+(defthmd
+  not-intersectp-list-of-cons-2
   (implies (and (member-equal i y)
                 (not-intersectp-list y l))
            (not-intersectp-list (list i) l))
