@@ -29,6 +29,7 @@
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/reverse-list" :dir :system))
+(local (include-book "kestrel/lists-light/cons" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
 ;; this version does not handle embedded dags
@@ -574,30 +575,16 @@
   :hints (("Goal" :use (:instance merge-terms-into-dag-array-basic-return-type)
            :in-theory (disable merge-terms-into-dag-array-basic-return-type))))
 
-;returns (mv erp nodenums-or-quoteps dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-(defund make-terms-into-dag-array-basic (terms dag-array-name dag-parent-array-name interpreted-function-alist)
-  (declare (xargs :guard (and (pseudo-term-listp terms)
-                              (symbolp dag-array-name)
-                              (symbolp dag-parent-array-name)
-                              (interpreted-function-alistp interpreted-function-alist))))
-  (merge-terms-into-dag-array-basic terms
-                                    nil ;initial var-replacement-alist
-                                    (make-empty-array dag-array-name 1000) ;fixme why 1000?
-                                    0 ;initial dag-len
-                                    (make-empty-array dag-parent-array-name 1000)
-                                    nil  ;empty dag-constant-alist
-                                    nil  ;empty dag-variable-alist
-                                    dag-array-name dag-parent-array-name
-                                    interpreted-function-alist))
-
-(defthm wf-dagp-of-make-terms-into-dag-array-basic
-  (implies (and (pseudo-term-listp terms)
-                (symbolp dag-array-name)
-                (symbolp dag-parent-array-name)
-                (interpreted-function-alistp interpreted-function-alist)
-                (not (mv-nth 0 (make-terms-into-dag-array-basic terms dag-array-name dag-parent-array-name interpreted-function-alist))))
-           (mv-let (erp nodenums-or-quoteps dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-             (make-terms-into-dag-array-basic terms dag-array-name dag-parent-array-name interpreted-function-alist)
-             (declare (ignore erp nodenums-or-quoteps))
-             (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)))
-  :hints (("Goal" :in-theory (enable make-terms-into-dag-array-basic))))
+(defthm-flag-merge-term-into-dag-array-basic
+  (defthm true-listp-of-mv-nth-1-of-merge-terms-into-dag-array-basic-dummy
+    t
+    :rule-classes nil
+    :flag merge-term-into-dag-array-basic)
+  (defthm true-listp-of-mv-nth-1-of-merge-terms-into-dag-array-basic
+    (true-listp (mv-nth 1 (merge-terms-into-dag-array-basic
+                           terms var-replacement-alist
+                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
+                           interpreted-function-alist)))
+    :rule-classes :type-prescription
+    :flag merge-terms-into-dag-array-basic)
+  :hints (("Goal" :in-theory (e/d (merge-term-into-dag-array-basic merge-terms-into-dag-array-basic) (natp)))))
