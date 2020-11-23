@@ -11,6 +11,9 @@
          (true-list-list-fix x))
   :hints (("goal" :in-theory (enable true-list-list-fix))))
 
+(defthm cons-under-set-equiv-1
+  (set-equiv (list* x x y) (cons x y)))
+
 (defcong
   set-equiv
   equal (not-intersectp-list x l)
@@ -181,5 +184,49 @@
                                   ()))))
 
 (defcong flatten-equiv flatten-equiv (cons x y) 2
+  :hints (("goal" :in-theory (e/d (flatten-equiv)
+                                  ()))))
+
+(defthmd cons-equal-under-set-equiv-1
+  (iff (set-equiv (cons x y1) (cons x y2))
+       (set-equiv (remove-equal x y1)
+                  (remove-equal x y2)))
+  :instructions ((:= (cons x y2)
+                     (cons x (remove-equal x y2))
+                     :equiv set-equiv)
+                 (:= (cons x y1)
+                     (cons x (remove-equal x y1))
+                     :equiv set-equiv)
+                 (:dive 1)
+                 :x (:dive 1)
+                 (:= (subsetp-equal (remove-equal x y1)
+                                    (remove-equal x y2)))
+                 :top
+                 (:= (subsetp-equal (remove-equal x y2)
+                                    (cons x (remove-equal x y1)))
+                     (subsetp-equal (remove-equal x y2)
+                                    (remove-equal x y1)))
+                 (:dive 2)
+                 :x
+                 :top :bash))
+
+(defthm flatten-equiv-of-append-of-cons-lemma-1
+  (implies
+   (and (true-listp x) (true-listp w))
+   (equal (flatten-equiv (list* w x z)
+                         (list* x y))
+          (flatten-equiv (remove-equal x (list* w (true-list-list-fix z)))
+                         (remove-equal x (true-list-list-fix y)))))
+  :instructions
+  ((:bash ("goal" :in-theory (e/d (flatten-equiv cons-equal-under-set-equiv-1)
+                                  ())))
+   (:dive 1 2)
+   (:rewrite commutativity-2-of-cons-under-flatten-equiv-lemma-1)
+   :up (:rewrite cons-equal-under-set-equiv-1)
+   :top (:bash ("goal" :in-theory (e/d nil ())))))
+
+(defthm flatten-equiv-of-append-of-cons-1
+  (flatten-equiv (append x (cons y z))
+                 (cons y (append x z)))
   :hints (("goal" :in-theory (e/d (flatten-equiv)
                                   ()))))

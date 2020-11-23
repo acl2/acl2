@@ -4,97 +4,88 @@
 
 ;  lofat-place-file.lisp                                Mihir Mehta
 
-;; These are some rules from other books which are either interacting badly
-;; with the theory I've built up so far, or else causing a lot of unnecessary
-;; frames and tries.
-(local
- (in-theory (disable take-of-too-many make-list-ac-removal
-                     revappend-removal str::hex-digit-char-listp-of-cons
-                     loghead logtail nth-when->=-n-len-l
-                     integer-listp)))
-
-(local
- (in-theory (disable nth update-nth ceiling floor mod true-listp take member-equal)))
-
 ;; get-cc-alt really should be disabled here if it can!
 (local
- (in-theory (e/d (hifat-equiv-of-cons-lemma-5)
-                 (non-free-index-list-listp-correctness-1
-                  intersectp-member-when-not-member-intersectp
-                  no-duplicatesp-of-member
-                  free-index-list-listp-correctness-1
-                  consp-of-nthcdr car-of-nthcdr
-                  count-free-clusters-of-set-indices-in-fa-table-2
-                  (:rewrite subsetp-implies-subsetp-cdr)
-                  (:rewrite stringp-when-nonempty-stringp)
-                  (:rewrite
-                   acl2-numberp-of-car-when-acl2-number-listp)
-                  (:rewrite
-                   rationalp-of-car-when-rational-listp)
-                  (:definition acl2-number-listp)
-                  (:rewrite
-                   flatten-subset-no-duplicatesp-lemma-2)
-                  (:definition rational-listp)
-                  (:rewrite true-listp-when-string-list)
-                  (:rewrite integerp-of-car-when-integer-listp)
-                  (:definition string-listp)
-                  (:rewrite subseq-of-length-1)
-                  (:rewrite assoc-of-car-when-member)
-                  (:rewrite characterp-nth)
-                  (:rewrite hifat-file-alist-fix-guard-lemma-1)
-                  (:rewrite subsetp-member . 2)
-                  (:rewrite
-                   d-e-list-p-of-cdr-when-d-e-list-p)
-                  (:rewrite intersect-with-subset . 8)
-                  (:rewrite intersect-with-subset . 1)
-                  (:rewrite intersect-with-subset . 3)
-                  (:rewrite intersect-with-subset . 4)
-                  (:rewrite intersect-with-subset . 2)
-                  (:rewrite intersect-with-subset . 7)
-                  (:rewrite intersect-with-subset . 10)
-                  (:rewrite subsetp-member . 4)
-                  (:rewrite natp-of-caar-when-file-table-p)
-                  (:rewrite natp-of-caar-when-fd-table-p)
-                  (:rewrite
-                   fat32-filename-p-of-car-when-fat32-filename-list-p)
-                  (:rewrite free-index-listp-correctness-1)
-                  (:rewrite
-                   consp-of-assoc-of-hifat-file-alist-fix)
-                  (:linear hifat-entry-count-when-hifat-subsetp)
-                  (:rewrite
-                   true-list-listp-of-cdr-when-true-list-listp)
-                  (:rewrite not-intersectp-list-when-subsetp-2)
-                  (:definition subsetp-equal)
-                  (:rewrite
-                   not-intersectp-list-of-set-difference$-lemma-2
-                   . 1)
-                  (:rewrite true-list-listp-when-not-consp)
-                  (:rewrite
-                   member-intersectp-is-commutative-lemma-2)
+ (in-theory (e/d ((:rewrite hifat-equiv-of-cons-lemma-5)
+                  (:rewrite not-intersectp-list-of-cons-2))
+                 ((:rewrite free-index-list-listp-of-update-nth-lemma-1)
+                  (:rewrite free-index-list-listp-correctness-1)
+                  (:rewrite non-free-index-list-listp-correctness-1)
+                  (:rewrite count-free-clusters-of-set-indices-in-fa-table-2)
+                  (:rewrite count-free-clusters-of-set-indices-in-fa-table-lemma-1)
                   (:rewrite non-free-index-listp-correctness-5)
-                  (:rewrite then-subseq-same-2)
-                  (:rewrite
-                   count-free-clusters-of-set-indices-in-fa-table-lemma-1)
-                  (:linear find-n-free-clusters-correctness-1)
-                  (:rewrite
-                   fat32-masked-entry-list-p-when-not-consp)
-                  (:rewrite
-                   fat32-masked-entry-list-p-when-bounded-nat-listp)
+                  (:rewrite free-index-listp-correctness-1)
+                  (:rewrite consp-of-assoc-of-hifat-file-alist-fix)
+                  (:linear hifat-entry-count-when-hifat-subsetp)
                   (:rewrite hifat-place-file-when-hifat-equiv-1)
-                  (:rewrite nat-listp-when-unsigned-byte-listp)
-                  (:rewrite bounded-nat-listp-correctness-1)
+                  (:rewrite consp-of-assoc-when-hifat-equiv-lemma-1)
                   (:rewrite hifat-subsetp-preserves-assoc)
-                  (:rewrite
-                   consp-of-assoc-when-hifat-equiv-lemma-1)
-                  (:rewrite free-index-list-listp-of-update-nth-lemma-1)
-                  (:rewrite
-                   abs-find-file-correctness-1-lemma-40)
-                  (:linear
-                   lofat-place-file-correctness-1-lemma-25)
-                  (:rewrite
-                   not-intersectp-list-of-set-difference$-lemma-3)
-                  (:rewrite
-                   not-intersectp-list-of-set-difference$-lemma-1)))))
+                  (:rewrite abs-find-file-correctness-1-lemma-40)
+                  (:rewrite hifat-file-alist-fix-guard-lemma-1)
+                  (:rewrite natp-of-caar-when-fd-table-p)
+                  (:rewrite natp-of-caar-when-file-table-p)
+                  (:rewrite fat32-filename-p-of-car-when-fat32-filename-list-p)
+                  (:rewrite d-e-list-p-of-cdr-when-d-e-list-p)
+                  (:rewrite fat32-masked-entry-list-p-when-bounded-nat-listp)
+                  (:linear find-n-free-clusters-correctness-1)
+                  (:rewrite fat32-masked-entry-list-p-when-not-consp)
+                  (:rewrite bounded-nat-listp-correctness-1)
+                  (:rewrite stringp-when-nonempty-stringp)
+                  (:rewrite str::hex-digit-char-listp-of-cons)
+                  (:definition logtail$inline)
+                  (:definition loghead$inline)
+                  (:rewrite nat-listp-when-unsigned-byte-listp)
+                  (:rewrite take-of-too-many)
+                  (:rewrite make-list-ac-removal)
+                  (:rewrite true-list-listp-when-not-consp)
+                  (:rewrite true-list-listp-of-cdr-when-true-list-listp)
+                  (:rewrite rationalp-of-car-when-rational-listp)
+                  (:rewrite integerp-of-car-when-integer-listp)
+                  (:rewrite acl2-numberp-of-car-when-acl2-number-listp)
+                  (:rewrite subsetp-implies-subsetp-cdr)
+                  (:rewrite revappend-removal)
+                  (:rewrite not-intersectp-list-of-set-difference$-lemma-2
+                            . 1)
+                  (:rewrite member-intersectp-is-commutative-lemma-2)
+                  (:rewrite intersectp-member-when-not-member-intersectp)
+                  (:rewrite flatten-subset-no-duplicatesp-lemma-2)
+                  (:rewrite not-intersectp-list-when-subsetp-2)
+                  (:rewrite no-duplicatesp-of-member)
+                  (:rewrite then-subseq-same-2)
+                  (:rewrite subseq-of-length-1)
+                  (:rewrite nth-when->=-n-len-l)
+                  (:rewrite car-of-nthcdr)
+                  (:rewrite assoc-of-car-when-member)
+                  (:rewrite true-listp-when-string-list)
+                  (:rewrite intersect-with-subset . 10)
+                  (:rewrite intersect-with-subset . 8)
+                  (:rewrite intersect-with-subset . 7)
+                  (:rewrite intersect-with-subset . 4)
+                  (:rewrite intersect-with-subset . 3)
+                  (:rewrite intersect-with-subset . 2)
+                  (:rewrite intersect-with-subset . 1)
+                  (:rewrite subsetp-member . 4)
+                  (:rewrite subsetp-member . 2)
+                  (:rewrite consp-of-nthcdr)
+                  (:induction integer-listp)
+                  (:definition integer-listp)
+                  (:definition rational-listp)
+                  (:definition acl2-number-listp)
+                  (:induction update-nth)
+                  (:definition update-nth)
+                  (:definition mod)
+                  (:definition ceiling)
+                  (:rewrite characterp-nth)
+                  (:definition string-listp)
+                  (:induction take)
+                  (:definition take)
+                  (:induction member-equal)
+                  (:definition member-equal)
+                  (:definition floor)
+                  (:induction nth)
+                  (:definition nth)
+                  (:induction true-listp)
+                  (:definition true-listp)))))
 
 (defthm
   lofat-place-file-correctness-lemma-55
@@ -689,6 +680,184 @@
   :hints (("goal" :in-theory (disable put-assoc-under-hifat-equiv-3)
            :use put-assoc-under-hifat-equiv-3)))
 
+(defthm
+  lofat-place-file-correctness-lemma-15
+  (implies
+   (and
+    (>= (d-e-first-cluster (mv-nth 0 (find-d-e d-e-list name)))
+        *ms-first-data-cluster*)
+    (useful-d-e-list-p d-e-list)
+    (equal (mv-nth 3
+                   (lofat-to-hifat-helper fat32$c
+                                          d-e-list entry-limit1))
+           0)
+    (not (d-e-directory-p (mv-nth 0 (find-d-e d-e-list name)))))
+   (and
+    (equal
+     (mv-nth
+      3
+      (lofat-to-hifat-helper
+       fat32$c
+       (place-d-e d-e-list
+                  (d-e-set-first-cluster-file-size
+                   (mv-nth 0 (find-d-e d-e-list name))
+                   0 0))
+       entry-limit1))
+     0)
+    (subsetp-equal
+     (mv-nth
+      2
+      (lofat-to-hifat-helper
+       fat32$c
+       (place-d-e d-e-list
+                  (d-e-set-first-cluster-file-size
+                   (mv-nth 0 (find-d-e d-e-list name))
+                   0 0))
+       entry-limit1))
+     (cons nil
+           (mv-nth 2
+                   (lofat-to-hifat-helper fat32$c
+                                          d-e-list entry-limit1))))))
+  :hints
+  (("goal"
+    :induct (lofat-to-hifat-helper fat32$c
+                                   d-e-list entry-limit1)
+    :do-not-induct t
+    :expand (:free (d-e d-e-list)
+                   (lofat-to-hifat-helper fat32$c
+                                          (cons d-e d-e-list)
+                                          entry-limit1))
+    :in-theory
+    (e/d
+     (lofat-to-hifat-helper find-d-e
+                            place-d-e hifat-entry-count
+                            lofat-to-hifat-helper-correctness-4)
+     ((:rewrite lofat-place-file-correctness-1-lemma-14)
+      (:rewrite nth-of-nats=>chars)
+      (:rewrite
+       hifat-entry-count-of-lofat-to-hifat-helper-of-delete-d-e-lemma-3)
+      (:linear nth-when-d-e-p)
+      (:rewrite lofat-place-file-correctness-1-lemma-13)
+      (:rewrite explode-of-d-e-filename)
+      (:rewrite d-e-list-p-of-cdr-when-d-e-list-p)
+      (:rewrite d-e-p-when-member-equal-of-d-e-list-p)
+      (:rewrite m1-file-alist-p-of-cdr-when-m1-file-alist-p)
+      (:rewrite intersectp-when-subsetp)
+      (:rewrite subsetp-trans2)
+      (:rewrite subsetp-when-atom-left)
+      (:rewrite subsetp-when-atom-right)
+      (:rewrite m1-file-p-of-cdar-when-m1-file-alist-p)
+      (:rewrite subsetp-car-member)
+      (:definition binary-append)
+      (:rewrite m1-directory-file-p-when-m1-file-p)
+      (:rewrite hifat-to-lofat-inversion-lemma-2)
+      intersect-with-subset
+      (:definition assoc-equal)
+      (:rewrite consp-of-assoc-of-hifat-file-alist-fix)
+      (:rewrite fat32-filename-p-of-caar-when-m1-file-alist-p)
+      (:rewrite subdir-contents-p-when-zero-length)
+      (:rewrite m1-file-alist-p-when-subsetp-equal)
+      (:rewrite fat32-filename-p-correctness-1)
+      (:rewrite m1-directory-file-p-correctness-1)
+      (:rewrite m1-regular-file-p-correctness-1)
+      (:rewrite hifat-no-dups-p-of-cdr))))))
+
+(defthm
+  lofat-place-file-correctness-lemma-169
+  (implies
+   (and
+    (equal (lofat-file->contents file) "")
+    (d-e-directory-p d-e)
+    (equal (mv-nth 1
+                   (lofat-place-file fat32$c d-e path file))
+           0)
+    (lofat-fs-p fat32$c)
+    (equal (mv-nth 1 (d-e-cc-contents fat32$c d-e))
+           0)
+    (equal
+     (mv-nth 3
+             (lofat-to-hifat-helper
+              fat32$c
+              (make-d-e-list (mv-nth 0 (d-e-cc-contents fat32$c d-e)))
+              (+ -1 entry-limit)))
+     0)
+    (not-intersectp-list
+     (mv-nth 0 (d-e-cc fat32$c d-e))
+     (mv-nth 2
+             (lofat-to-hifat-helper
+              fat32$c
+              (make-d-e-list (mv-nth 0 (d-e-cc-contents fat32$c d-e)))
+              (+ -1 entry-limit))))
+    (lofat-regular-file-p file)
+    (not (zp entry-limit))
+    (<
+     (+
+      1
+      (hifat-entry-count
+       (mv-nth 0
+               (lofat-to-hifat-helper
+                fat32$c
+                (make-d-e-list (mv-nth 0 (d-e-cc-contents fat32$c d-e)))
+                (+ -1 entry-limit))))
+      (hifat-entry-count
+       (mv-nth
+        0
+        (lofat-to-hifat-helper
+         fat32$c d-e-list
+         (+
+          -1 entry-limit
+          (-
+           (hifat-entry-count
+            (mv-nth
+             0
+             (lofat-to-hifat-helper
+              fat32$c
+              (make-d-e-list (mv-nth 0 (d-e-cc-contents fat32$c d-e)))
+              (+ -1 entry-limit))))))))))
+     entry-limit)
+    (fat32-filename-list-p path)
+    (not (consp (cdr path)))
+    (d-e-p d-e))
+   (not-intersectp-list
+    (mv-nth 0
+            (d-e-cc (mv-nth 0
+                            (lofat-place-file fat32$c d-e path file))
+                    d-e))
+    (mv-nth
+     2
+     (lofat-to-hifat-helper
+      (mv-nth 0
+              (lofat-place-file fat32$c d-e path file))
+      (place-d-e
+       (make-d-e-list (mv-nth 0 (d-e-cc-contents fat32$c d-e)))
+       (d-e-set-first-cluster-file-size
+        (mv-nth
+         0
+         (find-d-e (make-d-e-list (mv-nth 0 (d-e-cc-contents fat32$c d-e)))
+                   (car path)))
+        0 0))
+      (+ -1 entry-limit)))))
+  :hints
+  (("goal"
+    :do-not-induct t
+    :in-theory
+    (disable (:rewrite not-intersectp-list-of-lofat-to-hifat-helper)
+             (:definition member-intersectp-equal)
+             (:definition free-index-listp)
+             (:rewrite lofat-to-hifat-helper-of-update-dir-contents)
+             (:rewrite lofat-to-hifat-helper-of-clear-cc)
+             (:rewrite lofat-place-file-correctness-lemma-93)
+             (:rewrite member-intersectp-is-commutative)
+             (:rewrite lofat-place-file-correctness-1-lemma-11)
+             (:rewrite consp-of-fat32-build-index-list)
+             (:rewrite lofat-place-file-correctness-1-lemma-14)
+             (:rewrite d-e-cc-under-iff . 3)
+             (:rewrite lofat-place-file-correctness-lemma-121
+                       . 1)
+             (:rewrite not-intersectp-list-when-atom)
+             (:rewrite hifat-to-lofat-inversion-lemma-17)
+             (:definition find-d-e)))))
+
 (defund-nx
   lofat-place-file-spec-1
   (d-e x entry-limit
@@ -891,6 +1060,38 @@
                         (mv-nth 0 (find-d-e d-e-list name))
                         path file))
      d-e-list entry-limit x))))
+
+(defthm
+  lofat-place-file-correctness-lemma-108
+  (implies
+   (and
+    (equal (mv-nth 1
+                   (lofat-place-file fat32$c d-e path file))
+           0)
+    (fat32-filename-list-p path)
+    (equal
+     (mv-nth 3
+             (lofat-to-hifat-helper
+              fat32$c
+              (make-d-e-list (mv-nth 0 (d-e-cc-contents fat32$c d-e)))
+              entry-limit))
+     0)
+    (lofat-directory-file-p file)
+    (equal
+     (mv-nth
+      1
+      (find-d-e (make-d-e-list (mv-nth 0 (d-e-cc-contents fat32$c d-e)))
+                (car path)))
+     0))
+   (>=
+    (d-e-first-cluster
+     (mv-nth
+      0
+      (find-d-e (make-d-e-list (mv-nth 0 (d-e-cc-contents fat32$c d-e)))
+                (car path))))
+    2))
+  :hints (("goal" :do-not-induct t))
+  :rule-classes :linear)
 
 (encapsulate
   ()
@@ -2721,7 +2922,6 @@
         (:rewrite lofat-place-file-correctness-lemma-121
                   . 1)
         (:rewrite hifat-to-lofat-inversion-lemma-17)
-        (:rewrite lofat-place-file-correctness-lemma-100)
         (:rewrite not-intersectp-list-of-lofat-to-hifat-helper)
         (:definition free-index-listp)
         (:rewrite
@@ -4204,8 +4404,6 @@
         (:rewrite not-intersectp-list-of-append-1)
         (:rewrite lofat-place-file-correctness-1-lemma-13)
         (:rewrite d-e-cc-contents-of-lofat-place-file-coincident-lemma-13)
-        (:rewrite lofat-to-hifat-helper-after-delete-and-clear-2-lemma-2
-                  . 1)
         (:definition not-intersectp-list)
         (:rewrite lofat-place-file-correctness-lemma-56)
         (:rewrite not-intersectp-list-of-lofat-to-hifat-helper)
@@ -4218,8 +4416,6 @@
         (:definition natp)
         (:rewrite lofat-place-file-correctness-1-lemma-13)
         (:rewrite d-e-cc-contents-of-lofat-place-file-coincident-lemma-13)
-        (:rewrite lofat-to-hifat-helper-after-delete-and-clear-2-lemma-2
-                  . 1)
         (:definition not-intersectp-list)
         (:rewrite lofat-place-file-correctness-lemma-56)
         (:rewrite nfix-when-zp)

@@ -508,29 +508,6 @@
                        (if (consp (assoc-equal x alist))
                            (list (assoc-equal x alist)) nil))))
 
-(defthmd cons-equal-under-set-equiv-1
-  (iff (set-equiv (cons x y1) (cons x y2))
-       (set-equiv (remove-equal x y1)
-                  (remove-equal x y2)))
-  :instructions ((:= (cons x y2)
-                     (cons x (remove-equal x y2))
-                     :equiv set-equiv)
-                 (:= (cons x y1)
-                     (cons x (remove-equal x y1))
-                     :equiv set-equiv)
-                 (:dive 1)
-                 :x (:dive 1)
-                 (:= (subsetp-equal (remove-equal x y1)
-                                    (remove-equal x y2)))
-                 :top
-                 (:= (subsetp-equal (remove-equal x y2)
-                                    (cons x (remove-equal x y1)))
-                     (subsetp-equal (remove-equal x y2)
-                                    (remove-equal x y1)))
-                 (:dive 2)
-                 :x
-                 :top :bash))
-
 (defund d-e-p (x)
   (declare (xargs :guard t))
   (and (unsigned-byte-listp 8 x)
