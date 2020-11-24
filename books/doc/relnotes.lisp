@@ -854,6 +854,16 @@
      and to return its two conjuncts if that is the case.")
 
    (xdoc::p
+    "A new utility @(tsee check-mbt-call) has been added,
+     to check if a term is a (translated) call of @(tsee mbt)
+     and to return its argument if that is the case.")
+
+   (xdoc::p
+    "A new utility @(tsee check-mbt$-call) has been added,
+     to check if a term is a (translated) call of @(tsee mbt$)
+     and to return its argument if that is the case.")
+
+   (xdoc::p
     "A theorem about the built-in @('flatten-ands-in-lit') has been added,
      in @('[books]/kestrel/std/system/flatten-ands-in-lit').")
 
