@@ -27,6 +27,8 @@
 (include-book "kestrel/event-macros/event-generation" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
 (include-book "kestrel/std/system/check-if-call" :dir :system)
+(include-book "kestrel/std/system/check-mbt-call" :dir :system)
+(include-book "kestrel/std/system/check-mbt-dollar-call" :dir :system)
 (include-book "kestrel/std/system/maybe-pseudo-event-formp" :dir :system)
 (include-book "kestrel/std/system/table-alist-plus" :dir :system)
 (include-book "kestrel/std/util/tuple" :dir :system)
@@ -505,6 +507,10 @@
        to an expression, which we return.")
      (xdoc::p
       "If the term is an @(tsee if) call,
+       first we check if the test is @(tsee mbt) or @(tsee mbt$);
+       in that case, we discard test and `else' branch
+       and recursively process the `then' branch.
+       Otherwise,
        we call the mutually recursive function on the test,
        we call this function on the branches,
        and we construct a conditional expression.")
@@ -535,7 +541,11 @@
         (('c::sint01 arg)
          (atc-gen-expr-bool arg fn ctx state))
         (('if test then else)
-         (b* (((er test-expr) (atc-gen-expr-bool test fn ctx state))
+         (b* (((mv mbtp &) (acl2::check-mbt-call test))
+              ((when mbtp) (atc-gen-expr-nonbool then fn ctx state))
+              ((mv mbt$p &) (acl2::check-mbt$-call test))
+              ((when mbt$p) (atc-gen-expr-nonbool then fn ctx state))
+              ((er test-expr) (atc-gen-expr-bool test fn ctx state))
               ((er then-expr) (atc-gen-expr-nonbool then fn ctx state))
               ((er else-expr) (atc-gen-expr-nonbool else fn ctx state)))
            (value
@@ -617,12 +627,20 @@
      If the term is not a conditional,
      we generate a C expression for the term
      and generate a @('return') statement with that expression.
+     Otherwise, the term is a conditional and there are two cases.
+     If the test is @(tsee mbt) or @(tsee mbt$),
+     we discard test and `else' branch
+     and recursively translate the `then' branch.
      Otherwise, we generate an @('if') statement,
      with recursively generated statements as branches;
      the test expression is generated from the test term."))
   (case-match term
     (('if test then else)
-     (b* (((mv erp test-expr state) (atc-gen-expr-bool test fn ctx state))
+     (b* (((mv mbtp &) (acl2::check-mbt-call test))
+          ((when mbtp) (atc-gen-stmt then fn ctx state))
+          ((mv mbt$p &) (acl2::check-mbt$-call test))
+          ((when mbt$p) (atc-gen-stmt then fn ctx state))
+          ((mv erp test-expr state) (atc-gen-expr-bool test fn ctx state))
           ((when erp) (mv erp (irr-stmt) state))
           ((er then-stmt) (atc-gen-stmt then fn ctx state))
           ((er else-stmt) (atc-gen-stmt else fn ctx state)))

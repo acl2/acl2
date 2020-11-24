@@ -183,7 +183,7 @@
      "The name of each symbol that is a formal parameter of each @('fni')
       must be a portable ASCII C identifier
       as defined in Section `Portable ASCII C Identifiers' below.
-      The nams of these symbols are used as
+      The names of these symbols are used as
       the names of the formal parameters of the corresponding C function,
       in the same order.
       Therefore, the formal parameters of each @('fni')
@@ -282,10 +282,9 @@
      (xdoc::li
       "Calls of the following functions and macros on allowed boolean terms:"
       (xdoc::ul
-       (xdoc::li
-        (xdoc::li "@(tsee not)")
-        (xdoc::li "@(tsee and)")
-        (xdoc::li "@(tsee or)")))
+       (xdoc::li "@(tsee not)")
+       (xdoc::li "@(tsee and)")
+       (xdoc::li "@(tsee or)"))
       "The first one is a function, while the other two are macros.
        In translated terms, @('(and x y)') and @('(or x y)') are
        @('(if x y \'nil)') and @('(or x x y)'):
@@ -293,7 +292,30 @@
        Each such call represents the corresponding C logical operator
        (negation @('!'), conjunction @('&&'), disjunction @('||'));
        conjunction and disjunctions are represented non-strictly.
-       These calls are allowed boolean terms."))
+       These calls are allowed boolean terms.")
+     (xdoc::li
+      "Calls of @(tsee if) on
+       (i) tests of the form @('(mbt ...)') or @('(mbt$ ...)'),
+       (ii) `then' branches that are allowed non-boolean terms, and
+       (iii) `else' branches that are arbitrary terms.
+       Both tests and `else' branches are ignored;
+       only the `then' branches represent C code and are translated to C.
+       The reason is that ATC generates C code under guard assumptions.
+       In translated terms,
+       @('(mbt x)') is
+       @('(return-last \'acl2::mbe1-raw \'t x)'), and
+       @('(mbt$ x)') is
+       @('(return-last \'acl2::mbe1-raw \'t (if x \'nil \'t))').")
+     (xdoc::li
+      "Calls of @(tsee if) on
+       (i) tests of the form @('(mbt$ ...)'),
+       (ii) `then' branches that are allowed non-boolean terms, and
+       (iii) `else' branches that are arbitrary terms.
+       Both tests and `else' branches are ignored;
+       only the `then' branches represent C code and are translated to C.
+       The reason is that ATC generates C code under guard assumptions.
+       In translated terms, @('(mbt x)') is
+       @('(return-last \'acl2::mbe1-raw \'t (if x \'nil \'t))')."))
     (xdoc::p
      "Note that the allowed boolean terms return ACL2 boolean values,
       while the allowed non-boolean terms return ACL2 non-boolean values
