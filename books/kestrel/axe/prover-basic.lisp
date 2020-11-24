@@ -42,18 +42,17 @@
 (include-book "hit-counts")
 (include-book "get-args-not-done")
 (include-book "tries")
-;(local (include-book "kestrel/lists-light/memberp" :dir :system))
-(local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/remove-equal" :dir :system))
-(local (include-book "kestrel/utilities/acl2-count" :dir :system))
-(local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/reverse" :dir :system))
 (local (include-book "kestrel/lists-light/last" :dir :system))
 (local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cdrs" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
+(local (include-book "kestrel/utilities/acl2-count" :dir :system))
+(local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))
+(local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 
 ;(in-theory (disable add-to-end))
 
@@ -144,7 +143,7 @@
    (declare (xargs
              :verify-guards nil ;todo
              :stobjs state
-             :guard-debug t
+             ;; :guard-debug t
              :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                          (nat-listp nodenums-to-assume-false-to-walk-down)
                          (all-< nodenums-to-assume-false-to-walk-down dag-len)
@@ -165,7 +164,8 @@
                          (natp embedded-dag-depth) ;can we just use the prover depth?
                          (stringp case-designator)
                          (natp prover-depth)
-                         (axe-prover-optionsp options))
+                         (axe-prover-optionsp options) ;; TODO: Not currently used.  Disallow :no-stp?
+                         )
              :measure (+ 1 (nfix count)))
             (type (unsigned-byte 59) count))
    (if (or (endp nodenums-to-assume-false-to-walk-down)
@@ -254,7 +254,6 @@
                                (symbol-listp monitored-symbols)
                                (natp embedded-dag-depth) ;can we just use the prover depth?
                                (stringp case-designator)
-
                                (natp prover-depth)
                                (axe-prover-optionsp options))
                    :measure (+ 1 (nfix count)))
@@ -348,14 +347,14 @@
                                    alist
                                    nodenums-to-assume-false
                                    hyp
-                                   :elided ;;fffixme print dag-array? ;could print only the part of the dag below the maxnodenum in alist? can this stack overflow?
+                                   :elided ;;todo: print dag-array? ;could print only the part of the dag below the maxnodenum in alist? can this stack overflow?
                                    ))
                           (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)))
                      ;;hyp didn't rewrite to a constant:
                      (prog2$
                       (and old-try-count print (or (eq :verbose print) (eq :verbose2 print)) (< 100 try-diff) (cw "(~x1 tries wasted(p): ~x0:~x2 (non-constant result))~%" rule-symbol try-diff hyp-num))
                       ;; Give up:
-                      (prog2$ ;ffixme improve this printing?
+                      (prog2$ ;todo: improve this printing?
                        (and (member-eq rule-symbol monitored-symbols)
                             (progn$ (cw "(Failed to relieve hyp ~x0, namely, ~x1, for ~x2. " hyp-num hyp rule-symbol)
                                     (cw "Reason: Rewrote to:~%")
@@ -390,7 +389,6 @@
                                (symbol-listp monitored-symbols)
                                (natp embedded-dag-depth) ;can we just use the prover depth?
                                (stringp case-designator)
-
                                (natp prover-depth)
                                (axe-prover-optionsp options))
                    :measure (+ 1 (nfix count)))
@@ -558,13 +556,14 @@
  ;; TREE has nodenums and quoteps and variables (really? yes, from when we call this on a worklist of nodes) at the leaves.
  ;; returns (mv erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)
  ;; be sure we always handle lambdas early, in case one is hiding an if - fixme - skip this for now?
- (defund simplify-tree-and-add-to-dag-for-basic-prover (tree equiv
-                                                             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                             rule-alist
-                                                             nodenums-to-assume-false
-                                                             equiv-alist ;don't pass this around?
-                                                             print
-                                                             info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options count state)
+ (defund simplify-tree-and-add-to-dag-for-basic-prover (tree
+                                                        equiv
+                                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                        rule-alist
+                                                        nodenums-to-assume-false
+                                                        equiv-alist ;don't pass this around?
+                                                        print
+                                                        info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options count state)
    (declare (xargs :stobjs state
                    :guard (and (axe-treep tree)
                                (symbolp equiv)
@@ -580,7 +579,6 @@
                                (symbol-listp monitored-symbols)
                                (natp embedded-dag-depth) ;can we just use the prover depth?
                                (stringp case-designator)
-
                                (natp prover-depth)
                                (axe-prover-optionsp options))
                    :measure (+ 1 (nfix count)))
@@ -591,7 +589,7 @@
          (if (symbolp tree)
              (prog2$ ;;nil ;;(cw "Rewriting the variable ~x0" tree) ;new!
               (hard-error 'simplify-tree-and-add-to-dag-for-basic-prover "rewriting the var ~x0" (acons #\0 tree nil))
-              ;; It's a variable:  FFIXME perhaps add it first and then use assumptions?
+              ;; It's a variable:  todo: perhaps add it first and then use assumptions?
               ;; First try looking it up in the assumptions (fixme make special version of rewrite-term-using-assumptions-for-basic-prover for a variable?):
               (let ((assumption-match (rewrite-term-using-assumptions-for-axe-prover tree equiv nodenums-to-assume-false dag-array print)))
                 (if assumption-match
@@ -605,7 +603,7 @@
                     (add-variable-to-dag-array tree dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
                     (mv erp nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)))))
            ;; TREE is a nodenum (because it's an atom but not a symbol):
-;fffixme what if tree is the nodenum of a constant?
+           ;;fffixme what if tree is the nodenum of a constant?
            (let ((assumption-match (rewrite-nodenum-using-assumptions-for-axe-prover tree equiv nodenums-to-assume-false dag-array print)))
              (if assumption-match
                  ;;fffixme don't simplify here, since nodenums-to-assume-false will be simplified after the 1st pass (what about chains of equalities)?
@@ -859,7 +857,6 @@
                                        (mv erp nodenum dag-array dag-len dag-parent-array dag-constant-alist
                                            dag-variable-alist info tries state))))))))))))))))))))
 
-
 ;simplify all the trees in tree-lst and add to the DAG
 ;returns (mv erp nodenums-or-quoteps dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries changed-anything-flg state)
 ;if the items in tree-lst are already all nodenums or quoted constants this doesn't re-cons-up the list
@@ -887,7 +884,6 @@
                                (symbol-listp monitored-symbols)
                                (natp embedded-dag-depth) ;can we just use the prover depth?
                                (stringp case-designator)
-
                                (natp prover-depth)
                                (axe-prover-optionsp options))
                    :measure (+ 1 (nfix count)))
@@ -896,7 +892,7 @@
        (mv t tree-lst dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries nil state)
      (if (endp tree-lst)
          (mv nil tree-lst dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries nil state)
-       (let ((item (car tree-lst))
+       (let ((first-tree (car tree-lst))
              (rest (cdr tree-lst)))
 ;this simplifies the arguments in reverse order:
          (mv-let (erp rest-result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries changed-anything-for-rest state)
@@ -906,8 +902,8 @@
                                                               rule-alist nodenums-to-assume-false  equiv-alist print info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count) state)
            (if erp
                (mv erp tree-lst dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries nil state)
-             (mv-let (erp item-result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)
-               (simplify-tree-and-add-to-dag-for-basic-prover item
+             (mv-let (erp first-tree-result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)
+               (simplify-tree-and-add-to-dag-for-basic-prover first-tree
                                                               (car equiv-lst)
                                                               dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                               rule-alist nodenums-to-assume-false equiv-alist print info tries interpreted-function-alist monitored-symbols
@@ -916,10 +912,10 @@
                (if erp
                    (mv erp tree-lst dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries nil state)
                  ;;this avoids reconsing when nothing changes:
-                 (let* ((changed-anything-for-item (not (equal item-result item)))
-                        (changed-anything (or changed-anything-for-item changed-anything-for-rest))
+                 (let* ((changed-anything-for-first-tree (not (equal first-tree-result first-tree)))
+                        (changed-anything (or changed-anything-for-first-tree changed-anything-for-rest))
                         (result (if changed-anything
-                                    (cons item-result rest-result)
+                                    (cons first-tree-result rest-result)
                                   tree-lst)))
                    (mv nil result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries changed-anything state))))))))))
 
@@ -1020,7 +1016,6 @@
                               (triesp tries)
                               (symbol-listp monitored-symbols)
                               (stringp case-designator)
-
                               (natp prover-depth)
                               (axe-prover-optionsp options))
                   :verify-guards nil
@@ -1131,7 +1126,6 @@
                               (triesp tries)
                               (symbol-listp monitored-symbols)
                               (stringp case-designator)
-
                               (natp prover-depth)
                               (axe-prover-optionsp options))
                   :verify-guards nil)
@@ -1188,7 +1182,6 @@
                               (triesp tries)
                               (symbol-listp monitored-symbols)
                               (stringp case-designator)
-
                               (natp prover-depth)
                               (axe-prover-optionsp options))
                   :verify-guards nil
@@ -1275,7 +1268,6 @@
                               (triesp tries)
                               (symbol-listp monitored-symbols)
                               (stringp case-designator)
-
                               (natp prover-depth)
                               (axe-prover-optionsp options))
                   :verify-guards nil
@@ -1529,7 +1521,6 @@
                               (triesp tries)
                               (symbol-listp monitored-symbols)
                               (stringp case-designator)
-
                               (natp prover-depth)
                               (axe-prover-optionsp options))
                   :verify-guards nil
@@ -1732,8 +1723,7 @@
 ;)
                        ))))))))))))
 
-
-;;returns (mv erp result state) where result is :proved [iff we proved that the top-node of dag-lst is non-nil (or is t?)], :failed, or :timed-out
+;; Returns (mv erp result state) where result is :proved [iff we proved that the top-node of dag-lst is non-nil (or is t?)], :failed, or :timed-out
 (defund prove-dag-with-basic-prover (dag
                                      assumptions ;terms we can assume non-nil
                                      rule-alists
@@ -1896,9 +1886,6 @@
                                                            ,rule-lists
                                                            ,monitored-symbols
                                                            state)))
-
-
-
 
 ;; Returns (mv erp provedp state)
 (defund prove-implication-with-basic-prover (conc ;a term

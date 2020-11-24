@@ -1223,7 +1223,7 @@
 ;could strip out nodenums to assume true (or nodenums to assume non-nil??)
 ;fixme could preprocess nodenums-to-assume-false into pairs and simplify this function
 ;if there are multiple matches, the first one will fire, even if later ones might be better
-(defun rewrite-nodenum-using-assumptions-for-axe-prover (nodenum equiv nodenums-to-assume-false dag-array print)
+(defund rewrite-nodenum-using-assumptions-for-axe-prover (nodenum equiv nodenums-to-assume-false dag-array print)
   (declare (xargs :guard (and (natp nodenum)
                               (symbolp equiv)
                               (all-natp nodenums-to-assume-false)
@@ -1321,7 +1321,7 @@
 ;ffixme this should not fail if it's trying to use an equality we've already decided to substitute and drop..
 ;perhaps term is always either a var of a fn-call applied to nodenums and quoteps
 ;todo: rename term to tree in the param and this function's name:
-(defun rewrite-term-using-assumptions-for-axe-prover (term equiv nodenums-to-assume-false dag-array print)
+(defund rewrite-term-using-assumptions-for-axe-prover (term equiv nodenums-to-assume-false dag-array print)
   (declare (xargs :guard (and (axe-treep term)
                               (symbolp equiv)
                               (all-natp nodenums-to-assume-false)
@@ -3752,7 +3752,7 @@
         (cons (aref1 result-array-name result-array arg)
               (lookup-args-in-result-array (cdr args) result-array-name result-array))))))
 
-(defun axe-prover-optionsp (options)
+(defund axe-prover-optionsp (options)
   (declare (xargs :guard t))
   (and (alistp options)
        (subsetp-eq (strip-cars options) '(:no-stp))))
