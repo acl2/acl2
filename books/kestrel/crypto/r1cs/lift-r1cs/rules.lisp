@@ -1,11 +1,9 @@
 (in-package "R1CS")
 
 ;; todo: reduce:
-(include-book "../sparse/rules-axe") ;todo: reduce
-(include-book "../sparse/rules") ;todo: reduce
 (include-book "../gadgets")
 (include-book "kestrel/axe/axe-syntax" :dir :system)
-(include-book "kestrel/axe/axe-syntax-functions-bv" :dir :system) ;for bind-bv-size-axe
+(include-book "kestrel/axe/axe-syntax-functions-bv" :dir :system) ;for bind-bv-size-axe (todo: separate out the axe rules)
 (include-book "kestrel/prime-fields/prime-fields-rules" :dir :system)
 (include-book "kestrel/bv/bvcat" :dir :system)
 (include-book "kestrel/arithmetic-light/ceiling-of-lg" :dir :system)

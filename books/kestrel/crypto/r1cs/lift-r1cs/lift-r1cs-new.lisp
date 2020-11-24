@@ -16,6 +16,8 @@
 (include-book "rule-lists")
 (include-book "../sparse/rule-lists")
 (include-book "proof-support-rules")
+(include-book "../sparse/rules-axe")
+(include-book "../sparse/rules")
 (include-book "filter-and-combine-symbol-alists")
 (include-book "kestrel/utilities/keywords-to-acl2-package" :dir :system)
 (include-book "kestrel/axe/def-simplified" :dir :system)
