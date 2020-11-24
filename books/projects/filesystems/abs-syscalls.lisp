@@ -20218,13 +20218,22 @@
           (:rewrite
            append-nthcdr-dirname-basename-lemma-1
            . 3)
-          (:REWRITE ABS-PWRITE-CORRECTNESS-LEMMA-98)
-          (:DEFINITION NAT-EQUIV$INLINE)
-          (:REWRITE STR::EXPLODE-WHEN-NOT-STRINGP)
+          (:rewrite abs-pwrite-correctness-lemma-98)
+          (:definition nat-equiv$inline)
+          (:rewrite str::explode-when-not-stringp)
           (:rewrite
            fat32-filename-list-p-when-subsetp-equal)
           (:rewrite
-           fat32-filename-p-when-member-equal-of-fat32-filename-list-p)))))
+           fat32-filename-p-when-member-equal-of-fat32-filename-list-p)
+          (:rewrite nthcdr-when->=-n-len-l)
+          (:rewrite nfix-when-zp)
+          (:rewrite path-clear-partial-collapse-when-zp-src-lemma-15)
+          (:rewrite abs-find-file-helper-of-collapse-1 . 2)
+          (:rewrite abs-mkdir-correctness-lemma-26 . 2)
+          (:linear len-when-prefixp)
+          (:rewrite partial-collapse-when-path-clear-of-prefix)
+          (:rewrite abs-find-file-correctness-lemma-12)
+          (:rewrite path-clear-partial-collapse-when-zp-src-lemma-3)))))
 
   (defthm
     abs-pwrite-correctness-1

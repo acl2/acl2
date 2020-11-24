@@ -2007,6 +2007,11 @@
     (implies (equal (+ w y) z)
              (iff (equal (+ w (min x y)) z)
                   (<= y x)))
+    :hints (("Goal" :in-theory (enable min))))
+
+  (defthm painful-debugging-lemma-25
+    (zp (+ (- x) (min x y)))
+    :rule-classes :type-prescription
     :hints (("Goal" :in-theory (enable min)))))
 
 (defthm member-of-nth-when-not-intersectp
