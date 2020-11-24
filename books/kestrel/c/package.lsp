@@ -32,6 +32,7 @@
                impossible
                lnfix
                maybe-pseudo-event-formp
+               mbt$
                msg-listp
                nat
                pseudo-event-form-listp

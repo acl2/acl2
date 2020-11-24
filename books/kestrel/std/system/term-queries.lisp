@@ -24,6 +24,8 @@
 (include-book "check-if-call")
 (include-book "check-lambda-call")
 (include-book "check-list-call")
+(include-book "check-mbt-call")
+(include-book "check-mbt-dollar-call")
 (include-book "check-mv-let-call")
 (include-book "check-nary-lambda-call")
 (include-book "check-unary-lambda-call")
