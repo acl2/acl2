@@ -288,7 +288,7 @@
       "@(':print') &mdash; default @(':result')"
       (xdoc::p
        "Specifies what is printed on the screen
-        (see @(see event-macro-screen-printing)).")
+        (see @(see acl2::event-macro-screen-printing)).")
       (xdoc::p
        "It must be one of the following:")
       (xdoc::ul
