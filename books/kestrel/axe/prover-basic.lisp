@@ -645,7 +645,7 @@
                                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)
                          ;;didn't resolve the test; must rewrite the other arguments:
                          (mv-let (erp other-arg-results dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)
-                           (simplify-tree-lst-and-add-to-dag-for-basic-prover (rest args)
+                           (simplify-trees-and-add-to-dag-for-basic-prover (rest args)
                                                                               '(equal equal) ;;equiv-lst
                                                                               dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                                               rule-alist nodenums-to-assume-false
@@ -676,7 +676,7 @@
                                  dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)
                            ;;didn't resolve the test; must rewrite the other arguments:
                            (mv-let (erp other-arg-results dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)
-                             (simplify-tree-lst-and-add-to-dag-for-basic-prover (cons (first args) ;the size
+                             (simplify-trees-and-add-to-dag-for-basic-prover (cons (first args) ;the size
                                                                                       (cddr args) ;then part and else part
                                                                                       )
                                                                                 '(equal equal equal) ;;equiv-lst
@@ -748,7 +748,7 @@
                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state))))))
                        ;;not a short-circuit-function:
                        (mv-let (erp arg-results dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)
-                         (simplify-tree-lst-and-add-to-dag-for-basic-prover args
+                         (simplify-trees-and-add-to-dag-for-basic-prover args
                                                                             (get-equivs equiv fn equiv-alist)
                                                                             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                                             rule-alist nodenums-to-assume-false
@@ -839,8 +839,7 @@
                                         dag-array dag-len dag-parent-array dag-constant-alist
                                         dag-variable-alist rule-alist nodenums-to-assume-false  equiv-alist
                                         print info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count) state)
-
-                                     ;; No rule fired, so no simplifcation can be done:
+                                     ;; No rule fired, so no simplification can be done:
                                      ;; This node is ready to add to the dag
                                      ;; in-line this?
                                      (mv-let (erp nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
@@ -854,21 +853,21 @@
                                        (mv erp nodenum dag-array dag-len dag-parent-array dag-constant-alist
                                            dag-variable-alist info tries state))))))))))))))))))))
 
-;simplify all the trees in tree-lst and add to the DAG
-;returns (mv erp nodenums-or-quoteps dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)
-;if the items in tree-lst are already all nodenums or quoted constants this doesn't re-cons-up the list
-;not tail-recursive, btw.
- (defund simplify-tree-lst-and-add-to-dag-for-basic-prover (tree-lst
-                                                            equiv-lst
-                                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                            rule-alist nodenums-to-assume-false
-                                                            equiv-alist print info tries interpreted-function-alist monitored-symbols
-                                                            embedded-dag-depth case-designator prover-depth
-                                                            options count state)
+ ;; Simplify all the trees in TREES and add to the DAG.
+ ;; Returns (mv erp nodenums-or-quoteps dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state).
+ ;; If the items in TREES are already all nodenums or quoted constants, this doesn't re-cons-up the list.
+ ;; (not tail-recursive, btw.)
+ (defund simplify-trees-and-add-to-dag-for-basic-prover (trees
+                                                         equivs
+                                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                         rule-alist nodenums-to-assume-false
+                                                         equiv-alist print info tries interpreted-function-alist monitored-symbols
+                                                         embedded-dag-depth case-designator prover-depth
+                                                         options count state)
    (declare (xargs :stobjs state
-                   :guard (and (true-listp tree-lst)
-                               (all-axe-treep tree-lst)
-                               (symbol-listp equiv-lst)
+                   :guard (and (true-listp trees)
+                               (all-axe-treep trees)
+                               (symbol-listp equivs)
                                (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                                (rule-alistp rule-alist)
                                (nat-listp nodenums-to-assume-false)
@@ -887,30 +886,27 @@
             (type (unsigned-byte 59) count))
    (if (zp-fast count)
        (mv :count-exceeded nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)
-     (if (endp tree-lst)
-         (mv (erp-nil) tree-lst dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)
-       (let ((first-tree (car tree-lst))
-             (rest (cdr tree-lst)))
-;this simplifies the arguments in reverse order:
-         (mv-let (erp rest-result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)
-           (simplify-tree-lst-and-add-to-dag-for-basic-prover rest
-                                                              (cdr equiv-lst)
-                                                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                              rule-alist nodenums-to-assume-false  equiv-alist print info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count) state)
-           (if erp
-               (mv erp tree-lst dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)
-             (mv-let (erp first-tree-result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)
-               (simplify-tree-and-add-to-dag-for-basic-prover first-tree
-                                                              (car equiv-lst)
-                                                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                              rule-alist nodenums-to-assume-false equiv-alist print info tries interpreted-function-alist monitored-symbols
-                                                              embedded-dag-depth
-                                                              case-designator prover-depth options (+ -1 count) state)
-               (if erp
-                   (mv erp tree-lst dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)
-                 (mv (erp-nil)
-                     (cons-with-hint first-tree-result rest-result tree-lst)
-                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)))))))))
+     (if (endp trees)
+         (mv (erp-nil) trees dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)
+       (b* ( ;; this simplifies the arguments in reverse order (TODO: why?)
+            ((mv erp rest-result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)
+             (simplify-trees-and-add-to-dag-for-basic-prover (rest trees)
+                                                             (rest equivs)
+                                                             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                             rule-alist nodenums-to-assume-false  equiv-alist print info tries interpreted-function-alist
+                                                             monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count) state))
+            ((when erp) (mv erp trees dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state))
+            ((mv erp first-result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)
+             (simplify-tree-and-add-to-dag-for-basic-prover (first trees)
+                                                            (first equivs)
+                                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                            rule-alist nodenums-to-assume-false equiv-alist print info tries interpreted-function-alist monitored-symbols
+                                                            embedded-dag-depth
+                                                            case-designator prover-depth options (+ -1 count) state))
+            ((when erp) (mv erp trees dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)))
+         (mv (erp-nil)
+             (cons-with-hint first-result rest-result trees)
+             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)))))
 
  ;;           (mv-let (rewritten-if-test ;if this is non-nil, tree is an if (or related thing) and this is what the test rewrote to
  ;;                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)
@@ -959,7 +955,7 @@
  ;;                                   (mv-let
  ;;                                    (nodenums-or-quoteps dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
  ;;                                                         info tries changed-anything-flg state)
- ;;                                    (simplify-tree-lst-and-add-to-dag-for-basic-prover
+ ;;                                    (simplify-trees-and-add-to-dag-for-basic-prover
  ;;                                     (cdr args) ;skip the if-test
  ;;                                     (cdr (get-equivs equiv fn equiv-alist)) ;lookup what equivs to use for the arguments ;;;;forgot the cdr on this line!
  ;;                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist rule-alist
@@ -968,7 +964,7 @@
  ;;                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
  ;;                                        info tries changed-anything-flg state))
  ;;                                 ;;rewrite all the args:
- ;;                                 (simplify-tree-lst-and-add-to-dag-for-basic-prover
+ ;;                                 (simplify-trees-and-add-to-dag-for-basic-prover
  ;;                                  args
  ;;                                  (get-equivs equiv fn equiv-alist) ;lookup what equivs to use for the arguments
  ;;                                  dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist rule-alist
