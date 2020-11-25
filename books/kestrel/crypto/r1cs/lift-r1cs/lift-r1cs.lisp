@@ -12,8 +12,8 @@
 
 ;; This is for R1CSes in sparse form
 
-(include-book "rules")
-(include-book "rule-lists")
+(include-book "lift-r1cs-rules")
+(include-book "lift-r1cs-rule-lists")
 (include-book "../sparse/rule-lists")
 (include-book "../sparse/rules-axe")
 (include-book "../sparse/rules")
