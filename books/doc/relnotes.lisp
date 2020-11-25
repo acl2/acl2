@@ -530,19 +530,12 @@
      whose general form section should be normally a small fraction.")
 
    (xdoc::p
-    "The XDOC constructor @(tsee xdoc::evmac-topic-implementation)
-     has been simplified by removing its
-     @(':item-state'), @(':item-wrld'), and @(':item-ctx') options.
-     Instead, named constants have been provided for these common items.
-     This constructor has also been extended with a @(':default-parent') option.
-     A function has been also added to construct a common kind of items.")
-
-   (xdoc::p
     "The XDOC constructor @(tsee xdoc::evmac-topic-event-generation)
      has been extended with an additional option.")
 
    (xdoc::p
-    "New XDOC constructors have been added.")
+    "New XDOC constructors have been added
+     and some XDOC constructors have been improve.")
 
    (xdoc::p
     "A utility @(tsee evmac-prepare-proofs) has been added,
@@ -551,6 +544,10 @@
    (xdoc::p
     "Utilities have been added to generate various kinds of event forms
      from attributes of the event forms.")
+
+   (xdoc::p
+    "Some general XDOC topics about event macros have been added,
+     which can be referenced by the user documentation of event macros.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
