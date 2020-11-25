@@ -1964,11 +1964,9 @@
                         (mv (erp-nil)
                             memo-match
                             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                            (if (and memoization trees-equal-to-tree)
-                                (add-pairs-to-memoization trees-equal-to-tree
-                                                          memo-match ;the nodenum or quotep they are all equal to
-                                                          memoization)
-                              memoization)
+                            (add-pairs-to-memoization trees-equal-to-tree
+                                                      memo-match ;the nodenum or quotep they are all equal to
+                                                      memoization)
                             info tries limits node-replacement-array)
                       ;; Handle the various kinds of if:
                       (if (and (member-eq fn '(if myif))
@@ -2079,7 +2077,7 @@
                                                                             (+ -1 count))))))))))))))))
 
         ;; Returns (mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array).
-        ;; Can the FN ever be an if (of any type)?  If so, consider checking whether the test is constant.
+        ;; No special handling if FN is an if (of any type).
         (defund ,simplify-fun-call-and-add-to-dag-name (fn ;;a function symbol
                                                         args ;these are simplified (so these are nodenums or quoteps)
                                                         trees-equal-to-tree ;a list of the successive RHSes, all of which are equivalent to tree (to be added to the memoization) ;todo: rename
@@ -2117,11 +2115,9 @@
                   (mv (erp-nil)
                       memo-match
                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                      (if (and memoization trees-equal-to-tree)
-                          (add-pairs-to-memoization trees-equal-to-tree
-                                                    memo-match ;the nodenum or quotep they are all equal to
-                                                    memoization)
-                        memoization)
+                      (add-pairs-to-memoization trees-equal-to-tree
+                                                memo-match ;the nodenum or quotep they are all equal to
+                                                memoization)
                       info tries limits node-replacement-array)
                 ;; Next, try to apply rules:
                 (mv-let
@@ -2144,7 +2140,7 @@
                                                             rewriter-rule-alist
                                                             refined-assumption-alist node-replacement-array-num-valid-nodes print
                                                             interpreted-function-alist known-booleans monitored-symbols (+ -1 count))
-                      ;; No rule fired, so no simplifcation can be done.  Add the node to the dag.
+                      ;; No rule fired, so no simplification can be done.  Add the node to the dag.
                       (mv-let (erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization)
                         (add-function-call-expr-to-dag-array-with-memo
                          fn args ;(if any-arg-was-simplifiedp (cons fn args) tree) ;could put back the any-arg-was-simplifiedp trick to save this cons

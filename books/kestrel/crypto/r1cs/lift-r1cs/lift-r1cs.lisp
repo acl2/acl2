@@ -12,16 +12,17 @@
 
 ;; This is for R1CSes in sparse form
 
-(include-book "rules")
-(include-book "rule-lists")
+(include-book "lift-r1cs-rules")
+(include-book "lift-r1cs-rule-lists")
 (include-book "../sparse/rule-lists")
 (include-book "../sparse/rules-axe")
 (include-book "../sparse/rules")
-(include-book "proof-support-rules")
 (include-book "filter-and-combine-symbol-alists")
+(include-book "lift-r1cs-common")
 (include-book "kestrel/utilities/keywords-to-acl2-package" :dir :system)
 (include-book "kestrel/axe/unroll-spec-basic" :dir :system)
 (include-book "kestrel/prime-fields/prime-fields-rules-axe" :dir :system)
+(include-book "kestrel/prime-fields/rules2" :dir :system)
 (include-book "kestrel/utilities/ensure-rules-known" :dir :system)
 
 (acl2::ensure-rules-known (lift-r1cs-rules))
@@ -45,7 +46,7 @@
   (let ((constraints-fn-name (acl2::pack$ base-name '-constraints)))
     (acl2::unroll-spec-basic-fn (acl2::pack$ '* base-name '-holdsp*)
                                 `(r1cs::r1cs-constraints-holdp (,constraints-fn-name)
-                                                               ,(acl2::make-valuation-from-keyword-vars2 vars)
+                                                               ,(make-valuation-from-keyword-vars2 vars)
                                                                ;;todo: gen:
                                                                ',prime)
                                 ;; The extra rules:

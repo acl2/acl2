@@ -1,8 +1,8 @@
 (in-package "PFIELD")
 
-;; TODO: Are some of these specific to idioms of certain compilers?
+;; TODO: Are some of these specific to idioms of certain R1CS compilers?
 
-(include-book "kestrel/prime-fields/prime-fields-rules" :dir :system)
+(include-book "prime-fields-rules")
 (include-book "kestrel/booleans/booland" :dir :system)
 (include-book "kestrel/booleans/boolor" :dir :system)
 (local (include-book "kestrel/prime-fields/equal-of-add-move-negs-bind-free" :dir :system))

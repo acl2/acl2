@@ -300,22 +300,51 @@
                   (acl2::bitxor x y)))
   :hints (("Goal" :in-theory (enable bitp))))
 
-;; Note that there is no digit in the 1's place
-;; sort of a base case
+;; Note that there is no digit in the 1's place, likely because the
+;; multiplication of that bit by 1 gets simplified, making that addend
+;; "lighter".  So this is sort of a base case when creating a big BVCAT of
+;; several bits.
 (defthm bvcat-intro-2-4
   (implies (and (acl2::bitp x)
                 (acl2::bitp y)
-                (POSP P))
-           (equal (ADD
-                   (MUL '2 x p)
-                   (ADD
-                    (MUL '4 y p)
+                (posp p))
+           (equal (add
+                   (mul 2 x p)
+                   (add
+                    (mul 4 y p)
                     z
                     p)
                    p)
                   (add (acl2::bvcat 1 y 2 (acl2::bvcat 1 x 1 0))
-                               z
-                               p)))
+                       z
+                       p)))
+  :hints (("Goal" :in-theory (enable acl2::bitp))))
+
+(defthm bvcat-intro-4-2
+  (implies (and (acl2::bitp x)
+                (acl2::bitp y)
+                (posp p))
+           (equal (add
+                   (mul 4 x p)
+                   (add
+                    (mul 2 y p)
+                    z
+                    p)
+                   p)
+                  (add (acl2::bvcat 1 x 2 (acl2::bvcat 1 y 1 0))
+                       z
+                       p)))
+  :hints (("Goal" :in-theory (enable acl2::bitp))))
+
+(defthm bvcat-intro-4-2-simple
+  (implies (and (acl2::bitp x)
+                (acl2::bitp y)
+                (POSP P))
+           (equal (ADD
+                   (MUL '4 x p)
+                   (MUL '2 y p)
+                   p)
+                  (mod (acl2::bvcat 1 x 2 (acl2::bvcat 1 y 1 0)) p)))
   :hints (("Goal" :in-theory (enable acl2::bitp))))
 
 ;might need a commuted version
@@ -379,12 +408,13 @@
            (equal (mod (acl2::bvcat highsize highval lowsize lowval) p)
                   (acl2::bvcat highsize highval lowsize lowval))))
 
+;; TODO: Consider normalizing small "negative" constants to negative numbers.
 (defthmd add-of-constant-normalize-to-fep
   (implies (and (syntaxp (quotep k))
                 (not (fep k p))
                 (posp p))
-           (equal (ADD k X P)
-                  (ADD (mod (ifix k) p) X P))))
+           (equal (add k x p)
+                  (add (mod (ifix k) p) x p))))
 
 (defthm not-fep-when-negative-cheap
   (implies (< x 0)
@@ -546,32 +576,6 @@
   :hints (("Goal" :in-theory (e/d (bitp) (pfield::mul-of-add-arg1
                                           pfield::mul-of-add-arg2)))))
 
-(defthm bvcat-intro-4-2
-  (implies (and (acl2::bitp x)
-                (acl2::bitp y)
-                (POSP P))
-           (equal (ADD
-                   (MUL '4 x p)
-                   (ADD
-                    (MUL '2 y p)
-                    z
-                    p)
-                   p)
-                  (add (acl2::bvcat 1 x 2 (acl2::bvcat 1 y 1 0))
-                               z
-                               p)))
-  :hints (("Goal" :in-theory (enable acl2::bitp))))
-
-(defthm bvcat-intro-4-2-simple
-  (implies (and (acl2::bitp x)
-                (acl2::bitp y)
-                (POSP P))
-           (equal (ADD
-                   (MUL '4 x p)
-                   (MUL '2 y p)
-                   p)
-                  (mod (acl2::bvcat 1 x 2 (acl2::bvcat 1 y 1 0)) p)))
-  :hints (("Goal" :in-theory (enable acl2::bitp))))
 
 (defthm bitp-of-bitxor
   (bitp (acl2::bitxor x y)))
@@ -584,13 +588,13 @@
                            pfield::mod-when-fep)))
 
 (defthm mod-of-+-of-mod-arg3
-  (IMPLIES (AND (integerp Y)
-                (INTEGERP P)
-                (< 0 P)
-                (INTEGERP Z)
-                (INTEGERP x))
-           (EQUAL (MOD (+ x y (MOD z P)) P)
-                  (MOD (+ x Y Z) P)))
+  (implies (and (integerp y)
+                (integerp p)
+                (< 0 p)
+                (integerp z)
+                (integerp x))
+           (equal (mod (+ x y (mod z p)) p)
+                  (mod (+ x y z) p)))
   :hints (("Goal" :in-theory (enable acl2::mod-sum-cases))))
 
 (defthm add-of-mul-of-power-of-2-and-add
