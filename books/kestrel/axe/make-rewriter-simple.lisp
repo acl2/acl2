@@ -4651,6 +4651,9 @@
                    &                                          ; limits
                    & ; node-replacement-array
                    )
+               ;; TODO: Make a version that recurs over the structure of TERM
+               ;; and then restrict simplify-tree-and-add-to-dag... to terms
+               ;; that don't contain vars.
                (,simplify-tree-and-add-to-dag-name term
                                                    nil ;trees-equal-to-tree
                                                    dag-array
