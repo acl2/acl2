@@ -299,7 +299,7 @@
        (xdoc::li
         "@(':result'), to print, besides any error output,
          also the "
-        (xdoc::seetopic "event-macro-results" "results")
+        (xdoc::seetopic "acl2::event-macro-results" "results")
         " of " ,macro-ref ".
          This is the default value of the @(':print') input.")
        (xdoc::li
