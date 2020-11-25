@@ -3642,21 +3642,15 @@
                                   ((:rewrite nfix-when-natp)
                                    (:rewrite length-when-stringp))))))
 
-(defthm
-  lofat-fs-p-of-hifat-to-lofat-helper-lemma-1
-  (implies
-   (lofat-fs-p fat32$c)
-   (and
-    (not (< (binary-+ '2
-                      (count-of-clusters fat32$c))
-            '0))
-    (not (< (binary-+ '2
-                      (count-of-clusters fat32$c))
-            '2))
-    (not
-     (< (nfix (binary-+ '2
-                        (count-of-clusters fat32$c)))
-        '2)))))
+(local
+ (defthm
+   lofat-fs-p-of-hifat-to-lofat-helper-lemma-1
+   (implies
+    (lofat-fs-p fat32$c)
+    (and
+     (not (< (binary-+ '2 (count-of-clusters fat32$c)) '0))
+     (not (< (binary-+ '2 (count-of-clusters fat32$c)) '2))
+     (not (< (nfix (binary-+ '2 (count-of-clusters fat32$c))) '2))))))
 
 (defthm
   lofat-fs-p-of-hifat-to-lofat-helper
