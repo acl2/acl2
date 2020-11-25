@@ -25,6 +25,7 @@
 (include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
 (include-book "kestrel/event-macros/cw-event" :dir :system)
 (include-book "kestrel/event-macros/event-generation" :dir :system)
+(include-book "kestrel/event-macros/make-event-terse" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
 (include-book "kestrel/std/system/check-mbt-call" :dir :system)
 (include-book "kestrel/std/system/check-mbt-dollar-call" :dir :system)
@@ -1038,10 +1039,5 @@
      via @(tsee with-output) and @('(:on-behalf-of :quiet)').")
    (xdoc::@def "atc"))
   (defmacro atc (&whole call &rest args)
-    `(with-output
-       :gag-mode nil
-       :off :all
-       :on acl2::error
-       (make-event
-        (atc-fn ',args ',call 'atc state)
-        :on-behalf-of :quiet))))
+    `(make-event-terse (atc-fn ',args ',call 'atc state)
+                       :suppress-errors nil)))

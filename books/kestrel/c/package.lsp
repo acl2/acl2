@@ -31,6 +31,7 @@
                implode
                impossible
                lnfix
+               make-event-terse
                maybe-pseudo-event-formp
                mbt$
                msg-listp
