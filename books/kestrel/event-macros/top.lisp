@@ -21,6 +21,7 @@
 (include-book "proof-preparation")
 (include-book "restore-output")
 (include-book "results")
+(include-book "screen-printing")
 (include-book "template-generators")
 (include-book "try-event")
 
