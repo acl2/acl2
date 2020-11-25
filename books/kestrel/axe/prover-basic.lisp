@@ -1534,14 +1534,14 @@
                   (mv nil nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                       info tries state)))))))
 
- ;; The main entry point of the Axe Prover's main mutual recursion
- ;; tries to prove the disjunction of LITERAL-NODENUMS-OR-QUOTEPS
- ;; returns (mv erp result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state) where result is :proved, :failed, or :timed-out
- ;; Can split into cases and/or call STP (ffixme which should we do first?)
- ;;ffixme this could gather all the failed cases and return corresponding calls to prove-clause for the user to copy and paste to work on manually - currently this stops as soon as one case fails..
- ;;when should we try to separate the vars?  i think destructor elimination can enable separation...
- ;;upon failure, prints the failed case (sometimes?)
- ;; Does not change any existing DAG nodes if prover-depth > 0 (TODO check that).
+;; The main entry point of the Axe Prover.
+;; Tries to prove the disjunction of LITERAL-NODENUMS-OR-QUOTEPS.
+;; Returns (mv erp result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state) where result is :proved, :failed, or :timed-out
+;; Can split into cases and/or call STP (ffixme which should we do first?)
+;;ffixme this could gather all the failed cases and return corresponding calls to prove-clause for the user to copy and paste to work on manually - currently this stops as soon as one case fails..
+;;when should we try to separate the vars?  i think destructor elimination can enable separation...
+;;upon failure, prints the failed case (sometimes?)
+;; Does not change any existing DAG nodes if prover-depth > 0 (TODO check that).
 (defund prove-disjunction-with-basic-prover (literal-nodenums-or-quoteps
                                              dag-array ;must be named 'dag-array
                                              dag-len
@@ -1727,7 +1727,6 @@
                                      options state)
   (declare (xargs :stobjs state
                   :verify-guards nil ;todo
-                  :mode :program     ;todo
                   :guard (and (or (myquotep dag)
                                   (and (pseudo-dagp dag) ;todo: allow a quotep?
                                        (< (len dag) 2147483647)))
@@ -1863,15 +1862,16 @@
                 (mv (erp-nil) '(value-triple :ok) state))
       (mv :failed-to-prove nil state))))
 
-(defmacro prove-implication-dag-with-basic-prover (dag1
-                                                   dag2
+;; Returns (mv erp event state) where a failure to prove causes erp to be non-nil.
+(defmacro prove-implication-dag-with-basic-prover (dag-or-term1
+                                                   dag-or-term2
                                                    &key
                                                    (rule-lists 'nil) ;todo: improve by building some in and allowing :extra-rules and :remove-rules?
                                                    ;; interpreted-function-alist
                                                    (monitor 'nil))
   ;; all args get evaluated:
-  `(make-event (prove-implication-dag-with-basic-prover-fn ,dag1
-                                                           ,dag2
+  `(make-event (prove-implication-dag-with-basic-prover-fn ,dag-or-term1
+                                                           ,dag-or-term2
                                                            ,rule-lists
                                                            ,monitor
                                                            state)))
@@ -1890,7 +1890,7 @@
                               ;;... todo add more
                               (axe-prover-optionsp options)
                               )
-                  :mode :program     ;todo
+;                  :mode :program     ;todo
                   :verify-guards nil ;todo
                   ))
   (b* ((- (cw "(Proving theorem with Axe prover:~%"))
@@ -1928,7 +1928,7 @@
 (defund prove-theorem-with-basic-prover (conc ;a term
                                          hyps ;list of terms
                                          defthm-name rule-alists monitored-symbols interpreted-function-alist print options state)
-  (declare (xargs :mode :program ;because we call submit-events
+  (declare (xargs :mode :program ;because this calls submit-events
                   :guard (and (pseudo-termp conc)
                               (pseudo-term-listp hyps)
                               (symbolp defthm-name)
@@ -2001,8 +2001,7 @@
                               ;;... todo add more
                               (axe-prover-optionsp options)
                               )
-                  :mode :program ;todo
-                  :verify-guards nil ;todo ;first verify-guards for MAKE-TERMS-INTO-DAG-ARRAY
+                  :verify-guards nil ;todo
                   ))
   (b* ((- (cw "(Proving clause with Axe prover:~%"))
        ((mv erp literal-nodenums-or-quoteps dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
@@ -2038,8 +2037,8 @@
 ;; was made).  TODO: Allow it to change the clause but not prove it entirely?
 (defund basic-prover-clause-processor (clause hint state)
   (declare (xargs :stobjs state
-                  ;; :verify-guards nil
-                  :mode :program
+                  :verify-guards nil
+                  ;:mode :program
                   :guard (and (pseudo-term-listp clause)
                               (alistp hint))))
   (b* ((must-prove (lookup-eq :must-prove hint))
