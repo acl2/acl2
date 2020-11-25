@@ -3693,7 +3693,7 @@
            (not (< x (+ 1 (MAXELEM lst)))))
   :hints (("Goal" :in-theory (enable maxelem all-<))))
 
-;; Returns (mv erp nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state).
+;; Returns (mv erp nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries).
 ;why is this separate?
 (defund simplify-var-and-add-to-dag-for-axe-prover (tree equiv
                                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
@@ -3702,10 +3702,8 @@
                                                         equiv-alist print
                                                         info tries interpreted-function-alist monitored-symbols
                                                         ;; embedded-dag-depth
-                                                        case-designator work-hard-when-instructedp prover-depth
-                                                        state)
-  (declare (xargs :stobjs state
-                  :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                                                        case-designator work-hard-when-instructedp prover-depth)
+  (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                               (symbolp equiv)
                               (symbolp tree)
                               (<= dag-len 2147483645)
@@ -3725,12 +3723,12 @@
                 ;; We replace the variable with something it's equated to in nodenums-to-assume-false.
                 ;; We don't rewrite the result (by the second pass, nodenums-to-assume-false will be simplified - and maybe we should always do that?)
      ;fixme what if there is a chain of equalities to follow?
-                (mv (erp-nil) assumption-match dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)
+                (mv (erp-nil) assumption-match dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
               ;; no match, so we just add the variable to the DAG:
               ;;make this a macro? this one might be rare..  same for other adding to dag operations?
               (mv-let (erp nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist) ;fixme simplify nodenum?
                 (add-variable-to-dag-array tree dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-                (mv erp nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state))))))
+                (mv erp nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))))))
 
 ;; This duplicates the term x, but if it's  the variable COUNT, that's ok.
 (defmacro zp-fast (x)
