@@ -1813,7 +1813,7 @@
                                                     dag-or-term2
                                                     rule-lists
                                                     ;; interpreted-function-alist
-                                                    monitored-symbols
+                                                    monitor
                                                     state)
   (declare (xargs :guard (and ;; (or (myquotep dag1)
                               ;;     (and (pseudo-dagp dag1)
@@ -1822,7 +1822,7 @@
                               ;;     (and (pseudo-dagp dag2)
                               ;;          (<= (len dag2) 2147483646)))
                               (rule-item-list-listp rule-lists)
-                              (symbol-listp monitored-symbols))
+                              (symbol-listp monitor))
 ;                  :guard-hints (("Goal" :in-theory (enable alistp-guard-hack)))
                   :verify-guards nil
                   :stobjs state
@@ -1848,7 +1848,7 @@
                                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                              (make-rule-alists rule-lists (w state))
                                              nil ;; interpreted-function-alist
-                                             monitored-symbols
+                                             monitor
                                              t ;print
                                              "MAIN_CASE" ;;case-designator ;the name of this case (a string?)
                                              (empty-info-world) ;(and print (empty-info-world))
@@ -1868,12 +1868,12 @@
                                                    &key
                                                    (rule-lists 'nil) ;todo: improve by building some in and allowing :extra-rules and :remove-rules?
                                                    ;; interpreted-function-alist
-                                                   (monitored-symbols 'nil))
+                                                   (monitor 'nil))
   ;; all args get evaluated:
   `(make-event (prove-implication-dag-with-basic-prover-fn ,dag1
                                                            ,dag2
                                                            ,rule-lists
-                                                           ,monitored-symbols
+                                                           ,monitor
                                                            state)))
 
 ;; Returns (mv erp provedp state)
