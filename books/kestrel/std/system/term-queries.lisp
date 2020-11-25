@@ -28,6 +28,7 @@
 (include-book "check-mbt-dollar-call")
 (include-book "check-mv-let-call")
 (include-book "check-nary-lambda-call")
+(include-book "check-or-call")
 (include-book "check-unary-lambda-call")
 (include-book "check-user-lambda")
 (include-book "check-user-term")
