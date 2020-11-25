@@ -18,6 +18,7 @@
 (include-book "../sparse/rules-axe")
 (include-book "../sparse/rules")
 (include-book "filter-and-combine-symbol-alists")
+(include-book "lift-r1cs-common")
 (include-book "kestrel/utilities/keywords-to-acl2-package" :dir :system)
 (include-book "kestrel/axe/unroll-spec-basic" :dir :system)
 (include-book "kestrel/prime-fields/prime-fields-rules-axe" :dir :system)
@@ -45,7 +46,7 @@
   (let ((constraints-fn-name (acl2::pack$ base-name '-constraints)))
     (acl2::unroll-spec-basic-fn (acl2::pack$ '* base-name '-holdsp*)
                                 `(r1cs::r1cs-constraints-holdp (,constraints-fn-name)
-                                                               ,(acl2::make-valuation-from-keyword-vars2 vars)
+                                                               ,(make-valuation-from-keyword-vars2 vars)
                                                                ;;todo: gen:
                                                                ',prime)
                                 ;; The extra rules:

@@ -18,6 +18,7 @@
 (include-book "../sparse/rules-axe")
 (include-book "../sparse/rules")
 (include-book "filter-and-combine-symbol-alists")
+(include-book "lift-r1cs-common")
 (include-book "kestrel/utilities/keywords-to-acl2-package" :dir :system)
 (include-book "kestrel/axe/def-simplified" :dir :system)
 (include-book "kestrel/prime-fields/prime-fields-rules-axe" :dir :system)
@@ -50,7 +51,7 @@
   (let* (;(vars (r1cs->vars r1cs))
          ;(constraints (r1cs->constraints r1cs))
          (term-to-simplify `(r1cs::r1cs-constraints-holdp ',constraints
-                                                          ,(acl2::make-valuation-from-keyword-vars2 vars)
+                                                          ,(make-valuation-from-keyword-vars2 vars)
                                                           ',prime)))
     (acl2::def-simplified-fn name-of-defconst
                              term-to-simplify

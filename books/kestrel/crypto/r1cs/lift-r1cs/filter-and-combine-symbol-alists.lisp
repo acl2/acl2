@@ -10,16 +10,7 @@
 
 (include-book "kestrel/alists-light/assoc-equal" :dir :system)
 (include-book "kestrel/alists-light/lookup-equal" :dir :system)
-(include-book "proof-utils") ;for make-valuation-from-keyword-vars (move that here?)
-(local (include-book "kestrel/utilities/merge-sort-symbol-less-than" :dir :system))
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
-(local (include-book "kestrel/lists-light/append" :dir :system))
-(local (include-book "kestrel/lists-light/len" :dir :system))
-(local (include-book "kestrel/lists-light/take" :dir :system))
-(local (include-book "kestrel/lists-light/nthcdr" :dir :system))
-(local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
-(local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system)) ;todo: add symbol-listp-of-take, etc
-(local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 
 (local
  (defthm symbol-listp-of-take
@@ -186,24 +177,3 @@
                       (lookup-equal key1 alist-small)
                     (lookup-equal key1 alist-large))))
   :hints (("Goal" :in-theory (enable lookup-equal))))
-
-(defun make-valuation-from-keyword-vars2-aux (sorted-vars)
-  (declare (xargs :guard (symbol-listp sorted-vars)
-                  :measure (len sorted-vars)))
-  (let ((len (len sorted-vars)))
-    (if (< len 3) ;; could try different values here (must be at least 2)
-        (make-valuation-from-keyword-vars sorted-vars)
-      ;; At least 2 vars:
-      (let* ((first-half-len (floor len 2))
-             (first-half (take first-half-len sorted-vars))
-             (second-half (nthcdr first-half-len sorted-vars))
-             (var (first second-half)))
-        `(filter-and-combine-symbol-alists ',var
-                                           ,(make-valuation-from-keyword-vars2-aux first-half)
-                                           ,(make-valuation-from-keyword-vars2-aux second-half))))))
-
-;; Makes a tree of calls to filter-and-combine-symbol-alists instead of a
-;; (potentially very deep) nest of calls to acons.
-(defun make-valuation-from-keyword-vars2 (vars)
-  (declare (xargs :guard (symbol-listp vars)))
-  (make-valuation-from-keyword-vars2-aux (merge-sort-symbol-< vars)))
