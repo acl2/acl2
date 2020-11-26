@@ -457,13 +457,16 @@
     :guard (denv-nonempty-stack-p env)
     :returns (result value-resultp)
     :parents (dynamic-semantics execution-functions)
-    :verify-guards :after-returns
     :short "Execute an expression."
     :long
     (xdoc::topstring
      (xdoc::p
       "For now we only support the execution of
-       variables, (some) constants, and (some) unary and binary expressions."))
+       variables, (some) constants, and (some) unary and binary expressions.")
+     (xdoc::p
+      "Since we currently do not model side effects,
+       we just evaluate them left-to-right,
+       but any ordering would yield the same results."))
     (b* (((when (zp limit)) (error :limit))
          (e (expr-fix e)))
       (expr-case
@@ -487,6 +490,34 @@
                                           (exec-expr e.then env (1- limit))
                                         (exec-expr e.else env (1- limit)))
                                   :err test.get))))
+    :measure (nfix limit))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define exec-expr-list ((es expr-listp) (env denvp) (limit natp))
+    :guard (denv-nonempty-stack-p env)
+    :returns (result value-list-resultp)
+    :parents (dynamic-semantics execution-functions)
+    :short "Execute a list of expressions."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "Since we currently do not model side effects,
+       we just evaluate them left-to-right,
+       but any ordering would yield the same results."))
+    (b* (((when (zp limit)) (error :limit))
+         ((when (endp es)) (value-list-result-ok nil))
+         (result (exec-expr (car es) env (1- limit))))
+      (value-result-case
+       result
+       :err result.get
+       :ok (b* ((val result.get)
+                (result (exec-expr-list (cdr es) env (1- limit))))
+             (value-list-result-case
+              result
+              :err result.get
+              :ok (b* ((vals result.get))
+                    (value-list-result-ok (cons val vals)))))))
     :measure (nfix limit))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
