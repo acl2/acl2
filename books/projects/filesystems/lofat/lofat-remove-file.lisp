@@ -2312,6 +2312,152 @@
   :hints (("goal" :in-theory (disable lofat-to-hifat-helper-correctness-4)
            :use lofat-to-hifat-helper-correctness-4)))
 
+;; Hypotheses minimised.
+(defthm
+  lofat-remove-file-correctness-lemma-68
+  (implies
+   (and
+    (useful-d-e-list-p d-e-list)
+    (<=
+     2
+     (d-e-first-cluster
+      (mv-nth
+       0
+       (find-d-e
+        (make-d-e-list
+         (mv-nth
+          0
+          (d-e-cc-contents
+           fat32$c
+           (mv-nth 0 (find-d-e d-e-list filename1)))))
+        filename2))))
+    (<
+     (d-e-first-cluster
+      (mv-nth
+       0
+       (find-d-e
+        (make-d-e-list
+         (mv-nth
+          0
+          (d-e-cc-contents
+           fat32$c
+           (mv-nth 0 (find-d-e d-e-list filename1)))))
+        filename2)))
+     (+ 2 (count-of-clusters fat32$c)))
+    (equal
+     (mv-nth
+      1
+      (update-dir-contents
+       fat32$c
+       (d-e-first-cluster
+        (mv-nth 0 (find-d-e d-e-list filename1)))
+       (nats=>string
+        (clear-d-e
+         (string=>nats
+          (mv-nth
+           0
+           (d-e-cc-contents
+            fat32$c
+            (mv-nth 0 (find-d-e d-e-list filename1)))))
+         filename2))))
+     0)
+    (equal
+     (mv-nth
+      1
+      (find-d-e
+       (make-d-e-list
+        (mv-nth
+         0
+         (d-e-cc-contents
+          fat32$c
+          (mv-nth 0 (find-d-e d-e-list filename1)))))
+       filename2))
+     0)
+    (lofat-fs-p fat32$c)
+    (equal
+     (mv-nth
+      3
+      (lofat-to-hifat-helper fat32$c d-e-list entry-limit))
+     0)
+    (d-e-directory-p (mv-nth 0 (find-d-e d-e-list filename1))))
+   (not-intersectp-list
+    (mv-nth
+     0
+     (d-e-cc
+      fat32$c
+      (mv-nth
+       0
+       (find-d-e
+        (make-d-e-list
+         (mv-nth
+          0
+          (d-e-cc-contents
+           fat32$c
+           (mv-nth 0 (find-d-e d-e-list filename1)))))
+        filename2))))
+    (mv-nth
+     2
+     (lofat-to-hifat-helper
+      (mv-nth
+       0
+       (update-dir-contents
+        fat32$c
+        (d-e-first-cluster
+         (mv-nth 0 (find-d-e d-e-list filename1)))
+        (nats=>string
+         (clear-d-e
+          (string=>nats
+           (mv-nth
+            0
+            (d-e-cc-contents
+             fat32$c
+             (mv-nth 0 (find-d-e d-e-list filename1)))))
+          filename2))))
+      d-e-list entry-limit))))
+  :hints
+  (("goal"
+    :in-theory
+    (e/d
+     (lofat-to-hifat-helper lofat-to-hifat-helper-correctness-4
+                            not-intersectp-list)
+     (nth-of-effective-fat
+      (:definition binary-append)
+      (:definition len)
+      (:rewrite lofat-to-hifat-helper-of-update-dir-contents)
+      (:linear lofat-to-hifat-helper-correctness-3)
+      (:rewrite member-intersectp-binary-append . 1)
+      (:rewrite subdir-contents-p-when-zero-length)
+      (:rewrite flatten-subset-no-duplicatesp-lemma-2)
+      (:rewrite member-intersectp-is-commutative-lemma-2)
+      (:rewrite lofat-to-hifat-helper-of-delete-d-e-2
+                . 1)
+      (:rewrite
+       get-cc-contents-of-lofat-remove-file-coincident-lemma-5
+       . 2)
+      (:rewrite consp-of-make-list-ac)
+      (:definition delete-d-e)
+      (:rewrite delete-d-e-correctness-1)
+      (:definition non-free-index-list-listp)
+      (:definition remove-assoc-equal)
+      (:linear make-clusters-correctness-2)
+      (:rewrite len-of-effective-fat)
+      (:definition make-list-ac)
+      (:rewrite subsetp-car-member)
+      (:rewrite lofat-remove-file-correctness-1-lemma-16)
+      (:rewrite subsetp-implies-subsetp-cdr)
+      (:rewrite not-intersectp-list-when-atom)
+      (:rewrite d-e-p-when-member-equal-of-d-e-list-p)
+      (:rewrite another-lemma-about-member-intersectp)
+      (:rewrite lofat-remove-file-correctness-1-lemma-14)
+      (:rewrite d-e-cc-of-update-dir-contents-coincident)))
+    :induct
+    (lofat-to-hifat-helper fat32$c d-e-list entry-limit)
+    :do-not-induct t
+    :expand ((:free (y) (intersectp-equal nil y))
+             (:free (fat32$c entry-limit)
+                    (lofat-to-hifat-helper
+                     fat32$c d-e-list entry-limit))))))
+
 (defund-nx lofat-remove-file-spec-1
   (fat32$c d-e-list entry-limit x fs filename path d-e)
   (implies
