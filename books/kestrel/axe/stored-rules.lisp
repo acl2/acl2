@@ -46,13 +46,14 @@
   (declare (xargs :guard (<= 3 (len stored-axe-rule))))
   (cdddr stored-axe-rule))
 
-;; See also axe-rulep.
+;; See also axe-rulep.  A stored rule has the form (lhs-args hyps rule-symbol
+;; . rhs).  The top function symbol of the LHS is not stored.
 (defund stored-axe-rulep (item)
   (declare (xargs :guard t))
   (and (<= 3 (len item)) ;the final cdr is the rhs
        (pseudo-term-listp (stored-rule-lhs-args item))
        (axe-rule-hyp-listp (stored-rule-hyps item))
-       (pseudo-termp (stored-rule-rhs item))
+       (pseudo-termp (stored-rule-rhs item)) ;todo: disallow free vars
        (symbolp (stored-rule-symbol item))))
 
 (defthm stored-axe-rulep-of-make-stored-rule
