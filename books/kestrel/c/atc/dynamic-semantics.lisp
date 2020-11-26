@@ -218,7 +218,7 @@
 
 (define push-frame ((frame framep) (env denvp))
   :returns (new-env denvp)
-  :short "Push a frame into a dynamic environment's call stack."
+  :short "Push a frame onto a dynamic environment's call stack."
   (b* ((stack (denv->call-stack env))
        (new-stack (cons (frame-fix frame) stack)))
     (change-denv env :call-stack new-stack))
@@ -518,8 +518,7 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "For now we only support the execution of
-       variables, (some) constants, and (some) unary and binary expressions.")
+      "For now we only support the execution of certain expressions.")
      (xdoc::p
       "Since we currently do not model side effects,
        we just evaluate them left-to-right,
@@ -530,7 +529,11 @@
        e
        :ident (exec-ident e.get env)
        :const (exec-const e.get)
-       :call (error (list :exec-expr e))
+       :call (b* ((args (exec-expr-list e.args env (1- limit))))
+               (value-list-result-case
+                args
+                :err args.get
+                :ok (exec-fun e.fun args.get env (1- limit))))
        :postinc (error (list :exec-expr e))
        :postdec (error (list :exec-expr e))
        :preinc (error (list :exec-expr e))
@@ -579,6 +582,45 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+  (define exec-fun ((fun identp) (args value-listp) (env denvp) (limit natp))
+    :returns (result value-resultp)
+    :parents (dynamic-semantics execution-functions)
+    :short "Execution a function on argument values."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We retrieve the information about the function from the environment.
+       We initialize a store with the argument values,
+       and we push a frame onto the call stack.
+       We execute the function body,
+       which must return a result,
+       which must match the function's result type
+       (but we do not check this because every value is an @('int') for now).
+       We return the value as result.
+       There is no need to pop the frame
+       because for now we are not threading environments through execution."))
+    (b* (((when (zp limit)) (error :limit))
+         (fenv (denv->functions env))
+         (info (fun-env-lookup fun fenv))
+         ((when (not info))
+          (error (list :function-undefined (ident-fix fun))))
+         ((fun-info info) info)
+         (store (init-store info.params args)))
+      (store-result-case
+       store
+       :err store.get
+       :ok (b* ((frame (make-frame :function fun :store store.get))
+                (env (push-frame frame env))
+                (val-opt (exec-stmt info.body env (1- limit))))
+             (value-option-result-case
+              val-opt
+              :err val-opt.get
+              :ok (or val-opt.get
+                      (error (list :no-return-value (ident-fix fun))))))))
+    :measure (nfix limit))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (define exec-stmt ((s stmtp) (env denvp) (limit natp))
     :guard (denv-nonempty-stack-p env)
     :returns (result value-option-resultp)
@@ -587,11 +629,7 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "For now we only support the execution of @('return') statements.
-       If there is no expression, no value is returned.
-       If there is an expression, its value is returned.
-       We also support the execution of compound statments
-       that consists of supported statements."))
+      "For now we only support the execution of certain statements."))
     (b* (((when (zp limit)) (error :limit))
          (s (stmt-fix s)))
       (stmt-case
