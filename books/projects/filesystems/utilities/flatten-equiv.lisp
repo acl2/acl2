@@ -6,11 +6,6 @@
 
 ;  flatten-equiv.lisp                                   Mihir Mehta
 
-(defthm true-list-list-fix-of-true-list-fix
-  (equal (true-list-list-fix (true-list-fix x))
-         (true-list-list-fix x))
-  :hints (("goal" :in-theory (enable true-list-list-fix))))
-
 (defcong
   set-equiv
   equal (not-intersectp-list x l)
