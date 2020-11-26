@@ -870,6 +870,8 @@
     "The currently generated proof hints are simple:
      we enable @(tsee run-fun) and all the functions that it calls
      in the dynamic execution;
+     we also need to force the expansion of @(tsee exec-fun),
+     based on experimentation;
      we also use the guard theorem of @('fn').
      Given that the translation unit is a constant,
      this symbolically executes the C function.
@@ -906,6 +908,7 @@
        (hints `(("Goal"
                  :in-theory (enable run-fun
                                     init-store
+                                    exec-fun
                                     exec-stmt
                                     exec-block-item
                                     exec-block-item-list
@@ -919,12 +922,16 @@
                                     exec-const
                                     exec-iconst
                                     top-frame
+                                    push-frame
+                                    pop-frame
                                     store-result-kind
                                     store-result-ok->get
                                     value-result-kind
                                     value-result-ok->get
                                     value-option-result-kind
                                     value-option-result-ok->get)
+                 :expand ((:free (fun args env limit)
+                           (c::exec-fun fun args env limit)))
                  :use (:guard-theorem ,fn))))
        ((mv local-event exported-event)
         (acl2::evmac-generate-defthm

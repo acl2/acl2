@@ -747,9 +747,8 @@
   (xdoc::topstring
    (xdoc::p
     "We initialize the function environment from the translation unit.
-     We look up the function definition in the environment.
-     We build the initial store and we execute the function body.
-     We ensure that a value is returned.")
+     We create an initial dynamic environment.
+     We call the function.")
    (xdoc::p
     "For now we just pass a large number as the recursive limit,
      which should suffice for our current programs of interest.
@@ -759,21 +758,6 @@
     (fun-env-result-case
      fenv
      :err (error fenv.get)
-     :ok (b* ((info (fun-env-lookup fun fenv.get))
-              ((when (not info))
-               (error (list :run-fun :undefined (ident-fix fun))))
-              (store (init-store (fun-info->params info) args)))
-    (store-result-case
-     store
-     :err store.get
-     :ok (b* ((frame (make-frame :function fun :store store.get))
-              (env (make-denv :functions fenv.get :call-stack (list frame)))
-              (val? (exec-stmt (fun-info->body info) env 1000000000))) ; 10^9
-           (value-option-result-case
-            val?
-            :err val?.get
-            :ok (if (sintp val?)
-                    val?
-                  (error (list :run-fun :no-value-returned)))))))))
-  :guard-hints (("Goal" :in-theory (enable denv-nonempty-stack-p)))
+     :ok (b* ((env (make-denv :functions fenv.get :call-stack nil)))
+           (exec-fun fun args env 1000000000)))) ; 10^9
   :hooks (:fix))
