@@ -448,6 +448,43 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define init-store ((formals param-decl-listp) (actuals value-listp))
+  :returns (result store-resultp)
+  :short "Initialize the store for a function call."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We go through formal parameters and actual arguments,
+     pairing them up into the store.
+     We return an error if they do not match in number,
+     or if there are repeated parameters."))
+  (b* ((formals (param-decl-list-fix formals))
+       (actuals (value-list-fix actuals))
+       ((when (endp formals))
+        (if (endp actuals)
+            nil
+          (error (list :init-store :extra-actuals actuals))))
+       ((when (endp actuals))
+        (error (list :init-store :extra-formals formals)))
+       (store (init-store (cdr formals) (cdr actuals))))
+    (store-result-case
+     store
+     :err store.get
+     :ok (b* ((formal (car formals))
+              (actual (car actuals))
+              (name (param-decl->name formal)))
+           (if (omap::in name store)
+               (error (list :init-store :duplicate-param name))
+             (omap::update name actual store)))))
+  :hooks (:fix)
+  :measure (len formals)
+  :prepwork ((local (in-theory (enable storep-when-store-resultp-ok))))
+  :verify-guards nil ; done below
+  ///
+  (verify-guards init-store))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines execution-functions
   :short "Mutually recursive functions for execution."
 
@@ -610,43 +647,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deffixequiv-mutual execution-functions))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define init-store ((formals param-decl-listp) (actuals value-listp))
-  :returns (result store-resultp)
-  :short "Initialize the store for a function call."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We go through formal parameters and actual arguments,
-     pairing them up into the store.
-     We return an error if they do not match in number,
-     or if there are repeated parameters."))
-  (b* ((formals (param-decl-list-fix formals))
-       (actuals (value-list-fix actuals))
-       ((when (endp formals))
-        (if (endp actuals)
-            nil
-          (error (list :init-store :extra-actuals actuals))))
-       ((when (endp actuals))
-        (error (list :init-store :extra-formals formals)))
-       (store (init-store (cdr formals) (cdr actuals))))
-    (store-result-case
-     store
-     :err store.get
-     :ok (b* ((formal (car formals))
-              (actual (car actuals))
-              (name (param-decl->name formal)))
-           (if (omap::in name store)
-               (error (list :init-store :duplicate-param name))
-             (omap::update name actual store)))))
-  :hooks (:fix)
-  :measure (len formals)
-  :prepwork ((local (in-theory (enable storep-when-store-resultp-ok))))
-  :verify-guards nil ; done below
-  ///
-  (verify-guards init-store))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
