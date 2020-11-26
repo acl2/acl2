@@ -46,7 +46,9 @@
                         (1 1 (:REWRITE SUBSETP-MEMBER . 4))
                         (1 1 (:REWRITE SUBSETP-MEMBER . 3))
                         (1 1 (:REWRITE SUBSETP-MEMBER . 2))
-                        (1 1 (:REWRITE SUBSETP-MEMBER . 1)))
+                        (1 1 (:REWRITE SUBSETP-MEMBER . 1))
+                        (1 1 (:REWRITE INTERSECTP-MEMBER . 3))
+                        (1 1 (:REWRITE INTERSECTP-MEMBER . 2)))
 (INTEGERS-FROM-TO-LIST-IN-INTEGERS-FROM-TO
      (128 128 (:REWRITE DEFAULT-<-2))
      (128 128 (:REWRITE DEFAULT-<-1))

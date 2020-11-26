@@ -1,6 +1,6 @@
 (SET-SIZE-EQUAL)
 (SET-SIZE-EQ-EXEC$GUARD-CHECK)
-(SET-SIZE-EQ-EXEC (66 2 (:DEFINITION REMOVE-DUPLICATES-EQUAL))
+(SET-SIZE-EQ-EXEC (70 2 (:DEFINITION REMOVE-DUPLICATES-EQUAL))
                   (18 2 (:REWRITE SUBSETP-CAR-MEMBER))
                   (16 16 (:REWRITE DEFAULT-CDR))
                   (15 6
@@ -20,10 +20,12 @@
                   (2 2 (:REWRITE SUBSETP-MEMBER . 1))
                   (2 2
                      (:REWRITE MEMBER-EQUAL-WHEN-ALL-EQUALP))
+                  (2 2 (:REWRITE INTERSECTP-MEMBER . 3))
+                  (2 2 (:REWRITE INTERSECTP-MEMBER . 2))
                   (1 1 (:TYPE-PRESCRIPTION TRUE-LISTP))
                   (1 1 (:REWRITE CONSP-BY-LEN)))
 (SET-SIZE-EQL-EXEC$GUARD-CHECK)
-(SET-SIZE-EQL-EXEC (66 2 (:DEFINITION REMOVE-DUPLICATES-EQUAL))
+(SET-SIZE-EQL-EXEC (70 2 (:DEFINITION REMOVE-DUPLICATES-EQUAL))
                    (18 2 (:REWRITE SUBSETP-CAR-MEMBER))
                    (16 16 (:REWRITE DEFAULT-CDR))
                    (15 6
@@ -43,13 +45,15 @@
                    (2 2 (:REWRITE SUBSETP-MEMBER . 1))
                    (2 2
                       (:REWRITE MEMBER-EQUAL-WHEN-ALL-EQUALP))
+                   (2 2 (:REWRITE INTERSECTP-MEMBER . 3))
+                   (2 2 (:REWRITE INTERSECTP-MEMBER . 2))
                    (1 1 (:TYPE-PRESCRIPTION TRUE-LISTP))
                    (1 1 (:REWRITE CONSP-BY-LEN)))
 (SET-SIZE-EQ-EXEC-IS-SET-SIZE-EQUAL
-     (367 9 (:DEFINITION REMOVE-DUPLICATES-EQUAL))
-     (252 55
+     (385 9 (:DEFINITION REMOVE-DUPLICATES-EQUAL))
+     (260 55
           (:REWRITE CONSP-UNDER-IFF-WHEN-TRUE-LISTP))
-     (92 2 (:REWRITE DEFAULT-COERCE-3))
+     (96 2 (:REWRITE DEFAULT-COERCE-3))
      (91 9 (:REWRITE SUBSETP-CAR-MEMBER))
      (43 43 (:REWRITE DEFAULT-CDR))
      (37 9 (:REWRITE SUBSETP-WHEN-ATOM-RIGHT))
@@ -75,14 +79,16 @@
      (9 9 (:REWRITE SUBSETP-MEMBER . 1))
      (9 9
         (:REWRITE MEMBER-EQUAL-WHEN-ALL-EQUALP))
+     (9 9 (:REWRITE INTERSECTP-MEMBER . 3))
+     (9 9 (:REWRITE INTERSECTP-MEMBER . 2))
      (8 8 (:REWRITE DEFAULT-COERCE-2))
      (8 8 (:LINEAR INDEX-OF-<-LEN))
      (6 6 (:REWRITE DEFAULT-COERCE-1)))
 (SET-SIZE-EQL-EXEC-IS-SET-SIZE-EQUAL
-     (367 9 (:DEFINITION REMOVE-DUPLICATES-EQUAL))
-     (252 55
+     (385 9 (:DEFINITION REMOVE-DUPLICATES-EQUAL))
+     (260 55
           (:REWRITE CONSP-UNDER-IFF-WHEN-TRUE-LISTP))
-     (92 2 (:REWRITE DEFAULT-COERCE-3))
+     (96 2 (:REWRITE DEFAULT-COERCE-3))
      (91 9 (:REWRITE SUBSETP-CAR-MEMBER))
      (43 43 (:REWRITE DEFAULT-CDR))
      (37 9 (:REWRITE SUBSETP-WHEN-ATOM-RIGHT))
@@ -108,6 +114,8 @@
      (9 9 (:REWRITE SUBSETP-MEMBER . 1))
      (9 9
         (:REWRITE MEMBER-EQUAL-WHEN-ALL-EQUALP))
+     (9 9 (:REWRITE INTERSECTP-MEMBER . 3))
+     (9 9 (:REWRITE INTERSECTP-MEMBER . 2))
      (8 8 (:REWRITE DEFAULT-COERCE-2))
      (8 8 (:LINEAR INDEX-OF-<-LEN))
      (6 6 (:REWRITE DEFAULT-COERCE-1)))
@@ -167,17 +175,17 @@
      (76 63 (:REWRITE SUBSETP-TRANS))
      (60 15 (:REWRITE DUPLICITY-WHEN-NOT-CONSP))
      (56 56 (:REWRITE DEFAULT-CDR))
-     (48 15
+     (50 15
          (:REWRITE DUPLICITY-WHEN-NON-MEMBER-EQUAL))
+     (44 10 (:REWRITE SUBSETP-MEMBER . 4))
      (44 10 (:REWRITE MEMBER-WHEN-ATOM))
      (42 42
          (:REWRITE NO-DUPLICATESP-EQUAL-WHEN-HIGH-DUPLICITY))
      (42 42
          (:REWRITE NO-DUPLICATESP-EQUAL-WHEN-DUPLICITY-BADGUY1))
-     (42 10 (:REWRITE SUBSETP-MEMBER . 4))
      (41 17 (:REWRITE PROVE-UNIV-BASE-CASE))
      (38 38 (:REWRITE SUBLISTP-COMPLETE))
-     (23 2 (:REWRITE REMOVE-WHEN-NON-MEMBER))
+     (25 2 (:REWRITE REMOVE-WHEN-NON-MEMBER))
      (16 11 (:REWRITE SUBSETP-MEMBER . 2))
      (14 14 (:REWRITE DEFAULT-CAR))
      (14 14 (:REWRITE CAR-WHEN-ALL-EQUALP))
@@ -188,6 +196,8 @@
      (11 11
          (:REWRITE MEMBER-EQUAL-WHEN-ALL-EQUALP))
      (10 10 (:REWRITE SUBSETP-MEMBER . 3))
+     (10 10 (:REWRITE INTERSECTP-MEMBER . 3))
+     (10 10 (:REWRITE INTERSECTP-MEMBER . 2))
      (5 2 (:REWRITE REMOVE-WHEN-ATOM)))
 (PROVE-UNIV (6 3
                (:REWRITE CONSP-UNDER-IFF-WHEN-TRUE-LISTP))
@@ -208,9 +218,9 @@
      (22 22 (:REWRITE CONSP-BY-LEN))
      (22 7 (:REWRITE LEN-WHEN-ATOM))
      (15 2 (:REWRITE PREFIXP-WHEN-EQUAL-LENGTHS))
+     (13 4 (:REWRITE SUBSETP-MEMBER . 4))
      (12 3 (:REWRITE SUBSETP-WHEN-ATOM-RIGHT))
      (12 3 (:REWRITE SUBSETP-WHEN-ATOM-LEFT))
-     (11 4 (:REWRITE SUBSETP-MEMBER . 4))
      (10 1 (:REWRITE LEN-WHEN-PREFIXP))
      (9 3 (:REWRITE MEMBER-WHEN-ATOM))
      (8 8
@@ -233,6 +243,8 @@
      (4 4 (:REWRITE SUBSETP-MEMBER . 1))
      (4 4
         (:REWRITE MEMBER-EQUAL-WHEN-ALL-EQUALP))
+     (4 4 (:REWRITE INTERSECTP-MEMBER . 3))
+     (4 4 (:REWRITE INTERSECTP-MEMBER . 2))
      (4 2 (:REWRITE DEFAULT-<-2))
      (4 1 (:REWRITE SUBLISTP-WHEN-ATOM-RIGHT))
      (4 1 (:REWRITE SUBLISTP-WHEN-ATOM-LEFT))
@@ -256,10 +268,10 @@
      (1 1 (:REWRITE SUBLISTP-COMPLETE)))
 (SET-SIZE-ZERO-EMPTY)
 (SET-SIZE-OF-TRUE-LIST-FIX)
-(SET-SIZE-OF-CONS (352 8 (:DEFINITION REMOVE-DUPLICATES-EQUAL))
-                  (188 53
+(SET-SIZE-OF-CONS (368 8 (:DEFINITION REMOVE-DUPLICATES-EQUAL))
+                  (192 53
                        (:REWRITE CONSP-UNDER-IFF-WHEN-TRUE-LISTP))
-                  (134 5 (:REWRITE LEN-WHEN-ATOM))
+                  (138 5 (:REWRITE LEN-WHEN-ATOM))
                   (106 24
                        (:REWRITE REMOVE-DUPLICATES-EQUAL-WHEN-ATOM))
                   (88 8 (:REWRITE SUBSETP-CAR-MEMBER))
@@ -280,6 +292,8 @@
                   (11 11 (:REWRITE SUBSETP-MEMBER . 1))
                   (11 11
                       (:REWRITE MEMBER-EQUAL-WHEN-ALL-EQUALP))
+                  (11 11 (:REWRITE INTERSECTP-MEMBER . 3))
+                  (11 11 (:REWRITE INTERSECTP-MEMBER . 2))
                   (8 8 (:REWRITE SUBSETP-WHEN-ATOM-LEFT))
                   (8 8 (:REWRITE SUBSETP-TRANS2))
                   (8 8 (:REWRITE SUBSETP-TRANS))
@@ -291,11 +305,11 @@
                   (4 2 (:REWRITE DEFAULT-+-2))
                   (3 3 (:LINEAR INDEX-OF-<-LEN))
                   (2 2 (:REWRITE DEFAULT-+-1)))
-(SET-SIZE-OF-ADD-TO-SET (867 19
+(SET-SIZE-OF-ADD-TO-SET (905 19
                              (:DEFINITION REMOVE-DUPLICATES-EQUAL))
-                        (606 121
+                        (624 121
                              (:REWRITE CONSP-UNDER-IFF-WHEN-TRUE-LISTP))
-                        (519 15 (:REWRITE LEN-WHEN-ATOM))
+                        (537 15 (:REWRITE LEN-WHEN-ATOM))
                         (244 57
                              (:REWRITE REMOVE-DUPLICATES-EQUAL-WHEN-ATOM))
                         (209 19 (:REWRITE SUBSETP-CAR-MEMBER))
@@ -310,6 +324,8 @@
                         (38 38 (:REWRITE DEFAULT-CAR))
                         (38 38 (:REWRITE CAR-WHEN-ALL-EQUALP))
                         (25 25 (:REWRITE SUBSETP-MEMBER . 4))
+                        (25 25 (:REWRITE INTERSECTP-MEMBER . 3))
+                        (25 25 (:REWRITE INTERSECTP-MEMBER . 2))
                         (22 22 (:REWRITE SUBSETP-TRANS2))
                         (22 22 (:REWRITE SUBSETP-TRANS))
                         (22 22 (:REWRITE SUBSETP-MEMBER . 2))
@@ -327,16 +343,16 @@
                         (14 7 (:REWRITE DEFAULT-+-2))
                         (8 8 (:LINEAR INDEX-OF-<-LEN))
                         (7 7 (:REWRITE DEFAULT-+-1)))
-(SET-SIZE-OF-REMOVE (360 8 (:DEFINITION REMOVE-DUPLICATES-EQUAL))
-                    (289 48
+(SET-SIZE-OF-REMOVE (376 8 (:DEFINITION REMOVE-DUPLICATES-EQUAL))
+                    (299 48
                          (:REWRITE CONSP-UNDER-IFF-WHEN-TRUE-LISTP))
-                    (162 3 (:REWRITE LEN-WHEN-ATOM))
+                    (168 3 (:REWRITE LEN-WHEN-ATOM))
                     (97 24
                         (:REWRITE REMOVE-DUPLICATES-EQUAL-WHEN-ATOM))
-                    (91 12 (:REWRITE MEMBER-WHEN-ATOM))
+                    (93 12 (:REWRITE MEMBER-WHEN-ATOM))
                     (88 8 (:REWRITE SUBSETP-CAR-MEMBER))
-                    (67 1 (:REWRITE REMOVE-WHEN-NON-MEMBER))
-                    (54 1 (:REWRITE REMOVE-WHEN-ATOM))
+                    (73 1 (:REWRITE REMOVE-WHEN-NON-MEMBER))
+                    (56 1 (:REWRITE REMOVE-WHEN-ATOM))
                     (43 43 (:TYPE-PRESCRIPTION TRUE-LISTP))
                     (43 43 (:REWRITE CONSP-BY-LEN))
                     (40 40
@@ -347,14 +363,16 @@
                     (16 16 (:TYPE-PRESCRIPTION SUBSETP-EQUAL))
                     (16 16 (:REWRITE DEFAULT-CAR))
                     (16 16 (:REWRITE CAR-WHEN-ALL-EQUALP))
+                    (13 1
+                        (:REWRITE MEMBER-OF-REMOVE-DUPLICATES-EQUAL))
                     (12 12 (:REWRITE SUBSETP-MEMBER . 4))
                     (12 12 (:REWRITE SUBSETP-MEMBER . 3))
                     (12 12 (:REWRITE SUBSETP-MEMBER . 2))
                     (12 12 (:REWRITE SUBSETP-MEMBER . 1))
+                    (12 12 (:REWRITE INTERSECTP-MEMBER . 3))
+                    (12 12 (:REWRITE INTERSECTP-MEMBER . 2))
                     (11 11
                         (:REWRITE MEMBER-EQUAL-WHEN-ALL-EQUALP))
-                    (11 1
-                        (:REWRITE MEMBER-OF-REMOVE-DUPLICATES-EQUAL))
                     (8 8 (:REWRITE SUBSETP-WHEN-ATOM-LEFT))
                     (8 8 (:REWRITE SUBSETP-TRANS2))
                     (8 8 (:REWRITE SUBSETP-TRANS))
@@ -366,18 +384,18 @@
 (SET-SIZE-WHEN-SUBSETP-LINEAR)
 (SET-SIZE-WHEN-STRICT-SUBSETP)
 (SET-SIZE-WHEN-STRICT-SUBSETP-LINEAR)
-(SET-SIZE-WHEN-SET-EQUIV (1776 32
+(SET-SIZE-WHEN-SET-EQUIV (1840 32
                                (:DEFINITION REMOVE-DUPLICATES-EQUAL))
-                         (1408 234
+                         (1448 234
                                (:REWRITE CONSP-UNDER-IFF-WHEN-TRUE-LISTP))
-                         (792 18 (:REWRITE LEN-WHEN-ATOM))
+                         (816 18 (:REWRITE LEN-WHEN-ATOM))
                          (672 32 (:REWRITE SUBSETP-CAR-MEMBER))
-                         (536 2
+                         (552 2
                               (:REWRITE LOWER-BOUND-OF-LEN-WHEN-SUBLISTP))
                          (482 66 (:REWRITE SUBSETP-TRANS))
                          (388 96
                               (:REWRITE REMOVE-DUPLICATES-EQUAL-WHEN-ATOM))
-                         (272 2 (:REWRITE SUBLISTP-WHEN-PREFIXP))
+                         (280 2 (:REWRITE SUBLISTP-WHEN-PREFIXP))
                          (214 214 (:TYPE-PRESCRIPTION TRUE-LISTP))
                          (214 214 (:REWRITE CONSP-BY-LEN))
                          (200 66 (:REWRITE SUBSETP-WHEN-ATOM-RIGHT))
@@ -385,13 +403,13 @@
                          (160 160
                               (:TYPE-PRESCRIPTION REMOVE-DUPLICATES-EQUAL))
                          (160 32 (:REWRITE MEMBER-WHEN-ATOM))
-                         (130 4
+                         (134 4
                               (:REWRITE PREFIXP-WHEN-NOT-CONSP-RIGHT))
-                         (130 4
+                         (134 4
                               (:REWRITE PREFIXP-WHEN-NOT-CONSP-LEFT))
+                         (132 2 (:REWRITE SUBLISTP-WHEN-ATOM-RIGHT))
+                         (132 2 (:REWRITE SUBLISTP-WHEN-ATOM-LEFT))
                          (128 128 (:REWRITE CONSP-OF-CDR-BY-LEN))
-                         (128 2 (:REWRITE SUBLISTP-WHEN-ATOM-RIGHT))
-                         (128 2 (:REWRITE SUBLISTP-WHEN-ATOM-LEFT))
                          (96 96 (:REWRITE DEFAULT-CDR))
                          (64 64 (:REWRITE DEFAULT-CAR))
                          (64 64 (:REWRITE CAR-WHEN-ALL-EQUALP))
@@ -402,6 +420,8 @@
                          (32 32 (:REWRITE SUBSETP-MEMBER . 1))
                          (32 32
                              (:REWRITE MEMBER-EQUAL-WHEN-ALL-EQUALP))
+                         (32 32 (:REWRITE INTERSECTP-MEMBER . 3))
+                         (32 32 (:REWRITE INTERSECTP-MEMBER . 2))
                          (24 24
                              (:LINEAR LOWER-BOUND-OF-LEN-WHEN-SUBLISTP))
                          (24 24
