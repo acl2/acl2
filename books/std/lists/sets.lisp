@@ -841,3 +841,6 @@ about set equivalence.</p>"
     :hints (("Goal" :in-theory (disable
                                 set-equiv-implies-equal-len-remove-duplicates-equal)
              :use set-equiv-implies-equal-len-remove-duplicates-equal))))
+
+(defthm cons-under-set-equiv-1
+  (set-equiv (list* x x y) (cons x y)))
