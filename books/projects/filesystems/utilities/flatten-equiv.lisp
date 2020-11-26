@@ -11,9 +11,6 @@
          (true-list-list-fix x))
   :hints (("goal" :in-theory (enable true-list-list-fix))))
 
-(defthm cons-under-set-equiv-1
-  (set-equiv (list* x x y) (cons x y)))
-
 (defcong
   set-equiv
   equal (not-intersectp-list x l)
