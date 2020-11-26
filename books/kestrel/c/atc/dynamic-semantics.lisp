@@ -448,7 +448,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines exec-fns
+(defines execution-functions
   :short "Mutually recursive functions for execution."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -456,7 +456,7 @@
   (define exec-expr ((e exprp) (env denvp) (limit natp))
     :guard (denv-nonempty-stack-p env)
     :returns (result value-resultp)
-    :parents (dynamic-semantics exec-fns)
+    :parents (dynamic-semantics execution-functions)
     :verify-guards :after-returns
     :short "Execute an expression."
     :long
@@ -494,7 +494,7 @@
   (define exec-stmt ((s stmtp) (env denvp) (limit natp))
     :guard (denv-nonempty-stack-p env)
     :returns (result value-option-resultp)
-    :parents (dynamic-semantics exec-fns)
+    :parents (dynamic-semantics execution-functions)
     :short "Execute a statement."
     :long
     (xdoc::topstring
@@ -545,7 +545,7 @@
   (define exec-block-item ((item block-itemp) (env denvp) (limit natp))
     :guard (denv-nonempty-stack-p env)
     :returns (result value-option-resultp)
-    :parents (dynamic-semantics exec-fns)
+    :parents (dynamic-semantics execution-functions)
     :short "Execute a block item."
     (b* (((when (zp limit)) (error :limit)))
       (block-item-case item
@@ -560,7 +560,7 @@
                                 (limit natp))
     :guard (denv-nonempty-stack-p env)
     :returns (result value-option-resultp)
-    :parents (dynamic-semantics exec-fns)
+    :parents (dynamic-semantics execution-functions)
     :short "Execute a list of block items."
     (b* (((when (zp limit)) (error :limit))
          ((when (endp items)) nil)
@@ -578,7 +578,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (fty::deffixequiv-mutual exec-fns))
+  (fty::deffixequiv-mutual execution-functions))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
