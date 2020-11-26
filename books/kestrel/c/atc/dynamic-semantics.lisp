@@ -613,7 +613,7 @@
   :hooks (:fix)
   :measure (len formals)
   :prepwork ((local (in-theory (enable storep-when-store-resultp-ok))))
-  :verify-guards nil
+  :verify-guards nil ; done below
   ///
   (verify-guards init-store))
 
