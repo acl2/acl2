@@ -3332,6 +3332,14 @@
                             (7 4 (:REWRITE DEFAULT-<-1))
                             (4 2 (:REWRITE DEFAULT-+-2))
                             (3 2 (:REWRITE DEFAULT-+-1)))
+(PAINFUL-DEBUGGING-LEMMA-25 (9 9 (:TYPE-PRESCRIPTION MIN))
+                            (4 4
+                               (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
+                            (3 2 (:REWRITE DEFAULT-<-2))
+                            (3 2 (:REWRITE DEFAULT-<-1))
+                            (2 1 (:REWRITE DEFAULT-UNARY-MINUS))
+                            (2 1 (:REWRITE DEFAULT-+-2))
+                            (1 1 (:REWRITE DEFAULT-+-1)))
 (MEMBER-OF-NTH-WHEN-NOT-INTERSECTP
      (178 10 (:REWRITE NTH-WHEN->=-N-LEN-L))
      (156 82 (:REWRITE SUBSETP-MEMBER . 1))
