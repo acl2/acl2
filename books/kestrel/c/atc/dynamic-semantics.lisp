@@ -209,14 +209,34 @@
 (define top-frame ((env denvp))
   :guard (denv-nonempty-stack-p env)
   :returns (frame framep)
-  :short "Return the top call frame of a dynamic environment."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The additional guard is needed to guarantee
-     the existence of any frame, and thus of the top frame."))
+  :short "Top frame of a dynamic environment's call stack."
   (frame-fix (car (denv->call-stack env)))
   :guard-hints (("Goal" :in-theory (enable denv-nonempty-stack-p)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define push-frame ((frame framep) (env denvp))
+  :returns (new-env denvp)
+  :short "Push a frame into a dynamic environment's call stack."
+  (b* ((stack (denv->call-stack env))
+       (new-stack (cons (frame-fix frame) stack)))
+    (change-denv env :call-stack new-stack))
+  :hooks (:fix)
+  ///
+  (more-returns
+   (new-env denv-nonempty-stack-p
+            :hints (("Goal" :in-theory (enable denv-nonempty-stack-p))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define pop-frame ((env denvp))
+  :guard (denv-nonempty-stack-p env)
+  :returns (new-env denvp)
+  :short "Pop a frame from a dynamic environment's non-empty call stack."
+  (b* ((stack (denv->call-stack env))
+       (new-stack (cdr stack)))
+    (change-denv env :call-stack new-stack))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
