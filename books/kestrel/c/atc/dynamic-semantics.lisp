@@ -448,59 +448,62 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-expr ((e exprp) (env denvp) (limit natp))
-  :guard (denv-nonempty-stack-p env)
-  :returns (result value-resultp)
-  :verify-guards :after-returns
-  :short "Execute an expression."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "For now we only support the execution of
-     variables, (some) constants, and (some) unary and binary expressions."))
-  (b* (((when (zp limit)) (error :limit))
-       (e (expr-fix e)))
-    (expr-case
-     e
-     :ident (exec-ident e.get env)
-     :const (exec-const e.get)
-     :call (error (list :exec-expr e))
-     :postinc (error (list :exec-expr e))
-     :postdec (error (list :exec-expr e))
-     :preinc (error (list :exec-expr e))
-     :predec (error (list :exec-expr e))
-     :unary (b* ((arg (exec-expr e.arg env (1- limit))))
-              (exec-unary e.op arg))
-     :cast (error (list :exec-expr e))
-     :binary (b* ((arg1 (exec-expr e.arg1 env (1- limit)))
-                  (arg2 (exec-expr e.arg2 env (1- limit))))
-               (exec-binary e.op arg1 arg2))
-     :cond (b* ((test (exec-expr e.test env (1- limit))))
-             (value-result-case test
-                                :ok (if (sint-nonzerop test.get)
-                                        (exec-expr e.then env (1- limit))
-                                      (exec-expr e.else env (1- limit)))
-                                :err test.get))))
-  :measure (nfix limit)
-  :hooks (:fix))
+(defines exec-fns
+  :short "Mutually recursive functions for execution."
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines exec-stmt-fns
-  :short "Execute a statement."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "For now we only support the execution of @('return') statements.
-     If there is no expression, no value is returned.
-     If there is an expression, its value is returned.
-     We also support the execution of compound statments
-     that consists of supported statements."))
+  (define exec-expr ((e exprp) (env denvp) (limit natp))
+    :guard (denv-nonempty-stack-p env)
+    :returns (result value-resultp)
+    :parents (dynamic-semantics exec-fns)
+    :verify-guards :after-returns
+    :short "Execute an expression."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "For now we only support the execution of
+       variables, (some) constants, and (some) unary and binary expressions."))
+    (b* (((when (zp limit)) (error :limit))
+         (e (expr-fix e)))
+      (expr-case
+       e
+       :ident (exec-ident e.get env)
+       :const (exec-const e.get)
+       :call (error (list :exec-expr e))
+       :postinc (error (list :exec-expr e))
+       :postdec (error (list :exec-expr e))
+       :preinc (error (list :exec-expr e))
+       :predec (error (list :exec-expr e))
+       :unary (b* ((arg (exec-expr e.arg env (1- limit))))
+                (exec-unary e.op arg))
+       :cast (error (list :exec-expr e))
+       :binary (b* ((arg1 (exec-expr e.arg1 env (1- limit)))
+                    (arg2 (exec-expr e.arg2 env (1- limit))))
+                 (exec-binary e.op arg1 arg2))
+       :cond (b* ((test (exec-expr e.test env (1- limit))))
+               (value-result-case test
+                                  :ok (if (sint-nonzerop test.get)
+                                          (exec-expr e.then env (1- limit))
+                                        (exec-expr e.else env (1- limit)))
+                                  :err test.get))))
+    :measure (nfix limit))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define exec-stmt ((s stmtp) (env denvp) (limit natp))
     :guard (denv-nonempty-stack-p env)
     :returns (result value-option-resultp)
-    :parents nil
+    :parents (dynamic-semantics exec-fns)
+    :short "Execute a statement."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "For now we only support the execution of @('return') statements.
+       If there is no expression, no value is returned.
+       If there is an expression, its value is returned.
+       We also support the execution of compound statments
+       that consists of supported statements."))
     (b* (((when (zp limit)) (error :limit))
          (s (stmt-fix s)))
       (stmt-case
@@ -537,22 +540,28 @@
                  nil)))
     :measure (nfix limit))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (define exec-block-item ((item block-itemp) (env denvp) (limit natp))
     :guard (denv-nonempty-stack-p env)
     :returns (result value-option-resultp)
-    :parents nil
+    :parents (dynamic-semantics exec-fns)
+    :short "Execute a block item."
     (b* (((when (zp limit)) (error :limit)))
       (block-item-case item
                        :decl (error (list :exec-block-item item.get))
                        :stmt (exec-stmt item.get env (1- limit))))
     :measure (nfix limit))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (define exec-block-item-list ((items block-item-listp)
                                 (env denvp)
                                 (limit natp))
     :guard (denv-nonempty-stack-p env)
     :returns (result value-option-resultp)
-    :parents nil
+    :parents (dynamic-semantics exec-fns)
+    :short "Execute a list of block items."
     (b* (((when (zp limit)) (error :limit))
          ((when (endp items)) nil)
          (val? (exec-block-item (car items) env (1- limit)))
@@ -561,11 +570,15 @@
       (exec-block-item-list (cdr items) env (1- limit)))
     :measure (nfix limit))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   :verify-guards nil ; done below
   ///
-  (verify-guards exec-stmt)
+  (verify-guards exec-expr)
 
-  (fty::deffixequiv-mutual exec-stmt-fns))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (fty::deffixequiv-mutual exec-fns))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
