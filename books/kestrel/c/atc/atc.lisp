@@ -862,13 +862,13 @@
   (xdoc::topstring
    (xdoc::p
     "The execution of the C function according to the dynamic semantics
-     is expressed by calling @(tsee exec-fun) on
+     is expressed by calling @(tsee run-fun) on
      the name of @('fn'), the formals of @('fn'), and @('*const*').
      This is equated to a call of @('fn') on its formals.
      The guard of @('fn') is used as hypothesis.")
    (xdoc::p
     "The currently generated proof hints are simple:
-     we enable @(tsee exec-fun) and all the functions that it calls
+     we enable @(tsee run-fun) and all the functions that it calls
      in the dynamic execution;
      we also use the guard theorem of @('fn').
      Given that the translation unit is a constant,
@@ -899,12 +899,12 @@
        (wrld (w state))
        (formals (acl2::formals+ fn wrld))
        (guard (untranslate (acl2::uguard fn wrld) t wrld))
-       (lhs `(exec-fun (ident ,(symbol-name fn))
-                       (list ,@formals)
-                       ,const))
+       (lhs `(run-fun (ident ,(symbol-name fn))
+                      (list ,@formals)
+                      ,const))
        (rhs `(value-result-ok (,fn ,@formals)))
        (hints `(("Goal"
-                 :in-theory (enable exec-fun
+                 :in-theory (enable run-fun
                                     init-store
                                     exec-stmt
                                     exec-block-item

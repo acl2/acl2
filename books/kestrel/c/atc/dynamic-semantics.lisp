@@ -651,7 +651,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-fun ((fun identp) (args value-listp) (tunit transunitp))
+(define run-fun ((fun identp) (args value-listp) (tunit transunitp))
   :returns (result value-resultp)
   :short "Execute a function call."
   :long
@@ -672,7 +672,7 @@
      :err (error fenv.get)
      :ok (b* ((info (fun-env-lookup fun fenv.get))
               ((when (not info))
-               (error (list :exec-fun :undefined (ident-fix fun))))
+               (error (list :run-fun :undefined (ident-fix fun))))
               (store (init-store (fun-info->params info) args)))
     (store-result-case
      store
@@ -685,6 +685,6 @@
             :err val?.get
             :ok (if (sintp val?)
                     val?
-                  (error (list :exec-fun :no-value-returned)))))))))
+                  (error (list :run-fun :no-value-returned)))))))))
   :guard-hints (("Goal" :in-theory (enable denv-nonempty-stack-p)))
   :hooks (:fix))
