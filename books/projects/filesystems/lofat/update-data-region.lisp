@@ -419,10 +419,15 @@
   fati-when-lofat-fs-p
   (implies (lofat-fs-p fat32$c)
            (equal (fat32-entry-p (fati i fat32$c))
-                  (< (nfix i)
-                     (fat-length fat32$c))))
-  :hints (("goal" :in-theory (enable lofat-fs-p
-                                     fat32$c-p fati fat-length))))
+                  (< (nfix i) (fat-length fat32$c))))
+  :hints (("goal" :in-theory (enable lofat-fs-p fat32$c-p fati fat-length)))
+  :rule-classes
+  (:rewrite
+   (:rewrite :corollary (implies (lofat-fs-p fat32$c)
+                                 (equal (unsigned-byte-p 32 (fati i fat32$c))
+                                        (< (nfix i) (fat-length fat32$c))))
+             :hints (("goal" :do-not-induct t
+                      :in-theory (enable fat32-entry-p))))))
 
 (defthm
   cluster-size-of-update-fati

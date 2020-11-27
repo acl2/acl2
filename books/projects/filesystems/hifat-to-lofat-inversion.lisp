@@ -627,17 +627,9 @@
   (("goal" :in-theory (enable d-e-cc)))
   :rule-classes (:rewrite :type-prescription))
 
-(defthm
-  fat32-masked-entry-list-p-of-d-e-cc
-  (implies (and (d-e-p d-e)
-                (<= *ms-first-data-cluster*
-                    (d-e-first-cluster d-e))
-                (< (d-e-first-cluster d-e)
-                   (+ *ms-first-data-cluster*
-                      (count-of-clusters fat32$c))))
-           (fat32-masked-entry-list-p
-            (mv-nth 0
-                    (d-e-cc fat32$c d-e))))
+(defthm fat32-masked-entry-list-p-of-d-e-cc
+  (implies (d-e-p d-e)
+           (fat32-masked-entry-list-p (mv-nth 0 (d-e-cc fat32$c d-e))))
   :hints (("goal" :in-theory (enable d-e-cc))))
 
 (defthm
@@ -1972,16 +1964,13 @@
 
 (defthm
   lofat-fs-p-of-stobj-set-indices-in-fa-table
-  (implies (and (lofat-fs-p fat32$c)
-                (fat32-masked-entry-list-p value-list)
-                (equal (len index-list)
-                       (len value-list)))
-           (lofat-fs-p
-            (stobj-set-indices-in-fa-table
-             fat32$c index-list value-list)))
-  :hints
-  (("goal" :in-theory
-    (enable stobj-set-indices-in-fa-table))))
+  (implies
+   (and (lofat-fs-p fat32$c)
+        (fat32-masked-entry-list-p value-list)
+        (case-split (equal (len index-list)
+                           (len value-list))))
+   (lofat-fs-p (stobj-set-indices-in-fa-table fat32$c index-list value-list)))
+  :hints (("goal" :in-theory (enable stobj-set-indices-in-fa-table))))
 
 (defthm
   cluster-size-of-stobj-set-indices-in-fa-table

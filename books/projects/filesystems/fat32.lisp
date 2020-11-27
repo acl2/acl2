@@ -457,16 +457,12 @@
 
 (defthm
   fat32-masked-entry-list-p-of-fat32-build-index-list
-  (implies
-   (and
-    (fat32-masked-entry-p masked-current-cluster)
-    (>= masked-current-cluster *ms-first-data-cluster*)
-    (< masked-current-cluster (len fa-table)))
-   (b* (((mv index-list &)
-         (fat32-build-index-list fa-table masked-current-cluster
-                                 length cluster-size)))
-     (fat32-masked-entry-list-p index-list)))
-  :hints (("Goal" :in-theory (enable fat32-build-index-list))))
+  (implies (fat32-masked-entry-p masked-current-cluster)
+           (b* (((mv index-list &)
+                 (fat32-build-index-list fa-table masked-current-cluster
+                                         length cluster-size)))
+             (fat32-masked-entry-list-p index-list)))
+  :hints (("goal" :in-theory (enable fat32-build-index-list))))
 
 (defthm
   fat32-build-index-list-of-update-nth
