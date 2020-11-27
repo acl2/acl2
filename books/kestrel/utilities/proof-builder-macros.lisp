@@ -71,17 +71,22 @@ Verify @(see guard)s efficiently by using a previous guard theorem."
 
  <p>This @(see proof-builder) macro attempts to prove a theorem, typically a
  @(see guard) proof obligation, by applying the hint @(':guard-theorem fn') in
- a carefully controlled, efficient manner.  This proof is attempted in the
- theory, @('thy'), if supplied and non-@('nil'), else in the @(tsee
- current-theory).  If that proof fails, then a single, ordinary prover call is
- made with that @(':use') hint and in the following theory: @('alt-thy') if
- supplied and non-@('nil'), else @('thy') if supplied and non-@('nil'), else
- the @(see current-theory).</p>
+ a carefully controlled, efficient manner (using the @(':fancy-use') @(see
+ proof-builder) macro).  This proof is attempted in the theory, @('thy'), if
+ supplied and non-@('nil'), else in the @(tsee current-theory).  If that proof
+ fails, then a single, ordinary prover call is made with that @(':use') hint
+ and in the following theory: @('alt-thy') if supplied and non-@('nil'), else
+ @('thy') if supplied and non-@('nil'), else the @(see current-theory).  If the
+ proof has not yet succeeded and the original theory is not @('nil') or
+ @('(current-theory :here)'), then a final proof is attempted in the same
+ careful manner as the first proof attempt.</p>
 
- <p>By default, the first attempt is done with all output inhibited.  However,
- if @('verbose') is @('t') then output is left alone; and if @('verbose') is
+ <p>Output is inhibited by default.  However, if @('verbose') is @('t') then
+ output is as specified by the enclosing environment; and if @('verbose') is
  any other non-@('nil') value, then output is mostly inhibited for that attempt
- by use of the proof-builder command, @(':quiet').</p>
+ by use of the proof-builder command, @(':quiet').  In all of those
+ non-@('nil') cases for the @('verbose') input, a little message will be
+ started at the beginning of the second and third proof attempts, if any.</p>
 
  <p>For a few small examples, see community book
  @('kestrel/utilities/proof-builder-macros-tests.lisp.')</p>
@@ -123,17 +128,22 @@ Prove termination efficiently by using a previous termination theorem."
 
  <p>This @(see proof-builder) macro attempts to prove a theorem, typically a
  termination proof obligation, by applying the hint @(':termination-theorem
- fn') in a carefully controlled, efficient manner.  This proof is attempted in
- the theory, @('thy'), if supplied and non-@('nil'), else in the @(tsee
- current-theory).  If that proof fails, then a single, ordinary prover call is
- made with that @(':use') hint and in the following theory: @('alt-thy') if
- supplied and non-@('nil'), else @('thy') if supplied and non-@('nil'), else
- the @(see current-theory).</p>
+ fn') in a carefully controlled, efficient manner (using the @(':fancy-use')
+ @(see proof-builder) macro).  This proof is attempted in the theory, @('thy'),
+ if supplied and non-@('nil'), else in the @(tsee current-theory).  If that
+ proof fails, then a single, ordinary prover call is made with that @(':use')
+ hint and in the following theory: @('alt-thy') if supplied and non-@('nil'),
+ else @('thy') if supplied and non-@('nil'), else the @(see current-theory).
+ If the proof has not yet succeeded and the original theory is not @('nil') or
+ @('(current-theory :here)'), then a final proof is attempted in the same
+ careful manner as the first proof attempt.</p>
 
- <p>By default, the first attempt is done with all output inhibited.  However,
- if @('verbose') is @('t') then output is left alone; and if @('verbose') is
+ <p>Output is inhibited by default.  However, if @('verbose') is @('t') then
+ output is as specified by the enclosing environment; and if @('verbose') is
  any other non-@('nil') value, then output is mostly inhibited for that attempt
- by use of the proof-builder command, @(':quiet').</p>
+ by use of the proof-builder command, @(':quiet').  In all of those
+ non-@('nil') cases for the @('verbose') input, a little message will be
+ started at the beginning of the second and third proof attempts, if any.</p>
 
  <p>For a few small examples, see community book
  @('kestrel/utilities/proof-builder-macros-tests.lisp.')</p>
@@ -182,10 +192,13 @@ Use one or more previously-proved theorems efficiently."
  non-@('nil'), else in the @(tsee current-theory).  If that proof fails, then a
  single, ordinary prover call is made with that @(':use') hint and in the
  following theory: @('alt-thy') if supplied and non-@('nil'), else @('thy') if
- supplied and non-@('nil'), else the @(see current-theory).</p>
+ supplied and non-@('nil'), else the @(see current-theory).  If the proof has
+ not yet succeeded and the original theory is not @('nil') or
+ @('(current-theory :here)'), then a final proof is attempted in the same
+ careful manner as the first proof attempt.</p>
 
- <p>By default, the first attempt is done with all output inhibited.  However,
- if @('verbose') is @('t') then output is left alone; and if @('verbose') is
+ <p>Output is inhibited by default.  However, if @('verbose') is @('t') then
+ output is as specified by the enclosing environment; and if @('verbose') is
  any other non-@('nil') value, then output is mostly inhibited for that attempt
  by use of the proof-builder command, @(':quiet').</p>
 
@@ -220,75 +233,129 @@ Use one or more previously-proved theorems efficiently."
          (list lmi+))
         (t lmi+)))
 
-(defun pc-fancy-use-fn (lmi+ theory fallback-theory verbose)
-  (let* ((lmi-lst (lmi+-to-lmi-lst lmi+))
-         (instr1
-          `(protect
-            (insist-all-proved
-             ,@(and theory `((in-theory ,theory)))
-             (succeed s-prop) ; expand implies, etc.
-             (when-not-proved
-              (use ,@lmi-lst)
-              (when-not-proved
-               (demote)
-               (dv 1)
-               (succeed s-prop) ; expand implies, etc.
-               (when-not-proved ; probably unnecessary here, but harmless
-                (add-abbreviation @hyp@)
-                (= & (hide (? @hyp@)) 0) ; hide the used theorem
-                cg                       ; Prove that hyp = (hide hyp).
-                (succeed drop) ; Proof of hyp = (hide hyp) does not need hypotheses.
-                (:prove :hints (("Goal"
+(define-pc-help print-msg (str args &optional evisc-tuple)
+
+; This is kind of a hack in support of the prove-guard and prove-termination
+; macro commands.  Maybe we'll add xdoc later if this has broader utility.
+
+; Example:
+;   ->: (:PRINT-MSG "hello ~x0~|List: ~&1" (WORLD (a b c)))
+;   hello WORLD
+;   List: A, B and C
+;   ->:
+
+  (let ((msg (cons str (pairlis$ *base-10-chars* args))))
+    (fms0 "~|~@0~|" (list (cons #\0 msg)) 0 evisc-tuple)))
+
+(defun pc-fancy-use-fn1 (lmi-lst theory)
+  `(protect
+    (insist-all-proved
+     ,@(and theory `((in-theory ,theory)))
+     (succeed s-prop) ; expand implies, etc.
+     (when-not-proved
+      (use ,@lmi-lst)
+      (when-not-proved
+       (demote)
+       (dv 1)
+       (succeed s-prop) ; expand implies, etc.
+       (when-not-proved ; probably unnecessary here, but harmless
+        (add-abbreviation @hyp@)
+        (= & (hide (? @hyp@)) 0) ; hide the used theorem
+        cg                       ; Prove that hyp = (hide hyp).
+        (succeed drop) ; Proof of hyp = (hide hyp) does not need hypotheses.
+        (:prove :hints (("Goal"
 
 ; It's not clear that the following :do-not '(preprocess) is important.  It
 ; seems potentially helpful to avoid the use of preprocessing for complex
 ; Boolean reasoning, since clausify is probably much more efficient.
 
-                                 :do-not '(preprocess)
-                                 :expand ((:free (v) (hide v)))
-                                 :in-theory nil)))
-                top ; back to top of main goal: (implies (hide hyp) new-thm)
-                split
-                (repeat
-                 (protect
-                  (comment "Start next goal")
-                  (demote 1)        ; demote (hide hyp)
-                  (dv 1)            ; at (hide hyp)
-                  (= & (? @hyp@) 0) ; replace with hyp
-                  up                ; back to the top
-                  prove
-                  ;; We are now at the goal to prove (equal (hide hyp) hyp).
-                  (succeed drop) ; Proof of hyp = (hide hyp) does not need hypotheses.
-                  (:prove :hints (("Goal"
-                                   :do-not '(preprocess) ; probably unnecessary
-                                   :expand ((:free (v) (hide v)))
-                                   :in-theory nil)))))))))))
-         (instr2
-          (let ((thy (or fallback-theory theory)))
-            `(do-all
-              (comment "Second try: calling prover directly ....")
-              (:prove
-               :hints (("Goal"
-                        :use ,@lmi-lst
-                        ,@(and thy
-                               `(:in-theory ,thy)))))))))
-    (case verbose
-      ((t) `(orelse ,instr1 ,instr2))
-      ((nil) `(orelse (:quiet! ,instr1) ,instr2))
-      (otherwise `(orelse (:quiet ,instr1) ,instr2)))))
+                         :do-not '(preprocess)
+                         :expand ((:free (v) (hide v)))
+                         :in-theory nil)))
+        top ; back to top of main goal: (implies (hide hyp) new-thm)
+        split
+        (repeat
+         (protect
+          (comment "Start next goal")
+          (demote 1)        ; demote (hide hyp)
+          (dv 1)            ; at (hide hyp)
+          (= & (? @hyp@) 0) ; replace with hyp
+          up                ; back to the top
+          prove
+          ;; We are now at the goal to prove (equal (hide hyp) hyp).
+          (succeed drop) ; Proof of hyp = (hide hyp) does not need hypotheses.
+          (:prove :hints (("Goal"
+                           :do-not '(preprocess) ; probably unnecessary
+                           :expand ((:free (v) (hide v)))
+                           :in-theory nil)))))))))))
+
+(defun pc-fancy-use-fn (lmi+ theory fallback-theory verbose expl)
+
+; If verbose is non-nil then we print a message when starting the second or
+; third attempt at proving with the given lemma-instance(s).  The message is
+; then as follows (substituting "Third" for "Second" if it's the third try):
+
+;   Second try <expl>: calling prover directly ....
+
+; For example, if expl is "at guard verification" then we see:
+
+;   Second try at guard verification: calling prover directly ....
+
+  (flet ((vb (verbose instr)
+             (case verbose
+               ((t) instr)
+               ((nil) `(:quiet! ,instr))
+               (otherwise `(:quiet ,instr)))))
+    (let* ((lmi-lst (lmi+-to-lmi-lst lmi+))
+           (instr1 (vb verbose (pc-fancy-use-fn1 lmi-lst theory)))
+           (instr2a
+            (let ((thy (or fallback-theory theory)))
+              `(do-all-no-prompt
+                ,(if verbose
+                     `(:print-msg "~%Second try~@0: calling the prover ~
+                                   directly...~|"
+                                  (,(if expl
+                                        (msg " ~@0" expl)
+                                      "")))
+                   :skip)
+                ,(vb verbose
+                     `(:prove
+                       :hints (("Goal"
+                                :use ,@lmi-lst
+                                ,@(and thy
+                                       `(:in-theory ,thy)))))))))
+           (instr2b (if (or (null theory)
+                            (equal theory '(current-theory :here)))
+                        nil ; already tried the proof attempt with instr1
+                      `(do-all-no-prompt
+                        ,(if verbose
+                             `(:print-msg "~%~@0 try~@1: proving carefully ~
+                                           using the current theory...~|"
+                                          (,(if instr2a "Third" "Second")
+                                           ,(if expl
+                                                (msg " ~@0" expl)
+                                              "")))
+                           :skip)
+                        ,(vb verbose
+                             (pc-fancy-use-fn1 lmi-lst nil)))))
+           (instr2 (if instr2a
+                       `(orelse ,instr2a ,instr2b)
+                     instr2b)))
+      `(orelse ,instr1 ,instr2))))
 
 (define-pc-macro prove-guard (old-fn
                               &optional theory fallback-theory verbose)
   (value (pc-fancy-use-fn `(:guard-theorem ,old-fn)
-                          theory fallback-theory
-                          verbose)))
+                          theory fallback-theory verbose
+                          "at guard verification")))
 
 (define-pc-macro prove-termination (old-fn
                                     &optional theory fallback-theory verbose)
   (value (pc-fancy-use-fn `(:termination-theorem ,old-fn)
-                          theory fallback-theory verbose)))
+                          theory fallback-theory verbose
+                          "at proving termination")))
 
 (define-pc-macro fancy-use (lmi+
                             &optional theory fallback-theory verbose)
   (value (pc-fancy-use-fn lmi+
-                          theory fallback-theory verbose)))
+                          theory fallback-theory verbose nil)))
