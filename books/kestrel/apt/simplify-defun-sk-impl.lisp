@@ -36,7 +36,7 @@
 (defun fn-simp-defs-sk (fn fn-simp hyps theory expand simplify-body
                            skolem-name guard guard-hints
                            verify-guards rewrite untranslate must-simplify
-                           fn-simp-is-fn-name ctx state)
+                           fn-simp-is-fn-name verbose ctx state)
 
 ; See fn-simp-defs for the analogous function to use when fn is defined by
 ; defun; here, fn is defined by defun-sk.
@@ -177,7 +177,8 @@
                   `(cons ',fn-simp-is-fn-name
                          ,fn-runes)
                   `(cons ',fn-simp-is-fn-name
-                         ,theory))))))
+                         ,theory)
+                  verbose)))))
     (value
      `((,defun-sk? ,fn-simp ,formals
          (,quantifier ,bound-vars ,untrans-simp-body)
@@ -325,7 +326,7 @@
                          skolem-name guard guard-hints
                          verify-guards rewrite untranslate must-simplify
                          fn-simp-is-fn-name
-                         ctx state))
+                         verbose ctx state))
        (new-defun
         (nth 0 fn-simp-defs)) ; (defun-sk foo$1 ...)
        (state (cond (verbose

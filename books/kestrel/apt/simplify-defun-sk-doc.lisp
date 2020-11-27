@@ -335,7 +335,7 @@
 
  <p>Specify whether to verify guards for the new function.</p>
 
- <p>By default, guard verification is performed for the new function symbol
+ <p>By default, guard verification is performed for the new function symbol if
  and only if the input function symbol is guard-verified.  This default
  behavior is overridden by a Boolean value @('V') of @(':verify-guards'): guard
  verification is done if @('V') is @('t'), else is not done.</p>
@@ -344,10 +344,13 @@
  events are admitted, including the new definition and the @('OLD-becomes-NEW')
  theorem (see above), by calling @(tsee verify-guards) on the new function
  symbol.  The @(':guard-hints') are utilized, if supplied (and not @(':auto')).
- Otherwise, hints specify the theory used for simplification (see the
- discussion of @(':theory')) augmented by the @('OLD-becomes-NEW') theorem (see
- above) and, if the old function symbol is guard-verified, the hints apply its
- guard theorem with a @(':use') hint.</p>
+ Otherwise, a @(':guard-hints') value is generated that specifies the theory
+ used for simplification (see the discussion of @(':theory')) augmented by the
+ @('OLD-becomes-NEW') theorem (see above); also, if the old function symbol is
+ guard-verified, the hints apply its guard theorem with a @(':use') hint.  This
+ generated @(':guard-hints') value can cause  up to three different proof
+ attempts, each somewhat different from the others, when necessary.  (For
+ details use @(':show-only t').)</p>
 
  </blockquote>
 
