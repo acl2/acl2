@@ -108,15 +108,11 @@ defined in a special way in the @(see std/strings) library, see in particular
   :pred true-list-listp
   :elementp-of-nil t)
 
-(defthmd true-list-list-fix-of-true-list-fix
-  (equal (true-list-list-fix (true-list-fix x))
-         (true-list-list-fix x))
-  :hints (("goal" :in-theory (enable true-list-list-fix))))
-
-(defcong list-equiv equal (true-list-list-fix x) 1
-  :hints (("Goal" :use (true-list-list-fix-of-true-list-fix
-                        (:instance
-                         true-list-list-fix-of-true-list-fix
-                         (x x-equiv))))))
+(defrefinement
+  list-equiv true-list-list-equiv
+  :hints
+  (("goal"
+    :induct (fast-list-equiv x y)
+    :in-theory (enable fast-list-equiv true-list-list-fix))))
 
 ;; string-listp is handled specially in std/strings/eqv.
