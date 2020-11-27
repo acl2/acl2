@@ -151,7 +151,9 @@
                                  (36 36 (:REWRITE SUBSETP-MEMBER . 4))
                                  (36 36 (:REWRITE SUBSETP-MEMBER . 3))
                                  (36 36 (:REWRITE SUBSETP-MEMBER . 2))
-                                 (36 36 (:REWRITE SUBSETP-MEMBER . 1)))
+                                 (36 36 (:REWRITE SUBSETP-MEMBER . 1))
+                                 (36 36 (:REWRITE INTERSECTP-MEMBER . 3))
+                                 (36 36 (:REWRITE INTERSECTP-MEMBER . 2)))
 (GL::PBFR-DEPENDS-ON-OF-BFR-FORCE-CHECK
      (7 7 (:TYPE-PRESCRIPTION BOOLEANP))
      (6 3
@@ -160,7 +162,9 @@
      (4 4 (:REWRITE SUBSETP-MEMBER . 4))
      (4 4 (:REWRITE SUBSETP-MEMBER . 3))
      (4 4 (:REWRITE SUBSETP-MEMBER . 2))
-     (4 4 (:REWRITE SUBSETP-MEMBER . 1)))
+     (4 4 (:REWRITE SUBSETP-MEMBER . 1))
+     (4 4 (:REWRITE INTERSECTP-MEMBER . 3))
+     (4 4 (:REWRITE INTERSECTP-MEMBER . 2)))
 (GL::BFR-VACUITY-CHECK)
 (GL::BFR-VACUITY-CHECK-NVALS (4 2 (:REWRITE DEFAULT-+-2))
                              (3 3 (:REWRITE DEFAULT-CDR))

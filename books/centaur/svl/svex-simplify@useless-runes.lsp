@@ -430,138 +430,176 @@
      (2 2
         (:REWRITE SYMBOL-LISTP-IMPLIES-SYMBOLP)))
 (SVL::SVEX-P-TO-SVEX-FNC-QUOTE)
-(SVL::4VEC-TO-SVEX (939 85 (:REWRITE O<=-O-FINP-DEF))
-                   (314 66 (:REWRITE O-P-O-INFP-CAR))
-                   (245 97 (:REWRITE AC-<))
-                   (182 95 (:REWRITE DEFAULT-<-2))
+(SVL::4VEC-TO-SVEX (1419 133 (:REWRITE O<=-O-FINP-DEF))
+                   (514 116 (:REWRITE O-P-O-INFP-CAR))
+                   (389 145 (:REWRITE AC-<))
+                   (226 133 (:REWRITE O-INFP-O-FINP-O<=))
+                   (202 115 (:REWRITE DEFAULT-<-2))
+                   (196 8
+                        (:DEFINITION NONNEGATIVE-INTEGER-QUOTIENT))
                    (174 48 (:REWRITE O-FIRST-EXPT-<))
-                   (130 85 (:REWRITE O-INFP-O-FINP-O<=))
-                   (116 66 (:REWRITE O-P-DEF-O-FINP-1))
-                   (113 95
+                   (166 116 (:REWRITE O-P-DEF-O-FINP-1))
+                   (133 115
                         (:REWRITE RP::EQUALITY-MEASURE-LEMMA3))
-                   (113 95
+                   (133 115
                         (:REWRITE RP::EQUALITY-MEASURE-LEMMA1))
+                   (115 115 (:REWRITE DEFAULT-<-1))
+                   (104 6
+                        (:REWRITE RP::ATOM-RP-TERMP-IS-SYMBOLP))
                    (96 48 (:REWRITE O-FIRST-COEFF-<))
-                   (95 95 (:REWRITE DEFAULT-<-1))
-                   (94 4
-                       (:REWRITE RP::ATOM-RP-TERMP-IS-SYMBOLP))
+                   (83 67
+                       (:REWRITE RP::EQUALITY-MEASURE-LEMMA2))
+                   (80 51 (:REWRITE DEFAULT-+-2))
+                   (79 79 (:REWRITE FN-CHECK-DEF-NOT-QUOTE))
                    (78 39 (:REWRITE O-FIRST-EXPT-DEF-O-FINP))
+                   (68 8 (:DEFINITION NFIX))
+                   (62 51 (:REWRITE DEFAULT-+-1))
                    (54 6 (:REWRITE RP::IS-IF-RP-TERMP))
                    (50 50 (:TYPE-PRESCRIPTION O-FINP))
-                   (47 47
-                       (:REWRITE RP::EQUALITY-MEASURE-LEMMA2))
                    (44 44
                        (:TYPE-PRESCRIPTION RP::IS-IF$INLINE))
-                   (40 27 (:REWRITE DEFAULT-+-2))
-                   (34 27 (:REWRITE DEFAULT-+-1))
-                   (31 31 (:REWRITE FN-CHECK-DEF-NOT-QUOTE))
+                   (28 20 (:REWRITE DEFAULT-UNARY-MINUS))
                    (28 6 (:REWRITE RP::RP-TERMP-CADR))
                    (27 9 (:REWRITE RP::M-MEASURE-LEMMA6))
                    (27 9 (:REWRITE RP::IS-IF-CONS-COUNT))
+                   (18 14 (:REWRITE DEFAULT-*-2))
+                   (18 14 (:REWRITE DEFAULT-*-1))
+                   (18 6
+                       (:REWRITE RP::RP-TERMP-IMPLIES-SYMBOL-CAR-TERM))
+                   (14 10 (:REWRITE O-INFP->NEQ-0))
                    (14 6 (:REWRITE RP::RP-TERMP-IS-IF-LEMMA))
                    (12 12
                        (:REWRITE RP::RP-TERMP-SHOULD-TERM-BE-IN-CONS-LHS))
-                   (12 4
-                       (:REWRITE RP::RP-TERMP-IMPLIES-SYMBOL-CAR-TERM))
+                   (10 10
+                       (:REWRITE INTEGER-LISTP-IMPLIES-INTEGERP))
                    (9 9 (:REWRITE RP::MEASURE-LEMMA7-2))
                    (9 9 (:REWRITE RP::MEASURE-LEMMA7))
                    (9 9 (:REWRITE RP::MEASURE-LEMMA6-5))
                    (9 9 (:REWRITE RP::M-MEASURE-LEMMA11))
-                   (8 8 (:REWRITE DEFAULT-UNARY-MINUS))
                    (8 4
                       (:REWRITE RP::RP-TERMP-EXTRACT-FROM-RP))
                    (8 4 (:REWRITE RP::RP-TERMP-EX-FROM-RP))
+                   (8 4 (:REWRITE INTEGERP==>NUMERATOR-=-X))
+                   (8 4 (:REWRITE INTEGERP==>DENOMINATOR-=-1))
                    (8 4
                       (:REWRITE RP::EXTRACT-FROM-RP-PSEUDO-TERM-LISTP))
-                   (6 6 (:REWRITE FOLD-CONSTS-IN-+))
-                   (4 4
+                   (6 6
                       (:REWRITE SYMBOL-LISTP-IMPLIES-SYMBOLP))
-                   (4 4 (:REWRITE O-INFP->NEQ-0))
+                   (6 6 (:REWRITE FOLD-CONSTS-IN-+))
+                   (4 4 (:REWRITE DEFAULT-NUMERATOR))
+                   (4 4 (:REWRITE DEFAULT-DENOMINATOR))
                    (3 1
-                      (:REWRITE RP::QUOTEP-TERM-WITH-EX-FROM-RP))
-                   (2 2
-                      (:REWRITE INTEGER-LISTP-IMPLIES-INTEGERP)))
+                      (:REWRITE RP::QUOTEP-TERM-WITH-EX-FROM-RP)))
 (SVL::4VEC-TO-SVEX-FLAG
-     (988 89 (:REWRITE O<=-O-FINP-DEF))
-     (266 46 (:REWRITE O-P-O-INFP-CAR))
-     (257 101 (:REWRITE AC-<))
-     (194 105 (:REWRITE DEFAULT-<-2))
-     (188 8
+     (1308 121 (:REWRITE O<=-O-FINP-DEF))
+     (392 16
+          (:DEFINITION NONNEGATIVE-INTEGER-QUOTIENT))
+     (353 133 (:REWRITE AC-<))
+     (282 50 (:REWRITE O-P-O-INFP-CAR))
+     (234 145 (:REWRITE DEFAULT-<-2))
+     (208 12
           (:REWRITE RP::ATOM-RP-TERMP-IS-SYMBOLP))
+     (202 121 (:REWRITE O-INFP-O-FINP-O<=))
      (178 49 (:REWRITE O-FIRST-EXPT-<))
-     (138 89 (:REWRITE O-INFP-O-FINP-O<=))
-     (128 46 (:REWRITE O-P-DEF-O-FINP-1))
-     (123 105
+     (163 145
           (:REWRITE RP::EQUALITY-MEASURE-LEMMA3))
-     (123 105
+     (163 145
           (:REWRITE RP::EQUALITY-MEASURE-LEMMA1))
+     (145 145 (:REWRITE DEFAULT-<-1))
+     (136 16 (:DEFINITION NFIX))
+     (133 89 (:REWRITE DEFAULT-+-2))
+     (132 50 (:REWRITE O-P-DEF-O-FINP-1))
+     (128 96
+          (:REWRITE RP::EQUALITY-MEASURE-LEMMA2))
      (108 12 (:REWRITE RP::IS-IF-RP-TERMP))
-     (105 105 (:REWRITE DEFAULT-<-1))
+     (103 89 (:REWRITE DEFAULT-+-1))
      (98 49 (:REWRITE O-FIRST-COEFF-<))
      (82 82 (:TYPE-PRESCRIPTION O-FINP))
      (80 40 (:REWRITE O-FIRST-EXPT-DEF-O-FINP))
-     (56 56
-         (:REWRITE RP::EQUALITY-MEASURE-LEMMA2))
+     (56 40 (:REWRITE DEFAULT-UNARY-MINUS))
      (56 12 (:REWRITE RP::RP-TERMP-CADR))
      (54 18
          (:REWRITE RP::QUOTEP-TERM-WITH-EX-FROM-RP))
-     (53 41 (:REWRITE DEFAULT-+-2))
      (52 52
          (:TYPE-PRESCRIPTION RP::IS-IF$INLINE))
-     (47 41 (:REWRITE DEFAULT-+-1))
+     (36 28 (:REWRITE DEFAULT-*-2))
+     (36 28 (:REWRITE DEFAULT-*-1))
+     (36 12
+         (:REWRITE RP::RP-TERMP-IMPLIES-SYMBOL-CAR-TERM))
+     (28 20 (:REWRITE O-INFP->NEQ-0))
      (28 12 (:REWRITE RP::RP-TERMP-IS-IF-LEMMA))
      (27 9 (:REWRITE RP::M-MEASURE-LEMMA6))
      (27 9 (:REWRITE RP::IS-IF-CONS-COUNT))
      (24 24
          (:REWRITE RP::RP-TERMP-SHOULD-TERM-BE-IN-CONS-LHS))
-     (24 8
-         (:REWRITE RP::RP-TERMP-IMPLIES-SYMBOL-CAR-TERM))
+     (20 20
+         (:REWRITE INTEGER-LISTP-IMPLIES-INTEGERP))
      (16 16 (:REWRITE FN-CHECK-DEF-NOT-QUOTE))
-     (16 16 (:REWRITE DEFAULT-UNARY-MINUS))
      (16 8
          (:REWRITE RP::RP-TERMP-EXTRACT-FROM-RP))
      (16 8 (:REWRITE RP::RP-TERMP-EX-FROM-RP))
+     (16 8 (:REWRITE INTEGERP==>NUMERATOR-=-X))
+     (16 8 (:REWRITE INTEGERP==>DENOMINATOR-=-1))
      (16 8
          (:REWRITE RP::EXTRACT-FROM-RP-PSEUDO-TERM-LISTP))
+     (12 12
+         (:REWRITE SYMBOL-LISTP-IMPLIES-SYMBOLP))
      (9 9 (:REWRITE RP::MEASURE-LEMMA7-2))
      (9 9 (:REWRITE RP::MEASURE-LEMMA7))
      (9 9 (:REWRITE RP::MEASURE-LEMMA6-5))
      (9 9 (:REWRITE RP::M-MEASURE-LEMMA11))
-     (8 8
-        (:REWRITE SYMBOL-LISTP-IMPLIES-SYMBOLP))
-     (8 8 (:REWRITE O-INFP->NEQ-0))
-     (6 6 (:REWRITE FOLD-CONSTS-IN-+))
-     (4 4
-        (:REWRITE INTEGER-LISTP-IMPLIES-INTEGERP)))
+     (8 8 (:REWRITE DEFAULT-NUMERATOR))
+     (8 8 (:REWRITE DEFAULT-DENOMINATOR))
+     (6 6 (:REWRITE FOLD-CONSTS-IN-+)))
 (FLAG::FLAG-EQUIV-LEMMA)
 (SVL::4VEC-TO-SVEX-FLAG-EQUIVALENCES)
 (SVL::4VEC-TO-SVEX-MEMOIZE-CONDITION)
 (SVL::4VEC-TO-SVEX-MEMOIZE-CONDITION)
 (SVL::FLAG-LEMMA-FOR-SVEXL-NODE-P-OF-4VEC-TO-SVEX
-     (702 234
-          (:REWRITE RP::QUOTEP-TERM-WITH-EX-FROM-RP))
-     (480 480
-          (:REWRITE SV::SVAR-P-WHEN-MEMBER-EQUAL-OF-SVARLIST-P))
-     (452 452
+     (22224 1044
+            (:DEFINITION NONNEGATIVE-INTEGER-QUOTIENT))
+     (8520 5672 (:REWRITE DEFAULT-+-2))
+     (6564 1044 (:DEFINITION NFIX))
+     (6398 5672 (:REWRITE DEFAULT-+-1))
+     (6144 4882 (:REWRITE DEFAULT-*-2))
+     (5464 4882 (:REWRITE DEFAULT-*-1))
+     (4308 3128 (:REWRITE DEFAULT-UNARY-MINUS))
+     (3830 3542 (:REWRITE DEFAULT-<-1))
+     (3542 3542
+           (:REWRITE RP::EQUALITY-MEASURE-LEMMA1))
+     (3384 3384
+           (:REWRITE INTEGER-LISTP-IMPLIES-INTEGERP))
+     (1782 1254 (:REWRITE DEFAULT-NUMERATOR))
+     (1758 1278 (:REWRITE DEFAULT-DENOMINATOR))
+     (928 928
           (:REWRITE SV::SVEXLIST-P-WHEN-NOT-CONSP))
-     (288 288
-          (:REWRITE RP::EQUALITY-MEASURE-LEMMA1))
-     (288 288 (:REWRITE DEFAULT-<-1))
-     (214 202
+     (912 304
+          (:REWRITE RP::QUOTEP-TERM-WITH-EX-FROM-RP))
+     (840 840
+          (:REWRITE RATIONAL-LISTP-IMPLIES-RATIONALP))
+     (780 780
+          (:REWRITE SV::SVAR-P-WHEN-MEMBER-EQUAL-OF-SVARLIST-P))
+     (714 444 (:REWRITE O-INFP->NEQ-0))
+     (640 368 (:REWRITE RATIONALP-*))
+     (527 134
+          (:REWRITE SV::SVEX-P-OF-CAR-WHEN-SVEXLIST-P))
+     (450 450 (:REWRITE FOLD-CONSTS-IN-+))
+     (440 240
+          (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
+     (374 362
           (:REWRITE SV::SVEX-P-WHEN-MEMBER-EQUAL-OF-SVEXLIST-P))
+     (273 273 (:REWRITE FN-CHECK-DEF-NOT-QUOTE))
+     (240 240
+          (:REWRITE ACL2-NUMBER-LISTP-IMPLIES-ACL2-NUMBERP))
+     (236 236
+          (:REWRITE SVL::LOGHEAD-NON-POS-SIZE))
      (210 210
           (:REWRITE SV::4VEC-P-WHEN-MEMBER-EQUAL-OF-4VECLIST-P))
-     (207 54
-          (:REWRITE SV::SVEX-P-OF-CAR-WHEN-SVEXLIST-P))
-     (105 105 (:REWRITE SVL::BITP-IMPLIES-4VECP))
-     (100 100
+     (206 206
           (:REWRITE SYMBOL-LISTP-IMPLIES-SYMBOLP))
-     (84 84 (:REWRITE O-INFP->NEQ-0))
-     (80 80
-         (:REWRITE RP::RP-TERMP-IMPLIES-SYMBOL-CAR-TERM))
-     (59 59 (:REWRITE FN-CHECK-DEF-NOT-QUOTE))
-     (50 50
-         (:REWRITE INTEGER-LISTP-IMPLIES-INTEGERP))
+     (186 186
+          (:REWRITE RP::RP-TERMP-IMPLIES-SYMBOL-CAR-TERM))
+     (105 105 (:REWRITE SVL::BITP-IMPLIES-4VECP))
      (40 5
          (:REWRITE SVL::SVEXL-NODE-P-OF-CAR-WHEN-SVEXL-NODELIST-P))
      (8 8 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
