@@ -2631,14 +2631,14 @@
   (implies (not (integerp width))
            (equal (all-unsigned-byte-p width data)
                   (endp data)))
-  :rule-classes ((::rewrite :backchain-limit-lst (0)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable all-unsigned-byte-p))))
 
 (defthm all-unsigned-byte-p-when-negative-width
   (implies (< width 0)
            (equal (all-unsigned-byte-p width data)
                   (endp data)))
-  :rule-classes ((::rewrite :backchain-limit-lst (0)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable all-unsigned-byte-p))))
 
 ;consider (subrange 10 100 (bv-array-write 8 16 4 5 '(0 0 0 0 0 0 0 0)))
