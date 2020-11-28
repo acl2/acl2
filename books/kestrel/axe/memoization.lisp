@@ -203,6 +203,8 @@
          *memoization-size*)
   :hints (("Goal" :in-theory (enable empty-memoization))))
 
+(comp t) ; Added by Matt K. to avoid stack overflow in Allegro CL
+
 (defthm memoizationp-of-empty-memoization
   (memoizationp (empty-memoization))
   :hints (("Goal" :in-theory (enable (:e empty-memoization)))))
