@@ -815,7 +815,11 @@ matches a current prefix.</p>"
         (equal (vl-namedb-allnames new-db)
                (cons fresh-name
                      (vl-namedb-allnames db))))
-      :hints(("Goal" :in-theory (disable CONS-OF-STR-FIX-K-UNDER-VL-NAMEDB-NAMESET-EQUIV))))
+      :hints(("Goal" :in-theory (disable
+                                 CONS-OF-STR-FIX-K-UNDER-VL-NAMEDB-NAMESET-EQUIV
+; Matt K. mod, 11/28/2020: Accommodate fix for storing patterned congruences.
+                                 (:congruence cons-streqv-congruence-on-k-under-vl-namedb-nameset-equiv)
+      ))))
 
     (defthm vl-namedb->names-of-vl-namedb-plain-name
       (vl-namedb->names (mv-nth 1 (vl-namedb-plain-name name db)))))

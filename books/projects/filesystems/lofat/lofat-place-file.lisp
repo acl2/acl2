@@ -3617,49 +3617,7 @@
             fat32$c
             (make-d-e-list (mv-nth 0
                                    (d-e-cc-contents fat32$c (car d-e-list))))
-            (+ -1 entry-limit)))))))))))
-  :instructions
-  (:promote
-   (:dive 2)
-   (:rewrite
-    m1-file-hifat-file-alist-fix-congruence
-    ((fs2
-      (mv-nth
-       0
-       (hifat-place-file
-        (mv-nth
-         0
-         (lofat-to-hifat-helper
-          fat32$c
-          (make-d-e-list (mv-nth 0
-                                 (d-e-cc-contents fat32$c (car d-e-list))))
-          (+ -1 entry-limit)))
-        path
-        (m1-file-hifat-file-alist-fix nil nil))))))
-   :top
-   (:bash ("goal" :in-theory (disable lofat-place-file)))
-   (:dive 1)
-   (:rewrite
-    m1-file-hifat-file-alist-fix-congruence
-    ((fs2
-      (mv-nth
-       0
-       (hifat-place-file
-        (mv-nth
-         0
-         (lofat-to-hifat-helper
-          fat32$c
-          (make-d-e-list (mv-nth 0
-                                 (d-e-cc-contents fat32$c (car d-e-list))))
-          (+ -1 entry-limit)))
-        path
-        '((d-e 0 0 0 0 0 0 0 0 0 0 0 0
-               0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
-          (contents)))))))
-   :top
-   (:bash ("goal" :in-theory (disable lofat-place-file)))
-   (:bash ("goal" :in-theory (disable lofat-place-file)))
-   (:bash ("goal" :in-theory (disable lofat-place-file)))))
+            (+ -1 entry-limit))))))))))))
 
 (defthm
   lofat-place-file-correctness-lemma-164
