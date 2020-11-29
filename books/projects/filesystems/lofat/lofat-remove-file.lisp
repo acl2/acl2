@@ -79,8 +79,6 @@
     (:rewrite consp-of-assoc-when-hifat-equiv-lemma-1)
     (:rewrite free-index-list-listp-of-update-nth-lemma-1)
     (:rewrite abs-find-file-correctness-1-lemma-40)
-    (:rewrite lofat-place-file-correctness-1-lemma-13)
-    (:rewrite lofat-place-file-correctness-1-lemma-14)
     (:rewrite
      d-e-cc-contents-of-lofat-place-file-coincident-lemma-13)
     (:rewrite nth-of-nats=>chars)
