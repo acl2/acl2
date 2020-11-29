@@ -87,10 +87,10 @@
 ;;ffixme might be faster to do duplicate checking at the end (or while sorting!)...
 (defund extend-unprioritized-rule-alist (axe-rules remove-duplicate-rulesp rule-alist)
   (declare (xargs :guard (and (true-listp axe-rules)
-                              (axe-rule-listp axe-rules)
+                              (all-axe-rulep axe-rules)
                               (rule-alistp rule-alist))
                   :guard-hints (("Goal" :expand ((axe-rulep (car axe-rules))
-                                                 (axe-rule-listp axe-rules))))))
+                                                 (all-axe-rulep axe-rules))))))
   (if (endp axe-rules)
       rule-alist
     (let* ((rule (first axe-rules))
@@ -112,9 +112,9 @@
 
 (defthm symbol-alistp-of-extend-unprioritized-rule-alist
   (implies (and (symbol-alistp acc)
-                (axe-rule-listp axe-rules))
+                (all-axe-rulep axe-rules))
            (symbol-alistp (extend-unprioritized-rule-alist axe-rules remove-duplicate-rulesp acc)))
-  :hints (("Goal" :in-theory (enable extend-unprioritized-rule-alist axe-rule-listp axe-rulep ;yuck
+  :hints (("Goal" :in-theory (enable extend-unprioritized-rule-alist all-axe-rulep axe-rulep ;yuck
                                      ))))
 
 ;; TODO: Would it make sense to sort the fns also?
@@ -147,8 +147,8 @@
                                      rule-alistp))))
 
 ;; this is really axe-rule-setsp:
-(defforall-simple axe-rule-listp)
-(verify-guards all-axe-rule-listp)
+(defforall-simple all-axe-rulep)
+(verify-guards all-all-axe-rulep)
 
 (defthm rule-alistp-of-uniquify-alist-eq-aux
   (implies (and (rule-alistp alist)
@@ -158,11 +158,11 @@
 
 (defthm rule-alistp-of-extend-unprioritized-rule-alist
   (implies (and (rule-alistp acc)
-                (axe-rule-listp axe-rules))
+                (all-axe-rulep axe-rules))
            (rule-alistp (extend-unprioritized-rule-alist axe-rules remove-duplicate-rulesp acc)))
   :hints (("Goal"
            :expand ((axe-rulep (car axe-rules))
-                    (axe-rule-listp axe-rules))
+                    (all-axe-rulep axe-rules))
            :in-theory (enable rule-alistp extend-unprioritized-rule-alist))))
 
 ;speed this up when just adding a few rules?
@@ -170,7 +170,7 @@
   (declare (xargs :guard (and (true-listp axe-rules)
                               (rule-alistp rule-alist)
                               (alistp priorities)
-                              (axe-rule-listp axe-rules))))
+                              (all-axe-rulep axe-rules))))
   (let* ((rule-alist (uniquify-alist-eq (extend-unprioritized-rule-alist axe-rules remove-duplicate-rulesp rule-alist)))
          (rule-alist (if priorities
                          (sort-rules-for-each-function-symbol-by-priority rule-alist priorities) ;is this too slow?
@@ -181,7 +181,7 @@
   (implies (and (true-listp axe-rules)
                 (rule-alistp rule-alist)
                 (alistp priorities)
-                (axe-rule-listp axe-rules))
+                (all-axe-rulep axe-rules))
            (rule-alistp (extend-rule-alist axe-rules remove-duplicate-rulesp priorities rule-alist)))
   :hints (("Goal" :in-theory (enable extend-rule-alist))))
 

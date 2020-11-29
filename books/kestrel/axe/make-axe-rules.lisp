@@ -850,38 +850,30 @@
   :hints (("Goal" :in-theory (enable lhs-and-rhs-of-conc))))
 
 ;;;
-;;; axe-rule-listp
+;;; all-axe-rulep
 ;;;
 
-(defforall axe-rule-listp (items) (axe-rulep items))
-(verify-guards axe-rule-listp)
+(defforall all-axe-rulep (items) (axe-rulep items))
+(verify-guards all-axe-rulep)
 
 ;fixme defforall should do this (but maybe disable it?)
-(defthm axe-rulep-of-car-when-axe-rule-listp
-  (implies (and (axe-rule-listp lst)
+(defthm axe-rulep-of-car-when-all-axe-rulep
+  (implies (and (all-axe-rulep lst)
                 (consp lst))
            (axe-rulep (car lst))))
 
+;todo: rename to axe-rule-listp
 (defun axe-rule-setp (x)
   (declare (xargs :guard t))
   (and (true-listp x)
-       (axe-rule-listp x)))
-
-(defforall-simple axe-rule-setp)
-(verify-guards all-axe-rule-setp)
-
-;; Recognize a true-list of axe-rule-sets.
-(defun axe-rule-setsp (items)
-  (declare (xargs :guard t))
-  (and (all-axe-rule-setp items)
-       (true-listp items)))
+       (all-axe-rulep x)))
 
 (defund rule-symbol-list (rules)
   (declare (xargs :guard (and (true-listp rules)
-                              (axe-rule-listp rules))
-                  :guard-hints (("Goal" :expand ((axe-rule-listp rules)
+                              (all-axe-rulep rules))
+                  :guard-hints (("Goal" :expand ((all-axe-rulep rules)
                                                  (axe-rulep (car rules))) ;this is because rule-symbol is a macro?
-                                 :in-theory (enable axe-rule-listp)))))
+                                 :in-theory (enable all-axe-rulep)))))
   (if (endp rules)
       nil
     (cons (rule-symbol (first rules))
@@ -924,15 +916,15 @@
                 (symbol-listp free))
            (symbolp x)))
 
-(defthm axe-rule-listp-of-add-rule-for-conjunct
+(defthm all-axe-rulep-of-add-rule-for-conjunct
   (implies (and (symbolp rule-symbol)
                 (pseudo-termp conc)
                 (pseudo-term-listp hyps)
                 (axe-rule-hyp-listp extra-hyps)
-                (axe-rule-listp acc)
+                (all-axe-rulep acc)
                 (symbol-listp known-boolean-fns)
                 )
-           (axe-rule-listp (add-rule-for-conjunct conc hyps extra-hyps counter rule-symbol known-boolean-fns print wrld acc)))
+           (all-axe-rulep (add-rule-for-conjunct conc hyps extra-hyps counter rule-symbol known-boolean-fns print wrld acc)))
   :otf-flg t
   :hints (("Goal" :in-theory (e/d (;axe-rulep
                                    add-rule-for-conjunct) ()))))
@@ -964,13 +956,13 @@
           (er hard? 'make-rules-from-conclusion-aux "Unexpected form of a conclusion: ~x0" conc))
       (add-rule-for-conjunct conc hyps extra-hyps counter rule-symbol known-boolean-fns print wrld nil))))
 
-(defthm axe-rule-listp-of-make-rules-from-conclusion-aux
+(defthm all-axe-rulep-of-make-rules-from-conclusion-aux
   (implies (and (symbolp rule-symbol)
                 (pseudo-termp conc)
                 (pseudo-term-listp hyps)
                 (axe-rule-hyp-listp extra-hyps)
                 (symbol-listp known-boolean-fns))
-           (axe-rule-listp (make-rules-from-conclusion-aux conc hyps extra-hyps counter rule-symbol known-boolean-fns print wrld)))
+           (all-axe-rulep (make-rules-from-conclusion-aux conc hyps extra-hyps counter rule-symbol known-boolean-fns print wrld)))
   :hints (("Goal" :in-theory (enable axe-rulep make-rules-from-conclusion-aux))))
 
 (defthm true-listp-of-make-rules-from-conclusion-aux
@@ -992,13 +984,13 @@
     ;;there is only one conclusion:
     (add-rule-for-conjunct conc hyps extra-hyps nil rule-symbol known-boolean-fns print wrld nil)))
 
-(defthm axe-rule-listp-of-make-rules-from-conclusion
+(defthm all-axe-rulep-of-make-rules-from-conclusion
   (implies (and (symbolp rule-symbol)
                 (pseudo-termp conc)
                 (pseudo-term-listp hyps)
                 (axe-rule-hyp-listp extra-hyps)
                 (symbol-listp known-boolean-fns))
-           (axe-rule-listp (make-rules-from-conclusion conc hyps extra-hyps rule-symbol known-boolean-fns print wrld)))
+           (all-axe-rulep (make-rules-from-conclusion conc hyps extra-hyps rule-symbol known-boolean-fns print wrld)))
   :hints (("Goal" :in-theory (enable make-rules-from-conclusion axe-rulep))))
 
 (defthm true-listp-of-make-rules-from-conclusion
@@ -1070,11 +1062,11 @@
       ;; the conclusion may have multiple conjuncts:
       (make-rules-from-conclusion conc hyps extra-hyps rule-symbol known-boolean-fns print wrld))))
 
-(defthm axe-rule-listp-of-make-rules-from-theorem
+(defthm all-axe-rulep-of-make-rules-from-theorem
   (implies (and (PSEUDO-TERMP THEOREM-BODY)
                 (symbolp rule-symbol)
                 (symbol-listp known-boolean-fns))
-           (axe-rule-listp (make-rules-from-theorem theorem-body rule-symbol rule-classes known-boolean-fns print wrld)))
+           (all-axe-rulep (make-rules-from-theorem theorem-body rule-symbol rule-classes known-boolean-fns print wrld)))
   :hints (("Goal" :in-theory (enable make-rules-from-theorem
                                      AXE-RULEP ;fixme
                                      ))))
@@ -1177,11 +1169,11 @@
              (append (make-rules-from-theorem theorem-body name rule-classes known-boolean-fns print wrld)
                      acc))))))
 
-(defthm axe-rule-listp-of-add-axe-rules-for-rule
-  (implies (and (axe-rule-listp acc)
+(defthm all-axe-rulep-of-add-axe-rules-for-rule
+  (implies (and (all-axe-rulep acc)
                 (symbolp rule-name)
                 (symbol-listp known-boolean-fns))
-           (axe-rule-listp (add-axe-rules-for-rule rule-name known-boolean-fns print acc wrld)))
+           (all-axe-rulep (add-axe-rules-for-rule rule-name known-boolean-fns print acc wrld)))
   :hints (("Goal" :in-theory (enable ADD-AXE-RULES-FOR-RULE axe-rulep))))
 
 (defthm true-listp-of-add-axe-rules-for-rule
@@ -1191,44 +1183,43 @@
 
 ;; For each of the RULE-NAMES, look it up in the world and add one or more rules for it to ACC.
 ;; Returns a list of rules.
-;todo: drop one -aux from the name
-(defund make-axe-rules-aux-aux (rule-names known-boolean-fns print acc wrld)
+(defund make-axe-rules-aux (rule-names known-boolean-fns print acc wrld)
   (declare (xargs :guard (and (symbol-listp rule-names)
                               (true-listp acc)
                               (symbol-listp known-boolean-fns)
                               (ilks-plist-worldp wrld))))
   (if (endp rule-names)
       (reverse acc) ;skip this reverse! or call a better version of it that doesn't handle strings?
-    (make-axe-rules-aux-aux (rest rule-names) known-boolean-fns print
+    (make-axe-rules-aux (rest rule-names) known-boolean-fns print
                             (add-axe-rules-for-rule (first rule-names) known-boolean-fns print acc wrld)
                             wrld)))
 
-(defthm true-listp-of-make-axe-rules-aux-aux
+(defthm true-listp-of-make-axe-rules-aux
   (implies (true-listp acc)
-           (true-listp (make-axe-rules-aux-aux rule-names known-boolean-fns print acc wrld)))
-  :hints (("Goal" :in-theory (enable make-axe-rules-aux-aux))))
+           (true-listp (make-axe-rules-aux rule-names known-boolean-fns print acc wrld)))
+  :hints (("Goal" :in-theory (enable make-axe-rules-aux))))
 
-(defthm axe-rule-listp-of-make-axe-rules-aux-aux
-  (implies (and (axe-rule-listp acc)
+(defthm all-axe-rulep-of-make-axe-rules-aux
+  (implies (and (all-axe-rulep acc)
                 (true-listp acc)
                 (symbol-listp rule-names)
                 (symbol-listp known-boolean-fns))
-           (axe-rule-listp (make-axe-rules-aux-aux rule-names known-boolean-fns print acc wrld)))
-  :hints (("Goal" :in-theory (enable make-axe-rules-aux-aux))))
+           (all-axe-rulep (make-axe-rules-aux rule-names known-boolean-fns print acc wrld)))
+  :hints (("Goal" :in-theory (enable make-axe-rules-aux))))
 
 ;returns a list of axe-rules
 (defund make-axe-rules (rule-names wrld)
   (declare (xargs :guard (and (symbol-listp rule-names)
                               (ilks-plist-worldp wrld))))
-  (make-axe-rules-aux-aux rule-names (known-booleans wrld) nil nil wrld))
+  (make-axe-rules-aux rule-names (known-booleans wrld) nil nil wrld))
 
 (defthm true-listp-of-make-axe-rules
   (true-listp (make-axe-rules rules wrld))
   :hints (("Goal" :in-theory (enable make-axe-rules))))
 
-(defthm axe-rule-listp-of-make-axe-rules
+(defthm all-axe-rulep-of-make-axe-rules
   (implies (symbol-listp rule-names)
-           (axe-rule-listp (make-axe-rules rule-names wrld)))
+           (all-axe-rulep (make-axe-rules rule-names wrld)))
   :hints (("Goal" :in-theory (enable make-axe-rules))))
 
 ;; This version removes duplicate rules first.  (That may happen later anyway
@@ -1247,6 +1238,15 @@
   (let ((rules (make-axe-rules rules wrld)))
     (union-equal rules rule-set)))
 
+(defforall-simple axe-rule-setp)
+(verify-guards all-axe-rule-setp)
+
+;; Recognize a true-list of axe-rule-sets.
+(defun axe-rule-setsp (items)
+  (declare (xargs :guard t))
+  (and (all-axe-rule-setp items)
+       (true-listp items)))
+
 ;; Add the RULES to each rule set in RULE-SETS.
 ;todo: optimze?
 (defun add-rules-to-rule-sets (rules rule-sets wrld)
@@ -1262,7 +1262,7 @@
 ;; Add the RULES to each rule set in RULE-SETS.
 ;todo: optimze?
 (defun add-axe-rules-to-rule-sets (axe-rules rule-sets)
-  (declare (xargs :guard (and (axe-rule-listp axe-rules)
+  (declare (xargs :guard (and (all-axe-rulep axe-rules)
                               (true-listp axe-rules)
                               (axe-rule-setsp rule-sets))))
   (if (endp rule-sets)
@@ -1273,7 +1273,7 @@
 ;; (defun remove-rule-from-rule-set (rule rule-set)
 ;;   (declare (xargs :guard (and (symbolp rule)
 ;;                               (axe-rule-setp rule-set))
-;;                   :guard-hints (("Goal" :expand (axe-rule-listp rule-set)
+;;                   :guard-hints (("Goal" :expand (all-axe-rulep rule-set)
 ;;                                  :in-theory (enable axe-rulep)))))
 ;;   (if (endp rule-set)
 ;;       nil
