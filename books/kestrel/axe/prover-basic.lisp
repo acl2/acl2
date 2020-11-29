@@ -22,6 +22,7 @@
 ;fixme use faster tests than equal in some places below?
 
 (include-book "prover-support")
+(include-book "rule-alists")
 (include-book "make-implication-dag")
 (include-book "dag-or-term-to-dag-basic")
 (include-book "elaborate-rule-items")

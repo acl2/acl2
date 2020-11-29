@@ -38,6 +38,7 @@
 (include-book "rewriter-support") ;make local? but may be needed by the generated rewriters
 (include-book "tries")
 (include-book "rule-limits")
+(include-book "rule-alists")
 (include-book "instantiate-hyp-basic")
 (include-book "my-sublis-var-and-eval-basic")
 (include-book "dag-array-builders3")

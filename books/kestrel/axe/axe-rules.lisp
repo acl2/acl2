@@ -12,6 +12,8 @@
 
 (in-package "ACL2")
 
+;; See also stored-rules.lisp.
+
 (include-book "kestrel/utilities/quote" :dir :system)
 (include-book "kestrel/utilities/forms" :dir :system)
 (include-book "kestrel/utilities/terms" :dir :system) ; for lambda-free-termp
