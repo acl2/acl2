@@ -86,11 +86,10 @@
 ;if remove-duplicate-rulesp is non-nil we ensure that two rules with the same name are never added (we don't check for rules that are the same except for the name)
 ;;ffixme might be faster to do duplicate checking at the end (or while sorting!)...
 (defund extend-unprioritized-rule-alist (axe-rules remove-duplicate-rulesp rule-alist)
-  (declare (xargs :guard (and (true-listp axe-rules)
-                              (all-axe-rulep axe-rules)
+  (declare (xargs :guard (and (axe-rule-listp axe-rules)
                               (rule-alistp rule-alist))
-                  :guard-hints (("Goal" :expand ((axe-rulep (car axe-rules))
-                                                 (all-axe-rulep axe-rules))))))
+                  :guard-hints (("Goal" :expand ((axe-rule-listp axe-rules)
+                                                 (axe-rulep (car axe-rules)))))))
   (if (endp axe-rules)
       rule-alist
     (let* ((rule (first axe-rules))
@@ -112,9 +111,9 @@
 
 (defthm symbol-alistp-of-extend-unprioritized-rule-alist
   (implies (and (symbol-alistp acc)
-                (all-axe-rulep axe-rules))
+                (axe-rule-listp axe-rules))
            (symbol-alistp (extend-unprioritized-rule-alist axe-rules remove-duplicate-rulesp acc)))
-  :hints (("Goal" :in-theory (enable extend-unprioritized-rule-alist all-axe-rulep axe-rulep ;yuck
+  :hints (("Goal" :in-theory (enable extend-unprioritized-rule-alist axe-rulep ;yuck
                                      ))))
 
 ;; TODO: Would it make sense to sort the fns also?
@@ -147,8 +146,8 @@
                                      rule-alistp))))
 
 ;; this is really axe-rule-setsp:
-(defforall-simple all-axe-rulep)
-(verify-guards all-all-axe-rulep)
+(defforall-simple axe-rule-listp)
+(verify-guards all-axe-rule-listp)
 
 (defthm rule-alistp-of-uniquify-alist-eq-aux
   (implies (and (rule-alistp alist)
@@ -158,19 +157,18 @@
 
 (defthm rule-alistp-of-extend-unprioritized-rule-alist
   (implies (and (rule-alistp acc)
-                (all-axe-rulep axe-rules))
+                (axe-rule-listp axe-rules))
            (rule-alistp (extend-unprioritized-rule-alist axe-rules remove-duplicate-rulesp acc)))
   :hints (("Goal"
            :expand ((axe-rulep (car axe-rules))
-                    (all-axe-rulep axe-rules))
+                    (axe-rule-listp axe-rules))
            :in-theory (enable rule-alistp extend-unprioritized-rule-alist))))
 
 ;speed this up when just adding a few rules?
 (defund extend-rule-alist (axe-rules remove-duplicate-rulesp priorities rule-alist)
-  (declare (xargs :guard (and (true-listp axe-rules)
-                              (rule-alistp rule-alist)
+  (declare (xargs :guard (and (rule-alistp rule-alist)
                               (alistp priorities)
-                              (all-axe-rulep axe-rules))))
+                              (axe-rule-listp axe-rules))))
   (let* ((rule-alist (uniquify-alist-eq (extend-unprioritized-rule-alist axe-rules remove-duplicate-rulesp rule-alist)))
          (rule-alist (if priorities
                          (sort-rules-for-each-function-symbol-by-priority rule-alist priorities) ;is this too slow?
@@ -178,10 +176,9 @@
     rule-alist))
 
 (defthm rule-alistp-of-extend-rule-alist
-  (implies (and (true-listp axe-rules)
-                (rule-alistp rule-alist)
+  (implies (and (rule-alistp rule-alist)
                 (alistp priorities)
-                (all-axe-rulep axe-rules))
+                (axe-rule-listp axe-rules))
            (rule-alistp (extend-rule-alist axe-rules remove-duplicate-rulesp priorities rule-alist)))
   :hints (("Goal" :in-theory (enable extend-rule-alist))))
 
@@ -191,12 +188,12 @@
 ;; sort the rules by head symbol, then remove dups, then use the fact that
 ;; rules for the same symbol are grouped together.
 (defund make-rule-alist-simple (axe-rules remove-duplicate-rulesp priorities)
-  (declare (xargs :guard (and (axe-rule-setp axe-rules)
+  (declare (xargs :guard (and (axe-rule-listp axe-rules)
                               (alistp priorities))))
   (extend-rule-alist axe-rules remove-duplicate-rulesp priorities (empty-rule-alist)))
 
 (defthm rule-alistp-of-make-rule-alist-simple
-  (implies (and (axe-rule-setp axe-rules)
+  (implies (and (axe-rule-listp axe-rules)
                 (alistp priorities))
            (rule-alistp (make-rule-alist-simple axe-rules remove-duplicate-rulesp priorities)))
   :hints (("Goal" :in-theory (enable make-rule-alist-simple))))
@@ -264,7 +261,7 @@
   (implies (symbol-listp rule-names)
            (rule-alistp (make-rule-alist rule-names wrld)))
   :hints (("Goal" :in-theory (enable make-rule-alist
-                                     axe-rule-setp))))
+                                     axe-rule-listp))))
 
 (defund make-rule-alists (rule-name-lists wrld)
   (declare (xargs :guard (and (true-listp rule-name-lists)
@@ -277,7 +274,7 @@
 
 ;todo: would prefer to just pass in named formulas here
 (defund extend-rule-alist2 (axe-rules rule-alist wrld)
-  (declare (xargs :guard (and (axe-rule-setp axe-rules)
+  (declare (xargs :guard (and (axe-rule-listp axe-rules)
                               (rule-alistp rule-alist)
                               (plist-worldp wrld))))
   (let ((priorities (table-alist 'axe-rule-priorities-table wrld)))
@@ -287,7 +284,7 @@
 
 ;todo: would prefer to just pass in named formulas here
 (defund extend-rule-alists2 (axe-rules rule-alists wrld)
-  (declare (xargs :guard (and (axe-rule-setp axe-rules)
+  (declare (xargs :guard (and (axe-rule-listp axe-rules)
                               (all-rule-alistp rule-alists)
                               (true-listp rule-alists)
                               (plist-worldp wrld))))
