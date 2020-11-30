@@ -102,12 +102,12 @@
        (file (cdr head))
        ((unless (and (alistp file)
                      (equal (strip-cars file)
-                            '(dir-ent contents))))
+                            '(d-e contents))))
         nil)
-       (dir-ent (cdr (std::da-nth 0 (cdr head))))
+       (d-e (cdr (std::da-nth 0 (cdr head))))
        (contents (cdr (std::da-nth 1 (cdr head)))))
     (and (fat32-filename-p (car head))
-         (dir-ent-p dir-ent)
+         (d-e-p d-e)
          (or (and (stringp contents)
                   (unsigned-byte-p 32 (length contents)))
              (abs-file-alist-p contents))
@@ -186,7 +186,7 @@
 
 (fty::defprod
  abs-file
- ((dir-ent dir-ent-p :default (dir-ent-fix nil))
+ ((d-e d-e-p :default (d-e-fix nil))
   (contents abs-file-contents-p :default (abs-file-contents-fix nil))))
 
 (defthm
@@ -234,7 +234,7 @@
 (defthm
   m1-regular-file-p-of-abs-file
   (equal
-   (m1-regular-file-p (abs-file dir-ent contents))
+   (m1-regular-file-p (abs-file d-e contents))
    (and
     (stringp (abs-file-contents-fix contents))
     (unsigned-byte-p 32
@@ -273,7 +273,7 @@
 (defthm
   abs-directory-file-p-of-abs-file
   (implies (abs-file-alist-p contents)
-           (abs-directory-file-p (abs-file dir-ent contents)))
+           (abs-directory-file-p (abs-file d-e contents)))
   :hints (("goal" :in-theory (enable abs-directory-file-p))))
 
 (defthm
@@ -1001,7 +1001,7 @@
         (abs-directory-file-p (cdr head))
         (cons (cons (car head)
                     (make-abs-file
-                     :dir-ent (abs-file->dir-ent (cdr head))
+                     :d-e (abs-file->d-e (cdr head))
                      :contents (abs-fs-fix (abs-file->contents (cdr head)))))
               (abs-fs-fix (cdr x)))
       (cons head
@@ -1084,7 +1084,7 @@
     (abs-fs-fix (put-assoc-equal name val fs))
     (if (abs-directory-file-p (abs-file-fix val))
         (put-assoc-equal name
-                         (abs-file (abs-file->dir-ent val)
+                         (abs-file (abs-file->d-e val)
                                    (abs-fs-fix (abs-file->contents val)))
                          fs)
       (put-assoc-equal name (abs-file-fix val)
@@ -1361,7 +1361,7 @@
         (abs-put-assoc
          head
          (abs-file
-          (abs-file->dir-ent
+          (abs-file->d-e
            (cdr (abs-assoc head abs-file-alist1)))
           (ctx-app
            (abs-file->contents
@@ -1380,7 +1380,7 @@
    (abs-file-alist-p
     (put-assoc-equal
      (car x-path)
-     (abs-file (abs-file->dir-ent (cdr (assoc-equal (car x-path)
+     (abs-file (abs-file->d-e (cdr (assoc-equal (car x-path)
                                                     abs-file-alist1)))
                (ctx-app
                 (abs-file->contents (cdr (assoc-equal (car x-path)
@@ -1664,7 +1664,7 @@
      (abs-addrs
       (put-assoc-equal
        name
-       (abs-file (abs-file->dir-ent (cdr (assoc-equal name abs-file-alist1)))
+       (abs-file (abs-file->d-e (cdr (assoc-equal name abs-file-alist1)))
                  abs-file-alist2)
        abs-file-alist1)))))
   :hints
@@ -1677,7 +1677,7 @@
     :induct
     (put-assoc-equal
      name
-     (abs-file (abs-file->dir-ent (cdr (assoc-equal name abs-file-alist1)))
+     (abs-file (abs-file->d-e (cdr (assoc-equal name abs-file-alist1)))
                abs-file-alist2)
      abs-file-alist1))))
 
@@ -1699,7 +1699,7 @@
       (put-assoc-equal
        name
        (abs-file
-        (abs-file->dir-ent (cdr (assoc-equal name abs-file-alist1)))
+        (abs-file->d-e (cdr (assoc-equal name abs-file-alist1)))
         (ctx-app (abs-file->contents (cdr (assoc-equal name abs-file-alist1)))
                  abs-file-alist2 x x-path))
        abs-file-alist1)
@@ -1712,7 +1712,7 @@
       (put-assoc-equal
        name
        (abs-file
-        (abs-file->dir-ent (cdr (assoc-equal name abs-file-alist1)))
+        (abs-file->d-e (cdr (assoc-equal name abs-file-alist1)))
         (ctx-app (abs-file->contents (cdr (assoc-equal name abs-file-alist1)))
                  abs-file-alist2 x x-path))
        abs-file-alist1)))))
@@ -1725,7 +1725,7 @@
       (alist abs-file-alist1)
       (val
        (abs-file
-        (abs-file->dir-ent (cdr (assoc-equal name abs-file-alist1)))
+        (abs-file->d-e (cdr (assoc-equal name abs-file-alist1)))
         (ctx-app (abs-file->contents (cdr (assoc-equal name abs-file-alist1)))
                  abs-file-alist2 x x-path))))
      (:instance
@@ -1763,7 +1763,7 @@
      (abs-addrs
       (put-assoc-equal
        name
-       (abs-file (abs-file->dir-ent (cdr (assoc-equal name abs-file-alist1)))
+       (abs-file (abs-file->d-e (cdr (assoc-equal name abs-file-alist1)))
                  abs-file-alist2)
        abs-file-alist1))
      y)))
@@ -1794,7 +1794,7 @@
       (put-assoc-equal
        name
        (abs-file
-        (abs-file->dir-ent (cdr (assoc-equal name abs-file-alist1)))
+        (abs-file->d-e (cdr (assoc-equal name abs-file-alist1)))
         (ctx-app
          (abs-file->contents (cdr (assoc-equal name abs-file-alist1)))
          abs-file-alist2 x x-path))
@@ -1848,7 +1848,7 @@
       (put-assoc-equal
        name
        (abs-file
-        (abs-file->dir-ent (cdr (assoc-equal name (cdr abs-file-alist1))))
+        (abs-file->d-e (cdr (assoc-equal name (cdr abs-file-alist1))))
         abs-file-alist2)
        (cdr abs-file-alist1))))))
   :hints
@@ -1863,7 +1863,7 @@
         (put-assoc-equal
          name
          (abs-file
-          (abs-file->dir-ent (cdr (assoc-equal name (cdr abs-file-alist1))))
+          (abs-file->d-e (cdr (assoc-equal name (cdr abs-file-alist1))))
           abs-file-alist2)
          (cdr abs-file-alist1)))))
      (:with
@@ -1973,7 +1973,7 @@
      (put-assoc-equal
       name
       (abs-file
-       (abs-file->dir-ent (cdr (assoc-equal name abs-file-alist1)))
+       (abs-file->d-e (cdr (assoc-equal name abs-file-alist1)))
        (ctx-app (abs-file->contents (cdr (assoc-equal name abs-file-alist1)))
                 abs-file-alist2 x (cdr x-path)))
       abs-file-alist1))
@@ -1988,7 +1988,7 @@
      (put-assoc-equal
       name
       (abs-file
-       (abs-file->dir-ent (cdr (assoc-equal name abs-file-alist1)))
+       (abs-file->d-e (cdr (assoc-equal name abs-file-alist1)))
        (ctx-app (abs-file->contents (cdr (assoc-equal name abs-file-alist1)))
                 abs-file-alist2 x (cdr x-path)))
       abs-file-alist1)))))
@@ -2032,7 +2032,7 @@
      (put-assoc-equal
       name
       (abs-file
-       (abs-file->dir-ent (cdr (assoc-equal name abs-file-alist1)))
+       (abs-file->d-e (cdr (assoc-equal name abs-file-alist1)))
        (ctx-app (abs-file->contents (cdr (assoc-equal name abs-file-alist1)))
                 abs-file-alist2 x (cdr x-path)))
       abs-file-alist1))
@@ -2055,7 +2055,7 @@
      (put-assoc-equal
       name
       (abs-file
-       (abs-file->dir-ent (cdr (assoc-equal name abs-file-alist1)))
+       (abs-file->d-e (cdr (assoc-equal name abs-file-alist1)))
        (ctx-app (abs-file->contents (cdr (assoc-equal name abs-file-alist1)))
                 abs-file-alist2 x (cdr x-path)))
       abs-file-alist1)))))
@@ -2118,7 +2118,7 @@
        (put-assoc-equal
         (fat32-filename-fix (car x3-path))
         (abs-file
-         (abs-file->dir-ent
+         (abs-file->d-e
           (cdr (assoc-equal (fat32-filename-fix (car x3-path))
                             abs-file-alist1)))
          (ctx-app
@@ -2131,7 +2131,7 @@
      (put-assoc-equal
       (fat32-filename-fix (car x3-path))
       (abs-file
-       (abs-file->dir-ent (cdr (assoc-equal (fat32-filename-fix (car x3-path))
+       (abs-file->d-e (cdr (assoc-equal (fat32-filename-fix (car x3-path))
                                             abs-file-alist1)))
        (ctx-app
         (abs-file->contents
@@ -2144,7 +2144,7 @@
      (put-assoc-equal
       (fat32-filename-fix (car x3-path))
       (abs-file
-       (abs-file->dir-ent (cdr (assoc-equal (fat32-filename-fix (car x3-path))
+       (abs-file->d-e (cdr (assoc-equal (fat32-filename-fix (car x3-path))
                                             abs-file-alist1)))
        (ctx-app
         (abs-file->contents
@@ -2160,7 +2160,7 @@
       (put-assoc-equal
        (fat32-filename-fix (car x3-path))
        (abs-file
-        (abs-file->dir-ent
+        (abs-file->d-e
          (cdr (assoc-equal (fat32-filename-fix (car x3-path))
                            abs-file-alist1)))
         (ctx-app
@@ -2187,7 +2187,7 @@
          (put-assoc-equal
           (fat32-filename-fix (car x3-path))
           (abs-file
-           (abs-file->dir-ent
+           (abs-file->d-e
             (cdr (assoc-equal (fat32-filename-fix (car x3-path))
                               abs-file-alist1)))
            (ctx-app
@@ -2200,7 +2200,7 @@
        (put-assoc-equal
         (fat32-filename-fix (car x3-path))
         (abs-file
-         (abs-file->dir-ent
+         (abs-file->d-e
           (cdr (assoc-equal (fat32-filename-fix (car x3-path))
                             abs-file-alist1)))
          (ctx-app
@@ -2338,7 +2338,7 @@
     (mv
      (abs-put-assoc
       head
-      (abs-file (abs-file->dir-ent (cdr (abs-assoc head fs)))
+      (abs-file (abs-file->d-e (cdr (abs-assoc head fs)))
                 insert)
       fs)
      addr-list sub-fs final-head)))
@@ -2373,25 +2373,25 @@
      (list
       (cons
        "INITRD  IMG"
-       (abs-file (dir-ent-fix nil) ""))
+       (abs-file (d-e-fix nil) ""))
       (cons
        "RUN        "
        (abs-file
-        (dir-ent-fix nil)
+        (d-e-fix nil)
         (list
          (cons
           "RSYSLOGDPID"
-          (abs-file (dir-ent-fix nil) "")))))
+          (abs-file (d-e-fix nil) "")))))
       (cons
        "USR        "
-       (abs-file (dir-ent-fix nil)
+       (abs-file (d-e-fix nil)
                  (list
                   (cons
                    "LOCAL      "
-                   (abs-file (dir-ent-fix nil) ()))
+                   (abs-file (d-e-fix nil) ()))
                   (cons
                    "LIB        "
-                   (abs-file (dir-ent-fix nil) ()))
+                   (abs-file (d-e-fix nil) ()))
                   1))))
      0))
    (cons
@@ -2401,18 +2401,18 @@
      (list
       (cons
        "SHARE      "
-       (abs-file (dir-ent-fix nil) ()))
+       (abs-file (d-e-fix nil) ()))
       (cons
        "BIN        "
-       (abs-file (dir-ent-fix nil)
+       (abs-file (d-e-fix nil)
                  (list
                   (cons
                    "CAT        "
-                   (abs-file (dir-ent-fix nil) ""))
+                   (abs-file (d-e-fix nil) ""))
                   2
                   (cons
                    "TAC        "
-                   (abs-file (dir-ent-fix nil) ""))))))
+                   (abs-file (d-e-fix nil) ""))))))
      0))
    (cons
     2
@@ -2421,7 +2421,7 @@
      (list
       (cons
        "COL        "
-       (abs-file (dir-ent-fix nil) "")))
+       (abs-file (d-e-fix nil) "")))
      1)))))
 
 (assert-event
@@ -2431,25 +2431,25 @@
     (list
      (cons
       "INITRD  IMG"
-      (abs-file (dir-ent-fix nil) ""))
+      (abs-file (d-e-fix nil) ""))
      (cons
       "RUN        "
       (abs-file
-       (dir-ent-fix nil)
+       (d-e-fix nil)
        (list
         (cons
          "RSYSLOGDPID"
-         (abs-file (dir-ent-fix nil) "")))))
+         (abs-file (d-e-fix nil) "")))))
      (cons
       "USR        "
-      (abs-file (dir-ent-fix nil)
+      (abs-file (d-e-fix nil)
                 (list
                  (cons
                   "LOCAL      "
-                  (abs-file (dir-ent-fix nil) ()))
+                  (abs-file (d-e-fix nil) ()))
                  (cons
                   "LIB        "
-                  (abs-file (dir-ent-fix nil) ()))
+                  (abs-file (d-e-fix nil) ()))
                  1))))
     (list "INITRD  IMG")
     3)
@@ -2461,21 +2461,21 @@
       (cons
        "RUN        "
        (abs-file
-        (dir-ent-fix nil)
+        (d-e-fix nil)
         (list
          (cons
           "RSYSLOGDPID"
-          (abs-file (dir-ent-fix nil) "")))))
+          (abs-file (d-e-fix nil) "")))))
       (cons
        "USR        "
-       (abs-file (dir-ent-fix nil)
+       (abs-file (d-e-fix nil)
                  (list
                   (cons
                    "LOCAL      "
-                   (abs-file (dir-ent-fix nil) ()))
+                   (abs-file (d-e-fix nil) ()))
                   (cons
                    "LIB        "
-                   (abs-file (dir-ent-fix nil) ()))
+                   (abs-file (d-e-fix nil) ()))
                   1)))))
     (equal
      addr-list
@@ -2485,7 +2485,7 @@
      (list
       (cons
        "INITRD  IMG"
-       (abs-file (dir-ent-fix nil) ""))))
+       (abs-file (d-e-fix nil) ""))))
     (equal
      final-head
      "INITRD  IMG"))))
@@ -2497,25 +2497,25 @@
     (list
      (cons
       "INITRD  IMG"
-      (abs-file (dir-ent-fix nil) ""))
+      (abs-file (d-e-fix nil) ""))
      (cons
       "RUN        "
       (abs-file
-       (dir-ent-fix nil)
+       (d-e-fix nil)
        (list
         (cons
          "RSYSLOGDPID"
-         (abs-file (dir-ent-fix nil) "")))))
+         (abs-file (d-e-fix nil) "")))))
      (cons
       "USR        "
-      (abs-file (dir-ent-fix nil)
+      (abs-file (d-e-fix nil)
                 (list
                  (cons
                   "LOCAL      "
-                  (abs-file (dir-ent-fix nil) ()))
+                  (abs-file (d-e-fix nil) ()))
                  (cons
                   "LIB        "
-                  (abs-file (dir-ent-fix nil) ()))
+                  (abs-file (d-e-fix nil) ()))
                  1))))
     (list "RUN        " "RSYSLOGDPID")
     3)
@@ -2525,23 +2525,23 @@
      (list
       (cons
        "INITRD  IMG"
-       (abs-file (dir-ent-fix nil) ""))
+       (abs-file (d-e-fix nil) ""))
       (cons
        "RUN        "
        (abs-file
-        (dir-ent-fix nil)
+        (d-e-fix nil)
         (list
          3)))
       (cons
        "USR        "
-       (abs-file (dir-ent-fix nil)
+       (abs-file (d-e-fix nil)
                  (list
                   (cons
                    "LOCAL      "
-                   (abs-file (dir-ent-fix nil) ()))
+                   (abs-file (d-e-fix nil) ()))
                   (cons
                    "LIB        "
-                   (abs-file (dir-ent-fix nil) ()))
+                   (abs-file (d-e-fix nil) ()))
                   1)))))
     (equal
      addr-list
@@ -2551,7 +2551,7 @@
      (list
       (cons
        "RSYSLOGDPID"
-       (abs-file (dir-ent-fix nil) ""))))
+       (abs-file (d-e-fix nil) ""))))
     (equal
      final-head
      "RSYSLOGDPID"))))
@@ -2563,25 +2563,25 @@
     (list
      (cons
       "INITRD  IMG"
-      (abs-file (dir-ent-fix nil) ""))
+      (abs-file (d-e-fix nil) ""))
      (cons
       "RUN        "
       (abs-file
-       (dir-ent-fix nil)
+       (d-e-fix nil)
        (list
         (cons
          "RSYSLOGDPID"
-         (abs-file (dir-ent-fix nil) "")))))
+         (abs-file (d-e-fix nil) "")))))
      (cons
       "USR        "
-      (abs-file (dir-ent-fix nil)
+      (abs-file (d-e-fix nil)
                 (list
                  (cons
                   "LOCAL      "
-                  (abs-file (dir-ent-fix nil) ()))
+                  (abs-file (d-e-fix nil) ()))
                  (cons
                   "LIB        "
-                  (abs-file (dir-ent-fix nil) ()))
+                  (abs-file (d-e-fix nil) ()))
                  1))))
     (list "USR        " "BIN        " "COL        ")
     3)
@@ -2591,25 +2591,25 @@
      (list
       (cons
        "INITRD  IMG"
-       (abs-file (dir-ent-fix nil) ""))
+       (abs-file (d-e-fix nil) ""))
       (cons
        "RUN        "
        (abs-file
-        (dir-ent-fix nil)
+        (d-e-fix nil)
         (list
          (cons
           "RSYSLOGDPID"
-          (abs-file (dir-ent-fix nil) "")))))
+          (abs-file (d-e-fix nil) "")))))
       (cons
        "USR        "
-       (abs-file (dir-ent-fix nil)
+       (abs-file (d-e-fix nil)
                  (list
                   (cons
                    "LOCAL      "
-                   (abs-file (dir-ent-fix nil) ()))
+                   (abs-file (d-e-fix nil) ()))
                   (cons
                    "LIB        "
-                   (abs-file (dir-ent-fix nil) ()))
+                   (abs-file (d-e-fix nil) ()))
                   1)))))
     (equal
      addr-list
@@ -2657,25 +2657,25 @@
       (list
        (cons
         "INITRD  IMG"
-        (abs-file (dir-ent-fix nil) ""))
+        (abs-file (d-e-fix nil) ""))
        (cons
         "RUN        "
         (abs-file
-         (dir-ent-fix nil)
+         (d-e-fix nil)
          (list
           (cons
            "RSYSLOGDPID"
-           (abs-file (dir-ent-fix nil) "")))))
+           (abs-file (d-e-fix nil) "")))))
        (cons
         "USR        "
-        (abs-file (dir-ent-fix nil)
+        (abs-file (d-e-fix nil)
                   (list
                    (cons
                     "LOCAL      "
-                    (abs-file (dir-ent-fix nil) ()))
+                    (abs-file (d-e-fix nil) ()))
                    (cons
                     "LIB        "
-                    (abs-file (dir-ent-fix nil) ()))
+                    (abs-file (d-e-fix nil) ()))
                    1))))
       0))
     (cons
@@ -2685,18 +2685,18 @@
       (list
        (cons
         "SHARE      "
-        (abs-file (dir-ent-fix nil) ()))
+        (abs-file (d-e-fix nil) ()))
        (cons
         "BIN        "
-        (abs-file (dir-ent-fix nil)
+        (abs-file (d-e-fix nil)
                   (list
                    (cons
                     "CAT        "
-                    (abs-file (dir-ent-fix nil) ""))
+                    (abs-file (d-e-fix nil) ""))
                    2
                    (cons
                     "TAC        "
-                    (abs-file (dir-ent-fix nil) ""))))))
+                    (abs-file (d-e-fix nil) ""))))))
       0))
     (cons
      2
@@ -2705,7 +2705,7 @@
       (list
        (cons
         "COL        "
-        (abs-file (dir-ent-fix nil) "")))
+        (abs-file (d-e-fix nil) "")))
       1)))
    (list "INITRD  IMG"))
   t))
@@ -2721,25 +2721,25 @@
       (list
        (cons
         "INITRD  IMG"
-        (abs-file (dir-ent-fix nil) ""))
+        (abs-file (d-e-fix nil) ""))
        (cons
         "RUN        "
         (abs-file
-         (dir-ent-fix nil)
+         (d-e-fix nil)
          (list
           (cons
            "RSYSLOGDPID"
-           (abs-file (dir-ent-fix nil) "")))))
+           (abs-file (d-e-fix nil) "")))))
        (cons
         "USR        "
-        (abs-file (dir-ent-fix nil)
+        (abs-file (d-e-fix nil)
                   (list
                    (cons
                     "LOCAL      "
-                    (abs-file (dir-ent-fix nil) ()))
+                    (abs-file (d-e-fix nil) ()))
                    (cons
                     "LIB        "
-                    (abs-file (dir-ent-fix nil) ()))
+                    (abs-file (d-e-fix nil) ()))
                    1))))
       0))
     (cons
@@ -2749,18 +2749,18 @@
       (list
        (cons
         "SHARE      "
-        (abs-file (dir-ent-fix nil) ()))
+        (abs-file (d-e-fix nil) ()))
        (cons
         "BIN        "
-        (abs-file (dir-ent-fix nil)
+        (abs-file (d-e-fix nil)
                   (list
                    (cons
                     "CAT        "
-                    (abs-file (dir-ent-fix nil) ""))
+                    (abs-file (d-e-fix nil) ""))
                    2
                    (cons
                     "TAC        "
-                    (abs-file (dir-ent-fix nil) ""))))))
+                    (abs-file (d-e-fix nil) ""))))))
       0))
     (cons
      2
@@ -2769,7 +2769,7 @@
       (list
        (cons
         "COL        "
-        (abs-file (dir-ent-fix nil) "")))
+        (abs-file (d-e-fix nil) "")))
       1)))
    (list "USR        " "BIN        " "COL        "))
   t))
@@ -2785,25 +2785,25 @@
       (list
        (cons
         "INITRD  IMG"
-        (abs-file (dir-ent-fix nil) ""))
+        (abs-file (d-e-fix nil) ""))
        (cons
         "RUN        "
         (abs-file
-         (dir-ent-fix nil)
+         (d-e-fix nil)
          (list
           (cons
            "RSYSLOGDPID"
-           (abs-file (dir-ent-fix nil) "")))))
+           (abs-file (d-e-fix nil) "")))))
        (cons
         "USR        "
-        (abs-file (dir-ent-fix nil)
+        (abs-file (d-e-fix nil)
                   (list
                    (cons
                     "LOCAL      "
-                    (abs-file (dir-ent-fix nil) ()))
+                    (abs-file (d-e-fix nil) ()))
                    (cons
                     "LIB        "
-                    (abs-file (dir-ent-fix nil) ()))
+                    (abs-file (d-e-fix nil) ()))
                    1))))
       0))
     (cons
@@ -2813,18 +2813,18 @@
       (list
        (cons
         "SHARE      "
-        (abs-file (dir-ent-fix nil) ()))
+        (abs-file (d-e-fix nil) ()))
        (cons
         "BIN        "
-        (abs-file (dir-ent-fix nil)
+        (abs-file (d-e-fix nil)
                   (list
                    (cons
                     "CAT        "
-                    (abs-file (dir-ent-fix nil) ""))
+                    (abs-file (d-e-fix nil) ""))
                    2
                    (cons
                     "TAC        "
-                    (abs-file (dir-ent-fix nil) ""))))))
+                    (abs-file (d-e-fix nil) ""))))))
       0))
     (cons
      2
@@ -2833,7 +2833,7 @@
       (list
        (cons
         "COL        "
-        (abs-file (dir-ent-fix nil) "")))
+        (abs-file (d-e-fix nil) "")))
       1)))
    (list "USR        " "BIN        " "FIREFOX    "))
   nil))
@@ -3550,25 +3550,25 @@
          (list
           (cons
            "INITRD  IMG"
-           (abs-file (dir-ent-fix nil) ""))
+           (abs-file (d-e-fix nil) ""))
           (cons
            "RUN        "
            (abs-file
-            (dir-ent-fix nil)
+            (d-e-fix nil)
             (list
              (cons
               "RSYSLOGDPID"
-              (abs-file (dir-ent-fix nil) "")))))
+              (abs-file (d-e-fix nil) "")))))
           (cons
            "USR        "
-           (abs-file (dir-ent-fix nil)
+           (abs-file (d-e-fix nil)
                      (list
                       (cons
                        "LOCAL      "
-                       (abs-file (dir-ent-fix nil) ()))
+                       (abs-file (d-e-fix nil) ()))
                       (cons
                        "LIB        "
-                       (abs-file (dir-ent-fix nil) ()))
+                       (abs-file (d-e-fix nil) ()))
                       1))))
          (list
           (cons
@@ -3578,18 +3578,18 @@
             (list
              (cons
               "SHARE      "
-              (abs-file (dir-ent-fix nil) ()))
+              (abs-file (d-e-fix nil) ()))
              (cons
               "BIN        "
-              (abs-file (dir-ent-fix nil)
+              (abs-file (d-e-fix nil)
                         (list
                          (cons
                           "CAT        "
-                          (abs-file (dir-ent-fix nil) ""))
+                          (abs-file (d-e-fix nil) ""))
                          2
                          (cons
                           "TAC        "
-                          (abs-file (dir-ent-fix nil) ""))))))
+                          (abs-file (d-e-fix nil) ""))))))
             0))
           (cons
            2
@@ -3598,7 +3598,7 @@
             (list
              (cons
               "COL        "
-              (abs-file (dir-ent-fix nil) "")))
+              (abs-file (d-e-fix nil) "")))
             1)))))))
    (and
     (equal
@@ -3606,40 +3606,40 @@
      (list
       (cons
        "INITRD  IMG"
-       (abs-file (dir-ent-fix nil) ""))
+       (abs-file (d-e-fix nil) ""))
       (cons
        "RUN        "
-       (abs-file (dir-ent-fix nil)
+       (abs-file (d-e-fix nil)
                  (list
                   (cons
                    "RSYSLOGDPID"
-                   (abs-file (dir-ent-fix nil) "")))))
+                   (abs-file (d-e-fix nil) "")))))
       (cons
        "USR        "
-       (abs-file (dir-ent-fix nil)
+       (abs-file (d-e-fix nil)
                  (list
                   (cons
                    "LOCAL      "
-                   (abs-file (dir-ent-fix nil) nil))
+                   (abs-file (d-e-fix nil) nil))
                   (cons
                    "LIB        "
-                   (abs-file (dir-ent-fix nil) nil))
+                   (abs-file (d-e-fix nil) nil))
                   (cons
                    "SHARE      "
-                   (abs-file (dir-ent-fix nil) nil))
+                   (abs-file (d-e-fix nil) nil))
                   (cons
                    "BIN        "
-                   (abs-file (dir-ent-fix nil)
+                   (abs-file (d-e-fix nil)
                              (list
                               (cons
                                "CAT        "
-                               (abs-file (dir-ent-fix nil) ""))
+                               (abs-file (d-e-fix nil) ""))
                               (cons
                                "TAC        "
-                               (abs-file (dir-ent-fix nil) ""))
+                               (abs-file (d-e-fix nil) ""))
                               (cons
                                "COL        "
-                               (abs-file (dir-ent-fix nil) ""))))))))))
+                               (abs-file (d-e-fix nil) ""))))))))))
     (equal result t))))
 
 ;; This example used to behave differently earlier, before abs-no-dups-p was
@@ -3652,23 +3652,23 @@
    (list
     (cons
      "INITRD  IMG"
-     (abs-file (dir-ent-fix nil) ""))
+     (abs-file (d-e-fix nil) ""))
     (cons
      "RUN        "
      (abs-file
-      (dir-ent-fix nil)
+      (d-e-fix nil)
       (list
        (cons
         "RSYSLOGDPID"
-        (abs-file (dir-ent-fix nil) "")))))
+        (abs-file (d-e-fix nil) "")))))
     (cons
      "USR        "
-     (abs-file (dir-ent-fix nil)
+     (abs-file (d-e-fix nil)
                (list
                 1
                 (cons
                  "LIB        "
-                 (abs-file (dir-ent-fix nil) ()))
+                 (abs-file (d-e-fix nil) ()))
                 1)))))
   t))
 
@@ -3678,26 +3678,26 @@
    (list
     (cons
      "INITRD  IMG"
-     (abs-file (dir-ent-fix nil) ""))
+     (abs-file (d-e-fix nil) ""))
     (cons
      "RUN        "
      (abs-file
-      (dir-ent-fix nil)
+      (d-e-fix nil)
       (list
        (cons
         "RSYSLOGDPID"
-        (abs-file (dir-ent-fix nil) "")))))
+        (abs-file (d-e-fix nil) "")))))
     (cons
      "USR        "
-     (abs-file (dir-ent-fix nil)
+     (abs-file (d-e-fix nil)
                (list
                 (cons
                  "LIB        "
-                 (abs-file (dir-ent-fix nil) ()))
+                 (abs-file (d-e-fix nil) ()))
                 1
                 (cons
                  "LIB        "
-                 (abs-file (dir-ent-fix nil) ())))))))
+                 (abs-file (d-e-fix nil) ())))))))
   nil))
 
 (assert-event
@@ -3706,22 +3706,22 @@
    (list
     (cons
      "INITRD  IMG"
-     (abs-file (dir-ent-fix nil) ""))
+     (abs-file (d-e-fix nil) ""))
     (cons
      "RUN        "
      (abs-file
-      (dir-ent-fix nil)
+      (d-e-fix nil)
       (list
        (cons
         "RSYSLOGDPID"
-        (abs-file (dir-ent-fix nil) "")))))
+        (abs-file (d-e-fix nil) "")))))
     (cons
      "USR        "
-     (abs-file (dir-ent-fix nil)
+     (abs-file (d-e-fix nil)
                (list
                 (cons
                  "LIB        "
-                 (abs-file (dir-ent-fix nil) ()))
+                 (abs-file (d-e-fix nil) ()))
                 1)))))
   t))
 
@@ -4460,7 +4460,7 @@
    (abs-no-dups-p
     (put-assoc-equal
      name
-     (abs-file (abs-file->dir-ent (cdr (assoc-equal name abs-file-alist1)))
+     (abs-file (abs-file->d-e (cdr (assoc-equal name abs-file-alist1)))
                abs-file-alist2)
      abs-file-alist1)))
   :hints
@@ -4471,7 +4471,7 @@
      (abs-no-dups-p abs-file-alist1)
      (put-assoc-equal
       name
-      (abs-file (abs-file->dir-ent (cdr (assoc-equal name abs-file-alist1)))
+      (abs-file (abs-file->d-e (cdr (assoc-equal name abs-file-alist1)))
                 abs-file-alist2)
       abs-file-alist1))
     :expand (abs-file-alist-p abs-file-alist1))))
@@ -5732,7 +5732,7 @@
      (abs-addrs
       (abs-file->contents (cdr (assoc-equal name abs-file-alist1))))))
    (subsetp-equal
-    (abs-addrs (put-assoc-equal name (abs-file dir-ent abs-file-alist2)
+    (abs-addrs (put-assoc-equal name (abs-file d-e abs-file-alist2)
                                 abs-file-alist1))
     (abs-addrs abs-file-alist1)))
   :hints (("goal" :in-theory (enable abs-addrs))))

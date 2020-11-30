@@ -43,7 +43,7 @@
    (:rewrite hifat-file-alist-fix-guard-lemma-1)
    (:rewrite 1st-complete-of-put-assoc-2)
    (:rewrite m1-file-contents-p-correctness-1)
-   (:rewrite true-listp-when-dir-ent-p)
+   (:rewrite true-listp-when-d-e-p)
    (:rewrite
     abs-separate-of-frame->frame-of-collapse-this-lemma-7)
    (:rewrite dist-names-of-put-assoc-equal)
@@ -350,7 +350,7 @@
                     (fat32-filename-list-fix x-path)))
       (mv
        (abs-file
-        (abs-file->dir-ent
+        (abs-file->d-e
          (mv-nth 0
                  (abs-find-file-helper abs-file-alist1 path)))
         (ctx-app
@@ -3396,7 +3396,7 @@
    (equal
     (cons
      (abs-file
-      (abs-file->dir-ent (mv-nth 0 (abs-find-file frame path)))
+      (abs-file->d-e (mv-nth 0 (abs-find-file frame path)))
       (ctx-app
        (abs-file->contents (mv-nth 0 (abs-find-file frame path)))
        (frame-val->dir (cdr (assoc-equal (1st-complete (frame->frame frame))

@@ -9,7 +9,7 @@
 (include-book "std/typed-lists/unsigned-byte-listp" :dir :system)
 
 (make-event
- `(defstobj fat32-in-memory
+ `(defstobj fat32$c
 
     ;; The following fields are noted to be common to both FAT16 and FAT32, per
     ;; the Microsoft specification.
@@ -111,7 +111,8 @@
     (data-region :type (array string (*ms-min-count-of-clusters*))
          :resizable t
          ;; per spec
-         :initially "")))
+         :initially "")
+    :renaming ((fat32$cp fat32$c-p))))
 
 (defthm bs_oemnamep-alt
   (equal (bs_oemnamep x)
@@ -282,7 +283,7 @@
        :hints (("goal" :in-theory (enable data-region-length ,updater)))))))
 
 (update-stobj-scalar-correctness 16 update-bpb_rsvdseccnt bpb_rsvdseccnt
-                                 fat32-in-memory fat32-in-memoryp
+                                 fat32$c fat32$c-p
                                  *bpb_rsvdseccnt*
                                  update-bpb_rsvdseccnt-correctness-1
                                  update-bpb_rsvdseccnt-correctness-2
@@ -298,7 +299,7 @@
                                  nth-of-bpb_rsvdseccnt)
 
 (update-stobj-scalar-correctness 8 update-bpb_secperclus bpb_secperclus
-                                 fat32-in-memory fat32-in-memoryp
+                                 fat32$c fat32$c-p
                                  *bpb_secperclus*
                                  update-bpb_secperclus-correctness-1
                                  update-bpb_secperclus-correctness-2
@@ -314,7 +315,7 @@
                                  nth-of-bpb_secperclus)
 
 (update-stobj-scalar-correctness 16 update-bpb_bytspersec bpb_bytspersec
-                                 fat32-in-memory fat32-in-memoryp
+                                 fat32$c fat32$c-p
                                  *bpb_bytspersec*
                                  update-bpb_bytspersec-correctness-1
                                  update-bpb_bytspersec-correctness-2
@@ -330,7 +331,7 @@
                                  nth-of-bpb_bytspersec)
 
 (update-stobj-scalar-correctness 8 update-bpb_numfats bpb_numfats
-                                 fat32-in-memory fat32-in-memoryp
+                                 fat32$c fat32$c-p
                                  *bpb_numfats*
                                  update-bpb_numfats-correctness-1
                                  update-bpb_numfats-correctness-2
@@ -346,7 +347,7 @@
                                  nth-of-bpb_numfats)
 
 (update-stobj-scalar-correctness 32 update-bpb_rootclus bpb_rootclus
-                                 fat32-in-memory fat32-in-memoryp
+                                 fat32$c fat32$c-p
                                  *bpb_rootclus*
                                  update-bpb_rootclus-correctness-1
                                  update-bpb_rootclus-correctness-2
@@ -362,7 +363,7 @@
                                  nth-of-bpb_rootclus)
 
 (update-stobj-scalar-correctness 16 update-bpb_fsinfo bpb_fsinfo
-                                 fat32-in-memory fat32-in-memoryp
+                                 fat32$c fat32$c-p
                                  *bpb_fsinfo*
                                  update-bpb_fsinfo-correctness-1
                                  update-bpb_fsinfo-correctness-2
@@ -378,7 +379,7 @@
                                  nth-of-bpb_fsinfo)
 
 (update-stobj-scalar-correctness 16 update-bpb_bkbootsec bpb_bkbootsec
-                                 fat32-in-memory fat32-in-memoryp
+                                 fat32$c fat32$c-p
                                  *bpb_bkbootsec*
                                  update-bpb_bkbootsec-correctness-1
                                  update-bpb_bkbootsec-correctness-2
@@ -394,7 +395,7 @@
                                  nth-of-bpb_bkbootsec)
 
 (update-stobj-scalar-correctness 8 update-bs_drvnum bs_drvnum
-                                 fat32-in-memory fat32-in-memoryp
+                                 fat32$c fat32$c-p
                                  *bs_drvnum*
                                  update-bs_drvnum-correctness-1
                                  update-bs_drvnum-correctness-2
@@ -410,7 +411,7 @@
                                  nth-of-bs_drvnum)
 
 (update-stobj-scalar-correctness 8 update-bs_reserved1 bs_reserved1
-                                 fat32-in-memory fat32-in-memoryp
+                                 fat32$c fat32$c-p
                                  *bs_reserved1*
                                  update-bs_reserved1-correctness-1
                                  update-bs_reserved1-correctness-2
@@ -426,7 +427,7 @@
                                  nth-of-bs_reserved1)
 
 (update-stobj-scalar-correctness 8 update-bs_bootsig bs_bootsig
-                                 fat32-in-memory fat32-in-memoryp
+                                 fat32$c fat32$c-p
                                  *bs_bootsig*
                                  update-bs_bootsig-correctness-1
                                  update-bs_bootsig-correctness-2
@@ -442,7 +443,7 @@
                                  nth-of-bs_bootsig)
 
 (update-stobj-scalar-correctness 8 update-bpb_media bpb_media
-                                 fat32-in-memory fat32-in-memoryp
+                                 fat32$c fat32$c-p
                                  *bpb_media*
                                  update-bpb_media-correctness-1
                                  update-bpb_media-correctness-2
@@ -458,7 +459,7 @@
                                  nth-of-bpb_media)
 
 (update-stobj-scalar-correctness 8 update-bpb_fsver_minor bpb_fsver_minor
-                                 fat32-in-memory fat32-in-memoryp
+                                 fat32$c fat32$c-p
                                  *bpb_fsver_minor*
                                  update-bpb_fsver_minor-correctness-1
                                  update-bpb_fsver_minor-correctness-2
@@ -474,7 +475,7 @@
                                  nth-of-bpb_fsver_minor)
 
 (update-stobj-scalar-correctness 8 update-bpb_fsver_major bpb_fsver_major
-                                 fat32-in-memory fat32-in-memoryp
+                                 fat32$c fat32$c-p
                                  *bpb_fsver_major*
                                  update-bpb_fsver_major-correctness-1
                                  update-bpb_fsver_major-correctness-2
@@ -490,7 +491,7 @@
                                  nth-of-bpb_fsver_major)
 
 (update-stobj-scalar-correctness 16 update-bpb_fatsz16 bpb_fatsz16
-                                 fat32-in-memory fat32-in-memoryp
+                                 fat32$c fat32$c-p
                                  *bpb_fatsz16*
                                  update-bpb_fatsz16-correctness-1
                                  update-bpb_fatsz16-correctness-2
@@ -506,7 +507,7 @@
                                  nth-of-bpb_fatsz16)
 
 (update-stobj-scalar-correctness 16 update-bpb_secpertrk bpb_secpertrk
-                                 fat32-in-memory fat32-in-memoryp
+                                 fat32$c fat32$c-p
                                  *bpb_secpertrk*
                                  update-bpb_secpertrk-correctness-1
                                  update-bpb_secpertrk-correctness-2
@@ -522,7 +523,7 @@
                                  nth-of-bpb_secpertrk)
 
 (update-stobj-scalar-correctness 16 update-bpb_numheads bpb_numheads
-                                 fat32-in-memory fat32-in-memoryp
+                                 fat32$c fat32$c-p
                                  *bpb_numheads*
                                  update-bpb_numheads-correctness-1
                                  update-bpb_numheads-correctness-2
@@ -538,7 +539,7 @@
                                  nth-of-bpb_numheads)
 
 (update-stobj-scalar-correctness 16 update-bpb_extflags bpb_extflags
-                                 fat32-in-memory fat32-in-memoryp
+                                 fat32$c fat32$c-p
                                  *bpb_extflags*
                                  update-bpb_extflags-correctness-1
                                  update-bpb_extflags-correctness-2
@@ -554,7 +555,7 @@
                                  nth-of-bpb_extflags)
 
 (update-stobj-scalar-correctness 32 update-bpb_hiddsec bpb_hiddsec
-                                 fat32-in-memory fat32-in-memoryp
+                                 fat32$c fat32$c-p
                                  *bpb_hiddsec*
                                  update-bpb_hiddsec-correctness-1
                                  update-bpb_hiddsec-correctness-2
@@ -570,7 +571,7 @@
                                  nth-of-bpb_hiddsec)
 
 (update-stobj-scalar-correctness 32 update-bpb_totsec32 bpb_totsec32
-                                 fat32-in-memory fat32-in-memoryp
+                                 fat32$c fat32$c-p
                                  *bpb_totsec32*
                                  update-bpb_totsec32-correctness-1
                                  update-bpb_totsec32-correctness-2
@@ -586,7 +587,7 @@
                                  nth-of-bpb_totsec32)
 
 (update-stobj-scalar-correctness 32 update-bpb_fatsz32 bpb_fatsz32
-                                 fat32-in-memory fat32-in-memoryp
+                                 fat32$c fat32$c-p
                                  *bpb_fatsz32*
                                  update-bpb_fatsz32-correctness-1
                                  update-bpb_fatsz32-correctness-2
@@ -602,7 +603,7 @@
                                  nth-of-bpb_fatsz32)
 
 (update-stobj-scalar-correctness 16 update-bpb_rootentcnt bpb_rootentcnt
-                                 fat32-in-memory fat32-in-memoryp
+                                 fat32$c fat32$c-p
                                  *bpb_rootentcnt*
                                  update-bpb_rootentcnt-correctness-1
                                  update-bpb_rootentcnt-correctness-2
@@ -618,7 +619,7 @@
                                  nth-of-bpb_rootentcnt)
 
 (update-stobj-scalar-correctness 16 update-bpb_totsec16 bpb_totsec16
-                                 fat32-in-memory fat32-in-memoryp
+                                 fat32$c fat32$c-p
                                  *bpb_totsec16*
                                  update-bpb_totsec16-correctness-1
                                  update-bpb_totsec16-correctness-2
@@ -634,7 +635,7 @@
                                  nth-of-bpb_totsec16)
 
 (update-stobj-scalar-correctness 32 update-bs_volid bs_volid
-                                 fat32-in-memory fat32-in-memoryp
+                                 fat32$c fat32$c-p
                                  *bs_volid*
                                  update-bs_volid-correctness-1
                                  update-bs_volid-correctness-2
@@ -650,26 +651,26 @@
                                  nth-of-bs_volid)
 
 (defthm fati-of-update-fati
-  (equal (fati i1 (update-fati i2 v fat32-in-memory))
+  (equal (fati i1 (update-fati i2 v fat32$c))
          (if (equal (nfix i1) (nfix i2))
-             v (fati i1 fat32-in-memory)))
+             v (fati i1 fat32$c)))
   :hints (("goal" :in-theory (enable fati update-fati))))
 
 (defthm
   data-regioni-of-update-data-regioni
   (equal
    (data-regioni i1
-                 (update-data-regioni i2 v fat32-in-memory))
+                 (update-data-regioni i2 v fat32$c))
    (if (equal (nfix i1) (nfix i2))
-       v (data-regioni i1 fat32-in-memory)))
+       v (data-regioni i1 fat32$c)))
   :hints
   (("goal"
     :in-theory (enable data-regioni update-data-regioni))))
 
 (defthm
   data-region-length-of-resize-fat
-  (equal (data-region-length (resize-fat i fat32-in-memory))
-         (data-region-length fat32-in-memory))
+  (equal (data-region-length (resize-fat i fat32$c))
+         (data-region-length fat32$c))
   :hints
   (("goal" :in-theory (enable data-region-length resize-fat))))
 
@@ -743,28 +744,28 @@
       (implies
        (not (equal key *bpb_fatsz32*))
        (equal
-        (bpb_fatsz32 (update-nth key val fat32-in-memory))
-        (bpb_fatsz32 fat32-in-memory)))
+        (bpb_fatsz32 (update-nth key val fat32$c))
+        (bpb_fatsz32 fat32$c)))
       :hints (("goal" :in-theory (enable bpb_fatsz32)))
       :rule-classes
       ,(make-corollaries
         'bpb_fatsz32
         (remove1-assoc 'update-bpb_fatsz32 *the-list*)
-        'fat32-in-memory)))
+        'fat32$c)))
 
   (make-event
    `(defthm
       bpb_secperclus-of-update-nth
       (implies
        (not (equal key *bpb_secperclus*))
-       (equal (bpb_secperclus (update-nth key val fat32-in-memory))
-              (bpb_secperclus fat32-in-memory)))
+       (equal (bpb_secperclus (update-nth key val fat32$c))
+              (bpb_secperclus fat32$c)))
       :hints (("goal" :in-theory (enable bpb_secperclus)))
       :rule-classes
       ,(make-corollaries
         'bpb_secperclus
         (remove1-assoc 'update-bpb_secperclus *the-list*)
-        'fat32-in-memory)))
+        'fat32$c)))
 
   (make-event
    `(defthm
@@ -772,14 +773,14 @@
       (implies
        (not (equal key *bpb_rsvdseccnt*))
        (equal
-        (bpb_rsvdseccnt (update-nth key val fat32-in-memory))
-        (bpb_rsvdseccnt fat32-in-memory)))
+        (bpb_rsvdseccnt (update-nth key val fat32$c))
+        (bpb_rsvdseccnt fat32$c)))
       :hints (("goal" :in-theory (enable bpb_rsvdseccnt)))
       :rule-classes
       ,(make-corollaries
         'bpb_rsvdseccnt
         (remove1-assoc 'update-bpb_rsvdseccnt *the-list*)
-        'fat32-in-memory)))
+        'fat32$c)))
 
   (make-event
    `(defthm
@@ -787,14 +788,14 @@
       (implies
        (not (equal key *bpb_numfats*))
        (equal
-        (bpb_numfats (update-nth key val fat32-in-memory))
-        (bpb_numfats fat32-in-memory)))
+        (bpb_numfats (update-nth key val fat32$c))
+        (bpb_numfats fat32$c)))
       :hints (("goal" :in-theory (enable bpb_numfats)))
       :rule-classes
       ,(make-corollaries
         'bpb_numfats
         (remove1-assoc 'update-bpb_numfats *the-list*)
-        'fat32-in-memory)))
+        'fat32$c)))
 
   (make-event
    `(defthm
@@ -802,14 +803,14 @@
       (implies
        (not (equal key *bpb_bytspersec*))
        (equal
-        (bpb_bytspersec (update-nth key val fat32-in-memory))
-        (bpb_bytspersec fat32-in-memory)))
+        (bpb_bytspersec (update-nth key val fat32$c))
+        (bpb_bytspersec fat32$c)))
       :hints (("goal" :in-theory (enable bpb_bytspersec)))
       :rule-classes
       ,(make-corollaries
         'bpb_bytspersec
         (remove1-assoc 'update-bpb_bytspersec *the-list*)
-        'fat32-in-memory)))
+        'fat32$c)))
 
   (make-event
    `(defthm
@@ -817,14 +818,14 @@
       (implies
        (not (equal key *bpb_totsec32*))
        (equal
-        (bpb_totsec32 (update-nth key val fat32-in-memory))
-        (bpb_totsec32 fat32-in-memory)))
+        (bpb_totsec32 (update-nth key val fat32$c))
+        (bpb_totsec32 fat32$c)))
       :hints (("goal" :in-theory (enable bpb_totsec32)))
       :rule-classes
       ,(make-corollaries
         'bpb_totsec32
         (remove1-assoc 'update-bpb_totsec32 *the-list*)
-        'fat32-in-memory)))
+        'fat32$c)))
 
   (make-event
    `(defthm
@@ -832,58 +833,58 @@
       (implies
        (not (equal key *bpb_rootclus*))
        (equal
-        (bpb_rootclus (update-nth key val fat32-in-memory))
-        (bpb_rootclus fat32-in-memory)))
+        (bpb_rootclus (update-nth key val fat32$c))
+        (bpb_rootclus fat32$c)))
       :hints (("goal" :in-theory (enable bpb_rootclus)))
       :rule-classes
       ,(make-corollaries
         'bpb_rootclus
         (remove1-assoc 'update-bpb_rootclus *the-list*)
-        'fat32-in-memory))))
+        'fat32$c))))
 
 (defthm bpb_rootclus-of-update-fati
-  (equal (bpb_rootclus (update-fati i v fat32-in-memory))
-         (bpb_rootclus fat32-in-memory))
+  (equal (bpb_rootclus (update-fati i v fat32$c))
+         (bpb_rootclus fat32$c))
   :hints (("Goal" :in-theory (enable update-fati))))
 
 (defthm bpb_rootclus-of-update-data-regioni
-  (equal (bpb_rootclus (update-data-regioni i v fat32-in-memory))
-         (bpb_rootclus fat32-in-memory))
+  (equal (bpb_rootclus (update-data-regioni i v fat32$c))
+         (bpb_rootclus fat32$c))
   :hints (("Goal" :in-theory (enable update-data-regioni))))
 
 (defthm
   fat-length-of-update-fati
-  (equal (fat-length (update-fati i v fat32-in-memory))
-         (max (fat-length fat32-in-memory)
+  (equal (fat-length (update-fati i v fat32$c))
+         (max (fat-length fat32$c)
               (1+ (nfix i))))
   :hints (("goal" :in-theory (enable fat-length update-fati))))
 
 (defthm
   fat-length-of-resize-fat
-  (equal (fat-length (resize-fat i fat32-in-memory))
+  (equal (fat-length (resize-fat i fat32$c))
          (nfix i))
   :hints (("goal" :in-theory (enable fat-length resize-fat))))
 
 (defthm
   data-regioni-of-update-fati
-  (equal (data-regioni i1 (update-fati i2 v fat32-in-memory))
-         (data-regioni i1 fat32-in-memory))
+  (equal (data-regioni i1 (update-fati i2 v fat32$c))
+         (data-regioni i1 fat32$c))
   :hints
   (("goal"
     :in-theory (enable data-regioni update-fati))))
 
 (defthm
   data-region-length-of-update-data-regioni
-  (equal (data-region-length (update-data-regioni i v fat32-in-memory))
-         (max (data-region-length fat32-in-memory)
+  (equal (data-region-length (update-data-regioni i v fat32$c))
+         (max (data-region-length fat32$c)
               (1+ (nfix i))))
   :hints (("goal" :in-theory (enable data-region-length update-data-regioni)))
   :rule-classes
   (:rewrite
    (:rewrite
     :corollary
-    (equal (consp (nth *data-regioni* (update-data-regioni i v fat32-in-memory)))
-           (not (zp (max (data-region-length fat32-in-memory)
+    (equal (consp (nth *data-regioni* (update-data-regioni i v fat32$c)))
+           (not (zp (max (data-region-length fat32$c)
                          (1+ (nfix i))))))
     :hints (("Goal"
              :in-theory (enable data-region-length)) ))))
@@ -891,8 +892,8 @@
 (defthm
   fati-of-update-data-regioni
   (equal (fati i1
-               (update-data-regioni i2 v fat32-in-memory))
-         (fati i1 fat32-in-memory))
+               (update-data-regioni i2 v fat32$c))
+         (fati i1 fat32$c))
   :hints
   (("goal" :in-theory (enable fati update-data-regioni))))
 
@@ -944,31 +945,31 @@
        :rule-classes
        ((:rewrite :corollary
                    (equal (bpb_secperclus (,name v ,stobj))
-                          (bpb_secperclus fat32-in-memory))
+                          (bpb_secperclus fat32$c))
                    :hints (("Goal" :in-theory (enable bpb_secperclus)) ))
         (:rewrite :corollary
                    (equal (bpb_rsvdseccnt (,name v ,stobj))
-                          (bpb_rsvdseccnt fat32-in-memory))
+                          (bpb_rsvdseccnt fat32$c))
                   :hints (("Goal" :in-theory (enable bpb_rsvdseccnt)) ))
         (:rewrite :corollary
                    (equal (bpb_numfats (,name v ,stobj))
-                          (bpb_numfats fat32-in-memory))
+                          (bpb_numfats fat32$c))
                   :hints (("Goal" :in-theory (enable bpb_numfats)) ))
         (:rewrite :corollary
                    (equal (bpb_fatsz32 (,name v ,stobj))
-                          (bpb_fatsz32 fat32-in-memory))
+                          (bpb_fatsz32 fat32$c))
                   :hints (("Goal" :in-theory (enable bpb_fatsz32)) ))
         (:rewrite :corollary
                    (equal (bpb_bytspersec (,name v ,stobj))
-                          (bpb_bytspersec fat32-in-memory))
+                          (bpb_bytspersec fat32$c))
                    :hints (("Goal" :in-theory (enable bpb_bytspersec)) ))
         (:rewrite :corollary
                    (equal (bpb_totsec32 (,name v ,stobj))
-                          (bpb_totsec32 fat32-in-memory))
+                          (bpb_totsec32 fat32$c))
                    :hints (("Goal" :in-theory (enable bpb_totsec32)) ))
         (:rewrite :corollary
                    (equal (bpb_rootclus (,name v ,stobj))
-                          (bpb_rootclus fat32-in-memory))
+                          (bpb_rootclus fat32$c))
                    :hints (("Goal" :in-theory (enable bpb_rootclus)) ))))
 
      (defthm
@@ -1020,7 +1021,7 @@
                    (,stobj-recogniser ,stobj)
                    (< (nfix i) (,array-length ,stobj)))
                   (integerp (,array-accessor i ,stobj)))
-         :hints (("Goal" :in-theory (disable fat32-in-memoryp))))
+         :hints (("Goal" :in-theory (disable fat32$c-p))))
         (:linear
          :corollary
          (implies (and
@@ -1029,7 +1030,7 @@
                   (and
                    (<= 0 (,array-accessor i ,stobj))
                    (< (,array-accessor i ,stobj) ,upper-bound)))
-         :hints (("Goal" :in-theory (disable fat32-in-memoryp))))))
+         :hints (("Goal" :in-theory (disable fat32$c-p))))))
 
      (defthm ,lemma-name5
        (equal
@@ -1107,7 +1108,7 @@
 (update-stobj-array
  update-bs_jmpboot bs_jmpboot-length 8
  update-bs_jmpbooti bs_jmpbooti *bs_jmpbooti*
- fat32-in-memory fat32-in-memoryp
+ fat32$c fat32$c-p
  update-bs_jmpboot-correctness-1
  update-bs_jmpboot-correctness-2
  update-bs_jmpboot-correctness-3
@@ -1124,7 +1125,7 @@
 (update-stobj-array
  update-bs_oemname bs_oemname-length 8
  update-bs_oemnamei bs_oemnamei *bs_oemnamei*
- fat32-in-memory fat32-in-memoryp
+ fat32$c fat32$c-p
  update-bs_oemname-correctness-1
  update-bs_oemname-correctness-2
  update-bs_oemname-correctness-3
@@ -1141,7 +1142,7 @@
 (update-stobj-array
  update-bs_vollab bs_vollab-length 8
  update-bs_vollabi bs_vollabi *bs_vollabi*
- fat32-in-memory fat32-in-memoryp
+ fat32$c fat32$c-p
  update-bs_vollab-correctness-1
  update-bs_vollab-correctness-2
  update-bs_vollab-correctness-3
@@ -1158,7 +1159,7 @@
 (update-stobj-array
  update-bs_filsystype bs_filsystype-length 8
  update-bs_filsystypei bs_filsystypei *bs_filsystypei*
- fat32-in-memory fat32-in-memoryp
+ fat32$c fat32$c-p
  update-bs_filsystype-correctness-1
  update-bs_filsystype-correctness-2
  update-bs_filsystype-correctness-3
@@ -1175,7 +1176,7 @@
 (update-stobj-array
  update-bpb_reserved bpb_reserved-length 8
  update-bpb_reservedi bpb_reservedi *bpb_reservedi*
- fat32-in-memory fat32-in-memoryp
+ fat32$c fat32$c-p
  update-bpb_reserved-correctness-1
  update-bpb_reserved-correctness-2
  update-bpb_reserved-correctness-3
@@ -1192,43 +1193,43 @@
 (comp t) ; Matt K. mod 4/2019 (needed for avoiding stack overflow in Allegro CL)
 
 (defthm
-  fat32-in-memoryp-of-create-fat32-in-memory
-  (fat32-in-memoryp (create-fat32-in-memory)))
+  fat32$c-p-of-create-fat32$c
+  (fat32$c-p (create-fat32$c)))
 
 ;; The strategy of just using lofat-fs-p everywhere is not
 ;; going to work. It's going to be desirable to prove lemmas with the weaker
-;; hypothesis (fat32-in-memoryp fat32-in-memory) where possible, and we do want
+;; hypothesis (fat32$c-p fat32$c) where possible, and we do want
 ;; to be able to use those lemmas in a context where
-;; (lofat-fs-p fat32-in-memory) is known to be true without
-;; allowing for the definition of fat32-in-memoryp to be expanded.
+;; (lofat-fs-p fat32$c) is known to be true without
+;; allowing for the definition of fat32$c-p to be expanded.
 ;;
-;; We're also disabling create-fat32-in-memory because any time it gets
+;; We're also disabling create-fat32$c because any time it gets
 ;; expanded in a subgoal there's trouble discharging it as well as writing it
 ;; out in full.
 ;;
 ;; Note, we're non-locally disabling these because we want them to be off by
 ;; default in other books.
-(in-theory (disable fat32-in-memoryp create-fat32-in-memory))
+(in-theory (disable fat32$c-p create-fat32$c))
 
 (defthm
   bpb_bytspersec-of-update-data-regioni
   (equal
-   (bpb_bytspersec (update-data-regioni i v fat32-in-memory))
-   (bpb_bytspersec fat32-in-memory))
+   (bpb_bytspersec (update-data-regioni i v fat32$c))
+   (bpb_bytspersec fat32$c))
   :hints (("goal" :in-theory (enable update-data-regioni))))
 
 (defthm
   bpb_secperclus-of-update-data-regioni
   (equal
-   (bpb_secperclus (update-data-regioni i v fat32-in-memory))
-   (bpb_secperclus fat32-in-memory))
+   (bpb_secperclus (update-data-regioni i v fat32$c))
+   (bpb_secperclus fat32$c))
   :hints (("goal" :in-theory (enable update-data-regioni))))
 
 (defthm
   bpb_totsec32-of-update-data-regioni
   (equal
-   (bpb_totsec32 (update-data-regioni i v fat32-in-memory))
-   (bpb_totsec32 fat32-in-memory))
+   (bpb_totsec32 (update-data-regioni i v fat32$c))
+   (bpb_totsec32 fat32$c))
   :hints
   (("goal"
     :in-theory (enable update-data-regioni bpb_totsec32))))
@@ -1236,8 +1237,8 @@
 (defthm
   bpb_rsvdseccnt-of-update-data-regioni
   (equal
-   (bpb_rsvdseccnt (update-data-regioni i v fat32-in-memory))
-   (bpb_rsvdseccnt fat32-in-memory))
+   (bpb_rsvdseccnt (update-data-regioni i v fat32$c))
+   (bpb_rsvdseccnt fat32$c))
   :hints
   (("goal"
     :in-theory (enable update-data-regioni bpb_rsvdseccnt))))
@@ -1245,8 +1246,8 @@
 (defthm
   bpb_numfats-of-update-data-regioni
   (equal
-   (bpb_numfats (update-data-regioni i v fat32-in-memory))
-   (bpb_numfats fat32-in-memory))
+   (bpb_numfats (update-data-regioni i v fat32$c))
+   (bpb_numfats fat32$c))
   :hints
   (("goal"
     :in-theory (enable update-data-regioni bpb_numfats))))
@@ -1254,8 +1255,8 @@
 (defthm
   bpb_fatsz32-of-update-data-regioni
   (equal
-   (bpb_fatsz32 (update-data-regioni i v fat32-in-memory))
-   (bpb_fatsz32 fat32-in-memory))
+   (bpb_fatsz32 (update-data-regioni i v fat32$c))
+   (bpb_fatsz32 fat32$c))
   :hints
   (("goal"
     :in-theory (enable update-data-regioni bpb_fatsz32))))
@@ -1263,45 +1264,45 @@
 (defthm
   update-data-regioni-of-data-regioni
   (implies
-   (and (fat32-in-memoryp fat32-in-memory)
+   (and (fat32$c-p fat32$c)
         (< (nfix i)
-           (data-region-length fat32-in-memory)))
+           (data-region-length fat32$c)))
    (equal
-    (update-data-regioni i (data-regioni i fat32-in-memory)
-                         fat32-in-memory)
-    fat32-in-memory))
+    (update-data-regioni i (data-regioni i fat32$c)
+                         fat32$c)
+    fat32$c))
   :hints
-  (("goal" :in-theory (enable fat32-in-memoryp
+  (("goal" :in-theory (enable fat32$c-p
                               data-regioni update-data-regioni
                               data-region-length))))
 
 (defthm
   bpb_secperclus-of-resize-data-region
-  (equal (bpb_secperclus (resize-data-region i fat32-in-memory))
-         (bpb_secperclus fat32-in-memory))
+  (equal (bpb_secperclus (resize-data-region i fat32$c))
+         (bpb_secperclus fat32$c))
   :hints
   (("goal"
     :in-theory (enable bpb_secperclus resize-data-region))))
 
 (defthm
   bpb_bytspersec-of-resize-data-region
-  (equal (bpb_bytspersec (resize-data-region i fat32-in-memory))
-         (bpb_bytspersec fat32-in-memory))
+  (equal (bpb_bytspersec (resize-data-region i fat32$c))
+         (bpb_bytspersec fat32$c))
   :hints
   (("goal"
     :in-theory (enable bpb_bytspersec resize-data-region))))
 
 (defthm
-  update-fati-of-fati-when-fat32-in-memoryp
-  (implies (and (fat32-in-memoryp fat32-in-memory)
+  update-fati-of-fati-when-fat32$c-p
+  (implies (and (fat32$c-p fat32$c)
                 (< (nfix i)
-                   (fat-length fat32-in-memory)))
-           (equal (update-fati i (fati i fat32-in-memory)
-                               fat32-in-memory)
-                  fat32-in-memory))
+                   (fat-length fat32$c)))
+           (equal (update-fati i (fati i fat32$c)
+                               fat32$c)
+                  fat32$c))
   :hints
   (("goal" :in-theory (enable fati update-fati
-                              fat-length fat32-in-memoryp))))
+                              fat-length fat32$c-p))))
 
 (defmacro
     update-bpb_secperclus-macro
@@ -1317,22 +1318,22 @@
        (update-bpb_secperclus v1 ,stobj)))
      :hints (("goal" :in-theory (enable update-bpb_secperclus ,name)))))
 
-(update-bpb_secperclus-macro update-bs_oemname fat32-in-memory
+(update-bpb_secperclus-macro update-bs_oemname fat32$c
                              update-bpb_secperclus-of-update-bs_oemname)
 
-(update-bpb_secperclus-macro update-bs_jmpboot fat32-in-memory
+(update-bpb_secperclus-macro update-bs_jmpboot fat32$c
                              update-bpb_secperclus-of-update-bs_jmpboot)
 
-(update-bpb_secperclus-macro update-bpb_bytspersec fat32-in-memory
+(update-bpb_secperclus-macro update-bpb_bytspersec fat32$c
                              update-bpb_secperclus-of-update-bpb_bytspersec)
 
-(update-bpb_secperclus-macro update-bpb_fatsz32 fat32-in-memory
+(update-bpb_secperclus-macro update-bpb_fatsz32 fat32$c
                              update-bpb_secperclus-of-update-bpb_fatsz32)
 
-(update-bpb_secperclus-macro update-bpb_numfats fat32-in-memory
+(update-bpb_secperclus-macro update-bpb_numfats fat32$c
                              update-bpb_secperclus-of-update-bpb_numfats)
 
-(update-bpb_secperclus-macro update-bpb_rsvdseccnt fat32-in-memory
+(update-bpb_secperclus-macro update-bpb_rsvdseccnt fat32$c
                              update-bpb_secperclus-of-update-bpb_rsvdseccnt)
 
 (defmacro
@@ -1349,19 +1350,19 @@
        (update-bpb_rsvdseccnt v1 ,stobj)))
      :hints (("goal" :in-theory (enable update-bpb_rsvdseccnt ,name)))))
 
-(update-bpb_rsvdseccnt-macro update-bs_oemname fat32-in-memory
+(update-bpb_rsvdseccnt-macro update-bs_oemname fat32$c
                              update-bpb_rsvdseccnt-of-update-bs_oemname)
 
-(update-bpb_rsvdseccnt-macro update-bs_jmpboot fat32-in-memory
+(update-bpb_rsvdseccnt-macro update-bs_jmpboot fat32$c
                              update-bpb_rsvdseccnt-of-update-bs_jmpboot)
 
-(update-bpb_rsvdseccnt-macro update-bpb_bytspersec fat32-in-memory
+(update-bpb_rsvdseccnt-macro update-bpb_bytspersec fat32$c
                              update-bpb_rsvdseccnt-of-update-bpb_bytspersec)
 
-(update-bpb_rsvdseccnt-macro update-bpb_fatsz32 fat32-in-memory
+(update-bpb_rsvdseccnt-macro update-bpb_fatsz32 fat32$c
                              update-bpb_rsvdseccnt-of-update-bpb_fatsz32)
 
-(update-bpb_rsvdseccnt-macro update-bpb_numfats fat32-in-memory
+(update-bpb_rsvdseccnt-macro update-bpb_numfats fat32$c
                              update-bpb_rsvdseccnt-of-update-bpb_numfats)
 
 (defmacro
@@ -1378,16 +1379,16 @@
        (update-bpb_numfats v1 ,stobj)))
      :hints (("goal" :in-theory (enable update-bpb_numfats ,name)))))
 
-(update-bpb_numfats-macro update-bs_oemname fat32-in-memory
+(update-bpb_numfats-macro update-bs_oemname fat32$c
                           update-bpb_numfats-of-update-bs_oemname)
 
-(update-bpb_numfats-macro update-bs_jmpboot fat32-in-memory
+(update-bpb_numfats-macro update-bs_jmpboot fat32$c
                           update-bpb_numfats-of-update-bs_jmpboot)
 
-(update-bpb_numfats-macro update-bpb_bytspersec fat32-in-memory
+(update-bpb_numfats-macro update-bpb_bytspersec fat32$c
                           update-bpb_numfats-of-update-bpb_bytspersec)
 
-(update-bpb_numfats-macro update-bpb_fatsz32 fat32-in-memory
+(update-bpb_numfats-macro update-bpb_fatsz32 fat32$c
                           update-bpb_numfats-of-update-bpb_fatsz32)
 
 (defmacro
@@ -1404,37 +1405,37 @@
        (update-bpb_fatsz32 v1 ,stobj)))
      :hints (("goal" :in-theory (enable update-bpb_fatsz32 ,name)))))
 
-(update-bpb_fatsz32-macro update-bs_oemname fat32-in-memory
+(update-bpb_fatsz32-macro update-bs_oemname fat32$c
                           update-bpb_fatsz32-of-update-bs_oemname)
 
-(update-bpb_fatsz32-macro update-bs_jmpboot fat32-in-memory
+(update-bpb_fatsz32-macro update-bs_jmpboot fat32$c
                           update-bpb_fatsz32-of-update-bs_jmpboot)
 
-(update-bpb_fatsz32-macro update-bpb_totsec32 fat32-in-memory
+(update-bpb_fatsz32-macro update-bpb_totsec32 fat32$c
                           update-bpb_fatsz32-of-update-bpb_totsec32)
 
-(update-bpb_fatsz32-macro update-bpb_hiddsec fat32-in-memory
+(update-bpb_fatsz32-macro update-bpb_hiddsec fat32$c
                           update-bpb_fatsz32-of-update-bpb_hiddsec)
 
-(update-bpb_fatsz32-macro update-bpb_numheads fat32-in-memory
+(update-bpb_fatsz32-macro update-bpb_numheads fat32$c
                           update-bpb_fatsz32-of-update-bpb_numheads)
 
-(update-bpb_fatsz32-macro update-bpb_secpertrk fat32-in-memory
+(update-bpb_fatsz32-macro update-bpb_secpertrk fat32$c
                           update-bpb_fatsz32-of-update-bpb_secpertrk)
 
-(update-bpb_fatsz32-macro update-bpb_fatsz16 fat32-in-memory
+(update-bpb_fatsz32-macro update-bpb_fatsz16 fat32$c
                           update-bpb_fatsz32-of-update-bpb_fatsz16)
 
-(update-bpb_fatsz32-macro update-bpb_media fat32-in-memory
+(update-bpb_fatsz32-macro update-bpb_media fat32$c
                           update-bpb_fatsz32-of-update-bpb_media)
 
-(update-bpb_fatsz32-macro update-bpb_totsec16 fat32-in-memory
+(update-bpb_fatsz32-macro update-bpb_totsec16 fat32$c
                           update-bpb_fatsz32-of-update-bpb_totsec16)
 
-(update-bpb_fatsz32-macro update-bpb_rootentcnt fat32-in-memory
+(update-bpb_fatsz32-macro update-bpb_rootentcnt fat32$c
                           update-bpb_fatsz32-of-update-bpb_rootentcnt)
 
-(update-bpb_fatsz32-macro update-bpb_bytspersec fat32-in-memory
+(update-bpb_fatsz32-macro update-bpb_bytspersec fat32$c
                           update-bpb_fatsz32-of-update-bpb_bytspersec)
 
 (defmacro
@@ -1451,70 +1452,70 @@
        (update-bpb_bytspersec v1 ,stobj)))
      :hints (("goal" :in-theory (enable update-bpb_bytspersec ,name)))))
 
-(update-bpb_bytspersec-macro update-bs_oemname fat32-in-memory
+(update-bpb_bytspersec-macro update-bs_oemname fat32$c
                              update-bpb_bytspersec-of-update-bs_oemname)
 
-(update-bpb_bytspersec-macro update-bs_jmpboot fat32-in-memory
+(update-bpb_bytspersec-macro update-bs_jmpboot fat32$c
                              update-bpb_bytspersec-of-update-bs_jmpboot)
 
 (defthm
-  fat32-in-memoryp-of-resize-data-region
+  fat32$c-p-of-resize-data-region
   (implies
-   (fat32-in-memoryp fat32-in-memory)
-   (fat32-in-memoryp (resize-data-region i fat32-in-memory)))
+   (fat32$c-p fat32$c)
+   (fat32$c-p (resize-data-region i fat32$c)))
   :hints
   (("goal"
-    :in-theory (enable fat32-in-memoryp resize-data-region))))
+    :in-theory (enable fat32$c-p resize-data-region))))
 
 (defthm
-  fat32-in-memoryp-of-update-fati
+  fat32$c-p-of-update-fati
   (implies
-   (fat32-in-memoryp fat32-in-memory)
-   (equal (fat32-in-memoryp (update-fati i v fat32-in-memory))
+   (fat32$c-p fat32$c)
+   (equal (fat32$c-p (update-fati i v fat32$c))
           (and (fat32-entry-p v)
                (<= (nfix i)
-                   (fat-length fat32-in-memory)))))
+                   (fat-length fat32$c)))))
   :hints
   (("goal" :in-theory (enable update-fati
-                              fat32-in-memoryp fat-length))))
+                              fat32$c-p fat-length))))
 
 (defthm update-fati-of-update-fati-coincident
-  (equal (update-fati i v1 (update-fati i v2 fat32-in-memory))
-         (update-fati i v1 fat32-in-memory))
+  (equal (update-fati i v1 (update-fati i v2 fat32$c))
+         (update-fati i v1 fat32$c))
   :hints (("goal" :in-theory (enable update-fati))))
 
 (defthm update-fati-of-update-fati-disjoint
   (implies (not (equal (nfix i1) (nfix i2)))
-           (equal (update-fati i1 v1 (update-fati i2 v2 fat32-in-memory))
-                  (update-fati i2 v2 (update-fati i1 v1 fat32-in-memory))))
+           (equal (update-fati i1 v1 (update-fati i2 v2 fat32$c))
+                  (update-fati i2 v2 (update-fati i1 v1 fat32$c))))
   :hints (("goal" :in-theory (e/d (update-fati) (update-nth)))))
 
 (defthm
   fat-length-of-update-nth
   (implies
    (not (equal key *fati*))
-   (equal (fat-length (update-nth key val fat32-in-memory))
-          (fat-length fat32-in-memory)))
+   (equal (fat-length (update-nth key val fat32$c))
+          (fat-length fat32$c)))
   :hints (("goal" :in-theory (enable fat-length))))
 
 (defthm
-  fat32-in-memoryp-of-resize-fat
-  (implies (fat32-in-memoryp fat32-in-memory)
-           (fat32-in-memoryp (resize-fat i fat32-in-memory)))
+  fat32$c-p-of-resize-fat
+  (implies (fat32$c-p fat32$c)
+           (fat32$c-p (resize-fat i fat32$c)))
   :hints
-  (("goal" :in-theory (enable fat32-in-memoryp resize-fat))))
+  (("goal" :in-theory (enable fat32$c-p resize-fat))))
 
 (defthm
   fat-length-of-resize-data-region
-  (equal (fat-length (resize-data-region i fat32-in-memory))
-         (fat-length fat32-in-memory))
+  (equal (fat-length (resize-data-region i fat32$c))
+         (fat-length fat32$c))
   :hints (("goal" :in-theory (enable resize-data-region))))
 
 (defthm
   fat-length-of-update-data-regioni
   (equal
-   (fat-length (update-data-regioni i v fat32-in-memory))
-   (fat-length fat32-in-memory))
+   (fat-length (update-data-regioni i v fat32$c))
+   (fat-length fat32$c))
   :hints (("goal" :in-theory (enable update-data-regioni fat-length))))
 
 (defthm
@@ -1522,64 +1523,64 @@
   (implies
    (not (equal (nfix n) *data-regioni*))
    (equal (nth n
-               (update-data-regioni i v fat32-in-memory))
-          (nth n fat32-in-memory)))
+               (update-data-regioni i v fat32$c))
+          (nth n fat32$c)))
   :hints (("goal" :in-theory (enable update-data-regioni))))
 
 (defthm
-  resize-fat-of-fat-length-when-fat32-in-memoryp
-  (implies (fat32-in-memoryp fat32-in-memory)
-           (equal (resize-fat (fat-length fat32-in-memory)
-                              fat32-in-memory)
-                  fat32-in-memory))
+  resize-fat-of-fat-length-when-fat32$c-p
+  (implies (fat32$c-p fat32$c)
+           (equal (resize-fat (fat-length fat32$c)
+                              fat32$c)
+                  fat32$c))
   :hints
   (("goal" :in-theory (enable resize-fat
-                              fat-length fat32-in-memoryp)))
+                              fat-length fat32$c-p)))
   :rule-classes
   (:rewrite
    (:rewrite
     :corollary
-    (implies (and (fat32-in-memoryp fat32-in-memory)
-                  (equal i (fat-length fat32-in-memory)))
-             (equal (resize-fat i fat32-in-memory)
-                    fat32-in-memory)))))
+    (implies (and (fat32$c-p fat32$c)
+                  (equal i (fat-length fat32$c)))
+             (equal (resize-fat i fat32$c)
+                    fat32$c)))))
 
 (defthm
-  resize-data-region-of-data-region-length-when-fat32-in-memoryp
+  resize-data-region-of-data-region-length-when-fat32$c-p
   (implies
-   (fat32-in-memoryp fat32-in-memory)
+   (fat32$c-p fat32$c)
    (equal
-    (resize-data-region (data-region-length fat32-in-memory)
-                        fat32-in-memory)
-    fat32-in-memory))
+    (resize-data-region (data-region-length fat32$c)
+                        fat32$c)
+    fat32$c))
   :hints
   (("goal"
     :in-theory (enable resize-data-region
-                       data-region-length fat32-in-memoryp)))
+                       data-region-length fat32$c-p)))
   :rule-classes
   (:rewrite
    (:rewrite
     :corollary
     (implies
-     (and (fat32-in-memoryp fat32-in-memory)
-          (equal i (data-region-length fat32-in-memory)))
-     (equal (resize-data-region i fat32-in-memory)
-            fat32-in-memory))
+     (and (fat32$c-p fat32$c)
+          (equal i (data-region-length fat32$c)))
+     (equal (resize-data-region i fat32$c)
+            fat32$c))
     :hints (("goal" :in-theory (enable resize-data-region))))))
 
 (defthm
   nth-of-resize-data-region
   (implies (not (equal n *data-regioni*))
            (equal (nth n
-                       (resize-data-region i fat32-in-memory))
-                  (nth n fat32-in-memory)))
+                       (resize-data-region i fat32$c))
+                  (nth n fat32$c)))
   :hints (("goal" :in-theory (enable resize-data-region))))
 
 (defthm
   nth-of-resize-fat
-  (equal (nth n (resize-fat i fat32-in-memory))
+  (equal (nth n (resize-fat i fat32$c))
          (if (not (equal n *fati*))
-             (nth n fat32-in-memory)
-           (resize-list (nth *fati* fat32-in-memory)
+             (nth n fat32$c)
+           (resize-list (nth *fati* fat32$c)
                         i '0)))
   :hints (("goal" :in-theory (enable resize-fat))))

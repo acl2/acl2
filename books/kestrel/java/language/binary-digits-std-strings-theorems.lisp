@@ -24,10 +24,10 @@
 
   (defrule bin-digitp-of-char-code
     (equal (bin-digitp (char-code char))
-           (str::bit-digitp char))
-    :enable (bin-digitp str::bit-digitp))
+           (str::bin-digit-char-p char))
+    :enable (bin-digitp str::bin-digit-char-p))
 
   (defrule bin-digit-listp-of-chars=>nats
     (equal (bin-digit-listp (chars=>nats chars))
-           (str::bit-digit-listp chars))
+           (str::bin-digit-char-listp chars))
     :enable chars=>nats))

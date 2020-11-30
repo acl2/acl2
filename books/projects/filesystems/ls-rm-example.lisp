@@ -16,21 +16,21 @@
     (rm-list-extra-hypothesis (cdr name-list))))
 
 (defthm rm-list-correctness-1-lemma-1
-  (equal (mv-nth 1 (rm-list fat32-in-memory path-list 1))
+  (equal (mv-nth 1 (rm-list fat32$c path-list 1))
          1))
 
 (defthm
   rm-list-correctness-1-lemma-2
   (implies
    (and
-    (lofat-fs-p fat32-in-memory)
+    (lofat-fs-p fat32$c)
     (equal
      (mv-nth 1
              (hifat-find-file
-              (mv-nth 0 (lofat-to-hifat fat32-in-memory))
+              (mv-nth 0 (lofat-to-hifat fat32$c))
               fat32-path))
      *enoent*)
-    (equal (mv-nth 1 (lofat-to-hifat fat32-in-memory))
+    (equal (mv-nth 1 (lofat-to-hifat fat32$c))
            0))
    (equal
     (mv-nth
@@ -40,34 +40,34 @@
        0
        (lofat-to-hifat
         (mv-nth 0
-                (rm-list fat32-in-memory
+                (rm-list fat32$c
                          path-list exit-status))))
       fat32-path))
     *enoent*))
   :hints (("goal" :in-theory (e/d nil (hifat-find-file))
-           :induct (rm-list fat32-in-memory
+           :induct (rm-list fat32$c
                             path-list exit-status))))
 
 (defthm
   rm-list-correctness-1
   (implies
    (and
-    (lofat-fs-p fat32-in-memory)
+    (lofat-fs-p fat32$c)
     (member-equal path path-list)
     (equal (mv-nth 1
-                   (rm-list fat32-in-memory
+                   (rm-list fat32$c
                             path-list exit-status))
            0)
     (rm-list-extra-hypothesis path-list)
     (equal
      (mv-nth '1
-             (lofat-to-hifat fat32-in-memory))
+             (lofat-to-hifat fat32$c))
      '0)
     (equal
      (mv-nth '1
              (lofat-to-hifat
               (mv-nth '0
-                      (rm-list fat32-in-memory
+                      (rm-list fat32$c
                                path-list exit-status))))
      '0))
    (not
@@ -76,7 +76,7 @@
       1
       (lofat-lstat
        (mv-nth 0
-               (rm-list fat32-in-memory
+               (rm-list fat32$c
                         path-list exit-status))
        (path-to-fat32-path (explode path))))
      0)))
@@ -91,12 +91,12 @@
             (equal
              (mv-nth
               1
-              (ls-list fat32-in-memory name-list exit-status))
+              (ls-list fat32$c name-list exit-status))
              exit-status))
            (equal
             (mv-nth
              1
-             (ls-list fat32-in-memory name-list exit-status))
+             (ls-list fat32$c name-list exit-status))
             2))
   :rule-classes :linear)
 
@@ -104,10 +104,10 @@
 (defthmd ls-list-correctness-1-lemma-2
   (implies
    (not (equal (mv-nth 1
-                       (lofat-lstat fat32-in-memory path))
+                       (lofat-lstat fat32$c path))
                0))
    (equal (mv-nth 1
-                  (lofat-lstat fat32-in-memory path))
+                  (lofat-lstat fat32$c path))
           -1))
   :hints (("goal" :in-theory (enable lofat-lstat))))
 
@@ -119,7 +119,7 @@
     (not
      (equal
       (mv-nth 1
-              (ls-list fat32-in-memory name-list exit-status))
+              (ls-list fat32$c name-list exit-status))
       2)))
    (and
     (fat32-filename-list-p
@@ -128,19 +128,19 @@
      (mv-nth
       1
       (lofat-lstat
-       fat32-in-memory
+       fat32$c
        (path-to-fat32-path (explode path))))
      0))))
 
 (defthm lstat-after-unlink-1
-  (implies (and (lofat-fs-p fat32-in-memory)
+  (implies (and (lofat-fs-p fat32$c)
                 (fat32-filename-list-p path)
-                (equal (mv-nth 1 (lofat-to-hifat fat32-in-memory))
+                (equal (mv-nth 1 (lofat-to-hifat fat32$c))
                        0))
-           (b* (((mv fat32-in-memory unlink-errno)
-                 (lofat-unlink fat32-in-memory path))
+           (b* (((mv fat32$c unlink-errno)
+                 (lofat-unlink fat32$c path))
                 ((mv & lstat-errno)
-                 (lofat-lstat fat32-in-memory path)))
+                 (lofat-lstat fat32$c path)))
              (implies (equal unlink-errno 0)
                       (equal lstat-errno -1))))
   :hints (("goal" :do-not-induct t :in-theory (enable hifat-lstat))))
@@ -149,7 +149,7 @@
   ls-1-after-rm-1
   (implies
    (and
-    (lofat-fs-p fat32-in-memory)
+    (lofat-fs-p fat32$c)
     (< 0
        (len (intersection-equal ls-paths rm-paths)))
     (rm-list-extra-hypothesis
@@ -163,7 +163,7 @@
         (rm-list
          (mv-nth
           '0
-          (string-to-lofat fat32-in-memory disk-image-string))
+          (string-to-lofat fat32$c disk-image-string))
          rm-paths '0))))
      '0)
     (equal
@@ -171,14 +171,14 @@
       1
       (lofat-to-hifat
        (mv-nth 0
-               (string-to-lofat fat32-in-memory disk-image-string))))
+               (string-to-lofat fat32$c disk-image-string))))
      0))
-   (b* (((mv fat32-in-memory
+   (b* (((mv fat32$c
              disk-image-string rm-exit-status)
-         (rm-1 fat32-in-memory
+         (rm-1 fat32$c
                disk-image-string rm-paths))
         ((mv & & ls-exit-status)
-         (ls-1 fat32-in-memory
+         (ls-1 fat32$c
                ls-paths disk-image-string)))
      (implies (equal rm-exit-status 0)
               (equal ls-exit-status 2))))
@@ -197,10 +197,10 @@
             (intersection-equal ls-paths rm-paths)))
       (exit-status 0)
       (path-list rm-paths)
-      (fat32-in-memory
+      (fat32$c
        (mv-nth
         0
-        (string-to-lofat fat32-in-memory disk-image-string))))
+        (string-to-lofat fat32$c disk-image-string))))
      (:instance
       (:rewrite ls-list-correctness-1)
       (exit-status 0)
@@ -208,11 +208,11 @@
        (nth 0
             (intersection-equal ls-paths rm-paths)))
       (name-list ls-paths)
-      (fat32-in-memory
+      (fat32$c
        (mv-nth
         0
         (rm-list
          (mv-nth
           0
-          (string-to-lofat fat32-in-memory disk-image-string))
+          (string-to-lofat fat32$c disk-image-string))
          rm-paths 0))))))))

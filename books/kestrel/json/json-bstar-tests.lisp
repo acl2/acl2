@@ -29,7 +29,7 @@
 (assert-event (not (json-patternp 'T)))
 (assert-event (not (json-patternp 'NIL)))
 (assert-event (not (json-patternp '||)))
-(assert-event (not (json-patternp '::_)))
+(assert-event (not (json-patternp ':_)))
 
 ;; *.. is not allowed at the top level.
 ;; Currently it is only allowed as the last array element or object member.
@@ -51,7 +51,7 @@
 (assert-event (json-patternp '(:number 4)))
 (assert-event (json-patternp '(:number 4/5)))
 (assert-event (json-patternp '(:number efg)))
-(assert-event (not (json-patternp '(:number ::fgh))))
+(assert-event (not (json-patternp '(:number :fgh))))
 
 (assert-event (json-patternp '(:array *..)))
 (assert-event (json-patternp '(:object *..)))

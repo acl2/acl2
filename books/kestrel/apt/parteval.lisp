@@ -10,8 +10,10 @@
 
 (in-package "APT")
 
+(include-book "kestrel/error-checking/ensure-function-is-defined" :dir :system)
 (include-book "kestrel/error-checking/ensure-function-is-guard-verified" :dir :system)
 (include-book "kestrel/error-checking/ensure-function-is-logic-mode" :dir :system)
+(include-book "kestrel/error-checking/ensure-list-has-no-duplicates" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-boolean" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-symbol-list" :dir :system)
@@ -110,7 +112,7 @@
                    old "The first input" t nil))
        (description (msg "The target function ~x0" old$))
        ((er &) (ensure-function-is-logic-mode$ old$ description t nil))
-       ((er &) (ensure-function-defined$ old$ description t nil))
+       ((er &) (ensure-function-is-defined$ old$ description t nil))
        ((er &) (ensure-function-number-of-results$ old$ 1
                                                    description t nil))
        ((er &) (ensure-function-no-stobjs$ old$ description t nil))
@@ -190,7 +192,7 @@
         (msg "The list ~x0 of static parameters" y1...ym))
        ((when (null y1...ym))
         (er-soft+ ctx t nil "~@0 must not be empty." description))
-       ((er &) (ensure-list-no-duplicates$ y1...ym description t nil))
+       ((er &) (ensure-list-has-no-duplicates$ y1...ym description t nil))
        ((er &) (ensure-value-is-symbol-list$ y1...ym description t nil))
        ((er &) (ensure-list-subset$ y1...ym (formals old$ (w state))
                                     description t nil))

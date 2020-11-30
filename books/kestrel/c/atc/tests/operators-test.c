@@ -66,6 +66,26 @@ int main(void) {
   ok &= sint_ne_test1();
   ok &= sint_ne_test2();
   ok &= sint_ne_test3();
+  ok &= sint_bitand_test1();
+  ok &= sint_bitand_test2();
+  ok &= sint_bitand_test3();
+  ok &= sint_bitand_test4();
+  ok &= sint_bitxor_test1();
+  ok &= sint_bitxor_test2();
+  ok &= sint_bitxor_test3();
+  ok &= sint_bitxor_test4();
+  ok &= sint_bitior_test1();
+  ok &= sint_bitior_test2();
+  ok &= sint_bitior_test3();
+  ok &= sint_bitior_test4();
+  ok &= sint_logand_test1();
+  ok &= sint_logand_test2();
+  ok &= sint_logand_test3();
+  ok &= sint_logand_test4();
+  ok &= sint_logor_test1();
+  ok &= sint_logor_test2();
+  ok &= sint_logor_test3();
+  ok &= sint_logor_test4();
   if (ok)
     printf("All tests passed.\n");
   else

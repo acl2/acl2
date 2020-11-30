@@ -24,10 +24,10 @@
 
   (defrule dec-digitp-of-char-code
     (equal (dec-digitp (char-code char))
-           (str::digitp char))
-    :enable (dec-digitp str::digitp))
+           (str::dec-digit-char-p char))
+    :enable (dec-digitp str::dec-digit-char-p))
 
   (defrule dec-digit-listp-of-chars=>nats
     (equal (dec-digit-listp (chars=>nats chars))
-           (str::digit-listp chars))
+           (str::dec-digit-char-listp chars))
     :enable chars=>nats))

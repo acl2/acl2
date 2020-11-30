@@ -10,11 +10,12 @@
 
 (in-package "C")
 
-(include-book "c-abstract-syntax")
-(include-book "c-pretty-printer" :ttags ((:open-output-channel!)))
-(include-book "c-static-semantics")
-(include-book "c-dynamic-semantics")
+(include-book "abstract-syntax")
+(include-book "pretty-printer" :ttags ((:open-output-channel!)))
+(include-book "static-semantics")
+(include-book "dynamic-semantics")
 
+(include-book "kestrel/error-checking/ensure-function-is-defined" :dir :system)
 (include-book "kestrel/error-checking/ensure-function-is-guard-verified" :dir :system)
 (include-book "kestrel/error-checking/ensure-function-is-logic-mode" :dir :system)
 (include-book "kestrel/error-checking/ensure-symbol-is-fresh-event-name" :dir :system)
@@ -24,9 +25,16 @@
 (include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
 (include-book "kestrel/event-macros/cw-event" :dir :system)
 (include-book "kestrel/event-macros/event-generation" :dir :system)
+(include-book "kestrel/event-macros/make-event-terse" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
-(include-book "kestrel/std/system/check-if-call" :dir :system)
-(include-book "kestrel/utilities/error-checking/top" :dir :system)
+(include-book "kestrel/std/system/check-mbt-call" :dir :system)
+(include-book "kestrel/std/system/check-mbt-dollar-call" :dir :system)
+(include-book "kestrel/std/system/formals-plus" :dir :system)
+(include-book "kestrel/std/system/maybe-pseudo-event-formp" :dir :system)
+(include-book "kestrel/std/system/table-alist-plus" :dir :system)
+(include-book "kestrel/std/system/ubody-plus" :dir :system)
+(include-book "kestrel/std/system/uguard-plus" :dir :system)
+(include-book "kestrel/std/util/tuple" :dir :system)
 (include-book "oslib/dirname" :dir :system)
 (include-book "oslib/file-types" :dir :system)
 
@@ -52,6 +60,8 @@
 
   (xdoc::evmac-topic-implementation-item-input "output-file")
 
+  xdoc::*evmac-topic-implementation-item-call*
+
   "@('const') is the symbol specified by @('const-name')."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -68,7 +78,7 @@
        (desc (msg "The target function ~x0" fn))
        ((er &) (acl2::ensure-function-is-logic-mode$ fn desc t nil))
        ((er &) (acl2::ensure-function-is-guard-verified$ fn desc t nil))
-       ((er &) (acl2::ensure-function-defined$ fn desc t nil)))
+       ((er &) (acl2::ensure-function-is-defined$ fn desc t nil)))
     (value nil))
   :guard-hints (("Goal" :in-theory (enable
                                     acl2::ensure-value-is-function-name
@@ -227,7 +237,10 @@
         (if output-file-option
             (mv (cdr output-file-option) t)
           (mv :irrelevant nil)))
-       (verbose (cdr (assoc-eq :verbose options)))
+       (verbose-option (assoc-eq :verbose options))
+       (verbose (if verbose-option
+                    (cdr verbose-option)
+                  t))
        ((er &) (atc-process-fn1...fnp fn1...fnp ctx state))
        ((er const) (atc-process-const-name const-name ctx state))
        ((er &) (atc-process-output-file output-file
@@ -242,6 +255,80 @@
                  const
                  output-file
                  verbose))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc+ atc-table
+  :parents (atc-implementation)
+  :short "Table of @(tsee atc) calls."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Every successful call of @(tsee atc) is recorded in a table.
+     This is used to support redundancy checking (see @(tsee atc-fn))."))
+  :order-subtopics t
+  :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defval *atc-table*
+  :short "Name of the table of @(tsee atc) calls."
+  'atc-table)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defaggregate atc-call-info
+  :short "Information associated to an @(tsee atc) call
+          in the table of @(tsee atc) calls."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now we only record the generated encapsulate.
+     More information may be recorded in the future."))
+  ((encapsulate pseudo-event-formp))
+  :pred atc-call-infop)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-maybe-call-infop (x)
+  :short "Optional information associated to an @(tsee atc) call
+          in the table of @(tsee atc) calls."
+  (or (atc-call-infop x)
+      (eq x nil)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection atc-table-definition
+  :short "Definition of the table of @(tsee atc) calls."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The keys of the table are calls of @(tsee atc).
+     The values of the table are the associated information."))
+
+  (make-event
+   `(table ,*atc-table* nil nil
+      :guard (and (pseudo-event-formp acl2::key)
+                  (atc-call-infop acl2::val)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-table-lookup ((call pseudo-event-formp) (wrld plist-worldp))
+  :returns (info? atc-maybe-call-infop)
+  :short "Look up an @(tsee atc) call in the table."
+  (b* ((table (acl2::table-alist+ *atc-table* wrld))
+       (info? (cdr (assoc-equal call table))))
+    (if (atc-maybe-call-infop info?)
+        info?
+      (raise "Internal error: value ~x0 of key ~x1 in the ATC table.")))
+  :prepwork ((local (include-book "std/alists/top" :dir :system))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-table-record-event ((call pseudo-event-formp) (info atc-call-infop))
+  :returns (event pseudo-event-formp)
+  :short "Event to update the table of @(tsee atc) calls."
+  `(table ,*atc-table* ',call ',info))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -270,183 +357,264 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-check-if-test ((term pseudo-termp) (fn symbolp) ctx state)
-  :returns (mv erp (arg pseudo-termp) state)
-  :short "Check if the test of an @(tsee if) has the right form."
+(define atc-check-sint-const ((term pseudo-termp))
+  :returns (mv (yes/no booleanp)
+               (val acl2::sbyte32p))
+  :short "Check if a term represents an @('int') constant."
   :long
   (xdoc::topstring
    (xdoc::p
-    "ATC requires all the test terms of @(tsee if) calls
-     to be calls of @(tsee c::sint-nonzerop),
-     which converts C @('int') values to ACL2 booleans.
-     Thus, it works for ACL2 tests,
-     but at the same time its argument directly represents a C test.
-     Here we check that a term is a call of this function,
-     and we return its argument if it does."))
-  (if (and (acl2::nvariablep term)
-           (not (acl2::fquotep term))
-           (not (acl2::flambda-applicationp term))
-           (eq (acl2::ffn-symb term) 'sint-nonzerop))
-      (b* ((arg (acl2::fargn term 1)))
-        (if (pseudo-termp arg)
-            (value arg)
-          (value (raise "Internal error: the term ~x0 is not well-formed."
-                        term))))
-    (er-soft+ ctx t nil
-              "Tests of IF must be calls of ~x0 on allowed terms, ~
-               but an IF test in function ~x1 is ~x2 instead."
-              'sint-nonzerop fn term))
-  :hooks (:fix)
+    "If the term is a call of @(tsee sint-const) on a quoted integer constant
+     whose value is non-negative and representable as an @('int'),
+     we return the value.
+     This way, the caller can generate the appropriate C integer constant."))
+  (case-match term
+    (('sint-const ('quote val))
+     (if (and (natp val)
+              (acl2::sbyte32p val))
+         (mv t val)
+       (mv nil 0)))
+    (& (mv nil 0)))
   ///
-  (defret acl2-count-of-atc-check-if-test
-    (implies (not erp)
+  (defret natp-of-atc-check-sint-const
+    (natp val)
+    :rule-classes :type-prescription))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-check-sint-unop ((term pseudo-termp))
+  :returns (mv (yes/no booleanp)
+               (op unopp)
+               (arg pseudo-termp :hyp :guard))
+  :short "Check if a term represents
+          an @('int') unary expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the term is a call of one of the ACL2 functions
+     that represent C unary operators,
+     we return the operator and the argument term.
+     This way, the caller can translate the argument term to a C expression
+     and apply the operator to the expression.")
+   (xdoc::p
+    "If the term does not have that form, we return an indication of failure.
+     The term may represent some other kind of C expression."))
+  (case-match term
+    ((fn arg)
+     (case fn
+       (sint-plus (mv t (unop-plus) arg))
+       (sint-minus (mv t (unop-minus) arg))
+       (sint-bitnot (mv t (unop-bitnot) arg))
+       (sint-lognot (mv t (unop-lognot) arg))
+       (t (mv nil (irr-unop) nil))))
+    (& (mv nil (irr-unop) nil)))
+  ///
+
+  (defret acl2-count-of-atc-check-sint-unop-arg
+    (implies yes/no
              (< (acl2-count arg)
                 (acl2-count term)))
     :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-expr ((term pseudo-termp) (fn symbolp) ctx state)
-  :returns (mv erp (expr exprp) state)
-  :verify-guards :after-returns
-  :short "Generate a C expression from an ACL2 term."
+(define atc-check-sint-binop ((term pseudo-termp))
+  :returns (mv (yes/no booleanp)
+               (op binopp)
+               (arg1 pseudo-termp :hyp :guard)
+               (arg2 pseudo-termp :hyp :guard))
+  :short "Check if a term represents
+          an @('int') non-side-effecting binary expression."
   :long
   (xdoc::topstring
    (xdoc::p
-    "At the same time, we check that the term satisfies
-     the restrictions stated in the user documentation.")
+    "If the term is a call of one of the ACL2 functions
+     that represent C non-side-effecting binary operators,
+     we return the operator and the argument terms.
+     This way, the caller can translate the argument terms to C expressions
+     and apply the operator to the expressions.")
    (xdoc::p
-    "At the top-level, we disallow quoted constants.
-     These are only allowed as arguments of @(tsee sint-const),
-     so they are checked and accepted as part of a call of this function.")
+    "Note that when @('&&') and @('||') are represented this way,
+     their ACL2 representation is strict,
+     which may be acceptable in some cases.")
    (xdoc::p
-    "We allow any variables,
-     because they must be formal parameters,
-     given that we disallow lambda expressions.")
-   (xdoc::p
-    "We allow only calls of the functions listed in the user documentation,
-     and subject to the constraints stated there.")
-   (xdoc::p
-    "We translate @(tsee if) calls to conditional expressions.
-     This is done for the ``inner'' @(tsee if) calls,
-     i.e. the ones that are arguments of non-@(tsee if) functions
-     or test (not branch) arguments of @(tsee if).
-     Before getting here, @(tsee atc-gen-stmt) has already generated statements
-     for the ``outer'' @(tsee if) calls, i.e. the other such calls.")
-   (xdoc::p
-    "For calls of @(tsee sint-const), we check that the argument
-     is an integer quoted constant.
-     The fact that it is in the right range is guaranteed by guard verification,
-     so we do not need to check that."))
-  (b* (((when (acl2::variablep term))
-        (value (expr-ident (ident (symbol-name term)))))
-       ((when (acl2::fquotep term))
-        (er-soft+ ctx t (irr-expr)
-                  "The quoted constant ~x0 in the body of ~x1 ~
-                   is disallowed. ~
-                   Only quoted integer constants are allowed, ~
-                   and only as arguments of SINT-CONST."
-                  term fn))
-       ((when (acl2::flambda-applicationp term))
-        (er-soft+ ctx t (irr-expr)
-                  "Lambda expressions, such as ~x0 in the body of ~x1, ~
-                   are disallowed.
-                   Support for LET variables (i.e. lambda expressions) ~
-                   will be added later."
-                  (acl2::ffn-symb term) fn))
-       (op (acl2::ffn-symb term))
-       ((when (eq op 'if))
-        (b* ((test (acl2::fargn term 1))
-             (then (acl2::fargn term 2))
-             (else (acl2::fargn term 3))
-             ((mv erp test-arg state) (atc-check-if-test test fn ctx state))
-             ((when erp) (mv erp (irr-expr) state))
-             ((er test-expr) (atc-gen-expr test-arg fn ctx state))
-             ((er then-expr) (atc-gen-expr then fn ctx state))
-             ((er else-expr) (atc-gen-expr else fn ctx state)))
-          (value (make-expr-cond :test test-expr
-                                 :then then-expr
-                                 :else else-expr))))
-       ((when (eq op 'sint-const))
-        (b* ((arg (acl2::fargn term 1))
-             ((unless (quotep arg))
-              (er-soft+ ctx t (irr-expr)
-                        "The call x0 in the body of ~x1 is disallowed. ~
-                         SINT-CONST may be called only on ~
-                         quoted constants."
-                        term fn))
-             (val (unquote arg))
-             ((unless (integerp val))
-              (er-soft+ ctx t (irr-expr)
-                        "The call x0 in the body of ~x1 is disallowed. ~
-                         The quoted constant ~x2 argument of SINT-CONST ~
-                         must be an integer."
-                        term fn arg))
-             ((unless (and (>= val 0)
-                           (acl2::sbyte32p val)))
-              (raise "Internal error: the value ~x0 of the quoted constant ~
-                      in the argument of the call ~x1 in the body of ~x2 ~
-                      is out of range.")
-              (value (irr-expr))))
-          (value (expr-const
-                  (const-int
-                   (make-iconst :value (unquote arg)
-                                :base (iconst-base-dec)
-                                :unsignedp nil
-                                :type (iconst-tysuffix-none)))))))
-       ((when (member-eq op '(sint-plus
-                              sint-minus
-                              sint-bitnot
-                              sint-lognot)))
-        (b* (((er arg) (atc-gen-expr (acl2::fargn term 1) fn ctx state))
-             (unop (case op
-                     (sint-plus (unop-plus))
-                     (sint-minus (unop-minus))
-                     (sint-bitnot (unop-bitnot))
-                     (sint-lognot (unop-lognot)))))
-          (value (make-expr-unary :op unop :arg arg))))
-       ((when (member-eq op '(sint-add
-                              sint-sub
-                              sint-mul
-                              sint-div
-                              sint-rem
-                              sint-shl-sint
-                              sint-shr-sint
-                              sint-lt
-                              sint-gt
-                              sint-le
-                              sint-ge
-                              sint-eq
-                              sint-ne
-                              sint-bitand
-                              sint-bitxor
-                              sint-bitior)))
-        (b* (((er arg1) (atc-gen-expr (acl2::fargn term 1) fn ctx state))
-             ((er arg2) (atc-gen-expr (acl2::fargn term 2) fn ctx state))
-             (binop (case op
-                      (sint-add (binop-add))
-                      (sint-sub (binop-sub))
-                      (sint-mul (binop-mul))
-                      (sint-div (binop-div))
-                      (sint-rem (binop-rem))
-                      (sint-shl-sint (binop-shl))
-                      (sint-shr-sint (binop-shr))
-                      (sint-lt (binop-lt))
-                      (sint-gt (binop-gt))
-                      (sint-le (binop-le))
-                      (sint-ge (binop-ge))
-                      (sint-eq (binop-eq))
-                      (sint-ne (binop-ne))
-                      (sint-bitand (binop-bitand))
-                      (sint-bitxor (binop-bitxor))
-                      (sint-bitior (binop-bitior)))))
-          (value (make-expr-binary :op binop :arg1 arg1 :arg2 arg2)))))
-    (er-soft+ ctx t (irr-expr)
-              "The function ~x0 in the body of ~x1 is disallowed. ~
-               Support for calling more C operations, ~
-               and for calling the target functions, ~
-               will be added later."
-              op fn)))
+    "If the term does not have that form, we return an indication of failure.
+     The term may represent some other kind of C expression."))
+  (case-match term
+    ((fn arg1 arg2)
+     (case fn
+       (sint-add (mv t (binop-add) arg1 arg2))
+       (sint-sub (mv t (binop-sub) arg1 arg2))
+       (sint-mul (mv t (binop-mul) arg1 arg2))
+       (sint-div (mv t (binop-div) arg1 arg2))
+       (sint-rem (mv t (binop-rem) arg1 arg2))
+       (sint-shl-sint (mv t (binop-shl) arg1 arg2))
+       (sint-shr-sint (mv t (binop-shr) arg1 arg2))
+       (sint-lt (mv t (binop-lt) arg1 arg2))
+       (sint-le (mv t (binop-le) arg1 arg2))
+       (sint-gt (mv t (binop-gt) arg1 arg2))
+       (sint-ge (mv t (binop-ge) arg1 arg2))
+       (sint-eq (mv t (binop-eq) arg1 arg2))
+       (sint-ne (mv t (binop-ne) arg1 arg2))
+       (sint-bitand (mv t (binop-bitand) arg1 arg2))
+       (sint-bitxor (mv t (binop-bitxor) arg1 arg2))
+       (sint-bitior (mv t (binop-bitior) arg1 arg2))
+       (sint-logand (mv t (binop-logand) arg1 arg2))
+       (sint-logor (mv t (binop-logor) arg1 arg2))
+       (t (mv nil (irr-binop) nil nil))))
+    (& (mv nil (irr-binop) nil nil)))
+  ///
+
+  (defret acl2-count-of-atc-check-sint-binop-arg1
+    (implies yes/no
+             (< (acl2-count arg1)
+                (acl2-count term)))
+    :rule-classes :linear)
+
+  (defret acl2-count-of-atc-check-sint-binop-arg2
+    (implies yes/no
+             (< (acl2-count arg2)
+                (acl2-count term)))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defines atc-gen-expr-fns
+  :short "Mutually recursive functions to
+          generate C expressions from ACL terms."
+
+  (define atc-gen-expr-nonbool ((term pseudo-termp) (fn symbolp) ctx state)
+    :returns (mv erp (expr exprp) state)
+    :parents (atc-event-and-code-generation atc-gen-expr-fns)
+    :short "Generate a C expression from a ACL2 term
+            that must be an allowed non-boolean term."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "At the same time, we check that the term is an allowed non-boolean term,
+       as described in the user documentation.")
+     (xdoc::p
+      "An ACL2 variable is translated to a C variable.")
+     (xdoc::p
+      "If the term fits the @(tsee sint-const) pattern
+       we translate it to a C integer constant.")
+     (xdoc::p
+      "If the term fits the pattern of a unary or binary operation,
+       we translate it to the application of the operator
+       to the recursively generated expressions.")
+     (xdoc::p
+      "If the term is a call of @(tsee c::sint01),
+       we call the mutually recursive function
+       that translates the argument, which must be an allowed boolean term,
+       to an expression, which we return.")
+     (xdoc::p
+      "If the term is an @(tsee if) call,
+       first we check if the test is @(tsee mbt) or @(tsee mbt$);
+       in that case, we discard test and `else' branch
+       and recursively process the `then' branch.
+       Otherwise,
+       we call the mutually recursive function on the test,
+       we call this function on the branches,
+       and we construct a conditional expression.")
+     (xdoc::p
+      "In all other cases, we fail with an error.
+       The term is not an allowed non-boolean term.
+       We could extend this code to provide
+       more information to the user at some point."))
+    (b* (((when (acl2::variablep term))
+          (value (expr-ident (make-ident :name (symbol-name term)))))
+         ((mv okp val) (atc-check-sint-const term))
+         ((when okp)
+          (value
+           (expr-const (const-int (make-iconst :value val
+                                               :base (iconst-base-dec)
+                                               :unsignedp nil
+                                               :type (iconst-tysuffix-none))))))
+         ((mv okp op arg) (atc-check-sint-unop term))
+         ((when okp)
+          (b* (((er arg-expr) (atc-gen-expr-nonbool arg fn ctx state)))
+            (value (make-expr-unary :op op :arg arg-expr))))
+         ((mv okp op arg1 arg2) (atc-check-sint-binop term))
+         ((when okp)
+          (b* (((er arg1-expr) (atc-gen-expr-nonbool arg1 fn ctx state))
+               ((er arg2-expr) (atc-gen-expr-nonbool arg2 fn ctx state)))
+            (value (make-expr-binary :op op :arg1 arg1-expr :arg2 arg2-expr)))))
+      (case-match term
+        (('c::sint01 arg)
+         (atc-gen-expr-bool arg fn ctx state))
+        (('if test then else)
+         (b* (((mv mbtp &) (acl2::check-mbt-call test))
+              ((when mbtp) (atc-gen-expr-nonbool then fn ctx state))
+              ((mv mbt$p &) (acl2::check-mbt$-call test))
+              ((when mbt$p) (atc-gen-expr-nonbool then fn ctx state))
+              ((er test-expr) (atc-gen-expr-bool test fn ctx state))
+              ((er then-expr) (atc-gen-expr-nonbool then fn ctx state))
+              ((er else-expr) (atc-gen-expr-nonbool else fn ctx state)))
+           (value
+            (make-expr-cond :test test-expr :then then-expr :else else-expr))))
+        (& (er-soft+ ctx t (irr-expr)
+                     "When generating C code for the function ~x0, ~
+                      at a point where
+                      an allowed non-boolean ACL2 term is expected, ~
+                      the term ~x1 is encountered instead."
+                     fn term)))))
+
+  (define atc-gen-expr-bool ((term pseudo-termp) (fn symbolp) ctx state)
+    :returns (mv erp (expr exprp) state)
+    :parents (atc-event-and-code-generation atc-gen-expr-fns)
+    :short "Generate a C expression from a ACL2 term
+            that must be an allowed boolean term."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "At the same time, we check that the term is an allowed boolen term,
+       as described in the user documentation.")
+     (xdoc::p
+      "If the term is a call of @(tsee not), @(tsee and), or @(tsee or),
+       we recursively translate the arguments,
+       which must be an allowed boolean terms,
+       and we construct a logical expression
+       with the corresponding C operators.")
+     (xdoc::p
+      "If the term is a call of @(tsee sint-nonzerop),
+       we call the mutually recursive function
+       that translates the argument, which must be an allowed non-boolean term,
+       to an expression, which we return.")
+     (xdoc::p
+      "In all other cases, we fail with an error.
+       The term is not an allowed non-boolean term.
+       We could extend this code to provide
+       more information to the user at some point."))
+    (case-match term
+      (('not arg)
+       (b* (((er arg-expr) (atc-gen-expr-bool arg fn ctx state)))
+         (value (make-expr-unary :op (unop-lognot) :arg arg-expr))))
+      (('if arg1 arg2 ''nil)
+       (b* (((er arg1-expr) (atc-gen-expr-bool arg1 fn ctx state))
+            ((er arg2-expr) (atc-gen-expr-bool arg2 fn ctx state)))
+         (value (make-expr-binary :op (binop-logand)
+                                  :arg1 arg1-expr
+                                  :arg2 arg2-expr))))
+      (('if arg1 arg1 arg2)
+       (b* (((er arg1-expr) (atc-gen-expr-bool arg1 fn ctx state))
+            ((er arg2-expr) (atc-gen-expr-bool arg2 fn ctx state)))
+         (value (make-expr-binary :op (binop-logor)
+                                  :arg1 arg1-expr
+                                  :arg2 arg2-expr))))
+      (('c::sint-nonzerop arg)
+       (atc-gen-expr-nonbool arg fn ctx state))
+      (& (er-soft+ ctx t (irr-expr)
+                   "When generating C code for the function ~x0, ~
+                    at a point where
+                    an allowed boolean ACL2 term is expected, ~
+                    the term ~x1 is encountered instead."
+                   fn term))))
+
+  :prepwork ((set-state-ok t))
+
+  :verify-guards nil ; done below
+  ///
+  (verify-guards atc-gen-expr-nonbool))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -461,23 +629,28 @@
      If the term is not a conditional,
      we generate a C expression for the term
      and generate a @('return') statement with that expression.
+     Otherwise, the term is a conditional and there are two cases.
+     If the test is @(tsee mbt) or @(tsee mbt$),
+     we discard test and `else' branch
+     and recursively translate the `then' branch.
      Otherwise, we generate an @('if') statement,
      with recursively generated statements as branches;
      the test expression is generated from the test term."))
-  (b* (((mv ifp test then else) (acl2::check-if-call term)))
-    (if ifp
-        (b* (((mv erp test-arg state) (atc-check-if-test test fn ctx state))
-             ((when erp) (mv erp (irr-stmt) state))
-             ((mv erp test-expr state) (atc-gen-expr test-arg fn ctx state))
-             ((when erp) (mv erp (irr-stmt) state))
-             ((er then-stmt) (atc-gen-stmt then fn ctx state))
-             ((er else-stmt) (atc-gen-stmt else fn ctx state)))
-          (value
-           (make-stmt-ifelse :test test-expr :then then-stmt :else else-stmt)))
-      (b* (((mv erp expr state) (atc-gen-expr term fn ctx state))
-           ((when erp) (mv erp (irr-stmt) state)))
-        (value
-         (make-stmt-return :value expr))))))
+  (case-match term
+    (('if test then else)
+     (b* (((mv mbtp &) (acl2::check-mbt-call test))
+          ((when mbtp) (atc-gen-stmt then fn ctx state))
+          ((mv mbt$p &) (acl2::check-mbt$-call test))
+          ((when mbt$p) (atc-gen-stmt then fn ctx state))
+          ((mv erp test-expr state) (atc-gen-expr-bool test fn ctx state))
+          ((when erp) (mv erp (irr-stmt) state))
+          ((er then-stmt) (atc-gen-stmt then fn ctx state))
+          ((er else-stmt) (atc-gen-stmt else fn ctx state)))
+       (value
+        (make-stmt-ifelse :test test-expr :then then-stmt :else else-stmt))))
+    (& (b* (((mv erp expr state) (atc-gen-expr-nonbool term fn ctx state))
+            ((when erp) (mv erp (irr-stmt) state)))
+         (value (make-stmt-return :value expr))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -491,7 +664,7 @@
                    the formal parameter ~x1 of the function ~x2 ~
                    must be a portable ASCII C identifier, but it is not."
                   name formal fn)))
-    (value (make-param-decl :name (ident name)
+    (value (make-param-decl :name (make-ident :name name)
                             :type (tyspecseq-sint)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -573,7 +746,7 @@
     (value
      (ext-decl-fundef
       (make-fundef :result (tyspecseq-sint)
-                   :name (ident name)
+                   :name (make-ident :name name)
                    :params params
                    :body (stmt-compound (list (block-item-stmt stmt))))))))
 
@@ -608,20 +781,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-const ((const symbolp) (tunit transunitp))
-  :returns (event acl2::pseudo-event-formp)
+(define atc-gen-const ((const symbolp) (tunit transunitp) (verbose booleanp))
+  :returns (mv (local-event pseudo-event-formp)
+               (exported-event pseudo-event-formp))
   :short "Generate the named constant for the abstract syntax tree
           of the generated C code (i.e. translation unit)."
-  `(defconst ,const ',tunit))
+  (b* ((progress-start?
+        (and verbose
+             `((cw-event "~%Generating the named constant ~x0..." ',const))))
+       (progress-end? (and verbose `((cw-event " done.~%"))))
+       (defconst-event `(defconst ,const ',tunit))
+       (local-event `(progn ,@progress-start?
+                            (local ,defconst-event)
+                            ,@progress-end?)))
+    (mv local-event defconst-event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-wf-thm ((const symbolp) ctx state)
+(define atc-gen-wf-thm ((const symbolp) (verbose booleanp) ctx state)
   :returns (mv erp
                (result
-                "A @('(tuple (name symbolp)
-                             (local-event acl2::pseudo-event-formp)
-                             (exported-event acl2::pseudo-event-formp))').")
+                "A @('(tuple (local-event pseudo-event-formp)
+                             (exported-event pseudo-event-formp))').")
                state)
   :mode :program
   :short "Generate the theorem asserting
@@ -651,17 +832,27 @@
          name
          :formula `(transunit-wfp ,const)
          :hints '(("Goal" :in-theory '((:e transunit-wfp))))
-         :enable nil)))
-    (value (list name local-event exported-event))))
+         :enable nil))
+       (progress-start?
+        (and verbose
+             `((cw-event "~%Generating the theorem ~x0..." ',name))))
+       (progress-end? (and verbose `((cw-event " done.~%"))))
+       (local-event `(progn ,@progress-start?
+                            ,local-event
+                            ,@progress-end?)))
+    (value (list local-event exported-event))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-fn-thm ((fn symbolp) (const symbolp) ctx state)
+(define atc-gen-fn-thm ((fn symbolp)
+                        (const symbolp)
+                        (verbose booleanp)
+                        ctx
+                        state)
   :returns (mv erp
                (result
-                "A @('(tuple (name symbolp)
-                             (local-event acl2::pseudo-event-formp)
-                             (exported-event acl2::pseudo-event-formp))').")
+                "A @('(tuple (local-event pseudo-event-formp)
+                             (exported-event pseudo-event-formp))').")
                state)
   :mode :program
   :short "Generate the theorem asserting
@@ -671,14 +862,16 @@
   (xdoc::topstring
    (xdoc::p
     "The execution of the C function according to the dynamic semantics
-     is expressed by calling @(tsee exec-fun) on
+     is expressed by calling @(tsee run-fun) on
      the name of @('fn'), the formals of @('fn'), and @('*const*').
      This is equated to a call of @('fn') on its formals.
      The guard of @('fn') is used as hypothesis.")
    (xdoc::p
     "The currently generated proof hints are simple:
-     we enable @(tsee exec-fun) and all the functions that it calls
+     we enable @(tsee run-fun) and all the functions that it calls
      in the dynamic execution;
+     we also need to force the expansion of @(tsee exec-fun),
+     based on experimentation;
      we also use the guard theorem of @('fn').
      Given that the translation unit is a constant,
      this symbolically executes the C function.
@@ -708,73 +901,126 @@
        (wrld (w state))
        (formals (acl2::formals+ fn wrld))
        (guard (untranslate (acl2::uguard fn wrld) t wrld))
-       (lhs `(exec-fun (ident ,(symbol-name fn))
-                       (list ,@formals)
-                       ,const))
+       (lhs `(run-fun (ident ,(symbol-name fn))
+                      (list ,@formals)
+                      ,const))
        (rhs `(value-result-ok (,fn ,@formals)))
        (hints `(("Goal"
-                 :in-theory (enable exec-fun
+                 :in-theory (enable run-fun
                                     init-store
-                                    lookup-fun
-                                    lookup-fun-aux
+                                    exec-fun
                                     exec-stmt
                                     exec-block-item
                                     exec-block-item-list
                                     exec-expr
                                     exec-binary
+                                    exec-binary-strict
+                                    exec-binary-logand
+                                    exec-binary-logor
                                     exec-unary
                                     exec-ident
                                     exec-const
                                     exec-iconst
+                                    top-frame
+                                    push-frame
+                                    pop-frame
                                     store-result-kind
                                     store-result-ok->get
                                     value-result-kind
                                     value-result-ok->get
-                                    maybe-value-result-kind
-                                    maybe-value-result-ok->get)
+                                    value-option-result-kind
+                                    value-option-result-ok->get)
+                 :expand ((:free (fun args env limit)
+                           (c::exec-fun fun args env limit)))
                  :use (:guard-theorem ,fn))))
        ((mv local-event exported-event)
         (acl2::evmac-generate-defthm
          name
          :formula `(implies ,guard (equal ,lhs ,rhs))
          :hints hints
-         :enable nil)))
-    (value (list name local-event exported-event))))
+         :enable nil))
+       (progress-start?
+        (and verbose
+             `((cw-event "~%Generating the theorem ~x0..." ',name))))
+       (progress-end? (and verbose `((cw-event " done.~%"))))
+       (local-event `(progn ,@progress-start?
+                            ,local-event
+                            ,@progress-end?)))
+    (value (list local-event exported-event))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-fn-thm-list ((fns symbol-listp) (const symbolp) ctx state)
+(define atc-gen-fn-thm-list ((fns symbol-listp)
+                             (const symbolp)
+                             (verbose booleanp)
+                             ctx
+                             state)
   :returns (mv erp
                (result
                 "A @('(tuple
-                       (names symbol-listp)
-                       (local-events acl2::pseudo-event-form-listp)
-                       (exported-events acl2::pseudo-event-form-listp))').")
+                       (local-events pseudo-event-form-listp)
+                       (exported-events pseudo-event-form-listp))').")
                state)
   :mode :program
   :short "Lift @(tsee atc-gen-fn-thm) to lists."
   (b* (((when (endp fns)) (value (list nil nil nil)))
-       ((er (list name local-event exported-event))
-        (atc-gen-fn-thm (car fns) const ctx state))
-       ((er (list names local-events exported-events))
-        (atc-gen-fn-thm-list (cdr fns) const ctx state)))
-    (value (list (cons name names)
-                 (cons local-event local-events)
+       ((er (list local-event exported-event))
+        (atc-gen-fn-thm (car fns) const verbose ctx state))
+       ((er (list local-events exported-events))
+        (atc-gen-fn-thm-list (cdr fns) const verbose ctx state)))
+    (value (list (cons local-event local-events)
                  (cons exported-event exported-events)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-file ((tunit transunitp) (output-file stringp) state)
-  :returns state
+  :returns (mv erp val state)
   :mode :program
   :short "Pretty-print the generated C code (i.e. translation unit)
           to the output file."
   (b* ((lines (pprint-transunit tunit)))
     (pprinted-lines-to-file lines output-file state)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-gen-everything ((fn1...fnp symbol-listp)
+                            (const symbolp)
+                            (output-file stringp)
+                            (verbose booleanp)
+                            (call pseudo-event-formp)
+                            ctx
+                            state)
+  :returns (mv erp (event "A @(tsee pseudo-event-formp).") state)
+  :mode :program
+  :short "Generate the file and the events."
+  (b* (((er tunit) (atc-gen-transunit fn1...fnp ctx state))
+       ((mv local-const-event exported-const-event)
+        (atc-gen-const const tunit verbose))
+       ((er (list wf-thm-local-event wf-thm-exported-event))
+        (atc-gen-wf-thm const verbose ctx state))
+       ((er (list fn-thm-local-events fn-thm-exported-events))
+        (atc-gen-fn-thm-list fn1...fnp const verbose ctx state))
+       ((acl2::run-when verbose) (cw "~%Generating file ~x0..." output-file))
+       ((er &) (atc-gen-file tunit output-file state))
+       ((acl2::run-when verbose) (cw " done.~%"))
+       (encapsulate
+         `(encapsulate ()
+            (evmac-prepare-proofs)
+            ,local-const-event
+            ,exported-const-event
+            ,wf-thm-local-event
+            ,wf-thm-exported-event
+            ,@fn-thm-local-events
+            ,@fn-thm-exported-events))
+       (info (make-atc-call-info :encapsulate encapsulate))
+       (table-event (atc-table-record-event call info)))
+    (value `(progn ,encapsulate
+                   ,table-event
+                   (value-triple :invisible)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-fn ((args true-listp) ctx state)
+(define atc-fn ((args true-listp) (call pseudo-event-formp) ctx state)
   :returns (mv erp
                (result "Always @('(value-triple :invisible)').")
                state)
@@ -782,30 +1028,11 @@
   :parents (atc-implementation)
   :short "Process the inputs and
           generate the constant definition and the C file."
-  (b* (((er (list fn1...fnp const output-file ?verbose))
-        (atc-process-inputs args ctx state))
-       ((er tunit) (atc-gen-transunit fn1...fnp ctx state))
-       (const-event (atc-gen-const const tunit))
-       ((er (list wf-thm-name wf-thm-local-event wf-thm-exported-event))
-        (atc-gen-wf-thm const ctx state))
-       ((er (list fn-thm-names fn-thm-local-events fn-thm-exported-events))
-        (atc-gen-fn-thm-list fn1...fnp const ctx state))
-       (state (atc-gen-file tunit output-file state))
-       (- (cw "~%Generated C file:~% ~x0~%" output-file))
-       (encapsulate
-         `(encapsulate ()
-            (evmac-prepare-proofs)
-            ,const-event
-            (cw-event "~%Generated named constant:~% ~x0~%" ',const)
-            ,wf-thm-local-event
-            ,wf-thm-exported-event
-            ,@fn-thm-local-events
-            ,@fn-thm-exported-events
-            (cw-event "~%Generated theorems:~% ~x0~%" ',wf-thm-name)
-            ,@(loop$ for name in fn-thm-names
-                     collect `(cw-event " ~x0~%" ',name)))))
-    (value `(progn ,encapsulate
-                   (value-triple :invisible)))))
+  (b* (((when (atc-table-lookup call (w state)))
+        (value '(value-triple :redundant)))
+       ((er (list fn1...fnp const output-file verbose))
+        (atc-process-inputs args ctx state)))
+    (atc-gen-everything fn1...fnp const output-file verbose call ctx state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -818,8 +1045,6 @@
     "We suppress the extra output produced by @(tsee make-event)
      via @(tsee with-output) and @('(:on-behalf-of :quiet)').")
    (xdoc::@def "atc"))
-  (defmacro atc (&rest args)
-    `(with-output :off :all :on acl2::error
-       (make-event
-        (atc-fn ',args 'atc state)
-        :on-behalf-of :quiet))))
+  (defmacro atc (&whole call &rest args)
+    `(make-event-terse (atc-fn ',args ',call 'atc state)
+                       :suppress-errors nil)))

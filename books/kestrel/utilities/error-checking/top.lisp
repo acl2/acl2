@@ -63,14 +63,6 @@
   (((not (eq symb symb1))
     "~@0 must be different from ~@1." description description1)))
 
-(def-error-checker ensure-list-no-duplicates
-  ((list true-listp "List to check."))
-  :short
-  "Cause an error if a true list has duplicates."
-  :body
-  (((no-duplicatesp-equal list)
-    "~@0 must have no duplicates." description)))
-
 (def-error-checker ensure-list-subset
   ((list true-listp "List to check.")
    (super true-listp "List that must include all the elements of @('list')."))
@@ -413,14 +405,6 @@
   :body
   (((programp fn (w state))
     "~@0 must be in program mode." description)))
-
-(def-error-checker ensure-function-defined
-  ((fn (logic-function-namep fn (w state)) "Function to check."))
-  :short
-  "Cause an error if a function is not defined."
-  :body
-  (((definedp fn (w state))
-    "~@0 must be defined." description)))
 
 (def-error-checker ensure-function-non-recursive
   ((fn (logic-function-namep fn (w state)) "Function to check."))

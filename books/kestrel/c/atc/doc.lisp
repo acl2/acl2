@@ -42,7 +42,7 @@
       Thus, ATC can be used at the end of an APT derivation.")
 
     (xdoc::p
-     "Currently ATC recognizes  a very limited subset of ACL2
+     "Currently ATC recognizes a very limited subset of ACL2
       and translates it to a very limited subset of C.
       This is just a first step (the development of ATC has just started);
       we plan to extend ATC to increasingly larger subsets of ACL2 and C.")
@@ -92,7 +92,7 @@
      "(atc fn1 ... fn"
      "     :const-name  ...  ; default :auto"
      "     :output-file ...  ; no default"
-     "     :verbose     ...  ; default nil"
+     "     :verbose     ...  ; default t"
      "  )"))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -142,7 +142,7 @@
        The file must include a @('.c') extension."))
 
     (xdoc::desc
-     "@(':verbose') &mdash; default @('nil')"
+     "@(':verbose') &mdash; default @('t')"
      (xdoc::p
       "Controls the amount of screen output:")
      (xdoc::ul
@@ -183,7 +183,7 @@
      "The name of each symbol that is a formal parameter of each @('fni')
       must be a portable ASCII C identifier
       as defined in Section `Portable ASCII C Identifiers' below.
-      The nams of these symbols are used as
+      The names of these symbols are used as
       the names of the formal parameters of the corresponding C function,
       in the same order.
       Therefore, the formal parameters of each @('fni')
@@ -207,21 +207,26 @@
       is guaranteed by the restrictions given below.")
 
     (xdoc::p
-     "Each function @('fni') must be in logic-mode and guard-verified.
+     "Each function @('fni') must be in logic mode and guard-verified.
       It must have an "
      (xdoc::seetopic "acl2::function-definedness" "unnormalized body")
-     " consisting exclusively of:")
+     " consisting exclusively of
+      <i>allowed non-boolean terms</i> and
+      <i>allowed boolean terms</i>,
+      which are inductively defined as follows:")
     (xdoc::ul
      (xdoc::li
       "The formal parameters of the function.
-       These represent the corresponding C formal parameters.")
+       These represent the corresponding C formal parameters.
+       These are allowed non-boolean terms.")
      (xdoc::li
       "Calls of @(tsee sint-const) on quoted integers.
        These represent C integer constants of type @('int').
        The guard verification requirement ensures that
-       the quoted integer is within the range of type @('int').")
+       the quoted integer is within the range of type @('int').
+       These calls are allowed non-boolean terms.")
      (xdoc::li
-      "Calls of the following functions on recursively allowed terms:"
+      "Calls of the following functions on allowed non-boolean terms:"
       (xdoc::ul
        (xdoc::li "@(tsee sint-plus)")
        (xdoc::li "@(tsee sint-minus)")
@@ -242,28 +247,89 @@
        (xdoc::li "@(tsee sint-ne)")
        (xdoc::li "@(tsee sint-bitand)")
        (xdoc::li "@(tsee sint-bitxor)")
-       (xdoc::li "@(tsee sint-bitior)"))
+       (xdoc::li "@(tsee sint-bitior)")
+       (xdoc::li "@(tsee sint-logand)")
+       (xdoc::li "@(tsee sint-logor)"))
       "Each such call represents the corresponding C operator,
        applied to C @('int') values.
        The guard verification requirement ensures that
        they are always applied to values with a well-defined result,
-       and that result is an @('int') value.")
+       and that result is an @('int') value.
+       If the operator is @('&&') or @('||'),
+       this represents a strict (i.e. not non-strict) use of them;
+       see below for how to represent non-strict uses of them,
+       but the strict use is slightly simpler when usable.
+       These calls are allowed non-boolean terms.")
+     (xdoc::li
+      "Calls of @(tsee sint01) on allowed boolean terms.
+       Each such call converts an allowed boolean term
+       to an allowed non-boolean term.
+       These calls are allowed non-boolean terms.")
+     (xdoc::li
+      "Calls of @(tsee sint-nonzerop) on allowed non-boolean terms.
+       Each such call converts an allowed non-boolean term
+       to an allowed boolean term.
+       These calls are allowed boolean terms.")
      (xdoc::li
       "Calls of @(tsee if) on
-       (i) tests that are call of @(tsee sint-nonzerop)
-       on recursively allowed terms, and
-       (ii) branches that are recursively allowed terms.
-       The function @(tsee sint-nonzerop) serves to convert
-       (the ACL2 representation of) a C @('int') to an ACL2 boolean,
-       which is needed for the ACL2 @(tsee if) calls.
-       An ACL2 call of @(tsee sint-nonzerop) represents, in C,
-       what its ACL2 argument represents:
-       that is, the @(tsee sint-nonzerop) is dropped in the translation to C,
-       so that the C test has type @('int').
+       (i) tests that are allowed boolean terms and
+       (ii) branches that are allowed non-boolean terms.
        An ACL2 @(tsee if) represents
-       either a C @('if') conditional statement
-       or a C @('?:') conditional expression,
-       as explained below."))
+       either an C @('if') conditional statement
+       or a C @('?:') conditional expression;
+       the choice is explained below.
+       These calls are allowed non-boolean terms.")
+     (xdoc::li
+      "Calls of the following functions and macros on allowed boolean terms:"
+      (xdoc::ul
+       (xdoc::li "@(tsee not)")
+       (xdoc::li "@(tsee and)")
+       (xdoc::li "@(tsee or)"))
+      "The first one is a function, while the other two are macros.
+       In translated terms, @('(and x y)') and @('(or x y)') are
+       @('(if x y \'nil)') and @('(or x x y)'):
+       these are the patterns that ATC looks for.
+       Each such call represents the corresponding C logical operator
+       (negation @('!'), conjunction @('&&'), disjunction @('||'));
+       conjunction and disjunctions are represented non-strictly.
+       These calls are allowed boolean terms.")
+     (xdoc::li
+      "Calls of @(tsee if) on
+       (i) tests of the form @('(mbt ...)') or @('(mbt$ ...)'),
+       (ii) `then' branches that are allowed non-boolean terms, and
+       (iii) `else' branches that are arbitrary terms.
+       Both tests and `else' branches are ignored;
+       only the `then' branches represent C code and are translated to C.
+       The reason is that ATC generates C code under guard assumptions.
+       In translated terms,
+       @('(mbt x)') is
+       @('(return-last \'acl2::mbe1-raw \'t x)'), and
+       @('(mbt$ x)') is
+       @('(return-last \'acl2::mbe1-raw \'t (if x \'nil \'t))').")
+     (xdoc::li
+      "Calls of @(tsee if) on
+       (i) tests of the form @('(mbt$ ...)'),
+       (ii) `then' branches that are allowed non-boolean terms, and
+       (iii) `else' branches that are arbitrary terms.
+       Both tests and `else' branches are ignored;
+       only the `then' branches represent C code and are translated to C.
+       The reason is that ATC generates C code under guard assumptions.
+       In translated terms, @('(mbt x)') is
+       @('(return-last \'acl2::mbe1-raw \'t (if x \'nil \'t))')."))
+    (xdoc::p
+     "Note that the allowed boolean terms return ACL2 boolean values,
+      while the allowed non-boolean terms return ACL2 non-boolean values
+      that represent C values.
+      The distinction between these two kinds of allowed terms
+      stems from the need to represent C's non-strictness in ACL2:
+      C's non-strict constructs are
+      @('if') statements,
+      @('?:') expressions,
+      @('&&') expressions, and
+      @('||') expressions;
+      C's only non-strict construct is @(tsee if)
+      (which the macros @(tsee and) and @(tsee or) expand to, see above).")
+
     (xdoc::p
      "The above restrictions imply that @('fni') returns a single result,
       i.e. not an @(tsee mv) result.
@@ -437,4 +503,13 @@
      (xdoc::p
       "The directory @('[books]/kestrel/c/atc/tests')
        contains some examples of generated C code
-       and handwritten C code to test it.")))))
+       and handwritten C code to test it.")))
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::evmac-section
+    "Redundancy"
+
+    (xdoc::p
+     "A call of @('atc') is redundant if an only if
+      it is identical to a previous successful call of @('atc')."))))

@@ -10,6 +10,7 @@
 
 (in-package "APT")
 
+(include-book "kestrel/error-checking/ensure-function-is-defined" :dir :system)
 (include-book "kestrel/error-checking/ensure-function-is-guard-verified" :dir :system)
 (include-book "kestrel/error-checking/ensure-function-is-logic-mode" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-boolean" :dir :system)
@@ -397,7 +398,7 @@
                    old "The first input" t nil))
        (description (msg "The target function ~x0" old$))
        ((er &) (ensure-function-is-logic-mode$ old$ description t nil))
-       ((er &) (ensure-function-defined$ old$ description t nil))
+       ((er &) (ensure-function-is-defined$ old$ description t nil))
        ((er &) (ensure-function-number-of-results$ old$ 1
                                                    description t nil))
        ((er &) (ensure-function-no-stobjs$ old$ description t nil))

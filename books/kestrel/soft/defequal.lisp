@@ -13,6 +13,7 @@
 (include-book "defun-sk2")
 (include-book "defund-sk2")
 
+(include-book "kestrel/error-checking/ensure-list-has-no-duplicates" :dir :system)
 (include-book "kestrel/error-checking/ensure-symbol-is-fresh-event-name" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-boolean" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-function-name" :dir :system)
@@ -241,7 +242,7 @@
   (if (eq vars :auto)
       (value (defequal-process-vars-aux name n))
     (b* (((er &) (ensure-value-is-symbol-list$ vars "The :VARS input" t nil))
-         ((er &) (ensure-list-no-duplicates$
+         ((er &) (ensure-list-has-no-duplicates$
                   vars
                   (msg "The list ~x0 of variables specified by the :VARS input"
                        vars)
@@ -260,7 +261,7 @@
   :prepwork
 
   ((local (in-theory (enable acl2::ensure-value-is-symbol-list
-                             acl2::ensure-list-no-duplicates)))
+                             acl2::ensure-list-has-no-duplicates)))
 
    (define defequal-process-vars-aux ((name symbolp) (n natp))
      :returns (x1...xn symbol-listp)

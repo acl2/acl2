@@ -972,8 +972,10 @@
            nil)))
 
 (defthm integerp-of-car-of-last-when-integer-listp
-  (implies (and (integer-listp l) (consp l))
-           (integerp (car (last l)))))
+  (implies (integer-listp l)
+           (equal
+            (integerp (car (last l)))
+            (consp l))))
 
 (defthm non-negativity-of-car-of-last-when-nat-listp
   (implies (nat-listp l)
@@ -1996,6 +1998,20 @@
   (local (in-theory (disable min)))
   (defthm painful-debugging-lemma-22
     (implies (< z y) (iff (equal (min x y) z) (equal x z)))
+    :hints (("Goal" :in-theory (enable min))))
+
+  (defthm painful-debugging-lemma-23 (iff (< (min x y) y) (< x y))
+    :hints (("Goal" :in-theory (enable min))))
+
+  (defthm painful-debugging-lemma-24
+    (implies (equal (+ w y) z)
+             (iff (equal (+ w (min x y)) z)
+                  (<= y x)))
+    :hints (("Goal" :in-theory (enable min))))
+
+  (defthm painful-debugging-lemma-25
+    (zp (+ (- x) (min x y)))
+    :rule-classes :type-prescription
     :hints (("Goal" :in-theory (enable min)))))
 
 (defthm member-of-nth-when-not-intersectp
@@ -2020,3 +2036,9 @@
   (implies (true-list-listp l1)
            (true-list-listp (set-difference-equal l1 l2)))
   :hints (("goal" :in-theory (enable set-difference-equal true-list-listp))))
+
+(defthm last-of-append
+  (equal (last (append x y))
+         (cond ((consp y) (last y))
+               ((consp x) (cons (car (last x)) y))
+               (t y))))

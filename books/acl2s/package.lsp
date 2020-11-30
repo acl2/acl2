@@ -23,7 +23,6 @@
      rquote-listp
      unrquote-lst
      def-const
-     => ;sig
      _ ;range
      )
    (union-eq *acl2-exports*
@@ -229,7 +228,6 @@
       impliez
       v
 
-      => ;sig
       _  ;range
 
       d<

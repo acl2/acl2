@@ -15,6 +15,7 @@
 (include-book "java-primitive-arrays")
 (include-book "test-structures")
 
+(include-book "kestrel/error-checking/ensure-list-has-no-duplicates" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-boolean" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-function-name" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-in-list" :dir :system)
@@ -147,10 +148,10 @@
                  (t (ensure-list-functions$ targets
                                             (msg "The ~&0 inputs" targets)
                                             t nil))))
-       ((er &) (ensure-list-no-duplicates$ targets
-                                           (msg "The target functions ~&0"
-                                                targets)
-                                           t nil))
+       ((er &) (ensure-list-has-no-duplicates$ targets
+                                               (msg "The target functions ~&0"
+                                                    targets)
+                                               t nil))
        ((when (or deep (not guards))) (value nil))
        (target-prims (intersection-eq targets
                                       (union-eq *atj-jprim-fns*
@@ -651,7 +652,7 @@
        (description (msg
                      "The list ~x0 of names of the tests in the :TESTS input"
                      names))
-       ((er &) (ensure-list-no-duplicates$ names description t nil)))
+       ((er &) (ensure-list-has-no-duplicates$ names description t nil)))
     (atj-process-tests-aux alist targets$ deep$ guards$ ctx state))
 
   :prepwork

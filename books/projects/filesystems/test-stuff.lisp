@@ -34,45 +34,45 @@
                  :alias #\r)))
 
 (defun
-  rm-list (fat32-in-memory name-list exit-status)
-  (declare (xargs :stobjs fat32-in-memory
-                  :guard (and (lofat-fs-p fat32-in-memory)
+  rm-list (fat32$c name-list exit-status)
+  (declare (xargs :stobjs fat32$c
+                  :guard (and (lofat-fs-p fat32$c)
                               (string-listp name-list))))
   (b* (((when (atom name-list))
-        (mv fat32-in-memory exit-status))
+        (mv fat32$c exit-status))
        (fat32-path (path-to-fat32-path
                         (coerce (car name-list) 'list)))
-       ((mv fat32-in-memory retval &)
+       ((mv fat32$c retval &)
         (if (not (fat32-filename-list-p fat32-path))
-            (mv fat32-in-memory 1 *enoent*)
-          (lofat-unlink fat32-in-memory fat32-path)))
+            (mv fat32$c 1 *enoent*)
+          (lofat-unlink fat32$c fat32-path)))
        (exit-status (if (equal retval 0) exit-status 1)))
-    (rm-list fat32-in-memory (cdr name-list) exit-status)))
+    (rm-list fat32$c (cdr name-list) exit-status)))
 
 (defthm
   lofat-fs-p-of-rm-list
   (implies
-   (and (lofat-fs-p fat32-in-memory))
+   (and (lofat-fs-p fat32$c))
    (lofat-fs-p (mv-nth 0
-                       (rm-list fat32-in-memory
+                       (rm-list fat32$c
                                 name-list exit-status)))))
 
 (defund
   rm-1
-  (fat32-in-memory disk-image-string rm-paths)
-  (declare (xargs :guard (and (lofat-fs-p fat32-in-memory)
+  (fat32$c disk-image-string rm-paths)
+  (declare (xargs :guard (and (lofat-fs-p fat32$c)
                               (string-listp rm-paths)
                               (stringp disk-image-string)
                               (>= (length disk-image-string) *initialbytcnt*))
-                  :stobjs fat32-in-memory))
-  (b* (((mv fat32-in-memory error-code)
-        (string-to-lofat fat32-in-memory disk-image-string))
+                  :stobjs fat32$c))
+  (b* (((mv fat32$c error-code)
+        (string-to-lofat fat32$c disk-image-string))
        ((unless (equal error-code 0))
-        (mv fat32-in-memory disk-image-string 1))
-       ((mv fat32-in-memory exit-status)
-        (rm-list fat32-in-memory rm-paths 0))
-       (disk-image-string (lofat-to-string fat32-in-memory)))
-    (mv fat32-in-memory disk-image-string exit-status)))
+        (mv fat32$c disk-image-string 1))
+       ((mv fat32$c exit-status)
+        (rm-list fat32$c rm-paths 0))
+       (disk-image-string (lofat-to-string fat32$c)))
+    (mv fat32$c disk-image-string exit-status)))
 
 (defthm
   rm-2-guard-lemma-1
@@ -82,9 +82,9 @@
    (equal (mv-nth 1 (rm-list fs name-list exit-status))
           1)))
 
-(defun rm-2 (fat32-in-memory state disk-path output-path rm-paths)
-  (declare (xargs :stobjs (state fat32-in-memory)
-                  :guard (and (fat32-in-memoryp fat32-in-memory)
+(defun rm-2 (fat32$c state disk-path output-path rm-paths)
+  (declare (xargs :stobjs (state fat32$c)
+                  :guard (and (fat32$c-p fat32$c)
                               (string-listp rm-paths)
                               (stringp disk-path)
                               (stringp output-path)
@@ -94,32 +94,32 @@
   (mbe :logic
        (b*
            ((disk-image-string (read-file-into-string disk-path))
-            ((mv fat32-in-memory disk-image-string exit-status)
-             (rm-1 fat32-in-memory disk-image-string rm-paths))
-            ((unless (equal exit-status 0)) (mv fat32-in-memory state 1))
+            ((mv fat32$c disk-image-string exit-status)
+             (rm-1 fat32$c disk-image-string rm-paths))
+            ((unless (equal exit-status 0)) (mv fat32$c state 1))
             ((mv channel state)
              (open-output-channel output-path
                                   :character state))
-            ((when (null channel)) (mv fat32-in-memory state 1))
+            ((when (null channel)) (mv fat32$c state 1))
             (state
              (princ$ disk-image-string channel state))
             (state (close-output-channel channel state)))
-         (mv fat32-in-memory state exit-status))
+         (mv fat32$c state exit-status))
        :exec
        (b*
-           (((mv fat32-in-memory error-code)
+           (((mv fat32$c error-code)
              (disk-image-to-lofat
-              fat32-in-memory disk-path state))
+              fat32$c disk-path state))
             ((unless (equal error-code 0))
-             (mv fat32-in-memory state 1))
-            ((mv fat32-in-memory exit-status)
-             (rm-list fat32-in-memory rm-paths 0))
-            ((unless (equal exit-status 0)) (mv fat32-in-memory state 1))
+             (mv fat32$c state 1))
+            ((mv fat32$c exit-status)
+             (rm-list fat32$c rm-paths 0))
+            ((unless (equal exit-status 0)) (mv fat32$c state 1))
             ((mv state error-code)
              (lofat-to-disk-image
-              fat32-in-memory output-path state))
+              fat32$c output-path state))
             (exit-status (if (equal error-code 0) exit-status 1)))
-         (mv fat32-in-memory state exit-status))))
+         (mv fat32$c state exit-status))))
 
 (defoptions rmdir-opts
   :parents (demo2)
@@ -192,12 +192,12 @@
                            (wc-helper text nl nw nc beginning-of-word-p pos))
                    (+ nc (length text) (- pos)))))
 
-(defund wc-1 (fat32-in-memory path)
+(defund wc-1 (fat32$c path)
   (declare
    (xargs
-    :stobjs fat32-in-memory
+    :stobjs fat32$c
     :guard (and (stringp path)
-                (lofat-fs-p fat32-in-memory))
+                (lofat-fs-p fat32$c))
     :guard-hints
     (("goal" :in-theory
       (enable lofat-open lofat-lstat hifat-open)))))
@@ -210,7 +210,7 @@
        ((unless (fat32-filename-list-p fat32-path))
         (mv 0 0 0 1))
        ((mv val error-code &)
-        (lofat-lstat fat32-in-memory fat32-path))
+        (lofat-lstat fat32$c fat32-path))
        ((unless (equal error-code 0))
         (mv 0 0 0 error-code))
        (file-length (struct-stat->st_size val))
@@ -218,7 +218,7 @@
         (lofat-open fat32-path nil nil))
        ((mv file-text file-read-length &)
         (lofat-pread
-         fd file-length 0 fat32-in-memory fd-table file-table))
+         fd file-length 0 fat32$c fd-table file-table))
        ((unless (equal file-read-length file-length))
         (mv 0 0 0 1))
        ((mv nl nw nc)
@@ -233,10 +233,10 @@
                  :rule-classes :type-prescription
                  :alias #\d)))
 
-(defun ls-list (fat32-in-memory name-list exit-status)
-  (declare (xargs :stobjs fat32-in-memory
+(defun ls-list (fat32$c name-list exit-status)
+  (declare (xargs :stobjs fat32$c
                   :guard (and
-                          (lofat-fs-p fat32-in-memory) (string-listp name-list))))
+                          (lofat-fs-p fat32$c) (string-listp name-list))))
   (b*
       (((when (atom name-list)) (mv nil exit-status))
        (fat32-path
@@ -245,37 +245,37 @@
        ;; not trying to match this program for its stderr output.
        ((unless
             (fat32-filename-list-p fat32-path))
-        (ls-list fat32-in-memory (cdr name-list) 2))
+        (ls-list fat32$c (cdr name-list) 2))
        ((mv & retval &)
-        (lofat-lstat fat32-in-memory fat32-path))
+        (lofat-lstat fat32$c fat32-path))
        ((unless (equal retval 0))
-        (ls-list fat32-in-memory (cdr name-list) 2))
-       ((mv tail-list exit-status) (ls-list fat32-in-memory (cdr name-list) exit-status)))
+        (ls-list fat32$c (cdr name-list) 2))
+       ((mv tail-list exit-status) (ls-list fat32$c (cdr name-list) exit-status)))
     (mv (cons (car name-list) tail-list) exit-status)))
 
 (defund
   ls-1
-  (fat32-in-memory ls-paths disk-image-string)
-  (declare (xargs :guard (and (lofat-fs-p fat32-in-memory)
+  (fat32$c ls-paths disk-image-string)
+  (declare (xargs :guard (and (lofat-fs-p fat32$c)
                               (string-listp ls-paths)
                               (stringp disk-image-string)
                               (>= (length disk-image-string)
                                   *initialbytcnt*))
-                  :stobjs fat32-in-memory))
-  (b* (((mv fat32-in-memory error-code)
-        (string-to-lofat fat32-in-memory disk-image-string))
+                  :stobjs fat32$c))
+  (b* (((mv fat32$c error-code)
+        (string-to-lofat fat32$c disk-image-string))
        ((unless (equal error-code 0))
-        (mv fat32-in-memory nil 2))
+        (mv fat32$c nil 2))
        ((mv ls-list exit-status)
-        (ls-list fat32-in-memory ls-paths 0)))
-    (mv fat32-in-memory ls-list exit-status)))
+        (ls-list fat32$c ls-paths 0)))
+    (mv fat32$c ls-list exit-status)))
 
 (defun
   ls-2
-  (fat32-in-memory state ls-paths disk-path)
+  (fat32$c state ls-paths disk-path)
   (declare
-   (xargs :stobjs (state fat32-in-memory)
-          :guard (and (fat32-in-memoryp fat32-in-memory)
+   (xargs :stobjs (state fat32$c)
+          :guard (and (fat32$c-p fat32$c)
                       (state-p state)
                       (string-listp ls-paths)
                       (stringp disk-path))
@@ -285,18 +285,18 @@
   (mbe
    :logic
    (b* ((disk-image-string (read-file-into-string disk-path))
-        ((mv fat32-in-memory ls-list exit-status)
-         (ls-1 fat32-in-memory
+        ((mv fat32$c ls-list exit-status)
+         (ls-1 fat32$c
                ls-paths disk-image-string)))
-     (mv fat32-in-memory ls-list exit-status))
+     (mv fat32$c ls-list exit-status))
    :exec
-   (b* (((mv fat32-in-memory error-code)
-         (disk-image-to-lofat fat32-in-memory disk-path state))
+   (b* (((mv fat32$c error-code)
+         (disk-image-to-lofat fat32$c disk-path state))
         ((unless (equal error-code 0))
-         (mv fat32-in-memory nil 2))
+         (mv fat32$c nil 2))
         ((mv ls-list exit-status)
-         (ls-list fat32-in-memory ls-paths 0)))
-     (mv fat32-in-memory ls-list exit-status))))
+         (ls-list fat32$c ls-paths 0)))
+     (mv fat32$c ls-list exit-status))))
 
 (defoptions truncate-opts
   :parents (demo2)
@@ -308,57 +308,57 @@
                :default 0)))
 
 (defun
-  truncate-list (fat32-in-memory name-list size exit-status)
-  (declare (xargs :stobjs fat32-in-memory
-                  :guard (and (lofat-fs-p fat32-in-memory)
+  truncate-list (fat32$c name-list size exit-status)
+  (declare (xargs :stobjs fat32$c
+                  :guard (and (lofat-fs-p fat32$c)
                               (string-listp name-list)
                               (natp size))))
   (b* (((when (atom name-list))
-        (mv fat32-in-memory exit-status))
+        (mv fat32$c exit-status))
        (fat32-path (path-to-fat32-path
                         (coerce (car name-list) 'list)))
-       ((mv fat32-in-memory retval &)
+       ((mv fat32$c retval &)
         (if (not (fat32-filename-list-p fat32-path))
-            (mv fat32-in-memory 1 *enoent*)
-          (lofat-truncate fat32-in-memory fat32-path size)))
+            (mv fat32$c 1 *enoent*)
+          (lofat-truncate fat32$c fat32-path size)))
        (exit-status (if (equal retval 0) exit-status 1)))
-    (truncate-list fat32-in-memory (cdr name-list) size exit-status)))
+    (truncate-list fat32$c (cdr name-list) size exit-status)))
 
-(defun compare-disks (image-path1 image-path2 fat32-in-memory state)
-  (declare (xargs :stobjs (fat32-in-memory state)
-                  :guard (and (fat32-in-memoryp fat32-in-memory)
+(defun compare-disks (image-path1 image-path2 fat32$c state)
+  (declare (xargs :stobjs (fat32$c state)
+                  :guard (and (fat32$c-p fat32$c)
                               (stringp image-path1)
                               (stringp image-path2))
                   :guard-hints (("Goal" :in-theory (disable
                                                     read-file-into-string2)))))
   (b*
-      (((mv fat32-in-memory error-code1)
+      (((mv fat32$c error-code1)
         (disk-image-to-lofat
-         fat32-in-memory image-path1 state))
+         fat32$c image-path1 state))
        ((mv fs-ref error-code2)
         (if
             (not (equal error-code1 0))
             (mv nil *EIO*)
-          (lofat-to-hifat fat32-in-memory)))
-       ((mv fat32-in-memory error-code3)
+          (lofat-to-hifat fat32$c)))
+       ((mv fat32$c error-code3)
         (disk-image-to-lofat
-         fat32-in-memory image-path2 state))
+         fat32$c image-path2 state))
        ((mv fs error-code4)
         (if
             (or (not (equal error-code1 0)) (not (equal error-code3 0)))
             (mv nil *EIO*)
-          (lofat-to-hifat fat32-in-memory)))
+          (lofat-to-hifat fat32$c)))
        ((unless (or (equal error-code1 0) (equal error-code3 0)))
-        (mv t fat32-in-memory))
+        (mv t fat32$c))
        ((unless (and (equal error-code1 0) (equal error-code3 0)))
-        (mv nil fat32-in-memory))
+        (mv nil fat32$c))
        ((unless (or (equal error-code2 0) (equal error-code4 0)))
-        (mv t fat32-in-memory))
+        (mv t fat32$c))
        ((unless (and (equal error-code2 0) (equal error-code4 0)))
-        (mv nil fat32-in-memory))
+        (mv nil fat32$c))
        ((unless (hifat-equiv fs-ref fs))
-        (mv nil fat32-in-memory)))
-    (mv t fat32-in-memory)))
+        (mv nil fat32$c)))
+    (mv t fat32$c)))
 
 (defthm
   compare-disks-correctness-1-lemma-1
@@ -374,11 +374,11 @@
       ((str1 (read-file-into-string image-path1))
        (str2 (read-file-into-string image-path2)))
     (implies
-     (fat32-in-memoryp fat32-in-memory)
+     (fat32$c-p fat32$c)
      (equal
       (mv-nth 0
               (compare-disks image-path1
-                             image-path2 fat32-in-memory state))
+                             image-path2 fat32$c state))
       (eqfat str1 str2))))
   :hints
   (("goal"

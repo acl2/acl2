@@ -19,14 +19,23 @@
                                 '(byte
                                   error
                                   pprint-indent))
-             '(bool
+             '(any
+               bool
                cw-event
                define-sk
+               defmacro+
                defxdoc+
                er-soft+
                evmac-prepare-proofs
                flatten-ands-in-lit
                implode
+               impossible
                lnfix
+               make-event-terse
+               maybe-pseudo-event-formp
+               mbt$
                msg-listp
-               nat)))
+               nat
+               pseudo-event-form-listp
+               pseudo-event-formp
+               tuple)))

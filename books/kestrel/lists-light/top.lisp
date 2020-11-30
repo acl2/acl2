@@ -61,7 +61,9 @@
 (include-book "finalcdr")
 (include-book "all-equal-dollar")
 (include-book "all-equal-dollar2")
+(include-book "all-eql-dollar")
 (include-book "all-same")
+(include-book "all-same-eql")
 (include-book "update-subrange")
 (include-book "add-to-end")
 (include-book "first-non-member")
@@ -76,6 +78,7 @@
 (include-book "group2")
 (include-book "ungroup")
 (include-book "group-and-ungroup")
+(include-book "group-rules")
 
 (include-book "rules")
 (include-book "rules2")

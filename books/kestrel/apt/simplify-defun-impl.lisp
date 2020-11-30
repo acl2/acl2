@@ -105,7 +105,7 @@
 
 ; Consider the following questions.
 
-; - How much work should we do when simplifying each subterm?  
+; - How much work should we do when simplifying each subterm?
 ; - How much work should we do when simplifying :assumptions?
 ; - How much work should we do when simplifying governors of each subterm?
 
@@ -125,17 +125,17 @@
 ;     hyps, after diving into them.  (See before-vs-after-lemmas below.)  The
 ;     :assumptions could therefore be used to simplify the governors, but not
 ;     vice-versa.  No forward-chaining or linear will be done.
-; 
+;
 ; (3) If the resulting top-level hyps don't allow the S command to reduce the
 ;     "before" to the "after", then the prover is called on to do this (using
 ;     ORELSE).  The prover will treat the :assumptions and governors
 ;     symmetrically.
-; 
+;
 ; (4) To get the greatest subterm simplification (goal A above), it makes sense
 ;     to try to get the greatest simplification for top-level hypothesis, since
 ;     presumably normal forms are best (e.g., for rewrite rules with
 ;     free-variable hyps and for forward-chaining).
-; 
+;
 ; From (2) we might want to simplify the hyps and governors separately, without
 ; any forward-chaining or linear.  But that is in tension with (4).  Now (3)
 ; suggests that we would ultimately do best to mimic the prover in support of
@@ -1883,20 +1883,22 @@
 (defun fn-simp-defs-termination-hints (hints fn wrld
                                              computed-hint-lst
                                              theory
-                                             theory-alt)
+                                             theory-alt
+                                             verbose)
   (if (not (eq hints :auto))
       hints
     (let ((old-recursivep (getpropc fn 'recursivep nil wrld)))
       `(("Goal"
          ,@(and old-recursivep
                 `(:instructions
-                  ((:prove-termination ,fn ,theory ,theory-alt)))))
+                  ((:prove-termination ,fn ,theory ,theory-alt ,verbose)))))
         ,@computed-hint-lst))))
 
 (defun fn-simp-defs-verify-guards-hints (guard-hints fn wrld
                                                      computed-hint-lst
                                                      theory
-                                                     theory-alt)
+                                                     theory-alt
+                                                     verbose)
   (if (not (eq guard-hints :auto))
       guard-hints
     (let ((compliant-p (eq (symbol-class fn wrld)
@@ -1904,7 +1906,7 @@
       (cond (compliant-p
              `(("Goal"
                 :instructions
-                ((:prove-guard ,fn ,theory ,theory-alt)))))
+                ((:prove-guard ,fn ,theory ,theory-alt ,verbose)))))
             (computed-hint-lst
              `(,@computed-hint-lst))
             (t nil)))))
@@ -2136,7 +2138,8 @@
        (termination-hints (fn-simp-defs-termination-hints measure-hints fn wrld
                                                           computed-hint-lst
                                                           fn-runes
-                                                          theory))
+                                                          theory
+                                                          verbose))
        (new-def-event-pre
         (sd-new-def-event
 
@@ -2160,7 +2163,8 @@
                                           `(cons ',fn-simp-is-fn-name
                                                  ,fn-runes)
                                           `(cons ',fn-simp-is-fn-name
-                                                 ,theory)))
+                                                 ,theory)
+                                          verbose))
        (new-def-event-installed
         (sd-new-def-event defun? fn-simp formals fn-ruler-extenders simp-guard
                           simp-measure new-recursivep verify-guards-p

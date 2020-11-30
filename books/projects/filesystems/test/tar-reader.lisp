@@ -3,9 +3,9 @@
 (b*
     (((mv & disk-image-location state)
       (getenv$ "DISK" state))
-     ((mv fat32-in-memory &)
+     ((mv fat32$c &)
       (disk-image-to-lofat
-       fat32-in-memory disk-image-location state))
+       fat32$c disk-image-location state))
      ((mv & val state)
       (getenv$ "TAR_INPUT" state))
      (input-path (path-to-fat32-path (coerce val 'list)))
@@ -13,20 +13,20 @@
       (getenv$ "TAR_OUTPUT" state))
      (output-path (path-to-fat32-path (coerce val 'list)))
      ((mv val error-code &)
-      (lofat-lstat fat32-in-memory input-path))
+      (lofat-lstat fat32$c input-path))
      ((unless (and (fat32-filename-list-p output-path)
                    (equal error-code 0)))
-      (mv fat32-in-memory state))
+      (mv fat32$c state))
      (file-length (struct-stat->st_size val))
      ((mv fd-table file-table fd &)
       (lofat-open input-path nil nil))
      ((mv file-text file-read-length &)
       (lofat-pread
-       fd file-length 0 fat32-in-memory fd-table file-table))
+       fd file-length 0 fat32$c fd-table file-table))
      ((unless (equal file-read-length file-length))
-      (mv fat32-in-memory state))
-     ((mv state fat32-in-memory fd-table file-table)
-      (process-block-sequence file-text state fat32-in-memory fd-table
+      (mv fat32$c state))
+     ((mv state fat32$c fd-table file-table)
+      (process-block-sequence file-text state fat32$c fd-table
                               file-table output-path))
      ((mv channel state) (open-output-channel :string :object state))
      (state (print-object$-ser fd-table nil channel state))
@@ -37,5 +37,5 @@
      (state (princ$ str2 *standard-co* state))
      ((mv state &)
       (lofat-to-disk-image
-       fat32-in-memory disk-image-location state)))
-  (mv fat32-in-memory state))
+       fat32$c disk-image-location state)))
+  (mv fat32$c state))

@@ -136,6 +136,26 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Generate an I/O relation (matrix of OLD) that
+; is satisfied by a solution function or term.
+
+(defmacro gen-matrix-sat (&key name inputs output sol satrule)
+  `(encapsulate
+     (((,name ,@(repeat (1+ (len inputs)) '*)) => *)
+      ((,sol ,@(repeat (len inputs) '*)) => *))
+     (local
+      (defun ,sol (,@inputs)
+        (declare (ignore ,@inputs))
+        nil))
+     (local
+      (defun ,name (,@inputs ,output)
+        (declare (ignore ,@inputs ,output))
+        t))
+     (defthmd ,satrule
+       (,name ,@inputs (,name ,@inputs)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Generate an I/O relation (matrix of OLD) that
 ; is satisfied when the output is equal to a term.
 
 (defmacro gen-matrix-sat-eqterm (&key name inputs output term sat)
@@ -284,6 +304,22 @@
                            :rwrule ,rwrule)
      (gen-old :name ,old :vars ,inputs :matrix ,matrix :?f ,?f)))
 
+(defmacro gen-inputs-1-sat (&key (?f '?f)
+                                 (matrix 'm)
+                                 (inputs '(x))
+                                 (output 'y)
+                                 (sol 'sol)
+                                 (satrule 'satrule)
+                                 (old 'old))
+  `(encapsulate ()
+     (gen-funvar :name ,?f :arity 1)
+     (gen-matrix-sat :name ,matrix
+                     :inputs ,inputs
+                     :output ,output
+                     :sol ,sol
+                     :satrule ,satrule)
+     (gen-old :name ,old :vars ,inputs :matrix ,matrix :?f ,?f)))
+
 (defmacro gen-inputs-1-sat-eqterm (&key (?f '?f)
                                         (matrix 'm)
                                         (inputs '(x))
@@ -384,6 +420,22 @@
                            :rwrule ,rwrule)
      (gen-old :name ,old :vars ,inputs :matrix ,matrix :?f ,?f)))
 
+(defmacro gen-inputs-2-sat (&key (?f '?f)
+                                 (matrix 'm)
+                                 (inputs '(x1 x2))
+                                 (output 'y)
+                                 (sol 'sol)
+                                 (satrule 'satrule)
+                                 (old 'old))
+  `(encapsulate ()
+     (gen-funvar :name ,?f :arity 2)
+     (gen-matrix-sat :name ,matrix
+                     :inputs ,inputs
+                     :output ,output
+                     :sol ,sol
+                     :satrule ,satrule)
+     (gen-old :name ,old :vars ,inputs :matrix ,matrix :?f ,?f)))
+
 (defmacro gen-inputs-2-sat-eqterm (&key (?f '?f)
                                         (matrix 'm)
                                         (inputs '(x1 x2))
@@ -482,6 +534,22 @@
                            :output ,output
                            :test ,test
                            :rwrule ,rwrule)
+     (gen-old :name ,old :vars ,inputs :matrix ,matrix :?f ,?f)))
+
+(defmacro gen-inputs-3-sat (&key (?f '?f)
+                                 (matrix 'm)
+                                 (inputs '(x1 x2 x3))
+                                 (output 'y)
+                                 (sol 'sol)
+                                 (satrule 'satrule)
+                                 (old 'old))
+  `(encapsulate ()
+     (gen-funvar :name ,?f :arity 3)
+     (gen-matrix-sat :name ,matrix
+                     :inputs ,inputs
+                     :output ,output
+                     :sol ,sol
+                     :satrule ,satrule)
      (gen-old :name ,old :vars ,inputs :matrix ,matrix :?f ,?f)))
 
 (defmacro gen-inputs-3-sat-eqterm (&key (?f '?f)

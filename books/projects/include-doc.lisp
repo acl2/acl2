@@ -25,9 +25,13 @@
      (include-book "rp-rewriter/lib/mult/doc")
      (include-book "rp-rewriter/lib/mult2/doc")
      (include-book "rp-rewriter/lib/mult3/doc")
-     
+
+     (include-book "smtlink/doc")
      (ifdef "OS_HAS_SMTLINK"
-            (include-book "smtlink/doc")
+            (include-book "smtlink/examples/examples")
+            :endif)
+     (ifdef "OS_HAS_SMTLINK"
+            (include-book "smtlink/examples/ringosc")
             :endif)
 
 
@@ -731,4 +735,3 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.</li>
 
 </ul>")))
-

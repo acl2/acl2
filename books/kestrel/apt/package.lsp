@@ -118,8 +118,8 @@
                          ensure-boolean-or-auto-and-return-boolean$
                          ensure-doublet-list$
                          ensure-function-arity$
-                         ensure-function-defined$
                          ensure-function-has-args$
+                         ensure-function-is-defined$
                          ensure-function-is-guard-verified$
                          ensure-function-is-logic-mode$
                          ensure-function-known-measure$
@@ -137,7 +137,7 @@
                          ensure-function/macro/lambda$
                          ensure-keyword-value-list
                          ensure-keyword-value-list$
-                         ensure-list-no-duplicates$
+                         ensure-list-has-no-duplicates$
                          ensure-list-subset$
                          ensure-named-formulas
                          ensure-symbol-different$

@@ -633,7 +633,7 @@
         (consp (car x)))
    (abs-file-alist-p
     (list (cons (car (car x))
-                (abs-file (abs-file->dir-ent (cdr (car x)))
+                (abs-file (abs-file->d-e (cdr (car x)))
                           (abs-fs-fix (abs-file->contents (cdr (car x)))))))))
   :hints (("goal" :in-theory (enable abs-file-alist-p abs-file))))
 
@@ -650,7 +650,7 @@
    (absfat-subsetp
     (abs-fs-fix (append (cdr x) y))
     (cons (cons (car (car x))
-                (abs-file (abs-file->dir-ent (cdr (car x)))
+                (abs-file (abs-file->d-e (cdr (car x)))
                           (abs-fs-fix (abs-file->contents (cdr (car x))))))
           (abs-fs-fix (append (cdr x) z)))))
   :hints
@@ -664,7 +664,7 @@
      (y
       (list
        (cons (car (car x))
-             (abs-file (abs-file->dir-ent (cdr (car x)))
+             (abs-file (abs-file->d-e (cdr (car x)))
                        (abs-fs-fix (abs-file->contents (cdr (car x))))))))
      (x (abs-fs-fix (append (cdr x) y)))))))
 
@@ -947,7 +947,8 @@
                (:definition member-equal)
                (:rewrite abs-addrs-of-ctx-app-1-lemma-4)
                (:definition assoc-equal)
-               (:rewrite ctx-app-ok-when-absfat-equiv-lemma-4)))
+               (:rewrite ctx-app-ok-when-absfat-equiv-lemma-4)
+               (:rewrite abs-file-alist-p-correctness-1)))
     :induct (mv (fat32-filename-list-prefixp z-path y-path)
                 (ctx-app x z z-var z-path)
                 (ctx-app x y y-var y-path)))
@@ -1592,7 +1593,9 @@
         (:definition put-assoc-equal)
         (:rewrite no-duplicatesp-of-strip-cars-of-put-assoc)
         (:type-prescription
-         abs-addrs-of-remove-assoc-lemma-1)))
+         abs-addrs-of-remove-assoc-lemma-1)
+        (:rewrite abs-file-alist-p-correctness-1)
+        (:rewrite abs-complete-correctness-1)))
       :induct (induction-scheme dir frame x)
       :expand
       ((collapse frame)
@@ -2474,7 +2477,7 @@
      (:type-prescription assoc-when-zp-len)
      (:definition nth)
      (:rewrite nat-listp-when-unsigned-byte-listp)
-     (:linear nth-when-dir-ent-p)
+     (:linear nth-when-d-e-p)
      (:rewrite ctx-app-ok-when-abs-complete)
      (:rewrite fat32-filename-list-p-of-names-at))))
 
@@ -3356,7 +3359,7 @@
                                   seq))))
   :hints (("goal" :induct (collapse-seq frame seq)
            :in-theory (e/d (collapse-seq frame-addrs-before-seq
-                                         ctx-app-list-seq collapse
+                                         ctx-app-list-seq
                                          frame-addrs-before-seq-of-collapse-this-1)
                            ((:definition no-duplicatesp-equal)
                             (:definition member-equal)
@@ -4051,7 +4054,7 @@
   (("goal"
     :do-not-induct t
     :in-theory (e/d (collapse-seq frame-addrs-before-seq
-                                  ctx-app-list-seq collapse
+                                  ctx-app-list-seq
                                   frame-addrs-before-seq-of-collapse-this-1)
                     ((:definition no-duplicatesp-equal)
                      (:definition member-equal)
@@ -4096,7 +4099,7 @@
   :hints
   (("goal"
     :in-theory (e/d (collapse-seq frame-addrs-before-seq
-                                  ctx-app-list-seq collapse)
+                                  ctx-app-list-seq)
                     ((:definition no-duplicatesp-equal)
                      (:definition member-equal)
                      (:rewrite nthcdr-when->=-n-len-l)
@@ -4745,7 +4748,8 @@
                     . 1)
           (:type-prescription abs-addrs-of-remove-assoc-lemma-1)
           (:rewrite 1st-complete-of-put-assoc-lemma-1)
-          (:definition len))))))
+          (:definition len)
+          (:rewrite abs-file-alist-p-correctness-1))))))
 
 (defthmd
   1st-complete-under-path-of-frame->frame-of-partial-collapse-lemma-5
@@ -6933,7 +6937,7 @@
    (local (in-theory
            (e/d (valid-seqp-after-collapse-this-lemma-6
                  collapse-seq seq-this
-                 collapse-iter collapse 1st-complete)
+                 collapse-iter 1st-complete)
                 ((:rewrite
                   assoc-of-frame->frame-of-collapse-this)
                  (:rewrite nthcdr-when->=-n-len-l)
@@ -7766,7 +7770,7 @@
     (put-assoc-equal
      (fat32-filename-fix (car y-path))
      (abs-file
-      (abs-file->dir-ent (cdr (assoc-equal (fat32-filename-fix (car y-path))
+      (abs-file->d-e (cdr (assoc-equal (fat32-filename-fix (car y-path))
                                            x)))
       (ctx-app
        (ctx-app (abs-file->contents
@@ -7778,7 +7782,7 @@
     (put-assoc-equal
      (fat32-filename-fix (car y-path))
      (abs-file
-      (abs-file->dir-ent (cdr (assoc-equal (fat32-filename-fix (car y-path))
+      (abs-file->d-e (cdr (assoc-equal (fat32-filename-fix (car y-path))
                                            x)))
       (ctx-app
        (ctx-app (abs-file->contents
@@ -7798,7 +7802,7 @@
        (put-assoc-equal
         (fat32-filename-fix (car y-path))
         (abs-file
-         (abs-file->dir-ent
+         (abs-file->d-e
           (cdr (assoc-equal (fat32-filename-fix (car y-path))
                             x)))
          (ctx-app
@@ -7812,7 +7816,7 @@
       (abs-file-alist1 x)
       (val
        (abs-file
-        (abs-file->dir-ent (cdr (assoc-equal (fat32-filename-fix (car y-path))
+        (abs-file->d-e (cdr (assoc-equal (fat32-filename-fix (car y-path))
                                              x)))
         (ctx-app
          (ctx-app
@@ -7960,7 +7964,7 @@
      (put-assoc-equal
       (fat32-filename-fix (car z-path))
       (abs-file
-       (abs-file->dir-ent (cdr (assoc-equal (fat32-filename-fix (car z-path))
+       (abs-file->d-e (cdr (assoc-equal (fat32-filename-fix (car z-path))
                                             x)))
        (append
         (remove-equal z-var
@@ -7981,7 +7985,7 @@
        (put-assoc-equal
         (fat32-filename-fix (car z-path))
         (abs-file
-         (abs-file->dir-ent
+         (abs-file->d-e
           (cdr (assoc-equal (fat32-filename-fix (car z-path))
                             x)))
          (append (remove-equal
@@ -8314,8 +8318,7 @@
                             (frame->frame frame))))))))
   :hints
   (("goal"
-    :in-theory (e/d (collapse-this collapse
-                                   (:rewrite partial-collapse-correctness-lemma-20))
+    :in-theory (e/d (collapse-this (:rewrite partial-collapse-correctness-lemma-20))
                     ((:definition member-equal)
                      (:definition assoc-equal)
                      (:definition remove-equal)

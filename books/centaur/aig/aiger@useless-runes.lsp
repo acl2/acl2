@@ -2099,6 +2099,8 @@
              (3 3 (:REWRITE SUBSETP-MEMBER . 3))
              (3 3 (:REWRITE SUBSETP-MEMBER . 2))
              (3 3 (:REWRITE SUBSETP-MEMBER . 1))
+             (3 3 (:REWRITE INTERSECTP-MEMBER . 3))
+             (3 3 (:REWRITE INTERSECTP-MEMBER . 2))
              (3 3
                 (:REWRITE HONS-DUPLICITY-ALIST-P-WHEN-NOT-CONSP))
              (3 3 (:REWRITE ALISTP-WHEN-ATOM))

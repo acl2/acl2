@@ -9,3 +9,9 @@ operators
 
 conditionals.c
 conditionals
+
+nonstrict.c
+nonstrict
+
+mbt.c
+mbt

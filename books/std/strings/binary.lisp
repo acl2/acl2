@@ -27,6 +27,7 @@
 ;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
+; Contributing author: Alessandro Coglio <coglio@kestrel.edu>
 
 (in-package "STR")
 (include-book "ieqv")
@@ -121,33 +122,33 @@
 
 (local (xdoc::set-default-parents binary))
 
-(define bit-digitp (x)
+(define bin-digit-char-p (x)
   :short "Recognizer for characters #\\0 and #\\1."
   :returns bool
-  :long "<p>@(call bit-digitp) is the binary alternative to @(see digitp).</p>"
+  :long "<p>@(call bin-digit-char-p) is the binary alternative to @(see dec-digit-char-p).</p>"
   :inline t
   (or (eql x #\0)
       (eql x #\1))
   ///
-  (defcong ichareqv equal (bit-digitp x) 1
+  (defcong ichareqv equal (bin-digit-char-p x) 1
     :hints(("Goal" :in-theory (enable ichareqv
                                       downcase-char
                                       char-fix))))
-  (defthm characterp-when-bit-digitp
-    (implies (bit-digitp char)
+  (defthm characterp-when-bin-digit-char-p
+    (implies (bin-digit-char-p char)
              (characterp char))
     :rule-classes :compound-recognizer))
 
-(std::deflist bit-digit-listp (x)
-  :short "Recognizes lists of @(see bit-digitp) characters."
-  (bit-digitp x)
+(std::deflist bin-digit-char-listp (x)
+  :short "Recognizes lists of @(see bin-digit-char-p) characters."
+  (bin-digit-char-p x)
   ///
-  (defcong icharlisteqv equal (bit-digit-listp x) 1
+  (defcong icharlisteqv equal (bin-digit-char-listp x) 1
     :hints(("Goal" :in-theory (enable icharlisteqv)))))
 
 (define bit-digit-val
-  :short "Coerces a @(see bit-digitp) character into a number, 0 or 1."
-  ((x bit-digitp :type character))
+  :short "Coerces a @(see bin-digit-char-p) character into a number, 0 or 1."
+  ((x bin-digit-char-p :type character))
   :returns (bit bitp :rule-classes :type-prescription)
   :split-types t
   :inline t
@@ -155,7 +156,7 @@
       1
     0)
   ///
-  (local (in-theory (enable bit-digitp)))
+  (local (in-theory (enable bin-digit-char-p)))
 
   (defcong ichareqv equal (bit-digit-val x) 1
     :hints(("Goal" :in-theory (enable ichareqv downcase-char char-fix))))
@@ -176,8 +177,8 @@
   (defthm unsigned-byte-p-of-bit-digit-val
     (unsigned-byte-p 1 (bit-digit-val x)))
   (defthm equal-of-bit-digit-val-and-bit-digit-val
-    (implies (and (bit-digitp x)
-                  (bit-digitp y))
+    (implies (and (bin-digit-char-p x)
+                  (bin-digit-char-p y))
              (equal (equal (bit-digit-val x) (bit-digit-val y))
                     (equal x y))))
   (defthm bit-digit-val-of-digit-to-char
@@ -187,7 +188,7 @@
 
 (define bit-digit-list-value1
   :parents (bit-digit-list-value)
-  ((x bit-digit-listp)
+  ((x bin-digit-char-listp)
    (val :type unsigned-byte))
   (mbe :logic (if (consp x)
                   (bit-digit-list-value1 (cdr x)
@@ -201,11 +202,11 @@
                     (+ (the (unsigned-byte 8) (if (eql (car x) #\1) 1 0))
                        (the unsigned-byte (ash (the unsigned-byte val) 1)))))
                (the unsigned-byte val)))
-  :guard-hints (("Goal" :in-theory (enable bit-digit-val bit-digitp))))
+  :guard-hints (("Goal" :in-theory (enable bit-digit-val bin-digit-char-p))))
 
 (define bit-digit-list-value
   :short "Coerces a list of bit digits into a natural number."
-  ((x bit-digit-listp))
+  ((x bin-digit-char-listp))
   :returns (value natp :rule-classes :type-prescription)
   :long "<p>For instance, @('(bit-digit-list-value '(#\1 #\0 #\0 #\0))') is 8.
 See also @(see parse-bits-from-charlist) for a more flexible function that can
@@ -251,7 +252,7 @@ tolerate non-bit digits after the number.</p>"
   ((x character-listp))
   :returns (tail character-listp :hyp :guard)
   (cond ((atom x)             nil)
-        ((bit-digitp (car x)) (skip-leading-bit-digits (cdr x)))
+        ((bin-digit-char-p (car x)) (skip-leading-bit-digits (cdr x)))
         (t                    x))
   ///
   (local (defun ind (x y)
@@ -263,7 +264,7 @@ tolerate non-bit digits after the number.</p>"
   (defcong icharlisteqv icharlisteqv (skip-leading-bit-digits x) 1
     :hints(("Goal" :in-theory (enable icharlisteqv))))
   (defthm len-of-skip-leading-bit-digits
-    (implies (bit-digitp (car x))
+    (implies (bin-digit-char-p (car x))
              (< (len (skip-leading-bit-digits x))
                 (len x)))))
 
@@ -272,34 +273,34 @@ tolerate non-bit digits after the number.</p>"
   ((x character-listp))
   :returns (head character-listp)
   (cond ((atom x)             nil)
-        ((bit-digitp (car x)) (cons (car x) (take-leading-bit-digits (cdr x))))
+        ((bin-digit-char-p (car x)) (cons (car x) (take-leading-bit-digits (cdr x))))
         (t                    nil))
   ///
   (local (defthm l0 ;; Gross, but gets us an equal congruence
-           (implies (bit-digitp x)
+           (implies (bin-digit-char-p x)
                     (equal (ichareqv x y)
                            (equal x y)))
            :hints(("Goal" :in-theory (enable ichareqv
                                              downcase-char
-                                             bit-digitp
+                                             bin-digit-char-p
                                              char-fix)))))
   (defcong icharlisteqv equal (take-leading-bit-digits x) 1
     :hints(("Goal" :in-theory (enable icharlisteqv))))
-  (defthm bit-digit-listp-of-take-leading-bit-digits
-    (bit-digit-listp (take-leading-bit-digits x)))
+  (defthm bin-digit-char-listp-of-take-leading-bit-digits
+    (bin-digit-char-listp (take-leading-bit-digits x)))
   (defthm bound-of-len-of-take-leading-bit-digits
     (<= (len (take-leading-bit-digits x)) (len x))
     :rule-classes :linear)
   (defthm equal-of-take-leading-bit-digits-and-length
     (equal (equal (len (take-leading-bit-digits x)) (len x))
-           (bit-digit-listp x)))
-  (defthm take-leading-bit-digits-when-bit-digit-listp
-    (implies (bit-digit-listp x)
+           (bin-digit-char-listp x)))
+  (defthm take-leading-bit-digits-when-bin-digit-char-listp
+    (implies (bin-digit-char-listp x)
              (equal (take-leading-bit-digits x)
                     (list-fix x))))
   (defthm consp-of-take-leading-bit-digits
     (equal (consp (take-leading-bit-digits x))
-           (bit-digitp (car x)))))
+           (bin-digit-char-p (car x)))))
 
 (define bit-digit-string-p-aux
   :parents (bit-digit-string-p)
@@ -314,17 +315,17 @@ tolerate non-bit digits after the number.</p>"
   :verify-guards nil
   :enabled t
   (mbe :logic
-       (bit-digit-listp (nthcdr n (explode x)))
+       (bin-digit-char-listp (nthcdr n (explode x)))
        :exec
        (if (eql n xl)
            t
-         (and (bit-digitp (char x n))
+         (and (bin-digit-char-p (char x n))
               (bit-digit-string-p-aux x
                                       (the unsigned-byte (+ 1 n))
                                       xl))))
   ///
   (verify-guards bit-digit-string-p-aux
-    :hints(("Goal" :in-theory (enable bit-digit-listp)))))
+    :hints(("Goal" :in-theory (enable bin-digit-char-listp)))))
 
 (define bit-digit-string-p
   :short "Recognizer for strings whose characters are all 0 or 1."
@@ -333,7 +334,7 @@ tolerate non-bit digits after the number.</p>"
   :long "<p>Corner case: this accepts the empty string since all of its
 characters are bit digits.</p>
 
-<p>Logically this is defined in terms of @(see bit-digit-listp).  But in the
+<p>Logically this is defined in terms of @(see bin-digit-char-listp).  But in the
 execution, we use a @(see char)-based function that avoids exploding the
 string.  This provides much better performance, e.g., on an AMD FX-8350 with
 CCL:</p>
@@ -347,11 +348,11 @@ CCL:</p>
     ;; 0.99 seconds, 800 MB allocated
     (let ((x \"01001\"))
       (time$ (loop for i fixnum from 1 to 10000000 do
-                   (str::bit-digit-listp (explode x)))))
+                   (str::bin-digit-char-listp (explode x)))))
 })"
   :inline t
   :enabled t
-  (mbe :logic (bit-digit-listp (explode x))
+  (mbe :logic (bin-digit-char-listp (explode x))
        :exec (bit-digit-string-p-aux x 0 (length x)))
   ///
   (defcong istreqv equal (bit-digit-string-p x) 1))
@@ -361,7 +362,7 @@ CCL:</p>
   :parents (natchars2)
   :short "Logically simple definition that is similar to @(see natchars2)."
   ((n natp))
-  :returns (chars bit-digit-listp)
+  :returns (chars bin-digit-char-listp)
   :long "<p>This <i>almost</i> computes @('(natchars2 n)'), but when @('n') is
 zero it returns @('nil') instead of @('(#\\0)').  You would normally never call
 this function directly, but it is convenient for reasoning about @(see
@@ -419,7 +420,7 @@ natchars2).</p>"
 (define natchars2
   :short "Convert a natural number into a list of bits."
   ((n natp))
-  :returns (chars bit-digit-listp)
+  :returns (chars bin-digit-char-listp)
   :long "<p>For instance, @('(natchars 8)') is @('(#\\1 #\\0 #\\0 #\\0)').</p>
 
 <p>This is like ACL2's built-in function @(see explode-nonnegative-integer),
@@ -520,8 +521,8 @@ consing together characters in reverse order.</p>"
   :inline t
   (implode (natchars2 n))
   ///
-  (defthm bit-digit-listp-of-natstr
-    (bit-digit-listp (explode (natstr2 n))))
+  (defthm bin-digit-char-listp-of-natstr
+    (bin-digit-char-listp (explode (natstr2 n))))
   (defthm natstr2-one-to-one
     (equal (equal (natstr2 n) (natstr2 m))
            (equal (nfix n) (nfix m))))
@@ -590,7 +591,7 @@ the characters are 0 or 1.</p>"
   (mbe :logic
        (cond ((atom x)
               (mv (nfix val) (nfix len) nil))
-             ((bit-digitp (car x))
+             ((bin-digit-char-p (car x))
               (let ((digit-val (bit-digit-val (car x))))
                 (parse-bits-from-charlist (cdr x)
                                           (+ digit-val (ash (nfix val) 1))
@@ -612,7 +613,7 @@ the characters are 0 or 1.</p>"
          (mv val len x)))
   ///
   (verify-guards parse-bits-from-charlist
-    :hints(("Goal" :in-theory (enable bit-digitp
+    :hints(("Goal" :in-theory (enable bin-digit-char-p
                                       bit-digit-val
                                       char-fix))))
   (defthm val-of-parse-bits-from-charlist
@@ -696,10 +697,10 @@ of our logical definition.</p>"
   ;; Minor speed hint
   (local (in-theory (disable BOUND-OF-LEN-OF-TAKE-LEADING-BIT-DIGITS
                              ACL2::RIGHT-SHIFT-TO-LOGTAIL
-                             BIT-DIGIT-LISTP-OF-CDR-WHEN-BIT-DIGIT-LISTP)))
+                             BIN-DIGIT-CHAR-LISTP-OF-CDR-WHEN-BIN-DIGIT-CHAR-LISTP)))
 
   (verify-guards parse-bits-from-string
-    :hints(("Goal" :in-theory (enable bit-digitp
+    :hints(("Goal" :in-theory (enable bin-digit-char-p
                                       bit-digit-val
                                       bit-digit-list-value
                                       take-leading-bit-digits)))))
@@ -718,7 +719,7 @@ characters other than 0 or 1, or is empty, we return @('nil').</p>"
   (mbe :logic
        (let ((chars (explode x)))
          (and (consp chars)
-              (bit-digit-listp chars)
+              (bin-digit-char-listp chars)
               (bit-digit-list-value chars)))
        :exec
        (b* (((the unsigned-byte xl) (length x))
