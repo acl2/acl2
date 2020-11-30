@@ -305,7 +305,8 @@
                      (member arg vars)))
         (raise "Expected ~x0 to be among variables of ~x1" arg form))
 
-       (fix-body `(,out-equiv ,(subst `(,fix ,arg) arg form)
+       (subst-alist `((,arg . (,fix ,arg))))
+       (fix-body `(,out-equiv ,(acl2::sublis-var subst-alist form)
                               ,form))
        (fix-thm `(defthm ,fix-thmname
                    ,fix-body
@@ -315,14 +316,14 @@
                           (implies (syntaxp (and (quotep ,arg)
                                                  (not (,pred (cadr ,arg)))))
                                    (,out-equiv ,form
-                                               ,(subst `(,fix ,arg) arg form)))
+                                               ,(acl2::sublis-var subst-alist form)))
                           :hints (("Goal" :in-theory
                                    '(,out-equiv-equiv-rune ,fix-thmname))))))
        (cong-thm (and (not skip-cong-thm)
                       `(defthm ,congruence-thmname
                          (implies (,equiv ,arg ,argequiv)
                                   (,out-equiv ,form
-                                              ,(subst argequiv arg form)))
+                                              ,(acl2::sublis-var `((,arg . ,argequiv)) form)))
                          :hints (("Goal" :in-theory nil
                                   :do-not '(preprocess)
                                   :use ((:instance ,fix-thmname)
