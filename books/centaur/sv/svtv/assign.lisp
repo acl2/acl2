@@ -194,47 +194,40 @@
                                       equal-of-svar->name)))))
 
 
-;; (define 4vec-assigns-to-overrideval-assigns ((x 4vec-assigns-p)
-;;                                              (updates svex-alist-p))
-;;   :returns (new-x 4vec-assigns-p)
-;;   (b* (((when (atom x)) nil)
-;;        ((unless (mbt (consp (car x))))
-;;         (4vec-assigns-to-overrideval-assigns (cdr x) updates))
-;;        ((cons lhs val) (car x)))
-;;     (cons (cons (lhs-to-overrideval-lhs lhs updates) (4vec-driver-fix val))
-;;           (4vec-assigns-to-overrideval-assigns (cdr x) updates)))
-;;   ///
-;;   (defret vars-of-<fn>
-;;     (implies (and (not (member v (lhslist-vars (alist-keys x))))
-;;                   (not (and (svar->override-val v)
-;;                             (member (change-svar v :override-val nil) (lhslist-vars (alist-keys x))))))
-;;              (not (member v (lhslist-vars (alist-keys new-x)))))
-;;     :hints(("Goal" :in-theory (enable lhslist-vars alist-keys))))
+(define 4vec-assigns-to-overrideval-assigns ((x 4vec-assigns-p)
+                                             (updates svex-alist-p))
+  :returns (new-x 4vec-assigns-p)
+  (b* (((when (atom x)) nil)
+       ((unless (mbt (consp (car x))))
+        (4vec-assigns-to-overrideval-assigns (cdr x) updates))
+       ((cons lhs val) (car x)))
+    (cons (cons (lhs-to-overrideval-lhs lhs updates) (4vec-driver-fix val))
+          (4vec-assigns-to-overrideval-assigns (cdr x) updates)))
+  ///
+  (defret vars-of-<fn>
+    (implies (svar->override-test v)
+             (not (member v (lhslist-vars (alist-keys new-x)))))
+    :hints(("Goal" :in-theory (enable lhslist-vars alist-keys))))
 
-;;   (local (in-theory (enable 4vec-assigns-fix))))
+  (local (in-theory (enable 4vec-assigns-fix))))
 
-;; (define 4vec-assigns-to-overridetest-assigns ((x 4vec-assigns-p)
-;;                                              (updates svex-alist-p))
-;;   :returns (new-x 4vec-assigns-p)
-;;   (b* (((when (atom x)) nil)
-;;        ((unless (mbt (consp (car x))))
-;;         (4vec-assigns-to-overridetest-assigns (cdr x) updates))
-;;        ((cons lhs val) (car x)))
-;;     (cons (cons (lhs-to-overridetest-lhs lhs updates) (4vec-driver-fix val))
-;;           (4vec-assigns-to-overridetest-assigns (cdr x) updates)))
-;;   ///
-;;   (defret vars-of-<fn>
-;;     (implies (and (not (member (change-svar v :override-test nil) (lhslist-vars (alist-keys x))))
-;;                   (not (member v (lhslist-vars (alist-keys x)))))
-;;              (not (member v (lhslist-vars (alist-keys new-x)))))
-;;     :hints(("Goal" :in-theory (enable lhslist-vars alist-keys))))
+(define 4vec-assigns-to-overridetest-assigns ((x 4vec-assigns-p)
+                                             (updates svex-alist-p))
+  :returns (new-x 4vec-assigns-p)
+  (b* (((when (atom x)) nil)
+       ((unless (mbt (consp (car x))))
+        (4vec-assigns-to-overridetest-assigns (cdr x) updates))
+       ((cons lhs val) (car x)))
+    (cons (cons (lhs-to-overridetest-lhs lhs updates) (4vec-driver-fix val))
+          (4vec-assigns-to-overridetest-assigns (cdr x) updates)))
+  ///
 
-;;   (defret vars-of-<fn>-when-not-override-test
-;;     (implies (not (svar->override-test v))
-;;              (not (member v (lhslist-vars (alist-keys new-x)))))
-;;     :hints(("Goal" :in-theory (enable lhslist-vars alist-keys))))
+  (defret vars-of-<fn>-when-not-override-test
+    (implies (not (svar->override-test v))
+             (not (member v (lhslist-vars (alist-keys new-x)))))
+    :hints(("Goal" :in-theory (enable lhslist-vars alist-keys))))
 
-;;   (local (in-theory (enable 4vec-assigns-fix))))
+  (local (in-theory (enable 4vec-assigns-fix))))
 
     
 
@@ -250,40 +243,40 @@
                                            lhslist-vars)))))
 
 
-;; (define svtv-env-to-4vec-assigns
-;;   ((env svex-env-p
-;;         "The assignment given by the user -- keys are named variables in the
-;;          lhsmap.")
-;;    (map svtv-name-lhs-map-p
-;;         "Mapping from user names to canonical signal LHSes"))
-;;   :returns (assigns 4vec-assigns-p)
-;;   (b* (((when (atom env))
-;;         nil)
-;;        ((unless (mbt (and (consp (car env))
-;;                           (svar-p (caar env)))))
-;;         (svtv-env-to-4vec-assigns (cdr env) map))
-;;        ((cons var val) (car env))
-;;        (look (hons-get var map))
-;;        ((unless look)
-;;         (er hard? 'svtv-env-to-4vec-assigns
-;;             "No signal named ~x0 in map.")
-;;         (svtv-env-to-4vec-assigns (cdr env) map))
-;;        (lhs (lhs-fix (cdr look)))
-;;        ;; (test-lhs (lhs-to-overridetest-lhs lhs updates))
-;;        ;; (test-look (hons-assoc-equal var tests))
-;;        ;; (test (if test-look (cdr test-look) -1))
-;;        )
-;;     (cons (cons lhs (make-4vec-driver :value val))
-;;           ;; (cons (cons test-lhs (make-4vec-driver :value test))
-;;           (svtv-env-to-4vec-assigns (cdr env) map)))
-;;   ///
-;;   (defret vars-of-<fn>
-;;     (implies (not (member v (lhslist-vars (alist-vals (svtv-name-lhs-map-fix map)))))
-;;              (not (member v (lhslist-vars (alist-keys assigns)))))
-;;     :hints(("Goal" :in-theory (enable alist-keys lhslist-vars
-;;                                       member-lhs-vars-of-lookup-when-alist-vals-of-svtv-name-lhs-map))))
+(define svtv-env-to-4vec-assigns
+  ((env svex-env-p
+        "The assignment given by the user -- keys are named variables in the
+         lhsmap.")
+   (map svtv-name-lhs-map-p
+        "Mapping from user names to canonical signal LHSes"))
+  :returns (assigns 4vec-assigns-p)
+  (b* (((when (atom env))
+        nil)
+       ((unless (mbt (and (consp (car env))
+                          (svar-p (caar env)))))
+        (svtv-env-to-4vec-assigns (cdr env) map))
+       ((cons var val) (car env))
+       (look (hons-get var map))
+       ((unless look)
+        (er hard? 'svtv-env-to-4vec-assigns
+            "No signal named ~x0 in map.")
+        (svtv-env-to-4vec-assigns (cdr env) map))
+       (lhs (lhs-fix (cdr look)))
+       ;; (test-lhs (lhs-to-overridetest-lhs lhs updates))
+       ;; (test-look (hons-assoc-equal var tests))
+       ;; (test (if test-look (cdr test-look) -1))
+       )
+    (cons (cons lhs (make-4vec-driver :value val))
+          ;; (cons (cons test-lhs (make-4vec-driver :value test))
+          (svtv-env-to-4vec-assigns (cdr env) map)))
+  ///
+  (defret vars-of-<fn>
+    (implies (not (member v (lhslist-vars (alist-vals (svtv-name-lhs-map-fix map)))))
+             (not (member v (lhslist-vars (alist-keys assigns)))))
+    :hints(("Goal" :in-theory (enable alist-keys lhslist-vars
+                                      member-lhs-vars-of-lookup-when-alist-vals-of-svtv-name-lhs-map))))
 
-;;   (local (in-theory (enable svex-env-fix))))
+  (local (in-theory (enable svex-env-fix))))
 
 
 (define svtv-subst-to-assigns
@@ -324,10 +317,12 @@
              (not (member v (driverlist-vars (alist-vals assigns)))))
     :hints(("Goal" :in-theory (enable alist-vals svex-alist-vars driverlist-vars))))
 
-  ;; (defret eval-of-<fn>
-  ;;   (equal (assigns-eval assigns env)
-  ;;          (svtv-env-to-4vec-assigns (svex-alist-eval subst env) map))
-  ;;   :hints(("Goal" :in-theory (enable svtv-env-to-4vec-assigns svex-alist-eval assigns-eval))))
+  (defret eval-of-<fn>
+    (equal (assigns-eval assigns env)
+           (svtv-env-to-4vec-assigns (svex-alist-eval subst env) map))
+    :hints(("Goal" :in-theory (enable svtv-env-to-4vec-assigns
+                                      driver-eval
+                                      svex-alist-eval assigns-eval))))
 
   (local (in-theory (enable svex-alist-fix))))
 
@@ -375,41 +370,41 @@
 ;;   (local (in-theory (enable svex-env-fix))))
 
 
-;; (define svtv-assignment-to-4vec-assigns
-;;   ((env svex-env-p
-;;         "The assignment given by the user -- keys are named variables in the
-;;          lhsmap.")
-;;    (tests svex-env-p
-;;           "Assignments to override test (mask) vectors given by the user.  These
-;;            override the default behavior in which any variable present in env has
-;;            its override test set to all 1s.  Any key of tests that is not a key
-;;            of env will be ignored.")
-;;    (map svtv-name-lhs-map-p
-;;         "Mapping from user names to canonical signal LHSes")
-;;    (updates svex-alist-p
-;;             "Update functions for internal signals"))
-;;   :returns (assigns 4vec-assigns-p)
-;;   (b* (((when (atom env))
-;;         nil)
-;;        ((unless (mbt (and (consp (car env))
-;;                           (svar-p (caar env)))))
-;;         (svtv-assignment-to-4vec-assigns (cdr env) tests map updates))
-;;        ((cons var val) (car env))
-;;        (look (hons-get var map))
-;;        ((unless look)
-;;         (er hard? 'svtv-assignment-to-4vec-assigns
-;;             "No signal named ~x0 in map.")
-;;         (svtv-assignment-to-4vec-assigns (cdr env) tests map updates))
-;;        (lhs (cdr look))
-;;        (val-lhs (lhs-to-overrideval-lhs lhs updates))
-;;        (test-lhs (lhs-to-overridetest-lhs lhs updates))
-;;        (test-look (hons-assoc-equal var tests))
-;;        (test (if test-look (cdr test-look) -1)))
-;;     (cons (cons val-lhs (make-4vec-driver :value val))
-;;           (cons (cons test-lhs (make-4vec-driver :value test))
-;;                 (svtv-assignment-to-4vec-assigns (cdr env) tests map updates))))
-;;   ///
-;;   (local (in-theory (enable svex-env-fix))))
+(define svtv-assignment-to-4vec-assigns
+  ((env svex-env-p
+        "The assignment given by the user -- keys are named variables in the
+         lhsmap.")
+   (tests svex-env-p
+          "Assignments to override test (mask) vectors given by the user.  These
+           override the default behavior in which any variable present in env has
+           its override test set to all 1s.  Any key of tests that is not a key
+           of env will be ignored.")
+   (map svtv-name-lhs-map-p
+        "Mapping from user names to canonical signal LHSes")
+   (updates svex-alist-p
+            "Update functions for internal signals"))
+  :returns (assigns 4vec-assigns-p)
+  (b* (((when (atom env))
+        nil)
+       ((unless (mbt (and (consp (car env))
+                          (svar-p (caar env)))))
+        (svtv-assignment-to-4vec-assigns (cdr env) tests map updates))
+       ((cons var val) (car env))
+       (look (hons-get var map))
+       ((unless look)
+        (er hard? 'svtv-assignment-to-4vec-assigns
+            "No signal named ~x0 in map.")
+        (svtv-assignment-to-4vec-assigns (cdr env) tests map updates))
+       (lhs (cdr look))
+       (val-lhs (lhs-to-overrideval-lhs lhs updates))
+       (test-lhs (lhs-to-overridetest-lhs lhs updates))
+       (test-look (hons-assoc-equal var tests))
+       (test (if test-look (cdr test-look) -1)))
+    (cons (cons val-lhs (make-4vec-driver :value val))
+          (cons (cons test-lhs (make-4vec-driver :value test))
+                (svtv-assignment-to-4vec-assigns (cdr env) tests map updates))))
+  ///
+  (local (in-theory (enable svex-env-fix))))
        
 
 ;; (define svtv-subst-to-assigns
@@ -608,58 +603,6 @@
 (local (include-book "tools/trivial-ancestors-check" :dir :system))
 
 
-
-(defsection svex-env-to-alist
-  (define svex-env-to-alist ((x svex-env-p))
-    :inline t
-    :returns (new-x svex-alist-p)
-    :verify-guards nil
-    (mbe :logic (if (atom x)
-                    nil
-                  (if (and (consp (car x)) (svar-p (caar x)))
-                      (cons (cons (caar x) (svex-quote (cdar x)))
-                            (svex-env-to-alist (cdr x)))
-                    (svex-env-to-alist (cdr x))))
-         :exec x)
-    ///
-    (local (defret <fn>-is-really-svex-env-fix
-             (equal new-x (svex-env-fix x))
-             :hints(("Goal" :in-theory (enable svex-env-fix svex-quote)))))
-
-    (verify-guards svex-env-to-alist$inline
-      :hints(("Goal" :in-theory (enable svex-quote))))
-
-    (defret eval-of-<fn>
-      (equal (svex-alist-eval new-x env) (svex-env-fix x))
-      :hints(("Goal" :in-theory (e/d (svex-alist-eval svex-env-fix)
-                                     (<fn>-is-really-svex-env-fix))))))
-
-  (define svex-alist-all-quotes-p ((x svex-alist-p))
-    (if (atom x)
-        t
-      (and (or (not (mbt (and (consp (car x)) (svar-p (caar x)))))
-               (svex-case (cdar x) :quote))
-           (svex-alist-all-quotes-p (cdr x))))
-    ///
-    (local (in-theory (enable svex-alist-fix))))
-
-  (local (defthm svex-alist-all-quotes-p-means-eval-is-identity
-           (implies (svex-alist-all-quotes-p x)
-                    (equal (svex-alist-eval x env)
-                           (svex-alist-fix x)))
-           :hints(("Goal" :in-theory (enable svex-alist-all-quotes-p
-                                             svex-alist-eval
-                                             svex-alist-fix
-                                             svex-fix
-                                             svex-quote->val)))))
-
-  (define svex-alist-eval-likely-all-quotes ((x svex-alist-p) (env svex-env-p))
-    :enabled t
-    (mbe :logic (svex-alist-eval x env)
-         :exec (if (svex-alist-all-quotes-p x)
-                   x
-                 (svex-alist-eval x env)))))
-
 (local (acl2::use-trivial-ancestors-check))
 
 (local (defthm svex-concat-of-quotes
@@ -673,63 +616,7 @@
                   (svex-case (svex-rsh w x) :quote))
          :hints(("Goal" :in-theory (enable svex-rsh)))))
 
-(define svtv-env-to-values ((env svex-env-p)
-                            (map svtv-name-lhs-map-p)
-                            (updates svex-alist-p))
-  :guard (lhslist-nonoverride-p (alist-vals map))
-  :returns (val-inputs svex-env-p)
-  ;; (4vec-netassigns->resolves
-  ;;  (4vec-assigns->netassigns
-  ;;   (4vec-assigns-to-overrideval-assigns
-  ;;    (svtv-subst-to-4vec-assigns
-  ;;     env map)
-  ;;    updates)))
-  (svex-alist-eval-likely-all-quotes
-   (netassigns->resolves
-    (assigns->netassigns
-     (assigns-to-overrideval-assigns
-      (svtv-subst-to-4vec-assigns
-       (svex-env-to-alist env) map)
-      updates)))
-   nil)
-  ///
 
-  (defret override-test-keys-of-<fn>
-    (implies (svar->override-test v)
-             (not (hons-assoc-equal v val-inputs)))
-    :hints(("Goal" :in-theory (enable override-test-member-when-lhslist-nonoverride-p))))
-
-  (defret svex-env-boundp-override-test-of-<fn>
-    (implies (svar->override-test v)
-             (not (svex-env-boundp v val-inputs)))
-    :hints(("Goal" :in-theory (e/d (svex-env-boundp)
-                                   (<fn>))))))
-
-(define svtv-env-to-tests ((tests svex-env-p)
-                           (map svtv-name-lhs-map-p)
-                           (updates svex-alist-p))
-  :guard (lhslist-nonoverride-p (alist-vals map))
-  :returns (test-inputs svex-env-p)
-  (4vec-netassigns->resolves
-   (4vec-assigns->netassigns
-    (4vec-assigns-to-overridetest-assigns
-     (svtv-env-to-4vec-assigns
-      tests
-      (mbe :logic (svtv-name-lhs-map-nonoverride-fix map)
-           :exec map))
-     updates)))
-  ///
-
-  (defret non-override-test-keys-of-<fn>
-    (implies (not (svar->override-test v))
-             (not (hons-assoc-equal v test-inputs)))
-    :hints(("Goal" :in-theory (enable override-val-member-when-lhslist-nonoverride-p))))
-
-  (defret svex-env-boundp-non-override-test-of-<fn>
-    (implies (not (svar->override-test v))
-             (not (svex-env-boundp v test-inputs)))
-    :hints(("Goal" :in-theory (e/d (svex-env-boundp)
-                                   (<fn>))))))
 
 (define svarlist-override-tests-match ((x svarlist-p) (val booleanp))
   (if (atom x)
@@ -756,6 +643,322 @@
   (defret match-when-<fn>-nonmember
     (implies (not (member badguy (svarlist-fix x)))
              (svarlist-override-tests-match x val))))
+
+(define assigns-to-overrideval-assigns ((x assigns-p)
+                                        (updates svex-alist-p))
+  :returns (new-x assigns-p)
+  (b* (((when (atom x)) nil)
+       ((unless (mbt (consp (car x))))
+        (assigns-to-overrideval-assigns (cdr x) updates))
+       ((cons lhs val) (car x)))
+    (cons (cons (lhs-to-overrideval-lhs lhs updates) (driver-fix val))
+          (assigns-to-overrideval-assigns (cdr x) updates)))
+  ///
+  (defret vars-of-<fn>
+    (implies (svar->override-test v)
+             (not (member v (lhslist-vars (alist-keys new-x)))))
+    :hints(("Goal" :in-theory (enable lhslist-vars alist-keys))))
+
+  (defret alist-vals-of-<fn>
+    (equal (alist-vals new-x)
+           (alist-vals (assigns-fix x)))
+    :hints(("Goal" :in-theory (enable alist-vals assigns-fix))))
+
+  (defret eval-of-<fn>
+    (equal (assigns-eval new-x env)
+           (4vec-assigns-to-overrideval-assigns (assigns-eval x env) updates))
+    :hints(("Goal" :in-theory (enable 4vec-assigns-to-overrideval-assigns assigns-eval))))
+
+  (local (in-theory (enable assigns-fix))))
+
+(define assigns-to-overridetest-assigns ((x assigns-p)
+                                         (updates svex-alist-p))
+  :returns (new-x assigns-p)
+  (b* (((when (atom x)) nil)
+       ((unless (mbt (consp (car x))))
+        (assigns-to-overridetest-assigns (cdr x) updates))
+       ((cons lhs val) (car x)))
+    (cons (cons (lhs-to-overridetest-lhs lhs updates) (driver-fix val))
+          (assigns-to-overridetest-assigns (cdr x) updates)))
+  ///
+  ;; (defret vars-of-<fn>
+  ;;   (implies (and (not (member (change-svar v :override-test nil) (lhslist-vars (alist-keys x))))
+  ;;                 (not (member v (lhslist-vars (alist-keys x)))))
+  ;;            (not (member v (lhslist-vars (alist-keys new-x)))))
+  ;;   :hints(("Goal" :in-theory (enable lhslist-vars alist-keys))))
+
+  (defret vars-of-<fn>-when-not-override-test
+    (implies (not (svar->override-test v))
+             (not (member v (lhslist-vars (alist-keys new-x)))))
+    :hints(("Goal" :in-theory (enable lhslist-vars alist-keys))))
+
+  
+
+  (defret alist-vals-of-<fn>
+    (equal (alist-vals new-x)
+           (alist-vals (assigns-fix x)))
+    :hints(("Goal" :in-theory (enable alist-vals assigns-fix))))
+
+  (defret eval-of-<fn>
+    (equal (assigns-eval new-x env)
+           (4vec-assigns-to-overridetest-assigns (assigns-eval x env) updates))
+    :hints(("Goal" :in-theory (enable 4vec-assigns-to-overridetest-assigns assigns-eval))))
+
+  (local (in-theory (enable assigns-fix))))
+
+(local (defthm hons-assoc-equal-of-svex-alist-eval
+         (equal (hons-assoc-equal key (svex-alist-eval x env))
+                (and (svar-p key)
+                     (let ((look (hons-assoc-equal key x)))
+                       (and look
+                            (cons key (svex-eval (cdr look) env))))))
+         :hints(("Goal" :in-theory (enable svex-alist-eval)))))
+
+(defsection vars-of-assign-lhses
+
+  (local (in-theory (disable fast-alist-clean)))
+  (local (include-book "std/alists/fast-alist-clean" :dir :system))
+
+  (defret keys-of-assign->netassigns
+    (implies (and (not (member v (lhs-vars lhs)))
+                  (not (hons-assoc-equal v (netassigns-fix acc))))
+             (not (hons-assoc-equal v assigns)))
+    :fn assign->netassigns
+    :hints(("Goal" :in-theory (enable <fn> lhs-vars lhatom-vars))))
+
+
+  (define netassigns-driver-vars ((x netassigns-p))
+    :measure (len (netassigns-fix x))
+    :returns (vars svarlist-p)
+    (b* ((x (netassigns-fix x))
+         ((when (atom x)) nil))
+      (append (driverlist-vars (cdar x))
+              (netassigns-driver-vars (cdr x))))
+    ///
+    (defret member-driverlist-vars-when-not-member-netassigns-driver-vars
+      (implies (not (member v (netassigns-driver-vars x)))
+               (not (member v (driverlist-vars (cdr (hons-assoc-equal k (netassigns-fix x)))))))
+      :hints(("Goal" :in-theory (enable netassigns-fix))))
+
+    (deffixequiv netassigns-driver-vars)
+
+    (defthm netassigns-driver-vars-of-append
+      (equal (netassigns-driver-vars (append x y))
+             (append (netassigns-driver-vars x) (netassigns-driver-vars y)))
+      :hints(("Goal" :in-theory (enable netassigns-fix)
+              :induct (append x y)
+              :expand ((netassigns-driver-vars (cons (car x) (append (cdr x) y)))))))
+
+    (defthm netassigns-driver-vars-of-remove-assoc
+      (implies (and (not (member v (netassigns-driver-vars x)))
+                    (netassigns-p x))
+               (not (member v (netassigns-driver-vars (acl2::hons-remove-assoc k x)))))
+      :hints(("Goal" :in-theory (enable acl2::hons-remove-assoc))))
+
+    (defthm netassign-driver-vars-of-fast-alist-clean
+      (implies (and (not (member v (netassigns-driver-vars x)))
+                    (netassigns-p x))
+               (not (member v (netassigns-driver-vars (fast-alist-clean x)))))
+      :hints(("Goal" :in-theory (e/d (acl2::fast-alist-clean-by-remove-assoc)
+                                     (acl2::fast-alist-clean))))))
+  
+
+  (defret driver-vars-of-assign->netassigns
+    (implies (and (not (member v (svex-vars (driver->value dr))))
+                  (not (member v (netassigns-driver-vars acc))))
+             (not (member v (netassigns-driver-vars assigns))))
+    :fn assign->netassigns
+    :hints(("Goal" :in-theory (enable <fn> netassigns-driver-vars driverlist-vars))))
+
+  (defret keys-of-assigns->netassigns-aux
+    (implies (and (not (member v (lhslist-vars (alist-keys (assigns-fix x)))))
+                  (not (hons-assoc-equal v (netassigns-fix acc))))
+             (not (hons-assoc-equal v netassigns)))
+   :fn assigns->netassigns-aux
+   :hints(("Goal" :in-theory (enable <fn> alist-keys lhslist-vars))))
+
+  (defret driver-vars-of-assigns->netassigns-aux
+    (implies (and (not (member v (driverlist-vars (alist-vals (assigns-fix x)))))
+                  (not (member v (netassigns-driver-vars acc))))
+             (not (member v (netassigns-driver-vars netassigns))))
+    :fn assigns->netassigns-aux
+    :hints(("Goal" :in-theory (enable <fn> driverlist-vars alist-vals))))
+
+
+  (defret keys-of-assigns->netassigns
+    (implies (and (not (member v (lhslist-vars (alist-keys (assigns-fix x))))))
+             (not (hons-assoc-equal v netassigns)))
+   :fn assigns->netassigns
+   :hints(("Goal" :in-theory (enable <fn>))))
+
+  (defret driver-vars-of-assigns->netassigns
+    (implies (not (member v (driverlist-vars (alist-vals (assigns-fix x)))))
+             (not (member v (netassigns-driver-vars netassigns))))
+    :fn assigns->netassigns
+    :hints(("Goal" :in-theory (enable <fn> driverlist-vars netassigns-driver-vars))))
+
+  (local (defthm consp-car-of-netassigns-fix-fwd
+           (implies (consp (netassigns-fix x))
+                    (consp (car (netassigns-fix x))))
+           :rule-classes :forward-chaining))
+
+  (defret keys-of-netassigns->resolves
+    (implies (not (hons-assoc-equal v (netassigns-fix x)))
+             (not (hons-assoc-equal v assigns)))
+   :fn netassigns->resolves
+   :hints(("Goal" :in-theory (enable <fn>))))
+
+
+
+  (defret svex-alist-vars-of-netassigns->resolves
+    (implies (not (member v (netassigns-driver-vars x)))
+             (not (member v (svex-alist-vars assigns))))
+    :fn netassigns->resolves
+    :hints(("Goal" :in-theory (enable <fn> svex-alist-vars netassigns-driver-vars)))))
+
+
+
+
+(define svtv-subst-to-values ((subst svex-alist-p)
+                              (map svtv-name-lhs-map-p)
+                              (updates svex-alist-p))
+  ;; :guard (lhslist-nonoverride-p (alist-vals map))
+  :returns (val-subst svex-alist-p)
+  (netassigns->resolves
+   (assigns->netassigns
+    (assigns-to-overrideval-assigns
+     (svtv-subst-to-assigns subst map)
+     updates)))
+  ///
+  (defret override-test-keys-of-<fn>
+    (implies (svar->override-test v)
+             (not (hons-assoc-equal v val-subst)))
+    :hints(("Goal" :in-theory (enable override-test-member-when-lhslist-nonoverride-p))))
+
+  (defret override-test-key-lookup-of-<fn>
+    (implies (svar->override-test v)
+             (not (svex-lookup v val-subst)))
+    :hints(("Goal" :in-theory (e/d (svex-lookup) (<fn>)))))
+
+  (defret svex-alist-vars-of-<fn>
+    (implies (not (member v (svex-alist-vars subst)))
+             (not (member v (svex-alist-vars val-subst)))))
+
+  ;; (defret svex-alist-eval-of-<fn>
+  ;;   (implies (and (equal subst-vals (svex-env-to-alist (svex-alist-eval subst env)))
+  ;;                 (syntaxp (not (equal subst-vals subst))))
+  ;;            (equal (svex-alist-eval val-subst env)
+  ;;                   (svex-alist-eval (svtv-subst-to-values
+  ;;                                     subst-vals map updates)
+  ;;                                    nil))))
+  )
+
+
+
+(define svtv-env-to-values ((env svex-env-p)
+                            (map svtv-name-lhs-map-p)
+                            (updates svex-alist-p))
+  ;; :guard (lhslist-nonoverride-p (alist-vals map))
+  :returns (val-inputs svex-env-p)
+  (4vec-netassigns->resolves
+   (4vec-assigns->netassigns
+    (4vec-assigns-to-overrideval-assigns
+     (svtv-env-to-4vec-assigns
+      env map)
+     updates)))
+  ;; (svex-alist-eval-likely-all-quotes
+  ;;  (svtv-subst-to-values (svex-env-to-alist env) map updates)
+  ;;  nil)
+  ///
+
+  (defret override-test-keys-of-<fn>
+    (implies (svar->override-test v)
+             (not (hons-assoc-equal v val-inputs)))
+    :hints(("Goal" :in-theory (enable override-test-member-when-lhslist-nonoverride-p))))
+
+  (defret svex-env-boundp-override-test-of-<fn>
+    (implies (svar->override-test v)
+             (not (svex-env-boundp v val-inputs)))
+    :hints(("Goal" :in-theory (e/d (svex-env-boundp)
+                                   (<fn>)))))
+
+  (defthm eval-of-svtv-subst-to-values
+    (equal (svex-alist-eval (svtv-subst-to-values subst map updates) env)
+           (svtv-env-to-values (svex-alist-eval subst env) map updates))
+    :hints(("Goal" :in-theory (enable svtv-subst-to-values)))))
+
+
+
+
+(define svtv-subst-to-tests ((tests svex-alist-p)
+                              (map svtv-name-lhs-map-p)
+                              (updates svex-alist-p))
+  ;; :guard (lhslist-nonoverride-p (alist-vals map))
+  :returns (test-subst svex-alist-p)
+  (netassigns->resolves
+   (assigns->netassigns
+    (assigns-to-overridetest-assigns
+     (svtv-subst-to-assigns tests map)
+     updates)))
+  ///
+  (defret non-override-test-keys-of-<fn>
+    (implies (not (svar->override-test v))
+             (not (hons-assoc-equal v test-subst)))
+    :hints(("Goal" :in-theory (enable override-test-member-when-lhslist-nonoverride-p))))
+
+  (defret non-override-test-key-lookup-of-<fn>
+    (implies (not (svar->override-test v))
+             (not (svex-lookup v test-subst)))
+    :hints(("Goal" :in-theory (e/d (svex-lookup) (<fn>)))))
+
+  (defret svex-alist-vars-of-<fn>
+    (implies (not (member v (svex-alist-vars tests)))
+             (not (member v (svex-alist-vars test-subst)))))
+
+  ;; (defret svex-alist-eval-of-<fn>
+  ;;   (implies (and (equal tests-vals (svex-env-to-alist (svex-alist-eval tests env)))
+  ;;                 (syntaxp (not (equal tests-vals tests))))
+  ;;            (equal (svex-alist-eval test-subst env)
+  ;;                   (svex-alist-eval (svtv-subst-to-tests
+  ;;                                     tests-vals map updates)
+  ;;                                    nil))))
+  )
+
+
+
+(define svtv-env-to-tests ((tests svex-env-p)
+                            (map svtv-name-lhs-map-p)
+                            (updates svex-alist-p))
+  ;; :guard (lhslist-nonoverride-p (alist-vals map))
+  :returns (test-inputs svex-env-p)
+  (4vec-netassigns->resolves
+   (4vec-assigns->netassigns
+    (4vec-assigns-to-overridetest-assigns
+     (svtv-env-to-4vec-assigns
+      tests map)
+     updates)))
+  ;; (svex-alist-eval-likely-all-quotes
+  ;;  (svtv-subst-to-tests (svex-env-to-alist tests) map updates)
+  ;;  nil)
+  ///
+
+  (defret non-override-test-keys-of-<fn>
+    (implies (not (svar->override-test v))
+             (not (hons-assoc-equal v test-inputs)))
+    :hints(("Goal" :in-theory (enable override-test-member-when-lhslist-nonoverride-p))))
+
+  (defret svex-env-boundp-non-override-test-of-<fn>
+    (implies (not (svar->override-test v))
+             (not (svex-env-boundp v test-inputs)))
+    :hints(("Goal" :in-theory (e/d (svex-env-boundp)
+                                   (<fn>)))))
+
+  (defthm eval-of-svtv-subst-to-tests
+    (equal (svex-alist-eval (svtv-subst-to-tests subst map updates) env)
+           (svtv-env-to-tests (svex-alist-eval subst env) map updates))
+    :hints(("Goal" :in-theory (enable svtv-subst-to-tests)))))
+
+
 
 (define svex-env-override-tests-filter ((x svex-env-p) (val booleanp))
   :returns (new-x svex-env-p)
@@ -850,7 +1053,7 @@
                                          (tests svex-env-p)
                                          (map svtv-name-lhs-map-p)
                                          (updates svex-alist-p))
-  :guard (lhslist-nonoverride-p (alist-vals map))
+  ;; :guard (lhslist-nonoverride-p (alist-vals map))
   :guard-hints (("goal" :in-theory (enable member-alist-keys-is-hons-assoc-equal)))
   :returns (inputs svex-env-p)
   (b* ((val-env (svtv-env-to-values env map updates))
@@ -933,164 +1136,11 @@
     :hints(("Goal" :in-theory (enable join-val/test-envs)))))
 
 
-(define assigns-to-overrideval-assigns ((x assigns-p)
-                                        (updates svex-alist-p))
-  :returns (new-x assigns-p)
-  (b* (((when (atom x)) nil)
-       ((unless (mbt (consp (car x))))
-        (assigns-to-overrideval-assigns (cdr x) updates))
-       ((cons lhs val) (car x)))
-    (cons (cons (lhs-to-overrideval-lhs lhs updates) (driver-fix val))
-          (assigns-to-overrideval-assigns (cdr x) updates)))
-  ///
-  (defret vars-of-<fn>
-    (implies (and (not (member v (lhslist-vars (alist-keys x))))
-                  (not (and (svar->override-val v)
-                            (member (change-svar v :override-val nil) (lhslist-vars (alist-keys x))))))
-             (not (member v (lhslist-vars (alist-keys new-x)))))
-    :hints(("Goal" :in-theory (enable lhslist-vars alist-keys))))
-
-  (defret eval-of-<fn>
-    (equal (assigns-eval new-x env)
-           (4vec-assigns-to-overrideval-assigns (assigns-eval x env) updates))
-    :hints(("Goal" :in-theory (enable 4vec-assigns-to-overrideval-assigns assigns-eval))))
-
-  (local (in-theory (enable assigns-fix))))
-
-(define assigns-to-overridetest-assigns ((x assigns-p)
-                                         (updates svex-alist-p))
-  :returns (new-x assigns-p)
-  (b* (((when (atom x)) nil)
-       ((unless (mbt (consp (car x))))
-        (assigns-to-overridetest-assigns (cdr x) updates))
-       ((cons lhs val) (car x)))
-    (cons (cons (lhs-to-overridetest-lhs lhs updates) (driver-fix val))
-          (assigns-to-overridetest-assigns (cdr x) updates)))
-  ///
-  (defret vars-of-<fn>
-    (implies (and (not (member (change-svar v :override-test nil) (lhslist-vars (alist-keys x))))
-                  (not (member v (lhslist-vars (alist-keys x)))))
-             (not (member v (lhslist-vars (alist-keys new-x)))))
-    :hints(("Goal" :in-theory (enable lhslist-vars alist-keys))))
-
-  (defret vars-of-<fn>-when-not-override-test
-    (implies (not (svar->override-test v))
-             (not (member v (lhslist-vars (alist-keys new-x)))))
-    :hints(("Goal" :in-theory (enable lhslist-vars alist-keys))))
-
-  (defret eval-of-<fn>
-    (equal (assigns-eval new-x env)
-           (4vec-assigns-to-overridetest-assigns (assigns-eval x env) updates))
-    :hints(("Goal" :in-theory (enable 4vec-assigns-to-overridetest-assigns assigns-eval))))
-
-  (local (in-theory (enable assigns-fix))))
-
-
-(defsection vars-of-assign-lhses
-  (defret keys-of-assign->netassigns
-    (implies (and (not (member v (lhs-vars lhs)))
-                  (not (hons-assoc-equal v (netassigns-fix acc))))
-             (not (hons-assoc-equal v assigns)))
-    :fn assign->netassigns
-    :hints(("Goal" :in-theory (enable <fn> lhs-vars lhatom-vars))))
-
-  (defret keys-of-assigns->netassigns-aux
-    (implies (and (not (member v (lhslist-vars (alist-keys (assigns-fix x)))))
-                  (not (hons-assoc-equal v (netassigns-fix acc))))
-             (not (hons-assoc-equal v netassigns)))
-   :fn assigns->netassigns-aux
-   :hints(("Goal" :in-theory (enable <fn> alist-keys lhslist-vars))))
-
-  (local (in-theory (disable fast-alist-clean)))
-  (local (include-book "std/alists/fast-alist-clean" :dir :system))
-
-  (defret keys-of-assigns->netassigns
-    (implies (and (not (member v (lhslist-vars (alist-keys (assigns-fix x))))))
-             (not (hons-assoc-equal v netassigns)))
-   :fn assigns->netassigns
-   :hints(("Goal" :in-theory (enable <fn>))))
-
-  (local (defthm consp-car-of-netassigns-fix-fwd
-           (implies (consp (netassigns-fix x))
-                    (consp (car (netassigns-fix x))))
-           :rule-classes :forward-chaining))
-
-  (defret keys-of-netassigns->resolves
-    (implies (not (hons-assoc-equal v (netassigns-fix x)))
-             (not (hons-assoc-equal v assigns)))
-   :fn netassigns->resolves
-   :hints(("Goal" :in-theory (enable <fn>)))))
-
-(define svtv-subst-to-values ((subst svex-alist-p)
-                            (map svtv-name-lhs-map-p)
-                            (updates svex-alist-p))
-  :guard (lhslist-nonoverride-p (alist-vals map))
-  :returns (val-inputs svex-alist-p)
-  (netassigns->resolves
-   (assigns->netassigns
-    (assigns-to-overrideval-assigns
-     (svtv-subst-to-assigns
-      subst
-      (mbe :logic (svtv-name-lhs-map-nonoverride-fix map)
-           :exec map))
-     updates)))
-  ///
-
-  (defret override-test-keys-of-<fn>
-    (implies (svar->override-test v)
-             (not (hons-assoc-equal v val-inputs)))
-    :hints(("Goal" :in-theory (enable override-test-member-when-lhslist-nonoverride-p))))
-
-  (defret svex-lookup-override-test-of-<fn>
-    (implies (svar->override-test v)
-             (not (svex-lookup v val-inputs)))
-    :hints(("Goal" :in-theory (e/d (svex-lookup)
-                                   (<fn>)))))
-
-  (defret eval-of-<fn>
-    (equal (svex-alist-eval val-inputs env)
-           (svtv-env-to-values
-            (svex-alist-eval subst env) map updates))
-    :hints(("Goal" :in-theory (enable svtv-env-to-values)))))
-
-(define svtv-subst-to-tests ((subst svex-alist-p)
-                             (map svtv-name-lhs-map-p)
-                             (updates svex-alist-p))
-  :guard (lhslist-nonoverride-p (alist-vals map))
-  :returns (test-inputs svex-alist-p)
-  (netassigns->resolves
-   (assigns->netassigns
-    (assigns-to-overridetest-assigns
-     (svtv-subst-to-assigns
-      subst
-      (mbe :logic (svtv-name-lhs-map-nonoverride-fix map)
-           :exec map))
-     updates)))
-  ///
-
-  (defret non-override-test-keys-of-<fn>
-    (implies (not (svar->override-test v))
-             (not (hons-assoc-equal v test-inputs)))
-    :hints(("Goal" :in-theory (enable override-test-member-when-lhslist-nonoverride-p))))
-
-  (defret svex-lookup-non-override-test-of-<fn>
-    (implies (not (svar->override-test v))
-             (not (svex-lookup v test-inputs)))
-    :hints(("Goal" :in-theory (e/d (svex-lookup)
-                                   (<fn>)))))
-
-  (defret eval-of-<fn>
-    (equal (svex-alist-eval test-inputs env)
-           (svtv-env-to-tests
-            (svex-alist-eval subst env) map updates))
-    :hints(("Goal" :in-theory (enable svtv-env-to-tests)))))
-
-
 (define svtv-subst-to-phase-inputs ((vals svex-alist-p)
                                     (tests svex-alist-p)
                                     (map svtv-name-lhs-map-p)
                                     (updates svex-alist-p))
-  :guard (lhslist-nonoverride-p (alist-vals map))
+;;   :guard (lhslist-nonoverride-p (alist-vals map))
   :guard-hints (("goal" :in-theory (enable member-alist-keys-is-hons-assoc-equal)))
   :returns (inputs svex-alist-p)
   (b* ((val-alists (svtv-subst-to-values vals map updates))
@@ -1103,7 +1153,9 @@
            (svtv-assignment-to-phase-inputs
             (svex-alist-eval vals env)
             (svex-alist-eval tests env) map updates))
-    :hints(("Goal" :in-theory (enable svtv-assignment-to-phase-inputs)))))
+    :hints(("Goal" :in-theory (enable svtv-assignment-to-phase-inputs
+                                      svtv-env-to-values
+                                      svtv-env-to-tests)))))
 
 
 

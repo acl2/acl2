@@ -2059,16 +2059,16 @@ bits of @('foo'):</p>
 
   (verify-guards netassigns->resolves)
 
-  (local (defthm vars-of-drivestrength-insert
-           (implies (and (not (member v (driverlist-vars x)))
-                         (not (member v (svex-vars (driver->value elt)))))
-                    (not (member v (driverlist-vars (drivestrength-insert elt x)))))
-           :hints(("Goal" :in-theory (enable drivestrength-insert)))))
+  (defthm vars-of-drivestrength-insert
+    (implies (and (not (member v (driverlist-vars x)))
+                  (not (member v (svex-vars (driver->value elt)))))
+             (not (member v (driverlist-vars (drivestrength-insert elt x)))))
+    :hints(("Goal" :in-theory (enable drivestrength-insert))))
 
-  (local (defthm vars-of-drivestrength-insertsort
-           (implies (not (member v (driverlist-vars x)))
-                    (not (member v (driverlist-vars (drivestrength-insertsort x)))))
-           :hints(("Goal" :in-theory (enable drivestrength-insertsort)))))
+  (defthm vars-of-drivestrength-insertsort
+    (implies (not (member v (driverlist-vars x)))
+             (not (member v (driverlist-vars (drivestrength-insertsort x)))))
+    :hints(("Goal" :in-theory (enable drivestrength-insertsort))))
 
   (defthm vars-of-netassigns->resolves
     (implies (not (member v (netassigns-vars x)))

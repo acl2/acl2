@@ -36,6 +36,8 @@
 (include-book "expand")
 
 
+(local (std::add-default-post-define-hook :fix))
+
 (define svarlist-to-override-alist ((x svarlist-p))
   :returns (alist svex-alist-p)
   (if (atom x)
@@ -107,7 +109,7 @@
   :returns (mv err
                (fsm (implies (not err)
                              (svtv-fsm-p fsm)))
-               new-moddb new-aliases)
+               (new-moddb moddb-basics-ok) new-aliases)
   :guard (modalist-addr-p (design->modalist x))
   (b* (((mv err assigns delays & moddb aliases)
         (svex-design-flatten-and-normalize x))
@@ -148,7 +150,25 @@
                            (not (equal aliases ''nil))))
              (equal <call>
                     (let ((moddb nil) (aliases nil)) <call>)))
-    :hints(("Goal" :in-theory (enable normalize-stobjs-of-svex-design-flatten-and-normalize)))))
+    :hints(("Goal" :in-theory (enable normalize-stobjs-of-svex-design-flatten-and-normalize))))
+
+  (defret moddb-mods-ok-of-<fn>
+    (moddb-mods-ok new-moddb))
+
+  (defret alias-length-of-<fn>
+    (implies (not err)
+             (equal (len new-aliases)
+                    (moddb-mod-totalwires
+                     (moddb-modname-get-index (design->top x) new-moddb)
+                     new-moddb))))
+
+  (defret modidx-of-<fn>
+    (implies (not err)
+             (moddb-modname-get-index (design->top x) new-moddb))
+    :rule-classes (:rewrite
+                   (:type-prescription :corollary
+                    (implies (not err)
+                             (natp (moddb-modname-get-index (design->top x) new-moddb)))))))
 
 
 

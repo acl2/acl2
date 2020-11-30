@@ -121,7 +121,16 @@
            (svex-env-lookup k (svtv-fsm-step-env (svex-alist-eval in env)
                                                  (svex-alist-eval prev-st env)
                                                  x)))
-    :hints(("Goal" :in-theory (enable svtv-fsm-step-env)))))
+    :hints(("Goal" :in-theory (enable svtv-fsm-step-env))))
+
+  (defret normalize-svtv-fsm-fields-of-<fn>
+    (implies (syntaxp (not (and (equal values ''nil)
+                                (equal design ''((modalist) (top . "default-modname")))
+                                (equal user-names ''nil)
+                                (equal namemap ''nil))))
+             (equal (let ((x (svtv-fsm values nextstate design user-names namemap))) <call>)
+                    (let ((x (svtv-fsm nil nextstate '((modalist) (top . "default-modname")) nil nil)))
+                      <call>)))))
 
 (define svex-env-to-subst ((x svex-env-p))
   :returns (subst svex-alist-p)
@@ -212,7 +221,15 @@
 
   (defret svex-alist-keys-of-<fn>-nextst
     (equal (svex-alist-keys nextsts)
-           (svex-alist-keys (svtv-fsm->nextstate x)))))
+           (svex-alist-keys (svtv-fsm->nextstate x))))
+
+  (defret normalize-svtv-fsm-fields-of-<fn>
+    (implies (syntaxp (not (and (equal design ''((modalist) (top . "default-modname")))
+                                (equal user-names ''nil)
+                                (equal namemap ''nil))))
+             (equal (let ((x (svtv-fsm values nextstate design user-names namemap))) <call>)
+                    (let ((x (svtv-fsm values nextstate '((modalist) (top . "default-modname")) nil nil)))
+                      <call>)))))
 
 
 
@@ -308,7 +325,15 @@
                                    phases x))
     :hints(("Goal" :in-theory (enable svtv-cycle-eval-nextst)
             :induct <call>
-            :expand ((svex-alist-eval nil env))))))
+            :expand ((svex-alist-eval nil env)))))
+
+  (defret normalize-svtv-fsm-fields-of-<fn>
+    (implies (syntaxp (not (and (equal design ''((modalist) (top . "default-modname")))
+                                (equal user-names ''nil)
+                                (equal namemap ''nil))))
+             (equal (let ((x (svtv-fsm values nextstate design user-names namemap))) <call>)
+                    (let ((x (svtv-fsm values nextstate '((modalist) (top . "default-modname")) nil nil)))
+                      <call>)))))
 
 
 
@@ -322,4 +347,17 @@
        ((mv outs nextst)
         (with-fast-alist prev-st
           (svtv-cycle-compile prev-st phases x))))
-    (change-svtv-fsm x :values outs :nextstate nextst)))
+    (change-svtv-fsm x :values outs :nextstate nextst))
+  ///
+  (defret normalize-svtv-fsm-fields-of-<fn>
+    (implies (syntaxp (not (and (equal design ''((modalist) (top . "default-modname")))
+                                (equal user-names ''nil)
+                                (equal namemap ''nil))))
+             (and (equal (let ((x (svtv-fsm values nextstate design user-names namemap)))
+                           (svtv-fsm->nextstate <call>))
+                         (let ((x (svtv-fsm values nextstate '((modalist) (top . "default-modname")) nil nil)))
+                           (svtv-fsm->nextstate <call>)))
+                  (equal (let ((x (svtv-fsm values nextstate design user-names namemap)))
+                           (svtv-fsm->values <call>))
+                         (let ((x (svtv-fsm values nextstate '((modalist) (top . "default-modname")) nil nil)))
+                           (svtv-fsm->values <call>)))))))
