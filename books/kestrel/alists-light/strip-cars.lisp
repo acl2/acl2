@@ -57,3 +57,9 @@
   :hints (("Goal" :in-theory (enable strip-cars))))
 
 (theory-invariant (incompatible (:rewrite strip-cars-of-cdr) (:definition strip-cars)))
+
+(defthmd member-equal-of-strip-cars-iff
+  (implies (alistp alist)
+           (iff (member-equal key (strip-cars alist))
+                (assoc-equal key alist)))
+  :hints (("Goal" :in-theory (enable assoc-equal member-equal strip-cars))))
