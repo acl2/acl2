@@ -26,7 +26,6 @@
 (include-book "memoization")
 (include-book "kestrel/utilities/erp" :dir :system)
 
-;move and use in dag array builders 3
 (defund print-intervalp (print-interval)
   (declare (xargs :guard t))
   (or (not print-interval)
@@ -39,11 +38,15 @@
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable print-intervalp))))
 
-(in-theory (disable alistp))
+(local (in-theory (disable alistp)))
 
-;; Add the symbol var to the DAG. Returns (mv erp nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info).
-;; trees-equal-to-tree represents everything in the rewrite stack that rewrote to expr, so pair all those things in the memoization with the nodenum for expr.
 ;; TODO: Consider using hashing?
+
+;; Either extends the dag to include a node for VAR or returns an existing node
+;; that represents VAR.  Also updates the memoization to record the fact that all of the
+;; TREES-EQUAL-TO-TREE are equal to the node returned for VAR.  Returns (mv erp
+;; nodenum dag-array dag-len dag-parent-array dag-constant-alist
+;; dag-variable-alist memoization info).
 (defund add-variable-to-dag-array-with-memo (var dag-array dag-len
                                                  dag-parent-array ;;just passed through
                                                  dag-constant-alist ;;just passed through
@@ -224,8 +227,6 @@
                                         (mv-nth 3 (add-variable-to-dag-array-with-memo var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist trees-equal-to-tree memoization info))))
   :hints (("Goal" :in-theory (enable add-variable-to-dag-array-with-memo))))
 
-
-
 (defthm bounded-dag-parent-entriesp-after-add-variable-to-dag-array-with-memo
   (implies (and (bounded-dag-parent-entriesp (+ -1 (alen1 'dag-array dag-array))
                                              'dag-parent-array
@@ -332,8 +333,7 @@
            (bounded-memoizationp (mv-nth 7 (add-variable-to-dag-array-with-memo var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist trees-equal-to-tree memoization info))
                                  (mv-nth 3 (add-variable-to-dag-array-with-memo var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist trees-equal-to-tree memoization info))))
   :hints (("Goal" :in-theory (e/d (add-variable-to-dag-array-with-memo dargp-less-than-when-natp)
-                                  (dargp-less-than natp
-                                                              )))))
+                                  (dargp-less-than natp)))))
 
 (defthm maybe-bounded-memoizationp-of-nth-7-of-add-variable-to-dag-array-with-memo
   (implies (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
@@ -364,18 +364,19 @@
                 (not (mv-nth 0 (add-variable-to-dag-array-with-memo var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist trees-equal-to-tree memoization info))))
            (memoizationp (mv-nth 7 (add-variable-to-dag-array-with-memo var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist trees-equal-to-tree memoization info))))
   :hints (("Goal" :in-theory (e/d (add-variable-to-dag-array-with-memo dargp-less-than-when-natp)
-                                  (dargp-less-than natp
-                                                              )))))
+                                  (dargp-less-than natp)))))
 
 (defthm mv-nth-8-of-add-variable-to-dag-array-with-memo
   (equal (mv-nth 8 (add-variable-to-dag-array-with-memo var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist trees-equal-to-tree memoization info))
          info)
   :hints (("Goal" :in-theory (enable add-variable-to-dag-array-with-memo))))
 
-;fixme if we are not calling this as a tail call, we could separate out the memo stuff and just call the -simple version of this function
-;the args of expr should be constants and nodenums?  no vars? or are vars okay??
-;expr shouldn't be a function applied to all constants?? (BBOZO but what if it's a function we can't evaluate?)
-;; Returns (mv erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization) ;can rv 1 actually be a quotep?
+;; Either extends the dag to include a node for FN applied to ARGS or returns
+;; an existing node that represents that expr.  Also updates the memoization to
+;; record the fact that all of the TREES-EQUAL-TO-TREE are equal to the node
+;; returned for that expr.  Returns (mv erp nodenum dag-array dag-len
+;; dag-parent-array dag-constant-alist dag-variable-alist memoization).
+;; TODO: if we are not calling this as a tail call, we could separate out the memo stuff and just call add-function-call-expr-to-dag-array.
 (defund add-function-call-expr-to-dag-array-with-memo (fn args dag-array dag-len
                                                           dag-parent-array
                                                           dag-constant-alist
@@ -581,8 +582,7 @@
            (<= dag-len
                (mv-nth 3 (add-function-call-expr-to-dag-array-with-memo fn args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print-interval print trees-equal-to-tree memoization))))
   :rule-classes (:rewrite
-                 (:linear :trigger-terms ((mv-nth 3 (add-function-call-expr-to-dag-array-with-memo fn args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print-interval print trees-equal-to-tree memoization))))
-                 )
+                 (:linear :trigger-terms ((mv-nth 3 (add-function-call-expr-to-dag-array-with-memo fn args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print-interval print trees-equal-to-tree memoization)))))
   :hints (("Goal" :in-theory (enable add-function-call-expr-to-dag-array-with-memo))))
 
 (defthm bound-on-mv-nth-3-of-add-function-call-expr-to-dag-array-with-memo-3-gen
