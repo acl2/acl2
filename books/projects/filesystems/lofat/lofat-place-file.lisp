@@ -1140,10 +1140,8 @@
       (:rewrite len-of-nats=>chars)
       (:rewrite len-of-insert-d-e)
       (:rewrite d-e-fix-when-d-e-p)
-      (:rewrite lofat-place-file-correctness-1-lemma-14)
       (:rewrite subsetp-append1)
       (:rewrite lofat-place-file-correctness-lemma-83)
-      (:rewrite lofat-place-file-correctness-1-lemma-13)
       (:rewrite lofat-place-file-correctness-lemma-52)
       (:rewrite not-intersectp-list-when-subsetp-1)))
     :induct (lofat-to-hifat-helper fat32$c
@@ -1378,6 +1376,41 @@
                                         (find-d-e (cdr d-e-list)
                                                       filename))
                                 path file)))))))
+
+;; This works because as soon as both arguments are quoted constants, the
+;; executable-counterpart will kick in. The availability of the
+;; executable-counterpart will, however, have to be ensured
+;; by a theory invariant.
+(defthm
+  lofat-place-file-correctness-lemma-2
+  (implies
+   (syntaxp (quotep const))
+   (and
+    (hifat-equiv
+     (mv-nth 0
+             (hifat-place-file fs path
+                               (m1-file-hifat-file-alist-fix d-e const)))
+     (mv-nth 0
+             (hifat-place-file fs path
+                               (m1-file-hifat-file-alist-fix nil const))))
+    (equal
+     (mv-nth 1
+             (hifat-place-file fs path
+                               (m1-file-hifat-file-alist-fix d-e const)))
+     (mv-nth 1
+             (hifat-place-file fs path
+                               (m1-file-hifat-file-alist-fix nil const))))))
+   :hints
+   (("goal" :use (:instance hifat-place-file-when-hifat-equiv-1
+                            (file1 (m1-file-hifat-file-alist-fix d-e const))
+                            (file2 (m1-file-hifat-file-alist-fix nil const))))))
+
+(theory-invariant
+ (implies
+  (active-runep
+   '(:rewrite lofat-place-file-correctness-lemma-2))
+  (active-runep
+   '(:executable-counterpart m1-file-hifat-file-alist-fix))))
 
 (defthm
   lofat-place-file-correctness-lemma-40
@@ -1620,9 +1653,7 @@
 
   (local
    (in-theory (e/d (lofat-place-file)
-                   ((:rewrite
-                     lofat-place-file-correctness-1-lemma-14)
-                    (:rewrite intersectp-when-subsetp)
+                   ((:rewrite intersectp-when-subsetp)
                     (:linear nth-when-d-e-p)
                     (:rewrite
                      d-e-cc-contents-of-lofat-remove-file-disjoint-lemma-3)
@@ -2314,13 +2345,10 @@
   (("goal"
     :in-theory
     (e/d ()
-         ((:rewrite lofat-place-file-correctness-1-lemma-13)
-          (:rewrite lofat-place-file-correctness-1-lemma-14)
-          (:definition member-intersectp-equal)
+         ((:definition member-intersectp-equal)
           (:rewrite lofat-to-hifat-helper-of-clear-cc)
           (:rewrite lofat-place-file-correctness-lemma-56)
           (:rewrite not-intersectp-list-of-lofat-to-hifat-helper)
-          (:rewrite lofat-place-file-correctness-1-lemma-11)
           (:definition free-index-listp)
           (:rewrite lofat-place-file-correctness-lemma-82)
           (:rewrite nth-of-effective-fat)))
@@ -2472,7 +2500,6 @@
      (:rewrite lofat-to-hifat-helper-of-lofat-remove-file-disjoint-lemma-4)
      (:rewrite lofat-place-file-correctness-lemma-5)
      (:definition find-d-e)
-     (:rewrite lofat-place-file-correctness-1-lemma-14)
      (:definition make-list-ac)
      (:rewrite d-e-p-when-member-equal-of-d-e-list-p)
      (:definition place-d-e)
@@ -2522,7 +2549,6 @@
     :do-not-induct t
     :in-theory
     (disable
-     (:rewrite lofat-place-file-correctness-1-lemma-14)
      (:definition member-intersectp-equal)
      (:rewrite lofat-to-hifat-helper-of-update-dir-contents)
      (:rewrite not-intersectp-list-of-lofat-to-hifat-helper)
@@ -2532,7 +2558,6 @@
      (:definition no-duplicatesp-equal)
      (:rewrite count-free-clusters-of-set-indices-in-fa-table-1)
      (:rewrite hifat-to-lofat-inversion-lemma-17)
-     (:rewrite lofat-place-file-correctness-1-lemma-13)
      (:rewrite lofat-fs-p-of-place-contents)
      (:rewrite d-e-cc-under-iff . 3)
      (:rewrite
@@ -2934,11 +2959,9 @@
      (not-intersectp-list hifat-entry-count)
      ((:definition subseq)
       (:definition subseq-list)
-      (:rewrite lofat-place-file-correctness-1-lemma-14)
       (:rewrite m1-file-alist-p-of-cdr-when-m1-file-alist-p)
       (:rewrite nfix-when-zp)
       (:definition delete-d-e)
-      (:rewrite lofat-place-file-correctness-1-lemma-13)
       (:rewrite nth-of-nats=>chars)
       (:rewrite lofat-place-file-correctness-lemma-3)
       (:rewrite take-of-len-free)
@@ -3012,7 +3035,6 @@
       (:rewrite natp-of-place-contents)
       (:rewrite str::explode-when-not-stringp)
       (:rewrite set-difference$-when-not-intersectp)
-      (:linear lofat-remove-file-correctness-1-lemma-27)
       (:rewrite delete-d-e-correctness-1)
       (:definition remove-assoc-equal)
       (:rewrite abs-find-file-correctness-1-lemma-40)
@@ -3310,12 +3332,10 @@
         (d-e-cc-of-update-dir-contents-coincident
          (:rewrite d-e-cc-contents-of-lofat-remove-file-disjoint-lemma-7
                    . 5)
-         (:rewrite lofat-place-file-correctness-1-lemma-14)
          (:rewrite lofat-to-hifat-helper-of-update-dir-contents)
          (:rewrite not-intersectp-list-of-lofat-to-hifat-helper)
          (:rewrite nfix-when-zp)
          (:definition member-intersectp-equal)
-         (:rewrite lofat-place-file-correctness-1-lemma-13)
          (:rewrite lofat-to-hifat-helper-of-clear-cc)
          (:definition free-index-listp)
          (:rewrite d-e-cc-contents-of-lofat-remove-file-coincident-lemma-8)
@@ -3341,7 +3361,6 @@
          (:rewrite member-of-nth-when-not-intersectp)
          (:rewrite lofat-place-file-correctness-lemma-82)
          (:rewrite non-free-index-list-listp-of-effective-fat-of-place-contents)
-         (:rewrite lofat-remove-file-correctness-1-lemma-26)
          (:rewrite d-e-cc-of-update-dir-contents)
          (:rewrite d-e-cc-contents-of-lofat-remove-file-disjoint-lemma-11)
          (:rewrite not-intersectp-list-of-set-difference$-lemma-2
@@ -3449,12 +3468,10 @@
          d-e-cc-of-update-dir-contents-coincident
          (:rewrite d-e-cc-contents-of-lofat-remove-file-disjoint-lemma-7
                    . 5)
-         (:rewrite lofat-place-file-correctness-1-lemma-14)
          (:rewrite lofat-to-hifat-helper-of-update-dir-contents)
          (:rewrite not-intersectp-list-of-lofat-to-hifat-helper)
          (:rewrite nfix-when-zp)
          (:definition member-intersectp-equal)
-         (:rewrite lofat-place-file-correctness-1-lemma-13)
          (:rewrite lofat-to-hifat-helper-of-clear-cc)
          (:definition free-index-listp)
          (:rewrite d-e-cc-contents-of-lofat-remove-file-coincident-lemma-8)
@@ -3480,7 +3497,6 @@
          (:rewrite member-of-nth-when-not-intersectp)
          (:rewrite lofat-place-file-correctness-lemma-82)
          (:rewrite non-free-index-list-listp-of-effective-fat-of-place-contents)
-         (:rewrite lofat-remove-file-correctness-1-lemma-26)
          (:rewrite d-e-cc-of-update-dir-contents)
          (:rewrite d-e-cc-contents-of-lofat-remove-file-disjoint-lemma-11)
          (:rewrite not-intersectp-list-of-set-difference$-lemma-2
@@ -4152,6 +4168,43 @@
   (("goal" :do-not-induct t
     :in-theory (disable d-e-cc-of-update-dir-contents-coincident))))
 
+;; Decently useful.
+(defthm
+  lofat-remove-file-correctness-1-lemma-26
+  (implies
+   (and (lofat-fs-p fat32$c)
+        (d-e-p d-e)
+        (d-e-directory-p d-e)
+        (<= *ms-first-data-cluster*
+            (d-e-first-cluster d-e))
+        (< (d-e-first-cluster d-e)
+           (+ *ms-first-data-cluster*
+              (count-of-clusters fat32$c)))
+        (equal (mv-nth 1
+                       (update-dir-contents fat32$c
+                                            (d-e-first-cluster d-e)
+                                            dir-contents))
+               0)
+        (stringp dir-contents)
+        (< 0 (len (explode dir-contents)))
+        (<= (len (explode dir-contents))
+            *ms-max-dir-size*)
+        (non-free-index-list-listp x (effective-fat fat32$c))
+        (not-intersectp-list
+         (mv-nth '0
+                 (d-e-cc fat32$c d-e))
+         x))
+   (not-intersectp-list
+    (mv-nth 0
+            (d-e-cc
+             (mv-nth 0
+                     (update-dir-contents fat32$c
+                                          (d-e-first-cluster d-e)
+                                          dir-contents))
+             d-e))
+    x))
+  :hints (("goal" :in-theory (enable not-intersectp-list))))
+
 (encapsulate
   ()
 
@@ -4269,9 +4322,7 @@
        (:rewrite hifat-to-lofat-inversion-lemma-17)
        (:rewrite non-free-index-list-listp-of-effective-fat-of-place-contents)
        (:rewrite nfix-when-zp)
-       (:rewrite lofat-place-file-correctness-1-lemma-14)
        (:linear nth-when-d-e-p)
-       (:rewrite lofat-place-file-correctness-1-lemma-11)
        (:rewrite lofat-to-hifat-helper-of-place-contents)
        (:rewrite lofat-to-hifat-helper-of-update-fati)
        (:rewrite not-intersectp-list-of-lofat-to-hifat-helper)
@@ -4943,12 +4994,10 @@
      (lofat-to-hifat-helper find-d-e
                             place-d-e
                             lofat-to-hifat-helper-correctness-4)
-     ((:rewrite lofat-place-file-correctness-1-lemma-14)
-      (:rewrite nth-of-nats=>chars)
+     ((:rewrite nth-of-nats=>chars)
       (:rewrite
        hifat-entry-count-of-lofat-to-hifat-helper-of-delete-d-e-lemma-3)
       (:linear nth-when-d-e-p)
-      (:rewrite lofat-place-file-correctness-1-lemma-13)
       (:rewrite explode-of-d-e-filename)
       (:rewrite d-e-list-p-of-cdr-when-d-e-list-p)
       (:rewrite d-e-p-when-member-equal-of-d-e-list-p)
@@ -4975,7 +5024,6 @@
       (:rewrite lofat-to-hifat-helper-correctness-4)
       (:rewrite nth-of-effective-fat)
       (:rewrite lofat-place-file-correctness-lemma-83)
-      (:rewrite lofat-place-file-correctness-1-lemma-11)
       (:rewrite natp-of-car-when-nat-listp)
       (:type-prescription assoc-when-zp-len)
       (:rewrite not-intersectp-list-when-subsetp-1)
@@ -5070,10 +5118,8 @@
              (:rewrite lofat-to-hifat-helper-of-clear-cc)
              (:rewrite lofat-place-file-correctness-lemma-93)
              (:rewrite member-intersectp-is-commutative)
-             (:rewrite lofat-place-file-correctness-1-lemma-11)
              (:rewrite consp-of-fat32-build-index-list)
-             (:rewrite lofat-place-file-correctness-1-lemma-14)
-             (:rewrite d-e-cc-under-iff . 3)
+                    (:rewrite d-e-cc-under-iff . 3)
              (:rewrite lofat-place-file-correctness-lemma-121
                        . 1)
              (:rewrite not-intersectp-list-when-atom)
@@ -5351,9 +5397,6 @@
      (:rewrite lofat-place-file-correctness-lemma-3)
      (:rewrite lofat-place-file-correctness-1-lemma-16)
      (:rewrite lofat-place-file-correctness-lemma-82)
-     (:rewrite lofat-place-file-correctness-1-lemma-14)
-     (:rewrite lofat-place-file-correctness-1-lemma-13)
-     (:rewrite lofat-place-file-correctness-1-lemma-11)
      (:rewrite d-e-cc-of-lofat-place-file-disjoint)
      (:rewrite d-e-cc-contents-of-lofat-place-file-disjoint)
      (:induction lofat-place-file)
@@ -8615,25 +8658,21 @@
                             lofat-to-hifat-helper-correctness-4
                             lofat-to-hifat-helper)
        (hifat-entry-count
-        (:rewrite lofat-place-file-correctness-1-lemma-14)
-        (:rewrite lofat-place-file-correctness-lemma-55)
+          (:rewrite lofat-place-file-correctness-lemma-55)
         (:rewrite hifat-file-alist-fix-when-hifat-no-dups-p)
         (:rewrite m1-file-alist-p-of-cdr-when-m1-file-alist-p)
         (:definition member-intersectp-equal)
         (:rewrite not-intersectp-list-of-append-1)
-        (:rewrite lofat-place-file-correctness-1-lemma-13)
         (:rewrite d-e-cc-contents-of-lofat-place-file-coincident-lemma-13)
         (:definition not-intersectp-list)
         (:rewrite lofat-place-file-correctness-lemma-56)
         (:rewrite not-intersectp-list-of-lofat-to-hifat-helper)
-        (:rewrite lofat-place-file-correctness-1-lemma-14)
-        (:rewrite lofat-place-file-correctness-lemma-55)
+          (:rewrite lofat-place-file-correctness-lemma-55)
         (:rewrite hifat-file-alist-fix-when-hifat-no-dups-p)
         (:rewrite m1-file-alist-p-of-cdr-when-m1-file-alist-p)
         (:definition member-intersectp-equal)
         (:rewrite not-intersectp-list-of-append-1)
         (:definition natp)
-        (:rewrite lofat-place-file-correctness-1-lemma-13)
         (:rewrite d-e-cc-contents-of-lofat-place-file-coincident-lemma-13)
         (:definition not-intersectp-list)
         (:rewrite lofat-place-file-correctness-lemma-56)
@@ -18962,6 +19001,65 @@
                                        (:definition length)
                                        (:definition min))))
     :rule-classes (:linear :rewrite))
+
+  (defthm
+    lofat-place-file-correctness-1-lemma-11
+    (implies
+     (and
+      (useful-d-e-list-p d-e-list)
+      (not (d-e-directory-p (d-e-fix d-e)))
+      (zp
+       (mv-nth
+        3
+        (lofat-to-hifat-helper fat32$c d-e-list entry-limit)))
+      (>
+       (nfix entry-limit)
+       (hifat-entry-count
+        (mv-nth
+         0
+         (lofat-to-hifat-helper fat32$c d-e-list entry-limit)))))
+     (equal
+      (mv-nth
+       0
+       (lofat-to-hifat-helper fat32$c (place-d-e d-e-list d-e)
+                              entry-limit))
+      (put-assoc-equal
+       (d-e-filename d-e)
+       (m1-file
+        d-e
+        (if (or (< (d-e-first-cluster (d-e-fix d-e)) 2)
+                (<= (+ 2 (count-of-clusters fat32$c))
+                    (d-e-first-cluster (d-e-fix d-e))))
+            ""
+          (mv-nth 0
+                  (d-e-cc-contents fat32$c (d-e-fix d-e)))))
+       (mv-nth
+        0
+        (lofat-to-hifat-helper fat32$c d-e-list entry-limit)))))
+    :hints
+    (("goal"
+      :in-theory
+      (e/d
+       (lofat-to-hifat-helper hifat-entry-count
+                              (:definition butlast)
+                              (:definition nfix)
+                              (:definition length)
+                              (:definition min))
+       ((:rewrite nth-of-effective-fat)
+        (:rewrite nth-of-nats=>chars)
+        (:linear nth-when-d-e-p)
+        (:rewrite explode-of-d-e-filename)
+        (:rewrite take-of-len-free)
+        (:rewrite
+         hifat-entry-count-of-lofat-to-hifat-helper-of-delete-d-e-lemma-3)
+        (:rewrite put-assoc-equal-without-change . 2)
+        (:rewrite nats=>chars-of-take)))
+      :induct (lofat-to-hifat-helper fat32$c d-e-list entry-limit)
+      :do-not-induct t
+      :expand
+      (:free (fat32$c d-e d-e-list entry-limit)
+             (lofat-to-hifat-helper fat32$c (cons d-e d-e-list)
+                                    entry-limit)))))
 
   (local (include-book "std/lists/intersectp" :dir :system))
 

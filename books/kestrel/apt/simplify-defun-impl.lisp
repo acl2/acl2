@@ -924,16 +924,17 @@
                           hyps
                           fn))))))))
 
-(defun simplify-hyp-list (thyps thints ctx state)
+(defun simplify-hyp-list (hyps governors thints ctx state)
 
-; Given a list of translated hypotheses, and theory and expand derived from the
-; top-level simplify[-defun[-sk]] call, we return (list* rewritten-hyps rrec
-; runes) when there is no error.
+; Given a context formed from the given translated hypotheses and governors,
+; and theory and expand derived from the top-level simplify[-defun[-sk]] call,
+; we return (list* rewritten-context rrec runes) when there is no error.
 
-  (b* (((mv erp
-            (list* ?rewritten-hyps rrec ttree pairs)
+  (b* ((context (append hyps governors))
+       ((mv erp
+            (list* ?rewritten-context rrec ttree pairs)
             state)
-        (acl2::rewrite$-hyps thyps
+        (acl2::rewrite$-hyps context
                              :thints thints
                              :ctx ctx
 
@@ -953,9 +954,19 @@
 ; implementation error until learning that we should handle this case
 ; differently.
 
-      (er-soft+ ctx :implementation-error nil
-                "Miscellaneous error attempting to simplify the given ~
-                 assumptions.")))))
+      (er-soft+ ctx :bad-input nil
+                "The error noted above was caused by an attempt to build a ~
+                 context from the given ~@0"
+                (cond
+                 (hyps
+                  (cond
+                   (governors (msg "list of assumptions,~|  ~y0,~|and list of ~
+                                    governing IF tests,~|  ~y1."
+                                   hyps governors))
+                   (t (msg "list of assumptions,~|  ~y0."
+                           hyps))))
+                 (t (msg "list of governing IF tests,~|  ~y0."
+                         governors))))))))
 
 (defconst *must-simplify-keywords*
 ; Keep this in sync with the default value in (show-)simplify-defun.
@@ -1667,7 +1678,7 @@
                                                 wrld))
          (equiv-at-subterm (equiv-from-geneqv geneqv-subterm))
          ((er (cons rrec runes1))
-          (simplify-hyp-list (append thyps governors) thints ctx state))
+          (simplify-hyp-list thyps governors thints ctx state))
          ((er (cons new-subterm runes2))
           (simplify-defun-term subterm bindings geneqv-subterm rrec
                                (get-must-simplify :body must-simplify)

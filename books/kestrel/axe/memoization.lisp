@@ -426,6 +426,12 @@
            (maybe-memoizationp memoization))
   :hints (("Goal" :in-theory (enable maybe-bounded-memoizationp maybe-memoizationp))))
 
+(defthm maybe-bounded-memoizationp-monotone
+  (implies (and (maybe-bounded-memoizationp memoization bound2)
+                (<= bound2 bound))
+           (maybe-bounded-memoizationp memoization bound))
+  :hints (("Goal" :in-theory (enable maybe-bounded-memoizationp))))
+
 ;;;
 ;;; print-memo-stats
 ;;;

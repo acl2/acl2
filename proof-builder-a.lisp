@@ -567,6 +567,11 @@
 ; Notice that unlike Lisp macros, the global Lisp state is available for the
 ; expansion.  Hence we can query the ACL2 database etc.
 
+; Moreover, we can modify state, and in particular set state globals but with
+; the same protection as we have during make-event: the use of
+; protect-system-state-globals.  That macro is invoked by the call below of
+; xtrans-eval.
+
   (let ((instr (make-official-pc-instr raw-instr)))
 
 ; Notice that instr is syntactically valid, i.e. is a true-listp headed by a

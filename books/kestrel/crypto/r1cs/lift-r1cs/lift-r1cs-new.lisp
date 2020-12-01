@@ -33,7 +33,9 @@
                          constraints
                          prime
                          extra-rules remove-rules rules
-                         monitor memoizep count-hitsp
+                         monitor memoizep
+                         count-hitsp
+                         print
                          whole-form state)
   (declare (xargs :guard (and (symbolp name-of-defconst)
                               (symbol-listp vars)
@@ -81,7 +83,7 @@
                              memoizep
                              count-hitsp
                              ;; nil                             ;simplify-xorsp
-                             nil ;print
+                             print
                              whole-form
                              state)))
 
@@ -99,7 +101,8 @@
                                 (rules 'nil)
                                 (monitor 'nil)
                                 (memoizep 'nil) ;; memoization can slow down R1CS lifting a lot, due to many terms with the same single nodenum (the valuation?) being put into the same memo slot
-                                (count-hitsp 'nil))
+                                (count-hitsp 'nil)
+                                (print 'nil))
   `(acl2::make-event-quiet (lift-r1cs-new-fn ',name-of-defconst
                                              ,vars
                                              ,constraints
@@ -110,5 +113,6 @@
                                              ,monitor
                                              ,memoizep
                                              ,count-hitsp
+                                             ,print
                                              ',whole-form
                                              state)))
