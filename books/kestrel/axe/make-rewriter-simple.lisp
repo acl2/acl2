@@ -41,7 +41,8 @@
 (include-book "rule-alists")
 (include-book "instantiate-hyp-basic")
 (include-book "my-sublis-var-and-eval-basic")
-(include-book "dag-array-builders3")
+(include-book "dag-array-builders")
+(include-book "memoization")
 (include-book "dag-array-printing2")
 (include-book "unify-tree-and-dag")
 (include-book "unify-term-and-dag-fast")
@@ -1908,21 +1909,25 @@
             (if (atom tree)
                 (if (symbolp tree)
                     ;; It's a variable (this case may be very rare; can we eliminate it by pre-handling vars in the initial term?):
-                    (mv-let (erp nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info) ;fixme don't bother to pass through the info and memo?  do memo separately?
-                      (add-variable-to-dag-array-with-memo tree
-                                                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                           trees-equal-to-tree
-                                                           memoization info)
-                      (if erp
-                          (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
-                        (let ((replacement-match (lookup-in-node-replacement-array nodenum node-replacement-array node-replacement-array-num-valid-nodes)))
-                          (mv (erp-nil)
-                              (if replacement-match
-                                  ;; the node was replaced:
-                                  replacement-match
-                                ;; not replaced:
-                                nodenum)
-                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))))
+                    (b* ( ;; Add it to the DAG:
+                         ((mv erp nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+                          (add-variable-to-dag-array tree dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+                         ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
+                         ;; See if the resulting node is known to be equal to something:
+                         (replacement-match (lookup-in-node-replacement-array nodenum node-replacement-array node-replacement-array-num-valid-nodes))
+                         (new-nodenum-or-quotep (if replacement-match
+                                                    ;; the node was replaced with something equal to it, using an assumption:
+                                                    replacement-match
+                                                  ;; not replaced:
+                                                  nodenum)))
+                      (mv (erp-nil)
+                          new-nodenum-or-quotep
+                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                          (and memoization
+                               (add-pairs-to-memoization trees-equal-to-tree ;the items ; TODO: Should we include TREE itself?
+                                                         new-nodenum-or-quotep ;the nodenum-or-quotep they are all equal to
+                                                         memoization))
+                          info tries limits node-replacement-array))
                   ;; TREE is a nodenum (because it's an atom but not a symbol): fixme use equalities?
 ;ffffixme, this assumes that nodes in the dag are already rewritten.  but what if this nodenum came from a node-equality assumption? in that case, it may not be rewritten! should we simplify the cdrs of node-replacement-array-num-valid-nodes once at the beginning?  also think about  (they are terms so the cdr gets simplified each time an equality fires, but maybe they get simplified over and over).
                   ;; First, see if the nodenum is mapped to anything in the node-replacement-array-num-valid-nodes:
@@ -2141,27 +2146,30 @@
                                                             rewriter-rule-alist
                                                             refined-assumption-alist node-replacement-array-num-valid-nodes print
                                                             interpreted-function-alist known-booleans monitored-symbols (+ -1 count))
-                      ;; No rule fired, so no simplification can be done.  Add the node to the dag.
-                      (mv-let (erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization)
-                        (add-function-call-expr-to-dag-array-with-memo
-                         fn args ;(if any-arg-was-simplifiedp (cons fn args) tree) ;could put back the any-arg-was-simplifiedp trick to save this cons
-                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                         1000 ; the print-interval
-                         print
-                         (cons-if-not-equal-car expr trees-equal-to-tree) ; might be the same as tree if the args aren't simplified?) well, each arg should be simplified and memoed.
-                         memoization)
-                        (if erp
-                            (mv erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
-                          ;; combine with the case above?
-                          (if (consp nodenum-or-quotep) ;must be a quotep (fixme can this happen?!):
-                              (mv (erp-nil) nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
-                            ;; nodenum-or-quotep is a nodenum.  See if it is equated to anything in the node-replacement-array-num-valid-nodes:
-                            (let ((node-equality-assumption-match (lookup-in-node-replacement-array nodenum-or-quotep node-replacement-array node-replacement-array-num-valid-nodes)))
-                              (mv (erp-nil)
-                                  (if node-equality-assumption-match
-                                      node-equality-assumption-match ; not rewritten.  We could rewrite all such items outside the main clique
-                                    nodenum-or-quotep)
-                                  dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))))))))))))
+                      ;; No rule fired, so no simplification can be done.  Add the node to the dag:
+                      (b* (((mv erp nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+                            (add-function-call-expr-to-dag-array
+                             fn args ;(if any-arg-was-simplifiedp (cons fn args) tree) ;could put back the any-arg-was-simplifiedp trick to save this cons
+                             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                             ;;1000 ; the print-interval ;todo: consider putting back some printing like that done by add-function-call-expr-to-dag-array-with-memo
+                             ;;print
+                             ))
+                           ((when erp) (mv erp nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
+                           ;; See if the nodenum returned is equated to anything:
+                           (replacement-match (lookup-in-node-replacement-array nodenum node-replacement-array node-replacement-array-num-valid-nodes))
+                           (new-nodenum-or-quotep (if replacement-match
+                                                      ;; the node was replaced with something equal to it, using an assumption:
+                                                      replacement-match ; not rewritten.  We could rewrite all such items (that replacements can introduce) outside the main clique
+                                                    ;; not replaced:
+                                                    nodenum)))
+                        (mv (erp-nil)
+                            new-nodenum-or-quotep
+                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                            (and memoization
+                                 (add-pairs-to-memoization (cons-if-not-equal-car expr trees-equal-to-tree) ; might be the same as tree if the args aren't simplified?) well, each arg should be simplified and memoed.
+                                                           new-nodenum-or-quotep ;the nodenum-or-quotep they are all equal to
+                                                           memoization))
+                            info tries limits node-replacement-array)))))))))
         ) ;end mutual-recursion
 
        ;; Theorems about when the count reaches 0:
@@ -3342,91 +3350,17 @@
                        (all-stored-axe-rulep stored-rules)
                        (rule-alistp rewriter-rule-alist)
                        (bounded-refined-assumption-alistp refined-assumption-alist dag-len))
-                  (and (maybe-memoizationp (MV-NTH 7 ,call-of-try-to-apply-rules))
-                       ;; (EQUAL
-                       ;;      (ALEN1 'DAG-ARRAY
-                       ;;             (MV-NTH 2
-                       ;;                     (,try-to-apply-rules-name stored-rules
-                       ;;                                    rewriter-rule-alist args-to-match
-                       ;;                                    dag-array dag-len dag-parent-array
-                       ;;                                    dag-constant-alist dag-variable-alist memoization info tries limits
-                       ;;                                    refined-assumption-alist
-                       ;;
-                       ;;                                    node-replacement-array-num-valid-nodes
-                       ;;                                    print
-                       ;;                                    interpreted-function-alist
-                       ;;                                    monitored-symbols count)))
-                       ;;      (ALEN1 'DAG-PARENT-ARRAY
-                       ;;             (MV-NTH 4
-                       ;;                     (,try-to-apply-rules-name stored-rules
-                       ;;                                         rewriter-rule-alist args-to-match
-                       ;;                                         dag-array dag-len dag-parent-array
-                       ;;                                         dag-constant-alist dag-variable-alist memoization info tries limits
-                       ;;                                         refined-assumption-alist
-                       ;;
-                       ;;                                         node-replacement-array-num-valid-nodes
-                       ;;                                         print
-                       ;;                                         interpreted-function-alist
-                       ;;                                         monitored-symbols count))))
-                       ;;     (DAG-CONSTANT-ALISTP
-                       ;;      (MV-NTH 5 (,try-to-apply-rules-name stored-rules
-                       ;;                                    rewriter-rule-alist args-to-match
-                       ;;                                    dag-array dag-len dag-parent-array
-                       ;;                                    dag-constant-alist dag-variable-alist memoization info tries limits
-                       ;;                                    refined-assumption-alist
-                       ;;
-                       ;;                                    node-replacement-array-num-valid-nodes
-                       ;;                                    print
-                       ;;                                    interpreted-function-alist
-                       ;;                                    monitored-symbols count)))
-                       ;;     (BOUNDED-DAG-PARENT-ARRAYP
-                       ;;      'DAG-PARENT-ARRAY
-                       ;;      (MV-NTH 4 (,try-to-apply-rules-name stored-rules
-                       ;;                                    rewriter-rule-alist args-to-match
-                       ;;                                    dag-array dag-len dag-parent-array
-                       ;;                                    dag-constant-alist dag-variable-alist memoization info tries limits
-                       ;;                                    refined-assumption-alist
-                       ;;
-                       ;;                                    node-replacement-array-num-valid-nodes
-                       ;;                                    print
-                       ;;                                    interpreted-function-alist
-                       ;;                                    monitored-symbols count))
-                       ;;      (MV-NTH 3
-                       ;;              (,try-to-apply-rules-name stored-rules
-                       ;;                                  rewriter-rule-alist args-to-match
-                       ;;                                  dag-array dag-len dag-parent-array
-                       ;;                                  dag-constant-alist dag-variable-alist memoization info tries limits
-                       ;;                                  refined-assumption-alist
-                       ;;
-                       ;;                                  node-replacement-array-num-valid-nodes
-                       ;;                                  print
-                       ;;                                  interpreted-function-alist
-                       ;;                                  monitored-symbols count)))
-                       ;;     (PSEUDO-DAG-ARRAYP
-                       ;;      'DAG-ARRAY
-                       ;;      (MV-NTH 2
-                       ;;              (,try-to-apply-rules-name stored-rules
-                       ;;                                  rewriter-rule-alist args-to-match
-                       ;;                                  dag-array dag-len dag-parent-array
-                       ;;                                  dag-constant-alist dag-variable-alist memoization info tries limits
-                       ;;                                  refined-assumption-alist
-                       ;;
-                       ;;                                  node-replacement-array-num-valid-nodes
-                       ;;                                  print
-                       ;;                                  interpreted-function-alist
-                       ;;                                  monitored-symbols count))
-                       ;;      (MV-NTH 3
-                       ;;              (,try-to-apply-rules-name stored-rules
-                       ;;                                  rewriter-rule-alist args-to-match
-                       ;;                                  dag-array dag-len dag-parent-array
-                       ;;                                  dag-constant-alist dag-variable-alist memoization info tries limits
-                       ;;                                  refined-assumption-alist
-                       ;;
-                       ;;                                  node-replacement-array-num-valid-nodes
-                       ;;                                  print
-                       ;;                                  interpreted-function-alist
-                       ;;                                  monitored-symbols count)))
-                       ))
+                  (and (maybe-memoizationp (mv-nth 7 ,call-of-try-to-apply-rules))
+                       (equal (alen1 'dag-parent-array (mv-nth 4 ,call-of-try-to-apply-rules))
+                              (alen1 'dag-array (mv-nth 2 ,call-of-try-to-apply-rules)))
+                       (dag-constant-alistp (mv-nth 5 ,call-of-try-to-apply-rules))
+                       (bounded-dag-parent-arrayp 'dag-parent-array
+                                                  (mv-nth 4 ,call-of-try-to-apply-rules)
+                                                  (mv-nth 3 ,call-of-try-to-apply-rules))
+                       (dag-parent-arrayp 'dag-parent-array (mv-nth 4 ,call-of-try-to-apply-rules))
+                       (pseudo-dag-arrayp 'dag-array
+                                          (mv-nth 2 ,call-of-try-to-apply-rules)
+                                          (mv-nth 3 ,call-of-try-to-apply-rules))))
          :hints (("Goal" :use (:instance ,(pack$ 'theorem-for-try-to-apply-rules- suffix))
                   :in-theory (disable ,(pack$ 'theorem-for-try-to-apply-rules- suffix)))))
 
@@ -4579,7 +4513,8 @@
                                    tree-to-memoizep ;todo
                                    <=-trans ;drop?
                                    symbolp-when-member-equal)
-                                  (dargp-less-than
+                                  (dargp
+                                   dargp-less-than
                                    natp
                                    quotep
                                    myquotep
