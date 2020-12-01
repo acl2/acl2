@@ -15,6 +15,9 @@
 ;; This book defines functions that are equivalent to ACL2 built-in functions
 ;; but have guards of t (for use in evaluators).
 
+;; Disable certification of this book in ACL2(r), due to differences in FLOOR:
+; cert_param: (non-acl2r)
+
 (include-book "unguarded-primitives")
 
 (defund mv-nth-unguarded (n x)
@@ -100,8 +103,8 @@
 
 (defund floor-unguarded (i j)
   (declare (xargs :guard t))
-  (if (and (rationalp i)
-           (rationalp j)
+  (if (and (real/rationalp i)
+           (real/rationalp j)
            (not (equal j 0)))
       (floor i j)
     ;; may be slow:
@@ -114,6 +117,7 @@
             (t (+ (- (nonnegative-integer-quotient-unguarded (- n) d))
                   -1))))))
 
+;; Doesn't work in ACL2(r)
 (defthm floor-unguarded-correct
   (equal (floor-unguarded x y)
          (floor x y))
