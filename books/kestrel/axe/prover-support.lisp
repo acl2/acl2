@@ -3774,6 +3774,7 @@
   (prog2$ nil ;;(cw "Rewriting the variable ~x0" tree) ;new!
           ;; It's a variable:  FFIXME perhaps add it first and then use assumptions?
           ;; First try looking it up in the assumptions (fixme make special version of replace-term-using-assumptions-for-axe-prover for a variable?):
+          ;; TOOD: Could we just rely on variable substitution to handle this?:
           (let ((assumption-match (replace-term-using-assumptions-for-axe-prover tree equiv nodenums-to-assume-false dag-array print)))
             (if assumption-match
                 ;; We replace the variable with something it's equated to in nodenums-to-assume-false.
