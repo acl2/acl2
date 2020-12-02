@@ -1370,7 +1370,7 @@
     that form the bodies of defined functions;
     there is just one instance for each name, as explained above,
     to which the definition is attached.
-    The ATJ-generated code also builds @'Acl2NamedFunction') instances
+    The ATJ-generated code also builds @('Acl2NamedFunction') instances
     for functions that are implemented natively in Java
     (e.g. for the "
    (xdoc::seetopic "acl2::primitive" "ACL2 primitive functions")
@@ -1386,7 +1386,7 @@
     ATJ also knows which ACL2 functions have native Java implementations
     (the implementing method in @('Acl2NativeFunction')
     of @('Acl2NamedFunction.define(Acl2Symbol[], Acl2Term)')
-    throws an exception."))
+    throws an exception)."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1436,7 +1436,7 @@
     For now, just consider the methods
     with all @('Acl2Value') arguments and results.")
 
-  (atj-tutorial-section "Scope the Native Implementations")
+  (atj-tutorial-section "Scope of the Native Implementations")
 
   (xdoc::p
    "Besides native implementations of the ACL2 primitive functions,
@@ -1561,7 +1561,7 @@
   (xdoc::p
    "The evaluator is realized via
     the implementing methods of the abstract methods
-    @('Acl2Term.eval(Acl2Value[])') and @('Acl2Function.apply(Acl2Value[])';
+    @('Acl2Term.eval(Acl2Value[])') and @('Acl2Function.apply(Acl2Value[])');
     The implementing methods are
     in subclasses of @('Acl2Term') and @('Acl2Function').
     Recall that all these classes provide "
@@ -1639,11 +1639,12 @@
    (xdoc::seetopic "atj-tutorial-acl2-environment"
                    "Java representation of the ACL2 environment")
    "), AIJ sets all the indices in the @('Acl2Variable')s
-    that occur the definiens of the function.
-    The setting of indices starts with the parameters and body of the function:
+    that occur in the definiens of the function.
+    The setting of indices starts with the parameters of the function:
     the 0-based position of each parameter in the parameter list
-    is the value to which all the occurrences of that variables are set;
-    when a lambda expression is encountered,
+    is the value to which all the occurrences of that variable are set
+    in the body of the function;
+    however, when a lambda expression is encountered,
     the variables in its body are given indices
     based on the parameters of the lambda expression,
     ignoring the outer indices
@@ -1651,7 +1652,7 @@
     in ACL2 " (xdoc::seetopic "acl2::term" "translated terms") ").
     In assigning these indices,
     AIJ ensures that the definiens of the function is well-formed,
-    e.g. that it does not include variables that are not parameters.
+    e.g. that the body does not include free variables that are not parameters.
     Because the same ACL2 variable
     may have different indices in different contexts,
     the @('Acl2Term') instances passed to AIJ to define functions
@@ -2005,7 +2006,8 @@
     Starting from @('f1'), @('f2'), etc.,
     ATJ finds all the functions called by these directly or indirectly,
     using a worklist algorithm.
-    The search stops when primitive functions are encountered.
+    When a natively implemnented function is encountered,
+    its called functions are not further explored.
     Recursive functions, also mutually recursive ones,
     are handled appropriately (i.e. they do not cause a circular search).")
 
@@ -2034,10 +2036,10 @@
      used by the @(tsee pure-raw-p) utility.
      The reason for this restriction is that
      ATJ does not look at the raw Lisp code of those functions,
-     and therefore could not be properly translate to Java
+     and therefore could not properly translate to Java
      the code responsible for any side effects."))
   (xdoc::p
-   "If any of this conditions is violated,
+   "If any of these conditions is violated,
     ATJ stops with an error without generating Java code.")
 
   (xdoc::p
@@ -2106,7 +2108,7 @@
      As noted above, these calls result from @('(mbe :logic y :exec x)').
      If ATJ's @(':guards') input is @('nil'),
      ATJ treats the call as if it were just @('y');
-     if instead ATJ's @(':guards') input is @('t').
+     if instead ATJ's @(':guards') input is @('t'),
      ATJ treats the call as if it were just @('x').
      The reason for this is explained later in more detail
      in @(see atj-tutorial-deep-guards).
@@ -2138,7 +2140,7 @@
      any function that is not known to be free of side effects.
      The process and the reason are the same
      as in the @('acl2::mbe1-raw') case.
-     This is independent form the value of ATJ's @(':guards') input."))
+     This is independent from the value of ATJ's @(':guards') input."))
 
   (xdoc::p
    "It should be possible to extend ATJ to accept
@@ -2329,7 +2331,7 @@
     which generates additional Java code to run tests specified by the user.
     We illustrate this option via an example,
     but also provide more general explanations.
-    While this tutorial page describes and exemplifies test generation for the"
+    While this tutorial page describes and exemplifies test generation for the "
    (xdoc::seetopic "atj-tutorial-deep" "deep embedding approach")
    ", most notions apply to the shallow embedding as well.")
 
@@ -2380,9 +2382,9 @@
     without specifying, or even knowing, the expected results.")
 
   (xdoc::p
-   "Currently the names of the test must be non-empty strings
-    that only contains (uppercase and lowercase) letters and digits.
-    This makes it easy to turn these names into (parts of) methods names,
+   "Currently the names of the tests must be non-empty strings
+    that only contain (uppercase and lowercase) letters and digits.
+    This makes it easy to turn these names into (parts of) method names,
     as explained below.")
 
   (atj-tutorial-section "Supplying the Tests to ATJ")
@@ -2419,19 +2421,19 @@
     non-target functions directly or indirectly called by the target functions
     (such as @(tsee zp) in the @('fact') example above):
     the rationale is that the target functions are the top-level ones,
-    and thus the one to be tested.
+    and thus the ones to be tested.
     This restriction can be relaxed if it turns out to be a burden.")
 
   (atj-tutorial-section "Generated Test Code")
 
   (xdoc::p
    "As conveyed by the message shown on the screen by ATJ,
-    two Java files are generated, in the current directory.
+    three Java files are generated, in the current directory.
     The first two files, @('Acl2Code.java') and @('Acl2CodeEnvironment'),
     are the same as before.
     The third file, @('Acl2CodeTests.java'), is new.
     Opening the new file reveals that it contains
-    a single Java public class called @('Acl2CodeTest').
+    a single Java public class called @('Acl2CodeTests').
     The file imports all the (public) AIJ classes,
     which are in the @('edu.kestrel.acl2.aij') Java package,
     and a few classes from the Java standard library.")
@@ -2473,7 +2475,7 @@
    "After compiling, the code can be run, without argument, via")
   (xdoc::codeblock
    "java -cp [books]/kestrel/java/aij/java/out/artifacts/AIJ_jar/AIJ.jar:. \\"
-   "     Acl2CodeTest")
+   "     Acl2CodeTests")
   (xdoc::p
    "where again @('[books]/...') must be replaced with a proper path.
     As conveyed by the messages printed on the screen,
@@ -2486,11 +2488,12 @@
    "Now try running the same code with a positive integer argument:")
   (xdoc::codeblock
    "java -cp [books]/kestrel/java/aij/java/out/artifacts/AIJ_jar/AIJ.jar:. \\"
-   "     Acl2CodeTest 10")
+   "     Acl2CodeTests 10")
   (xdoc::p
    "In addition to the messages printed before,
     now 10 running times are reported for each test,
     along with a minimum, an average, and a maximum.
+    The numeric argument indicates the number of times to run each test.
     These tests run very quickly and thus it is likely that
     all the reported time be @('0.000') or perhaps just @('0.001').
     Adding and running longer tests such as @('(fact 10000)')
@@ -2499,7 +2502,7 @@
   (atj-tutorial-section "A Closer Look at the Test Methods")
 
   (xdoc::p
-   "All the private static method in the test class @('Acl2CodeTests'),
+   "All the private static methods in the test class @('Acl2CodeTests'),
     each of which corresponds to one of the user-supplied tests,
     have a very similar structure.")
 
@@ -2543,7 +2546,7 @@
     Thus we measure the real time,
     which may be affected by various kinds of ``noise'',
     in particular any other running processes.
-    By repeating the tests a number of times (via the numeric argument),
+    Repeating the tests a number of times (via the numeric argument),
     and perhaps by attempting to run the tests
     with as few other processes as possible,
     should mitigate the noise."))
