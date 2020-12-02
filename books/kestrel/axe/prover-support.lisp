@@ -468,7 +468,7 @@
 ;; copies a segment of nodes from FROM-DAG-ARRAY to DAG-ARRAY and returns the new dag (including the auxiliary data structures) and a RENAMING-ARRAY
 ;; Returns (mv erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist renaming-array).
 ;fixme should this use a worklist instead of copying a segment?
-(defun add-array-nodes-to-dag (nodenum max-nodenum
+(defund add-array-nodes-to-dag (nodenum max-nodenum
                                        from-dag-array-name from-dag-array from-dag-array-len
                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                        renaming-array)
@@ -1456,7 +1456,7 @@
 ;; returns (mv success-flg alist-for-free-vars)
 ;; if success-flg is nil, the alist returned is irrelevant
 ;; the alist returned maps variables to nodenums or quoteps
-(defun match-hyp-with-nodenum-to-assume-false (hyp nodenum-to-assume-false dag-array dag-len)
+(defund match-hyp-with-nodenum-to-assume-false (hyp nodenum-to-assume-false dag-array dag-len)
    (declare (xargs :guard (and (axe-treep hyp)
                                (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                                (natp nodenum-to-assume-false)
@@ -1831,7 +1831,7 @@
 ;explores worklist and all supporting nodes
 ;any node that is a parent of NODENUM and whose fn is not among FNS causes this to return nil
 ;fixme stop once we hit a nodenum smaller than NODENUM?
-(defun nodenum-only-appears-in (worklist dag-array dag-len nodenum fns done-array)
+(defund nodenum-only-appears-in (worklist dag-array dag-len nodenum fns done-array)
   (declare (xargs ;; The measure is, first the number of unhandled nodes, then, if unchanged, check the length of the worklist.
             :measure (make-ord 1
                                (+ 1 ;coeff must be positive
@@ -1927,7 +1927,7 @@
            :in-theory (disable member-equal-of-var-okay-to-elim))))
 
 ;try to deprecate?
-(defun axe-prover-hints (runes
+(defund axe-prover-hints (runes
                          rule-alist ;was rules
                          interpreted-function-alist analyzed-function-table)
   (s :runes runes
@@ -2361,7 +2361,7 @@
 ;;fffixme could the node to spit on ever be a literal?  or the negation of a literal? avoid that (could lead to loops)
 ;redid this now that we are not dropping unused nodes (thus, this now only examines nodes that support the literals)
 ;todo: have this return the size of the split node, so we know whether to print it?
-(defun find-node-to-split-for-prover (dag-array-name dag-array dag-len
+(defund find-node-to-split-for-prover (dag-array-name dag-array dag-len
                                                      literal-nodenums ;can't be empty
                                                      )
   (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
@@ -2403,7 +2403,7 @@
 
 ;looks for the if nest that results from the macro OR
 ;now also handles boolor ! ;Fri Feb 12 12:54:05 2010
-(defun get-disjuncts-from-term (term)
+(defund get-disjuncts-from-term (term)
   (if (and (call-of 'if term)
            (equal (farg1 term) (farg2 term)))
       (cons (farg1 term) ;should we dive into this term too?
@@ -3810,7 +3810,7 @@
         :exec (= 0 ,x)))
 
 ;; see also translate-args
-(defun lookup-args-in-result-array (args result-array-name result-array)
+(defund lookup-args-in-result-array (args result-array-name result-array)
   (declare (xargs :guard (and (true-listp args)
                               (all-dargp args)
                               (array1p result-array-name result-array)
