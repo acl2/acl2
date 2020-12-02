@@ -34,7 +34,6 @@
 (include-book "make-node-replacement-pairs")
 (include-book "node-replacement-array")
 (include-book "refined-assumption-alists")
-(include-book "node-replacement-pairs")
 (include-book "rewriter-support") ;make local? but may be needed by the generated rewriters
 (include-book "tries")
 (include-book "rule-limits")
