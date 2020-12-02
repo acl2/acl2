@@ -2663,9 +2663,9 @@
   (declare (xargs :stobjs state
                   :guard (ilks-plist-worldp (w state))))
 ;always do this sequence? merge the trim phases into this sequence?
-  (list (make-axe-rules (amazing-rules-bv) (w state))
-        (make-axe-rules (append (amazing-rules-bv) (bit-blast-rules-basic)) (w state))
+  (list (make-axe-rules! (amazing-rules-bv) (w state))
+        (make-axe-rules! (append (amazing-rules-bv) (bit-blast-rules-basic)) (w state))
         ;;we do need to blast the mult of a constant (and the resulting pluses??), it seems
-        (make-axe-rules (append (amazing-rules-bv) (bit-blast-rules3)) (w state))))
+        (make-axe-rules! (append (amazing-rules-bv) (bit-blast-rules3)) (w state))))
 
 ;; (defun dups (x) (if (endp x) nil (if (member-eq (first x) (rest x)) (cons (first x) (dups (rest x))) (dups (rest x)))))

@@ -53,7 +53,7 @@
                                  't)
                              't)
                           nil
-                          (make-rule-alist '(if-same-branches)
+                          (make-rule-alist! '(if-same-branches)
                                            (w state))
                           nil nil nil nil (w state))
      (and (not erp)
@@ -68,7 +68,7 @@
  (mv-let (erp res)
    (simplify-term-basic '(if (natp x) (natp x) y)
                         nil
-                        (make-rule-alist nil
+                        (make-rule-alist! nil
                                          (w state))
                         nil nil nil nil (w state))
    (and (not erp)
@@ -79,7 +79,7 @@
  (mv-let (erp res)
    (simplify-term-basic '(if (foo x) (foo x) y)
                         nil
-                        (make-rule-alist nil
+                        (make-rule-alist! nil
                                          (w state))
                         nil nil nil nil (w state))
    (and (not erp)
@@ -164,7 +164,7 @@
  (mv-let (erp res)
    (simplify-term-basic '(if (natp x) (natp x) y)
                         nil
-                        (make-rule-alist nil
+                        (make-rule-alist! nil
                                          (w state))
                         nil nil t nil (w state))
    (and (not erp)
@@ -175,7 +175,7 @@
  (mv-let (erp res)
    (simplify-term-basic '(if (natp x) y (natp x))
                         nil
-                        (make-rule-alist nil
+                        (make-rule-alist! nil
                                          (w state))
                         nil nil t nil (w state))
    (and (not erp)
@@ -186,7 +186,7 @@
  (mv-let (erp res)
    (simplify-term-basic '(if (foo x) (foo x) y)
                         nil
-                        (make-rule-alist nil
+                        (make-rule-alist! nil
                                          (w state))
                         nil nil t nil (w state))
    (and (not erp)
@@ -197,7 +197,7 @@
  (mv-let (erp res)
    (simplify-term-basic '(if (foo x) y (foo x))
                         nil
-                        (make-rule-alist nil
+                        (make-rule-alist! nil
                                          (w state))
                         nil nil t nil (w state))
    (and (not erp)
@@ -208,7 +208,7 @@
  (mv-let (erp res)
    (simplify-term-basic '(if (not (natp x)) (not (natp x)) y)
                         nil
-                        (make-rule-alist nil
+                        (make-rule-alist! nil
                                          (w state))
                         nil nil t nil (w state))
    (and (not erp)
@@ -219,7 +219,7 @@
  (mv-let (erp res)
    (simplify-term-basic '(if (not (natp x)) (natp x) y)
                         nil
-                        (make-rule-alist nil
+                        (make-rule-alist! nil
                                          (w state))
                         nil nil t nil (w state))
    (and (not erp)
@@ -230,7 +230,7 @@
  (mv-let (erp res)
    (simplify-term-basic '(if (not (natp x)) y (not (natp x)))
                         nil
-                        (make-rule-alist nil
+                        (make-rule-alist! nil
                                          (w state))
                         nil nil t nil (w state))
    (and (not erp)
@@ -241,7 +241,7 @@
  (mv-let (erp res)
    (simplify-term-basic '(if (not (natp x)) y (natp x))
                         nil
-                        (make-rule-alist nil
+                        (make-rule-alist! nil
                                          (w state))
                         nil nil t nil (w state))
    (and (not erp)
@@ -252,7 +252,7 @@
  (mv-let (erp res)
    (simplify-term-basic '(if (not (foo x)) (not (foo x)) y)
                         nil
-                        (make-rule-alist nil
+                        (make-rule-alist! nil
                                          (w state))
                         nil nil t nil (w state))
    (and (not erp)
@@ -263,7 +263,7 @@
  (mv-let (erp res)
    (simplify-term-basic '(if (not (foo x)) (foo x) y)
                         nil
-                        (make-rule-alist nil
+                        (make-rule-alist! nil
                                          (w state))
                         nil nil t nil (w state))
    (and (not erp)
@@ -274,7 +274,7 @@
  (mv-let (erp res)
    (simplify-term-basic '(if (not (foo x)) y (not (foo x)))
                         nil
-                        (make-rule-alist nil
+                        (make-rule-alist! nil
                                          (w state))
                         nil nil t nil (w state))
    (and (not erp)
@@ -285,7 +285,7 @@
  (mv-let (erp res)
    (simplify-term-basic '(if (not (foo x)) y (foo x))
                         nil
-                        (make-rule-alist nil
+                        (make-rule-alist! nil
                                          (w state))
                         nil nil t nil (w state))
    (and (not erp)
@@ -297,12 +297,12 @@
 
 (assert!
  (mv-let (erp res)
-   (simp-term-basic '(car (cons x y)) nil (make-rule-alist '(car-cons) (w state)) nil nil nil nil (w state))
+   (simp-term-basic '(car (cons x y)) nil (make-rule-alist! '(car-cons) (w state)) nil nil nil nil (w state))
    (and (not erp)
         (equal res 'x))))
 
 (assert!
  (mv-let (erp res)
-   (simp-term-basic '(car (cons '2 y)) nil (make-rule-alist '(car-cons) (w state)) nil nil nil nil (w state))
+   (simp-term-basic '(car (cons '2 y)) nil (make-rule-alist! '(car-cons) (w state)) nil nil nil nil (w state))
    (and (not erp)
         (equal res ''2))))
