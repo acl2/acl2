@@ -598,7 +598,7 @@
                     (mv erp nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))))
            ;; TREE is a nodenum (because it's an atom but not a symbol):
            ;;fffixme what if tree is the nodenum of a constant?
-           (let ((assumption-match (replace-nodenum-using-assumptions-for-axe-prover tree equiv nodenums-to-assume-false dag-array print)))
+           (let ((assumption-match (replace-nodenum-using-assumptions-for-axe-prover tree equiv nodenums-to-assume-false dag-array)))
              (if assumption-match ;;TODO: We know (for now) that this must be a constant
                  ;;fffixme don't simplify here, since nodenums-to-assume-false will be simplified after the 1st pass (what about chains of equalities)?
                  (simplify-tree-and-add-to-dag-for-basic-prover assumption-match
@@ -834,7 +834,7 @@
                                  ;; something using the assumptions.  Note that
                                  ;; this uses the simplified args, so
                                  ;; assumptions not in normal form may have no effect.
-                                 (let ((assumption-match (replace-nodenum-using-assumptions-for-axe-prover nodenum equiv nodenums-to-assume-false dag-array print)))  ;currently, this can only be a constant?
+                                 (let ((assumption-match (replace-nodenum-using-assumptions-for-axe-prover nodenum equiv nodenums-to-assume-false dag-array)))  ;currently, this can only be a constant?
                                    (mv (erp-nil)
                                        (if assumption-match
                                            ;; we replace the term with something it's equated to in nodenums-to-assume-false. we don't simplify the resulting thing (currently a constant). eventually, we might need to think about handling chains of equalities.:
