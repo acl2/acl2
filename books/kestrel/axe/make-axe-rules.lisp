@@ -1280,7 +1280,7 @@
   (and (all-axe-rule-listp items)
        (true-listp items)))
 
-;; Returns (mv erp axe-rules).
+;; Returns (mv erp rule-sets).
 ;; Add the RULES to each rule set in RULE-SETS.
 ;todo: optimze?
 (defun add-rules-to-rule-sets (rules rule-sets wrld)
@@ -1298,6 +1298,14 @@
       (mv (erp-nil)
           (cons first-rule-set
                 rest-rule-sets)))))
+
+;; Returns the new rule-sets.  Does not return erp.
+(defun add-rules-to-rule-sets! (rules rule-sets wrld)
+  (mv-let (erp rule-sets)
+    (add-rules-to-rule-sets rules rule-sets wrld)
+    (if erp
+        (er hard? 'add-rules-to-rule-sets! "Error adding rules to rule-sets.")
+      rule-sets)))
 
 ;; Add the RULES to each rule set in RULE-SETS.
 ;todo: optimze?
