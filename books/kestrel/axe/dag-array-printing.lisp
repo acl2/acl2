@@ -28,6 +28,7 @@
 
 ;; Extends ACC with the members of ITEMS that are nodenums (also reverses their
 ;; order).  Each member of ITEMS must be a nodenum or a quoted constant.
+;; TODO: This must already exist (keep-atoms?).
 (defun filter-nodenums (items acc)
   (declare (xargs :guard (all-dargp items)))
   (if (atom items)
@@ -40,7 +41,9 @@
   (equal (true-listp (filter-nodenums items acc))
          (true-listp acc)))
 
-;; Print the nodes in node-list and all of their supporters.
+;; Print the nodes in node-list and all of their supporters.  Doesn't print any nodes below low-index.
+;; TODO: Make a specialized version for when low-index is 0.
+;; TODO: Use a worklist algorithm (this currently goes through the nodes one-by-one).
 (defun print-supporting-dag-nodes (index low-index dag-array-name dag-array node-list first-elementp)
   (declare (type (integer 0 *) low-index)
            (type integer index)
@@ -49,8 +52,8 @@
                               (true-listp node-list))
                   :guard-hints (("Goal" :in-theory (enable array1p-rewrite)))))
   (if (or (< index low-index)
-          (not (natp low-index))
-          (not (natp index)))
+          (not (mbt (natp low-index)))
+          (not (mbt (natp index))))
       nil
     (if (member index node-list) ;fixme this could be slow.  use an array of tags?
         ;;print this node (and add its supporters to node-list)
