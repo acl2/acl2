@@ -99,17 +99,20 @@
         (mv (erp-t) nil state))
        (term (translate-term term 'unroll-spec-basic-fn (w state)))
        (assumptions (translate-terms assumptions 'unroll-spec-basic-fn (w state)))
+       ((mv erp rule-alist)
+        (make-rule-alist
+         ;; Either use the user-supplied rules or the usual rules
+         ;; plus any user-supplied extra rules:
+         (or rules
+             (set-difference-eq (append (unroll-spec-basic-rules)
+                                        extra-rules)
+                                remove-rules))
+         (w state)))
+       ((when erp) (mv erp nil state))
        ((mv erp dag)
         (simplify-term-basic term
                              assumptions
-                             (make-rule-alist
-                              ;; Either use the user-supplied rules or the usual rules
-                              ;; plus any user-supplied extra rules:
-                              (or rules
-                                  (set-difference-eq (append (unroll-spec-basic-rules)
-                                                             extra-rules)
-                                                     remove-rules))
-                              (w state))
+                             rule-alist
                              interpreted-function-alist
                              monitor
                              memoizep

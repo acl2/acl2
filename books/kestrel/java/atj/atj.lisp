@@ -202,9 +202,9 @@
                                    verbose$
                                    state))
        (- (if output-file-test$
-              (cw "~%Generated Java files:~% ~x0~% ~x1~% ~x2~%"
+              (cw "~%Generated Java files:~% ~s0~% ~s1~% ~s2~%"
                   output-file$ output-file-env$ output-file-test$)
-            (cw "~%Generated Java files:~% ~x0~% ~x1~%"
+            (cw "~%Generated Java files:~% ~s0~% ~s1~%"
                 output-file$ output-file-env$))))
     (value '(value-triple :invisible))))
 

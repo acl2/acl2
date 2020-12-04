@@ -1820,12 +1820,14 @@
        ((mv dag-parent-array dag-constant-alist dag-variable-alist)
         (make-dag-indices 'dag-array dag-array 'dag-parent-array dag-len))
        (rule-lists (elaborate-rule-item-lists rule-lists state))
+       ((mv erp rule-alists) (make-rule-alists rule-lists (w state)))
+       ((when erp) (mv erp nil state))
        ((mv erp result & & & & & ; dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
             & &                  ;info tries ;todo: use these
            )
         (prove-disjunction-with-basic-prover (list top-nodenum) ;; just one disjunct
                                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                             (make-rule-alists rule-lists (w state))
+                                             rule-alists
                                              nil ;; interpreted-function-alist
                                              monitor
                                              t ;print
@@ -2039,15 +2041,17 @@
                      rule-lists))
        (monitored-symbols (lookup-eq :monitor hint))
        (print (lookup-eq :print hint))
+       ((mv erp rule-alists) (make-rule-alists rule-lists (w state)))
+       ((when erp) (mv erp (list clause)))
        ((mv erp provedp)
         (prove-clause-with-basic-prover clause
                                         'basic-prover-clause-proc
-                                        (make-rule-alists rule-lists (w state))
+                                        rule-alists
                                         monitored-symbols
                                         nil ;interpreted-function-alist ;todo?
                                         print
                                         nil ;; options
-                                       ))
+                                        ))
        ((when erp) (mv erp (list clause))) ; error (and no change to clause set)
        )
     (if provedp

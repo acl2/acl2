@@ -78,9 +78,8 @@
         (mv (erp-t) nil state))
        (term (translate-term term 'def-simplified-fn (w state)))
        (assumptions (translate-terms assumptions 'def-simplified-fn (w state)))
-       ((mv erp dag)
-        (simplify-term-basic term
-                             assumptions
+       ((mv erp rule-alist)
+
                              (make-rule-alist
                               ;; Either use the user-supplied rules or the usual rules
                               ;; plus any user-supplied extra rules:
@@ -88,7 +87,12 @@
                                   (set-difference-eq (append (def-simplified-rules)
                                                              extra-rules)
                                                      remove-rules))
-                              (w state))
+                              (w state)))
+       ((when erp) (mv erp nil state))
+       ((mv erp dag)
+        (simplify-term-basic term
+                             assumptions
+                             rule-alist
                              interpreted-function-alist
                              monitor
                              memoizep
