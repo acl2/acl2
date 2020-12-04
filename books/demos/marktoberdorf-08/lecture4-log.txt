@@ -4099,8 +4099,8 @@ This simplifies, using the :compound-recognizer rule
 ACL2::NATP-COMPOUND-RECOGNIZER, the :definitions DO-INST (if-intro),
 EXECUTE-LOAD, NEXT-INST, NTH (if-intro) and SYNP, the :executable-
 counterparts of ARG1, BINARY-+, CONSP, EQUAL, MEMBER-EQUAL, NTH, OPCODE
-and ZP and the :rewrite rules H-INV-OPENER, NTH-ADD1!, STATES and 
-STEP-OPENER, to the following two conjectures.
+and ZP and the :rewrite rules H-INV-OPENER, NTH-ADD1!, STATES and STEP-OPENER,
+to the following two conjectures.
 
 Subgoal 1.2
 (IMPLIES (AND (EQUAL (PC S) 11)

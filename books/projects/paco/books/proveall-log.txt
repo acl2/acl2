@@ -161,10 +161,10 @@ PACO !>>(DTHM MEMBER-EQUAL-UNION-EQUAL
                        (MEMBER-EQUAL E B))))
 
 ACL2 Warning [Subsume] in ( ACL2::DEFAXIOM MEMBER-EQUAL-UNION-EQUAL
-...):  A newly proposed :REWRITE rule generated from 
-MEMBER-EQUAL-UNION-EQUAL probably subsumes the previously added :REWRITE
-rule MEMBER-EQUAL-UNION-EQUAL-LEMMA, in the sense that the new rule
-will now probably be applied whenever the old rule would have been.
+...):  A newly proposed :REWRITE rule generated from MEMBER-EQUAL-UNION-EQUAL
+probably subsumes the previously added :REWRITE rule 
+MEMBER-EQUAL-UNION-EQUAL-LEMMA, in the sense that the new rule will
+now probably be applied whenever the old rule would have been.
 
 
 Summary
@@ -829,8 +829,8 @@ PACO !>>(DTHM NAT-ADDER
               :HINTS ((NIL :INDUCT T)))
 
 ACL2 Warning [Double-rewrite] in ( ACL2::DEFAXIOM NAT-ADDER ...): 
-In a :REWRITE rule generated from NAT-ADDER, equivalence relation IFF is
-maintained at one problematic occurrence of variable C in the right-
+In a :REWRITE rule generated from NAT-ADDER, equivalence relation IFF
+is maintained at one problematic occurrence of variable C in the right-
 hand side, but not at any binding occurrence of C.  Consider replacing
 that occurrence of C in the right-hand side with (ACL2::DOUBLE-REWRITE C).
 See :doc double-rewrite for more information on this issue.
