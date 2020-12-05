@@ -781,6 +781,8 @@
             lofat-to-hifat-inversion-lemma-15
             lofat-remove-file-helper)))
 
+  (local (include-book "std/lists/intersectp" :dir :system))
+
   (defthm
     lofat-remove-file-correctness-lemma-65
     (implies
@@ -831,7 +833,8 @@
         3
         (lofat-to-hifat-helper
          fat32$c
-         (make-d-e-list (mv-nth 0 (d-e-cc-contents fat32$c root-d-e)))
+         (make-d-e-list
+          (mv-nth 0 (d-e-cc-contents fat32$c root-d-e)))
          entry-limit))
        0)
       (not-intersectp-list
@@ -840,7 +843,8 @@
         2
         (lofat-to-hifat-helper
          fat32$c
-         (make-d-e-list (mv-nth 0 (d-e-cc-contents fat32$c root-d-e)))
+         (make-d-e-list
+          (mv-nth 0 (d-e-cc-contents fat32$c root-d-e)))
          entry-limit)))
       (not-intersectp-list
        x
@@ -848,7 +852,8 @@
         2
         (lofat-to-hifat-helper
          fat32$c
-         (make-d-e-list (mv-nth 0 (d-e-cc-contents fat32$c root-d-e)))
+         (make-d-e-list
+          (mv-nth 0 (d-e-cc-contents fat32$c root-d-e)))
          entry-limit))))
      (not-intersectp-list
       x
@@ -861,8 +866,9 @@
          (mv-nth
           0
           (d-e-cc-contents
-           (mv-nth 0
-                   (lofat-remove-file-helper fat32$c root-d-e path))
+           (mv-nth
+            0
+            (lofat-remove-file-helper fat32$c root-d-e path))
            root-d-e)))
         entry-limit))))))
 
