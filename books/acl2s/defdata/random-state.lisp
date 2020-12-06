@@ -473,21 +473,21 @@ On todo list for fixing.
 
       (5 :uniform ,lo-1 ,hi-1)
       (5 :uniform ,lo-2 ,hi-2)
-      (6 :uniform ,lo-3 ,hi-3)
-      (6 :uniform ,lo-4 ,hi-4)
-      (7 :uniform ,lo-5 ,hi-5)
+      (5 :uniform ,lo-3 ,hi-3)
+      (5 :uniform ,lo-4 ,hi-4)
+      (5 :uniform ,lo-5 ,hi-5)
 
       (5 :uniform ,mid-lo-1 ,mid-hi-1)
       (5 :uniform ,mid-lo-2 ,mid-hi-2)
-      (6 :uniform ,mid-lo-3 ,mid-hi-3)
-      (6 :uniform ,mid-lo-4 ,mid-hi-4)
-      (7 :uniform ,mid-lo-5 ,mid-hi-5)
+      (5 :uniform ,mid-lo-3 ,mid-hi-3)
+      (5 :uniform ,mid-lo-4 ,mid-hi-4)
+      (5 :uniform ,mid-lo-5 ,mid-hi-5)
       
-      (6 :geometric :leq-bnd ,max ,min)
-      (17 :geometric :geq-bnd ,min ,max)
-      (6 :geometric :between ,min ,max)
+      (5 :geometric :leq-bnd ,max ,min)
+      (20 :geometric :geq-bnd ,min ,max)
+      (5 :geometric :between ,min ,max)
 
-      (10 :uniform ,min ,max))))
+      (17 :uniform ,min ,max))))
 
 (defattach sampling-dist-rec sampling-dist-rec-builtin)
 (include-book "switchnat")

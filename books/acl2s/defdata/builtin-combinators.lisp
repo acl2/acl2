@@ -210,23 +210,23 @@ data last modified: [2017-06-22 Thu]
       (1 :eq ,mid1)
       (1 :eq ,mid2)
 
-      (5 :uniform ,lo-1 ,hi-1)
-      (5 :uniform ,lo-2 ,hi-2)
-      (6 :uniform ,lo-3 ,hi-3)
-      (6 :uniform ,lo-4 ,hi-4)
-      (7 :uniform ,lo-5 ,hi-5)
+      (4 :uniform ,lo-1 ,hi-1)
+      (4 :uniform ,lo-2 ,hi-2)
+      (4 :uniform ,lo-3 ,hi-3)
+      (4 :uniform ,lo-4 ,hi-4)
+      (4 :uniform ,lo-5 ,hi-5)
 
-      (5 :uniform ,mid-lo-1 ,mid-hi-1)
-      (5 :uniform ,mid-lo-2 ,mid-hi-2)
-      (6 :uniform ,mid-lo-3 ,mid-hi-3)
-      (6 :uniform ,mid-lo-4 ,mid-hi-4)
-      (7 :uniform ,mid-lo-5 ,mid-hi-5)
+      (4 :uniform ,mid-lo-1 ,mid-hi-1)
+      (4 :uniform ,mid-lo-2 ,mid-hi-2)
+      (4 :uniform ,mid-lo-3 ,mid-hi-3)
+      (4 :uniform ,mid-lo-4 ,mid-hi-4)
+      (4 :uniform ,mid-lo-5 ,mid-hi-5)
       
-      (6 :geometric :leq-bnd ,max ,min)
-      (6 :geometric :geq-bnd ,min ,max)
-      (6 :geometric :between ,min ,max)
+      (5 :geometric :leq-bnd ,max ,min)
+      (23 :geometric :geq-bnd ,min ,max)
+      (14 :geometric :between ,min ,max)
 
-      (20 :uniform ,min ,max))))
+      (14 :uniform ,min ,max))))
 
 #|
 
