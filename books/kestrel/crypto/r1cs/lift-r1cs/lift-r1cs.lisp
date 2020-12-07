@@ -83,7 +83,7 @@
                                 function-type
                                 (if produce-function
                                     (keywords-to-acl2-package vars) ;; function-params -- this provides the ordering
-                                  ;; the defautl, since no function will be produced:
+                                  ;; the default, since no function will be produced:
                                   :auto)
                                 produce-theorem
                                 nil ;print
