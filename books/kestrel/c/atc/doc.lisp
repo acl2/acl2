@@ -315,7 +315,14 @@
        only the `then' branches represent C code and are translated to C.
        The reason is that ATC generates C code under guard assumptions.
        In translated terms, @('(mbt x)') is
-       @('(return-last \'acl2::mbe1-raw \'t (if x \'nil \'t))')."))
+       @('(return-last \'acl2::mbe1-raw \'t (if x \'nil \'t))').")
+     (xdoc::li
+      "Calls of a target function @('fnj'), with @('j < i'),
+       on allowed non-boolean terms.
+       The restriction @('j < i') means that
+       no (direct or indirect) recursion is allowed
+       and the target functions must be specified according to
+       a topological order of their call graph."))
     (xdoc::p
      "Note that the allowed boolean terms return ACL2 boolean values,
       while the allowed non-boolean terms return ACL2 non-boolean values

@@ -24,6 +24,7 @@
                cw-event
                define-sk
                defmacro+
+               defopener
                defxdoc+
                er-soft+
                evmac-prepare-proofs

@@ -14,6 +14,7 @@
 (include-book "pretty-printer" :ttags ((:open-output-channel!)))
 (include-book "static-semantics")
 (include-book "dynamic-semantics")
+(include-book "proof-support")
 
 (include-book "kestrel/error-checking/ensure-function-is-defined" :dir :system)
 (include-book "kestrel/error-checking/ensure-function-is-guard-verified" :dir :system)
@@ -55,6 +56,19 @@
   xdoc::*evmac-topic-implementation-item-ctx*
 
   "@('fn1...fnp') is the list @('(fn1 ... fnp)') of inputs to @(tsee atc)."
+
+  "@('fn') is one of the symbols in @('fn1...fnp')."
+
+  "@('fns') is @('fn1...fnp') or a suffix of it."
+
+  "@('prec-fns') is a list (in no particular order)
+   of the symbols in @('fn1...fnp') that precede, in the latter list,
+   a symbol @('fn') in @('fn1...fnp') for which code is being generated;
+   @('fn') is often also a parameter of
+   the ATC function that has @('prec-fns') as parameter.
+   According to the restrictions stated in the ATC user documentation,
+   @('prec-fns') consists of the target function symbols
+   that @('fn') is allowed to call."
 
   (xdoc::evmac-topic-implementation-item-input "const-name")
 
@@ -479,11 +493,41 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-check-callable-fn ((term pseudo-termp) (prec-fns symbol-listp))
+  :returns (mv (yes/no booleanp)
+               (fn symbolp :hyp (symbol-listp prec-fns))
+               (args pseudo-term-listp :hyp (pseudo-termp term)))
+  :short "Check if a term represents a call to a callable target function."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the check is successful, we return
+     the called function along with the arguments."))
+  (case-match term
+    ((fn . args) (if (and (member-eq fn prec-fns)
+                          (not (eq fn 'quote)))
+                     (mv t fn args)
+                   (mv nil nil nil)))
+    (& (mv nil nil nil)))
+  ///
+
+  (defret acl2-count-of-atc-check-callable-fn-args
+    (implies yes/no
+             (< (acl2-count args)
+                (acl2-count term)))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines atc-gen-expr-fns
   :short "Mutually recursive functions to
           generate C expressions from ACL terms."
 
-  (define atc-gen-expr-nonbool ((term pseudo-termp) (fn symbolp) ctx state)
+  (define atc-gen-expr-nonbool ((term pseudo-termp)
+                                (fn symbolp)
+                                (prec-fns symbol-listp)
+                                ctx
+                                state)
     :returns (mv erp (expr exprp) state)
     :parents (atc-event-and-code-generation atc-gen-expr-fns)
     :short "Generate a C expression from a ACL2 term
@@ -532,24 +576,66 @@
                                                :type (iconst-tysuffix-none))))))
          ((mv okp op arg) (atc-check-sint-unop term))
          ((when okp)
-          (b* (((er arg-expr) (atc-gen-expr-nonbool arg fn ctx state)))
+          (b* (((er arg-expr) (atc-gen-expr-nonbool arg
+                                                    fn
+                                                    prec-fns
+                                                    ctx
+                                                    state)))
             (value (make-expr-unary :op op :arg arg-expr))))
          ((mv okp op arg1 arg2) (atc-check-sint-binop term))
          ((when okp)
-          (b* (((er arg1-expr) (atc-gen-expr-nonbool arg1 fn ctx state))
-               ((er arg2-expr) (atc-gen-expr-nonbool arg2 fn ctx state)))
-            (value (make-expr-binary :op op :arg1 arg1-expr :arg2 arg2-expr)))))
+          (b* (((er arg1-expr) (atc-gen-expr-nonbool arg1
+                                                     fn
+                                                     prec-fns
+                                                     ctx
+                                                     state))
+               ((er arg2-expr) (atc-gen-expr-nonbool arg2
+                                                     fn
+                                                     prec-fns
+                                                     ctx
+                                                     state)))
+            (value (make-expr-binary :op op :arg1 arg1-expr :arg2 arg2-expr))))
+         ((mv okp fn args) (atc-check-callable-fn term prec-fns))
+         ((when okp)
+          (b* (((mv erp arg-exprs state) (atc-gen-expr-nonbool-list args
+                                                                    fn
+                                                                    prec-fns
+                                                                    ctx
+                                                                    state))
+               ((when erp) (mv erp (irr-expr) state)))
+            (value (make-expr-call :fun (make-ident :name (symbol-name fn))
+                                   :args arg-exprs)))))
       (case-match term
         (('c::sint01 arg)
-         (atc-gen-expr-bool arg fn ctx state))
+         (atc-gen-expr-bool arg fn prec-fns ctx state))
         (('if test then else)
          (b* (((mv mbtp &) (acl2::check-mbt-call test))
-              ((when mbtp) (atc-gen-expr-nonbool then fn ctx state))
+              ((when mbtp) (atc-gen-expr-nonbool then
+                                                 fn
+                                                 prec-fns
+                                                 ctx
+                                                 state))
               ((mv mbt$p &) (acl2::check-mbt$-call test))
-              ((when mbt$p) (atc-gen-expr-nonbool then fn ctx state))
-              ((er test-expr) (atc-gen-expr-bool test fn ctx state))
-              ((er then-expr) (atc-gen-expr-nonbool then fn ctx state))
-              ((er else-expr) (atc-gen-expr-nonbool else fn ctx state)))
+              ((when mbt$p) (atc-gen-expr-nonbool then
+                                                  fn
+                                                  prec-fns
+                                                  ctx
+                                                  state))
+              ((er test-expr) (atc-gen-expr-bool test
+                                                 fn
+                                                 prec-fns
+                                                 ctx
+                                                 state))
+              ((er then-expr) (atc-gen-expr-nonbool then
+                                                    fn
+                                                    prec-fns
+                                                    ctx
+                                                    state))
+              ((er else-expr) (atc-gen-expr-nonbool else
+                                                    fn
+                                                    prec-fns
+                                                    ctx
+                                                    state)))
            (value
             (make-expr-cond :test test-expr :then then-expr :else else-expr))))
         (& (er-soft+ ctx t (irr-expr)
@@ -559,7 +645,34 @@
                       the term ~x1 is encountered instead."
                      fn term)))))
 
-  (define atc-gen-expr-bool ((term pseudo-termp) (fn symbolp) ctx state)
+  (define atc-gen-expr-nonbool-list ((terms pseudo-term-listp)
+                                     (fn symbolp)
+                                     (prec-fns symbol-listp)
+                                     ctx
+                                     state)
+    :returns (mv erp (exprs expr-listp) state)
+    :parents (atc-event-and-code-generation atc-gen-expr-fns)
+    :short "Generate a list of C expressions from a list of ACL2 terms
+            that must be allowed non-boolean terms."
+    (b* (((when (endp terms)) (value nil))
+         ((mv erp expr state) (atc-gen-expr-nonbool (car terms)
+                                                    fn
+                                                    prec-fns
+                                                    ctx
+                                                    state))
+         ((when erp) (mv erp nil state))
+         ((er exprs) (atc-gen-expr-nonbool-list (cdr terms)
+                                                fn
+                                                prec-fns
+                                                ctx
+                                                state)))
+      (value (cons expr exprs))))
+
+  (define atc-gen-expr-bool ((term pseudo-termp)
+                             (fn symbolp)
+                             (prec-fns symbol-listp)
+                             ctx
+                             state)
     :returns (mv erp (expr exprp) state)
     :parents (atc-event-and-code-generation atc-gen-expr-fns)
     :short "Generate a C expression from a ACL2 term
@@ -587,22 +700,22 @@
        more information to the user at some point."))
     (case-match term
       (('not arg)
-       (b* (((er arg-expr) (atc-gen-expr-bool arg fn ctx state)))
+       (b* (((er arg-expr) (atc-gen-expr-bool arg fn prec-fns ctx state)))
          (value (make-expr-unary :op (unop-lognot) :arg arg-expr))))
       (('if arg1 arg2 ''nil)
-       (b* (((er arg1-expr) (atc-gen-expr-bool arg1 fn ctx state))
-            ((er arg2-expr) (atc-gen-expr-bool arg2 fn ctx state)))
+       (b* (((er arg1-expr) (atc-gen-expr-bool arg1 fn prec-fns ctx state))
+            ((er arg2-expr) (atc-gen-expr-bool arg2 fn prec-fns ctx state)))
          (value (make-expr-binary :op (binop-logand)
                                   :arg1 arg1-expr
                                   :arg2 arg2-expr))))
       (('if arg1 arg1 arg2)
-       (b* (((er arg1-expr) (atc-gen-expr-bool arg1 fn ctx state))
-            ((er arg2-expr) (atc-gen-expr-bool arg2 fn ctx state)))
+       (b* (((er arg1-expr) (atc-gen-expr-bool arg1 fn prec-fns ctx state))
+            ((er arg2-expr) (atc-gen-expr-bool arg2 fn prec-fns ctx state)))
          (value (make-expr-binary :op (binop-logor)
                                   :arg1 arg1-expr
                                   :arg2 arg2-expr))))
       (('c::sint-nonzerop arg)
-       (atc-gen-expr-nonbool arg fn ctx state))
+       (atc-gen-expr-nonbool arg fn prec-fns ctx state))
       (& (er-soft+ ctx t (irr-expr)
                    "When generating C code for the function ~x0, ~
                     at a point where
@@ -618,7 +731,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-stmt ((term pseudo-termp) (fn symbolp) ctx state)
+(define atc-gen-stmt ((term pseudo-termp)
+                      (fn symbolp)
+                      (prec-fns symbol-listp)
+                      ctx
+                      state)
   :returns (mv erp (stmt stmtp) state)
   :verify-guards :after-returns
   :short "Generate a C statement from an ACL2 term."
@@ -639,16 +756,24 @@
   (case-match term
     (('if test then else)
      (b* (((mv mbtp &) (acl2::check-mbt-call test))
-          ((when mbtp) (atc-gen-stmt then fn ctx state))
+          ((when mbtp) (atc-gen-stmt then fn prec-fns ctx state))
           ((mv mbt$p &) (acl2::check-mbt$-call test))
-          ((when mbt$p) (atc-gen-stmt then fn ctx state))
-          ((mv erp test-expr state) (atc-gen-expr-bool test fn ctx state))
+          ((when mbt$p) (atc-gen-stmt then fn prec-fns ctx state))
+          ((mv erp test-expr state) (atc-gen-expr-bool test
+                                                       fn
+                                                       prec-fns
+                                                       ctx
+                                                       state))
           ((when erp) (mv erp (irr-stmt) state))
-          ((er then-stmt) (atc-gen-stmt then fn ctx state))
-          ((er else-stmt) (atc-gen-stmt else fn ctx state)))
+          ((er then-stmt) (atc-gen-stmt then fn prec-fns ctx state))
+          ((er else-stmt) (atc-gen-stmt else fn prec-fns ctx state)))
        (value
         (make-stmt-ifelse :test test-expr :then then-stmt :else else-stmt))))
-    (& (b* (((mv erp expr state) (atc-gen-expr-nonbool term fn ctx state))
+    (& (b* (((mv erp expr state) (atc-gen-expr-nonbool term
+                                                       fn
+                                                       prec-fns
+                                                       ctx
+                                                       state))
             ((when erp) (mv erp (irr-stmt) state)))
          (value (make-stmt-return :value expr))))))
 
@@ -714,7 +839,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-ext-decl ((fn symbolp) ctx state)
+(define atc-gen-ext-decl ((fn symbolp) (prec-fns symbol-listp) ctx state)
   :returns (mv erp (ext ext-declp) state)
   :short "Generate a C external declaration (a function definition)
           from an ACL2 function."
@@ -741,7 +866,7 @@
                                                        state))
        ((when erp) (mv erp (irr-ext-decl) state))
        (body (acl2::ubody+ fn wrld))
-       ((mv erp stmt state) (atc-gen-stmt body fn ctx state))
+       ((mv erp stmt state) (atc-gen-stmt body fn prec-fns ctx state))
        ((when erp) (mv erp (irr-ext-decl) state)))
     (value
      (ext-decl-fundef
@@ -752,12 +877,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-ext-decl-list ((fns symbol-listp) ctx state)
+(define atc-gen-ext-decl-list ((fns symbol-listp)
+                               (prec-fns symbol-listp)
+                               ctx
+                               state)
   :returns (mv erp (exts ext-decl-listp) state)
   :short "Lift @(tsee atc-gen-ext-decl) to lists."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "After we process the first function @('fn') in @('fns'),
+     we add it to  @('prec-fns') for the recursive call on @('(cdr fns)')."))
   (b* (((when (endp fns)) (value nil))
        ((cons fn rest-fns) fns)
-       ((mv erp ext state) (atc-gen-ext-decl fn ctx state))
+       ((mv erp ext state) (atc-gen-ext-decl fn prec-fns ctx state))
        (dup? (member-eq fn rest-fns))
        ((when dup?)
         (er-soft+ ctx t nil
@@ -767,7 +900,10 @@
                    have the same symbol name."
                   fn (car dup?)))
        ((when erp) (mv erp nil state))
-       ((er exts) (atc-gen-ext-decl-list rest-fns ctx state)))
+       ((er exts) (atc-gen-ext-decl-list rest-fns
+                                         (cons fn prec-fns)
+                                         ctx
+                                         state)))
     (value (cons ext exts))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -775,7 +911,7 @@
 (define atc-gen-transunit ((fn1...fnp symbol-listp) ctx state)
   :returns (mv erp (tunit transunitp) state)
   :short "Generate a C translation unit from the ACL2 target functions."
-  (b* (((mv erp exts state) (atc-gen-ext-decl-list fn1...fnp ctx state))
+  (b* (((mv erp exts state) (atc-gen-ext-decl-list fn1...fnp nil ctx state))
        ((when erp) (mv erp (irr-transunit) state)))
     (value (make-transunit :decls exts))))
 
@@ -845,6 +981,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-fn-thm ((fn symbolp)
+                        (prec-fns symbol-listp)
                         (const symbolp)
                         (verbose booleanp)
                         ctx
@@ -867,12 +1004,17 @@
      This is equated to a call of @('fn') on its formals.
      The guard of @('fn') is used as hypothesis.")
    (xdoc::p
-    "The currently generated proof hints are simple:
+    "The currently generated proof hints are relatively simple:
      we enable @(tsee run-fun) and all the functions that it calls
      in the dynamic execution;
-     we also need to force the expansion of @(tsee exec-fun),
+     we also need to force the expansion of
+     @(tsee exec-fun) and @(tsee exec-block-item),
      based on experimentation;
      we also use the guard theorem of @('fn').
+     We also enable some opener rules;
+     see @(see atc-proof-support).
+     We also enable all the functions that may be called by @('fn');
+     eventually, we will generate more compositional proofs.
      Given that the translation unit is a constant,
      this symbolically executes the C function.
      Since the generated C code currently has no loops,
@@ -929,9 +1071,18 @@
                                     value-result-kind
                                     value-result-ok->get
                                     value-option-result-kind
-                                    value-option-result-ok->get)
+                                    value-option-result-ok->get
+                                    exec-expr-of-call
+                                    exec-expr-list-of-cons
+                                    exec-expr-list-of-atom
+                                    exec-block-item-list-of-cons
+                                    exec-block-item-list-of-atom
+                                    exec-stmt-of-return
+                                    ,@prec-fns)
                  :expand ((:free (fun args env limit)
-                           (c::exec-fun fun args env limit)))
+                           (exec-fun fun args env limit))
+                          (:free (item env limit)
+                           (exec-block-item item env limit)))
                  :use (:guard-theorem ,fn))))
        ((mv local-event exported-event)
         (acl2::evmac-generate-defthm
@@ -951,6 +1102,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-fn-thm-list ((fns symbol-listp)
+                             (prec-fns symbol-listp)
                              (const symbolp)
                              (verbose booleanp)
                              ctx
@@ -965,9 +1117,19 @@
   :short "Lift @(tsee atc-gen-fn-thm) to lists."
   (b* (((when (endp fns)) (value (list nil nil nil)))
        ((er (list local-event exported-event))
-        (atc-gen-fn-thm (car fns) const verbose ctx state))
+        (atc-gen-fn-thm (car fns)
+                        prec-fns
+                        const
+                        verbose
+                        ctx
+                        state))
        ((er (list local-events exported-events))
-        (atc-gen-fn-thm-list (cdr fns) const verbose ctx state)))
+        (atc-gen-fn-thm-list (cdr fns)
+                             (cons (car fns) prec-fns)
+                             const
+                             verbose
+                             ctx
+                             state)))
     (value (list (cons local-event local-events)
                  (cons exported-event exported-events)))))
 
@@ -999,7 +1161,7 @@
        ((er (list wf-thm-local-event wf-thm-exported-event))
         (atc-gen-wf-thm const verbose ctx state))
        ((er (list fn-thm-local-events fn-thm-exported-events))
-        (atc-gen-fn-thm-list fn1...fnp const verbose ctx state))
+        (atc-gen-fn-thm-list fn1...fnp nil const verbose ctx state))
        ((acl2::run-when verbose) (cw "~%Generating file ~x0..." output-file))
        ((er &) (atc-gen-file tunit output-file state))
        ((acl2::run-when verbose) (cw " done.~%"))
