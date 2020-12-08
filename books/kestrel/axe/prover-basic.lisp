@@ -168,7 +168,8 @@
    (if (or (endp nodenums-to-assume-false-to-walk-down)
            (zp-fast count))
        ;;failed to relieve the hyps:
-       (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
+       (mv (erp-nil)  ;we could return an error of :count-exceeded here if (zp-fast count), but that might be slower
+           nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
      (let* ((nodenum-to-assume-false (first nodenums-to-assume-false-to-walk-down)))
        (mv-let (matchp alist-for-free-vars)
          (match-hyp-with-nodenum-to-assume-false hyp nodenum-to-assume-false dag-array dag-len) ;fixme this could extend the alist
@@ -389,9 +390,10 @@
                    :measure (+ 1 (nfix count)))
             (type (unsigned-byte 59) count))
    (if (or (endp stored-rules) ;no rule fired:
-           (zp-fast count)     ;signal an error for this?
+           (zp-fast count)
            )
-       (mv (erp-nil) nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
+       (mv (erp-nil) ;we could return an error of :count-exceeded here if (zp-fast count), but that might be slower
+           nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
      (let* ((stored-rule (first stored-rules))
             (tries (and tries (+ 1 tries)))
             ;;binds variables to nodenums or quoteps:
@@ -578,7 +580,7 @@
                    :measure (+ 1 (nfix count)))
             (type (unsigned-byte 59) count))
    (if (zp-fast count)
-       (mv t nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
+       (mv :count-exceeded nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
      (if (atom tree)
          (if (symbolp tree) ;; TODO: Prove that this case is impossible.
              (prog2$ ;;nil ;;(cw "Rewriting the variable ~x0" tree) ;new!
@@ -606,12 +608,12 @@
                                                                 dag-variable-alist
                                                                 rule-alist nodenums-to-assume-false  equiv-alist print
                                                                 info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count))
-               (mv nil tree dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))))
+               (mv (erp-nil) tree dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))))
        ;; TREE is not an atom:
        (let ((fn (ffn-symb tree)))
          (if (eq fn 'quote)
              ;; TREE is a quoted constant, so return it
-             (mv nil tree dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
+             (mv (erp-nil) tree dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
            ;; TREE is a function call. fn may be a lambda or a short-circuit-function (if/myif/boolif/bvif/booland/boolor):
            (let ((args (fargs tree)))
              ;;Rewrite the args, *except* if it's a short-circuit function, we may be able to avoid rewriting them all and instead just return a new term to rewrite (will that new term ever be a constant?).
@@ -631,7 +633,7 @@
                      (if erp
                          (mv erp nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
                        (if (consp test-result) ;tests for quotep
-                           (mv nil
+                           (mv (erp-nil)
                                t ;; did short-circuit
                                (if (unquote test-result)
                                    (if (eq 'boolif fn) `(bool-fix$inline ,(second args)) (second args)) ;then branch
@@ -646,7 +648,7 @@
                                                                               equiv-alist print info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count))
                            (if erp
                                (mv erp nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
-                             (mv nil nil ;did not short-circuit
+                             (mv (erp-nil) nil ;did not short-circuit
                                  (cons test-result other-arg-results)
                                  dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))))))
                  (if (eq 'bvif fn) ;;(bvif size test thenpart elsepart)
@@ -660,7 +662,7 @@
                        (if erp
                            (mv erp nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
                          (if (consp test-result) ;tests for quotep
-                             (mv nil
+                             (mv (erp-nil)
                                  t ;; did short-circuit
                                  (if (unquote test-result)
                                      `(bvchop                       ;$inline
@@ -679,7 +681,7 @@
                                                                                 equiv-alist print info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count))
                              (if erp
                                  (mv erp nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
-                               (mv nil nil ;did not short-circuit
+                               (mv (erp-nil) nil ;did not short-circuit
                                    (cons (first other-arg-results)
                                          (cons test-result
                                                (cdr other-arg-results)))
@@ -695,7 +697,7 @@
                          (if erp
                              (mv erp nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
                            (if (equal *nil* arg1-result)
-                               (mv nil
+                               (mv (erp-nil)
                                    t     ;; did short-circuit
                                    *nil* ;; (booland nil x) = nil
                                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
@@ -708,7 +710,7 @@
                                                                               monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count))
                                (if erp
                                    (mv erp nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
-                                 (mv nil
+                                 (mv (erp-nil)
                                      nil ;did not short-circuit
                                      (list arg1-result arg2-result)
                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))))))
@@ -723,7 +725,7 @@
                            (if erp
                                (mv erp nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
                              (if (and (consp arg1-result) (unquote arg1-result)) ;checks for a non-nil constant
-                                 (mv nil
+                                 (mv (erp-nil)
                                      t   ;; did short-circuit
                                      *t* ;boolor of a non-nil value is t
                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
@@ -736,7 +738,7 @@
                                                                                 monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count))
                                  (if erp
                                      (mv erp nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
-                                   (mv nil
+                                   (mv (erp-nil)
                                        nil ;did not short-circuit
                                        (list arg1-result arg2-result)
                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))))))
@@ -749,7 +751,7 @@
                                                                          equiv-alist print info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count))
                          (if erp
                              (mv erp nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
-                           (mv nil
+                           (mv (erp-nil)
                                nil ;did not short-circuit
                                arg-results
                                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))))))
@@ -1002,7 +1004,7 @@
                   :measure (+ 1 (nfix count)))
            (type (unsigned-byte 59) count))
   (if (zp-fast count)
-      (mv (erp-t) result-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
+      (mv :count-exceeded result-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
     (if (endp worklist)
         (mv (erp-nil) result-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
       (let* ((nodenum (first worklist)))
@@ -1167,7 +1169,7 @@
                   )
            (type (unsigned-byte 59) count))
   (if (zp-fast count)
-      (mv (erp-t) nil nil done-list dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
+      (mv :count-exceeded nil nil done-list dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
     (if (endp work-list)
         (progn$ (and (eq :verbose print) (progn$ (cw "(Literals after rewriting them all:~%")
                                                  (print-dag-only-supporters-lst done-list 'dag-array dag-array)
@@ -1191,7 +1193,7 @@
                         (if (unquote new-nodenum-or-quotep)
                             ;;The literal rewrote to a non-nil constant, so we proved the clause.
                             (prog2$ (cw "T ")
-                                    (mv nil
+                                    (mv (erp-nil)
                                         t  ;provedp=t
                                         t  ;(meaningless)
                                         nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
@@ -1252,7 +1254,7 @@
                   )
            (type (unsigned-byte 59) count))
   (if (zp-fast count)
-      (mv (erp-t) nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
+      (mv :count-exceeded nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
     (b* ((- (cw "(Rewriting with rule set ~x0:~%" rule-set-number))
          ((mv erp provedp changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
           (rewrite-literals-for-basic-prover literal-nodenums
@@ -1371,7 +1373,7 @@
                   :measure (+ 1 (nfix count)))
            (type (unsigned-byte 59) count))
   (if (zp-fast count)
-      (mv (erp-t) nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
+      (mv :count-exceeded nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
     (if (atom rule-alists)
         ;; No error but didn't prove:
         (mv (erp-nil) nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
@@ -1503,7 +1505,7 @@
                   )
            (type (unsigned-byte 59) count))
   (if (zp-fast count)
-      (mv t nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
+      (mv :count-exceeded nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
     (mv-let (erp provedp literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
       (rewrite-subst-and-elim-with-rule-alists-for-basic-prover literal-nodenums
                                                                 dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
@@ -1515,10 +1517,9 @@
       (if erp
           (mv erp nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
         (if provedp
-            (mv nil t nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
+            (mv (erp-nil) t nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
           (prog2$ nil ;(cw "We have been told not to miter.~%")
-                  (mv nil nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                      info tries)))))))
+                  (mv (erp-nil) nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))))))
 
 ;; The main entry point of the Axe Prover.
 ;; Tries to prove the disjunction of LITERAL-NODENUMS-OR-QUOTEPS.
