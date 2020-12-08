@@ -551,7 +551,7 @@
 
  ;; Rewrite TREE repeatedly using RULE-ALIST and NODENUMS-TO-ASSUME-FALSE and add the result to the dag, returning a nodenum or a quotep.
  ;; TREE has nodenums and quoteps and variables (really? yes, from when we call this on a worklist of nodes) at the leaves.
- ;; returns (mv erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)
+ ;; Returns (mv erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state).
  ;; be sure we always handle lambdas early, in case one is hiding an if - fixme - skip this for now?
  (defund simplify-tree-and-add-to-dag-for-basic-prover (tree
                                                         equiv

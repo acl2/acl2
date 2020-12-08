@@ -55,10 +55,10 @@
                                (pseudo-termp term)
                                (interpreted-function-alistp interpreted-function-alist))))
    (cond ((variablep term)
-          (let ((a (assoc-eq term alist)))
-            (cond (a (cdr a))
-                  (t term) ;TODO: can we drop this case and the check above for some uses of this function (e.g., no free vars in a rule RHS or lambda body)
-                  )))
+          (let ((match (assoc-eq term alist))) ;todo: consider a version of lookup-eq with a default
+            (if match  ;TODO: can we drop this check for some uses of this function (e.g., no free vars in a rule RHS or lambda body)?
+                (cdr match)
+              term)))
          ((fquotep term) term)
          (t (let ((fn (ffn-symb term)))
               (if (and (eq fn 'if) ;bozo, consider also handling bvif, boolif, myif, maybe boolor and booland...
@@ -78,10 +78,10 @@
                             (my-sublis-var-and-eval-basic alist (fourth term) interpreted-function-alist) ;else part
                             )))
                 ;;regular function call or lambda
+                ;; Substitute in the args:
                 (mv-let (ground-termp args)
                   (my-sublis-var-and-eval-basic-lst alist (fargs term) interpreted-function-alist)
                   (if ground-termp
-                      ;;ffixme, call something different here depending on whether it's an ifn (could get the body of the ifn by doing an assoc-eq above):
                       (mv-let (erp res)
                         (apply-axe-evaluator-basic-to-quoted-args fn args interpreted-function-alist)
                         (if erp
@@ -90,10 +90,6 @@
                              ;; (cw "sub: Failed to apply ~x0 to constant args (er:~x1,ifns:~x2).~%" fn erp (strip-cars interpreted-function-alist) ;(len interpreted-function-alist))
                              (cons fn args))
                           (enquote res)))
-                    ;; (let ((possible-val (eval-fn-if-possible fn (unquote-list args))))
-                    ;; (if possible-val ;possible-val is quoted (or is nil if we can't eval the fn)
-                    ;; possible-val
-                    ;; (cons fn args)))
                     (cons fn args))))))))
 
  ;; Returns (mv ground-termp args).
@@ -161,16 +157,15 @@
 (verify-guards my-sublis-var-and-eval-basic
   :hints (("Goal"
            :use (:instance myquotep-of-my-sublis-var-and-eval-basic
-                           (term (CADR TERM)))
+                           (term (cadr term)))
            :in-theory (e/d ()
-                           (myquotep SYMBOL-ALISTP STRIP-CDRS myquotep-of-my-sublis-var-and-eval-basic)))))
+                           (myquotep symbol-alistp strip-cdrs myquotep-of-my-sublis-var-and-eval-basic)))))
 
 (defthm-flag-my-sublis-var-and-eval-basic
   (defthm axe-treep-of-my-sublis-var-and-eval-basic
     (implies (and ;(eq 'quote (car (my-sublis-var-and-eval-basic alist term interpreted-function-alist)))
                   (all-dargp (strip-cdrs alist))
-                  (pseudo-termp term)
-                  )
+                  (pseudo-termp term))
              (axe-treep (my-sublis-var-and-eval-basic alist term interpreted-function-alist)))
     :flag my-sublis-var-and-eval-basic)
   (defthm all-axe-treep-of-mv-nth-1-of-my-sublis-var-and-eval-basic-lst
@@ -186,8 +181,7 @@
   (defthm bounded-axe-treep-of-my-sublis-var-and-eval-basic
     (implies (and ;(eq 'quote (car (my-sublis-var-and-eval-basic alist term interpreted-function-alist)))
                   (all-dargp-less-than (strip-cdrs alist) dag-len)
-                  (pseudo-termp term)
-                  )
+                  (pseudo-termp term))
              (bounded-axe-treep (my-sublis-var-and-eval-basic alist term interpreted-function-alist) dag-len))
     :flag my-sublis-var-and-eval-basic)
   (defthm all-bounded-axe-treep-of-mv-nth-1-of-my-sublis-var-and-eval-basic-lst
