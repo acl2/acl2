@@ -65,7 +65,7 @@
 ; The loop function, which CDRs down the list,
 ; also takes the previous page's name and title as arguments
 ; (since those have been CDR'd away).
-; Thse are initially NIL, in which case no 'previous' link is added to the page.
+; These are initially NIL, in which case no 'previous' link is added to the page.
 ; This only happens for the first page; all the others have a 'previous' link.
 ; Unless the page is the last one in the list, a 'next' link is generated.
 ; There is no need to pass the next page's name and title as arguments,
