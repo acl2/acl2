@@ -286,6 +286,34 @@
                     (mv-nth 6 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))))
   :hints (("Goal" :in-theory (enable wf-dagp))))
 
+(defthm dargp-less-than-of-mv-nth-1-of-add-variable-to-dag-array
+  (implies (and (natp dag-len)
+                (bounded-dag-variable-alistp dag-variable-alist dag-len)
+                (symbolp var)
+                (bounded-dag-parent-arrayp 'dag-parent-array dag-parent-array dag-len)
+                (equal (alen1 'dag-array dag-array)
+                       (alen1 'dag-parent-array
+                              dag-parent-array))
+                (not (mv-nth 0 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))))
+           (dargp-less-than (mv-nth 1 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+                            (mv-nth 3 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))))
+  :hints (("Goal" :in-theory (e/d (dargp-less-than add-variable-to-dag-array) (natp)))))
+
+(defthm dargp-less-than-of-mv-nth-1-of-add-variable-to-dag-array-gen
+  (implies (and (<= (mv-nth 3 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)) bound)
+                (natp dag-len)
+                (bounded-dag-variable-alistp dag-variable-alist dag-len)
+                (symbolp var)
+                (bounded-dag-parent-arrayp 'dag-parent-array dag-parent-array dag-len)
+                (equal (alen1 'dag-array dag-array)
+                       (alen1 'dag-parent-array
+                              dag-parent-array))
+                (not (mv-nth 0 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))))
+           (dargp-less-than (mv-nth 1 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+                            bound))
+  :hints (("Goal" :use dargp-less-than-of-mv-nth-1-of-add-variable-to-dag-array
+           :in-theory (disable dargp-less-than-of-mv-nth-1-of-add-variable-to-dag-array))))
+
 ;;;
 ;;; add-function-call-expr-to-dag-array
 ;;;
@@ -574,7 +602,24 @@
                               dag-parent-array))
                 (not (mv-nth 0 (add-function-call-expr-to-dag-array fn args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))))
            (dargp-less-than (mv-nth 1 (add-function-call-expr-to-dag-array fn args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
-                                       (mv-nth 3 (add-function-call-expr-to-dag-array fn args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))))
+                            (mv-nth 3 (add-function-call-expr-to-dag-array fn args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))))
+  :hints (("Goal" :in-theory (e/d (dargp-less-than) (natp)))))
+
+(defthm dargp-less-than-of-mv-nth-1-of-add-function-call-expr-to-dag-array-gen
+  (implies (and (<= (mv-nth 3 (add-function-call-expr-to-dag-array fn args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)) bound)
+                (natp dag-len)
+                (bounded-dag-constant-alistp dag-constant-alist dag-len)
+                (symbolp fn)
+                (not (equal 'quote fn))
+                ;; (true-listp args)
+                (all-dargp-less-than args (alen1 'dag-array dag-array))
+                (bounded-dag-parent-arrayp 'dag-parent-array dag-parent-array dag-len)
+                (equal (alen1 'dag-array dag-array)
+                       (alen1 'dag-parent-array
+                              dag-parent-array))
+                (not (mv-nth 0 (add-function-call-expr-to-dag-array fn args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))))
+           (dargp-less-than (mv-nth 1 (add-function-call-expr-to-dag-array fn args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+                            bound))
   :hints (("Goal" :in-theory (e/d (dargp-less-than) (natp)))))
 
 (defthm dag-variable-alist-correct-after-add-function-call-expr-to-dag-array

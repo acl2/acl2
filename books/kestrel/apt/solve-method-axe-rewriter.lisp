@@ -63,7 +63,10 @@
     "We use the Axe function @('acl2::dag-to-term')
      to turn the DAG into a term."))
   (b* ((wrld (w state))
-       (rule-alist (acl2::make-rule-alist method-rules wrld))
+       ((mv erp rule-alist) (acl2::make-rule-alist method-rules wrld))
+       ((when erp) (er-soft+ ctx t nil
+                             "Failed to make Axe rules from the rules ~x0."
+                             method-rules))
        ((mv erp term) (acl2::simp-term-basic matrix
                                              nil ; assumptions
                                              rule-alist

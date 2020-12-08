@@ -15,8 +15,10 @@
 (include-book "deftest")
 
 (deftest
-  (defmergesort merge-< merge-sort-< < rationalp))
+  (defmergesort merge-< merge-sort-< < real/rationalp))
 
 (deftest
   (in-theory nil) ;make sure the proofs still work with no rules enabled
-  (defmergesort merge-< merge-sort-< < rationalp))
+  ;; TODO: We should probably produce an applicability condition that the guard of <
+  ;; is satisfied by items that satisfy real/rationalp.
+  (defmergesort merge-< merge-sort-< < real/rationalp))

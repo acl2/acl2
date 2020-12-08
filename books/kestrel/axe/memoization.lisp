@@ -203,11 +203,9 @@
          *memoization-size*)
   :hints (("Goal" :in-theory (enable empty-memoization))))
 
-(comp t) ; Added by Matt K. to avoid stack overflow in Allegro CL
-
 (defthm memoizationp-of-empty-memoization
   (memoizationp (empty-memoization))
-  :hints (("Goal" :in-theory (enable (:e empty-memoization)))))
+  :hints (("Goal" :in-theory (enable empty-memoization memoizationp))))
 
 ;;;
 ;;; add-pairs-to-memoization
@@ -427,6 +425,12 @@
   (implies (maybe-bounded-memoizationp memoization bound)
            (maybe-memoizationp memoization))
   :hints (("Goal" :in-theory (enable maybe-bounded-memoizationp maybe-memoizationp))))
+
+(defthm maybe-bounded-memoizationp-monotone
+  (implies (and (maybe-bounded-memoizationp memoization bound2)
+                (<= bound2 bound))
+           (maybe-bounded-memoizationp memoization bound))
+  :hints (("Goal" :in-theory (enable maybe-bounded-memoizationp))))
 
 ;;;
 ;;; print-memo-stats

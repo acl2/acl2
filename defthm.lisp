@@ -1415,7 +1415,7 @@
                                    (assert$ pair (cdr pair)))))
                      (warning$ ctx ("Double-rewrite")
                                `("In a ~x0 rule generated from ~x1~@2, ~
-                                  equivalence relation~#3~[ ~&3~ is~/s ~&3 ~
+                                  equivalence relation~#3~[ ~&3 is~/s ~&3 ~
                                   are~] maintained at ~n4 problematic ~
                                   occurrence~#5~[~/s~] of variable ~x6 in ~
                                   ~@7, but not at any binding occurrence of ~

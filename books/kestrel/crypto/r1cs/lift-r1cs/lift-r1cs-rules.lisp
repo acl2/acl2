@@ -369,6 +369,7 @@
 
 ;; no w term
 ;todo: generalize or use something like add-of-mul-of-power-of-2-and-add?
+;rename
 (defthm add-of-bvcat-of-add-of-mul-combine-simp
   (implies (and (syntaxp (and (quotep k)
                               (quotep highsize)
@@ -607,11 +608,10 @@
                 )
            (equal (add (mul k x p) (add y z p) p)
                   (add (acl2::bvcat 1 x (+ -1 (acl2::integer-length k)) y)
-                               z
-                               p)))
+                       z
+                       p)))
   :hints (("Goal" :in-theory (enable bitp acl2::bvcat acl2::logapp add
                                      ACL2::POWER-OF-2P))))
-
 
 (defthm add-of-mul-of-power-of-2
   (implies (and (syntaxp (quotep k))

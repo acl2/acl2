@@ -4047,8 +4047,16 @@
 ; Uterm is an untranslated term with an output signature of * or (mv * *
 ; state).  We translate it and eval it under alist (after extending alist with
 ; state bound to the current state) and return the resulting error triple or
-; signal a translate or evaluation error.  We restore the world and certain
-; state globals (*protected-system-state-globals*) after the evaluation.
+; signal a translate or evaluation error.
+
+; We restore the world and certain state globals
+; (*protected-system-state-globals*) after the evaluation, by using
+; protect-system-state-globals below.  Be sure not to change that protection
+; without considering the consequences; in particular, make-event expansion
+; relies on this restoration (via protected-eval, which calls
+; protect-system-state-globals), as do proof-builder macro commands.  Without
+; that protection we expect that unsoundness or bad errors could arise during
+; book certification.
 
 ; If trans-flg is nil, we do not translate.  We *assume* uterm is a
 ; single-threaded translated term with output signature (mv * * state)!

@@ -580,12 +580,12 @@
    (if (zp-fast count)
        (mv t nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
      (if (atom tree)
-         (if (symbolp tree)
+         (if (symbolp tree) ;; TODO: Prove that this case is impossible.
              (prog2$ ;;nil ;;(cw "Rewriting the variable ~x0" tree) ;new!
               (hard-error 'simplify-tree-and-add-to-dag-for-basic-prover "rewriting the var ~x0" (acons #\0 tree nil))
               ;; It's a variable:  todo: perhaps add it first and then use assumptions?
               ;; First try looking it up in the assumptions (fixme make special version of rewrite-term-using-assumptions-for-basic-prover for a variable?):
-              (let ((assumption-match (rewrite-term-using-assumptions-for-axe-prover tree equiv nodenums-to-assume-false dag-array print)))
+              (let ((assumption-match (replace-term-using-assumptions-for-axe-prover tree equiv nodenums-to-assume-false dag-array print)))
                 (if assumption-match
                     ;; We replace the variable with something it's equated to in nodenums-to-assume-false.
                     ;; We don't rewrite the result (by the second pass, nodenums-to-assume-false will be simplified - and maybe we should always do that?)
@@ -598,8 +598,8 @@
                     (mv erp nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))))
            ;; TREE is a nodenum (because it's an atom but not a symbol):
            ;;fffixme what if tree is the nodenum of a constant?
-           (let ((assumption-match (rewrite-nodenum-using-assumptions-for-axe-prover tree equiv nodenums-to-assume-false dag-array print)))
-             (if assumption-match
+           (let ((assumption-match (replace-nodenum-using-assumptions-for-axe-prover tree equiv nodenums-to-assume-false dag-array)))
+             (if assumption-match ;;TODO: We know (for now) that this must be a constant
                  ;;fffixme don't simplify here, since nodenums-to-assume-false will be simplified after the 1st pass (what about chains of equalities)?
                  (simplify-tree-and-add-to-dag-for-basic-prover assumption-match
                                                                 equiv dag-array dag-len dag-parent-array dag-constant-alist
@@ -743,10 +743,10 @@
                        ;;not a short-circuit-function:
                        (mv-let (erp arg-results dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
                          (simplify-trees-and-add-to-dag-for-basic-prover args
-                                                                            (get-equivs equiv fn equiv-alist)
-                                                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                                            rule-alist nodenums-to-assume-false
-                                                                            equiv-alist print info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count))
+                                                                         (get-equivs equiv fn equiv-alist)
+                                                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                                         rule-alist nodenums-to-assume-false
+                                                                         equiv-alist print info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count))
                          (if erp
                              (mv erp nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
                            (mv nil
@@ -764,7 +764,7 @@
                                                                     embedded-dag-depth case-designator prover-depth options (+ -1 count))
                    ;;otherwise, we rewrote all the args:
                    (let ((args term-or-rewritten-args))
-                     ;;Now we simplify the function applied to the simplified args:
+                     ;; Now we simplify the function applied to the simplified args:
                      ;; If it's a lambda, beta reduce and simplify the result:
                      (if (consp fn) ;;tests for lambda
                          ;; It's a lambda, so we beta-reduce and simplify the result:
@@ -804,48 +804,43 @@
                                    quoted-val
                                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                    info tries))
-                           ;;it wasn't a ground term (that we can evaluate):
-                           ;;Next, try looking it up in nodenums-to-assume-false (BOZO should we move this down (or up?)?)
-                           ;; this uses the simplified args, so nodenums-to-assume-false not in normal form may not fire
-                           (let ((assumption-match (rewrite-term-using-assumptions-for-axe-prover ;fixme special version of this for a fn-call?
-                                                    (cons fn args) ;BOZO eventually, sort nodenums-to-assume-false by fn and skip this cons:
-                                                    equiv
-                                                    nodenums-to-assume-false dag-array print)))
-                             (if assumption-match
-                                 ;; we replace the term with something it's equated to in nodenums-to-assume-false...
-                                 ;;we don't simplify the resulting node - fixme what about chains of equalities?
-                                 (mv nil assumption-match dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
-                               ;; Next, try to apply rules:
-                               ;; bbozo can/should we generalize the matching code to take a tree with quoteps, nodenums, and variables at the leaves? -- we no longer do this.
-                               (mv-let (erp rhs dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
+                           ;; It wasn't a ground term (that we can evaluate).
+                           (b* (;; Next, try to apply rules:
+                                ((mv erp rhs-or-nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
                                  (try-to-apply-rules-for-basic-prover
                                   (get-rules-for-fn fn rule-alist)
                                   rule-alist args
                                   dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                  nodenums-to-assume-false  equiv-alist print info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count))
-                                 (if erp
-                                     (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
-                                   (if rhs
-                                       ;; should try-to-apply-rules-for-basic-prover make this call directly?  if so, what should it do in case of failure?
-                                       (simplify-tree-and-add-to-dag-for-basic-prover
-                                        rhs
-                                        equiv ;; was: 'equal
-                                        dag-array dag-len dag-parent-array dag-constant-alist
-                                        dag-variable-alist rule-alist nodenums-to-assume-false  equiv-alist
-                                        print info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count))
-                                     ;; No rule fired, so no simplification can be done:
-                                     ;; This node is ready to add to the dag
-                                     ;; in-line this?
-                                     (mv-let (erp nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-                                       (add-function-call-expr-to-dag-array
-                                        (prog2$ (and (eq :verbose print)
-                                                     (cw "(Making ~x0 term with args: ~x1.)~%" fn args))
-                                                fn)
-                                        args
-                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-                                       ;;fixme what if nodenum is equated to something else by an assumption?
-                                       (mv erp nodenum dag-array dag-len dag-parent-array dag-constant-alist
-                                           dag-variable-alist info tries))))))))))))))))))))
+                                  nodenums-to-assume-false  equiv-alist print info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count)))
+                                ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))
+                             (if rhs-or-nil
+                                 ;; A rule fired, so rewrite the instantiated RHS:
+                                 ;; TODO: should try-to-apply-rules-for-basic-prover make this call directly?  if so, what should it do in case of failure?
+                                 (simplify-tree-and-add-to-dag-for-basic-prover
+                                  rhs-or-nil
+                                  equiv ;; was: 'equal
+                                  dag-array dag-len dag-parent-array dag-constant-alist
+                                  dag-variable-alist rule-alist nodenums-to-assume-false equiv-alist
+                                  print info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count))
+                               ;; No rule fired, so no simplification can be done.  This node is ready to add to the dag:
+                               (b* ((- (and (eq :verbose print) (cw "(Making ~x0 term with args: ~x1.)~%" fn args)))
+                                    ((mv erp nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+                                     ;; todo: make a variant that takes (cons fn args), which we compute above:
+                                     ;; todo: perhaps inline this:
+                                     (add-function-call-expr-to-dag-array fn args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+                                    ((when erp) (mv erp nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
+                                    )
+                                 ;; Finally, see if the node can be replaced by
+                                 ;; something using the assumptions.  Note that
+                                 ;; this uses the simplified args, so
+                                 ;; assumptions not in normal form may have no effect.
+                                 (let ((assumption-match (replace-nodenum-using-assumptions-for-axe-prover nodenum equiv nodenums-to-assume-false dag-array)))  ;currently, this can only be a constant?
+                                   (mv (erp-nil)
+                                       (if assumption-match
+                                           ;; we replace the term with something it's equated to in nodenums-to-assume-false. we don't simplify the resulting thing (currently a constant). eventually, we might need to think about handling chains of equalities.:
+                                           assumption-match
+                                         nodenum)
+                                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))))))))))))))))))
 
  ;; Simplify all the trees in TREES and add to the DAG.
  ;; Returns (mv erp nodenums-or-quoteps dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries).
@@ -1825,12 +1820,14 @@
        ((mv dag-parent-array dag-constant-alist dag-variable-alist)
         (make-dag-indices 'dag-array dag-array 'dag-parent-array dag-len))
        (rule-lists (elaborate-rule-item-lists rule-lists state))
+       ((mv erp rule-alists) (make-rule-alists rule-lists (w state)))
+       ((when erp) (mv erp nil state))
        ((mv erp result & & & & & ; dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
             & &                  ;info tries ;todo: use these
            )
         (prove-disjunction-with-basic-prover (list top-nodenum) ;; just one disjunct
                                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                             (make-rule-alists rule-lists (w state))
+                                             rule-alists
                                              nil ;; interpreted-function-alist
                                              monitor
                                              t ;print
@@ -2044,15 +2041,17 @@
                      rule-lists))
        (monitored-symbols (lookup-eq :monitor hint))
        (print (lookup-eq :print hint))
+       ((mv erp rule-alists) (make-rule-alists rule-lists (w state)))
+       ((when erp) (mv erp (list clause)))
        ((mv erp provedp)
         (prove-clause-with-basic-prover clause
                                         'basic-prover-clause-proc
-                                        (make-rule-alists rule-lists (w state))
+                                        rule-alists
                                         monitored-symbols
                                         nil ;interpreted-function-alist ;todo?
                                         print
                                         nil ;; options
-                                       ))
+                                        ))
        ((when erp) (mv erp (list clause))) ; error (and no change to clause set)
        )
     (if provedp

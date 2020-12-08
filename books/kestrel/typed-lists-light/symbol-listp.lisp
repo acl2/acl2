@@ -80,3 +80,14 @@
   (implies (symbol-listp l)
            (symbol-listp (nthcdr n l)))
   :hints (("Goal" :in-theory (enable nthcdr))))
+
+(defthm symbol-listp-of-revappend
+  (equal (symbol-listp (revappend x y))
+         (and (symbol-listp (true-list-fix x))
+              (symbol-listp y)))
+  :hints (("Goal" :in-theory (enable revappend symbol-listp))))
+
+(defthm symbol-listp-of-reverse
+  (implies (symbol-listp x)
+           (symbol-listp (reverse x)))
+  :hints (("Goal" :in-theory (enable reverse))))

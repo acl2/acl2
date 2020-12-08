@@ -7,6 +7,8 @@
 (set-verify-guards-eagerness 2)
 
 (include-book "random-state-basis1")
+(include-book "builtin-combinators")
+(include-book "number-enums-sampling")
 ;(include-book "num-list-fns") ;defines acl2-number-listp,pos-listp,naturals-listp
 
 ;=====================================================================;
@@ -440,21 +442,56 @@ On todo list for fixing.
           (declare (xargs :guard (and (natp min) (posp max) (<= min max))))
           (list min max))))
 
-
 (defun sampling-dist-rec-builtin (min max)
   (declare (xargs :guard (and (natp min)
                               (posp max)
                               (<= min max))))
-  `((1 :eq ,min)
-    (1 :eq ,max)
-    (30 :geometric :geq ,min)
-    (67 :uniform ,min ,max)
-;    (2 :geometric :geq ,(1+ max))
-;    (1 :geometric :leq ,(1- min))
-    ))
+  (b* ((lo-1 (force-between *dist-lo1* min max))
+       (hi-1 (force-between *dist-hi1* min max))
+       (lo-2 (force-between *dist-lo2* min max))
+       (hi-2 (force-between *dist-hi2* min max))
+       (lo-3 (force-between *dist-lo3* min max))
+       (hi-3 (force-between *dist-hi3* min max))
+       (lo-4 (force-between *dist-lo4* min max))
+       (hi-4 (force-between *dist-hi4* min max))
+       (lo-5 (force-between *dist-lo5* min max))
+       (hi-5 (force-between *dist-hi5* min max))
+       (mid (floor (+ min max) 2))
+       (mid-lo-1 (force-between (- mid hi-1) min max))
+       (mid-hi-1 (force-between (+ mid hi-1) min max))
+       (mid-lo-2 (force-between (- mid hi-2) min max))
+       (mid-hi-2 (force-between (+ mid hi-2) min max))
+       (mid-lo-3 (force-between (- mid hi-3) min max))
+       (mid-hi-3 (force-between (+ mid hi-3) min max))
+       (mid-lo-4 (force-between (- mid hi-4) min max))
+       (mid-hi-4 (force-between (+ mid hi-4) min max))
+       (mid-lo-5 (force-between (- mid hi-5) min max))
+       (mid-hi-5 (force-between (+ mid hi-5) min max)))
+    `((1 :eq ,min)
+      (1 :eq ,max)
+      (1 :eq ,mid)
+
+      (4 :uniform ,lo-1 ,hi-1)
+      (4 :uniform ,lo-2 ,hi-2)
+      (4 :uniform ,lo-3 ,hi-3)
+      (4 :uniform ,lo-4 ,hi-4)
+      (4 :uniform ,lo-5 ,hi-5)
+
+      (4 :uniform ,mid-lo-1 ,mid-hi-1)
+      (4 :uniform ,mid-lo-2 ,mid-hi-2)
+      (4 :uniform ,mid-lo-3 ,mid-hi-3)
+      (4 :uniform ,mid-lo-4 ,mid-hi-4)
+      (4 :uniform ,mid-lo-5 ,mid-hi-5)
+      
+      (5 :geometric :leq-bnd ,max ,min)
+      (24 :geometric :geq-bnd ,min ,max)
+      (14 :geometric :between ,min ,max)
+
+      (14 :uniform ,min ,max))))
 
 (defattach sampling-dist-rec sampling-dist-rec-builtin)
 (include-book "switchnat")
+
 (defun choose-size (min max seed.)
   (declare (type (unsigned-byte 31) seed.)
            (type (signed-byte 30) min)
@@ -479,16 +516,16 @@ On todo list for fixing.
        ((mv uniform-n (the (unsigned-byte 31) seed.))
         (defdata::random-integer-between-seed min max seed.))
        (size (case-match sp ;sampling type dispatch
-               ((':eq x) x)
-               ((':geometric ':leq x)     (nfix (- x n)))
-               ((':geometric ':geq x)     (mod (+ x n) (1+ max)))
+               ((':eq x)                  x)
+               ((':geometric ':around x) (geometric-int-around x n))
+               ((':geometric ':leq x)    (geometric-int-leq x n))
+               ((':geometric ':geq x)    (geometric-int-geq x n))
+               ((':geometric ':around-bnd x lo hi) (geometric-int-around-bnd x lo hi n))
+               ((':geometric ':leq-bnd x lo)       (geometric-int-leq-bnd x lo n))
+               ((':geometric ':geq-bnd x hi)       (geometric-int-geq-bnd x hi n))
+               ((':geometric ':between lo hi)      (geometric-int-between lo hi n))
                ((':uniform & &)         uniform-n)
                (& (er hard ctx "~| Unsupported case ~x0.~%" sp))))
        ;(- (cw  "~| Chosen size is ~x0~%" size))
        )
     (mv size (the (unsigned-byte 31) seed.))))
-
-
-      
-         
-    

@@ -1219,82 +1219,135 @@
 
 ;; (skip- proofs (verify-guards simpler-dag-termp2))
 
-;returns a nodenum or quotep, or nil to indicate failure
-;could strip out nodenums to assume true (or nodenums to assume non-nil??)
-;fixme could preprocess nodenums-to-assume-false into pairs and simplify this function
-;if there are multiple matches, the first one will fire, even if later ones might be better
-(defund rewrite-nodenum-using-assumptions-for-axe-prover (nodenum equiv nodenums-to-assume-false dag-array print)
+;; Tries to replace NODENUM (current only with a constant) using facts known
+;; from the NODENUMS-TO-ASSUME-FALSE.  The result is related to NODENUM by the
+;; EQUIV passed in ('equal or 'iff).
+;; Returns a quotep, or nil to indicate failure.  May some day be allowed to return a nodenum.
+;; TODO: To speed this up, we could separately track nodenums to assume false and nodenums to assume true (non-nil).
+;; TODO: To speed this up, we could perhaps index the known true/false facts by top function-symbol.
+;; TODO: To speed this up, we could perhaps maintain this information as node-replacement pairs, perhaps even in an array.
+;; If there are multiple matches, the first one will fire, even if later ones might be better.
+(defund replace-nodenum-using-assumptions-for-axe-prover (nodenum
+                                                          equiv ;todo: perhaps pass in an iff-flag
+                                                          nodenums-to-assume-false dag-array
+                                                          ;;print
+                                                          )
   (declare (xargs :guard (and (natp nodenum)
                               (symbolp equiv)
                               (all-natp nodenums-to-assume-false)
                               (true-listp nodenums-to-assume-false)
                               (pseudo-dag-arrayp 'dag-array dag-array (+ 1 (maxelem (cons nodenum nodenums-to-assume-false)))))
-                  :guard-hints (("Goal" :in-theory (e/d (CAR-BECOMES-NTH-OF-0) (natp))))))
+                  :guard-hints (("Goal"
+                                 :use ((:instance true-listp-of-dargs-of-aref1-when-pseudo-dag-arrayp-simple
+                                                  (dag-array-name 'dag-array)
+                                                  (n (nth 0 nodenums-to-assume-false)))
+                                       (:instance true-listp-of-dargs-of-aref1-when-pseudo-dag-arrayp-simple
+                                                  (dag-array-name 'dag-array)
+                                                  (n (nth 0 (dargs (aref1 'dag-array dag-array (nth 0 nodenums-to-assume-false)))))))
+                                 :in-theory (e/d (car-becomes-nth-of-0
+                                                  NATP-OF-+-OF-1)
+                                                 (natp
+                                                  true-listp-of-dargs-of-aref1-when-pseudo-dag-arrayp
+                                                  true-listp-of-dargs-of-aref1-when-pseudo-dag-arrayp-simple))))))
   (if (endp nodenums-to-assume-false)
       nil ;; failure to rewrite NODENUM
     (let* ((nodenum-to-assume-false (first nodenums-to-assume-false)))
       (if (eql nodenum nodenum-to-assume-false) ; could do (member nodenum nodenums-to-assume-false) in a wrapper function
+          ;; NODENUM is among the NODENUMS-TO-ASSUME-FALSE, so we replace it with 'nil:
           *nil*
         (let* ((expr-to-assume-false (aref1 'dag-array dag-array nodenum-to-assume-false)))
           (if (not (and (call-of 'not expr-to-assume-false)
-                        (= 1 (len (dargs expr-to-assume-false)))
+                        (consp (dargs expr-to-assume-false))
+                        ;; (not (consp (rest (dargs expr-to-assume-false)))) ;todo: think about bad arities
                         (atom (darg1 expr-to-assume-false)) ;makes sure it's a nodenum
                         ))
-              ;; keep looking:
-              (rewrite-nodenum-using-assumptions-for-axe-prover nodenum equiv (rest nodenums-to-assume-false) dag-array print)
+              ;; expr-to-assume-false does not have a form we can use, so keep looking:
+              (replace-nodenum-using-assumptions-for-axe-prover nodenum equiv (rest nodenums-to-assume-false) dag-array
+                                                                ;;print
+                                                                )
             ;; EXPR-TO-ASSUME-FALSE is of the form (not <nodenum-to-assume-non-nil>):
             (let ((nodenum-to-assume-non-nil (darg1 expr-to-assume-false)))
               (if (and (eq 'iff equiv) ;fixme equivs may someday not be comparable using eq
                        (eql nodenum nodenum-to-assume-non-nil))
-;ffixme what if nodenum is the nodenum of a boolean (either because of the ffn-symb or because we have a hyp to that effect?)
-;then we can do this even if the equiv is 'equal?
+                  ;; NODENUM is equal to NODENUM-TO-ASSUME-NON-NIL, and since
+                  ;; we only must preserve IFF, we can replace it with 't:
+                  ;; TODO: If nodenum is the nodenum of a boolean (either
+                  ;; because of the ffn-symb or because we have a hyp to that
+                  ;; effect), we could replace it with *t* even if the equiv is
+                  ;; 'equal:
                   *t*
                 (let ((expr-to-assume-non-nil (aref1 'dag-array dag-array nodenum-to-assume-non-nil)))
                   (if (not (and (call-of 'equal expr-to-assume-non-nil)
-                                (= 2 (len (dargs expr-to-assume-non-nil)))))
-                      ;; keep looking:
-                      (rewrite-nodenum-using-assumptions-for-axe-prover nodenum equiv (rest nodenums-to-assume-false) dag-array print)
-                    (if (and (eql nodenum (darg2 expr-to-assume-non-nil))
-                             ;; expr-to-assume-non-nil is of the form (equal <thing> NODENUM):
-                             ;; note the order: equalities fire right-to-left, since the small thing is put first
-                             (let ((thing (darg1 expr-to-assume-non-nil)))
-                               (if (quotep thing)
-                                   t ;always put a constant in
-                                 ;;thing is a nodenum:
-                                 nil ;Sun May 15 18:35:43 2011
-                                 ;; (if (variablep (aref1 'dag-array dag-array thing))
-                                 ;;     nil ;don't put a variable back in... (or can we order the variables???)
-                                 ;;   (or nil ;(simpler-dag-termp thing nodenum dag-array) ;fixme do we always want to do this?  fixme is this known from how the equality is ordered? ;can this loop?
-                                 ;;       (and (variablep (aref1 'dag-array dag-array nodenum)) ;don't test this over and over?  or we could wait until substitute-a-var?
-                                 ;;            (not (member nodenum (supporters-of-node thing 'dag-array dag-array 'tag-array-for-supporters))))
-                                 ;;       ))
-                                 ))) ;expensive?!
-
-                        ;; ffixme, don't do this when the assumptions haven't yet been simplified? can lead to loops!
-                        (prog2$ (and (eq :verbose print)
-                                     (cw "Putting in ~x0 for node ~x1.~%" (darg1 expr-to-assume-non-nil) nodenum))
-                                (darg1 expr-to-assume-non-nil))
-
-                      ;;this whole case is new (FFIXME this violates the rule about equalities firing from right to left):
-                      ;;fixme keep this in sync with the stuff above...
-                      (if (and (eql nodenum (darg1 expr-to-assume-non-nil))
-                               ;; expr-to-assume-non-nil is of the form (equal NODENUM <thing>):
-                               (let ((thing (darg2 expr-to-assume-non-nil)))
-                                 (if (quotep thing)
-                                     t ;always put a quotep in
-                                   nil ;Sun May 15 18:35:52 2011
-                                   ;; (if (variablep (aref1 'dag-array dag-array thing))
-                                   ;;     nil ;don't put a variable back in...
-                                   ;;   (or nil ;(simpler-dag-termp thing nodenum dag-array)
-                                   ;;       (and (variablep (aref1 'dag-array dag-array nodenum))
-                                   ;;            (not (member nodenum (supporters-of-node thing 'dag-array dag-array 'tag-array-for-supporters))))))
-                                   )))
+                                ;;(= 2 (len (dargs expr-to-assume-non-nil)))
+                                (consp (rest (dargs expr-to-assume-non-nil))) ;todo: think about bad arities
+                                ))
+                      ;; expr-to-assume-non-nil does not have a form we can use, so keep looking:
+                      (replace-nodenum-using-assumptions-for-axe-prover nodenum equiv (rest nodenums-to-assume-false) dag-array
+                                                                        ;;print
+                                                                        )
+                    (let ((darg1 (darg1 expr-to-assume-non-nil))
+                          (darg2 (darg2 expr-to-assume-non-nil)))
+                      (if (and (eql nodenum darg2)
+                               ;; expr-to-assume-non-nil is of the form (equal <thing> NODENUM):
+                               ;; note the order: equalities fire right-to-left, since the small thing is put first
+                               (consp darg1) ;; check for quotep
+                               ;; (if (quotep darg1)
+                               ;;     t ;always put a constant in
+                               ;;   ;;thing is a nodenum:
+                               ;;   nil ;Sun May 15 18:35:43 2011
+                               ;;   ;; (if (variablep (aref1 'dag-array dag-array thing))
+                               ;;   ;;     nil ;don't put a variable back in... (or can we order the variables???)
+                               ;;   ;;   (or nil ;(simpler-dag-termp thing nodenum dag-array) ;fixme do we always want to do this?  fixme is this known from how the equality is ordered? ;can this loop?
+                               ;;   ;;       (and (variablep (aref1 'dag-array dag-array nodenum)) ;don't test this over and over?  or we could wait until substitute-a-var?
+                               ;;   ;;            (not (member nodenum (supporters-of-node thing 'dag-array dag-array 'tag-array-for-supporters))))
+                               ;;   ;;       ))
+                               ;;   )
+                               ) ;expensive?!
                           ;; ffixme, don't do this when the assumptions haven't yet been simplified? can lead to loops!
-                          (prog2$ (and (eq :verbose print)
-                                       (cw "Putting in ~x0 for node ~x1.~%" (darg2 expr-to-assume-non-nil) nodenum))
-                                  (darg2 expr-to-assume-non-nil))
-                        ;; keep looking:
-                        (rewrite-nodenum-using-assumptions-for-axe-prover nodenum equiv (rest nodenums-to-assume-false) dag-array print)))))))))))))
+                          (progn$ ;; (and (eq :verbose print) (cw "Putting in ~x0 for node ~x1.~%" (darg1 expr-to-assume-non-nil) nodenum))
+                           darg1)
+                        ;;this whole case is new (FFIXME this violates the rule about equalities firing from right to left):
+                        ;;fixme keep this in sync with the stuff above...
+                        (if (and (eql nodenum darg1)
+                                 (consp darg2) ;; check for quotep
+                                 ;; ;; expr-to-assume-non-nil is of the form (equal NODENUM <thing>):
+                                 ;; (let ((thing (darg2 expr-to-assume-non-nil)))
+                                 ;;   (if (quotep thing)
+                                 ;;       t ;always put a quotep in
+                                 ;;     nil ;Sun May 15 18:35:52 2011
+                                 ;;     ;; (if (variablep (aref1 'dag-array dag-array thing))
+                                 ;;     ;;     nil ;don't put a variable back in...
+                                 ;;     ;;   (or nil ;(simpler-dag-termp thing nodenum dag-array)
+                                 ;;     ;;       (and (variablep (aref1 'dag-array dag-array nodenum))
+                                 ;;     ;;            (not (member nodenum (supporters-of-node thing 'dag-array dag-array 'tag-array-for-supporters))))))
+                                 ;;     ))
+                                 )
+                            ;; ffixme, don't do this when the assumptions haven't yet been simplified? can lead to loops!
+                            (progn$ ;; (and (eq :verbose print) (cw "Putting in ~x0 for node ~x1.~%" (darg2 expr-to-assume-non-nil) nodenum))
+                             darg2)
+                          ;; keep looking:
+                          (replace-nodenum-using-assumptions-for-axe-prover nodenum equiv (rest nodenums-to-assume-false) dag-array
+                                                                            ;;print
+                                                                            ))))))))))))))
+
+;; Currently it can only put in a quotep!
+(defthm myquotep-of-replace-nodenum-using-assumptions-for-axe-prover
+  (implies (and (replace-nodenum-using-assumptions-for-axe-prover nodenum equiv nodenums-to-assume-false dag-array)
+                (natp nodenum)
+                ;;(symbolp equiv)
+                (all-natp nodenums-to-assume-false)
+                ;;(true-listp nodenums-to-assume-false)
+                (pseudo-dag-arrayp 'dag-array dag-array (+ 1 (maxelem (cons nodenum nodenums-to-assume-false)))))
+           (myquotep (replace-nodenum-using-assumptions-for-axe-prover nodenum equiv nodenums-to-assume-false dag-array)))
+  :hints (("Goal"
+           :in-theory (e/d (replace-nodenum-using-assumptions-for-axe-prover
+                            car-becomes-nth-of-0
+                            NATP-OF-+-OF-1)
+                           (natp
+                            ;;quotep
+                            myquotep
+                            ;;MAXELEM-OF-CONS
+                            )))))
 
 ;x must be a nodenum or quotep:
 (defmacro isnodenum (x) `(not (consp ,x))) ;fixme would (atom be faster?)
@@ -1317,11 +1370,11 @@
 ; (not (equal new-nodenum-or-quotep term)) - rewrite term to the new term
 ;fixme more generally, if we have a hyp of (booleanp term) we can safely rewrite term in an iff context everywhere?
 ;equiv is 'equal or 'iff (or nil, which means equal) for now
-;returns a nodenum or quotep, or nil to indicate failure
+;; Returns a nodenum or quotep, or nil to indicate failure.
 ;ffixme this should not fail if it's trying to use an equality we've already decided to substitute and drop..
 ;perhaps term is always either a var of a fn-call applied to nodenums and quoteps
 ;todo: rename term to tree in the param and this function's name:
-(defund rewrite-term-using-assumptions-for-axe-prover (term equiv nodenums-to-assume-false dag-array print)
+(defund replace-term-using-assumptions-for-axe-prover (term equiv nodenums-to-assume-false dag-array print)
   (declare (xargs :guard (and (axe-treep term)
                               (symbolp equiv)
                               (all-natp nodenums-to-assume-false)
@@ -1339,7 +1392,7 @@
         (if (not (and (call-of 'not expr-to-assume-false)
                       (= 1 (len (dargs expr-to-assume-false)))
                       (isnodenum (darg1 expr-to-assume-false))))
-            (rewrite-term-using-assumptions-for-axe-prover term equiv (rest nodenums-to-assume-false) dag-array print)
+            (replace-term-using-assumptions-for-axe-prover term equiv (rest nodenums-to-assume-false) dag-array print)
           ;; EXPR-TO-ASSUME-FALSE is of the form (not <nodenum>):
           (let ((non-nil-expr (aref1 'dag-array dag-array (darg1 expr-to-assume-false))))
             (if (and (eq equiv 'iff)
@@ -1352,7 +1405,7 @@
               (if (not (and (call-of 'equal non-nil-expr)
                             (= 2 (len (dargs non-nil-expr)))
                             (isnodenum (darg2 non-nil-expr))))
-                  (rewrite-term-using-assumptions-for-axe-prover term equiv (rest nodenums-to-assume-false) dag-array print)
+                  (replace-term-using-assumptions-for-axe-prover term equiv (rest nodenums-to-assume-false) dag-array print)
                 ;; this is consistent with what we've been doing all along (turning equalities around to bring the smaller term to the left)
                 (if (and (equal term (aref1 'dag-array dag-array (darg2 non-nil-expr))) ;fixme allow the equal to be weaker?
                          ;; NON-NIL-EXPR is of the form (equal <thing> <nodenum-of-term>)
@@ -1377,7 +1430,27 @@
                     (prog2$ (and (eq :verbose print)
                                  (cw "Putting in ~x0 for term ~x1.~%" (darg1 non-nil-expr) term))
                             (darg1 non-nil-expr))
-                  (rewrite-term-using-assumptions-for-axe-prover term equiv (rest nodenums-to-assume-false) dag-array print))))))))))
+                  (replace-term-using-assumptions-for-axe-prover term equiv (rest nodenums-to-assume-false) dag-array print))))))))))
+
+(defthm replace-term-using-assumptions-for-axe-prover-forward-to-consp
+  (implies (replace-term-using-assumptions-for-axe-prover term equiv nodenums-to-assume-false dag-array print)
+           (consp nodenums-to-assume-false))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable replace-term-using-assumptions-for-axe-prover))))
+
+;todo: on fact, it's always a quotep !
+;; (defthm dargp-of-replace-term-using-assumptions-for-axe-prover
+;;   (implies (and (replace-term-using-assumptions-for-axe-prover term equiv nodenums-to-assume-false dag-array print)
+;;                 (axe-treep term)
+;;                 (symbolp equiv)
+;;                 (all-natp nodenums-to-assume-false)
+;;                 (true-listp nodenums-to-assume-false)
+;;                 ;; (if (consp nodenums-to-assume-false)
+;;                 ;;     (pseudo-dag-arrayp 'dag-array dag-array (+ 1 (maxelem nodenums-to-assume-false)))
+;;                 ;;   t)
+;;                 )
+;;            (dargp (replace-term-using-assumptions-for-axe-prover term equiv nodenums-to-assume-false dag-array print)))
+;;   :hints (("Goal" :in-theory (e/d (replace-term-using-assumptions-for-axe-prover) (dargp)))))
 
 ;; hyp is a tree with leaves that are quoteps, nodenums (from vars already bound), and free vars
 ;; returns (mv success-flg alist-for-free-vars)
@@ -3717,8 +3790,9 @@
                    ))
   (prog2$ nil ;;(cw "Rewriting the variable ~x0" tree) ;new!
           ;; It's a variable:  FFIXME perhaps add it first and then use assumptions?
-          ;; First try looking it up in the assumptions (fixme make special version of rewrite-term-using-assumptions-for-axe-prover for a variable?):
-          (let ((assumption-match (rewrite-term-using-assumptions-for-axe-prover tree equiv nodenums-to-assume-false dag-array print)))
+          ;; First try looking it up in the assumptions (fixme make special version of replace-term-using-assumptions-for-axe-prover for a variable?):
+          ;; TOOD: Could we just rely on variable substitution to handle this?:
+          (let ((assumption-match (replace-term-using-assumptions-for-axe-prover tree equiv nodenums-to-assume-false dag-array print)))
             (if assumption-match
                 ;; We replace the variable with something it's equated to in nodenums-to-assume-false.
                 ;; We don't rewrite the result (by the second pass, nodenums-to-assume-false will be simplified - and maybe we should always do that?)

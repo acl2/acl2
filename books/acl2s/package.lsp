@@ -255,6 +255,16 @@
 
       def-pattern-match-constructor
       pattern-match
+      patbind-match
+      patbind-when
+      patbind-assocs
+      patbind-the
+      patbind-nths
+      patbind-nths*
+      patbind-fun
+      patbind-ret
+      patbind-wmv
+      patbind-run-when
       
       clear-memo-table
 

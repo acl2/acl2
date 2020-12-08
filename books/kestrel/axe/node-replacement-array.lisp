@@ -319,6 +319,19 @@
       nil
     (aref1 'node-replacement-array node-replacement-array nodenum)))
 
+(defthm dargp-of-lookup-in-node-replacement-array
+  (implies (and (lookup-in-node-replacement-array nodenum node-replacement-array num-valid-nodes) ;; node is being replaced with something
+                (natp nodenum)
+                (natp num-valid-nodes)
+                (<= num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
+                (node-replacement-arrayp 'node-replacement-array node-replacement-array))
+           (dargp (lookup-in-node-replacement-array nodenum node-replacement-array num-valid-nodes)))
+  :hints (("Goal" :use (:instance type-of-aref1-when-node-replacement-arrayp
+                                  (array-name 'node-replacement-array)
+                                  (array node-replacement-array)
+                                  (index nodenum))
+           :in-theory (e/d (lookup-in-node-replacement-array) (type-of-aref1-when-bounded-node-replacement-arrayp)))))
+
 (defthm dargp-less-than-of-lookup-in-node-replacement-array
   (implies (and (lookup-in-node-replacement-array nodenum node-replacement-array num-valid-nodes) ;; node is being replaced with something
                 (natp nodenum)

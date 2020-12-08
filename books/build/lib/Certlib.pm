@@ -1540,13 +1540,22 @@ sub collect_top_up_to_date {
     return \@top_up_to_date;
 }
 
+
 sub collect_top_up_to_date_modulo_local {
     # up_to_date is the hash returned by check_up_to_date
     my ($targets, $depdb, $up_to_date) = @_;
 
+    # We need to traverse non-up-to-date targets to find which of
+    # their up-to-date nonlocal dependencies need including.  We also
+    # traverse up-to-date targets to mark those that are included
+    # nonlocally under another up-to-date target (and therefore don't
+    # need to be included separately since they will be included by
+    # the ancestor).
+
     # This tracks whether each target is under an up-to-date target,
     # but also doubles as a seen list.
     my %under_up_to_date = ();
+    #DEBUG my $INDENT = "";
     my $dfs;
     $dfs = sub {
 	my ($target, $under) = @_;
@@ -1554,15 +1563,32 @@ sub collect_top_up_to_date_modulo_local {
 	    # Seen already. Skip, but first update under_up_to_date if
 	    # it needs it.
 	    if ($under) {
-		$under_up_to_date{$target} = 1;
+		#DEBUG print STDERR "${INDENT}$target set as under up to date $under\n";
+		$under_up_to_date{$target} = $under;
 	    }
+	    #DEBUG } else {
+	    #DEBUG 	print STDERR "${INDENT}$target already seen\n";
+	    #DEBUG }
 	    return;
 	}
 	$under_up_to_date{$target} = $under;
+	my $uptodate = $up_to_date->{$target} ? $target : 0;
+	#DEBUG if ($uptodate) {
+	#DEBUG     if ($under) {
+	#DEBUG 	print STDERR "${INDENT}$target up to date (under $under)\n";
+	#DEBUG     } else {
+	#DEBUG 	print STDERR "${INDENT}$target up to date\n";
+	#DEBUG     }
+	#DEBUG } else {
+	#DEBUG     print STDERR "${INDENT}$target out of date\n";
+	#DEBUG }
 
 	my $certdeps = $depdb->cert_nonlocal_deps($target);
 	foreach my $cert (@$certdeps) {
-	    $dfs->($cert, $up_to_date->{$target});
+	    #DEBUG my $saved_indent = $INDENT;
+	    #DEBUG $INDENT = "${INDENT} ";
+	    $dfs->($cert, $uptodate);
+	    #DEBUG $INDENT = $saved_indent;
 	}
     };
 
@@ -1571,7 +1597,7 @@ sub collect_top_up_to_date_modulo_local {
     }
     my @top_up_to_date = ();
     while ((my $cert, my $updated) = each %$up_to_date) {
-	if ($updated && exists $under_up_to_date{$cert} && $under_up_to_date{$cert} == 0) {
+	if ($updated && exists $under_up_to_date{$cert} && ! $under_up_to_date{$cert}) {
 	    push (@top_up_to_date, $cert);
 	}
     }

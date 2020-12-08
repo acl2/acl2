@@ -166,7 +166,7 @@ sub scan_add_dir {
 
 
 sub scan_include_book {
-    my ($base,$the_line) = @_;
+    my ($base,$the_line, $islocal) = @_;
 
     my @res = $the_line =~
 	m/^[^;]*?   # not commented. Minimal match so we don't miss the optional local.
@@ -187,7 +187,8 @@ sub scan_include_book {
             (?<noport>no[_-]port))? # optional no-port comment
        /xi;
     if (@res) {
-	my $ans = [include_book_event, $+{book}, uc($+{dirname} || ""), $+{noport} ? 1 : 0, $+{local} ? 1 : 0 ];
+	$islocal = $islocal || ($+{local} ? 1 : 0);
+	my $ans = [include_book_event, $+{book}, uc($+{dirname} || ""), $+{noport} ? 1 : 0, $islocal ];
 	debug_print_event($base, $ans);
 	return $ans;
     }
@@ -374,6 +375,22 @@ sub scan_pbs {
    return 0;
 }
 
+sub scan_local {
+    # If the line ends with "(local" (with possible whitespace,
+    # package prefix, and/or trailing comment), return 1.
+    my ($base, $the_line) = @_;
+    if ($the_line =~ m/^[^;]*           # disallow comment but allow other leading trash
+                      \( \s*
+                      (?:[^\s():]*::)?  # package prefix
+                      local
+                      \s*               # allow only whitespace or comment after local
+                      (?:;.*)?
+                      $/xi) {
+	return 1;
+    }
+    return 0;
+}
+
 
 # Scans a source file line by line to get the list of
 # dependency-affecting events.
@@ -381,22 +398,28 @@ sub scan_src {
     my $fname = shift;
     my @events = ();
     if (open(my $file, "<", $fname)) {
+	my $islocal = 0;
 	while (my $the_line = <$file>) {
-	    my $event = scan_include_book($fname, $the_line)
-		|| scan_cert_param($fname, $the_line)
-		|| scan_depends_on($fname, $the_line)
-		|| scan_depends_rec($fname, $the_line)
-		|| scan_ifdef($fname, $the_line)
-		|| scan_endif($fname, $the_line)
-		|| scan_ifdef_define($fname, $the_line)
-		|| scan_loads($fname, $the_line)
-		|| scan_ld($fname, $the_line)
-		|| scan_add_dir($fname, $the_line)
-		|| scan_max_mem($fname, $the_line)
-		|| scan_max_time($fname, $the_line)
-		|| scan_pbs ($fname, $the_line);
-	    if ($event) {
-		push @events, $event;
+	    if ($the_line =~ m/^\s*$/) {
+		# just whitespace so skip, in particular don't remove $islocal
+	    } else {
+		my $event = scan_include_book($fname, $the_line, $islocal)
+		    || scan_cert_param($fname, $the_line)
+		    || scan_depends_on($fname, $the_line)
+		    || scan_depends_rec($fname, $the_line)
+		    || scan_ifdef($fname, $the_line)
+		    || scan_endif($fname, $the_line)
+		    || scan_ifdef_define($fname, $the_line)
+		    || scan_loads($fname, $the_line)
+		    || scan_ld($fname, $the_line)
+		    || scan_add_dir($fname, $the_line)
+		    || scan_max_mem($fname, $the_line)
+		    || scan_max_time($fname, $the_line)
+		    || scan_pbs ($fname, $the_line);
+		if ($event) {
+		    push @events, $event;
+		}
+		$islocal = scan_local($fname, $the_line);
 	    }
 	}
 	close($file);
