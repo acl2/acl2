@@ -962,6 +962,10 @@
 
  ) ;end mutual-recursion for Axe Prover
 
+;; TODO: Why is this so slow?
+;; (make-flag relieve-free-var-hyp-and-all-others-for-basic-prover)
+;; (defthm-flag-relieve-free-var-hyp-and-all-others-for-basic-prover)
+
 ;; TODO: remove count from some of these functions:
 
 ;ffixme watch out for equality assumptions ordered the wrong way! - will they get rewritten the wrong way?
