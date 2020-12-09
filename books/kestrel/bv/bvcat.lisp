@@ -63,7 +63,7 @@
   :hints (("Goal" :cases ((integerp lowval))
            :in-theory (enable bvcat))))
 
-(defthm unsigned-byte-p-of-+-when-<-of-logtail-and-expt
+(defthmd unsigned-byte-p-of-+-when-<-of-logtail-and-expt
   (implies (and (< (logtail size x) (expt 2 size2))
                 (natp size)
                 (natp size2)
