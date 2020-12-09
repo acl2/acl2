@@ -22,14 +22,14 @@
 ;; Prevent very expensive calls to primep
 (in-theory (disable (:e rtl::primep)))
 
-;; This is the order of the groups G1 and G2 from BLS12-381.
-(defconst *bls12-381-r*
+;; This is the order of the groups G1 and G2 from BLS12-381.  Also known as r.
+(defconst *bls12-381-scalar-field-prime*
   52435875175126190479447740508185965837690552500527637822603658699938581184513)
 
 ;; We intend to add xdoc for this later.
 (defund bls12-381-scalar-field-prime ()
   (declare (xargs :guard t))
-  *bls12-381-r*)
+  *bls12-381-scalar-field-prime*)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -55,7 +55,7 @@
 ;;   list(F)
 ;; See also Mathematica's FactorInteger and PrimitiveRoot.
 
-(defconst *bls12-381-r-pratt-cert*
+(defconst *bls12-381-scalar-field-prime-pratt-cert*
   '(7 (2 3 11 19 10177 125527 859267 906349 2508409 2529403 52437899 254760293)
       (32 1 1 1 1 1 1 2 1 1 1 2)
       (() () () () () ()
@@ -108,23 +108,23 @@
 
 ;; Since primep may often be disabled and this cannot be efficiently executed.
 (defthm primep-of-bls12-381-scalar-field-prime-constant
-  (rtl::primep *bls12-381-r*)
+  (rtl::primep *bls12-381-scalar-field-prime*)
   :hints (("Goal" :in-theory (enable (:e rtl::certify-prime))
            :use (:instance rtl::certification-theorem
-                           (p *bls12-381-r*)
-                           (c *bls12-381-r-pratt-cert*)))))
+                           (p *bls12-381-scalar-field-prime*)
+                           (c *bls12-381-scalar-field-prime-pratt-cert*)))))
 
 (defthm primep-of-bls12-381-scalar-field-prime
   (rtl::primep (bls12-381-scalar-field-prime))
   :hints (("Goal" :in-theory (enable (:e bls12-381-scalar-field-prime) (:e rtl::certify-prime))
            :use (:instance rtl::certification-theorem
-                           (p *bls12-381-r*)
-                           (c *bls12-381-r-pratt-cert*)))))
+                           (p *bls12-381-scalar-field-prime*)
+                           (c *bls12-381-scalar-field-prime-pratt-cert*)))))
 
 ;; To allow the :linear rule to be created.
 (local (in-theory (disable (:e bls12-381-scalar-field-prime))))
 
 (defthm bls12-381-scalar-field-prime-linear
-  (= (bls12-381-scalar-field-prime) *bls12-381-r*)
+  (= (bls12-381-scalar-field-prime) *bls12-381-scalar-field-prime*)
   :rule-classes :linear
   :hints (("Goal" :in-theory (enable (:e bls12-381-scalar-field-prime)))))
