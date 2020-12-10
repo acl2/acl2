@@ -1874,9 +1874,7 @@
                               (symbol-listp monitored-symbols)
                               (interpreted-function-alistp interpreted-function-alist)
                               ;;... todo add more
-                              (axe-prover-optionsp options)
-                              )
-;                  :mode :program     ;todo
+                              (axe-prover-optionsp options))
                   :verify-guards nil ;todo
                   ))
   (b* ((- (cw "(Proving theorem with Axe prover:~%"))
