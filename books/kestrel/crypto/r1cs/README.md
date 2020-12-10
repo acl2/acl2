@@ -8,12 +8,13 @@ an R1CS is a conjunction of constraints, each of the form:
 
 where a, b, and c are vectors of coefficients (elements of the prime
 field consisting of the integers modulo some prime p), and x is a
-vector of variables representing elements of the field.  Here, DOT
-represents taking the dot product of two vectors except that all
-additions and multiplications are done modulo p, and * represents the
-product of two scalars modulo p.  We also allow, in x, the special
-symbol 1, representing the field element 1, so that constant terms can
-be represented in the dot products.
+vector of distinct "pseudo-variables".  Each pseudo-variable is either
+a variable, representing an element of the field, or the special
+symbol 1, representing the field element 1.  Here, DOT represents
+taking the dot product of two vectors except that all additions and
+multiplications are done modulo p, and * represents the product of two
+scalars modulo p.  Using a pseudo-variable of 1 allows a constant
+addend to be represented in a dot product.
 
 We provide a formalization of R1CSes in sparse form (where only
 variables with non-zero coefficients are included in the
@@ -30,7 +31,7 @@ operators available in R1CSes.  See gadgets.lisp.
 
 We also provide a "lifter" which turns an R1CS into a (potentially
 very large) logical representation, essentially a conjunction of
-equalties involving the prime field operators ADD and MUL.  This
+equalities involving the prime field operators ADD and MUL.  This
 lifter is based on our Axe Rewriter.  It can also apply a variety of
 verified simplification rules to the R1CS.  See
 lift-r1cs/lift-r1cs-new.lisp.
@@ -57,9 +58,9 @@ spec holds then there exist values for all of the R1CS variables that
 make it true, should also be possible using our formalization but have
 not been a focus so far.)
 
-The Axe Prover uses rewriting, which each simplification rule having
+The Axe Prover uses rewriting, with each simplification rule having
 been proven as a theorem by ACL2.  It also uses variable substitution,
-which can get rid of internal variables by splicing their defining
+which can eliminate internal variables by splicing their defining
 expressions into the expression for the R1CS as a whole.  Much of the
 work of the proof is in "solving" the constraints to be of the form
 (equal <intermediate-var> <defining-expression>).  See
