@@ -46,7 +46,7 @@
          (and (alistp alist)
               (equal expected-symbols (strip-cars alist))
               (all-dargp-less-than (strip-cdrs alist) dag-len)))
-  :hints (("Goal" :in-theory (e/d (strip-cdrs default-cdr default-car axe-bind-free-result-okayp)
+  :hints (("Goal" :in-theory (e/d (strip-cdrs default-cdr default-car axe-bind-free-result-okayp dargp-less-than)
                                   (myquotep natp)))))
 
 (defthm axe-bind-free-result-okayp-forward-to-alistp

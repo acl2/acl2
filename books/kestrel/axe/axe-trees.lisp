@@ -16,6 +16,7 @@
 (include-book "kestrel/utilities/quote" :dir :system) ;for myquotep
 (include-book "kestrel/utilities/polarity" :dir :system)
 (include-book "all-dargp")
+(include-book "dargp-less-than")
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 
@@ -111,6 +112,11 @@
                 (< tree bound))
            (bounded-axe-treep tree bound))
   :hints (("Goal" :in-theory (enable bounded-axe-treep))))
+
+(defthmd bounded-axe-treep-when-dargp-less-than
+  (implies (dargp-less-than tree bound)
+           (bounded-axe-treep tree bound))
+  :hints (("Goal" :in-theory (enable bounded-axe-treep dargp-less-than))))
 
 ;; (defthmd bounded-axe-treep-when-not-consp
 ;;   (implies (and (not (consp tree))
@@ -359,3 +365,20 @@
                 (axe-treep x))
            (equal (myquotep x)
                   (equal 'quote (car x)))))
+
+(defthm axe-treep-of-cons-strong
+  (equal (axe-treep (cons fn args))
+         (if (equal 'quote fn)
+             (and (= 1 (len args))
+                  (true-listp args))
+           (and (all-axe-treep args)
+                (true-listp args)
+                (or (symbolp fn)
+                    (and (true-listp fn)
+                         (equal (len fn) 3)
+                         (eq (car fn) 'lambda)
+                         (symbol-listp (cadr fn))
+                         (pseudo-termp (caddr fn))
+                         (equal (len (cadr fn))
+                                (len args)))))))
+  :hints (("Goal" :in-theory (enable axe-treep))))
