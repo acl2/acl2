@@ -16,7 +16,8 @@
 ;; work-hard, doesn't handle embedded dags, uses the basic evaluator instead of
 ;; the main one, and does not depend on any skip-proofs.
 
-;todo: remove any mentions of sha1, md5, rc4, etc. in the file and other files in this dir.
+;; See tests in prover-basic-tests.lisp.
+
 ;todo: implement backchain limits, polarities, improve handling of equivs
 ;fixme axe prover requires some rules (like boolor of t, etc.) to be always enabled (without that one, we can get an error in get-disjuncts).  Improve get-disjuncts?
 ;fixme use faster tests than equal in some places below?
