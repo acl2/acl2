@@ -1776,20 +1776,20 @@
 ;; Try to prove that DAG1 implies DAG2, for all values of the variables.
 ;; TODO: Warning if no variable overlap?
 ;; Returns (mv erp event state) where a failure to prove causes erp to be non-nil.
-(defund prove-implication-dag-with-basic-prover-fn (dag-or-term1
-                                                    dag-or-term2
-                                                    rule-lists
-                                                    ;; interpreted-function-alist
-                                                    monitor
-                                                    state)
+(defund prove-implication-with-basic-prover-fn (dag-or-term1
+                                                dag-or-term2
+                                                rule-lists
+                                                ;; interpreted-function-alist
+                                                monitor
+                                                state)
   (declare (xargs :guard (and ;; (or (myquotep dag1)
-                              ;;     (and (pseudo-dagp dag1)
-                              ;;          (<= (len dag1) 2147483646)))
-                              ;; (or (myquotep dag2)
-                              ;;     (and (pseudo-dagp dag2)
-                              ;;          (<= (len dag2) 2147483646)))
-                              (rule-item-list-listp rule-lists)
-                              (symbol-listp monitor))
+                          ;;     (and (pseudo-dagp dag1)
+                          ;;          (<= (len dag1) 2147483646)))
+                          ;; (or (myquotep dag2)
+                          ;;     (and (pseudo-dagp dag2)
+                          ;;          (<= (len dag2) 2147483646)))
+                          (rule-item-list-listp rule-lists)
+                          (symbol-listp monitor))
 ;                  :guard-hints (("Goal" :in-theory (enable alistp-guard-hack)))
                   :verify-guards nil
                   :stobjs state
@@ -1812,7 +1812,7 @@
        ((when erp) (mv erp nil state))
        ((mv erp result & & & & & ; dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
             & &                  ;info tries ;todo: use these
-           )
+            )
         (prove-disjunction-with-basic-prover (list top-nodenum) ;; just one disjunct
                                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                              rule-alists
@@ -1825,7 +1825,7 @@
                                              0            ;prover-depth
                                              nil          ;options
                                              (+ -1 (expt 2 59)) ;max fixnum?
-                                            ))
+                                             ))
        ((when erp) (mv erp nil state)))
     (if (eq result :proved)
         (prog2$ (cw "Proved.~%")
@@ -1833,18 +1833,18 @@
       (mv :failed-to-prove nil state))))
 
 ;; Returns (mv erp event state) where a failure to prove causes erp to be non-nil.
-(defmacro prove-implication-dag-with-basic-prover (dag-or-term1
-                                                   dag-or-term2
-                                                   &key
-                                                   (rule-lists 'nil) ;todo: improve by building some in and allowing :extra-rules and :remove-rules?
-                                                   ;; interpreted-function-alist
-                                                   (monitor 'nil))
+(defmacro prove-implication-with-basic-prover (dag-or-term1
+                                               dag-or-term2
+                                               &key
+                                               (rule-lists 'nil) ;todo: improve by building some in and allowing :extra-rules and :remove-rules?
+                                               ;; interpreted-function-alist
+                                               (monitor 'nil))
   ;; all args get evaluated:
-  `(make-event (prove-implication-dag-with-basic-prover-fn ,dag-or-term1
-                                                           ,dag-or-term2
-                                                           ,rule-lists
-                                                           ,monitor
-                                                           state)))
+  `(make-event (prove-implication-with-basic-prover-fn ,dag-or-term1
+                                                       ,dag-or-term2
+                                                       ,rule-lists
+                                                       ,monitor
+                                                       state)))
 
 ;; ;; Returns (mv erp provedp)
 ;; (defund prove-implication-with-basic-prover (conc ;a term
