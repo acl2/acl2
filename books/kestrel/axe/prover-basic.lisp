@@ -1846,115 +1846,115 @@
                                                            ,monitor
                                                            state)))
 
-;; Returns (mv erp provedp)
-(defund prove-implication-with-basic-prover (conc ;a term
-                                             hyps ;list of terms
-                                             name rule-alists monitored-symbols interpreted-function-alist print options)
-  (declare (xargs :guard (and (pseudo-termp conc)
-                              (pseudo-term-listp hyps)
-                              (symbolp name)
-                              (all-rule-alistp rule-alists)
-                              (symbol-listp monitored-symbols)
-                              (interpreted-function-alistp interpreted-function-alist)
-                              ;;... todo add more
-                              (axe-prover-optionsp options))
-                  :verify-guards nil ;todo
-                  ))
-  (b* ((- (cw "(Proving theorem with Axe prover:~%"))
-       (literal-terms (cons conc (negate-terms hyps)))
-       ((mv erp literal-nodenums-or-quoteps dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-        (make-terms-into-dag-array-basic literal-terms 'dag-array 'dag-parent-array interpreted-function-alist))
-       ((when erp) (mv erp nil))
-       ;;fixme name clashes..
-       ((mv erp result & & & & & info tries)
-        (prove-disjunction-with-basic-prover literal-nodenums-or-quoteps ;; fixme think about the options used here!
-                                             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                             rule-alists ;;(make-rule-alist-simple rule-alist t (table-alist 'axe-rule-priorities-table (w state)))
-                                             nil ;interpreted-function-alist
-                                             monitored-symbols
-                                             t           ;print
-                                             (symbol-name name) ;;case-designator
-                                             (and print (empty-info-world))
-                                             (and print (zero-tries))
-                                             0 ;prover-depth
-                                             options
-                                             (+ -1 (expt 2 59)) ;max fixnum?
-                                            ))
-       ((when erp) (mv erp nil))
-       (- (and print (print-hit-counts print info (rules-from-rule-alists rule-alists))))
-       (- (and print (cw "Total tries: ~x0.~%" tries))))
-    (if (eq :proved result)
-        (prog2$ (cw "Proved the theorem.)~%")
-                (mv (erp-nil) t))
-      (prog2$ (cw "Failed to prove the theorem.)~%")
-              (mv (erp-nil) nil)))))
+;; ;; Returns (mv erp provedp)
+;; (defund prove-implication-with-basic-prover (conc ;a term
+;;                                              hyps ;list of terms
+;;                                              name rule-alists monitored-symbols interpreted-function-alist print options)
+;;   (declare (xargs :guard (and (pseudo-termp conc)
+;;                               (pseudo-term-listp hyps)
+;;                               (symbolp name)
+;;                               (all-rule-alistp rule-alists)
+;;                               (symbol-listp monitored-symbols)
+;;                               (interpreted-function-alistp interpreted-function-alist)
+;;                               ;;... todo add more
+;;                               (axe-prover-optionsp options))
+;;                   :verify-guards nil ;todo
+;;                   ))
+;;   (b* ((- (cw "(Proving theorem with Axe prover:~%"))
+;;        (literal-terms (cons conc (negate-terms hyps)))
+;;        ((mv erp literal-nodenums-or-quoteps dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+;;         (make-terms-into-dag-array-basic literal-terms 'dag-array 'dag-parent-array interpreted-function-alist))
+;;        ((when erp) (mv erp nil))
+;;        ;;fixme name clashes..
+;;        ((mv erp result & & & & & info tries)
+;;         (prove-disjunction-with-basic-prover literal-nodenums-or-quoteps ;; fixme think about the options used here!
+;;                                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+;;                                              rule-alists ;;(make-rule-alist-simple rule-alist t (table-alist 'axe-rule-priorities-table (w state)))
+;;                                              nil ;interpreted-function-alist
+;;                                              monitored-symbols
+;;                                              t           ;print
+;;                                              (symbol-name name) ;;case-designator
+;;                                              (and print (empty-info-world))
+;;                                              (and print (zero-tries))
+;;                                              0 ;prover-depth
+;;                                              options
+;;                                              (+ -1 (expt 2 59)) ;max fixnum?
+;;                                             ))
+;;        ((when erp) (mv erp nil))
+;;        (- (and print (print-hit-counts print info (rules-from-rule-alists rule-alists))))
+;;        (- (and print (cw "Total tries: ~x0.~%" tries))))
+;;     (if (eq :proved result)
+;;         (prog2$ (cw "Proved the theorem.)~%")
+;;                 (mv (erp-nil) t))
+;;       (prog2$ (cw "Failed to prove the theorem.)~%")
+;;               (mv (erp-nil) nil)))))
 
-;; Returns (mv erp provedp state) where if provedp is non-nil, defthm has been proved in state
-;pass in rule-classes?
-;the caller should check that defthm-name is not already defined
-(defund prove-theorem-with-basic-prover (conc ;a term
-                                         hyps ;list of terms
-                                         defthm-name rule-alists monitored-symbols interpreted-function-alist print options state)
-  (declare (xargs :mode :program ;because this calls submit-events
-                  :guard (and (pseudo-termp conc)
-                              (pseudo-term-listp hyps)
-                              (symbolp defthm-name)
-                              (all-rule-alistp rule-alists)
-                              (symbol-listp monitored-symbols)
-                              (interpreted-function-alistp interpreted-function-alist)
-                              ;;... todo add more
-                              (axe-prover-optionsp options)
-                              )
-                  :stobjs state))
-  (mv-let (erp provedp)
-    (prove-implication-with-basic-prover conc hyps defthm-name rule-alists monitored-symbols interpreted-function-alist print options)
-    (if erp
-        (mv erp nil state)
-      (if provedp
-          (b* ((- (cw "(Making the theorem ~x0.~%" defthm-name))
-               (state (submit-events
-                       ;;where should this go?  should we use a clause processor?
-                       ;;ffixme perhaps miter-and-merge should submit the defthm??
-                       ;;skip-proofs here are bad?
-                       `((skip-proofs (defthm ,defthm-name
-                                        (implies (and ,@hyps)
-                                                 ,conc)
-                                        :rule-classes nil)))
-                       state))
-               (- (cw "Done making the theorem ~x0.)~%" defthm-name)))
-            (mv (erp-nil) t state))
-        (mv (erp-nil) nil state)))))
+;; ;; Returns (mv erp provedp state) where if provedp is non-nil, defthm has been proved in state
+;; ;pass in rule-classes?
+;; ;the caller should check that defthm-name is not already defined
+;; (defund prove-theorem-with-basic-prover (conc ;a term
+;;                                          hyps ;list of terms
+;;                                          defthm-name rule-alists monitored-symbols interpreted-function-alist print options state)
+;;   (declare (xargs :mode :program ;because this calls submit-events
+;;                   :guard (and (pseudo-termp conc)
+;;                               (pseudo-term-listp hyps)
+;;                               (symbolp defthm-name)
+;;                               (all-rule-alistp rule-alists)
+;;                               (symbol-listp monitored-symbols)
+;;                               (interpreted-function-alistp interpreted-function-alist)
+;;                               ;;... todo add more
+;;                               (axe-prover-optionsp options)
+;;                               )
+;;                   :stobjs state))
+;;   (mv-let (erp provedp)
+;;     (prove-implication-with-basic-prover conc hyps defthm-name rule-alists monitored-symbols interpreted-function-alist print options)
+;;     (if erp
+;;         (mv erp nil state)
+;;       (if provedp
+;;           (b* ((- (cw "(Making the theorem ~x0.~%" defthm-name))
+;;                (state (submit-events
+;;                        ;;where should this go?  should we use a clause processor?
+;;                        ;;ffixme perhaps miter-and-merge should submit the defthm??
+;;                        ;;skip-proofs here are bad?
+;;                        `((skip-proofs (defthm ,defthm-name
+;;                                         (implies (and ,@hyps)
+;;                                                  ,conc)
+;;                                         :rule-classes nil)))
+;;                        state))
+;;                (- (cw "Done making the theorem ~x0.)~%" defthm-name)))
+;;             (mv (erp-nil) t state))
+;;         (mv (erp-nil) nil state)))))
 
-;this one throws an error if it fails
-;; Returns state
-;the caller should check that defthm-name is not already defined
-;; TODO: Support taking an IMPLIES and extracting from it the CONC and HYPS
-;; TODO: Make a macro wrapper
-;; TODO: Allow giving an untranslated term
-(defund prove-theorem-with-basic-prover2 (conc     ;a term
-                                          hyps     ;list of terms
-                                          defthm-name ;TODO: Should this come first?
-                                          rule-alists monitored-symbols interpreted-function-alist print options state)
-  (declare (xargs :mode :program
-                  :stobjs state
-                  :guard (and (pseudo-termp conc)
-                              (pseudo-term-listp hyps)
-                              (symbolp defthm-name)
-                              (all-rule-alistp rule-alists)
-                              (symbol-listp monitored-symbols)
-                              (interpreted-function-alistp interpreted-function-alist)
-                              ;;... todo add more
-                              (axe-prover-optionsp options)
-                              )))
-  (mv-let (erp provedp state)
-    (prove-theorem-with-basic-prover conc hyps defthm-name rule-alists monitored-symbols interpreted-function-alist print options state)
-    (if erp
-        (prog2$ (hard-error 'prove-theorem-with-basic-prover2 "Failed to prove ~s0.~%" (acons #\0 defthm-name nil))
-                state)
-      (if provedp
-          state
-        (prog2$ (hard-error 'prove-theorem-with-basic-prover2 "Failed to prove ~s0.~%" (acons #\0 defthm-name nil))
-                state)))))
+;; ;this one throws an error if it fails
+;; ;; Returns state
+;; ;the caller should check that defthm-name is not already defined
+;; ;; TODO: Support taking an IMPLIES and extracting from it the CONC and HYPS
+;; ;; TODO: Make a macro wrapper
+;; ;; TODO: Allow giving an untranslated term
+;; (defund prove-theorem-with-basic-prover2 (conc     ;a term
+;;                                           hyps     ;list of terms
+;;                                           defthm-name ;TODO: Should this come first?
+;;                                           rule-alists monitored-symbols interpreted-function-alist print options state)
+;;   (declare (xargs :mode :program
+;;                   :stobjs state
+;;                   :guard (and (pseudo-termp conc)
+;;                               (pseudo-term-listp hyps)
+;;                               (symbolp defthm-name)
+;;                               (all-rule-alistp rule-alists)
+;;                               (symbol-listp monitored-symbols)
+;;                               (interpreted-function-alistp interpreted-function-alist)
+;;                               ;;... todo add more
+;;                               (axe-prover-optionsp options)
+;;                               )))
+;;   (mv-let (erp provedp state)
+;;     (prove-theorem-with-basic-prover conc hyps defthm-name rule-alists monitored-symbols interpreted-function-alist print options state)
+;;     (if erp
+;;         (prog2$ (hard-error 'prove-theorem-with-basic-prover2 "Failed to prove ~s0.~%" (acons #\0 defthm-name nil))
+;;                 state)
+;;       (if provedp
+;;           state
+;;         (prog2$ (hard-error 'prove-theorem-with-basic-prover2 "Failed to prove ~s0.~%" (acons #\0 defthm-name nil))
+;;                 state)))))
 
 ;; Returns (mv erp provedp).  Attempts to prove the clause (a disjunction
 ;; of terms) with the Axe Prover.
