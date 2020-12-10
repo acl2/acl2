@@ -17,14 +17,47 @@
 (include-book "dags")
 (include-book "evaluator-basic")
 (include-book "axe-trees")
+(include-book "kestrel/alists-light/maybe-replace-var" :dir :system)
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/utilities/pseudo-termp" :dir :system))
 
-;move
-(defthmd bounded-axe-treep-when-dargp-less-than
-  (implies (dargp-less-than tree bound)
-           (bounded-axe-treep tree bound))
-  :hints (("Goal" :in-theory (enable bounded-axe-treep dargp-less-than))))
+(defthm dargp-of-maybe-replace-var
+  (implies (and (all-dargp (strip-cdrs alist))
+                (symbolp term)
+                (not (equal term (maybe-replace-var term alist))))
+           (dargp (maybe-replace-var term alist)))
+  :hints (("Goal" :in-theory (enable maybe-replace-var))))
+
+(defthm dargp-less-than-of-maybe-replace-var
+  (implies (and (all-dargp-less-than (strip-cdrs alist) bound)
+                (symbolp term)
+                (not (equal term (maybe-replace-var term alist))))
+           (dargp-less-than (maybe-replace-var term alist) bound))
+  :hints (("Goal" :in-theory (enable maybe-replace-var))))
+
+(defthm myquotep-of-maybe-replace-var
+  (implies (and (all-dargp (strip-cdrs alist))
+                (symbolp term)
+                (equal 'quote (car (maybe-replace-var term alist))))
+           (myquotep (maybe-replace-var term alist)))
+  :hints (("Goal" :use dargp-of-maybe-replace-var
+           :in-theory (disable dargp-of-maybe-replace-var))))
+
+(defthm axe-treep-of-maybe-replace-var
+  (implies (and (all-dargp (strip-cdrs alist))
+                (symbolp term))
+           (axe-treep (maybe-replace-var term alist)))
+  :hints (("Goal" :use dargp-of-maybe-replace-var
+           :in-theory (disable dargp-of-maybe-replace-var))))
+
+(defthm bounded-axe-treep-of-maybe-replace-var
+  (implies (and (all-dargp-less-than (strip-cdrs alist) bound)
+                (symbolp term))
+           (bounded-axe-treep (maybe-replace-var term alist) bound))
+  :hints (("Goal" :use dargp-less-than-of-maybe-replace-var
+           :in-theory (e/d (bounded-axe-treep-when-dargp-less-than)
+                           (dargp-less-than-of-maybe-replace-var)))))
+
 
 ;(local (in-theory (disable memberp-of-cons)))
 
@@ -55,10 +88,7 @@
                                (pseudo-termp term)
                                (interpreted-function-alistp interpreted-function-alist))))
    (cond ((variablep term)
-          (let ((match (assoc-eq term alist))) ;todo: consider a version of lookup-eq with a default
-            (if match  ;TODO: can we drop this check for some uses of this function (e.g., no free vars in a rule RHS or lambda body)?
-                (cdr match)
-              term)))
+          (maybe-replace-var term alist))
          ((fquotep term) term)
          (t (let ((fn (ffn-symb term)))
               (if (and (eq fn 'if) ;bozo, consider also handling bvif, boolif, myif, maybe boolor and booland...
@@ -151,8 +181,10 @@
                   (pseudo-term-listp terms))
              (all-myquotep (mv-nth 1 (my-sublis-var-and-eval-basic-lst alist terms interpreted-function-alist))))
     :flag my-sublis-var-and-eval-basic-lst)
-  :hints (("Goal" :in-theory (e/d (my-sublis-var-and-eval-basic my-sublis-var-and-eval-basic-lst)
-                                  (myquotep)))))
+  :hints (("Goal" ;:do-not '(generalize eliminate-destructors)
+           :in-theory (e/d (my-sublis-var-and-eval-basic my-sublis-var-and-eval-basic-lst
+                                                         myquotep-when-dargp)
+                           (myquotep)))))
 
 (verify-guards my-sublis-var-and-eval-basic
   :hints (("Goal"
@@ -175,7 +207,7 @@
              (all-axe-treep (mv-nth 1 (my-sublis-var-and-eval-basic-lst alist terms interpreted-function-alist))))
     :flag my-sublis-var-and-eval-basic-lst)
   :hints (("Goal" :in-theory (e/d (my-sublis-var-and-eval-basic my-sublis-var-and-eval-basic-lst)
-                                  (myquotep MYQUOTEP-OF-MY-SUBLIS-VAR-AND-EVAL-BASIC)))))
+                                  (myquotep myquotep-of-my-sublis-var-and-eval-basic axe-treep)))))
 
 (defthm-flag-my-sublis-var-and-eval-basic
   (defthm bounded-axe-treep-of-my-sublis-var-and-eval-basic
