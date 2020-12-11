@@ -27,7 +27,7 @@
 ;;;
 
 ;acc contains the elems that the slow-moving guy has passed
-;returns (mv half-the-elements other-half)
+;; Returns (mv first-half second-half).
 ;This walks down TAIL twice as fast as it walks down LST
 (defun split-list-fast-aux (lst tail acc)
   (declare (xargs :guard (and (true-listp tail)
@@ -73,15 +73,27 @@
                      (len acc))))
   :hints (("Goal" :in-theory (enable split-list-fast-aux))))
 
+(defthm consp-of-mv-nth-0-of-split-list-fast-aux
+  (equal (consp (mv-nth 0 (split-list-fast-aux lst tail acc)))
+         (or (consp acc)
+             (consp (CDR TAIL))))
+  :hints (("Goal" :in-theory (enable split-list-fast-aux))))
+
+(defthm consp-of-mv-nth-1-of-split-list-fast-aux
+  (equal (consp (mv-nth 1 (split-list-fast-aux lst tail acc)))
+         (< (len tail) (* 2 (len lst))))
+  :hints (("Goal" :induct (split-list-fast-aux lst tail acc)
+           :in-theory (enable split-list-fast-aux))
+          ("subgoal *1/2" :cases ((< (LEN (CDDR TAIL))
+                                     (* 2 (LEN (CDR LST))))))))
+
 ;;;
 ;;; split-list-fast
 ;;;
 
 ;reuses the tail of the list
-;to be used when all we care about is splitting the list into two pieces of roughly the same size
-; (not the order and not which elements go in which half), e.g., for mergesort
-;returns (mv half-the-elements other-half)
-
+;; This is helpful when all we care about is splitting the list into two pieces of roughly the same size, not the order and not which elements go in which half), e.g., for mergesort.
+;; Returns (mv first-half-rev second-half) where FIRST-HALF-REV is the first half of the elements in reverse.
 ;fixme would it be faster to compute the length of the list first and then walk down that many elements (would require arithmetic)?
 (defund split-list-fast (lst)
   (declare (xargs :guard (true-listp lst)))
@@ -118,4 +130,14 @@
   (equal (+ (len (mv-nth 0 (split-list-fast lst)))
             (len (mv-nth 1 (split-list-fast lst))))
          (len lst))
+  :hints (("Goal" :in-theory (enable split-list-fast))))
+
+(defthm consp-of-mv-nth-0-of-split-list-fast
+  (equal (consp (mv-nth 0 (split-list-fast lst)))
+         (< 1 (len lst)))
+  :hints (("Goal" :in-theory (enable split-list-fast))))
+
+(defthm consp-of-mv-nth-1-of-split-list-fast
+  (equal (consp (mv-nth 1 (split-list-fast lst)))
+         (consp lst))
   :hints (("Goal" :in-theory (enable split-list-fast))))
