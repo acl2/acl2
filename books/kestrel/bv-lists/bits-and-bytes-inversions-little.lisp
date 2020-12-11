@@ -50,3 +50,11 @@
            (equal (bits-to-bytes-little (bytes-to-bits-little x))
                   x))
   :hints (("Goal" :in-theory (enable bytes-to-bits-little bits-to-bytes-little))))
+
+;; Somewhat unusal because the inner function operates on a single byte but the
+;; outer function returns a list of bytes.
+(defthm bits-to-bytes-little-of-byte-to-bits-little
+  (implies (unsigned-byte-p 8 byte)
+           (equal (bits-to-bytes-little (byte-to-bits-little byte))
+                  (list byte)))
+  :hints (("Goal" :expand (bits-to-bytes-little (byte-to-bits-little byte)))))

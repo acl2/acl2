@@ -1,8 +1,25 @@
+; A way to efficiently deal with symbolic symbol-alists during rewriting
+;
+; Copyright (C) 2020 Kestrel Institute
+;
+; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
+;
+; Author: Eric Smith (eric.smith@kestrel.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (in-package "ACL2")
 
-;; A way to represent symbolic symbol-alists (which are linear structures and
-;; can be very deep) using tree-shaped terms.  Resolving a lookup using the
-;; rule lookup-equal-of-filter-and-combine-symbol-alists-safe should be
+;; This book introduces a way to represent symbol-alists during rewriting using
+;; tree-shaped terms instead of deep nests of calls to ACONS.  Logically
+;; speaking, symbol-alists are linear structures.  Symbolically, they are
+;; usually represented as nests of calls to ACONS.  But resolving a lookup in
+;; such a symbolic alist during rewriting can require a number of rewrite steps
+;; that is linear in the number of ACONS calls.  Instead, we can represent a
+;; symbol-alist as a nest of calls of FILTER-AND-COMBINE-SYMBOL-ALISTS.  The
+;; depth of such a tree can be logarithmic in the number of ACONS terms that
+;; would appear in the standard representation.  So, resolving a lookup using
+;; the rule LOOKUP-EQUAL-OF-FILTER-AND-COMBINE-SYMBOL-ALISTS-SAFE should be
 ;; logarithmic instead of linear in the depth of the alist.
 
 ;; To be useful, this machinery requires that keys of the alist are a known set
@@ -152,6 +169,11 @@
 
 (defthm alistp-of-filter-and-combine-symbol-alists
   (alistp (filter-and-combine-symbol-alists key alist-small alist-large)))
+
+(defthm symbol-alistp-of-filter-and-combine-symbol-alists
+  (implies (and (symbol-alistp alist-small)
+                (symbol-alistp alist-large))
+           (symbol-alistp (filter-and-combine-symbol-alists key alist-small alist-large))))
 
 ;; The key rule
 (defthm lookup-equal-of-filter-and-combine-symbol-alists

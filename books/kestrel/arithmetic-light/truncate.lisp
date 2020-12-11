@@ -150,3 +150,9 @@
            (equal (equal (truncate i j) i)
                   (equal i 0)))
   :hints (("Goal" :in-theory (enable truncate-becomes-floor-gen))))
+
+(defthm truncate-of--1
+  (implies (integerp i)
+           (equal (truncate i -1)
+                  (- i)))
+  :hints (("Goal" :in-theory (enable truncate))))

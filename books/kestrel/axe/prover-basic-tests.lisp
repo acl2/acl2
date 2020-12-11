@@ -16,21 +16,21 @@
 ;; TODO: Add more tests
 
 (deftest
-  (prove-implication-dag-with-basic-prover *t*
+  (prove-implication-with-basic-prover *t*
                                            '((0 natp '7))
                                            :rule-lists (list '(implies))))
 
 (deftest
-  (prove-implication-dag-with-basic-prover '((1 natp 0) (0 . x)) '((1 natp 0) (0 . x))
+  (prove-implication-with-basic-prover '((1 natp 0) (0 . x)) '((1 natp 0) (0 . x))
                                            :rule-lists (list '(implies))
                                            ))
 
 (deftest
-  (must-fail (prove-implication-dag-with-basic-prover *t* '((1 natp 0) (0 . x))
+  (must-fail (prove-implication-with-basic-prover *t* '((1 natp 0) (0 . x))
                                                       :rule-lists (list '(implies))
                                            )))
 
 (deftest
-  (must-fail (prove-implication-dag-with-basic-prover '((1 natp 0) (0 . x)) '((1 natp 0) (0 . y))
+  (must-fail (prove-implication-with-basic-prover '((1 natp 0) (0 . x)) '((1 natp 0) (0 . y))
                                                       :rule-lists (list '(implies))
                                                       )))
