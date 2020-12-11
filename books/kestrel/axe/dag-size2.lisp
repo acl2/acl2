@@ -42,43 +42,6 @@
          (all-< lst val))
   :hints (("Goal" :in-theory (enable merge-sort-<))))
 
-;todo: have defmergesort do this
-(defthm consp-of-merge-<
-  (equal (consp (merge-< x1 x2 acc))
-         (or (consp x1)
-             (consp x2)
-             (consp acc)))
-  :hints (("Goal" :in-theory (enable merge-<))))
-
-;; (thm
-;;  (equal (consp (mv-nth 1 (SPLIT-LIST-FAST-AUX LST TAIL ACC)))
-;;         (consp lst)))
-
-;; (thm
-;;  (equal (CONSP (MV-NTH 1 (SPLIT-LIST-FAST x)))
-;;         (consp (cdr x)))
-;;  :hints (("Goal" :expand ((SPLIT-LIST-FAST-AUX X X NIL)
-;;                           (SPLIT-LIST-FAST-AUX (CDR X)
-;;                                                (CDDR X)
-;;                                                (LIST (CAR X))))
-;;           :in-theory (enable SPLIT-LIST-FAST SPLIT-LIST-FAST-AUX))))
-
-;; (defthm consp-of-mv-nth-0-of-split-list-fast-aux
-;;   (implies (and (consp lst)
-;;                 (<= (len tail) (len lst)))
-;;            (consp (mv-nth 0 (split-list-fast-aux lst tail acc))))
-;;   :hints (("Goal" :in-theory (enable split-list-fast-aux))))
-
-;todo: have defmergesort do this
-;strengthen (see above)
-(defthm consp-of-merge-sort-<
-  (implies (consp lst)
-           (consp (merge-sort-< lst)))
-  :hints (("Subgoal *1/2" :use (:instance split-list-fast-aux-len-theorem (tail lst) (acc nil)))
-          ("Goal"
-           :in-theory (e/d (merge-sort-< SPLIT-LIST-FAST)
-                           (split-list-fast-aux-len-theorem)))))
-
 ;not tail-rec..
 (defund lookup-lst-array (array-name array indices)
   (declare (xargs :guard (and (all-natp indices)
