@@ -3027,6 +3027,20 @@
           (mv (flsz-atom x print-base print-radix col state)
               state)))
 
+(defun splat-string (x indent col channel state)
+
+; This variant of splat-atom prints the string x flat, without the quotes.
+
+  (let* ((sz (the-half-fixnum! (length x) 'splat-string))
+         (too-bigp (> (+ col sz) (fmt-hard-right-margin state))))
+    (pprogn (if too-bigp
+                (pprogn (newline channel state)
+                        (spaces indent 0 channel state))
+                state)
+            (princ$ x channel state)
+            (mv (if too-bigp (+ indent sz) (+ col sz))
+                state))))
+
 ; Splat, below, prints out an arbitrary ACL2 object flat, introducing
 ; the single-gritch notation for quote and breaking lines between lexemes
 ; to avoid going over the hard right margin.  It indents all but the first
@@ -3034,22 +3048,24 @@
 
 (mutual-recursion
 
-(defun splat (x print-base print-radix indent col channel state)
+(defun splat (x print-base print-radix indent eviscp col channel state)
   (cond ((atom x)
          (splat-atom x print-base print-radix indent col channel state))
+        ((evisceratedp eviscp x)
+         (splat-string (cdr x) indent col channel state))
         ((and (eq (car x) 'quote)
               (consp (cdr x))
               (null (cddr x)))
          (pprogn (princ$ #\' channel state)
-                 (splat (cadr x) print-base print-radix indent (1+ col) channel
-                        state)))
+                 (splat (cadr x) print-base print-radix indent eviscp
+                        (1+ col) channel state)))
         (t (pprogn (princ$ #\( channel state)
-                   (splat1 x print-base print-radix indent (1+ col) channel
-                           state)))))
+                   (splat1 x print-base print-radix indent eviscp (1+ col)
+                           channel state)))))
 
-(defun splat1 (x print-base print-radix indent col channel state)
+(defun splat1 (x print-base print-radix indent eviscp col channel state)
   (mv-let (col state)
-          (splat (car x) print-base print-radix indent col channel state)
+          (splat (car x) print-base print-radix indent eviscp col channel state)
           (cond ((null (cdr x))
                  (pprogn (princ$ #\) channel state)
                          (mv (1+ col) state)))
@@ -3061,6 +3077,7 @@
                                 (mv-let (col state)
                                         (splat (cdr x)
                                                print-base print-radix indent
+                                               eviscp
                                                (+ indent 2)
                                                channel state)
                                         (pprogn (princ$ #\) channel state)
@@ -3069,15 +3086,15 @@
                            (princ$ " . " channel state)
                            (mv-let (col state)
                                    (splat (cdr x)
-                                          print-base print-radix indent
+                                          print-base print-radix indent eviscp
                                           (+ 3 col)
                                           channel state)
                                    (pprogn (princ$ #\) channel state)
                                            (mv (1+ col) state)))))))
                 (t (pprogn
                     (princ$ #\Space channel state)
-                    (splat1 (cdr x) print-base print-radix indent (1+ col)
-                            channel state))))))
+                    (splat1 (cdr x) print-base print-radix indent eviscp
+                            (1+ col) channel state))))))
 
 )
 
@@ -3990,14 +4007,27 @@
                                     i pair s))
                                   state))))))
              ((#\f #\F)
-              (maybe-newline
-               (mv-letc (col state)
-                        (splat (fmt-var s alist i maximum)
-                               (print-base) (print-radix)
-                               (if (eql fmc #\F) (1+f col) 0)
-                               col channel state)
-                        (fmt0 s alist (+f i 3) maximum col pn channel
-                              state evisc-tuple))))
+              (let ((evisc-table (table-alist 'evisc-table (w state))))
+                (mv-let
+                  (x state)
+                  (cond (evisc-table (eviscerate-top
+                                      (fmt-var s alist i maximum)
+                                      nil ;;; print-level
+                                      nil ;;; print-length
+                                      nil ;;; alist
+                                      evisc-table
+                                      nil ;;; hiding-cars
+                                      state))
+                        (t (mv (fmt-var s alist i maximum)
+                               state)))
+                  (maybe-newline
+                   (mv-letc (col state)
+                            (splat x
+                                   (print-base) (print-radix)
+                                   (if (eql fmc #\F) (1+f col) 0)
+                                   evisc-table col channel state)
+                            (fmt0 s alist (+f i 3) maximum col pn channel
+                                  state evisc-tuple))))))
              ((#\s #\S)
               (let ((x (fmt-var s alist i maximum)))
                 (cond
