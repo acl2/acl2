@@ -15,7 +15,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ atc-errors
-  :parents (atc)
+  :parents (atc-implementation)
   :short "Error values used in the formalization of C for ATC."
   :long
   (xdoc::topstring

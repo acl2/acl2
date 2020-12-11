@@ -18,7 +18,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ atc-abstract-syntax
-  :parents (atc)
+  :parents (atc-implementation)
   :short "An abstract syntax of C for ATC."
   :long
   (xdoc::topstring

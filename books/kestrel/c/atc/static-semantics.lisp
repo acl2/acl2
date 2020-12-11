@@ -19,7 +19,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ atc-static-semantics
-  :parents (atc)
+  :parents (atc-implementation)
   :short "A static semantics of C for ATC."
   :long
   (xdoc::topstring

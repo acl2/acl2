@@ -37,7 +37,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ atc-pretty-printer
-  :parents (atc)
+  :parents (atc-implementation)
   :short "A pretty-printer of C abstract syntax for ATC."
   :long
   (xdoc::topstring

@@ -19,7 +19,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ atc-dynamic-semantics
-  :parents (atc)
+  :parents (atc-implementation)
   :short "A dynamic semantics of C for ATC."
   :long
   (xdoc::topstring

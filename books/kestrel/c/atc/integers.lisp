@@ -15,7 +15,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ atc-integers
-  :parents (atc)
+  :parents (atc-implementation)
   :short "A model of C integers for ATC."
   :long
   (xdoc::topstring
