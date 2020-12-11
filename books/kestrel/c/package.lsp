@@ -25,6 +25,7 @@
                define-sk
                defmacro+
                defopener
+               deftutorial
                defxdoc+
                er-soft+
                evmac-prepare-proofs

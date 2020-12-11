@@ -30,59 +30,11 @@
    (xdoc::evmac-section-intro
 
     (xdoc::p
-     "ATC translates a subset of ACL2 to C.
-      The ACL2 subset is designed to be close to C,
-      i.e. to be essentially ``C written in ACL2'',
-      so that it is easy to translate to C.
-      ATC is meant to be used in conjunction with "
-     (xdoc::seetopic "apt::apt" "APT")
-     ": one uses APT transformations
-      to refine ACL2 specifications and code
-      to the subset recognized by ATC, which ATC translates to C.
-      Thus, ATC can be used at the end of an APT derivation.")
-
-    (xdoc::p
-     "Currently ATC recognizes a very limited subset of ACL2
-      and translates it to a very limited subset of C.
-      This is just a first step (the development of ATC has just started);
-      we plan to extend ATC to increasingly larger subsets of ACL2 and C.")
-
-    (xdoc::p
-     "We also generate, along with the C code,
-      ACL2 proofs of the correctness of
-      the output C code with respect to the input ACL2 code.
-      This is based on a formal semantics of C,
-      which we are also developing.")
-
-    (xdoc::p
-     "ATC is related to "
-     (xdoc::seetopic "java::atj" "ATJ")
-     ", the Java code generator for ACL2.
-      Aside from the obvious difference in target languages,
-      ATJ and ATC currently differ in their primary goals and emphases.
-      ATJ was built to recognize, and translate to reasonable Java,
-      essentially any ACL2 code
-      (provided that it has side effects known to ATJ);
-      ATJ also provides ways to exert finer-grained control
-      on the generated Java,
-      by using certain ACL2 types and operations
-      that represent Java types and operations
-      and that are translated to the corresponding Java constructs.
-      In contrast, ATC is being built to recognize, and translate to C,
-      only certain ACL2 types and operations
-      that represent C types and operations
-      and that are translated to the corresponding Java constructs;
-      ATC does not attempt to translate arbitrary ACL2 to C.
-      As a result, ATC is much simpler,
-      thus making the generation of proofs easier.
-      While there are plans to have ATJ generate proofs too,
-      that is a larger task.
-      In the future, ATC may be extended towards
-      recognizing any ACL2 code and translating it to reasonable C,
-      analogously to ATJ.
-      Thus, while eventually ATJ and ATC may provide similar features,
-      their starting points were different,
-      which will keep the two tools different for some time to come."))
+     "This manual page contains user-level reference documentation for ATC.
+      If you are new to ATC, you should start with the "
+     (xdoc::seetopic "atc-tutorial" "tutorial")
+     ", which provides user-level information
+      on how ATC works and how to use ATC effectively."))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -12,3 +12,4 @@
 
 (include-book "atc")
 (include-book "doc")
+(include-book "tutorial")
