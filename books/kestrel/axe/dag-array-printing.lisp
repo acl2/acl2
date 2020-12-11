@@ -59,7 +59,7 @@
         ;;print this node (and add its supporters to node-list)
         (let ((expr (aref1 dag-array-name dag-array index)))
           (progn$ (if (not first-elementp) (cw "~% ") nil)
-                  (cw "~f0" (cons index expr)) ;ffixme skip this cons?! (also in the other version)
+                  (cw "~x0" (cons index expr)) ;ffixme skip this cons?! (also in the other version)
                   (print-supporting-dag-nodes (+ -1 index)
                                               low-index
                                               dag-array-name
