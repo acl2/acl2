@@ -185,12 +185,12 @@ FX-8350.</p>
     :hints(("Goal" :in-theory (enable hex-digit-char-p)))))
 
 
-(define hex-digit-val
+(define hex-digit-char-value
   :short "Coerces a @(see hex-digit-char-p) character into a number."
   ((x hex-digit-char-p))
   :split-types t
   :returns (val natp :rule-classes :type-prescription)
-  :long "<p>For instance, @('(hex-digit-val #\\a)') is 10.  For any non-@(see
+  :long "<p>For instance, @('(hex-digit-char-value #\\a)') is 10.  For any non-@(see
          hex-digit-char-p), 0 is returned.</p>"
   :inline t
   (mbe :logic
@@ -212,23 +212,23 @@ FX-8350.</p>
   :prepwork
   ((local (in-theory (enable hex-digit-char-p char-fix))))
   ///
-  (defcong ichareqv equal (hex-digit-val x) 1
+  (defcong ichareqv equal (hex-digit-char-value x) 1
     :hints(("Goal" :in-theory (enable ichareqv downcase-char))))
-  (defthm hex-digit-val-upper-bound
-    (< (hex-digit-val x) 16)
+  (defthm hex-digit-char-value-upper-bound
+    (< (hex-digit-char-value x) 16)
     :rule-classes ((:rewrite) (:linear)))
-  (defthm unsigned-byte-p-of-hex-digit-val
-    (unsigned-byte-p 4 (hex-digit-val x)))
-  (defthm equal-of-hex-digit-val-and-hex-digit-val
+  (defthm unsigned-byte-p-of-hex-digit-char-value
+    (unsigned-byte-p 4 (hex-digit-char-value x)))
+  (defthm equal-of-hex-digit-char-value-and-hex-digit-char-value
     (implies (and (hex-digit-char-p x)
                   (hex-digit-char-p y))
-             (equal (equal (hex-digit-val x) (hex-digit-val y))
+             (equal (equal (hex-digit-char-value x) (hex-digit-char-value y))
                     (ichareqv x y)))
     :hints(("Goal" :in-theory (enable hex-digit-char-p-cases))))
-  (defthm hex-digit-val-of-digit-to-char
+  (defthm hex-digit-char-value-of-digit-to-char
     (implies (and (natp n)
                   (< n 16))
-             (equal (hex-digit-val (digit-to-char n))
+             (equal (hex-digit-char-value (digit-to-char n))
                     n))
     :hints(("Goal" :in-theory (enable digit-to-char)))))
 
@@ -246,64 +246,64 @@ FX-8350.</p>
     :rule-classes ((:rewrite :backchain-limit-lst 1))))
 
 
-(define hex-digit-list-value1
-  :parents (hex-digit-list-value)
+(define hex-digit-chars-value1
+  :parents (hex-digit-chars-value)
   ((x hex-digit-char-listp)
    (val :type unsigned-byte))
   :guard-debug t
   (if (consp x)
-      (hex-digit-list-value1
+      (hex-digit-chars-value1
        (cdr x)
        (the unsigned-byte
-            (+ (the (unsigned-byte 4) (hex-digit-val (car x)))
+            (+ (the (unsigned-byte 4) (hex-digit-char-value (car x)))
                (the unsigned-byte (ash (mbe :logic (lnfix val)
                                             :exec val)
                                        4)))))
     (lnfix val)))
 
-(define hex-digit-list-value
+(define hex-digit-chars-value
   :short "Coerces a @(see hex-digit-char-listp) into a natural number."
   ((x hex-digit-char-listp))
   :returns (value natp :rule-classes :type-prescription)
-  :long "<p>For instance, @('(hex-digit-list-value '(#\1 #\F))') is 31.  See
+  :long "<p>For instance, @('(hex-digit-chars-value '(#\1 #\F))') is 31.  See
          also @(see parse-hex-from-charlist) for a more flexible function that
          can tolerate non-hexadecimal characters after the number.</p>"
   :inline t
   :verify-guards nil
   (mbe :logic (if (consp x)
-                  (+ (ash (hex-digit-val (car x)) (* 4 (1- (len x))))
-                     (hex-digit-list-value (cdr x)))
+                  (+ (ash (hex-digit-char-value (car x)) (* 4 (1- (len x))))
+                     (hex-digit-chars-value (cdr x)))
                 0)
-       :exec (hex-digit-list-value1 x 0))
+       :exec (hex-digit-chars-value1 x 0))
   ///
-  (defcong icharlisteqv equal (hex-digit-list-value x) 1
+  (defcong icharlisteqv equal (hex-digit-chars-value x) 1
     :hints(("Goal" :in-theory (e/d (icharlisteqv)))))
-  (defthm unsigned-byte-p-of-hex-digit-list-value
-    (unsigned-byte-p (* 4 (len x)) (hex-digit-list-value x)))
-  (defthm hex-digit-list-value-upper-bound
-    (< (hex-digit-list-value x)
+  (defthm unsigned-byte-p-of-hex-digit-chars-value
+    (unsigned-byte-p (* 4 (len x)) (hex-digit-chars-value x)))
+  (defthm hex-digit-chars-value-upper-bound
+    (< (hex-digit-chars-value x)
        (expt 2 (* 4 (len x))))
     :rule-classes ((:rewrite) (:linear))
     :hints(("Goal"
             :in-theory (e/d (unsigned-byte-p)
-                            (unsigned-byte-p-of-hex-digit-list-value))
-            :use ((:instance unsigned-byte-p-of-hex-digit-list-value)))))
-  (defthm hex-digit-list-value-upper-bound-free
+                            (unsigned-byte-p-of-hex-digit-chars-value))
+            :use ((:instance unsigned-byte-p-of-hex-digit-chars-value)))))
+  (defthm hex-digit-chars-value-upper-bound-free
     (implies (equal n (len x))
-             (< (hex-digit-list-value x) (expt 2 (* 4 n)))))
-  (defthm hex-digit-list-value1-removal
+             (< (hex-digit-chars-value x) (expt 2 (* 4 n)))))
+  (defthm hex-digit-chars-value1-removal
     (implies (natp val)
-             (equal (hex-digit-list-value1 x val)
-                    (+ (hex-digit-list-value x)
+             (equal (hex-digit-chars-value1 x val)
+                    (+ (hex-digit-chars-value x)
                        (ash (nfix val) (* 4 (len x))))))
     :hints(("Goal"
-            :in-theory (enable hex-digit-list-value1)
-            :induct (hex-digit-list-value1 x val))))
-  (verify-guards hex-digit-list-value$inline)
-  (defthm hex-digit-list-value-of-append
-    (equal (hex-digit-list-value (append x (list a)))
-           (+ (ash (hex-digit-list-value x) 4)
-              (hex-digit-val a)))))
+            :in-theory (enable hex-digit-chars-value1)
+            :induct (hex-digit-chars-value1 x val))))
+  (verify-guards hex-digit-chars-value$inline)
+  (defthm hex-digit-chars-value-of-append
+    (equal (hex-digit-chars-value (append x (list a)))
+           (+ (ash (hex-digit-chars-value x) 4)
+              (hex-digit-char-value a)))))
 
 (define skip-leading-hex-digits (x)
   :short "Skip over any leading hex digit characters at the start of a character list."
@@ -551,7 +551,7 @@ natchars16).</p>"
 <p>This is like ACL2's built-in function @(see explode-nonnegative-integer),
 except that it doesn't deal with accumulators and is limited to base-16 numbers.
 These simplifications lead to particularly nice rules, e.g., about @(see
-hex-digit-list-value), and somewhat better performance:</p>
+hex-digit-chars-value), and somewhat better performance:</p>
 
 @({
   ;; Times reported by an AMD FX-8350, Linux, 64-bit CCL:
@@ -624,16 +624,16 @@ hex-digit-list-value), and somewhat better performance:</p>
            :hints(("Goal"
                    :in-theory (acl2::enable* acl2::ihsext-recursive-redefs
                                              acl2::ihsext-inductions)))))
-  (local (defthm hex-digit-list-value-of-rev-of-basic-natchars16
-           (equal (hex-digit-list-value (rev (basic-natchars16 n)))
+  (local (defthm hex-digit-chars-value-of-rev-of-basic-natchars16
+           (equal (hex-digit-chars-value (rev (basic-natchars16 n)))
                   (nfix n))
            :hints(("Goal"
                    :induct (basic-natchars16 n)
                    :in-theory (acl2::enable* basic-natchars16
                                              acl2::ihsext-recursive-redefs
                                              acl2::logcons)))))
-  (defthm hex-digit-list-value-of-natchars16
-    (equal (hex-digit-list-value (natchars16 n))
+  (defthm hex-digit-chars-value-of-natchars16
+    (equal (hex-digit-chars-value (natchars16 n))
            (nfix n))))
 
 (define revappend-natchars16-aux ((n natp) (acc))
@@ -682,8 +682,8 @@ hex-digit-list-value), and somewhat better performance:</p>
   (defthm natstr16-one-to-one
     (equal (equal (natstr16 n) (natstr16 m))
            (equal (nfix n) (nfix m))))
-  (defthm hex-digit-list-value-of-natstr
-    (equal (hex-digit-list-value (explode (natstr16 n)))
+  (defthm hex-digit-chars-value-of-natstr
+    (equal (hex-digit-chars-value (explode (natstr16 n)))
            (nfix n)))
   (defthm natstr16-nonempty
     (not (equal (natstr16 n) ""))))
@@ -794,7 +794,7 @@ hex-digit-list-value), and somewhat better performance:</p>
          (parse-hex-from-charlist
           (cdr x)
           (the unsigned-byte
-               (+ (the unsigned-byte (hex-digit-val (car x)))
+               (+ (the unsigned-byte (hex-digit-char-value (car x)))
                   (the unsigned-byte (ash (the unsigned-byte (lnfix val)) 4))))
           (the unsigned-byte (+ 1 (the unsigned-byte (lnfix len))))))
         (t
@@ -802,10 +802,10 @@ hex-digit-list-value), and somewhat better performance:</p>
   ///
   (defthm val-of-parse-hex-from-charlist
       (equal (mv-nth 0 (parse-hex-from-charlist x val len))
-             (+ (hex-digit-list-value (take-leading-hex-digits x))
+             (+ (hex-digit-chars-value (take-leading-hex-digits x))
                 (ash (nfix val) (* 4 (len (take-leading-hex-digits x))))))
       :hints(("Goal" :in-theory (enable take-leading-hex-digits
-                                        hex-digit-list-value))))
+                                        hex-digit-chars-value))))
   (defthm len-of-parse-hex-from-charlist
     (equal (mv-nth 1 (parse-hex-from-charlist x val len))
            (+ (nfix len) (len (take-leading-hex-digits x))))
@@ -866,7 +866,7 @@ of our logical definition.</p>"
              (parse-hex-from-string
               (the string x)
               (the unsigned-byte
-                   (+ (the unsigned-byte (hex-digit-val char))
+                   (+ (the unsigned-byte (hex-digit-char-value char))
                       (the unsigned-byte (ash (the unsigned-byte val) 4))))
               (the unsigned-byte (+ 1 (the unsigned-byte len)))
               (the unsigned-byte (+ 1 n))
@@ -881,7 +881,7 @@ of our logical definition.</p>"
   (verify-guards parse-hex-from-string
     :hints(("Goal" :in-theory (enable parse-hex-from-charlist
                                       take-leading-hex-digits
-                                      hex-digit-list-value
+                                      hex-digit-chars-value
                                       )))))
 
 
@@ -900,7 +900,7 @@ or has any non hexadecimal digit characters (0-9, A-F, a-f), we return
        (let ((chars (explode x)))
          (and (consp chars)
               (hex-digit-char-listp chars)
-              (hex-digit-list-value chars)))
+              (hex-digit-chars-value chars)))
        :exec
        (b* (((the unsigned-byte xl) (length x))
             ((mv (the unsigned-byte val) (the unsigned-byte len))

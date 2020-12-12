@@ -195,8 +195,8 @@ string such as \"x0\" is considered to be less than \"x00\", etc.</p>
     ;; (local (defthm lemma-3
     ;;          (implies (and (equal (len (take-leading-digits y))
     ;;                               (len (take-leading-digits x)))
-    ;;                        (equal (digit-list-value (take-leading-digits y))
-    ;;                               (digit-list-value (take-leading-digits x)))
+    ;;                        (equal (dec-digit-chars-value (take-leading-digits y))
+    ;;                               (dec-digit-chars-value (take-leading-digits x)))
     ;;                        (charlisteqv (skip-leading-digits x)
     ;;                                     (skip-leading-digits y)))
     ;;                   (equal (charlisteqv x y)
@@ -205,7 +205,7 @@ string such as \"x0\" is considered to be less than \"x00\", etc.</p>
     ;;                  :in-theory (enable chareqv
     ;;                                     take-leading-digits
     ;;                                     skip-leading-digits
-    ;;                                     digit-list-value)))))
+    ;;                                     dec-digit-chars-value)))))
     ;; (defthm charlistnat<-trichotomy-weak
     ;;   (implies (and (not (charlistnat< x y))
     ;;                 (not (charlistnat< y x)))
@@ -218,9 +218,9 @@ string such as \"x0\" is considered to be less than \"x00\", etc.</p>
 
   (encapsulate
     ()
-    (local (defthm digit-list-value-max
-             (< (digit-list-value x) (expt 10 (len x)))
-             :hints(("Goal" :in-theory (enable digit-list-value)))
+    (local (defthm dec-digit-chars-value-max
+             (< (dec-digit-chars-value x) (expt 10 (len x)))
+             :hints(("Goal" :in-theory (enable dec-digit-chars-value)))
              :rule-classes :linear))
 
     (local (defthmd equal-of-sum-digits-lemma1
@@ -274,21 +274,21 @@ string such as \"x0\" is considered to be less than \"x00\", etc.</p>
                            (character-listp y)
                            (dec-digit-char-listp x)
                            (dec-digit-char-listp y))
-                      (equal (equal (digit-list-value x)
-                                    (digit-list-value y))
+                      (equal (equal (dec-digit-chars-value x)
+                                    (dec-digit-chars-value y))
                              (equal x y)))
              :hints(("Goal"
                      :induct (my-induction x y)
                      :in-theory (enable dec-digit-char-listp
-                                        digit-list-value
+                                        dec-digit-chars-value
                                         commutativity-of-+))
                     (and stable-under-simplificationp
                          '(:use ((:instance equal-of-sum-digits
                                   (b (expt 10 (len (cdr x))))
-                                  (little1 (digit-list-value (cdr x)))
-                                  (little2 (digit-list-value (cdr y)))
-                                  (big1 (digit-val (car x)))
-                                  (big2 (digit-val (car y))))))))))
+                                  (little1 (dec-digit-chars-value (cdr x)))
+                                  (little2 (dec-digit-chars-value (cdr y)))
+                                  (big1 (dec-digit-char-value (car x)))
+                                  (big2 (dec-digit-char-value (car y))))))))))
 
     (local (defthm crock
              (implies (and (equal (take-leading-digits y)
@@ -306,8 +306,8 @@ string such as \"x0\" is considered to be less than \"x00\", etc.</p>
     (local (defthm lemma-3
              (implies (and (equal (len (take-leading-digits y))
                                   (len (take-leading-digits x)))
-                           (equal (digit-list-value (take-leading-digits y))
-                                  (digit-list-value (take-leading-digits x)))
+                           (equal (dec-digit-chars-value (take-leading-digits y))
+                                  (dec-digit-chars-value (take-leading-digits x)))
                            (charlisteqv (skip-leading-digits x)
                                         (skip-leading-digits y)))
                       (equal (charlisteqv x y)
@@ -316,7 +316,7 @@ string such as \"x0\" is considered to be less than \"x00\", etc.</p>
                      :in-theory (enable chareqv
                                         take-leading-digits
                                         skip-leading-digits
-                                        digit-list-value)))))
+                                        dec-digit-chars-value)))))
 
     (defthm charlistnat<-trichotomy-weak
       (implies (and (not (charlistnat< x y))
@@ -532,7 +532,7 @@ one index.</p>"
     (verify-guards strnat<-aux
       :hints((and stable-under-simplificationp
                   '(:in-theory (enable dec-digit-char-p
-                                       digit-val
+                                       dec-digit-char-value
                                        char-fix
                                        char<))))))
 
