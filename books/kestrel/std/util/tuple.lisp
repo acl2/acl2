@@ -76,7 +76,7 @@
    (xdoc::@def "acl2::tuple"))
 
   (define tuple-fn ((args true-listp))
-    :returns (mv vars conjunctns)
+    :returns (mv vars conjuncts)
     (b* (((when (endp args)) (mv nil nil))
          (arg (car args))
          ((unless (tuplep 2 arg)) (mv nil nil))
