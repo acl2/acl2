@@ -168,7 +168,7 @@
 (include-book "kestrel/axe/dag-arrays" :dir :system)
 (include-book "kestrel/axe/axe-syntax" :dir :system)
 
-(defun var-less-than-unquoted-keyp (var-darg key-darg dag-array)
+(defun acl2::var-less-than-unquoted-keyp (var-darg key-darg dag-array)
   (declare (xargs :guard (and (or (acl2::myquotep var-darg)
                                   (and (natp var-darg)
                                        (acl2::pseudo-dag-arrayp 'dag-array dag-array (+ 1 var-darg))))
@@ -183,7 +183,7 @@
                 (and (symbolp var-expr)
                      (symbol-< var-expr unquoted-key)))))))
 
-(defun var-not-less-than-unquoted-keyp (var-darg key-darg dag-array)
+(defun acl2::var-not-less-than-unquoted-keyp (var-darg key-darg dag-array)
   (declare (xargs :guard (and (or (acl2::myquotep var-darg)
                                   (and (natp var-darg)
                                        (acl2::pseudo-dag-arrayp 'dag-array dag-array (+ 1 var-darg))))
@@ -199,15 +199,15 @@
                      (not (symbol-< var-expr unquoted-key))))))))
 
 ;; Restrict the search for VAR to the branch (namely, X) where we know it is.
-(defthm member-equal-of-append-with-key-first-half-axe
-  (implies (and (acl2::axe-syntaxp (var-less-than-unquoted-keyp var key dag-array))
+(defthm acl2::member-equal-of-append-with-key-first-half-axe
+  (implies (and (acl2::axe-syntaxp (acl2::var-less-than-unquoted-keyp var key dag-array))
                 (member-equal var x))
            (member-equal var (acl2::append-with-key key x y)))
   :hints (("Goal" :in-theory (enable acl2::append-with-key))))
 
 ;; Restrict the search for VAR to the branch (namely, Y) where we know it is.
-(defthm member-equal-of-append-with-key-second-half-axe
-  (implies (and (acl2::axe-syntaxp (var-not-less-than-unquoted-keyp var key dag-array))
+(defthm acl2::member-equal-of-append-with-key-second-half-axe
+  (implies (and (acl2::axe-syntaxp (acl2::var-not-less-than-unquoted-keyp var key dag-array))
                 (member-equal var y))
            (member-equal var (acl2::append-with-key key x y)))
   :hints (("Goal" :in-theory (enable acl2::append-with-key))))
