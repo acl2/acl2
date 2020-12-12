@@ -31,8 +31,7 @@
 (include-book "make-axe-rules") ;not strictly needed but nice to include this here...
 (include-book "worklists")
 (include-book "rewriter-common") ; for axe-bind-free-result-okayp, etc.
-(include-book "merge-tree-into-dag-array-basic")
-(include-book "merge-term-into-dag-array-basic")
+(include-book "merge-tree-into-dag-array-basic") ; for merge-trees-into-dag-array-basic
 (include-book "instantiate-hyp-basic")
 (include-book "contexts") ;for max-nodenum-in-context
 (include-book "my-sublis-var-and-eval-basic")
