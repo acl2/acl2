@@ -61,13 +61,13 @@
 
 ;; The point of these scheme is to allow using a single assumption, that can be
 ;; searched in logarithmic time, to represent a large set of assumptions.
-(defun make-append-with-key-nest-aux (vars)
+(defund make-append-with-key-nest-aux (vars)
   (declare (xargs :guard (and (symbol-listp vars)
                               (consp vars))
                   :measure (len vars)))
   (if (not (consp (rest vars)))
       ;; just one var
-      `(cons ,(first vars) nil)
+      `(cons ,(first vars) 'nil)
     ;; at least two vars:
     (mv-let (first-half-rev second-half)
       (split-list-fast vars)
@@ -79,7 +79,17 @@
                           ;; none are symbol-< than the key:
                           ,(make-append-with-key-nest-aux second-half))))))
 
-(defun make-append-with-key-nest (vars)
+(defthm pseudo-termp-of-make-append-with-key-nest-aux
+  (implies (symbol-listp vars)
+           (pseudo-termp (make-append-with-key-nest-aux vars)))
+  :hints (("Goal" :in-theory (enable make-append-with-key-nest-aux))))
+
+(defund make-append-with-key-nest (vars)
   (declare (xargs :guard (and (symbol-listp vars)
                               (consp vars))))
   (make-append-with-key-nest-aux (merge-sort-symbol-< vars)))
+
+(defthm pseudo-termp-of-make-append-with-key-nest
+  (implies (symbol-listp vars)
+           (pseudo-termp (make-append-with-key-nest vars)))
+  :hints (("Goal" :in-theory (enable make-append-with-key-nest))))
