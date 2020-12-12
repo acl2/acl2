@@ -91,8 +91,5 @@
     (bv-array-read bv-array-read-unguarded)
     (bv-array-write bv-array-write-unguarded)))
 
-(defconst *axe-evaluator-basic-functions*
-  (get-fns-from-fns-and-aliases *axe-evaluator-basic-fns-and-aliases*))
-
 ;; Make the evaluator:
 (make-evaluator-simple axe-evaluator-basic *axe-evaluator-basic-fns-and-aliases*)
