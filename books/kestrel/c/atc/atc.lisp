@@ -521,7 +521,7 @@
 
 (defines atc-gen-expr-fns
   :short "Mutually recursive functions to
-          generate C expressions from ACL terms."
+          generate C expressions from ACL2 terms."
 
   (define atc-gen-expr-nonbool ((term pseudo-termp)
                                 (fn symbolp)
@@ -530,7 +530,7 @@
                                 state)
     :returns (mv erp (expr exprp) state)
     :parents (atc-event-and-code-generation atc-gen-expr-fns)
-    :short "Generate a C expression from a ACL2 term
+    :short "Generate a C expression from an ACL2 term
             that must be an allowed non-boolean term."
     :long
     (xdoc::topstring
@@ -675,7 +675,7 @@
                              state)
     :returns (mv erp (expr exprp) state)
     :parents (atc-event-and-code-generation atc-gen-expr-fns)
-    :short "Generate a C expression from a ACL2 term
+    :short "Generate a C expression from an ACL2 term
             that must be an allowed boolean term."
     :long
     (xdoc::topstring
