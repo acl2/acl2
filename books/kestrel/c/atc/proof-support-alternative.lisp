@@ -65,17 +65,17 @@
   :disable t)
 
 (add-to-ruleset exec-unfold-rules
-                '(EXEC-EXPR-BASE-1
-                  EXEC-EXPR-BASE-2
-                  EXEC-EXPR-BASE-3
-                  EXEC-EXPR-BASE-4
-                  EXEC-EXPR-BASE-5
-                  EXEC-EXPR-BASE-6
-                  EXEC-EXPR-BASE-7
-                  EXEC-EXPR-BASE-8
-                  EXEC-EXPR-BASE-9
-                  EXEC-EXPR-UNROLL-1
-                  EXEC-EXPR-UNROLL-2))
+                '(exec-expr-base-1
+                  exec-expr-base-2
+                  exec-expr-base-3
+                  exec-expr-base-4
+                  exec-expr-base-5
+                  exec-expr-base-6
+                  exec-expr-base-7
+                  exec-expr-base-8
+                  exec-expr-base-9
+                  exec-expr-unroll-1
+                  exec-expr-unroll-2))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -84,10 +84,10 @@
   :disable t)
 
 (add-to-ruleset exec-unfold-rules
-                '(EXEC-EXPR-LIST-BASE-1
-                  EXEC-EXPR-LIST-BASE-2
-                  EXEC-EXPR-LIST-BASE-3
-                  EXEC-EXPR-LIST-UNROLL))
+                '(exec-expr-list-base-1
+                  exec-expr-list-base-2
+                  exec-expr-list-base-3
+                  exec-expr-list-unroll))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -96,17 +96,17 @@
   :disable t)
 
 (add-to-ruleset exec-unfold-rules
-                '(EXEC-STMT-BASE-1
-                  EXEC-STMT-BASE-2
-                  EXEC-STMT-BASE-3
-                  EXEC-STMT-BASE-4
-                  EXEC-STMT-BASE-5
-                  EXEC-STMT-BASE-6
-                  EXEC-STMT-BASE-7
-                  EXEC-STMT-BASE-8
-                  EXEC-STMT-BASE-9
-                  EXEC-STMT-UNROLL-1
-                  EXEC-STMT-UNROLL-2))
+                '(exec-stmt-base-1
+                  exec-stmt-base-2
+                  exec-stmt-base-3
+                  exec-stmt-base-4
+                  exec-stmt-base-5
+                  exec-stmt-base-6
+                  exec-stmt-base-7
+                  exec-stmt-base-8
+                  exec-stmt-base-9
+                  exec-stmt-unroll-1
+                  exec-stmt-unroll-2))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -115,8 +115,8 @@
   :disable t)
 
 (add-to-ruleset exec-unfold-rules
-                '(EXEC-BLOCK-ITEM-LIST-BASE-1
-                  EXEC-BLOCK-ITEM-LIST-BASE-2
-                  EXEC-BLOCK-ITEM-LIST-BASE-3
-                  EXEC-BLOCK-ITEM-LIST-BASE-4
-                  EXEC-BLOCK-ITEM-LIST-UNROLL))
+                '(exec-block-item-list-base-1
+                  exec-block-item-list-base-2
+                  exec-block-item-list-base-3
+                  exec-block-item-list-base-4
+                  exec-block-item-list-unroll))
