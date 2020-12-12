@@ -126,10 +126,10 @@
                 (acl2::memberp x free))
            (fep x p)))
 
-(defun gen-fe-listp-assumption (vars)
+(defun gen-fe-listp-assumption (vars prime)
   (declare (xargs :guard (and (symbol-listp vars)
                               (consp vars))))
-  `(fe-listp ,(acl2::make-append-with-key-nest vars)))
+  `(fe-listp ,(acl2::make-append-with-key-nest vars) ,prime))
 
 ;; test: (gen-fe-listp-assumption '(x1 x2 x3 x4 x5 x6 x7 x8 x9 x10))
 
@@ -216,3 +216,6 @@
                 (acl2::axe-syntaxp (acl2::var-not-less-than-unquoted-keyp var key acl2::dag-array)))
            (acl2::memberp var (acl2::append-with-key key x y)))
   :hints (("Goal" :in-theory (enable acl2::append-with-key))))
+
+(defthm pfield::booleanp-of-fe-listp
+  (booleanp (fe-listp elems prime)))
