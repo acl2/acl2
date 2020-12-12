@@ -25,8 +25,10 @@
                define-sk
                defmacro+
                defopener
+               defopeners
                deftutorial
                defxdoc+
+               enable*
                er-soft+
                evmac-prepare-proofs
                flatten-ands-in-lit

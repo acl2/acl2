@@ -14,7 +14,7 @@
 (include-book "pretty-printer" :ttags ((:open-output-channel!)))
 (include-book "static-semantics")
 (include-book "dynamic-semantics")
-(include-book "proof-support")
+(include-book "proof-support-alternative")
 
 (include-book "kestrel/error-checking/ensure-function-is-defined" :dir :system)
 (include-book "kestrel/error-checking/ensure-function-is-guard-verified" :dir :system)
@@ -1012,7 +1012,7 @@
      based on experimentation;
      we also use the guard theorem of @('fn').
      We also enable some opener rules;
-     see @(see atc-proof-support).
+     see @(see atc-proof-support-alternative).
      We also enable all the functions that may be called by @('fn');
      eventually, we will generate more compositional proofs.
      Given that the translation unit is a constant,
@@ -1048,37 +1048,39 @@
                       ,const))
        (rhs `(value-result-ok (,fn ,@formals)))
        (hints `(("Goal"
-                 :in-theory (enable run-fun
-                                    init-store
-                                    exec-fun
-                                    exec-stmt
-                                    exec-block-item
-                                    exec-block-item-list
-                                    exec-expr
-                                    exec-binary
-                                    exec-binary-strict
-                                    exec-binary-logand
-                                    exec-binary-logor
-                                    exec-unary
-                                    exec-ident
-                                    exec-const
-                                    exec-iconst
-                                    top-frame
-                                    push-frame
-                                    pop-frame
-                                    store-result-kind
-                                    store-result-ok->get
-                                    value-result-kind
-                                    value-result-ok->get
-                                    value-option-result-kind
-                                    value-option-result-ok->get
-                                    exec-expr-of-call
-                                    exec-expr-list-of-cons
-                                    exec-expr-list-of-atom
-                                    exec-block-item-list-of-cons
-                                    exec-block-item-list-of-atom
-                                    exec-stmt-of-return
-                                    ,@prec-fns)
+                 :in-theory (enable* run-fun
+                                     init-store
+                                     exec-fun
+                                     exec-stmt
+                                     exec-block-item
+                                     exec-block-item-list
+                                     exec-expr
+                                     exec-binary
+                                     exec-binary-strict
+                                     exec-binary-logand
+                                     exec-binary-logor
+                                     exec-unary
+                                     exec-ident
+                                     exec-const
+                                     exec-iconst
+                                     top-frame
+                                     push-frame
+                                     pop-frame
+                                     store-result-kind
+                                     store-result-ok->get
+                                     value-result-kind
+                                     value-result-ok->get
+                                     value-option-result-kind
+                                     value-option-result-ok->get
+                                     exec-unfold-rules
+                                     ;; rules from ATC-PROOF-SUPPORT:
+                                     ;; exec-expr-of-call
+                                     ;; exec-expr-list-of-cons
+                                     ;; exec-expr-list-of-atom
+                                     ;; exec-block-item-list-of-cons
+                                     ;; exec-block-item-list-of-atom
+                                     ;; exec-stmt-of-return
+                                     ,@prec-fns)
                  :expand ((:free (fun args env limit)
                            (exec-fun fun args env limit))
                           (:free (item env limit)
