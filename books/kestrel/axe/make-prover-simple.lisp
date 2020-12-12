@@ -21,7 +21,7 @@
 ;fixme axe prover requires some rules (like boolor of t, etc.) to be always enabled (without that one, we can get an error in get-disjuncts).  Improve get-disjuncts?
 ;fixme use faster tests than equal in some places below?
 
-(include-book "prover-support")
+(include-book "prover-common")
 (include-book "rule-alists")
 (include-book "make-implication-dag")
 (include-book "dag-or-term-to-dag-basic") ;todo: gen
@@ -31,8 +31,7 @@
 (include-book "make-axe-rules") ;not strictly needed but nice to include this here...
 (include-book "worklists")
 (include-book "rewriter-common") ; for axe-bind-free-result-okayp, etc.
-(include-book "merge-tree-into-dag-array-basic")
-(include-book "merge-term-into-dag-array-basic")
+(include-book "merge-tree-into-dag-array-basic") ; for merge-trees-into-dag-array-basic
 (include-book "instantiate-hyp-basic")
 (include-book "contexts") ;for max-nodenum-in-context
 (include-book "my-sublis-var-and-eval-basic")

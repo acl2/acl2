@@ -688,3 +688,6 @@
                            (m (+ -1 (integer-length k)))))))
 
 (theory-invariant (incompatible (:definition bvchop) (:rewrite MOD-OF-EXPT-OF-2-CONSTANT-VERSION)))
+
+(defthm bitp-of-bvchop-of-1
+  (bitp (acl2::bvchop 1 x)))

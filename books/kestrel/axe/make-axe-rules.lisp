@@ -808,7 +808,7 @@
             (if (member-eq fn known-boolean-fns)
                 ;; pred -> (equal pred 't)
                 (mv nil (expand-lambdas-in-term conc) *t*)
-              (prog2$ (er hard? 'lhs-and-rhs-of-conc "Unexpected form of conclusion ~x0 in rule ~x1" conc rule-symbol)
+              (prog2$ (er hard? 'lhs-and-rhs-of-conc "Unexpected form of conclusion (not a known boolean) ~x0 in rule ~x1" conc rule-symbol)
                       (mv t nil nil)))))))))
 
 (defthm lambda-free-termp-of-mv-nth-1-of-lhs-and-rhs-of-conc

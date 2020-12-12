@@ -65,6 +65,7 @@
                              rules ;to override the default
                              ;; nil ;rule-alists
                              ;; drop? but we need to know that all lookups of vars give integers:
+                             ;; TODO: Use the more compact machinery for this:
                              (make-fep-assumptions-from-keyword-vars vars prime)
                              ;; TODO: Add more functions to this?
                              ;; TODO: Make this once and store it?

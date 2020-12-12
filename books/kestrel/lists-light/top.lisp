@@ -84,3 +84,5 @@
 
 (include-book "rules")
 (include-book "rules2")
+
+(include-book "append-with-key")

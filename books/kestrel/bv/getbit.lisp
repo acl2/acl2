@@ -1,7 +1,7 @@
 ; BV Library: getbit
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2020 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -334,3 +334,6 @@
                                   (slice-becomes-getbit
                                    bvchop-of-logtail-becomes-slice
                                    bvchop-1-becomes-getbit)))))
+
+(defthm bitp-of-getbit
+  (bitp (acl2::getbit n x)))

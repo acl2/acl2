@@ -37,15 +37,15 @@
                  (19 17 (:REWRITE DEFAULT-UNARY-MINUS))
                  (7 7
                     (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP)))
-(CDR-OF-BUTLAST (231 169 (:REWRITE DEFAULT-CDR))
-                (205 112 (:REWRITE DEFAULT-+-2))
-                (117 112 (:REWRITE DEFAULT-+-1))
+(CDR-OF-BUTLAST (225 163 (:REWRITE DEFAULT-CDR))
+                (199 109 (:REWRITE DEFAULT-+-2))
+                (114 109 (:REWRITE DEFAULT-+-1))
                 (90 7
                     (:REWRITE TRUE-LIST-FIX-WHEN-TRUE-LISTP))
                 (76 16 (:DEFINITION TRUE-LISTP))
-                (43 29 (:REWRITE DEFAULT-<-2))
+                (45 31 (:REWRITE DEFAULT-<-2))
                 (41 41 (:TYPE-PRESCRIPTION TRUE-LISTP))
-                (31 29 (:REWRITE DEFAULT-<-1))
+                (35 31 (:REWRITE DEFAULT-<-1))
                 (10 10 (:REWRITE DEFAULT-UNARY-MINUS))
                 (2 2
                    (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP)))
