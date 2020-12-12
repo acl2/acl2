@@ -356,6 +356,16 @@
   (:ullong ())
   :pred tyspecseqp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define irr-tyspecseq ()
+  :returns (ty tyspecseqp)
+  :short "An irrelevant type specifier sequence,
+          usable as a dummy return value."
+  (with-guard-checking :none (ec-call (tyspecseq-fix :irrelevant)))
+  ///
+  (in-theory (disable (:e irr-tyspecseq))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod tyname
