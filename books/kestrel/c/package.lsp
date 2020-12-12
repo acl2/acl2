@@ -42,4 +42,5 @@
                nat
                pseudo-event-form-listp
                pseudo-event-formp
-               tuple)))
+               tuple
+               std::defret-mutual)))

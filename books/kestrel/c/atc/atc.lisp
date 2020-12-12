@@ -528,7 +528,10 @@
                                 (prec-fns symbol-listp)
                                 ctx
                                 state)
-    :returns (mv erp (expr exprp) state)
+    :returns (mv erp
+                 (std::result (tuple (expr exprp)
+                                     (type tyspecseqp)))
+                 state)
     :parents (atc-event-and-code-generation atc-gen-expr-fns)
     :short "Generate a C expression from an ACL2 term
             that must be an allowed non-boolean term."
@@ -537,6 +540,10 @@
      (xdoc::p
       "At the same time, we check that the term is an allowed non-boolean term,
        as described in the user documentation.")
+     (xdoc::p
+      "Besides the generated expression, we also return its C type.
+       This is always @('int') for now,
+       but this will be generalized at some point.")
      (xdoc::p
       "An ACL2 variable is translated to a C variable.")
      (xdoc::p
@@ -566,35 +573,42 @@
        We could extend this code to provide
        more information to the user at some point."))
     (b* (((when (acl2::variablep term))
-          (value (expr-ident (make-ident :name (symbol-name term)))))
+          (value (list (expr-ident (make-ident :name (symbol-name term)))
+                       (tyspecseq-sint))))
          ((mv okp val) (atc-check-sint-const term))
          ((when okp)
           (value
-           (expr-const (const-int (make-iconst :value val
-                                               :base (iconst-base-dec)
-                                               :unsignedp nil
-                                               :type (iconst-tysuffix-none))))))
+           (list
+            (expr-const (const-int (make-iconst :value val
+                                                :base (iconst-base-dec)
+                                                :unsignedp nil
+                                                :type (iconst-tysuffix-none))))
+            (tyspecseq-sint))))
          ((mv okp op arg) (atc-check-sint-unop term))
          ((when okp)
-          (b* (((er arg-expr) (atc-gen-expr-nonbool arg
-                                                    fn
-                                                    prec-fns
-                                                    ctx
-                                                    state)))
-            (value (make-expr-unary :op op :arg arg-expr))))
+          (b* (((er (list arg-expr &)) (atc-gen-expr-nonbool arg
+                                                             fn
+                                                             prec-fns
+                                                             ctx
+                                                             state)))
+            (value (list (make-expr-unary :op op :arg arg-expr)
+                         (tyspecseq-sint)))))
          ((mv okp op arg1 arg2) (atc-check-sint-binop term))
          ((when okp)
-          (b* (((er arg1-expr) (atc-gen-expr-nonbool arg1
-                                                     fn
-                                                     prec-fns
-                                                     ctx
-                                                     state))
-               ((er arg2-expr) (atc-gen-expr-nonbool arg2
-                                                     fn
-                                                     prec-fns
-                                                     ctx
-                                                     state)))
-            (value (make-expr-binary :op op :arg1 arg1-expr :arg2 arg2-expr))))
+          (b* (((er (list arg1-expr &)) (atc-gen-expr-nonbool arg1
+                                                              fn
+                                                              prec-fns
+                                                              ctx
+                                                              state))
+               ((er (list arg2-expr &)) (atc-gen-expr-nonbool arg2
+                                                              fn
+                                                              prec-fns
+                                                              ctx
+                                                              state)))
+            (value (list (make-expr-binary :op op
+                                           :arg1 arg1-expr
+                                           :arg2 arg2-expr)
+                         (tyspecseq-sint)))))
          ((mv okp fn args) (atc-check-callable-fn term prec-fns))
          ((when okp)
           (b* (((mv erp arg-exprs state) (atc-gen-expr-nonbool-list args
@@ -602,12 +616,17 @@
                                                                     prec-fns
                                                                     ctx
                                                                     state))
-               ((when erp) (mv erp (irr-expr) state)))
-            (value (make-expr-call :fun (make-ident :name (symbol-name fn))
-                                   :args arg-exprs)))))
+               ((when erp) (mv erp (list (irr-expr) (irr-tyspecseq)) state)))
+            (value (list
+                    (make-expr-call :fun (make-ident :name (symbol-name fn))
+                                    :args arg-exprs)
+                    (tyspecseq-sint))))))
       (case-match term
         (('c::sint01 arg)
-         (atc-gen-expr-bool arg fn prec-fns ctx state))
+         (b* (((mv erp expr state)
+               (atc-gen-expr-bool arg fn prec-fns ctx state))
+              ((when erp) (mv erp (list (irr-expr) (irr-tyspecseq)) state)))
+           (mv nil (list expr (tyspecseq-sint)) state)))
         (('if test then else)
          (b* (((mv mbtp &) (acl2::check-mbt-call test))
               ((when mbtp) (atc-gen-expr-nonbool then
@@ -621,24 +640,27 @@
                                                   prec-fns
                                                   ctx
                                                   state))
-              ((er test-expr) (atc-gen-expr-bool test
-                                                 fn
-                                                 prec-fns
-                                                 ctx
-                                                 state))
-              ((er then-expr) (atc-gen-expr-nonbool then
-                                                    fn
-                                                    prec-fns
-                                                    ctx
-                                                    state))
-              ((er else-expr) (atc-gen-expr-nonbool else
-                                                    fn
-                                                    prec-fns
-                                                    ctx
-                                                    state)))
+              ((mv erp test-expr state) (atc-gen-expr-bool test
+                                                           fn
+                                                           prec-fns
+                                                           ctx
+                                                           state))
+              ((when erp) (mv erp (list (irr-expr) (irr-tyspecseq)) state))
+              ((er (list then-expr &)) (atc-gen-expr-nonbool then
+                                                             fn
+                                                             prec-fns
+                                                             ctx
+                                                             state))
+              ((er (list else-expr &)) (atc-gen-expr-nonbool else
+                                                             fn
+                                                             prec-fns
+                                                             ctx
+                                                             state)))
            (value
-            (make-expr-cond :test test-expr :then then-expr :else else-expr))))
-        (& (er-soft+ ctx t (irr-expr)
+            (list
+             (make-expr-cond :test test-expr :then then-expr :else else-expr)
+             (tyspecseq-sint)))))
+        (& (er-soft+ ctx t (list (irr-expr) (irr-tyspecseq))
                      "When generating C code for the function ~x0, ~
                       at a point where
                       an allowed non-boolean ACL2 term is expected, ~
@@ -654,12 +676,16 @@
     :parents (atc-event-and-code-generation atc-gen-expr-fns)
     :short "Generate a list of C expressions from a list of ACL2 terms
             that must be allowed non-boolean terms."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We do not return the C types of the expressions."))
     (b* (((when (endp terms)) (value nil))
-         ((mv erp expr state) (atc-gen-expr-nonbool (car terms)
-                                                    fn
-                                                    prec-fns
-                                                    ctx
-                                                    state))
+         ((mv erp (list expr &) state) (atc-gen-expr-nonbool (car terms)
+                                                             fn
+                                                             prec-fns
+                                                             ctx
+                                                             state))
          ((when erp) (mv erp nil state))
          ((er exprs) (atc-gen-expr-nonbool-list (cdr terms)
                                                 fn
@@ -700,11 +726,23 @@
        more information to the user at some point."))
     (case-match term
       (('not arg)
-       (b* (((er arg-expr) (atc-gen-expr-bool arg fn prec-fns ctx state)))
+       (b* (((er arg-expr) (atc-gen-expr-bool arg
+                                              fn
+                                              prec-fns
+                                              ctx
+                                              state)))
          (value (make-expr-unary :op (unop-lognot) :arg arg-expr))))
       (('if arg1 arg2 ''nil)
-       (b* (((er arg1-expr) (atc-gen-expr-bool arg1 fn prec-fns ctx state))
-            ((er arg2-expr) (atc-gen-expr-bool arg2 fn prec-fns ctx state)))
+       (b* (((er arg1-expr) (atc-gen-expr-bool arg1
+                                               fn
+                                               prec-fns
+                                               ctx
+                                               state))
+            ((er arg2-expr) (atc-gen-expr-bool arg2
+                                               fn
+                                               prec-fns
+                                               ctx
+                                               state)))
          (value (make-expr-binary :op (binop-logand)
                                   :arg1 arg1-expr
                                   :arg2 arg2-expr))))
@@ -715,7 +753,9 @@
                                   :arg1 arg1-expr
                                   :arg2 arg2-expr))))
       (('c::sint-nonzerop arg)
-       (atc-gen-expr-nonbool arg fn prec-fns ctx state))
+       (b* (((mv erp (list expr &) state)
+             (atc-gen-expr-nonbool arg fn prec-fns ctx state)))
+         (mv erp expr state)))
       (& (er-soft+ ctx t (irr-expr)
                    "When generating C code for the function ~x0, ~
                     at a point where
@@ -726,7 +766,23 @@
   :prepwork ((set-state-ok t))
 
   :verify-guards nil ; done below
+
   ///
+
+  (defret-mutual consp-of-atc-gen-expr-nonbool/bool
+    (defret consp-of-atc-gen-expr-nonbool
+      (consp std::result)
+      :rule-classes :type-prescription
+      :fn atc-gen-expr-nonbool)
+    (defret true-of-atc-gen-expr-nonbool-list
+      t
+      :rule-classes nil
+      :fn atc-gen-expr-nonbool-list)
+    (defret true-of-atc-gen-expr-bool
+      t
+      :rule-classes nil
+      :fn atc-gen-expr-bool))
+
   (verify-guards atc-gen-expr-nonbool))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -736,11 +792,18 @@
                       (prec-fns symbol-listp)
                       ctx
                       state)
-  :returns (mv erp (stmt stmtp) state)
-  :verify-guards :after-returns
+  :returns (mv erp
+               (std::result (tuple (stmt stmtp)
+                                   (type tyspecseqp)))
+               state)
   :short "Generate a C statement from an ACL2 term."
   :long
   (xdoc::topstring
+   (xdoc::p
+    "Besides the generated statement,
+     we also return the C type of the value it returns.
+     This is always @('int') for now,
+     but this will be generalized at some point.")
    (xdoc::p
     "This is called on the body term of an ACL2 function.
      If the term is not a conditional,
@@ -764,18 +827,31 @@
                                                        prec-fns
                                                        ctx
                                                        state))
-          ((when erp) (mv erp (irr-stmt) state))
-          ((er then-stmt) (atc-gen-stmt then fn prec-fns ctx state))
-          ((er else-stmt) (atc-gen-stmt else fn prec-fns ctx state)))
+          ((when erp) (mv erp (list (irr-stmt) (irr-tyspecseq)) state))
+          ((er (list then-stmt &)) (atc-gen-stmt then fn prec-fns ctx state))
+          ((er (list else-stmt &)) (atc-gen-stmt else fn prec-fns ctx state)))
        (value
-        (make-stmt-ifelse :test test-expr :then then-stmt :else else-stmt))))
-    (& (b* (((mv erp expr state) (atc-gen-expr-nonbool term
-                                                       fn
-                                                       prec-fns
-                                                       ctx
-                                                       state))
-            ((when erp) (mv erp (irr-stmt) state)))
-         (value (make-stmt-return :value expr))))))
+        (list
+         (make-stmt-ifelse :test test-expr :then then-stmt :else else-stmt)
+         (tyspecseq-sint)))))
+    (& (b* (((mv erp (list expr &) state) (atc-gen-expr-nonbool term
+                                                                fn
+                                                                prec-fns
+                                                                ctx
+                                                                state))
+            ((when erp) (mv erp (list (irr-stmt) (irr-tyspecseq)) state)))
+         (value (list (make-stmt-return :value expr)
+                      (tyspecseq-sint))))))
+
+  :verify-guards nil ; done below
+
+  ///
+
+  (more-returns
+   (std::result consp :rule-classes :type-prescription)
+   (std::result true-listp :rule-classes :type-prescription))
+
+  (verify-guards atc-gen-stmt))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -843,6 +919,11 @@
   :returns (mv erp (ext ext-declp) state)
   :short "Generate a C external declaration (a function definition)
           from an ACL2 function."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We use the type of the value returned by the statement for the body
+     as the result type of the C function."))
   (b* ((name (symbol-name fn))
        ((unless (atc-ident-stringp name))
         (er-soft+ ctx t (irr-ext-decl)
@@ -866,11 +947,15 @@
                                                        state))
        ((when erp) (mv erp (irr-ext-decl) state))
        (body (acl2::ubody+ fn wrld))
-       ((mv erp stmt state) (atc-gen-stmt body fn prec-fns ctx state))
+       ((mv erp (list stmt type) state) (atc-gen-stmt body
+                                                      fn
+                                                      prec-fns
+                                                      ctx
+                                                      state))
        ((when erp) (mv erp (irr-ext-decl) state)))
     (value
      (ext-decl-fundef
-      (make-fundef :result (tyspecseq-sint)
+      (make-fundef :result type
                    :name (make-ident :name name)
                    :params params
                    :body (stmt-compound (list (block-item-stmt stmt))))))))
