@@ -89,3 +89,17 @@
       (if (consp nodenum-or-quotep)
           (mv (erp-nil) nodenum-or-quotep)
         (mv (erp-nil) (array-to-alist dag-len 'make-term-into-dag-basic-array dag-array))))))
+
+;; Returns the dag-or-quotep.  Does not return erp.
+(defund make-term-into-dag-basic! (term interpreted-function-alist)
+  (declare (xargs :guard (and (pseudo-termp term)
+                              (interpreted-function-alistp interpreted-function-alist))
+                  :guard-hints (("Goal" :use (:instance wf-dagp-of-make-term-into-dag-array-basic
+                                                        (dag-array-name 'make-term-into-dag-basic-array)
+                                                        (dag-parent-array-name 'make-term-into-dag-basic-parent-array))
+                                 :in-theory (disable wf-dagp-of-make-term-into-dag-array-basic)))))
+  (mv-let (erp dag-or-quotep)
+    (make-term-into-dag-basic term interpreted-function-alist)
+    (if erp
+        (er hard? 'make-term-into-dag-basic "Error making term into dag.")
+      dag-or-quotep)))

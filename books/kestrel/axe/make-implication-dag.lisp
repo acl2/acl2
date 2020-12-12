@@ -35,11 +35,13 @@
         ;;only dag1 is a quotep:
         (let ((top-nodenum (top-nodenum dag2)))
           (mv (erp-nil)
+              ;;fixme call a blessed dag builder function here?
               (acons-fast (+ 1 top-nodenum) `(implies ,dag1 ,top-nodenum) dag2))))
     (if (quotep dag2)
         ;;only dag2 is a quotep:
         (let ((top-nodenum (top-nodenum dag1)))
           (mv (erp-nil)
+              ;;fixme call a blessed dag builder function here?
               (acons-fast (+ 1 top-nodenum) `(implies ,top-nodenum ,dag2) dag1)))
       ;;both are dag-lsts (we'll merge the smaller one into the larger one):
       (let* ((dag1-len (len dag1))
@@ -94,3 +96,17 @@
 ;; (make-implication-dag *t* *t*)
 ;; (make-implication-dag '((2 foo 1) (1 baz 0) (0 . x)) '((1 bar 0) (0 . x)))
 ;; (make-implication-dag '((1 bar 0) (0 . x)) '((2 foo 1) (1 baz 0) (0 . x)))
+
+;; Returns the dag-or-quotep.  Does not return erp.
+(defun make-implication-dag! (dag1 dag2)
+  (declare (xargs :guard (and (or (myquotep dag1)
+                                  (and (pseudo-dagp dag1)
+                                       (<= (len dag1) 2147483646)))
+                              (or (myquotep dag2)
+                                  (and (pseudo-dagp dag2)
+                                       (<= (len dag2) 2147483646))))))
+  (mv-let (erp dag-or-quotep)
+    (make-implication-dag dag1 dag2)
+    (if erp
+        (er hard? 'make-implication-dag! "Error making implication DAG.")
+      dag-or-quotep)))
