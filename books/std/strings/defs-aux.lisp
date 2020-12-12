@@ -120,10 +120,10 @@
     ;; decimal.lisp
     dec-digit-char-p
     nonzero-dec-digit-char-p
-    digit-val
+    dec-digit-char-value
     dec-digit-char-listp
-    digit-list-value1
-    digit-list-value
+    dec-digit-chars-value1
+    dec-digit-chars-value
     skip-leading-digits
     take-leading-digits
     digit-string-p-aux
@@ -147,9 +147,9 @@
     ;; binary.lisp
     bin-digit-char-p
     bin-digit-char-listp
-    bit-digit-val
-    bit-digit-list-value1
-    bit-digit-list-value
+    bin-digit-char-value
+    bin-digit-chars-value1
+    bin-digit-chars-value
     skip-leading-bit-digits
     take-leading-bit-digits
     bit-digit-string-p-aux
@@ -169,9 +169,9 @@
     ;; hex.lisp
     hex-digit-char-p
     hex-digit-char-listp
-    hex-digit-val
-    hex-digit-list-value1
-    hex-digit-list-value
+    hex-digit-char-value
+    hex-digit-chars-value1
+    hex-digit-chars-value
     skip-leading-hex-digits
     take-leading-hex-digits
     hex-digit-string-p-aux
@@ -193,10 +193,10 @@
     ;; octal
     oct-digit-char-p
     nonzero-oct-digit-char-p
-    octal-digit-val
+    oct-digit-char-value
     oct-digit-char-listp
-    octal-digit-list-value1
-    octal-digit-list-value
+    oct-digit-chars-value1
+    oct-digit-chars-value
     skip-leading-octal-digits
     take-leading-octal-digits
     octal-digit-string-p-aux
