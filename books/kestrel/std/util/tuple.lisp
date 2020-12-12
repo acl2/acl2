@@ -27,7 +27,7 @@
      However, when a function returns an "
     (xdoc::seetopic "acl2::error-triple" "error triple")
     " whose value (i.e. middle component) consists of multiple results,
-     given that the error triple already consists of multipel results
+     given that the error triple already consists of multiple results
      (three: the error, the value, and the state),
      it is not possible to use the @(tsee mv) return specifier notation
      for the value of the error triple.")
