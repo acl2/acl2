@@ -21,7 +21,7 @@
 ;fixme axe prover requires some rules (like boolor of t, etc.) to be always enabled (without that one, we can get an error in get-disjuncts).  Improve get-disjuncts?
 ;fixme use faster tests than equal in some places below?
 
-(include-book "prover-support")
+(include-book "prover-common")
 (include-book "rule-alists")
 (include-book "make-implication-dag")
 (include-book "dag-or-term-to-dag-basic") ;todo: gen
