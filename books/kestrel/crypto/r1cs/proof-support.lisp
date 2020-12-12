@@ -15,6 +15,7 @@
 (include-book "kestrel/prime-fields/rules2" :dir :system) ;reduce?
 (include-book "kestrel/utilities/def-constant-opener" :dir :system) ;reduce?
 (include-book "kestrel/lists-light/append-with-key" :dir :system)
+(include-book "kestrel/lists-light/memberp" :dir :system)
 (include-book "kestrel/bv/bvcat" :dir :system)
 (include-book "kestrel/bv/bvplus" :dir :system)
 (include-book "kestrel/crypto/r1cs/sparse/r1cs" :dir :system) ;for fe-listp, todo: reduce
@@ -113,9 +114,16 @@
                        (equal y (acl2::bvplus 8 w z)))))
   :hints (("Goal" :use (:instance acl2::adding-8-idiom))))
 
+;for acl2
 (defthm pfield::fep-when-fe-listp-and-member-equal
   (implies (and (fe-listp free p)
-                (member-equal x free))
+                (acl2::member-equal x free))
+           (fep x p)))
+
+;for axe, since member-equal is not a known boolean, todo: why isn't that ok (can't make the axe rule)?
+(defthm pfield::fep-when-fe-listp-and-memberp
+  (implies (and (fe-listp free p)
+                (acl2::memberp x free))
            (fep x p)))
 
 (defun gen-fe-listp-assumption (vars)
@@ -126,7 +134,6 @@
 ;; test: (gen-fe-listp-assumption '(x1 x2 x3 x4 x5 x6 x7 x8 x9 x10))
 
 (local (include-book "kestrel/lists-light/member-equal" :dir :system)) ;for member-equal-of-cons
-
 ;test
 (thm
  (implies (fe-listp
@@ -161,53 +168,51 @@
                (fep x8 prime)
                (fep x9 prime)
                (fep x10 prime)))
- :hints (("Goal" :in-theory (disable member-equal
-                                     ;;acl2::member-equal-becomes-memberp
-                                     ))))
+ :hints (("Goal" :in-theory (e/d (member-equal) (ACL2::MEMBER-EQUAL-BECOMES-MEMBERP)))))
 
 (include-book "kestrel/axe/dag-arrays" :dir :system)
 (include-book "kestrel/axe/axe-syntax" :dir :system)
 
-(defun acl2::var-less-than-unquoted-keyp (var-darg key-darg dag-array)
+(defun acl2::var-less-than-unquoted-keyp (var-darg key-darg acl2::dag-array)
   (declare (xargs :guard (and (or (acl2::myquotep var-darg)
                                   (and (natp var-darg)
-                                       (acl2::pseudo-dag-arrayp 'dag-array dag-array (+ 1 var-darg))))
+                                       (acl2::pseudo-dag-arrayp 'acl2::dag-array acl2::dag-array (+ 1 var-darg))))
                               (or (acl2::myquotep key-darg)
                                   (and (natp key-darg)
-                                       (acl2::pseudo-dag-arrayp 'dag-array dag-array (+ 1 key-darg)))))))
+                                       (acl2::pseudo-dag-arrayp 'acl2::dag-array acl2::dag-array (+ 1 key-darg)))))))
   (and (consp key-darg) ;checks for quotep
        (let ((unquoted-key (unquote key-darg)))
          (and (symbolp unquoted-key)
               (natp var-darg)
-              (let ((var-expr (aref1 'dag-array dag-array var-darg)))
+              (let ((var-expr (aref1 'acl2::dag-array acl2::dag-array var-darg)))
                 (and (symbolp var-expr)
                      (symbol-< var-expr unquoted-key)))))))
 
-(defun acl2::var-not-less-than-unquoted-keyp (var-darg key-darg dag-array)
+(defun acl2::var-not-less-than-unquoted-keyp (var-darg key-darg acl2::dag-array)
   (declare (xargs :guard (and (or (acl2::myquotep var-darg)
                                   (and (natp var-darg)
-                                       (acl2::pseudo-dag-arrayp 'dag-array dag-array (+ 1 var-darg))))
+                                       (acl2::pseudo-dag-arrayp 'acl2::dag-array acl2::dag-array (+ 1 var-darg))))
                               (or (acl2::myquotep key-darg)
                                   (and (natp key-darg)
-                                       (acl2::pseudo-dag-arrayp 'dag-array dag-array (+ 1 key-darg)))))))
+                                       (acl2::pseudo-dag-arrayp 'acl2::dag-array acl2::dag-array (+ 1 key-darg)))))))
   (and (consp key-darg) ;checks for quotep
        (let ((unquoted-key (unquote key-darg)))
          (and (symbolp unquoted-key)
               (natp var-darg)
-              (let ((var-expr (aref1 'dag-array dag-array var-darg)))
+              (let ((var-expr (aref1 'acl2::dag-array acl2::dag-array var-darg)))
                 (and (symbolp var-expr)
                      (not (symbol-< var-expr unquoted-key))))))))
 
 ;; Restrict the search for VAR to the branch (namely, X) where we know it is.
-(defthm acl2::member-equal-of-append-with-key-first-half-axe
-  (implies (and (acl2::axe-syntaxp (acl2::var-less-than-unquoted-keyp var key dag-array))
-                (member-equal var x))
-           (member-equal var (acl2::append-with-key key x y)))
+(defthm acl2::memberp-of-append-with-key-first-half-axe
+  (implies (and (acl2::memberp var x)
+                (acl2::axe-syntaxp (acl2::var-less-than-unquoted-keyp var key acl2::dag-array)))
+           (acl2::memberp var (acl2::append-with-key key x y)))
   :hints (("Goal" :in-theory (enable acl2::append-with-key))))
 
 ;; Restrict the search for VAR to the branch (namely, Y) where we know it is.
-(defthm acl2::member-equal-of-append-with-key-second-half-axe
-  (implies (and (acl2::axe-syntaxp (acl2::var-not-less-than-unquoted-keyp var key dag-array))
-                (member-equal var y))
-           (member-equal var (acl2::append-with-key key x y)))
+(defthm acl2::memberp-of-append-with-key-second-half-axe
+  (implies (and (acl2::memberp var y)
+                (acl2::axe-syntaxp (acl2::var-not-less-than-unquoted-keyp var key acl2::dag-array)))
+           (acl2::memberp var (acl2::append-with-key key x y)))
   :hints (("Goal" :in-theory (enable acl2::append-with-key))))
