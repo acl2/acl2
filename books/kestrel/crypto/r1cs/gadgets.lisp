@@ -45,6 +45,25 @@
                 (bitp x)))
   :hints (("Goal" :in-theory (disable pfield::equal-of-add-move-negations-bind-free))))
 
+;; For when we have "add of neg" instead of sub.
+(defthm equal-of-0-and-mul-of-add-of-1-and-neg-same
+  (implies (and (fep x prime)
+                (rtl::primep prime))
+           (equal (equal 0 (mul x (add 1 (neg x prime) prime) prime))
+                  (bitp x)))
+  :hints (("Goal" :use (:instance constrain-to-be-bit-correct)
+           :in-theory (disable constrain-to-be-bit-correct))))
+
+;; For when we have "add of neg" instead of sub.
+(defthm equal-of-0-and-mul-of-add-of-1-and-neg-same-alt
+  (implies (and (fep x prime)
+                (rtl::primep prime))
+           (equal (equal 0 (mul (add 1 (neg x prime) prime) x prime))
+                  (bitp x)))
+  :hints (("Goal" :use (:instance constrain-to-be-bit-correct)
+           :in-theory (disable constrain-to-be-bit-correct))))
+
+
 ;;
 ;; Selection constraint (if-then-else)
 ;;
