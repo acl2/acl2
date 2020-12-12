@@ -70,8 +70,8 @@
       `(cons ,(first vars) nil)
     ;; at least two vars:
     (mv-let (first-half-rev second-half)
-      (acl2::split-list-fast vars)
-      (let* ((first-half (acl2::reverse-list first-half-rev))
+      (split-list-fast vars)
+      (let* ((first-half (reverse-list first-half-rev))
              (key (first second-half)))
         `(append-with-key ',key ;note that the key is quoted
                           ;; all are symbol-< than the key:
@@ -82,4 +82,4 @@
 (defun make-append-with-key-nest (vars)
   (declare (xargs :guard (and (symbol-listp vars)
                               (consp vars))))
-  (make-append-with-key-nest-aux (acl2::merge-sort-symbol-< vars)))
+  (make-append-with-key-nest-aux (merge-sort-symbol-< vars)))
