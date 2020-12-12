@@ -98,7 +98,7 @@
   ;;   (exec-expr-list es env limit)
   ;;   :hyp (and (not (zp limit))
   ;;             (consp es)
-  ;;             (syntaxp (quotep e)))
+  ;;             (syntaxp (quotep es)))
   ;;   :hints (("Goal"
   ;;            :expand ((exec-expr-list es env limit)))))
 
