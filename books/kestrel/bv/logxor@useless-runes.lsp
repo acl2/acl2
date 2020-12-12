@@ -75,26 +75,28 @@
                           (:REWRITE LOGXOR-WHEN-NOT-INTEGERP-ARG1)))
 (LOGXOR-SAME-2)
 (LOGXOR-COMBINE-CONSTANTS)
-(FLOOR-OF-LOGXOR-BY-2 (70 15
+(FLOOR-OF-LOGXOR-BY-2 (76 15
                           (:REWRITE LOGIOR-WHEN-NOT-INTEGERP-ARG2))
-                      (57 15
+                      (62 15
                           (:REWRITE LOGIOR-WHEN-NOT-INTEGERP-ARG1))
                       (53 53
+                          (:TYPE-PRESCRIPTION FLOOR-TYPE-NON-NEGATIVE))
+                      (53 53
                           (:TYPE-PRESCRIPTION FLOOR-TYPE-1-PART-1-BETTER))
-                      (44 12
+                      (47 12
                           (:REWRITE LOGAND-WHEN-NOT-INTEGERP-ARG1-CHEAP))
-                      (29 12
+                      (33 12
                           (:REWRITE LOGAND-WHEN-NOT-INTEGERP-ARG2-CHEAP))
+                      (22 6 (:REWRITE LOGNOT-WHEN-NOT-INTEGERP))
                       (18 18
                           (:TYPE-PRESCRIPTION LOGAND-NON-NEGATIVE-TYPE))
                       (18 18
                           (:TYPE-PRESCRIPTION LOGAND-NEGATIVE-TYPE))
-                      (18 6 (:REWRITE LOGNOT-WHEN-NOT-INTEGERP))
                       (10 6 (:REWRITE FLOOR-WHEN-<))
-                      (9 4
-                         (:REWRITE LOGORC1-WHEN-NOT-INTEGERP-ARG2))
-                      (9 4
-                         (:REWRITE LOGORC1-WHEN-NOT-INTEGERP-ARG1))
+                      (10 4
+                          (:REWRITE LOGORC1-WHEN-NOT-INTEGERP-ARG2))
+                      (10 4
+                          (:REWRITE LOGORC1-WHEN-NOT-INTEGERP-ARG1))
                       (6 6
                          (:TYPE-PRESCRIPTION <-OF-LOGIOR-AND-0-TYPE))
                       (6 6
@@ -108,7 +110,7 @@
                       (6 6
                          (:REWRITE FLOOR-MINUS-NEGATIVE-CONSTANT))
                       (6 6 (:REWRITE FLOOR-MINUS-ERIC-BETTER))
-                      (5 2
+                      (6 2
                          (:REWRITE LOGEQV-WHEN-NOT-INTEGERP-ARG1))
                       (4 2
                          (:REWRITE LOGEQV-WHEN-NOT-INTEGERP-ARG2))
@@ -116,11 +118,13 @@
                       (2 2 (:REWRITE DEFAULT-<-1)))
 (FLOOR-OF-LOGXOR-BY-2-BACK
      (25 25
+         (:TYPE-PRESCRIPTION FLOOR-TYPE-NON-NEGATIVE))
+     (25 25
          (:TYPE-PRESCRIPTION FLOOR-TYPE-1-PART-1-BETTER))
-     (9 3
-        (:REWRITE LOGXOR-WHEN-NOT-INTEGERP-ARG2))
-     (9 3
-        (:REWRITE LOGXOR-WHEN-NOT-INTEGERP-ARG1))
+     (11 3
+         (:REWRITE LOGXOR-WHEN-NOT-INTEGERP-ARG2))
+     (11 3
+         (:REWRITE LOGXOR-WHEN-NOT-INTEGERP-ARG1))
      (8 4 (:REWRITE FLOOR-WHEN-<))
      (4 4
         (:REWRITE FLOOR-WHEN-NOT-RATIONALP-OF-QUOTIENT))
@@ -137,23 +141,25 @@
      (2 2 (:REWRITE DEFAULT-<-1)))
 (FLOOR-OF-LOGXOR-AND-EXPT
      (169 13 (:DEFINITION EXPT))
-     (82 15
+     (88 15
          (:REWRITE LOGIOR-WHEN-NOT-INTEGERP-ARG2))
-     (68 6 (:REWRITE FLOOR-WHEN-<))
-     (67 15
+     (72 15
          (:REWRITE LOGIOR-WHEN-NOT-INTEGERP-ARG1))
+     (68 6 (:REWRITE FLOOR-WHEN-<))
+     (57 57
+         (:TYPE-PRESCRIPTION FLOOR-TYPE-NON-NEGATIVE))
      (57 57
          (:TYPE-PRESCRIPTION FLOOR-TYPE-1-PART-1-BETTER))
-     (50 12
+     (53 12
          (:REWRITE LOGAND-WHEN-NOT-INTEGERP-ARG1-CHEAP))
+     (41 12
+         (:REWRITE LOGAND-WHEN-NOT-INTEGERP-ARG2-CHEAP))
      (39 13 (:REWRITE DEFAULT-*-2))
      (39 13 (:REWRITE COMMUTATIVITY-OF-+))
-     (37 12
-         (:REWRITE LOGAND-WHEN-NOT-INTEGERP-ARG2-CHEAP))
      (34 4 (:LINEAR EXPT-BOUND-LINEAR-WEAK))
+     (30 6 (:REWRITE LOGNOT-WHEN-NOT-INTEGERP))
      (26 26 (:REWRITE DEFAULT-+-2))
      (26 26 (:REWRITE DEFAULT-+-1))
-     (26 6 (:REWRITE LOGNOT-WHEN-NOT-INTEGERP))
      (20 16 (:REWRITE DEFAULT-<-2))
      (18 18
          (:TYPE-PRESCRIPTION LOGAND-NON-NEGATIVE-TYPE))
@@ -164,11 +170,11 @@
      (16 16 (:REWRITE DEFAULT-<-1))
      (13 13 (:REWRITE ZIP-OPEN))
      (13 13 (:REWRITE DEFAULT-*-1))
-     (11 4
+     (12 4
          (:REWRITE LOGORC1-WHEN-NOT-INTEGERP-ARG2))
-     (11 4
+     (12 4
          (:REWRITE LOGORC1-WHEN-NOT-INTEGERP-ARG1))
-     (7 2
+     (8 2
         (:REWRITE LOGEQV-WHEN-NOT-INTEGERP-ARG1))
      (6 6
         (:TYPE-PRESCRIPTION <-OF-LOGIOR-AND-0-TYPE))

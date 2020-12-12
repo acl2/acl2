@@ -36,3 +36,7 @@
 (CONSP-OF-CAR-WHEN-ALISTP (4 1 (:REWRITE ALISTP-OF-CDR))
                           (3 3 (:REWRITE DEFAULT-CAR))
                           (1 1 (:REWRITE DEFAULT-CDR)))
+(ALISTP-OF-REMOVE1-EQUAL (17 17 (:REWRITE DEFAULT-CAR))
+                         (14 7 (:REWRITE EQUAL-OF-BOOLEANS-CHEAP))
+                         (11 11 (:REWRITE DEFAULT-CDR))
+                         (7 7 (:TYPE-PRESCRIPTION BOOLEANP)))

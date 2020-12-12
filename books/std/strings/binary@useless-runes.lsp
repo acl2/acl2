@@ -248,9 +248,9 @@
  (8 8 (:REWRITE CONSP-OF-CDDR-BY-LEN))
  (3 1 (:REWRITE |(equal 0 (len x))|))
  (2 2 (:REWRITE EQUAL-CONSTANT-+)))
-(STR::BIT-DIGIT-VAL$INLINE)
-(STR::BITP-OF-BIT-DIGIT-VAL)
-(STR::ICHAREQV-IMPLIES-EQUAL-BIT-DIGIT-VAL-1
+(STR::BIN-DIGIT-CHAR-VALUE$INLINE)
+(STR::BITP-OF-BIN-DIGIT-CHAR-VALUE)
+(STR::ICHAREQV-IMPLIES-EQUAL-BIN-DIGIT-CHAR-VALUE-1
      (24 4 (:REWRITE STR::DEFAULT-CODE-CHAR))
      (20 4 (:REWRITE DEFAULT-CODE-CHAR))
      (18 18 (:REWRITE DEFAULT-<-2))
@@ -261,10 +261,10 @@
      (4 4 (:REWRITE NEGATIVE-WHEN-NATP))
      (4 4 (:REWRITE CHAR-FIX-WHEN-CHARACTERP))
      (4 4 (:REWRITE CHAR-FIX-DEFAULT)))
-(STR::UNSIGNED-BYTE-P-OF-BIT-DIGIT-VAL)
-(STR::EQUAL-OF-BIT-DIGIT-VAL-AND-BIT-DIGIT-VAL)
-(STR::BIT-DIGIT-VAL-OF-DIGIT-TO-CHAR)
-(STR::BIT-DIGIT-LIST-VALUE1
+(STR::UNSIGNED-BYTE-P-OF-BIN-DIGIT-CHAR-VALUE)
+(STR::EQUAL-OF-BIN-DIGIT-CHAR-VALUE-AND-BIN-DIGIT-CHAR-VALUE)
+(STR::BIN-DIGIT-CHAR-VALUE-OF-DIGIT-TO-CHAR)
+(STR::BIN-DIGIT-CHARS-VALUE1
      (28 7 (:REWRITE ASH-0))
      (15 10 (:REWRITE DEFAULT-+-2))
      (15 10 (:REWRITE DEFAULT-+-1))
@@ -286,16 +286,16 @@
      (1 1
         (:REWRITE BITOPS::UNSIGNED-BYTE-P-INCR))
      (1 1 (:REWRITE IFIX-WHEN-NOT-INTEGERP)))
-(STR::BIT-DIGIT-LIST-VALUE$INLINE)
-(STR::NATP-OF-BIT-DIGIT-LIST-VALUE)
-(STR::ICHARLISTEQV-IMPLIES-EQUAL-BIT-DIGIT-LIST-VALUE-1
+(STR::BIN-DIGIT-CHARS-VALUE$INLINE)
+(STR::NATP-OF-BIN-DIGIT-CHARS-VALUE)
+(STR::ICHARLISTEQV-IMPLIES-EQUAL-BIN-DIGIT-CHARS-VALUE-1
      (116 50 (:REWRITE DEFAULT-+-2))
      (94 94 (:REWRITE CONSP-BY-LEN))
      (94 6 (:REWRITE RIGHT-SHIFT-TO-LOGTAIL))
      (78 50 (:REWRITE DEFAULT-+-1))
      (66 6 (:REWRITE ASH-0))
      (60 60
-         (:TYPE-PRESCRIPTION STR::BITP-OF-BIT-DIGIT-VAL))
+         (:TYPE-PRESCRIPTION STR::BITP-OF-BIN-DIGIT-CHAR-VALUE))
      (52 52 (:REWRITE CONSP-OF-CDR-BY-LEN))
      (44 12
          (:TYPE-PRESCRIPTION BITOPS::ASH-NATP-TYPE))
@@ -317,12 +317,12 @@
      (6 2 (:REWRITE |(< 0 (len x))|))
      (4 4 (:REWRITE DEFAULT-<-1))
      (2 2 (:REWRITE EQUAL-CONSTANT-+)))
-(STR::UNSIGNED-BYTE-P-OF-BIT-DIGIT-LIST-VALUE
+(STR::UNSIGNED-BYTE-P-OF-BIN-DIGIT-CHARS-VALUE
      (47 3 (:REWRITE RIGHT-SHIFT-TO-LOGTAIL))
      (38 15 (:REWRITE DEFAULT-+-2))
      (33 3 (:REWRITE ASH-0))
      (30 30
-         (:TYPE-PRESCRIPTION STR::BITP-OF-BIT-DIGIT-VAL))
+         (:TYPE-PRESCRIPTION STR::BITP-OF-BIN-DIGIT-CHAR-VALUE))
      (29 15 (:REWRITE DEFAULT-+-1))
      (22 6
          (:TYPE-PRESCRIPTION BITOPS::ASH-NATP-TYPE))
@@ -345,15 +345,15 @@
      (2 2 (:REWRITE DEFAULT-<-1))
      (1 1
         (:INDUCTION BITOPS::UNSIGNED-BYTE-P-INDUCT)))
-(STR::BIT-DIGIT-LIST-VALUE-UPPER-BOUND
+(STR::BIN-DIGIT-CHARS-VALUE-UPPER-BOUND
      (60 1
-         (:DEFINITION STR::BIT-DIGIT-LIST-VALUE$INLINE))
+         (:DEFINITION STR::BIN-DIGIT-CHARS-VALUE$INLINE))
      (18 1 (:REWRITE RIGHT-SHIFT-TO-LOGTAIL))
      (17 2 (:DEFINITION LEN))
      (13 5 (:REWRITE DEFAULT-+-2))
      (11 1 (:REWRITE ASH-0))
      (10 10
-         (:TYPE-PRESCRIPTION STR::BITP-OF-BIT-DIGIT-VAL))
+         (:TYPE-PRESCRIPTION STR::BITP-OF-BIN-DIGIT-CHAR-VALUE))
      (10 5
          (:TYPE-PRESCRIPTION |x < y  =>  0 < -x+y|))
      (10 5 (:REWRITE DEFAULT-+-1))
@@ -379,15 +379,15 @@
      (1 1
         (:REWRITE BITOPS::UNSIGNED-BYTE-P-INCR))
      (1 1 (:REWRITE DEFAULT-CAR)))
-(STR::BIT-DIGIT-LIST-VALUE-UPPER-BOUND-FREE
+(STR::BIN-DIGIT-CHARS-VALUE-UPPER-BOUND-FREE
      (60 1
-         (:DEFINITION STR::BIT-DIGIT-LIST-VALUE$INLINE))
+         (:DEFINITION STR::BIN-DIGIT-CHARS-VALUE$INLINE))
      (18 1 (:REWRITE RIGHT-SHIFT-TO-LOGTAIL))
      (17 2 (:DEFINITION LEN))
      (13 5 (:REWRITE DEFAULT-+-2))
      (11 1 (:REWRITE ASH-0))
      (10 10
-         (:TYPE-PRESCRIPTION STR::BITP-OF-BIT-DIGIT-VAL))
+         (:TYPE-PRESCRIPTION STR::BITP-OF-BIN-DIGIT-CHAR-VALUE))
      (10 5
          (:TYPE-PRESCRIPTION |x < y  =>  0 < -x+y|))
      (10 5 (:REWRITE DEFAULT-+-1))
@@ -407,7 +407,7 @@
      (1 1 (:TYPE-PRESCRIPTION IFIX))
      (1 1 (:REWRITE DEFAULT-CAR))
      (1 1 (:REWRITE DEFAULT-<-1)))
-(STR::BIT-DIGIT-LIST-VALUE1-REMOVAL
+(STR::BIN-DIGIT-CHARS-VALUE1-REMOVAL
      (94 8 (:REWRITE ASH-0))
      (87 29 (:REWRITE DEFAULT-+-2))
      (65 7 (:REWRITE ZIP-OPEN))
@@ -440,26 +440,26 @@
         (:REWRITE NFIX-EQUAL-TO-NONZERO-CONST))
      (2 2 (:REWRITE NFIX-EQUAL-TO-NONZERO))
      (1 1 (:REWRITE EQUAL-CONSTANT-+)))
-(STR::BIT-DIGIT-LIST-VALUE$INLINE (113 9 (:REWRITE RIGHT-SHIFT-TO-LOGTAIL))
-                                  (92 36 (:REWRITE DEFAULT-+-2))
-                                  (68 36 (:REWRITE DEFAULT-+-1))
-                                  (68 8 (:REWRITE ASH-0))
-                                  (57 22 (:REWRITE LEN-WHEN-ATOM))
-                                  (42 6 (:REWRITE ZIP-OPEN))
-                                  (35 5 (:REWRITE <-0-+-NEGATIVE-1))
-                                  (29 29 (:REWRITE CONSP-BY-LEN))
-                                  (22 22 (:REWRITE DEFAULT-CDR))
-                                  (21 21 (:REWRITE CONSP-OF-CDR-BY-LEN))
-                                  (19 7 (:REWRITE IFIX-WHEN-NOT-INTEGERP))
-                                  (19 7 (:REWRITE IFIX-WHEN-INTEGERP))
-                                  (10 5 (:REWRITE DEFAULT-<-2))
-                                  (8 8 (:REWRITE DEFAULT-CAR))
-                                  (7 7 (:TYPE-PRESCRIPTION IFIX))
-                                  (6 6 (:TYPE-PRESCRIPTION ZIP))
-                                  (6 6 (:REWRITE CONSP-OF-CDDR-BY-LEN))
-                                  (5 5 (:REWRITE DEFAULT-<-1))
-                                  (5 2 (:REWRITE |(< 0 (len x))|)))
-(STR::BIT-DIGIT-LIST-VALUE-OF-APPEND
+(STR::BIN-DIGIT-CHARS-VALUE$INLINE (113 9 (:REWRITE RIGHT-SHIFT-TO-LOGTAIL))
+                                   (92 36 (:REWRITE DEFAULT-+-2))
+                                   (68 36 (:REWRITE DEFAULT-+-1))
+                                   (68 8 (:REWRITE ASH-0))
+                                   (57 22 (:REWRITE LEN-WHEN-ATOM))
+                                   (42 6 (:REWRITE ZIP-OPEN))
+                                   (35 5 (:REWRITE <-0-+-NEGATIVE-1))
+                                   (29 29 (:REWRITE CONSP-BY-LEN))
+                                   (22 22 (:REWRITE DEFAULT-CDR))
+                                   (21 21 (:REWRITE CONSP-OF-CDR-BY-LEN))
+                                   (19 7 (:REWRITE IFIX-WHEN-NOT-INTEGERP))
+                                   (19 7 (:REWRITE IFIX-WHEN-INTEGERP))
+                                   (10 5 (:REWRITE DEFAULT-<-2))
+                                   (8 8 (:REWRITE DEFAULT-CAR))
+                                   (7 7 (:TYPE-PRESCRIPTION IFIX))
+                                   (6 6 (:TYPE-PRESCRIPTION ZIP))
+                                   (6 6 (:REWRITE CONSP-OF-CDDR-BY-LEN))
+                                   (5 5 (:REWRITE DEFAULT-<-1))
+                                   (5 2 (:REWRITE |(< 0 (len x))|)))
+(STR::BIN-DIGIT-CHARS-VALUE-OF-APPEND
      (187 17 (:REWRITE ASH-0))
      (168 71 (:REWRITE DEFAULT-+-2))
      (133 71 (:REWRITE DEFAULT-+-1))
@@ -1217,7 +1217,7 @@
                            (2 2 (:REWRITE INEQUALITY-WITH-NFIX-HYP-1))
                            (2 2 (:REWRITE DEFAULT-CDR))
                            (2 2 (:REWRITE DEFAULT-CAR)))
-(STR::BIT-DIGIT-LIST-VALUE-OF-REV-OF-BASIC-NATCHARS2
+(STR::BIN-DIGIT-CHARS-VALUE-OF-REV-OF-BASIC-NATCHARS2
      (4094 33
            (:REWRITE BITOPS::LOGAND-WITH-NEGATED-BITMASK))
      (3370 44 (:DEFINITION BITMASKP**))
@@ -1277,7 +1277,7 @@
      (8 8 (:REWRITE ZP-OPEN))
      (3 3 (:REWRITE EQUAL-CONSTANT-+))
      (3 2 (:REWRITE NFIX-WHEN-NOT-NATP)))
-(STR::BIT-DIGIT-LIST-VALUE-OF-NATCHARS2
+(STR::BIN-DIGIT-CHARS-VALUE-OF-NATCHARS2
      (26 1 (:REWRITE NFIX-EQUAL-TO-NONZERO))
      (16 3 (:REWRITE ZP-WHEN-INTEGERP))
      (12 3 (:REWRITE ZP-WHEN-GT-0))
@@ -1384,15 +1384,15 @@
                             (:REWRITE NFIX-EQUAL-TO-NONZERO-CONST))
                          (2 2
                             (:REWRITE INEQUALITY-WITH-NFIX-HYP-1)))
-(STR::BIT-DIGIT-LIST-VALUE-OF-NATSTR (11 2 (:REWRITE NFIX-WHEN-NATP))
-                                     (7 2 (:REWRITE NFIX-WHEN-NOT-NATP))
-                                     (6 2 (:REWRITE NATP-WHEN-GTE-0))
-                                     (5 5 (:TYPE-PRESCRIPTION NATP))
-                                     (2 2 (:REWRITE NATP-WHEN-INTEGERP))
-                                     (2 2 (:REWRITE NATP-RW))
-                                     (2 1 (:REWRITE NEGATIVE-WHEN-NATP))
-                                     (1 1 (:REWRITE DEFAULT-<-2))
-                                     (1 1 (:REWRITE DEFAULT-<-1)))
+(STR::BIN-DIGIT-CHARS-VALUE-OF-NATSTR (11 2 (:REWRITE NFIX-WHEN-NATP))
+                                      (7 2 (:REWRITE NFIX-WHEN-NOT-NATP))
+                                      (6 2 (:REWRITE NATP-WHEN-GTE-0))
+                                      (5 5 (:TYPE-PRESCRIPTION NATP))
+                                      (2 2 (:REWRITE NATP-WHEN-INTEGERP))
+                                      (2 2 (:REWRITE NATP-RW))
+                                      (2 1 (:REWRITE NEGATIVE-WHEN-NATP))
+                                      (1 1 (:REWRITE DEFAULT-<-2))
+                                      (1 1 (:REWRITE DEFAULT-<-1)))
 (STR::NATSTR2-NONEMPTY)
 (STR::NATSTR2-LIST (5 1 (:REWRITE NATP-WHEN-GTE-0))
                    (4 4 (:REWRITE CONSP-BY-LEN))
@@ -1609,7 +1609,7 @@
  (2 2 (:TYPE-PRESCRIPTION ZIP))
  (2 2 (:TYPE-PRESCRIPTION IFIX))
  (2 2
-    (:TYPE-PRESCRIPTION STR::BITP-OF-BIT-DIGIT-VAL))
+    (:TYPE-PRESCRIPTION STR::BITP-OF-BIN-DIGIT-CHAR-VALUE))
  (2 2 (:REWRITE ZP-WHEN-INTEGERP))
  (2 2 (:REWRITE ZP-OPEN))
  (2 2
@@ -1651,7 +1651,7 @@
  (2 2 (:TYPE-PRESCRIPTION ZIP))
  (2 2 (:TYPE-PRESCRIPTION IFIX))
  (2 2
-    (:TYPE-PRESCRIPTION STR::BITP-OF-BIT-DIGIT-VAL))
+    (:TYPE-PRESCRIPTION STR::BITP-OF-BIN-DIGIT-CHAR-VALUE))
  (2 2 (:REWRITE ZP-WHEN-INTEGERP))
  (2 2 (:REWRITE ZP-OPEN))
  (2 2
@@ -1823,7 +1823,7 @@
  (2 1 (:REWRITE DEFAULT-UNARY-MINUS))
  (1 1 (:TYPE-PRESCRIPTION ZIP))
  (1 1
-    (:TYPE-PRESCRIPTION STR::NATP-OF-BIT-DIGIT-LIST-VALUE))
+    (:TYPE-PRESCRIPTION STR::NATP-OF-BIN-DIGIT-CHARS-VALUE))
  (1 1 (:TYPE-PRESCRIPTION IFIX))
  (1 1 (:REWRITE OPEN-SMALL-NTHCDR))
  (1 1
@@ -1870,7 +1870,7 @@
      (:REWRITE STR::BIN-DIGIT-CHAR-LISTP-OF-NTHCDR))
  (55 55 (:TYPE-PRESCRIPTION ZP))
  (41 11
-     (:DEFINITION STR::BIT-DIGIT-VAL$INLINE))
+     (:DEFINITION STR::BIN-DIGIT-CHAR-VALUE$INLINE))
  (40 40 (:REWRITE OPEN-SMALL-NTHCDR))
  (35 35 (:TYPE-PRESCRIPTION ZIP))
  (31 1 (:REWRITE CHARACTERP-NTH))
