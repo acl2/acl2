@@ -2158,13 +2158,15 @@
        ((unless (consp alist-elem))
         (if (atom (cdr path))
             (mv (put-assoc-equal name file fs) 0)
-          (mv fs *enotdir*)))
+          (mv fs *enoent*)))
        ((when (and (not (m1-directory-file-p (cdr alist-elem)))
-                   (or (consp (cdr path))
-                       ;; This is the case where a regular file could get replaced by
-                       ;; a directory, which is a bad idea.
-                       (m1-directory-file-p file))))
+                   (consp (cdr path))))
         (mv fs *enotdir*))
+       ((when (and (not (m1-directory-file-p (cdr alist-elem)))
+                   ;; This is the case where a regular file could get replaced by
+                   ;; a directory, which is a bad idea.
+                   (m1-directory-file-p file)))
+        (mv fs *eexist*))
        ((when (not (or (m1-directory-file-p (cdr alist-elem))
                        (consp (cdr path))
                        (m1-directory-file-p file)
@@ -2288,9 +2290,20 @@
   (equal
    (hifat-place-file fs (append x y) file)
    (cond
+    ((and (< 0 (mv-nth 1 (hifat-find-file fs x)))
+          (not (equal (mv-nth 1 (hifat-find-file fs x))
+                      2)))
+     (mv (hifat-file-alist-fix fs)
+         *enotdir*))
+    ((atom x) (hifat-place-file fs y file))
     ((atom y) (hifat-place-file fs x file))
-    ((and (zp (mv-nth 1 (hifat-find-file fs x)))
-          (m1-directory-file-p (mv-nth 0 (hifat-find-file fs x))))
+    ((equal (mv-nth 1 (hifat-find-file fs x))
+            *enoent*)
+     (mv (hifat-file-alist-fix fs) *enoent*))
+    ((not (m1-directory-file-p (mv-nth 0 (hifat-find-file fs x))))
+     (mv (hifat-file-alist-fix fs)
+         *enotdir*))
+    (t
      (mv
       (mv-nth
        0
@@ -2306,12 +2319,7 @@
       (mv-nth
        1
        (hifat-place-file (m1-file->contents (mv-nth 0 (hifat-find-file fs x)))
-                         y file))))
-    ((or (zp (mv-nth 1 (hifat-find-file fs x)))
-         (consp x))
-     (mv (hifat-file-alist-fix fs)
-         *enotdir*))
-    (t (hifat-place-file fs y file))))
+                         y file))))))
   :hints
   (("goal"
     :in-theory (enable hifat-place-file hifat-find-file)

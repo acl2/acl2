@@ -1163,14 +1163,24 @@
                 d-e
               (d-e-install-directory-bit
                d-e (lofat-directory-file-p file))))
+       ((when (and (not (equal error-code 0))
+                   (consp (cdr path))))
+        ;; This used to be the home of a bug! Initially the error code we
+        ;; returned here was *enotdir* and the error code we returned in
+        ;; hifat-place-file was *enoent*. Clearly, the former was wrong, which
+        ;; we fixed.
+        (mv fat32$c *enoent*))
        ((when (and (consp (cdr path))
                    (not (d-e-directory-p d-e))))
         (mv fat32$c *enotdir*))
        (first-cluster (d-e-first-cluster d-e))
        ((when (and (not (equal error-code 0))
                    (consp (cdr path))))
-        ;; This is messy.
-        (mv fat32$c *enotdir*))
+        ;; This used to be the home of a bug! Initially the error code we
+        ;; returned here was *eio* and the error code we returned in
+        ;; hifat-place-file was *enotdir*. Clearly, both were wrong, and in
+        ;; time both were fixed.
+        (mv fat32$c *enoent*))
        ((when (and (or (< first-cluster 2)
                        (<= (+ 2 (count-of-clusters fat32$c))
                            first-cluster))
@@ -1202,10 +1212,10 @@
        ((when (and (d-e-directory-p d-e)
                    (lofat-regular-file-p file)))
         (mv fat32$c *enoent*))
-       ;; This is messy.
+       ;; This used to be the home of a bug! We used to return *enotdir* here.
        ((when (and (not (d-e-directory-p d-e))
                    (lofat-directory-file-p file)))
-        (mv fat32$c *enotdir*))
+        (mv fat32$c *eexist*))
        ((mv fat32$c &)
         (if (or (< first-cluster 2)
                 (<= (+ 2 (count-of-clusters fat32$c))
@@ -3536,14 +3546,18 @@
                  (make-d-e-with-filename name)))
           (d-e (if (equal error-code 0) d-e
                  (d-e-install-directory-bit d-e (lofat-directory-file-p file))))
+          ((when (and (not (equal error-code 0))
+                      (consp (cdr path))))
+           ;; This used to be the home of a bug!
+           (mv fat32$c *enoent*))
           ;; ENOTDIR - can't act on anything that supposedly exists inside a regular file.
           ((when (and (consp (cdr path)) (not (d-e-directory-p d-e))))
            (mv fat32$c *enotdir*))
           (first-cluster (d-e-first-cluster d-e))
           ((when (and (not (equal error-code 0))
                       (consp (cdr path))))
-           ;; This is messy.
-           (mv fat32$c *enotdir*))
+           ;; This used to be the home of a bug!
+           (mv fat32$c *enoent*))
           ((when (and (or (< first-cluster 2)
                           (<= (+ 2 (count-of-clusters fat32$c)) first-cluster))
                       (consp (cdr path))))
@@ -3558,10 +3572,10 @@
           ((when (and (d-e-directory-p d-e)
                       (lofat-regular-file-p file)))
            (mv fat32$c *enoent*))
-          ;; This is messy.
+          ;; This used to be the home of a bug! We used to return *enotdir* here.
           ((when (and (not (d-e-directory-p d-e))
                       (lofat-directory-file-p file)))
-           (mv fat32$c *enotdir*))
+           (mv fat32$c *eexist*))
           ((mv fat32$c &)
            (if (or (< first-cluster 2) (<= (+ 2 (count-of-clusters fat32$c)) first-cluster))
                (mv fat32$c 0) (clear-cc fat32$c first-cluster length)))
@@ -29786,13 +29800,9 @@
 
   (local (include-book "std/lists/intersectp" :dir :system))
 
-  ;; Counterexample.
-  ;;
-  ;; This is a painful situation where we would like both hifat-place-file and
-  ;;lofat-place-file to do the right thing and return *enoent*, but there's too
-  ;;much chaos currently in any attempt to change hifat-place-file... So we
-  ;;just got both to do the same incorrect thing instead of different incorrect
-  ;;things.
+  ;; This was a counterexample, but now it's fixed. Both hifat-place-file and
+  ;; lofat-place-file needed to return *enoent*, while they were respectively
+  ;; returning *enotdir* and *eio*.
   (thm
    (implies
     (and
@@ -29827,10 +29837,10 @@
           entry-limit))
         path
         (m1-file d-e (lofat-file->contents file))))
-      *enotdir*)
+      *enoent*)
      (equal (mv-nth 1
                     (lofat-place-file fat32$c root-d-e path file))
-            *enotdir*)))
+            *enoent*)))
    :hints
    (("goal"
      :do-not-induct t
@@ -29845,7 +29855,62 @@
            (:rewrite d-e-cc-contents-of-lofat-remove-file-disjoint-lemma-7
                      . 5))))))
 
-  ;; Counterexample. Here, again, both should return an EEXIST code, but...
+  ;; This used to be a counterexample because lofat-place-file used to return
+  ;; *ENOTDIR*, but no longer.
+  (thm
+   (implies
+    (and
+     (fat32-filename-list-p path)
+     (equal
+      (mv-nth
+       3
+       (lofat-to-hifat-helper
+        fat32$c
+        (make-d-e-list (mv-nth 0 (d-e-cc-contents fat32$c root-d-e)))
+        entry-limit))
+      0)
+     (lofat-regular-file-p file)
+     (not
+      (equal
+       (mv-nth
+        1
+        (find-d-e (make-d-e-list (mv-nth 0 (d-e-cc-contents fat32$c root-d-e)))
+                  (car path)))
+       0))
+     (consp (cdr path)))
+    (and
+     (equal
+      (mv-nth
+       1
+       (hifat-place-file
+        (mv-nth
+         0
+         (lofat-to-hifat-helper
+          fat32$c
+          (make-d-e-list (mv-nth 0 (d-e-cc-contents fat32$c root-d-e)))
+          entry-limit))
+        path
+        (m1-file d-e (lofat-file->contents file))))
+      *enoent*)
+     (equal (mv-nth 1
+                    (lofat-place-file fat32$c root-d-e path file))
+            *enoent*)))
+   :hints
+   (("goal"
+     :do-not-induct t
+     :expand ((lofat-place-file fat32$c root-d-e path file))
+     :in-theory
+     (e/d (hifat-place-file (:rewrite lofat-to-hifat-inversion-lemma-4)
+                            hifat-find-file)
+          ((:definition find-d-e)
+           (:definition place-d-e)
+           (:rewrite d-e-p-when-member-equal-of-d-e-list-p)
+           (:rewrite lofat-fs-p-of-lofat-place-file-lemma-1)
+           (:rewrite d-e-cc-contents-of-lofat-remove-file-disjoint-lemma-7
+                     . 5))))))
+
+  ;; This used to be a counterexample, because lofat-place-file used to return
+  ;; *enotdir*.
   (thm
    (implies
     (and
@@ -29888,10 +29953,10 @@
           entry-limit))
         path
         (m1-file d-e (lofat-file->contents file))))
-      *enotdir*)
+      *eexist*)
      (equal (mv-nth 1
                     (lofat-place-file fat32$c root-d-e path file))
-            *enotdir*)))
+            *eexist*)))
    :hints
    (("goal"
      :do-not-induct t
