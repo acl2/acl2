@@ -11,6 +11,8 @@
 
 (in-package "ACL2")
 
+;; TODO: Consider disabling acl2-count here.
+
 ;todo: use polarities?
 (defthm acl2-count-hack
   (implies (<= (acl2-count x) y)
