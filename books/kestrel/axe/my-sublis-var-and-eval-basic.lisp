@@ -12,52 +12,18 @@
 
 (in-package "ACL2")
 
+;; This utility applies a subsitution (mapping vars to dargs) to a term, such
+;; as the RHS of a rewrite rule.  As it goes, it evaluates ground calls of
+;; known functions.
+
 ;; Similar to instantiate-hyp-basic?
 
 (include-book "dags")
 (include-book "evaluator-basic")
 (include-book "axe-trees")
-(include-book "kestrel/alists-light/maybe-replace-var" :dir :system)
+(include-book "replace-var-rules")
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/utilities/pseudo-termp" :dir :system))
-
-(defthm dargp-of-maybe-replace-var
-  (implies (and (all-dargp (strip-cdrs alist))
-                (symbolp term)
-                (not (equal term (maybe-replace-var term alist))))
-           (dargp (maybe-replace-var term alist)))
-  :hints (("Goal" :in-theory (enable maybe-replace-var))))
-
-(defthm dargp-less-than-of-maybe-replace-var
-  (implies (and (all-dargp-less-than (strip-cdrs alist) bound)
-                (symbolp term)
-                (not (equal term (maybe-replace-var term alist))))
-           (dargp-less-than (maybe-replace-var term alist) bound))
-  :hints (("Goal" :in-theory (enable maybe-replace-var))))
-
-(defthm myquotep-of-maybe-replace-var
-  (implies (and (all-dargp (strip-cdrs alist))
-                (symbolp term)
-                (equal 'quote (car (maybe-replace-var term alist))))
-           (myquotep (maybe-replace-var term alist)))
-  :hints (("Goal" :use dargp-of-maybe-replace-var
-           :in-theory (disable dargp-of-maybe-replace-var))))
-
-(defthm axe-treep-of-maybe-replace-var
-  (implies (and (all-dargp (strip-cdrs alist))
-                (symbolp term))
-           (axe-treep (maybe-replace-var term alist)))
-  :hints (("Goal" :use dargp-of-maybe-replace-var
-           :in-theory (disable dargp-of-maybe-replace-var))))
-
-(defthm bounded-axe-treep-of-maybe-replace-var
-  (implies (and (all-dargp-less-than (strip-cdrs alist) bound)
-                (symbolp term))
-           (bounded-axe-treep (maybe-replace-var term alist) bound))
-  :hints (("Goal" :use dargp-less-than-of-maybe-replace-var
-           :in-theory (e/d (bounded-axe-treep-when-dargp-less-than)
-                           (dargp-less-than-of-maybe-replace-var)))))
-
 
 ;(local (in-theory (disable memberp-of-cons)))
 
@@ -68,15 +34,6 @@
 ;;                            all-consp-when-not-consp
 ;;                            use-all-consp-for-car)))ee
 
-(defthm axe-treep-of-cdr-of-assoc-equal-when-all-dargp-of-strip-cdrs
-  (implies (and (all-dargp (strip-cdrs alist))
-                (assoc-equal form alist))
-           (axe-treep (cdr (assoc-equal form alist))))
-  :hints (("Goal" :use (:instance dargp-of-cdr-of-assoc-equal (var form))
-           :in-theory (disable dargp-of-cdr-of-assoc-equal))))
-
-;this one evaluates applications of known functions on constant arguments
-;todo: try cons-with-hint here?
 ;; This handles lambda applications correctly (by handling their args) but does not beta reduce.
 (mutual-recursion
  ;; Returns a new term.
@@ -91,7 +48,7 @@
           (maybe-replace-var term alist))
          ((fquotep term) term)
          (t (let ((fn (ffn-symb term)))
-              (if (and (eq fn 'if) ;bozo, consider also handling bvif, boolif, myif, maybe boolor and booland...
+              (if (and (eq fn 'if) ;; TODO: consider also handling bvif, boolif, myif, maybe boolor and booland...
                        (= 3 (len (fargs term))))
                   (let* ((test (second term))
                          (test-result (my-sublis-var-and-eval-basic alist test interpreted-function-alist)))
@@ -149,24 +106,6 @@
   (true-listp (mv-nth 1 (my-sublis-var-and-eval-basic-lst alist terms interpreted-function-alist)))
   :hints (("Goal" :induct (len terms) :in-theory (enable my-sublis-var-and-eval-basic-lst (:i len)))))
 
-;; maybe we should prove that it returns an axe-tree...
-;; (defthm-flag-my-sublis-var-and-eval-basic
-;;   (defthm pseudo-termp-of-my-sublis-var-and-eval-basic
-;;     (implies (and (pseudo-termp term)
-;;                   (symbol-alistp alist)
-;;                   ;(pseudo-term-listp (strip-cdrs alist))
-;;                   (alistp interpreted-function-alist))
-;;              (pseudo-termp (my-sublis-var-and-eval-basic alist term interpreted-function-alist)))
-;;     :flag my-sublis-var-and-eval-basic)
-;;   (defthm pseudo-term-listp-of-my-sublis-var-and-eval-basic-lst
-;;     (implies (and (pseudo-term-listp terms)
-;;                   (symbol-alistp alist)
-;;                   ;(pseudo-term-listp (strip-cdrs alist))
-;;                   (alistp interpreted-function-alist))
-;;              (pseudo-term-listp (mv-nth 1 (my-sublis-var-and-eval-basic-lst alist terms interpreted-function-alist))))
-;;     :flag my-sublis-var-and-eval-basic-lst)
-;;   :hints (("Goal" :in-theory (disable list::memberp-of-cons))))
-
 (defthm-flag-my-sublis-var-and-eval-basic
   (defthm myquotep-of-my-sublis-var-and-eval-basic
     (implies (and (eq 'quote (car (my-sublis-var-and-eval-basic alist term interpreted-function-alist)))
@@ -176,15 +115,14 @@
              (myquotep (my-sublis-var-and-eval-basic alist term interpreted-function-alist)))
     :flag my-sublis-var-and-eval-basic)
   (defthm all-myquotep-of-mv-nth-1-of-my-sublis-var-and-eval-basic-lst
-    (implies (and (mv-nth 0 (my-sublis-var-and-eval-basic-lst alist terms interpreted-function-alist))
+    (implies (and (mv-nth 0 (my-sublis-var-and-eval-basic-lst alist terms interpreted-function-alist)) ;means ground term
                   (all-dargp (strip-cdrs alist))
                   (pseudo-term-listp terms))
              (all-myquotep (mv-nth 1 (my-sublis-var-and-eval-basic-lst alist terms interpreted-function-alist))))
     :flag my-sublis-var-and-eval-basic-lst)
-  :hints (("Goal" ;:do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (my-sublis-var-and-eval-basic my-sublis-var-and-eval-basic-lst
-                                                         myquotep-when-dargp)
-                           (myquotep)))))
+  :hints (("Goal" :in-theory (e/d (my-sublis-var-and-eval-basic my-sublis-var-and-eval-basic-lst
+                                                                myquotep-when-dargp)
+                                  (myquotep)))))
 
 (verify-guards my-sublis-var-and-eval-basic
   :hints (("Goal"
@@ -228,7 +166,6 @@
                                    ;bounded-axe-treep-when-natp
                                    ;bounded-axe-treep-when-not-consp
                                    )
-                                  (myquotep MYQUOTEP-OF-MY-SUBLIS-VAR-AND-EVAL-BASIC
-                                            BOUNDED-AXE-TREEP
-                                            natp
-                                            )))))
+                                  (myquotep myquotep-of-my-sublis-var-and-eval-basic
+                                            bounded-axe-treep
+                                            natp)))))

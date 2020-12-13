@@ -382,3 +382,10 @@
                          (equal (len (cadr fn))
                                 (len args)))))))
   :hints (("Goal" :in-theory (enable axe-treep))))
+
+(defthm axe-treep-of-cdr-of-assoc-equal-when-all-dargp-of-strip-cdrs
+  (implies (and (all-dargp (strip-cdrs alist))
+                (assoc-equal form alist))
+           (axe-treep (cdr (assoc-equal form alist))))
+  :hints (("Goal" :use (:instance dargp-of-cdr-of-assoc-equal (var form))
+           :in-theory (disable dargp-of-cdr-of-assoc-equal))))
