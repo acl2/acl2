@@ -45,13 +45,6 @@
            (not (nth 0 dag)))
   :hints (("Goal" :in-theory (enable alistp))))
 
-(defthm dargp-of-cdr-of-assoc-equal
-  (implies (and (all-dargp (strip-cdrs alist))
-                (assoc-equal var alist))
-           (dargp (cdr (assoc-equal var alist))))
-  :hints (("Goal" :in-theory (e/d (strip-cdrs)
-                                  ()))))
-
 (defthm dargp-less-than-of-cdr-of-assoc-equal
   (implies (and (all-dargp-less-than (strip-cdrs alist) bound)
                 (assoc-equal term alist))
