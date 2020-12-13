@@ -14,6 +14,23 @@
 
 ;; See unify-term-and-dag-fast-correct.lisp for a proof of correctness of this code.
 
+
+;; Before attempting the full (one-way) unification (which involves building an
+;; alist), this quickly checks whether the term is of the right shape (ex: "foo
+;; of bar of baz of 255").  Most tries will probably fail at that stage,
+;; especially in a large rule-set.
+
+;; TODO: Consider marking rules for which the pre-filter will never fail (e.g.,
+;; ones of the form (foo <var> <var>), and avoid the prefilter for them.
+
+;; TODO: Consider marking variables that occur only once in the rule and don't
+;; bother binding them in the alist.
+
+;; TODO: Consider marking each occurence of a var in the lhs according to
+;; whether it is the first occurence of that var (don't bother to look it up in
+;; the alist) or a later occurrence (check the alist but don't consider binding
+;; the var because it is bound).
+
 (include-book "kestrel/utilities/forms" :dir :system)
 (include-book "dag-arrays")
 (local (include-book "kestrel/alists-light/alistp" :dir :system))

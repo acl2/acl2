@@ -24,21 +24,19 @@
 (include-book "prover-common")
 (include-book "rule-alists")
 (include-book "make-implication-dag")
-(include-book "dag-or-term-to-dag-basic") ;todo: gen
 (include-book "elaborate-rule-items")
 (include-book "axe-clause-utilities")
-(include-book "kestrel/utilities/submit-events" :dir :system)
-(include-book "make-axe-rules") ;not strictly needed but nice to include this here...
-(include-book "worklists")
+;(include-book "kestrel/utilities/submit-events" :dir :system)
 (include-book "rewriter-common") ; for axe-bind-free-result-okayp, etc.
-(include-book "merge-tree-into-dag-array-basic") ; for merge-trees-into-dag-array-basic
-(include-book "instantiate-hyp-basic")
-(include-book "contexts") ;for max-nodenum-in-context
-(include-book "my-sublis-var-and-eval-basic")
+;(include-book "contexts") ;for max-nodenum-in-context
 (include-book "unify-term-and-dag-fast")
 (include-book "hit-counts")
 (include-book "get-args-not-done")
 (include-book "tries")
+(include-book "my-sublis-var-and-eval-basic") ;todo: gen
+(include-book "instantiate-hyp-basic") ;todo: gen
+(include-book "dag-or-term-to-dag-basic") ;todo: gen?
+(include-book "merge-tree-into-dag-array-basic") ;for merge-trees-into-dag-array-basic ;todo: gen?
 
 (defun make-prover-simple-fn (suffix ;; gets added to generated names
                               apply-axe-evaluator-to-quoted-args-name
@@ -87,7 +85,7 @@
 ;for speed
        (local (in-theory (disable ;alistp-consp-hack-equal
                           weak-dagp-aux
-;consp-from-len-cheap
+                          ;;consp-from-len-cheap
                           default-car
                           <-of-nth-and-alen1 ;todo
                           dag-exprp0
@@ -97,17 +95,15 @@
                           all-natp-when-not-consp
                           all-<-when-not-consp
                           all-dargp-when-not-consp
-                          )))
+                          acl2-count ;yuck
+                          SYMBOL-ALISTP ;move
+                          dag-function-call-exprp-redef
+                          axe-treep)))
 
+       (local (in-theory (enable natp-of-+-of-1-alt
+                                 natp-of-car-when-all-dargp-less-than-gen)))
 
-
-       (local (in-theory (enable natp-of-+-of-1-alt)))
-
-;(in-theory (disable bag::count-of-cons)) ;why is this getting introduced?
-
-;(in-theory (disable car-becomes-nth-of-0)) ;move to arrays-axe
-
-       (local (in-theory (disable acl2-count))) ;yuck
+       ;;(in-theory (disable car-becomes-nth-of-0)) ;move to arrays-axe
 
        ;; (defthm all-myquotep-of-mv-nth-1-of-my-sublis-var-and-eval-lst
        ;;   (implies (and (mv-nth 0 (my-sublis-var-and-eval-lst alist l interpreted-function-alist))
@@ -124,17 +120,6 @@
        ;;                             )))
        ;;           ("Goal" :induct (len l) :expand (my-sublis-var-and-eval-lst alist l interpreted-function-alist)
        ;;            :in-theory (enable (:i len)))))
-
-
-;TODO: possible optimization: before unifying for real (which involves building an alist), quickly check whether the term is of the right shape (ex: "foo of bar of baz of 255").  most tries will probably fail at that stage, especially in a large rule-set (could mark certain rules (e.g., ones of the form (foo <var> <var>) that we know will not fail this stage.
-;TODO: possible optimization: mark variables that occur only once in the rule and don't bother making pairs for them in the alist until we know there is a structural match
-;TODO: possible optimization: mark each occurence of a vars in the lhs according to whether it is the first occurence of that var (don't bother to lookup in alist) or a later occurrence (check the alist but don't ever need to bind the var because it will already be bound)
-
-       (local (in-theory (enable natp-of-car-when-all-dargp-less-than-gen)))
-
-       (local (in-theory (disable SYMBOL-ALISTP))) ;move
-       (local (in-theory (disable dag-function-call-exprp-redef
-                                  axe-treep)))
 
        ;;todo: verify guards and remove this:
        (defttag invariant-risk)
