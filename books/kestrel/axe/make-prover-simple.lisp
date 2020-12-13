@@ -1784,6 +1784,7 @@
        ;; Try to prove that DAG1 implies DAG2, for all values of the variables.
        ;; TODO: Warning if no variable overlap?
        ;; Returns (mv erp event state) where a failure to prove causes erp to be non-nil.
+       ;; TODO: Check all inputs, including arities.
        (defund ,prove-implication-fn-name (dag-or-term1
                                            dag-or-term2
                                            rule-lists
