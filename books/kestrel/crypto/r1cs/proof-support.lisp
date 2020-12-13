@@ -205,15 +205,15 @@
 
 ;; Restrict the search for VAR to the branch (namely, X) where we know it is.
 (defthm acl2::memberp-of-append-with-key-first-half-axe
-  (implies (and (acl2::memberp var x)
-                (acl2::axe-syntaxp (acl2::var-less-than-unquoted-keyp var key acl2::dag-array)))
+  (implies (and (acl2::axe-syntaxp (acl2::var-less-than-unquoted-keyp var key acl2::dag-array))
+                (acl2::memberp var x))
            (acl2::memberp var (acl2::append-with-key key x y)))
   :hints (("Goal" :in-theory (enable acl2::append-with-key))))
 
 ;; Restrict the search for VAR to the branch (namely, Y) where we know it is.
 (defthm acl2::memberp-of-append-with-key-second-half-axe
-  (implies (and (acl2::memberp var y)
-                (acl2::axe-syntaxp (acl2::var-not-less-than-unquoted-keyp var key acl2::dag-array)))
+  (implies (and (acl2::axe-syntaxp (acl2::var-not-less-than-unquoted-keyp var key acl2::dag-array))
+                (acl2::memberp var y))
            (acl2::memberp var (acl2::append-with-key key x y)))
   :hints (("Goal" :in-theory (enable acl2::append-with-key))))
 
