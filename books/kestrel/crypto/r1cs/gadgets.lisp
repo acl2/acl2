@@ -132,9 +132,9 @@
 ;; c = a+b-2ab becomes c=bitxor(a,b)
 (defun xor-constraint (a b c prime)
   (declare (xargs :guard (and (rtl::primep prime)
-                              (fep a prime)
+                              ;; (fep a prime)
                               (bitp a)
-                              (fep b prime)
+                              ;; (fep b prime)
                               (bitp b)
                               (fep c prime)
                               (not (equal 2 prime)) ;ensures that the 2 below is a field element
@@ -143,9 +143,9 @@
          (add a (sub b c prime) prime)))
 
 (defthm xor-constraint-correct
-  (implies (and (fep a prime)
+  (implies (and ;; (fep a prime)
                 (bitp a)
-                (fep b prime)
+                ;; (fep b prime)
                 (bitp b)
                 (fep c prime)
                 (not (equal 2 prime))
@@ -223,12 +223,11 @@
 (defthm bitxor-constraint-intro-2-alt
   (implies (and (bitp a)
                 (bitp b)
-                ;; (fep c p)
                 (not (equal 2 p))
                 (rtl::primep p))
            (equal (equal (add a (add b (neg c p) p) p)
                          (mul (add a a p) b p))
-                  (equal (mod (ifix c) p)
+                  (equal (mod (ifix c) p) ; just c, if we known (fep c p)
                          (acl2::bitxor a b))))
   :hints (("Goal" :use bitxor-constraint-intro-2
            :in-theory (disable bitxor-constraint-intro-2))))
@@ -237,7 +236,6 @@
 (defthm bitxor-constraint-intro-2b
   (implies (and (bitp a)
                 (bitp b)
-                ;; (fep c p)
                 (not (equal 2 p))
                 (rtl::primep p))
            (equal (equal (mul (add a a p) b p)
@@ -251,12 +249,11 @@
 (defthm bitxor-constraint-intro-2b-alt
   (implies (and (bitp a)
                 (bitp b)
-;                (fep c p)
                 (not (equal 2 p))
                 (rtl::primep p))
            (equal (equal (add b (add a (neg c p) p) p)
                          (mul (add a a p) b p))
-                  (equal (mod (ifix c) p)
+                  (equal (mod (ifix c) p) ; just c, if we known (fep c p)
                          (acl2::bitxor a b))))
   :hints (("Goal" :use bitxor-constraint-intro-2
            :in-theory (disable bitxor-constraint-intro-2))))
