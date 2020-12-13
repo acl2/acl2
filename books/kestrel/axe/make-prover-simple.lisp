@@ -1788,7 +1788,7 @@
        (defund ,prove-implication-fn-name (dag-or-term1
                                            dag-or-term2
                                            rule-lists
-                                           ;; interpreted-function-alist
+                                           interpreted-function-alist
                                            monitor
                                            state)
          (declare (xargs :guard (and ;; (or (myquotep dag1)
@@ -1804,7 +1804,10 @@
                          :stobjs state
                          :mode :program ;because this translates its args if they are terms
                          ))
-         (b* (((mv erp dag1) (dag-or-term-to-dag-basic dag-or-term1 (w state)))
+         (b* (((when (not (interpreted-function-alistp interpreted-function-alist)))
+               (er hard? ',prove-implication-fn-name "Ill-formed interpreted-function-alist: ~x0" interpreted-function-alist)
+               (mv :bad-input nil state))
+              ((mv erp dag1) (dag-or-term-to-dag-basic dag-or-term1 (w state)))
               ((when erp) (mv erp nil state))
               ((mv erp dag2) (dag-or-term-to-dag-basic dag-or-term2 (w state)))
               ((when erp) (mv erp nil state))
@@ -1825,7 +1828,7 @@
                (,prove-disjunction-name (list top-nodenum) ;; just one disjunct
                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                         rule-alists
-                                        nil ;; interpreted-function-alist
+                                        interpreted-function-alist
                                         monitor
                                         t ;print
                                         "MAIN_CASE" ;;case-designator ;the name of this case (a string?)
@@ -1846,7 +1849,7 @@
                                           dag-or-term2
                                           &key
                                           (rule-lists 'nil) ;todo: improve by building some in and allowing :extra-rules and :remove-rules?
-                                          ;; interpreted-function-alist
+                                          (interpreted-function-alist 'nil)
                                           (monitor 'nil))
          ;; all args get evaluated:
          (list 'make-event
@@ -1854,6 +1857,7 @@
                      dag-or-term1
                      dag-or-term2
                      rule-lists
+                     interpreted-function-alist
                      monitor
                      'state)))
 
@@ -1989,7 +1993,7 @@
                (,prove-disjunction-name literal-nodenums-or-quoteps ;; fixme think about the options used here!
                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                         rule-alists ;;(make-rule-alist-simple rule-alist t (table-alist 'axe-rule-priorities-table (w state)))
-                                        nil         ;interpreted-function-alist
+                                        interpreted-function-alist
                                         monitored-symbols
                                         t                              ;print
                                         (symbol-name name) ;;case-designator
