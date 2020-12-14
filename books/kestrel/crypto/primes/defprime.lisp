@@ -12,7 +12,7 @@
 (in-package "PRIMES")
 
 ;; This utility defines a constant, a 0-ary function, and several rules about
-;; the given prime number.  It is inteneded to be used for large primes for
+;; the given prime number.  It is intended to be used for large primes for
 ;; which calling primep takes too long.  It requires a Pratt certificate to
 ;; prove primality.
 
