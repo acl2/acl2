@@ -2081,11 +2081,12 @@
   :rule-classes (:rewrite :type-prescription))
 
 ;; Out of x, y and frame, at least one has to be a free variable...
-(defthm m1-file-alist-p-of-final-val-seq-lemma-3
-  (implies (and (consp (assoc-equal y (frame->frame frame)))
-                (not (equal x y)))
-           (consp (frame->frame (collapse-this frame x))))
-  :hints (("goal" :in-theory (enable collapse-this))))
+(local
+ (defthm m1-file-alist-p-of-final-val-seq-lemma-3
+   (implies (and (consp (assoc-equal y (frame->frame frame)))
+                 (not (equal x y)))
+            (consp (frame->frame (collapse-this frame x))))
+   :hints (("goal" :in-theory (enable collapse-this)))))
 
 (defthm
   m1-file-alist-p-of-final-val-seq-lemma-4
@@ -3331,10 +3332,11 @@
                                         (frame->frame frame))))))
    :hints (("goal" :in-theory (enable valid-seqp collapse-seq)))))
 
-(defthm valid-seqp-after-collapse-this-lemma-4
-  (implies (atom (frame->frame frame))
-           (iff (valid-seqp frame seq) (atom seq)))
-  :hints (("goal" :in-theory (enable valid-seqp collapse-seq))))
+(local
+ (defthm valid-seqp-after-collapse-this-lemma-4
+   (implies (atom (frame->frame frame))
+            (iff (valid-seqp frame seq) (atom seq)))
+   :hints (("goal" :in-theory (enable valid-seqp collapse-seq)))))
 
 (defthmd
   valid-seqp-after-collapse-this-lemma-5
@@ -4235,34 +4237,35 @@
                                  (seq-this (collapse-this frame x)))
                             (frame->frame frame))))))))))
 
-(defthm
-  valid-seqp-after-collapse-this-lemma-28
-  (implies
-   (mv-nth 1 (collapse frame))
-   (or
-    (equal (frame-val->src (cdr (assoc-equal x (frame->frame frame))))
-           0)
-    (and
-     (consp
-      (assoc-equal (frame-val->src (cdr (assoc-equal x (frame->frame frame))))
-                   (frame->frame frame)))
-     (not (equal (frame-val->src (cdr (assoc-equal x (frame->frame frame))))
-                 x)))))
-  :hints (("goal" :in-theory (enable collapse)))
-  :rule-classes
-  ((:rewrite
-    :corollary
-    (implies (and (mv-nth 1 (collapse frame))
-                  (no-duplicatesp-equal (strip-cars (frame->frame frame)))
-                  (consp (assoc-equal x (frame->frame frame)))
-                  (not (zp x)))
-             (equal (len (frame->frame (collapse-this frame x)))
-                    (+ -1 (len (frame->frame frame)))))
-    :hints
-    (("goal"
-      :cases
-      ((equal (frame-val->src (cdr (assoc-equal x (frame->frame frame))))
-              0)))))))
+(local
+ (defthm
+   valid-seqp-after-collapse-this-lemma-28
+   (implies
+    (mv-nth 1 (collapse frame))
+    (or
+     (equal (frame-val->src (cdr (assoc-equal x (frame->frame frame))))
+            0)
+     (and
+      (consp
+       (assoc-equal (frame-val->src (cdr (assoc-equal x (frame->frame frame))))
+                    (frame->frame frame)))
+      (not (equal (frame-val->src (cdr (assoc-equal x (frame->frame frame))))
+                  x)))))
+   :hints (("goal" :in-theory (enable collapse)))
+   :rule-classes
+   ((:rewrite
+     :corollary
+     (implies (and (mv-nth 1 (collapse frame))
+                   (no-duplicatesp-equal (strip-cars (frame->frame frame)))
+                   (consp (assoc-equal x (frame->frame frame)))
+                   (not (zp x)))
+              (equal (len (frame->frame (collapse-this frame x)))
+                     (+ -1 (len (frame->frame frame)))))
+     :hints
+     (("goal"
+       :cases
+       ((equal (frame-val->src (cdr (assoc-equal x (frame->frame frame))))
+               0))))))))
 
 (local
  (defthm
