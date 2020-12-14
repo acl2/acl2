@@ -1255,7 +1255,7 @@
                   (type (unsigned-byte 59) count))
          (if (zp-fast count)
              (mv :count-exceeded nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
-           (b* ((- (cw "(Rewriting with rule set ~x0:~%" rule-set-number))
+           (b* ((- (cw "(Rewriting with rule set ~x0:~%" rule-set-number)) ;the printed paren is closed below
                 ((mv erp provedp changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
                  (,rewrite-literals-name literal-nodenums
                                          nil ;initial done-list
@@ -1264,7 +1264,7 @@
                                          rule-alist
                                          interpreted-function-alist monitored-symbols print case-designator
                                          info tries prover-depth options))
-                (- (cw "Done rewriting.)~%" rule-set-number))
+                (- (cw "  Done rewriting (~x0 literals).)~%" (len literal-nodenums))) ;print the rule-set-number?
                 ((when erp) (mv erp nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
 
                 ;;fffixme right here we could drop any literal of the form (equal <constant> <var>) - if the var appears in any other literal, rewriting should have put in the constant for it..
