@@ -1097,13 +1097,16 @@
                                   nodenums-to-assume-false rule-alist equiv-alist interpreted-function-alist print info tries
                                   monitored-symbols case-designator prover-depth options (+ -1 count)))))))))))))))
 
-;fixme call the new rewriter here!  would have to handle nested result-arrays in the stobj somehow?
-;fixme inline this?
-       ;;returns (mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)
-;fixme can we use a better equiv?
-       (defund ,rewrite-literal-name (nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nodenums-to-assume-false rule-alist interpreted-function-alist
-                                              info tries monitored-symbols print case-designator ;none of these should affect soundness
-                                              prover-depth options)
+       ;; Returns (mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state).
+       ;; It would be nice to call a standard rewriter here, but the assumptions (nodenums-to-assume-false) are likely not in the right form.
+       ;; TODO: can we use a better equiv?
+       ;; TODO: Inline this?
+       (defund ,rewrite-literal-name (nodenum
+                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                      nodenums-to-assume-false
+                                      rule-alist interpreted-function-alist
+                                      info tries monitored-symbols print case-designator ;none of these should affect soundness
+                                      prover-depth options)
          (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                                      (natp nodenum)
                                      (< nodenum dag-len)
@@ -1139,34 +1142,33 @@
                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                info tries)))
 
-       ;;not a worklist algorithm of the usual sort (all elements of work-list are literals)
-       ;;rewrite each of the literals in WORK-LIST once, assuming all of the other literals false, and add the results to DONE-LIST
-       ;;returns (mv erp provedp changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries),
-       ;;where if provedp is t, then the disjunction of literal-nodenums was proved to be non-nil
-       ;;and if provedp is nil, then the disjunction of literal-nodenums is equal to the disjunction of the union of work-list and done-list
-       ;; if provedp is non-nil, changep is meaningless
+       ;; Rewrite each of the literals in WORK-LIST once, and add the results to DONE-LIST.  When rewriting a literal, assume all
+       ;; other literals (from WORK-LIST and DONE-LIST) false.
+       ;; Returns (mv erp provedp changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries),
+       ;; where if PROVEDP is t, then the disjunction of WORK-LIST and DONE-LIST was proved to be non-nil,
+       ;; and if PROVEDP is nil, then that disjunction is equuialent to the LITERAL-NODENUMS returned.
+       ;; If provedp is non-nil, changep is meaningless..
+       ;; Not a worklist algorithm of the usual sort (all elements of work-list are literals)
        ;; may extend the dag but doesn't change any nodes (new!)
        (defund ,rewrite-literals-name (work-list            ;a list of nodenums
                                        done-list            ;a list of nodenums
                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                        changep rule-alist
                                        interpreted-function-alist monitored-symbols print case-designator
-                                       info             ;an info-world
-                                       tries ;a natural number (or nil?)??
-                                       prover-depth options)
+                                       info tries prover-depth options)
          (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                                      (nat-listp work-list)
-                                     ;;(all-< work-list (alen1 result-array-name result-array))
+                                     (all-< work-list dag-len)
                                      (nat-listp done-list)
+                                     (all-< done-list dag-len)
                                      (booleanp changep)
-;(nat-listp nodenums-to-assume-false)
-;(all-< nodenums-to-assume-false dag-len)
                                      (rule-alistp rule-alist)
                                      (interpreted-function-alistp interpreted-function-alist)
+                                     (symbol-listp monitored-symbols)
+                                     ;; print
+                                     (stringp case-designator)
                                      (info-worldp info)
                                      (triesp tries)
-                                     (symbol-listp monitored-symbols)
-                                     (stringp case-designator)
                                      (natp prover-depth)
                                      (axe-prover-optionsp options))
                          :verify-guards nil))
@@ -1177,54 +1179,56 @@
                      (mv (erp-nil)
                          nil ;provedp=nil
                          changep done-list dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
-           (let* ((nodenum (first work-list))
-                  (rest-work-list (rest work-list))
-                  (other-literals (append rest-work-list done-list))) ;save this append somehow?
-             (mv-let (erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
-               (,rewrite-literal-name
-                nodenum
-                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                other-literals rule-alist interpreted-function-alist info tries monitored-symbols print case-designator prover-depth options)
-               (if erp
-                   (mv erp nil nil done-list dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
-                 (progn$ nil ;(cw "Node ~x0 rewrote to ~x1 in dag:~%" nodenum new-nodenum-or-quotep)
-                         nil ;(if (quotep new-nodenum-or-quotep) :none (if (eql nodenum new-nodenum-or-quote) :no-change (print-dag-only-supporters 'dag-array dag-array new-nodenum-or-quotep)))
-                         (if (isconstant new-nodenum-or-quotep)
-                             (if (unquote new-nodenum-or-quotep)
-                                 ;;The literal rewrote to a non-nil constant, so we proved the clause.
-                                 (prog2$ (cw "T ")
-                                         (mv (erp-nil)
-                                             t ;provedp=t
-                                             t ;(meaningless)
-                                             nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
-                               (prog2$ (cw "F ")
-                                       ;;The literal rewrote to nil, so drop it:
-                                       (,rewrite-literals-name rest-work-list
-                                                               done-list
-                                                               dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                               t ;something changed (ffixme maybe if all that happens is this, we should not make another pass?)
-                                                               rule-alist interpreted-function-alist monitored-symbols print case-designator
-                                                               info tries prover-depth options)))
-                           ;;The literal didn't rewrite to a quotep.  Harvest the disjuncts, raising them to top level:
-                           (mv-let (erp disjuncts dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-                             ;;fixme don't get disjuncts if nothing changed?  do we get-disjuncts at the start?
-                             (get-disjuncts new-nodenum-or-quotep
-                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                            nil ;fixme pass in done-list as the accumulator...
-                                            nil ;negated-flg
-                                            )
-                             (if erp
-                                 (mv erp nil nil done-list dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
-                               (let ((change-on-this-literalp (or (not (eql nodenum new-nodenum-or-quotep)) ;the rewriting changed something
-                                                                  ;;(not (equal (list new-nodenum-or-quotep) disjuncts))
-                                                                  (not (eql new-nodenum-or-quotep (first disjuncts))) ;the harvesting disjuncts changed something - could skip this check if we know there are no disjuncts to harvest in the input?))
-                                                                  )))
-                                 (prog2$ nil ;(if change-on-this-literalp (cw "C") (cw "N"))
-                                         (,rewrite-literals-name rest-work-list
-                                                                 (append disjuncts done-list)
-                                                                 dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                                 (or changep change-on-this-literalp)
-                                                                 rule-alist interpreted-function-alist monitored-symbols print case-designator info tries prover-depth options))))))))))))
+           (b* ((nodenum (first work-list))
+                (rest-work-list (rest work-list))
+                (other-literals (append rest-work-list done-list)) ;todo: save this append somehow?
+                ;; Rewrite the literal:
+                ((mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
+                 (,rewrite-literal-name nodenum
+                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                        other-literals rule-alist interpreted-function-alist info tries monitored-symbols print case-designator prover-depth options))
+                ((when erp) (mv erp nil nil done-list dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
+                ;; (- (cw "Node ~x0 rewrote to ~x1 in dag:~%" nodenum new-nodenum-or-quotep))
+                ;; (- (if (quotep new-nodenum-or-quotep) (cw ":elided") (if (eql nodenum new-nodenum-or-quote) :no-change (print-dag-only-supporters 'dag-array dag-array new-nodenum-or-quotep))))
+                ;;
+                )
+             (if (consp new-nodenum-or-quotep) ; check for quotep
+                 ;; The literal rewrote to a constant:
+                 (if (unquote new-nodenum-or-quotep)
+                     ;;The literal rewrote to a non-nil constant, so we proved the clause:
+                     (prog2$ (cw "T ")
+                             (mv (erp-nil)
+                                 t ;provedp=t
+                                 t ;(meaningless)
+                                 nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
+                   (prog2$ (cw "F ")
+                           ;;The literal rewrote to nil, so drop it:
+                           (,rewrite-literals-name rest-work-list
+                                                   done-list
+                                                   dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                   t ;something changed (ffixme maybe if all that happens is this, we should not make another pass?)
+                                                   rule-alist interpreted-function-alist monitored-symbols print case-designator
+                                                   info tries prover-depth options)))
+               ;;The literal didn't rewrite to a constant.  Harvest the disjuncts, raising them to top level:
+               (mv-let (erp disjuncts dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+                 ;;fixme don't get disjuncts if nothing changed?  do we get-disjuncts at the start?
+                 (get-disjuncts new-nodenum-or-quotep
+                                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                nil ;fixme pass in done-list as the accumulator...
+                                nil ;negated-flg
+                                )
+                 (if erp
+                     (mv erp nil nil done-list dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
+                   (let ((change-on-this-literalp (or (not (eql nodenum new-nodenum-or-quotep)) ;the rewriting changed something
+                                                      ;;(not (equal (list new-nodenum-or-quotep) disjuncts))
+                                                      (not (eql new-nodenum-or-quotep (first disjuncts))) ;the harvesting disjuncts changed something - could skip this check if we know there are no disjuncts to harvest in the input?))
+                                                      )))
+                     (prog2$ nil ;(if change-on-this-literalp (cw "C") (cw "N"))
+                             (,rewrite-literals-name rest-work-list
+                                                     (append disjuncts done-list)
+                                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                     (or changep change-on-this-literalp)
+                                                     rule-alist interpreted-function-alist monitored-symbols print case-designator info tries prover-depth options)))))))))
 
        ;; can this loop? probably, if the rules loop?
        ;; Returns (mv erp provedp literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries).
@@ -1255,7 +1259,7 @@
                   (type (unsigned-byte 59) count))
          (if (zp-fast count)
              (mv :count-exceeded nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
-           (b* ((- (cw "(Rewriting with rule set ~x0:~%" rule-set-number))
+           (b* ((- (cw "(Rewriting with rule set ~x0 (~x1 literals):~%" rule-set-number (len literal-nodenums)))
                 ((mv erp provedp changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
                  (,rewrite-literals-name literal-nodenums
                                          nil ;initial done-list
@@ -1297,7 +1301,7 @@
                             ((when (not (and (rational-listp literal-nodenums) ;todo: using nat-listp here didn't work
                                              (all-< literal-nodenums dag-len))))
                              (er hard? ',rewrite-subst-and-elim-with-rule-alist-name "Bad nodenum after crunching.")
-                             (mv (erp-t) literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+                             (mv :error-in-crunching literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
                             (- (cw "Done.)~%")))
                          (mv (erp-nil) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist literal-nodenums))))
                     ((when erp)
@@ -1338,15 +1342,14 @@
                                 interpreted-function-alist monitored-symbols case-designator print
                                 info tries prover-depth options (+ -1 count))
                              ;;fixme improve this printing..
-;should this be printed by the parent, after we attack the clause miter?
+                             ;;should this be printed by the parent, after we attack the clause miter?
                              ;;yes, probably..
                              (prog2$
                               (and (eq :verbose print)
                                    (prog2$ (cw "Case ~s0 didn't simplify to true.  Literal nodenums:~% ~x1~%(This case: ~x2)~%Literals:~%"
                                                case-designator
                                                literal-nodenums
-                                               (expressions-for-this-case literal-nodenums dag-array dag-len)
-                                               )
+                                               (expressions-for-this-case literal-nodenums dag-array dag-len))
                                            (print-dag-only-supporters-lst literal-nodenums 'dag-array dag-array)))
                               (mv (erp-nil) nil literal-nodenums
                                   dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))))))))))))
@@ -1811,7 +1814,7 @@
               ((when erp) (mv erp nil state))
               ((mv erp dag2) (dag-or-term-to-dag-basic dag-or-term2 (w state)))
               ((when erp) (mv erp nil state))
-              ((mv erp implication-dag) (make-implication-dag dag1 dag2))
+              ((mv erp implication-dag) (make-implication-dag dag1 dag2)) ; todo: we will end up having to extract disjuncts from this
               ((when erp) (mv erp nil state))
               (dag-array (make-into-array 'dag-array implication-dag))
               (top-nodenum (top-nodenum implication-dag))

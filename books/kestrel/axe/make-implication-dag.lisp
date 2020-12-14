@@ -20,6 +20,7 @@
 ;dag2 is a quotep or dag-lst
 ;; Returns (mv erp res) where res is a quotep or dag-lst.
 ;todo: consider returning the auxilary data structures.
+;todo: consider letting this return a list of disjuncts
 (defund make-implication-dag (dag1 dag2)
   (declare (xargs :guard (and (or (myquotep dag1)
                                   (and (pseudo-dagp dag1)

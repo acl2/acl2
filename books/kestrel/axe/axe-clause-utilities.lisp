@@ -62,7 +62,7 @@
       (if (consp disjunct)
           ;; it's a quotep:
           (if (unquote disjunct)
-              ;; A disjunct that is a non-nil constant proves the disjuntion:
+              ;; A disjunct that is a non-nil constant proves the disjunction:
               (mv t nil) ;second RV is irrelevant
             ;; Drop the nil disjunct:
             (handle-constant-disjuncts (rest disjuncts) acc))

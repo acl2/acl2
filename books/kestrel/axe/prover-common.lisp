@@ -1352,7 +1352,7 @@
 ;x must be a nodenum or quotep:
 (defmacro isnodenum (x) `(not (consp ,x))) ;fixme would (atom be faster?)
 ;x must be a nodenum or quotep:
-(defmacro isconstant (x) `(consp ,x))
+;(defmacro isconstant (x) `(consp ,x))
 
 (defthm not-<-of-nth-when-all-natp
   (implies (and (syntaxp (quotep k))
@@ -1438,7 +1438,7 @@
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable replace-term-using-assumptions-for-axe-prover))))
 
-;todo: on fact, it's always a quotep !
+;todo: in fact, it's always a quotep !
 ;; (defthm dargp-of-replace-term-using-assumptions-for-axe-prover
 ;;   (implies (and (replace-term-using-assumptions-for-axe-prover term equiv nodenums-to-assume-false dag-array print)
 ;;                 (axe-treep term)
@@ -1641,6 +1641,7 @@
                 (get-disjuncts (darg1 expr) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc
                                t) ;;negated-flg
               ;;it's not something we know how to get disjuncts from:
+              ;; TODO: Handle if?  Handle implies?
               (mv (erp-nil)
                   (add-to-set-eql nodenum acc)
                   dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))))
@@ -3768,7 +3769,7 @@
 
 ;; Returns (mv erp nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries).
 ;why is this separate?
-(defund simplify-var-and-add-to-dag-for-axe-prover (tree equiv
+(defund simplify-var-and-add-to-dag-for-axe-prover (var equiv
                                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                         rule-alist
                                                         nodenums-to-assume-false
@@ -3778,7 +3779,7 @@
                                                         case-designator work-hard-when-instructedp prover-depth)
   (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                               (symbolp equiv)
-                              (symbolp tree)
+                              (symbolp var)
                               (<= dag-len 2147483645)
                               (all-natp nodenums-to-assume-false)
                               (true-listp nodenums-to-assume-false)
@@ -3788,20 +3789,20 @@
                    case-designator work-hard-when-instructedp
                    prover-depth ;fixme
                    ))
-  (prog2$ nil ;;(cw "Rewriting the variable ~x0" tree) ;new!
+  (prog2$ nil ;;(cw "Rewriting the variable ~x0" var) ;new!
           ;; It's a variable:  FFIXME perhaps add it first and then use assumptions?
           ;; First try looking it up in the assumptions (fixme make special version of replace-term-using-assumptions-for-axe-prover for a variable?):
           ;; TOOD: Could we just rely on variable substitution to handle this?:
-          (let ((assumption-match (replace-term-using-assumptions-for-axe-prover tree equiv nodenums-to-assume-false dag-array print)))
+          (let ((assumption-match (replace-term-using-assumptions-for-axe-prover var equiv nodenums-to-assume-false dag-array print)))
             (if assumption-match
                 ;; We replace the variable with something it's equated to in nodenums-to-assume-false.
                 ;; We don't rewrite the result (by the second pass, nodenums-to-assume-false will be simplified - and maybe we should always do that?)
-     ;fixme what if there is a chain of equalities to follow?
+;fixme what if there is a chain of equalities to follow?
                 (mv (erp-nil) assumption-match dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
               ;; no match, so we just add the variable to the DAG:
               ;;make this a macro? this one might be rare..  same for other adding to dag operations?
               (mv-let (erp nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist) ;fixme simplify nodenum?
-                (add-variable-to-dag-array tree dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+                (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
                 (mv erp nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))))))
 
 ;; This duplicates the term x, but if it's  the variable COUNT, that's ok.
