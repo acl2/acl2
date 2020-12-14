@@ -26,7 +26,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define pointp (point)
-  :short "Recognizer all possible points of all possible elliptic curves."
+  :short "Recognize all possible points of all possible elliptic curves."
   :long
   (xdoc::topstring
    (xdoc::p
