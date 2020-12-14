@@ -704,6 +704,7 @@
  (defun bar (x)
    (declare (xargs :measure (nfix x)))
    (if (zp x) 0 (+ 1 1 (bar (+ -1 x)))))
+ (include-book \"kestrel/apt/simplify-defun-tests\" :dir :system)
  (simplify-defun bar
                  :new-name bar-simp
                  :thm-name bar-simplified
