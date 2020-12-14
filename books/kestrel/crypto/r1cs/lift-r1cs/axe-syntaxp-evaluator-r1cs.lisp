@@ -1,4 +1,4 @@
-; A basic axe-syntaxp-evaluator
+; A custom axe-syntaxp-evaluator for R1CS proofs
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
 ; Copyright (C) 2013-2020 Kestrel Institute
@@ -16,7 +16,8 @@
 (include-book "kestrel/axe/make-axe-syntaxp-evaluator" :dir :system)
 (include-book "../proof-support") ;todo: reduce
 
-(make-axe-syntaxp-evaluator 'r1cs '(var-less-than-unquoted-keyp
+(make-axe-syntaxp-evaluator 'r1cs '(;; These are the additional functions needed for R1CS proofs:
+                                    var-less-than-unquoted-keyp
                                     var-not-less-than-unquoted-keyp
                                     ;; same stuff as in the "basic" version:
                                     not-quotep ;drop?
