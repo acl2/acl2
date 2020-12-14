@@ -229,10 +229,11 @@
 
 (define atc-process-inputs ((args true-listp) ctx state)
   :returns (mv erp
-               (result "A @('(tuple (fn1...fnp symbol-listp)
-                                    (const symbolp)
-                                    (output-file stringp)
-                                    (verbose booleanp))').")
+               (val "A @('(tuple (fn1...fnp symbol-listp)
+                                 (const symbolp)
+                                 (output-file stringp)
+                                 (verbose booleanp)
+                                 val)').")
                state)
   :mode :program
   :short "Process all the inputs."
@@ -530,8 +531,9 @@
                                 ctx
                                 state)
     :returns (mv erp
-                 (std::result (tuple (expr exprp)
-                                     (type tyspecseqp)))
+                 (val (tuple (expr exprp)
+                             (type tyspecseqp)
+                             val))
                  state)
     :parents (atc-event-and-code-generation atc-gen-expr-fns)
     :short "Generate a C expression from an ACL2 term
@@ -772,7 +774,7 @@
 
   (defret-mutual consp-of-atc-gen-expr-nonbool/bool
     (defret consp-of-atc-gen-expr-nonbool
-      (consp std::result)
+      (consp val)
       :rule-classes :type-prescription
       :fn atc-gen-expr-nonbool)
     (defret true-of-atc-gen-expr-nonbool-list
@@ -794,8 +796,9 @@
                       ctx
                       state)
   :returns (mv erp
-               (std::result (tuple (stmt stmtp)
-                                   (type tyspecseqp)))
+               (val (tuple (stmt stmtp)
+                           (type tyspecseqp)
+                           val))
                state)
   :short "Generate a C statement from an ACL2 term."
   :long
@@ -849,8 +852,8 @@
   ///
 
   (more-returns
-   (std::result consp :rule-classes :type-prescription)
-   (std::result true-listp :rule-classes :type-prescription))
+   (val consp :rule-classes :type-prescription)
+   (val true-listp :rule-classes :type-prescription))
 
   (verify-guards atc-gen-stmt))
 
@@ -1022,9 +1025,9 @@
 
 (define atc-gen-wf-thm ((const symbolp) (verbose booleanp) ctx state)
   :returns (mv erp
-               (result
-                "A @('(tuple (local-event pseudo-event-formp)
-                             (exported-event pseudo-event-formp))').")
+               (val "A @('(tuple (local-event pseudo-event-formp)
+                                 (exported-event pseudo-event-formp)
+                                 val)').")
                state)
   :mode :program
   :short "Generate the theorem asserting
@@ -1073,9 +1076,9 @@
                         ctx
                         state)
   :returns (mv erp
-               (result
-                "A @('(tuple (local-event pseudo-event-formp)
-                             (exported-event pseudo-event-formp))').")
+               (val "A @('(tuple (local-event pseudo-event-formp)
+                                 (exported-event pseudo-event-formp)
+                                 val)').")
                state)
   :mode :program
   :short "Generate the theorem asserting
@@ -1196,10 +1199,9 @@
                              ctx
                              state)
   :returns (mv erp
-               (result
-                "A @('(tuple
-                       (local-events pseudo-event-form-listp)
-                       (exported-events pseudo-event-form-listp))').")
+               (val "A @('(tuple (local-events pseudo-event-form-listp)
+                                 (exported-events pseudo-event-form-listp)
+                                 val)').")
                state)
   :mode :program
   :short "Lift @(tsee atc-gen-fn-thm) to lists."

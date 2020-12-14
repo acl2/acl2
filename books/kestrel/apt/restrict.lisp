@@ -239,7 +239,8 @@
                                     (new-to-old-enable symbolp)
                                     (verify-guards booleanp)
                                     (hints evmac-input-hints-p)
-                                    (names-to-avoid symbol-listp))').")
+                                    (names-to-avoid symbol-listp)
+                                    result)').")
                state)
   :mode :program
   :short "Process all the inputs."

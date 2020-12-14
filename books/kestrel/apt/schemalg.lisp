@@ -462,7 +462,8 @@
                                     (?h symbolp)
                                     (spec-0 symbolp)
                                     (spec-1 symbolp)
-                                    (updated-names-to-avoid symbol-listp))').")
+                                    (updated-names-to-avoid symbol-listp)
+                                    result)').")
                state)
   :mode :program
   :short "Process some of the schema-specific inputs
@@ -517,7 +518,8 @@
                                     (spec-0 symbolp)
                                     (spec-1 symbolp)
                                     (spec-2 symbolp)
-                                    (updated-names-to-avoid symbol-listp))').")
+                                    (updated-names-to-avoid symbol-listp)
+                                    result)').")
                state)
   :mode :program
   :short "Process some of the schema-specific inputs
@@ -574,7 +576,8 @@
                                     (?h symbolp)
                                     (spec-0 symbolp)
                                     (spec-1 symbolp)
-                                    (updated-names-to-avoid symbol-listp))').")
+                                    (updated-names-to-avoid symbol-listp)
+                                    result)').")
                state)
   :mode :program
   :short "Process some of the schema-specific inputs
@@ -634,7 +637,8 @@
                                     (spec-0 symbolp)
                                     (spec-1 symbolp)
                                     (spec-2 symbolp)
-                                    (updated-names-to-avoid symbol-listp))').")
+                                    (updated-names-to-avoid symbol-listp)
+                                    result)').")
                state)
   :mode :program
   :short "Process all the schema-specific inputs."
@@ -806,7 +810,8 @@
                                     (old-if-new symbolp)
                                     (old-if-new-enable booleanp)
                                     (verify-guards booleanp)
-                                    (updated-names-to-avoid symbol-listp))').")
+                                    (updated-names-to-avoid symbol-listp)
+                                    result)').")
                state)
   :mode :program
   :short "Process all the inputs."

@@ -40,14 +40,16 @@
    (xdoc::codeblock
     "(tuple (var1 type1)"
     "       ..."
-    "       (varn typen))")
+    "       (varn typen)"
+    "       x)")
    (xdoc::p
-    "where each @('vari') is a variable symbol
-     and each @('typei') is a predicate symbol or a term over @('vari'),
+    "where each @('vari') is a variable symbol,
+     each @('typei') is a predicate symbol or a term over @('vari'),
+     and @('x') is a variable symbol,
      expands to")
    (xdoc::codeblock
-    "(and (tuplep n result)"
-    "     (b* (((list var1 ... varn) result))"
+    "(and (tuplep n x)"
+    "     (b* (((list var1 ... varn) x))"
     "       (and (type1 var1)"
     "            ..."
     "            (typen varn))))")
@@ -58,17 +60,15 @@
     "This lets us write return specifiers of the form")
    (xdoc::codeblock
     ":returns (mv erp"
-    "             (result (tuple (var1 type1) ... (varn typen)))"
+    "             (val (tuple (var1 type1) ... (varn typen) val))"
     "             state)")
    (xdoc::p
-    "where we can use the call @('(tuple ...)') as the type of @('result')
-     (the name must be exactly that),
-     so that the expansion will express that @('result') is an @('n')-tuple
+    "where we can use the call @('(tuple ...)') as the type of @('val'),
+     so that the expansion will express that @('val') is an @('n')-tuple
      whose components have the specified types.")
    (xdoc::p
     "We may extend this macro with support for
-     @(':hyp') and other features of return specifiers.
-     We may also extend it to support names other than @('result').")
+     @(':hyp') and other features of return specifiers.")
    (xdoc::p
     "The macro is in the @('STD') package,
      but we also add a synonym in the @('ACL2') package.")
@@ -90,9 +90,11 @@
           (cons conjunct conjuncts))))
 
   (defmacro tuple (&rest args)
-    (b* (((mv vars conjuncts) (tuple-fn args)))
-      `(and (tuplep ,(len args) result)
-            (b* (((list ,@vars) result))
+    (b* ((var (car (last args)))
+         (comps (butlast args 1))
+         ((mv vars conjuncts) (tuple-fn comps)))
+      `(and (tuplep ,(len comps) ,var)
+            (b* (((list ,@vars) ,var))
               (and ,@conjuncts)))))
 
   (defmacro acl2::tuple (&rest args)

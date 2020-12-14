@@ -121,7 +121,8 @@
                (result "@('(tuple (old symbolp)
                                   (?f symbolp)
                                   (x1...xn symbol-listp)
-                                  (matrix pseudo-termp))').")
+                                  (matrix pseudo-termp)
+                                  result)').")
                state)
   :mode :program
   :short "Process the @('old') input."
@@ -256,7 +257,8 @@
   :returns (mv erp
                (result "@('(tuple (f symbolp)
                                   (f-existsp booleanp)
-                                  (updated-names-to-avoid symbol-listp))')")
+                                  (updated-names-to-avoid symbol-listp)
+                                  result)')")
                state)
   :mode :program
   :short "Process the @(':solution-name') input."
@@ -513,7 +515,8 @@
                                   (old-if-new symbolp)
                                   (old-if-new-enable booleanp)
                                   (verify-guards booleanp)
-                                  (names-to-avoid symbol-listp))').")
+                                  (names-to-avoid symbol-listp)
+                                  result)').")
                state)
   :mode :program
   :short "Process all the inputs."
@@ -921,7 +924,8 @@
                (result "@('(tuple (local-events pseudo-event-form-listp)
                                   (exported-events pseudo-event-form-listp)
                                   (solution-correct symbolp)
-                                  (updated-names-to-avoid symbol-listp))')")
+                                  (updated-names-to-avoid symbol-listp)
+                                  result)')")
                state)
   :mode :program
   :short "Attempt to generate a solution using the ACL2 rewriter."
@@ -1015,7 +1019,8 @@
                (result "@('(tuple (local-events pseudo-form-listp)
                                   (exported-events pseudo-form-listp)
                                   (solution-correct symbolp)
-                                  (updated-names-to-avoid symbol-listp))')")
+                                  (updated-names-to-avoid symbol-listp)
+                                  result)')")
                state)
   :mode :program
   :short "Attempt to generate a solution using the Axe rewriter."
@@ -1097,7 +1102,8 @@
                (result "@('(tuple (local-events pseudo-form-listp)
                                   (exported-events pseudo-form-listp)
                                   (solution-correct symbolp)
-                                  (updated-names-to-avoid symbol-listp))')")
+                                  (updated-names-to-avoid symbol-listp)
+                                  result)')")
                state)
   :mode :program
   :short "Attempt to generate the events that provide the solution,
@@ -1224,7 +1230,8 @@
                (result "@('(tuple (local-events pseudo-form-listp)
                                   (exported-events pseudo-form-listp)
                                   (solution-correct symbolp)
-                                  (updated-names-to-avoid symbol-listp))')")
+                                  (updated-names-to-avoid symbol-listp)
+                                  result)')")
                state)
   :mode :program
   :short "Attempt to generate the events that provide the solution."
