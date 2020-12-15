@@ -373,6 +373,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(std::defalist atc-symbol-tyspecseq-alistp (x)
+  :short "Recognize alists from symbols to type specifier sequences."
+  :key (symbolp x)
+  :val (tyspecseqp x)
+  :true-listp t
+  :keyp-of-nil t
+  :valp-of-nil nil
+  ///
+
+  (defrule tyspecseqp-of-cdr-of-assoc-equal
+    (implies (and (atc-symbol-tyspecseq-alistp x)
+                  (assoc-equal k x))
+             (tyspecseqp (cdr (assoc-equal k x)))))
+
+  (defruled alistp-when-atc-symbol-tyspecseq-alistp-rewrite
+    (implies (atc-symbol-tyspecseq-alistp x)
+             (alistp x))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-check-sint-const ((term pseudo-termp))
   :returns (mv (yes/no booleanp)
                (val acl2::sbyte32p))
@@ -401,7 +421,8 @@
 (define atc-check-sint-unop ((term pseudo-termp))
   :returns (mv (yes/no booleanp)
                (op unopp)
-               (arg pseudo-termp :hyp :guard))
+               (arg pseudo-termp :hyp :guard)
+               (type tyspecseqp))
   :short "Check if a term represents
           an @('int') unary expression."
   :long
@@ -413,17 +434,20 @@
      This way, the caller can translate the argument term to a C expression
      and apply the operator to the expression.")
    (xdoc::p
+    "We also return the result C type of the operator.
+     This is always @('int') for now, but it will be generalized.")
+   (xdoc::p
     "If the term does not have that form, we return an indication of failure.
      The term may represent some other kind of C expression."))
   (case-match term
     ((fn arg)
      (case fn
-       (sint-plus (mv t (unop-plus) arg))
-       (sint-minus (mv t (unop-minus) arg))
-       (sint-bitnot (mv t (unop-bitnot) arg))
-       (sint-lognot (mv t (unop-lognot) arg))
-       (t (mv nil (irr-unop) nil))))
-    (& (mv nil (irr-unop) nil)))
+       (sint-plus (mv t (unop-plus) arg (tyspecseq-sint)))
+       (sint-minus (mv t (unop-minus) arg (tyspecseq-sint)))
+       (sint-bitnot (mv t (unop-bitnot) arg (tyspecseq-sint)))
+       (sint-lognot (mv t (unop-lognot) arg (tyspecseq-sint)))
+       (t (mv nil (irr-unop) nil (irr-tyspecseq)))))
+    (& (mv nil (irr-unop) nil (irr-tyspecseq))))
   ///
 
   (defret acl2-count-of-atc-check-sint-unop-arg
@@ -438,7 +462,8 @@
   :returns (mv (yes/no booleanp)
                (op binopp)
                (arg1 pseudo-termp :hyp :guard)
-               (arg2 pseudo-termp :hyp :guard))
+               (arg2 pseudo-termp :hyp :guard)
+               (type tyspecseqp))
   :short "Check if a term represents
           an @('int') non-side-effecting binary expression."
   :long
@@ -454,31 +479,34 @@
      their ACL2 representation is strict,
      which may be acceptable in some cases.")
    (xdoc::p
+    "We also return the result C type of the operator.
+     This is always @('int') for now, but it will be generalized.")
+   (xdoc::p
     "If the term does not have that form, we return an indication of failure.
      The term may represent some other kind of C expression."))
   (case-match term
     ((fn arg1 arg2)
      (case fn
-       (sint-add (mv t (binop-add) arg1 arg2))
-       (sint-sub (mv t (binop-sub) arg1 arg2))
-       (sint-mul (mv t (binop-mul) arg1 arg2))
-       (sint-div (mv t (binop-div) arg1 arg2))
-       (sint-rem (mv t (binop-rem) arg1 arg2))
-       (sint-shl-sint (mv t (binop-shl) arg1 arg2))
-       (sint-shr-sint (mv t (binop-shr) arg1 arg2))
-       (sint-lt (mv t (binop-lt) arg1 arg2))
-       (sint-le (mv t (binop-le) arg1 arg2))
-       (sint-gt (mv t (binop-gt) arg1 arg2))
-       (sint-ge (mv t (binop-ge) arg1 arg2))
-       (sint-eq (mv t (binop-eq) arg1 arg2))
-       (sint-ne (mv t (binop-ne) arg1 arg2))
-       (sint-bitand (mv t (binop-bitand) arg1 arg2))
-       (sint-bitxor (mv t (binop-bitxor) arg1 arg2))
-       (sint-bitior (mv t (binop-bitior) arg1 arg2))
-       (sint-logand (mv t (binop-logand) arg1 arg2))
-       (sint-logor (mv t (binop-logor) arg1 arg2))
-       (t (mv nil (irr-binop) nil nil))))
-    (& (mv nil (irr-binop) nil nil)))
+       (sint-add (mv t (binop-add) arg1 arg2 (tyspecseq-sint)))
+       (sint-sub (mv t (binop-sub) arg1 arg2 (tyspecseq-sint)))
+       (sint-mul (mv t (binop-mul) arg1 arg2 (tyspecseq-sint)))
+       (sint-div (mv t (binop-div) arg1 arg2 (tyspecseq-sint)))
+       (sint-rem (mv t (binop-rem) arg1 arg2 (tyspecseq-sint)))
+       (sint-shl-sint (mv t (binop-shl) arg1 arg2 (tyspecseq-sint)))
+       (sint-shr-sint (mv t (binop-shr) arg1 arg2 (tyspecseq-sint)))
+       (sint-lt (mv t (binop-lt) arg1 arg2 (tyspecseq-sint)))
+       (sint-le (mv t (binop-le) arg1 arg2 (tyspecseq-sint)))
+       (sint-gt (mv t (binop-gt) arg1 arg2 (tyspecseq-sint)))
+       (sint-ge (mv t (binop-ge) arg1 arg2 (tyspecseq-sint)))
+       (sint-eq (mv t (binop-eq) arg1 arg2 (tyspecseq-sint)))
+       (sint-ne (mv t (binop-ne) arg1 arg2 (tyspecseq-sint)))
+       (sint-bitand (mv t (binop-bitand) arg1 arg2 (tyspecseq-sint)))
+       (sint-bitxor (mv t (binop-bitxor) arg1 arg2 (tyspecseq-sint)))
+       (sint-bitior (mv t (binop-bitior) arg1 arg2 (tyspecseq-sint)))
+       (sint-logand (mv t (binop-logand) arg1 arg2 (tyspecseq-sint)))
+       (sint-logor (mv t (binop-logor) arg1 arg2 (tyspecseq-sint)))
+       (t (mv nil (irr-binop) nil nil (irr-tyspecseq)))))
+    (& (mv nil (irr-binop) nil nil (irr-tyspecseq))))
   ///
 
   (defret acl2-count-of-atc-check-sint-binop-arg1
@@ -526,6 +554,7 @@
           generate C expressions from ACL2 terms."
 
   (define atc-gen-expr-nonbool ((term pseudo-termp)
+                                (var-types atc-symbol-tyspecseq-alistp)
                                 (fn symbolp)
                                 (prec-fns symbol-listp)
                                 ctx
@@ -548,7 +577,9 @@
        This is always @('int') for now,
        but this will be generalized at some point.")
      (xdoc::p
-      "An ACL2 variable is translated to a C variable.")
+      "An ACL2 variable is translated to a C variable.
+       Its type is looked up in an alist that is passed as input.
+       For now the type is always @('int'), but this will be generalized.")
      (xdoc::p
       "If the term fits the @(tsee sint-const) pattern
        we translate it to a C integer constant.")
@@ -576,8 +607,14 @@
        We could extend this code to provide
        more information to the user at some point."))
     (b* (((when (acl2::variablep term))
-          (value (list (expr-ident (make-ident :name (symbol-name term)))
-                       (tyspecseq-sint))))
+          (b* ((var-type (assoc-eq term var-types))
+               ((when (not var-type))
+                (raise "Internal error: the variable ~x0 in function ~x1 ~
+                        has no associated type." term fn)
+                (value (list (irr-expr) (irr-tyspecseq))))
+               (type (tyspecseq-fix (cdr var-type))))
+            (value (list (expr-ident (make-ident :name (symbol-name term)))
+                         type))))
          ((mv okp val) (atc-check-sint-const term))
          ((when okp)
           (value
@@ -587,23 +624,26 @@
                                                 :unsignedp nil
                                                 :type (iconst-tysuffix-none))))
             (tyspecseq-sint))))
-         ((mv okp op arg) (atc-check-sint-unop term))
+         ((mv okp op arg type) (atc-check-sint-unop term))
          ((when okp)
           (b* (((er (list arg-expr &)) (atc-gen-expr-nonbool arg
+                                                             var-types
                                                              fn
                                                              prec-fns
                                                              ctx
                                                              state)))
             (value (list (make-expr-unary :op op :arg arg-expr)
-                         (tyspecseq-sint)))))
-         ((mv okp op arg1 arg2) (atc-check-sint-binop term))
+                         type))))
+         ((mv okp op arg1 arg2 type) (atc-check-sint-binop term))
          ((when okp)
           (b* (((er (list arg1-expr &)) (atc-gen-expr-nonbool arg1
+                                                              var-types
                                                               fn
                                                               prec-fns
                                                               ctx
                                                               state))
                ((er (list arg2-expr &)) (atc-gen-expr-nonbool arg2
+                                                              var-types
                                                               fn
                                                               prec-fns
                                                               ctx
@@ -611,10 +651,11 @@
             (value (list (make-expr-binary :op op
                                            :arg1 arg1-expr
                                            :arg2 arg2-expr)
-                         (tyspecseq-sint)))))
+                         type))))
          ((mv okp fn args) (atc-check-callable-fn term prec-fns))
          ((when okp)
           (b* (((mv erp arg-exprs state) (atc-gen-expr-nonbool-list args
+                                                                    var-types
                                                                     fn
                                                                     prec-fns
                                                                     ctx
@@ -623,38 +664,43 @@
             (value (list
                     (make-expr-call :fun (make-ident :name (symbol-name fn))
                                     :args arg-exprs)
-                    (tyspecseq-sint))))))
+                    type)))))
       (case-match term
         (('c::sint01 arg)
          (b* (((mv erp expr state)
-               (atc-gen-expr-bool arg fn prec-fns ctx state))
+               (atc-gen-expr-bool arg var-types fn prec-fns ctx state))
               ((when erp) (mv erp (list (irr-expr) (irr-tyspecseq)) state)))
            (mv nil (list expr (tyspecseq-sint)) state)))
         (('if test then else)
          (b* (((mv mbtp &) (acl2::check-mbt-call test))
               ((when mbtp) (atc-gen-expr-nonbool then
+                                                 var-types
                                                  fn
                                                  prec-fns
                                                  ctx
                                                  state))
               ((mv mbt$p &) (acl2::check-mbt$-call test))
               ((when mbt$p) (atc-gen-expr-nonbool then
+                                                  var-types
                                                   fn
                                                   prec-fns
                                                   ctx
                                                   state))
               ((mv erp test-expr state) (atc-gen-expr-bool test
+                                                           var-types
                                                            fn
                                                            prec-fns
                                                            ctx
                                                            state))
               ((when erp) (mv erp (list (irr-expr) (irr-tyspecseq)) state))
               ((er (list then-expr &)) (atc-gen-expr-nonbool then
+                                                             var-types
                                                              fn
                                                              prec-fns
                                                              ctx
                                                              state))
               ((er (list else-expr &)) (atc-gen-expr-nonbool else
+                                                             var-types
                                                              fn
                                                              prec-fns
                                                              ctx
@@ -671,6 +717,7 @@
                      fn term)))))
 
   (define atc-gen-expr-nonbool-list ((terms pseudo-term-listp)
+                                     (var-types atc-symbol-tyspecseq-alistp)
                                      (fn symbolp)
                                      (prec-fns symbol-listp)
                                      ctx
@@ -685,12 +732,14 @@
       "We do not return the C types of the expressions."))
     (b* (((when (endp terms)) (value nil))
          ((mv erp (list expr &) state) (atc-gen-expr-nonbool (car terms)
+                                                             var-types
                                                              fn
                                                              prec-fns
                                                              ctx
                                                              state))
          ((when erp) (mv erp nil state))
          ((er exprs) (atc-gen-expr-nonbool-list (cdr terms)
+                                                var-types
                                                 fn
                                                 prec-fns
                                                 ctx
@@ -698,6 +747,7 @@
       (value (cons expr exprs))))
 
   (define atc-gen-expr-bool ((term pseudo-termp)
+                             (var-types atc-symbol-tyspecseq-alistp)
                              (fn symbolp)
                              (prec-fns symbol-listp)
                              ctx
@@ -730,6 +780,7 @@
     (case-match term
       (('not arg)
        (b* (((er arg-expr) (atc-gen-expr-bool arg
+                                              var-types
                                               fn
                                               prec-fns
                                               ctx
@@ -737,11 +788,13 @@
          (value (make-expr-unary :op (unop-lognot) :arg arg-expr))))
       (('if arg1 arg2 ''nil)
        (b* (((er arg1-expr) (atc-gen-expr-bool arg1
+                                               var-types
                                                fn
                                                prec-fns
                                                ctx
                                                state))
             ((er arg2-expr) (atc-gen-expr-bool arg2
+                                               var-types
                                                fn
                                                prec-fns
                                                ctx
@@ -750,14 +803,24 @@
                                   :arg1 arg1-expr
                                   :arg2 arg2-expr))))
       (('if arg1 arg1 arg2)
-       (b* (((er arg1-expr) (atc-gen-expr-bool arg1 fn prec-fns ctx state))
-            ((er arg2-expr) (atc-gen-expr-bool arg2 fn prec-fns ctx state)))
+       (b* (((er arg1-expr) (atc-gen-expr-bool arg1
+                                               var-types
+                                               fn
+                                               prec-fns
+                                               ctx
+                                               state))
+            ((er arg2-expr) (atc-gen-expr-bool arg2
+                                               var-types
+                                               fn
+                                               prec-fns
+                                               ctx
+                                               state)))
          (value (make-expr-binary :op (binop-logor)
                                   :arg1 arg1-expr
                                   :arg2 arg2-expr))))
       (('c::sint-nonzerop arg)
        (b* (((mv erp (list expr &) state)
-             (atc-gen-expr-nonbool arg fn prec-fns ctx state)))
+             (atc-gen-expr-nonbool arg var-types fn prec-fns ctx state)))
          (mv erp expr state)))
       (& (er-soft+ ctx t (irr-expr)
                    "When generating C code for the function ~x0, ~
@@ -791,6 +854,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-stmt ((term pseudo-termp)
+                      (var-types atc-symbol-tyspecseq-alistp)
                       (fn symbolp)
                       (prec-fns symbol-listp)
                       ctx
@@ -823,22 +887,34 @@
   (case-match term
     (('if test then else)
      (b* (((mv mbtp &) (acl2::check-mbt-call test))
-          ((when mbtp) (atc-gen-stmt then fn prec-fns ctx state))
+          ((when mbtp) (atc-gen-stmt then var-types fn prec-fns ctx state))
           ((mv mbt$p &) (acl2::check-mbt$-call test))
-          ((when mbt$p) (atc-gen-stmt then fn prec-fns ctx state))
+          ((when mbt$p) (atc-gen-stmt then var-types fn prec-fns ctx state))
           ((mv erp test-expr state) (atc-gen-expr-bool test
+                                                       var-types
                                                        fn
                                                        prec-fns
                                                        ctx
                                                        state))
           ((when erp) (mv erp (list (irr-stmt) (irr-tyspecseq)) state))
-          ((er (list then-stmt &)) (atc-gen-stmt then fn prec-fns ctx state))
-          ((er (list else-stmt &)) (atc-gen-stmt else fn prec-fns ctx state)))
+          ((er (list then-stmt &)) (atc-gen-stmt then
+                                                 var-types
+                                                 fn
+                                                 prec-fns
+                                                 ctx
+                                                 state))
+          ((er (list else-stmt &)) (atc-gen-stmt else
+                                                 var-types
+                                                 fn
+                                                 prec-fns
+                                                 ctx
+                                                 state)))
        (value
         (list
          (make-stmt-ifelse :test test-expr :then then-stmt :else else-stmt)
          (tyspecseq-sint)))))
     (& (b* (((mv erp (list expr &) state) (atc-gen-expr-nonbool term
+                                                                var-types
                                                                 fn
                                                                 prec-fns
                                                                 ctx
@@ -875,24 +951,45 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-param-decl-list ((formals symbol-listp) (fn symbolp) ctx state)
-  :returns (mv erp (params param-decl-listp) state)
+  :returns (mv erp
+               (val (tuple (params param-decl-listp)
+                           (var-types atc-symbol-tyspecseq-alistp)
+                           val))
+               state)
   :short "Generate a list of C parameter declarations
           from a list of ACL2 formal parameters."
-  (b* (((when (endp formals)) (value nil))
-       ((cons formal rest-formals) formals)
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Also generate an alist from the formal parameters to their C types."))
+  (b* (((when (endp formals)) (value (list nil nil)))
+       (formal (mbe :logic (acl2::symbol-fix (car formals))
+                    :exec (car formals)))
+       ((when (member-equal (symbol-name formal)
+                            (symbol-name-lst (cdr formals))))
+        (er-soft+ ctx t (list nil nil)
+                  "The formal parameter ~x0 of the function ~x1 ~
+                   has the same symbol name as another formal parameters ~x2; ~
+                   this is disallowed, even if the package names differ."
+                  formal fn (cdr formals)))
        ((mv erp param state) (atc-gen-param-decl formal fn ctx state))
-       (dup? (member-eq formal rest-formals))
-       ((when dup?)
-        (er-soft+ ctx t nil
-                  "The formal parameters of the ~x0 function ~
-                   must have distinct symbol names ~
-                   (i.e. they may not differ only in the package names), ~
-                   but the formal parameters ~x1 and ~x2 ~
-                   have the same symbol name."
-                  fn formal (car dup?)))
-       ((when erp) (mv erp nil state))
-       ((er params) (atc-gen-param-decl-list rest-formals fn ctx state)))
-    (value (cons param params))))
+       ((when erp) (mv erp (list nil nil) state))
+       ((er (list params var-types)) (atc-gen-param-decl-list (cdr formals)
+                                                              fn
+                                                              ctx
+                                                              state)))
+    (value (list (cons param params)
+                 (acons formal (tyspecseq-sint) var-types))))
+
+  :verify-guards nil ; done below
+  ///
+  (verify-guards atc-gen-param-decl-list
+    :hints
+    (("Goal"
+      :in-theory (enable alistp-when-atc-symbol-tyspecseq-alistp-rewrite))))
+
+  (more-returns
+   (val true-listp :rule-classes :type-prescription)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -945,13 +1042,14 @@
                                           ctx
                                           state))
        ((when erp) (mv erp (irr-ext-decl) state))
-       ((mv erp params state) (atc-gen-param-decl-list formals
-                                                       fn
-                                                       ctx
-                                                       state))
+       ((mv erp (list params var-types) state) (atc-gen-param-decl-list formals
+                                                                        fn
+                                                                        ctx
+                                                                        state))
        ((when erp) (mv erp (irr-ext-decl) state))
        (body (acl2::ubody+ fn wrld))
        ((mv erp (list stmt type) state) (atc-gen-stmt body
+                                                      var-types
                                                       fn
                                                       prec-fns
                                                       ctx
