@@ -284,7 +284,6 @@ on a per data definition basis or
 ;;only strings upto len 1 to 8
 (defun nth-string-builtin (n)
   (declare (xargs :guard (natp n)))
-                  ;:verify-guards nil))
   (let* ((str-len (1+ (mod n 7)))
          (char-pos-list (defdata::split-nat str-len n))
          (charlist (get-character-list-from-positions char-pos-list)))
@@ -302,7 +301,6 @@ on a per data definition basis or
 
 (defun nth-standard-string-builtin (n)
   (declare (xargs :guard (natp n)))
-                  ;:verify-guards nil))
   (let* ((str-len (1+ (mod n 7)))
          (char-pos-list (defdata::split-nat str-len n))
          (charlist (get-standard-char-list-from-positions char-pos-list)))
@@ -317,7 +315,6 @@ on a per data definition basis or
 
 (defun nth-symbol-builtin (n)
   (declare (xargs :guard (natp n)))
-                 ;:verify-guards nil)) 
   (intern$ (nth-string-builtin n) "ACL2S"))
 
 ;; (defattach nth-symbol nth-symbol-builtin)
@@ -343,7 +340,6 @@ on a per data definition basis or
 ;;only strings upto len 1 to 8
 (defun nth-character-list-builtin (n)
   (declare (xargs :guard (natp n)))
-                  ;:verify-guards nil))
   (let* ((str-len (1+ (mod n 7)))
          (char-pos-list (defdata::split-nat str-len n))
          (charlist (get-character-list-from-positions char-pos-list)))
@@ -351,7 +347,6 @@ on a per data definition basis or
 
 (defun nth-standard-char-list-builtin (n)
   (declare (xargs :guard (natp n)))
-                  ;:verify-guards nil))
   (let* ((str-len (1+ (mod n 7)))
          (char-pos-list (defdata::split-nat str-len n))
          (charlist (get-standard-char-list-from-positions char-pos-list)))
