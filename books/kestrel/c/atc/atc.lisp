@@ -667,7 +667,7 @@
             (value (list
                     (make-expr-call :fun (make-ident :name (symbol-name fn))
                                     :args arg-exprs)
-                    type)))))
+                    (tyspecseq-sint))))))
       (case-match term
         (('c::sint01 arg)
          (b* (((mv erp expr state)
@@ -934,15 +934,15 @@
         (list
          (make-stmt-ifelse :test test-expr :then then-stmt :else else-stmt)
          then-type))))
-    (& (b* (((mv erp (list expr &) state) (atc-gen-expr-nonbool term
-                                                                var-types
-                                                                fn
-                                                                prec-fns
-                                                                ctx
-                                                                state))
+    (& (b* (((mv erp (list expr type) state) (atc-gen-expr-nonbool term
+                                                                   var-types
+                                                                   fn
+                                                                   prec-fns
+                                                                   ctx
+                                                                   state))
             ((when erp) (mv erp (list (irr-stmt) (irr-tyspecseq)) state)))
          (value (list (make-stmt-return :value expr)
-                      (tyspecseq-sint))))))
+                      type)))))
 
   :verify-guards nil ; done below
 
