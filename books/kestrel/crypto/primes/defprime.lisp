@@ -49,6 +49,8 @@
 
        ;; (in-theory (disable (:e ,name)))
 
+       (table acl2::evisc-table ,number ,(concatenate 'string "#.*" (symbol-name name) "*"))
+
        ;; We use Russinoff's algorithm from "Pratt certification and the primality of 2^255 - 19"
        ;; where a Pratt certificate of n is a tree
        ;; (r (p1 ... pn) (e1 ... en) (c1 ... cn))
@@ -78,17 +80,12 @@
        ;; To allow the :linear rule to be created.
        (local (in-theory (disable (:e ,name))))
 
-       ;; A fairly strong linear rule
+       ;; A fairly strong linear rule.  Should allow ACL2 to prove that a call
+       ;; of the 0-ary function is greater than 2, etc.
        (defthm ,(acl2::pack-in-package-of-symbol 'defprime name '-linear)
          (= (,name) ,defconst-name)
          :rule-classes :linear
-         :hints (("Goal" :in-theory (enable (:e ,name)))))
-
-       ;; (defthm <-of-2-and-bn-254-group-prime
-       ;;   (< 2 (bn-254-group-prime))
-       ;;   :rule-classes ((:rewrite :linear))
-       ;;   :hints (("Goal" :in-theory (enable (:e bn-254-group-prime)))))
-       )))
+         :hints (("Goal" :in-theory (enable (:e ,name))))))))
 
 (defmacro defprime (name number pratt-cert)
   `(make-event (defprime-fn ',name ',number ',pratt-cert)))

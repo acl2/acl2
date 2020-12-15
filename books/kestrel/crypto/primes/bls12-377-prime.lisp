@@ -9,6 +9,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; The elliptic curve BLS12-377 contains a subgroup with a large prime order.
+;; The certificate in this file can be used to prove primality of this number.
+;; This prime number is usually called the "scalar field prime" since the
+;; arithmetic circuits used for zk-SNARKs are computed modulo this prime.
+;; In the first reference below, the prime is also called 'r'.
+
+;; References for BLS12-377:
+;; https://eprint.iacr.org/2018/962.pdf
+;; https://github.com/AleoHQ/snarkOS/blob/c9e5f823b8493f8c3a6c43e6f4dfd16173b99957/curves/README.md#bls12-377
+
+
 (in-package "PRIMES")
 
 ;; See also ../ecurve/bls-377-domain-parameters.lisp
@@ -17,6 +28,7 @@
 
 (defprime bls12-377-scalar-field-prime
   #x12ab655e9a2ca55660b44d1e5c37b00159aa76fed00000010a11800000000001
+
   ;; The following certificate was generated using
   ;; sagecell.sagemath.org and wolframalpha.com
   ;; For example,
