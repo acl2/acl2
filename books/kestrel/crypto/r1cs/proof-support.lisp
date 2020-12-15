@@ -719,3 +719,15 @@
                          (not (quotep x))))
            (equal (add x (add k y p) p)
                   (add k (add x y p) p))))
+
+(defthm not-of-if-of-nil-arg3-when-booleans
+  (implies (and (booleanp x)
+                (booleanp y))
+           (equal (not (if x y nil)) ;; "not and"
+                  (acl2::boolor (not x) (not y)))))
+
+;; combines 2 steps, dropping the mod and dropping the ifix.
+(defthm mod-of-ifix-when-fep
+  (implies (fep x p)
+           (equal (mod (ifix x) p)
+                  x)))
