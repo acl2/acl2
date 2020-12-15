@@ -1301,7 +1301,7 @@
                              (not (consp literal-nodenums)) ;;can't crunch if no nodenums (can this happen?)
                              )
                          (mv (erp-nil) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist literal-nodenums)
-                       (b* ((- (cw "(Crunching: ..."))
+                       (b* (;; (- (cw "(Crunching: ...")) ;; matching paren printed below
                             ((mv dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist literal-nodenums)
                              (crunch-dag-array2-with-indices 'dag-array dag-array dag-len 'dag-parent-array literal-nodenums))
                             ;; TODO: Prove that this can't happen.  Need to know that
@@ -1311,7 +1311,8 @@
                                              (all-< literal-nodenums dag-len))))
                              (er hard? ',rewrite-subst-and-elim-with-rule-alist-name "Bad nodenum after crunching.")
                              (mv :error-in-crunching literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
-                            (- (cw "Done.)~%")))
+                            ;; (- (cw "Done.)~%"))
+                            )
                          (mv (erp-nil) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist literal-nodenums))))
                     ((when erp)
                      (mv erp nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))
@@ -1328,7 +1329,7 @@
                          (substitute-vars literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print prover-depth 0 nil))
                         ((when erp)
                          (mv erp nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
-                        (- (cw "Done substituting. ~x0 literals left.)~%" (len literal-nodenums))))
+                        (- (cw "  Done substituting. ~x0 literals left.)~%" (len literal-nodenums))))
                      (if changep
                          ;;Something changed, so start over:
                          (,rewrite-subst-and-elim-with-rule-alist-name
