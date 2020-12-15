@@ -554,7 +554,7 @@
           generate C expressions from ACL2 terms."
 
   (define atc-gen-expr-nonbool ((term pseudo-termp)
-                                (var-types atc-symbol-tyspecseq-alistp)
+                                (vars atc-symbol-tyspecseq-alistp)
                                 (fn symbolp)
                                 (prec-fns symbol-listp)
                                 ctx
@@ -610,12 +610,12 @@
        We could extend this code to provide
        more information to the user at some point."))
     (b* (((when (acl2::variablep term))
-          (b* ((var-type (assoc-eq term var-types))
-               ((when (not var-type))
+          (b* ((var+type (assoc-eq term vars))
+               ((when (not var+type))
                 (raise "Internal error: the variable ~x0 in function ~x1 ~
                         has no associated type." term fn)
                 (value (list (irr-expr) (irr-tyspecseq))))
-               (type (tyspecseq-fix (cdr var-type))))
+               (type (tyspecseq-fix (cdr var+type))))
             (value (list (expr-ident (make-ident :name (symbol-name term)))
                          type))))
          ((mv okp val) (atc-check-sint-const term))
@@ -630,7 +630,7 @@
          ((mv okp op arg type) (atc-check-sint-unop term))
          ((when okp)
           (b* (((er (list arg-expr &)) (atc-gen-expr-nonbool arg
-                                                             var-types
+                                                             vars
                                                              fn
                                                              prec-fns
                                                              ctx
@@ -640,13 +640,13 @@
          ((mv okp op arg1 arg2 type) (atc-check-sint-binop term))
          ((when okp)
           (b* (((er (list arg1-expr &)) (atc-gen-expr-nonbool arg1
-                                                              var-types
+                                                              vars
                                                               fn
                                                               prec-fns
                                                               ctx
                                                               state))
                ((er (list arg2-expr &)) (atc-gen-expr-nonbool arg2
-                                                              var-types
+                                                              vars
                                                               fn
                                                               prec-fns
                                                               ctx
@@ -658,7 +658,7 @@
          ((mv okp fn args) (atc-check-callable-fn term prec-fns))
          ((when okp)
           (b* (((mv erp arg-exprs state) (atc-gen-expr-nonbool-list args
-                                                                    var-types
+                                                                    vars
                                                                     fn
                                                                     prec-fns
                                                                     ctx
@@ -671,39 +671,39 @@
       (case-match term
         (('c::sint01 arg)
          (b* (((mv erp expr state)
-               (atc-gen-expr-bool arg var-types fn prec-fns ctx state))
+               (atc-gen-expr-bool arg vars fn prec-fns ctx state))
               ((when erp) (mv erp (list (irr-expr) (irr-tyspecseq)) state)))
            (mv nil (list expr (tyspecseq-sint)) state)))
         (('if test then else)
          (b* (((mv mbtp &) (acl2::check-mbt-call test))
               ((when mbtp) (atc-gen-expr-nonbool then
-                                                 var-types
+                                                 vars
                                                  fn
                                                  prec-fns
                                                  ctx
                                                  state))
               ((mv mbt$p &) (acl2::check-mbt$-call test))
               ((when mbt$p) (atc-gen-expr-nonbool then
-                                                  var-types
+                                                  vars
                                                   fn
                                                   prec-fns
                                                   ctx
                                                   state))
               ((mv erp test-expr state) (atc-gen-expr-bool test
-                                                           var-types
+                                                           vars
                                                            fn
                                                            prec-fns
                                                            ctx
                                                            state))
               ((when erp) (mv erp (list (irr-expr) (irr-tyspecseq)) state))
               ((er (list then-expr then-type)) (atc-gen-expr-nonbool then
-                                                                     var-types
+                                                                     vars
                                                                      fn
                                                                      prec-fns
                                                                      ctx
                                                                      state))
               ((er (list else-expr else-type)) (atc-gen-expr-nonbool else
-                                                                     var-types
+                                                                     vars
                                                                      fn
                                                                      prec-fns
                                                                      ctx
@@ -728,7 +728,7 @@
                      fn term)))))
 
   (define atc-gen-expr-nonbool-list ((terms pseudo-term-listp)
-                                     (var-types atc-symbol-tyspecseq-alistp)
+                                     (vars atc-symbol-tyspecseq-alistp)
                                      (fn symbolp)
                                      (prec-fns symbol-listp)
                                      ctx
@@ -743,14 +743,14 @@
       "We do not return the C types of the expressions."))
     (b* (((when (endp terms)) (value nil))
          ((mv erp (list expr &) state) (atc-gen-expr-nonbool (car terms)
-                                                             var-types
+                                                             vars
                                                              fn
                                                              prec-fns
                                                              ctx
                                                              state))
          ((when erp) (mv erp nil state))
          ((er exprs) (atc-gen-expr-nonbool-list (cdr terms)
-                                                var-types
+                                                vars
                                                 fn
                                                 prec-fns
                                                 ctx
@@ -758,7 +758,7 @@
       (value (cons expr exprs))))
 
   (define atc-gen-expr-bool ((term pseudo-termp)
-                             (var-types atc-symbol-tyspecseq-alistp)
+                             (vars atc-symbol-tyspecseq-alistp)
                              (fn symbolp)
                              (prec-fns symbol-listp)
                              ctx
@@ -791,7 +791,7 @@
     (case-match term
       (('not arg)
        (b* (((er arg-expr) (atc-gen-expr-bool arg
-                                              var-types
+                                              vars
                                               fn
                                               prec-fns
                                               ctx
@@ -799,13 +799,13 @@
          (value (make-expr-unary :op (unop-lognot) :arg arg-expr))))
       (('if arg1 arg2 ''nil)
        (b* (((er arg1-expr) (atc-gen-expr-bool arg1
-                                               var-types
+                                               vars
                                                fn
                                                prec-fns
                                                ctx
                                                state))
             ((er arg2-expr) (atc-gen-expr-bool arg2
-                                               var-types
+                                               vars
                                                fn
                                                prec-fns
                                                ctx
@@ -815,13 +815,13 @@
                                   :arg2 arg2-expr))))
       (('if arg1 arg1 arg2)
        (b* (((er arg1-expr) (atc-gen-expr-bool arg1
-                                               var-types
+                                               vars
                                                fn
                                                prec-fns
                                                ctx
                                                state))
             ((er arg2-expr) (atc-gen-expr-bool arg2
-                                               var-types
+                                               vars
                                                fn
                                                prec-fns
                                                ctx
@@ -831,7 +831,7 @@
                                   :arg2 arg2-expr))))
       (('c::sint-nonzerop arg)
        (b* (((mv erp (list expr &) state)
-             (atc-gen-expr-nonbool arg var-types fn prec-fns ctx state)))
+             (atc-gen-expr-nonbool arg vars fn prec-fns ctx state)))
          (mv erp expr state)))
       (& (er-soft+ ctx t (irr-expr)
                    "When generating C code for the function ~x0, ~
@@ -866,7 +866,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-stmt ((term pseudo-termp)
-                      (var-types atc-symbol-tyspecseq-alistp)
+                      (vars atc-symbol-tyspecseq-alistp)
                       (fn symbolp)
                       (prec-fns symbol-listp)
                       ctx
@@ -900,24 +900,24 @@
   (case-match term
     (('if test then else)
      (b* (((mv mbtp &) (acl2::check-mbt-call test))
-          ((when mbtp) (atc-gen-stmt then var-types fn prec-fns ctx state))
+          ((when mbtp) (atc-gen-stmt then vars fn prec-fns ctx state))
           ((mv mbt$p &) (acl2::check-mbt$-call test))
-          ((when mbt$p) (atc-gen-stmt then var-types fn prec-fns ctx state))
+          ((when mbt$p) (atc-gen-stmt then vars fn prec-fns ctx state))
           ((mv erp test-expr state) (atc-gen-expr-bool test
-                                                       var-types
+                                                       vars
                                                        fn
                                                        prec-fns
                                                        ctx
                                                        state))
           ((when erp) (mv erp (list (irr-stmt) (irr-tyspecseq)) state))
           ((er (list then-stmt then-type)) (atc-gen-stmt then
-                                                         var-types
+                                                         vars
                                                          fn
                                                          prec-fns
                                                          ctx
                                                          state))
           ((er (list else-stmt else-type)) (atc-gen-stmt else
-                                                         var-types
+                                                         vars
                                                          fn
                                                          prec-fns
                                                          ctx
@@ -935,7 +935,7 @@
          (make-stmt-ifelse :test test-expr :then then-stmt :else else-stmt)
          then-type))))
     (& (b* (((mv erp (list expr type) state) (atc-gen-expr-nonbool term
-                                                                   var-types
+                                                                   vars
                                                                    fn
                                                                    prec-fns
                                                                    ctx
@@ -976,7 +976,7 @@
 (define atc-gen-param-decl-list ((formals symbol-listp) (fn symbolp) ctx state)
   :returns (mv erp
                (val (tuple (params param-decl-listp)
-                           (var-types atc-symbol-tyspecseq-alistp)
+                           (vars atc-symbol-tyspecseq-alistp)
                            val))
                state)
   :short "Generate a list of C parameter declarations
@@ -997,12 +997,12 @@
                   formal fn (cdr formals)))
        ((mv erp param state) (atc-gen-param-decl formal fn ctx state))
        ((when erp) (mv erp (list nil nil) state))
-       ((er (list params var-types)) (atc-gen-param-decl-list (cdr formals)
+       ((er (list params vars)) (atc-gen-param-decl-list (cdr formals)
                                                               fn
                                                               ctx
                                                               state)))
     (value (list (cons param params)
-                 (acons formal (tyspecseq-sint) var-types))))
+                 (acons formal (tyspecseq-sint) vars))))
 
   :verify-guards nil ; done below
   ///
@@ -1065,14 +1065,14 @@
                                           ctx
                                           state))
        ((when erp) (mv erp (irr-ext-decl) state))
-       ((mv erp (list params var-types) state) (atc-gen-param-decl-list formals
+       ((mv erp (list params vars) state) (atc-gen-param-decl-list formals
                                                                         fn
                                                                         ctx
                                                                         state))
        ((when erp) (mv erp (irr-ext-decl) state))
        (body (acl2::ubody+ fn wrld))
        ((mv erp (list stmt type) state) (atc-gen-stmt body
-                                                      var-types
+                                                      vars
                                                       fn
                                                       prec-fns
                                                       ctx
