@@ -424,13 +424,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-check-sint-unop ((term pseudo-termp))
+(define atc-check-unop ((term pseudo-termp))
   :returns (mv (yes/no booleanp)
                (op unopp)
                (arg pseudo-termp :hyp :guard)
                (type tyspecseqp))
-  :short "Check if a term represents
-          an @('int') unary expression."
+  :short "Check if a term represents a unary expression."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -440,8 +439,7 @@
      This way, the caller can translate the argument term to a C expression
      and apply the operator to the expression.")
    (xdoc::p
-    "We also return the result C type of the operator.
-     This is always @('int') for now, but it will be generalized.")
+    "We also return the result C type of the operator.")
    (xdoc::p
     "If the term does not have that form, we return an indication of failure.
      The term may represent some other kind of C expression."))
@@ -456,7 +454,7 @@
     (& (mv nil (irr-unop) nil (irr-tyspecseq))))
   ///
 
-  (defret acl2-count-of-atc-check-sint-unop-arg
+  (defret acl2-count-of-atc-check-unop-arg
     (implies yes/no
              (< (acl2-count arg)
                 (acl2-count term)))
@@ -464,14 +462,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-check-sint-binop ((term pseudo-termp))
+(define atc-check-binop ((term pseudo-termp))
   :returns (mv (yes/no booleanp)
                (op binopp)
                (arg1 pseudo-termp :hyp :guard)
                (arg2 pseudo-termp :hyp :guard)
                (type tyspecseqp))
-  :short "Check if a term represents
-          an @('int') non-side-effecting binary expression."
+  :short "Check if a term represents a non-side-effecting binary expression."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -515,13 +512,13 @@
     (& (mv nil (irr-binop) nil nil (irr-tyspecseq))))
   ///
 
-  (defret acl2-count-of-atc-check-sint-binop-arg1
+  (defret acl2-count-of-atc-check-binop-arg1
     (implies yes/no
              (< (acl2-count arg1)
                 (acl2-count term)))
     :rule-classes :linear)
 
-  (defret acl2-count-of-atc-check-sint-binop-arg2
+  (defret acl2-count-of-atc-check-binop-arg2
     (implies yes/no
              (< (acl2-count arg2)
                 (acl2-count term)))
@@ -642,7 +639,7 @@
                                                 :unsignedp nil
                                                 :type (iconst-tysuffix-none))))
             (tyspecseq-sint))))
-         ((mv okp op arg type) (atc-check-sint-unop term))
+         ((mv okp op arg type) (atc-check-unop term))
          ((when okp)
           (b* (((er (list arg-expr &)) (atc-gen-expr-nonbool arg
                                                              vars
@@ -652,7 +649,7 @@
                                                              state)))
             (value (list (make-expr-unary :op op :arg arg-expr)
                          type))))
-         ((mv okp op arg1 arg2 type) (atc-check-sint-binop term))
+         ((mv okp op arg1 arg2 type) (atc-check-binop term))
          ((when okp)
           (b* (((er (list arg1-expr &)) (atc-gen-expr-nonbool arg1
                                                               vars
