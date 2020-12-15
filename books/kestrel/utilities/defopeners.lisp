@@ -500,6 +500,7 @@
                               (symbolp existing-symbol))))
   (intern-in-package-of-symbol (symbol-name symbol) existing-symbol))
 
+;; Returns (mv event generated-names).
 (defund make-unroll-and-base-theorems (fn all-fns-in-nest hyps disable suffix verbose state)
   (declare (xargs :stobjs state
                   :verify-guards nil
@@ -536,22 +537,28 @@
                            (cw-theorems base-theorems)
                            (cw "Unroll theorems for ~x0:~%" fn)
                            (cw-theorems unroll-theorems)))))
-        `(progn (encapsulate ()
+        (mv `(progn (encapsulate ()
                   (local (install-not-normalized ,fn))
                   (set-ignore-ok t)
                   ,@base-theorems
                   ,@unroll-theorems)
-                (value-triple ',(append base-theorem-names unroll-theorem-names)))))))
+                    (value-triple ',(append base-theorem-names unroll-theorem-names)))
+            (append base-theorem-names unroll-theorem-names))))))
 
 ;TODO: If fn is non-recursive, just make a single rule...    or should it be an error to call defopeners?
 
-;for non-mut-rec
+;for non-mut-rec.  Returns an event.
+;; KEEP IN SYNC WITH DEFOPENERS-NAMES-FN.
 (defun defopeners-fn (fn hyps disable suffix verbose state)
   (declare (xargs :stobjs state
                   :verify-guards nil))
-  (make-unroll-and-base-theorems fn (list fn) hyps disable suffix verbose state))
+  (mv-let (event names)
+    (make-unroll-and-base-theorems fn (list fn) hyps disable suffix verbose state)
+    (declare (ignore names))
+    event))
 
 ;hyps should be a list of terms over the formals of the function (can include syntaxp, etc.)
+;; KEEP IN SYNC WITH DEFOPENERS-NAMES.
 (defmacro defopeners (fn &key
                          (hyps 'nil)
                          (disable 'nil)
@@ -562,11 +569,36 @@
    (if (member-eq verbose '(t 't)) t nil) ;verbose
    `(make-event (defopeners-fn ',fn ',hyps ',disable ',suffix ',verbose state))))
 
+;for non-mut-rec.  Returns a list of names
+;; KEEP IN SYNC WITH DEFOPENERS-FN.
+(defun defopeners-names-fn (fn hyps disable suffix verbose state)
+  (declare (xargs :stobjs state
+                  :verify-guards nil))
+  (mv-let (event names)
+    (make-unroll-and-base-theorems fn (list fn) hyps disable suffix verbose state)
+    (declare (ignore event))
+    names))
+
+;hyps should be a list of terms over the formals of the function (can include syntaxp, etc.)
+;; KEEP IN SYNC WITH DEFOPENERS.
+(defmacro defopeners-names (fn &key
+                               (hyps 'nil)
+                               (disable 'nil)
+                               (verbose 'nil)
+                               (suffix 'nil) ;nil or a symbol to add to the unroll and base rule names
+                               )
+  `(defopeners-names-fn ',fn ',hyps ',disable ',suffix ',verbose state))
+
+;; Returns an event
 (defun defopeners-mut-rec-fn (fn hyps disable suffix verbose state)
   (declare (xargs :stobjs state
                   :verify-guards nil))
-  (make-unroll-and-base-theorems fn (fn-recursive-partners fn state) hyps disable suffix verbose state))
+  (mv-let (event names)
+    (make-unroll-and-base-theorems fn (fn-recursive-partners fn state) hyps disable suffix verbose state)
+    (declare (ignore names))
+    event))
 
+;; TODO: Add defopeners-mut-rec-name, like defopeners-names.
 ;TODO: Call control-screen-output here, as above?
 ;TODO: Combine this with the non-mut-rec version (query the world to check whether it's a mut rec and what the other functions are)
 (defmacro defopeners-mut-rec (fn &key
