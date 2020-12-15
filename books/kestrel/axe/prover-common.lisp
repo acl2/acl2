@@ -56,6 +56,8 @@
 ;(local (include-book "kestrel/alists-light/strip-cdrs" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
+(local (in-theory (disable add-to-set-equal)))
+
 (local
  (defthm equal-of-len-of-remove-equal-same
    (equal (equal (len (remove-equal a x)) (len x))
@@ -1590,11 +1592,10 @@
                                                                         nil))))))))
                 nil)))
 
-;Returns (mv erp disjuncts dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist).
-;where DISJUNCTS is a set of nodenums whose disjunction is equivalent (iff? could we just say implies?) to either (or nodenum acc), if negated-flg is nil, or to (or (not nodenum) acc), if negated-flg is non-nil
-; and the dag may have been extended (could we say they just imply it?)
-;fixme could this be expensive if there is a lot of shared structure?
-;note: some of the disjuncts may not exist in the dag (ex: for (not (booland x y)), the disjuncts are (not x) and (not y), and these may not exist in the dag).  thus, this returns a possibly-extended dag.
+;; Returns (mv erp extended-acc dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist).
+;; where EXTENDED-ACC is a set of nodenums whose disjunction is equivalent (iff?) to either (or nodenum acc), if negated-flg is nil, or to (or (not nodenum) acc), if negated-flg is non-nil.
+;; This may extend the dag, since some of the disjuncts may not already exist in the dag (ex: for (not (booland x y)), the disjuncts are (not x) and (not y), and these may not exist in the dag).
+;; TODO: In theory this could blow up due to shared structure, but I haven't seen that happen.
 ;ffixme handle non-predicates (in which case we'll have an if nest, not a boolor nest)?
 (defund get-disjuncts (nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc negated-flg)
   (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
@@ -1619,7 +1620,7 @@
         (let ((expr (aref1 'dag-array dag-array nodenum)))
           (if (and (call-of 'boolor expr)
                    (= 2 (len (dargs expr)))
-                   (not (consp (darg1 expr))) ;handle this case?
+                   (not (consp (darg1 expr))) ;handle this case? if non-nil, it should prove the clause, else (if nil) it should be dropped
                    (not (consp (darg2 expr))) ;handle this case?
                    (mbt (< (darg1 expr) nodenum))
                    (mbt (< (darg2 expr) nodenum))
@@ -1678,12 +1679,16 @@
                   (add-to-set-eql negated-nodenum acc) ;meaningless if erp is t.
                   dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))))))))
 
-(in-theory (disable add-to-set-equal)) ;move
+;; (mv-let (erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+;;   (make-term-into-dag-array-basic '(booland x y) 'dag-array-name 'dag-parent-array-name nil)
+;;   (declare (ignore erp))
+;;   (get-disjuncts nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nil t))
 
 (def-dag-builder-theorems
   (get-disjuncts nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc negated-flg)
   (mv erp disjuncts dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
 
+;; The disjuncts are always nodenums.
 (defthm nat-listp-of-mv-nth-1-of-get-disjuncts
   (implies  (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                  (natp nodenum)
@@ -1693,6 +1698,72 @@
   :hints (("Goal" :in-theory (e/d (get-disjuncts) (natp)))))
 
 (verify-guards get-disjuncts :hints (("Goal" :in-theory (e/d (car-becomes-nth-of-0) (natp)))))
+
+(defthm all-<-of-mv-nth-1-of-get-disjuncts
+  (implies  (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                 (natp nodenum)
+                 (< nodenum dag-len)
+                 (nat-listp acc)
+                 (all-< acc dag-len)
+                 (not (mv-nth 0 (get-disjuncts nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc negated-flg))))
+            (all-< (mv-nth 1 (get-disjuncts nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc negated-flg))
+                   (mv-nth 3 (get-disjuncts nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc negated-flg))))
+  :hints (("Goal" :in-theory (e/d (get-disjuncts CAR-BECOMES-NTH-OF-0) (natp)))))
+
+;; Extends ACC with nodenums whose disjunction is equivalent to the disjunction of the NODENUMS.
+;; Returns (mv erp extended-acc dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist).
+(defund get-disjuncts-from-nodes (nodenums
+                                  dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                  acc)
+  (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                              (nat-listp nodenums)
+                              (all-< nodenums dag-len)
+                              (nat-listp acc)
+                              (all-< acc dag-len))
+;                  :hints (("Goal" :in-theory (enable car-becomes-nth-of-0)))
+;                  :verify-guards nil ; done below
+                  ))
+  (if (endp nodenums)
+      ;; I suppose we could skip the reverse here:
+      (mv (erp-nil) (reverse acc) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+    (b* ( ;; todo add handling of constant disjuncts, currently not returns by get-disjuncts
+         ((mv erp acc dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+          (get-disjuncts (first nodenums)
+                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                         acc ; will be extended
+                         nil ; negated-flg
+                         ))
+         ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))
+      (get-disjuncts-from-nodes (rest nodenums) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc))))
+
+;move
+(local
+ (defthm nat-listp-of-append
+   (equal (nat-listp (append x y))
+          (and (nat-listp (true-list-fix x))
+               (nat-listp y)))
+   :hints (("Goal" :in-theory (enable nat-listp reverse-list)))))
+
+;move
+(local
+ (defthm nat-listp-of-reverse-list
+   (equal (nat-listp (reverse-list x))
+          (nat-listp (true-list-fix x)))
+   :hints (("Goal" :in-theory (enable nat-listp reverse-list)))))
+
+;; The disjuncts are always nodenums.
+(defthm nat-listp-of-mv-nth-1-of-get-disjuncts-from-nodes
+  (implies  (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                 (nat-listp nodenums)
+                 (all-< nodenums dag-len)
+                 (nat-listp acc)
+                 (all-< acc dag-len))
+            (nat-listp (mv-nth 1 (get-disjuncts-from-nodes nodenums
+                                                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                           acc))))
+  :hints (("Goal" :in-theory (e/d (get-disjuncts-from-nodes) (natp)))))
+
+
 
 ;can be used to test get-disjuncts:
 ;; (defun get-disjuncts-of-term (term)
@@ -2402,24 +2473,6 @@
 ;;         ;skip it (it's probably a :definition):
 ;;         (keep-rewrite-rule-names (cdr runes))))))
 
-;looks for the if nest that results from the macro OR
-;now also handles boolor ! ;Fri Feb 12 12:54:05 2010
-(defund get-disjuncts-from-term (term)
-  (if (and (call-of 'if term)
-           (equal (farg1 term) (farg2 term)))
-      (cons (farg1 term) ;should we dive into this term too?
-            (get-disjuncts-from-term (farg3 term)))
-    (if (call-of 'boolor term)
-        (append (get-disjuncts-from-term (farg1 term))
-                (get-disjuncts-from-term (farg2 term)))
-      (list term))))
-
-;returns a list of conjuncts (terms) whose conjunction is equivalent to (not term)
-;only preserves iff, not equality?
-(defun conjuncts-for-negation (term)
-  ;;uses the fact that (not (or x y)) is (and (not x) (not y))
-  (negate-terms (get-disjuncts-from-term term)))
-
 ;defforall could do these too?
 (defthm all-natp-of-mv-nth-0-of-split-list-fast-aux
   (implies (and (all-natp lst)
@@ -2940,13 +2993,6 @@
             (len changed-acc)
             (len unchanged-acc)))
   :hints (("Goal" :in-theory (enable translate-nodes))))
-
-(local
- (defthm nat-listp-of-append
-   (implies (and (nat-listp x)
-                 (nat-listp y))
-            (nat-listp (append x y)))
-   :hints (("Goal" :in-theory (enable nat-listp)))))
 
 (local
  (defthm nat-listp-of-repeat
