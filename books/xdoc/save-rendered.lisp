@@ -73,8 +73,8 @@
               (cons #\3 (if (equal (length tuple) 4)
                             (if (eq (nth 0 tuple) 'TOP)
                                 ""
-                              (msg "Source: ~s0~|" (nth 3 tuple)))
-                          "Source: ACL2 Sources~|"))
+                              (msg ":DOC source: ~s0~|" (nth 3 tuple)))
+                          ":DOC source: ACL2 Sources~|"))
               (cons #\4 (nth 2 tuple)))
         channel state nil))
 
