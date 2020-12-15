@@ -482,8 +482,7 @@
      their ACL2 representation is strict,
      which may be acceptable in some cases.")
    (xdoc::p
-    "We also return the result C type of the operator.
-     This is always @('int') for now, but it will be generalized.")
+    "We also return the result C type of the operator.")
    (xdoc::p
     "If the term does not have that form, we return an indication of failure.
      The term may represent some other kind of C expression."))
@@ -605,7 +604,7 @@
        we call the mutually recursive function
        that translates the argument (which must be an allowed boolean term)
        to an expression, which we return.
-       The type is always @('int') here.")
+       The type of this expression is always @('int').")
      (xdoc::p
       "If the term is an @(tsee if) call,
        first we check if the test is @(tsee mbt) or @(tsee mbt$);
@@ -893,9 +892,7 @@
   (xdoc::topstring
    (xdoc::p
     "Besides the generated statement,
-     we also return the C type of the value it returns.
-     This is always @('int') for now,
-     but this will be generalized at some point.")
+     we also return the C type of the value it returns.")
    (xdoc::p
     "This is called on the body term of an ACL2 function.
      If the term is not a conditional,
