@@ -586,12 +586,14 @@
      (xdoc::p
       "If the term fits the pattern of a unary or binary operation,
        we translate it to the application of the operator
-       to the recursively generated expressions.")
+       to the recursively generated expressions.
+       The type is the result type of the operator.")
      (xdoc::p
       "If the term is a call of @(tsee c::sint01),
        we call the mutually recursive function
        that translates the argument, which must be an allowed boolean term,
-       to an expression, which we return.")
+       to an expression, which we return.
+       The result is always @('int') here.")
      (xdoc::p
       "If the term is an @(tsee if) call,
        first we check if the test is @(tsee mbt) or @(tsee mbt$);
@@ -600,7 +602,8 @@
        Otherwise,
        we call the mutually recursive function on the test,
        we call this function on the branches,
-       and we construct a conditional expression.")
+       and we construct a conditional expression.
+       We ensure that the two branches have the same type.")
      (xdoc::p
       "In all other cases, we fail with an error.
        The term is not an allowed non-boolean term.
@@ -693,22 +696,30 @@
                                                            ctx
                                                            state))
               ((when erp) (mv erp (list (irr-expr) (irr-tyspecseq)) state))
-              ((er (list then-expr &)) (atc-gen-expr-nonbool then
-                                                             var-types
-                                                             fn
-                                                             prec-fns
-                                                             ctx
-                                                             state))
-              ((er (list else-expr &)) (atc-gen-expr-nonbool else
-                                                             var-types
-                                                             fn
-                                                             prec-fns
-                                                             ctx
-                                                             state)))
+              ((er (list then-expr then-type)) (atc-gen-expr-nonbool then
+                                                                     var-types
+                                                                     fn
+                                                                     prec-fns
+                                                                     ctx
+                                                                     state))
+              ((er (list else-expr else-type)) (atc-gen-expr-nonbool else
+                                                                     var-types
+                                                                     fn
+                                                                     prec-fns
+                                                                     ctx
+                                                                     state))
+              ((unless (equal then-type else-type))
+               (er-soft+ ctx t (list (irr-expr) (irr-tyspecseq))
+                         "When generating C code for the function ~x0, ~
+                          two branches ~x1 and ~x2 of a conditional term ~
+                          have different types ~x3 and ~x4;
+                          use conversion operations, if needed, ~
+                          to make the branches of the same type."
+                         fn then else then-type else-type)))
            (value
             (list
              (make-expr-cond :test test-expr :then then-expr :else else-expr)
-             (tyspecseq-sint)))))
+             then-type))))
         (& (er-soft+ ctx t (list (irr-expr) (irr-tyspecseq))
                      "When generating C code for the function ~x0, ~
                       at a point where
@@ -837,7 +848,8 @@
 
   (defret-mutual consp-of-atc-gen-expr-nonbool/bool
     (defret consp-of-atc-gen-expr-nonbool
-      (consp val)
+      (and (consp val)
+           (true-listp val))
       :rule-classes :type-prescription
       :fn atc-gen-expr-nonbool)
     (defret true-of-atc-gen-expr-nonbool-list
@@ -883,7 +895,8 @@
      and recursively translate the `then' branch.
      Otherwise, we generate an @('if') statement,
      with recursively generated statements as branches;
-     the test expression is generated from the test term."))
+     the test expression is generated from the test term;
+     we ensure that the two branches have the same type."))
   (case-match term
     (('if test then else)
      (b* (((mv mbtp &) (acl2::check-mbt-call test))
@@ -897,22 +910,30 @@
                                                        ctx
                                                        state))
           ((when erp) (mv erp (list (irr-stmt) (irr-tyspecseq)) state))
-          ((er (list then-stmt &)) (atc-gen-stmt then
-                                                 var-types
-                                                 fn
-                                                 prec-fns
-                                                 ctx
-                                                 state))
-          ((er (list else-stmt &)) (atc-gen-stmt else
-                                                 var-types
-                                                 fn
-                                                 prec-fns
-                                                 ctx
-                                                 state)))
+          ((er (list then-stmt then-type)) (atc-gen-stmt then
+                                                         var-types
+                                                         fn
+                                                         prec-fns
+                                                         ctx
+                                                         state))
+          ((er (list else-stmt else-type)) (atc-gen-stmt else
+                                                         var-types
+                                                         fn
+                                                         prec-fns
+                                                         ctx
+                                                         state))
+          ((unless (equal then-type else-type))
+           (er-soft+ ctx t (list (irr-stmt) (irr-tyspecseq))
+                     "When generating C code for the function ~x0, ~
+                      two branches ~x1 and ~x2 of a conditional term ~
+                      have different types ~x3 and ~x4;
+                      use conversion operations, if needed, ~
+                      to make the branches of the same type."
+                     fn then else then-type else-type)))
        (value
         (list
          (make-stmt-ifelse :test test-expr :then then-stmt :else else-stmt)
-         (tyspecseq-sint)))))
+         then-type))))
     (& (b* (((mv erp (list expr &) state) (atc-gen-expr-nonbool term
                                                                 var-types
                                                                 fn
@@ -928,8 +949,10 @@
   ///
 
   (more-returns
-   (val consp :rule-classes :type-prescription)
-   (val true-listp :rule-classes :type-prescription))
+   (val (and (consp val)
+             (true-listp val))
+        :name cons-true-listp-of-atc-gen-stmt-val
+        :rule-classes :type-prescription))
 
   (verify-guards atc-gen-stmt))
 
