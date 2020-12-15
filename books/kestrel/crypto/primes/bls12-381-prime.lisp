@@ -1,4 +1,4 @@
-; Primes Library: Scalar Field prime for BLS-381
+; Primes Library: Scalar Field prime for BLS12-381
 ;
 ; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -10,18 +10,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; The prime r used for the curve BLS12-381
-;; is described in
-;;   https://www.ietf.org/id/draft-irtf-cfrg-pairing-friendly-curves-07.html
+;; The elliptic curve BLS12-381 contains a subgroup with a large prime order.
+;; The certificate in this file can be used to prove primality of this number.
+;; This prime number is usually called the "scalar field prime" since the
+;; arithmetic circuits used for zk-SNARKs are computed modulo this prime.
+;; In the references below, the prime is also called 'r'.
+
+;; Some references for BLS12-381:
+;; https://electriccoin.co/blog/new-snark-curve/
+;; https://github.com/zcash/librustzcash/blob/6e0364cd42a2b3d2b958a54771ef51a8db79dd29/pairing/src/bls12_381/README.md
+;; https://www.ietf.org/id/draft-irtf-cfrg-pairing-friendly-curves-09.html#section-4.2.1
+;; https://hackmd.io/@benjaminion/bls12-381
 
 (in-package "PRIMES")
 
 (include-book "defprime")
 
-;; This is the order of the groups G1 and G2 from BLS12-381.  Also known as r.
-;; We intend to add xdoc for this later.
 (defprime bls12-381-scalar-field-prime
   52435875175126190479447740508185965837690552500527637822603658699938581184513
+
   ;; Pratt certificate for BLS-381 prime subgroup (scalar field) aka "r".
   ;; The following certificate was generated using
   ;; sagecell.sagemath.org and wolframalpha.com
