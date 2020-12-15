@@ -37,17 +37,6 @@
                                ACL2::UNSIGNED-BYTE-P-OF-BVCAT-ALL-CASES
                                ACL2::UNSIGNED-BYTE-P-OF-BVCAT2))))
 
-(defthm mod-of-+-of---when-equal-of-mod
-  (implies (and (syntaxp (not (quotep x1)))
-                (equal (mod x1 y) k)
-                (syntaxp (quotep k))
-                (integerp x1)
-                (integerp x2)
-                (posp y)
-                )
-           (equal (mod (+ (- x1) x2) y)
-                  (mod (+ (- k) x2) y))))
-
 (defthm mul-normalize-constant-arg1
   (implies (and (syntaxp (and (quotep x)
                               (quotep p)))
@@ -101,33 +90,6 @@
   :hints (("Goal" :in-theory (e/d (unsigned-byte-p)
                                   (pfield::MUL-OF-ADD-ARG2)))))
 
-
-(defthmd add-of-+-arg2
-  (implies (and (integerp y1)
-                (integerp y2))
-           (equal (add x (+ y1 y2) p)
-                  (add x (add y1 y2 p) p)))
-  :hints (("Goal" :in-theory (enable add))))
-
-(defthmd add-of-+-arg1
-  (implies (and (integerp y1)
-                (integerp y2))
-           (equal (add (+ y1 y2) x p)
-                  (add (add y1 y2 p) x p)))
-  :hints (("Goal" :in-theory (enable add))))
-
-(defthm add-same-arg1-arg3
-  (implies (posp p)
-           (equal (add p x p)
-                  (mod (ifix x) p)))
-  :hints (("Goal" :in-theory (enable add))))
-
-(defthm add-same-arg2-arg3
-  (implies (posp p)
-           (equal (add x p p)
-                  (mod (ifix x) p)))
-  :hints (("Goal" :in-theory (enable add))))
-
 (defthm bitp-idiom-with-constant-1
   (implies (and (syntaxp (and (quotep k1)
                               (quotep k2)))
@@ -140,12 +102,13 @@
   :hints (("Goal" :use (:instance bitp-idiom-1
                                   (p-1 (+ -1 p))
                                   (x (add k1 x p)))
-           :in-theory (e/d (add-of-+-arg2) (bitp-idiom-1
-                                            pfield::mul-of-add-arg2
-                                            pfield::mul-of-add-arg1
-                                            ;; prevent loops:
-                                            ;acl2::+-of-minus
-                                            acl2::mod-of-minus-arg1)))))
+           :in-theory (e/d (pfield::add-of-+-arg2)
+                           (bitp-idiom-1
+                            pfield::mul-of-add-arg2
+                            pfield::mul-of-add-arg1
+                            ;; prevent loops:
+                            ;;acl2::+-of-minus
+                            acl2::mod-of-minus-arg1)))))
 
 (defthm bitp-idiom-with-constant-2
   (implies (and (syntaxp (and (quotep k1)
@@ -200,7 +163,7 @@
                 (< 1 p))
            (equal (bitp (add k (neg x p) p))
                   (bitp (add (+ 1 (- k)) x p))))
-  :hints (("Goal" :in-theory (e/d (add-of-+-arg2 add-of-unary---arg2)
+  :hints (("Goal" :in-theory (e/d (pfield::add-of-+-arg2 add-of-unary---arg2)
                                   (acl2::bitp-becomes-unsigned-byte-p
                                    acl2::mod-of-minus-arg1)))))
 
