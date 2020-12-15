@@ -713,6 +713,59 @@
   :hints (("Goal" :use (:instance add-of-add-of-bvcat-of-0-when-unsigned-byte-p-with-extra-special (extra 0))
            :in-theory (disable add-of-add-of-bvcat-of-0-when-unsigned-byte-p-with-extra-special))))
 
+;swaps lowval and the bvcat
+(defthm add-of-add-of-bvcat-of-0-when-unsigned-byte-p-with-extra-alt
+  (implies (and (unsigned-byte-p lowsize lowval)
+                (natp lowsize)
+                (natp highsize))
+           (equal (add (acl2::bvcat highsize highval lowsize 0) (add lowval extra p) p)
+                  (add (acl2::bvcat highsize highval lowsize lowval) extra p)))
+  :hints (("Goal" ;:cases ((equal x 0))
+           :in-theory (enable bitp acl2::bvcat
+                              acl2::logapp
+                              add acl2::power-of-2p
+                              mul
+                              neg))))
+
+;swaps lowval and the bvcat
+;todo: think about bitp vs unsigned-byte-p 1
+(defthm add-of-add-of-bvcat-of-0-when-unsigned-byte-p-with-extra-special-alt
+  (implies (and (bitp lowval)
+                (natp highsize))
+           (equal (add (acl2::bvcat highsize highval 1 0) (add lowval extra p) p)
+                  (add (acl2::bvcat highsize highval 1 lowval) extra p)))
+  :hints (("Goal" ;:cases ((equal x 0))
+           :in-theory (enable bitp acl2::bvcat
+                              acl2::logapp
+                              add acl2::power-of-2p
+                              mul
+                              neg))))
+
+;swaps lowval and the bvcat
+(defthm add-of-add-of-bvcat-of-0-when-unsigned-byte-p-alt
+  (implies (and (unsigned-byte-p lowsize lowval)
+                (natp lowsize)
+                (natp highsize)
+                (posp p))
+           (equal (add (acl2::bvcat highsize highval lowsize 0) lowval p)
+                  (mod (acl2::bvcat highsize highval lowsize lowval) p)))
+  :hints (("Goal" :use (:instance add-of-add-of-bvcat-of-0-when-unsigned-byte-p-with-extra (extra 0))
+           :in-theory (disable add-of-add-of-bvcat-of-0-when-unsigned-byte-p-with-extra
+                               acl2::bvcat-equal-rewrite-alt
+                               acl2::bvcat-equal-rewrite
+                               acl2::<-of-bvcat))))
+
+;swaps lowval and the bvcat
+;; since for size 1 we'll have a bitp hyp
+(defthm add-of-add-of-bvcat-of-0-when-unsigned-byte-p-special-alt
+  (implies (and (bitp lowval)
+                (natp highsize)
+                (posp p))
+           (equal (add (acl2::bvcat highsize highval 1 0) lowval p)
+                  (mod (acl2::bvcat highsize highval 1 lowval) p)))
+  :hints (("Goal" :use (:instance add-of-add-of-bvcat-of-0-when-unsigned-byte-p-with-extra-special (extra 0))
+           :in-theory (disable add-of-add-of-bvcat-of-0-when-unsigned-byte-p-with-extra-special))))
+
 (defthm add-commute-constant
   (implies (syntaxp (and (quotep k)
                          ;; avoid loops:
