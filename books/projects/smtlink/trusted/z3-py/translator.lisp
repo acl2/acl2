@@ -251,7 +251,7 @@
          ;; translate type declarations
          (translated-type-decls
           (translate-type-decl-list type-decl-list h.types-info h.int-to-rat))
-         (translated-abs-types (translate-abstract-types h.abs))
+         (translated-abs-types (translate-abstract-types h.types-info))
          ;; translate type definitions
          ((mv translated-fixtypes fixtype-precond new-sym-alst &)
           (translate-fixtype-list h.types h.types-info sym-alst index avoid

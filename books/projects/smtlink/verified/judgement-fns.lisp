@@ -118,40 +118,601 @@ state)
 state)
 |#
 
+;; --------------------------------------------------------------------
+;; Another way to intersect judgements that should be easier for proofs
+
+(define substitute-term-in-type-predicate ((single-judge pseudo-termp)
+                                           (term pseudo-termp)
+                                           (new-var symbolp)
+                                           (supertype-alst type-to-types-alist-p))
+  :returns (new-judge pseudo-termp)
+  :guard (type-predicate-of-term single-judge term supertype-alst)
+  :ignore-ok t
+  (b* ((single-judge (pseudo-term-fix single-judge))
+       ((unless (type-predicate-of-term single-judge term supertype-alst))
+        (er hard? 'judgement-fns=>substitute-term-in-type-predicate
+            "Type predicate judgement is malformed: ~q0" single-judge))
+       (new-var (symbol-fix new-var))
+       ((mv okp type)
+        (case-match single-judge
+          ((type &) (mv t type))
+          (& (mv nil nil))))
+       ((unless (mbt okp)) nil))
+    `(,type ,new-var)))
+
+(define substitute-term-in-args ((args pseudo-term-listp)
+                                 (term pseudo-termp)
+                                 (new-var symbolp))
+  :returns (new-args pseudo-term-listp)
+  (b* ((args (pseudo-term-list-fix args))
+       (new-var (symbol-fix new-var))
+       ((unless (consp args)) nil)
+       ((cons first-arg rest-args) args)
+       ((if (equal first-arg term)) (cons new-var rest-args)))
+    (cons first-arg (substitute-term-in-args rest-args term new-var))))
+
+(define substitute-term-in-single-var-fncall ((single-judge pseudo-termp)
+                                              (term pseudo-termp)
+                                              (new-var symbolp))
+  :returns (new-judge pseudo-termp)
+  :guard (single-var-fncall-of-term single-judge term)
+  (b* ((single-judge (pseudo-term-fix single-judge))
+       ((unless (single-var-fncall-of-term single-judge term))
+        (er hard? 'judgement-fns=>substitute-term-in-single-var-fncall
+            "Single-var fncall judgement is malformed: ~q0" single-judge))
+       ((mv okp fn args)
+        (case-match single-judge
+          ((fn . args) (mv t fn args))
+          (& (mv nil nil nil))))
+       ((unless (mbt okp)) nil))
+    `(,fn ,@(substitute-term-in-args args term new-var))))
+
+(define substitute-term-in-judge ((single-judge pseudo-termp)
+                                  (term pseudo-termp)
+                                  (new-var symbolp)
+                                  (supertype-alst type-to-types-alist-p))
+  :returns (new-judge pseudo-termp)
+  :guard (judgement-of-term single-judge term supertype-alst)
+  (b* ((single-judge (pseudo-term-fix single-judge))
+       (new-var (symbol-fix new-var)))
+    (cond ((equal single-judge term) new-var)
+          ((type-predicate-of-term single-judge term supertype-alst)
+           (substitute-term-in-type-predicate single-judge term new-var supertype-alst))
+          ((single-var-fncall-of-term single-judge term)
+           (substitute-term-in-single-var-fncall single-judge term new-var))
+          (t nil))))
+
+(define make-fast-judgements ((judge pseudo-termp)
+                              (term pseudo-termp)
+                              (new-var symbolp)
+                              (supertype-alst type-to-types-alist-p)
+                              (alst pseudo-term-integerp)
+                              (count integerp))
+  :returns (mv (new-alst pseudo-term-integerp)
+               (new-cnt integerp))
+  :measure (acl2-count (pseudo-term-fix judge))
+  :verify-guards nil
+  (b* ((judge (pseudo-term-fix judge))
+       (term (pseudo-term-fix term))
+       (supertype-alst (type-to-types-alist-fix supertype-alst))
+       (count (ifix count))
+       (alst (pseudo-term-integer-fix alst))
+       ((unless (is-conjunct-list? judge term supertype-alst))
+        (mv (er hard? 'judgement-fns=>make-fast-judgements
+                "Judgement for term ~p0 is malformed: ~p1~%" term judge)
+            0))
+       ((if (equal judge ''t)) (mv alst count))
+       ((if (judgement-of-term judge term supertype-alst))
+        (mv (acons (substitute-term-in-judge judge term new-var supertype-alst)
+                   count alst)
+            (1+ count)))
+       ((unless (consp judge)) (mv alst count))
+       ((list & judge-hd judge-tl &) judge)
+       ((mv new-alst new-cnt)
+        (make-fast-judgements judge-hd term new-var supertype-alst alst count)))
+    (make-fast-judgements judge-tl term new-var supertype-alst
+                          new-alst new-cnt)))
+
+(verify-guards make-fast-judgements)
+
+(define map-judgements ((judge pseudo-termp)
+                        (term pseudo-termp)
+                        (new-var symbolp)
+                        (supertype-alst type-to-types-alist-p)
+                        (alst pseudo-term-integerp)
+                        (acc maybe-integer-listp))
+  :returns (ind-list maybe-integer-listp)
+  :measure (acl2-count (pseudo-term-fix judge))
+  :verify-guards nil
+  (b* ((judge (pseudo-term-fix judge))
+       (term (pseudo-term-fix term))
+       (supertype-alst (type-to-types-alist-fix supertype-alst))
+       (alst (pseudo-term-integer-fix alst))
+       (acc (maybe-integer-list-fix acc))
+       ((unless (is-conjunct-list? judge term supertype-alst))
+        (er hard? 'judgement-fns=>map-judgements
+            "Judgement for term ~p0 is malformed: ~p1~%" term judge))
+       ((if (equal judge ''t)) acc)
+       ((if (judgement-of-term judge term supertype-alst))
+        (b* ((new-judge
+              (substitute-term-in-judge judge term new-var supertype-alst))
+             (exist? (assoc-equal new-judge alst))
+             ((if exist?) (cons (cdr exist?) acc)))
+          (cons nil acc)))
+       ((unless (consp judge)) acc)
+       ((list & judge-hd judge-tl &) judge)
+       (new-acc (map-judgements judge-hd term new-var supertype-alst alst acc)))
+    (map-judgements judge-tl term new-var supertype-alst alst new-acc)))
+
+(verify-guards map-judgements)
+
+;; else judgements
+(define construct-judge-by-list ((judge pseudo-termp)
+                                 (term pseudo-termp)
+                                 (supertype-alst type-to-types-alist-p)
+                                 (ind-lst maybe-integer-listp)
+                                 (acc pseudo-termp))
+  :returns (mv (new-judge pseudo-termp)
+               (rest-ind maybe-integer-listp))
+  :measure (acl2-count (pseudo-term-fix judge))
+  :verify-guards nil
+  (b* ((judge (pseudo-term-fix judge))
+       (term (pseudo-term-fix term))
+       (supertype-alst (type-to-types-alist-fix supertype-alst))
+       (ind-lst (maybe-integer-list-fix ind-lst))
+       (acc (pseudo-term-fix acc))
+       ((unless (is-conjunct-list? judge term supertype-alst))
+        (mv ''t
+            (er hard? 'judgement-fns=>construct-judge-by-list
+                "Judgement for term ~p0 is malformed: ~p1~%" term judge)))
+       ((if (equal judge ''t)) (mv acc ind-lst))
+       ((if (judgement-of-term judge term supertype-alst))
+        (b* (((unless (consp ind-lst))
+              (mv ''t
+                  (er hard? 'judgement-fns=>construct-judge-by-list
+                      "Run out of indices.~%")))
+             ((cons curr-ind rest-ind) ind-lst)
+             ((unless curr-ind) (mv acc rest-ind)))
+          (mv `(if ,judge ,acc 'nil) rest-ind)))
+       ((unless (consp judge)) (mv acc ind-lst))
+       ((list & judge-hd judge-tl &) judge)
+       ((mv new-acc new-ind)
+        (construct-judge-by-list judge-hd term supertype-alst ind-lst acc)))
+    (construct-judge-by-list judge-tl term supertype-alst new-ind new-acc)))
+
+(verify-guards construct-judge-by-list)
+
+(defthm correctness-of-is-conjunct-list?
+  (implies (and (ev-smtcp-meta-extract-global-facts)
+                (pseudo-termp judge)
+                (pseudo-termp term)
+                (type-to-types-alist-p supertype-alst)
+                (alistp a)
+                (ev-smtcp judge a)
+                (is-conjunct-list? judge term supertype-alst)
+                (not (equal judge ''t))
+                (not (judgement-of-term judge term supertype-alst))
+                (consp judge))
+           (and (ev-smtcp (cadr judge) a)
+                (ev-smtcp (caddr judge) a)))
+  :hints (("Goal"
+           :in-theory (enable is-conjunct-list?))))
+
+(defthm correctness-of-construct-judge-by-list
+  (implies (and (ev-smtcp-meta-extract-global-facts)
+                (pseudo-termp judge)
+                (pseudo-termp term)
+                (pseudo-termp acc)
+                (type-to-types-alist-p supertype-alst)
+                (alistp a)
+                (ev-smtcp judge a)
+                (ev-smtcp acc a))
+           (ev-smtcp
+            (mv-nth 0 (construct-judge-by-list judge term supertype-alst ind-lst acc)) a))
+  :hints (("Goal"
+           :in-theory (enable construct-judge-by-list))))
+
+(define find-nth-judge ((judge pseudo-termp)
+                        (term pseudo-termp)
+                        (supertype-alst type-to-types-alist-p)
+                        (nth integerp))
+  :returns (mv (the-judge pseudo-termp)
+               (new-nth integerp))
+  :measure (acl2-count (pseudo-term-fix judge))
+  :verify-guards nil
+  (b* ((judge (pseudo-term-fix judge))
+       (term (pseudo-term-fix term))
+       (supertype-alst (type-to-types-alist-fix supertype-alst))
+       (nth (ifix nth))
+       ((if (<= nth 0)) (mv judge 0))
+       ((unless (is-conjunct-list? judge term supertype-alst))
+        (mv (prog2$ (er hard? 'judgement-fns=>find-nth-judge
+                        "Judgement for term ~p0 is malformed: ~p1~%" term
+                        judge)
+                    ''t)
+            0))
+       ((if (equal judge ''t)) (mv ''t nth))
+       ((if (judgement-of-term judge term supertype-alst)) (mv ''t (1- nth)))
+       ((unless (consp judge)) (mv ''t 0))
+       ((list & judge-hd judge-tl &) judge)
+       ((mv new-judge new-nth)
+        (find-nth-judge judge-hd term supertype-alst nth))
+       ((if new-judge) (mv new-judge new-nth)))
+    (find-nth-judge judge-tl term supertype-alst new-nth)))
+
+(verify-guards find-nth-judge)
+
+(defthm correctness-of-find-nth-judge
+  (implies (and (ev-smtcp-meta-extract-global-facts)
+                (pseudo-termp judge)
+                (pseudo-termp term)
+                (type-to-types-alist-p supertype-alst)
+                (alistp a)
+                (ev-smtcp judge a))
+           (ev-smtcp
+            (mv-nth 0 (find-nth-judge judge term supertype-alst nth)) a))
+  :hints (("Goal"
+           :in-theory (enable find-nth-judge))))
+
+(define construct-judge-by-find ((judge1 pseudo-termp)
+                                 (term1 pseudo-termp)
+                                 (judge2 pseudo-termp)
+                                 (term2 pseudo-termp)
+                                 (supertype-alst type-to-types-alist-p)
+                                 (ind-lst maybe-integer-listp)
+                                 (acc pseudo-termp))
+  :returns (mv (new-judge pseudo-termp)
+               (rest-ind maybe-integer-listp))
+  :measure (acl2-count (pseudo-term-fix judge1))
+  :verify-guards nil
+  (b* ((judge1 (pseudo-term-fix judge1))
+       (term1 (pseudo-term-fix term1))
+       (judge2 (pseudo-term-fix judge2))
+       (term2 (pseudo-term-fix term2))
+       (supertype-alst (type-to-types-alist-fix supertype-alst))
+       (ind-lst (maybe-integer-list-fix ind-lst))
+       (acc (pseudo-term-fix acc))
+       ((unless (is-conjunct-list? judge1 term1 supertype-alst))
+        (mv (prog2$ (er hard? 'judgement-fns=>construct-judge-by-find
+                        "Judgement for term ~p0 is malformed: ~p1~%" term1
+                        judge1)
+                    ''t)
+            nil))
+       ((if (equal judge1 ''t)) (mv acc ind-lst))
+       ((if (judgement-of-term judge1 term1 supertype-alst))
+        (b* (((unless (consp ind-lst))
+              (mv (prog2$ (er hard? 'judgement-fns=>construct-judge-by-list
+                              "Run out of indices.~%")
+                          ''t)
+                  nil))
+             ((cons curr-ind rest-ind) ind-lst)
+             ((unless curr-ind) (mv acc rest-ind))
+             ((mv j2 &)
+              (find-nth-judge judge2 term2 supertype-alst curr-ind))
+             ((unless j2)
+              (mv (prog2$ (er hard? 'judgement-fns=>construct-judge-by-find
+                              "Can't find ~p0th judgement in judgements ~p1~%"
+                              curr-ind judge2)
+                          ''t)
+                  nil)))
+          (mv `(if ,j2 ,acc 'nil) rest-ind)))
+       ((unless (consp judge1)) (mv acc ind-lst))
+       ((list & judge1-hd judge1-tl &) judge1)
+       ((mv new-acc new-ind)
+        (construct-judge-by-find judge1-hd term1 judge2 term2 supertype-alst
+                                 ind-lst acc)))
+    (construct-judge-by-find judge1-tl term1 judge2 term2 supertype-alst
+                             new-ind new-acc)))
+
+(verify-guards construct-judge-by-find)
+
+(defthm correctness-of-construct-judge-by-find
+  (implies (and (ev-smtcp-meta-extract-global-facts)
+                (pseudo-termp judge1)
+                (pseudo-termp term1)
+                (pseudo-termp judge2)
+                (pseudo-termp term2)
+                (pseudo-termp acc)
+                (type-to-types-alist-p supertype-alst)
+                (maybe-integer-listp ind-lst)
+                (alistp a)
+                (ev-smtcp judge2 a)
+                (ev-smtcp acc a))
+           (ev-smtcp
+            (mv-nth 0 (construct-judge-by-find judge1 term1 judge2 term2
+                                               supertype-alst ind-lst acc))
+            a))
+  :hints (("Goal"
+           :in-theory (enable construct-judge-by-find))))
+
+;; slow return type theorem
+(encapsulate ()
+  (local
+   (in-theory (e/d (pseudo-term-fix)
+                   (symbol-listp
+                    pseudo-termp
+                    acl2::pseudo-termp-car
+                    pseudo-term-listp-of-symbol-listp
+                    (:rewrite consp-of-is-conjunct?)))))
+
+(define rearrange-if-judgements ((judge pseudo-termp))
+  :returns (res pseudo-termp)
+  :verify-guards nil
+  :measure (acl2-count (pseudo-term-fix judge))
+  (b* ((judge (pseudo-term-fix judge))
+       ((mv okp if-cond then-judge else-judge)
+        (case-match judge
+          (('if if-cond then-judge else-judge)
+           (mv t if-cond then-judge else-judge))
+          (& (mv nil nil nil nil))))
+       ((unless okp)
+        (prog2$ (er hard? 'judgement-fns=>rearrange-if-judgements
+                    "Judgements are malformed.~%")
+                ''t))
+       ((unless (and (is-conjunct? then-judge)
+                     (is-conjunct? else-judge)))
+        (prog2$ (er hard? 'judgement-fns=>rearragen-if-judgements
+                    "Then or else judges is malformed.~%")
+                ''t))
+       ((if (and (equal then-judge ''t) (equal else-judge ''t))) ''t)
+       ((if (and (not (equal then-judge ''t))
+                 (not (equal else-judge ''t))))
+        (b* (((list & first-then rest-then &) then-judge)
+             ((list & first-else rest-else &) else-judge)
+             (first `(if ,if-cond ,first-then ,first-else))
+             (rest (rearrange-if-judgements
+                    `(if ,if-cond ,rest-then ,rest-else))))
+          `(if ,first ,rest 'nil))))
+    (prog2$ (er hard? 'judgement-fns=>combine-judgements
+                "Judgements are malformed.~%")
+            ''t)))
+)
+
+(verify-guards rearrange-if-judgements
+  :hints (("Goal" :in-theory (disable symbol-listp))))
+
+(defthm correctness-of-rearrange-if-judgements
+  (implies (and (ev-smtcp-meta-extract-global-facts)
+                (pseudo-termp judge)
+                (alistp a)
+                (ev-smtcp judge a))
+           (ev-smtcp (rearrange-if-judgements judge) a))
+  :hints (("Goal"
+           :in-theory (e/d (rearrange-if-judgements)
+                           (symbol-listp)))))
+
+;; One problem: what to return when args are of different lengths
+(define commute-if-for-args ((if-cond pseudo-termp)
+                             (then-args pseudo-term-listp)
+                             (else-args pseudo-term-listp))
+  :returns (new-args pseudo-term-listp)
+  (b* ((if-cond (pseudo-term-fix if-cond))
+       (then-args (pseudo-term-list-fix then-args))
+       (else-args (pseudo-term-list-fix else-args))
+       ((unless (or (and then-args else-args)
+                    (and (not then-args) (not else-args))))
+        (er hard? 'judgement-fns=>commute-if-for-args
+            "Then and else should be of the same lengths.~%"))
+       ((unless (and (consp then-args) (consp else-args))) nil)
+       ((cons then-hd then-tl) then-args)
+       ((cons else-hd else-tl) else-args)
+       (rest-args
+        (commute-if-for-args if-cond then-tl else-tl))
+       (if-term `(if ,if-cond ,then-hd ,else-hd))
+       ((if (equal then-hd else-hd)) `(,then-hd ,@rest-args)))
+    `(,if-term ,@rest-args)))
+
+;; (defthm lemma-commute-if
+;;   (implies (and (ev-smtcp-meta-extract-global-facts)
+;;                 (pseudo-termp cond)
+;;                 (pseudo-termp x)
+;;                 (pseudo-termp y)
+;;                 (symbolp p)
+;;                 (not (equal p 'quote))
+;;                 (alistp a)
+;;                 (ev-smtcp `(if ,cond (,p ,x) (,p ,y)) a))
+;;            (ev-smtcp `(,p (if ,cond ,x ,y)) a))
+;;   :hints (("Goal"
+;;            :in-theory (disable ev-smtcp-of-fncall-args)
+;;            :use ((:instance ev-smtcp-of-fncall-args
+;;                             (x `(,p (if ,cond ,x ,y)))
+;;                             (a a))
+;;                  (:instance ev-smtcp-of-fncall-args
+;;                             (x (list p x))
+;;                             (a a))
+;;                  (:instance ev-smtcp-of-fncall-args
+;;                             (x (list p y))
+;;                             (a a))))))
+
+(encapsulate ()
+(local
+ (defthm lemma
+   (implies (and (pseudo-term-listp x) x)
+            (not (equal (len x) 0))))
+ )
+
+(defthm correctness-of-commute-if-for-args-cond
+  (implies (and (ev-smtcp-meta-extract-global-facts)
+                (pseudo-termp if-cond)
+                (pseudo-term-listp then-args)
+                (pseudo-term-listp else-args)
+                (alistp a)
+                (ev-smtcp if-cond a)
+                (equal (len then-args) (len else-args)))
+           (equal (ev-smtcp-lst (commute-if-for-args if-cond then-args else-args) a)
+                  (ev-smtcp-lst then-args a)))
+  :hints (("Goal"
+           :in-theory (enable commute-if-for-args)
+           :induct (commute-if-for-args if-cond then-args else-args)
+           )))
+
+(defthm correctness-of-commute-if-for-args-notcond
+  (implies (and (ev-smtcp-meta-extract-global-facts)
+                (pseudo-termp if-cond)
+                (pseudo-term-listp then-args)
+                (pseudo-term-listp else-args)
+                (alistp a)
+                (not (ev-smtcp if-cond a))
+                (equal (len then-args) (len else-args)))
+           (equaL (ev-smtcp-lst (commute-if-for-args if-cond then-args else-args) a)
+                  (ev-smtcp-lst else-args a)))
+  :hints (("Goal"
+           :in-theory (enable commute-if-for-args)
+           :induct (commute-if-for-args if-cond then-args else-args)
+           )))
+)
+
+(define commute-if ((judge pseudo-termp)
+                    (then-term pseudo-termp)
+                    (else-term pseudo-termp)
+                    (supertype-alst type-to-types-alist-p))
+  :returns (new-judge pseudo-termp
+                      :hints (("Goal"
+                               :in-theory (disable symbol-listp
+                                                   true-list-listp
+                                                   acl2::true-listp-of-car-when-true-list-listp))))
+  :guard-hints (("Goal"
+                 :in-theory (disable symbol-listp true-list-listp
+                                     acl2::true-listp-of-car-when-true-list-listp)))
+  (b* ((judge (pseudo-term-fix judge))
+       (then-term (pseudo-term-fix then-term))
+       (else-term (pseudo-term-fix else-term))
+       ((mv okp if-cond then-judge else-judge)
+        (case-match judge
+          (('if if-cond then-judge else-judge)
+           (mv t if-cond then-judge else-judge))
+          (& (mv nil nil nil nil))))
+       ((unless okp)
+        (prog2$ (er hard? 'judgement-fns=>commute-if
+                    "If judge is malformed.~%")
+                ''t))
+       (if-term `(if ,if-cond ,then-term ,else-term))
+       ((unless (and (judgement-of-term then-judge then-term supertype-alst)
+                     (judgement-of-term else-judge else-term supertype-alst)))
+        (prog2$ (er hard? 'judgement-fns=>commute-if
+                    "Then or else judgement is malformed.~%")
+                ''t)))
+    (cond ((and (equal then-judge then-term) (equal else-judge else-term)) if-term)
+          ((and (not (equal then-judge then-term))
+                (not (equal else-judge else-term))
+                (equal (car then-judge) (car else-judge))
+                (equal (len (cdr then-judge)) (len (cdr else-judge))))
+           `(,(car then-judge)
+             ,@(commute-if-for-args if-cond (cdr then-judge) (cdr else-judge))))
+          (t (prog2$ (er hard? 'judgement-fns=>commute-if
+                         "Then or else judgement is malformed.~%")
+                     ''t)))))
+
+;; It takes a while
+(defthm correctness-of-commute-if
+  (implies (and (ev-smtcp-meta-extract-global-facts)
+                (pseudo-termp judge)
+                (pseudo-termp then-term)
+                (pseudo-termp else-term)
+                (type-to-types-alist-p supertype-alst)
+                (alistp a)
+                (ev-smtcp judge a))
+           (ev-smtcp (commute-if judge then-term else-term supertype-alst) a))
+  :hints (("Goal"
+           :do-not-induct t
+           :in-theory (e/d (commute-if)
+                           (pseudo-termp
+                            symbol-listp
+                            pseudo-term-listp
+                            pseudo-term-listp-of-symbol-listp
+                            acl2::pseudo-termp-list-cdr
+                            consp-of-is-conjunct?
+                            ev-smtcp-of-fncall-args))
+           :use ((:instance ev-smtcp-of-fncall-args
+                            (x (cons (car (caddr judge))
+                                     (commute-if-for-args (cadr judge)
+                                                          (cdr (caddr judge))
+                                                          (cdr (cadddr judge)))))
+                            (a a))
+                 (:instance ev-smtcp-of-fncall-args
+                            (x (caddr judge))
+                            (a a))
+                 (:instance ev-smtcp-of-fncall-args
+                            (x (cons (car (cadddr judge))
+                                     (commute-if-for-args (cadr judge)
+                                                          (cdr (caddr judge))
+                                                          (cdr (cadddr judge)))))
+                            (a a))
+                 (:instance ev-smtcp-of-fncall-args
+                            (x (cadddr judge))
+                            (a a))
+                 (:instance correctness-of-commute-if-for-args-cond
+                            (if-cond (cadr judge))
+                            (then-args (cdr (caddr judge)))
+                            (else-args (cdr (cadddr judge)))
+                            (a a))
+                 (:instance correctness-of-commute-if-for-args-notcond
+                            (if-cond (cadr judge))
+                            (then-args (cdr (caddr judge)))
+                            (else-args (cdr (cadddr judge)))
+                            (a a))))))
+
+(define merge-if-judgements ((judge pseudo-termp)
+                             (then-term pseudo-termp)
+                             (else-term pseudo-termp)
+                             (supertype-alst type-to-types-alist-p))
+  :returns (new-judge pseudo-termp)
+  :measure (acl2-count (pseudo-term-fix judge))
+  (b* ((judge (pseudo-term-fix judge))
+       ((unless (is-conjunct? judge))
+        (prog2$ (er hard? 'judgement-fns=>merge-if-judgements
+                    "Judgement is malformed.~%")
+                ''t))
+       ((if (equal judge ''t)) ''t)
+       ((list & first-judge rest-judge &) judge)
+       (new-first (commute-if first-judge then-term else-term supertype-alst))
+       (new-rest
+        (merge-if-judgements rest-judge then-term else-term supertype-alst)))
+    `(if ,new-first ,new-rest ''nil)))
+
+(defthm correctness-of-merge-if-judgements
+  (implies (and (ev-smtcp-meta-extract-global-facts)
+                (pseudo-termp judge)
+                (pseudo-termp then-term)
+                (pseudo-termp else-term)
+                (type-to-types-alist-p supertype-alst)
+                (alistp a)
+                (ev-smtcp judge a))
+           (ev-smtcp (merge-if-judgements judge then-term else-term supertype-alst) a))
+  :hints (("Goal"
+           :in-theory (e/d (merge-if-judgements)
+                           ()))))
+
 ;;------------------------------------------------------
 ;; Union judgements
 
-(define union-judgements-acc ((judge1 pseudo-termp)
-                              (judge2 pseudo-termp)
+(define union-judgements-acc ((judge pseudo-termp)
                               (acc pseudo-termp)
                               state)
   :returns (union pseudo-termp)
   :verify-guards nil
-  :measure (acl2-count (pseudo-term-fix judge2))
-  (b* ((judge1 (pseudo-term-fix judge1))
-       (judge2 (pseudo-term-fix judge2))
+  :measure (acl2-count (pseudo-term-fix judge))
+  (b* ((judge (pseudo-term-fix judge))
        (acc (pseudo-term-fix acc))
-       ((if (and (not (is-conjunct? judge2))
-                 (not (path-test acc judge2 state))))
-        `(if ,judge2 ,acc 'nil))
-       ((unless (is-conjunct? judge2)) acc)
-       ((if (equal judge2 ''t)) acc)
-       ((list & judge-hd judge-tl &) judge2)
-       (acc-hd (union-judgements-acc judge1 judge-hd acc state)))
-    (union-judgements-acc judge1 judge-tl acc-hd state)))
+       ((if (and (not (is-conjunct? judge))
+                 (not (path-test acc judge state))))
+        `(if ,judge ,acc 'nil))
+       ((unless (is-conjunct? judge)) acc)
+       ((if (equal judge ''t)) acc)
+       ((list & judge-hd judge-tl &) judge)
+       (acc-hd (union-judgements-acc judge-hd acc state)))
+    (union-judgements-acc judge-tl acc-hd state)))
 
 (verify-guards union-judgements-acc)
 
 (defthm correctness-of-union-judgements-acc
   (implies (and (ev-smtcp-meta-extract-global-facts)
-                (pseudo-termp judge1)
-                (pseudo-termp judge2)
+                (pseudo-termp judge)
                 (pseudo-termp acc)
                 (alistp a)
                 (ev-smtcp acc a)
-                (ev-smtcp judge1 a)
-                (ev-smtcp judge2 a))
-           (ev-smtcp (union-judgements-acc judge1 judge2 acc state) a))
+                (ev-smtcp judge a))
+           (ev-smtcp (union-judgements-acc judge acc state) a))
   :hints (("Goal"
            :in-theory (e/d (union-judgements-acc is-conjunct?)
                            ()))))
@@ -160,7 +721,7 @@ state)
                           (judge2 pseudo-termp)
                           state)
   :returns (union pseudo-termp)
-  (union-judgements-acc judge1 judge2 judge1 state))
+  (union-judgements-acc judge2 judge1 state))
 
 (defthm correctness-of-union-judgements
   (implies (and (ev-smtcp-meta-extract-global-facts)

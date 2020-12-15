@@ -55,7 +55,9 @@
                                 (supertype-alst type-to-types-alist-p))
   :returns (ok booleanp)
   (and (pseudo-termp judge)
-       (equal (len judge) 2)
+       (consp judge)
+       (cdr judge)
+       (not (cddr judge))
        (symbolp (car judge))
        (not (equal (car judge) 'quote))
        (is-type? (car judge) supertype-alst)
@@ -65,8 +67,26 @@
    (ok (implies ok (and (pseudo-termp judge)
                         (consp judge)
                         (symbolp (car judge))
-                        (not (equal (car judge) 'quote))))
+                        (not (equal (car judge) 'quote))
+                        (consp (cdr judge))
+                        (equal (cadr judge) term)
+                        (not (cddr judge))))
+       :hints (("Goal" :in-theory (enable len)))
        :name implies-of-type-predicate-of-term)))
+
+;; (in-theory (disable implies-of-type-predicate-of-term))
+
+(defthm correctness-of-type-predicate-of-term
+  (implies (and (ev-smtcp-meta-extract-global-facts)
+                (pseudo-termp judge)
+                (pseudo-termp term)
+                (type-to-types-alist-p supertype-alst)
+                (type-predicate-of-term judge term supertype-alst)
+                (alistp a)
+                (ev-smtcp judge a))
+           (ev-smtcp `(,(car judge) ,(cadr judge)) a))
+  :hints (("Goal"
+           :in-theory (enable type-predicate-of-term))))
 
 (define single-var-fncall-of-term ((judge pseudo-termp)
                                    (term pseudo-termp))
@@ -94,7 +114,13 @@
   ///
   (more-returns
    (ok (implies ok (pseudo-termp judge))
-       :name pseudo-termp-of-judgement-of-term))
+       :name pseudo-termp-of-judgement-of-term)
+   (ok (implies (and ok (not (equal judge term)))
+                (and (consp judge)
+                     (symbolp (car judge))
+                     (not (equal (car judge) 'quote))
+                     (pseudo-term-listp (cdr judge))))
+       :name pseudo-term-listp-of-judgement-of-term))
 
   (defthm equal-judgement-of-term
     (implies (pseudo-termp term)
@@ -209,10 +235,11 @@
        ((if (equal judges ''t)) t)
        ((if (judgement-of-term judges term supertype-alst)) t)
        ((unless (consp judges)) nil)
-       ((list fn cond then nil-term) judges)
-       ((unless (and (equal fn 'if) (equal nil-term ''nil))) nil))
-    (and (is-conjunct-list? cond term supertype-alst)
-         (is-conjunct-list? then term supertype-alst)))
+       ((list if cond then else) judges))
+    (and (equal if 'if)
+         (is-conjunct-list? cond term supertype-alst)
+         (is-conjunct-list? then term supertype-alst)
+         (equal else ''nil)))
   ///
   (more-returns
    (ok (implies (and ok (pseudo-termp judges) (pseudo-termp term)
@@ -220,11 +247,24 @@
                      (not (equal judges ''t))
                      (not (judgement-of-term judges term supertype-alst)))
                 (and (pseudo-termp (cadr judges))
+                     (pseudo-termp (caddr judges))
                      (consp judges)
                      (consp (cdr judges))
                      (consp (cddr judges))))
        :name implies-of-is-conjunct-list?
-       :hints (("Goal" :in-theory (enable pseudo-termp)))))
+       :hints (("Goal" :in-theory (enable pseudo-termp))))
+   ;; (ok (implies (and ok (pseudo-termp judges) (pseudo-termp term)
+   ;;                   (type-to-types-alist-p supertype-alst)
+   ;;                   (not (equal judges ''t))
+   ;;                   (not (judgement-of-term judges term supertype-alst)))
+   ;;              (< (acl2-count (caddr judges))
+   ;;                 (acl2-count judges)))
+   ;;     :name acl2-count-of-caddr-of-is-conjunct-list?
+   ;;     :hints (("Goal"
+   ;;              :in-theory (disable implies-of-is-conjunct-list?)
+   ;;              :use ((:instance implies-of-is-conjunct-list?))))
+   ;;     :rule-classes :linear)
+   )
 
   (defthm t-of-is-conjunct-list?
     (is-conjunct-list? ''t term supertype-alst))

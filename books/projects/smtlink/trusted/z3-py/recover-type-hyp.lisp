@@ -15,23 +15,21 @@
   :short "Recovering types from type-hyp"
 
   (define recover-type-decl-list ((hyp-lst pseudo-term-listp)
-                                  (fixinfo smt-fixtype-info-p)
-                                  (abs symbol-listp))
+                                  (fixinfo smt-fixtype-info-p))
     :returns (type-decl-list decl-list-p)
     (b* ((fixinfo (smt-fixtype-info-fix fixinfo))
          (hyp-lst (pseudo-term-list-fix hyp-lst))
          ((unless (consp hyp-lst)) nil)
          ((cons first rest) hyp-lst)
-         ((unless (type-decl-p first fixinfo abs))
+         ((unless (type-decl-p first fixinfo))
           (er hard? 'recover-type-hype=>recover-type-decl-list "ill-formed ~
                           type term: ~q0" first))
          (var (cadr first)))
       (cons (make-decl :name var :type (make-hint-pair :thm first))
-            (recover-type-decl-list rest fixinfo abs))))
+            (recover-type-decl-list rest fixinfo))))
 
   (define recover-type-hyp-main ((decl-list pseudo-term-listp)
-                                 (fixinfo smt-fixtype-info-p)
-                                 (abs symbol-listp))
+                                 (fixinfo smt-fixtype-info-p))
     :returns (type-decl-list decl-list-p)
     (b* ((decl-list (pseudo-term-list-fix decl-list))
          ((unless (consp decl-list)) nil)
@@ -48,8 +46,8 @@
                      ((unless (pseudo-term-listp hyp-lst))
                       (er hard? 'recover-type-hyp=>recover-type-hyp-main
                           "Not a pseudo-term-listp: ~q0" hyp-lst))
-                     (first-type-decl (recover-type-decl-list hyp-lst fixinfo abs))
-                     (rest-type-decl (recover-type-hyp-main rest fixinfo abs)))
+                     (first-type-decl (recover-type-decl-list hyp-lst fixinfo))
+                     (rest-type-decl (recover-type-hyp-main rest fixinfo)))
                   (append first-type-decl rest-type-decl)))
                (t (prog2$ (er hard? 'recover-type-hyp=>recover-type-hyp-main "tag ~
                           isn't recognized: ~q0" tag)
@@ -67,7 +65,7 @@
          (smtlink-hint (smtlink-hint-fix smtlink-hint))
          ((smtlink-hint h) smtlink-hint)
          ((mv type-hyp-lst untyped-theorem)
-          (smt-extract term h.types-info h.abs)))
-      (mv (recover-type-hyp-main type-hyp-lst h.types-info h.abs)
+          (smt-extract term h.types-info)))
+      (mv (recover-type-hyp-main type-hyp-lst h.types-info)
           untyped-theorem)))
   )

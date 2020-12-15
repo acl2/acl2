@@ -167,6 +167,17 @@
   (implies (and (pseudo-term-alistp x) (not (consp (assoc-equal y x))))
            (not (assoc-equal y x))))
 
+(defalist pseudo-term-integer
+  :key-type pseudo-termp
+  :val-type integerp
+  :true-listp t
+  :pred pseudo-term-integerp)
+
+(defthm assoc-equal-of-pseudo-term-integerp
+  (implies (and (pseudo-term-integerp x)
+                (assoc-equal y x))
+           (integerp (cdr (assoc-equal y x)))))
+
 ;; -------------------------------------------
 ;; acl2-count theorems
 

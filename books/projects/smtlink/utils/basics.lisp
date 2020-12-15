@@ -115,3 +115,10 @@
             (symbol-alistp (pairlis$ x y)))
    :hints (("Goal" :in-theory (enable symbol-alistp))))
  )
+
+(defoption maybe-integer integerp :pred maybe-integerp)
+
+(deflist maybe-integer-list
+  :elt-type maybe-integerp
+  :pred maybe-integer-listp
+  :true-listp t)

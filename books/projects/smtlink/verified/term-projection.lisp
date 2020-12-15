@@ -16,6 +16,7 @@
 (include-book "clause-processors/meta-extract-user" :dir :system)
 (include-book "ordinals/lexicographic-ordering-without-arithmetic" :dir :system)
 
+(include-book "../utils/fresh-vars")
 (include-book "basics")
 ;; (include-book "alist")
 (include-book "hint-please")
@@ -28,28 +29,6 @@
 ;; a similar way.
 
 (set-state-ok t)
-
-(defthm symbol-list-of-append
-  (implies (and (symbol-listp x)
-                (symbol-listp y))
-           (symbol-listp (append x y))))
-
-(define new-fresh-vars ((n natp)
-                        (current symbol-listp))
-  :returns (new-vars symbol-listp
-                     :hints (("Goal" :in-theory (enable
-                                                 acl2::new-symbols-from-base))))
-  (acl2::new-symbols-from-base n 'x current)
-  ///
-  (more-returns
-   (new-vars (implies (and (natp n)
-                           (symbol-listp current))
-                      (equal (len new-vars) n))
-             :name len-of-new-fresh-vars)))
-
-(define new-fresh-var ((current symbol-listp))
-  :returns (new-var symbolp)
-  (car (new-fresh-vars 1 current)))
 
 ;; ---------------------------------------------------------------
 (encapsulate ()
