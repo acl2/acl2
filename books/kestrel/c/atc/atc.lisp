@@ -62,14 +62,20 @@
 
   "@('fns') is @('fn1...fnp') or a suffix of it."
 
-  "@('prec-fns') is a list (in no particular order)
-   of the symbols in @('fn1...fnp') that precede, in the latter list,
-   a symbol @('fn') in @('fn1...fnp') for which code is being generated;
+  "@('vars') is an alist from ACL2 variable symbols to C types.
+   These are the variables in scope
+   for the ACL2 term whose code is being generated."
+
+  "@('prec-fns') is an alist from ACL2 function symbols to C types.
+   The function symbols are the ones in @('fn1...fnp') that precede,
+   in the latter list,
+   the symbol @('fn') in @('fn1...fnp') for which code is being generated;
    @('fn') is often also a parameter of
    the ATC function that has @('prec-fns') as parameter.
    According to the restrictions stated in the ATC user documentation,
    @('prec-fns') consists of the target function symbols
-   that @('fn') is allowed to call."
+   that @('fn') is allowed to call.
+   The type associated to each symbol is the C result type of the function."
 
   (xdoc::evmac-topic-implementation-item-input "const-name")
 
@@ -523,22 +529,31 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-check-callable-fn ((term pseudo-termp) (prec-fns symbol-listp))
+(define atc-check-callable-fn ((term pseudo-termp)
+                               (prec-fns atc-symbol-tyspecseq-alistp))
   :returns (mv (yes/no booleanp)
-               (fn symbolp :hyp (symbol-listp prec-fns))
-               (args pseudo-term-listp :hyp (pseudo-termp term)))
+               (fn symbolp :hyp (atc-symbol-tyspecseq-alistp prec-fns))
+               (args pseudo-term-listp :hyp (pseudo-termp term))
+               (type tyspecseqp))
   :short "Check if a term represents a call to a callable target function."
   :long
   (xdoc::topstring
    (xdoc::p
     "If the check is successful, we return
-     the called function along with the arguments."))
+     the called function along with the arguments.
+     We also return the result type of the function."))
   (case-match term
-    ((fn . args) (if (and (member-eq fn prec-fns)
-                          (not (eq fn 'quote)))
-                     (mv t fn args)
-                   (mv nil nil nil)))
-    (& (mv nil nil nil)))
+    ((fn . args) (b* (((unless (symbolp fn))
+                       (mv nil nil nil (irr-tyspecseq)))
+                      ((when (eq fn 'quote))
+                       (mv nil nil nil (irr-tyspecseq)))
+                      (fn+type (assoc-eq fn prec-fns))
+                      ((unless (consp fn+type))
+                       (mv nil nil nil (irr-tyspecseq)))
+                      (type (mbe :logic (tyspecseq-fix (cdr fn+type))
+                                 :exec (cdr fn+type))))
+                   (mv t fn args type)))
+    (& (mv nil nil nil (irr-tyspecseq))))
   ///
 
   (defret acl2-count-of-atc-check-callable-fn-args
@@ -556,7 +571,7 @@
   (define atc-gen-expr-nonbool ((term pseudo-termp)
                                 (vars atc-symbol-tyspecseq-alistp)
                                 (fn symbolp)
-                                (prec-fns symbol-listp)
+                                (prec-fns atc-symbol-tyspecseq-alistp)
                                 ctx
                                 state)
     :returns (mv erp
@@ -573,15 +588,10 @@
       "At the same time, we check that the term is an allowed non-boolean term,
        as described in the user documentation.")
      (xdoc::p
-      "Besides the generated expression, we also return its C type.
-       This is always @('int') for now,
-       but this will be generalized at some point.")
-     (xdoc::p
       "An ACL2 variable is translated to a C variable.
-       Its type is looked up in an alist that is passed as input.
-       For now the type is always @('int'), but this will be generalized.")
+       Its type is looked up in an alist that is passed as input.")
      (xdoc::p
-      "If the term fits the @(tsee sint-const) pattern
+      "If the term fits the @(tsee sint-const) pattern,
        we translate it to a C integer constant.")
      (xdoc::p
       "If the term fits the pattern of a unary or binary operation,
@@ -589,11 +599,16 @@
        to the recursively generated expressions.
        The type is the result type of the operator.")
      (xdoc::p
+      "If the term is a call of a function that precedes @('fn')
+       in the list of target functions @('fn1'), ..., @('fnp'),
+       we translate it to a C function call on the translated arguments.
+       The type of the expression is the result type of the function.")
+     (xdoc::p
       "If the term is a call of @(tsee c::sint01),
        we call the mutually recursive function
-       that translates the argument, which must be an allowed boolean term,
+       that translates the argument (which must be an allowed boolean term)
        to an expression, which we return.
-       The result is always @('int') here.")
+       The type is always @('int') here.")
      (xdoc::p
       "If the term is an @(tsee if) call,
        first we check if the test is @(tsee mbt) or @(tsee mbt$);
@@ -655,7 +670,7 @@
                                            :arg1 arg1-expr
                                            :arg2 arg2-expr)
                          type))))
-         ((mv okp fn args) (atc-check-callable-fn term prec-fns))
+         ((mv okp fn args type) (atc-check-callable-fn term prec-fns))
          ((when okp)
           (b* (((mv erp arg-exprs state) (atc-gen-expr-nonbool-list args
                                                                     vars
@@ -667,7 +682,7 @@
             (value (list
                     (make-expr-call :fun (make-ident :name (symbol-name fn))
                                     :args arg-exprs)
-                    (tyspecseq-sint))))))
+                    type)))))
       (case-match term
         (('c::sint01 arg)
          (b* (((mv erp expr state)
@@ -730,7 +745,7 @@
   (define atc-gen-expr-nonbool-list ((terms pseudo-term-listp)
                                      (vars atc-symbol-tyspecseq-alistp)
                                      (fn symbolp)
-                                     (prec-fns symbol-listp)
+                                     (prec-fns atc-symbol-tyspecseq-alistp)
                                      ctx
                                      state)
     :returns (mv erp (exprs expr-listp) state)
@@ -760,7 +775,7 @@
   (define atc-gen-expr-bool ((term pseudo-termp)
                              (vars atc-symbol-tyspecseq-alistp)
                              (fn symbolp)
-                             (prec-fns symbol-listp)
+                             (prec-fns atc-symbol-tyspecseq-alistp)
                              ctx
                              state)
     :returns (mv erp (expr exprp) state)
@@ -868,7 +883,7 @@
 (define atc-gen-stmt ((term pseudo-termp)
                       (vars atc-symbol-tyspecseq-alistp)
                       (fn symbolp)
-                      (prec-fns symbol-listp)
+                      (prec-fns atc-symbol-tyspecseq-alistp)
                       ctx
                       state)
   :returns (mv erp
@@ -1039,18 +1054,27 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-ext-decl ((fn symbolp) (prec-fns symbol-listp) ctx state)
-  :returns (mv erp (ext ext-declp) state)
+(define atc-gen-ext-decl ((fn symbolp)
+                          (prec-fns atc-symbol-tyspecseq-alistp)
+                          ctx
+                          state)
+  :returns (mv erp
+               (val (tuple (ext ext-declp)
+                           (updated-prec-fns atc-symbol-tyspecseq-alistp)
+                           val)
+                    :hyp (atc-symbol-tyspecseq-alistp prec-fns))
+               state)
   :short "Generate a C external declaration (a function definition)
           from an ACL2 function."
   :long
   (xdoc::topstring
    (xdoc::p
     "We use the type of the value returned by the statement for the body
-     as the result type of the C function."))
+     as the result type of the C function.
+     We also extend the alist @('prec-fns') with the function."))
   (b* ((name (symbol-name fn))
        ((unless (atc-ident-stringp name))
-        (er-soft+ ctx t (irr-ext-decl)
+        (er-soft+ ctx t (list (irr-ext-decl) nil)
                   "The symbol name ~s0 of the function ~x1 ~
                    must be a portable ASCII C identifier, but it is not."
                   name fn))
@@ -1064,12 +1088,12 @@
                                           guard-conjuncts
                                           ctx
                                           state))
-       ((when erp) (mv erp (irr-ext-decl) state))
+       ((when erp) (mv erp (list (irr-ext-decl) nil) state))
        ((mv erp (list params vars) state) (atc-gen-param-decl-list formals
-                                                                        fn
-                                                                        ctx
-                                                                        state))
-       ((when erp) (mv erp (irr-ext-decl) state))
+                                                                   fn
+                                                                   ctx
+                                                                   state))
+       ((when erp) (mv erp (list (irr-ext-decl) nil) state))
        (body (acl2::ubody+ fn wrld))
        ((mv erp (list stmt type) state) (atc-gen-stmt body
                                                       vars
@@ -1077,30 +1101,37 @@
                                                       prec-fns
                                                       ctx
                                                       state))
-       ((when erp) (mv erp (irr-ext-decl) state)))
+       ((when erp) (mv erp (list (irr-ext-decl) nil) state)))
     (value
-     (ext-decl-fundef
-      (make-fundef :result type
-                   :name (make-ident :name name)
-                   :params params
-                   :body (stmt-compound (list (block-item-stmt stmt))))))))
+     (list
+      (ext-decl-fundef
+       (make-fundef :result type
+                    :name (make-ident :name name)
+                    :params params
+                    :body (stmt-compound (list (block-item-stmt stmt)))))
+      (acons fn type prec-fns))))
+  ///
+
+  (more-returns
+   (val true-listp :rule-classes :type-prescription)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-ext-decl-list ((fns symbol-listp)
-                               (prec-fns symbol-listp)
+                               (prec-fns atc-symbol-tyspecseq-alistp)
                                ctx
                                state)
-  :returns (mv erp (exts ext-decl-listp) state)
+  :returns (mv erp
+               (exts ext-decl-listp :hyp (atc-symbol-tyspecseq-alistp prec-fns))
+               state)
   :short "Lift @(tsee atc-gen-ext-decl) to lists."
   :long
   (xdoc::topstring
    (xdoc::p
     "After we process the first function @('fn') in @('fns'),
-     we add it to  @('prec-fns') for the recursive call on @('(cdr fns)')."))
+     we use the extended @('prec-fns') for the subsequent functions."))
   (b* (((when (endp fns)) (value nil))
        ((cons fn rest-fns) fns)
-       ((mv erp ext state) (atc-gen-ext-decl fn prec-fns ctx state))
        (dup? (member-eq fn rest-fns))
        ((when dup?)
         (er-soft+ ctx t nil
@@ -1109,11 +1140,10 @@
                    but the functions ~x0 and ~x1 ~
                    have the same symbol name."
                   fn (car dup?)))
+       ((mv erp (list ext prec-fns) state)
+        (atc-gen-ext-decl fn prec-fns ctx state))
        ((when erp) (mv erp nil state))
-       ((er exts) (atc-gen-ext-decl-list rest-fns
-                                         (cons fn prec-fns)
-                                         ctx
-                                         state)))
+       ((er exts) (atc-gen-ext-decl-list rest-fns prec-fns ctx state)))
     (value (cons ext exts))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
