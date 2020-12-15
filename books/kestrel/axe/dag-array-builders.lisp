@@ -471,6 +471,16 @@
                  (:linear :trigger-terms ((mv-nth 3 (add-function-call-expr-to-dag-array fn args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))))
   :hints (("Goal" :in-theory (enable add-function-call-expr-to-dag-array bounded-dag-constant-alistp))))
 
+(defthm bound-on-mv-nth-3-and-mv-nth-1-of-add-function-call-expr-to-dag-array-alt
+  (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                (all-dargp-less-than args (alen1 'dag-array dag-array))
+                (not (mv-nth 0 (add-function-call-expr-to-dag-array fn args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))))
+           (< (mv-nth 1 (add-function-call-expr-to-dag-array fn args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+              (mv-nth 3 (add-function-call-expr-to-dag-array fn args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))))
+  :rule-classes (:rewrite
+                 (:linear :trigger-terms ((mv-nth 3 (add-function-call-expr-to-dag-array fn args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))))
+  :hints (("Goal" :in-theory (enable add-function-call-expr-to-dag-array bounded-dag-constant-alistp))))
+
 (defthm bound-on-mv-nth-3-of-add-function-call-expr-to-dag-array-3
   (implies (natp dag-len)
            (<= dag-len
