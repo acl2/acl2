@@ -967,22 +967,87 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-param-decl ((formal symbolp) (fn symbolp) ctx state)
-  :returns (mv erp (param param-declp) state)
-  :short "Generate a C parameter declaration from an ACL2 formal parameter."
-  (b* ((name (symbol-name formal))
-       ((unless (atc-ident-stringp name))
-        (er-soft+ ctx t (irr-param-decl)
-                  "The symbol name ~s0 of ~
-                   the formal parameter ~x1 of the function ~x2 ~
-                   must be a portable ASCII C identifier, but it is not."
-                  name formal fn)))
-    (value (make-param-decl :name (make-ident :name name)
-                            :type (tyspecseq-sint)))))
+(define atc-find-param-type ((formal symbolp)
+                             (fn symbolp)
+                             (guard-conjuncts pseudo-term-listp)
+                             (guard pseudo-termp)
+                             ctx
+                             state)
+  :returns (mv erp (type tyspecseqp) state)
+  :short "Find the C type of a function's parameter from the guard."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We look for a term of the form @('(<type> <formal>)')
+     among the conjuncts of the function's guard,
+     where @('<type>') is a predicate corresponding to a C type
+     and @('<formal>') is the formal argument in question.
+     For now we only accept @(tsee sintp) as @('<type>'),
+     but this will be extended to more C types in the future."))
+  (b* (((when (endp guard-conjuncts))
+        (er-soft+ ctx t (irr-tyspecseq)
+                  "The guard ~x0 of the ~x1 function does not have ~
+                   a recognizable conjunct that requires ~
+                   the formal parameter ~x2 to be a C value ~
+                   of some C type."
+                  guard fn formal))
+       (conjunct (car guard-conjuncts))
+       ((unless (and (acl2::nvariablep conjunct)
+                     (not (acl2::fquotep conjunct))
+                     (not (acl2::flambda-applicationp conjunct))))
+        (atc-find-param-type formal fn (cdr guard-conjuncts) guard ctx state))
+       (type-fn (acl2::ffn-symb conjunct))
+       (type (case type-fn
+               ('sintp (tyspecseq-sint))
+               (t nil)))
+       ((when (not type))
+        (atc-find-param-type formal fn (cdr guard-conjuncts) guard ctx state)))
+    (value type)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-param-decl-list ((formals symbol-listp) (fn symbolp) ctx state)
+(define atc-gen-param-decl ((formal symbolp)
+                            (fn symbolp)
+                            (guard-conjuncts pseudo-term-listp)
+                            (guard pseudo-termp)
+                            ctx
+                            state)
+  :returns (mv erp
+               (val (tuple (param param-declp)
+                           (type tyspecseqp)
+                           val))
+               state)
+  :short "Generate a C parameter declaration from an ACL2 formal parameter."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Besides checking that the name of the parameter is adequate,
+     we also (try and) retrieve its C type from the guard."))
+  (b* ((name (symbol-name formal))
+       ((unless (atc-ident-stringp name))
+        (er-soft+ ctx t (list (irr-param-decl) (irr-tyspecseq))
+                  "The symbol name ~s0 of ~
+                   the formal parameter ~x1 of the function ~x2 ~
+                   must be a portable ASCII C identifier, but it is not."
+                  name formal fn))
+       ((mv erp type state)
+        (atc-find-param-type formal fn guard-conjuncts guard ctx state))
+       ((when erp) (mv erp (list (irr-param-decl) (irr-tyspecseq)) state)))
+    (value (list (make-param-decl :name (make-ident :name name)
+                                  :type type)
+                 type)))
+  ///
+  (more-returns
+   (val true-listp :rule-classes :type-prescription)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-gen-param-decl-list ((formals symbol-listp)
+                                 (fn symbolp)
+                                 (guard-conjuncts pseudo-term-listp)
+                                 (guard pseudo-termp)
+                                 ctx
+                                 state)
   :returns (mv erp
                (val (tuple (params param-decl-listp)
                            (vars atc-symbol-tyspecseq-alistp)
@@ -1001,17 +1066,25 @@
                             (symbol-name-lst (cdr formals))))
         (er-soft+ ctx t (list nil nil)
                   "The formal parameter ~x0 of the function ~x1 ~
-                   has the same symbol name as another formal parameters ~x2; ~
+                   has the same symbol name as ~
+                   another formal parameter among ~x2; ~
                    this is disallowed, even if the package names differ."
                   formal fn (cdr formals)))
-       ((mv erp param state) (atc-gen-param-decl formal fn ctx state))
+       ((mv erp (list param type) state) (atc-gen-param-decl formal
+                                                             fn
+                                                             guard-conjuncts
+                                                             guard
+                                                             ctx
+                                                             state))
        ((when erp) (mv erp (list nil nil) state))
        ((er (list params vars)) (atc-gen-param-decl-list (cdr formals)
-                                                              fn
-                                                              ctx
-                                                              state)))
+                                                         fn
+                                                         guard-conjuncts
+                                                         guard
+                                                         ctx
+                                                         state)))
     (value (list (cons param params)
-                 (acons formal (tyspecseq-sint) vars))))
+                 (acons formal type vars))))
 
   :verify-guards nil ; done below
   ///
@@ -1022,29 +1095,6 @@
 
   (more-returns
    (val true-listp :rule-classes :type-prescription)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-check-guard ((formals symbol-listp)
-                         (fn symbolp)
-                         (guard pseudo-termp)
-                         (guard-conjuncts pseudo-term-listp)
-                         ctx
-                         state)
-  :returns (mv erp (nothing null) state)
-  :short "Check whether every formal parameter of a target function
-          has an associated guard conjunct that requires the parameter
-          to be (the ACL2 counterpart of) a C @('int') value."
-  (b* (((when (endp formals)) (value nil))
-       (formal (car formals))
-       (conjunct (acl2::fcons-term* 'sintp formal))
-       ((unless (member-equal conjunct guard-conjuncts))
-        (er-soft+ ctx t nil
-                  "The guard ~x0 of the ~x1 function does not have ~
-                   a recognizable conjunct ~x2 that requires ~
-                   the formal parameter ~x3 to be a C int value."
-                  guard fn conjunct formal)))
-    (atc-check-guard (cdr formals) fn guard guard-conjuncts ctx state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1076,17 +1126,13 @@
        (formals (acl2::formals+ fn wrld))
        (guard (acl2::uguard+ fn wrld))
        (guard-conjuncts (flatten-ands-in-lit guard))
-       ((mv erp & state) (atc-check-guard formals
-                                          fn
-                                          guard
-                                          guard-conjuncts
-                                          ctx
-                                          state))
-       ((when erp) (mv erp (list (irr-ext-decl) nil) state))
-       ((mv erp (list params vars) state) (atc-gen-param-decl-list formals
-                                                                   fn
-                                                                   ctx
-                                                                   state))
+       ((mv erp (list params vars) state)
+        (atc-gen-param-decl-list formals
+                                 fn
+                                 guard-conjuncts
+                                 guard
+                                 ctx
+                                 state))
        ((when erp) (mv erp (list (irr-ext-decl) nil) state))
        (body (acl2::ubody+ fn wrld))
        ((mv erp (list stmt type) state) (atc-gen-stmt body
