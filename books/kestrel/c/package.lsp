@@ -26,6 +26,7 @@
                defmacro+
                defopener
                defopeners
+               defopeners-names
                deftutorial
                defxdoc+
                enable*
