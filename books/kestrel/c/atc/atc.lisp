@@ -1466,12 +1466,6 @@
 (defsection atc-macro-definition
   :parents (atc-implementation)
   :short "Definition of the @(tsee atc) macro."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We suppress the extra output produced by @(tsee make-event)
-     via @(tsee with-output) and @('(:on-behalf-of :quiet)').")
-   (xdoc::@def "atc"))
   (defmacro atc (&whole call &rest args)
     `(make-event-terse (atc-fn ',args ',call 'atc state)
                        :suppress-errors nil)))
