@@ -1285,11 +1285,8 @@
    (xdoc::p
     "The currently generated proof hints are relatively simple:
      we enable @(tsee run-fun) and all the functions that it calls
-     in the dynamic execution;
-     we also need to force the expansion of
-     @(tsee exec-fun) and @(tsee exec-block-item),
-     based on experimentation;
-     we also use the guard theorem of @('fn').
+     in the dynamic execution.
+     We also use the guard theorem of @('fn').
      We also enable the opener rules; see @(see atc-proof-support).
      We also enable all the functions that may be called by @('fn');
      eventually, we will generate more compositional proofs.
@@ -1352,10 +1349,6 @@
                                      value-option-result-ok->get
                                      exec-unfold-rules
                                      ,@prec-fns)
-                 :expand ((:free (fun args env limit)
-                           (exec-fun fun args env limit))
-                          (:free (item env limit)
-                           (exec-block-item item env limit)))
                  :use (:guard-theorem ,fn))))
        ((mv local-event exported-event)
         (acl2::evmac-generate-defthm

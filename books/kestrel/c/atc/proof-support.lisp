@@ -57,16 +57,8 @@
      since we use the rules in a symbolic execution,
      we expect that the simplification will take place there.")
    (xdoc::p
-    "We generate openers for the execution functions
-     @(tsee exec-expr),
-     @(tsee exec-expr-list),
-     @(tsee exec-stmt), and
-     @(tsee exec-block-item-list),
-     We do no generate openers for
-     @(tsee exec-block-item) and
-     @(tsee exec-fun);
-     instead, we generate @(':expand') hints for these
-     (see @(tsee atc-gen-fn-thm)).")
+    "We generate openers for the mutually recursive execution functions
+     @(tsee exec-expr) and companions.")
    (xdoc::p
     "It seems to be a general heuristic that opener rules are needed
      for symbolic execution when there are mutually recursive calls.
@@ -116,6 +108,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defopeners exec-fun
+  :hyps ((syntaxp (quotep fun)))
+  :disable t)
+
+(add-to-ruleset exec-unfold-rules
+                '(exec-fun-base))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defopeners exec-stmt
   :hyps ((syntaxp (quotep s)))
   :disable t)
@@ -132,6 +133,15 @@
                   exec-stmt-base-9
                   exec-stmt-unroll-1
                   exec-stmt-unroll-2))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defopeners exec-block-item
+  :hyps ((syntaxp item))
+  :disable t)
+
+(add-to-ruleset exec-unfold-rules
+                '(exec-block-item-base))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
