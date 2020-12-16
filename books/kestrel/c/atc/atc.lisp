@@ -15,7 +15,6 @@
 (include-book "static-semantics")
 (include-book "dynamic-semantics")
 (include-book "proof-support")
-(include-book "proof-support-alternative")
 
 (include-book "kestrel/error-checking/ensure-function-is-defined" :dir :system)
 (include-book "kestrel/error-checking/ensure-function-is-guard-verified" :dir :system)
@@ -1291,8 +1290,7 @@
      @(tsee exec-fun) and @(tsee exec-block-item),
      based on experimentation;
      we also use the guard theorem of @('fn').
-     We also enable some opener rules;
-     see @(see atc-proof-support-alternative).
+     We also enable the opener rules; see @(see atc-proof-support).
      We also enable all the functions that may be called by @('fn');
      eventually, we will generate more compositional proofs.
      Given that the translation unit is a constant,
@@ -1353,13 +1351,6 @@
                                      value-option-result-kind
                                      value-option-result-ok->get
                                      exec-unfold-rules
-                                     ;; rules from ATC-PROOF-SUPPORT:
-                                     ;; exec-expr-of-call
-                                     ;; exec-expr-list-of-cons
-                                     ;; exec-expr-list-of-atom
-                                     ;; exec-block-item-list-of-cons
-                                     ;; exec-block-item-list-of-atom
-                                     ;; exec-stmt-of-return
                                      ,@prec-fns)
                  :expand ((:free (fun args env limit)
                            (exec-fun fun args env limit))
