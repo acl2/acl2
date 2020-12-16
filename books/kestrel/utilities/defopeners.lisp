@@ -579,7 +579,7 @@
     (declare (ignore event))
     names))
 
-;hyps should be a list of terms over the formals of the function (can include syntaxp, etc.)
+;; Returns the list of theorem names that defopeners would introduce.
 ;; KEEP IN SYNC WITH DEFOPENERS.
 (defmacro defopeners-names (fn &key
                                (hyps 'nil)
