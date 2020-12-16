@@ -374,614 +374,333 @@
    (m1-directory-file-p (m1-file-fix file))))
  :hints (("goal" :in-theory (enable hifat-place-file))))
 
-(skip-proofs
- (defund lofat-place-file-helper
-   (fat32$c root-d-e path file)
-   (declare (xargs :stobjs fat32$c))
-   (b*
-       (((mv root-d-e-cc-contents &) (d-e-cc-contents fat32$c root-d-e))
-        ((mv d-e error-code)
-         (find-d-e (make-d-e-list root-d-e-cc-contents)
-                   (fat32-filename-fix (car path))))
-        ((mv root-d-e-cc &) (d-e-cc fat32$c root-d-e))
-        ((mv d-e-cc &) (d-e-cc fat32$c d-e)))
-     (cond
-      ((and
-        (<= (len (make-clusters (lofat-file->contents file)
-                                (cluster-size fat32$c)))
-            (len (stobj-find-n-free-clusters
-                  fat32$c
-                  (len (make-clusters (lofat-file->contents file)
-                                      (cluster-size fat32$c))))))
-        (not (equal error-code 0))
-        (< 0
-           (len (explode (lofat-file->contents file))))
-        (<= 1
-            (len (stobj-find-n-free-clusters fat32$c 1)))
-        (lofat-regular-file-p file)
-        (<= (+ 96
-               (* 32
-                  (len (make-d-e-list root-d-e-cc-contents))))
-            2097152)
-        (<=
+;; Move later.
+(defthm make-clusters-of-nil
+  (implies (and (atom text) (not (stringp text)))
+           (equal (make-clusters text cluster-size)
+                  nil))
+  :hints (("goal" :in-theory (enable make-clusters))))
+
+(encapsulate
+  ()
+
+  (local (include-book "arithmetic-3/top" :dir :system))
+
+  (defthm lofat-place-file-helper-guard-lemma-1
+    (<= (* *ms-d-e-length*
+           (len (make-d-e-list dir-contents)))
+        (len (explode dir-contents)))
+    :hints (("goal" :do-not-induct t
+             :use len-of-make-d-e-list))
+    :rule-classes :linear))
+
+(defund
+  lofat-place-file-helper
+  (fat32$c root-d-e path file)
+  (declare
+   (xargs :stobjs fat32$c
+          :guard (and (lofat-fs-p fat32$c)
+                      (d-e-p root-d-e)
+                      (>= (d-e-first-cluster root-d-e)
+                          *ms-first-data-cluster*)
+                      (< (d-e-first-cluster root-d-e)
+                         (+ *ms-first-data-cluster*
+                            (count-of-clusters fat32$c)))
+                      (fat32-filename-list-p path)
+                      (lofat-file-p file)
+                      (or (lofat-regular-file-p file)
+                          (equal (lofat-file->contents file)
+                                 nil)))
+          :guard-debug t
+          :guard-hints (("goal" :in-theory (disable nfix)))))
+  (b*
+      (((mv root-d-e-cc-contents &)
+        (d-e-cc-contents fat32$c root-d-e))
+       (path-head (mbe :logic (fat32-filename-fix (car path))
+                       :exec (if (consp path)
+                                 (fat32-filename-fix (car path))
+                               *empty-fat32-name*)))
+       ((mv d-e error-code)
+        (find-d-e (make-d-e-list root-d-e-cc-contents)
+                  path-head))
+       ((mv root-d-e-cc &)
+        (d-e-cc fat32$c root-d-e))
+       (file-clusters
+        (mbe :logic (make-clusters (lofat-file->contents file)
+                                   (cluster-size fat32$c))
+             :exec (if (stringp (lofat-file->contents file))
+                       (make-clusters (lofat-file->contents file)
+                                      (cluster-size fat32$c))
+                     nil)))
+       (free-clusters-2
+        (stobj-find-n-free-clusters
+         fat32$c
+         (nfix
+          (+
+           (+
+            (len file-clusters)
+            (len
+             (make-clusters
+              (nats=>string
+               (insert-d-e (string=>nats root-d-e-cc-contents)
+                           (d-e-install-directory-bit
+                            (make-d-e-with-filename path-head)
+                            nil)))
+              (cluster-size fat32$c))))
+           (- (len root-d-e-cc))))))
+       (free-clusters-3
+        (stobj-find-n-free-clusters
+         fat32$c
+         (nfix
+          (+
+           (+
+            (len file-clusters)
+            (len
+             (make-clusters
+              (nats=>string
+               (insert-d-e (string=>nats root-d-e-cc-contents)
+                           d-e))
+              (cluster-size fat32$c))))
+           (- (len root-d-e-cc))))))
+       (free-clusters-5 (stobj-find-n-free-clusters fat32$c 1)))
+    (cond
+     ((and
+       (<= (len file-clusters)
+           (len (stobj-find-n-free-clusters
+                 fat32$c (len file-clusters))))
+       (not (equal error-code 0))
+       (lofat-regular-file-p file)
+       (< 0
+          (len (explode (lofat-file->contents file))))
+       (<= 1 (len free-clusters-5))
+       (<= (+ 96
+              (* 32
+                 (len (make-d-e-list root-d-e-cc-contents))))
+           2097152)
+       (<=
+        (+
          (+
-          (+
-           (len (make-clusters (lofat-file->contents file)
-                               (cluster-size fat32$c)))
-           (len
-            (make-clusters
-             (nats=>string
-              (insert-d-e
-               (string=>nats root-d-e-cc-contents)
-               (d-e-set-first-cluster-file-size
-                (d-e-install-directory-bit
-                 (make-d-e-with-filename (fat32-filename-fix (car path)))
-                 nil)
-                (nth 0
-                     (stobj-find-n-free-clusters fat32$c 1))
-                (len (explode (lofat-file->contents file))))))
-             (cluster-size fat32$c))))
-          (- (len root-d-e-cc)))
-         (len
-          (stobj-find-n-free-clusters
-           fat32$c
-           (+
-            (+
-             (len (make-clusters (lofat-file->contents file)
-                                 (cluster-size fat32$c)))
-             (len
-              (make-clusters
-               (nats=>string
-                (insert-d-e
-                 (string=>nats root-d-e-cc-contents)
-                 (d-e-set-first-cluster-file-size
-                  (d-e-install-directory-bit
-                   (make-d-e-with-filename
-                    (fat32-filename-fix (car path)))
-                   nil)
-                  (nth 0
-                       (stobj-find-n-free-clusters fat32$c 1))
-                  (len (explode (lofat-file->contents file))))))
-               (cluster-size fat32$c))))
-            (- (len root-d-e-cc)))))))
-       0)
-      ((and
-        (<= (len (make-clusters (lofat-file->contents file)
-                                (cluster-size fat32$c)))
-            (len (stobj-find-n-free-clusters
-                  fat32$c
-                  (len (make-clusters (lofat-file->contents file)
-                                      (cluster-size fat32$c))))))
-        (not (equal error-code 0))
-        (< 0
-           (len (explode (lofat-file->contents file))))
-        (<= 1
-            (len (stobj-find-n-free-clusters fat32$c 1)))
-        (<= (+ 96
-               (* 32
-                  (len (make-d-e-list root-d-e-cc-contents))))
-            2097152)
-        (<
-         (len
-          (stobj-find-n-free-clusters
-           fat32$c
-           (+
-            (+
-             (len (make-clusters (lofat-file->contents file)
-                                 (cluster-size fat32$c)))
-             (len
-              (make-clusters
-               (nats=>string
-                (insert-d-e
-                 (string=>nats root-d-e-cc-contents)
-                 (d-e-set-first-cluster-file-size
-                  (d-e-install-directory-bit
-                   (make-d-e-with-filename
-                    (fat32-filename-fix (car path)))
-                   nil)
-                  (nth 0
-                       (stobj-find-n-free-clusters fat32$c 1))
-                  (len (explode (lofat-file->contents file))))))
-               (cluster-size fat32$c))))
-            (- (len root-d-e-cc)))))
+          (len file-clusters)
+          (len
+           (make-clusters
+            (nats=>string
+             (insert-d-e (string=>nats root-d-e-cc-contents)
+                         (d-e-install-directory-bit
+                          (make-d-e-with-filename path-head)
+                          nil)))
+            (cluster-size fat32$c))))
+         (- (len root-d-e-cc)))
+        (len free-clusters-2)))
+      0)
+     ((and
+       (<= (len file-clusters)
+           (len (stobj-find-n-free-clusters
+                 fat32$c (len file-clusters))))
+       (not (equal error-code 0))
+       (lofat-regular-file-p file)
+       (< 0
+          (len (explode (lofat-file->contents file))))
+       (<= 1 (len free-clusters-5))
+       (<= (+ 96
+              (* 32
+                 (len (make-d-e-list root-d-e-cc-contents))))
+           2097152)
+       (<
+        (len free-clusters-2)
+        (+
          (+
-          (+
-           (len (make-clusters (lofat-file->contents file)
-                               (cluster-size fat32$c)))
-           (len
-            (make-clusters
-             (nats=>string
-              (insert-d-e
-               (string=>nats root-d-e-cc-contents)
-               (d-e-set-first-cluster-file-size
-                (d-e-install-directory-bit
-                 (make-d-e-with-filename (fat32-filename-fix (car path)))
-                 nil)
-                (nth 0
-                     (stobj-find-n-free-clusters fat32$c 1))
-                (len (explode (lofat-file->contents file))))))
-             (cluster-size fat32$c))))
-          (- (len root-d-e-cc)))))
-       28)
-      ((and
-        (not (equal error-code 0))
-        (lofat-directory-file-p file)
-        (not (lofat-regular-file-p file))
-        (<= 1
-            (len (stobj-find-n-free-clusters fat32$c 1)))
-        (<= (+ 96
-               (* 32
-                  (len (make-d-e-list root-d-e-cc-contents))))
-            2097152)
-        (not (lofat-file->contents file))
-        (<=
-         (+
-          (+
-           1
-           (len
-            (make-clusters
-             (nats=>string
-              (insert-d-e
-               (string=>nats root-d-e-cc-contents)
-               (d-e-set-first-cluster-file-size
-                (d-e-install-directory-bit
-                 (make-d-e-with-filename (fat32-filename-fix (car path)))
-                 t)
-                (nth 0
-                     (stobj-find-n-free-clusters fat32$c 1))
-                0)))
-             (cluster-size fat32$c))))
-          (- (len root-d-e-cc)))
-         (len
-          (stobj-find-n-free-clusters
-           fat32$c
-           (+
-            (+
-             1
-             (len
-              (make-clusters
-               (nats=>string
-                (insert-d-e
-                 (string=>nats root-d-e-cc-contents)
-                 (d-e-set-first-cluster-file-size
-                  (d-e-install-directory-bit
-                   (make-d-e-with-filename
-                    (fat32-filename-fix (car path)))
-                   t)
-                  (nth 0
-                       (stobj-find-n-free-clusters fat32$c 1))
-                  0)))
-               (cluster-size fat32$c))))
-            (- (len root-d-e-cc)))))))
-       0)
-      ((and
-        (not (equal error-code 0))
-        (lofat-directory-file-p file)
-        (not (lofat-regular-file-p file))
-        (<= 1
-            (len (stobj-find-n-free-clusters fat32$c 1)))
-        (<= (+ 96
-               (* 32
-                  (len (make-d-e-list root-d-e-cc-contents))))
-            2097152)
-        (not (lofat-file->contents file))
-        (<
-         (len
-          (stobj-find-n-free-clusters
-           fat32$c
-           (+
-            (+
-             1
-             (len
-              (make-clusters
-               (nats=>string
-                (insert-d-e
-                 (string=>nats root-d-e-cc-contents)
-                 (d-e-set-first-cluster-file-size
-                  (d-e-install-directory-bit
-                   (make-d-e-with-filename
-                    (fat32-filename-fix (car path)))
-                   t)
-                  (nth 0
-                       (stobj-find-n-free-clusters fat32$c 1))
-                  0)))
-               (cluster-size fat32$c))))
-            (- (len root-d-e-cc)))))
-         (+
-          (+
-           1
-           (len
-            (make-clusters
-             (nats=>string
-              (insert-d-e
-               (string=>nats root-d-e-cc-contents)
-               (d-e-set-first-cluster-file-size
-                (d-e-install-directory-bit
-                 (make-d-e-with-filename (fat32-filename-fix (car path)))
-                 t)
-                (nth 0
-                     (stobj-find-n-free-clusters fat32$c 1))
-                0)))
-             (cluster-size fat32$c))))
-          (- (len root-d-e-cc)))))
-       28)
-      ((and
-        (equal (len (stobj-find-n-free-clusters
-                     fat32$c
-                     (len (make-clusters (lofat-file->contents file)
-                                         (cluster-size fat32$c)))))
-               (len (make-clusters (lofat-file->contents file)
-                                   (cluster-size fat32$c))))
-        (equal error-code 0)
-        (not (d-e-directory-p d-e))
-        (< 0
-           (len (explode (lofat-file->contents file))))
-        (<= (+ 2 (count-of-clusters fat32$c))
-            (d-e-first-cluster d-e))
-        (lofat-regular-file-p file)
-        (<= 1
-            (len (stobj-find-n-free-clusters fat32$c 1)))
-        (<= 2 (d-e-first-cluster d-e))
-        (<=
-         (+
-          (+
-           (len (make-clusters (lofat-file->contents file)
-                               (cluster-size fat32$c)))
-           (len
-            (make-clusters
-             (nats=>string
-              (insert-d-e
-               (string=>nats root-d-e-cc-contents)
-               (d-e-set-first-cluster-file-size
-                d-e
-                (nth 0
-                     (stobj-find-n-free-clusters fat32$c 1))
-                (len (explode (lofat-file->contents file))))))
-             (cluster-size fat32$c))))
-          (- (len root-d-e-cc)))
-         (len
-          (stobj-find-n-free-clusters
-           fat32$c
-           (+
-            (+
-             (len (make-clusters (lofat-file->contents file)
-                                 (cluster-size fat32$c)))
-             (len
-              (make-clusters
-               (nats=>string
-                (insert-d-e
-                 (string=>nats root-d-e-cc-contents)
-                 (d-e-set-first-cluster-file-size
-                  d-e
-                  (nth 0
-                       (stobj-find-n-free-clusters fat32$c 1))
-                  (len (explode (lofat-file->contents file))))))
-               (cluster-size fat32$c))))
-            (- (len root-d-e-cc)))))))
-       0)
-      ((and
-        (<= (+ (len (make-clusters (lofat-file->contents file)
-                                   (cluster-size fat32$c)))
-               (- (len d-e-cc)))
-            (len (stobj-find-n-free-clusters
-                  fat32$c
-                  (+ (len (make-clusters (lofat-file->contents file)
-                                         (cluster-size fat32$c)))
-                     (- (len d-e-cc))))))
-        (equal error-code 0)
-        (not (d-e-directory-p d-e))
-        (< 0
-           (len (explode (lofat-file->contents file))))
-        (<= 2 (d-e-first-cluster d-e))
-        (< (d-e-first-cluster d-e)
-           (+ 2 (count-of-clusters fat32$c)))
-        (lofat-regular-file-p file)
-        (<=
-         (+
-          (+
-           (len (make-clusters (lofat-file->contents file)
-                               (cluster-size fat32$c)))
-           (len
-            (make-clusters
-             (nats=>string (insert-d-e (string=>nats root-d-e-cc-contents)
-                                       d-e))
-             (cluster-size fat32$c))))
-          (- (+ (len root-d-e-cc) (len d-e-cc))))
-         (len
-          (stobj-find-n-free-clusters
-           fat32$c
-           (+
-            (+
-             (len (make-clusters (lofat-file->contents file)
-                                 (cluster-size fat32$c)))
-             (len
-              (make-clusters
-               (nats=>string
-                (insert-d-e (string=>nats root-d-e-cc-contents)
-                            d-e))
-               (cluster-size fat32$c))))
-            (- (+ (len root-d-e-cc) (len d-e-cc))))))))
-       0)
-      ((and
-        (<=
-         (+
-          (+
-           (len (make-clusters (lofat-file->contents file)
-                               (cluster-size fat32$c)))
-           (len
-            (make-clusters
-             (nats=>string
-              (insert-d-e
-               (string=>nats root-d-e-cc-contents)
-               (d-e-set-first-cluster-file-size
-                d-e
-                (nth 0
-                     (stobj-find-n-free-clusters fat32$c 1))
-                (len (explode (lofat-file->contents file))))))
-             (cluster-size fat32$c))))
-          (- (len root-d-e-cc)))
-         (len
-          (stobj-find-n-free-clusters
-           fat32$c
-           (+
-            (+
-             (len (make-clusters (lofat-file->contents file)
-                                 (cluster-size fat32$c)))
-             (len
-              (make-clusters
-               (nats=>string
-                (insert-d-e
-                 (string=>nats root-d-e-cc-contents)
-                 (d-e-set-first-cluster-file-size
-                  d-e
-                  (nth 0
-                       (stobj-find-n-free-clusters fat32$c 1))
-                  (len (explode (lofat-file->contents file))))))
-               (cluster-size fat32$c))))
-            (- (len root-d-e-cc))))))
-        (equal (len (stobj-find-n-free-clusters
-                     fat32$c
-                     (len (make-clusters (lofat-file->contents file)
-                                         (cluster-size fat32$c)))))
-               (len (make-clusters (lofat-file->contents file)
-                                   (cluster-size fat32$c))))
-        (equal error-code 0)
-        (not (d-e-directory-p d-e))
-        (< 0
-           (len (explode (lofat-file->contents file))))
-        (< (d-e-first-cluster d-e) 2)
-        (lofat-regular-file-p file)
-        (<= 1
-            (len (stobj-find-n-free-clusters fat32$c 1))))
-       0)
-      ((lofat-regular-file-p file) 28)
-      ((and
-        (<=
-         (+
-          (+
-           1
-           (len
-            (make-clusters
-             (nats=>string
-              (insert-d-e
-               (string=>nats root-d-e-cc-contents)
-               (d-e-set-first-cluster-file-size
-                d-e
-                (nth 0
-                     (stobj-find-n-free-clusters fat32$c 1))
-                0)))
-             (cluster-size fat32$c))))
-          (- (len root-d-e-cc)))
-         (len
-          (stobj-find-n-free-clusters
-           fat32$c
-           (+
-            (+
-             1
-             (len
-              (make-clusters
-               (nats=>string
-                (insert-d-e
-                 (string=>nats root-d-e-cc-contents)
-                 (d-e-set-first-cluster-file-size
-                  d-e
-                  (nth 0
-                       (stobj-find-n-free-clusters fat32$c 1))
-                  0)))
-               (cluster-size fat32$c))))
-            (- (len root-d-e-cc))))))
-        (equal error-code 0)
-        (not (d-e-directory-p d-e))
-        (not (lofat-directory-file-p file))
-        (<= (+ 2 (count-of-clusters fat32$c))
-            (d-e-first-cluster d-e))
-        (<= 1
-            (len (stobj-find-n-free-clusters fat32$c 1)))
-        (<= 2 (d-e-first-cluster d-e)))
-       0)
-      ((and
-        (equal error-code 0)
-        (not (d-e-directory-p d-e))
-        (not (lofat-directory-file-p file))
-        (<= (+ 2 (count-of-clusters fat32$c))
-            (d-e-first-cluster d-e))
-        (<= 1
-            (len (stobj-find-n-free-clusters fat32$c 1)))
-        (<= 2 (d-e-first-cluster d-e))
-        (<
-         (len
-          (stobj-find-n-free-clusters
-           fat32$c
-           (+
-            (+
-             1
-             (len
-              (make-clusters
-               (nats=>string
-                (insert-d-e
-                 (string=>nats root-d-e-cc-contents)
-                 (d-e-set-first-cluster-file-size
-                  d-e
-                  (nth 0
-                       (stobj-find-n-free-clusters fat32$c 1))
-                  0)))
-               (cluster-size fat32$c))))
-            (- (len root-d-e-cc)))))
-         (+
-          (+
-           1
-           (len
-            (make-clusters
-             (nats=>string
-              (insert-d-e
-               (string=>nats root-d-e-cc-contents)
-               (d-e-set-first-cluster-file-size
-                d-e
-                (nth 0
-                     (stobj-find-n-free-clusters fat32$c 1))
-                0)))
-             (cluster-size fat32$c))))
-          (- (len root-d-e-cc)))))
-       28)
-      ((and
-        (equal error-code 0)
-        (not (d-e-directory-p d-e))
-        (not (lofat-directory-file-p file))
-        (<= 2 (d-e-first-cluster d-e))
-        (< (d-e-first-cluster d-e)
-           (+ 2 (count-of-clusters fat32$c)))
-        (<=
-         (+
-          (+
-           1
-           (len
-            (make-clusters
-             (nats=>string (insert-d-e (string=>nats root-d-e-cc-contents)
-                                       d-e))
-             (cluster-size fat32$c))))
-          (- (+ (len root-d-e-cc) (len d-e-cc))))
-         (len
-          (stobj-find-n-free-clusters
-           fat32$c
-           (+
-            (+
-             1
-             (len
-              (make-clusters
-               (nats=>string
-                (insert-d-e (string=>nats root-d-e-cc-contents)
-                            d-e))
-               (cluster-size fat32$c))))
-            (- (+ (len root-d-e-cc) (len d-e-cc))))))))
-       0)
-      ((and
-        (equal error-code 0)
-        (not (d-e-directory-p d-e))
-        (not (lofat-directory-file-p file))
-        (< (d-e-first-cluster d-e) 2)
-        (<= 1
-            (len (stobj-find-n-free-clusters fat32$c 1)))
-        (<
-         (len
-          (stobj-find-n-free-clusters
-           fat32$c
-           (+
-            (+
-             1
-             (len
-              (make-clusters
-               (nats=>string
-                (insert-d-e
-                 (string=>nats root-d-e-cc-contents)
-                 (d-e-set-first-cluster-file-size
-                  d-e
-                  (nth 0
-                       (stobj-find-n-free-clusters fat32$c 1))
-                  0)))
-               (cluster-size fat32$c))))
-            (- (len root-d-e-cc)))))
-         (+
-          (+
-           1
-           (len
-            (make-clusters
-             (nats=>string
-              (insert-d-e
-               (string=>nats root-d-e-cc-contents)
-               (d-e-set-first-cluster-file-size
-                d-e
-                (nth 0
-                     (stobj-find-n-free-clusters fat32$c 1))
-                0)))
-             (cluster-size fat32$c))))
-          (- (len root-d-e-cc)))))
-       28)
-      ((and
-        (equal error-code 0)
-        (not (d-e-directory-p d-e))
-        (not (lofat-directory-file-p file))
-        (< (d-e-first-cluster d-e) 2)
-        (<= 1
-            (len (stobj-find-n-free-clusters fat32$c 1)))
-        (<=
-         (+
-          (+
-           1
-           (len
-            (make-clusters
-             (nats=>string
-              (insert-d-e
-               (string=>nats root-d-e-cc-contents)
-               (d-e-set-first-cluster-file-size
-                d-e
-                (nth 0
-                     (stobj-find-n-free-clusters fat32$c 1))
-                0)))
-             (cluster-size fat32$c))))
-          (- (len root-d-e-cc)))
-         (len
-          (stobj-find-n-free-clusters
-           fat32$c
-           (+
-            (+
-             1
-             (len
-              (make-clusters
-               (nats=>string
-                (insert-d-e
-                 (string=>nats root-d-e-cc-contents)
-                 (d-e-set-first-cluster-file-size
-                  d-e
-                  (nth 0
-                       (stobj-find-n-free-clusters fat32$c 1))
-                  0)))
-               (cluster-size fat32$c))))
-            (- (len root-d-e-cc)))))))
-       0)
-      ((<
-        (len
-         (stobj-find-n-free-clusters
-          fat32$c
-          (+
-           (+
-            1
-            (len (make-clusters
-                  (nats=>string
-                   (insert-d-e (string=>nats root-d-e-cc-contents)
-                               d-e))
-                  (cluster-size fat32$c))))
-           (- (+ (len root-d-e-cc) (len d-e-cc))))))
+          (len file-clusters)
+          (len
+           (make-clusters
+            (nats=>string
+             (insert-d-e (string=>nats root-d-e-cc-contents)
+                         (d-e-install-directory-bit
+                          (make-d-e-with-filename path-head)
+                          nil)))
+            (cluster-size fat32$c))))
+         (- (len root-d-e-cc)))))
+      28)
+     ((and
+       (not (equal error-code 0))
+       (lofat-directory-file-p file)
+       (<= 1 (len free-clusters-5))
+       (<= (+ 96
+              (* 32
+                 (len (make-d-e-list root-d-e-cc-contents))))
+           2097152)
+       (not (lofat-file->contents file))
+       (<=
         (+
          (+
           1
           (len
            (make-clusters
-            (nats=>string (insert-d-e (string=>nats root-d-e-cc-contents)
-                                      d-e))
+            (nats=>string
+             (insert-d-e (string=>nats root-d-e-cc-contents)
+                         (d-e-install-directory-bit
+                          (make-d-e-with-filename path-head)
+                          t)))
             (cluster-size fat32$c))))
-         (- (+ (len root-d-e-cc) (len d-e-cc)))))
-       28)
-      (t 0)))))
+         (- (len root-d-e-cc)))
+        (len
+         (stobj-find-n-free-clusters
+          fat32$c
+          (nfix
+           (+
+            (+
+             1
+             (len
+              (make-clusters
+               (nats=>string
+                (insert-d-e
+                 (string=>nats root-d-e-cc-contents)
+                 (d-e-install-directory-bit
+                  (make-d-e-with-filename path-head)
+                  t)))
+               (cluster-size fat32$c))))
+            (- (len root-d-e-cc))))))))
+      0)
+     ((and
+       (not (equal error-code 0))
+       (lofat-directory-file-p file)
+       (<= 1 (len free-clusters-5))
+       (<= (+ 96
+              (* 32
+                 (len (make-d-e-list root-d-e-cc-contents))))
+           2097152)
+       (not (lofat-file->contents file)))
+      28)
+     ((and
+       (equal (len (stobj-find-n-free-clusters
+                    fat32$c (len file-clusters)))
+              (len file-clusters))
+       (equal error-code 0)
+       (not (d-e-directory-p d-e))
+       (lofat-regular-file-p file)
+       (< 0
+          (len (explode (lofat-file->contents file))))
+       (<= (+ 2 (count-of-clusters fat32$c))
+           (d-e-first-cluster d-e))
+       (<= 1 (len free-clusters-5))
+       (<= 2 (d-e-first-cluster d-e))
+       (<=
+        (+
+         (+
+          (len file-clusters)
+          (len
+           (make-clusters
+            (nats=>string
+             (insert-d-e (string=>nats root-d-e-cc-contents)
+                         d-e))
+            (cluster-size fat32$c))))
+         (- (len root-d-e-cc)))
+        (len free-clusters-3)))
+      0)
+     ((and
+       (equal error-code 0)
+       (not (d-e-directory-p d-e))
+       (lofat-regular-file-p file)
+       (< 0
+          (len (explode (lofat-file->contents file))))
+       (<= 2 (d-e-first-cluster d-e))
+       (< (d-e-first-cluster d-e)
+          (+ 2 (count-of-clusters fat32$c)))
+       (b*
+           (((mv d-e-cc &) (d-e-cc fat32$c d-e))
+            (free-clusters-1
+             (stobj-find-n-free-clusters
+              fat32$c
+              (nfix
+               (+
+                (+
+                 (len file-clusters)
+                 (len
+                  (make-clusters
+                   (nats=>string
+                    (insert-d-e (string=>nats root-d-e-cc-contents)
+                                d-e))
+                   (cluster-size fat32$c))))
+                (- (+ (len root-d-e-cc) (len d-e-cc)))))))
+            (free-clusters-4 (stobj-find-n-free-clusters
+                              fat32$c
+                              (nfix (+ (len file-clusters)
+                                       (- (len d-e-cc)))))))
+         (and
+          (<= (+ (len file-clusters) (- (len d-e-cc)))
+              (len free-clusters-4))
+          (<=
+           (+
+            (+
+             (len file-clusters)
+             (len
+              (make-clusters
+               (nats=>string
+                (insert-d-e (string=>nats root-d-e-cc-contents)
+                            d-e))
+               (cluster-size fat32$c))))
+            (- (+ (len root-d-e-cc) (len d-e-cc))))
+           (len free-clusters-1)))))
+      0)
+     ((and
+       (<=
+        (+
+         (+
+          (len file-clusters)
+          (len
+           (make-clusters
+            (nats=>string
+             (insert-d-e (string=>nats root-d-e-cc-contents)
+                         d-e))
+            (cluster-size fat32$c))))
+         (- (len root-d-e-cc)))
+        (len free-clusters-3))
+       (equal (len (stobj-find-n-free-clusters
+                    fat32$c (len file-clusters)))
+              (len file-clusters))
+       (equal error-code 0)
+       (not (d-e-directory-p d-e))
+       (lofat-regular-file-p file)
+       (< 0
+          (len (explode (lofat-file->contents file))))
+       (< (d-e-first-cluster d-e) 2)
+       (<= 1 (len free-clusters-5)))
+      0)
+     ((lofat-regular-file-p file) 28)
+     ((and
+       (<= *ms-first-data-cluster*
+           (d-e-first-cluster d-e))
+       (< (d-e-first-cluster d-e)
+          (+ *ms-first-data-cluster*
+             (count-of-clusters fat32$c)))
+       (b*
+           (((mv d-e-cc &) (d-e-cc fat32$c d-e)))
+         (<
+          (len
+           (stobj-find-n-free-clusters
+            fat32$c
+            (nfix
+             (+
+              (+
+               1
+               (len
+                (make-clusters
+                 (nats=>string
+                  (insert-d-e (string=>nats root-d-e-cc-contents)
+                              d-e))
+                 (cluster-size fat32$c))))
+              (- (+ (len root-d-e-cc) (len d-e-cc)))))))
+          (+
+           (+
+            1
+            (len
+             (make-clusters
+              (nats=>string
+               (insert-d-e (string=>nats root-d-e-cc-contents)
+                           d-e))
+              (cluster-size fat32$c))))
+           (- (+ (len root-d-e-cc) (len d-e-cc)))))))
+      28)
+     (t 0))))
 
 ;; This is a no-change loser.
 (defun
@@ -1197,11 +916,6 @@
                   (fati 0 fat32$c)))
   :hints (("goal" :in-theory (enable fati nth))))
 
-;; Move later.
-(defthm integer-listp-of-d-e-cc
-  (integer-listp (mv-nth 0 (d-e-cc fat32$c d-e)))
-  :hints (("goal" :in-theory (enable d-e-cc))))
-
 (defthm
   lofat-place-file-guard-lemma-7
   (implies (and (d-e-p d-e)
@@ -1393,6 +1107,7 @@
    (and
     (consp path)
     (not (consp (cdr path)))
+    (lofat-file-p file)
     (or (lofat-regular-file-p file)
         (equal (lofat-file->contents file) nil))
     (good-root-d-e-p root-d-e fat32$c)
@@ -3062,62 +2777,77 @@
            (count-free-clusters (effective-fat fat32$c))
            (len (mv-nth 0 (d-e-cc fat32$c root-d-e))))))
       0)
-     ((<
-       (+
-        -1
-        (count-free-clusters (effective-fat fat32$c))
-        (len (mv-nth 0 (d-e-cc fat32$c root-d-e)))
-        (len
+     ((and
+       (<=
+        2
+        (d-e-first-cluster
          (mv-nth
           0
-          (d-e-cc
-           fat32$c
-           (mv-nth
-            0
-            (find-d-e
-             (make-d-e-list (mv-nth 0 (d-e-cc-contents fat32$c root-d-e)))
-             (fat32-filename-fix (car path))))))))
-       (len
-        (make-clusters
-         (nats=>string
-          (insert-d-e
-           (string=>nats (mv-nth 0 (d-e-cc-contents fat32$c root-d-e)))
-           (d-e-set-first-cluster-file-size
+          (find-d-e (make-d-e-list (mv-nth 0 (d-e-cc-contents fat32$c root-d-e)))
+                    (fat32-filename-fix (car path))))))
+       (<
+        (d-e-first-cluster
+         (mv-nth
+          0
+          (find-d-e (make-d-e-list (mv-nth 0 (d-e-cc-contents fat32$c root-d-e)))
+                    (fat32-filename-fix (car path)))))
+        (+ 2 (count-of-clusters fat32$c)))
+       (<
+        (+
+         -1
+         (count-free-clusters (effective-fat fat32$c))
+         (len (mv-nth 0 (d-e-cc fat32$c root-d-e)))
+         (len
+          (mv-nth
+           0
+           (d-e-cc
+            fat32$c
             (mv-nth
              0
              (find-d-e
               (make-d-e-list (mv-nth 0 (d-e-cc-contents fat32$c root-d-e)))
-              (fat32-filename-fix (car path))))
-            (nth
-             0
-             (find-n-free-clusters
-              (set-indices-in-fa-table
-               (effective-fat fat32$c)
-               (mv-nth
-                0
-                (d-e-cc
-                 fat32$c
-                 (mv-nth
-                  0
-                  (find-d-e
-                   (make-d-e-list (mv-nth 0 (d-e-cc-contents fat32$c root-d-e)))
-                   (fat32-filename-fix (car path))))))
-               (make-list-ac
-                (len
-                 (mv-nth
-                  0
-                  (d-e-cc
-                   fat32$c
-                   (mv-nth
-                    0
-                    (find-d-e
-                     (make-d-e-list
-                      (mv-nth 0 (d-e-cc-contents fat32$c root-d-e)))
-                     (fat32-filename-fix (car path)))))))
-                0 nil))
-              1))
-            0)))
-         (cluster-size fat32$c))))
+              (fat32-filename-fix (car path))))))))
+        (len
+         (make-clusters
+          (nats=>string
+           (insert-d-e
+            (string=>nats (mv-nth 0 (d-e-cc-contents fat32$c root-d-e)))
+            (d-e-set-first-cluster-file-size
+             (mv-nth
+              0
+              (find-d-e
+               (make-d-e-list (mv-nth 0 (d-e-cc-contents fat32$c root-d-e)))
+               (fat32-filename-fix (car path))))
+             (nth
+              0
+              (find-n-free-clusters
+               (set-indices-in-fa-table
+                (effective-fat fat32$c)
+                (mv-nth
+                 0
+                 (d-e-cc
+                  fat32$c
+                  (mv-nth
+                   0
+                   (find-d-e
+                    (make-d-e-list (mv-nth 0 (d-e-cc-contents fat32$c root-d-e)))
+                    (fat32-filename-fix (car path))))))
+                (make-list-ac
+                 (len
+                  (mv-nth
+                   0
+                   (d-e-cc
+                    fat32$c
+                    (mv-nth
+                     0
+                     (find-d-e
+                      (make-d-e-list
+                       (mv-nth 0 (d-e-cc-contents fat32$c root-d-e)))
+                      (fat32-filename-fix (car path)))))))
+                 0 nil))
+               1))
+             0)))
+          (cluster-size fat32$c)))))
       28)
      (t 0))))
   :hints (("goal" :in-theory (e/d
