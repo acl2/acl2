@@ -17,11 +17,10 @@
 (include-book "kestrel/axe/rewriter-basic" :dir :system)
 (include-book "kestrel/axe/rule-lists" :dir :system)
 (include-book "kestrel/axe/dag-to-term" :dir :system)
-(include-book "kestrel/axe/dag-size-fast" :dir :system)
+(include-book "kestrel/axe/dag-size-fast" :dir :system) ; for dag-or-quotep-size-less-thanp
 (include-book "kestrel/axe/dag-to-term-with-lets" :dir :system)
 (include-book "kestrel/axe/rules-in-rule-lists" :dir :system)
 (include-book "kestrel/axe/evaluator" :dir :system) ;; since this calls dag-val-with-axe-evaluator to embed the resulting dag in a function, introduces a skip-proofs
-;(include-book "rule-lists-jvm") ;for amazing-rules-spec-and-dag
 (include-book "kestrel/utilities/make-event-quiet" :dir :system)
 (include-book "kestrel/utilities/redundancy" :dir :system)
 (include-book "kestrel/utilities/strip-stars-from-name" :dir :system)
@@ -33,7 +32,6 @@
   (append (base-rules)
           (amazing-rules-bv)
           (list-rules)
-          ;; (amazing-rules-spec-and-dag) ;todo: reduce?
           ;; (introduce-bv-array-rules)
           ;; '(list-to-byte-array) ;; todo: add to a rule set (whatever mentions list-to-bv-array)
           ))
