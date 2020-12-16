@@ -149,7 +149,7 @@
       @('(sintp x)') for every formal parameter @('x').
       The conjuncts may be at any level of nesting,
       but must be easily extractable by flattening
-      the @(tsee and) structure of the guard term.
+      the @(tsee and) structure of the (translated) guard term.
       Thus, all the formal parameters of the C function represented by @('fni')
       have type @('int');
       the rest of the guard (i.e. additional requirements)
