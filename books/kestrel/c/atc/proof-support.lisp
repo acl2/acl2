@@ -51,8 +51,8 @@
      In general, there will be some base cases and some step cases;
      the former have @('base') in the generated rule names,
      while the latter have @('unroll') in the generated rule names.
-     The names of the generated rules can be seen below,
-     in the forms that add such rules to the ruleset.
+     The names of the generated rules are automatically obtained
+     via the @('defopeners-names') companion tool of @('defopeners').
      While @(tsee defopener) simplifies the expansion, @('defopeners') does not;
      since we use the rules in a symbolic execution,
      we expect that the simplification will take place there.")
@@ -81,18 +81,7 @@
   :hyps ((syntaxp (quotep e)))
   :disable t)
 
-(add-to-ruleset exec-unfold-rules
-                '(exec-expr-base-1
-                  exec-expr-base-2
-                  exec-expr-base-3
-                  exec-expr-base-4
-                  exec-expr-base-5
-                  exec-expr-base-6
-                  exec-expr-base-7
-                  exec-expr-base-8
-                  exec-expr-base-9
-                  exec-expr-unroll-1
-                  exec-expr-unroll-2))
+(add-to-ruleset exec-unfold-rules (defopeners-names exec-expr))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -100,11 +89,7 @@
   :hyps ((syntaxp (quotep es)))
   :disable t)
 
-(add-to-ruleset exec-unfold-rules
-                '(exec-expr-list-base-1
-                  exec-expr-list-base-2
-                  exec-expr-list-base-3
-                  exec-expr-list-unroll))
+(add-to-ruleset exec-unfold-rules (defopeners-names exec-expr-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -112,8 +97,7 @@
   :hyps ((syntaxp (quotep fun)))
   :disable t)
 
-(add-to-ruleset exec-unfold-rules
-                '(exec-fun-base))
+(add-to-ruleset exec-unfold-rules (defopeners-names exec-fun))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -121,18 +105,7 @@
   :hyps ((syntaxp (quotep s)))
   :disable t)
 
-(add-to-ruleset exec-unfold-rules
-                '(exec-stmt-base-1
-                  exec-stmt-base-2
-                  exec-stmt-base-3
-                  exec-stmt-base-4
-                  exec-stmt-base-5
-                  exec-stmt-base-6
-                  exec-stmt-base-7
-                  exec-stmt-base-8
-                  exec-stmt-base-9
-                  exec-stmt-unroll-1
-                  exec-stmt-unroll-2))
+(add-to-ruleset exec-unfold-rules (defopeners-names exec-stmt))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -140,8 +113,7 @@
   :hyps ((syntaxp item))
   :disable t)
 
-(add-to-ruleset exec-unfold-rules
-                '(exec-block-item-base))
+(add-to-ruleset exec-unfold-rules (defopeners-names exec-block-item))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -149,9 +121,4 @@
   :hyps ((syntaxp (quotep items)))
   :disable t)
 
-(add-to-ruleset exec-unfold-rules
-                '(exec-block-item-list-base-1
-                  exec-block-item-list-base-2
-                  exec-block-item-list-base-3
-                  exec-block-item-list-base-4
-                  exec-block-item-list-unroll))
+(add-to-ruleset exec-unfold-rules (defopeners-names exec-block-item-list))
