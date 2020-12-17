@@ -5,7 +5,7 @@
 
 (in-package "ACL2")
 
-(include-book "../abstract-separate")
+(include-book "../abs-separate")
 (local (include-book "std/lists/prefixp" :dir :system))
 (local (include-book "std/lists/intersection" :dir :system))
 

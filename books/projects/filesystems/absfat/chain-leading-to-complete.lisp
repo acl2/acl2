@@ -2,7 +2,7 @@
 
 (in-package "ACL2")
 
-(include-book "../abstract-separate")
+(include-book "../abs-separate")
 
 (defun
     chain-leading-to-complete (frame x acc seq)

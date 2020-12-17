@@ -1,5 +1,0 @@
-; cert-flags: ? t :skip-proofs-okp t
-(include-book "std/portcullis" :dir :system)
-
-; Uncomment to enable proof output.
-; (set-inhibit-output-lst '(proof-tree))
