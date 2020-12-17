@@ -52,17 +52,17 @@
     :returns (yes/no booleanp)
     :parents (secp256k1-field)
     :short "Recognizer for @(tsee secp256k1-field)."
-    (integer-range-p 0 (secp256k1-prime) x)
+    (integer-range-p 0 (secp256k1-field-prime) x)
     :no-function t
     ///
 
-    (make-event ; to avoid expanding SECP256K1-PRIME manually
+    (make-event ; to avoid expanding SECP256K1-FIELD-PRIME manually
      `(defrule natp-and-below-prime-when-secp256k1-fieldp
         (implies (secp256k1-fieldp x)
                  (and (natp x)
-                      (< x ,(secp256k1-prime))))
+                      (< x ,(secp256k1-field-prime))))
         :rule-classes :tau-system
-        :enable secp256k1-prime)))
+        :enable secp256k1-field-prime)))
 
   (std::deffixer secp256k1-field-fix
     :pred secp256k1-fieldp

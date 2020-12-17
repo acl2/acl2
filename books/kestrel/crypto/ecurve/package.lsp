@@ -11,6 +11,7 @@
 
 (in-package "ACL2")
 
+(include-book "kestrel/crypto/primes/portcullis" :dir :system)
 (include-book "kestrel/prime-fields/portcullis" :dir :system)
 (include-book "rtl/rel11/portcullis" :dir :system)
 (include-book "std/portcullis" :dir :system)
@@ -51,6 +52,7 @@
             pfield::inv
             pfield::neg
             pfield::pow
+            primes::secp256k1-field-prime
             str::strval16s
             ///
             )

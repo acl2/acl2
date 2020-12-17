@@ -374,7 +374,8 @@
                                        (s k))
                                  :in-theory
                                  (e/d (pfield::fep ecurve::pointp)
-                                      (ecurve::pointp-of-secp256k1*))))))
+                                      (ecurve::pointp-of-secp256k1*
+                                       (:e ecurve::secp256k1-field-prime)))))))
 
 ;; "1. H(m) is transformed into an integer modulo q using the bits2int
 ;;     transform and an extra modular reduction:
