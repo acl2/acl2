@@ -684,6 +684,10 @@
                                  (equal (mv-nth 0 (d-e-cc fat32$c d-e))
                                         nil)))))
 
+(defthm integer-listp-of-d-e-cc
+  (integer-listp (mv-nth 0 (d-e-cc fat32$c d-e)))
+  :hints (("goal" :in-theory (enable d-e-cc))))
+
 (defund
   d-e-cc-contents
   (fat32$c d-e)

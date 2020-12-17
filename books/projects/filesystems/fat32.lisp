@@ -1042,6 +1042,8 @@
   :hints (("goal" :in-theory (enable find-n-free-clusters
                                      find-n-free-clusters-helper))))
 
+(defcong nat-equiv equal (find-n-free-clusters fa-table n) 2)
+
 (defthmd
   fat32-masked-entry-list-p-alt
   (equal (fat32-masked-entry-list-p x)
