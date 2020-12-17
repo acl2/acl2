@@ -491,10 +491,10 @@ one clause generated is:
 
 <p>The message suggests that each goal (i.e., clause) after the first should be
 of the form @('(implies ... (equal (HIDE (FOO X Y)) ...))') or simply
-@('(equal (HIDE (FOO X Y)) ...); but in this case, one goal was actually of the
-form @('(IMPLIES ... (MY-PREDICATE (HIDE (FOO X Y))))').  After first executing
-@('(set-gag-mode nil)') and then running @('defopener') again, the proof log
-helped to discover a rewrite rule of the following form.</p>
+@('(equal (HIDE (FOO X Y)) ...)'); but in this case, one goal was actually of
+the form @('(IMPLIES ... (MY-PREDICATE (HIDE (FOO X Y))))').  After first
+executing @('(set-gag-mode nil)') and then running @('defopener') again, the
+proof log helped to discover a rewrite rule of the following form.</p>
 
 @({
 (equal (equal (f1 a)
