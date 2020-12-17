@@ -53,6 +53,7 @@
                          define-sk
                          defmacro+
                          defthm-commutative
+                         deftutorial
                          defxdoc+
                          doublets-to-alist
                          dumb-occur-var-open
