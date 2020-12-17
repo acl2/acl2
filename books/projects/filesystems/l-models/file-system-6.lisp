@@ -11,7 +11,7 @@
 ; based on every character in ACL2 being a byte.
 
 (include-book "file-system-4")
-(include-book "fat32")
+(include-book "../fat32")
 
 (local (in-theory (e/d
                    ((:linear len-of-find-n-free-clusters-helper)

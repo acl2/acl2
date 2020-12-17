@@ -1,6 +1,6 @@
 (in-package "ACL2")
 
-(include-book "test-stuff")
+(include-book "../test-stuff")
 
 (defun
     truncate-list-extra-hypothesis

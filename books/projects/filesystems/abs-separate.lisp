@@ -1,4 +1,4 @@
-;  abstract-separate.lisp                               Mihir Mehta
+;  abs-separate.lisp                                    Mihir Mehta
 
 ; This is a model of the FAT32 filesystem, related to HiFAT but with abstract
 ; variables.

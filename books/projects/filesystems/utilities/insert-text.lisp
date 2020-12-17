@@ -2,7 +2,7 @@
 
 ;  insert-text.lisp                                    Mihir Mehta
 
-(local (include-book "file-system-lemmas"))
+(local (include-book "../file-system-lemmas"))
 
 (defund
   insert-text (oldtext start text)

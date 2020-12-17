@@ -6,8 +6,8 @@
 ; a file-system recognizer, and then we define various file-system
 ; operations.
 
-(include-book "file-system-lemmas")
-(include-book "insert-text")
+(include-book "../file-system-lemmas")
+(include-book "../utilities/insert-text")
 
 (defun l1-fs-p (fs)
   (declare (xargs :guard t))

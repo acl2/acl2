@@ -374,13 +374,6 @@
    (m1-directory-file-p (m1-file-fix file))))
  :hints (("goal" :in-theory (enable hifat-place-file))))
 
-;; Move later.
-(defthm make-clusters-of-nil
-  (implies (and (atom text) (not (stringp text)))
-           (equal (make-clusters text cluster-size)
-                  nil))
-  :hints (("goal" :in-theory (enable make-clusters))))
-
 (encapsulate
   ()
 
