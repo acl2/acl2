@@ -789,7 +789,7 @@
    "To generate Java code for that function,
     include ATJ via")
   (xdoc::codeblock
-   "(include-book \"kestrel/java/atj/top\" :dir :system)")
+   "(include-book \"kestrel/java/atj/atj\" :dir :system)")
   (xdoc::p
    "and call ATJ via")
   (xdoc::codeblock
@@ -2522,7 +2522,7 @@
    "To generate shallowly embedded Java code for that function,
     include ATJ via")
   (xdoc::codeblock
-   "(include-book \"kestrel/java/atj/top\" :dir :system)")
+   "(include-book \"kestrel/java/atj/atj\" :dir :system)")
   (xdoc::p
    "as before, and call ATJ via")
   (xdoc::codeblock
