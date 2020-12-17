@@ -830,7 +830,7 @@
                (name "A @(tsee symbolp).")
                (updated-names-to-avoid "A @(tsee symbol-listp)."))
   :mode :program
-  :short "Generate the theorem asserting the correctness of the solution
+  :short "Generate the theorem asserting the correctness of the solution,
           from the rewriting theorem."
   :long
   (xdoc::topstring
@@ -845,7 +845,7 @@
    (xdoc::p
     "The proof follows the design notes,
      but those use a second-order notation and explicit quantification,
-     so here we need to do things a little differently here.
+     so here we need to do things a little differently.
      We generate the instance of the rewriting theorem
      that instantiates @('?f') to @('f').
      We prove the theorem in the theory consisting of
