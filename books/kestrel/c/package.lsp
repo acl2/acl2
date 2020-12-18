@@ -32,6 +32,7 @@
                defxdoc+
                enable*
                er-soft+
+               evmac-input-print-p
                evmac-prepare-proofs
                flatten-ands-in-lit
                implode

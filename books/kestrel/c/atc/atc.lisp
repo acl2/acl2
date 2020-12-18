@@ -27,6 +27,8 @@
 (include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
 (include-book "kestrel/event-macros/cw-event" :dir :system)
 (include-book "kestrel/event-macros/event-generation" :dir :system)
+(include-book "kestrel/event-macros/evmac-input-print-p" :dir :system)
+(include-book "kestrel/event-macros/input-processing" :dir :system)
 (include-book "kestrel/event-macros/make-event-terse" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
 (include-book "kestrel/std/system/check-mbt-call" :dir :system)
@@ -80,6 +82,8 @@
   (xdoc::evmac-topic-implementation-item-input "const-name")
 
   (xdoc::evmac-topic-implementation-item-input "output-file")
+
+  (xdoc::evmac-topic-implementation-item-input "print")
 
   xdoc::*evmac-topic-implementation-item-call*
 
@@ -226,7 +230,7 @@
   :short "Keyword options accepted by @(tsee atc)."
   (list :const-name
         :output-file
-        :verbose)
+        :print)
   ///
   (assert-event (symbol-listp *atc-allowed-options*))
   (assert-event (no-duplicatesp-eq *atc-allowed-options*)))
@@ -238,7 +242,7 @@
                (val "A @('(tuple (fn1...fnp symbol-listp)
                                  (const symbolp)
                                  (output-file stringp)
-                                 (verbose booleanp)
+                                 (print evmac-input-print-p)
                                  val)').")
                state)
   :mode :program
@@ -259,24 +263,21 @@
         (if output-file-option
             (mv (cdr output-file-option) t)
           (mv :irrelevant nil)))
-       (verbose-option (assoc-eq :verbose options))
-       (verbose (if verbose-option
-                    (cdr verbose-option)
-                  t))
+       (print-option (assoc-eq :print options))
+       (print (if print-option
+                  (cdr print-option)
+                :result))
        ((er &) (atc-process-fn1...fnp fn1...fnp ctx state))
        ((er const) (atc-process-const-name const-name ctx state))
        ((er &) (atc-process-output-file output-file
                                         output-file?
                                         ctx
                                         state))
-       ((er &) (acl2::ensure-value-is-boolean$ verbose
-                                               "The :VERBOSE input"
-                                               t
-                                               nil)))
+       ((er &) (acl2::evmac-process-input-print print ctx state)))
     (value (list fn1...fnp
                  const
                  output-file
-                 verbose))))
+                 print))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1197,15 +1198,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-const ((const symbolp) (tunit transunitp) (verbose booleanp))
+(define atc-gen-const ((const symbolp)
+                       (tunit transunitp)
+                       (print evmac-input-print-p))
   :returns (mv (local-event pseudo-event-formp)
                (exported-event pseudo-event-formp))
   :short "Generate the named constant for the abstract syntax tree
           of the generated C code (i.e. translation unit)."
-  (b* ((progress-start?
-        (and verbose
+  (b* ((progressp (member-eq print '(:info :all)))
+       (progress-start?
+        (and progressp
              `((cw-event "~%Generating the named constant ~x0..." ',const))))
-       (progress-end? (and verbose `((cw-event " done.~%"))))
+       (progress-end? (and progressp `((cw-event " done.~%"))))
        (defconst-event `(defconst ,const ',tunit))
        (local-event `(progn ,@progress-start?
                             (local ,defconst-event)
@@ -1214,7 +1218,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-wf-thm ((const symbolp) (verbose booleanp) ctx state)
+(define atc-gen-wf-thm ((const symbolp) (print evmac-input-print-p) ctx state)
   :returns (mv erp
                (val "A @('(tuple (local-event pseudo-event-formp)
                                  (exported-event pseudo-event-formp)
@@ -1249,10 +1253,11 @@
          :formula `(transunit-wfp ,const)
          :hints '(("Goal" :in-theory '((:e transunit-wfp))))
          :enable nil))
+       (progressp (member-eq print '(:info :all)))
        (progress-start?
-        (and verbose
+        (and progressp
              `((cw-event "~%Generating the theorem ~x0..." ',name))))
-       (progress-end? (and verbose `((cw-event " done.~%"))))
+       (progress-end? (and progressp `((cw-event " done.~%"))))
        (local-event `(progn ,@progress-start?
                             ,local-event
                             ,@progress-end?)))
@@ -1263,7 +1268,7 @@
 (define atc-gen-fn-thm ((fn symbolp)
                         (prec-fns symbol-listp)
                         (const symbolp)
-                        (verbose booleanp)
+                        (print evmac-input-print-p)
                         ctx
                         state)
   :returns (mv erp
@@ -1357,10 +1362,11 @@
          :formula `(implies ,guard (equal ,lhs ,rhs))
          :hints hints
          :enable nil))
+       (progressp (member-eq print '(:info :all)))
        (progress-start?
-        (and verbose
+        (and progressp
              `((cw-event "~%Generating the theorem ~x0..." ',name))))
-       (progress-end? (and verbose `((cw-event " done.~%"))))
+       (progress-end? (and progressp `((cw-event " done.~%"))))
        (local-event `(progn ,@progress-start?
                             ,local-event
                             ,@progress-end?)))
@@ -1371,7 +1377,7 @@
 (define atc-gen-fn-thm-list ((fns symbol-listp)
                              (prec-fns symbol-listp)
                              (const symbolp)
-                             (verbose booleanp)
+                             (print evmac-input-print-p)
                              ctx
                              state)
   :returns (mv erp
@@ -1386,14 +1392,14 @@
         (atc-gen-fn-thm (car fns)
                         prec-fns
                         const
-                        verbose
+                        print
                         ctx
                         state))
        ((er (list local-events exported-events))
         (atc-gen-fn-thm-list (cdr fns)
                              (cons (car fns) prec-fns)
                              const
-                             verbose
+                             print
                              ctx
                              state)))
     (value (list (cons local-event local-events)
@@ -1411,10 +1417,34 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-gen-print-result ((output-file stringp)
+                              (const-event pseudo-event-formp)
+                              (wf-thm-event pseudo-event-formp)
+                              (fn-thm-events pseudo-event-form-listp))
+  :returns (events pseudo-event-form-listp)
+  :short "Generate the events to print the results of ATC."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used only if @(':print') is at least @(':result')."))
+  (append (list `(cw-event "~%File ~s0.~%" ,output-file)
+                `(cw-event "~%~x0~|" ',const-event)
+                `(cw-event "~%~x0~|" ',wf-thm-event))
+          (atc-gen-print-result-aux fn-thm-events))
+
+  :prepwork
+  ((define atc-gen-print-result-aux ((events pseudo-event-form-listp))
+     :returns (cwevents pseudo-event-form-listp)
+     (cond ((endp events) nil)
+           (t (cons `(cw-event "~%~x0~|" ',(car events))
+                    (atc-gen-print-result-aux (cdr events))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-gen-everything ((fn1...fnp symbol-listp)
                             (const symbolp)
                             (output-file stringp)
-                            (verbose booleanp)
+                            (print evmac-input-print-p)
                             (call pseudo-event-formp)
                             ctx
                             state)
@@ -1423,14 +1453,21 @@
   :short "Generate the file and the events."
   (b* (((er tunit) (atc-gen-transunit fn1...fnp ctx state))
        ((mv local-const-event exported-const-event)
-        (atc-gen-const const tunit verbose))
+        (atc-gen-const const tunit print))
        ((er (list wf-thm-local-event wf-thm-exported-event))
-        (atc-gen-wf-thm const verbose ctx state))
+        (atc-gen-wf-thm const print ctx state))
        ((er (list fn-thm-local-events fn-thm-exported-events))
-        (atc-gen-fn-thm-list fn1...fnp nil const verbose ctx state))
-       ((acl2::run-when verbose) (cw "~%Generating file ~x0..." output-file))
+        (atc-gen-fn-thm-list fn1...fnp nil const print ctx state))
+       (progressp (member-eq print '(:info :all)))
+       ((acl2::run-when progressp)
+        (cw "~%Generating the file ~s0..." output-file))
        ((er &) (atc-gen-file tunit output-file state))
-       ((acl2::run-when verbose) (cw " done.~%"))
+       ((acl2::run-when progressp) (cw " done.~%"))
+       (print-events (and (member-eq print '(:result :info :all))
+                          (atc-gen-print-result output-file
+                                                exported-const-event
+                                                wf-thm-exported-event
+                                                fn-thm-exported-events)))
        (encapsulate
          `(encapsulate ()
             (evmac-prepare-proofs)
@@ -1440,10 +1477,12 @@
             ,wf-thm-exported-event
             ,@fn-thm-local-events
             ,@fn-thm-exported-events))
+       (encapsulate+ (acl2::restore-output? (eq print :all) encapsulate))
        (info (make-atc-call-info :encapsulate encapsulate))
        (table-event (atc-table-record-event call info)))
-    (value `(progn ,encapsulate
+    (value `(progn ,encapsulate+
                    ,table-event
+                   ,@print-events
                    (value-triple :invisible)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1458,9 +1497,9 @@
           generate the constant definition and the C file."
   (b* (((when (atc-table-lookup call (w state)))
         (value '(value-triple :redundant)))
-       ((er (list fn1...fnp const output-file verbose))
+       ((er (list fn1...fnp const output-file print))
         (atc-process-inputs args ctx state)))
-    (atc-gen-everything fn1...fnp const output-file verbose call ctx state)))
+    (atc-gen-everything fn1...fnp const output-file print call ctx state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1468,5 +1507,9 @@
   :parents (atc-implementation)
   :short "Definition of the @(tsee atc) macro."
   (defmacro atc (&whole call &rest args)
-    `(make-event-terse (atc-fn ',args ',call 'atc state)
-                       :suppress-errors nil)))
+    (b* ((print-etc (member-eq :print args))
+         (print-nil-p (and (consp print-etc)
+                           (consp (cdr print-etc))
+                           (eq (cadr print-etc) nil))))
+      `(make-event-terse (atc-fn ',args ',call 'atc state)
+                         :suppress-errors ,print-nil-p))))
