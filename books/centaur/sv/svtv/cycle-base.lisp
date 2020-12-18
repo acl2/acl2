@@ -72,7 +72,12 @@
        ((svtv-fsm x))
        (outs (svex-alist-eval x.values env)))
     (fast-alist-free env)
-    outs))
+    outs)
+  ///
+  (defcong svex-envs-similar svex-envs-equivalent (svtv-cycle-step-phase-outs ins prev-st phase x) 1)
+  (defcong svex-envs-similar svex-envs-equivalent (svtv-cycle-step-phase-outs ins prev-st phase x) 2)
+
+  (defcong svtv-fsm-eval-equiv svex-envs-equivalent (svtv-cycle-step-phase-outs ins prev-st phase x) 4))
 
 (define svtv-cycle-step-phase-nextsts ((ins svex-env-p)
                                        (prev-st svex-env-p)
@@ -92,7 +97,11 @@
     nextsts)
   ///
   (defret alist-keys-of-<fn>
-    (equal (alist-keys nextsts) (svex-alist-keys (svtv-fsm->nextstate x)))))
+    (equal (alist-keys nextsts) (svex-alist-keys (svtv-fsm->nextstate x))))
+  (defcong svex-envs-similar svex-envs-similar (svtv-cycle-step-phase-nextsts ins prev-st phase x) 1)
+  (defcong svex-envs-similar svex-envs-equivalent (svtv-cycle-step-phase-nextsts ins prev-st phase x) 2)
+
+  (defcong svtv-fsm-eval-equiv svex-envs-equivalent (svtv-cycle-step-phase-nextsts ins prev-st phase x) 4))
 
 (define svtv-cycle-step-phase ((ins svex-env-p)
                                (prev-st svex-env-p)
@@ -150,7 +159,24 @@
        ((mv outs1 nextst) (svtv-cycle-step-phase ins prev-st (car phases) x))
        ((when (svtv-cyclephase->outputs-captured (car phases)))
         outs1))
-    (svtv-cycle-eval-outs ins nextst (cdr phases) x)))
+    (svtv-cycle-eval-outs ins nextst (cdr phases) x))
+  ///
+  (local (defun svtv-cycle-eval-outs-cong-ind (ins prev-st phases x x-equiv)
+           (b* (((when (atom phases))
+                 (mv ins prev-st x x-equiv)))
+             (svtv-cycle-eval-outs-cong-ind
+              ins (svtv-cycle-step-phase-nextsts ins prev-st (car phases) x)
+              (cdr phases) x x-equiv))))
+              
+  (defcong svex-envs-similar svex-envs-equivalent (svtv-cycle-eval-outs ins prev-st phases x) 2
+    :hints (("goal" :expand ((:free (prev-st) (svtv-cycle-eval-outs ins prev-st phases x))))))
+
+  (defcong svex-envs-similar svex-envs-equivalent (svtv-cycle-eval-outs ins prev-st phases x) 1
+    :hints (("goal" :expand ((:free (ins) (svtv-cycle-eval-outs ins prev-st phases x))))))
+
+  (defcong svtv-fsm-eval-equiv svex-envs-equivalent (svtv-cycle-eval-outs ins prev-st phases x) 4
+    :hints (("goal" :induct (svtv-cycle-eval-outs ins prev-st phases x)
+             :expand ((:free (x) (svtv-cycle-eval-outs ins prev-st phases x)))))))
 
 
 
@@ -165,7 +191,27 @@
         (mbe :logic (svex-env-extract (svex-alist-keys (svtv-fsm->nextstate x)) prev-st)
              :exec prev-st))
        (nextst (svtv-cycle-step-phase-nextsts ins prev-st (car phases) x)))
-    (svtv-cycle-eval-nextst ins nextst (cdr phases) x)))
+    (svtv-cycle-eval-nextst ins nextst (cdr phases) x))
+  ///
+
+  (local (defthm svex-alist-keys-of-svex-env-extract
+           (equal (alist-keys (svex-env-extract keys x))
+                  (svarlist-fix keys))
+           :hints(("Goal" :in-theory (enable svex-alist-keys svex-env-extract)))))
+
+  (defret svex-alist-keys-of-<fn>
+    (equal (alist-keys nextst)
+           (svex-alist-keys (svtv-fsm->nextstate x))))
+
+  (defcong svex-envs-similar svex-envs-equivalent (svtv-cycle-eval-nextst ins prev-st phases x) 2
+    :hints (("goal" :expand ((:free (prev-st) (svtv-cycle-eval-nextst ins prev-st phases x))))))
+
+  (defcong svex-envs-similar svex-envs-equivalent (svtv-cycle-eval-nextst ins prev-st phases x) 1
+    :hints (("goal" :expand ((:free (ins) (svtv-cycle-eval-nextst ins prev-st phases x))))))
+
+  (defcong svtv-fsm-eval-equiv svex-envs-equivalent (svtv-cycle-eval-nextst ins prev-st phases x) 4
+    :hints (("goal" :induct (svtv-cycle-eval-nextst ins prev-st phases x)
+             :expand ((:free (x) (svtv-cycle-eval-nextst ins prev-st phases x)))))))
 
 
 (define svtv-cycle-eval ((ins svex-env-p)

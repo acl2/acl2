@@ -32,6 +32,7 @@
 (include-book "fsm-obj")
 (include-book "print")
 (include-book "../svex/lists")
+(include-book "../svex/alist-equiv")
 (include-book "../svex/env-ops")
 (local (include-book "std/lists/sets" :dir :system))
 ;; (local (include-book "std/lists/take" :dir :system))
@@ -43,6 +44,48 @@
   :hints(("Goal" :in-theory (enable alist-keys svex-alist-keys svex-alist-eval))))
 
 (local (in-theory (disable acl2::hons-dups-p)))
+
+
+(define svtv-fsm-eval-equiv ((x svtv-fsm-p) (y svtv-fsm-p))
+  (b* (((svtv-fsm x))
+       ((svtv-fsm y)))
+    (and (ec-call (svex-alist-eval-equiv x.values y.values))
+         (ec-call (svex-alist-eval-equiv x.nextstate y.nextstate))
+         ;; (equal x.design y.design)
+         ;; (equal x.user-names y.user-names)
+         ;; (equal x.namemap y.namemap)
+         ))
+  ///
+  (defequiv svtv-fsm-eval-equiv)
+
+  (defcong svtv-fsm-eval-equiv svex-alist-eval-equiv (svtv-fsm->values fsm) 1)
+  (defcong svtv-fsm-eval-equiv svex-alist-eval-equiv (svtv-fsm->nextstate fsm) 1))
+
+
+(define svtv-fsm-eval/namemap-equiv ((x svtv-fsm-p) (y svtv-fsm-p))
+  (b* (((svtv-fsm x))
+       ((svtv-fsm y)))
+    (and (ec-call (svex-alist-eval-equiv x.values y.values))
+         (ec-call (svex-alist-eval-equiv x.nextstate y.nextstate))
+         (equal x.namemap y.namemap)))
+  ///
+  (defequiv svtv-fsm-eval/namemap-equiv)
+
+  (defrefinement svtv-fsm-eval/namemap-equiv svtv-fsm-eval-equiv
+    :hints(("Goal" :in-theory (enable svtv-fsm-eval-equiv))))
+
+  (defcong svex-alist-eval-equiv svtv-fsm-eval/namemap-equiv 
+    (svtv-fsm values nextstate design user-names namemap) 1)
+
+  (defcong svex-alist-eval-equiv svtv-fsm-eval/namemap-equiv 
+    (svtv-fsm values nextstate design user-names namemap) 2)
+
+
+
+  (defcong svtv-fsm-eval/namemap-equiv equal (svtv-fsm->namemap fsm) 1))
+
+
+
 
 
 (define svtv-fsm-step-env ((in svex-env-p)
@@ -63,7 +106,13 @@
 
   (defthm svtv-fsm-step-env-of-reduce-states-from-prev-st
     (equal (svtv-fsm-step-env ins (svex-env-reduce (svex-alist-keys (svtv-fsm->nextstate x)) prev-st) x)
-           (svtv-fsm-step-env ins prev-st x))))
+           (svtv-fsm-step-env ins prev-st x)))
+
+  (defcong svex-envs-similar svex-envs-similar (svtv-fsm-step-env in prev-st x) 1)
+
+  (defcong svex-envs-similar svex-envs-equivalent (svtv-fsm-step-env in prev-st x) 2)
+  
+  (defcong svtv-fsm-eval-equiv svex-envs-equivalent (svtv-fsm-step-env in prev-st x) 3))
   
 
 
@@ -87,7 +136,13 @@
 
   (defthm svtv-fsm-step-of-reduce-states-from-prev-st
     (equal (svtv-fsm-step ins (svex-env-reduce (svex-alist-keys (svtv-fsm->nextstate x)) prev-st) x)
-           (svtv-fsm-step ins prev-st x))))
+           (svtv-fsm-step ins prev-st x)))
+
+  (defcong svex-envs-similar svex-envs-equivalent (svtv-fsm-step in prev-st x) 1)
+
+  (defcong svex-envs-similar svex-envs-equivalent (svtv-fsm-step in prev-st x) 2)
+  
+  (defcong svtv-fsm-eval-equiv svex-envs-equivalent (svtv-fsm-step in prev-st x) 3))
 
 
 
@@ -108,8 +163,87 @@
 
   (defthm svtv-fsm-step-outs-of-reduce-states-from-prev-st
     (equal (svtv-fsm-step-outs ins (svex-env-reduce (svex-alist-keys (svtv-fsm->nextstate x)) prev-st) x)
-           (svtv-fsm-step-outs ins prev-st x))))
+           (svtv-fsm-step-outs ins prev-st x)))
 
+  (defcong svex-envs-similar svex-envs-equivalent (svtv-fsm-step-outs in prev-st x) 1)
+
+  (defcong svex-envs-similar svex-envs-equivalent (svtv-fsm-step-outs in prev-st x) 2)
+  
+  (defcong svtv-fsm-eval-equiv svex-envs-equivalent (svtv-fsm-step-outs in prev-st x) 3))
+
+
+
+
+
+(defsection svex-envlists-similar
+  (def-universal-equiv svex-envlists-similar
+    :qvars (n)
+    :equiv-terms ((svex-envs-similar (nth n x))
+                  (equal (len x)))
+    :defquant t)
+
+  (defexample svex-envlists-similar-nth-ex
+    :pattern (nth n x)
+    :templates (n)
+    :instance-rulename svex-envlists-similar-instancing)
+
+  (defcong svex-envlists-similar svex-envs-similar (car x) 1
+    :hints (("goal" :use ((:instance svex-envlists-similar-necc (n 0) (y x-equiv))))))
+
+  (defcong svex-envlists-similar svex-envlists-similar (cdr x) 1
+    :hints (("goal" :use ((:instance svex-envlists-similar-necc
+                           (n (+ (nfix (svex-envlists-similar-witness (cdr x) (cdr x-equiv))) 1))
+                           (y x-equiv)))
+             :expand ((:free (x y) (svex-envlists-similar (cdr x) y))
+                      (:free (x y) (svex-envlists-similar y (cdr x)))))))
+
+  (defcong svex-envlists-similar equal (len x) 1
+    :hints (("goal" :in-theory (enable svex-envlists-similar))))
+
+  (defcong svex-envlists-similar equal (consp x) 1
+    :hints (("goal" :in-theory (enable svex-envlists-similar))))
+
+  (defcong svex-envlists-similar svex-envs-similar (nth n x) 2 :hints ((witness)))
+
+  (defcong svex-envs-similar svex-envlists-similar (cons a b) 1
+    :hints ((witness)
+            (and stable-under-simplificationp
+                 '(:expand ((:free (a) (nth n0 (cons a b))))))))
+
+  (defcong svex-envlists-similar svex-envlists-similar (cons a b) 2
+    :hints ((witness :ruleset (svex-envlists-similar-witnessing))
+            (and stable-under-simplificationp
+                 '(:expand ((:free (a) (nth n0 (cons a b)))))))))
+
+
+(defsection svex-envlists-equivalent
+  (def-universal-equiv svex-envlists-equivalent
+    :qvars (n)
+    :equiv-terms ((svex-envs-equivalent (nth n x))
+                  (equal (len x)))
+    :defquant t)
+
+  (defexample svex-envlists-equivalent-nth-ex
+    :pattern (nth n x)
+    :templates (n)
+    :instance-rulename svex-envlists-equivalent-instancing)
+
+  (defrefinement svex-envlists-equivalent svex-envlists-similar
+    :hints ((witness)))
+
+
+  (defcong svex-envlists-equivalent svex-envs-equivalent (car x) 1
+    :hints (("goal" :use ((:instance svex-envlists-equivalent-necc (n 0) (y x-equiv))))))
+
+  (defcong svex-envlists-equivalent svex-envlists-equivalent (cdr x) 1
+    :hints (("goal" :use ((:instance svex-envlists-equivalent-necc
+                           (n (+ (nfix (svex-envlists-equivalent-witness (cdr x) (cdr x-equiv))) 1))
+                           (y x-equiv)))
+             :expand ((:free (x y) (svex-envlists-equivalent (cdr x) y))
+                      (:free (x y) (svex-envlists-equivalent y (cdr x)))))))
+
+  (defcong svex-envlists-equivalent svex-envs-equivalent (nth n x) 2
+    :hints ((witness))))
 
 
 
@@ -134,7 +268,32 @@
 
   (defthm svtv-fsm-final-state-of-reduce-states-from-prev-st
     (equal (svtv-fsm-final-state ins (svex-env-reduce (svex-alist-keys (svtv-fsm->nextstate x)) prev-st) x)
-           (svtv-fsm-final-state ins prev-st x))))
+           (svtv-fsm-final-state ins prev-st x)))
+
+  (defcong svex-envs-similar svex-envs-equivalent (svtv-fsm-final-state ins prev-st x) 2)
+
+  (defcong svtv-fsm-eval-equiv svex-envs-equivalent (svtv-fsm-final-state ins prev-st x) 3)
+  
+  (local (defun svtv-fsm-final-st-ins-cong-ind (ins ins-equiv prev-st x)
+           (b* (((svtv-fsm x)))
+             (if (atom ins)
+                 (list ins-equiv prev-st x)
+               (svtv-fsm-final-st-ins-cong-ind (cdr ins) (cdr ins-equiv)
+                                               (svtv-fsm-step (car ins) prev-st x)
+                                               x)))))
+
+  (defcong svex-envlists-similar svex-envs-equivalent (svtv-fsm-final-state ins prev-st x) 1
+    :hints (("goal" :induct (svtv-fsm-final-st-ins-cong-ind ins ins-equiv prev-st x))))
+
+  (defcong svex-envs-equivalent svex-envlists-equivalent (cons a b) 1
+    :hints ((witness)
+            (and stable-under-simplificationp
+                 '(:expand ((:free (a) (nth n0 (cons a b))))))))
+
+  (defcong svex-envlists-equivalent svex-envlists-equivalent (cons a b) 2
+    :hints ((witness :ruleset (svex-envlists-equivalent-witnessing))
+            (and stable-under-simplificationp
+                 '(:expand ((:free (a) (nth n0 (cons a b)))))))))
 
 
 
@@ -236,7 +395,22 @@
                       (take m ins)
                       (svtv-fsm-eval nil initst svtv)
                       (svtv-fsm-step-outs (car ins) initst svtv)
-                      (svtv-fsm-step (car ins) initst svtv))))))
+                      (svtv-fsm-step (car ins) initst svtv)))))
+
+  (defcong svex-envs-similar svex-envlists-equivalent (svtv-fsm-eval ins prev-st x) 2)
+
+  (defcong svtv-fsm-eval-equiv svex-envlists-equivalent (svtv-fsm-eval ins prev-st x) 3)
+  
+  (local (defun svtv-fsm-eval-ins-cong-ind (ins ins-equiv prev-st x)
+           (b* (((svtv-fsm x)))
+             (if (atom ins)
+                 (list ins-equiv prev-st x)
+               (svtv-fsm-eval-ins-cong-ind (cdr ins) (cdr ins-equiv)
+                                               (svtv-fsm-step (car ins) prev-st x)
+                                               x)))))
+
+  (defcong svex-envlists-similar svex-envlists-equivalent (svtv-fsm-eval ins prev-st x) 1
+    :hints (("goal" :induct (svtv-fsm-eval-ins-cong-ind ins ins-equiv prev-st x)))))
 
 
 
@@ -318,7 +492,23 @@
                       (take m ins)
                       (svtv-fsm-eval-states nil initst svtv)
                       (svtv-fsm-step-outs (car ins) initst svtv)
-                      (svtv-fsm-step (car ins) initst svtv))))))
+                      (svtv-fsm-step (car ins) initst svtv)))))
+
+  (defcong svex-envs-similar svex-envlists-equivalent (svtv-fsm-eval-states ins prev-st x) 2)
+
+  (defcong svtv-fsm-eval-equiv svex-envlists-equivalent (svtv-fsm-eval-states ins prev-st x) 3)
+  
+  (local (defun svtv-fsm-eval-ins-cong-ind (ins ins-equiv prev-st x)
+           (b* (((svtv-fsm x)))
+             (if (atom ins)
+                 (list ins-equiv prev-st x)
+               (svtv-fsm-eval-ins-cong-ind (cdr ins) (cdr ins-equiv)
+                                               (svtv-fsm-step (car ins) prev-st x)
+                                               x)))))
+
+  (defcong svex-envlists-similar svex-envlists-equivalent (svtv-fsm-eval-states ins prev-st x) 1
+    :hints (("goal" :induct (svtv-fsm-eval-ins-cong-ind ins ins-equiv prev-st x)
+             :expand ((:free (ins) (svtv-fsm-eval-states ins prev-st x)))))))
 
 
 
@@ -338,7 +528,9 @@
                     (svex-env-lookup var (nth n x))))
     :hints(("Goal" :in-theory (enable nth svex-envlist-extract
                                       default-car nthcdr)
-            :induct (list (nthcdr n signals) (nthcdr n x))))))
+            :induct (list (nthcdr n signals) (nthcdr n x)))))
+
+  (defcong svex-envlists-similar svex-envlists-equivalent (svex-envlist-extract keys envs) 2))
 
 
 (local (defthm take-of-svex-envlist-fix
@@ -349,6 +541,8 @@
                                          acl2::take-of-too-many
                                          acl2::take-when-atom))))))
 
+
+(local (defcong svex-envlists-similar svex-envlists-similar (take n x) 2))
 
 
 (define svtv-fsm-run ((ins svex-envlist-p)
@@ -374,7 +568,14 @@
     (implies (member (svar-fix var) (svarlist-fix (nth n signals)))
              (equal (svex-env-lookup var (nth n (svtv-fsm-run ins initst svtv signals)))
                     (svex-env-lookup var (nth n (svtv-fsm-eval (take (len signals) ins) initst svtv)))))
-    :hints(("Goal" :in-theory (enable svtv-fsm-run)))))
+    :hints(("Goal" :in-theory (enable svtv-fsm-run))))
+
+
+  (defcong svex-envs-similar svex-envlists-equivalent (svtv-fsm-run ins prev-st x signals) 2)
+
+  (defcong svtv-fsm-eval-equiv svex-envlists-equivalent (svtv-fsm-run ins prev-st x signals) 3)
+
+  (defcong svex-envlists-similar svex-envlists-equivalent (svtv-fsm-run ins prev-st x signals) 1))
 
 
 (define svtv-fsm-print-run ((ins svex-envlist-p)
@@ -444,7 +645,14 @@
     (implies (member (svar-fix var) (svarlist-fix (nth n signals)))
              (equal (svex-env-lookup var (nth n (svtv-fsm-run-states ins initst x signals)))
                     (svex-env-lookup var (nth n (svtv-fsm-eval-states (take (len signals) ins) initst x)))))
-    :hints(("Goal" :in-theory (enable svtv-fsm-run)))))
+    :hints(("Goal" :in-theory (enable svtv-fsm-run))))
+
+
+  (defcong svex-envs-similar svex-envlists-equivalent (svtv-fsm-run-states ins prev-st x signals) 2)
+
+  (defcong svtv-fsm-eval-equiv svex-envlists-equivalent (svtv-fsm-run-states ins prev-st x signals) 3)
+
+  (defcong svex-envlists-similar svex-envlists-equivalent (svtv-fsm-run-states ins prev-st x signals) 1))
 
 
 (define svtv-fsm-run-states* ((ins svex-envlist-p)

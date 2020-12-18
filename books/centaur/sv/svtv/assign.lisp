@@ -155,7 +155,9 @@
   (defret override-test-var-of-overrideval-lhs
     (implies (svar->override-test x)
              (not (member x (lhs-vars val-lhs))))
-    :hints(("Goal" :in-theory (enable lhs-vars lhatom-vars)))))
+    :hints(("Goal" :in-theory (enable lhs-vars lhatom-vars))))
+
+  (defcong svex-alist-eval-equiv equal (lhs-to-overrideval-lhs lhs updates) 2))
 
 
 
@@ -191,7 +193,9 @@
     (implies (not (svar->override-test x))
              (not (member x (lhs-vars val-lhs))))
     :hints(("Goal" :in-theory (enable lhs-vars lhatom-vars
-                                      equal-of-svar->name)))))
+                                      equal-of-svar->name))))
+
+  (defcong svex-alist-eval-equiv equal (lhs-to-overridetest-lhs lhs updates) 2))
 
 
 (define 4vec-assigns-to-overrideval-assigns ((x 4vec-assigns-p)
@@ -209,7 +213,9 @@
              (not (member v (lhslist-vars (alist-keys new-x)))))
     :hints(("Goal" :in-theory (enable lhslist-vars alist-keys))))
 
-  (local (in-theory (enable 4vec-assigns-fix))))
+  (local (in-theory (enable 4vec-assigns-fix)))
+  
+  (defcong svex-alist-eval-equiv equal (4vec-assigns-to-overrideval-assigns x updates) 2))
 
 (define 4vec-assigns-to-overridetest-assigns ((x 4vec-assigns-p)
                                              (updates svex-alist-p))
@@ -227,7 +233,8 @@
              (not (member v (lhslist-vars (alist-keys new-x)))))
     :hints(("Goal" :in-theory (enable lhslist-vars alist-keys))))
 
-  (local (in-theory (enable 4vec-assigns-fix))))
+  (local (in-theory (enable 4vec-assigns-fix)))
+  (defcong svex-alist-eval-equiv equal (4vec-assigns-to-overridetest-assigns x updates) 2))
 
     
 
@@ -885,7 +892,9 @@
   (defthm eval-of-svtv-subst-to-values
     (equal (svex-alist-eval (svtv-subst-to-values subst map updates) env)
            (svtv-env-to-values (svex-alist-eval subst env) map updates))
-    :hints(("Goal" :in-theory (enable svtv-subst-to-values)))))
+    :hints(("Goal" :in-theory (enable svtv-subst-to-values))))
+
+  (defcong svex-alist-eval-equiv equal (svtv-env-to-values env map updates) 3))
 
 
 
@@ -956,7 +965,9 @@
   (defthm eval-of-svtv-subst-to-tests
     (equal (svex-alist-eval (svtv-subst-to-tests subst map updates) env)
            (svtv-env-to-tests (svex-alist-eval subst env) map updates))
-    :hints(("Goal" :in-theory (enable svtv-subst-to-tests)))))
+    :hints(("Goal" :in-theory (enable svtv-subst-to-tests))))
+
+  (defcong svex-alist-eval-equiv equal (svtv-env-to-tests tests map updates) 3))
 
 
 
@@ -1016,12 +1027,12 @@
                 (or (hons-assoc-equal key x)
                     (hons-assoc-equal key y)))))
 
-(local (defthm svex-env-lookup-of-append
-         (equal (svex-env-lookup key (append x y))
-                (if (svex-env-boundp key x)
-                    (svex-env-lookup key x)
-                  (svex-env-lookup key y)))
-         :hints(("Goal" :in-theory (enable svex-env-lookup svex-env-boundp)))))
+;; (local (defthm svex-env-lookup-of-append
+;;          (equal (svex-env-lookup key (append x y))
+;;                 (if (svex-env-boundp key x)
+;;                     (svex-env-lookup key x)
+;;                   (svex-env-lookup key y)))
+;;          :hints(("Goal" :in-theory (enable svex-env-lookup svex-env-boundp)))))
 
 
 
@@ -1058,7 +1069,11 @@
   :returns (inputs svex-env-p)
   (b* ((val-env (svtv-env-to-values env map updates))
        (test-env (svtv-env-to-tests tests map updates)))
-    (join-val/test-envs val-env test-env)))
+    (join-val/test-envs val-env test-env))
+  ///
+  
+
+  (defcong svex-alist-eval-equiv equal (svtv-assignment-to-phase-inputs vals tests map updates) 4))
 
 
 
@@ -1253,7 +1268,27 @@
     (with-fast-alist x.namemap
       (with-fast-alist x.values
         (svtv-assignment-to-phase-inputs inputs override-tests
-                                         x.namemap x.values)))))
+                                         x.namemap x.values))))
+  ///
+  (defcong svtv-fsm-eval/namemap-equiv equal (svtv-fsm-renamed-env tests map updates) 3))
+
+(define svtv-fsm-renamed-subst ((inputs svex-alist-p)
+                                (override-tests svex-alist-p)
+                                (x svtv-fsm-p))
+  :returns (subst svex-alist-p)
+  (b* (((svtv-fsm x)))
+    (with-fast-alist x.namemap
+      (with-fast-alist x.values
+        (svtv-subst-to-phase-inputs inputs override-tests
+                                    x.namemap x.values))))
+  ///
+  (defret eval-of-<fn>
+    (equal (svex-alist-eval subst env)
+           (svtv-fsm-renamed-env
+            (svex-alist-eval inputs env)
+            (svex-alist-eval override-tests env)
+            x))
+    :hints(("Goal" :in-theory (enable svtv-fsm-renamed-env)))))
 
 (define svtv-fsm-renamed-step-env ((inputs svex-env-p)
                                    (override-tests svex-env-p)
@@ -1270,7 +1305,12 @@
             inputs override-tests
             (svex-env-extract (svex-alist-keys (svtv-fsm->nextstate x)) prev-st)
             x)
-           env)))
+           env))
+
+  (defcong svtv-fsm-eval/namemap-equiv svex-envs-equivalent (svtv-fsm-renamed-step-env inputs override-tests prev-st x) 4)
+  
+  (defcong svex-envs-similar svex-envs-equivalent
+    (svtv-fsm-renamed-step-env inputs override-tests prev-st x) 3))
     
 
 (define svtv-name-lhs-map-to-svex-alist ((x svtv-name-lhs-map-p))
@@ -1361,6 +1401,7 @@ except that we memoize the results."
     :hints(("Goal" :in-theory (enable svex-alist-subst))))
   (verify-guards svex-alist-subst-fal))
 
+
 (define svtv-fsm-renamed-outexprs ((outvars svarlist-p)
                                    (x svtv-fsm-p))
   :returns (outs svex-alist-p)
@@ -1368,7 +1409,18 @@ except that we memoize the results."
        (out-alist1 (acl2::fal-extract (svarlist-fix outvars) x.namemap)))
     (with-fast-alist x.values
       (svex-alist-subst-fal (svtv-name-lhs-map-to-svex-alist out-alist1)
-                            x.values))))
+                            x.values)))
+  ///
+  (local (defthm svex-lookup-of-svex-alist-subst+
+           (equal (svex-lookup var (svex-alist-subst x subst))
+                  (b* ((look (svex-lookup var x)))
+                    (and look
+                         (svex-subst look subst))))
+           :hints(("Goal" :in-theory (enable svex-alist-subst svex-lookup svex-acons)))))
+
+  (defcong svtv-fsm-eval/namemap-equiv svex-alist-eval-equiv
+    (svtv-fsm-renamed-outexprs outvars x) 2
+    :hints ((witness) (witness))))
 
 
 
@@ -1393,7 +1445,13 @@ except that we memoize the results."
             inputs override-tests
             (svex-env-extract (svex-alist-keys (svtv-fsm->nextstate x)) prev-st)
             x)
-           nextstate)))
+           nextstate))
+
+  (defcong svtv-fsm-eval/namemap-equiv svex-envs-equivalent
+    (svtv-fsm-step-renamed inputs override-tests prev-st x) 4)
+
+  (defcong svex-envs-similar svex-envs-equivalent
+    (svtv-fsm-step-renamed inputs override-tests prev-st x) 3))
 
 (define svtv-fsm-step-outs-renamed ((inputs svex-env-p)
                                     (override-tests svex-env-p)
@@ -1414,7 +1472,13 @@ except that we memoize the results."
             inputs override-tests outvars
             (svex-env-extract (svex-alist-keys (svtv-fsm->nextstate x)) prev-st)
             x)
-           outs)))
+           outs))
+
+  (defcong svtv-fsm-eval/namemap-equiv svex-envs-equivalent
+    (svtv-fsm-step-outs-renamed inputs override-tests outvars prev-st x) 5)
+
+  (defcong svex-envs-similar svex-envs-equivalent
+    (svtv-fsm-step-outs-renamed inputs override-tests outvars prev-st x) 4))
 
 (define svtv-fsm-step-full-outs-renamed ((inputs svex-env-p)
                                          (override-tests svex-env-p)
@@ -1551,6 +1615,26 @@ except that we memoize the results."
           (svtv-fsm-run-renamed-input-envs (cdr inputs) (cdr override-tests) x))))
 
 
+(define svtv-fsm-run-renamed-input-substs ((inputs svex-alistlist-p)
+                                           (override-tests svex-alistlist-p)
+                                           (x svtv-fsm-p))
+  :returns (substs svex-alistlist-p)
+  (if (atom inputs)
+      nil
+    (cons (svtv-fsm-renamed-subst (car inputs) (car override-tests) x)
+          (svtv-fsm-run-renamed-input-substs (cdr inputs) (cdr override-tests) x)))
+  ///
+  (defret eval-of-<fn>
+    (equal (svex-alistlist-eval substs env)
+           (svtv-fsm-run-renamed-input-envs
+            (svex-alistlist-eval inputs env)
+            (svex-alistlist-eval override-tests env)
+            x))
+    :hints(("Goal" :in-theory (enable svtv-fsm-run-renamed-input-envs
+                                      svex-alistlist-eval
+                                      svex-alist-eval)))))
+
+
 
 
 (define svtv-fsm-final-state-renamed ((inputs svex-envlist-p)
@@ -1665,7 +1749,7 @@ except that we memoize the results."
                                            (full-outs svex-envlist-p)
                                            (x svtv-fsm-p))
   :returns (outs svex-envlist-p)
-  (if (atom full-outs)
+  (if (atom outvars)
       nil
     (cons (svtv-fsm-step-extract-renamed-outs (car outvars) (car full-outs) x)
           (svtv-fsm-run-extract-renamed-outs (cdr outvars) (cdr full-outs) x))))
@@ -1681,16 +1765,16 @@ except that we memoize the results."
 
 (define svtv-fsm-run-renamed ((inputs svex-envlist-p)
                               (override-tests svex-envlist-p)
-                              (outvars svarlist-list-p)
                               (prev-st svex-env-p)
-                              (x svtv-fsm-p))
+                              (x svtv-fsm-p)
+                              (outvars svarlist-list-p))
   :returns (outs svex-envlist-p)
   :guard (and (equal (alist-keys prev-st) (svex-alist-keys (svtv-fsm->nextstate x)))
               (not (acl2::hons-dups-p (svex-alist-keys (svtv-fsm->nextstate x)))))
   :guard-hints ((and stable-under-simplificationp
                      '(:in-theory (enable svtv-fsm-step-outs-renamed
                                           svtv-fsm-step-renamed))))
-  (if (atom inputs)
+  (if (atom outvars)
       nil
     (b* (((mv outs nextst)
           (mbe :logic 
@@ -1716,13 +1800,13 @@ except that we memoize the results."
       (cons outs
             (svtv-fsm-run-renamed (cdr inputs)
                                   (cdr override-tests)
-                                  (cdr outvars)
                                   nextst
-                                  x))))
+                                  x
+                                  (cdr outvars)))))
   ///
   (local (defun nth-of-fn-induct (n inputs override-tests outvars prev-st x)
-           (if (atom inputs)
-               (list n outvars prev-st)
+           (if (atom outvars)
+               (list n inputs prev-st)
              (nth-of-fn-induct
               (1- n)
               (cdr inputs)
@@ -1731,16 +1815,24 @@ except that we memoize the results."
               (svtv-fsm-step-renamed (car inputs) (car override-tests) prev-st x)
               x))))
 
+  (local (defthm svtv-fsm-step-outs-renamed-of-no-outvars
+           (equal (svtv-fsm-step-outs-renamed ins overrides nil prev-st x)
+                  nil)
+           :hints(("Goal" :in-theory (enable svtv-fsm-step-outs-renamed
+                                             svtv-fsm-renamed-outexprs
+                                             fal-extract
+                                             svex-alist-eval)))))
+  
+
   (defretd nth-of-<fn>
     (equal (nth n outs)
-           (and (< (nfix n) (len inputs))
-                (b* ((st (svtv-fsm-final-state-renamed (take n inputs)
-                                                       (take n override-tests)
-                                                       prev-st x)))
-                  (svtv-fsm-step-outs-renamed (nth n inputs)
-                                              (nth n override-tests)
-                                              (nth n outvars)
-                                              st x))))
+           (b* ((st (svtv-fsm-final-state-renamed (take n inputs)
+                                                  (take n override-tests)
+                                                  prev-st x)))
+             (svtv-fsm-step-outs-renamed (nth n inputs)
+                                         (nth n override-tests)
+                                         (nth n outvars)
+                                         st x)))
     :hints(("Goal" :in-theory (enable svtv-fsm-final-state-renamed
                                       nth)
             :induct (nth-of-fn-induct n inputs override-tests outvars prev-st x))))
@@ -1749,17 +1841,18 @@ except that we memoize the results."
     (equal outs
            (svtv-fsm-run-extract-renamed-outs
             outvars
-            (svtv-fsm-eval-renamed inputs override-tests prev-st x)
+            (svtv-fsm-eval-renamed (take (len outvars) inputs) override-tests prev-st x)
             x))
-    :hints(("Goal" :in-theory (enable svtv-fsm-run-extract-renamed-outs
-                                      svtv-fsm-eval-renamed
-                                      svtv-fsm-step-outs-renamed-is-extract-of-full-outs))))
+    :hints(("Goal" :in-theory (e/d (svtv-fsm-run-extract-renamed-outs
+                                    svtv-fsm-eval-renamed
+                                    svtv-fsm-step-outs-renamed-is-extract-of-full-outs)
+                                   (acl2::take-of-too-many)))))
 
   (defret <fn>-of-extract-states
     (equal (svtv-fsm-run-renamed
-            inputs override-tests outvars
-            (svex-env-extract (svex-alist-keys (svtv-fsm->nextstate x)) prev-st)
-            x)
+            inputs override-tests (svex-env-extract (svex-alist-keys (svtv-fsm->nextstate x)) prev-st)
+            x
+            outvars)
            outs))
 
 
@@ -1768,10 +1861,12 @@ except that we memoize the results."
            (svtv-fsm-run-extract-renamed-outs
             outvars
             (svtv-fsm-run
-             (svtv-fsm-run-renamed-input-envs inputs override-tests x)
+             (svtv-fsm-run-renamed-input-envs
+              (take (len outvars) inputs)
+              override-tests x)
              prev-st
              x
-             (svtv-fsm-run-renamed-output-signals (take (len inputs) outvars) x))
+             (svtv-fsm-run-renamed-output-signals outvars x))
             x))
     :hints(("Goal" :in-theory (enable svtv-fsm-run
                                       svex-envlist-extract
@@ -1783,7 +1878,39 @@ except that we memoize the results."
                                       svtv-fsm-step-renamed
                                       svtv-fsm-step
                                       svtv-fsm-renamed-step-env)
-            :induct <call>))))
+            :induct <call>)))
+
+  (defcong svex-envlists-equivalent svex-envlists-equivalent (cons a b) 2
+    :hints ((witness)))
+
+  (local (defun svtv-fsm-run-renamed-prev-st-cong-ind (inputs override-tests
+                                                              prev-st prev-st-equiv
+                                                              x outvars)
+           (if (atom outvars)
+               (list inputs override-tests prev-st prev-st-equiv x)
+             (b* ((nextst1
+                   (svtv-fsm-step-renamed (car inputs)
+                                          (car override-tests)
+                                          prev-st x))
+                  (nextst2
+                   (svtv-fsm-step-renamed (car inputs)
+                                          (car override-tests)
+                                          prev-st-equiv x)))
+               (svtv-fsm-run-renamed-prev-st-cong-ind (cdr inputs)
+                                                      (cdr override-tests)
+                                                      nextst1 nextst2
+                                                      x
+                                                      (cdr outvars))))))
+
+  (defcong svex-envs-similar svex-envlists-equivalent
+    (svtv-fsm-run-renamed inputs override-tests prev-st x outvars) 3
+    :hints (("goal" :induct (svtv-fsm-run-renamed-prev-st-cong-ind inputs override-tests prev-st prev-st-equiv x outvars)
+             :expand ((:free (prev-st) (svtv-fsm-run-renamed inputs override-tests prev-st x outvars))))))
+
+  (defcong svtv-fsm-eval/namemap-equiv svex-envlists-equivalent
+    (svtv-fsm-run-renamed inputs override-tests prev-st x outvars) 4
+    :hints (("goal" :induct (svtv-fsm-run-renamed inputs override-tests prev-st x outvars)
+             :expand ((:free (x) (svtv-fsm-run-renamed inputs override-tests prev-st x outvars)))))))
 
 
 

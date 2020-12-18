@@ -56,12 +56,12 @@
               (hons-assoc-equal v x))
          :hints(("Goal" :in-theory (enable alist-keys)))))
 
-(local (defthm svex-env-lookup-of-append
-         (equal (svex-env-lookup v (append a b))
-                (if (member (svar-fix v) (alist-keys (svex-env-fix a)))
-                    (svex-env-lookup v a)
-                  (svex-env-lookup v b)))
-         :hints(("Goal" :in-theory (enable svex-env-lookup member-alist-keys)))))
+;; (local (defthm svex-env-lookup-of-append
+;;          (equal (svex-env-lookup v (append a b))
+;;                 (if (member (svar-fix v) (alist-keys (svex-env-fix a)))
+;;                     (svex-env-lookup v a)
+;;                   (svex-env-lookup v b)))
+;;          :hints(("Goal" :in-theory (enable svex-env-lookup member-alist-keys)))))
 
 
 
@@ -75,9 +75,9 @@
 
 (local (defthm noncycle-var-member-svex-add-cycle-num
          (implies (not (svex-cycle-var-p v))
-                  (not (member (svar-fix v) (alist-keys (svar-alist-add-cycle-num env cycle)))))
+                  (not (svex-env-boundp v (svar-alist-add-cycle-num env cycle))))
          :hints(("Goal" :in-theory (enable svar-alist-add-cycle-num
-                                           alist-keys
+                                           svex-env-boundp
                                            svex-cycle-var-p)))))
 
 (local (defthm svex-env-extract-of-append-cycles
