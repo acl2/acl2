@@ -101,7 +101,7 @@
   "@('f-body') is the obtained body of the solution function @('f'),
    when this function is generated."
 
-  "@('solution-correct') is the name of the locally generated theorem
+  "@('solution-theorem') is the name of the locally generated theorem
    asserting the correctness of the solution."
 
   (xdoc::evmac-topic-implementation-item-fn-doc "new")
@@ -788,49 +788,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define solve-gen-solution-correct-from-rewriting-theorem
-  ((?f symbolp)
-   (x1...xn symbol-listp)
-   (matrix pseudo-termp)
-   (f-body pseudo-termp)
-   (rewriting-correct symbolp)
-   (names-to-avoid symbol-listp)
-   (wrld plist-worldp))
-  :returns (mv (solution-correct-event "A @(tsee pseudo-event-formp).")
-               (solution-correct "A @(tsee symbolp).")
-               (updated-names-to-avoid "A @(tsee symbol-listp)."))
-  :mode :program
-  :short "Generate the solution correctness theorem from the rewriting theorem."
-  (b* (((mv solution-correct names-to-avoid)
-        (fresh-logical-name-with-$s-suffix 'solution-correct
-                                           nil
-                                           names-to-avoid
-                                           wrld))
-       (solution-correct-event
-        `(local
-          (defthmd ,solution-correct
-            (implies (equal (,?f ,@x1...xn)
-                            ,f-body)
-                     ,matrix)
-            :hints (("Goal" :in-theory nil :use ,rewriting-correct))))))
-    (mv solution-correct-event solution-correct names-to-avoid)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define solve-gen-solution-theorem-from-rewriting-theorem
   ((old symbolp)
    (x1...xn symbol-listp)
    (?f symbolp)
    (f symbolp)
-   (rewriting-correct symbolp)
+   (rewriting-theorem symbolp)
    (print evmac-input-print-p)
    (names-to-avoid symbol-listp)
    (wrld plist-worldp))
   :returns (mv (events "A @(tsee pseudo-event-form-listp).")
                (name "A @(tsee symbolp).")
+               (old-instance "A @(tsee symbolp).")
                (updated-names-to-avoid "A @(tsee symbol-listp)."))
   :mode :program
-  :short "Generate the theorem asserting the correctness of the solution
+  :short "Generate the theorem asserting the correctness of the solution,
           from the rewriting theorem."
   :long
   (xdoc::topstring
@@ -845,7 +817,7 @@
    (xdoc::p
     "The proof follows the design notes,
      but those use a second-order notation and explicit quantification,
-     so here we need to do things a little differently here.
+     so here we need to do things a little differently.
      We generate the instance of the rewriting theorem
      that instantiates @('?f') to @('f').
      We prove the theorem in the theory consisting of
@@ -863,13 +835,13 @@
                                            'function
                                            names-to-avoid
                                            wrld))
-       ((mv rewriting-correct-instance names-to-avoid)
-        (fresh-logical-name-with-$s-suffix 'rewriting-correct-instance
+       ((mv rewriting-theorem-instance names-to-avoid)
+        (fresh-logical-name-with-$s-suffix 'rewriting-theorem-instance
                                            nil
                                            names-to-avoid
                                            wrld))
-       ((mv solution-correct names-to-avoid)
-        (fresh-logical-name-with-$s-suffix 'solution-correct
+       ((mv solution-theorem names-to-avoid)
+        (fresh-logical-name-with-$s-suffix 'solution-theorem
                                            nil
                                            names-to-avoid
                                            wrld))
@@ -878,10 +850,10 @@
           (soft::defun-inst ,old-instance
             (,old (,?f . ,f))
             :print ,(and (eq print :all) :all))))
-       (rewriting-correct-instance-event
+       (rewriting-theorem-instance-event
         `(local
-          (soft::defthm-inst ,rewriting-correct-instance
-            (,rewriting-correct (,?f . ,f))
+          (soft::defthm-inst ,rewriting-theorem-instance
+            (,rewriting-theorem (,?f . ,f))
             :print ,(and (eq print :all) :all))))
        (old-instance-witness (add-suffix-to-fn old-instance "-WITNESS"))
        (instantiation
@@ -890,18 +862,19 @@
                    as i from 0 to (1- (len x1...xn))
                    collect `(,xi (mv-nth ,i (,old-instance-witness))))
           (list (list (car x1...xn) `(,old-instance-witness)))))
-       (solution-correct-event
+       (solution-theorem-event
         `(local
-          (defthm ,solution-correct
+          (defthm ,solution-theorem
             (,old-instance)
             :hints (("Goal"
                      :in-theory '(,old-instance ,f)
-                     :use (:instance ,rewriting-correct-instance
+                     :use (:instance ,rewriting-theorem-instance
                            ,@instantiation)))))))
     (mv (list old-instance-event
-              rewriting-correct-instance-event
-              solution-correct-event)
-        solution-correct
+              rewriting-theorem-instance-event
+              solution-theorem-event)
+        solution-theorem
+        old-instance
         names-to-avoid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -923,7 +896,8 @@
   :returns (mv erp
                (result "@('(tuple (local-events pseudo-event-form-listp)
                                   (exported-events pseudo-event-form-listp)
-                                  (solution-correct symbolp)
+                                  (solution-theorem symbolp)
+                                  (old-instance symbolp)
                                   (updated-names-to-avoid symbol-listp)
                                   result)')")
                state)
@@ -942,11 +916,12 @@
     "If the call is successful, we attempt to extract a solution,
      i.e. the body to use for the function @('f') to generate.")
    (xdoc::p
-    "We generate the rewriting theorem and the solution correctness theorem,
+    "We generate the rewriting theorem and the solution theorem,
      along with the solution function.")
    (xdoc::p
     "We return all the events,
-     and the name of the solution correctness theorem."))
+     the name of the solution theorem,
+     and the name of the instance of @('old') in the theorem."))
   (b* (((er (list rewritten-term used-rules))
         (trans-eval-error-triple `(,*solve-call-acl2-rewriter*
                                    ,@(kwote-lst (list matrix method-rules ctx))
@@ -959,20 +934,12 @@
                                                             x1...xn
                                                             ctx
                                                             state))
-       ((mv rewriting-correct-event rewriting-correct names-to-avoid)
+       ((mv rewriting-theorem-event rewriting-theorem names-to-avoid)
         (solve-gen-acl2-rewriter-theorem matrix
                                          rewritten-term
                                          used-rules
                                          names-to-avoid
                                          (w state)))
-       ((mv solution-correct-event solution-correct names-to-avoid)
-        (solve-gen-solution-correct-from-rewriting-theorem ?f
-                                                           x1...xn
-                                                           matrix
-                                                           f-body
-                                                           rewriting-correct
-                                                           names-to-avoid
-                                                           (w state)))
        ((mv f-local-event f-exported-event)
         (solve-gen-f f
                      x1...xn
@@ -982,21 +949,24 @@
                      solution-enable
                      verify-guards
                      (w state)))
-       ((mv more-solution-theorem-events & names-to-avoid)
+       ((mv solution-theorem-events
+            solution-theorem
+            old-instance
+            names-to-avoid)
         (solve-gen-solution-theorem-from-rewriting-theorem old
                                                            x1...xn
                                                            ?f
                                                            f
-                                                           rewriting-correct
+                                                           rewriting-theorem
                                                            print
                                                            names-to-avoid
                                                            (w state))))
-    (value (list (list* rewriting-correct-event
-                        solution-correct-event
+    (value (list (list* rewriting-theorem-event
                         f-local-event
-                        more-solution-theorem-events)
+                        solution-theorem-events)
                  (list f-exported-event)
-                 solution-correct
+                 solution-theorem
+                 old-instance
                  names-to-avoid))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1018,7 +988,8 @@
   :returns (mv erp
                (result "@('(tuple (local-events pseudo-form-listp)
                                   (exported-events pseudo-form-listp)
-                                  (solution-correct symbolp)
+                                  (solution-theorem symbolp)
+                                  (old-instance symbolp)
                                   (updated-names-to-avoid symbol-listp)
                                   result)')")
                state)
@@ -1041,20 +1012,12 @@
                                                             x1...xn
                                                             ctx
                                                             state))
-       ((mv rewriting-correct-event rewriting-correct names-to-avoid)
+       ((mv rewriting-theorem-event rewriting-theorem names-to-avoid)
         (solve-gen-axe-rewriter-theorem matrix
                                         rewritten-term
                                         method-rules
                                         names-to-avoid
                                         (w state)))
-       ((mv solution-correct-event solution-correct names-to-avoid)
-        (solve-gen-solution-correct-from-rewriting-theorem ?f
-                                                           x1...xn
-                                                           matrix
-                                                           f-body
-                                                           rewriting-correct
-                                                           names-to-avoid
-                                                           (w state)))
        ((mv f-local-event f-exported-event)
         (solve-gen-f f
                      x1...xn
@@ -1064,21 +1027,24 @@
                      solution-enable
                      verify-guards
                      (w state)))
-       ((mv more-solution-theorem-events & names-to-avoid)
+       ((mv solution-theorem-events
+            solution-theorem
+            old-instance
+            names-to-avoid)
         (solve-gen-solution-theorem-from-rewriting-theorem old
                                                            x1...xn
                                                            ?f
                                                            f
-                                                           rewriting-correct
+                                                           rewriting-theorem
                                                            print
                                                            names-to-avoid
                                                            (w state))))
-    (value (list (list* rewriting-correct-event
-                        solution-correct-event
+    (value (list (list* rewriting-theorem-event
                         f-local-event
-                        more-solution-theorem-events)
+                        solution-theorem-events)
                  (list f-exported-event)
-                 solution-correct
+                 solution-theorem
+                 old-instance
                  names-to-avoid))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1101,7 +1067,8 @@
   :returns (mv erp
                (result "@('(tuple (local-events pseudo-form-listp)
                                   (exported-events pseudo-form-listp)
-                                  (solution-correct symbolp)
+                                  (solution-theorem symbolp)
+                                  (old-instance symbolp)
                                   (updated-names-to-avoid symbol-listp)
                                   result)')")
                state)
@@ -1109,11 +1076,6 @@
   :short "Attempt to generate the events that provide the solution,
           when using the manual method."
   (b* ((wrld (w state))
-       ((mv solution-correct names-to-avoid)
-        (fresh-logical-name-with-$s-suffix 'solution-correct
-                                           nil
-                                           names-to-avoid
-                                           wrld))
        ((mv appcond names-to-avoid)
         (fresh-logical-name-with-$s-suffix 'appcond
                                            nil
@@ -1130,14 +1092,7 @@
                                            names-to-avoid
                                            wrld)))
     (if f-existsp
-        (b* ((solution-correct-event
-              `(local
-                (defthmd ,solution-correct
-                  (implies (equal (,?f ,@x1...xn)
-                                  (,f ,@x1...xn))
-                           ,matrix)
-                  :hints ,solution-hints)))
-             (appcond-event
+        (b* ((appcond-event
               `(local
                 (defthmd ,appcond
                   ,(acl2::sublis-fn-simple (list (cons ?f f)) matrix)
@@ -1152,21 +1107,13 @@
                 (defthm ,solution-theorem
                   (,old-instance)
                   :hints (("Goal" :in-theory '(,old-instance ,appcond)))))))
-          (value (list (list solution-correct-event
-                             appcond-event
+          (value (list (list appcond-event
                              old-instance-event
                              solution-theorem-event)
                        nil
-                       solution-correct
+                       solution-theorem
                        names-to-avoid)))
       (b* ((f-body solution-body)
-           (solution-correct-event
-            `(local
-              (defthmd ,solution-correct
-                (implies (equal (,?f ,@x1...xn)
-                                ,f-body)
-                         ,matrix)
-                :hints ,solution-hints)))
            ((mv & matrix-instance)
             (acl2::fsublis-fn-rec (list (cons ?f (make-lambda x1...xn
                                                               solution-body)))
@@ -1197,13 +1144,13 @@
               (defthm ,solution-theorem
                 (,old-instance)
                 :hints (("Goal" :in-theory '(,old-instance ,f ,appcond)))))))
-        (value (list (list solution-correct-event
-                           appcond-event
+        (value (list (list appcond-event
                            f-local-event
                            old-instance-event
                            solution-theorem-event)
                      (list f-exported-event)
-                     solution-correct
+                     solution-theorem
+                     old-instance
                      names-to-avoid))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1229,7 +1176,8 @@
   :returns (mv erp
                (result "@('(tuple (local-events pseudo-form-listp)
                                   (exported-events pseudo-form-listp)
-                                  (solution-correct symbolp)
+                                  (solution-theorem symbolp)
+                                  (old-instance symbolp)
                                   (updated-names-to-avoid symbol-listp)
                                   result)')")
                state)
@@ -1317,33 +1265,39 @@
                               (?f symbolp)
                               (x1...xn symbol-listp)
                               (new symbolp)
-                              (f-existsp booleanp)
                               (f symbolp)
-                              (solution-correct symbolp))
+                              (solution-theorem symbolp)
+                              (old-instance symbolp))
   :returns (mv (local-event pseudo-event-formp)
                (exported-event pseudo-event-formp))
   :short "Generate the @('old-if-new') theorem."
   :long
-  (xdoc::topstring-p
-   "In the generated hints, we enable @('f') (by including it in the theory)
-    if @('f') is generated, because in that case
-    the theorem @('solution-correct') mentions its body, not @('f').
-    If instead @('f') already exists,
-    the theorem @('solution-correct') mentions @('f'), as does @('new'),
-    and so there is no need to enable it
-    (and in fact, enabling it might even sabotage the proof).")
+  (xdoc::topstring
+   (xdoc::p
+    "The proof follows the design notes,
+     but those use a second-order notation and explicit quantification,
+     so here we need to do things a little differently.
+     We enable the definition of @('old'),
+     which results in its matrix applied to the witness(es).
+     We enable the rewrite rule of @('new') that turns @('?f') into @('f'),
+     so that it carries out that replacement in the aforementioned matrix.
+     We add the solution theorem via a @(':use') hint;
+     this theorem has the form @('(old-instance)').
+     We use an instance of the rewrite rule of @('old-instance'),
+     where the quantifier variable(s) is/are instantiated with the witness(es):
+     this results exactly in the matrix with @('f') above,
+     and thus the theorem is proved."))
   (b* ((formula `(implies (,new) (,old)))
        (new-rwrule (packn-pos (list ?f '-to- f) new))
+       (old-instance-rwrule (add-suffix-to-fn old-instance "-NECC"))
        (old-witness (add-suffix-to-fn old "-WITNESS"))
        (instantiation (if (>= (len x1...xn) 2)
                           (solve-gen-old-if-new-thm-aux x1...xn 0 old-witness)
                         `((,(car x1...xn) (,old-witness)))))
-       (theory (if f-existsp
-                   (list old new-rwrule)
-                 (list old new-rwrule f)))
        (hints `(("Goal"
-                 :in-theory ',theory
-                 :use (:instance ,solution-correct ,@instantiation)))))
+                 :in-theory '(,old, new-rwrule)
+                 :use (,solution-theorem
+                       (:instance ,old-instance-rwrule ,@instantiation))))))
     (evmac-generate-defthm old-if-new
                            :enable old-if-new-enable
                            :formula formula
@@ -1392,7 +1346,8 @@
   (b* ((wrld (w state))
        ((er (list solution-local-events
                   solution-exported-events
-                  solution-correct
+                  solution-theorem
+                  old-instance
                   &))
         (solve-gen-solution old
                             ?f
@@ -1426,9 +1381,9 @@
                               ?f
                               x1...xn
                               new
-                              f-existsp
                               f
-                              solution-correct))
+                              solution-theorem
+                              old-instance))
        (encapsulate-events
         `((logic)
           (evmac-prepare-proofs)
