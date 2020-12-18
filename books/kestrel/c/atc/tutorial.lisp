@@ -44,9 +44,10 @@
     plus a number of hyperlinked pages,
     all of which are subtopics of this top-level page,
     listed below alphabetically for easy reference.
-    Starting from this top-level page, we provide <i>Next</i> links
-    to navigate sequentially through all the tutorial pages
-    (and we also provide <i>Previous</i> links going the opposite direction).
+    Starting from this top-level page,
+    we provide <i>Start</i> and <i>Next</i> links
+    to navigate sequentially through all the tutorial pages;
+    we also provide <i>Previous</i> links going the opposite direction.
     It is recommended to follow this order
     when reading this tutorial for the first time.")
 
@@ -135,7 +136,7 @@
     Conversely, ATJ may be extended to generate proofs as well.
     Thus, while eventually ATJ and ATC may provide similar features,
     their starting points and tradeoffs are different,
-    which will keep the two tools different for some time to come."))
+    and that will keep the two tools different for some time to come."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -184,8 +185,8 @@
   (xdoc::ul
    (xdoc::li
     "The generated C code satisfies the compile-time constraints
-     prescribed by official definition of C [C18].
-     In other words, the C code compiles by a compliant compiler.
+     prescribed by the official definition of C [C18].
+     In other words, the C code is compiled by a compliant compiler.
      This is expressed via a "
     (xdoc::seetopic "atc-static-semantics"
                     "formal static semantics of C")
