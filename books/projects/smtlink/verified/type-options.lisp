@@ -162,3 +162,7 @@
   :ignore-ok t
   (b* ((smtlink-hint (smtlink-hint-fix smtlink-hint)))
     (make-type-options)))
+
+(defprod type-inference-hints
+  ((type-options type-options-p)
+   (names symbol-listp)))

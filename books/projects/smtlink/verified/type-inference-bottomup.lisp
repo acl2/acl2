@@ -20,6 +20,7 @@
 (include-book "typed-term-fns")
 (include-book "judgement-fns")
 (include-book "returns-judgement")
+(include-book "../utils/fresh-vars")
 
 (set-state-ok t)
 ;; ------------------------------------------------------------
@@ -194,68 +195,108 @@
 ;; ------------------------------------------------------------------
 ;;    The main type-judgements
 
-(local
- (defthm pseudo-termp-of-lambda
-   (implies (and (symbol-listp formals)
-                 (pseudo-termp body-judgements)
-                 (pseudo-term-listp actuals)
-                 (equal (len formals) (len actuals)))
-            (pseudo-termp `((lambda ,formals
-                              ,body-judgements)
-                            ,@actuals))))
- )
+;; (local
+;;  (defthm pseudo-termp-of-lambda
+;;    (implies (and (symbol-listp formals)
+;;                  (pseudo-termp body-judgements)
+;;                  (pseudo-term-listp actuals)
+;;                  (equal (len formals) (len actuals)))
+;;             (pseudo-termp `((lambda ,formals
+;;                               ,body-judgements)
+;;                             ,@actuals))))
+;;  )
+
+(define type-judgement-if-top ((judge-then pseudo-termp)
+                               (then pseudo-termp)
+                               (judge-else pseudo-termp)
+                               (else pseudo-termp)
+                               (cond pseudo-termp)
+                               (names symbol-listp)
+                               (options type-options-p))
+  :returns (judge-if-top pseudo-termp)
+  (b* ((judge-then (pseudo-term-fix judge-then))
+       (then (pseudo-term-fix then))
+       (judge-else (pseudo-term-fix judge-else))
+       (else (pseudo-term-fix else))
+       (names (symbol-list-fix names))
+       (options (type-options-fix options))
+       (supertype-alst (type-options->supertype options))
+       (new-var (new-fresh-var names))
+       ((mv fast-else &)
+        (make-fast-judgements judge-else else new-var
+                              supertype-alst nil 0))
+       (ind-lst
+        (map-judgements judge-then then new-var
+                        supertype-alst fast-else nil))
+       ((mv judge-then-common &)
+        (construct-judge-by-list judge-then then
+                                 supertype-alst ind-lst ''t))
+       ((mv judge-else-common &)
+        (construct-judge-by-find judge-then then judge-else else
+                                 supertype-alst ind-lst ''t))
+       (judge `(if ,cond ,judge-then-common ,judge-else-common)))
+    (merge-if-judgements judge then else supertype-alst)))
+
+(defthm correctness-of-type-judgement-if-top
+  (implies (and (ev-smtcp-meta-extract-global-facts)
+                (pseudo-termp judge-then)
+                (pseudo-termp then)
+                (pseudo-termp judge-else)
+                (pseudo-termp else)
+                (pseudo-termp cond)
+                (symbol-listp names)
+                (alistp a)
+                (ev-smtcp `(if ,cond ,judge-then ,judge-else) a))
+           (ev-smtcp (type-judgement-if-top judge-then then judge-else else
+                                            cond names options)
+                     a))
+  :hints (("Goal"
+           :in-theory (e/d (type-judgement-if-top)
+                           (correctness-of-path-test-list
+                            correctness-of-path-test
+                            consp-of-pseudo-lambdap
+                            pseudo-termp)))))
 
 (defines type-judgements
   :flag-local nil
   :well-founded-relation l<
   :verify-guards nil
-  :hints (("Goal"
-           :in-theory (disable
-                       (:definition pseudo-termp)
-                       (:rewrite acl2::pseudo-term-listp-of-cons)
-                       nth symbol-listp assoc-equal)))
-  :returns-hints
-  (("Goal"
-    :in-theory (disable
-                (:definition pseudo-termp)
-                (:rewrite acl2::pseudo-term-listp-of-cons)
-                nth symbol-listp assoc-equal)))
 
-  (define type-judgement-lambda ((term pseudo-termp)
-                                 (path-cond pseudo-termp)
-                                 (options type-options-p)
-                                 (names symbol-listp)
-                                 state)
-    :measure (list (acl2-count (pseudo-term-fix term)) 0)
-    :guard (and (consp term)
-                (pseudo-lambdap (car term)))
-    :returns (judgements pseudo-termp)
-    (b* ((term (pseudo-term-fix term))
-         (path-cond (pseudo-term-fix path-cond))
-         (names (symbol-list-fix names))
-         ((unless (mbt (and (consp term) (pseudo-lambdap (car term))))) ''t)
-         ((cons fn actuals) term)
-         (formals (lambda-formals fn))
-         (body (lambda-body fn))
-         ;; (shadowed-path-cond (shadow-path-cond formals path-cond))
-         (actuals-judgements
-          (type-judgement-list actuals path-cond options names state))
-         (formals-judgements
-          (term-substitution actuals-judgements (pairlis$ actuals formals) t))
-         (body-judgements
-          (type-judgement body formals-judgements options names state))
-         (lambda-judgements
-          `((lambda ,formals
-              ,body-judgements)
-            ,@actuals))
-         (return-judgement
-          (term-substitution (type-judgement-top body-judgements body options)
-                             `((,body . ,term)) t)))
-      `(if ,return-judgement
-           (if ,lambda-judgements
-               ,actuals-judgements
-             'nil)
-         'nil)))
+  ;; (define type-judgement-lambda ((term pseudo-termp)
+  ;;                                (path-cond pseudo-termp)
+  ;;                                (options type-options-p)
+  ;;                                (names symbol-listp)
+  ;;                                state)
+  ;;   :measure (list (acl2-count (pseudo-term-fix term)) 0)
+  ;;   :guard (and (consp term)
+  ;;               (pseudo-lambdap (car term)))
+  ;;   :returns (judgements pseudo-termp)
+  ;;   (b* ((term (pseudo-term-fix term))
+  ;;        (path-cond (pseudo-term-fix path-cond))
+  ;;        (names (symbol-list-fix names))
+  ;;        ((unless (mbt (and (consp term) (pseudo-lambdap (car term))))) ''t)
+  ;;        ((cons fn actuals) term)
+  ;;        (formals (lambda-formals fn))
+  ;;        (body (lambda-body fn))
+  ;;        ;; (shadowed-path-cond (shadow-path-cond formals path-cond))
+  ;;        (actuals-judgements
+  ;;         (type-judgement-list actuals path-cond options names state))
+  ;;        (formals-judgements
+  ;;         (term-substitution actuals-judgements (pairlis$ actuals formals) t))
+  ;;        (body-judgements
+  ;;         (type-judgement body formals-judgements options names state))
+  ;;        (lambda-judgements
+  ;;         `((lambda ,formals
+  ;;             ,body-judgements)
+  ;;           ,@actuals))
+  ;;        (return-judgement
+  ;;         (term-substitution (type-judgement-top body-judgements body options)
+  ;;                            `((,body . ,term)) t)))
+  ;;     `(if ,return-judgement
+  ;;          (if ,lambda-judgements
+  ;;              ,actuals-judgements
+  ;;            'nil)
+  ;;        'nil)))
 
   (define type-judgement-if ((term pseudo-termp)
                              (path-cond pseudo-termp)
@@ -269,6 +310,7 @@
     (b* ((term (pseudo-term-fix term))
          (path-cond (pseudo-term-fix path-cond))
          (names (symbol-list-fix names))
+         (options (type-options-fix options))
          ((unless (mbt (and (consp term) (equal (car term) 'if)))) ''t)
          ((cons & actuals) term)
          ((unless (equal (len actuals) 3))
@@ -286,15 +328,13 @@
                           options names state))
          (judge-then-top (type-judgement-top judge-then then options))
          (judge-else-top (type-judgement-top judge-else else options))
-
-         ()
-         (judge-from-then (term-substitution judge-then-top `((,then . ,term)) t))
-         (judge-from-else (term-substitution judge-else-top `((,else . ,term)) t))
-         (judge-if-top (intersect-judgements judge-from-then judge-from-else
-                                         state))
-         (judge-if-top-extended
-          (extend-judgements judge-if-top path-cond options state)))
-      `(if ,judge-if-top-extended
+         (judge-if-top
+          (type-judgement-if-top judge-then-top then judge-else-top else
+                                 cond names options))
+         ;; (judge-if-top-extended
+         ;;  (extend-judgements judge-if-top path-cond options state))
+         )
+      `(if ,judge-if-top
            (if ,judge-cond
                (if ,cond ,judge-then ,judge-else)
              'nil)
@@ -366,7 +406,10 @@
           (type-judgement-quoted term options state))
          ((cons fn &) term)
          ((if (pseudo-lambdap fn))
-          (type-judgement-lambda term path-cond options names state))
+          ;; (type-judgement-lambda term path-cond options names state)
+          (prog2$ (er hard? 'type-inference-bottomup=>type-judgement
+                      "Found lambda in the goal.~%")
+                  ''t))
          ((if (equal fn 'if))
           (type-judgement-if term path-cond options names state)))
       (type-judgement-fn term path-cond options names state)))
@@ -407,136 +450,38 @@
 stop
 
 (defthm-type-judgements-flag
-  (defthm correctness-of-type-judgement-lambda
-    (implies (and (ev-smtcp-meta-extract-global-facts)
-                  (pseudo-termp term)
-                  (pseudo-termp path-cond)
-                  (alistp a)
-                  (ev-smtcp path-cond a))
-             (ev-smtcp (type-judgement-lambda term path-cond options state) a))
-    :flag type-judgement-lambda
-    :hints ((and stable-under-simplificationp
-                 '(:expand (type-judgement-lambda term path-cond options state)))))
+  ;; (defthm correctness-of-type-judgement-lambda
+  ;;   (implies (and (ev-smtcp-meta-extract-global-facts)
+  ;;                 (pseudo-termp term)
+  ;;                 (pseudo-termp path-cond)
+  ;;                 (alistp a)
+  ;;                 (ev-smtcp path-cond a))
+  ;;            (ev-smtcp (type-judgement-lambda term path-cond options state) a))
+  ;;   :flag type-judgement-lambda
+  ;;   :hints ((and stable-under-simplificationp
+  ;;                '(:expand (type-judgement-lambda term path-cond options state)))))
   (defthm correctness-of-type-judgement-if
     (implies (and (ev-smtcp-meta-extract-global-facts)
                   (pseudo-termp term)
                   (pseudo-termp path-cond)
                   (alistp a)
                   (ev-smtcp path-cond a))
-             (ev-smtcp (type-judgement-if term path-cond options state) a))
+             (ev-smtcp (type-judgement-if term path-cond options names state) a))
     :flag type-judgement-if
     :hints ((and stable-under-simplificationp
                  '(:in-theory (disable)
-                              :expand (type-judgement-if term path-cond options state)
-                              :use (;; (:instance
-                                    ;;  correctness-of-intersect-judgements-judge1
-                                    ;;  (judge1
-                                    ;;   (TERM-SUBSTITUTION
-                                    ;;    (TYPE-JUDGEMENT-TOP
-                                    ;;     (TYPE-JUDGEMENT (CADDR TERM)
-                                    ;;                     (LIST* 'IF
-                                    ;;                            (SIMPLE-TRANSFORMER (CADR TERM))
-                                    ;;                            PATH-COND '('NIL))
-                                    ;;                     OPTIONS STATE)
-                                    ;;     (CADDR TERM)
-                                    ;;     OPTIONS)
-                                    ;;    (LIST (CONS (CADDR TERM) TERM))
-                                    ;;    T))
-                                    ;;  (judge2
-                                    ;;   (TERM-SUBSTITUTION
-                                    ;;    (TYPE-JUDGEMENT-TOP
-                                    ;;     (TYPE-JUDGEMENT (CADDDR TERM)
-                                    ;;                     (LIST* 'IF
-                                    ;;                            (SIMPLE-TRANSFORMER (LIST 'NOT (CADR TERM)))
-                                    ;;                            PATH-COND '('NIL))
-                                    ;;                     OPTIONS STATE)
-                                    ;;     (CADDDR TERM)
-                                    ;;     OPTIONS)
-                                    ;;    (LIST (CONS (CADDDR TERM) TERM))
-                                    ;;    T))
-                                    ;;  (a a))
-                                    ;; (:instance
-                                    ;;  correctness-of-intersect-judgements-judge2
-                                    ;;  (judge1
-                                    ;;   (TERM-SUBSTITUTION
-                                    ;;    (TYPE-JUDGEMENT-TOP
-                                    ;;     (TYPE-JUDGEMENT (CADDR TERM)
-                                    ;;                     (LIST* 'IF
-                                    ;;                            (SIMPLE-TRANSFORMER (CADR TERM))
-                                    ;;                            PATH-COND '('NIL))
-                                    ;;                     OPTIONS STATE)
-                                    ;;     (CADDR TERM)
-                                    ;;     OPTIONS)
-                                    ;;    (LIST (CONS (CADDR TERM) TERM))
-                                    ;;    T))
-                                    ;;  (judge2
-                                    ;;   (TERM-SUBSTITUTION
-                                    ;;    (TYPE-JUDGEMENT-TOP
-                                    ;;     (TYPE-JUDGEMENT (CADDDR TERM)
-                                    ;;                     (LIST* 'IF
-                                    ;;                            (SIMPLE-TRANSFORMER (LIST 'NOT (CADR TERM)))
-                                    ;;                            PATH-COND '('NIL))
-                                    ;;                     OPTIONS STATE)
-                                    ;;     (CADDDR TERM)
-                                    ;;     OPTIONS)
-                                    ;;    (LIST (CONS (CADDDR TERM) TERM))
-                                    ;;    T))
-                                    ;;  (a a))
-                                    ;; (:instance
-                                    ;;  correctness-of-type-judgement-top
-                                    ;;  (judgements (CADDDR TERM))
-                                    ;;  (term (LIST* 'IF
-                                    ;;               (SIMPLE-TRANSFORMER (LIST 'NOT (CADR TERM)))
-                                    ;;               PATH-COND '('NIL)))
-                                    ;;  (options options)
-                                    ;;  (a a))
-                                    (:instance
-                                     correctness-of-type-judgement-top
-                                     (judgements (caddr term))
-                                     (term (list* 'if
-                                                  (simple-transformer (cadr term))
-                                                  path-cond '('nil)))
-                                     (options options)
-                                     (a a))
-                                    ;; (:instance correctness-of-extend-judgements
-                                    ;;            (judgements (INTERSECT-JUDGEMENTS
-                                    ;;                         (TERM-SUBSTITUTION
-                                    ;;                          (TYPE-JUDGEMENT-TOP
-                                    ;;                           (TYPE-JUDGEMENT (CADDR TERM)
-                                    ;;                                           (LIST* 'IF
-                                    ;;                                                  (SIMPLE-TRANSFORMER (CADR TERM))
-                                    ;;                                                  PATH-COND '('NIL))
-                                    ;;                                           OPTIONS STATE)
-                                    ;;                           (CADDR TERM)
-                                    ;;                           OPTIONS)
-                                    ;;                          (LIST (CONS (CADDR TERM) TERM))
-                                    ;;                          T)
-                                    ;;                         (TERM-SUBSTITUTION
-                                    ;;                          (TYPE-JUDGEMENT-TOP
-                                    ;;                           (TYPE-JUDGEMENT (CADDDR TERM)
-                                    ;;                                           (LIST* 'IF
-                                    ;;                                                  (SIMPLE-TRANSFORMER (LIST 'NOT (CADR TERM)))
-                                    ;;                                                  PATH-COND '('NIL))
-                                    ;;                                           OPTIONS STATE)
-                                    ;;                           (CADDDR TERM)
-                                    ;;                           OPTIONS)
-                                    ;;                          (LIST (CONS (CADDDR TERM) TERM))
-                                    ;;                          T)
-                                    ;;                         STATE))
-                                    ;;            (path-cond path-cond)
-                                    ;;            (options options)
-                                    ;;            (state state)
-                                    ;;            (a a))
-                                    )))))
+                              :expand (type-judgement-if term path-cond options
+                                                         names state)))))
   (defthm correctness-of-type-judgement-fn
     (implies (and (ev-smtcp-meta-extract-global-facts)
                   (pseudo-termp term)
                   (pseudo-termp path-cond)
                   (alistp a)
                   (ev-smtcp path-cond a))
-             (ev-smtcp (type-judgement-fn term path-cond options state) a))
+             (ev-smtcp (type-judgement-fn term path-cond options names state) a))
     :hints ((and stable-under-simplificationp
-                 '(:expand (type-judgement-fn term path-cond options state))))
+                 '(:expand (type-judgement-fn term path-cond options names
+                                              state))))
     :flag type-judgement-fn)
   (defthm correctness-of-type-judgement
     (implies (and (ev-smtcp-meta-extract-global-facts)
@@ -544,40 +489,45 @@ stop
                   (pseudo-termp path-cond)
                   (alistp a)
                   (ev-smtcp path-cond a))
-             (ev-smtcp (type-judgement term path-cond options state) a))
+             (ev-smtcp (type-judgement term path-cond options names state) a))
     :flag type-judgement
     :hints ((and stable-under-simplificationp
-                 '(:expand (type-judgement term path-cond options state)))))
+                 '(:expand (type-judgement term path-cond options names
+                                           state)))))
   (defthm correctness-of-type-judgement-list
     (implies (and (ev-smtcp-meta-extract-global-facts)
                   (pseudo-term-listp term-lst)
                   (pseudo-termp path-cond)
                   (alistp a)
                   (ev-smtcp path-cond a))
-             (ev-smtcp (type-judgement-list term-lst path-cond options state)
+             (ev-smtcp (type-judgement-list term-lst path-cond options names state)
                        a))
     :hints ((and stable-under-simplificationp
-                 '(:expand (type-judgement-list term-lst
-                                                path-cond options state))))
+                 '(:expand ((type-judgement-list term-lst path-cond options
+                                                 names state)
+                            (type-judgement-list nil path-cond options names state)))))
     :flag type-judgement-list)
-  :hints(("Goal"
-          :induct (type-judgements-flag
-                   flag term term-lst path-cond options state)
-          :in-theory (disable symbol-listp
-                              pseudo-term-listp-of-symbol-listp
-                              consp-of-is-conjunct?
-                              acl2::true-listp-of-car-when-true-list-listp
-                              true-list-listp
-                              symbolp-of-fn-call-of-pseudo-termp))))
+  ;; :hints(("Goal"
+  ;;         :induct (type-judgements-flag
+  ;;                  flag term term-lst path-cond options state)
+  ;;         :in-theory (disable symbol-listp
+  ;;                             pseudo-term-listp-of-symbol-listp
+  ;;                             consp-of-is-conjunct?
+  ;;                             acl2::true-listp-of-car-when-true-list-listp
+  ;;                             true-list-listp
+  ;;                             symbolp-of-fn-call-of-pseudo-termp)))
+  )
 
 ;; -------------------------------------------------------
 
 (define type-judge-cp ((cl pseudo-term-listp)
                        (hints t)
                        state)
-  (b* (((unless (type-options-p hints)) (value (list cl)))
+  (b* (((unless (type-inference-hints-p hints))
+        (value (list cl)))
+       ((type-inference-hints h) hints)
        (goal (disjoin cl))
-       (judges (type-judgement goal ''t hints state)))
+       (judges (type-judgement goal ''t h.type-options h.names state)))
     (value (list (list `(implies ,judges ,goal))))))
 
 (local (in-theory (enable type-judge-cp)))
@@ -589,7 +539,7 @@ stop
                 (ev-smtcp
                  (conjoin-clauses
                   (acl2::clauses-result
-                   (type-judge-cp cl hint state)))
+                   (type-judge-cp cl hints state)))
                  a))
            (ev-smtcp (disjoin cl) a))
   :rule-classes :clause-processor)
