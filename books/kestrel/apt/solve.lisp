@@ -788,35 +788,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define solve-gen-solution-correct-from-rewriting-theorem
-  ((?f symbolp)
-   (x1...xn symbol-listp)
-   (matrix pseudo-termp)
-   (f-body pseudo-termp)
-   (rewriting-theorem symbolp)
-   (names-to-avoid symbol-listp)
-   (wrld plist-worldp))
-  :returns (mv (solution-correct-event "A @(tsee pseudo-event-formp).")
-               (solution-correct "A @(tsee symbolp).")
-               (updated-names-to-avoid "A @(tsee symbol-listp)."))
-  :mode :program
-  :short "Generate the solution correctness theorem from the rewriting theorem."
-  (b* (((mv solution-correct names-to-avoid)
-        (fresh-logical-name-with-$s-suffix 'solution-correct
-                                           nil
-                                           names-to-avoid
-                                           wrld))
-       (solution-correct-event
-        `(local
-          (defthmd ,solution-correct
-            (implies (equal (,?f ,@x1...xn)
-                            ,f-body)
-                     ,matrix)
-            :hints (("Goal" :in-theory nil :use ,rewriting-theorem))))))
-    (mv solution-correct-event solution-correct names-to-avoid)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define solve-gen-solution-theorem-from-rewriting-theorem
   ((old symbolp)
    (x1...xn symbol-listp)
@@ -969,14 +940,6 @@
                                          used-rules
                                          names-to-avoid
                                          (w state)))
-       ((mv solution-correct-event & names-to-avoid)
-        (solve-gen-solution-correct-from-rewriting-theorem ?f
-                                                           x1...xn
-                                                           matrix
-                                                           f-body
-                                                           rewriting-theorem
-                                                           names-to-avoid
-                                                           (w state)))
        ((mv f-local-event f-exported-event)
         (solve-gen-f f
                      x1...xn
@@ -999,7 +962,6 @@
                                                            names-to-avoid
                                                            (w state))))
     (value (list (list* rewriting-theorem-event
-                        solution-correct-event
                         f-local-event
                         solution-theorem-events)
                  (list f-exported-event)
@@ -1056,14 +1018,6 @@
                                         method-rules
                                         names-to-avoid
                                         (w state)))
-       ((mv solution-correct-event & names-to-avoid)
-        (solve-gen-solution-correct-from-rewriting-theorem ?f
-                                                           x1...xn
-                                                           matrix
-                                                           f-body
-                                                           rewriting-theorem
-                                                           names-to-avoid
-                                                           (w state)))
        ((mv f-local-event f-exported-event)
         (solve-gen-f f
                      x1...xn
@@ -1086,7 +1040,6 @@
                                                            names-to-avoid
                                                            (w state))))
     (value (list (list* rewriting-theorem-event
-                        solution-correct-event
                         f-local-event
                         solution-theorem-events)
                  (list f-exported-event)
@@ -1123,11 +1076,6 @@
   :short "Attempt to generate the events that provide the solution,
           when using the manual method."
   (b* ((wrld (w state))
-       ((mv solution-correct names-to-avoid)
-        (fresh-logical-name-with-$s-suffix 'solution-correct
-                                           nil
-                                           names-to-avoid
-                                           wrld))
        ((mv appcond names-to-avoid)
         (fresh-logical-name-with-$s-suffix 'appcond
                                            nil
@@ -1144,14 +1092,7 @@
                                            names-to-avoid
                                            wrld)))
     (if f-existsp
-        (b* ((solution-correct-event
-              `(local
-                (defthmd ,solution-correct
-                  (implies (equal (,?f ,@x1...xn)
-                                  (,f ,@x1...xn))
-                           ,matrix)
-                  :hints ,solution-hints)))
-             (appcond-event
+        (b* ((appcond-event
               `(local
                 (defthmd ,appcond
                   ,(acl2::sublis-fn-simple (list (cons ?f f)) matrix)
@@ -1166,21 +1107,13 @@
                 (defthm ,solution-theorem
                   (,old-instance)
                   :hints (("Goal" :in-theory '(,old-instance ,appcond)))))))
-          (value (list (list solution-correct-event
-                             appcond-event
+          (value (list (list appcond-event
                              old-instance-event
                              solution-theorem-event)
                        nil
-                       solution-correct
+                       solution-theorem
                        names-to-avoid)))
       (b* ((f-body solution-body)
-           (solution-correct-event
-            `(local
-              (defthmd ,solution-correct
-                (implies (equal (,?f ,@x1...xn)
-                                ,f-body)
-                         ,matrix)
-                :hints ,solution-hints)))
            ((mv & matrix-instance)
             (acl2::fsublis-fn-rec (list (cons ?f (make-lambda x1...xn
                                                               solution-body)))
@@ -1211,8 +1144,7 @@
               (defthm ,solution-theorem
                 (,old-instance)
                 :hints (("Goal" :in-theory '(,old-instance ,f ,appcond)))))))
-        (value (list (list solution-correct-event
-                           appcond-event
+        (value (list (list appcond-event
                            f-local-event
                            old-instance-event
                            solution-theorem-event)
