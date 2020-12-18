@@ -447,7 +447,6 @@
 
 ;; ------------------------------------------------
 ;; Correctness theorems for type-judgement
-stop
 
 (defthm-type-judgements-flag
   ;; (defthm correctness-of-type-judgement-lambda
@@ -469,7 +468,19 @@ stop
              (ev-smtcp (type-judgement-if term path-cond options names state) a))
     :flag type-judgement-if
     :hints ((and stable-under-simplificationp
-                 '(:in-theory (disable)
+                 '(:in-theory (disable
+                               ;; ev-smtcp-of-if-call
+                               pseudo-termp
+                               correctness-of-path-test-list
+                               symbol-listp
+                               correctness-of-path-test
+                               acl2::symbol-listp-when-not-consp
+                               consp-of-is-conjunct?
+                               ;; ev-smtcp-of-variable
+                               acl2::pseudo-termp-cadr-from-pseudo-term-listp
+                               acl2::symbolp-of-car-when-symbol-listp
+                               pseudo-term-listp-of-symbol-listp
+                               acl2::pseudo-termp-opener)
                               :expand (type-judgement-if term path-cond options
                                                          names state)))))
   (defthm correctness-of-type-judgement-fn
@@ -507,16 +518,19 @@ stop
                                                  names state)
                             (type-judgement-list nil path-cond options names state)))))
     :flag type-judgement-list)
-  ;; :hints(("Goal"
-  ;;         :induct (type-judgements-flag
-  ;;                  flag term term-lst path-cond options state)
-  ;;         :in-theory (disable symbol-listp
-  ;;                             pseudo-term-listp-of-symbol-listp
-  ;;                             consp-of-is-conjunct?
-  ;;                             acl2::true-listp-of-car-when-true-list-listp
-  ;;                             true-list-listp
-  ;;                             symbolp-of-fn-call-of-pseudo-termp)))
-  )
+  :hints(("Goal"
+          :in-theory (disable ;; ev-smtcp-of-if-call
+                              pseudo-termp
+                              correctness-of-path-test-list
+                              symbol-listp
+                              correctness-of-path-test
+                              acl2::symbol-listp-when-not-consp
+                              consp-of-is-conjunct?
+                              ;; ev-smtcp-of-variable
+                              acl2::pseudo-termp-cadr-from-pseudo-term-listp
+                              acl2::symbolp-of-car-when-symbol-listp
+                              pseudo-term-listp-of-symbol-listp
+                              acl2::pseudo-termp-opener))))
 
 ;; -------------------------------------------------------
 
