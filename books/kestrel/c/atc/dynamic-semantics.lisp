@@ -66,10 +66,7 @@
      (i.e. the code produces correct results if it terminates)
      is relativized to the limit value not running out.
      The limit is an artifact of the formalization;
-     it has no explicit counterpart in the execution state of the C code.
-     (Currently the mutually recursive functions terminate without the limit,
-     but this will change when we extend our dynamic semantics
-     with function calls, loops, etc.)"))
+     it has no explicit counterpart in the execution state of the C code."))
   :order-subtopics t
   :default-parent t)
 
