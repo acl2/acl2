@@ -185,7 +185,7 @@
     "The stack grows leftward and shrinks rightward,
      i.e. push is @(tsee cons), pop is @(tsee cdr), and top is @(tsee car)."))
   ((functions fun-env)
-   (call-stack frame-list))
+   (frames frame-list))
   :pred denvp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -199,7 +199,7 @@
     "This is always satisfied when executing statements and expressions,
      because those statements and expressions must be
      in the body of some function that is executing."))
-  (consp (denv->call-stack env))
+  (consp (denv->frames env))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -208,7 +208,7 @@
   :guard (denv-nonempty-stack-p env)
   :returns (frame framep)
   :short "Top frame of a dynamic environment's call stack."
-  (frame-fix (car (denv->call-stack env)))
+  (frame-fix (car (denv->frames env)))
   :guard-hints (("Goal" :in-theory (enable denv-nonempty-stack-p)))
   :hooks (:fix))
 
@@ -217,9 +217,9 @@
 (define push-frame ((frame framep) (env denvp))
   :returns (new-env denvp)
   :short "Push a frame onto a dynamic environment's call stack."
-  (b* ((stack (denv->call-stack env))
+  (b* ((stack (denv->frames env))
        (new-stack (cons (frame-fix frame) stack)))
-    (change-denv env :call-stack new-stack))
+    (change-denv env :frames new-stack))
   :hooks (:fix)
   ///
   (more-returns
@@ -232,9 +232,9 @@
   :guard (denv-nonempty-stack-p env)
   :returns (new-env denvp)
   :short "Pop a frame from a dynamic environment's non-empty call stack."
-  (b* ((stack (denv->call-stack env))
+  (b* ((stack (denv->frames env))
        (new-stack (cdr stack)))
-    (change-denv env :call-stack new-stack))
+    (change-denv env :frames new-stack))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -756,6 +756,6 @@
     (fun-env-result-case
      fenv
      :err (error fenv.get)
-     :ok (b* ((env (make-denv :functions fenv.get :call-stack nil)))
+     :ok (b* ((env (make-denv :functions fenv.get :frames nil)))
            (exec-fun fun args env 1000000000)))) ; 10^9
   :hooks (:fix))
