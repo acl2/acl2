@@ -3550,7 +3550,8 @@
                               (natp num)
                               (booleanp changep-acc))
                   :measure (len literal-nodenums)))
-  (b* (((mv erp changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+  (b* (;; Try to subst a var.  TODO: Allow this to evaluate ground terms that arise when substituting.
+       ((mv erp changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
         (substitute-a-var literal-nodenums literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print))
        ((when erp) (mv erp changep-acc literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
        )
