@@ -378,49 +378,83 @@
     "For now we only allow
      @('return') statements with expressions,
      conditional statements, and
-     compound statements."))
+     compound statements.")
+   (xdoc::p
+    "The ACL2 function that processes a block item returns,
+     besides an indication of success or failure,
+     also a possibly updated static environment.
+     The update happens when the block item is a declaration:
+     this way, subsequent block items can access the declared variable.")
+   (xdoc::p
+    "For a compound statement,
+     we add a block scope to the variable symbol table
+     and then we process the list of block items.
+     There is no need to explicitly remove it when exiting the block,
+     because we only use the extended variable symbol table
+     to check the well-formedness of the items of the block.
+     Anything that follows the block is checked
+     with the variable symbol table prior to the extension.
+     In fact, a compound statement does not update the static environment."))
 
   (define stmt-wfp ((s stmtp) (env senvp))
     :returns (yes/no booleanp)
     :parents nil
-    (stmt-case s
-               :labeled nil
-               :compound (block-item-list-wfp s.items env)
-               :expr nil
-               :null nil
-               :if (and (expr-wfp s.test env)
-                        (stmt-wfp s.then env))
-               :ifelse (and (expr-wfp s.test env)
-                            (stmt-wfp s.then env)
-                            (stmt-wfp s.else env))
-               :switch nil
-               :while nil
-               :dowhile nil
-               :for nil
-               :goto nil
-               :continue nil
-               :break nil
-               :return (and s.value
-                            (expr-wfp s.value env)))
+    (stmt-case
+     s
+     :labeled nil
+     :compound (b* ((var-symtab (senv->variables env))
+                    (ext-var-symtab (var-symtab-add-block var-symtab))
+                    (ext-env (change-senv env :variables ext-var-symtab)))
+                 (block-item-list-wfp s.items ext-env))
+     :expr nil
+     :null nil
+     :if (and (expr-wfp s.test env)
+              (stmt-wfp s.then env))
+     :ifelse (and (expr-wfp s.test env)
+                  (stmt-wfp s.then env)
+                  (stmt-wfp s.else env))
+     :switch nil
+     :while nil
+     :dowhile nil
+     :for nil
+     :goto nil
+     :continue nil
+     :break nil
+     :return (and s.value
+                  (expr-wfp s.value env)))
     :measure (stmt-count s))
 
   (define block-item-wfp ((item block-itemp) (env senvp))
-    :returns (yes/no booleanp)
+    :returns (mv (yes/no booleanp) (new-env senvp))
     :parents nil
-    (block-item-case item
-                     :decl nil
-                     :stmt (stmt-wfp item.get env))
+    (block-item-case
+     item
+     :decl (b* (((decl decl) item.get)
+                ((unless (and (tyspecseq-wfp decl.type)
+                              (ident-wfp decl.name)
+                              (expr-wfp decl.init env)))
+                 (mv nil (senv-fix env)))
+                (var-symtab (senv->variables env))
+                ((mv okp new-var-symtab)
+                 (var-symtab-add-var decl.name var-symtab))
+                ((when (not okp)) (mv nil (senv-fix env)))
+                (new-env (change-senv env :variables new-var-symtab)))
+             (mv t new-env))
+     :stmt (mv (stmt-wfp item.get env) (senv-fix env)))
     :measure (block-item-count item))
 
   (define block-item-list-wfp ((items block-item-listp) (env senvp))
     :returns (yes/no booleanp)
     :parents nil
     (or (endp items)
-        (and (block-item-wfp (car items) env)
-             (block-item-list-wfp (cdr items) env)))
+        (b* (((mv okp env) (block-item-wfp (car items) env))
+             ((when (not okp)) nil))
+          (block-item-list-wfp (cdr items) env)))
     :measure (block-item-list-count items))
 
+  :verify-guards nil ; done below
   ///
+  (verify-guards stmt-wfp)
 
   (fty::deffixequiv-mutual stmt-wfp-fns))
 
