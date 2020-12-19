@@ -1156,7 +1156,8 @@
        ;; and if PROVEDP is nil, then that disjunction is equuialent to the LITERAL-NODENUMS returned.
        ;; If provedp is non-nil, changep is meaningless..
        ;; Not a worklist algorithm of the usual sort (all elements of work-list are literals)
-       ;; may extend the dag but doesn't change any nodes (new!)
+       ;; may extend the dag but doesn't change any nodes (new!).
+       ;; TODO: If the only change is that some literals were dropped, perhaps we don't want to make another pass?
        (defund ,rewrite-literals-name (work-list ;a list of nodenums
                                        done-list ;a list of nodenums
                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
@@ -1208,33 +1209,18 @@
                                          changep ;; no change to changep
                                          rule-alist interpreted-function-alist monitored-symbols print case-designator info tries prover-depth options)
                ;; Rewriting changed the literal.  Harvest the disjuncts, raising them to top level, and add them to done-list:
-               ;; TODO: Handle constant disjuncts
-               (if (consp new-nodenum-or-quotep) ; check for quotep
-                   ;; The literal rewrote to a constant:
-                   (if (unquote new-nodenum-or-quotep)
-                       ;;The literal rewrote to a non-nil constant, so we proved the clause:
-                       (prog2$ (cw "T ")
-                               (mv (erp-nil)
-                                   t ;provedp=t
-                                   t ;(meaningless)
-                                   nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
-                     (prog2$ (cw "F ")
-                             ;;The literal rewrote to nil, so drop it:
-                             (,rewrite-literals-name rest-work-list
-                                                     done-list
-                                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                     t ;something changed (ffixme maybe if all that happens is this, we should not make another pass?)
-                                                     rule-alist interpreted-function-alist monitored-symbols print case-designator
-                                                     info tries prover-depth options)))
-                 (b* (((mv erp done-list dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-                       (get-disjuncts new-nodenum-or-quotep
-                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                      done-list ; will be extended with the disjuncts
-                                      nil       ;negated-flg
-                                      ))
-                      ((when erp) (mv erp nil nil done-list dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))
+               (b* (((mv erp provedp extended-done-list dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+                     (handle-rewritten-literal new-nodenum-or-quotep done-list dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+                    ((when erp) (mv erp nil nil done-list dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))
+                 (if provedp
+                     (mv (erp-nil)
+                         t   ;provedp
+                         t   ;changep
+                         nil ;literal-nodenums
+                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
+                   ;; Continue rewriting literals:
                    (,rewrite-literals-name rest-work-list
-                                           done-list ;; has been extended
+                                           extended-done-list
                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                            t ;; something changed
                                            rule-alist interpreted-function-alist monitored-symbols print case-designator info tries prover-depth options)))))))

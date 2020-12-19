@@ -3877,4 +3877,40 @@
   (and (alistp options)
        (subsetp-eq (strip-cars options) '(:no-stp))))
 
-;todo
+;; Extracts disjuncts, handles constants, etc.
+;; Returns (mv erp provedp extended-done-list dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist).
+(defun handle-rewritten-literal (new-nodenum-or-quotep ; the result of rewriting the literal
+                                 done-list ; to be extended with the disjuncts extracted from the rewritten literal
+                                 ;; array nodes may be added when using DeMorgan to get disjuncts or a negated conjunction:
+                                 dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+  (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                              (dargp-less-than new-nodenum-or-quotep dag-len)
+                              (nat-listp done-list))))
+  (if (consp new-nodenum-or-quotep) ; check for quotep
+      ;; The literal rewrote to a constant:
+      (if (unquote new-nodenum-or-quotep)
+          ;; The literal rewrote to a non-nil constant, so we proved the clause:
+          (prog2$ (cw "T ")
+                  (mv (erp-nil)
+                      t ; provedp
+                      nil ; irrelevant
+                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+        ;;The literal rewrote to nil, so drop it:
+        (prog2$ (cw "F ")
+                (mv (erp-nil)
+                    nil       ; provedp
+                    done-list ; not extended
+                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))
+    ;; TODO: improve get-disjuncts to handle constant disjuncts...
+    (b* (((mv erp extended-done-list dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+          (get-disjuncts new-nodenum-or-quotep
+                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                         done-list ; will be extended with the disjuncts
+                         nil       ;negated-flg
+                         ))
+         ((when erp) (mv erp nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))
+      ;; todo; combine with the case above?:
+      (mv (erp-nil)
+          nil ; provedp
+          extended-done-list
+          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))))
