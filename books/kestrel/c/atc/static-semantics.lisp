@@ -376,10 +376,9 @@
   (xdoc::topstring
    (xdoc::p
     "For now we only allow
-     @('return') statements with (well-formed) expressions,
-     compound statements of allowed statements (no declarations),
-     and conditional statements with well-formed tests,
-     and allowed statements as branches."))
+     @('return') statements with expressions,
+     conditional statements, and
+     compound statements."))
 
   (define stmt-wfp ((s stmtp) (env senvp))
     :returns (yes/no booleanp)
