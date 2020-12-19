@@ -17,20 +17,38 @@
 
 (deftest
   (prove-implication-with-basic-prover *t*
-                                           '((0 natp '7))
-                                           :rule-lists (list '(implies))))
+                                       '((0 natp '7))
+                                       :rule-lists (list '(implies))))
 
 (deftest
   (prove-implication-with-basic-prover '((1 natp 0) (0 . x)) '((1 natp 0) (0 . x))
-                                           :rule-lists (list '(implies))
-                                           ))
+                                       :rule-lists (list '(implies))
+                                       ))
 
 (deftest
   (must-fail (prove-implication-with-basic-prover *t* '((1 natp 0) (0 . x))
-                                                      :rule-lists (list '(implies))
-                                           )))
+                                                  :rule-lists (list '(implies))
+                                                  )))
 
 (deftest
   (must-fail (prove-implication-with-basic-prover '((1 natp 0) (0 . x)) '((1 natp 0) (0 . y))
-                                                      :rule-lists (list '(implies))
-                                                      )))
+                                                  :rule-lists (list '(implies)) ;todo
+                                                  )))
+
+(defthm-with-basic-prover-clause-processor test1
+  (natp 7)
+  :rules (implies) ;todo
+  )
+
+(defthm-with-basic-prover-clause-processor test2
+  (implies (natp x)
+           (natp x))
+  :rules (implies) ;todo
+  )
+
+(must-fail
+ (defthm-with-basic-prover-clause-processor test2
+   (implies (integerp x)
+            (natp x))
+   :rules (implies) ;todo
+   ))
