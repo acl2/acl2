@@ -8,6 +8,8 @@
 ;; rule-alists (structures that index rules by the top function symbol of their LHSes)
 ;;
 
+;; TODO: Consider using a property list world to make the lookups faster.
+
 ;; A rule-alist is a database of rules used by Axe.  It maps function symbols
 ;; to lists of stored rules.
 (defund rule-alistp (alist)
