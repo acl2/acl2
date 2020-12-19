@@ -370,7 +370,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines stmt-wfp-fns
+(defines stmt-wfp
   :short "Check if a statement is well-formed."
   :long
   (xdoc::topstring
@@ -398,7 +398,6 @@
 
   (define stmt-wfp ((s stmtp) (env senvp))
     :returns (yes/no booleanp)
-    :parents nil
     (stmt-case
      s
      :labeled nil
@@ -426,7 +425,6 @@
 
   (define block-item-wfp ((item block-itemp) (env senvp))
     :returns (mv (yes/no booleanp) (new-env senvp))
-    :parents nil
     (block-item-case
      item
      :decl (b* (((decl decl) item.get)
@@ -445,7 +443,6 @@
 
   (define block-item-list-wfp ((items block-item-listp) (env senvp))
     :returns (yes/no booleanp)
-    :parents nil
     (or (endp items)
         (b* (((mv okp env) (block-item-wfp (car items) env))
              ((when (not okp)) nil))
@@ -456,7 +453,7 @@
   ///
   (verify-guards stmt-wfp)
 
-  (fty::deffixequiv-mutual stmt-wfp-fns))
+  (fty::deffixequiv-mutual stmt-wfp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
