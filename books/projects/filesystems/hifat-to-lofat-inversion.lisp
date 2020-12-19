@@ -7,6 +7,7 @@
 
 (include-book "utilities/generate-index-list")
 (include-book "hifat/hifat-entry-count")
+(include-book "hifat/hifat-cluster-count")
 (include-book "lofat/stobj-find-n-free-clusters")
 
 ;; These are some rules from other books which are either interacting badly
@@ -1136,10 +1137,6 @@
           (append (list cc) head-cc-list
                   tail-cc-list)
           error-code))))
-
-(defthm lofat-to-hifat-helper-correctness-1-lemma-1
-  (equal (rationalp (nth n (d-e-fix x)))
-         (< (nfix n) *ms-d-e-length*)))
 
 (defthm
   lofat-to-hifat-helper-correctness-1
@@ -7998,36 +7995,6 @@
                  painful-debugging-lemma-10
                  painful-debugging-lemma-11)
                 ((:rewrite find-n-free-clusters-when-zp))))))
-
-;; In the subdirectory case, we need to place all the entries (32 bytes each)
-;; and two entries (dot and dotdot). The space taken up for these things is
-;; determined by the rule len-of-make-clusters, which expresses the length in
-;; terms of the greatest integer function.
-(defund
-  hifat-cluster-count (fs cluster-size)
-  (declare (xargs :guard (and (m1-file-alist-p fs)
-                              (integerp cluster-size)
-                              (< 0 cluster-size))))
-  (b*
-      (((unless (consp fs)) 0)
-       (head (car fs))
-       (contents (m1-file->contents (cdr head))))
-    (+
-     (hifat-cluster-count (cdr fs)
-                          cluster-size)
-     (if
-         (m1-regular-file-p (cdr head))
-         (len (make-clusters contents cluster-size))
-       (+ (hifat-cluster-count contents cluster-size)
-          ;; This mbe form is here to help make a good type-prescription rule,
-          ;; which identifies this thing as a natural number - not just an
-          ;; integer. As an aside, I guess the battle over whether 0 is a
-          ;; natural number has been lost for a while, since nobody seems to use
-          ;; the term "whole number" any more.
-          (mbe :exec (ceiling (* 32 (+ 2 (len contents)))
-                              cluster-size)
-               :logic (nfix (ceiling (* 32 (+ 2 (len contents)))
-                                     cluster-size))))))))
 
 (defthm
   count-free-clusters-of-effective-fat-of-place-contents
