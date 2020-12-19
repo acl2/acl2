@@ -8073,7 +8073,7 @@
                   functions to execute efficiently, which might not be the ~
                   case for an :ideal mode function.  These functions should ~
                   have their guards verified: ~&0."
-                 acc))))
+                 (remove-duplicates-eq acc)))))
    (t
     (let* ((trip (car trips))
            (fn (and (eq (car trip) 'event-landmark)

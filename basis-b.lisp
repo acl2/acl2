@@ -3441,8 +3441,30 @@
     (f-put-global 'proofs-co val state)
     (value val))))
 
+(defun illegal-state-ld-prompt (channel state)
+
+; See the Essay on Illegal-states.
+
+; Since ACL2 doesn't allow lower-case characters in package names, the
+; following is distinguishable from the prompts in legal states.  We indicate
+; the ld-level just as is done by default-print-prompt.
+
+  (fmt1 "[Illegal-State] ~*0"
+        (list (cons #\0 (list "" ">" ">" ">"
+                              (make-list-ac (f-get-global 'ld-level state)
+                                            nil nil))))
+        0 channel state nil))
+
+(defun ld-pre-eval-filter (state)
+  (f-get-global 'ld-pre-eval-filter state))
+
+(defun illegal-state-p (state)
+  (eq (ld-pre-eval-filter state)
+      :illegal-state))
+
 (defun ld-prompt (state)
-  (f-get-global 'ld-prompt state))
+  (cond ((illegal-state-p state) 'illegal-state-ld-prompt)
+        (t (f-get-global 'ld-prompt state))))
 
 (defun chk-ld-prompt (val ctx state)
   (cond ((or (null val)
@@ -3550,9 +3572,6 @@
     (f-put-global 'ld-missing-input-ok val state)
     (value val))))
 
-(defun ld-pre-eval-filter (state)
-  (f-get-global 'ld-pre-eval-filter state))
-
 (defun new-namep (name wrld)
 
 ; We determine if name has properties on world wrld.  Once upon a time
@@ -3648,7 +3667,7 @@
                          nil))))))
 
 (defun chk-ld-pre-eval-filter (val ctx state)
-  (cond ((or (member-eq val '(:all :query))
+  (cond ((or (member-eq val '(:all :query :illegal-state))
              (and (symbolp val)
                   (not (keywordp val))
                   (not (equal (symbol-package-name val)
