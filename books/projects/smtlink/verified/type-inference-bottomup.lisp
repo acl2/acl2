@@ -331,10 +331,9 @@
          (judge-if-top
           (type-judgement-if-top judge-then-top then judge-else-top else
                                  cond names options))
-         ;; (judge-if-top-extended
-         ;;  (extend-judgements judge-if-top path-cond options state))
-         )
-      `(if ,judge-if-top
+         (judge-if-top-extended
+          (extend-judgements judge-if-top path-cond options state)))
+      `(if ,judge-if-top-extended
            (if ,judge-cond
                (if ,cond ,judge-then ,judge-else)
              'nil)
