@@ -184,16 +184,16 @@
 ;;;
 
 ;; Each node maps to nil (no replacement), or to a replacement (a quotep or a nodenum).
-;; TODO: Bake in the name
+;; TODO: Bake in the name of the array
 (def-typed-acl2-array2 node-replacement-arrayp
   (or (null val)
       (myquotep val)
       (natp val)))
 
-;; it might get the default value
 ;; have the tool generate this?
 (defthm node-replacement-arrayp-aux-of-cons-of-cons-of-header-irrel
   (implies (and (natp index)
+                ;; the header doesn't change the default value:
                 (equal (cadr (assoc-keyword :default header))
                        (default name l)))
            (equal (node-replacement-arrayp-aux name (cons (cons :header header) l) index)
@@ -216,6 +216,7 @@
 ;;   :rule-classes :forward-chaining
 ;;   :hints (("Goal" :in-theory (enable node-replacement-arrayp))))
 
+;; have the tool generate this?
 (defthm node-replacement-arrayp-forward-to-array1p
   (implies (node-replacement-arrayp array-name array)
            (array1p array-name array))
@@ -309,7 +310,10 @@
 ;;; lookup-in-node-replacement-array
 ;;;
 
-;; Returns nil or a nodenum/quotep.
+;; Returns nil (no replacement for NODENUM) or a nodenum/quotep with which to replace NODENUM.
+;; TODO: Make a version that gives back NODENUM if no replacement is made.  We
+;; could even have the array map non-replaced nodes to themselves, to avoid
+;; having to check whether the result is nil.
 (defund lookup-in-node-replacement-array (nodenum node-replacement-array num-valid-nodes)
   (declare (xargs :guard (and (natp nodenum)
                               (natp num-valid-nodes)
@@ -317,6 +321,7 @@
                               (<= num-valid-nodes (alen1 'node-replacement-array node-replacement-array)))))
   (if (<= num-valid-nodes nodenum) ;can't possibly be replaced, and looking it up would be illegal
       nil
+    ;; either nil or a replacement (a nodenum or quotep):
     (aref1 'node-replacement-array node-replacement-array nodenum)))
 
 (defthm dargp-of-lookup-in-node-replacement-array
@@ -340,7 +345,7 @@
                 (natp bound)
                 (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array bound))
            (dargp-less-than (lookup-in-node-replacement-array nodenum node-replacement-array num-valid-nodes)
-                                       bound))
+                            bound))
   :hints (("Goal" :use (:instance type-of-aref1-when-bounded-node-replacement-arrayp
                                   (array-name 'node-replacement-array)
                                   (array node-replacement-array)

@@ -29,7 +29,6 @@
 ;; TODO: add a function to simplify a dag.
 
 (include-book "rewriter-common")
-(include-book "make-axe-rules") ; for get-rules-for-fn
 (include-book "supporting-nodes") ; for drop-non-supporters-array
 (include-book "make-node-replacement-pairs")
 (include-book "node-replacement-array")
@@ -37,7 +36,7 @@
 (include-book "rewriter-support") ;make local? but may be needed by the generated rewriters
 (include-book "tries")
 (include-book "rule-limits")
-(include-book "rule-alists")
+(include-book "rule-alists") ; for get-rules-for-fn
 (include-book "instantiate-hyp-basic")
 (include-book "my-sublis-var-and-eval-basic")
 (include-book "dag-array-builders")

@@ -1123,12 +1123,16 @@
                          :verify-guards nil))
          (b* ((- (and (or (eq :verbose print) (eq :verbose2 print))
                       (cw "(Rewriting literal ~x0.~%" nodenum)))
+              ;; Make an array to track results in the worklist algorithm:
               (result-array-name (pack$ 'result-array- prover-depth))
+              (result-array (make-empty-array result-array-name dag-len) ;fixme dag-len here is overkill? use (+ 1 nodeum)?
+                            )
+              ;; Rewrite this literal:
               ((mv erp result-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
                ;;fixme would it make sense to memoize in this (moot if we call the new rewriter)?:
                (,rewrite-nodes-name (list nodenum)
                                     result-array-name
-                                    (make-empty-array result-array-name dag-len) ;fixme dag-len here is overkill? use (+ 1 nodeum)?
+                                    result-array
                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                     nodenums-to-assume-false
                                     rule-alist
@@ -1218,7 +1222,8 @@
                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                            changep ;; no change to changep
                                            rule-alist interpreted-function-alist monitored-symbols print case-designator info tries prover-depth options)
-                 ;; Something changed.  Harvest the disjuncts, raising them to top level, and add them to done-list:
+                 ;; Rewriting changed the literal.  Harvest the disjuncts, raising them to top level, and add them to done-list:
+                 ;; TODO: Handle constant disjuncts
                  (b* (((mv erp done-list dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
                        (get-disjuncts new-nodenum-or-quotep
                                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist

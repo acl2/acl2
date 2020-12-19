@@ -66,8 +66,8 @@
 
 ;; Returns (mv erp node-replacement-pairs dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist).
 (defund make-node-replacement-pairs-and-add-to-dag-array-aux (pairs
-                                                             dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist
-                                                             acc)
+                                                              dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist
+                                                              acc)
   (declare (xargs :guard (and (equality-pairsp pairs)
                               (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
                               (alistp acc))))
@@ -80,20 +80,20 @@
            (rhs (cdr pair)))
       (b* (((mv erp lhs-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
             (merge-term-into-dag-array-basic lhs
-                                              nil ;var-replacement-alist
-                                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
-                                              nil ;interpreted-function-alist
-                                              ))
+                                             nil ;var-replacement-alist
+                                             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
+                                             nil ;interpreted-function-alist
+                                             ))
            ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
            ((when (consp lhs-nodenum-or-quotep)) ; check for quotep -- todo: prove this can't happen
             (er hard? 'make-node-replacement-pairs-and-add-to-dag-array-aux "Assumption with a quotep LHS: ~x0." `(equal ,lhs ,rhs))
             (mv :unexpectd-quote nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
            ((mv erp rhs-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
             (merge-term-into-dag-array-basic rhs
-                                              nil ;var-replacement-alist
-                                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
-                                              nil ;interpreted-function-alist
-                                              ))
+                                             nil ;var-replacement-alist
+                                             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
+                                             nil ;interpreted-function-alist
+                                             ))
            ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
            )
         (make-node-replacement-pairs-and-add-to-dag-array-aux (rest pairs)
