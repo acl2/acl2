@@ -203,7 +203,6 @@
 
 ; Symbols below should probably be added to *acl2-exports*.
 
-    ILLEGAL-STATE
   ))
 
 (defconst *special-ops*
