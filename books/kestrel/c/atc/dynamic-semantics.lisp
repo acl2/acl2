@@ -117,30 +117,33 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defomap store
-  :short "Fixtype of variable stores."
+(fty::defomap scope
+  :short "Fixtype of variable scopes."
   :long
   (xdoc::topstring
    (xdoc::p
-    "A variable store is a finite map from identifiers to @('int') values
+    "A variable scope is a finite map from identifiers to @('int') values
      (for now these are the only values that we model).
-     It represents the contents of the variables in scope."))
+     It represents the contents of the variables in a scope;
+     currently this is always a block scope,
+     because we do not model variables with file scope
+     (i.e. variables declared at the top level)."))
   :key-type ident
   :val-type sint
-  :pred storep)
+  :pred scopep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defresult store "stores")
+(fty::defresult scope "scopes")
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defruled storep-when-store-resultp-ok
-  (implies (and (store-resultp store)
-                (store-result-case store :ok))
-           (storep store))
-  :enable (store-resultp
-           store-result-kind))
+(defruled scopep-when-scope-resultp-ok
+  (implies (and (scope-resultp scope)
+                (scope-result-case scope :ok))
+           (scopep scope))
+  :enable (scope-resultp
+           scope-result-kind))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -151,12 +154,14 @@
    (xdoc::p
     "Every time a function is called, a frame is created,
      which contains information about
-     the function and its variables' values.")
+     the function and its variables' values.
+     Since for now we do not have variables in nested scopes,
+     we only have one scope.")
    (xdoc::p
     "As defined later, the call stack is represented as
      a stack (i.e. list) of frames."))
   ((function ident)
-   (store store))
+   (scope scope))
   :pred framep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -288,13 +293,13 @@
    (xdoc::p
     "The execution of expressions takes place
      in the context of a dynamic environment.
-     We look up the variable's value in the store,
-     defensively returning an error if the variable is not in the store,
+     We look up the variable's value in the top frame,
+     defensively returning an error if the variable is not found,
      which means that the variable is not in scope."))
   (b* ((id (ident-fix id))
        (frame (top-frame env))
-       (store (frame->store frame))
-       (pair? (omap::in id store))
+       (scope (frame->scope frame))
+       (pair? (omap::in id scope))
        ((when (not pair?)) (error (list :exec-ident-not-in-scope id))))
     (cdr pair?))
   :hooks (:fix))
@@ -466,14 +471,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define init-store ((formals param-decl-listp) (actuals value-listp))
-  :returns (result store-resultp)
-  :short "Initialize the store for a function call."
+(define init-scope ((formals param-decl-listp) (actuals value-listp))
+  :returns (result scope-resultp)
+  :short "Initialize the variable scope for a function call."
   :long
   (xdoc::topstring
    (xdoc::p
     "We go through formal parameters and actual arguments,
-     pairing them up into the store.
+     pairing them up into the scope.
      We return an error if they do not match in number,
      or if there are repeated parameters."))
   (b* ((formals (param-decl-list-fix formals))
@@ -481,25 +486,25 @@
        ((when (endp formals))
         (if (endp actuals)
             nil
-          (error (list :init-store :extra-actuals actuals))))
+          (error (list :init-scope :extra-actuals actuals))))
        ((when (endp actuals))
-        (error (list :init-store :extra-formals formals)))
-       (store (init-store (cdr formals) (cdr actuals))))
-    (store-result-case
-     store
-     :err store.get
+        (error (list :init-scope :extra-formals formals)))
+       (scope (init-scope (cdr formals) (cdr actuals))))
+    (scope-result-case
+     scope
+     :err scope.get
      :ok (b* ((formal (car formals))
               (actual (car actuals))
               (name (param-decl->name formal)))
-           (if (omap::in name store)
-               (error (list :init-store :duplicate-param name))
-             (omap::update name actual store)))))
+           (if (omap::in name scope)
+               (error (list :init-scope :duplicate-param name))
+             (omap::update name actual scope)))))
   :hooks (:fix)
   :measure (len formals)
-  :prepwork ((local (in-theory (enable storep-when-store-resultp-ok))))
+  :prepwork ((local (in-theory (enable scopep-when-scope-resultp-ok))))
   :verify-guards nil ; done below
   ///
-  (verify-guards init-store))
+  (verify-guards init-scope))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -588,7 +593,7 @@
     (xdoc::topstring
      (xdoc::p
       "We retrieve the information about the function from the environment.
-       We initialize a store with the argument values,
+       We initialize a scope with the argument values,
        and we push a frame onto the call stack.
        We execute the function body,
        which must return a result,
@@ -603,11 +608,11 @@
          ((when (not info))
           (error (list :function-undefined (ident-fix fun))))
          ((fun-info info) info)
-         (store (init-store info.params args)))
-      (store-result-case
-       store
-       :err store.get
-       :ok (b* ((frame (make-frame :function fun :store store.get))
+         (scope (init-scope info.params args)))
+      (scope-result-case
+       scope
+       :err scope.get
+       :ok (b* ((frame (make-frame :function fun :scope scope.get))
                 (env (push-frame frame env))
                 (val-opt (exec-stmt info.body env (1- limit))))
              (value-option-result-case
