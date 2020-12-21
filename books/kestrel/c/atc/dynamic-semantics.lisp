@@ -78,6 +78,15 @@
   (:err error)
   :pred value-resultp)
 
+;;;;;;;;;;;;;;;;;;;;
+
+(define irr-value-result ()
+  :returns (result value-resultp)
+  :short "An irrelevant value result, usable as a dummy return value."
+  (with-guard-checking :none (ec-call (value-result-fix :irrelevant)))
+  ///
+  (in-theory (disable (:e irr-value-result))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deflist value-list
@@ -105,15 +114,6 @@
 (encapsulate ()
   (local (in-theory (enable sintp)))
   (fty::defresult value-option "optional values"))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define irr-value-result ()
-  :returns (result value-resultp)
-  :short "An irrelevant value result, usable as a dummy return value."
-  (with-guard-checking :none (ec-call (value-result-fix :irrelevant)))
-  ///
-  (in-theory (disable (:e irr-value-result))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
