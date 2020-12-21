@@ -209,6 +209,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defresult denv "dynamic environments")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule not-denvp-of-error
+  (not (denvp (error x)))
+  :enable (denvp error))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define denv-nonempty-stack-p ((env denvp))
   :returns (yes/no booleanp)
   :short "Check if a dynamic environment has a non-empty call stack."
@@ -223,16 +233,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define top-frame ((env denvp))
-  :guard (denv-nonempty-stack-p env)
-  :returns (frame framep)
-  :short "Top frame of a dynamic environment's call stack."
-  (frame-fix (car (denv->frames env)))
-  :guard-hints (("Goal" :in-theory (enable denv-nonempty-stack-p)))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define push-frame ((frame framep) (env denvp))
   :returns (new-env denvp)
   :short "Push a frame onto a dynamic environment's call stack."
@@ -241,9 +241,26 @@
     (change-denv env :frames new-stack))
   :hooks (:fix)
   ///
+
   (more-returns
    (new-env denv-nonempty-stack-p
             :hints (("Goal" :in-theory (enable denv-nonempty-stack-p))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define top-frame ((env denvp))
+  :guard (denv-nonempty-stack-p env)
+  :returns (frame framep)
+  :short "Top frame of a dynamic environment's call stack."
+  (frame-fix (car (denv->frames env)))
+  :guard-hints (("Goal" :in-theory (enable denv-nonempty-stack-p)))
+  :hooks (:fix)
+  ///
+
+  (defrule top-frame-of-push-frame
+    (equal (top-frame (push-frame frame env))
+           (frame-fix frame))
+    :enable push-frame))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -254,7 +271,13 @@
   (b* ((stack (denv->frames env))
        (new-stack (cdr stack)))
     (change-denv env :frames new-stack))
-  :hooks (:fix))
+  :hooks (:fix)
+  ///
+
+  (defrule pop-frame-of-push-frame
+    (equal (pop-frame (push-frame frame env))
+           (denv-fix env))
+    :enable push-frame))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -356,6 +379,43 @@
           ((when (not pair)) (lookup-var-aux var (cdr scopes))))
        (cdr pair))
      :hooks (:fix))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define add-var ((var identp) (val sintp) (env denvp))
+  :guard (denv-nonempty-stack-p env)
+  :returns (result denv-resultp)
+  :short "Add a variable to a dynamic environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We add the variable to the top scope of the top frame;
+     the variable comes with a value.
+     If there is already a variable with the same name in the top scope,
+     we return an error: C disallows variable redefinition.
+     However, there may well be a variable with the same in a different scope:
+     in this case, the new variable hides the other one."))
+  (b* ((frame (top-frame env))
+       (scopes (frame->scopes frame))
+       (scope (car scopes))
+       (pair (omap::in (ident-fix var) scope))
+       ((when (consp pair)) (error (list :var-redefinition (ident-fix var))))
+       (new-scope (omap::update (ident-fix var) (sint-fix val) scope))
+       (new-scopes (cons new-scope (cdr scopes)))
+       (new-frame (change-frame frame :scopes new-scopes))
+       (new-env (push-frame new-frame (pop-frame env))))
+    new-env)
+  :hooks (:fix)
+  ///
+
+  (defret denv-inner-scope-p-of-add-var-when-denv-inner-scope-p
+    (implies (and (denv-nonempty-stack-p env)
+                  (denv-inner-scope-p env)
+                  (denv-result-case result :ok))
+             (denv-inner-scope-p (denv-result-ok->get result)))
+    :hints (("Goal" :in-theory (enable denv-result-ok->get
+                                       denv-inner-scope-p
+                                       denv-result-kind)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -790,9 +850,10 @@
     :parents (dynamic-semantics execution-functions)
     :short "Execute a block item."
     (b* (((when (zp limit)) (error :limit)))
-      (block-item-case item
-                       :decl (error (list :exec-block-item item.get))
-                       :stmt (exec-stmt item.get env (1- limit))))
+      (block-item-case
+       item
+       :decl (error (list :exec-block-item item.get))
+       :stmt (exec-stmt item.get env (1- limit))))
     :measure (nfix limit))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
