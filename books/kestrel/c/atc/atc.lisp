@@ -1349,6 +1349,7 @@
                                      pop-frame
                                      lookup-var
                                      lookup-var-aux
+                                     enter-scope
                                      scope-result-kind
                                      scope-result-ok->get
                                      value-result-kind

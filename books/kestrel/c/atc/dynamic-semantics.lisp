@@ -258,6 +258,72 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define denv-inner-scope-p ((env denvp))
+  :guard (denv-nonempty-stack-p env)
+  :returns (yes/no booleanp)
+  :short "Check if a dynamic environment with a non-empty call stack
+          has at least two scopes in the top frame."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The name of this predicate is motivated by the fact that
+     having at least two scopes means that we are in an inner scope,
+     i.e. one that is inside the always-present function body scope.")
+   (xdoc::p
+    "When this predicate holds, we may exit (i.e. pop) a scope,
+     and still have a valid top frame with a non-empty stack of scopes.
+     When we enter (i.e. push) a scope while executing a function's body,
+     we establish this predicate."))
+  (consp (cdr (frame->scopes (top-frame env))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define enter-scope ((env denvp))
+  :guard (denv-nonempty-stack-p env)
+  :returns (new-env denvp)
+  :short "Enter a scope."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We push an empty scope onto the scope stack of the top frame."))
+  (b* ((frame (top-frame env))
+       (scopes (frame->scopes frame))
+       (new-scopes (cons nil scopes))
+       (new-frame (change-frame frame :scopes new-scopes))
+       (new-env (push-frame new-frame (pop-frame env))))
+    new-env)
+  :hooks (:fix)
+  ///
+  (more-returns
+   (new-env denv-nonempty-stack-p)
+   (new-env denv-inner-scope-p
+            :hints (("Goal" :in-theory (enable denv-inner-scope-p
+                                               top-frame
+                                               push-frame))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exit-scope ((env denvp))
+  :guard (and (denv-nonempty-stack-p env)
+              (denv-inner-scope-p env))
+  :returns (new-env denvp)
+  :short "Exit a scope."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We pop the scope stack of the top frame."))
+  (b* ((frame (top-frame env))
+       (scopes (frame->scopes frame))
+       (new-scopes (cdr scopes))
+       (new-frame (change-frame frame :scopes new-scopes))
+       (new-env (push-frame new-frame (pop-frame env))))
+    new-env)
+  :guard-hints (("Goal" :in-theory (enable denv-inner-scope-p)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define lookup-var ((var identp) (env denvp))
   :guard (denv-nonempty-stack-p env)
   :returns (result value-resultp)
@@ -672,13 +738,20 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "For now we only support the execution of certain statements."))
+      "For now we only support the execution of certain statements.")
+     (xdoc::p
+      "For a compound statement (i.e. a block),
+       we enter a new (empty) scope prior to executing the block items.
+       There is no need to pop the scope at the end,
+       because for now we are not threading the dynamic environment
+       through the execution of statements."))
     (b* (((when (zp limit)) (error :limit))
          (s (stmt-fix s)))
       (stmt-case
        s
        :labeled (error (list :exec-stmt s))
-       :compound (exec-block-item-list s.items env (1- limit))
+       :compound (b* ((env (enter-scope env)))
+                   (exec-block-item-list s.items env (1- limit)))
        :expr (error (list :exec-stmt s))
        :null (error (list :exec-stmt s))
        :if (b* ((test (exec-expr s.test env (1- limit))))
