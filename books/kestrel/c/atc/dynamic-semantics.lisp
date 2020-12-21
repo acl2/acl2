@@ -46,8 +46,8 @@
      but for now it does not support the execution of many constructs,
      just because ATC does not generate those constructs for now.
      This way, we keep the dynamic semantics simpler.
-     Being too restrictive is adequate here:
-     if we have a prove of functional equivalence between some ACL2 code
+     Being more restrictive is adequate here:
+     if we have a proof of functional equivalence between some ACL2 code
      and some C code according to this restriction dynamic semantics,
      it means that the C code only uses the constructs that we cover,
      which is a subset of valid C.")
