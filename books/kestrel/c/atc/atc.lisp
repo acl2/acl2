@@ -1347,6 +1347,8 @@
                                      top-frame
                                      push-frame
                                      pop-frame
+                                     lookup-var
+                                     lookup-var-aux
                                      scope-result-kind
                                      scope-result-ok->get
                                      value-result-kind

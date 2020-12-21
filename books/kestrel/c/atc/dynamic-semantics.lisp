@@ -134,6 +134,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::deflist scope-list
+  :short "Fixtype of lists of variable scopes."
+  :elt-type scope
+  :true-listp t
+  :elementp-of-nil t
+  :pred scope-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defresult scope "scopes")
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -154,14 +163,19 @@
    (xdoc::p
     "Every time a function is called, a frame is created,
      which contains information about
-     the function and its variables' values.
-     Since for now we do not have variables in nested scopes,
-     we only have one scope.")
+     the function and its variables' values.")
+   (xdoc::p
+    "The variables are organized into a stack (i.e. list) of scopes,
+     which grows leftward and shrinks rightward
+     (i.e. scopes are added via @(tsee cons) and removed via @(tsee cdr).
+     There is always at least one scope,
+     i.e. the one for the function body's block.")
    (xdoc::p
     "As defined later, the call stack is represented as
      a stack (i.e. list) of frames."))
   ((function ident)
-   (scope scope))
+   (scopes scope-list :reqfix (if (consp scopes) scopes (list nil))))
+  :require (consp scopes)
   :pred framep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -244,6 +258,41 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define lookup-var ((var identp) (env denvp))
+  :guard (denv-nonempty-stack-p env)
+  :returns (result value-resultp)
+  :short "Look up a variable in a dynamic environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We look in the scopes of the top frame from left to right,
+     i.e. from innermost to outermost.
+     If we find a variable with that name, we return its value.
+     Otherwise we return an error.")
+   (xdoc::p
+    "We do not look at other frames,
+     because the variables in other frames are not in scope
+     for the C function in the top frame.")
+   (xdoc::p
+    "Once we extend dynamic environment with global variables,
+     we will need to extend this ACL2 function
+     to look for the variable among them,
+     if it is not found in the scopes of the top frame."))
+  (lookup-var-aux var (frame->scopes (top-frame env)))
+  :hooks (:fix)
+
+  :prepwork
+  ((define lookup-var-aux ((var identp) (scopes scope-listp))
+     :returns (result value-resultp)
+     (b* (((when (endp scopes)) (error (list :no-var-found (ident-fix var))))
+          (scope (car scopes))
+          (pair (omap::in (ident-fix var) (scope-fix scope)))
+          ((when (not pair)) (lookup-var-aux var (cdr scopes))))
+       (cdr pair))
+     :hooks (:fix))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define exec-iconst ((ic iconstp))
   :returns (result value-resultp)
   :short "Execute an integer constant."
@@ -291,17 +340,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The execution of expressions takes place
-     in the context of a dynamic environment.
-     We look up the variable's value in the top frame,
-     defensively returning an error if the variable is not found,
-     which means that the variable is not in scope."))
-  (b* ((id (ident-fix id))
-       (frame (top-frame env))
-       (scope (frame->scope frame))
-       (pair? (omap::in id scope))
-       ((when (not pair?)) (error (list :exec-ident-not-in-scope id))))
-    (cdr pair?))
+    "We read the variable's value (if any) from the dynamic environment."))
+  (lookup-var id env)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -612,7 +652,7 @@
       (scope-result-case
        scope
        :err scope.get
-       :ok (b* ((frame (make-frame :function fun :scope scope.get))
+       :ok (b* ((frame (make-frame :function fun :scopes (list scope.get)))
                 (env (push-frame frame env))
                 (val-opt (exec-stmt info.body env (1- limit))))
              (value-option-result-case
