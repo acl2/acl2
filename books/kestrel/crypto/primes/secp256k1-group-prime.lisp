@@ -10,9 +10,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; secp256k1 group prime
+; We introduce the prime that is the order of the group
+; defined by the secp256k1 elliptic curve domain parameters.
+; This elliptic curve is specified in
+; "Standards for Efficient Cryptography 1 (SEC 1)"
+; (http://www.secg.org/sec1-v2.pdf) and
+; "Standards for Efficient Cryptography 2 (SEC 2)"
+; (http://www.secg.org/sec2-v2.pdf).
+; This prime is called n in SEC 1 and 2.
+; See, in particular, Section 2 of SEC 2.
 
-;; For references see  secp256k1-field-prime.lisp
+; Also see ./secp256k1-field-prime.lisp.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

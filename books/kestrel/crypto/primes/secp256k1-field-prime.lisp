@@ -18,6 +18,8 @@
 ; This prime is called p in SEC 1 and 2.
 ; See, in particular, Section 2 of SEC 2.
 
+; Also see ./secp256k1-group-prime.lisp.
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "PRIMES")
