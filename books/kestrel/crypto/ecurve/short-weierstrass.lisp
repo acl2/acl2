@@ -15,6 +15,7 @@
 (include-book "primes")
 (include-book "points")
 (include-book "kestrel/prime-fields/prime-fields" :dir :system)
+(include-book "xdoc/defxdoc-plus" :dir :system)
 
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "short-weierstrass-closure-simp"))
@@ -23,61 +24,43 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Elliptic Curves over Prime Fields in Short Weierstrass Form
-; -----------------------------------------------------------
-;
-; This book specifies
-; elliptic curves over prime fields in short Weierstrass form.
-; The short Weierstrass form is y^2 = x^3 + ax + b,
-; with a, b, x, y in Fp and p > 3, where Fp is a prime field,
-; and where + and ^ (which is just iterated *) are field operations,
-; i.e. regular arithmetic operations mod p.
-
-; When p = 2 or p = 3, the elliptic curve equation has different forms.
-; We may generalize this library at some point to cover those forms,
-; and possibly also to cover non-prime finite fields.
-
-; See Neal Koblitz's book "A Course in Number Theory and Cryptography" (2nd Ed.)
-; for background on elliptic curves.
-
-; Our specification follows the SEC 1 standard,
-; available at http://www.secg.org/sec1-v2.pdf,
-; as well as the Johnson, Menezes, and Vanstone's
-; "The Elliptic Curve Digital Signature Algorithm (ECDSA)",
-; International Journal of Information Security,
-; August 2001, Volume 1, Issue 1, pages 33-63.
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; Top xdoc topic for this file.
-
-(defxdoc short-weierstrass
-  :parents (ecurve::elliptic-curves)
-  :short "A library for Short Weierstrass elliptic curves."
+(defxdoc+ short-weierstrass
+  :parents (elliptic-curves)
+  :short "Elliptic curves over prime fields in short Weierstrass form."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This libray contains executable formal specifications of elliptic curve operations
-     on Short Weierstrass curves, which have the form")
-   (xdoc::@[] "y^2=x^3+ax+b")
-   (xdoc::p "where @('x') and @('y') are integers in @('\{0,..,p-1\}')
-             for an appropriate prime number @('p').")
-   (xdoc::p "For details see "
-            (xdoc::a :href "http://www.secg.org/sec1-v2.pdf"
-              "Standards for Efficient Cryptography 1 (SEC 1)")
-            ".")
-   (xdoc::p "The arguments @('a') and @('b') to the functions below
-             always refer to the coefficients in the equation above.")
-   (xdoc::p "The argument @('p') always refers to the prime number
-             that is the field order.")
-   (xdoc::p "See the source code for more extensive
-             discussion, references, and proved theorems.")
-   ))
-
-;; Order the subtopics according to the order in which they were defined.
-(xdoc::order-subtopics short-weierstrass
-  nil
-  t)
+    "We provide executable formal specifications of operations on
+     elliptic curve in short Weierstrass form,
+     which are described by the equation")
+   (xdoc::@[] "y^2 = x^3 + ax + b")
+   (xdoc::p
+    "where @($a$) and @($b$) are integers in a prime field @($\\{0,..,p-1\}$)
+     for an appropriate prime number @($p > 3$),
+     and where @($x$) and @($y$) range over the same prime field.
+     The arithmetic operations in the equation above,
+     namely addition and power (i.e. iterated multiplication),
+     are prime field operations (i.e. modulo @($p$)).
+     Besides the finite points @($(x,y)$) that satisfy the equation,
+     the curve also includes a point at infinity.")
+   (xdoc::p
+    "When @($p = 2$) or @($p = 3$),
+     the elliptic curve equation has different forms,
+     not the short Weierstrass form.
+     We may extend our formalization to cover those curves in the future.
+     We may also extend it to cover curves over non-prime finite fields.")
+   (xdoc::p
+    "See Neal Koblitz's book ``A Course in Number Theory and Cryptography''
+     (Second Edition) for background on elliptic curves.")
+   (xdoc::p
+    "Our formalization follows "
+    (xdoc::ahref "http://www.secg.org/sec1-v2.pdf"
+                 "Standards for Efficient Cryptography 1 (SEC 1)")
+    ", as well as
+     ``The Elliptic Curve Digital Signature Algorithm (ECDSA)'',
+     <i>International Journal of Information Security</i>,
+     August 2001, Volume 1, Issue 1, pages 33-63."))
+  :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
