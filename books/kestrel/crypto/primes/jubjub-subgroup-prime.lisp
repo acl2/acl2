@@ -13,8 +13,11 @@
 ;; Jubjub is defined in the Zcash Protocol Specification.
 ;; https://zips.z.cash/protocol/protocol.pdf
 
-;; This is the prime number r_J that is the order of the largest subgroup
+;; This file proves primality of r_J, the order of the largest subgroup
 ;; of the twisted Edwards curve "Jubjub".
+
+;; For primality of the base field in which "Jubjub" is defined,
+;; see bls12-381-prime.lisp
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -25,7 +28,7 @@
 (defprime jubjub-subgroup-prime
   6554484396890773809930967563523245729705921265872317281365359162392183254199
 
-  ;; Pratt certificate for the Jubjub twisted Edwards curve "Jubjub".
+  ;; Pratt certificate for the twisted Edwards curve "Jubjub".
   (6 (2 3 12281 1710050753150114629 203928654140967434528233
         255074062430788457494141376149)
      (1 1 1 1 1 1)
