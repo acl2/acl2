@@ -14,7 +14,9 @@
 
 ;; See also node-replacement-pairs-for-context.
 
-(include-book "dags")
+(include-book "kestrel/typed-lists-light/all-natp" :dir :system)
+(include-book "kestrel/typed-lists-light/all-less" :dir :system)
+(include-book "all-dargp-less-than")
 
  ;pairs of the form (<nodenum> . <nodenum-or-quotep>)
 ;; TODO: Rename to node-replacement-alist?
