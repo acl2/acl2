@@ -1593,7 +1593,7 @@
                 nil)))
 
 ;; Returns (mv erp extended-acc dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist).
-;; where EXTENDED-ACC is a set of nodenums whose disjunction is equivalent (iff?) to either (or nodenum acc), if negated-flg is nil, or to (or (not nodenum) acc), if negated-flg is non-nil.
+;; where EXTENDED-ACC is a set of nodenums whose disjunction is iff-equivalent to either (or nodenum acc), if negated-flg is nil, or to (or (not nodenum) acc), if negated-flg is non-nil.
 ;; This may extend the dag, since some of the disjuncts may not already exist in the dag (ex: for (not (booland x y)), the disjuncts are (not x) and (not y), and these may not exist in the dag).
 ;; TODO: In theory this could blow up due to shared structure, but I haven't seen that happen.
 ;ffixme handle non-predicates (in which case we'll have an if nest, not a boolor nest)?
@@ -1610,7 +1610,6 @@
           (not (mbt (natp nodenum)))
           (not (mbt (< nodenum dag-len)))
           (not (mbt (pseudo-dag-arrayp 'dag-array dag-array dag-len))))
-      ;;(cons nodenum acc) ;fffffixme this shouldn't happen...
       (mv (erp-t)
           (prog2$ (hard-error 'get-disjuncts "Should not have a constant here but we have ~x0 (make sure boolor/booland/etc of constant rules are on)" (acons #\0 nodenum nil))
                   nil ;what should we have here?
@@ -3881,7 +3880,7 @@
 ;; Returns (mv erp provedp extended-done-list dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist).
 (defun handle-rewritten-literal (new-nodenum-or-quotep ; the result of rewriting the literal
                                  done-list ; to be extended with the disjuncts extracted from the rewritten literal
-                                 ;; array nodes may be added when using DeMorgan to get disjuncts or a negated conjunction:
+                                 ;; array nodes may be added when using DeMorgan to get disjuncts of a negated conjunction:
                                  dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
   (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                               (dargp-less-than new-nodenum-or-quotep dag-len)

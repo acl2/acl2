@@ -1199,7 +1199,6 @@
                 ((when erp) (mv erp nil nil done-list dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
                 ;; (- (cw "Node ~x0 rewrote to ~x1 in dag:~%" literal-nodenum new-nodenum-or-quotep))
                 ;; (- (if (quotep new-nodenum-or-quotep) (cw ":elided") (if (eql literal-nodenum new-nodenum-or-quote) :no-change (print-dag-only-supporters 'dag-array dag-array new-nodenum-or-quotep))))
-                ;;
                 )
              (if (eql new-nodenum-or-quotep literal-nodenum)
                  ;; No change for this literal:
@@ -1208,7 +1207,7 @@
                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                          changep ;; no change to changep
                                          rule-alist interpreted-function-alist monitored-symbols print case-designator info tries prover-depth options)
-               ;; Rewriting changed the literal.  Harvest the disjuncts, raising them to top level, and add them to done-list:
+               ;; Rewriting changed the literal.  Harvest the disjuncts, raising them to top level, and add them to the done-list:
                (b* (((mv erp provedp extended-done-list dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
                      (handle-rewritten-literal new-nodenum-or-quotep done-list dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
                     ((when erp) (mv erp nil nil done-list dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))
@@ -1270,7 +1269,7 @@
                                          rule-alist
                                          interpreted-function-alist monitored-symbols print case-designator
                                          info tries prover-depth options))
-                (- (cw "  Done rewriting (~x0 literals).)~%" (len literal-nodenums))) ;print the rule-set-number?
+                (- (cw "  Done rewriting (~x0 literals).)~%" (len literal-nodenums)))
                 ((when erp) (mv erp nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
 
                 ;; TODO: Right here we could drop any literal of the form (equal <constant> <var>) - if the var appears in any other literal, rewriting should have put in the constant for it, so the var will no longer appear.
