@@ -13,8 +13,8 @@
 
 (include-book "abstract-syntax")
 (include-book "portable-ascii-identifiers")
-(include-book "function-environments")
 
+(include-book "kestrel/fty/defomap" :dir :system)
 (include-book "kestrel/fty/sbyte32" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -99,7 +99,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define var-table-lookup ((var identp) (vtable var-tablep))
+(define var-table-lookup ((var identp) (vartable var-tablep))
   :returns (yes/no booleanp)
   :short "Look up a variable in a variable table."
   :long
@@ -113,16 +113,16 @@
      with information about the variables (particularly, types),
      because a variable reference refers to the one in the innermost block,
      when there are others."))
-  (and (mbt (not (endp vtable)))
-       (or (set::in (ident-fix var) (ident-set-fix (car vtable)))
-           (and (not (endp (cdr vtable)))
-                (var-table-lookup var (cdr vtable)))))
+  (and (mbt (not (endp vartable)))
+       (or (set::in (ident-fix var) (ident-set-fix (car vartable)))
+           (and (not (endp (cdr vartable)))
+                (var-table-lookup var (cdr vartable)))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define var-table-init ()
-  :returns (vtable var-tablep)
+  :returns (vartable var-tablep)
   :short "Create an initial variable table."
   :long
   (xdoc::topstring
@@ -132,7 +132,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define var-table-add-block ((vtable var-tablep))
+(define var-table-add-block ((vartable var-tablep))
   :returns (new-table var-tablep)
   :short "Add a block scope to a variable table."
   :long
@@ -141,13 +141,13 @@
     "We add the empty set (of variables)
      to the front of the sequence.
      This is used when a block is entered."))
-  (cons nil (var-table-fix vtable))
+  (cons nil (var-table-fix vartable))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define var-table-add-var ((var identp) (vtable var-tablep))
-  :returns (mv (okp booleanp) (new-vtable var-tablep))
+(define var-table-add-var ((var identp) (vartable var-tablep))
+  :returns (mv (okp booleanp) (new-vartable var-tablep))
   :short "Add a variable to (the innermost block of) a variable table."
   :long
   (xdoc::topstring
@@ -157,11 +157,11 @@
      Otherwise, we add the variable and return the variable table,
      along with @('t') as first result."))
   (b* ((var (ident-fix var))
-       (vtable (var-table-fix vtable))
-       (block (ident-set-fix (car vtable)))
-       ((when (set::in var block)) (mv nil vtable))
+       (vartable (var-table-fix vartable))
+       (block (ident-set-fix (car vartable)))
+       ((when (set::in var block)) (mv nil vartable))
        (new-block (set::insert var block)))
-    (mv t (cons new-block (cdr vtable))))
+    (mv t (cons new-block (cdr vartable))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -204,7 +204,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define fun-table-lookup ((fun identp) (ftable fun-tablep))
+(define fun-table-lookup ((fun identp) (funtable fun-tablep))
   :returns (fun-type fun-type-optionp
                      :hints (("Goal" :in-theory (enable fun-type-optionp))))
   :short "Look up a function in a function table."
@@ -213,13 +213,13 @@
    (xdoc::p
     "We return the type of the function, if the function is present.
      Otherwise, we return @('nil')."))
-  (cdr (omap::in (ident-fix fun) (fun-table-fix ftable)))
+  (cdr (omap::in (ident-fix fun) (fun-table-fix funtable)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define fun-table-init ()
-  :returns (ftable fun-tablep)
+  :returns (funtable fun-tablep)
   :short "Create an initial function table."
   :long
   (xdoc::topstring
@@ -229,8 +229,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define fun-table-add-fun ((fun identp) (type fun-typep) (ftable fun-tablep))
-  :returns (mv (okp booleanp) (new-ftable fun-tablep))
+(define fun-table-add-fun ((fun identp) (type fun-typep) (funtable fun-tablep))
+  :returns (mv (okp booleanp) (new-funtable fun-tablep))
   :short "Add a function with a function type to a function table."
   :long
   (xdoc::topstring
@@ -241,33 +241,35 @@
      along with @('t') as first result."))
   (b* ((fun (ident-fix fun))
        (type (fun-type-fix type))
-       (ftable (fun-table-fix ftable))
-       ((when (set::in fun ftable)) (mv nil ftable)))
-    (mv t (omap::update fun type ftable)))
+       (funtable (fun-table-fix funtable))
+       ((when (set::in fun funtable)) (mv nil funtable)))
+    (mv t (omap::update fun type funtable)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod senv
-  :short "Fixtype of static environments."
+(fty::defprod sym-table
+  :short "Fixtype of symbol tables."
   :long
   (xdoc::topstring
    (xdoc::p
-    "A static environment consists of
+    "A symbol table consists of
      a function table
-     and a variable table."))
+     and a variable table.")
+   (xdoc::p
+    "In the future, this may be extended with tables for structs etc."))
   ((functions fun-table)
    (variables var-table))
-  :pred senvp)
+  :pred sym-tablep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define irr-senv ()
-  :returns (env senvp)
-  :short "An irrelevant static environment, usable as a dummy return value."
-  (with-guard-checking :none (ec-call (senv-fix :irrelevant)))
+(define irr-sym-table ()
+  :returns (symtab sym-tablep)
+  :short "An irrelevant symbol table, usable as a dummy return value."
+  (with-guard-checking :none (ec-call (sym-table-fix :irrelevant)))
   ///
-  (in-theory (disable (:e irr-senv))))
+  (in-theory (disable (:e irr-sym-table))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -409,15 +411,17 @@
      but for now all our expressions have type @('int'),
      so there is no need to return this."))
 
-  (define expr-wfp ((e exprp) (env senvp))
+  (define expr-wfp ((e exprp) (symtab sym-tablep))
     :returns (yes/no booleanp)
     (expr-case e
                :ident (and (ident-wfp e.get)
-                           (var-table-lookup e.get (senv->variables env)))
+                           (var-table-lookup
+                            e.get (sym-table->variables symtab)))
                :const (const-wfp e.get)
-               :call (and (expr-list-wfp e.args env)
-                          (b* ((ftype (fun-table-lookup e.fun
-                                                        (senv->functions env))))
+               :call (and (expr-list-wfp e.args symtab)
+                          (b* ((ftype
+                                (fun-table-lookup
+                                 e.fun (sym-table->functions symtab))))
                             (and ftype
                                  (= (len (fun-type->inputs ftype))
                                     (len e.args)))))
@@ -426,21 +430,21 @@
                :preinc nil
                :predec nil
                :unary (and (unop-wfp e.op)
-                           (expr-wfp e.arg env))
+                           (expr-wfp e.arg symtab))
                :cast nil
                :binary (and (binop-wfp e.op)
-                            (expr-wfp e.arg1 env)
-                            (expr-wfp e.arg2 env))
-               :cond (and (expr-wfp e.test env)
-                          (expr-wfp e.then env)
-                          (expr-wfp e.else env)))
+                            (expr-wfp e.arg1 symtab)
+                            (expr-wfp e.arg2 symtab))
+               :cond (and (expr-wfp e.test symtab)
+                          (expr-wfp e.then symtab)
+                          (expr-wfp e.else symtab)))
     :measure (expr-count e))
 
-  (define expr-list-wfp ((es expr-listp) (env senvp))
+  (define expr-list-wfp ((es expr-listp) (symtab sym-tablep))
     :returns (yes/no booleanp)
     (or (endp es)
-        (and (expr-wfp (car es) env)
-             (expr-list-wfp (cdr es) env)))
+        (and (expr-wfp (car es) symtab)
+             (expr-list-wfp (cdr es) symtab)))
     :measure (expr-list-count es))
 
   ///
@@ -461,7 +465,7 @@
    (xdoc::p
     "The ACL2 function that processes a block item returns,
      besides an indication of success or failure,
-     also a possibly updated static environment.
+     also a possibly updated symbol table.
      The update happens when the block item is a declaration:
      this way, subsequent block items can access the declared variable.")
    (xdoc::p
@@ -473,24 +477,25 @@
      to check the well-formedness of the items of the block.
      Anything that follows the block is checked
      with the variable table prior to the extension.
-     In fact, a compound statement does not update the static environment."))
+     In fact, a compound statement does not update the symbol table."))
 
-  (define stmt-wfp ((s stmtp) (env senvp))
+  (define stmt-wfp ((s stmtp) (symtab sym-tablep))
     :returns (yes/no booleanp)
     (stmt-case
      s
      :labeled nil
-     :compound (b* ((vtable (senv->variables env))
-                    (ext-vtable (var-table-add-block vtable))
-                    (ext-env (change-senv env :variables ext-vtable)))
-                 (block-item-list-wfp s.items ext-env))
+     :compound (b* ((vartable (sym-table->variables symtab))
+                    (ext-vartable (var-table-add-block vartable))
+                    (ext-symtab (change-sym-table symtab
+                                                  :variables ext-vartable)))
+                 (block-item-list-wfp s.items ext-symtab))
      :expr nil
      :null nil
-     :if (and (expr-wfp s.test env)
-              (stmt-wfp s.then env))
-     :ifelse (and (expr-wfp s.test env)
-                  (stmt-wfp s.then env)
-                  (stmt-wfp s.else env))
+     :if (and (expr-wfp s.test symtab)
+              (stmt-wfp s.then symtab))
+     :ifelse (and (expr-wfp s.test symtab)
+                  (stmt-wfp s.then symtab)
+                  (stmt-wfp s.else symtab))
      :switch nil
      :while nil
      :dowhile nil
@@ -499,33 +504,33 @@
      :continue nil
      :break nil
      :return (and s.value
-                  (expr-wfp s.value env)))
+                  (expr-wfp s.value symtab)))
     :measure (stmt-count s))
 
-  (define block-item-wfp ((item block-itemp) (env senvp))
-    :returns (mv (yes/no booleanp) (new-env senvp))
+  (define block-item-wfp ((item block-itemp) (symtab sym-tablep))
+    :returns (mv (yes/no booleanp) (new-symtab sym-tablep))
     (block-item-case
      item
      :decl (b* (((decl decl) item.get)
                 ((unless (and (tyspecseq-wfp decl.type)
                               (ident-wfp decl.name)
-                              (expr-wfp decl.init env)))
-                 (mv nil (senv-fix env)))
-                (vtable (senv->variables env))
-                ((mv okp new-vtable)
-                 (var-table-add-var decl.name vtable))
-                ((when (not okp)) (mv nil (senv-fix env)))
-                (new-env (change-senv env :variables new-vtable)))
-             (mv t new-env))
-     :stmt (mv (stmt-wfp item.get env) (senv-fix env)))
+                              (expr-wfp decl.init symtab)))
+                 (mv nil (sym-table-fix symtab)))
+                (vartable (sym-table->variables symtab))
+                ((mv okp new-vartable)
+                 (var-table-add-var decl.name vartable))
+                ((when (not okp)) (mv nil (sym-table-fix symtab)))
+                (new-symtab (change-sym-table symtab :variables new-vartable)))
+             (mv t new-symtab))
+     :stmt (mv (stmt-wfp item.get symtab) (sym-table-fix symtab)))
     :measure (block-item-count item))
 
-  (define block-item-list-wfp ((items block-item-listp) (env senvp))
+  (define block-item-list-wfp ((items block-item-listp) (symtab sym-tablep))
     :returns (yes/no booleanp)
     (or (endp items)
-        (b* (((mv okp env) (block-item-wfp (car items) env))
+        (b* (((mv okp symtab) (block-item-wfp (car items) symtab))
              ((when (not okp)) nil))
-          (block-item-list-wfp (cdr items) env)))
+          (block-item-list-wfp (cdr items) symtab)))
     :measure (block-item-list-count items))
 
   :verify-guards nil ; done below
@@ -536,51 +541,51 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define param-decl-wfp ((param param-declp) (env senvp))
+(define param-decl-wfp ((param param-declp) (symtab sym-tablep))
   :returns (mv (yes/no booleanp)
-               (new-env senvp))
+               (new-symtab sym-tablep))
   :short "Check if a parameter declaration is well-formed."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The static environment passed as input is the one
+    "The static symtabironment passed as input is the one
      engendered by the parameter declarations that precede this one.
      We ensure that the components of the parameter declaration are well-formed
      and that the parameter can be added to the variable table;
      the latter check fails if there is a duplicate parameter.
-     If all checks succeed, we return the static environment
+     If all checks succeed, we return the static symtabironment
      updated with the parameter."))
   (b* (((param-decl param) param)
-       ((unless (tyspecseq-wfp param.type)) (mv nil (irr-senv)))
-       ((unless (ident-wfp param.name)) (mv nil (irr-senv)))
-       (vtable (senv->variables env))
-       ((mv okp new-vtable) (var-table-add-var param.name vtable))
-       ((when (not okp)) (mv nil (irr-senv))))
-    (mv t (change-senv env :variables new-vtable)))
+       ((unless (tyspecseq-wfp param.type)) (mv nil (irr-sym-table)))
+       ((unless (ident-wfp param.name)) (mv nil (irr-sym-table)))
+       (vartable (sym-table->variables symtab))
+       ((mv okp new-vartable) (var-table-add-var param.name vartable))
+       ((when (not okp)) (mv nil (irr-sym-table))))
+    (mv t (change-sym-table symtab :variables new-vartable)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define param-decl-list-wfp ((params param-decl-listp) (env senvp))
+(define param-decl-list-wfp ((params param-decl-listp) (symtab sym-tablep))
   :returns (mv (yes/no booleanp)
-               (new-env senvp))
+               (new-symtab sym-tablep))
   :short "Check if a list of parameter declaration is well-formed."
   :long
   (xdoc::topstring
    (xdoc::p
     "We go through each element of the list,
-     calling @(tsee param-decl-wfp) and threading the environment through."))
-  (b* (((when (endp params)) (mv t (senv-fix env)))
-       ((mv okp env) (param-decl-wfp (car params) env))
-       ((when (not okp)) (mv nil env)))
-    (param-decl-list-wfp (cdr params) env))
+     calling @(tsee param-decl-wfp) and threading the symtabironment through."))
+  (b* (((when (endp params)) (mv t (sym-table-fix symtab)))
+       ((mv okp symtab) (param-decl-wfp (car params) symtab))
+       ((when (not okp)) (mv nil symtab)))
+    (param-decl-list-wfp (cdr params) symtab))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define fundef-wfp ((fundef fundefp) (ftable fun-tablep))
+(define fundef-wfp ((fundef fundefp) (funtable fun-tablep))
   :returns (mv (yes/no booleanp)
-               (new-ftable fun-tablep))
+               (new-funtable fun-tablep))
   :short "Check if a function definition is well-formed."
   :long
   (xdoc::topstring
@@ -602,46 +607,46 @@
   (b* (((fundef fundef) fundef)
        (ftype (make-fun-type :inputs (param-decl-list->type-list fundef.params)
                              :output fundef.result))
-       ((mv okp ftable) (fun-table-add-fun fundef.name ftype ftable))
-       ((when (not okp)) (mv nil ftable))
-       ((unless (ident-wfp fundef.name)) (mv nil ftable))
-       ((unless (tyspecseq-wfp fundef.result)) (mv nil ftable))
-       (env (make-senv :functions ftable :variables (var-table-init)))
-       ((mv okp env) (param-decl-list-wfp fundef.params env))
-       ((when (not okp)) (mv nil ftable))
-       ((unless (stmt-wfp fundef.body env)) (mv nil ftable)))
-    (mv t ftable))
+       ((mv okp funtable) (fun-table-add-fun fundef.name ftype funtable))
+       ((when (not okp)) (mv nil funtable))
+       ((unless (ident-wfp fundef.name)) (mv nil funtable))
+       ((unless (tyspecseq-wfp fundef.result)) (mv nil funtable))
+       (symtab (make-sym-table :functions funtable :variables (var-table-init)))
+       ((mv okp symtab) (param-decl-list-wfp fundef.params symtab))
+       ((when (not okp)) (mv nil funtable))
+       ((unless (stmt-wfp fundef.body symtab)) (mv nil funtable)))
+    (mv t funtable))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ext-decl-wfp ((ext ext-declp) (ftable fun-tablep))
+(define ext-decl-wfp ((ext ext-declp) (funtable fun-tablep))
   :returns (mv (yes/no booleanp)
-               (new-ftable fun-tablep))
+               (new-funtable fun-tablep))
   :short "Check if an external declaration is well-formed."
   :long
   (xdoc::topstring
    (xdoc::p
     "For now we only allow well-formed function definitions."))
   (ext-decl-case ext
-                 :fundef (fundef-wfp ext.get ftable)
-                 :decl (mv nil (fun-table-fix ftable)))
+                 :fundef (fundef-wfp ext.get funtable)
+                 :decl (mv nil (fun-table-fix funtable)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ext-decl-list-wfp ((exts ext-decl-listp) (ftable fun-tablep))
+(define ext-decl-list-wfp ((exts ext-decl-listp) (funtable fun-tablep))
   :returns (mv (yes/no booleanp)
-               (new-ftable fun-tablep))
+               (new-funtable fun-tablep))
   :short "Check if a list of external declarations are well-formed."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We thread the function environment through."))
-  (b* (((when (endp exts)) (mv t (fun-table-fix ftable)))
-       ((mv okp ftable) (ext-decl-wfp (car exts) ftable))
-       ((unless okp) (mv nil ftable)))
-    (ext-decl-list-wfp (cdr exts) ftable))
+    "We thread the function table through."))
+  (b* (((when (endp exts)) (mv t (fun-table-fix funtable)))
+       ((mv okp funtable) (ext-decl-wfp (car exts) funtable))
+       ((unless okp) (mv nil funtable)))
+    (ext-decl-list-wfp (cdr exts) funtable))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -657,7 +662,7 @@
      threading the function table through,
      and discarding the final one (it served its pupose)."))
   (b* (((transunit tunit) tunit)
-       (ftable (fun-table-init))
-       ((mv okp &) (ext-decl-list-wfp tunit.decls ftable)))
+       (funtable (fun-table-init))
+       ((mv okp &) (ext-decl-list-wfp tunit.decls funtable)))
     okp)
   :hooks (:fix))
