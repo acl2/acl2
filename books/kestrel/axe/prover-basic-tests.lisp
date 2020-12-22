@@ -59,8 +59,57 @@
   :rules (implies) ;todo
   )
 
+(defthm-with-basic-prover-clause-processor boolor-1
+  (boolor t x)
+  :rules (posp) ;todo, if no rule given, the prover doesn't properly get disjuncts!
+  )
+
+(defthm-with-basic-prover-clause-processor boolor-2
+  (boolor x t)
+  :rules (posp) ;todo, if no rule given, the prover doesn't properly get disjuncts!
+  )
+
+(must-fail
+ (defthm-with-basic-prover-clause-processor boolor-3
+   (boolor nil (natp x))
+   :rules (posp) ;todo, if no rule given, the prover doesn't properly get disjuncts!
+   ))
+
+(must-fail
+ (defthm-with-basic-prover-clause-processor boolor-4
+   (boolor (natp x) nil)
+   :rules (posp) ;todo, if no rule given, the prover doesn't properly get disjuncts!
+   ))
+
+(defthm-with-basic-prover-clause-processor not-1
+  (not nil)
+  :rules (posp) ;todo, if no rule given, the prover doesn't properly get disjuncts!
+  :rule-classes nil
+  )
+
+(must-fail
+ (defthm-with-basic-prover-clause-processor not-2
+   (not t)
+   :rules (posp) ;todo, if no rule given, the prover doesn't properly get disjuncts!
+   :rule-classes nil
+   ))
+
+(must-fail
+ (defthm-with-basic-prover-clause-processor not-3
+   (not 7)
+   :rules (posp) ;todo, if no rule given, the prover doesn't properly get disjuncts!
+   :rule-classes nil
+   ))
+
+
 ;todo
-;; (defthm-with-basic-prover-clause-processor test5
-;;   (boolor t x)
-;;   ;:rules (implies) ;todo
+;; (defthm-with-basic-prover-clause-processor implies-or-1
+;;   (implies (or (natp x) (natp y)) (natp y))
+;;   :rules (implies)
+;;   )
+
+;todo
+;; (defthm-with-basic-prover-clause-processor implies-boolor-1
+;;   (implies (boolor (natp x) (natp y)) (natp y))
+;;   :rules (implies booleanp-of-boolor)
 ;;   )
