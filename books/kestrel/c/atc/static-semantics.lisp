@@ -60,8 +60,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deflist var-symtab
-  :short "Fixtype of symbol tables of variables."
+(fty::deflist var-table
+  :short "Fixtype of variable tables, i.e. symbol tables for variables."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -72,7 +72,7 @@
      corresponds to the innermost block:
      this order is natural, as blocks are added via @(tsee cons).
      The list is never empty:
-     we always initialize the symbol table one (empty) block.")
+     we always initialize the variable table one (empty) block.")
    (xdoc::p
     "Each element of the sequence is just a set of variable names for now,
      because currently all the variables have type @('int').
@@ -87,21 +87,21 @@
   :true-listp t
   :non-emptyp t
   :elementp-of-nil t
-  :pred var-symtabp
+  :pred var-tablep
   ///
 
-  (defrule var-symtabp-of-cons-alt
-    (iff (var-symtabp (cons a x))
+  (defrule var-tablep-of-cons-alt
+    (iff (var-tablep (cons a x))
          (and (ident-setp a)
-              (or (var-symtabp x)
+              (or (var-tablep x)
                   (eq x nil))))
-    :enable var-symtabp))
+    :enable var-tablep))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define var-symtab-lookup ((var identp) (symtab var-symtabp))
+(define var-table-lookup ((var identp) (table var-tablep))
   :returns (yes/no booleanp)
-  :short "Look up a variable in a symbol table."
+  :short "Look up a variable in a variable table."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -109,21 +109,21 @@
      indicating whether the variable is found or not.
      We search for it in the sequence in order,
      i.e. from innermost to outermost block.
-     This will be important when we extend variable symbol tables
+     This will be important when we extend variable tables
      with information about the variables (particularly, types),
      because a variable reference refers to the one in the innermost block,
      when there are others."))
-  (and (mbt (not (endp symtab)))
-       (or (set::in (ident-fix var) (ident-set-fix (car symtab)))
-           (and (not (endp (cdr symtab)))
-                (var-symtab-lookup var (cdr symtab)))))
+  (and (mbt (not (endp table)))
+       (or (set::in (ident-fix var) (ident-set-fix (car table)))
+           (and (not (endp (cdr table)))
+                (var-table-lookup var (cdr table)))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define var-symtab-init ()
-  :returns (symtab var-symtabp)
-  :short "Create an initial variable symbol table."
+(define var-table-init ()
+  :returns (table var-tablep)
+  :short "Create an initial variable table."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -132,36 +132,36 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define var-symtab-add-block ((symtab var-symtabp))
-  :returns (new-symtab var-symtabp)
-  :short "Add a block scope to a variable symbol table."
+(define var-table-add-block ((table var-tablep))
+  :returns (new-table var-tablep)
+  :short "Add a block scope to a variable table."
   :long
   (xdoc::topstring
    (xdoc::p
     "We add the empty set (of variables)
      to the front of the sequence.
      This is used when a block is entered."))
-  (cons nil (var-symtab-fix symtab))
+  (cons nil (var-table-fix table))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define var-symtab-add-var ((var identp) (symtab var-symtabp))
-  :returns (mv (okp booleanp) (new-symtab var-symtabp))
-  :short "Add a variable to (the innermost block of) a variable symbol table."
+(define var-table-add-var ((var identp) (table var-tablep))
+  :returns (mv (okp booleanp) (new-table var-tablep))
+  :short "Add a variable to (the innermost block of) a variable table."
   :long
   (xdoc::topstring
    (xdoc::p
     "If the block already has a variable with that name,
      it is an error: we return @('nil') as first result.
-     Otherwise, we add the variable and return the symbol table,
+     Otherwise, we add the variable and return the variable table,
      along with @('t') as first result."))
   (b* ((var (ident-fix var))
-       (symtab (var-symtab-fix symtab))
-       (block (ident-set-fix (car symtab)))
-       ((when (set::in var block)) (mv nil symtab))
+       (table (var-table-fix table))
+       (block (ident-set-fix (car table)))
+       ((when (set::in var block)) (mv nil table))
        (new-block (set::insert var block)))
-    (mv t (cons new-block (cdr symtab))))
+    (mv t (cons new-block (cdr table))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -173,14 +173,14 @@
    (xdoc::p
     "A static environment consists of
      a function environment
-     and a variables symbol table.")
+     and a variable table.")
    (xdoc::p
     "The function environment consists of
      information about the functions in scope.
      As defined later, we build the function environment
      as we traverse the tranlation unit."))
   ((functions fun-env)
-   (variables var-symtab))
+   (variables var-table))
   :pred senvp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -336,7 +336,7 @@
     :returns (yes/no booleanp)
     (expr-case e
                :ident (and (ident-wfp e.get)
-                           (var-symtab-lookup e.get (senv->variables env)))
+                           (var-table-lookup e.get (senv->variables env)))
                :const (const-wfp e.get)
                :call (b* ((info (fun-env-lookup e.fun (senv->functions env))))
                        (and info
@@ -387,13 +387,13 @@
      this way, subsequent block items can access the declared variable.")
    (xdoc::p
     "For a compound statement,
-     we add a block scope to the variable symbol table
+     we add a block scope to the variable table
      and then we process the list of block items.
      There is no need to explicitly remove it when exiting the block,
-     because we only use the extended variable symbol table
+     because we only use the extended variable table
      to check the well-formedness of the items of the block.
      Anything that follows the block is checked
-     with the variable symbol table prior to the extension.
+     with the variable table prior to the extension.
      In fact, a compound statement does not update the static environment."))
 
   (define stmt-wfp ((s stmtp) (env senvp))
@@ -401,9 +401,9 @@
     (stmt-case
      s
      :labeled nil
-     :compound (b* ((var-symtab (senv->variables env))
-                    (ext-var-symtab (var-symtab-add-block var-symtab))
-                    (ext-env (change-senv env :variables ext-var-symtab)))
+     :compound (b* ((var-table (senv->variables env))
+                    (ext-var-table (var-table-add-block var-table))
+                    (ext-env (change-senv env :variables ext-var-table)))
                  (block-item-list-wfp s.items ext-env))
      :expr nil
      :null nil
@@ -432,11 +432,11 @@
                               (ident-wfp decl.name)
                               (expr-wfp decl.init env)))
                  (mv nil (senv-fix env)))
-                (var-symtab (senv->variables env))
-                ((mv okp new-var-symtab)
-                 (var-symtab-add-var decl.name var-symtab))
+                (var-table (senv->variables env))
+                ((mv okp new-var-table)
+                 (var-table-add-var decl.name var-table))
                 ((when (not okp)) (mv nil (senv-fix env)))
-                (new-env (change-senv env :variables new-var-symtab)))
+                (new-env (change-senv env :variables new-var-table)))
              (mv t new-env))
      :stmt (mv (stmt-wfp item.get env) (senv-fix env)))
     :measure (block-item-count item))
@@ -467,17 +467,17 @@
     "The static environment passed as input is the one
      engendered by the parameter declarations that precede this one.
      We ensure that the components of the parameter declaration are well-formed
-     and that the parameter can be added to the variable symbol table;
+     and that the parameter can be added to the variable table;
      the latter check fails if there is a duplicate parameter.
      If all checks succeed, we return the static environment
      updated with the parameter."))
   (b* (((param-decl param) param)
        ((unless (tyspecseq-wfp param.type)) (mv nil (irr-senv)))
        ((unless (ident-wfp param.name)) (mv nil (irr-senv)))
-       (var-symtab (senv->variables env))
-       ((mv okp new-var-symtab) (var-symtab-add-var param.name var-symtab))
+       (var-table (senv->variables env))
+       ((mv okp new-var-table) (var-table-add-var param.name var-table))
        ((when (not okp)) (mv nil (irr-senv))))
-    (mv t (change-senv env :variables new-var-symtab)))
+    (mv t (change-senv env :variables new-var-table)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -522,7 +522,7 @@
   (b* (((fundef fundef) fundef)
        ((unless (tyspecseq-wfp fundef.result)) (mv nil (irr-fun-env)))
        ((unless (ident-wfp fundef.name)) (mv nil (irr-fun-env)))
-       (env (make-senv :functions fenv :variables (var-symtab-init)))
+       (env (make-senv :functions fenv :variables (var-table-init)))
        ((mv okp env) (param-decl-list-wfp fundef.params env))
        ((when (not okp)) (mv nil (irr-fun-env)))
        ((unless (stmt-wfp fundef.body env)) (mv nil (irr-fun-env)))
