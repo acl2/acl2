@@ -271,7 +271,7 @@
 ;;; assume-nodenum-false-in-node-replacement-array
 ;;;
 
-;; Keep this in sync with assume-nodenum-false-in-node-replacement-array.
+;; Keep this in sync with unassume-nodenum-false-in-node-replacement-array.
 ;; Returns (mv node-replacement-array node-replacement-array-num-valid-nodes).
 ;; Extends NODE-REPLACEMENT-ARRAY, if possible, to reflect the fact that
 ;; NODENUM is nil.
