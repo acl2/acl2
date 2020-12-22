@@ -408,6 +408,13 @@
   :hooks (:fix)
   ///
 
+  (defret denv-nonempty-stack-p-of-add-var-when-denv-nonempty-stack-p
+    (implies (and (denv-nonempty-stack-p env)
+                  (denv-result-case result :ok))
+             (denv-nonempty-stack-p (denv-result-ok->get result)))
+    :hints (("Goal" :in-theory (enable denv-result-ok->get
+                                       denv-result-kind))))
+
   (defret denv-inner-scope-p-of-add-var-when-denv-inner-scope-p
     (implies (and (denv-nonempty-stack-p env)
                   (denv-inner-scope-p env)
@@ -854,14 +861,27 @@
     (xdoc::topstring
      (xdoc::p
       "Besides an optional value result,
-       we also return an updated dynamic environment.
-       This is not actually updated for now (i.e. it is equal to the input),
-       but we do this in preparation for extending the dynamic semantics."))
+       we also return a possibly updated dynamic environment.")
+     (xdoc::p
+      "If the block item is a declaration,
+       we first execute the expression,
+       then we add the variable to the top scope of the top frame.")
+     (xdoc::p
+      "If the block item is a statement,
+       we execute it like any other statement."))
     (b* (((when (zp limit)) (mv (error :limit) (denv-fix env))))
       (block-item-case
        item
-       :decl (mv (error (list :exec-block-item item.get))
-                 (denv-fix env))
+       :decl (b* (((decl decl) item.get)
+                  (init (exec-expr decl.init env (1- limit))))
+               (value-result-case
+                init
+                :ok (b* ((new-env (add-var decl.name init.get env)))
+                      (denv-result-case
+                       new-env
+                       :ok (mv (value-option-result-ok nil) new-env.get)
+                       :err (mv new-env.get (denv-fix env))))
+                :err (mv init.get (denv-fix env))))
        :stmt (mv (exec-stmt item.get env (1- limit))
                  (denv-fix env))))
     :measure (nfix limit)
