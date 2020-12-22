@@ -846,15 +846,30 @@
 
   (define exec-block-item ((item block-itemp) (env denvp) (limit natp))
     :guard (denv-nonempty-stack-p env)
-    :returns (result value-option-resultp)
+    :returns (mv (result value-option-resultp)
+                 (new-env denvp))
     :parents (dynamic-semantics execution-functions)
     :short "Execute a block item."
-    (b* (((when (zp limit)) (error :limit)))
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "Besides an optional value result,
+       we also return an updated dynamic environment.
+       This is not actually updated for now (i.e. it is equal to the input),
+       but we do this in preparation for extending the dynamic semantics."))
+    (b* (((when (zp limit)) (mv (error :limit) (denv-fix env))))
       (block-item-case
        item
-       :decl (error (list :exec-block-item item.get))
-       :stmt (exec-stmt item.get env (1- limit))))
-    :measure (nfix limit))
+       :decl (mv (error (list :exec-block-item item.get))
+                 (denv-fix env))
+       :stmt (mv (exec-stmt item.get env (1- limit))
+                 (denv-fix env))))
+    :measure (nfix limit)
+    ///
+    (defret denv-nonempty-stack-p-of-exec-block-item
+      (implies (denv-nonempty-stack-p env)
+               (denv-nonempty-stack-p new-env))
+      :hints (("Goal" :expand ((exec-block-item item env limit))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -865,9 +880,15 @@
     :returns (result value-option-resultp)
     :parents (dynamic-semantics execution-functions)
     :short "Execute a list of block items."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We thread the dynamic environment through the block items.
+       However, for now we do not need to return it
+       after executing the whole list of block items."))
     (b* (((when (zp limit)) (error :limit))
          ((when (endp items)) nil)
-         (val? (exec-block-item (car items) env (1- limit)))
+         ((mv val? env) (exec-block-item (car items) env (1- limit)))
          ((when (value-option-result-case val? :err)) val?)
          ((when val?) val?))
       (exec-block-item-list (cdr items) env (1- limit)))
