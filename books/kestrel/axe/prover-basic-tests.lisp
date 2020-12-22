@@ -47,8 +47,20 @@
   )
 
 (must-fail
- (defthm-with-basic-prover-clause-processor test2
+ (defthm-with-basic-prover-clause-processor test3
    (implies (integerp x)
             (natp x))
    :rules (implies) ;todo
    ))
+
+(defthm-with-basic-prover-clause-processor test4
+  (implies t
+           (natp 7))
+  :rules (implies) ;todo
+  )
+
+;todo
+;; (defthm-with-basic-prover-clause-processor test5
+;;   (boolor t x)
+;;   ;:rules (implies) ;todo
+;;   )
