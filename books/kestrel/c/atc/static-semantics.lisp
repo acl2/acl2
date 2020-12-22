@@ -99,7 +99,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define var-table-lookup ((var identp) (table var-tablep))
+(define var-table-lookup ((var identp) (vtable var-tablep))
   :returns (yes/no booleanp)
   :short "Look up a variable in a variable table."
   :long
@@ -113,16 +113,16 @@
      with information about the variables (particularly, types),
      because a variable reference refers to the one in the innermost block,
      when there are others."))
-  (and (mbt (not (endp table)))
-       (or (set::in (ident-fix var) (ident-set-fix (car table)))
-           (and (not (endp (cdr table)))
-                (var-table-lookup var (cdr table)))))
+  (and (mbt (not (endp vtable)))
+       (or (set::in (ident-fix var) (ident-set-fix (car vtable)))
+           (and (not (endp (cdr vtable)))
+                (var-table-lookup var (cdr vtable)))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define var-table-init ()
-  :returns (table var-tablep)
+  :returns (vtable var-tablep)
   :short "Create an initial variable table."
   :long
   (xdoc::topstring
@@ -132,7 +132,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define var-table-add-block ((table var-tablep))
+(define var-table-add-block ((vtable var-tablep))
   :returns (new-table var-tablep)
   :short "Add a block scope to a variable table."
   :long
@@ -141,13 +141,13 @@
     "We add the empty set (of variables)
      to the front of the sequence.
      This is used when a block is entered."))
-  (cons nil (var-table-fix table))
+  (cons nil (var-table-fix vtable))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define var-table-add-var ((var identp) (table var-tablep))
-  :returns (mv (okp booleanp) (new-table var-tablep))
+(define var-table-add-var ((var identp) (vtable var-tablep))
+  :returns (mv (okp booleanp) (new-vtable var-tablep))
   :short "Add a variable to (the innermost block of) a variable table."
   :long
   (xdoc::topstring
@@ -157,11 +157,11 @@
      Otherwise, we add the variable and return the variable table,
      along with @('t') as first result."))
   (b* ((var (ident-fix var))
-       (table (var-table-fix table))
-       (block (ident-set-fix (car table)))
-       ((when (set::in var block)) (mv nil table))
+       (vtable (var-table-fix vtable))
+       (block (ident-set-fix (car vtable)))
+       ((when (set::in var block)) (mv nil vtable))
        (new-block (set::insert var block)))
-    (mv t (cons new-block (cdr table))))
+    (mv t (cons new-block (cdr vtable))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -204,7 +204,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define fun-table-lookup ((fun identp) (table fun-tablep))
+(define fun-table-lookup ((fun identp) (ftable fun-tablep))
   :returns (fun-type fun-type-optionp
                      :hints (("Goal" :in-theory (enable fun-type-optionp))))
   :short "Look up a function in a function table."
@@ -213,13 +213,13 @@
    (xdoc::p
     "We return the type of the function, if the function is present.
      Otherwise, we return @('nil')."))
-  (cdr (omap::in (ident-fix fun) (fun-table-fix table)))
+  (cdr (omap::in (ident-fix fun) (fun-table-fix ftable)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define fun-table-init ()
-  :returns (table fun-tablep)
+  :returns (ftable fun-tablep)
   :short "Create an initial function table."
   :long
   (xdoc::topstring
@@ -229,8 +229,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define fun-table-add-fun ((fun identp) (type fun-typep) (table fun-tablep))
-  :returns (mv (okp booleanp) (new-table fun-tablep))
+(define fun-table-add-fun ((fun identp) (type fun-typep) (ftable fun-tablep))
+  :returns (mv (okp booleanp) (new-ftable fun-tablep))
   :short "Add a function with a function type to a function table."
   :long
   (xdoc::topstring
@@ -241,9 +241,9 @@
      along with @('t') as first result."))
   (b* ((fun (ident-fix fun))
        (type (fun-type-fix type))
-       (table (fun-table-fix table))
-       ((when (set::in fun table)) (mv nil table)))
-    (mv t (omap::update fun type table)))
+       (ftable (fun-table-fix ftable))
+       ((when (set::in fun ftable)) (mv nil ftable)))
+    (mv t (omap::update fun type ftable)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -480,9 +480,9 @@
     (stmt-case
      s
      :labeled nil
-     :compound (b* ((var-table (senv->variables env))
-                    (ext-var-table (var-table-add-block var-table))
-                    (ext-env (change-senv env :variables ext-var-table)))
+     :compound (b* ((vtable (senv->variables env))
+                    (ext-vtable (var-table-add-block vtable))
+                    (ext-env (change-senv env :variables ext-vtable)))
                  (block-item-list-wfp s.items ext-env))
      :expr nil
      :null nil
@@ -511,11 +511,11 @@
                               (ident-wfp decl.name)
                               (expr-wfp decl.init env)))
                  (mv nil (senv-fix env)))
-                (var-table (senv->variables env))
-                ((mv okp new-var-table)
-                 (var-table-add-var decl.name var-table))
+                (vtable (senv->variables env))
+                ((mv okp new-vtable)
+                 (var-table-add-var decl.name vtable))
                 ((when (not okp)) (mv nil (senv-fix env)))
-                (new-env (change-senv env :variables new-var-table)))
+                (new-env (change-senv env :variables new-vtable)))
              (mv t new-env))
      :stmt (mv (stmt-wfp item.get env) (senv-fix env)))
     :measure (block-item-count item))
@@ -553,10 +553,10 @@
   (b* (((param-decl param) param)
        ((unless (tyspecseq-wfp param.type)) (mv nil (irr-senv)))
        ((unless (ident-wfp param.name)) (mv nil (irr-senv)))
-       (var-table (senv->variables env))
-       ((mv okp new-var-table) (var-table-add-var param.name var-table))
+       (vtable (senv->variables env))
+       ((mv okp new-vtable) (var-table-add-var param.name vtable))
        ((when (not okp)) (mv nil (irr-senv))))
-    (mv t (change-senv env :variables new-var-table)))
+    (mv t (change-senv env :variables new-vtable)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
