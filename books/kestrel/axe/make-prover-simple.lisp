@@ -1209,7 +1209,10 @@
                                          rule-alist interpreted-function-alist monitored-symbols print case-designator info tries prover-depth options)
                ;; Rewriting changed the literal.  Harvest the disjuncts, raising them to top level, and add them to the done-list:
                (b* (((mv erp provedp extended-done-list dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-                     (handle-rewritten-literal new-nodenum-or-quotep done-list dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+                     (get-disjuncts new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                    done-list ; will be extended with the disjuncts
+                                    nil       ;negated-flg
+                                    ))
                     ((when erp) (mv erp nil nil done-list dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))
                  (if provedp
                      (mv (erp-nil)
@@ -1253,14 +1256,14 @@
                   (type (unsigned-byte 59) count))
          (if (zp-fast count)
              (mv :count-exceeded nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
-           (b* ((- (cw "(Rewriting with rule set ~x0 (~x1 literals):~%" rule-set-number (len literal-nodenums))) ;the printed paren is closed below
-                ;; TODO: Do this in the callers?  Maintain an invariant about disjuncts having been extracted from literal-nodenums?
-                ((mv erp literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+           (b* (;; TODO: Do this in the callers?  Maintain an invariant about disjuncts having been extracted from literal-nodenums?
+                ((mv erp provedp literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
                  (get-disjuncts-from-nodes literal-nodenums
                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                            nil))
-                (- (cw "  (~x0 literals after extracting disjuncts.)~%" (len literal-nodenums)))
                 ((when erp) (mv erp nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
+                ((when provedp) (mv (erp-nil) t nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
+                (- (cw "(Rewriting with rule set ~x0 (~x1 literals):~%" rule-set-number (len literal-nodenums))) ;the printed paren is closed below
                 ((mv erp provedp changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
                  (,rewrite-literals-name literal-nodenums
                                          nil ;initial done-list
