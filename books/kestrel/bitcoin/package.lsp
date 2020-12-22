@@ -72,7 +72,7 @@
                             ecurve::secp256k1-add
                             ecurve::secp256k1-mul
                             ecurve::secp256k1-priv-to-pub
-                            ecurve::secp256k1-order
+                            ecurve::secp256k1-group-prime
                             ecurve::secp256k1-point-generator
                             ecurve::secp256k1-point-infinityp
                             ecurve::secp256k1-point-to-bytes

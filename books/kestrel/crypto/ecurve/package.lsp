@@ -53,6 +53,7 @@
             pfield::neg
             pfield::pow
             primes::secp256k1-field-prime
+            primes::secp256k1-group-prime
             str::strval16s
             ///
             )
