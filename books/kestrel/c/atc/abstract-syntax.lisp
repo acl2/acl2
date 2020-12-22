@@ -359,6 +359,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::deflist tyspecseq-list
+  :short "Fixtype of lists of sequences of type specifiers."
+  :elt-type tyspecseq
+  :true-listp t
+  :elementp-of-nil nil
+  :pred tyspecseq-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define irr-tyspecseq ()
   :returns (ty tyspecseqp)
   :short "An irrelevant type specifier sequence,

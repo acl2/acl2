@@ -166,6 +166,88 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod fun-type
+  :short "Fixtype of function types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Function types are described in [C18:6.2.5/20].
+     Eventually these may be integrated into
+     a broader formalized notion of C types,
+     but for now we introduce this fixtype here,
+     in order to use in in function tables.
+     A function type consists of zero or more input types and an output type.
+     As types here we use sequences of type specifiers for now,
+     as in other places."))
+  ((inputs tyspecseq-list)
+   (output tyspecseq))
+  :pred fun-typep)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption fun-type-option
+  fun-type
+  :short "Fixtype of optional function types."
+  :pred fun-type-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defomap fun-table
+  :short "Fixtype of function tables, i.e. symbol tables for functions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We associate a function type to the function name, in a finite map."))
+  :key-type ident
+  :val-type fun-type
+  :pred fun-tablep)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define fun-table-lookup ((fun identp) (table fun-tablep))
+  :returns (fun-type fun-type-optionp
+                     :hints (("Goal" :in-theory (enable fun-type-optionp))))
+  :short "Look up a function in a function table."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We return the type of the function, if the function is present.
+     Otherwise, we return @('nil')."))
+  (cdr (omap::in (ident-fix fun) (fun-table-fix table)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define fun-table-init ()
+  :returns (table fun-tablep)
+  :short "Create an initial function table."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is just the empty map."))
+  nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define fun-table-add-fun ((fun identp) (type fun-typep) (table fun-tablep))
+  :returns (mv (okp booleanp) (new-table fun-tablep))
+  :short "Add a function with a function type to a function table."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the table already has a function with that name,
+     it is an error: we return @('nil') as first result.
+     Otherwise, we add the function and return the function table,
+     along with @('t') as first result."))
+  (b* ((fun (ident-fix fun))
+       (type (fun-type-fix type))
+       (table (fun-table-fix table))
+       ((when (set::in fun table)) (mv nil table)))
+    (mv t (omap::update fun type table)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod senv
   :short "Fixtype of static environments."
   :long
