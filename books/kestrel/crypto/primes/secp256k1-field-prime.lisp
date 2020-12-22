@@ -1,4 +1,4 @@
-; Primes Library
+; Primes Library: Field Prime for secp256k1
 ;
 ; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
