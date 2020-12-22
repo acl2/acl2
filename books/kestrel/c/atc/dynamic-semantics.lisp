@@ -46,8 +46,8 @@
      but for now it does not support the execution of many constructs,
      just because ATC does not generate those constructs for now.
      This way, we keep the dynamic semantics simpler.
-     Being too restrictive is adequate here:
-     if we have a prove of functional equivalence between some ACL2 code
+     Being more restrictive is adequate here:
+     if we have a proof of functional equivalence between some ACL2 code
      and some C code according to this restriction dynamic semantics,
      it means that the C code only uses the constructs that we cover,
      which is a subset of valid C.")
@@ -78,6 +78,15 @@
   (:err error)
   :pred value-resultp)
 
+;;;;;;;;;;;;;;;;;;;;
+
+(define irr-value-result ()
+  :returns (result value-resultp)
+  :short "An irrelevant value result, usable as a dummy return value."
+  (with-guard-checking :none (ec-call (value-result-fix :irrelevant)))
+  ///
+  (in-theory (disable (:e irr-value-result))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deflist value-list
@@ -106,41 +115,44 @@
   (local (in-theory (enable sintp)))
   (fty::defresult value-option "optional values"))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define irr-value-result ()
-  :returns (result value-resultp)
-  :short "An irrelevant value result, usable as a dummy return value."
-  (with-guard-checking :none (ec-call (value-result-fix :irrelevant)))
-  ///
-  (in-theory (disable (:e irr-value-result))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defomap store
-  :short "Fixtype of variable stores."
+(fty::defomap scope
+  :short "Fixtype of variable scopes."
   :long
   (xdoc::topstring
    (xdoc::p
-    "A variable store is a finite map from identifiers to @('int') values
+    "A variable scope is a finite map from identifiers to @('int') values
      (for now these are the only values that we model).
-     It represents the contents of the variables in scope."))
+     It represents the contents of the variables in a scope;
+     currently this is always a block scope,
+     because we do not model variables with file scope
+     (i.e. variables declared at the top level)."))
   :key-type ident
   :val-type sint
-  :pred storep)
+  :pred scopep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defresult store "stores")
+(fty::deflist scope-list
+  :short "Fixtype of lists of variable scopes."
+  :elt-type scope
+  :true-listp t
+  :elementp-of-nil t
+  :pred scope-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult scope "scopes")
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defruled storep-when-store-resultp-ok
-  (implies (and (store-resultp store)
-                (store-result-case store :ok))
-           (storep store))
-  :enable (store-resultp
-           store-result-kind))
+(defruled scopep-when-scope-resultp-ok
+  (implies (and (scope-resultp scope)
+                (scope-result-case scope :ok))
+           (scopep scope))
+  :enable (scope-resultp
+           scope-result-kind))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -153,10 +165,17 @@
      which contains information about
      the function and its variables' values.")
    (xdoc::p
+    "The variables are organized into a stack (i.e. list) of scopes,
+     which grows leftward and shrinks rightward
+     (i.e. scopes are added via @(tsee cons) and removed via @(tsee cdr).
+     There is always at least one scope,
+     i.e. the one for the function body's block.")
+   (xdoc::p
     "As defined later, the call stack is represented as
      a stack (i.e. list) of frames."))
   ((function ident)
-   (store store))
+   (scopes scope-list :reqfix (if (consp scopes) scopes (list nil))))
+  :require (consp scopes)
   :pred framep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -190,6 +209,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defresult denv "dynamic environments")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule not-denvp-of-error
+  (not (denvp (error x)))
+  :enable (denvp error))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define denv-nonempty-stack-p ((env denvp))
   :returns (yes/no booleanp)
   :short "Check if a dynamic environment has a non-empty call stack."
@@ -204,16 +233,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define top-frame ((env denvp))
-  :guard (denv-nonempty-stack-p env)
-  :returns (frame framep)
-  :short "Top frame of a dynamic environment's call stack."
-  (frame-fix (car (denv->frames env)))
-  :guard-hints (("Goal" :in-theory (enable denv-nonempty-stack-p)))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define push-frame ((frame framep) (env denvp))
   :returns (new-env denvp)
   :short "Push a frame onto a dynamic environment's call stack."
@@ -222,9 +241,26 @@
     (change-denv env :frames new-stack))
   :hooks (:fix)
   ///
+
   (more-returns
    (new-env denv-nonempty-stack-p
             :hints (("Goal" :in-theory (enable denv-nonempty-stack-p))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define top-frame ((env denvp))
+  :guard (denv-nonempty-stack-p env)
+  :returns (frame framep)
+  :short "Top frame of a dynamic environment's call stack."
+  (frame-fix (car (denv->frames env)))
+  :guard-hints (("Goal" :in-theory (enable denv-nonempty-stack-p)))
+  :hooks (:fix)
+  ///
+
+  (defrule top-frame-of-push-frame
+    (equal (top-frame (push-frame frame env))
+           (frame-fix frame))
+    :enable push-frame))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -235,7 +271,158 @@
   (b* ((stack (denv->frames env))
        (new-stack (cdr stack)))
     (change-denv env :frames new-stack))
+  :hooks (:fix)
+  ///
+
+  (defrule pop-frame-of-push-frame
+    (equal (pop-frame (push-frame frame env))
+           (denv-fix env))
+    :enable push-frame))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define denv-inner-scope-p ((env denvp))
+  :guard (denv-nonempty-stack-p env)
+  :returns (yes/no booleanp)
+  :short "Check if a dynamic environment with a non-empty call stack
+          has at least two scopes in the top frame."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The name of this predicate is motivated by the fact that
+     having at least two scopes means that we are in an inner scope,
+     i.e. one that is inside the always-present function body scope.")
+   (xdoc::p
+    "When this predicate holds, we may exit (i.e. pop) a scope,
+     and still have a valid top frame with a non-empty stack of scopes.
+     When we enter (i.e. push) a scope while executing a function's body,
+     we establish this predicate."))
+  (consp (cdr (frame->scopes (top-frame env))))
   :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define enter-scope ((env denvp))
+  :guard (denv-nonempty-stack-p env)
+  :returns (new-env denvp)
+  :short "Enter a scope."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We push an empty scope onto the scope stack of the top frame."))
+  (b* ((frame (top-frame env))
+       (scopes (frame->scopes frame))
+       (new-scopes (cons nil scopes))
+       (new-frame (change-frame frame :scopes new-scopes))
+       (new-env (push-frame new-frame (pop-frame env))))
+    new-env)
+  :hooks (:fix)
+  ///
+  (more-returns
+   (new-env denv-nonempty-stack-p)
+   (new-env denv-inner-scope-p
+            :hints (("Goal" :in-theory (enable denv-inner-scope-p
+                                               top-frame
+                                               push-frame))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exit-scope ((env denvp))
+  :guard (and (denv-nonempty-stack-p env)
+              (denv-inner-scope-p env))
+  :returns (new-env denvp)
+  :short "Exit a scope."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We pop the scope stack of the top frame."))
+  (b* ((frame (top-frame env))
+       (scopes (frame->scopes frame))
+       (new-scopes (cdr scopes))
+       (new-frame (change-frame frame :scopes new-scopes))
+       (new-env (push-frame new-frame (pop-frame env))))
+    new-env)
+  :guard-hints (("Goal" :in-theory (enable denv-inner-scope-p)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define lookup-var ((var identp) (env denvp))
+  :guard (denv-nonempty-stack-p env)
+  :returns (result value-resultp)
+  :short "Look up a variable in a dynamic environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We look in the scopes of the top frame from left to right,
+     i.e. from innermost to outermost.
+     If we find a variable with that name, we return its value.
+     Otherwise we return an error.")
+   (xdoc::p
+    "We do not look at other frames,
+     because the variables in other frames are not in scope
+     for the C function in the top frame.")
+   (xdoc::p
+    "Once we extend dynamic environment with global variables,
+     we will need to extend this ACL2 function
+     to look for the variable among them,
+     if it is not found in the scopes of the top frame."))
+  (lookup-var-aux var (frame->scopes (top-frame env)))
+  :hooks (:fix)
+
+  :prepwork
+  ((define lookup-var-aux ((var identp) (scopes scope-listp))
+     :returns (result value-resultp)
+     (b* (((when (endp scopes)) (error (list :no-var-found (ident-fix var))))
+          (scope (car scopes))
+          (pair (omap::in (ident-fix var) (scope-fix scope)))
+          ((when (not pair)) (lookup-var-aux var (cdr scopes))))
+       (cdr pair))
+     :hooks (:fix))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define add-var ((var identp) (val sintp) (env denvp))
+  :guard (denv-nonempty-stack-p env)
+  :returns (result denv-resultp)
+  :short "Add a variable to a dynamic environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We add the variable to the top scope of the top frame;
+     the variable comes with a value.
+     If there is already a variable with the same name in the top scope,
+     we return an error: C disallows variable redefinition.
+     However, there may well be a variable with the same in a different scope:
+     in this case, the new variable hides the other one."))
+  (b* ((frame (top-frame env))
+       (scopes (frame->scopes frame))
+       (scope (car scopes))
+       (pair (omap::in (ident-fix var) scope))
+       ((when (consp pair)) (error (list :var-redefinition (ident-fix var))))
+       (new-scope (omap::update (ident-fix var) (sint-fix val) scope))
+       (new-scopes (cons new-scope (cdr scopes)))
+       (new-frame (change-frame frame :scopes new-scopes))
+       (new-env (push-frame new-frame (pop-frame env))))
+    new-env)
+  :hooks (:fix)
+  ///
+
+  (defret denv-nonempty-stack-p-of-add-var-when-denv-nonempty-stack-p
+    (implies (and (denv-nonempty-stack-p env)
+                  (denv-result-case result :ok))
+             (denv-nonempty-stack-p (denv-result-ok->get result)))
+    :hints (("Goal" :in-theory (enable denv-result-ok->get
+                                       denv-result-kind))))
+
+  (defret denv-inner-scope-p-of-add-var-when-denv-inner-scope-p
+    (implies (and (denv-nonempty-stack-p env)
+                  (denv-inner-scope-p env)
+                  (denv-result-case result :ok))
+             (denv-inner-scope-p (denv-result-ok->get result)))
+    :hints (("Goal" :in-theory (enable denv-result-ok->get
+                                       denv-inner-scope-p
+                                       denv-result-kind)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -286,17 +473,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The execution of expressions takes place
-     in the context of a dynamic environment.
-     We look up the variable's value in the store,
-     defensively returning an error if the variable is not in the store,
-     which means that the variable is not in scope."))
-  (b* ((id (ident-fix id))
-       (frame (top-frame env))
-       (store (frame->store frame))
-       (pair? (omap::in id store))
-       ((when (not pair?)) (error (list :exec-ident-not-in-scope id))))
-    (cdr pair?))
+    "We read the variable's value (if any) from the dynamic environment."))
+  (lookup-var id env)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -466,14 +644,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define init-store ((formals param-decl-listp) (actuals value-listp))
-  :returns (result store-resultp)
-  :short "Initialize the store for a function call."
+(define init-scope ((formals param-decl-listp) (actuals value-listp))
+  :returns (result scope-resultp)
+  :short "Initialize the variable scope for a function call."
   :long
   (xdoc::topstring
    (xdoc::p
     "We go through formal parameters and actual arguments,
-     pairing them up into the store.
+     pairing them up into the scope.
      We return an error if they do not match in number,
      or if there are repeated parameters."))
   (b* ((formals (param-decl-list-fix formals))
@@ -481,25 +659,25 @@
        ((when (endp formals))
         (if (endp actuals)
             nil
-          (error (list :init-store :extra-actuals actuals))))
+          (error (list :init-scope :extra-actuals actuals))))
        ((when (endp actuals))
-        (error (list :init-store :extra-formals formals)))
-       (store (init-store (cdr formals) (cdr actuals))))
-    (store-result-case
-     store
-     :err store.get
+        (error (list :init-scope :extra-formals formals)))
+       (scope (init-scope (cdr formals) (cdr actuals))))
+    (scope-result-case
+     scope
+     :err scope.get
      :ok (b* ((formal (car formals))
               (actual (car actuals))
               (name (param-decl->name formal)))
-           (if (omap::in name store)
-               (error (list :init-store :duplicate-param name))
-             (omap::update name actual store)))))
+           (if (omap::in name scope)
+               (error (list :init-scope :duplicate-param name))
+             (omap::update name actual scope)))))
   :hooks (:fix)
   :measure (len formals)
-  :prepwork ((local (in-theory (enable storep-when-store-resultp-ok))))
+  :prepwork ((local (in-theory (enable scopep-when-scope-resultp-ok))))
   :verify-guards nil ; done below
   ///
-  (verify-guards init-store))
+  (verify-guards init-scope))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -588,7 +766,7 @@
     (xdoc::topstring
      (xdoc::p
       "We retrieve the information about the function from the environment.
-       We initialize a store with the argument values,
+       We initialize a scope with the argument values,
        and we push a frame onto the call stack.
        We execute the function body,
        which must return a result,
@@ -603,11 +781,11 @@
          ((when (not info))
           (error (list :function-undefined (ident-fix fun))))
          ((fun-info info) info)
-         (store (init-store info.params args)))
-      (store-result-case
-       store
-       :err store.get
-       :ok (b* ((frame (make-frame :function fun :store store.get))
+         (scope (init-scope info.params args)))
+      (scope-result-case
+       scope
+       :err scope.get
+       :ok (b* ((frame (make-frame :function fun :scopes (list scope.get)))
                 (env (push-frame frame env))
                 (val-opt (exec-stmt info.body env (1- limit))))
              (value-option-result-case
@@ -627,13 +805,20 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "For now we only support the execution of certain statements."))
+      "For now we only support the execution of certain statements.")
+     (xdoc::p
+      "For a compound statement (i.e. a block),
+       we enter a new (empty) scope prior to executing the block items.
+       There is no need to pop the scope at the end,
+       because for now we are not threading the dynamic environment
+       through the execution of statements."))
     (b* (((when (zp limit)) (error :limit))
          (s (stmt-fix s)))
       (stmt-case
        s
        :labeled (error (list :exec-stmt s))
-       :compound (exec-block-item-list s.items env (1- limit))
+       :compound (b* ((env (enter-scope env)))
+                   (exec-block-item-list s.items env (1- limit)))
        :expr (error (list :exec-stmt s))
        :null (error (list :exec-stmt s))
        :if (b* ((test (exec-expr s.test env (1- limit))))
@@ -668,14 +853,43 @@
 
   (define exec-block-item ((item block-itemp) (env denvp) (limit natp))
     :guard (denv-nonempty-stack-p env)
-    :returns (result value-option-resultp)
+    :returns (mv (result value-option-resultp)
+                 (new-env denvp))
     :parents (dynamic-semantics execution-functions)
     :short "Execute a block item."
-    (b* (((when (zp limit)) (error :limit)))
-      (block-item-case item
-                       :decl (error (list :exec-block-item item.get))
-                       :stmt (exec-stmt item.get env (1- limit))))
-    :measure (nfix limit))
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "Besides an optional value result,
+       we also return a possibly updated dynamic environment.")
+     (xdoc::p
+      "If the block item is a declaration,
+       we first execute the expression,
+       then we add the variable to the top scope of the top frame.")
+     (xdoc::p
+      "If the block item is a statement,
+       we execute it like any other statement."))
+    (b* (((when (zp limit)) (mv (error :limit) (denv-fix env))))
+      (block-item-case
+       item
+       :decl (b* (((decl decl) item.get)
+                  (init (exec-expr decl.init env (1- limit))))
+               (value-result-case
+                init
+                :ok (b* ((new-env (add-var decl.name init.get env)))
+                      (denv-result-case
+                       new-env
+                       :ok (mv (value-option-result-ok nil) new-env.get)
+                       :err (mv new-env.get (denv-fix env))))
+                :err (mv init.get (denv-fix env))))
+       :stmt (mv (exec-stmt item.get env (1- limit))
+                 (denv-fix env))))
+    :measure (nfix limit)
+    ///
+    (defret denv-nonempty-stack-p-of-exec-block-item
+      (implies (denv-nonempty-stack-p env)
+               (denv-nonempty-stack-p new-env))
+      :hints (("Goal" :expand ((exec-block-item item env limit))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -686,9 +900,15 @@
     :returns (result value-option-resultp)
     :parents (dynamic-semantics execution-functions)
     :short "Execute a list of block items."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We thread the dynamic environment through the block items.
+       However, for now we do not need to return it
+       after executing the whole list of block items."))
     (b* (((when (zp limit)) (error :limit))
          ((when (endp items)) nil)
-         (val? (exec-block-item (car items) env (1- limit)))
+         ((mv val? env) (exec-block-item (car items) env (1- limit)))
          ((when (value-option-result-case val? :err)) val?)
          ((when val?) val?))
       (exec-block-item-list (cdr items) env (1- limit)))

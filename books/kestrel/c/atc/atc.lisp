@@ -1330,7 +1330,7 @@
        (rhs `(value-result-ok (,fn ,@formals)))
        (hints `(("Goal"
                  :in-theory (enable* run-fun
-                                     init-store
+                                     init-scope
                                      exec-fun
                                      exec-stmt
                                      exec-block-item
@@ -1347,8 +1347,11 @@
                                      top-frame
                                      push-frame
                                      pop-frame
-                                     store-result-kind
-                                     store-result-ok->get
+                                     lookup-var
+                                     lookup-var-aux
+                                     enter-scope
+                                     scope-result-kind
+                                     scope-result-ok->get
                                      value-result-kind
                                      value-result-ok->get
                                      value-option-result-kind

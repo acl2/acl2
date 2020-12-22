@@ -359,6 +359,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::deflist tyspecseq-list
+  :short "Fixtype of lists of sequences of type specifiers."
+  :elt-type tyspecseq
+  :true-listp t
+  :elementp-of-nil nil
+  :pred tyspecseq-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define irr-tyspecseq ()
   :returns (ty tyspecseqp)
   :short "An irrelevant type specifier sequence,
@@ -642,6 +651,15 @@
   :true-listp t
   :elementp-of-nil nil
   :pred param-decl-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection param-decl-list->type-list ((x param-decl-listp))
+  :result-type tyspecseq-listp
+  :short "Lift @(tsee param-decl->type) to lists."
+  (param-decl->type x)
+  ///
+  (fty::deffixequiv param-decl-list->type-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
