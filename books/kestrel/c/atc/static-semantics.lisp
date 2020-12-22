@@ -254,14 +254,9 @@
   (xdoc::topstring
    (xdoc::p
     "A static environment consists of
-     a function environment
-     and a variable table.")
-   (xdoc::p
-    "The function environment consists of
-     information about the functions in scope.
-     As defined later, we build the function environment
-     as we traverse the tranlation unit."))
-  ((functions fun-env)
+     a function table
+     and a variable table."))
+  ((functions fun-table)
    (variables var-table))
   :pred senvp)
 
@@ -420,10 +415,12 @@
                :ident (and (ident-wfp e.get)
                            (var-table-lookup e.get (senv->variables env)))
                :const (const-wfp e.get)
-               :call (b* ((info (fun-env-lookup e.fun (senv->functions env))))
-                       (and info
-                            (= (len (fun-info->params info))
-                               (len e.args))))
+               :call (and (expr-list-wfp e.args env)
+                          (b* ((ftype (fun-table-lookup e.fun
+                                                        (senv->functions env))))
+                            (and ftype
+                                 (= (len (fun-type->inputs ftype))
+                                    (len e.args)))))
                :postinc nil
                :postdec nil
                :preinc nil
@@ -581,69 +578,70 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define fundef-wfp ((fundef fundefp) (fenv fun-envp))
+(define fundef-wfp ((fundef fundefp) (ftable fun-tablep))
   :returns (mv (yes/no booleanp)
-               (new-fenv fun-envp))
+               (new-ftable fun-tablep))
   :short "Check if a function definition is well-formed."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Starting with an empty variable environment,
-     we process the parameter declarations and obtain the environment
-     in which the function body must be statically well-formed.
-     If a function with the same name is already in the environment,
-     it is an error: there is a duplicate function name.
-     Otherwise, we return the function environment
-     updated with the function definition.")
+    "Starting with an initial variable table,
+     we process the parameter declarations and obtain the variable table
+     in which the function body must be statically well-formed.")
+   (xdoc::p
+    "We also extend the function table with the new function.
+     It is an error if a function with the same name is already in the table.
+     In general, this must be done before checking the body:
+     the function is in scope, in its own body.")
    (xdoc::p
     "The scope of a function identifier goes from its declaration
      to the end of the translation unit [C:6.2.1/4].
      Thus, as we go through
      the function definitions in the translation unit in order,
-     we extend the function environment."))
+     we extend the function table."))
   (b* (((fundef fundef) fundef)
-       ((unless (tyspecseq-wfp fundef.result)) (mv nil (irr-fun-env)))
-       ((unless (ident-wfp fundef.name)) (mv nil (irr-fun-env)))
-       (env (make-senv :functions fenv :variables (var-table-init)))
+       (ftype (make-fun-type :inputs (param-decl-list->type-list fundef.params)
+                             :output fundef.result))
+       ((mv okp ftable) (fun-table-add-fun fundef.name ftype ftable))
+       ((when (not okp)) (mv nil ftable))
+       ((unless (ident-wfp fundef.name)) (mv nil ftable))
+       ((unless (tyspecseq-wfp fundef.result)) (mv nil ftable))
+       (env (make-senv :functions ftable :variables (var-table-init)))
        ((mv okp env) (param-decl-list-wfp fundef.params env))
-       ((when (not okp)) (mv nil (irr-fun-env)))
-       ((unless (stmt-wfp fundef.body env)) (mv nil (irr-fun-env)))
-       (fenv (fun-env-extend fundef fenv)))
-    (fun-env-result-case
-     fenv
-     :err (mv nil nil)
-     :ok (mv t fenv.get)))
+       ((when (not okp)) (mv nil ftable))
+       ((unless (stmt-wfp fundef.body env)) (mv nil ftable)))
+    (mv t ftable))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ext-decl-wfp ((ext ext-declp) (fenv fun-envp))
+(define ext-decl-wfp ((ext ext-declp) (ftable fun-tablep))
   :returns (mv (yes/no booleanp)
-               (new-fenv fun-envp))
+               (new-ftable fun-tablep))
   :short "Check if an external declaration is well-formed."
   :long
   (xdoc::topstring
    (xdoc::p
     "For now we only allow well-formed function definitions."))
   (ext-decl-case ext
-                 :fundef (fundef-wfp ext.get fenv)
-                 :decl (mv nil (irr-fun-env)))
+                 :fundef (fundef-wfp ext.get ftable)
+                 :decl (mv nil (fun-table-fix ftable)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ext-decl-list-wfp ((exts ext-decl-listp) (fenv fun-envp))
+(define ext-decl-list-wfp ((exts ext-decl-listp) (ftable fun-tablep))
   :returns (mv (yes/no booleanp)
-               (new-fenv fun-envp))
+               (new-ftable fun-tablep))
   :short "Check if a list of external declarations are well-formed."
   :long
   (xdoc::topstring
    (xdoc::p
     "We thread the function environment through."))
-  (b* (((when (endp exts)) (mv t (fun-env-fix fenv)))
-       ((mv okp fenv) (ext-decl-wfp (car exts) fenv))
-       ((unless okp) (mv nil (irr-fun-env))))
-    (ext-decl-list-wfp (cdr exts) fenv))
+  (b* (((when (endp exts)) (mv t (fun-table-fix ftable)))
+       ((mv okp ftable) (ext-decl-wfp (car exts) ftable))
+       ((unless okp) (mv nil ftable)))
+    (ext-decl-list-wfp (cdr exts) ftable))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -654,12 +652,12 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Starting from the empty environment,
+    "Starting from the initial (empty) function table,
      we check all the external declarations,
-     threading the environment through,
+     threading the function table through,
      and discarding the final one (it served its pupose)."))
   (b* (((transunit tunit) tunit)
-       (fenv nil)
-       ((mv okp &) (ext-decl-list-wfp tunit.decls fenv)))
+       (ftable (fun-table-init))
+       ((mv okp &) (ext-decl-list-wfp tunit.decls ftable)))
     okp)
   :hooks (:fix))

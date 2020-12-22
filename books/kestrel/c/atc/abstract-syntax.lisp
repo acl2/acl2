@@ -654,6 +654,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(std::defprojection param-decl-list->type-list ((x param-decl-listp))
+  :result-type tyspecseq-listp
+  :short "Lift @(tsee param-decl->type) to lists."
+  (param-decl->type x)
+  ///
+  (fty::deffixequiv param-decl-list->type-list))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define irr-param-decl ()
   :returns (param param-declp)
   :short "An irrelevant parameter declaration, usable as a dummy return value."
