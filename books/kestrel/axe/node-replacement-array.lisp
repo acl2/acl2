@@ -204,18 +204,6 @@
                                   (myquotep
                                    AREF1-OF-CONS-OF-CONS-OF-HEADER)))))
 
-;; (defun node-replacement-arrayp (array-name array array-len)
-;;   (declare (xargs :guard t))
-;;   (and (node-replacement-arrayp-aux array-name array)
-;;        (natp array-len)
-;;        (< array-len (alen1 array-name array))))
-
-;; (defthm node-replacement-arrayp-forward-to-natp
-;;   (implies (node-replacement-arrayp array-name array array-len)
-;;            (natp array-len))
-;;   :rule-classes :forward-chaining
-;;   :hints (("Goal" :in-theory (enable node-replacement-arrayp))))
-
 ;; have the tool generate this?
 (defthm node-replacement-arrayp-forward-to-array1p
   (implies (node-replacement-arrayp array-name array)
@@ -283,23 +271,11 @@
            (bounded-node-replacement-arrayp array-name array bound))
   :hints (("Goal" :in-theory (enable bounded-node-replacement-arrayp))))
 
-;; (defun bounded-node-replacement-arrayp (array-name array array-len bound)
-;;   (declare (xargs :guard (natp bound)))
-;;   (and (bounded-node-replacement-arrayp-aux array-name array bound)
-;;        (natp array-len)
-;;        (< array-len (alen1 array-name array))))
-
 (defthm node-replacement-arrayp-aux-when-bounded-node-replacement-arrayp-aux
   (implies (bounded-node-replacement-arrayp-aux name array index bound)
            (node-replacement-arrayp-aux name array index))
   :hints (("Goal" :in-theory (enable bounded-node-replacement-arrayp-aux
                                      node-replacement-arrayp-aux))))
-
-;; (defthm node-replacement-arrayp-aux-when-bounded-node-replacement-arrayp-aux
-;;   (implies (bounded-node-replacement-arrayp-aux name array bound)
-;;            (node-replacement-arrayp-aux name array))
-;;   :hints (("Goal" :in-theory (enable bounded-node-replacement-arrayp-aux
-;;                                      node-replacement-arrayp-aux))))
 
 (defthm node-replacement-arrayp-when-bounded-node-replacement-arrayp
   (implies (bounded-node-replacement-arrayp name array bound)
@@ -352,21 +328,9 @@
                                   (index nodenum))
            :in-theory (e/d (lookup-in-node-replacement-array) (type-of-aref1-when-bounded-node-replacement-arrayp)))))
 
-;; (defthm dargp-less-than-of-lookup-in-node-replacement-array-gen
-;;   (implies (and (<= bound bound2)
-;;                 (lookup-in-node-replacement-array nodenum node-replacement-array num-valid-nodes) ;; node is being replaced with something
-;;                 (natp nodenum)
-;;                 (natp num-valid-nodes)
-;;                 (natp bound)
-;;                 (node-replacement-arrayp 'node-replacement-array node-replacement-array num-valid-nodes bound))
-;;            (dargp-less-than (lookup-in-node-replacement-array nodenum node-replacement-array num-valid-nodes)
-;;                                        bound2))
-;;   :hints (("Goal" :use (:instance dargp-less-than-of-lookup-in-node-replacement-array)
-;;            :in-theory (disable dargp-less-than-of-lookup-in-node-replacement-array))))
-
-;; Returns nil or a nodenum/quotep.
-
-;;add support in typed arrays machinery for make-into-array?
+;;;
+;;; add-node-replacement-entry-and-maybe-expand
+;;;
 
 ;; Returns (mv node-replacement-array num-valid-nodes).
 (defund add-node-replacement-entry-and-maybe-expand (nodenum replacement array-name array num-valid-nodes)
