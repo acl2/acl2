@@ -14,13 +14,13 @@
 
 (include-book "kestrel/acl2-arrays/typed-acl2-arrays" :dir :system)
 (include-book "kestrel/acl2-arrays/expandable-arrays" :dir :system)
-(include-book "node-replacement-pairs")
+(include-book "node-replacement-alist")
 (include-book "dargp-less-than")
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 
-;; Currently, we build the node-replacement-array by calling make-into-array on
-;; the pairs produced by make-node-replacement-pairs-and-add-to-dag-array.
+;; We can build the node-replacement-array by calling make-into-array on the
+;; node-replacement-alist produced by make-node-replacement-alist-and-add-to-dag-array.
 
 (local (in-theory (disable ;symbolp-of-car-of-car-when-symbol-term-alistp
                    assoc-equal
@@ -51,63 +51,63 @@
   (implies (all-dargp-less-than (strip-cdrs alist) bound)
            (all-dargp-less-than (strip-cdrs (cdr alist)) bound)))
 
-(defthm not-node-replacement-pairsp
+(defthm not-node-replacement-alistp
   (implies (and (not (integerp (cdr (assoc-equal index alist))))
                 (cdr (assoc-equal index alist))
                 (not (consp (cdr (assoc-equal index alist)))))
-           (not (node-replacement-pairsp alist bound)))
-  :hints (("Goal" :in-theory (enable node-replacement-pairsp
+           (not (node-replacement-alistp alist bound)))
+  :hints (("Goal" :in-theory (enable node-replacement-alistp
                                      assoc-equal))))
 
-(defthm not-node-replacement-pairsp-2
+(defthm not-node-replacement-alistp-2
   (implies (and (<= BOUND (CDR (ASSOC-EQUAL INDEX ALIST)))
                 (not (consp (CDR (ASSOC-EQUAL INDEX ALIST))))
                 (ASSOC-EQUAL INDEX ALIST)
                 ;(natp bound)
                 )
-           (not (node-replacement-pairsp alist bound)))
-  :hints (("Goal" :in-theory (enable node-replacement-pairsp
+           (not (node-replacement-alistp alist bound)))
+  :hints (("Goal" :in-theory (enable node-replacement-alistp
                                      assoc-equal))))
 
-(defthm not-node-replacement-pairsp-3
+(defthm not-node-replacement-alistp-3
   (implies (and (< (CDR (ASSOC-EQUAL INDEX ALIST)) 0)
 ;                (not (consp (CDR (ASSOC-EQUAL INDEX ALIST))))
                 (ASSOC-EQUAL INDEX ALIST)
                 ;(natp bound)
                 )
-           (not (node-replacement-pairsp alist bound)))
-  :hints (("Goal" :in-theory (enable node-replacement-pairsp
+           (not (node-replacement-alistp alist bound)))
+  :hints (("Goal" :in-theory (enable node-replacement-alistp
                                      assoc-equal))))
 
-(defthm integerp-of-cdr-of-assoc-equal-when-node-replacement-pairsp
-  (implies (and (node-replacement-pairsp alist bound)
+(defthm integerp-of-cdr-of-assoc-equal-when-node-replacement-alistp
+  (implies (and (node-replacement-alistp alist bound)
                 (assoc-equal index alist))
            (equal (integerp (cdr (assoc-equal index alist)))
                   (not (consp (cdr (assoc-equal index alist))))))
-  :hints (("Goal" :in-theory (enable node-replacement-pairsp
+  :hints (("Goal" :in-theory (enable node-replacement-alistp
                                      assoc-equal))))
 
-(defthm not-cdddr-of-assoc-equal-when-node-replacement-pairsp
-  (implies (and (node-replacement-pairsp alist bound)
+(defthm not-cdddr-of-assoc-equal-when-node-replacement-alistp
+  (implies (and (node-replacement-alistp alist bound)
                 (assoc-equal index alist))
            (not (cdddr (assoc-equal index alist))))
-  :hints (("Goal" :in-theory (enable node-replacement-pairsp
+  :hints (("Goal" :in-theory (enable node-replacement-alistp
                                      assoc-equal))))
 
-(defthm consp-cddr-of-assoc-equal-when-node-replacement-pairsp
-  (implies (and (node-replacement-pairsp alist bound)
+(defthm consp-cddr-of-assoc-equal-when-node-replacement-alistp
+  (implies (and (node-replacement-alistp alist bound)
                 (assoc-equal index alist))
            (equal (consp (cddr (assoc-equal index alist)))
                   (consp (cdr (assoc-equal index alist)))))
-  :hints (("Goal" :in-theory (enable node-replacement-pairsp
+  :hints (("Goal" :in-theory (enable node-replacement-alistp
                                      assoc-equal))))
 
-(defthm equal-of-quote-and-cadr-of-assoc-equal-when-node-replacement-pairsp
-  (implies (and (node-replacement-pairsp alist bound)
+(defthm equal-of-quote-and-cadr-of-assoc-equal-when-node-replacement-alistp
+  (implies (and (node-replacement-alistp alist bound)
                 (assoc-equal index alist))
            (equal (equal 'quote (cadr (assoc-equal index alist)))
                   (consp (cdr (assoc-equal index alist)))))
-  :hints (("Goal" :in-theory (enable node-replacement-pairsp
+  :hints (("Goal" :in-theory (enable node-replacement-alistp
                                      assoc-equal))))
 
 ;; (defthm BOUNDED-INTEGER-ALISTP-of-+-of-1-and-max-key
@@ -118,16 +118,16 @@
 ;;   :hints (("Goal" :in-theory (enable BOUNDED-INTEGER-ALISTP MAX-KEY))))
 
 ;disable?
-(defthm natp-alistp-when-node-replacement-pairsp
-  (implies (node-replacement-pairsp alist bound)
+(defthm natp-alistp-when-node-replacement-alistp
+  (implies (node-replacement-alistp alist bound)
            (natp-alistp alist))
-  :hints (("Goal" :in-theory (enable node-replacement-pairsp natp-alistp))))
+  :hints (("Goal" :in-theory (enable node-replacement-alistp natp-alistp))))
 
-(defthm node-replacement-pairsp-forward-to-true-listp
-  (implies (node-replacement-pairsp alist bound)
+(defthm node-replacement-alistp-forward-to-true-listp
+  (implies (node-replacement-alistp alist bound)
            (true-listp alist))
   :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable node-replacement-pairsp))))
+  :hints (("Goal" :in-theory (enable node-replacement-alistp))))
 
 (defthm <-of-max-key-bound
   (implies (and
@@ -226,7 +226,7 @@
   :extra-guards ((natp bound)))
 
 (defthm bounded-node-replacement-arrayp-aux-of-make-into-array
-  (implies (and (node-replacement-pairsp alist bound)
+  (implies (and (node-replacement-alistp alist bound)
                 (natp index)
                 (< (max-key alist 0) 2147483646)
                 (<= index (max-key alist 0))
@@ -235,17 +235,17 @@
   :hints (("Goal" :in-theory (enable bounded-node-replacement-arrayp-aux make-into-array aref1))))
 
 (defthm bounded-node-replacement-arrayp-of-make-into-array
-  (implies (and (node-replacement-pairsp node-replacement-pairs bound)
+  (implies (and (node-replacement-alistp node-replacement-alist bound)
                 (natp bound)
                 (<= bound 2147483646)
-                ;(equal (alen1 ..) (+ 1 (max-key node-replacement-pairs 0)))
+                ;(equal (alen1 ..) (+ 1 (max-key node-replacement-alist 0)))
                 )
            (bounded-node-replacement-arrayp 'node-replacement-array
-                                            (make-into-array 'node-replacement-array node-replacement-pairs)
+                                            (make-into-array 'node-replacement-array node-replacement-alist)
                                             bound))
   :hints (("Goal" :in-theory (e/d (bounded-NODE-REPLACEMENT-ARRAYP
                                    bounded-NODE-REPLACEMENT-ARRAYP-aux
-                                   NODE-REPLACEMENT-PAIRSP
+                                   NODE-REPLACEMENT-ALISTP
                                    ;;MAKE-INTO-ARRAY
                                    BOUNDED-NATP-ALISTP-redef
                                    ) (alistp

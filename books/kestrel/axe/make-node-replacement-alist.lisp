@@ -12,7 +12,7 @@
 
 (in-package "ACL2")
 
-(include-book "node-replacement-pairs")
+(include-book "node-replacement-alist")
 (include-book "equality-pairs")
 (include-book "merge-term-into-dag-array-basic")
 ;(include-book "kestrel/utilities/erp" :dir :system)
@@ -64,8 +64,8 @@
    :rule-classes :forward-chaining
    :hints (("Goal" :in-theory (enable equality-pairsp)))))
 
-;; Returns (mv erp node-replacement-pairs dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist).
-(defund make-node-replacement-pairs-and-add-to-dag-array-aux (pairs
+;; Returns (mv erp node-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist).
+(defund make-node-replacement-alist-and-add-to-dag-array-aux (pairs
                                                               dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist
                                                               acc)
   (declare (xargs :guard (and (equality-pairsp pairs)
@@ -86,7 +86,7 @@
                                              ))
            ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
            ((when (consp lhs-nodenum-or-quotep)) ; check for quotep -- todo: prove this can't happen
-            (er hard? 'make-node-replacement-pairs-and-add-to-dag-array-aux "Assumption with a quotep LHS: ~x0." `(equal ,lhs ,rhs))
+            (er hard? 'make-node-replacement-alist-and-add-to-dag-array-aux "Assumption with a quotep LHS: ~x0." `(equal ,lhs ,rhs))
             (mv :unexpectd-quote nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
            ((mv erp rhs-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
             (merge-term-into-dag-array-basic rhs
@@ -96,30 +96,30 @@
                                              ))
            ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
            )
-        (make-node-replacement-pairs-and-add-to-dag-array-aux (rest pairs)
+        (make-node-replacement-alist-and-add-to-dag-array-aux (rest pairs)
                                                               dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist
                                                               (acons-fast lhs-nodenum-or-quotep ;will be a nodenum (checked above)
                                                                           rhs-nodenum-or-quotep
                                                                           acc))))))
 
-(defthm make-node-replacement-pairs-and-add-to-dag-array-aux-return-type
+(defthm make-node-replacement-alist-and-add-to-dag-array-aux-return-type
   (implies (and (equality-pairsp pairs)
                 (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
-                (node-replacement-pairsp acc dag-len))
-           (mv-let (erp node-replacement-pairs dag-array new-dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-             (make-node-replacement-pairs-and-add-to-dag-array-aux pairs
+                (node-replacement-alistp acc dag-len))
+           (mv-let (erp node-replacement-alist dag-array new-dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+             (make-node-replacement-alist-and-add-to-dag-array-aux pairs
                                                                    dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist
                                                                    acc)
              (implies (not erp)
-                      (and (node-replacement-pairsp node-replacement-pairs new-dag-len)
+                      (and (node-replacement-alistp node-replacement-alist new-dag-len)
                            (<= dag-len new-dag-len)
                            (natp new-dag-len)
                            (wf-dagp dag-array-name dag-array new-dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)))))
-  :hints (("Goal" :in-theory (e/d (make-node-replacement-pairs-and-add-to-dag-array-aux) (wf-dagp
+  :hints (("Goal" :in-theory (e/d (make-node-replacement-alist-and-add-to-dag-array-aux) (wf-dagp
                                       wf-dagp-expander)))))
 
-;; Returns (mv erp node-replacement-pairs dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist).
-(defund make-node-replacement-pairs-and-add-to-dag-array (assumptions
+;; Returns (mv erp node-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist).
+(defund make-node-replacement-alist-and-add-to-dag-array (assumptions
                                                           dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist
                                                           ;;known-boolean-fns
                                                           wrld)
@@ -127,29 +127,29 @@
                               (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
                               ;; (symbol-listp known-boolean-fns)
                               (plist-worldp wrld))))
-  (make-node-replacement-pairs-and-add-to-dag-array-aux (make-equality-pairs assumptions wrld) ;todo: optimize by not-reifying.  also, this may be computed elsewhere.
+  (make-node-replacement-alist-and-add-to-dag-array-aux (make-equality-pairs assumptions wrld) ;todo: optimize by not-reifying.  also, this may be computed elsewhere.
                                                         dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist
                                                         nil))
 
-(defthm make-node-replacement-pairs-and-add-to-dag-array-return-type
+(defthm make-node-replacement-alist-and-add-to-dag-array-return-type
   (implies (and (pseudo-term-listp assumptions)
                 (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
                 )
-           (mv-let (erp node-replacement-pairs dag-array new-dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-             (make-node-replacement-pairs-and-add-to-dag-array assumptions
+           (mv-let (erp node-replacement-alist dag-array new-dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+             (make-node-replacement-alist-and-add-to-dag-array assumptions
                                                                dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist
                                                                wrld)
              (implies (not erp)
-                      (and (node-replacement-pairsp node-replacement-pairs new-dag-len)
+                      (and (node-replacement-alistp node-replacement-alist new-dag-len)
                            (natp new-dag-len)
                            (integerp new-dag-len)
                            ;; (not (consp new-dag-len)) ; a bit odd. drop?
                            (<= dag-len new-dag-len)
                            (wf-dagp dag-array-name dag-array new-dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)))))
-  :hints (("Goal" :use (:instance make-node-replacement-pairs-and-add-to-dag-array-aux-return-type
+  :hints (("Goal" :use (:instance make-node-replacement-alist-and-add-to-dag-array-aux-return-type
                                   (pairs (make-equality-pairs assumptions wrld))
                                   (acc nil))
-           :in-theory (e/d (MAKE-NODE-REPLACEMENT-PAIRS-AND-ADD-TO-DAG-ARRAY) (make-node-replacement-pairs-and-add-to-dag-array-aux-return-type)))))
+           :in-theory (e/d (MAKE-NODE-REPLACEMENT-ALIST-AND-ADD-TO-DAG-ARRAY) (make-node-replacement-alist-and-add-to-dag-array-aux-return-type)))))
 
 (defthmd NATP-ALISTP-redef
   (implies (alistp alist)
@@ -157,28 +157,28 @@
                   (all-natp (strip-cars alist))))
   :hints (("Goal" :in-theory (enable natp-alistp))))
 
-(defthm make-node-replacement-pairs-and-add-to-dag-array-return-type-corollary
+(defthm make-node-replacement-alist-and-add-to-dag-array-return-type-corollary
   (implies (and (pseudo-term-listp assumptions)
                 (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
                 )
-           (mv-let (erp node-replacement-pairs dag-array new-dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-             (make-node-replacement-pairs-and-add-to-dag-array assumptions
+           (mv-let (erp node-replacement-alist dag-array new-dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+             (make-node-replacement-alist-and-add-to-dag-array assumptions
                                                                dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist
                                                                wrld)
              (declare (ignore dag-array dag-parent-array dag-constant-alist dag-variable-alist))
              (implies (not erp)
                       (and (NOT (< '2147483646 new-dag-len))
-                           (all-natp (strip-cars node-replacement-pairs))
-                           (natp-alistp node-replacement-pairs)
-                           (true-listp node-replacement-pairs)
-                           (BOUNDED-NATP-ALISTP node-replacement-pairs 2147483646)))))
-  :hints (("Goal" :use (:instance make-node-replacement-pairs-and-add-to-dag-array-return-type)
-           :in-theory (e/d (NODE-REPLACEMENT-PAIRSP
+                           (all-natp (strip-cars node-replacement-alist))
+                           (natp-alistp node-replacement-alist)
+                           (true-listp node-replacement-alist)
+                           (BOUNDED-NATP-ALISTP node-replacement-alist 2147483646)))))
+  :hints (("Goal" :use (:instance make-node-replacement-alist-and-add-to-dag-array-return-type)
+           :in-theory (e/d (NODE-REPLACEMENT-ALISTP
                             BOUNDED-NATP-ALISTP-REDEF
                             NATP-ALISTP-redef)
-                           (make-node-replacement-pairs-and-add-to-dag-array-return-type)))))
+                           (make-node-replacement-alist-and-add-to-dag-array-return-type)))))
 
 ;free var makes this not work well
-;; (defthm natp-of-max-key-when-node-replacement-pairsp
-;;   (implies (node-replacement-pairsp pairs dag-len)
+;; (defthm natp-of-max-key-when-node-replacement-alistp
+;;   (implies (node-replacement-alistp pairs dag-len)
 ;;            (natp (max-key pairs 0))))

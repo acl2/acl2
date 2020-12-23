@@ -30,7 +30,7 @@
 
 (include-book "rewriter-common")
 (include-book "supporting-nodes") ; for drop-non-supporters-array
-(include-book "make-node-replacement-pairs")
+(include-book "make-node-replacement-alist")
 (include-book "node-replacement-array")
 (include-book "refined-assumption-alists")
 (include-book "rewriter-support") ;make local? but may be needed by the generated rewriters
@@ -153,7 +153,7 @@
 
 ;; Keep this in sync with unassume-nodenum-true-in-node-replacement-array.
 ;; Returns (mv node-replacement-array node-replacement-array-num-valid-nodes).
-;; Extends NODE-REPLACEMENT-ARRAY, if possible, to reflect the fact that
+;; Updates NODE-REPLACEMENT-ARRAY, if possible, to reflect the fact that
 ;; NODENUM is non-nil.
 (defund assume-nodenum-true-in-node-replacement-array (nodenum dag-array dag-len node-replacement-array node-replacement-array-num-valid-nodes known-booleans)
   (declare (xargs :guard (and (natp nodenum) ;; should be the nodenum of a function call
@@ -273,8 +273,7 @@
 
 ;; Keep this in sync with unassume-nodenum-false-in-node-replacement-array.
 ;; Returns (mv node-replacement-array node-replacement-array-num-valid-nodes).
-;; Extends NODE-REPLACEMENT-ARRAY, if possible, to reflect the fact that
-;; NODENUM is nil.
+;; Updates NODE-REPLACEMENT-ARRAY to reflect the fact that NODENUM is nil.
 (defund assume-nodenum-false-in-node-replacement-array (nodenum dag-array dag-len node-replacement-array node-replacement-array-num-valid-nodes known-booleans)
   (declare (xargs :guard (and (natp nodenum) ;; should be the nodenum of a function call
                               (pseudo-dag-arrayp 'dag-array dag-array dag-len)
@@ -394,8 +393,9 @@
 
 ;; Keep this in sync with assume-nodenum-true-in-node-replacement-array.
 ;; Returns (mv node-replacement-array node-replacement-array-num-valid-nodes).
-;; Remove any assumptions made to reflect the fact that NODENUM is non-nil.
-;; TODO: Think about whether unassuming can in rare cases destroy information.  We could save the previous entries for the is (and the argument of not) and restore them last.
+;; Removes any assumptions made to reflect the fact that NODENUM is non-nil.
+;; TODO: Think about whether unassuming can in rare cases destroy information.  We could save the previous entries for the node (and the argument of not) and restore them last.
+;; TODO: add-node-replacement-entry-and-maybe-expand is overkill here, because we should never need to expand.
 (defund unassume-nodenum-true-in-node-replacement-array (nodenum dag-array dag-len node-replacement-array node-replacement-array-num-valid-nodes known-booleans)
   (declare (xargs :guard (and (natp nodenum) ;; should be the nodenum of a function call
                               (pseudo-dag-arrayp 'dag-array dag-array dag-len)
@@ -413,11 +413,11 @@
              (= 1 (len (dargs expr)))  ;optimize?
              (not (consp (darg1 expr))) ;avoid (not <constant>) but that should not happen
              )
-        ;; To assume (not <noden>), we assume <noden> is nil:
+        ;; To unassume (not <noden>), we clear the entry for <noden>:
         (add-node-replacement-entry-and-maybe-expand (darg1 expr) nil 'node-replacement-array node-replacement-array node-replacement-array-num-valid-nodes)
-      ;; Assume nodenum is t, but only if it's a call of a known boolean:
       (if (and (consp expr) ;always true?
                (member-eq (ffn-symb expr) known-booleans))
+          ;; Clear the entry for nodenum itself:
           (add-node-replacement-entry-and-maybe-expand nodenum nil 'node-replacement-array node-replacement-array node-replacement-array-num-valid-nodes)
         ;; TODO: Do something better in this case, perhaps by tracking nodenums known to be non-nil:
         ;; Or assume that (not <nodenum>) is nil, but that might require adding a node to the dag.
@@ -514,8 +514,8 @@
 
 ;; Keep this in sync with assume-nodenum-false-in-node-replacement-array.
 ;; Returns (mv node-replacement-array node-replacement-array-num-valid-nodes).
-;; Extends NODE-REPLACEMENT-ARRAY, if possible, to reflect the fact that
-;; NODENUM is nil.
+;; Removes any assumptions made to reflect the fact that NODENUM is nil.
+;; TODO: add-node-replacement-entry-and-maybe-expand is overkill here, because we should never need to expand.
 (defund unassume-nodenum-false-in-node-replacement-array (nodenum dag-array dag-len node-replacement-array node-replacement-array-num-valid-nodes known-booleans)
   (declare (xargs :guard (and (natp nodenum) ;; should be the nodenum of a function call
                               (pseudo-dag-arrayp 'dag-array dag-array dag-len)
@@ -532,7 +532,7 @@
              (= 1 (len (dargs expr)))  ;optimize?
              (not (consp (darg1 expr))) ;avoid (not <constant>) but that should not happen
              )
-        ;; To assume (not <noden>) is false, we assume <noden> is t, if it's a call of a known boolean.  Otherwise, we assume the whole not is nil (less strong).
+        ;; To unassume (not <noden>) is false, we assumed <noden> is t, if it's a call of a known boolean.  Otherwise, we assumed the whole not is nil (less strong).
         (let* ((noden (darg1 expr)) ;also done above
                (noden-expr (aref1 'dag-array dag-array noden)))
           (if (and (consp noden-expr)
@@ -540,7 +540,7 @@
               (add-node-replacement-entry-and-maybe-expand noden nil 'node-replacement-array node-replacement-array node-replacement-array-num-valid-nodes)
             ;; TODO: Do something better in this case, perhaps by tracking nodenums known to be non-nil:
             (add-node-replacement-entry-and-maybe-expand nodenum nil 'node-replacement-array node-replacement-array node-replacement-array-num-valid-nodes)))
-      ;; Assume nodenum is nil:
+      ;; Clear the entry for nodenum:
       (add-node-replacement-entry-and-maybe-expand nodenum nil 'node-replacement-array node-replacement-array node-replacement-array-num-valid-nodes))))
 
 (defthm node-replacement-arrayp-of-mv-nth-0-of-unassume-nodenum-false-in-node-replacement-array
@@ -654,7 +654,7 @@
 ;; OLD:
 ;; How we use the equality-assumption-alist:
 ;; 1. To replace a term that is a var (calling replace-var-using-equality-assumption-alist).  This may be rare.
-;;  TODO: Could this be handled using node-replacement-pairs instead, letting us eliminate the :var case?
+;;  TODO: Could this be handled using node-replacement-alist instead, letting us eliminate the :var case?
 ;; 2. To replace a (simplified) term that is a function call (calling replace-fun-call-using-equality-assumption-alist).
 
 ;; How we use the node-replacement-array:
@@ -860,11 +860,11 @@
                                   member-equal ; prevent case splitting
                                   )))
 
-       (local (in-theory (enable ;;consp-of-assoc-equal-when-node-replacement-pairsp
-                          ;;dargp-of-cdr-of-assoc-equal-when-node-replacement-pairsp
-                          ;;dargp-less-than-of-cdr-of-assoc-equal-when-node-replacement-pairsp
-                          ;;myquotep-of-cdr-of-assoc-equal-when-node-replacement-pairsp
-                          ;;natp-of-cdr-of-assoc-equal-when-node-replacement-pairsp
+       (local (in-theory (enable ;;consp-of-assoc-equal-when-node-replacement-alistp
+                          ;;dargp-of-cdr-of-assoc-equal-when-node-replacement-alistp
+                          ;;dargp-less-than-of-cdr-of-assoc-equal-when-node-replacement-alistp
+                          ;;myquotep-of-cdr-of-assoc-equal-when-node-replacement-alistp
+                          ;;natp-of-cdr-of-assoc-equal-when-node-replacement-alistp
                           )))
 
        ;;
@@ -4564,16 +4564,16 @@
                                                         (known-booleans wrld)))
               ((when erp) (mv erp nil))
               ;; TODO: Combine this with the above:
-              ((mv erp node-replacement-pairs dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-               (make-node-replacement-pairs-and-add-to-dag-array assumptions
+              ((mv erp node-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+               (make-node-replacement-alist-and-add-to-dag-array assumptions
                                                                  'dag-array ;todo: make a specialized version?
                                                                  dag-array dag-len
                                                                  'dag-parent-array ;todo: make a specialized version?
                                                                  dag-parent-array dag-constant-alist dag-variable-alist
                                                                  wrld))
               ((when erp) (mv erp nil))
-              (node-replacement-array (make-into-array 'node-replacement-array node-replacement-pairs))
-              (node-replacement-array-num-valid-nodes (+ 1 (max-key node-replacement-pairs 0))) ;todo: optimize if no assumptions?  the array len of 0 will prevent any lookup
+              (node-replacement-array (make-into-array 'node-replacement-array node-replacement-alist))
+              (node-replacement-array-num-valid-nodes (+ 1 (max-key node-replacement-alist 0))) ;todo: optimize if no assumptions?  the array len of 0 will prevent any lookup
               ((when erp) (mv erp nil))
               ((mv erp
                    new-nodenum-or-quotep
