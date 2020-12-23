@@ -564,7 +564,7 @@
 
         ;; Rewrite TREE repeatedly using RULE-ALIST and NODENUMS-TO-ASSUME-FALSE and add the result to the dag, returning a nodenum or a quotep.
         ;; TREE has nodenums and quoteps and variables (really? yes, from when we call this on a worklist of nodes) at the leaves.
-        ;; Returns (mv erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state).
+        ;; Returns (mv erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries).
         ;; be sure we always handle lambdas early, in case one is hiding an if - fixme - skip this for now?
         (defund ,simplify-tree-name (tree
                                      equiv
@@ -596,21 +596,23 @@
               (mv :count-exceeded nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
             (if (atom tree)
                 (if (symbolp tree) ;; TODO: Prove that this case is impossible.
-                    (prog2$ ;;nil ;;(cw "Rewriting the variable ~x0" tree) ;new!
-                     (hard-error ',simplify-tree-name "rewriting the var ~x0" (acons #\0 tree nil))
-                     ;; It's a variable:  todo: perhaps add it first and then use assumptions?
-                     ;; First try looking it up in the assumptions (fixme make special version of rewrite-term-using-assumptions-for-basic-prover for a variable?):
-                     (let ((assumption-match (replace-term-using-assumptions-for-axe-prover tree equiv nodenums-to-assume-false dag-array print)))
-                       (if assumption-match
-                           ;; We replace the variable with something it's equated to in nodenums-to-assume-false.
-                           ;; We don't rewrite the result (by the second pass, nodenums-to-assume-false will be simplified - and maybe we should always do that?)
-;fixme what if there is a chain of equalities to follow?
-                           (mv nil assumption-match dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
-                         ;; no match, so we just add the variable to the DAG:
-                         ;;make this a macro? this one might be rare..  same for other adding to dag operations?
-                         (mv-let (erp nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist) ;fixme simplify nodenum?
-                           (add-variable-to-dag-array tree dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-                           (mv erp nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))))
+                    (progn$ ;;nil ;;(cw "Rewriting the variable ~x0" tree) ;new!
+                     (er hard ',simplify-tree-name "rewriting the var ~x0" tree)
+                     (mv :unexpected-var nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
+;;                      ;; It's a variable:  todo: perhaps add it first and then use assumptions?
+;;                      ;; First try looking it up in the assumptions (fixme make special version of rewrite-term-using-assumptions-for-basic-prover for a variable?):
+;;                      (let ((assumption-match (replace-term-using-assumptions-for-axe-prover tree equiv nodenums-to-assume-false dag-array print)))
+;;                        (if assumption-match
+;;                            ;; We replace the variable with something it's equated to in nodenums-to-assume-false.
+;;                            ;; We don't rewrite the result (by the second pass, nodenums-to-assume-false will be simplified - and maybe we should always do that?)
+;; ;fixme what if there is a chain of equalities to follow?
+;;                            (mv nil assumption-match dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
+;;                          ;; no match, so we just add the variable to the DAG:
+;;                          ;;make this a macro? this one might be rare..  same for other adding to dag operations?
+;;                          (mv-let (erp nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist) ;fixme simplify nodenum?
+;;                            (add-variable-to-dag-array tree dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+;;                            (mv erp nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))))
+                     )
                   ;; TREE is a nodenum (because it's an atom but not a symbol):
                   ;;fffixme what if tree is the nodenum of a constant?
                   (let ((assumption-match (replace-nodenum-using-assumptions-for-axe-prover tree equiv nodenums-to-assume-false dag-array)))
@@ -703,7 +705,7 @@
                               ;; First, rewrite arg1:
                               (mv-let (erp arg1-result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
                                 (,simplify-tree-name (first args)
-                                                     'iff ;can rewrite the arg in a propositional context (check this)
+                                                     'iff ;can rewrite the arg in a propositional context
                                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                      rule-alist nodenums-to-assume-false equiv-alist print info tries interpreted-function-alist
                                                      monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count))
@@ -717,7 +719,7 @@
                                     ;;arg1 didn't rewrite to nil (fixme could handle if it rewrote to t); must rewrite the other argument:
                                     (mv-let (erp arg2-result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
                                       (,simplify-tree-name (second args)
-                                                           'iff ;can rewrite the arg in a propositional context (check this)
+                                                           'iff ;can rewrite the arg in a propositional context
                                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                            rule-alist nodenums-to-assume-false equiv-alist print info tries interpreted-function-alist
                                                            monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count))
@@ -731,7 +733,7 @@
                                 ;; First, rewrite arg1
                                 (mv-let (erp arg1-result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
                                   (,simplify-tree-name (first args)
-                                                       'iff ;can rewrite the arg in a propositional context (check this)
+                                                       'iff ;can rewrite the arg in a propositional context
                                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                        rule-alist nodenums-to-assume-false equiv-alist print info tries interpreted-function-alist
                                                        monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count))
@@ -745,7 +747,7 @@
                                       ;;arg1 didn't rewrite to a non-nil constant (fixme could handle if it rewrote to nil); must rewrite the other argument:
                                       (mv-let (erp arg2-result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
                                         (,simplify-tree-name (second args)
-                                                             'iff ;can rewrite the arg in a propositional context (check this)
+                                                             'iff ;can rewrite the arg in a propositional context
                                                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                              rule-alist nodenums-to-assume-false equiv-alist print info tries interpreted-function-alist
                                                              monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count))
@@ -1100,7 +1102,7 @@
                                   nodenums-to-assume-false rule-alist equiv-alist interpreted-function-alist print info tries
                                   monitored-symbols case-designator prover-depth options (+ -1 count)))))))))))))))
 
-       ;; Returns (mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state).
+       ;; Returns (mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries).
        ;; It would be nice to call a standard rewriter here, but the assumptions (nodenums-to-assume-false) are likely not in the right form.
        ;; TODO: can we use a better equiv?
        ;; TODO: Inline this?

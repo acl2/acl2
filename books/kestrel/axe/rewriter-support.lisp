@@ -169,8 +169,8 @@
            (< x y)))
 
 (defthm equal-of-quote-and-nth-1-of-assoc-equal-when-all-dargp-of-strip-cdrs
-  (implies (and (all-dargp (strip-cdrs node-replacement-pairs))
-                (assoc-equal tree node-replacement-pairs))
-           (equal (equal 'quote (nth 1 (assoc-equal tree node-replacement-pairs)))
-                  (consp (cdr (assoc-equal tree node-replacement-pairs)))))
+  (implies (and (all-dargp (strip-cdrs node-replacement-alist))
+                (assoc-equal tree node-replacement-alist))
+           (equal (equal 'quote (nth 1 (assoc-equal tree node-replacement-alist)))
+                  (consp (cdr (assoc-equal tree node-replacement-alist)))))
   :hints (("Goal" :in-theory (enable assoc-equal all-dargp strip-cdrs))))

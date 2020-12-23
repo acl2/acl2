@@ -1,4 +1,4 @@
-; Primes Library: Group prime for secp256k1
+; Primes Library: Group Prime for secp256k1
 ;
 ; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -10,9 +10,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; secp256k1 group prime
+; We introduce the prime that is the order of the group
+; defined by the secp256k1 elliptic curve domain parameters.
+; This elliptic curve is specified in
+; "Standards for Efficient Cryptography 1 (SEC 1)"
+; (http://www.secg.org/sec1-v2.pdf) and
+; "Standards for Efficient Cryptography 2 (SEC 2)"
+; (http://www.secg.org/sec2-v2.pdf).
+; This prime is called n in SEC 1 and 2.
+; See, in particular, Section 2 of SEC 2.
 
-;; For references see  secp256k1-field-prime.lisp
+; Also see ./secp256k1-field-prime.lisp.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -20,7 +28,10 @@
 
 (include-book "defprime")
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defprime secp256k1-group-prime
+
   #xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141
 
   ;; Pratt certificate for secp256k1 group order prime.
@@ -33,7 +44,6 @@
   ;;   F = factor(115792089237316195423570985008687907852837564279074904382605163141518161494336)
   ;;   list(F)
   ;; See also Mathematica's FactorInteger and PrimitiveRoot.
-
   (7 (2 3 149 631 107361793816595537 174723607534414371449 341948486974166000522343609283189)
      (6 1 1 1 1 1 1)
      (() () () ()
@@ -73,3 +83,9 @@
                   (3 (2 3 5 29 1871)
                      (1 1 1 1 1)
                      (() () () () ())))))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; This prime has length 256 bits.
+
+(assert-event (equal (integer-length (secp256k1-group-prime)) 256))

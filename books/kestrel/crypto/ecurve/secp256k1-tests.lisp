@@ -24,8 +24,8 @@
 ;; Tests of secp256k1+ and secp256k1*
 
 ;; Let's confirm that the standard generator point
-;; (secp256k1-generator) has order (secp256k1-order).
-(acl2::assert-equal (secp256k1* (secp256k1-order) (secp256k1-generator)) :infinity)
+;; (secp256k1-generator) has order (secp256k1-group-prime).
+(acl2::assert-equal (secp256k1* (secp256k1-group-prime) (secp256k1-generator)) :infinity)
 
 (acl2::assert-equal
  (secp256k1* 999 (secp256k1-generator))
@@ -306,12 +306,12 @@
    (< 3 (secp256k1-field-prime))))
 
 (defun test-secp256k1-operations (a b)
-  (declare (xargs :guard (and (natp a) (< a (secp256k1-order))
-                              (natp b) (< b (secp256k1-order)))))
+  (declare (xargs :guard (and (natp a) (< a (secp256k1-group-prime))
+                              (natp b) (< b (secp256k1-group-prime)))))
   (declare (xargs :guard-hints
              (("Goal" :in-theory (e/d (secp256k1* fep)
                                       ((:e secp256k1-field-prime)))))))
-  (let ((c (pfield::add a b (secp256k1-order))))
+  (let ((c (pfield::add a b (secp256k1-group-prime))))
     (let ((P (secp256k1* a (secp256k1-generator)))
           (Q (secp256k1* b (secp256k1-generator)))
           (R (secp256k1* c (secp256k1-generator))))
@@ -330,11 +330,11 @@
 ;; Timings:
 ;; 10,0000 calls to sha2::sha-256-bytes took 31 seconds.
 ;; 1,000 calls to sha2::sha-256-bytes took 3 seconds
-;; 1,000,000 calls to (random (ecurve::secp256k1-order)) took 1.2 seconds
+;; 1,000,000 calls to (random (ecurve::secp256k1-group-prime)) took 1.2 seconds
 
 ;; So I will split the true random seed (which is in the range [0,1000000000) ).
 ;; The upper 1,000,000 will be used to set num-randoms (the number of calls to
-;; (random (ecurve::secp256k1-order))), the last result of which will be passed
+;; (random (ecurve::secp256k1-group-prime))), the last result of which will be passed
 ;; to num-sha2s calls to sha-256-bytes.  If the final sha-256 is greater than
 ;; the curve order (exceedingly unlikely, on the order of 10^-39 chance)
 ;; then sha-256-bytes will be called again.
@@ -353,12 +353,12 @@
     (ccl::init-random-state-seeds)
     (let ((rand 0))
       (dotimes (i num-randoms)
-        (setq rand (random (ecurve::secp256k1-order))))
+        (setq rand (random (ecurve::secp256k1-group-prime))))
       (setq rand (unpackbv 32 8 rand)) ; make it a list of bytes
       (dotimes (i num-sha2s)
         (setq rand (sha2::sha-256-bytes rand)))
       ;; Now make sure it is within the curve order
-      (loop while (<= (ecurve::secp256k1-order)
+      (loop while (<= (ecurve::secp256k1-group-prime)
                       (packbv 32 8 rand))
             do (setq rand (sha2::sha-256-bytes rand)))
       ;; Finally convert it back to a number
@@ -394,7 +394,7 @@
          (ending-decimal (mod (acl2::packbv 3 8 last3bytes) 1000)))
     (let ((num-calls (+ 1 ending-decimal)))
       (let ((result (call-sha2-n-times val num-calls)))
-        (if (<= (ecurve::secp256k1-order)
+        (if (<= (ecurve::secp256k1-group-prime)
                 (acl2::packbv 32 8 result))
             ;; Should loop until within range (*), but the chance
             ;; of it not being within range is 10^-39 each time,

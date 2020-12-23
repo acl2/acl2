@@ -118,7 +118,7 @@ h = 01
 ;; p -> (secp256k1-field-prime)
 ;; a -> (secp256k1-a)
 ;; b -> (secp256k1-b)
-;; n -> (secp256k1-order)
+;; n -> (secp256k1-group-prime)
 ;; h -> (secp256k1-cofactor)
 ;; G -> (secp256k1-generator)
 
@@ -257,13 +257,13 @@ h = 01
 ;;   P = 2^256 - 2^32 - 977
 ;;   E = EllipticCurve(GF(P),[0,0,0,0,7])
 ;;   E.cardinality()
-;; Clicking the Evaluate button will yield (secp256k1-order):
+;; Clicking the Evaluate button will yield (secp256k1-group-prime):
 ;;   115792089237316195423570985008687907852837564279074904382605163141518161494337
 ;; Note, the parameters [0,0,0,0,7] refer to the coefficients
 ;; [a1,a2,a3,a4,a6] in the Weierstrass equation:
 ;; y^2 + a1*x*y + a3*y = x^3 + a2*x^2 + a4*x + a6
 
-;; 2. Is (secp256k1-order) really prime?
+;; 2. Is (secp256k1-group-prime) really prime?
 ;; It doesn't matter here, but it does in deterministic-ecdsa.lisp
 ;; To check, we copied this number to wolframalpha.com
 ;; and asked "Is 0xFFF...141 prime?"

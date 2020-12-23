@@ -13,6 +13,7 @@
 (in-package "ECURVE")
 
 (include-book "kestrel/crypto/primes/secp256k1-field-prime" :dir :system)
+(include-book "kestrel/crypto/primes/secp256k1-group-prime" :dir :system)
 
 (include-book "std/util/define" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
@@ -131,26 +132,6 @@
   (assert-event (< (secp256k1-generator-y) (secp256k1-field-prime)))
 
   (in-theory (disable (:e secp256k1-generator-y))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define secp256k1-order ()
-  :short "The order @($n$) of the group of the curve."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "SEC 2 lists it as")
-   (xdoc::codeblock
-    "FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFE BAAEDCE6 AF48A03B BFD25E8C D0364141"))
-  #xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141
-  :no-function t
-  ///
-
-  (assert-event (posp (secp256k1-order)))
-
-  (assert-event (equal (integer-length (secp256k1-order)) 256))
-
-  (in-theory (disable (:e secp256k1-order))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

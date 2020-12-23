@@ -117,3 +117,20 @@
   (implies (dargp-less-than item bound) ;bound is a free var
            (dargp item))
   :hints (("Goal" :in-theory (enable dargp-less-than))))
+
+(defthm dargp-less-than-mono
+  (implies (and (dargp-less-than items bound2)
+                (<= bound2 bound))
+           (dargp-less-than items bound))
+  :hints (("Goal" :in-theory (enable dargp-less-than))))
+
+(defthm dargp-less-than-when-equal-of-car-and-quote
+  (implies (equal 'quote (car item))
+           (equal (dargp-less-than item dag-len)
+                  (myquotep item)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable dargp-less-than))))
+
+(defthm dargp-less-than-of-list-of-quote
+  (dargp-less-than (cons 'quote (cons x nil)) bound)
+  :hints (("Goal" :in-theory (enable dargp-less-than))))

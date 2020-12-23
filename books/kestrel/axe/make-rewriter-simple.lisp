@@ -30,8 +30,8 @@
 
 (include-book "rewriter-common")
 (include-book "supporting-nodes") ; for drop-non-supporters-array
-(include-book "make-node-replacement-pairs")
-(include-book "node-replacement-array")
+(include-book "make-node-replacement-alist")
+(include-book "node-replacement-array2")
 (include-book "refined-assumption-alists")
 (include-book "rewriter-support") ;make local? but may be needed by the generated rewriters
 (include-book "tries")
@@ -147,488 +147,6 @@
                 (not (member-equal y vals)))
            (not (equal y x))))
 
-;;;
-;;; assume-nodenum-true-in-node-replacement-array
-;;;
-
-;; Keep this in sync with unassume-nodenum-true-in-node-replacement-array.
-;; Returns (mv node-replacement-array node-replacement-array-num-valid-nodes).
-;; Extends NODE-REPLACEMENT-ARRAY, if possible, to reflect the fact that
-;; NODENUM is non-nil.
-(defund assume-nodenum-true-in-node-replacement-array (nodenum dag-array dag-len node-replacement-array node-replacement-array-num-valid-nodes known-booleans)
-  (declare (xargs :guard (and (natp nodenum) ;; should be the nodenum of a function call
-                              (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                              (< nodenum dag-len)
-                              (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                              (natp node-replacement-array-num-valid-nodes)
-                              (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                              (symbol-listp known-booleans))
-                  :guard-hints (("Goal" :in-theory (enable CAR-BECOMES-NTH-OF-0))))
-           (ignore dag-len) ;avoid passing in?
-           )
-  (let ((expr (aref1 'dag-array dag-array nodenum)))
-    (if (and (consp expr)
-             (eq 'not (ffn-symb expr)) ; todo: can there be more than one nested not?
-             (= 1 (len (dargs expr)))  ;optimize?
-             (not (consp (darg1 expr))) ;avoid (not <constant>) but that should not happen
-             )
-        ;; To assume (not <noden>), we assume <noden> is nil:
-        (add-node-replacement-entry-and-maybe-expand (darg1 expr) *nil* 'node-replacement-array node-replacement-array node-replacement-array-num-valid-nodes)
-      ;; Assume nodenum is t, but only if it's a call of a known boolean:
-      (if (and (consp expr) ;always true?
-               (member-eq (ffn-symb expr) known-booleans))
-          (add-node-replacement-entry-and-maybe-expand nodenum *t* 'node-replacement-array node-replacement-array node-replacement-array-num-valid-nodes)
-        ;; TODO: Do something better in this case, perhaps by tracking nodenums known to be non-nil:
-        ;; Or assume that (not <nodenum>) is nil, but that might require adding a node to the dag.
-        (mv node-replacement-array node-replacement-array-num-valid-nodes)))))
-
-(defthm node-replacement-arrayp-of-mv-nth-0-of-assume-nodenum-true-in-node-replacement-array
-  (implies (and (natp nodenum)
-                (< nodenum 2147483646)
-                (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                (< nodenum dag-len)
-                (node-replacement-arrayp 'node-replacement-array node-replacement-array)
-                ;;(natp num-valid-nodes)
-                ;;(<= num-valid-nodes (alen1 'node-replacement-array array))
-                )
-           (node-replacement-arrayp 'node-replacement-array
-                                    (mv-nth 0 (assume-nodenum-true-in-node-replacement-array nodenum dag-array dag-len node-replacement-array node-replacement-array-num-valid-nodes known-booleans))))
-  :hints (("Goal" :in-theory (e/d (assume-nodenum-true-in-node-replacement-array
-                                   car-becomes-nth-of-0)
-                                  (natp)))))
-
-(defthm bounded-node-replacement-arrayp-of-mv-nth-0-of-assume-nodenum-true-in-node-replacement-array
-  (implies (and (natp nodenum)
-                (< nodenum 2147483646)
-                (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                (< nodenum dag-len)
-                (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array bound)
-                ;;(natp num-valid-nodes)
-                ;;(<= num-valid-nodes (alen1 'node-replacement-array array))
-                )
-           (bounded-node-replacement-arrayp 'node-replacement-array
-                                            (mv-nth 0 (assume-nodenum-true-in-node-replacement-array nodenum dag-array dag-len node-replacement-array node-replacement-array-num-valid-nodes known-booleans))
-                                            bound))
-  :hints (("Goal" :in-theory (e/d (assume-nodenum-true-in-node-replacement-array
-                                   car-becomes-nth-of-0)))))
-
-(defthm natp-of-mv-nth-1-of-assume-nodenum-true-in-node-replacement-array
-  (implies (and (natp nodenum)
-                (natp node-replacement-array-num-valid-nodes)
-                (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                (< nodenum dag-len)
-                )
-           (natp (mv-nth 1 (assume-nodenum-true-in-node-replacement-array nodenum dag-array dag-len node-replacement-array node-replacement-array-num-valid-nodes known-booleans))))
-  :hints (("Goal" :in-theory (e/d (assume-nodenum-true-in-node-replacement-array
-                                   car-becomes-nth-of-0)
-                                  (natp)))))
-
-;; The array doesn't get shorter.
-(defthm bound-on-alen1-of-mv-nth-0-of-assume-nodenum-true-in-node-replacement-array
-  (implies (and (natp nodenum)
-                (< nodenum 2147483646)
-                (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                (< nodenum dag-len)
-                (node-replacement-arrayp 'node-replacement-array node-replacement-array))
-           (<= (alen1 'node-replacement-array node-replacement-array)
-               (alen1 'node-replacement-array (mv-nth 0 (assume-nodenum-true-in-node-replacement-array nodenum dag-array dag-len node-replacement-array node-replacement-array-num-valid-nodes known-booleans)))))
-  :rule-classes (:rewrite :linear)
-  :hints (("Goal" :in-theory (e/d (assume-nodenum-true-in-node-replacement-array
-                                   car-becomes-nth-of-0)
-                                  (natp)))))
-
-(defthm bound-on-mv-nth-1-of-assume-nodenum-true-in-node-replacement-array
-  (implies (and (natp nodenum)
-                (< nodenum 2147483646)
-                (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                (< nodenum dag-len)
-                (node-replacement-arrayp 'node-replacement-array node-replacement-array)
-                (natp node-replacement-array-num-valid-nodes)
-                (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                )
-           (<= (mv-nth 1 (assume-nodenum-true-in-node-replacement-array nodenum dag-array dag-len node-replacement-array node-replacement-array-num-valid-nodes known-booleans))
-               (alen1 'node-replacement-array (mv-nth 0 (assume-nodenum-true-in-node-replacement-array nodenum dag-array dag-len node-replacement-array node-replacement-array-num-valid-nodes known-booleans)))))
-  :rule-classes (:rewrite :linear)
-  :hints (("Goal" :in-theory (e/d (assume-nodenum-true-in-node-replacement-array
-                                   car-becomes-nth-of-0)
-                                  (natp)))))
-
-;; The num-valid-nodes does not decrease.
-(defthm bound2-on-mv-nth-1-of-assume-nodenum-true-in-node-replacement-array
-  (implies (and (natp nodenum)
-                (< nodenum 2147483646)
-                (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                (< nodenum dag-len)
-                (node-replacement-arrayp 'node-replacement-array node-replacement-array))
-           (<= node-replacement-array-num-valid-nodes
-               (mv-nth 1 (assume-nodenum-true-in-node-replacement-array nodenum dag-array dag-len node-replacement-array node-replacement-array-num-valid-nodes known-booleans))))
-  :rule-classes (:rewrite :linear)
-  :hints (("Goal" :in-theory (e/d (assume-nodenum-true-in-node-replacement-array
-                                   car-becomes-nth-of-0)
-                                  (natp)))))
-
-;;;
-;;; assume-nodenum-false-in-node-replacement-array
-;;;
-
-;; Keep this in sync with assume-nodenum-false-in-node-replacement-array.
-;; Returns (mv node-replacement-array node-replacement-array-num-valid-nodes).
-;; Extends NODE-REPLACEMENT-ARRAY, if possible, to reflect the fact that
-;; NODENUM is nil.
-(defund assume-nodenum-false-in-node-replacement-array (nodenum dag-array dag-len node-replacement-array node-replacement-array-num-valid-nodes known-booleans)
-  (declare (xargs :guard (and (natp nodenum) ;; should be the nodenum of a function call
-                              (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                              (< nodenum dag-len)
-                              (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                              (natp node-replacement-array-num-valid-nodes)
-                              (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                              (symbol-listp known-booleans))
-                  :guard-hints (("Goal" :in-theory (enable CAR-BECOMES-NTH-OF-0))))
-           (ignore dag-len))
-  (let ((expr (aref1 'dag-array dag-array nodenum)))
-    (if (and (consp expr)
-             (eq 'not (ffn-symb expr)) ; todo: can there be more than one nested not?
-             (= 1 (len (dargs expr)))  ;optimize?
-             (not (consp (darg1 expr))) ;avoid (not <constant>) but that should not happen
-             )
-        ;; To assume (not <noden>) is false, we assume <noden> is t, if it's a call of a known boolean.  Otherwise, we assume the whole not is nil (less strong).
-        (let* ((noden (darg1 expr)) ;also done above
-               (noden-expr (aref1 'dag-array dag-array noden)))
-          (if (and (consp noden-expr)
-                   (member-eq (ffn-symb noden-expr) known-booleans))
-              ;; We are assuming that (not <noden>) is false where <noden> is boolean
-              (add-node-replacement-entry-and-maybe-expand noden *t* 'node-replacement-array node-replacement-array node-replacement-array-num-valid-nodes)
-            ;; TODO: Do something better in this case, perhaps by tracking nodenums known to be non-nil:
-            (add-node-replacement-entry-and-maybe-expand nodenum *nil* 'node-replacement-array node-replacement-array node-replacement-array-num-valid-nodes)))
-      ;; Assume nodenum is nil:
-      (add-node-replacement-entry-and-maybe-expand nodenum *nil* 'node-replacement-array node-replacement-array node-replacement-array-num-valid-nodes))))
-
-(defthm node-replacement-arrayp-of-mv-nth-0-of-assume-nodenum-false-in-node-replacement-array
-  (implies (and (natp nodenum)
-                (< nodenum 2147483646)
-                (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                (< nodenum dag-len)
-                (node-replacement-arrayp 'node-replacement-array node-replacement-array)
-                ;;(natp num-valid-nodes)
-                ;;(<= num-valid-nodes (alen1 'node-replacement-array array))
-                )
-           (node-replacement-arrayp 'node-replacement-array
-                                    (mv-nth 0 (assume-nodenum-false-in-node-replacement-array nodenum dag-array dag-len node-replacement-array node-replacement-array-num-valid-nodes known-booleans))))
-  :hints (("Goal" :in-theory (e/d (assume-nodenum-false-in-node-replacement-array
-                                   car-becomes-nth-of-0)
-                                  (natp)))))
-
-(defthm bounded-node-replacement-arrayp-of-mv-nth-0-of-assume-nodenum-false-in-node-replacement-array
-  (implies (and (natp nodenum)
-                (< nodenum 2147483646)
-                (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                (< nodenum dag-len)
-                (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array bound)
-                ;;(natp num-valid-nodes)
-                ;;(<= num-valid-nodes (alen1 'node-replacement-array array))
-                )
-           (bounded-node-replacement-arrayp 'node-replacement-array
-                                            (mv-nth 0 (assume-nodenum-false-in-node-replacement-array nodenum dag-array dag-len node-replacement-array node-replacement-array-num-valid-nodes known-booleans))
-                                            bound))
-  :hints (("Goal" :in-theory (e/d (assume-nodenum-false-in-node-replacement-array
-                                   car-becomes-nth-of-0)))))
-
-(defthm natp-of-mv-nth-1-of-assume-nodenum-false-in-node-replacement-array
-  (implies (and (natp nodenum)
-                (natp node-replacement-array-num-valid-nodes)
-                (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                (< nodenum dag-len))
-           (natp (mv-nth 1 (assume-nodenum-false-in-node-replacement-array nodenum dag-array dag-len node-replacement-array node-replacement-array-num-valid-nodes known-booleans))))
-  :rule-classes (:rewrite :type-prescription)
-  :hints (("Goal" :in-theory (e/d (assume-nodenum-false-in-node-replacement-array
-                                   car-becomes-nth-of-0)
-                                  (natp)))))
-
-;; The array doesn't get shorter.
-(defthm bound-on-alen1-of-mv-nth-0-of-assume-nodenum-false-in-node-replacement-array
-  (implies (and (natp nodenum)
-                (< nodenum 2147483646)
-                (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                (< nodenum dag-len)
-                (node-replacement-arrayp 'node-replacement-array node-replacement-array))
-           (<= (alen1 'node-replacement-array node-replacement-array)
-               (alen1 'node-replacement-array (mv-nth 0 (assume-nodenum-false-in-node-replacement-array nodenum dag-array dag-len node-replacement-array node-replacement-array-num-valid-nodes known-booleans)))))
-  :rule-classes (:rewrite :linear)
-  :hints (("Goal" :in-theory (e/d (assume-nodenum-false-in-node-replacement-array
-                                   car-becomes-nth-of-0)
-                                  (natp)))))
-
-(defthm bound-on-mv-nth-1-of-assume-nodenum-false-in-node-replacement-array
-  (implies (and (natp nodenum)
-                (< nodenum 2147483646)
-                (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                (< nodenum dag-len)
-                (node-replacement-arrayp 'node-replacement-array node-replacement-array)
-                (natp node-replacement-array-num-valid-nodes)
-                (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                )
-           (<= (mv-nth 1 (assume-nodenum-false-in-node-replacement-array nodenum dag-array dag-len node-replacement-array node-replacement-array-num-valid-nodes known-booleans))
-               (alen1 'node-replacement-array (mv-nth 0 (assume-nodenum-false-in-node-replacement-array nodenum dag-array dag-len node-replacement-array node-replacement-array-num-valid-nodes known-booleans)))))
-  :rule-classes (:rewrite :linear)
-  :hints (("Goal" :in-theory (e/d (assume-nodenum-false-in-node-replacement-array
-                                   car-becomes-nth-of-0)
-                                  (natp)))))
-
-;; The num-valid-nodes does not decrease.
-(defthm bound2-on-mv-nth-1-of-assume-nodenum-false-in-node-replacement-array
-  (implies (and (natp nodenum)
-                (< nodenum 2147483646)
-                (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                (< nodenum dag-len)
-                (node-replacement-arrayp 'node-replacement-array node-replacement-array))
-           (<= node-replacement-array-num-valid-nodes
-               (mv-nth 1 (assume-nodenum-false-in-node-replacement-array nodenum dag-array dag-len node-replacement-array node-replacement-array-num-valid-nodes known-booleans))))
-  :rule-classes (:rewrite :linear)
-  :hints (("Goal" :in-theory (e/d (assume-nodenum-false-in-node-replacement-array
-                                   car-becomes-nth-of-0)
-                                  (natp)))))
-
-;;;
-;;; unassume-nodenum-true-in-node-replacement-array
-;;;
-
-;; Keep this in sync with assume-nodenum-true-in-node-replacement-array.
-;; Returns (mv node-replacement-array node-replacement-array-num-valid-nodes).
-;; Remove any assumptions made to reflect the fact that NODENUM is non-nil.
-;; TODO: Think about whether unassuming can in rare cases destroy information.  We could save the previous entries for the is (and the argument of not) and restore them last.
-(defund unassume-nodenum-true-in-node-replacement-array (nodenum dag-array dag-len node-replacement-array node-replacement-array-num-valid-nodes known-booleans)
-  (declare (xargs :guard (and (natp nodenum) ;; should be the nodenum of a function call
-                              (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                              (< nodenum dag-len)
-                              (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                              (natp node-replacement-array-num-valid-nodes)
-                              (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                              (symbol-listp known-booleans))
-                  :guard-hints (("Goal" :in-theory (enable CAR-BECOMES-NTH-OF-0))))
-           (ignore dag-len) ;avoid passing in?
-           )
-  (let ((expr (aref1 'dag-array dag-array nodenum)))
-    (if (and (consp expr)
-             (eq 'not (ffn-symb expr)) ; todo: can there be more than one nested not?
-             (= 1 (len (dargs expr)))  ;optimize?
-             (not (consp (darg1 expr))) ;avoid (not <constant>) but that should not happen
-             )
-        ;; To assume (not <noden>), we assume <noden> is nil:
-        (add-node-replacement-entry-and-maybe-expand (darg1 expr) nil 'node-replacement-array node-replacement-array node-replacement-array-num-valid-nodes)
-      ;; Assume nodenum is t, but only if it's a call of a known boolean:
-      (if (and (consp expr) ;always true?
-               (member-eq (ffn-symb expr) known-booleans))
-          (add-node-replacement-entry-and-maybe-expand nodenum nil 'node-replacement-array node-replacement-array node-replacement-array-num-valid-nodes)
-        ;; TODO: Do something better in this case, perhaps by tracking nodenums known to be non-nil:
-        ;; Or assume that (not <nodenum>) is nil, but that might require adding a node to the dag.
-        (mv node-replacement-array node-replacement-array-num-valid-nodes)))))
-
-(defthm node-replacement-arrayp-of-mv-nth-0-of-unassume-nodenum-true-in-node-replacement-array
-  (implies (and (natp nodenum)
-                (< nodenum 2147483646)
-                (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                (< nodenum dag-len)
-                (node-replacement-arrayp 'node-replacement-array node-replacement-array)
-                ;;(natp num-valid-nodes)
-                ;;(<= num-valid-nodes (alen1 'node-replacement-array array))
-                )
-           (node-replacement-arrayp 'node-replacement-array
-                                    (mv-nth 0 (unassume-nodenum-true-in-node-replacement-array nodenum dag-array dag-len node-replacement-array node-replacement-array-num-valid-nodes known-booleans))))
-  :hints (("Goal" :in-theory (e/d (unassume-nodenum-true-in-node-replacement-array
-                                   car-becomes-nth-of-0)
-                                  (natp)))))
-
-(defthm bounded-node-replacement-arrayp-of-mv-nth-0-of-unassume-nodenum-true-in-node-replacement-array
-  (implies (and (natp nodenum)
-                (< nodenum 2147483646)
-                (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                (< nodenum dag-len)
-                (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array bound)
-                ;;(natp num-valid-nodes)
-                ;;(<= num-valid-nodes (alen1 'node-replacement-array array))
-                )
-           (bounded-node-replacement-arrayp 'node-replacement-array
-                                            (mv-nth 0 (unassume-nodenum-true-in-node-replacement-array nodenum dag-array dag-len node-replacement-array node-replacement-array-num-valid-nodes known-booleans))
-                                            bound))
-  :hints (("Goal" :in-theory (e/d (unassume-nodenum-true-in-node-replacement-array
-                                   car-becomes-nth-of-0)))))
-
-(defthm natp-of-mv-nth-1-of-unassume-nodenum-true-in-node-replacement-array
-  (implies (and (natp nodenum)
-                (natp node-replacement-array-num-valid-nodes)
-                (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                (< nodenum dag-len)
-                )
-           (natp (mv-nth 1 (unassume-nodenum-true-in-node-replacement-array nodenum dag-array dag-len node-replacement-array node-replacement-array-num-valid-nodes known-booleans))))
-  :hints (("Goal" :in-theory (e/d (unassume-nodenum-true-in-node-replacement-array
-                                   car-becomes-nth-of-0)
-                                  (natp)))))
-
-;; The array doesn't get shorter.
-(defthm bound-on-alen1-of-mv-nth-0-of-unassume-nodenum-true-in-node-replacement-array
-  (implies (and (natp nodenum)
-                (< nodenum 2147483646)
-                (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                (< nodenum dag-len)
-                (node-replacement-arrayp 'node-replacement-array node-replacement-array))
-           (<= (alen1 'node-replacement-array node-replacement-array)
-               (alen1 'node-replacement-array (mv-nth 0 (unassume-nodenum-true-in-node-replacement-array nodenum dag-array dag-len node-replacement-array node-replacement-array-num-valid-nodes known-booleans)))))
-  :rule-classes (:rewrite :linear)
-  :hints (("Goal" :in-theory (e/d (unassume-nodenum-true-in-node-replacement-array
-                                   car-becomes-nth-of-0)
-                                  (natp)))))
-
-(defthm bound-on-mv-nth-1-of-unassume-nodenum-true-in-node-replacement-array
-  (implies (and (natp nodenum)
-                (< nodenum 2147483646)
-                (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                (< nodenum dag-len)
-                (node-replacement-arrayp 'node-replacement-array node-replacement-array)
-                (natp node-replacement-array-num-valid-nodes)
-                (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                )
-           (<= (mv-nth 1 (unassume-nodenum-true-in-node-replacement-array nodenum dag-array dag-len node-replacement-array node-replacement-array-num-valid-nodes known-booleans))
-               (alen1 'node-replacement-array (mv-nth 0 (unassume-nodenum-true-in-node-replacement-array nodenum dag-array dag-len node-replacement-array node-replacement-array-num-valid-nodes known-booleans)))))
-  :rule-classes (:rewrite :linear)
-  :hints (("Goal" :in-theory (e/d (unassume-nodenum-true-in-node-replacement-array
-                                   car-becomes-nth-of-0)
-                                  (natp)))))
-
-;; The num-valid-nodes does not decrease.
-(defthm bound2-on-mv-nth-1-of-unassume-nodenum-true-in-node-replacement-array
-  (implies (and (natp nodenum)
-                (< nodenum 2147483646)
-                (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                (< nodenum dag-len)
-                (node-replacement-arrayp 'node-replacement-array node-replacement-array))
-           (<= node-replacement-array-num-valid-nodes
-               (mv-nth 1 (unassume-nodenum-true-in-node-replacement-array nodenum dag-array dag-len node-replacement-array node-replacement-array-num-valid-nodes known-booleans))))
-  :rule-classes (:rewrite :linear)
-  :hints (("Goal" :in-theory (e/d (unassume-nodenum-true-in-node-replacement-array
-                                   car-becomes-nth-of-0)
-                                  (natp)))))
-
-;;;
-;;; unassume-nodenum-false-in-node-replacement-array
-;;;
-
-;; Keep this in sync with assume-nodenum-false-in-node-replacement-array.
-;; Returns (mv node-replacement-array node-replacement-array-num-valid-nodes).
-;; Extends NODE-REPLACEMENT-ARRAY, if possible, to reflect the fact that
-;; NODENUM is nil.
-(defund unassume-nodenum-false-in-node-replacement-array (nodenum dag-array dag-len node-replacement-array node-replacement-array-num-valid-nodes known-booleans)
-  (declare (xargs :guard (and (natp nodenum) ;; should be the nodenum of a function call
-                              (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                              (< nodenum dag-len)
-                              (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
-                              (natp node-replacement-array-num-valid-nodes)
-                              (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                              (symbol-listp known-booleans))
-                  :guard-hints (("Goal" :in-theory (enable CAR-BECOMES-NTH-OF-0))))
-           (ignore dag-len))
-  (let ((expr (aref1 'dag-array dag-array nodenum)))
-    (if (and (consp expr)
-             (eq 'not (ffn-symb expr)) ; todo: can there be more than one nested not?
-             (= 1 (len (dargs expr)))  ;optimize?
-             (not (consp (darg1 expr))) ;avoid (not <constant>) but that should not happen
-             )
-        ;; To assume (not <noden>) is false, we assume <noden> is t, if it's a call of a known boolean.  Otherwise, we assume the whole not is nil (less strong).
-        (let* ((noden (darg1 expr)) ;also done above
-               (noden-expr (aref1 'dag-array dag-array noden)))
-          (if (and (consp noden-expr)
-                   (member-eq (ffn-symb noden-expr) known-booleans))
-              (add-node-replacement-entry-and-maybe-expand noden nil 'node-replacement-array node-replacement-array node-replacement-array-num-valid-nodes)
-            ;; TODO: Do something better in this case, perhaps by tracking nodenums known to be non-nil:
-            (add-node-replacement-entry-and-maybe-expand nodenum nil 'node-replacement-array node-replacement-array node-replacement-array-num-valid-nodes)))
-      ;; Assume nodenum is nil:
-      (add-node-replacement-entry-and-maybe-expand nodenum nil 'node-replacement-array node-replacement-array node-replacement-array-num-valid-nodes))))
-
-(defthm node-replacement-arrayp-of-mv-nth-0-of-unassume-nodenum-false-in-node-replacement-array
-  (implies (and (natp nodenum)
-                (< nodenum 2147483646)
-                (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                (< nodenum dag-len)
-                (node-replacement-arrayp 'node-replacement-array node-replacement-array)
-                ;;(natp num-valid-nodes)
-                ;;(<= num-valid-nodes (alen1 'node-replacement-array array))
-                )
-           (node-replacement-arrayp 'node-replacement-array
-                                    (mv-nth 0 (unassume-nodenum-false-in-node-replacement-array nodenum dag-array dag-len node-replacement-array node-replacement-array-num-valid-nodes known-booleans))))
-  :hints (("Goal" :in-theory (e/d (unassume-nodenum-false-in-node-replacement-array
-                                   car-becomes-nth-of-0)
-                                  (natp)))))
-
-(defthm bounded-node-replacement-arrayp-of-mv-nth-0-of-unassume-nodenum-false-in-node-replacement-array
-  (implies (and (natp nodenum)
-                (< nodenum 2147483646)
-                (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                (< nodenum dag-len)
-                (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array bound)
-                ;;(natp num-valid-nodes)
-                ;;(<= num-valid-nodes (alen1 'node-replacement-array array))
-                )
-           (bounded-node-replacement-arrayp 'node-replacement-array
-                                            (mv-nth 0 (unassume-nodenum-false-in-node-replacement-array nodenum dag-array dag-len node-replacement-array node-replacement-array-num-valid-nodes known-booleans))
-                                            bound))
-  :hints (("Goal" :in-theory (e/d (unassume-nodenum-false-in-node-replacement-array
-                                   car-becomes-nth-of-0)))))
-
-(defthm natp-of-mv-nth-1-of-unassume-nodenum-false-in-node-replacement-array
-  (implies (and (natp nodenum)
-                (natp node-replacement-array-num-valid-nodes)
-                (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                (< nodenum dag-len))
-           (natp (mv-nth 1 (unassume-nodenum-false-in-node-replacement-array nodenum dag-array dag-len node-replacement-array node-replacement-array-num-valid-nodes known-booleans))))
-  :rule-classes (:rewrite :type-prescription)
-  :hints (("Goal" :in-theory (e/d (unassume-nodenum-false-in-node-replacement-array
-                                   car-becomes-nth-of-0)
-                                  (natp)))))
-
-;; The array doesn't get shorter.
-(defthm bound-on-alen1-of-mv-nth-0-of-unassume-nodenum-false-in-node-replacement-array
-  (implies (and (natp nodenum)
-                (< nodenum 2147483646)
-                (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                (< nodenum dag-len)
-                (node-replacement-arrayp 'node-replacement-array node-replacement-array))
-           (<= (alen1 'node-replacement-array node-replacement-array)
-               (alen1 'node-replacement-array (mv-nth 0 (unassume-nodenum-false-in-node-replacement-array nodenum dag-array dag-len node-replacement-array node-replacement-array-num-valid-nodes known-booleans)))))
-  :rule-classes (:rewrite :linear)
-  :hints (("Goal" :in-theory (e/d (unassume-nodenum-false-in-node-replacement-array
-                                   car-becomes-nth-of-0)
-                                  (natp)))))
-
-(defthm bound-on-mv-nth-1-of-unassume-nodenum-false-in-node-replacement-array
-  (implies (and (natp nodenum)
-                (< nodenum 2147483646)
-                (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                (< nodenum dag-len)
-                (node-replacement-arrayp 'node-replacement-array node-replacement-array)
-                (natp node-replacement-array-num-valid-nodes)
-                (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
-                )
-           (<= (mv-nth 1 (unassume-nodenum-false-in-node-replacement-array nodenum dag-array dag-len node-replacement-array node-replacement-array-num-valid-nodes known-booleans))
-               (alen1 'node-replacement-array (mv-nth 0 (unassume-nodenum-false-in-node-replacement-array nodenum dag-array dag-len node-replacement-array node-replacement-array-num-valid-nodes known-booleans)))))
-  :rule-classes (:rewrite :linear)
-  :hints (("Goal" :in-theory (e/d (unassume-nodenum-false-in-node-replacement-array
-                                   car-becomes-nth-of-0)
-                                  (natp)))))
-
-;; The num-valid-nodes does not decrease.
-(defthm bound2-on-mv-nth-1-of-unassume-nodenum-false-in-node-replacement-array
-  (implies (and (natp nodenum)
-                (< nodenum 2147483646)
-                (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                (< nodenum dag-len)
-                (node-replacement-arrayp 'node-replacement-array node-replacement-array))
-           (<= node-replacement-array-num-valid-nodes
-               (mv-nth 1 (unassume-nodenum-false-in-node-replacement-array nodenum dag-array dag-len node-replacement-array node-replacement-array-num-valid-nodes known-booleans))))
-  :rule-classes (:rewrite :linear)
-  :hints (("Goal" :in-theory (e/d (unassume-nodenum-false-in-node-replacement-array
-                                   car-becomes-nth-of-0)
-                                  (natp)))))
-
-
 ;why is this needed?  the hyp is not being rewritten right during backchaining
 (defthmd max-key-hack
   (equal (if (consp alist) x (< y (max-key alist z)))
@@ -654,7 +172,7 @@
 ;; OLD:
 ;; How we use the equality-assumption-alist:
 ;; 1. To replace a term that is a var (calling replace-var-using-equality-assumption-alist).  This may be rare.
-;;  TODO: Could this be handled using node-replacement-pairs instead, letting us eliminate the :var case?
+;;  TODO: Could this be handled using node-replacement-alist instead, letting us eliminate the :var case?
 ;; 2. To replace a (simplified) term that is a function call (calling replace-fun-call-using-equality-assumption-alist).
 
 ;; How we use the node-replacement-array:
@@ -860,11 +378,11 @@
                                   member-equal ; prevent case splitting
                                   )))
 
-       (local (in-theory (enable ;;consp-of-assoc-equal-when-node-replacement-pairsp
-                          ;;dargp-of-cdr-of-assoc-equal-when-node-replacement-pairsp
-                          ;;dargp-less-than-of-cdr-of-assoc-equal-when-node-replacement-pairsp
-                          ;;myquotep-of-cdr-of-assoc-equal-when-node-replacement-pairsp
-                          ;;natp-of-cdr-of-assoc-equal-when-node-replacement-pairsp
+       (local (in-theory (enable ;;consp-of-assoc-equal-when-node-replacement-alistp
+                          ;;dargp-of-cdr-of-assoc-equal-when-node-replacement-alistp
+                          ;;dargp-less-than-of-cdr-of-assoc-equal-when-node-replacement-alistp
+                          ;;myquotep-of-cdr-of-assoc-equal-when-node-replacement-alistp
+                          ;;natp-of-cdr-of-assoc-equal-when-node-replacement-alistp
                           )))
 
        ;;
@@ -1486,10 +1004,10 @@
                                                             print interpreted-function-alist known-booleans monitored-symbols
                                                             (+ -1 count)))
                        ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)))
-                    (if (consp simplified-test)
+                    (if (consp simplified-test) ; tests for quotep
                         ;; test simplified to a constant:
                         (mv (erp-nil) simplified-test dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
-                      ;; test didn't simplify to a constant, so it's a nodenum.  Now try looking it up in the refined-assumption-alist:
+                      ;; simplified-test is a nodenum.  Now try looking it up in the refined-assumption-alist:
                       ;; TODO: Do this also for the other kinds of IF below
                       (if (nodenum-equal-to-refined-assumptionp simplified-test refined-assumption-alist dag-array)
                           ;; Since the test is known to be true from the refined-assumption-alist, it's as if it rewrote to 't (even though it may not be a predicate, IF/MYIF only looks at whether it is nil):
@@ -3272,7 +2790,6 @@
                        (all-axe-treep hyp-args)
                        (true-listp hyp-args)
                        (axe-rule-hyp-listp other-hyps)
-
                        (maybe-bounded-memoizationp memoization dag-len)
                        (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
                        (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
@@ -3281,8 +2798,7 @@
                        (symbol-alistp alist)
                        (all-dargp-less-than (strip-cdrs alist) dag-len)
                        (dargp-less-than-list-listp assumption-arg-lists dag-len)
-                       (<= x dag-len)
-                       )
+                       (<= x dag-len))
                   (<= x (mv-nth 4 ,call-of-relieve-free-var-hyp-and-all-others)))
          :hints (("Goal" :use (:instance ,(pack$ 'theorem-for-relieve-free-var-hyp-and-all-others- suffix))
                   :in-theory (disable ,(pack$ 'theorem-for-relieve-free-var-hyp-and-all-others- suffix)))))
@@ -3298,8 +2814,7 @@
                        (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
                        (symbol-alistp alist)
                        (all-dargp-less-than (strip-cdrs alist) dag-len)
-                       (<= x dag-len)
-                       )
+                       (<= x dag-len))
                   (and
                    (<= x (mv-nth 4 ,call-of-relieve-rule-hyps))
                    (all-dargp (strip-cdrs (mv-nth 2 ,call-of-relieve-rule-hyps)))))
@@ -3325,15 +2840,13 @@
          (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                        (all-dargp-less-than args-to-match dag-len)
                        (not (mv-nth 0 ,call-of-try-to-apply-rules))
-
                        (maybe-bounded-memoizationp memoization dag-len)
                        (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
                        (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
                        (all-stored-axe-rulep stored-rules)
                        (rule-alistp rewriter-rule-alist)
                        (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
-                       (<= x dag-len)
-                       )
+                       (<= x dag-len))
                   (<= x (mv-nth 3 ,call-of-try-to-apply-rules)))
          :hints (("Goal" :use (:instance ,(pack$ 'theorem-for-try-to-apply-rules- suffix))
                   :in-theory (disable ,(pack$ 'theorem-for-try-to-apply-rules- suffix)))))
@@ -3392,8 +2905,7 @@
                        (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
                        (rule-alistp rewriter-rule-alist)
                        (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
-                       (<= x dag-len)
-                       )
+                       (<= x dag-len))
                   (<= x
                       (mv-nth 3 ,call-of-simplify-trees-and-add-to-dag)))
          :hints (("Goal" :use (:instance ,(pack$ 'theorem-for-simplify-trees-and-add-to-dag- suffix))
@@ -3560,16 +3072,13 @@
                        (bounded-axe-treep tree dag-len)
                        (equal (len args) 4)
                        (not (mv-nth 0 ,call-of-simplify-bvif-tree-and-add-to-dag2))
-
                        (maybe-bounded-memoizationp memoization dag-len)
                        (trees-to-memoizep trees-equal-to-tree)
-
                        (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
                        (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
                        (rule-alistp rewriter-rule-alist)
                        (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
-                       (<= x dag-len)
-                       )
+                       (<= x dag-len))
                   (<= x
                       (mv-nth 3 ,call-of-simplify-bvif-tree-and-add-to-dag2)))
          :hints (("Goal" :use (:instance ,(pack$ 'theorem-for-simplify-bvif-tree-and-add-to-dag2- suffix))
@@ -3584,10 +3093,8 @@
                        (bounded-axe-treep tree dag-len)
                        (equal (len args) 4)
                        (not (mv-nth 0 ,call-of-simplify-bvif-tree-and-add-to-dag1))
-
                        (maybe-bounded-memoizationp memoization dag-len)
                        (trees-to-memoizep trees-equal-to-tree)
-
                        (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
                        (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
                        (rule-alistp rewriter-rule-alist)
@@ -3630,7 +3137,6 @@
                        (not (mv-nth 0 ,call-of-simplify-tree-and-add-to-dag))
                        (maybe-bounded-memoizationp memoization dag-len)
                        (trees-to-memoizep trees-equal-to-tree)
-
                        (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
                        (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
                        (rule-alistp rewriter-rule-alist)
@@ -3656,7 +3162,6 @@
                    (not (mv-nth 0 ,call-of-simplify-tree-and-add-to-dag))
                    (maybe-bounded-memoizationp memoization dag-len)
                    (trees-to-memoizep trees-equal-to-tree)
-
                    (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
                    (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
                    (rule-alistp rewriter-rule-alist)
@@ -3676,7 +3181,6 @@
                        (not (mv-nth 0 ,call-of-simplify-tree-and-add-to-dag))
                        (maybe-bounded-memoizationp memoization dag-len)
                        (trees-to-memoizep trees-equal-to-tree)
-
                        (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
                        (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
                        (rule-alistp rewriter-rule-alist)
@@ -3728,10 +3232,8 @@
                        (bounded-axe-treep tree dag-len)
                        (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                        (not (mv-nth 0 ,call-of-simplify-tree-and-add-to-dag))
-
                        (maybe-bounded-memoizationp memoization dag-len)
                        (trees-to-memoizep trees-equal-to-tree)
-
                        (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
                        (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
                        (rule-alistp rewriter-rule-alist)
@@ -3750,10 +3252,8 @@
                        (bounded-axe-treep tree dag-len)
                        (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                        (not (mv-nth 0 ,call-of-simplify-tree-and-add-to-dag))
-
                        (maybe-bounded-memoizationp memoization dag-len)
                        (trees-to-memoizep trees-equal-to-tree)
-
                        (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
                        (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
                        (rule-alistp rewriter-rule-alist)
@@ -4282,15 +3782,12 @@
                          (bounded-axe-treep tree dag-len)
                          (equal (len args) 4)
                          (not (mv-nth 0 ,call-of-simplify-bvif-tree-and-add-to-dag1))
-
                          (maybe-bounded-memoizationp memoization dag-len)
                          (trees-to-memoizep trees-equal-to-tree)
                          (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
                          (natp node-replacement-array-num-valid-nodes) (<= node-replacement-array-num-valid-nodes (alen1 'node-replacement-array node-replacement-array))
                          (rule-alistp rewriter-rule-alist)
-                         (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
-
-                         )
+                         (bounded-refined-assumption-alistp refined-assumption-alist dag-len))
                     (node-replacement-arrayp 'node-replacement-array (mv-nth 11 ,call-of-simplify-bvif-tree-and-add-to-dag1)))
            :hints (("Goal" :use (:instance ,(pack$ 'theorem-for-simplify-bvif-tree-and-add-to-dag1- suffix))
                     :in-theory (disable ,(pack$ 'theorem-for-simplify-bvif-tree-and-add-to-dag1- suffix)))))
@@ -4564,16 +4061,16 @@
                                                         (known-booleans wrld)))
               ((when erp) (mv erp nil))
               ;; TODO: Combine this with the above:
-              ((mv erp node-replacement-pairs dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-               (make-node-replacement-pairs-and-add-to-dag-array assumptions
+              ((mv erp node-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+               (make-node-replacement-alist-and-add-to-dag-array assumptions
                                                                  'dag-array ;todo: make a specialized version?
                                                                  dag-array dag-len
                                                                  'dag-parent-array ;todo: make a specialized version?
                                                                  dag-parent-array dag-constant-alist dag-variable-alist
                                                                  wrld))
               ((when erp) (mv erp nil))
-              (node-replacement-array (make-into-array 'node-replacement-array node-replacement-pairs))
-              (node-replacement-array-num-valid-nodes (+ 1 (max-key node-replacement-pairs 0))) ;todo: optimize if no assumptions?  the array len of 0 will prevent any lookup
+              (node-replacement-array (make-into-array 'node-replacement-array node-replacement-alist))
+              (node-replacement-array-num-valid-nodes (+ 1 (max-key node-replacement-alist 0))) ;todo: optimize if no assumptions?  the array len of 0 will prevent any lookup
               ((when erp) (mv erp nil))
               ((mv erp
                    new-nodenum-or-quotep
