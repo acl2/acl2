@@ -167,7 +167,12 @@
      (ok (implies (and ok (consp term-lst))
                   (make-typed-term-list-guard (cdr term-lst) path-cond (caddr judges)))
          :name make-typed-term-list-guard-of-cdr
-         :hints(("Goal" :in-theory (enable make-typed-term-list-guard))))))
+         :hints(("Goal" :in-theory (enable make-typed-term-list-guard))))
+     (ok (implies (and ok (not (consp term-lst)))
+                  (equal judges ''t))
+         :name make-typed-term-list-guard-of-not-consp
+         :hints(("Goal" :in-theory (enable make-typed-term-list-guard)))
+         :rule-classes nil)))
 
   ;; make-typed-term-list-fix-judges
   ;;   A "fixing" function to make judges satisfy make-typed-term-list-guard.
@@ -237,7 +242,6 @@
     :returns (tterm-lst typed-term-list-p)
     :guard-hints(("Goal"
                   :expand ((make-typed-term-list-guard term-lst path-cond judges))))
-
     (b* ((term-lst (pseudo-term-list-fix term-lst))
          (path-cond (pseudo-term-fix path-cond))
          (judges (make-typed-term-list-fix-judges term-lst path-cond judges))
@@ -286,9 +290,9 @@
              :hints(("Goal"
                      :expand(
                              (make-typed-term-list-fix-judges term-lst path-cond judges)
-                             (MAKE-TYPED-TERM-LIST-FIX-JUDGES (PSEUDO-TERM-LIST-FIX TERM-LST)
-                                                              (PSEUDO-TERM-FIX PATH-COND)
-                                                              JUDGES))))))
+                             (make-typed-term-list-fix-judges (pseudo-term-list-fix term-lst)
+                                                              (pseudo-term-fix path-cond)
+                                                              judges))))))
 
     (more-returns
      ;; mrg: I changed acl2-count-of-typed-term-list->term-lst into a
@@ -531,3 +535,16 @@
     :hints(("Goal"
             :in-theory (e/d (make-typed-term-list uniform-path-cond? uniform-path-help)
                             (crock-pain-0 crock-pain-1 crock-pain-2 crock-pain-3))))))
+
+
+(define correct-typed-term ((tterm typed-term-p))
+  :returns (res pseudo-termp)
+  (b* ((tterm (typed-term-fix tterm)))
+    `(implies ,(typed-term->path-cond tterm)
+              ,(typed-term->judgements tterm))))
+
+(define correct-typed-term-list ((tterm-lst typed-term-list-p))
+  :returns (res pseudo-termp)
+  (b* ((tterm-lst (typed-term-list-fix tterm-lst)))
+    `(implies ,(typed-term-list->path-cond tterm-lst)
+              ,(typed-term-list->judgements tterm-lst))))

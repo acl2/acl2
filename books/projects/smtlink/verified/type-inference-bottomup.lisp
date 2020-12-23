@@ -468,14 +468,12 @@
     :flag type-judgement-if
     :hints ((and stable-under-simplificationp
                  '(:in-theory (disable
-                               ;; ev-smtcp-of-if-call
                                pseudo-termp
                                correctness-of-path-test-list
                                symbol-listp
                                correctness-of-path-test
                                acl2::symbol-listp-when-not-consp
                                consp-of-is-conjunct?
-                               ;; ev-smtcp-of-variable
                                acl2::pseudo-termp-cadr-from-pseudo-term-listp
                                acl2::symbolp-of-car-when-symbol-listp
                                pseudo-term-listp-of-symbol-listp
@@ -518,14 +516,12 @@
                             (type-judgement-list nil path-cond options names state)))))
     :flag type-judgement-list)
   :hints(("Goal"
-          :in-theory (disable ;; ev-smtcp-of-if-call
-                              pseudo-termp
+          :in-theory (disable pseudo-termp
                               correctness-of-path-test-list
                               symbol-listp
                               correctness-of-path-test
                               acl2::symbol-listp-when-not-consp
                               consp-of-is-conjunct?
-                              ;; ev-smtcp-of-variable
                               acl2::pseudo-termp-cadr-from-pseudo-term-listp
                               acl2::symbolp-of-car-when-symbol-listp
                               pseudo-term-listp-of-symbol-listp

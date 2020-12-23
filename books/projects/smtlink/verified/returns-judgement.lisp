@@ -87,7 +87,7 @@
                                     t))
                 (yes?
                  (path-test-list `(if ,path-cond ,actuals-judgements 'nil)
-                                 substed state))
+                                 substed))
                 ((unless yes?)
                  (mv nil (er hard? 'returns-judgement=>construct-returns-judgement
                              "Hypotheses of returns theorem is not discharged.~%")))
@@ -167,7 +167,7 @@
                            actuals-judge-tl actuals-judgements-total arg-decl
                            path-cond supertype acc thm-acc state))
        (guard-term `(,type ,actual))
-       (yes? (path-test actual-judge guard-term state))
+       (yes? (path-test actual-judge guard-term))
        ((unless yes?)
         (returns-judgement-single-arg fn actuals actuals-total actuals-judgements
                                       actuals-judgements-total check-tl

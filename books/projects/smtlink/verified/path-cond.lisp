@@ -15,8 +15,6 @@
 (include-book "judgements")
 (include-book "term-substitution")
 
-(set-state-ok t)
-
 ;; -------------------------------------------------------------------
 ;;        Functions about path-cond
 
@@ -137,8 +135,7 @@
 |#
 
 (define path-test ((path-cond pseudo-termp)
-                   (expr pseudo-termp)
-                   state)
+                   (expr pseudo-termp))
   :returns (ok booleanp)
   :measure (acl2-count (pseudo-term-fix path-cond))
   (b* ((expr (pseudo-term-fix expr))
@@ -147,8 +144,8 @@
        ((if (equal path-cond expr)) t)
        ((unless (is-conjunct? path-cond)) nil)
        ((list* & path-hd path-tl &) path-cond))
-    (or (path-test path-hd expr state)
-        (path-test path-tl expr state)))
+    (or (path-test path-hd expr)
+        (path-test path-tl expr)))
   ///
   (defthm correctness-of-path-test
     (implies (and (ev-smtcp-meta-extract-global-facts)
@@ -156,7 +153,7 @@
                   (pseudo-termp path-cond)
                   (alistp a)
                   (ev-smtcp path-cond a)
-                  (path-test path-cond expr state))
+                  (path-test path-cond expr))
              (ev-smtcp expr a))
     :hints (("Goal"
              :in-theory (e/d (path-test is-conjunct?)
@@ -168,18 +165,17 @@
                               default-car default-cdr))))))
 
 (define path-test-list ((path-cond pseudo-termp)
-                        (expr-conj pseudo-termp)
-                        state)
+                        (expr-conj pseudo-termp))
   :returns (ok booleanp)
   :measure (acl2-count (pseudo-term-fix expr-conj))
   (b* ((path-cond (pseudo-term-fix path-cond))
        (expr-conj (pseudo-term-fix expr-conj))
        ((unless (is-conjunct? expr-conj))
-        (path-test path-cond expr-conj state))
+        (path-test path-cond expr-conj))
        ((if (equal expr-conj ''t)) t)
        ((list & expr-hd expr-tl &) expr-conj)
-       (yes? (path-test path-cond expr-hd state))
-       ((if yes?) (path-test-list path-cond expr-tl state)))
+       (yes? (path-test path-cond expr-hd))
+       ((if yes?) (path-test-list path-cond expr-tl)))
     nil))
 
 (defthm correctness-of-path-test-list
@@ -188,7 +184,7 @@
                 (pseudo-termp path-cond)
                 (alistp a)
                 (ev-smtcp path-cond a)
-                (path-test-list path-cond expr-conj state))
+                (path-test-list path-cond expr-conj))
            (ev-smtcp expr-conj a))
   :hints (("Goal"
            :in-theory (e/d (path-test-list is-conjunct?)
@@ -201,20 +197,16 @@
 
 #|
 (path-test-list '(if (integerp x) (if (null x) 't 'nil) 'nil)
-                '(if (integerp x) 't 'nil)
-                state)
+                '(if (integerp x) 't 'nil))
 (path-test-list '(if (integerp x) (if (null x) 't 'nil) 'nil)
-                '(if (rationalp x) 't 'nil)
-                state)
+                '(if (rationalp x) 't 'nil))
 (path-test-list '(if (integerp x) (if (null x) 't 'nil) 'nil)
-                '(if x 't 'nil)
-                state)
+                '(if x 't 'nil))
 (path-test-list '(if (if (integerp x)
                          (if (null x) 't 'nil) 'nil)
                      (rationalp x)
                    'nil)
-                '(if x (if (integerp x) 't 'nil) 'nil)
-                state)
+                '(if x (if (integerp x) 't 'nil) 'nil))
 (path-test-list '(IF (IF (RATIONALP R1) 'T 'NIL)
                      (IF (IF (RATIONAL-INTEGER-ALISTP AL)
                              'T
@@ -222,24 +214,22 @@
                          'T
                          'NIL)
                      'NIL)
-                '(rational-integer-alistp al)
-                state)
+                '(rational-integer-alistp al))
 |#
 
 (define path-test-list-or ((path-cond pseudo-termp)
-                           (expr-conj pseudo-termp)
-                           state)
+                           (expr-conj pseudo-termp))
   :returns (ok booleanp)
   :measure (acl2-count (pseudo-term-fix expr-conj))
   (b* ((path-cond (pseudo-term-fix path-cond))
        (expr-conj (pseudo-term-fix expr-conj))
        ((unless (is-conjunct? expr-conj))
-        (path-test path-cond expr-conj state))
+        (path-test path-cond expr-conj))
        ((if (equal expr-conj ''t)) nil)
        ((list & expr-hd expr-tl &) expr-conj)
-       (yes? (path-test path-cond expr-hd state))
+       (yes? (path-test path-cond expr-hd))
        ((if yes?) t))
-    (path-test-list-or path-cond expr-tl state)))
+    (path-test-list-or path-cond expr-tl)))
 
 ;; shadow-path-cond-acc will shadow the whole or branch if it contains
 ;; variables shadowed by formals.

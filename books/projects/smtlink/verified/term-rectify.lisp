@@ -54,7 +54,7 @@
                 ((unless (symbolp new-fn)) (mv t nil))
                 (substed
                  (term-substitution hypo (pairlis$ formals actuals) t))
-                (yes? (path-test-list actual-judges substed state))
+                (yes? (path-test-list actual-judges substed))
                 ((if yes?) (mv nil new-fn)))
              (mv t nil)))
           (('implies hypo ('equal (new-fn . !formals) (!fn . !formals)))
@@ -62,7 +62,7 @@
                 ((unless (symbolp new-fn)) (mv t nil))
                 (substed
                  (term-substitution hypo (pairlis$ formals actuals) t))
-                (yes? (path-test-list actual-judges substed state))
+                (yes? (path-test-list actual-judges substed))
                 ((if yes?) (mv nil new-fn)))
              (mv t nil)))
           (''t (mv nil nil))
@@ -124,7 +124,7 @@
         (prog2$ (er hard? 'term-rectify=>find-nil-fn
                     "nil-fn is 'quote or 'if.~%")
                 (make-typed-term)))
-       (yes? (path-test tt.judgements `(,type 'nil) state))
+       (yes? (path-test tt.judgements `(,type 'nil)))
        ((unless yes?) (find-nil-fn tterm path-cond nil-tl options state))
        ((unless (acl2::logicp nil-fn (w state)))
         (prog2$ (er hard? 'term-rectify=>find-nil-fn

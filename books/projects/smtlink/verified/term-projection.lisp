@@ -120,7 +120,7 @@
                                                 `(,var ,fresh-var))
                                       t))
                   (yes? (path-test-list `(if ,alist-term ,new-constraint 'nil)
-                                        substed-hypo state))
+                                        substed-hypo))
                   ((unless yes?) (mv nil nil)))
                (mv t `(alist-array-equiv ,var ,fresh-var))))
             (& (mv nil nil))))
@@ -147,8 +147,7 @@
                                       (actuals-proj pseudo-termp)
                                       (hypo pseudo-termp)
                                       (concl pseudo-termp)
-                                      (options type-options-p)
-                                      state)
+                                      (options type-options-p))
     :returns (mv (new-tt (good-typed-term-p new-tt options)
                          :hints (("Goal"
                                   :in-theory (enable good-typed-quote-p))))
@@ -181,7 +180,7 @@
                              ,actuals-proj
                            'nil)
                        'nil))
-         (yes? (path-test-list all-known hypo state))
+         (yes? (path-test-list all-known hypo))
          ((unless yes?)
           (prog2$ (er hard? 'term-projection=>generate-fncall-proj-cases
                       "Can't discharge the hypotheses: ~q0" hypo)
@@ -402,7 +401,7 @@
                    (generate-fncall-proj-cases fn actuals-tterm
                                                new-actuals-tterm
                                                actuals-proj hypo
-                                               concl to state)))
+                                               concl to)))
                (mv t new-tt new-proj)))
             (& (mv nil (make-typed-term) nil))))
          ((unless ok)
@@ -428,8 +427,7 @@
                             (then-proj pseudo-termp)
                             (else pseudo-termp)
                             (else-tterm typed-term-p)
-                            (else-proj pseudo-termp)
-                            state)
+                            (else-proj pseudo-termp))
     :returns (mv (new-t pseudo-termp)
                  (new-proj pseudo-termp))
     (b* ((term (pseudo-term-fix term))
@@ -441,8 +439,8 @@
          ((typed-term ett) (typed-term-fix else-tterm))
          (else-proj (pseudo-term-fix else-proj))
          (new-term `(if ,ctt.term ,ttt.term ,ett.term)))
-      (cond ((and (path-test then-proj `(alist-array-equiv ,then ,ttt.term) state)
-                  (path-test else-proj `(alist-array-equiv ,else ,ett.term) state))
+      (cond ((and (path-test then-proj `(alist-array-equiv ,then ,ttt.term))
+                  (path-test else-proj `(alist-array-equiv ,else ,ett.term)))
              (mv new-term `(alist-array-equiv ,term ,new-term)))
             (t (mv (er hard? 'term-projection=>generate-if-proj
                        "Inconsistent if projections.~%then: ~p0~% ~
@@ -455,8 +453,7 @@
                               (actuals-tterm typed-term-list-p)
                               (body pseudo-termp)
                               (body-tterm typed-term-p)
-                              (body-proj pseudo-termp)
-                              state)
+                              (body-proj pseudo-termp))
   :returns (mv (new-term pseudo-termp)
                (new-proj pseudo-termp))
   :guard (equal (len new-formals)
@@ -470,7 +467,7 @@
        ((typed-term btt) (typed-term-fix body-tterm))
        (body-proj (pseudo-term-fix body-proj))
        (new-term `((lambda ,new-formals ,btt.term) ,@att.term-lst)))
-    (cond ((path-test body-proj `(alist-array-equiv ,body ,btt.term) state)
+    (cond ((path-test body-proj `(alist-array-equiv ,body ,btt.term))
            (mv new-term `(alist-array-equiv ,term ,new-term)))
           (t (mv (er hard? 'term-projection=>lambda-projection
                      "Inconsistent lambda projections.~%body projection: ~p0~%"
@@ -639,7 +636,7 @@
           (mv (make-typed-term) nil nil))
          ((mv new-term new-proj)
           (generate-lambda-proj tt.term new-formals ptta ttb.term pttb
-                                projb state))
+                                projb))
          (new-judge `((lambda ,new-formals
                         ,pttb.judgements)
                       ,@ptta.term-lst))
@@ -692,7 +689,7 @@
          ((typed-term ptte) ptte)
          ((mv new-term new-proj)
           (generate-if-proj tt.term pttc ttt.term pttt projt tte.term
-                            ptte proje state))
+                            ptte proje))
          (new-judge (intersect-judgements pttt.judgements ptte.judgements state))
          (new-top (make-typed-term :term new-term
                                    :path-cond path-cond

@@ -33,7 +33,7 @@
        (judge2 (pseudo-term-fix judge2))
        (acc (pseudo-term-fix acc))
        ((if (and (not (is-conjunct? judge2))
-                 (path-test judge1 judge2 state)))
+                 (path-test judge1 judge2)))
         `(if ,judge2 ,acc 'nil))
        ((unless (is-conjunct? judge2)) acc)
        ((if (equal judge2 ''t)) acc)
@@ -616,13 +616,36 @@ state)
   :hints (("Goal"
            :do-not-induct t
            :in-theory (e/d (commute-if)
-                           (pseudo-termp
+                           (correctness-of-is-conjunct-list?
+                            correctness-of-path-test-list
+                            correctness-of-path-test
+                            consp-of-pseudo-lambdap
+                            pseudo-lambdap-of-fn-call-of-pseudo-termp
+                            symbolp-of-car-when-member-equal-of-type-to-types-alist-p
+                            ev-smtcp-of-booleanp-call
+                            ev-smtcp-of-lambda
+                            pseudo-termp
                             symbol-listp
                             pseudo-term-listp
                             pseudo-term-listp-of-symbol-listp
                             acl2::pseudo-termp-list-cdr
                             consp-of-is-conjunct?
-                            ev-smtcp-of-fncall-args))
+                            ev-smtcp-of-fncall-args
+                            correctness-of-commute-if-for-args-cond
+                            correctness-of-commute-if-for-args-notcond
+                            lambda-of-pseudo-lambdap
+                            pseudo-term-listp-of-cdr-of-pseudo-termp
+                            ev-smtcp-of-return-last-call
+                            ev-smtcp-of-rationalp-call
+                            ev-smtcp-of-not-call
+                            ev-smtcp-of-integerp-call
+                            ev-smtcp-of-implies-call
+                            ev-smtcp-of-iff-call
+                            ev-smtcp-of-hint-please-call
+                            ev-smtcp-of-equal-call
+                            ev-smtcp-of-cons-call
+                            ev-smtcp-of-binary-+-call
+                            acl2::pseudo-lambdap-of-car-when-pseudo-lambda-listp))
            :use ((:instance ev-smtcp-of-fncall-args
                             (x (cons (car (caddr judge))
                                      (commute-if-for-args (cadr judge)
@@ -695,7 +718,7 @@ state)
   (b* ((judge (pseudo-term-fix judge))
        (acc (pseudo-term-fix acc))
        ((if (and (not (is-conjunct? judge))
-                 (not (path-test acc judge state))))
+                 (not (path-test acc judge))))
         `(if ,judge ,acc 'nil))
        ((unless (is-conjunct? judge)) acc)
        ((if (equal judge ''t)) acc)
@@ -818,7 +841,7 @@ state)
       (('implies type-predicates (!tu.neighbour-type !term))
        (b* (((if (equal tu.neighbour-type 'quote)) ''t)
             ((unless (path-test-list `(if ,type-judge ,path-cond 'nil)
-                                     type-predicates state))
+                                     type-predicates))
              ''t))
          (caddr substed-thm)))
       (& ''t))))
