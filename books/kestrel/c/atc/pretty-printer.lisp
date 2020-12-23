@@ -764,7 +764,7 @@
   :returns (part msgp)
   :short "Pretty-print a declaration."
   (b* (((decl decl) decl))
-    (pprint-line (msg "~@0 ~@1 = ~@2"
+    (pprint-line (msg "~@0 ~@1 = ~@2;"
                       (pprint-tyspecseq decl.type)
                       (pprint-ident decl.name)
                       (pprint-expr decl.init (expr-grade-top)))
