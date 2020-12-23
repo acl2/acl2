@@ -1353,6 +1353,36 @@
                             ;;MAXELEM-OF-CONS
                             )))))
 
+;; simple consequence needed for proofs about the prover
+(defthm axe-treep-of-replace-nodenum-using-assumptions-for-axe-prover
+  (implies (and (replace-nodenum-using-assumptions-for-axe-prover nodenum equiv nodenums-to-assume-false dag-array)
+                (natp nodenum)
+                ;;(symbolp equiv)
+                (nat-listp ;all-natp
+                 nodenums-to-assume-false)
+                ;;(true-listp nodenums-to-assume-false)
+                (pseudo-dag-arrayp 'dag-array dag-array (+ 1 nodenum))
+                ;; todo: why is force needed here?
+                (force (implies (consp nodenums-to-assume-false)
+                                (pseudo-dag-arrayp 'dag-array dag-array (+ 1 (maxelem nodenums-to-assume-false))))))
+           (axe-treep (replace-nodenum-using-assumptions-for-axe-prover nodenum equiv nodenums-to-assume-false dag-array)))
+  :hints (("Goal" :in-theory (disable myquotep axe-treep)
+           :use (:instance myquotep-of-replace-nodenum-using-assumptions-for-axe-prover))))
+
+(defthm bounded-axe-treep-of-replace-nodenum-using-assumptions-for-axe-prover
+  (implies (and (replace-nodenum-using-assumptions-for-axe-prover nodenum equiv nodenums-to-assume-false dag-array)
+                (natp nodenum)
+                ;;(symbolp equiv)
+                (nat-listp ;all-natp
+                 nodenums-to-assume-false)
+                ;;(true-listp nodenums-to-assume-false)
+                (pseudo-dag-arrayp 'dag-array dag-array (+ 1 nodenum))
+                ;; todo: why is force needed here?
+                (force (implies (consp nodenums-to-assume-false)
+                                (pseudo-dag-arrayp 'dag-array dag-array (+ 1 (maxelem nodenums-to-assume-false))))))
+           (bounded-axe-treep (replace-nodenum-using-assumptions-for-axe-prover nodenum equiv nodenums-to-assume-false dag-array) dag-len))
+  :hints (("Goal" :use (:instance myquotep-of-replace-nodenum-using-assumptions-for-axe-prover))))
+
 ;x must be a nodenum or quotep:
 (defmacro isnodenum (x) `(not (consp ,x))) ;fixme would (atom be faster?)
 ;x must be a nodenum or quotep:
