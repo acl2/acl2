@@ -34,7 +34,7 @@
      "This manual page contains user-level reference documentation for ATC.
       If you are new to ATC, you should start with the "
      (xdoc::seetopic "atc-tutorial" "tutorial")
-     ", which provides user-level information
+     ", which provides user-level pedagogical information
       on how ATC works and how to use ATC effectively."))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -107,8 +107,7 @@
       This translation unit consists of one or more C function definitions.")
 
     (xdoc::p
-     "Each C function definition is represented by
-      a corresponding ACL2 function definition.
+     "Each C function definition is represented by an ACL2 function definition.
       These are the target ACL2 functions @('fni') passed as inputs.
       The order of the C functions in the translation unit is the same as
       the order of the inputs @('fn1'), ..., @('fnp').")
@@ -153,25 +152,77 @@
 
     (xdoc::p
      "Each function @('fni') must be in logic mode and guard-verified.
-      It must have an "
+      Its "
      (xdoc::seetopic "acl2::function-definedness" "unnormalized body")
-     " consisting exclusively of
-      <i>allowed non-boolean terms</i> and
-      <i>allowed boolean terms</i>,
-      which are inductively defined as follows:")
+     " must be an <i>allowed outer term</i>,
+      inductively defined as one of the following
+      (where allowed non-boolean and boolean terms are defined
+      after the allowed outer terms):")
     (xdoc::ul
      (xdoc::li
-      "The formal parameters of the function.
-       These represent the corresponding C formal parameters.
-       These are allowed non-boolean terms.")
+      "An allowed non-boolean term.
+       That is, an allowed non-boolean term is also an allowed outer term.
+       This represents a C @('return') statement
+       whose expression is represented by the same term,
+       viewed as an allowed non-boolean term.")
      (xdoc::li
-      "Calls of @(tsee sint-const) on quoted integers.
-       These represent C integer constants of type @('int').
+      "A call of @(tsee if) on
+       (i) a test that is an allowed boolean term and
+       (ii) branches that are allowed outer terms.
+       This represents a C @('if') conditional statement
+       whose test expression is represented by the test term
+       and whose branch blocks are represented by the branch terms.")
+     (xdoc::li
+      "A call of @(tsee if) on
+       (i) a test of the form @('(mbt ...)') or @('(mbt$ ...)'),
+       (ii) a `then' branch that is an allowed outer term, and
+       (iii) an `else' branch that may be any ACL2 term.
+       This represents the same C code represented by the `then' branch.
+       Both the test and the `else' branch are ignored;
+       the reason is that ATC generates C code under guard assumptions.
+       In translated terms,
+       @('(mbt x)') is
+       @('(return-last \'acl2::mbe1-raw \'t x)'), and
+       @('(mbt$ x)') is
+       @('(return-last \'acl2::mbe1-raw \'t (if x \'nil \'t))');
+       these are the patterns that ATC looks for.")
+     (xdoc::li
+      "A term of the form @('(let ((var init)) body)'),
+       where @('var') is a portable ASCII C identifier
+       as defined in Section `Portable ASCII C Identifiers' below,
+       @('init') is an allowed non-boolean term,
+       and @('body') is an allowed outer term.
+       This represents
+       a declaration of a C local variable represented  by @('var'),
+       initialized with the C expression represented by @('init'),
+       and followed by the C code represented by @('body');
+       the C type of the variable is determined from the initializer.
+       The @(tsee let) must have exactly one variable,
+       and its symbol name must be distinct from
+       the symbol names of all the other variables in scope
+       (both function parameters and variables bound in enclosing @(tsee let)s).
+       In translated terms,
+       @('(let ((var init)) body)') is @('((lambda (var) body) init)');
+       this is the pattern that ATC looks for."))
+    (xdoc::p
+     "An <i>allowed non-boolean term</i> is
+      inductively defined as one of the following:")
+    (xdoc::ul
+     (xdoc::li
+      "A formal parameter of the function.
+       This represents the corresponding C formal parameter,
+       as an expression.")
+     (xdoc::li
+      "A variable introduced by @(tsee let) (as described above).
+       This represents the corresponding C local variable,
+       as an expression.")
+     (xdoc::li
+      "A call of @(tsee sint-const) on a quoted integer.
+       This represents a C integer constants of type @('int').
        The guard verification requirement ensures that
-       the quoted integer is within the range of type @('int').
-       These calls are allowed non-boolean terms.")
+       the quoted integer is within the range of type @('int').")
      (xdoc::li
-      "Calls of the following functions on allowed non-boolean terms:"
+      "A call of one of the following functions on allowed non-boolean terms:"
       (xdoc::ul
        (xdoc::li "@(tsee sint-plus)")
        (xdoc::li "@(tsee sint-minus)")
@@ -195,87 +246,79 @@
        (xdoc::li "@(tsee sint-bitior)")
        (xdoc::li "@(tsee sint-logand)")
        (xdoc::li "@(tsee sint-logor)"))
-      "Each such call represents the corresponding C operator,
-       applied to C @('int') values.
+      "This represents
+       the corresponding C operator applied to C @('int') values.
        The guard verification requirement ensures that
-       they are always applied to values with a well-defined result,
+       the operators are always applied to values with a well-defined result,
        and that result is an @('int') value.
        If the operator is @('&&') or @('||'),
        this represents a strict (i.e. not non-strict) use of them;
        see below for how to represent non-strict uses of them,
-       but the strict use is slightly simpler when usable.
-       These calls are allowed non-boolean terms.")
+       but the strict version is slightly simpler when usable.")
      (xdoc::li
-      "Calls of @(tsee sint01) on allowed boolean terms.
-       Each such call converts an allowed boolean term
-       to an allowed non-boolean term.
-       These calls are allowed non-boolean terms.")
+      "A call of @(tsee sint01) on an allowed boolean term.
+       This converts an allowed boolean term
+       to an allowed non-boolean term.")
      (xdoc::li
-      "Calls of @(tsee sint-nonzerop) on allowed non-boolean terms.
-       Each such call converts an allowed non-boolean term
-       to an allowed boolean term.
-       These calls are allowed boolean terms.")
-     (xdoc::li
-      "Calls of @(tsee if) on
-       (i) tests that are allowed boolean terms and
+      "A call of @(tsee if) on
+       (i) a test that is an allowed boolean term and
        (ii) branches that are allowed non-boolean terms.
-       An ACL2 @(tsee if) represents
-       either an C @('if') conditional statement
-       or a C @('?:') conditional expression;
-       the choice is explained below.
-       These calls are allowed non-boolean terms.")
+       This represents a C @('?:') conditional expression
+       whose test expression is represented by the test term
+       and whose branch expressions are represented by the branch terms.")
      (xdoc::li
-      "Calls of the following functions and macros on allowed boolean terms:"
+      "A call of @(tsee if) on
+       (i) a test of the form @('(mbt ...)') or @('(mbt$ ...)'),
+       (ii) a `then' branch that is an allowed non-boolean term, and
+       (iii) an `else' branch that may be any ACL2 term.
+       This represents the same C code represented by the `then' branch.
+       Both the test and the `else' branch are ignored;
+       the reason is that ATC generates C code under guard assumptions.
+       In translated terms,
+       @('(mbt x)') is
+       @('(return-last \'acl2::mbe1-raw \'t x)'), and
+       @('(mbt$ x)') is
+       @('(return-last \'acl2::mbe1-raw \'t (if x \'nil \'t))');
+       these are the patterns that ATC looks for.")
+     (xdoc::li
+      "A call of a target function @('fnj'), with @('j < i'),
+       on allowed non-boolean terms.
+       The restriction @('j < i') means that
+       no (direct or indirect) recursion is allowed
+       and the target functions must be specified
+       in a topological order of their call graph.
+       This represents a call of the corresponding C function."))
+    (xdoc::p
+     "An <i>allowed boolean term</i> is
+      inductively defined as one of the following:")
+    (xdoc::ul
+     (xdoc::li
+      "A call of @(tsee sint-nonzerop) on an allowed non-boolean term.
+       This converts an allowed non-boolean term
+       to an allowed boolean term.")
+     (xdoc::li
+      "A call of one of the following functions and macros
+       on an allowed boolean term:"
       (xdoc::ul
        (xdoc::li "@(tsee not)")
        (xdoc::li "@(tsee and)")
        (xdoc::li "@(tsee or)"))
       "The first one is a function, while the other two are macros.
-       In translated terms, @('(and x y)') and @('(or x y)') are
-       @('(if x y \'nil)') and @('(or x x y)'):
-       these are the patterns that ATC looks for.
-       Each such call represents the corresponding C logical operator
+       This represents the corresponding C logical operator
        (negation @('!'), conjunction @('&&'), disjunction @('||'));
        conjunction and disjunctions are represented non-strictly.
-       These calls are allowed boolean terms.")
-     (xdoc::li
-      "Calls of @(tsee if) on
-       (i) tests of the form @('(mbt ...)') or @('(mbt$ ...)'),
-       (ii) `then' branches that are allowed non-boolean terms, and
-       (iii) `else' branches that are arbitrary terms.
-       Both tests and `else' branches are ignored;
-       only the `then' branches represent C code and are translated to C.
-       The reason is that ATC generates C code under guard assumptions.
-       In translated terms,
-       @('(mbt x)') is
-       @('(return-last \'acl2::mbe1-raw \'t x)'), and
-       @('(mbt$ x)') is
-       @('(return-last \'acl2::mbe1-raw \'t (if x \'nil \'t))').
-       These calls are allowed non-boolean terms.")
-     (xdoc::li
-      "Calls of @(tsee if) on
-       (i) tests of the form @('(mbt$ ...)'),
-       (ii) `then' branches that are allowed non-boolean terms, and
-       (iii) `else' branches that are arbitrary terms.
-       Both tests and `else' branches are ignored;
-       only the `then' branches represent C code and are translated to C.
-       The reason is that ATC generates C code under guard assumptions.
-       In translated terms, @('(mbt x)') is
-       @('(return-last \'acl2::mbe1-raw \'t (if x \'nil \'t))').
-       These calls are allowed non-boolean terms.")
-     (xdoc::li
-      "Calls of a target function @('fnj'), with @('j < i'),
-       on allowed non-boolean terms.
-       The restriction @('j < i') means that
-       no (direct or indirect) recursion is allowed
-       and the target functions must be specified according to
-       a topological order of their call graph.
-       These calls are allowed non-boolean terms."))
+       In translated terms, @('(and x y)') and @('(or x y)') are
+       @('(if x y \'nil)') and @('(or x x y)'):
+       these are the patterns that ATC looks for."))
     (xdoc::p
-     "Note that the allowed boolean terms return ACL2 boolean values,
-      while the allowed non-boolean terms return ACL2 non-boolean values
-      that represent C values.
-      The distinction between these two kinds of allowed terms
+     "Allowed outer terms represent C statements,
+      while allowed non-boolean and boolean terms represent C expressions;
+      the fact that expressions are ``inside'' statements
+      motivates the term `outer'.
+      The allowed boolean terms return ACL2 boolean values,
+      while the allowed outer (including non-boolean) terms return
+      ACL2 non-boolean values that represent C values:
+      the distinction between these two kinds of allowed terms
       stems from the need to represent C's non-strictness in ACL2:
       C's non-strict constructs are
       @('if') statements,
@@ -291,27 +334,11 @@
       By construction, this result has C type @('int').")
 
     (xdoc::p
-     "The body statement of the C function represented by each @('fni')
-      is obtained by translating the ACL2 function's body as follows.
-      If the body is not an @(tsee if),
-      it is translated to a single C @('return') statement
-      with the expression derived from the body
-      according to the correspondence outlined above;
-      in this case, any @(tsee if)s are turned into conditional expressions.
-      If the body is an @(tsee if),
-      it is turned into a C @('if') statement,
-      whose test expression is derived from the ACL2 test term
-      and whose branches are recursively translated
-      in the same manner as the body.
-      Thus, if a branch is also an @(tsee if),
-      it is turned into a nested @('if') statement.
-      Eventually non-@(tsee if) branches are reached,
-      and they are turned into @('return') statements.
-      Other calls of @(tsee if), e.g. arguments of non-@(tsee if) functions,
-      are turned into C conditional expressions.
-      Thus, depending on where an @(tsee if) occurs,
-      it may represent either a statement or an expression,
-      according to an easily predictable algorithm.")
+     "The body of the C function represented by each @('fni')
+      is the compound statement consisting of
+      the block items (i.e. statements and declarations)
+      represented by the ACL2 function's body
+      (which is an allowed outer term).")
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -385,8 +412,8 @@
      (xdoc::p
       "where @('...') is the abstract syntax tree of
        the generated C translation unit,
-       which ATC also pretty-prints and
-       writes to the file specified by the @(':output-file') input."))
+       which ATC also pretty-prints and writes
+       to the file specified by the @(':output-file') input."))
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

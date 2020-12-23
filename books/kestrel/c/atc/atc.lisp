@@ -31,6 +31,8 @@
 (include-book "kestrel/event-macros/input-processing" :dir :system)
 (include-book "kestrel/event-macros/make-event-terse" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
+(include-book "kestrel/std/system/check-if-call" :dir :system)
+(include-book "kestrel/std/system/check-lambda-call" :dir :system)
 (include-book "kestrel/std/system/check-mbt-call" :dir :system)
 (include-book "kestrel/std/system/check-mbt-dollar-call" :dir :system)
 (include-book "kestrel/std/system/formals-plus" :dir :system)
@@ -561,6 +563,45 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-check-let ((term pseudo-termp))
+  :returns (mv (yes/no booleanp)
+               (var symbolp :hyp :guard)
+               (init pseudo-termp :hyp :guard)
+               (body pseudo-termp :hyp :guard))
+  :short "Check if a term represents a local variable declaration
+          followed by more code."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Here we recognize and decompose allowed outer terms
+     that are @(tsee let)s.
+     In translated form, these are terms @('((lambda (var) body) init)')."))
+  (b* (((mv okp formals body args) (acl2::check-lambda-call term))
+       ((when (not okp)) (mv nil nil nil nil))
+       ((unless (and (= (len formals) 1)
+                     (= (len args) 1)))
+        (mv nil nil nil nil))
+       (var (car formals))
+       (init (car args)))
+    (mv t var init body))
+  :prepwork
+  ((local (include-book "std/typed-lists/pseudo-term-listp" :dir :system)))
+  ///
+
+  (defret acl2-count-of-atc-check-let-init
+    (implies yes/no
+             (< (acl2-count init)
+                (acl2-count term)))
+    :rule-classes :linear)
+
+  (defret acl2-count-of-atc-check-let-body
+    (implies yes/no
+             (< (acl2-count body)
+                (acl2-count term)))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines atc-gen-expr-fns
   :short "Mutually recursive functions to
           generate C expressions from ACL2 terms."
@@ -585,8 +626,10 @@
       "At the same time, we check that the term is an allowed non-boolean term,
        as described in the user documentation.")
      (xdoc::p
+      "We also return the C type of the expression.")
+     (xdoc::p
       "An ACL2 variable is translated to a C variable.
-       Its type is looked up in an alist that is passed as input.")
+       Its type is looked up in the variable alist passed as input.")
      (xdoc::p
       "If the term fits the @(tsee sint-const) pattern,
        we translate it to a C integer constant.")
@@ -599,10 +642,11 @@
       "If the term is a call of a function that precedes @('fn')
        in the list of target functions @('fn1'), ..., @('fnp'),
        we translate it to a C function call on the translated arguments.
-       The type of the expression is the result type of the function.")
+       The type of the expression is the result type of the function,
+       which is looked up in the function alist passed as input.")
      (xdoc::p
       "If the term is a call of @(tsee c::sint01),
-       we call the mutually recursive function
+       we call the mutually recursive ACL2 function
        that translates the argument (which must be an allowed boolean term)
        to an expression, which we return.
        The type of this expression is always @('int').")
@@ -612,8 +656,8 @@
        in that case, we discard test and `else' branch
        and recursively process the `then' branch.
        Otherwise,
-       we call the mutually recursive function on the test,
-       we call this function on the branches,
+       we call the mutually recursive ACL2 function on the test,
+       we call this ACL2 function on the branches,
        and we construct a conditional expression.
        We ensure that the two branches have the same type.")
      (xdoc::p
@@ -884,7 +928,7 @@
                       ctx
                       state)
   :returns (mv erp
-               (val (tuple (stmt stmtp)
+               (val (tuple (items block-item-listp)
                            (type tyspecseqp)
                            val))
                state)
@@ -892,67 +936,126 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Besides the generated statement,
-     we also return the C type of the value it returns.")
+    "More precisely, we return a list of block items.
+     These can be regarded as forming a compound statements,
+     but lists of block items are compositional (via concatenation).")
    (xdoc::p
-    "This is called on the body term of an ACL2 function.
-     If the term is not a conditional,
-     we generate a C expression for the term
-     and generate a @('return') statement with that expression.
-     Otherwise, the term is a conditional and there are two cases.
+    "At the same time, we check that the term is an allowed outer term,
+     as described in the user documentation.")
+   (xdoc::p
+    "Besides the generated block items list,
+     we also return the C type of the value it returns.
+     Even though C block item lists do not always return values,
+     the ones generated here always do;
+     in fact, we are turning ACL2 terms (which return values)
+     into block item lists that return values corresponding to the terms.")
+   (xdoc::p
+    "If the term is a conditional, there are two cases.
      If the test is @(tsee mbt) or @(tsee mbt$),
      we discard test and `else' branch
      and recursively translate the `then' branch.
-     Otherwise, we generate an @('if') statement,
-     with recursively generated statements as branches;
+     Otherwise, we generate an @('if') statement
+     (as a singleton block item list),
+     with recursively generated compound statements as branches;
      the test expression is generated from the test term;
-     we ensure that the two branches have the same type."))
-  (case-match term
-    (('if test then else)
-     (b* (((mv mbtp &) (acl2::check-mbt-call test))
-          ((when mbtp) (atc-gen-stmt then vars fn prec-fns ctx state))
-          ((mv mbt$p &) (acl2::check-mbt$-call test))
-          ((when mbt$p) (atc-gen-stmt then vars fn prec-fns ctx state))
-          ((mv erp test-expr state) (atc-gen-expr-bool test
-                                                       vars
-                                                       fn
-                                                       prec-fns
-                                                       ctx
-                                                       state))
-          ((when erp) (mv erp (list (irr-stmt) (irr-tyspecseq)) state))
-          ((er (list then-stmt then-type)) (atc-gen-stmt then
-                                                         vars
-                                                         fn
-                                                         prec-fns
-                                                         ctx
-                                                         state))
-          ((er (list else-stmt else-type)) (atc-gen-stmt else
-                                                         vars
-                                                         fn
-                                                         prec-fns
-                                                         ctx
-                                                         state))
-          ((unless (equal then-type else-type))
-           (er-soft+ ctx t (list (irr-stmt) (irr-tyspecseq))
-                     "When generating C code for the function ~x0, ~
-                      two branches ~x1 and ~x2 of a conditional term ~
-                      have different types ~x3 and ~x4;
-                      use conversion operations, if needed, ~
-                      to make the branches of the same type."
-                     fn then else then-type else-type)))
-       (value
-        (list
-         (make-stmt-ifelse :test test-expr :then then-stmt :else else-stmt)
-         then-type))))
-    (& (b* (((mv erp (list expr type) state) (atc-gen-expr-nonbool term
-                                                                   vars
-                                                                   fn
-                                                                   prec-fns
-                                                                   ctx
-                                                                   state))
-            ((when erp) (mv erp (list (irr-stmt) (irr-tyspecseq)) state)))
-         (value (list (make-stmt-return :value expr)
-                      type)))))
+     we ensure that the two branches have the same type.")
+   (xdoc::p
+    "If the term is a @(tsee let),
+     we first check that a variable with the same symbol name
+     is not already in scope (i.e. in the variable alist):
+     as explained in the user documentation,
+     we currently disallow variable hiding in the C code.
+     We generate a declaration for the variable,
+     initialized with the expression obtained
+     from the term that the variable is bound to,
+     which also determines the type of the variable.
+     We recursively generate the block items for the body
+     and we put those just after the variable declaration.")
+   (xdoc::p
+    "If the term is neither an @(tsee if) nor a @(tsee let),
+     we treat it as a non-boolean term.
+     We translate it to an expression
+     and we generate a @('return') statement with that expression."))
+  (b* (((mv okp test then else) (acl2::check-if-call term))
+       ((when okp)
+        (b* (((mv mbtp &) (acl2::check-mbt-call test))
+             ((when mbtp) (atc-gen-stmt then vars fn prec-fns ctx state))
+             ((mv mbt$p &) (acl2::check-mbt$-call test))
+             ((when mbt$p) (atc-gen-stmt then vars fn prec-fns ctx state))
+             ((mv erp test-expr state) (atc-gen-expr-bool test
+                                                          vars
+                                                          fn
+                                                          prec-fns
+                                                          ctx
+                                                          state))
+             ((when erp) (mv erp (list nil (irr-tyspecseq)) state))
+             ((er (list then-items then-type)) (atc-gen-stmt then
+                                                             vars
+                                                             fn
+                                                             prec-fns
+                                                             ctx
+                                                             state))
+             ((er (list else-items else-type)) (atc-gen-stmt else
+                                                             vars
+                                                             fn
+                                                             prec-fns
+                                                             ctx
+                                                             state))
+             ((unless (equal then-type else-type))
+              (er-soft+ ctx t (list nil (irr-tyspecseq))
+                        "When generating C code for the function ~x0, ~
+                         two branches ~x1 and ~x2 of a conditional term ~
+                         have different types ~x3 and ~x4;
+                         use conversion operations, if needed, ~
+                         to make the branches of the same type."
+                        fn then else then-type else-type)))
+          (value
+           (list
+            (list
+             (block-item-stmt
+              (make-stmt-ifelse :test test-expr
+                                :then (make-stmt-compound :items then-items)
+                                :else (make-stmt-compound :items else-items))))
+            then-type))))
+       ((mv okp var init body) (atc-check-let term))
+       ((when okp)
+        (b* ((var-name (symbol-name var))
+             ((unless (atc-ident-stringp var-name))
+              (er-soft+ ctx t (list nil (irr-tyspecseq))
+                        "The symbol name ~s0 of ~
+                         the LET variable ~x1 of the function ~x2 ~
+                         must be a portable ASCII C identifier, but it is not."
+                        var-name var fn))
+             ((when (member-equal var-name (symbol-name-lst (strip-cars vars))))
+              (er-soft+ ctx t (list nil (irr-tyspecseq))
+                        "When generating C code for the function ~x0, ~
+                         the LET variable ~x1 has the same symbol name as ~
+                         another variable (formal parameter or LET variable) ~
+                         that is in scope; ~
+                         this is disallowed, even if the package names differ."
+                        fn var))
+             ((mv erp (list init-expr init-type) state)
+              (atc-gen-expr-nonbool init vars fn prec-fns ctx state))
+             ((when erp) (mv erp (list nil (irr-tyspecseq)) state))
+             (decl (make-decl :type init-type
+                              :name (make-ident :name (symbol-name var))
+                              :init init-expr))
+             (item (block-item-decl decl))
+             (vars (acons var init-type vars))
+             ((er (list body-items body-type))
+              (atc-gen-stmt body vars fn prec-fns ctx state)))
+          (value
+           (list (cons item body-items)
+                 body-type))))
+       ((mv erp (list expr type) state) (atc-gen-expr-nonbool term
+                                                              vars
+                                                              fn
+                                                              prec-fns
+                                                              ctx
+                                                              state))
+       ((when erp) (mv erp (list nil (irr-tyspecseq)) state)))
+    (value (list (list (block-item-stmt (make-stmt-return :value expr)))
+                 type)))
 
   :verify-guards nil ; done below
 
@@ -1136,12 +1239,12 @@
                                  state))
        ((when erp) (mv erp (list (irr-ext-decl) nil) state))
        (body (acl2::ubody+ fn wrld))
-       ((mv erp (list stmt type) state) (atc-gen-stmt body
-                                                      vars
-                                                      fn
-                                                      prec-fns
-                                                      ctx
-                                                      state))
+       ((mv erp (list items type) state) (atc-gen-stmt body
+                                                       vars
+                                                       fn
+                                                       prec-fns
+                                                       ctx
+                                                       state))
        ((when erp) (mv erp (list (irr-ext-decl) nil) state)))
     (value
      (list
@@ -1149,7 +1252,7 @@
        (make-fundef :result type
                     :name (make-ident :name name)
                     :params params
-                    :body (stmt-compound (list (block-item-stmt stmt)))))
+                    :body (stmt-compound items)))
       (acons fn type prec-fns))))
   ///
 
@@ -1349,9 +1452,12 @@
                                      pop-frame
                                      lookup-var
                                      lookup-var-aux
+                                     add-var
                                      enter-scope
                                      scope-result-kind
                                      scope-result-ok->get
+                                     denv-result-kind
+                                     denv-result-ok->get
                                      value-result-kind
                                      value-result-ok->get
                                      value-option-result-kind
