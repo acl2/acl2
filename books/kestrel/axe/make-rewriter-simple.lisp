@@ -1004,10 +1004,10 @@
                                                             print interpreted-function-alist known-booleans monitored-symbols
                                                             (+ -1 count)))
                        ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)))
-                    (if (consp simplified-test)
+                    (if (consp simplified-test) ; tests for quotep
                         ;; test simplified to a constant:
                         (mv (erp-nil) simplified-test dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
-                      ;; test didn't simplify to a constant, so it's a nodenum.  Now try looking it up in the refined-assumption-alist:
+                      ;; simplified-test is a nodenum.  Now try looking it up in the refined-assumption-alist:
                       ;; TODO: Do this also for the other kinds of IF below
                       (if (nodenum-equal-to-refined-assumptionp simplified-test refined-assumption-alist dag-array)
                           ;; Since the test is known to be true from the refined-assumption-alist, it's as if it rewrote to 't (even though it may not be a predicate, IF/MYIF only looks at whether it is nil):
