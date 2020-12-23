@@ -354,3 +354,15 @@
                         nil nil t nil (w state))
    (and (not erp)
         (equal (dag-to-term res) '(if (not (foo x)) y (foo x))))))
+
+;; Test with a non-boolean assumptions that appears in an IF test.  This works
+;; because we lookup IF tests in the refined-assumption alist.
+(assert!
+ (mv-let (erp res)
+   (simplify-term-basic '(if (member-equal x y) w z)
+                        '((member-equal x y))
+                        (make-rule-alist! nil
+                                         (w state))
+                        nil nil t nil (w state))
+   (and (not erp)
+        (equal (dag-to-term res) 'w))))
