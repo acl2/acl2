@@ -31,7 +31,7 @@
   (xdoc::p
    "This tutorial is work in progress,
     but it may be already useful in its current incomplete form.
-    This tutorial's goal is to provide user-level information
+    This tutorial's goal is to provide user-level pedagogical information
     on how ATC works and how to use ATC effectively.
     See "
    (xdoc::seetopic "atc" "the ATC manual page")
@@ -52,11 +52,11 @@
     when reading this tutorial for the first time.")
 
   (xdoc::p
-   "Each page starts with a short description of the contents of the page,
-    and also says whether the page may be perhaps skipped at first reading,
-    because it contains additional information
-    that may not be necessary for a user to know in order to use ATC.
-    However, it is recommended to read all the tutorial pages, eventually."))
+   "Some pages may be skipped at first reading,
+    because they contain additional information
+    that may not be necessary for a user to know in order to start using ATC;
+    such pages include explicit text indicating that.
+    However, it is recommended to read all the pages, eventually."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -65,10 +65,7 @@
   "Motivation for Generating C Code from ACL2"
 
   (xdoc::p
-   "This tutorial page provides motivation for ATC.
-    It may be skipped at first reading,
-    especially if the reader is already motivated
-    to generate C code from ACL2.")
+   "(This page may be skipped at first reading.)")
 
   (xdoc::p
    "The motivation for generating C code from ACL2 is analogous to
@@ -92,6 +89,9 @@
 (def-atc-tutorial-page atj-comparison
 
   "Comparison with ATJ's Java code generation from ACL2"
+
+  (xdoc::p
+   "(This page may be skipped at first reading.)")
 
   (xdoc::p
    "ATC is related to "
@@ -171,6 +171,9 @@
 (def-atc-tutorial-page proofs
 
   "ACL2 Proofs Generated for the Generated C code"
+
+  (xdoc::p
+   "(This page may be skipped at first reading.)")
 
   (xdoc::p
    "Besides generating C code,
