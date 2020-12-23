@@ -22,6 +22,8 @@
 ;; We can build the node-replacement-array by calling make-into-array on the
 ;; node-replacement-alist produced by make-node-replacement-alist-and-add-to-dag-array.
 
+;; See also node-replacement-array2.lisp.
+
 (local (in-theory (disable ;symbolp-of-car-of-car-when-symbol-term-alistp
                    assoc-equal
                    ;default-car
