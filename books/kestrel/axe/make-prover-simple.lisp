@@ -53,7 +53,8 @@
   (let* ((relieve-free-var-hyp-and-all-others-name (pack$ 'relieve-free-var-hyp-and-all-others-for- suffix '-prover))
          (relieve-rule-hyps-name (pack$ 'relieve-rule-hyps-for- suffix '-prover))
          (try-to-apply-rules-name (pack$ 'try-to-apply-rules-for- suffix '-prover))
-         ;;(simplify-if-tree-name (pack$ 'simplify-if-tree-and-add-to-dag-for- suffix '-prover))
+         (simplify-if-tree-name (pack$ 'simplify-if-tree-and-add-to-dag-for- suffix '-prover))
+         (simplify-boolif-tree-name (pack$ 'simplify-boolif-tree-and-add-to-dag-for- suffix '-prover))
          (simplify-fun-call-name (pack$ 'simplify-fun-call-and-add-to-dag-for- suffix '-prover))
          (simplify-tree-name (pack$ 'simplify-tree-and-add-to-dag-for- suffix '-prover))
          (simplify-trees-name (pack$ 'simplify-trees-and-add-to-dag-for- suffix '-prover))
@@ -104,6 +105,15 @@
          ;;                                                        embedded-dag-depth case-designator
          ;;                                                        prover-depth options count))
          ;; (call-of-simplify-if-tree `(,simplify-if-tree-name tree
+         ;;                                                    equiv dag-array dag-len dag-parent-array
+         ;;                                                    dag-constant-alist dag-variable-alist
+         ;;                                                    rule-alist nodenums-to-assume-false
+         ;;                                                    equiv-alist print
+         ;;                                                    info tries interpreted-function-alist
+         ;;                                                    monitored-symbols
+         ;;                                                    embedded-dag-depth case-designator
+         ;;                                                    prover-depth options count))
+         ;; (call-of-simplify-boolif-tree `(,simplify-boolif-tree-name tree
          ;;                                                    equiv dag-array dag-len dag-parent-array
          ;;                                                    dag-constant-alist dag-variable-alist
          ;;                                                    rule-alist nodenums-to-assume-false
@@ -637,6 +647,146 @@
         ;;                                                                info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count) state))))))))))
 
         ;; Returns (mv erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries).
+        (defund ,simplify-if-tree-name (tree
+                                        equiv
+                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                        rule-alist
+                                        nodenums-to-assume-false
+                                        equiv-alist ;don't pass this around?
+                                        print
+                                        info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options count)
+          (declare (xargs :guard (and (axe-treep tree)
+                                      (symbolp equiv)
+                                      (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                                      (bounded-axe-treep tree dag-len)
+                                      (consp tree) ;; this case
+                                      (member-eq (ffn-symb tree) '(if myif)) ;; this case
+                                      (= 3 (len (fargs tree))) ;; this case
+                                      (rule-alistp rule-alist)
+                                      (nat-listp nodenums-to-assume-false)
+                                      (all-< nodenums-to-assume-false dag-len)
+                                      (symbol-alistp equiv-alist) ;strengthen?
+                                      ;; print
+                                      (info-worldp info)
+                                      (triesp tries)
+                                      (interpreted-function-alistp interpreted-function-alist)
+                                      (symbol-listp monitored-symbols)
+                                      (natp embedded-dag-depth) ;can we just use the prover depth?
+                                      (stringp case-designator)
+                                      (natp prover-depth)
+                                      (axe-prover-optionsp options))
+                          :measure (+ 1 (nfix count)))
+                   (type (unsigned-byte 59) count))
+          (if (zp-fast count)
+              (mv :count-exceeded nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
+            (b* ((args (fargs tree))
+                 ;; First, try to resolve the if-test:
+                 ((mv erp simplified-test dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
+                  (,simplify-tree-name (first args) ;the test
+                                       'iff ;can rewrite the test in a propositional context
+                                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                       rule-alist nodenums-to-assume-false equiv-alist print info tries interpreted-function-alist monitored-symbols embedded-dag-depth
+                                       case-designator prover-depth options (+ -1 count)))
+                 ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))
+              (if (consp simplified-test) ;tests for quotep
+                  ;; The test was resolved, so just simplify the appropriate branch:
+                  (,simplify-tree-name (if (unquote simplified-test)
+                                           (second args) ;then branch
+                                         (third args)    ;else branch
+                                         )
+                                       equiv ;use the same equiv
+                                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                       rule-alist nodenums-to-assume-false equiv-alist print info tries interpreted-function-alist monitored-symbols
+                                       embedded-dag-depth case-designator prover-depth options (+ -1 count))
+                ;; The test was not resolved, so we must rewrite both branches: ;; todo: just call simplify-tree twice here?
+                (b* (((mv erp simplified-other-args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
+                      (,simplify-trees-name (rest args)
+                                            '(equal equal) ;;equiv-lst ;todo: use the same equiv as for the whole term?
+                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                            rule-alist nodenums-to-assume-false
+                                            equiv-alist print info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count)))
+                     ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))
+                  (,simplify-fun-call-name (ffn-symb tree)
+                                           (cons simplified-test simplified-other-args)
+                                           equiv
+                                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                           rule-alist
+                                           nodenums-to-assume-false
+                                           equiv-alist
+                                           print
+                                           info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count)))))))
+
+        ;; Returns (mv erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries).
+        (defund ,simplify-boolif-tree-name (tree ;pass less?
+                                            equiv
+                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                            rule-alist
+                                            nodenums-to-assume-false
+                                            equiv-alist ;don't pass this around?
+                                            print
+                                            info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options count)
+          (declare (xargs :guard (and (axe-treep tree)
+                                      (symbolp equiv)
+                                      (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                                      (bounded-axe-treep tree dag-len)
+                                      (consp tree)         ;; this case
+                                      (eq (ffn-symb tree) 'boolif) ;; this case
+                                      (= 3 (len (fargs tree)))     ;; this case
+                                      (rule-alistp rule-alist)
+                                      (nat-listp nodenums-to-assume-false)
+                                      (all-< nodenums-to-assume-false dag-len)
+                                      (symbol-alistp equiv-alist) ;strengthen?
+                                      ;; print
+                                      (info-worldp info)
+                                      (triesp tries)
+                                      (interpreted-function-alistp interpreted-function-alist)
+                                      (symbol-listp monitored-symbols)
+                                      (natp embedded-dag-depth) ;can we just use the prover depth?
+                                      (stringp case-designator)
+                                      (natp prover-depth)
+                                      (axe-prover-optionsp options))
+                          :measure (+ 1 (nfix count)))
+                   (type (unsigned-byte 59) count))
+          (if (zp-fast count)
+              (mv :count-exceeded nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
+            (b* ((args (fargs tree))
+                 ;; First, try to resolve the if-test:
+                 ((mv erp simplified-test dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
+                  (,simplify-tree-name (first args) ;the test
+                                       'iff ;can rewrite the test in a propositional context
+                                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                       rule-alist nodenums-to-assume-false equiv-alist print info tries interpreted-function-alist monitored-symbols embedded-dag-depth
+                                       case-designator prover-depth options (+ -1 count)))
+                 ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))
+              (if (consp simplified-test) ;tests for quotep
+                  ;; The test was resolved, so just simplify the appropriate branch:
+                  (,simplify-tree-name (if (unquote simplified-test)
+                                           `(bool-fix$inline ,(second args)) ;then branch
+                                         `(bool-fix$inline ,(third args)) ;else branch
+                                         )
+                                       equiv ;use the same equiv, todo: consider using IFF here
+                                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                       rule-alist nodenums-to-assume-false equiv-alist print info tries interpreted-function-alist monitored-symbols
+                                       embedded-dag-depth case-designator prover-depth options (+ -1 count))
+                ;; The test was not resolved, so we must rewrite both branches: ;; todo: just call simplify-tree twice here?
+                (b* (((mv erp simplified-other-args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
+                      (,simplify-trees-name (rest args)
+                                            '(equal equal) ;;equiv-lst ;todo: use '(iff iff) here, or try the same equiv as for the whole term?
+                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                            rule-alist nodenums-to-assume-false
+                                            equiv-alist print info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count)))
+                     ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))
+                  (,simplify-fun-call-name (ffn-symb tree)
+                                           (cons simplified-test simplified-other-args)
+                                           equiv
+                                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                           rule-alist
+                                           nodenums-to-assume-false
+                                           equiv-alist
+                                           print
+                                           info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count)))))))
+
+        ;; Returns (mv erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries).
         ;; Takes a FN and simplified ARGS.  No special handling for IFs, lambdas, or ground terms.
         (defund ,simplify-fun-call-name (fn   ; a function symbol
                                          args ; the simplified args
@@ -744,19 +894,19 @@
                     (progn$ ;;nil ;;(cw "Rewriting the variable ~x0" tree) ;new!
                      (er hard ',simplify-tree-name "rewriting the var ~x0" tree)
                      (mv :unexpected-var nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
-;;                      ;; It's a variable:  todo: perhaps add it first and then use assumptions?
-;;                      ;; First try looking it up in the assumptions (fixme make special version of rewrite-term-using-assumptions-for-basic-prover for a variable?):
-;;                      (let ((assumption-match (replace-term-using-assumptions-for-axe-prover tree equiv nodenums-to-assume-false dag-array print)))
-;;                        (if assumption-match
-;;                            ;; We replace the variable with something it's equated to in nodenums-to-assume-false.
-;;                            ;; We don't rewrite the result (by the second pass, nodenums-to-assume-false will be simplified - and maybe we should always do that?)
-;; ;fixme what if there is a chain of equalities to follow?
-;;                            (mv nil assumption-match dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
-;;                          ;; no match, so we just add the variable to the DAG:
-;;                          ;;make this a macro? this one might be rare..  same for other adding to dag operations?
-;;                          (mv-let (erp nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist) ;fixme simplify nodenum?
-;;                            (add-variable-to-dag-array tree dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-;;                            (mv erp nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))))
+                     ;;                      ;; It's a variable:  todo: perhaps add it first and then use assumptions?
+                     ;;                      ;; First try looking it up in the assumptions (fixme make special version of rewrite-term-using-assumptions-for-basic-prover for a variable?):
+                     ;;                      (let ((assumption-match (replace-term-using-assumptions-for-axe-prover tree equiv nodenums-to-assume-false dag-array print)))
+                     ;;                        (if assumption-match
+                     ;;                            ;; We replace the variable with something it's equated to in nodenums-to-assume-false.
+                     ;;                            ;; We don't rewrite the result (by the second pass, nodenums-to-assume-false will be simplified - and maybe we should always do that?)
+                     ;; ;fixme what if there is a chain of equalities to follow?
+                     ;;                            (mv nil assumption-match dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
+                     ;;                          ;; no match, so we just add the variable to the DAG:
+                     ;;                          ;;make this a macro? this one might be rare..  same for other adding to dag operations?
+                     ;;                          (mv-let (erp nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist) ;fixme simplify nodenum?
+                     ;;                            (add-variable-to-dag-array tree dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+                     ;;                            (mv erp nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))))
                      )
                   ;; TREE is a nodenum (because it's an atom but not a symbol):
                   ;;fffixme what if tree is the nodenum of a constant?
@@ -771,211 +921,198 @@
                       (mv (erp-nil) tree dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))))
               ;; TREE is not an atom:
               (let ((fn (ffn-symb tree)))
-                (if (eq fn 'quote)
-                    ;; TREE is a quoted constant, so return it
-                    (mv (erp-nil) tree dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
-                  ;; TREE is a function call. fn may be a lambda or a short-circuit-function (if/myif/boolif/bvif/booland/boolor):
-                  (let ((args (fargs tree)))
-                    ;;Rewrite the args, *except* if it's a short-circuit function, we may be able to avoid rewriting them all and instead just return a new term to rewrite (will that new term ever be a constant?).
-                    (mv-let
-                      (erp short-circuitp term-or-rewritten-args ;if short-circuitp is non-nil, then this is a term equal to fn applied to args, else it's a list of rewritten args
-                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
-                      (if (or (eq 'if fn)
-                              (eq 'myif fn)
-                              (eq 'boolif fn))
-                          ;; First, try to resolve the if-test:
-                          (mv-let (erp test-result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
-                            (,simplify-tree-name (first args) ;the test
-                                                 'iff ;can rewrite the test in a propositional context
-                                                 dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                 rule-alist nodenums-to-assume-false equiv-alist print info tries interpreted-function-alist monitored-symbols embedded-dag-depth
-                                                 case-designator prover-depth options (+ -1 count))
-                            (if erp
-                                (mv erp nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
-                              (if (consp test-result) ;tests for quotep
-                                  (mv (erp-nil)
-                                      t ;; did short-circuit
-                                      (if (unquote test-result)
-                                          (if (eq 'boolif fn) `(bool-fix$inline ,(second args)) (second args)) ;then branch
-                                        (if (eq 'boolif fn) `(bool-fix$inline ,(third args)) (third args))) ;else branch
-                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
-                                ;;didn't resolve the test; must rewrite the other arguments:
-                                (mv-let (erp other-arg-results dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
-                                  (,simplify-trees-name (rest args)
-                                                        '(equal equal) ;;equiv-lst
-                                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                        rule-alist nodenums-to-assume-false
-                                                        equiv-alist print info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count))
-                                  (if erp
-                                      (mv erp nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
-                                    (mv (erp-nil) nil ;did not short-circuit
-                                        (cons test-result other-arg-results)
-                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))))))
-                        (if (eq 'bvif fn) ;;(bvif size test thenpart elsepart)
-                            ;; First, try to resolve the if-test:
-                            (mv-let (erp test-result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
-                              (,simplify-tree-name (second args) ;the test
-                                                   'iff ;can rewrite the test in a propositional context
-                                                   dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                   rule-alist nodenums-to-assume-false equiv-alist print info tries interpreted-function-alist monitored-symbols
-                                                   embedded-dag-depth case-designator prover-depth options (+ -1 count))
-                              (if erp
-                                  (mv erp nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
-                                (if (consp test-result) ;tests for quotep
-                                    (mv (erp-nil)
-                                        t ;; did short-circuit
-                                        (if (unquote test-result)
-                                            `(bvchop ;$inline
-                                              ,(first args) ,(third args)) ;then branch
-                                          `(bvchop ;$inline
-                                            ,(first args) ,(fourth args))) ;else branch
-                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
-                                  ;;didn't resolve the test; must rewrite the other arguments:
-                                  (mv-let (erp other-arg-results dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
-                                    (,simplify-trees-name (cons (first args) ;the size
-                                                                (cddr args) ;then part and else part
-                                                                )
-                                                          '(equal equal equal) ;;equiv-lst
+                (case fn
+                  (quote ;; TREE is a quoted constant, so return it:
+                   (mv (erp-nil) tree dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
+                  ((if myif)
+                   (,simplify-if-tree-name tree
+                                           equiv
+                                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                           rule-alist
+                                           nodenums-to-assume-false
+                                           equiv-alist ;don't pass this around?
+                                           print
+                                           info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count)))
+                  (boolif
+                   (,simplify-boolif-tree-name tree
+                                               equiv
+                                               dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                               rule-alist
+                                               nodenums-to-assume-false
+                                               equiv-alist ;don't pass this around?
+                                               print
+                                               info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count)))
+                  (t ;; TREE is a function call. fn may be a lambda or a short-circuit-function (if/myif/boolif/bvif/booland/boolor):
+                   (let ((args (fargs tree)))
+                     ;;Rewrite the args, *except* if it's a short-circuit function, we may be able to avoid rewriting them all and instead just return a new term to rewrite (will that new term ever be a constant?).
+                     (mv-let
+                       (erp short-circuitp term-or-rewritten-args ;if short-circuitp is non-nil, then this is a term equal to fn applied to args, else it's a list of rewritten args
+                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
+                       (if (eq 'bvif fn) ;;(bvif size test thenpart elsepart)
+                           ;; First, try to resolve the if-test:
+                           (mv-let (erp test-result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
+                             (,simplify-tree-name (second args) ;the test
+                                                  'iff ;can rewrite the test in a propositional context
+                                                  dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                  rule-alist nodenums-to-assume-false equiv-alist print info tries interpreted-function-alist monitored-symbols
+                                                  embedded-dag-depth case-designator prover-depth options (+ -1 count))
+                             (if erp
+                                 (mv erp nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
+                               (if (consp test-result) ;tests for quotep
+                                   (mv (erp-nil)
+                                       t ;; did short-circuit
+                                       (if (unquote test-result)
+                                           `(bvchop ;$inline
+                                             ,(first args) ,(third args)) ;then branch
+                                         `(bvchop ;$inline
+                                           ,(first args) ,(fourth args))) ;else branch
+                                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
+                                 ;;didn't resolve the test; must rewrite the other arguments:
+                                 (mv-let (erp other-arg-results dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
+                                   (,simplify-trees-name (cons (first args) ;the size
+                                                               (cddr args) ;then part and else part
+                                                               )
+                                                         '(equal equal equal) ;;equiv-lst
+                                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                         rule-alist nodenums-to-assume-false
+                                                         equiv-alist print info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count))
+                                   (if erp
+                                       (mv erp nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
+                                     (mv (erp-nil) nil ;did not short-circuit
+                                         (cons (first other-arg-results)
+                                               (cons test-result
+                                                     (cdr other-arg-results)))
+                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))))))
+                         (if (eq 'booland fn) ;;(booland arg1 arg2)
+                             ;; First, rewrite arg1:
+                             (mv-let (erp arg1-result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
+                               (,simplify-tree-name (first args)
+                                                    'iff ;can rewrite the arg in a propositional context
+                                                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                    rule-alist nodenums-to-assume-false equiv-alist print info tries interpreted-function-alist
+                                                    monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count))
+                               (if erp
+                                   (mv erp nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
+                                 (if (equal *nil* arg1-result)
+                                     (mv (erp-nil)
+                                         t       ;; did short-circuit
+                                         *nil*   ;; (booland nil x) = nil
+                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
+                                   ;;arg1 didn't rewrite to nil (fixme could handle if it rewrote to t); must rewrite the other argument:
+                                   (mv-let (erp arg2-result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
+                                     (,simplify-tree-name (second args)
+                                                          'iff ;can rewrite the arg in a propositional context
                                                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                          rule-alist nodenums-to-assume-false
-                                                          equiv-alist print info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count))
-                                    (if erp
-                                        (mv erp nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
-                                      (mv (erp-nil) nil ;did not short-circuit
-                                          (cons (first other-arg-results)
-                                                (cons test-result
-                                                      (cdr other-arg-results)))
-                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))))))
-                          (if (eq 'booland fn) ;;(booland arg1 arg2)
-                              ;; First, rewrite arg1:
-                              (mv-let (erp arg1-result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
-                                (,simplify-tree-name (first args)
-                                                     'iff ;can rewrite the arg in a propositional context
-                                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                     rule-alist nodenums-to-assume-false equiv-alist print info tries interpreted-function-alist
-                                                     monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count))
-                                (if erp
-                                    (mv erp nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
-                                  (if (equal *nil* arg1-result)
-                                      (mv (erp-nil)
-                                          t     ;; did short-circuit
-                                          *nil* ;; (booland nil x) = nil
-                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
-                                    ;;arg1 didn't rewrite to nil (fixme could handle if it rewrote to t); must rewrite the other argument:
-                                    (mv-let (erp arg2-result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
-                                      (,simplify-tree-name (second args)
-                                                           'iff ;can rewrite the arg in a propositional context
-                                                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                           rule-alist nodenums-to-assume-false equiv-alist print info tries interpreted-function-alist
-                                                           monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count))
-                                      (if erp
-                                          (mv erp nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
-                                        (mv (erp-nil)
-                                            nil ;did not short-circuit
-                                            (list arg1-result arg2-result)
-                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))))))
-                            (if (eq 'boolor fn) ;;(boolor arg1 arg2)
-                                ;; First, rewrite arg1
-                                (mv-let (erp arg1-result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
-                                  (,simplify-tree-name (first args)
-                                                       'iff ;can rewrite the arg in a propositional context
-                                                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                       rule-alist nodenums-to-assume-false equiv-alist print info tries interpreted-function-alist
-                                                       monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count))
-                                  (if erp
-                                      (mv erp nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
-                                    (if (and (consp arg1-result) (unquote arg1-result)) ;checks for a non-nil constant
-                                        (mv (erp-nil)
-                                            t   ;; did short-circuit
-                                            *t* ;boolor of a non-nil value is t
-                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
-                                      ;;arg1 didn't rewrite to a non-nil constant (fixme could handle if it rewrote to nil); must rewrite the other argument:
-                                      (mv-let (erp arg2-result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
-                                        (,simplify-tree-name (second args)
-                                                             'iff ;can rewrite the arg in a propositional context
-                                                             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                             rule-alist nodenums-to-assume-false equiv-alist print info tries interpreted-function-alist
-                                                             monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count))
-                                        (if erp
-                                            (mv erp nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
-                                          (mv (erp-nil)
-                                              nil ;did not short-circuit
-                                              (list arg1-result arg2-result)
-                                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))))))
-                              ;;not a short-circuit-function:
-                              (mv-let (erp arg-results dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
-                                (,simplify-trees-name args
-                                                      (get-equivs equiv fn equiv-alist)
+                                                          rule-alist nodenums-to-assume-false equiv-alist print info tries interpreted-function-alist
+                                                          monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count))
+                                     (if erp
+                                         (mv erp nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
+                                       (mv (erp-nil)
+                                           nil ;did not short-circuit
+                                           (list arg1-result arg2-result)
+                                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))))))
+                           (if (eq 'boolor fn) ;;(boolor arg1 arg2)
+                               ;; First, rewrite arg1
+                               (mv-let (erp arg1-result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
+                                 (,simplify-tree-name (first args)
+                                                      'iff ;can rewrite the arg in a propositional context
                                                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                      rule-alist nodenums-to-assume-false
-                                                      equiv-alist print info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count))
-                                (if erp
-                                    (mv erp nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
-                                  (mv (erp-nil)
-                                      nil ;did not short-circuit
-                                      arg-results
-                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))))))
-                      (if erp
-                          (mv erp tree dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
-                        (if short-circuitp
-                            ;;just simplify the term returned from short-circuit rewriting:
-                            (,simplify-tree-name term-or-rewritten-args
-                                                 equiv ;use the same equiv
-                                                 dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                 rule-alist nodenums-to-assume-false equiv-alist print info tries interpreted-function-alist monitored-symbols
-                                                 embedded-dag-depth case-designator prover-depth options (+ -1 count))
-                          ;;otherwise, we rewrote all the args:
-                          (let ((args term-or-rewritten-args))
-                            ;; Now we simplify the function applied to the simplified args:
-                            ;; If it's a lambda, beta reduce and simplify the result:
-                            (if (consp fn) ;;tests for lambda
-                                ;; It's a lambda, so we beta-reduce and simplify the result:
-                                ;; note that we don't look up lambdas in the nodenums-to-assume-false (this is consistent with simplifying first)
-                                (let* ((formals (second fn))
-                                       (body (third fn))
-                                       ;;BOZO could optimize this pattern: (my-sublis-var-and-eval-basic (my pairlis$ formals args) body ..)
-                                       (new-expr (my-sublis-var-and-eval-basic (pairlis$ formals args) body interpreted-function-alist)))
-                                  (,simplify-tree-name new-expr
-                                                       equiv ; was: 'equal
-                                                       dag-array dag-len dag-parent-array
-                                                       dag-constant-alist dag-variable-alist
-                                                       rule-alist
-                                                       nodenums-to-assume-false  equiv-alist print
-                                                       info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count)))
-                              ;; Handle ground terms:
-                              ;; TODO: Think about how it is possible to even have a ground term here
-                              (b* (((mv erp evaluatedp val)
-                                    (if (not (all-consp args)) ;; test for args being quoted constants
-                                        ;; not a ground term:
-                                        (mv (erp-nil) nil nil)
-                                      ;; ground term, so try to evaluate:
-                                      (b* (((mv erp val)
-                                            (,apply-axe-evaluator-to-quoted-args-name fn args interpreted-function-alist)))
-                                        (if erp
-                                            (if (eq :unknown-function erp)
-                                                (mv (erp-nil) nil nil) ;no error, but it didn't produce a value (todo: print a warning?)
-                                              ;; anything else non-nil is a true error:
-                                              (mv erp nil nil))
-                                          ;; normal case, evaluation worked:
-                                          (mv (erp-nil) t val)))))
-                                   ;; I suppose we could suppress any evaluator error here if we choose to (might be a bit faster)?
-                                   ((when erp) (mv erp tree dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))
-                                (if evaluatedp
-                                    (let ((quoted-val (enquote val)))
-                                      (mv (erp-nil)
-                                          quoted-val
-                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                          info tries))
-                                  ;; It wasn't a ground term (that we can evaluate).
-                                  (,simplify-fun-call-name fn
-                                                           args
-                                                           equiv
-                                                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                           rule-alist
-                                                           nodenums-to-assume-false
-                                                           equiv-alist ;don't pass this around?
-                                                           print
-                                                           info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count)))))))))))))))
+                                                      rule-alist nodenums-to-assume-false equiv-alist print info tries interpreted-function-alist
+                                                      monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count))
+                                 (if erp
+                                     (mv erp nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
+                                   (if (and (consp arg1-result) (unquote arg1-result)) ;checks for a non-nil constant
+                                       (mv (erp-nil)
+                                           t     ;; did short-circuit
+                                           *t* ;boolor of a non-nil value is t
+                                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
+                                     ;;arg1 didn't rewrite to a non-nil constant (fixme could handle if it rewrote to nil); must rewrite the other argument:
+                                     (mv-let (erp arg2-result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
+                                       (,simplify-tree-name (second args)
+                                                            'iff ;can rewrite the arg in a propositional context
+                                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                            rule-alist nodenums-to-assume-false equiv-alist print info tries interpreted-function-alist
+                                                            monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count))
+                                       (if erp
+                                           (mv erp nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
+                                         (mv (erp-nil)
+                                             nil ;did not short-circuit
+                                             (list arg1-result arg2-result)
+                                             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))))))
+                             ;;not a short-circuit-function:
+                             (mv-let (erp arg-results dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
+                               (,simplify-trees-name args
+                                                     (get-equivs equiv fn equiv-alist)
+                                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                     rule-alist nodenums-to-assume-false
+                                                     equiv-alist print info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count))
+                               (if erp
+                                   (mv erp nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
+                                 (mv (erp-nil)
+                                     nil ;did not short-circuit
+                                     arg-results
+                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))))))
+                       (if erp
+                           (mv erp tree dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
+                         (if short-circuitp
+                             ;;just simplify the term returned from short-circuit rewriting:
+                             (,simplify-tree-name term-or-rewritten-args
+                                                  equiv ;use the same equiv
+                                                  dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                  rule-alist nodenums-to-assume-false equiv-alist print info tries interpreted-function-alist monitored-symbols
+                                                  embedded-dag-depth case-designator prover-depth options (+ -1 count))
+                           ;;otherwise, we rewrote all the args:
+                           (let ((args term-or-rewritten-args))
+                             ;; Now we simplify the function applied to the simplified args:
+                             ;; If it's a lambda, beta reduce and simplify the result:
+                             (if (consp fn) ;;tests for lambda
+                                 ;; It's a lambda, so we beta-reduce and simplify the result:
+                                 ;; note that we don't look up lambdas in the nodenums-to-assume-false (this is consistent with simplifying first)
+                                 (let* ((formals (second fn))
+                                        (body (third fn))
+                                        ;;BOZO could optimize this pattern: (my-sublis-var-and-eval-basic (my pairlis$ formals args) body ..)
+                                        (new-expr (my-sublis-var-and-eval-basic (pairlis$ formals args) body interpreted-function-alist)))
+                                   (,simplify-tree-name new-expr
+                                                        equiv ; was: 'equal
+                                                        dag-array dag-len dag-parent-array
+                                                        dag-constant-alist dag-variable-alist
+                                                        rule-alist
+                                                        nodenums-to-assume-false  equiv-alist print
+                                                        info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count)))
+                               ;; Handle ground terms:
+                               ;; TODO: Think about how it is possible to even have a ground term here
+                               (b* (((mv erp evaluatedp val)
+                                     (if (not (all-consp args)) ;; test for args being quoted constants
+                                         ;; not a ground term:
+                                         (mv (erp-nil) nil nil)
+                                       ;; ground term, so try to evaluate:
+                                       (b* (((mv erp val)
+                                             (,apply-axe-evaluator-to-quoted-args-name fn args interpreted-function-alist)))
+                                         (if erp
+                                             (if (eq :unknown-function erp)
+                                                 (mv (erp-nil) nil nil) ;no error, but it didn't produce a value (todo: print a warning?)
+                                               ;; anything else non-nil is a true error:
+                                               (mv erp nil nil))
+                                           ;; normal case, evaluation worked:
+                                           (mv (erp-nil) t val)))))
+                                    ;; I suppose we could suppress any evaluator error here if we choose to (might be a bit faster)?
+                                    ((when erp) (mv erp tree dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))
+                                 (if evaluatedp
+                                     (let ((quoted-val (enquote val)))
+                                       (mv (erp-nil)
+                                           quoted-val
+                                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                           info tries))
+                                   ;; It wasn't a ground term (that we can evaluate).
+                                   (,simplify-fun-call-name fn
+                                                            args
+                                                            equiv
+                                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                            rule-alist
+                                                            nodenums-to-assume-false
+                                                            equiv-alist ;don't pass this around?
+                                                            print
+                                                            info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count))))))))))))))))
 
         ;; Simplify all the trees in TREES and add to the DAG.
         ;; Returns (mv erp nodenums-or-quoteps dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries).
@@ -1099,7 +1236,7 @@
         ) ;end mutual-recursion for Axe Prover
 
        ;; TODO: Why is this so slow?
-       ;; (make-flag ,relieve-free-var-hyp-and-all-others-name)
+       ;; (skip-proofs (make-flag ,relieve-free-var-hyp-and-all-others-name))
 
        ;; (,(pack$ 'defthm-flag- relieve-free-var-hyp-and-all-others-name)
        ;;   (DEFTHM ,(pack$ RELIEVE-FREE-VAR-HYP-AND-ALL-OTHERS-name '-return-type)
@@ -1218,6 +1355,61 @@
        ;;                              (info-worldp info)
        ;;                              (triesp tries)))))
        ;;     :FLAG ,SIMPLIFY-if-TREE-name)
+       ;;   (DEFTHM ,(pack$ SIMPLIFY-boolif-TREE-name '-return-type)
+       ;;     (IMPLIES (and (axe-treep tree)
+       ;;                   (symbolp equiv)
+       ;;                   (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+       ;;                   (bounded-axe-treep tree dag-len)
+       ;;                   (rule-alistp rule-alist)
+       ;;                   (nat-listp nodenums-to-assume-false)
+       ;;                   (all-< nodenums-to-assume-false dag-len)
+       ;;                   (symbol-alistp equiv-alist) ;strengthen?
+       ;;                   ;; print
+       ;;                   (info-worldp info)
+       ;;                   (triesp tries)
+       ;;                   (interpreted-function-alistp interpreted-function-alist)
+       ;;                   (symbol-listp monitored-symbols)
+       ;;                   (natp embedded-dag-depth) ;can we just use the prover depth?
+       ;;                   (stringp case-designator)
+       ;;                   (natp prover-depth)
+       ;;                   (axe-prover-optionsp options))
+       ;;              (mv-let (erp nodenum-or-quotep new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries)
+       ;;                ,call-of-simplify-boolif-tree
+       ;;                (implies (not erp)
+       ;;                         (and (dargp-less-than nodenum-or-quotep new-dag-len)
+       ;;                              (wf-dagp 'dag-array new-dag-array new-dag-len 'dag-parent-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
+       ;;                              (<= dag-len new-dag-len)
+       ;;                              (info-worldp info)
+       ;;                              (triesp tries)))))
+       ;;     :FLAG ,SIMPLIFY-boolif-TREE-name)
+       ;;   (DEFTHM ,(pack$ SIMPLIFY-fun-call-name '-return-type)
+       ;;     (IMPLIES (and (symbolp fn)
+       ;;                   (not (equal 'quote fn))
+       ;;                   (true-listp args)
+       ;;                   (all-dargp-less-than args dag-len)
+       ;;                   (symbolp equiv)
+       ;;                   (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+       ;;                   (rule-alistp rule-alist)
+       ;;                   (nat-listp nodenums-to-assume-false)
+       ;;                   (all-< nodenums-to-assume-false dag-len)
+       ;;                   (symbol-alistp equiv-alist)
+       ;;                   (info-worldp info)
+       ;;                   (triesp tries)
+       ;;                   (interpreted-function-alistp interpreted-function-alist)
+       ;;                   (symbol-listp monitored-symbols)
+       ;;                   (natp embedded-dag-depth)
+       ;;                   (stringp case-designator)
+       ;;                   (natp prover-depth)
+       ;;                   (axe-prover-optionsp options))
+       ;;              (mv-let (erp nodenum-or-quotep new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries)
+       ;;                ,call-of-simplify-fun-call
+       ;;                (implies (not erp)
+       ;;                         (and (dargp-less-than nodenum-or-quotep new-dag-len)
+       ;;                              (wf-dagp 'dag-array new-dag-array new-dag-len 'dag-parent-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
+       ;;                              (<= dag-len new-dag-len)
+       ;;                              (info-worldp info)
+       ;;                              (triesp tries)))))
+       ;;     :FLAG ,SIMPLIFY-fun-call-name)
        ;;   (DEFTHM ,(pack$ SIMPLIFY-TREE-name '-return-type)
        ;;     (IMPLIES (and (axe-treep tree)
        ;;                   (symbolp equiv)
