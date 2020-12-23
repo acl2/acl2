@@ -31,6 +31,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defprime secp256k1-group-prime
+
   #xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141
 
   ;; Pratt certificate for secp256k1 group order prime.
@@ -43,7 +44,6 @@
   ;;   F = factor(115792089237316195423570985008687907852837564279074904382605163141518161494336)
   ;;   list(F)
   ;; See also Mathematica's FactorInteger and PrimitiveRoot.
-
   (7 (2 3 149 631 107361793816595537 174723607534414371449 341948486974166000522343609283189)
      (6 1 1 1 1 1 1)
      (() () () ()
