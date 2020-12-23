@@ -101,7 +101,6 @@
    :rule-classes nil
    ))
 
-
 ;todo
 ;; (defthm-with-basic-prover-clause-processor implies-or-1
 ;;   (implies (or (natp x) (natp y)) (natp y))
@@ -113,3 +112,25 @@
 ;;   (implies (boolor (natp x) (natp y)) (natp y))
 ;;   :rules (implies booleanp-of-boolor)
 ;;   )
+
+;for axe
+(defthm equal-same
+  (equal (equal x x)
+         t)
+  :rule-classes nil)
+
+;todo: prove without splitting.  need to look up if tests in assumptions somehow.
+(defthm-with-basic-prover-clause-processor if-1
+  (implies (natp x)
+           (equal (if (natp x) x y) x))
+  :rules (implies equal-same)
+  :rule-classes nil
+  )
+
+;todo: prove without splitting.  need to look up if tests in assumptions somehow, even if non-boolean.
+(defthm-with-basic-prover-clause-processor if-2
+  (implies (member-equal '1 x)
+           (equal (if (member-equal '1 x) x y) x))
+  :rules (implies equal-same)
+  :rule-classes nil
+  )
