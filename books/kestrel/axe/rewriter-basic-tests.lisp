@@ -366,3 +366,14 @@
                         nil nil t nil (w state))
    (and (not erp)
         (equal (dag-to-term res) 'w))))
+
+;; ;; TODO: get this to work.  The known assumption appears in a call of NOT.  I suppose we could rewrite "if of not".
+;; (assert!
+;;  (mv-let (erp res)
+;;    (simplify-term-basic '(if (not (member-equal x y)) w z)
+;;                         '((member-equal x y))
+;;                         (make-rule-alist! nil
+;;                                          (w state))
+;;                         nil nil t nil (w state))
+;;    (and (not erp)
+;;         (equal (dag-to-term res) 'w))))
