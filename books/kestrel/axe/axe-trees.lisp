@@ -389,3 +389,17 @@
            (axe-treep (cdr (assoc-equal form alist))))
   :hints (("Goal" :use (:instance dargp-of-cdr-of-assoc-equal (var form))
            :in-theory (disable dargp-of-cdr-of-assoc-equal))))
+
+(defthm axe-treep-when-not-consp-and-not-symbolp-cheap
+  (implies (and (not (consp tree))
+                (not (symbolp tree)))
+           (equal (axe-treep tree)
+                  (natp tree)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0 0)))
+  :hints (("Goal" :in-theory (enable axe-treep))))
+
+(defthmd bounded-axe-treep-when-natp-strong
+  (implies (natp tree)
+           (equal (bounded-axe-treep tree bound)
+                  (< tree bound)))
+  :hints (("Goal" :in-theory (enable bounded-axe-treep))))
