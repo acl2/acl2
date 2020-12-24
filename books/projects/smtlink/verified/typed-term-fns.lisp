@@ -1296,23 +1296,21 @@
                     (equal (typed-term->path-cond new-tt)
                            (typed-term->path-cond tt-top)))
            :name make-typed-fncall-maintains-path-cond))
-  ;; (defthm correctness-of-make-typed-fncall
-  ;;   (implies (and (ev-smtcp-meta-extract-global-facts)
-  ;;                 (type-options-p options)
-  ;;                 (typed-term-p tt-top)
-  ;;                 (good-typed-term-list-p tt-actuals options)
-  ;;                 (make-typed-fncall-guard tt-top tt-actuals options)
-  ;;                 (alistp a)
-  ;;                 (ev-smtcp (correct-typed-term tt-top) a)
-  ;;                 (ev-smtcp-lst (correct-typed-term-list tt-actuals) a))
-  ;;            (ev-smtcp (correct-typed-term
-  ;;                       (make-typed-fncall tt-top tt-actuals options))
-  ;;                      a))
-  ;;   :hints (("Goal"
-  ;;            :do-not-induct t
-  ;;            :in-theory (e/d (correct-typed-term
-  ;;                             correct-typed-term-list
-  ;;                             make-typed-fncall-guard
-  ;;                             )
-  ;;                            ()))))
+  (defthm correctness-of-make-typed-fncall
+    (implies (and (ev-smtcp-meta-extract-global-facts)
+                  (type-options-p options)
+                  (good-typed-term-p tt-top options)
+                  (good-typed-term-list-p tt-actuals options)
+                  (alistp a)
+                  (ev-smtcp (correct-typed-term tt-top) a)
+                  (ev-smtcp (correct-typed-term-list tt-actuals) a))
+             (ev-smtcp (correct-typed-term
+                        (make-typed-fncall tt-top tt-actuals options))
+                       a))
+    :hints (("Goal"
+             :do-not-induct t
+             :in-theory (e/d (correct-typed-term
+                              correct-typed-term-list
+                              make-typed-fncall-guard)
+                             ()))))
   )
