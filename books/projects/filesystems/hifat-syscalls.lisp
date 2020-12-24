@@ -301,7 +301,7 @@
             (mv (coerce (m1-file->contents file) 'list)
                 (m1-file->d-e file))
           (mv nil (d-e-fix nil))))
-       ((unless (unsigned-byte-p 32 (+ OFFSET (length BUF))))
+       ((unless (unsigned-byte-p 32 (+ offset (length buf))))
         (mv fs -1 *enospc*))
        (file
         (make-m1-file
