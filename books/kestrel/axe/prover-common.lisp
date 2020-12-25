@@ -3886,9 +3886,9 @@
   (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                               (nat-listp literal-nodenums)
                               (all-< literal-nodenums dag-len)
-                              (consp literal-nodenums)
-                              (equal dag-variable-alist (make-dag-variable-alist 'dag-array dag-array dag-len)))
-                  :guard-hints (("Goal" :in-theory (e/d (car-becomes-nth-of-0
+                              (consp literal-nodenums))
+                  :guard-hints (("Goal" :cases ((equal dag-variable-alist (make-dag-variable-alist 'dag-array dag-array dag-len))) ;why is this :cases hint needed?
+                                 :in-theory (e/d (car-becomes-nth-of-0
                                                            <-of-nth-when-all-<
                                                            FIND-VAR-AND-EXPR-TO-SUBST
                                                            NODENUM-OF-VAR-TO-SUBSTP
