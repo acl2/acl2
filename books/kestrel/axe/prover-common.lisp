@@ -3886,7 +3886,8 @@
   (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                               (nat-listp literal-nodenums)
                               (all-< literal-nodenums dag-len)
-                              (consp literal-nodenums))
+                              (consp literal-nodenums) ;; because var-okay-to-elim asks for the max literal nodenum
+                              )
                   :guard-hints (("Goal" :cases ((equal dag-variable-alist (make-dag-variable-alist 'dag-array dag-array dag-len))) ;why is this :cases hint needed?
                                  :in-theory (e/d (car-becomes-nth-of-0
                                                            <-of-nth-when-all-<
