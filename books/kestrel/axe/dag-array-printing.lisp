@@ -82,7 +82,9 @@
 ;ffixme allow the key node to be not the top node?
 (defun print-dag-only-supporters (dag-array-name dag-array nodenum)
   (declare (type (integer 0 *) nodenum)
-           (xargs :guard (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum))))
+           (xargs :guard (and (natp nodenum)
+                              (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum)))
+                  :split-types t))
   (progn$ (cw "(")
           (print-supporting-dag-nodes nodenum 0 dag-array-name dag-array (list nodenum) t)
           (cw ")~%")))
