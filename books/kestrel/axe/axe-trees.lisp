@@ -403,3 +403,18 @@
            (equal (bounded-axe-treep tree bound)
                   (< tree bound)))
   :hints (("Goal" :in-theory (enable bounded-axe-treep))))
+
+;enable?
+(defthmd axe-treep-when-consp-of-car
+  (implies (consp (car tree))
+           (equal (axe-treep tree)
+                  (and (all-axe-treep (fargs tree))
+                       (true-listp (fargs tree))
+                       (true-listp (car tree))
+                       (equal (len (car tree)) 3)
+                       (eq (car (car tree)) 'lambda)
+                       (symbol-listp (cadr (car tree)))
+                       (pseudo-termp (caddr (car tree))) ;todo: can an axe tree appear here?
+                       (equal (len (cadr (car tree)))
+                              (len (fargs tree))))))
+  :hints (("Goal" :in-theory (enable axe-treep))))

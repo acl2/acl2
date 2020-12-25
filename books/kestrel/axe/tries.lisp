@@ -48,9 +48,15 @@
       (- tries1 tries2)
     0))
 
-(defthm integerp-of-sub-tries
+(defthm integerp-of-sub-tries-type
   (implies (and (triesp tries1)
                 (triesp tries2))
            (integerp (sub-tries tries1 tries2)))
   :rule-classes :type-prescription
+  :hints (("Goal" :in-theory (enable sub-tries))))
+
+(defthmd integerp-of-sub-tries
+  (implies (and (triesp tries1)
+                (triesp tries2))
+           (integerp (sub-tries tries1 tries2)))
   :hints (("Goal" :in-theory (enable sub-tries))))

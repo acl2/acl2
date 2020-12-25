@@ -318,3 +318,10 @@
                 (not (equal :fail (unify-terms-and-dag-items-fast terms dargs dag-array dag-len))))
            (symbol-alistp (unify-terms-and-dag-items-fast terms dargs dag-array dag-len)))
   :hints (("Goal" :in-theory (enable unify-terms-and-dag-items-fast))))
+
+(defthm true-listp-of-unify-terms-and-dag-items-fast
+  (implies (and (pseudo-term-listp terms) ;drop?
+                (not (equal :fail (unify-terms-and-dag-items-fast terms dargs dag-array dag-len))))
+           (true-listp (unify-terms-and-dag-items-fast terms dargs dag-array dag-len)))
+  :hints (("Goal" :use (:instance symbol-alistp-of-unify-terms-and-dag-items-fast)
+           :in-theory (disable symbol-alistp-of-unify-terms-and-dag-items-fast))))
