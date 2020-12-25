@@ -5,7 +5,8 @@
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
 ; Main Author: Eric Smith (eric.smith@kestrel.edu)
-; Contributing Author: Eric McCarthy (mccarthy@kestrel.edu)
+; Contributing Authors: Eric McCarthy (mccarthy@kestrel.edu)
+;                       Alessandro Coglio (coglio@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -19,14 +20,18 @@
 ;; https://eprint.iacr.org/2018/962.pdf
 ;; https://github.com/AleoHQ/snarkOS/blob/c9e5f823b8493f8c3a6c43e6f4dfd16173b99957/curves/README.md#bls12-377
 
+;; See also ../ecurve/bls-377-domain-parameters.lisp
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "PRIMES")
 
-;; See also ../ecurve/bls-377-domain-parameters.lisp
-
 (include-book "defprime")
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defprime bls12-377-scalar-field-prime
+
   #x12ab655e9a2ca55660b44d1e5c37b00159aa76fed00000010a11800000000001
 
   ;; The following certificate was generated using
@@ -57,3 +62,18 @@
        (11 (2 3 7 13 499)
            (46 1 1 1 1)
            (() () () () ())))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; This prime has length 253 bits.
+
+(assert-event (equal (integer-length (bls12-377-scalar-field-prime)) 253))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Decimal version of this prime.
+
+(assert-event
+ (equal (bls12-377-scalar-field-prime)
+        8444461749428370424248824938781546531375899335154063827935233455917409239041
+        ))
