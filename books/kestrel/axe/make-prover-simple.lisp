@@ -2749,7 +2749,7 @@
                                  (prog2$ (cw "Case ~s0 didn't simplify to true.  Literal nodenums:~% ~x1~%(This case: ~x2)~%Literals:~%"
                                              case-designator
                                              literal-nodenums
-                                             (expressions-for-this-case literal-nodenums dag-array dag-len))
+                                             (expressions-for-this-case-simple literal-nodenums dag-array dag-len))
                                          (print-dag-only-supporters-lst literal-nodenums 'dag-array dag-array)))
                             (mv (erp-nil) nil literal-nodenums
                                 dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))))))))))))
@@ -2822,7 +2822,7 @@
        ;;         (prog2$ (cw "No test cases passed in, so nothing to do.~%")
        ;;                 (mv nil nil rewriter-rule-alist rule-alist monitored-symbols interpreted-function-alist state result-array-stobj))
        ;;       (progn$ (cw "Clause miter literals: ~x0~%" literal-nodenums)
-       ;;               (cw "Clause miter case: ~x0~%" (expressions-for-this-case literal-nodenums dag-array dag-len)) ;fixme just print this instead of consing it up?
+       ;;               (cw "Clause miter case: ~x0~%" (expressions-for-this-case-simple literal-nodenums dag-array dag-len)) ;fixme just print this instead of consing it up?
        ;;               (cw "Clause miter literals:~%")
        ;;               ;; (print-array2 'dag-array dag-array dag-len)
        ;;               (print-dag-only-supporters-lst literal-nodenums 'dag-array dag-array)
