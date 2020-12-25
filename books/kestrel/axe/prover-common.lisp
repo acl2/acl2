@@ -49,6 +49,7 @@
 ;trim?:
 (local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))
 (local (include-book "kestrel/lists-light/remove-equal" :dir :system))
+(local (include-book "kestrel/lists-light/add-to-set-equal" :dir :system))
 (local (include-book "kestrel/utilities/acl2-count" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/lists-light/reverse" :dir :system))
@@ -185,7 +186,7 @@
            (all-<=-all x (merge-sort-< l)))
   :hints (("Goal" :in-theory (enable merge-sort-< all-<=-all))))
 
-(defun sortedp-<= (x)
+(defund sortedp-<= (x)
   (declare (xargs :guard (rational-listp x)))
   (if (endp x)
       t
@@ -198,9 +199,9 @@
 (defthm all-<=-of-car-of-last-when-sortedp-<=
   (implies (sortedp-<= x)
            (all-<= x (car (last x))))
-  :hints (("Goal" :in-theory (enable ALL-<=))))
+  :hints (("Goal" :in-theory (enable all-<= sortedp-<=))))
 
-(defun <=-all (x y)
+(defund <=-all (x y)
   (if (endp y)
       t
     (and (<= x (first y))
@@ -211,7 +212,7 @@
            (equal (all-<=-all x y)
                   (and (all-<=-all (cdr x) y)
                        (<=-all (car x) y))))
-  :hints (("Goal" :in-theory (enable ALL-<=-ALL))))
+  :hints (("Goal" :in-theory (enable ALL-<=-ALL <=-all))))
 
 (defthm <=-all-trans-1
   (implies (and (<=-all x2 lst)
@@ -234,7 +235,11 @@
          (and (sortedp-<= x)
               (sortedp-<= y)
               (all-<=-all x y)))
-  :hints (("Goal" :in-theory (enable all-<=-all-redef all-<= append))))
+  :hints (("Goal" :in-theory (enable all-<=-all-redef
+                                     all-<=
+                                     <=-all
+                                     append
+                                     sortedp-<=))))
 
 (defthm all-<=-of-reverse-list-arg1
   (equal (all-<= (reverse-list x) y)
@@ -250,13 +255,14 @@
   (equal (all-<=-all (cons x1 x2) lst)
          (and (<=-all x1 lst)
               (all-<=-all x2 lst)))
-  :hints (("Goal" :in-theory (enable all-<=-all))))
+  :hints (("Goal" :in-theory (enable all-<=-all <=-all))))
 
 (defthm <=-all-when-sortedp-<=-and-<=-of-car
   (implies (and (SORTEDP-<= lst)
                 (<= x (CAR lst)))
            (<=-ALL x lst))
-  :hints (("Goal" :in-theory (enable <=-ALL))))
+  :hints (("Goal" :in-theory (enable <=-ALL
+                                     sortedp-<=))))
 
 (defthm ALL-<=-ALL-of-cdr-arg2
   (implies (ALL-<=-ALL ACC L2)
@@ -269,6 +275,8 @@
               (ALL-<=-ALL x lst)))
   :hints (("Goal" :in-theory (enable ALL-<=-ALL))))
 
+;rename
+;todo: nested induction
 (defthm sorted-of-merge-<
   (implies (and (sortedp-<= l1)
                 (sortedp-<= l2)
@@ -278,18 +286,24 @@
                 )
            (sortedp-<= (merge-< l1 l2 acc)))
   :hints (("Goal" :in-theory (enable merge-<
+                                     sortedp-<=
+                                     SORTEDP-<=
+                                     <=-all
                                      ;;revappend-lemma
                                      ))))
 
 (defthm sortedp-<=-of-merge-sort-<
   (sortedp-<= (merge-sort-< x))
-  :hints (("Goal" :in-theory (enable merge-sort-<))))
+  :hints (("Goal" :in-theory (enable merge-sort-<
+                                     sortedp-<=))))
 
 (defthm all-<=-of-car-of-last-when-sortedp-<=-2
   (implies (and (sortedp-<= x)
                 (subsetp-equal y x))
            (all-<= y (car (last x))))
-  :hints (("Goal" :in-theory (enable ALL-<= SUBSETP-EQUAL))))
+  :hints (("Goal" :in-theory (enable ALL-<=
+                                     SUBSETP-EQUAL
+                                     sortedp-<=))))
 
 (encapsulate ()
   (local (include-book "kestrel/lists-light/memberp" :dir :system))
@@ -322,7 +336,7 @@
          (all-<=-all x y))
   :hints (("Goal" :in-theory (enable merge-sort-<))))
 
-(defun keep-non-atoms (items)
+(defund keep-non-atoms (items)
   (declare (xargs :guard t))
   (if (atom items) ;would endp be faster here?
       nil
@@ -332,7 +346,7 @@
 
 ;not tail recursive
 ;often lst will be sorted, but really the sortedness isn't crucial, just that equal elements are all grouped together
-(defun remove-duplicates-from-grouped-list (lst)
+(defund remove-duplicates-from-grouped-list (lst)
   (declare (xargs :guard (true-listp lst)))
   (if (endp lst)
       nil
@@ -346,19 +360,23 @@
 
 (defthm true-listp-of-remove-duplicates-from-grouped-list
   (implies (true-listp lst)
-           (true-listp (remove-duplicates-from-grouped-list lst))))
+           (true-listp (remove-duplicates-from-grouped-list lst)))
+  :hints (("Goal" :in-theory (enable remove-duplicates-from-grouped-list))))
 
 (defthm eqlable-listp-of-remove-duplicates-from-grouped-list
   (implies (eqlable-listp lst)
-           (eqlable-listp (remove-duplicates-from-grouped-list lst))))
+           (eqlable-listp (remove-duplicates-from-grouped-list lst)))
+  :hints (("Goal" :in-theory (enable remove-duplicates-from-grouped-list))))
 
 (defthm all-natp-of-remove-duplicates-from-grouped-list
   (implies (all-natp x)
-           (all-natp (remove-duplicates-from-grouped-list x))))
+           (all-natp (remove-duplicates-from-grouped-list x)))
+  :hints (("Goal" :in-theory (enable remove-duplicates-from-grouped-list))))
 
 (defthm all-<-of-remove-duplicates-from-grouped-list
   (equal (all-< (remove-duplicates-from-grouped-list x) bound)
-         (all-< x bound)))
+         (all-< x bound))
+  :hints (("Goal" :in-theory (enable remove-duplicates-from-grouped-list))))
 
 ;why are these firing?
 ;; (local (in-theory (disable bag::not-subbagp-of-cons-from-not-subbagp
@@ -437,7 +455,7 @@
 ;;              item))
 ;;  :hints (("Goal" :in-theory (enable PSEUDO-DAG-ARRAYP-AUX))))
 
-(defun make-var-lookup-terms (vars alist-nodenum)
+(defund make-var-lookup-terms (vars alist-nodenum)
   (declare (xargs :guard (true-listp vars)))
   (if (endp vars)
       nil
@@ -1473,6 +1491,17 @@
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable replace-term-using-assumptions-for-axe-prover))))
 
+(defthm dargp-less-than-of-replace-term-using-assumptions-for-axe-prover
+  (implies (and (replace-term-using-assumptions-for-axe-prover var equiv nodenums-to-assume-false dag-array print) ;no failure
+                (all-natp nodenums-to-assume-false)
+                (if (consp nodenums-to-assume-false)
+                    (pseudo-dag-arrayp 'dag-array dag-array (+ 1 (maxelem nodenums-to-assume-false)))
+                  t)
+                (all-< nodenums-to-assume-false dag-len))
+           (dargp-less-than (replace-term-using-assumptions-for-axe-prover var equiv nodenums-to-assume-false dag-array print) dag-len))
+  :hints (("Goal" :in-theory (e/d (replace-term-using-assumptions-for-axe-prover car-becomes-nth-of-0)
+                                  (myquotep)))))
+
 ;todo: in fact, it's always a quotep !
 ;; (defthm dargp-of-replace-term-using-assumptions-for-axe-prover
 ;;   (implies (and (replace-term-using-assumptions-for-axe-prover term equiv nodenums-to-assume-false dag-array print)
@@ -1628,7 +1657,7 @@
            (symbol-listp (lookup-equal key alist)))
   :hints (("Goal" :in-theory (enable symbol-to-symbols-alistp))))
 
-(defun all-symbol-to-symbols-alistp (x)
+(defund all-symbol-to-symbols-alistp (x)
   (declare (xargs :guard t))
   (if (atom x)
       t
@@ -1691,7 +1720,6 @@
  (equiv-alistp *congruence-table*))
 
 ;; Returns (mv erp provedp extended-acc dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist).
-
 ;; When NEGATED-FLG is nil, EXTENDED-ACC is ACC extended with the disjuncts of ITEM, except that if a true disjunct is found, we signal it by returning T for PROVEDP.
 ;; When NEGATED-FLG is non-nil, EXTENDED-ACC is ACC extended with the negations of the conjuncts of ITEM, except that if any of the negated conjuncts is true, we signal it by returning T for PROVEDP.
 ;; Throughout, we maintain IFF-equivalence but not necessarily equality.
@@ -1820,6 +1848,11 @@
 
 (verify-guards get-disjuncts :hints (("Goal" :in-theory (e/d (car-becomes-nth-of-0) (natp)))))
 
+(defthm true-listp-of-mv-nth-2-of-get-disjuncts
+  (implies  (true-listp acc)
+            (true-listp (mv-nth 2 (get-disjuncts item dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc negated-flg))))
+  :hints (("Goal" :in-theory (e/d (get-disjuncts) (natp)))))
+
 (defthm all-<-of-mv-nth-2-of-get-disjuncts
   (implies  (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                  (dargp-less-than item dag-len)
@@ -1841,7 +1874,6 @@
                               (nat-listp acc)
                               (all-< acc dag-len))
 ;                  :hints (("Goal" :in-theory (enable car-becomes-nth-of-0)))
-;                  :verify-guards nil ; done below
                   ))
   (if (endp nodenums)
       ;; I suppose we could skip the reverse here:
@@ -1859,6 +1891,10 @@
          ((when erp) (mv erp nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
          ((when provedp) (mv (erp-nil) t nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))
       (get-disjuncts-from-nodes (rest nodenums) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc))))
+
+(def-dag-builder-theorems
+  (get-disjuncts-from-nodes nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc)
+  (mv erp provedp extended-acc dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
 
 ;move
 (local
@@ -1885,6 +1921,23 @@
             (nat-listp (mv-nth 2 (get-disjuncts-from-nodes nodenums
                                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                            acc))))
+  :hints (("Goal" :in-theory (e/d (get-disjuncts-from-nodes) (natp)))))
+
+(defthm all-<-of-mv-nth-2-of-get-disjuncts-from-nodes
+  (implies  (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                 (nat-listp nodenums)
+                 (all-< nodenums dag-len)
+                 (nat-listp acc)
+                 (all-< acc dag-len))
+            (all-< (mv-nth 2 (get-disjuncts-from-nodes nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc))
+                   (mv-nth 4 (get-disjuncts-from-nodes nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc))))
+  :hints (("Goal" :in-theory (e/d (get-disjuncts-from-nodes) (natp)))))
+
+(defthm true-listp-of-mv-nth-2-of-get-disjuncts-from-nodes
+  (implies  (true-listp acc)
+            (true-listp (mv-nth 2 (get-disjuncts-from-nodes nodenums
+                                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                            acc))))
   :hints (("Goal" :in-theory (e/d (get-disjuncts-from-nodes) (natp)))))
 
 
@@ -2804,9 +2857,11 @@
                 )
            (all-<=-all (keep-atoms (dargs (aref1 'dag-array dag-array nodenum)))
                        nodenums))
-  :hints (("subgoal *1/3"
+  :hints (("goal" :in-theory (enable <=-all)
+           :induct (<=-all nodenum nodenums))
+          ("subgoal *1/2"
            :use (:instance all-<=-of-keep-atoms-of-dargs)
-           :in-theory (e/d ()
+           :in-theory (e/d (<=-all)
                            (ALL-<-OF-KEEP-ATOMS
                             all-<=-of-keep-atoms-of-dargs
                             all-<=-of-keep-atoms
@@ -2914,7 +2969,8 @@
 ;move
 (defthm SORTEDP-<=-of-cdr ;move
   (implies (SORTEDP-<= WORKLIST)
-           (SORTEDP-<= (CDR WORKLIST))))
+           (SORTEDP-<= (CDR WORKLIST)))
+  :hints (("Goal" :in-theory (enable sortedp-<=))))
 
 ;dup
 (defthm all-<=-when-all-<
@@ -3272,7 +3328,8 @@
 (defthm <-of-+-of-1-and-car-of-last-when-<=-all
   (implies (and (<=-all x lst)
                 (consp lst))
-           (< x (+ 1 (car (last lst))))))
+           (< x (+ 1 (car (last lst)))))
+  :hints (("Goal" :in-theory (enable <=-all))))
 
 ;todo: nested induction
 (defthm <=-all-of-merge-<
@@ -3280,7 +3337,7 @@
                 (<=-all a y)
                 (<=-all a acc))
            (<=-all a (merge-< x y acc)))
-  :hints (("Goal" :in-theory (enable merge-<))))
+  :hints (("Goal" :in-theory (enable merge-< <=-all))))
 
 (defthm <=-all-of-mv-nth-0-of-split-list-fast-aux
   (implies (and (<=-all a lst)
@@ -3289,7 +3346,7 @@
                 (<= (len tail) (len lst))
                 )
            (<=-all a (mv-nth 0 (split-list-fast-aux lst tail acc))))
-  :hints (("Goal" :in-theory (enable split-list-fast-aux))))
+  :hints (("Goal" :in-theory (enable split-list-fast-aux <=-all))))
 
 (defthm <=-all-of-mv-nth-1-of-split-list-fast-aux
   (implies (and (<=-all a lst)
@@ -3298,22 +3355,22 @@
                 (<= (len tail) (len lst))
                 )
            (<=-all a (mv-nth 1 (split-list-fast-aux lst tail acc))))
-  :hints (("Goal" :in-theory (enable split-list-fast-aux))))
+  :hints (("Goal" :in-theory (enable split-list-fast-aux <=-all))))
 
 (defthm <=-all-of-mv-nth-0-of-split-list-fast
   (implies (<=-all a x)
            (<=-all a (mv-nth 0 (split-list-fast x))))
-  :hints (("Goal" :in-theory (enable split-list-fast))))
+  :hints (("Goal" :in-theory (enable split-list-fast <=-all))))
 
 (defthm <=-all-of-mv-nth-1-of-split-list-fast
   (implies (<=-all a x)
            (<=-all a (mv-nth 1 (split-list-fast x))))
-  :hints (("Goal" :in-theory (enable split-list-fast))))
+  :hints (("Goal" :in-theory (enable split-list-fast <=-all))))
 
 (defthm <=-all-of-merge-sort-<
   (implies (<=-all a x)
            (<=-all a (merge-sort-< x)))
-  :hints (("Goal" :in-theory (enable merge-sort-<))))
+  :hints (("Goal" :in-theory (enable merge-sort-< <=-all))))
 
 ;; A good ordering of substitutions would be to substitute the "smallest" term
 ;; (the one which will be at the bottom of the DAG after all the substs) into
@@ -3708,6 +3765,24 @@
         ;; At least one var was substituted away, so keep going
         (substitute-vars literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print prover-depth (+ 1 num) t)))))
 
+(defthm substitute-vars-return-type
+  (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                (nat-listp literal-nodenums)
+                (all-< literal-nodenums dag-len)
+                (natp prover-depth)
+                (natp num)
+                (booleanp changep-acc))
+           (mv-let (erp changep new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
+             (substitute-vars literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print prover-depth num changep-acc)
+             (declare (ignore changep))
+             (implies (not erp)
+                      (and (nat-listp new-literal-nodenums)
+                           (all-natp new-literal-nodenums) ;follows from the above
+                           (true-listp new-literal-nodenums) ;follows from the above
+                           (all-< new-literal-nodenums new-dag-len)
+                           (wf-dagp 'dag-array new-dag-array new-dag-len 'dag-parent-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)))))
+  :hints (("Goal" :in-theory (enable substitute-vars))))
+
 ;;;
 ;;; tuple elimination
 ;;;
@@ -3873,6 +3948,24 @@
                           ;;(split-test-cases test-cases var new-vars) ;slow?
                           )))))))))
 
+(defthm eliminate-a-tuple-return-type
+  (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                (nat-listp literal-nodenums)
+                (all-< literal-nodenums dag-len)
+                (consp literal-nodenums)
+                ;(equal dag-variable-alist (make-dag-variable-alist 'dag-array dag-array dag-len))
+                (not (mv-nth 0 (eliminate-a-tuple literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print))))
+           (mv-let (erp changep new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
+             (eliminate-a-tuple literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print)
+             (declare (ignore changep))
+             (implies (not erp)
+                      (and (all-natp new-literal-nodenums)
+                           (true-listp new-literal-nodenums)
+                           (all-< new-literal-nodenums new-dag-len)
+                           (wf-dagp 'dag-array new-dag-array new-dag-len 'dag-parent-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)))))
+  :hints (("Goal" :in-theory (e/d (eliminate-a-tuple natp-of-cdr-of-assoc-equal-when-dag-variable-alistp)
+                                  (natp)))))
+
 ;; ;fixme change this to do less consing in the usual case of an objectcive of ?
 
 ;; ;fixme think about get-result vs. get-result-expandable
@@ -4029,6 +4122,33 @@
                       (wf-dagp 'dag-array new-dag-array new-dag-len 'dag-parent-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist))))
   :hints (("Goal" :in-theory (enable simplify-var-and-add-to-dag-for-axe-prover))))
 
+(defthm dargp-less-than-of-mv-nth-1-and-mv-nth-3-of-simplify-var-and-add-to-dag-for-axe-prover
+  (implies (and (not (mv-nth 0 (simplify-var-and-add-to-dag-for-axe-prover var equiv
+                                                                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                                           rule-alist
+                                                                           nodenums-to-assume-false
+                                                                           equiv-alist print
+                                                                           info tries interpreted-function-alist monitored-symbols
+                                                                           case-designator work-hard-when-instructedp prover-depth)))
+                (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                (all-natp nodenums-to-assume-false)
+                (all-< nodenums-to-assume-false dag-len))
+           (dargp-less-than (mv-nth 1 (simplify-var-and-add-to-dag-for-axe-prover var equiv
+                                                                                  dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                                                  rule-alist
+                                                                                  nodenums-to-assume-false
+                                                                                  equiv-alist print
+                                                                                  info tries interpreted-function-alist monitored-symbols
+                                                                                  case-designator work-hard-when-instructedp prover-depth))
+                            (mv-nth 3 (simplify-var-and-add-to-dag-for-axe-prover var equiv
+                                                                                  dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                                                  rule-alist
+                                                                                  nodenums-to-assume-false
+                                                                                  equiv-alist print
+                                                                                  info tries interpreted-function-alist monitored-symbols
+                                                                                  case-designator work-hard-when-instructedp prover-depth))))
+  :hints (("Goal" :in-theory (enable simplify-var-and-add-to-dag-for-axe-prover))))
+
 ;; This duplicates the term x, but if it's  the variable COUNT, that's ok.
 (defmacro zp-fast (x)
   `(mbe :logic (zp ,x)
@@ -4036,11 +4156,42 @@
 
 (def-typed-acl2-array2 result-arrayp
   (or (null val) ;node is not yet processed
-      (myquotep val)
-      (and (natp val)
-           (< val bound)))
+      (dargp-less-than val bound))
   :extra-vars (bound)
   :extra-guards ((natp bound)))
+
+;have def-typed-acl2-array generate this
+(DEFTHM DEFAULT-WHEN-result-ARRAYP-cheap
+  (IMPLIES (result-ARRAYP ARRAY-NAME ARRAY bound)
+           (EQUAL (DEFAULT ARRAY-NAME ARRAY)
+                  NIL))
+  :RULE-CLASSES ((:REWRITE :BACKCHAIN-LIMIT-LST (0)))
+  :HINTS (("Goal" :IN-THEORY (ENABLE result-ARRAYP))))
+
+(defthm result-arrayp-aux-monotone-on-bound
+  (implies (and (result-arrayp-aux array-name array index free)
+                (natp free)
+                (<= free bound))
+           (result-arrayp-aux array-name array index bound))
+  :hints (("Goal" :in-theory (enable result-arrayp-aux))))
+
+(defthm result-arrayp-monotone-on-bound
+  (implies (and (result-arrayp array-name array free)
+                (natp free)
+                (<= free bound))
+           (result-arrayp array-name array bound))
+  :hints (("Goal" :in-theory (enable result-arrayp))))
+
+;; just a rephrasing
+(defthmd type-of-aref1-when-result-arrayp-2
+  (implies (and (result-arrayp array-name array bound)
+                (< index (alen1 array-name array))
+                (natp index)
+                (aref1 array-name array index))
+           (dargp-less-than (aref1 array-name array index) bound))
+  :hints (("Goal" :use (:instance type-of-aref1-when-result-arrayp)
+           :in-theory (disable type-of-aref1-when-result-arrayp))))
+
 
 ;; see also translate-args
 (defund lookup-args-in-result-array (args result-array-name result-array)
@@ -4057,6 +4208,38 @@
                 (lookup-args-in-result-array (cdr args) result-array-name result-array))
         (cons (aref1 result-array-name result-array arg)
               (lookup-args-in-result-array (cdr args) result-array-name result-array))))))
+
+(defthm all-axe-treep-of-lookup-args-in-result-array
+  (implies (and (result-arrayp result-array-name result-array bound)
+                ;(all-dargp-less-than args dag-len)
+                (all-dargp args)
+                )
+           ;; works because nil is an axe-tree but it would be better not to rely on that
+           (all-axe-treep (lookup-args-in-result-array args result-array-name result-array)))
+  :hints (("Goal" :in-theory (enable axe-treep lookup-args-in-result-array))
+          ("subgoal *1/5"
+           :expand (LOOKUP-ARGS-IN-RESULT-ARRAY ARGS RESULT-ARRAY-NAME RESULT-ARRAY)
+           :use (:instance TYPE-OF-AREF1-WHEN-RESULT-ARRAYP
+                           (array-name result-array-name)
+                           (array result-array)
+                           (index (car args)))
+           :in-theory (disable TYPE-OF-AREF1-WHEN-RESULT-ARRAYP))))
+
+(defthm all-bounded-axe-treep-of-lookup-args-in-result-array
+  (implies (and (result-arrayp result-array-name result-array bound)
+                ;(all-dargp-less-than args dag-len)
+                (all-dargp args)
+                )
+           (all-bounded-axe-treep (lookup-args-in-result-array args result-array-name result-array) bound))
+  :hints (("Goal" :in-theory (enable axe-treep lookup-args-in-result-array))
+          ("subgoal *1/5"
+           :expand (lookup-args-in-result-array args result-array-name result-array)
+           :use (:instance type-of-aref1-when-result-arrayp
+                           (array-name result-array-name)
+                           (array result-array)
+                           (index (car args)))
+           :in-theory (e/d (bounded-axe-treep-when-dargp-less-than)
+                           (type-of-aref1-when-result-arrayp)))))
 
 (defund axe-prover-optionsp (options)
   (declare (xargs :guard t))
