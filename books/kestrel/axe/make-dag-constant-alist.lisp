@@ -115,7 +115,7 @@
 
 ;covers extending the dag by one node
 (defthm make-dag-constant-alist-of-aset1-expandable
-  (implies (and (posp dag-len)
+  (implies (and (natp dag-len)
                 (<= dag-len 2147483645)
                 (pseudo-dag-arrayp dag-array-name dag-array dag-len))
            (equal (make-dag-constant-alist dag-array-name (aset1-expandable dag-array-name dag-array dag-len expr) (+ 1 dag-len))
