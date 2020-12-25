@@ -1341,7 +1341,8 @@
                 ;;(symbolp equiv)
                 (all-natp nodenums-to-assume-false)
                 ;;(true-listp nodenums-to-assume-false)
-                (pseudo-dag-arrayp 'dag-array dag-array (+ 1 (maxelem (cons nodenum nodenums-to-assume-false)))))
+                ;; todo: why is force needed here?:
+                (force (pseudo-dag-arrayp 'dag-array dag-array (+ 1 (maxelem (cons nodenum nodenums-to-assume-false))))))
            (myquotep (replace-nodenum-using-assumptions-for-axe-prover nodenum equiv nodenums-to-assume-false dag-array)))
   :hints (("Goal"
            :in-theory (e/d (replace-nodenum-using-assumptions-for-axe-prover
@@ -1513,6 +1514,36 @@
               (unify-tree-with-dag-node hyp arg dag-array nil)))
         (mv nil nil)))))
 
+(defthm symbol-alistp-of-mv-nth-1-of-match-hyp-with-nodenum-to-assume-false
+  (symbol-alistp (mv-nth 1 (match-hyp-with-nodenum-to-assume-false hyp nodenum-to-assume-false dag-array dag-len)))
+  :hints (("Goal" :in-theory (enable match-hyp-with-nodenum-to-assume-false))))
+
+(defthm true-listp-of-mv-nth-1-of-match-hyp-with-nodenum-to-assume-false
+  (true-listp (mv-nth 1 (match-hyp-with-nodenum-to-assume-false hyp nodenum-to-assume-false dag-array dag-len)))
+  :rule-classes :type-prescription
+  :hints (("Goal" :in-theory (enable match-hyp-with-nodenum-to-assume-false))))
+
+(defthm all-dargp-of-mv-nth-1-of-match-hyp-with-nodenum-to-assume-false
+  (implies (and (axe-treep hyp)
+                (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+                (natp nodenum-to-assume-false)
+                (< nodenum-to-assume-false dag-len)
+                (mv-nth 0 (match-hyp-with-nodenum-to-assume-false hyp nodenum-to-assume-false dag-array dag-len)))
+           (all-dargp (strip-cdrs (mv-nth 1 (match-hyp-with-nodenum-to-assume-false hyp nodenum-to-assume-false dag-array dag-len)))))
+  :rule-classes :type-prescription
+  :hints (("Goal" :in-theory (e/d (match-hyp-with-nodenum-to-assume-false car-becomes-nth-of-0 NATP-OF-+-OF-1)
+                                  (natp)))))
+
+(defthm all-dargp-less-than-of-mv-nth-1-of-match-hyp-with-nodenum-to-assume-false
+  (implies (and (axe-treep hyp)
+                (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+                (natp nodenum-to-assume-false)
+                (< nodenum-to-assume-false dag-len)
+                (mv-nth 0 (match-hyp-with-nodenum-to-assume-false hyp nodenum-to-assume-false dag-array dag-len)))
+           (all-dargp-less-than (strip-cdrs (mv-nth 1 (match-hyp-with-nodenum-to-assume-false hyp nodenum-to-assume-false dag-array dag-len))) dag-len))
+  :hints (("Goal" :in-theory (e/d (match-hyp-with-nodenum-to-assume-false car-becomes-nth-of-0 NATP-OF-+-OF-1)
+                                  (natp)))))
+
 ;; ;returns (mv success-flg alist-for-free-vars)
 ;; ;; the alist returned maps variables to nodenums or quoteps
 ;; ;;fixme - faster to extend the alist? maybe not, since we'd be checking a longer alist when doing the matching?
@@ -1580,23 +1611,55 @@
 ;;           (equal (iff x y1)
 ;;                  (iff x y2))))
 
-(defun all-symbol-alistp (x)
+;; Recognize an alist that maps symbols to lists of symbols
+(defund symbol-to-symbols-alistp (x)
+  (declare (xargs :guard t))
+  (and (symbol-alistp x)
+       (symbol-list-listp (strip-cdrs x))))
+
+(defthm symbol-to-symbols-alistp-forward-to-symbol-alistp
+  (implies (symbol-to-symbols-alistp x)
+           (symbol-alistp x))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable symbol-to-symbols-alistp))))
+
+(defthm symbol-listp-of-lookup-equal-when-symbol-to-symbols-alistp
+  (implies (symbol-to-symbols-alistp alist)
+           (symbol-listp (lookup-equal key alist)))
+  :hints (("Goal" :in-theory (enable symbol-to-symbols-alistp))))
+
+(defun all-symbol-to-symbols-alistp (x)
   (declare (xargs :guard t))
   (if (atom x)
       t
-    (and (symbol-alistp (first x))
-         (all-symbol-alistp (rest x)))))
+    (and (symbol-to-symbols-alistp (first x))
+         (all-symbol-to-symbols-alistp (rest x)))))
 
-(defthm symbol-alistp-of-lookup-equal-when-all-symbol-alistp-of-strip-cdrs
-  (implies (all-symbol-alistp (strip-cdrs alist))
+(defthm symbol-to-symbols-alistp-of-lookup-equal-when-all-symbol-to-symbols-alistp-of-strip-cdrs
+  (implies (all-symbol-to-symbols-alistp (strip-cdrs alist))
+           (symbol-to-symbols-alistp (lookup-equal key alist)))
+  :hints (("Goal" :in-theory (enable all-symbol-to-symbols-alistp lookup-equal assoc-equal))))
+
+(defthm symbol-alistp-of-lookup-equal-when-all-symbol-to-symbols-alistp-of-strip-cdrs
+  (implies (all-symbol-to-symbols-alistp (strip-cdrs alist))
            (symbol-alistp (lookup-equal key alist)))
-  :hints (("Goal" :in-theory (enable all-symbol-alistp lookup-equal assoc-equal))))
+  :hints (("Goal" :in-theory (enable all-symbol-to-symbols-alistp lookup-equal assoc-equal))))
+
+(defund equiv-alistp (equiv-alist)
+  (declare (xargs :guard t))
+  (and (symbol-alistp equiv-alist)
+       (all-symbol-to-symbols-alistp (strip-cdrs equiv-alist))))
 
 ;; equiv-alist maps equivs to alists from function names to the equiv-lists to maintain for their args
-(defun get-equivs (equiv fn equiv-alist)
-  (declare (xargs :guard (and (symbol-alistp equiv-alist)
-                              (all-symbol-alistp (strip-cdrs equiv-alist)))))
+(defund get-equivs (equiv fn equiv-alist)
+  (declare (xargs :guard (equiv-alistp equiv-alist)
+                  :guard-hints (("Goal" :in-theory (enable equiv-alistp)))))
   (lookup-eq fn (lookup-eq equiv equiv-alist)))
+
+(defthm symbol-listp-of-get-equivs
+  (implies (equiv-alistp equiv-alist)
+           (symbol-listp (get-equivs equiv fn equiv-alist)))
+  :hints (("Goal" :in-theory (enable get-equivs equiv-alistp))))
 
 ;in this table, you look up the equivalence to preserve and the function being rewritten, and you get the list of equivalences to use for the function's arguments
 (defconst *congruence-table*
@@ -1623,6 +1686,9 @@
                                                                  (acons 'not '(iff)
                                                                         nil))))))))
                 nil)))
+
+(thm
+ (equiv-alistp *congruence-table*))
 
 ;; Returns (mv erp provedp extended-acc dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist).
 
@@ -3885,7 +3951,7 @@
   (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                               (symbolp equiv)
                               (symbolp var)
-                              (<= dag-len 2147483645)
+                              ;(<= dag-len 2147483645)
                               (all-natp nodenums-to-assume-false)
                               (true-listp nodenums-to-assume-false)
                               (all-< nodenums-to-assume-false dag-len)))
@@ -3910,15 +3976,77 @@
                 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
                 (mv erp nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))))))
 
+;todo: don't even take tries
+(defthm mv-nth-8-of-simplify-var-and-add-to-dag-for-axe-prover
+  (equal (mv-nth 8 (simplify-var-and-add-to-dag-for-axe-prover var equiv
+                                                               dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                               rule-alist
+                                                               nodenums-to-assume-false
+                                                               equiv-alist print
+                                                               info tries interpreted-function-alist monitored-symbols
+                                                               case-designator work-hard-when-instructedp prover-depth))
+         tries)
+  :hints (("Goal" :in-theory (enable simplify-var-and-add-to-dag-for-axe-prover))))
+
+;todo: don't even take info
+(defthm mv-nth-7-of-simplify-var-and-add-to-dag-for-axe-prover
+  (equal (mv-nth 7 (simplify-var-and-add-to-dag-for-axe-prover var equiv
+                                                               dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                               rule-alist
+                                                               nodenums-to-assume-false
+                                                               equiv-alist print
+                                                               info tries interpreted-function-alist monitored-symbols
+                                                               case-designator work-hard-when-instructedp prover-depth))
+         info)
+  :hints (("Goal" :in-theory (enable simplify-var-and-add-to-dag-for-axe-prover))))
+
+(defthm <-of-mv-nth-3-of-simplify-var-and-add-to-dag-for-axe-prover
+  (implies (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+           (<= dag-len
+               (mv-nth 3 (simplify-var-and-add-to-dag-for-axe-prover var equiv
+                                                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                                     rule-alist
+                                                                     nodenums-to-assume-false
+                                                                     equiv-alist print
+                                                                     info tries interpreted-function-alist monitored-symbols
+                                                                     case-designator work-hard-when-instructedp prover-depth))))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable simplify-var-and-add-to-dag-for-axe-prover))))
+
+(defthm simplify-var-and-add-to-dag-for-axe-prover-return-type
+  (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                (symbolp var))
+           (mv-let (erp nodenum new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries)
+             (simplify-var-and-add-to-dag-for-axe-prover var equiv
+                                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                         rule-alist
+                                                         nodenums-to-assume-false
+                                                         equiv-alist print
+                                                         info tries interpreted-function-alist monitored-symbols
+                                                         case-designator work-hard-when-instructedp prover-depth)
+             (declare (ignore nodenum info tries))
+             (implies (not erp)
+                      (wf-dagp 'dag-array new-dag-array new-dag-len 'dag-parent-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist))))
+  :hints (("Goal" :in-theory (enable simplify-var-and-add-to-dag-for-axe-prover))))
+
 ;; This duplicates the term x, but if it's  the variable COUNT, that's ok.
 (defmacro zp-fast (x)
   `(mbe :logic (zp ,x)
         :exec (= 0 ,x)))
 
+(def-typed-acl2-array2 result-arrayp
+  (or (null val) ;node is not yet processed
+      (myquotep val)
+      (and (natp val)
+           (< val bound)))
+  :extra-vars (bound)
+  :extra-guards ((natp bound)))
+
 ;; see also translate-args
 (defund lookup-args-in-result-array (args result-array-name result-array)
   (declare (xargs :guard (and (true-listp args)
                               (all-dargp args)
+                              ;;(result-arrayp result-array-name result-array dag-len)
                               (array1p result-array-name result-array)
                               (< (largest-non-quotep args) (alen1 result-array-name result-array)))))
   (if (endp args)
