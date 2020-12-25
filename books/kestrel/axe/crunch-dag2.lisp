@@ -458,4 +458,4 @@
                     (mv-nth 2 (crunch-dag-array2-with-indices dag-array-name dag-array dag-len dag-parent-array-name nodenums))
                     (mv-nth 3 (crunch-dag-array2-with-indices dag-array-name dag-array dag-len dag-parent-array-name nodenums))
                     (mv-nth 4 (crunch-dag-array2-with-indices dag-array-name dag-array dag-len dag-parent-array-name nodenums))))
-  :hints (("Goal" :in-theory (enable wf-dagp))))
+  :hints (("Goal" :in-theory (enable wf-dagp crunch-dag-array2-with-indices))))

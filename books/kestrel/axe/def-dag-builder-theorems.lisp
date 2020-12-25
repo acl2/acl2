@@ -198,7 +198,7 @@
                   (bounded-dag-variable-alistp (mv-nth ,dag-variable-alist-rv ,call)
                                                (mv-nth ,dag-len-rv ,call)))
          :hints (("Goal" :use (:instance ,(pack$ 'type-of- fn))
-                  :in-theory '(wf-dagp))))
+                  :in-theory '(wf-dagp-forward))))
 
        ;; This one takes hyps
        ;; (defthm ,(pack$ 'pseudo-dag-arrayp-of-mv-nth- dag-array-rv '-of- fn)

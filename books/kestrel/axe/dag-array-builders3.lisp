@@ -281,11 +281,11 @@
            :in-theory (e/d (bounded-dag-parent-arrayp alen1-of-maybe-expand-array)
                            (bounded-dag-parent-entriesp-after-add-variable-to-dag-array-with-memo)))))
 
-(defthm dag-variable-alist-correct-after-add-variable-to-dag-array-with-memo
+(defthmd dag-variable-alist-correct-after-add-variable-to-dag-array-with-memo
   (implies (and (not (mv-nth 0 (add-variable-to-dag-array-with-memo var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist trees-equal-to-tree memoization info)))
                 (equal dag-variable-alist (make-dag-variable-alist 'dag-array dag-array dag-len))
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                (posp dag-len)
+                (natp dag-len)
                 (not (consp var)))
            (equal (mv-nth 6 (add-variable-to-dag-array-with-memo var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist trees-equal-to-tree memoization info))
                   (make-dag-variable-alist
@@ -294,11 +294,11 @@
                    (mv-nth 3 (add-variable-to-dag-array-with-memo var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist trees-equal-to-tree memoization info)))))
   :hints (("Goal" :in-theory (enable add-variable-to-dag-array-with-memo))))
 
-(defthm dag-constant-alist-correct-after-add-variable-to-dag-array-with-memo
+(defthmd dag-constant-alist-correct-after-add-variable-to-dag-array-with-memo
   (implies (and (not (mv-nth 0 (add-variable-to-dag-array-with-memo var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist trees-equal-to-tree memoization info)))
                 (equal dag-constant-alist (make-dag-constant-alist 'dag-array dag-array dag-len))
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                (posp dag-len)
+                (natp dag-len)
                 (not (consp var)))
            (equal (mv-nth 5 (add-variable-to-dag-array-with-memo var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist trees-equal-to-tree memoization info))
                   (make-dag-constant-alist
@@ -318,7 +318,8 @@
                     (mv-nth 4 (add-variable-to-dag-array-with-memo var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist trees-equal-to-tree memoization info))
                     dag-constant-alist ;; unchanged
                     (mv-nth 6 (add-variable-to-dag-array-with-memo var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist trees-equal-to-tree memoization info))))
-  :hints (("Goal" :in-theory (enable wf-dagp))))
+  :hints (("Goal" :in-theory (enable wf-dagp
+                                     dag-variable-alist-correct-after-add-variable-to-dag-array-with-memo))))
 
 (defthm bounded-memoizationp-of-nth-7-of-add-variable-to-dag-array-with-memo
   (implies (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
@@ -707,11 +708,12 @@
            :in-theory (e/d (bounded-dag-parent-arrayp alen1-of-maybe-expand-array)
                            (bounded-dag-parent-entriesp-after-add-function-call-expr-to-dag-array-with-memo)))))
 
-(defthm dag-variable-alist-correct-after-add-function-call-expr-to-dag-array-with-memo
+;drop?
+(defthmd dag-variable-alist-correct-after-add-function-call-expr-to-dag-array-with-memo
   (implies (and (not (mv-nth 0 (add-function-call-expr-to-dag-array-with-memo fn args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print-interval print trees-equal-to-tree memoization)))
                 (equal dag-variable-alist (make-dag-variable-alist 'dag-array dag-array dag-len))
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                (posp dag-len))
+                (natp dag-len))
            (equal (mv-nth 6 (add-function-call-expr-to-dag-array-with-memo fn args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print-interval print trees-equal-to-tree memoization))
                   (make-dag-variable-alist
                    'dag-array
@@ -719,11 +721,23 @@
                    (mv-nth 3 (add-function-call-expr-to-dag-array-with-memo fn args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print-interval print trees-equal-to-tree memoization)))))
   :hints (("Goal" :in-theory (enable add-function-call-expr-to-dag-array-with-memo))))
 
-(defthm dag-constant-alist-correct-after-add-function-call-expr-to-dag-array-with-memo
+(defthm dag-variable-alist-after-add-function-call-expr-to-dag-array-with-memo
+  (implies (and (not (mv-nth 0 (add-function-call-expr-to-dag-array-with-memo fn args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print-interval print trees-equal-to-tree memoization)))
+                (equal dag-variable-alist (make-dag-variable-alist 'dag-array dag-array dag-len))
+                (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+                (natp dag-len))
+           (equal (make-dag-variable-alist
+                   'dag-array
+                   (mv-nth 2 (add-function-call-expr-to-dag-array-with-memo fn args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print-interval print trees-equal-to-tree memoization))
+                   (mv-nth 3 (add-function-call-expr-to-dag-array-with-memo fn args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print-interval print trees-equal-to-tree memoization)))
+                  (make-dag-variable-alist 'dag-array dag-array dag-len)))
+  :hints (("Goal" :in-theory (enable add-function-call-expr-to-dag-array-with-memo))))
+
+(defthmd dag-constant-alist-correct-after-add-function-call-expr-to-dag-array-with-memo
   (implies (and (not (mv-nth 0 (add-function-call-expr-to-dag-array-with-memo fn args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print-interval print trees-equal-to-tree memoization)))
                 (equal dag-constant-alist (make-dag-constant-alist 'dag-array dag-array dag-len))
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                (posp dag-len)
+                (natp dag-len)
                 (not (equal 'quote fn)))
            (equal (mv-nth 5 (add-function-call-expr-to-dag-array-with-memo fn args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print-interval print trees-equal-to-tree memoization))
                   (make-dag-constant-alist
