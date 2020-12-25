@@ -2602,6 +2602,22 @@
          :hints (("Goal" :do-not '(generalize eliminate-destructors)
                   :in-theory (e/d (,rewrite-literals-name) (natp)))))
 
+       (defthm ,(pack$ rewrite-literals-name '-return-type-2)
+         (implies (true-listp done-list)
+                  (mv-let (erp provedp changep literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries)
+                    (,rewrite-literals-name work-list
+                                            done-list
+                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                            changep
+                                            rule-alist
+                                            interpreted-function-alist monitored-symbols print case-designator
+                                            info tries prover-depth options)
+                    (declare (ignore erp provedp changep new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries))
+                    (true-listp literal-nodenums)))
+         :rule-classes :type-prescription
+         :hints (("Goal" :do-not '(generalize eliminate-destructors)
+                  :in-theory (e/d (,rewrite-literals-name) (natp)))))
+
        ;; can this loop? probably, if the rules loop?
        ;; Returns (mv erp provedp literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries).
        ;; where if provedp is non-nil we proved the clause and the other return values are irrelevant fffixme is test-cases?

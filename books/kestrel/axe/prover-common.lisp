@@ -3783,6 +3783,16 @@
                            (wf-dagp 'dag-array new-dag-array new-dag-len 'dag-parent-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)))))
   :hints (("Goal" :in-theory (enable substitute-vars))))
 
+(defthm substitute-vars-return-type-2
+  (implies (true-listp literal-nodenums)
+           (mv-let (erp changep new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
+             (substitute-vars literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print prover-depth num changep-acc)
+             (declare (ignore changep new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist))
+             (implies (not erp)
+                      (true-listp new-literal-nodenums))))
+  :rule-classes :type-prescription
+  :hints (("Goal" :in-theory (enable substitute-vars))))
+
 ;;;
 ;;; tuple elimination
 ;;;
@@ -3966,6 +3976,21 @@
                            (wf-dagp 'dag-array new-dag-array new-dag-len 'dag-parent-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)))))
   :hints (("Goal" :in-theory (e/d (eliminate-a-tuple natp-of-cdr-of-assoc-equal-when-dag-variable-alistp)
                                   (natp)))))
+
+(defthm eliminate-a-tuple-return-type-corollary
+  (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                (nat-listp literal-nodenums)
+                (all-< literal-nodenums dag-len)
+                (consp literal-nodenums)
+                ;(equal dag-variable-alist (make-dag-variable-alist 'dag-array dag-array dag-len))
+                (not (mv-nth 0 (eliminate-a-tuple literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print))))
+           (mv-let (erp changep new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
+             (eliminate-a-tuple literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print)
+             (declare (ignore changep new-literal-nodenums new-dag-parent-array new-dag-constant-alist new-dag-variable-alist))
+             (implies (not erp)
+                      (and (pseudo-dag-arrayp 'dag-array new-dag-array new-dag-len)))))
+  :hints (("Goal" :use (eliminate-a-tuple-return-type)
+           :in-theory (disable eliminate-a-tuple-return-type))))
 
 ;; ;fixme change this to do less consing in the usual case of an objectcive of ?
 
