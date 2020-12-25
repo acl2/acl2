@@ -42,6 +42,7 @@
          (all-< lst val))
   :hints (("Goal" :in-theory (enable merge-sort-<))))
 
+;todo: rename to aref1-list?
 ;not tail-rec..
 (defund lookup-lst-array (array-name array indices)
   (declare (xargs :guard (and (all-natp indices)
@@ -49,10 +50,10 @@
                               (array1p array-name array)
                               (all-< indices (alen1 array-name array))
                               )))
-  (if (consp indices)
-      (cons (aref1 array-name array (car indices))
-            (lookup-lst-array array-name array (cdr indices)))
-      nil))
+  (if (endp indices)
+      nil
+    (cons (aref1 array-name array (car indices))
+          (lookup-lst-array array-name array (cdr indices)))))
 
 (defund sum-list-tail-aux (lst acc)
   (declare (xargs :guard (and (true-listp lst)
@@ -149,8 +150,11 @@
 ;; worklist (for any :examined node, all its descendants are either on the
 ;; worklist or have a valid entry in the size-array).
 (defund size-array-for-nodes-aux (worklist ;must be sorted
-                                  dag-array-name dag-array dag-len size-array-name size-array worklist-array)
-  (declare (xargs :guard (and (array1p size-array-name size-array) ;; need to say that it contains integers or nil, or :examined
+                                  dag-array-name dag-array dag-len
+                                  size-array-name size-array ;; tracks the results being computed
+                                  worklist-array ;; tracks the status of nodes (whether they are :examined)
+                                  )
+  (declare (xargs :guard (and (array1p size-array-name size-array) ;; need to say that it contains integers or nil
                               (array1p 'worklist-array worklist-array) ;maps nodes to :examined or nil
                               (true-listp worklist)
                               (all-natp worklist)
