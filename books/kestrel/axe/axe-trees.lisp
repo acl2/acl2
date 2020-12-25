@@ -127,8 +127,10 @@
 ;;   :hints (("Goal" :in-theory (enable bounded-axe-treep))))
 
 (defthm bounded-axe-treep-of-cons
-  (implies (all-bounded-axe-treep args bound)
-           (bounded-axe-treep (cons fn args) bound))
+  (equal (bounded-axe-treep (cons fn args) bound)
+         (if (eq fn 'quote)
+             t
+           (all-bounded-axe-treep args bound)))
   :hints (("Goal" :in-theory (enable bounded-axe-treep))))
 
 (defthm all-bounded-axe-treep-of-cons
