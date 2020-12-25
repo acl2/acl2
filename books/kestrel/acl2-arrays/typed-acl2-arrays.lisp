@@ -291,12 +291,13 @@
 ;;; def-typed-acl2-array2 (this version checks every value up to index length-1)
 ;;;
 
-;; TODO: Use this variant more?
+;; TODO: Use this variant more?  It seems to generate strictly more stuff?
 
 ;; pred should be an expression over at most the vars INDEX and VAL and the EXTRA-VARS
 (defun def-typed-acl2-array2-fn (fn pred default default-satisfies-predp extra-vars extra-guards)
   (declare (xargs :guard (and (symbolp fn)
-                              (booleanp default-satisfies-predp))))
+                              (booleanp default-satisfies-predp)
+                              (symbol-listp extra-vars))))
   (let ((aux-fn (pack$ fn '-aux)))
     `(encapsulate ()
 
