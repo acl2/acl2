@@ -2699,6 +2699,11 @@
                          (substitute-vars literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print prover-depth 0 nil))
                         ((when erp)
                          (mv erp nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
+                        ((when (not literal-nodenums))
+                         (cw "NOTE: No literals left after substitution!~%") ;can happen if the only lit when we subst is a (negated) var equality
+                         (mv (erp-nil)
+                             nil ;; did not prove
+                             literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
                         (- (cw "  Done substituting. ~x0 literals left.)~%" (len literal-nodenums))))
                      (if changep
                          ;;Something changed, so start over:
