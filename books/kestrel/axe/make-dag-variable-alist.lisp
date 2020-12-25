@@ -119,6 +119,11 @@
            (dag-variable-alistp (make-dag-variable-alist dag-array-name dag-array dag-len)))
   :hints (("Goal" :in-theory (enable make-dag-variable-alist pseudo-dag-arrayp))))
 
+(defthm make-dag-variable-alist-of-0
+  (equal (make-dag-variable-alist dag-array-name dag-array 0)
+         nil)
+  :hints (("Goal" :in-theory (enable make-dag-variable-alist))))
+
 (defthm all-<-of-strip-cdrs-of-make-dag-variable-alist
   (implies (pseudo-dag-arrayp dag-array-name dag-array dag-len)
            (all-< (strip-cdrs (make-dag-variable-alist dag-array-name dag-array dag-len))
@@ -141,7 +146,7 @@
 
 ;covers extending the dag by one node
 (defthm make-dag-variable-alist-of-aset1-expandable
-  (implies (and (posp dag-len)
+  (implies (and (natp dag-len)
                 (<= dag-len 2147483645)
                 (pseudo-dag-arrayp dag-array-name dag-array dag-len))
            (equal (make-dag-variable-alist dag-array-name (aset1-expandable dag-array-name dag-array dag-len expr) (+ 1 dag-len))
