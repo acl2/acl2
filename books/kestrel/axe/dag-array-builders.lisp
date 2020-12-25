@@ -30,6 +30,7 @@
 (include-book "make-dag-variable-alist")
 (include-book "parent-array")
 (include-book "kestrel/utilities/erp" :dir :system)
+(local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
 (in-theory (disable alistp))
 
@@ -122,6 +123,11 @@
   (implies (natp dag-len)
            (natp (mv-nth 3 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))))
   :rule-classes (:rewrite :type-prescription)
+  :hints (("Goal" :in-theory (enable add-variable-to-dag-array))))
+
+(defthm integerp-of-mv-nth-3-of-add-variable-to-dag-array
+  (implies (natp dag-len)
+           (integerp (mv-nth 3 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))))
   :hints (("Goal" :in-theory (enable add-variable-to-dag-array))))
 
 ;; If no error is signaled, the new size is acceptable
@@ -388,6 +394,18 @@
   :rule-classes (:rewrite :type-prescription)
   :hints (("Goal" :in-theory (enable add-function-call-expr-to-dag-array))))
 
+(defthm integerp-of-mv-nth-1-of-add-function-call-expr-to-dag-array
+  (implies (and (dag-constant-alistp dag-constant-alist)
+                (natp dag-len)
+                (symbolp fn)
+                (not (equal 'quote fn))
+                (all-dargp args)
+                ;; (true-listp args)
+                (dag-parent-arrayp 'dag-parent-array dag-parent-array))
+           (integerp (mv-nth 1 (add-function-call-expr-to-dag-array fn args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))))
+  :rule-classes (:rewrite :type-prescription)
+  :hints (("Goal" :in-theory (enable add-function-call-expr-to-dag-array))))
+
 (defthm not-consp-of-mv-nth-1-of-add-function-call-expr-to-dag-array
   (implies (and (dag-constant-alistp dag-constant-alist)
                 (natp dag-len)
@@ -428,9 +446,29 @@
   :hints (("Goal" :cases ((< dag-len 2147483646))
            :in-theory (enable add-function-call-expr-to-dag-array))))
 
+(defthm pseudo-dag-arrayp-of-mv-nth-2-of-add-function-call-expr-to-dag-array-gen
+  (implies (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+                (<= n (mv-nth 3 (add-function-call-expr-to-dag-array fn args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))
+                (natp n)
+                (all-dargp-less-than args dag-len)
+                (symbolp fn)
+                (not (equal 'quote fn))
+                (true-listp args))
+           (pseudo-dag-arrayp 'dag-array
+                              (mv-nth 2 (add-function-call-expr-to-dag-array fn args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+                              n))
+  :hints (("Goal" :use (:instance pseudo-dag-arrayp-of-mv-nth-2-of-add-function-call-expr-to-dag-array)
+           :in-theory (disable pseudo-dag-arrayp-of-mv-nth-2-of-add-function-call-expr-to-dag-array))))
+
 (defthm natp-of-mv-nth-3-of-add-function-call-expr-to-dag-array
   (implies (natp dag-len)
            (natp (mv-nth 3 (add-function-call-expr-to-dag-array fn args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))))
+  :rule-classes (:rewrite :type-prescription)
+  :hints (("Goal" :in-theory (enable add-function-call-expr-to-dag-array))))
+
+(defthm integerp-of-mv-nth-3-of-add-function-call-expr-to-dag-array
+  (implies (natp dag-len)
+           (integerp (mv-nth 3 (add-function-call-expr-to-dag-array fn args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))))
   :rule-classes (:rewrite :type-prescription)
   :hints (("Goal" :in-theory (enable add-function-call-expr-to-dag-array))))
 
@@ -496,6 +534,46 @@
                2147483646))
   :rule-classes (:rewrite :linear)
   :hints (("Goal" :in-theory (enable add-function-call-expr-to-dag-array))))
+
+;; shows that the new dag is good up through the returne node, at least
+(defthm pseudo-dag-arrayp-of-mv-nth-2-of-add-function-call-expr-to-dag-array-other
+  (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                (not (mv-nth 0 (add-function-call-expr-to-dag-array fn args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))
+                (all-dargp-less-than args dag-len)
+                (symbolp fn)
+                (not (equal 'quote fn))
+                (true-listp args))
+           (pseudo-dag-arrayp 'dag-array
+                              (mv-nth 2 (add-function-call-expr-to-dag-array fn args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+                              (+ 1 (mv-nth 1 (add-function-call-expr-to-dag-array fn args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))))
+  :hints (("Goal" :use ((:instance pseudo-dag-arrayp-of-mv-nth-2-of-add-function-call-expr-to-dag-array)
+                        bound-on-mv-nth-3-and-mv-nth-1-of-add-function-call-expr-to-dag-array-alt
+                        (:instance PSEUDO-DAG-ARRAYP-MONOTONE
+                                   (DAG-ARRAY-NAME 'dag-array)
+                                   (dag-array (MV-NTH 2
+                                                      (ADD-FUNCTION-CALL-EXPR-TO-DAG-ARRAY
+                                                       FN
+                                                       ARGS DAG-ARRAY DAG-LEN DAG-PARENT-ARRAY
+                                                       DAG-CONSTANT-ALIST DAG-VARIABLE-ALIST)))
+                                   (m (+
+                                       1
+                                       (MV-NTH
+                                        1
+                                        (ADD-FUNCTION-CALL-EXPR-TO-DAG-ARRAY FN ARGS DAG-ARRAY DAG-LEN
+                                                                             DAG-PARENT-ARRAY DAG-CONSTANT-ALIST
+                                                                             DAG-VARIABLE-ALIST))))
+                                   (n (MV-NTH 3
+                                              (ADD-FUNCTION-CALL-EXPR-TO-DAG-ARRAY
+                                               FN
+                                               ARGS DAG-ARRAY DAG-LEN DAG-PARENT-ARRAY
+                                               DAG-CONSTANT-ALIST DAG-VARIABLE-ALIST)))))
+           :cases ((natp (mv-nth 1 (add-function-call-expr-to-dag-array fn args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))))
+           :in-theory (disable pseudo-dag-arrayp-of-mv-nth-2-of-add-function-call-expr-to-dag-array
+                               PSEUDO-DAG-ARRAYP-OF-MV-NTH-2-OF-ADD-FUNCTION-CALL-EXPR-TO-DAG-ARRAY-GEN
+                               bound-on-mv-nth-3-and-mv-nth-1-of-add-function-call-expr-to-dag-array-alt
+                               BOUND-ON-MV-NTH-3-AND-MV-NTH-1-OF-ADD-FUNCTION-CALL-EXPR-TO-DAG-ARRAY
+                               PSEUDO-DAG-ARRAYP-MONOTONE
+                               natp))))
 
 (defthm alen1-of-mv-nth-4-of-add-function-call-expr-to-dag-array
   (implies (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
