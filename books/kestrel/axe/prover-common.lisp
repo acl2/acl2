@@ -1721,7 +1721,7 @@
 
 ;; Returns (mv erp provedp extended-acc dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist).
 ;; When NEGATED-FLG is nil, EXTENDED-ACC is ACC extended with the disjuncts of ITEM, except that if a true disjunct is found, we signal it by returning T for PROVEDP.
-;; When NEGATED-FLG is non-nil, EXTENDED-ACC is ACC extended with the negations of the conjuncts of ITEM, except that if any of the negated conjuncts is true, we signal it by returning T for PROVEDP.
+;; When NEGATED-FLG is t, EXTENDED-ACC is ACC extended with the negations of the conjuncts of ITEM, except that if any of the negated conjuncts is true, we signal it by returning T for PROVEDP.
 ;; Throughout, we maintain IFF-equivalence but not necessarily equality.
 ;; This may extend the dag, since some of the disjuncts may not already exist in the dag (ex: for (not (booland x y)), the disjuncts are (not x) and (not y), and these may not exist in the dag).
 ;; TODO: In theory this could blow up due to shared structure, but I haven't seen that happen.
@@ -1729,7 +1729,8 @@
 (defund get-disjuncts (item dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc negated-flg)
   (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                               (dargp-less-than item dag-len)
-                              (nat-listp acc))
+                              (nat-listp acc)
+                              (booleanp negated-flg))
                   :measure (if (consp item)
                                0
                              (+ 1 (nfix item)))
@@ -1785,7 +1786,7 @@
                     nil ; provedp
                     (add-to-set-eql item acc)
                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))))
-      ;; The negated-flag is non-nil, so we are returning the negations of the conjuncts of ITEM:
+      ;; The negated-flag is t, so we are returning the negations of the conjuncts of ITEM:
       (if (consp item) ;test for quotep
           (if (unquote item)
               ;; A non-nil constant gets dropped, since we are to negate all conjuncts
