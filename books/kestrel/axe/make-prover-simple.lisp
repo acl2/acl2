@@ -2654,6 +2654,7 @@
        ;; otherwise, we return the simplified clause (as the list of literal nodenums and the dag-array, etc.)
        ;; perhaps this should return info, which the parent can print
        ;; old: this returns TEST-CASES because destructor elimination can change the vars and changes the test cases analogously.
+       ;; There should be no harvestable disjuncts in the LITERAL-NODENUMS returned?
        (defund ,rewrite-subst-and-elim-with-rule-alist-name (literal-nodenums
                                                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                              rule-alist rule-set-number
@@ -2676,7 +2677,7 @@
                   (type (unsigned-byte 59) count))
          (if (zp-fast count)
              (mv :count-exceeded nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
-           (b* (;; TODO: Do this in the callers?  Maintain an invariant about disjuncts having been extracted from literal-nodenums?
+           (b* (;; TODO: Do this in the callers?  Maintain an invariant about disjuncts having been extracted from literal-nodenums?  May not be true after we substitute, so do this there instead?
                 ((mv erp provedp literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
                  (get-disjuncts-from-nodes literal-nodenums
                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
@@ -2835,6 +2836,7 @@
                                   (natp)))))
 
        ;; Returns (mv erp provedp literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries).
+       ;; There should be no harvestable disjuncts in the LITERAL-NODENUMS returned, assuming there we none passed in.
        (defund ,rewrite-subst-and-elim-with-rule-alists-name (literal-nodenums
                                                               dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                               rule-alists ;we use these one at a time
@@ -3092,7 +3094,7 @@
                     (implies (not erp)
                              (and (pseudo-dag-arrayp 'dag-array new-dag-array new-dag-len)
                                   (true-listp new-literal-nodenums)
-                                  (natp dag-len)))))
+                                  (natp new-dag-len)))))
          :hints (("Goal" :use (,(pack$ prove-case-name '-return-type))
                   :in-theory (disable ,(pack$ prove-case-name '-return-type)))))
 
@@ -3107,16 +3109,17 @@
                                       info tries prover-depth options)
                     (declare (ignore erp provedp new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries))
                     (true-listp new-literal-nodenums)))
+         :rule-classes (:rewrite :type-prescription)
          :hints (("Goal" :in-theory (e/d (,prove-case-name)
                                          (natp)))))
 
        ;; The main entry point of the Axe Prover.
        ;; Tries to prove the disjunction of LITERAL-NODENUMS-OR-QUOTEPS.
        ;; Returns (mv erp result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries) where result is :proved, :failed, or :timed-out
-       ;; Can split into cases and/or call STP (ffixme which should we do first?)
-       ;;ffixme this could gather all the failed cases and return corresponding calls to prove-clause for the user to copy and paste to work on manually - currently this stops as soon as one case fails..
-       ;;when should we try to separate the vars?  i think destructor elimination can enable separation...
-       ;;upon failure, prints the failed case (sometimes?)
+       ;; If proving the goal as a single case fails, this splits into cases and recurs.
+       ;; TODO: This could gather all the failed cases and return corresponding calls to prove-clause for the user to copy and paste to work on manually - currently this stops as soon as one case fails.
+       ;; TODO: When should we try to separate the vars?  i think destructor elimination can enable separation...
+       ;; upon failure, prints the failed case (sometimes?).
        ;; Does not change any existing DAG nodes if prover-depth > 0 (TODO check that).
        (defund ,prove-disjunction-name (literal-nodenums-or-quoteps
                                         dag-array ;must be named 'dag-array
@@ -3146,147 +3149,135 @@
                   (type (unsigned-byte 59) count))
          (if (zp-fast count)
              (mv :count-exceeded
-                 :failed ;i'm going to say count reaching 0 is a failure
+                 :failed ; could instead use :timed-out here
                  dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
-           (mv-let
-             (provedp literal-nodenums)
-             ;;on some calls we know there are no constants and so could skip this check, but it seems pretty fast
-             (handle-constant-disjuncts literal-nodenums-or-quoteps nil)
-             (if provedp
-                 (prog2$ (cw "! Proved case ~s0 (one literal was a non-nil constant!)~%" case-designator)
-                         (mv (erp-nil) :proved dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
-               ;; First try to prove the clause as a single case.  This may do some work even if it doesn't prove the clause.
-               ;; Tuple elim (and substitution) may change the set of variables.
-               (mv-let
-                 (erp provedp literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                      info tries)
+           (b* (((mv provedp literal-nodenums)
+                 ;;on some calls we know there are no constants and so could skip this check, but it seems pretty fast
+                 ;; TODO: Should call get-disjuncts here?!
+                 (handle-constant-disjuncts literal-nodenums-or-quoteps nil))
+                ((when provedp)
+                 (cw "! Proved case ~s0 (one literal was a non-nil constant!)~%" case-designator)
+                 (mv (erp-nil) :proved dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
+                ;; First try to prove the clause as a single case.  This may do some work even if it doesn't prove the clause.
+                ;; Tuple elim (and substitution) may change the set of variables.
+                ((mv erp provedp literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
                  (,prove-case-name literal-nodenums
                                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                    rule-alists interpreted-function-alist monitored-symbols
-                                   case-designator print info tries prover-depth options)
-                 (if erp
-                     (mv erp
-                         :failed
-                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
-                   (if provedp
-                       (prog2$ (cw "Proved case ~s0 by rewriting, etc.~%" case-designator)
-                               (mv (erp-nil) :proved dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
-                     (if (not literal-nodenums)
-                         (prog2$ (cw "No literals left!~%") ;can this happen?
-                                 (mv (erp-nil) :failed dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
-                       ;; Proving it as a single case didn't finish the job (but may have done some work).
-                       ;; Now try to split on an if-then-else test (or an argument to a bool op).  We used to do this before trying stp.
-                       (let ((nodenum (find-node-to-split-for-prover 'dag-array dag-array dag-len literal-nodenums)))
-                         (if (not nodenum)
-                             (let ((printp (and print
-                                                (or (< dag-len 1000) ;fixme not the appropriate test
-                                                    (eq t print)     ;new
-                                                    (eq :verbose print)  ;new
-                                                    (eq :verbose2 print) ;new
-                                                    ))))
-                               (progn$ (cw "(Couldn't find a node to split on.  Failed to prove case ~s0~%" case-designator)
-                                       (and printp
-                                            (or (eq t print) (eq :verbose print) (eq :verbose2 print))
-                                            (progn$
-                                             (cw "(This case (~x0 literals):~%" (len literal-nodenums))
-                                             (print-axe-prover-case literal-nodenums 'dag-array dag-array dag-len)
-                                             (cw ")~%")
-                                             ))
-                                       (cw ")~%")
-                                       (mv (erp-nil) :failed dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))
-                           (progn$
-                            (cw "Splitting on node ~x0:~%" nodenum)
-                            ;;todo: elide this if too big:
-                            (print-dag-only-supporters 'dag-array dag-array nodenum)
-                            (and (or (eq t print) (eq :verbose print) (eq :verbose2 print))
-                                 (progn$ (cw "Literals:~%")
-                                         (print-dag-only-supporters-lst literal-nodenums 'dag-array dag-array)
-;(cw "parent array:~%")
-;(print-array2 'dag-parent-array dag-parent-array dag-len)
-                                         ))
-                            ;;splitting on nodenum (which is not a call of NOT):
-                            ;;instead of proving the clause C, we will prove both (or (not nodenum) C) and (or nodenum C)
-                            ;;can we somehow avoid this saving? copy to a new array? ;change ,rewrite-literals-name to not destroy existing nodes?!
-                            (b* (
-                                 ;;(saved-dag-array dag-array) ;(saved-dag-alist (array-to-alist dag-len 'dag-array dag-array)) ;don't convert to an alist?  just restore later by making the old value of dag-array the new  under-the-hood value?  same for parents array?
-                                 ;;(saved-dag-len dag-len)
-                                 ;;(saved-dag-parent-array dag-parent-array) ;(saved-dag-parent-alist (array-to-alist dag-len 'dag-parent-array dag-parent-array))
-                                 ;;(saved-dag-constant-alist dag-constant-alist)
-                                 ;;(saved-dag-variable-alist dag-variable-alist)
-                                 (case-1-designator (concatenate 'string case-designator "1"))
-                                 ;; In Case 1 we assume nodenum is non-nil (i.e., true).  Thus, we try to prove (or (not nodenum) C):
-                                 ;; (mv-let ;Use the split fact:
-                                 ;;  (dag-array dag-parent-array)
-                                 ;;  ;fixme consider making this not destructive:
-                                 ;;  (replace-nodenum-with-t-in-boolean-contexts nodenum dag-array dag-parent-array) ;this leaves the subtree at nodenum itself unchanged
-                                 (- (cw "(True Case: ~s0~%" case-1-designator))
-                                 (- (and (or (eq t print) (eq :verbose print) (eq :verbose2 print))
-                                         (prog2$ (cw "Literals:~%")
-                                                 (print-dag-only-supporters-lst literal-nodenums 'dag-array dag-array))))
-                                 ;;add the negation of nodenum to the dag:
-                                 ((mv erp negation-of-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-                                  (add-function-call-expr-to-dag-array 'not (list nodenum) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
-                                 ((when erp) (mv erp :failed dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
-                                 ((mv erp case-1-result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
-                                  (,prove-disjunction-name (cons negation-of-nodenum literal-nodenums)
-                                                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                           rule-alists interpreted-function-alist monitored-symbols
-                                                           print case-1-designator
-                                                           info tries
-                                                           (+ 1 prover-depth) ;to indicate that nodes should not be changed
-                                                           options (+ -1 count)))
-                                 ((when erp) (mv erp :failed dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))
-                              ;;fixme we could make an option to continue if case 1 fails, so that all the failed subgoals are printed
-                              (if (not (eq :proved case-1-result))
-                                  (prog2$ (cw "Failed on ~s0.)~%" case-1-designator)
-                                          (mv (erp-nil)
-                                              case-1-result ; will be :failed or :timed-out
+                                   case-designator print info tries prover-depth options))
+                ((when erp) (mv erp :failed dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
+                ((when provedp)
+                 (cw "Proved case ~s0 by rewriting, etc.~%" case-designator)
+                 (mv (erp-nil) :proved dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
+                ((when (not literal-nodenums)) ;can this happen? i think so, e.g., by sustitition
+                 (cw "No literals left!~%")
+                 (mv (erp-nil) :failed dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
+                ;; Proving it as a single case didn't finish the job (but may have done some work).
+                ;; Now try to split on an if-then-else test (or an argument to a bool op).  We used to do this before trying stp.
+                (nodenum (find-node-to-split-for-prover 'dag-array dag-array dag-len literal-nodenums)))
+             (if (not nodenum)
+                 (progn$ (cw "(Couldn't find a node to split on.  Failed to prove case ~s0~%" case-designator)
+                         (and print
+                              (or (eq t print) (eq :verbose print) (eq :verbose2 print)) ;drop?
+                              (or (< dag-len 1000) ;fixme not the appropriate test
+                                  (eq t print)     ;new
+                                  (eq :verbose print)  ;new
+                                  (eq :verbose2 print) ;new
+                                  )
+                              (progn$
+                               (cw "(This case (~x0 literals):~%" (len literal-nodenums))
+                               (print-axe-prover-case literal-nodenums 'dag-array dag-array dag-len)
+                               (cw ")~%")))
+                         (cw ")~%")
+                         (mv (erp-nil) :failed dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
+               ;;splitting on nodenum (which is not a call of NOT):
+               ;;instead of proving the clause C, we will prove both (or (not nodenum) C) and (or nodenum C)
+               (b* ((- (cw "Splitting on node ~x0:~%" nodenum))
+                    ;;todo: elide this if too big:
+                    (- (print-dag-only-supporters 'dag-array dag-array nodenum))
+                    (- (and (or (eq t print) (eq :verbose print) (eq :verbose2 print))
+                            (progn$ (cw "Literals:~%")
+                                    (print-dag-only-supporters-lst literal-nodenums 'dag-array dag-array)
+                                    ;;(cw "parent array:~%")
+                                    ;;(print-array2 'dag-parent-array dag-parent-array dag-len)
+                                    )))
+                    ;;can we somehow avoid this saving? copy to a new array? ;change ,rewrite-literals-name to not destroy existing nodes?!
+                    ;;(saved-dag-array dag-array) ;(saved-dag-alist (array-to-alist dag-len 'dag-array dag-array)) ;don't convert to an alist?  just restore later by making the old value of dag-array the new  under-the-hood value?  same for parents array?
+                    ;;(saved-dag-len dag-len)
+                    ;;(saved-dag-parent-array dag-parent-array) ;(saved-dag-parent-alist (array-to-alist dag-len 'dag-parent-array dag-parent-array))
+                    ;;(saved-dag-constant-alist dag-constant-alist)
+                    ;;(saved-dag-variable-alist dag-variable-alist)
+                    (case-1-designator (concatenate 'string case-designator "1"))
+                    ;; In Case 1 we assume nodenum is non-nil (i.e., true).  Thus, we try to prove (or (not nodenum) C):
+                    ;; (mv-let ;Use the split fact:
+                    ;;  (dag-array dag-parent-array)
+                    ;;  ;fixme consider making this not destructive:
+                    ;;  (replace-nodenum-with-t-in-boolean-contexts nodenum dag-array dag-parent-array) ;this leaves the subtree at nodenum itself unchanged
+                    (- (cw "(True Case: ~s0~%" case-1-designator))
+                    (- (and (or (eq t print) (eq :verbose print) (eq :verbose2 print))
+                            (prog2$ (cw "Literals:~%")
+                                    (print-dag-only-supporters-lst literal-nodenums 'dag-array dag-array))))
+                    ;;add the negation of nodenum to the dag:
+                    ((mv erp negation-of-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+                     (add-function-call-expr-to-dag-array 'not (list nodenum) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+                    ((when erp) (mv erp :failed dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
+                    ;; Attempt to prove case #1:
+                    ((mv erp case-1-result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
+                     (,prove-disjunction-name (cons negation-of-nodenum literal-nodenums) ;todo: call a variant here that doesn't bother to handle constant disjuncts?
                                               dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                              info tries))
-                                ;;In case 2 we assume nodenum is nil (false), i.e., we try to prove (or nodenum C):
-                                (b* ((- (cw "Proved ~s0)~%" case-1-designator)) ;end of case1
-                                     ;;restore the dag:
-                                     ;; (dag-array (compress1 'dag-array saved-dag-array)) ;(dag-array (make-into-array-with-len 'dag-array saved-dag-alist saved-dag-len)) ;leave some slack space?
-                                     ;; (dag-parent-array (compress1 'dag-parent-array saved-dag-parent-array)) ;(dag-parent-array (make-into-array-with-len 'dag-parent-array saved-dag-parent-alist saved-dag-len)) ;leave some slack space?
-                                     ;; (dag-constant-alist saved-dag-constant-alist)
-                                     ;; (dag-variable-alist saved-dag-variable-alist)
-                                     ;;(dag-len saved-dag-len)
-                                     (case-2-designator (concatenate 'string case-designator "2"))
-                                     (- (cw "(False case: ~s0~%" case-2-designator))
-                                     ;;                                       (mv-let ;Use the split fact:
-                                     ;;                                        (dag-array dag-parent-array)
-                                     ;; ;fixme consider making this not destructive:
-                                     ;;                                        (replace-nodenum-with-nil nodenum dag-array dag-parent-array) ;this leaves the subtree at nodenum itself unchanged
-                                     ((mv erp case-2-result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
-                                      (,prove-disjunction-name
-                                       (cons nodenum literal-nodenums) ;we are assuming (not ,nodenum)
-                                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                       rule-alists interpreted-function-alist monitored-symbols
-                                       print case-2-designator
-                                       info tries
-                                       (+ 1 prover-depth) ;to match what we do in the other case above
-                                       options (+ -1 count)))
-                                     ((when erp) (mv erp :failed dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
-                                     (- (if (not (eq :proved case-2-result))
-                                            (cw "Failed on ~s0.)~%" case-2-designator)
-                                          (cw "Proved ~s0)~%" case-2-designator)))
-                                     ;;end of case2
-                                     )
-                                  (mv (erp-nil)
-                                      (if (and (eq :proved case-1-result) ;leave this check in case we make an option above to continue even when case 1 fails
-                                               (eq :proved case-2-result))
-                                          ;; print that we proved case 2?
-                                          (prog2$ nil ;(cw "Used splitting to prove case: ~s0~%" case-designator) ;print the number of splits?
-                                                  :proved)
-                                        (prog2$ nil ;(cw "Failed to prove both subcases of case ~s0~%" case-designator)
-                                                case-2-result ;change this if we make an option above to continue even when case 1 fails
-                                                ))
-                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                      info tries)
-;)
-                                  ))
-;)
-                              ))))))))))))
+                                              rule-alists interpreted-function-alist monitored-symbols
+                                              print case-1-designator
+                                              info tries
+                                              (+ 1 prover-depth) ;to indicate that nodes should not be changed
+                                              options (+ -1 count)))
+                    ((when erp) (mv erp :failed dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))
+                 ;;fixme we could make an option to continue if case 1 fails, so that all the failed subgoals are printed
+                 (if (not (eq :proved case-1-result))
+                     (prog2$ (cw "Failed on ~s0.)~%" case-1-designator)
+                             (mv (erp-nil)
+                                 case-1-result ; will be :failed or :timed-out
+                                 dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                 info tries))
+                   ;;In case 2 we assume nodenum is nil (false), i.e., we try to prove (or nodenum C):
+                   (b* ((- (cw "Proved ~s0)~%" case-1-designator)) ;end of case1
+                        ;;restore the dag:
+                        ;; (dag-array (compress1 'dag-array saved-dag-array)) ;(dag-array (make-into-array-with-len 'dag-array saved-dag-alist saved-dag-len)) ;leave some slack space?
+                        ;; (dag-parent-array (compress1 'dag-parent-array saved-dag-parent-array)) ;(dag-parent-array (make-into-array-with-len 'dag-parent-array saved-dag-parent-alist saved-dag-len)) ;leave some slack space?
+                        ;; (dag-constant-alist saved-dag-constant-alist)
+                        ;; (dag-variable-alist saved-dag-variable-alist)
+                        ;;(dag-len saved-dag-len)
+                        (case-2-designator (concatenate 'string case-designator "2"))
+                        (- (cw "(False case: ~s0~%" case-2-designator))
+                        ;;                                       (mv-let ;Use the split fact:
+                        ;;                                        (dag-array dag-parent-array)
+                        ;; ;fixme consider making this not destructive:
+                        ;;                                        (replace-nodenum-with-nil nodenum dag-array dag-parent-array) ;this leaves the subtree at nodenum itself unchanged
+                        ((mv erp case-2-result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
+                         (,prove-disjunction-name
+                          (cons nodenum literal-nodenums) ;we are assuming (not ,nodenum)
+                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                          rule-alists interpreted-function-alist monitored-symbols
+                          print case-2-designator
+                          info tries
+                          (+ 1 prover-depth) ;to match what we do in the other case above
+                          options (+ -1 count)))
+                        ((when erp) (mv erp :failed dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
+                        (- (if (not (eq :proved case-2-result))
+                               (cw "Failed on ~s0.)~%" case-2-designator)
+                             (cw "Proved ~s0)~%" case-2-designator)))
+                        ;;end of case2
+                        )
+                     (mv (erp-nil)
+                         (if (and (eq :proved case-1-result) ;leave this check in case we make an option above to continue even when case 1 fails
+                                  (eq :proved case-2-result))
+                             ;; print that we proved case 2?
+                             (prog2$ nil ;(cw "Used splitting to prove case: ~s0~%" case-designator) ;print the number of splits?
+                                     :proved)
+                           (prog2$ nil ;(cw "Failed to prove both subcases of case ~s0~%" case-designator)
+                                   case-2-result ;change this if we make an option above to continue even when case 1 fails
+                                   ))
+                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                         info tries))))))))
 
        ;; (defthm ,(pack$ prove-disjunction-name '-return-type)
        ;;   (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
