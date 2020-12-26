@@ -1938,6 +1938,7 @@
             (true-listp (mv-nth 2 (get-disjuncts-from-nodes nodenums
                                                             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                             acc))))
+  :rule-classes :type-prescription
   :hints (("Goal" :in-theory (e/d (get-disjuncts-from-nodes) (natp)))))
 
 
@@ -2524,6 +2525,36 @@
           (smallest-size-node-aux (rest nodenums) next-size next-nodenum size-array size-array-len)
         (smallest-size-node-aux (rest nodenums) current-smallest-size current-smallest-node size-array size-array-len)))))
 
+(defthm natp-of-smallest-size-node-aux
+  (implies (and (all-natp nodenums)
+                (true-listp nodenums)
+                (array1p 'size-array size-array)
+                (natp size-array-len)
+                (<= size-array-len
+                    (alen1 'size-array size-array))
+                (all-< nodenums size-array-len)
+                (natp current-smallest-size)
+                (natp current-smallest-node)
+                )
+           (natp (smallest-size-node-aux nodenums current-smallest-size current-smallest-node size-array size-array-len)))
+  :hints (("Goal" :in-theory (e/d (smallest-size-node-aux) (natp)))))
+
+(defthm <-of-smallest-size-node-aux
+  (implies (and (all-< nodenums bound)
+                (all-natp nodenums)
+                (true-listp nodenums)
+                (array1p 'size-array size-array)
+                (natp size-array-len)
+                (<= size-array-len
+                    (alen1 'size-array size-array))
+                (all-< nodenums size-array-len)
+                (natp current-smallest-size)
+                (< current-smallest-node bound)
+                )
+           (< (smallest-size-node-aux nodenums current-smallest-size current-smallest-node size-array size-array-len)
+              bound))
+  :hints (("Goal" :in-theory (e/d (smallest-size-node-aux) (natp)))))
+
 ;nodenums must be non-nil
 ;returns a nodenum
 (defund smallest-size-node (nodenums size-array size-array-len)
@@ -2539,6 +2570,32 @@
   (let* ((first-node (first nodenums))
          (first-size (nfix (aref1 'size-array size-array first-node)))) ;todo: drop the nfix?
     (smallest-size-node-aux (rest nodenums) first-size first-node size-array size-array-len)))
+
+(defthm natp-of-smallest-size-node
+  (implies (and (all-natp nodenums)
+                (true-listp nodenums)
+                (consp nodenums)
+                (array1p 'size-array size-array)
+                (natp size-array-len)
+                (<= size-array-len
+                    (alen1 'size-array size-array))
+                (all-< nodenums size-array-len))
+           (natp (smallest-size-node nodenums size-array size-array-len)))
+  :hints (("Goal" :in-theory (e/d (smallest-size-node) (natp)))))
+
+(defthm <-of-smallest-size-node
+  (implies (and (all-< nodenums bound)
+                (all-natp nodenums)
+                (true-listp nodenums)
+                (consp nodenums)
+                (array1p 'size-array size-array)
+                (natp size-array-len)
+                (<= size-array-len
+                    (alen1 'size-array size-array))
+                (all-< nodenums size-array-len))
+           (< (smallest-size-node nodenums size-array size-array-len)
+              bound))
+  :hints (("Goal" :in-theory (e/d (smallest-size-node) (natp)))))
 
 (defthm all-natp-of-merge-<
   (implies (and (all-natp l1)
@@ -2637,6 +2694,40 @@
           (first candidate-nodenums) ;only one candidate, no need to compare sizes
         (let* ((size-array (size-array-for-sorted-nodes candidate-nodenums dag-array-name dag-array dag-len 'size-array)))
           (smallest-size-node candidate-nodenums size-array dag-len))))))
+
+(defthm natp-of-find-node-to-split-for-prover
+  (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                (nat-listp literal-nodenums)
+                (consp literal-nodenums)
+                (all-< literal-nodenums dag-len)
+                (< 0 dag-len) ;implied?
+                (find-node-to-split-for-prover dag-array-name dag-array dag-len literal-nodenums) ; no failure
+                )
+           (natp (find-node-to-split-for-prover dag-array-name dag-array dag-len literal-nodenums)))
+  :hints (("Goal" :in-theory (e/d (find-node-to-split-for-prover) (natp)))))
+
+(defthm <-of-find-node-to-split-for-prover
+  (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                (nat-listp literal-nodenums)
+                (consp literal-nodenums)
+                (all-< literal-nodenums dag-len)
+                (< 0 dag-len) ;implied?
+                (find-node-to-split-for-prover dag-array-name dag-array dag-len literal-nodenums) ; no failure
+                )
+           (< (find-node-to-split-for-prover dag-array-name dag-array dag-len literal-nodenums) dag-len))
+  :hints (("Goal" :in-theory (e/d (find-node-to-split-for-prover) (natp)))))
+
+(defthm dargp-less-than-of-find-node-to-split-for-prover
+  (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                (nat-listp literal-nodenums)
+                (consp literal-nodenums)
+                (all-< literal-nodenums dag-len)
+                (< 0 dag-len) ;implied?
+                (find-node-to-split-for-prover dag-array-name dag-array dag-len literal-nodenums) ; no failure
+                )
+           (dargp-less-than (find-node-to-split-for-prover dag-array-name dag-array dag-len literal-nodenums)
+                            dag-len))
+  :hints (("Goal" :in-theory (e/d (dargp-less-than) (natp)))))
 
 ;no sense monitoring definition rules.. (could also skip rules without hyps, if any)
 ;; (defun keep-rewrite-rule-names (runes)
@@ -3787,11 +3878,25 @@
   (implies (true-listp literal-nodenums)
            (mv-let (erp changep new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
              (substitute-vars literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print prover-depth num changep-acc)
-             (declare (ignore changep new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist))
-             (implies (not erp)
-                      (true-listp new-literal-nodenums))))
-  :rule-classes :type-prescription
+             (declare (ignore erp changep new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist))
+             (true-listp new-literal-nodenums)))
+  :rule-classes (:rewrite :type-prescription)
   :hints (("Goal" :in-theory (enable substitute-vars))))
+
+(defthm substitute-vars-return-type-3
+  (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                (nat-listp literal-nodenums)
+                (all-< literal-nodenums dag-len)
+                (natp prover-depth)
+                (natp num)
+                (booleanp changep-acc))
+           (mv-let (erp changep new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
+             (substitute-vars literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print prover-depth num changep-acc)
+             (declare (ignore changep new-literal-nodenums new-dag-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist))
+             (implies (not erp)
+                      (natp new-dag-len))))
+  :rule-classes (:rewrite :type-prescription)
+  :hints (("Goal" :in-theory (e/d (substitute-vars) (natp)))))
 
 ;;;
 ;;; tuple elimination
@@ -3965,13 +4070,16 @@
                 (all-< literal-nodenums dag-len)
                 (consp literal-nodenums)
                 ;(equal dag-variable-alist (make-dag-variable-alist 'dag-array dag-array dag-len))
-                (not (mv-nth 0 (eliminate-a-tuple literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print))))
+                ;;(not (mv-nth 0 (eliminate-a-tuple literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print)))
+                )
            (mv-let (erp changep new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
              (eliminate-a-tuple literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print)
              (declare (ignore changep))
              (implies (not erp)
                       (and (all-natp new-literal-nodenums)
                            (true-listp new-literal-nodenums)
+                           (equal (len new-literal-nodenums) (len literal-nodenums))
+                           (consp new-literal-nodenums)
                            (all-< new-literal-nodenums new-dag-len)
                            (wf-dagp 'dag-array new-dag-array new-dag-len 'dag-parent-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)))))
   :hints (("Goal" :in-theory (e/d (eliminate-a-tuple natp-of-cdr-of-assoc-equal-when-dag-variable-alistp)
@@ -3983,14 +4091,46 @@
                 (all-< literal-nodenums dag-len)
                 (consp literal-nodenums)
                 ;(equal dag-variable-alist (make-dag-variable-alist 'dag-array dag-array dag-len))
-                (not (mv-nth 0 (eliminate-a-tuple literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print))))
+                ;;(not (mv-nth 0 (eliminate-a-tuple literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print)))
+                )
            (mv-let (erp changep new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
              (eliminate-a-tuple literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print)
              (declare (ignore changep new-literal-nodenums new-dag-parent-array new-dag-constant-alist new-dag-variable-alist))
-             (implies (not erp)
-                      (and (pseudo-dag-arrayp 'dag-array new-dag-array new-dag-len)))))
+             (implies (and (not erp)
+                           (<= bound new-dag-len)
+                           (natp bound))
+                      (and (pseudo-dag-arrayp 'dag-array new-dag-array bound)))))
   :hints (("Goal" :use (eliminate-a-tuple-return-type)
            :in-theory (disable eliminate-a-tuple-return-type))))
+
+(defthm eliminate-a-tuple-return-type-2
+  (implies (natp dag-len)
+           (mv-let (erp changep new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
+             (eliminate-a-tuple literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print)
+             (declare (ignore erp changep new-literal-nodenums new-dag-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist))
+             (natp new-dag-len)))
+  :rule-classes (:rewrite :type-prescription)
+  :hints (("Goal" :in-theory (e/d (eliminate-a-tuple natp-of-cdr-of-assoc-equal-when-dag-variable-alistp)
+                                  (natp)))))
+
+(defthm eliminate-a-tuple-return-type-3
+  (implies (natp dag-len)
+           (mv-let (erp changep new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
+             (eliminate-a-tuple literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print)
+             (declare (ignore erp changep new-literal-nodenums new-dag-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist))
+             (integerp new-dag-len)))
+  :hints (("Goal" :in-theory (e/d (eliminate-a-tuple natp-of-cdr-of-assoc-equal-when-dag-variable-alistp)
+                                  (natp)))))
+
+(defthm eliminate-a-tuple-return-type-4
+  (implies (true-listp literal-nodenums)
+           (mv-let (erp changep new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
+             (eliminate-a-tuple literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print)
+             (declare (ignore erp changep new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist))
+             (true-listp new-literal-nodenums)))
+  :rule-classes (:rewrite :type-prescription)
+  :hints (("Goal" :in-theory (e/d (eliminate-a-tuple natp-of-cdr-of-assoc-equal-when-dag-variable-alistp)
+                                  (natp)))))
 
 ;; ;fixme change this to do less consing in the usual case of an objectcive of ?
 
