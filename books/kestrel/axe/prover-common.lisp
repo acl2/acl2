@@ -2673,10 +2673,9 @@
   (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (nat-listp literal-nodenums)
                               (consp literal-nodenums)
-                              (all-< literal-nodenums dag-len)
-                              (< 0 dag-len) ;implied?
-                              )
-                  :guard-hints (("Goal" :in-theory (enable all-rationalp-when-all-natp)))))
+                              (all-< literal-nodenums dag-len))
+                  :guard-hints (("Goal" :cases ((equal 0 dag-len))
+                                 :in-theory (enable all-rationalp-when-all-natp)))))
   (let* ((max-literal-nodenum (maxelem literal-nodenums))
          (done-array (make-empty-array 'done-array (+ 1 max-literal-nodenum)))
          ;;won't include any nodes that are calls to not:
@@ -2700,34 +2699,47 @@
                 (nat-listp literal-nodenums)
                 (consp literal-nodenums)
                 (all-< literal-nodenums dag-len)
-                (< 0 dag-len) ;implied?
                 (find-node-to-split-for-prover dag-array-name dag-array dag-len literal-nodenums) ; no failure
                 )
            (natp (find-node-to-split-for-prover dag-array-name dag-array dag-len literal-nodenums)))
-  :hints (("Goal" :in-theory (e/d (find-node-to-split-for-prover) (natp)))))
+  :hints (("Goal" :cases ((equal 0 dag-len))
+           :in-theory (e/d (find-node-to-split-for-prover) (natp)))))
 
 (defthm <-of-find-node-to-split-for-prover
   (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                 (nat-listp literal-nodenums)
                 (consp literal-nodenums)
                 (all-< literal-nodenums dag-len)
-                (< 0 dag-len) ;implied?
                 (find-node-to-split-for-prover dag-array-name dag-array dag-len literal-nodenums) ; no failure
                 )
            (< (find-node-to-split-for-prover dag-array-name dag-array dag-len literal-nodenums) dag-len))
-  :hints (("Goal" :in-theory (e/d (find-node-to-split-for-prover) (natp)))))
+  :hints (("Goal" :cases ((equal 0 dag-len))
+           :in-theory (e/d (find-node-to-split-for-prover) (natp)))))
 
 (defthm dargp-less-than-of-find-node-to-split-for-prover
   (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                 (nat-listp literal-nodenums)
                 (consp literal-nodenums)
                 (all-< literal-nodenums dag-len)
-                (< 0 dag-len) ;implied?
                 (find-node-to-split-for-prover dag-array-name dag-array dag-len literal-nodenums) ; no failure
                 )
            (dargp-less-than (find-node-to-split-for-prover dag-array-name dag-array dag-len literal-nodenums)
                             dag-len))
   :hints (("Goal" :in-theory (e/d (dargp-less-than) (natp)))))
+
+(defthm dargp-less-than-of-find-node-to-split-for-prover-gen
+  (implies (and (<= dag-len bound)
+                (natp bound)
+                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                (nat-listp literal-nodenums)
+                (consp literal-nodenums)
+                (all-< literal-nodenums dag-len)
+                (find-node-to-split-for-prover dag-array-name dag-array dag-len literal-nodenums) ; no failure
+                )
+           (dargp-less-than (find-node-to-split-for-prover dag-array-name dag-array dag-len literal-nodenums)
+                            bound))
+  :hints (("Goal" :use dargp-less-than-of-find-node-to-split-for-prover
+           :in-theory (disable dargp-less-than-of-find-node-to-split-for-prover))))
 
 ;no sense monitoring definition rules.. (could also skip rules without hyps, if any)
 ;; (defun keep-rewrite-rule-names (runes)
