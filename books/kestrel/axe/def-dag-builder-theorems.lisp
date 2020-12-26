@@ -17,7 +17,7 @@
 ;; TODO: Add support for mutual-recursion
 ;; TODO: Maybe split he corollaries into a different tool
 
-(include-book "parent-array")
+(include-book "dag-parent-array")
 (include-book "wf-dagp")
 
 (defun index-of-simple (item lst)

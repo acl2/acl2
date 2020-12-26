@@ -13,7 +13,7 @@
 (in-package "ACL2")
 
 (include-book "conjunctions-and-disjunctions")
-(include-book "parent-array-with-name")
+(include-book "dag-parent-array-with-name")
 (include-book "kestrel/acl2-arrays/typed-acl2-arrays" :dir :system)
 (include-book "rational-lists")
 (include-book "kestrel/bv/bvif" :dir :system) ;since this book deals with bvif specially

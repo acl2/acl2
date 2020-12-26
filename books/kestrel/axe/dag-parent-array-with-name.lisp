@@ -12,7 +12,7 @@
 
 (in-package "ACL2")
 
-(include-book "parent-array") ;todo
+(include-book "dag-parent-array") ;todo
 
 ;;;
 ;;; find-shortest-parent-lst-with-name

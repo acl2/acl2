@@ -28,7 +28,7 @@
 (include-book "numeric-lists")
 (include-book "make-dag-constant-alist")
 (include-book "make-dag-variable-alist")
-(include-book "parent-array")
+(include-book "dag-parent-array")
 (include-book "kestrel/utilities/erp" :dir :system)
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 

@@ -12,7 +12,7 @@
 
 (in-package "ACL2")
 
-(include-book "parent-array")
+(include-book "dag-parent-array")
 (include-book "dag-constant-alist")
 (include-book "dag-variable-alist")
 (include-book "make-dag-variable-alist")

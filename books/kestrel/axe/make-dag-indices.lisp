@@ -18,8 +18,8 @@
 ;; dag-parent-array-name are the standard names (and rename the existing
 ;; functions).
 
-(include-book "parent-array")
-(include-book "parent-array-with-name")
+(include-book "dag-parent-array")
+(include-book "dag-parent-array-with-name")
 (include-book "make-dag-constant-alist")
 (include-book "make-dag-variable-alist")
 

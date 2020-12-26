@@ -20,7 +20,7 @@
 (include-book "wf-dagp")
 ;(include-book "numeric-lists")
 ;(include-book "kestrel/typed-lists-light/all-less" :dir :system)
-(include-book "parent-array")
+(include-book "dag-parent-array")
 (include-book "make-dag-constant-alist")
 (include-book "make-dag-variable-alist")
 (include-book "memoization")

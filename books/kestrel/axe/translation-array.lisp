@@ -13,7 +13,7 @@
 (in-package "ACL2")
 
 (include-book "dag-arrays")
-(include-book "parent-array") ;todo: drop.  but need ALL-DARGP-LESS-THAN-WHEN-NO-ATOMS etc
+(include-book "dag-parent-array") ;todo: drop.  but need ALL-DARGP-LESS-THAN-WHEN-NO-ATOMS etc
 (include-book "kestrel/utilities/erp" :dir :system)
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))

@@ -20,7 +20,7 @@
 (include-book "numeric-lists")
 (include-book "make-dag-constant-alist")
 (include-book "make-dag-variable-alist")
-(include-book "parent-array-with-name")
+(include-book "dag-parent-array-with-name")
 (include-book "kestrel/utilities/erp" :dir :system)
 
 (in-theory (disable alistp))
