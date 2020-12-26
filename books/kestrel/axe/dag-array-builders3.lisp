@@ -307,6 +307,19 @@
                    (mv-nth 3 (add-variable-to-dag-array-with-memo var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist trees-equal-to-tree memoization info)))))
   :hints (("Goal" :in-theory (enable add-variable-to-dag-array-with-memo))))
 
+(defthmd dag-constant-alist-after-add-variable-to-dag-array-with-memo
+  (implies (and (not (mv-nth 0 (add-variable-to-dag-array-with-memo var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist trees-equal-to-tree memoization info)))
+                (equal dag-constant-alist (make-dag-constant-alist 'dag-array dag-array dag-len))
+                (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+                (natp dag-len)
+                (not (consp var)))
+           (equal (make-dag-constant-alist
+                   'dag-array
+                   (mv-nth 2 (add-variable-to-dag-array-with-memo var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist trees-equal-to-tree memoization info))
+                   (mv-nth 3 (add-variable-to-dag-array-with-memo var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist trees-equal-to-tree memoization info)))
+                  (make-dag-constant-alist 'dag-array dag-array dag-len)))
+  :hints (("Goal" :in-theory (enable add-variable-to-dag-array-with-memo))))
+
 (defthm wf-dagp-after-add-variable-to-dag-array-with-memo
   (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                 (not (mv-nth 0 (add-variable-to-dag-array-with-memo var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist trees-equal-to-tree memoization info)))
@@ -319,7 +332,8 @@
                     dag-constant-alist ;; unchanged
                     (mv-nth 6 (add-variable-to-dag-array-with-memo var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist trees-equal-to-tree memoization info))))
   :hints (("Goal" :in-theory (enable wf-dagp
-                                     dag-variable-alist-correct-after-add-variable-to-dag-array-with-memo))))
+                                     dag-variable-alist-correct-after-add-variable-to-dag-array-with-memo
+                                     dag-constant-alist-after-add-variable-to-dag-array-with-memo))))
 
 (defthm bounded-memoizationp-of-nth-7-of-add-variable-to-dag-array-with-memo
   (implies (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
@@ -761,7 +775,8 @@
                     (mv-nth 5 (add-function-call-expr-to-dag-array-with-memo fn args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print-interval print trees-equal-to-tree memoization))
                     dag-variable-alist ; unchanged
                     ))
-  :hints (("Goal" :in-theory (enable wf-dagp))))
+  :hints (("Goal" :in-theory (enable wf-dagp
+                                     dag-constant-alist-correct-after-add-function-call-expr-to-dag-array-with-memo))))
 
 (defthm bounded-memoizationp-of-nth-7-of-add-function-call-expr-to-dag-array-with-memo
   (implies (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)

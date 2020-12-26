@@ -16,6 +16,7 @@
 (include-book "dag-constant-alist")
 (include-book "dag-variable-alist")
 (include-book "make-dag-variable-alist")
+(include-book "make-dag-constant-alist")
 
 ;;;
 ;;; wf-dagp ("well-formed DAG")
@@ -26,7 +27,8 @@
   (declare (xargs :guard t))
   (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
        (bounded-dag-parent-arrayp dag-parent-array-name dag-parent-array dag-len)
-       (bounded-dag-constant-alistp dag-constant-alist dag-len)
+       ;; Says that the dag-constant-alist is in sync with the dag:
+       (equal dag-constant-alist (make-dag-constant-alist dag-array-name dag-array dag-len)) ;;(bounded-dag-constant-alistp dag-constant-alist dag-len)
        ;; Says that the dag-variable-alist is in sync with the dag:
        (equal dag-variable-alist (make-dag-variable-alist dag-array-name dag-array dag-len)) ;;(bounded-dag-variable-alistp dag-variable-alist dag-len)
        (equal (alen1 dag-array-name dag-array)
@@ -37,6 +39,7 @@
   (equal (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
          (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
               (bounded-dag-parent-arrayp dag-parent-array-name dag-parent-array dag-len)
+              (equal dag-constant-alist (make-dag-constant-alist dag-array-name dag-array dag-len)) ;(bounded-dag-constant-alistp dag-variable-alist dag-len)
               (bounded-dag-constant-alistp dag-constant-alist dag-len)
               (equal dag-variable-alist (make-dag-variable-alist dag-array-name dag-array dag-len)) ;(bounded-dag-variable-alistp dag-variable-alist dag-len)
               (equal (alen1 dag-array-name dag-array)
@@ -50,6 +53,7 @@
                 (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                 (bounded-dag-parent-arrayp dag-parent-array-name dag-parent-array dag-len)
                 (bounded-dag-constant-alistp dag-constant-alist dag-len)
+                (equal dag-constant-alist (make-dag-constant-alist dag-array-name dag-array dag-len))
                 (bounded-dag-variable-alistp dag-variable-alist dag-len)
                 (equal dag-variable-alist (make-dag-variable-alist dag-array-name dag-array dag-len))
                 (equal (alen1 dag-array-name dag-array)

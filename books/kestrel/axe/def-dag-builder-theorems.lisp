@@ -188,7 +188,7 @@
                   (bounded-dag-constant-alistp (mv-nth ,dag-constant-alist-rv ,call)
                                                (mv-nth ,dag-len-rv ,call)))
          :hints (("Goal" :use (:instance ,(pack$ 'type-of- fn))
-                  :in-theory '(wf-dagp))))
+                  :in-theory '(wf-dagp-forward))))
 
        ;; implied by wf-dagp (someday, when wf-dagp is never opened, we might not need this)
        (defthm ,(pack$ 'bounded-dag-dag-variable-alistp-of-mv-nth- dag-variable-alist-rv '-of- fn)
