@@ -102,6 +102,11 @@
   (dag-constant-alistp (make-dag-constant-alist dag-array-name dag-array dag-len))
   :hints (("Goal" :in-theory (enable make-dag-constant-alist))))
 
+(defthm make-dag-constant-alist-of-0
+  (equal (make-dag-constant-alist dag-array-name dag-array 0)
+         nil)
+  :hints (("Goal" :in-theory (enable make-dag-constant-alist))))
+
 (defthm bounded-dag-constant-alistp-of-make-dag-constant-alist
   (implies (pseudo-dag-arrayp dag-array-name dag-array dag-len)
            (bounded-dag-constant-alistp (make-dag-constant-alist dag-array-name dag-array dag-len) dag-len))
