@@ -725,6 +725,19 @@
                             bound))
   :hints (("Goal" :in-theory (e/d (dargp-less-than) (natp)))))
 
+;; this one uses wf-dagp
+(defthm dargp-less-than-of-mv-nth-1-of-add-function-call-expr-to-dag-array-gen-alt
+  (implies (and (<= (mv-nth 3 (add-function-call-expr-to-dag-array fn args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)) bound)
+                (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                (symbolp fn)
+                (not (equal 'quote fn))
+                ;; (true-listp args)
+                (all-dargp-less-than args (alen1 'dag-array dag-array))
+                (not (mv-nth 0 (add-function-call-expr-to-dag-array fn args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))))
+           (dargp-less-than (mv-nth 1 (add-function-call-expr-to-dag-array fn args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+                            bound))
+  :hints (("Goal" :in-theory (e/d (dargp-less-than) (natp)))))
+
 ;; drop?  the dag-variable-alist is simply unchanged
 (defthmd dag-variable-alist-correct-after-add-function-call-expr-to-dag-array
   (implies (and (not (mv-nth 0 (add-function-call-expr-to-dag-array fn args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))
