@@ -1935,10 +1935,10 @@
   :hints (("Goal" :in-theory (e/d (get-disjuncts-from-nodes) (natp)))))
 
 (defthm true-listp-of-mv-nth-2-of-get-disjuncts-from-nodes
-  (implies  (true-listp acc)
-            (true-listp (mv-nth 2 (get-disjuncts-from-nodes nodenums
-                                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                            acc))))
+  (implies (true-listp acc)
+           (true-listp (mv-nth 2 (get-disjuncts-from-nodes nodenums
+                                                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                           acc))))
   :rule-classes :type-prescription
   :hints (("Goal" :in-theory (e/d (get-disjuncts-from-nodes) (natp)))))
 
@@ -3884,8 +3884,27 @@
                            (all-natp new-literal-nodenums) ;follows from the above
                            (true-listp new-literal-nodenums) ;follows from the above
                            (all-< new-literal-nodenums new-dag-len)
-                           (wf-dagp 'dag-array new-dag-array new-dag-len 'dag-parent-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)))))
+                           (wf-dagp 'dag-array new-dag-array new-dag-len 'dag-parent-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
+                           (implies (< 0 prover-depth)
+                                    (<= dag-len new-dag-len))))))
   :hints (("Goal" :in-theory (enable substitute-vars))))
+
+(defthm substitute-vars-return-type-corollary
+  (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                (nat-listp literal-nodenums)
+                (all-< literal-nodenums dag-len)
+                (natp prover-depth)
+                (natp num)
+                (booleanp changep-acc))
+           (mv-let (erp changep new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
+             (substitute-vars literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print prover-depth num changep-acc)
+             (declare (ignore changep new-literal-nodenums new-dag-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist))
+             (implies (not erp)
+                      (implies (< 0 prover-depth)
+                               (<= dag-len new-dag-len)))))
+  :rule-classes :linear
+  :hints (("Goal" :use (substitute-vars-return-type)
+           :in-theory (disable substitute-vars-return-type))))
 
 (defthm substitute-vars-return-type-2
   (implies (true-listp literal-nodenums)
@@ -4094,7 +4113,8 @@
                            (equal (len new-literal-nodenums) (len literal-nodenums))
                            (consp new-literal-nodenums)
                            (all-< new-literal-nodenums new-dag-len)
-                           (wf-dagp 'dag-array new-dag-array new-dag-len 'dag-parent-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)))))
+                           (wf-dagp 'dag-array new-dag-array new-dag-len 'dag-parent-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
+                           (<= dag-len new-dag-len)))))
   :hints (("Goal" :in-theory (e/d (eliminate-a-tuple natp-of-cdr-of-assoc-equal-when-dag-variable-alistp)
                                   (natp)))))
 
@@ -4113,6 +4133,20 @@
                            (<= bound new-dag-len)
                            (natp bound))
                       (and (pseudo-dag-arrayp 'dag-array new-dag-array bound)))))
+  :hints (("Goal" :use (eliminate-a-tuple-return-type)
+           :in-theory (disable eliminate-a-tuple-return-type))))
+
+(defthm eliminate-a-tuple-return-type-corollary-linear
+  (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                (nat-listp literal-nodenums)
+                (all-< literal-nodenums dag-len)
+                (consp literal-nodenums))
+           (mv-let (erp changep new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
+             (eliminate-a-tuple literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print)
+             (declare (ignore changep new-literal-nodenums new-dag-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist))
+             (implies (not erp)
+                      (<= dag-len new-dag-len))))
+  :rule-classes :linear
   :hints (("Goal" :use (eliminate-a-tuple-return-type)
            :in-theory (disable eliminate-a-tuple-return-type))))
 
