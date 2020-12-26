@@ -114,10 +114,10 @@
 ;;   )
 
 ;for axe
-(defthm equal-same
+;dup
+(defthmd equal-same
   (equal (equal x x)
-         t)
-  :rule-classes nil)
+         t))
 
 ;todo: prove without splitting.  need to look up if tests in assumptions somehow.
 (defthm-with-basic-prover-clause-processor if-1
@@ -150,3 +150,15 @@
   :rules (implies equal-same)
   :rule-classes nil
   )
+
+(deftest
+  (local (include-book "boolean-rules-axe")) ;drop?
+  (local (include-book "basic-rules"))
+
+  (defthm-with-basic-prover-clause-processor tuple-elim-1
+    (implies (and (true-listp x)
+                  (equal 3 (len x)))
+             (equal (len x) y))
+    :rules (implies equal-same if-becomes-boolif BOOLIF-WHEN-QUOTEP-ARG3 booleanp-of-booland booleanp-of-equal) ;todo: few to none of these rules should need to be given explicitly
+    :rule-classes nil
+    ))
