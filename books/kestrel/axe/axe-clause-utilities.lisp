@@ -45,6 +45,30 @@
             (cons `(not ,item)
                   (expressions-for-this-case (cdr items) dag-array dag-len))))))))
 
+;; in this version, the items are all nodenums.  todo: drop the version just above?
+(defun expressions-for-this-case-simple (items dag-array dag-len)
+  (declare (xargs :guard (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+                              (nat-listp items)
+                              (all-< items dag-len))
+                  :guard-hints (("Goal" :expand ((possibly-negated-nodenumsp items))
+                                 :in-theory (enable strip-not-from-possibly-negated-nodenum
+                                                    strip-nots-from-possibly-negated-nodenums
+                                                    DAG-FUNCTION-CALL-EXPRP-REDEF)))))
+  (if (endp items)
+      nil
+    (let* ((item (first items)))
+      (let ((expr (aref1 'dag-array dag-array item)))
+        (if (and (consp expr)
+                 (eq 'not (ffn-symb expr))
+                 (consp (dargs expr)) ;for guards
+                 )
+            ;; if the item is a NOT, negate it by stripping the NOT:
+            (cons (first (dargs expr))
+                  (expressions-for-this-case (cdr items) dag-array dag-len))
+          ;; if the item isn't a NOT, negate it by adding a NOT:
+          (cons `(not ,item)
+                (expressions-for-this-case (cdr items) dag-array dag-len)))))))
+
 ;any non-nil constant proves the clause (we are proving a disjunction), any nil is dropped (because (or nil x) = x)
 ;;returns (mv provedp remaining-disjunct-nodenums)
 ;is there another version of this?  See get-axe-disjunction-from-dag-items.

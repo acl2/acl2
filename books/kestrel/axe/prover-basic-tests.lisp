@@ -134,3 +134,19 @@
   :rules (implies equal-same)
   :rule-classes nil
   )
+
+;; only one literal, and its a negated equality of a var that could be used to substitute
+(must-fail
+ (defthm-with-basic-prover-clause-processor subst-1
+   (not (equal x (car y)))
+   :rules (implies equal-same) ;todo: doesn't try to subst if no rules given?
+   :rule-classes nil
+   ))
+
+;; simple variable subst example
+(defthm-with-basic-prover-clause-processor subst-2
+  (implies (equal x (car y))
+           (equal (len x) (len (car y))))
+  :rules (implies equal-same)
+  :rule-classes nil
+  )
