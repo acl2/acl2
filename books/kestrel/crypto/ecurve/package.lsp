@@ -52,6 +52,7 @@
             pfield::inv
             pfield::neg
             pfield::pow
+            primes::bls12-377-scalar-field-prime
             primes::secp256k1-field-prime
             primes::secp256k1-group-prime
             str::strval16s
