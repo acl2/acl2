@@ -390,6 +390,7 @@
          (rewrite-subst-and-elim-with-rule-alists-name (pack$ 'rewrite-subst-and-elim-with-rule-alists-for- suffix '-prover))
          (prove-case-name (pack$ 'prove-case-with- suffix '-prover))
          (prove-disjunction-name (pack$ 'prove-disjunction-with- suffix '-prover))
+         (prove-disjunction-name-aux (pack$ 'prove-disjunction-with- suffix '-prover-aux))
          (prove-dag-name (pack$ 'prove-dag-with- suffix '-prover))
          (prove-clause-name (pack$ 'prove-clause-with- suffix '-prover))
          (prove-implication-name (pack$ 'prove-implication-with- suffix '-prover)) ;a macro
@@ -3113,29 +3114,28 @@
          :hints (("Goal" :in-theory (e/d (,prove-case-name)
                                          (natp)))))
 
-       ;; The main entry point of the Axe Prover.
-       ;; Tries to prove the disjunction of LITERAL-NODENUMS-OR-QUOTEPS.
+       ;; Tries to prove the disjunction of LITERAL-NODENUMS.
        ;; Returns (mv erp result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries) where result is :proved, :failed, or :timed-out
        ;; If proving the goal as a single case fails, this splits into cases and recurs.
        ;; TODO: This could gather all the failed cases and return corresponding calls to prove-clause for the user to copy and paste to work on manually - currently this stops as soon as one case fails.
        ;; TODO: When should we try to separate the vars?  i think destructor elimination can enable separation...
        ;; upon failure, prints the failed case (sometimes?).
        ;; Does not change any existing DAG nodes if prover-depth > 0 (TODO check that).
-       (defund ,prove-disjunction-name (literal-nodenums-or-quoteps
-                                        dag-array ;must be named 'dag-array
-                                        dag-len
-                                        dag-parent-array ;must be named 'dag-parent-array
-                                        dag-constant-alist dag-variable-alist
-                                        rule-alists
-                                        interpreted-function-alist
-                                        monitored-symbols
-                                        print
-                                        case-designator ;the name of this case (a string?)
-                                        info tries
-                                        prover-depth options count)
+       (defund ,prove-disjunction-name-aux (literal-nodenums
+                                            dag-array ;must be named 'dag-array
+                                            dag-len
+                                            dag-parent-array ;must be named 'dag-parent-array
+                                            dag-constant-alist dag-variable-alist
+                                            rule-alists
+                                            interpreted-function-alist
+                                            monitored-symbols
+                                            print
+                                            case-designator ;the name of this case (a string?)
+                                            info tries
+                                            prover-depth options count)
          (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                                     (true-listp literal-nodenums-or-quoteps)
-                                     (all-dargp-less-than literal-nodenums-or-quoteps dag-len)
+                                     (nat-listp literal-nodenums)
+                                     (all-< literal-nodenums dag-len)
                                      (all-rule-alistp rule-alists)
                                      (interpreted-function-alistp interpreted-function-alist)
                                      (info-worldp info)
@@ -3151,14 +3151,7 @@
              (mv :count-exceeded
                  :failed ; could instead use :timed-out here
                  dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
-           (b* (((mv provedp literal-nodenums)
-                 ;;on some calls we know there are no constants and so could skip this check, but it seems pretty fast
-                 ;; TODO: Should call get-disjuncts here?!
-                 (handle-constant-disjuncts literal-nodenums-or-quoteps nil))
-                ((when provedp)
-                 (cw "! Proved case ~s0 (one literal was a non-nil constant!)~%" case-designator)
-                 (mv (erp-nil) :proved dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
-                ;; First try to prove the clause as a single case.  This may do some work even if it doesn't prove the clause.
+           (b* (;; First try to prove the clause as a single case.  This may do some work even if it doesn't prove the clause.
                 ;; Tuple elim (and substitution) may change the set of variables.
                 ((mv erp provedp literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
                  (,prove-case-name literal-nodenums
@@ -3208,7 +3201,7 @@
                     ;;(saved-dag-constant-alist dag-constant-alist)
                     ;;(saved-dag-variable-alist dag-variable-alist)
                     (case-1-designator (concatenate 'string case-designator "1"))
-                    ;; In Case 1 we assume nodenum is non-nil (i.e., true).  Thus, we try to prove (or (not nodenum) C):
+                    ;; In Case 1 we assume nodenum is non-nil (i.e., true).  Thus, we add a new literal (not nodenum) and try to prove (or (not nodenum) C):
                     ;; (mv-let ;Use the split fact:
                     ;;  (dag-array dag-parent-array)
                     ;;  ;fixme consider making this not destructive:
@@ -3217,19 +3210,23 @@
                     (- (and (or (eq t print) (eq :verbose print) (eq :verbose2 print))
                             (prog2$ (cw "Literals:~%")
                                     (print-dag-only-supporters-lst literal-nodenums 'dag-array dag-array))))
-                    ;;add the negation of nodenum to the dag:
-                    ((mv erp negation-of-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-                     (add-function-call-expr-to-dag-array 'not (list nodenum) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+                    ;; Harvest disjuncts from the new literal:
+                    ((mv erp provedp case-1-literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+                     (get-disjuncts nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                    literal-nodenums ; will be extended
+                                    t ;negated-flag=t, since nodenum is the negation of the new literal.
+                                    ))
                     ((when erp) (mv erp :failed dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
+                    ((when provedp) (mv (erp-nil) :proved dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
                     ;; Attempt to prove case #1:
                     ((mv erp case-1-result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
-                     (,prove-disjunction-name (cons negation-of-nodenum literal-nodenums) ;todo: call a variant here that doesn't bother to handle constant disjuncts?
-                                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                              rule-alists interpreted-function-alist monitored-symbols
-                                              print case-1-designator
-                                              info tries
-                                              (+ 1 prover-depth) ;to indicate that nodes should not be changed
-                                              options (+ -1 count)))
+                     (,prove-disjunction-name-aux case-1-literal-nodenums
+                                                  dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                  rule-alists interpreted-function-alist monitored-symbols
+                                                  print case-1-designator
+                                                  info tries
+                                                  (+ 1 prover-depth) ;to indicate that nodes should not be changed
+                                                  options (+ -1 count)))
                     ((when erp) (mv erp :failed dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))
                  ;;fixme we could make an option to continue if case 1 fails, so that all the failed subgoals are printed
                  (if (not (eq :proved case-1-result))
@@ -3238,7 +3235,6 @@
                                  case-1-result ; will be :failed or :timed-out
                                  dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                  info tries))
-                   ;;In case 2 we assume nodenum is nil (false), i.e., we try to prove (or nodenum C):
                    (b* ((- (cw "Proved ~s0)~%" case-1-designator)) ;end of case1
                         ;;restore the dag:
                         ;; (dag-array (compress1 'dag-array saved-dag-array)) ;(dag-array (make-into-array-with-len 'dag-array saved-dag-alist saved-dag-len)) ;leave some slack space?
@@ -3247,20 +3243,29 @@
                         ;; (dag-variable-alist saved-dag-variable-alist)
                         ;;(dag-len saved-dag-len)
                         (case-2-designator (concatenate 'string case-designator "2"))
+                        ;;In case 2 we assume nodenum is nil (false), i.e., we add a new literal NODENUM and try to prove (or nodenum C):
                         (- (cw "(False case: ~s0~%" case-2-designator))
                         ;;                                       (mv-let ;Use the split fact:
                         ;;                                        (dag-array dag-parent-array)
                         ;; ;fixme consider making this not destructive:
                         ;;                                        (replace-nodenum-with-nil nodenum dag-array dag-parent-array) ;this leaves the subtree at nodenum itself unchanged
+                        ;; Harvest disjuncts from the new literal:
+                        ((mv erp provedp case-2-literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+                         (get-disjuncts nodenum ;the new literal
+                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                        literal-nodenums ; will be extended
+                                        nil ;negated-flag=nil, since nodenum itself is the new literal.
+                                        ))
+                        ((when erp) (mv erp :failed dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
+                        ((when provedp) (mv (erp-nil) :proved dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
                         ((mv erp case-2-result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
-                         (,prove-disjunction-name
-                          (cons nodenum literal-nodenums) ;we are assuming (not ,nodenum)
-                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                          rule-alists interpreted-function-alist monitored-symbols
-                          print case-2-designator
-                          info tries
-                          (+ 1 prover-depth) ;to match what we do in the other case above
-                          options (+ -1 count)))
+                         (,prove-disjunction-name-aux case-2-literal-nodenums
+                                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                      rule-alists interpreted-function-alist monitored-symbols
+                                                      print case-2-designator
+                                                      info tries
+                                                      (+ 1 prover-depth) ;to match what we do in the other case above
+                                                      options (+ -1 count)))
                         ((when erp) (mv erp :failed dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
                         (- (if (not (eq :proved case-2-result))
                                (cw "Failed on ~s0.)~%" case-2-designator)
@@ -3279,10 +3284,10 @@
                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                          info tries))))))))
 
-       ;; (defthm ,(pack$ prove-disjunction-name '-return-type)
+       ;; (defthm ,(pack$ prove-disjunction-name-aux '-return-type)
        ;;   (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-       ;;                 (true-listp literal-nodenums-or-quoteps)
-       ;;                 (all-dargp-less-than literal-nodenums-or-quoteps dag-len)
+       ;;                 (nat-listp literal-nodenums)
+       ;;                 (all-< literal-nodenums dag-len)
        ;;                 (all-rule-alistp rule-alists)
        ;;                 (interpreted-function-alistp interpreted-function-alist)
        ;;                 (info-worldp info)
@@ -3292,7 +3297,7 @@
        ;;                 (natp prover-depth)
        ;;                 (axe-prover-optionsp options))
        ;;            (mv-let (erp result new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries)
-       ;;              (,prove-disjunction-name literal-nodenums-or-quoteps
+       ;;              (,prove-disjunction-name-aux literal-nodenums
        ;;                                       dag-array
        ;;                                       dag-len
        ;;                                       dag-parent-array
@@ -3310,8 +3315,67 @@
        ;;                            (info-worldp new-info)
        ;;                            (triesp new-tries)))))
        ;;   :hints (("Goal" :induct t
-       ;;            :in-theory (e/d (,prove-disjunction-name)
+       ;;            :in-theory (e/d (,prove-disjunction-name-aux consp-when-true-listp-and-non-nil)
        ;;                            (natp)))))
+
+
+       ;; The main entry point of the Axe Prover.
+       ;; Tries to prove the disjunction of LITERAL-NODENUMS-OR-QUOTEPS.
+       ;; Returns (mv erp result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries) where result is :proved, :failed, or :timed-out
+       ;; Does not change any existing DAG nodes if prover-depth > 0 (TODO check that).
+       (defund ,prove-disjunction-name (literal-nodenums-or-quoteps
+                                        dag-array ;must be named 'dag-array
+                                        dag-len
+                                        dag-parent-array ;must be named 'dag-parent-array
+                                        dag-constant-alist dag-variable-alist
+                                        rule-alists
+                                        interpreted-function-alist
+                                        monitored-symbols
+                                        print
+                                        case-designator ;the name of this case
+                                        info tries
+                                        prover-depth options)
+         (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                                     (true-listp literal-nodenums-or-quoteps)
+                                     (all-dargp-less-than literal-nodenums-or-quoteps dag-len)
+                                     (all-rule-alistp rule-alists)
+                                     (interpreted-function-alistp interpreted-function-alist)
+                                     (info-worldp info)
+                                     (triesp tries)
+                                     (symbol-listp monitored-symbols)
+                                     (stringp case-designator)
+                                     (natp prover-depth)
+                                     (axe-prover-optionsp options))
+                         :verify-guards nil))
+         (b* ( ;; Handle any constant disjuncts
+              ((mv provedp literal-nodenums)
+               (handle-constant-disjuncts literal-nodenums-or-quoteps nil))
+              ((when provedp)
+               (cw "! Proved case ~s0 (one literal was a non-nil constant!)~%" case-designator)
+               (mv (erp-nil) :proved dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
+              ;; Now extract any additional disjuncts from the literals:
+              ((mv erp provedp literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+               (get-disjuncts-from-nodes literal-nodenums
+                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                         nil))
+              ((when erp) (mv erp :failed dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
+              ((when provedp)
+               (cw "! Proved case ~s0 (one literal had a non-nil constant disjunct!)~%" case-designator)
+               (mv (erp-nil) :proved dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))
+           (,prove-disjunction-name-aux literal-nodenums
+                                        dag-array
+                                        dag-len
+                                        dag-parent-array
+                                        dag-constant-alist dag-variable-alist
+                                        rule-alists
+                                        interpreted-function-alist
+                                        monitored-symbols
+                                        print
+                                        case-designator
+                                        info tries
+                                        prover-depth options
+                                        (+ -1 (expt 2 59)) ;max fixnum?
+                                        )))
 
        ;; Returns (mv erp result) where result is :proved [iff we proved that the top-node of dag-lst is non-nil (or is t?)], :failed, or :timed-out
        (defund ,prove-dag-name (dag
@@ -3392,9 +3456,7 @@
                                               (and print (empty-info-world))
                                               (and print (zero-tries))
                                               0 ;prover-depth
-                                              options
-                                              (+ -1 (expt 2 59)) ;max fixnum?
-                                              ))
+                                              options))
                     ((when erp) (mv erp :failed))
                     ;;just print the message in the subroutine and don't case split here?
                     (- (and print (cw "(~x0 tries.)~%" tries)))
@@ -3460,7 +3522,6 @@
                                         (zero-tries)  ;(and print (zero-tries))
                                         0             ;prover-depth
                                         nil           ;options
-                                        (+ -1 (expt 2 59)) ;max fixnum?
                                         ))
               ((when erp) (mv erp nil state)))
            (if (eq result :proved)
@@ -3517,7 +3578,7 @@
        ;;                                              (and print (zero-tries))
        ;;                                              0 ;prover-depth
        ;;                                              options
-       ;;                                              (+ -1 (expt 2 59)) ;max fixnum?
+       ;;
        ;;                                             ))
        ;;        ((when erp) (mv erp nil))
        ;;        (- (and print (print-hit-counts print info (rules-from-rule-alists rule-alists))))
@@ -3624,9 +3685,7 @@
                                         (and print (empty-info-world))
                                         (and print (zero-tries))
                                         0 ;prover-depth
-                                        options
-                                        (+ -1 (expt 2 59)) ;max fixnum?
-                                        ))
+                                        options))
               ((when erp) (mv erp nil))
               (- (and print (print-hit-counts print info (rules-from-rule-alists rule-alists))))
               (- (and print (cw "Total tries: ~x0.~%" tries))))
