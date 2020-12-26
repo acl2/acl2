@@ -37,7 +37,7 @@
 
 (defthm-with-basic-prover-clause-processor test1
   (natp 7)
-  :rules (implies) ;todo
+  :rules (implies) ;todo: if there are no rules, constants don't get evaluated.  should we rewrite once with no rules?
   )
 
 (defthm-with-basic-prover-clause-processor test2
@@ -60,44 +60,33 @@
   )
 
 (defthm-with-basic-prover-clause-processor boolor-1
-  (boolor t x)
-  :rules (posp) ;todo, if no rule given, the prover doesn't properly get disjuncts!
-  )
+  (boolor t x))
 
 (defthm-with-basic-prover-clause-processor boolor-2
-  (boolor x t)
-  :rules (posp) ;todo, if no rule given, the prover doesn't properly get disjuncts!
-  )
+  (boolor x t))
 
 (must-fail
  (defthm-with-basic-prover-clause-processor boolor-3
-   (boolor nil (natp x))
-   :rules (posp) ;todo, if no rule given, the prover doesn't properly get disjuncts!
-   ))
+   (boolor nil (natp x))))
 
 (must-fail
  (defthm-with-basic-prover-clause-processor boolor-4
-   (boolor (natp x) nil)
-   :rules (posp) ;todo, if no rule given, the prover doesn't properly get disjuncts!
-   ))
+   (boolor (natp x) nil)))
 
 (defthm-with-basic-prover-clause-processor not-1
   (not nil)
-  :rules (posp) ;todo, if no rule given, the prover doesn't properly get disjuncts!
   :rule-classes nil
   )
 
 (must-fail
  (defthm-with-basic-prover-clause-processor not-2
    (not t)
-   :rules (posp) ;todo, if no rule given, the prover doesn't properly get disjuncts!
    :rule-classes nil
    ))
 
 (must-fail
  (defthm-with-basic-prover-clause-processor not-3
    (not 7)
-   :rules (posp) ;todo, if no rule given, the prover doesn't properly get disjuncts!
    :rule-classes nil
    ))
 
@@ -183,3 +172,143 @@
 ;;     ))
 
 ;todo: the bool functions are not built into the basic evaluator
+
+(deftest
+  (local (include-book "boolean-rules-axe")) ;drop?
+  (local (include-book "basic-rules"))
+  ;; requires splitting if we have no if-lifting rules
+  (defthm-with-basic-prover-clause-processor split-1
+    (natp (if (natp x) 3 4))
+    :rules (implies equal-same if-becomes-boolif BOOLIF-WHEN-QUOTEP-ARG3 booleanp-of-booland booleanp-of-equal) ;todo: few to none of these rules should need to be given explicitly
+    :rule-classes nil
+    ))
+
+;todo: test splitting where the splitter has disjuncts (constant and not).  same for its negation.
+
+;; We immediately drop the nil disjunct
+(must-fail
+ (defthm-with-basic-prover-clause-processor harvest-disjuncts-1
+   (boolor nil x)
+   :rule-classes nil
+   ))
+
+;; We immediately drop the nil disjunct
+(must-fail
+ (defthm-with-basic-prover-clause-processor harvest-disjuncts-2
+   (boolor x nil)
+   :rule-classes nil
+   ))
+
+;; We immediately harvest the t disjunct, which proves the clause
+(defthm-with-basic-prover-clause-processor harvest-disjuncts-3
+   (boolor t x)
+   :rule-classes nil
+   )
+
+;; We immediately harvest the t disjunct, which proves the clause
+(defthm-with-basic-prover-clause-processor harvest-disjuncts-4
+   (boolor x t)
+   :rule-classes nil
+   )
+
+;; We immediately harvest the non-nil disjunct, which proves the clause
+(defthm-with-basic-prover-clause-processor harvest-disjuncts-5
+   (boolor 7 x)
+   :rule-classes nil
+   )
+
+;; We immediately harvest the non-nil disjunct, which proves the clause
+(defthm-with-basic-prover-clause-processor harvest-disjuncts-6
+   (boolor x 7)
+   :rule-classes nil
+   )
+
+;; We immediately deal with the t
+(must-fail
+ (defthm-with-basic-prover-clause-processor harvest-disjuncts-7
+   (not (booland t x))
+   :rule-classes nil
+   ))
+
+;; We immediately deal with the t
+(must-fail
+ (defthm-with-basic-prover-clause-processor harvest-disjuncts-8
+   (not (booland x t))
+   :rule-classes nil
+   ))
+
+;; We immediately deal with the 7
+(must-fail
+ (defthm-with-basic-prover-clause-processor harvest-disjuncts-9
+   (not (booland 7 x))
+   :rule-classes nil
+   ))
+
+;; We immediately deal with the 7
+(must-fail
+ (defthm-with-basic-prover-clause-processor harvest-disjuncts-10
+   (not (booland x 7))
+   :rule-classes nil
+   ))
+
+;; We immediately prove the clause, due to the nil
+(defthm-with-basic-prover-clause-processor harvest-disjuncts-11
+  (not (booland nil x))
+  :rule-classes nil
+  )
+
+;; We immediately prove the clause, due to the nil
+(defthm-with-basic-prover-clause-processor harvest-disjuncts-12
+  (not (booland x nil))
+  :rule-classes nil
+  )
+
+(defthm-with-basic-prover-clause-processor harvest-disjuncts-13
+  (not (not t))
+  :rule-classes nil
+  )
+
+(must-fail
+ (defthm-with-basic-prover-clause-processor harvest-disjuncts-13b
+   (not (not (not t)))
+   :rule-classes nil
+   ))
+
+(defthm-with-basic-prover-clause-processor harvest-disjuncts-13c
+  (not (not (not (not t))))
+  :rule-classes nil
+  )
+
+(defthm-with-basic-prover-clause-processor harvest-disjuncts-14
+  (not (not 7))
+  :rule-classes nil
+  )
+
+(must-fail
+ (defthm-with-basic-prover-clause-processor harvest-disjuncts-14b
+   (not (not (not 7)))
+   :rule-classes nil
+   ))
+
+(defthm-with-basic-prover-clause-processor harvest-disjuncts-14c
+  (not (not (not (not 7))))
+  :rule-classes nil
+  )
+
+(must-fail
+ (defthm-with-basic-prover-clause-processor harvest-disjuncts-15
+   (not (not nil))
+   :rule-classes nil
+   ))
+
+(defthm-with-basic-prover-clause-processor harvest-disjuncts-15b
+  (not (not (not nil)))
+  :rule-classes nil
+  )
+
+;; the literals that get extracted are x and y
+(must-fail
+ (defthm-with-basic-prover-clause-processor harvest-disjuncts-16
+   (not (booland (not x) (not y)))
+   :rule-classes nil
+   ))
