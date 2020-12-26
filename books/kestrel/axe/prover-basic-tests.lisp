@@ -155,10 +155,31 @@
   (local (include-book "boolean-rules-axe")) ;drop?
   (local (include-book "basic-rules"))
 
-  (defthm-with-basic-prover-clause-processor tuple-elim-1
-    (implies (and (true-listp x)
-                  (equal 3 (len x)))
-             (equal (len x) y))
-    :rules (implies equal-same if-becomes-boolif BOOLIF-WHEN-QUOTEP-ARG3 booleanp-of-booland booleanp-of-equal) ;todo: few to none of these rules should need to be given explicitly
-    :rule-classes nil
-    ))
+  (must-fail
+   ;; a test that involves elim.
+   (defthm-with-basic-prover-clause-processor tuple-elim-1
+     (implies (and (true-listp x)
+                   (equal 3 (len x)))
+              (equal (len x) y))
+     :rules (implies equal-same if-becomes-boolif BOOLIF-WHEN-QUOTEP-ARG3 booleanp-of-booland booleanp-of-equal) ;todo: few to none of these rules should need to be given explicitly
+     :rule-classes nil
+     )))
+
+;; ;todo: get this working. it loops!
+;; (deftest
+;;   (local (include-book "boolean-rules-axe")) ;drop?
+;;   (local (include-book "basic-rules"))
+
+;;   (defstub foo (x) t)
+
+;;   ;; a test that involves elim.
+;;   (defthm-with-basic-prover-clause-processor tuple-elim-2
+;;     (implies (and (true-listp x)
+;;                   (equal 3 (len x)))
+;;              (equal (foo x) (foo (cons (car x) (cons (cadr x) (cons (caddr x) nil))))))
+;;     :rules (implies equal-same if-becomes-boolif BOOLIF-WHEN-QUOTEP-ARG3 booleanp-of-booland booleanp-of-equal BOOLAND-OF-T BOOL-FIX$INLINE BOOLAND-OF-NIL
+;;                     BOOLAND-OF-NON-NIL-ARG2) ;todo: few to none of these rules should need to be given explicitly
+;;     :rule-classes nil
+;;     ))
+
+;todo: the bool functions are not built into the basic evaluator
