@@ -76,7 +76,7 @@
 ;; TODO: Should we remove duplicate disjuncts too?
 ;; TODO: Deprecate! (Why?)
 ;; Also used in prover.lisp
-(defun handle-constant-disjuncts (disjuncts acc)
+(defund handle-constant-disjuncts (disjuncts acc)
   (declare (xargs :guard (and (true-listp disjuncts)
                               (all-dargp disjuncts)
                               (true-listp acc))))
@@ -92,3 +92,15 @@
             (handle-constant-disjuncts (rest disjuncts) acc))
         ;; it's a nodenum:
         (handle-constant-disjuncts (rest disjuncts) (cons disjunct acc))))))
+
+(defthm all-<-of-mv-nth-1-of-handle-constant-disjuncts
+  (implies (and (all-dargp-less-than disjuncts bound)
+                (all-< acc bound))
+           (all-< (mv-nth 1 (handle-constant-disjuncts disjuncts acc)) bound))
+  :hints (("Goal" :in-theory (enable handle-constant-disjuncts))))
+
+(defthm nat-listp-of-mv-nth-1-of-handle-constant-disjuncts
+  (implies (and (all-dargp-less-than disjuncts bound)
+                (nat-listp acc))
+           (nat-listp (mv-nth 1 (handle-constant-disjuncts disjuncts acc))))
+  :hints (("Goal" :in-theory (enable handle-constant-disjuncts))))
