@@ -24,6 +24,7 @@
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/lists-light/cons" :dir :system))
+(local (include-book "kestrel/lists-light/reverse" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cars" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cdrs" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
@@ -31,21 +32,50 @@
 (local (in-theory (enable symbolp-of-car-when-dag-exprp0
                           car-of-car-when-pseudo-dagp-cheap)))
 
-;merge dag1 into dag2 takes two dag-lst-or-quoteps and returns a
-;dag-lst-or-quotep. Returns (mv erp nodenum-or-quotep-for-dag1 extended-dag2). any
-;valid nodenums in dag2 remain the same fixme make an aux function that returns
-;the 5 dag components and use in make-equality-dag ?
+;move
+(defthm pseudo-dagp-aux-of-array-to-alist-aux
+  (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                (natp n)
+                (<= n dag-len)
+                (pseudo-dagp-aux acc (+ -1 n)))
+           (pseudo-dagp-aux (array-to-alist-aux n dag-len dag-array-name dag-array acc) (+ -1 dag-len)))
+  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+           :in-theory (e/d (array-to-alist-aux
+                            pseudo-dagp-aux)
+                           (bounded-dag-exprp
+                            car-of-car-when-pseudo-dagp-aux)))))
+
+(defthm pseudo-dagp-of-array-to-alist
+  (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                (posp dag-len) ;a pseudo-dag can't be empty
+                )
+           (pseudo-dagp (array-to-alist dag-len dag-array-name dag-array)))
+  :otf-flg t
+  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+           :use (:instance pseudo-dagp-aux-of-array-to-alist-aux
+                           (n 0)
+                           (acc nil))
+           :in-theory (e/d (array-to-alist pseudo-dagp)
+                           (car-of-car-when-pseudo-dagp-aux
+                            natp
+                            pseudo-dagp-aux-of-array-to-alist-aux)))))
+
+;; Merges dag1 into dag2. Takes two dag-lst-or-quoteps and returns a
+;; dag-lst-or-quotep. Returns (mv erp nodenum-or-quotep-for-dag1
+;; extended-dag2). any valid nodenums in dag2 remain the same.  fixme make an
+;; aux function that returns the 5 dag components and use in make-equality-dag
+;; ?
 (defund merge-dag-into-dag-quick (dag1 dag2)
   (declare (xargs :guard (and (or (myquotep dag1)
                                   (pseudo-dagp dag1))
                               (or (myquotep dag2)
-                                  (pseudo-dagp dag2))
-                              (<= (len dag1) 2147483646)
-                              (<= (len dag2) 2147483646))
+                                  (pseudo-dagp dag2)))
                   :guard-hints (("Goal" :do-not '(generalize eliminate-destructors)
-                                 :in-theory (e/d (;car-of-nth-of-len-minus1-when-pseudo-dagp
-                                                  BOUNDED-DAG-PARENT-ARRAYP)
-                                                 (;REVERSE-REMOVAL
+                                 :in-theory (e/d ( ;car-of-nth-of-len-minus1-when-pseudo-dagp
+                                                  BOUNDED-DAG-PARENT-ARRAYP
+                                                  wf-dagp
+                                                  )
+                                                 ( ;REVERSE-REMOVAL
                                                   PSEUDO-DAG-arrayP))))))
   (if (quotep dag1)
       (mv (erp-nil) dag1 dag2)
@@ -54,6 +84,9 @@
       ;;neither is a quotep:
       (b* ((dag1-len (len dag1))
            (dag2-len (len dag2))
+           ((when (or (< 2147483646 dag1-len)
+                      (< 2147483646 dag2-len)))
+            (mv :dag-too-big nil nil))
            (max-nodes-needed (+ dag1-len dag2-len)) ;fixme allow some slack space?
            (new-size (min 2147483646 max-nodes-needed))
            ;; make dag2 into an array:
@@ -66,7 +99,7 @@
            (renaming-array (make-empty-array 'renaming-array dag1-len)) ;will rename nodes in dag1 to nodes in the merged dag
            ((mv erp renaming-array dag-array dag-len & & & ;dag-parent-array dag-constant-alist dag-variable-alist ;todo: return these things?
                 )
-            ;todo: the checks here on whether the array needs to be expanded will always fail:
+              ;todo: the checks here on whether the array needs to be expanded will always fail:
             (merge-nodes-into-dag-array rev-dag1
                                         dag-array dag2-len dag-parent-array dag-constant-alist dag-variable-alist
                                         renaming-array))
@@ -76,12 +109,112 @@
             (aref1 'renaming-array renaming-array (top-nodenum dag1))
             (array-to-alist dag-len 'dag-array dag-array))))))
 
-;todo: prove that the result is a dag
 (defthm true-listp-of-mv-nth-2-of-merge-dag-into-dag-quick
   (implies (and (true-listp dag1)
                 (true-listp dag2))
            (true-listp (mv-nth 2 (merge-dag-into-dag-quick dag1 dag2))))
   :hints (("Goal" :in-theory (enable merge-dag-into-dag-quick))))
+
+(defthm dargp-less-than-of-mv-nth-1-of-merge-dag-into-dag-quick
+  (implies (and (or (myquotep dag1)
+                    (pseudo-dagp dag1))
+                (or (myquotep dag2)
+                    (pseudo-dagp dag2))
+                (not (mv-nth 0 (merge-dag-into-dag-quick dag1 dag2))))
+           (dargp-less-than (mv-nth 1 (merge-dag-into-dag-quick dag1 dag2))
+                            (len (mv-nth 2 (merge-dag-into-dag-quick dag1 dag2)))))
+  :otf-flg t
+  :hints (("Goal" :in-theory (enable merge-dag-into-dag-quick PSEUDO-DAGP
+                                     wf-dagp ;todo
+                                     ))))
+
+(defthm natp-of-mv-nth-1-of-merge-dag-into-dag-quick
+  (implies (and (or (myquotep dag1)
+                    (pseudo-dagp dag1))
+                (or (myquotep dag2)
+                    (pseudo-dagp dag2))
+                (not (mv-nth 0 (merge-dag-into-dag-quick dag1 dag2)))
+                (not (consp (mv-nth 1 (merge-dag-into-dag-quick dag1 dag2)))))
+           (natp (mv-nth 1 (merge-dag-into-dag-quick dag1 dag2))))
+  :hints (("Goal" :use dargp-less-than-of-mv-nth-1-of-merge-dag-into-dag-quick
+           :in-theory (disable dargp-less-than-of-mv-nth-1-of-merge-dag-into-dag-quick))))
+
+(defthm myquotep-of-mv-nth-1-of-merge-dag-into-dag-quick
+  (implies (and (or (myquotep dag1)
+                    (pseudo-dagp dag1))
+                (or (myquotep dag2)
+                    (pseudo-dagp dag2))
+                (not (mv-nth 0 (merge-dag-into-dag-quick dag1 dag2))))
+           (equal (myquotep (mv-nth 1 (merge-dag-into-dag-quick dag1 dag2)))
+                  (consp (mv-nth 1 (merge-dag-into-dag-quick dag1 dag2)))))
+  :hints (("Goal" :use dargp-less-than-of-mv-nth-1-of-merge-dag-into-dag-quick
+           :in-theory (disable dargp-less-than-of-mv-nth-1-of-merge-dag-into-dag-quick))))
+
+(defthm not-quotep-of-mv-nth-2-of-merge-dag-into-dag-quick
+  (implies (pseudo-dagp dag2)
+           (not (quotep (mv-nth 2 (merge-dag-into-dag-quick dag1 dag2)))))
+  :hints (("Goal" :in-theory (enable merge-dag-into-dag-quick))))
+
+;; ;may not be true if there are duplicate nodes?
+;; (defthm <=-of-len-of-mv-nth-2-of-merge-dag-into-dag-quick
+;;   (implies (and (pseudo-dagp dag1)
+;;                 (not (mv-nth 0 (merge-dag-into-dag-quick dag1 dag2))))
+;;            (<= (len dag1) (len (mv-nth 2 (merge-dag-into-dag-quick dag1 dag2)))))
+;;   :hints (("Goal" :in-theory (enable merge-dag-into-dag-quick))))
+
+(defthm <=-of-len-of-mv-nth-2-of-merge-dag-into-dag-quick-linear
+  (implies (and (pseudo-dagp dag2)
+                (not (mv-nth 0 (merge-dag-into-dag-quick dag1 dag2))))
+           (<= (len dag2) (len (mv-nth 2 (merge-dag-into-dag-quick dag1 dag2)))))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable merge-dag-into-dag-quick))))
+
+(defthm pseudo-dagp-aux-of-mv-nth-2-of-merge-dag-into-dag-quick
+  (implies (and (or (myquotep dag1)
+                    (pseudo-dagp dag1))
+                (or (myquotep dag2)
+                    (pseudo-dagp dag2))
+                (not (quotep (mv-nth 2 (merge-dag-into-dag-quick dag1 dag2))))
+                (not (mv-nth 0 (merge-dag-into-dag-quick dag1 dag2))))
+           (pseudo-dagp-aux (mv-nth 2 (merge-dag-into-dag-quick dag1 dag2))
+                            (+ -1 (len (mv-nth 2 (merge-dag-into-dag-quick dag1 dag2))))))
+  :hints (("Goal" :in-theory (e/d (merge-dag-into-dag-quick PSEUDO-DAGP wf-dagp)
+                                  (myquotep len PSEUDO-DAGP)))))
+
+(local
+ (defthm integerp-when-natp
+   (implies (natp x) (integerp x))))
+
+(local
+ (defthm acl2-numberp-when-natp
+   (implies (natp x) (acl2-numberp x))))
+
+(defthm not-quote-of-ARRAY-TO-ALIST-AUX
+  (implies (not (equal 'quote (car acc)))
+           (not (quotep (ARRAY-TO-ALIST-AUX N LEN ARRAY-NAME ARRAY ACC))))
+  :hints (("Goal" :in-theory (enable ARRAY-TO-ALIST-AUX))))
+
+(local
+ (defthm natp-of-+-of--1
+   (implies (integerp x)
+            (equal (NATP (+ -1 x))
+                   (< 0 x)))))
+
+(defthm pseudo-dagp-of-mv-nth-2-of-merge-dag-into-dag-quick
+  (implies (and (or (myquotep dag1)
+                    (pseudo-dagp dag1))
+                (or (myquotep dag2)
+                    (pseudo-dagp dag2))
+                (not (quotep (mv-nth 2 (merge-dag-into-dag-quick dag1 dag2))))
+                (not (mv-nth 0 (merge-dag-into-dag-quick dag1 dag2))))
+           (pseudo-dagp (mv-nth 2 (merge-dag-into-dag-quick dag1 dag2))))
+  :otf-flg t
+  :hints (("Goal" :use pseudo-dagp-aux-of-mv-nth-2-of-merge-dag-into-dag-quick
+           :do-not '(generalize eliminate-destructors)
+           :in-theory (e/d (pseudo-dagp merge-dag-into-dag-quick)
+                           ( ;myquotep
+                            quotep len natp BOUNDED-DAG-EXPRP
+                            pseudo-dagp-aux-of-mv-nth-2-of-merge-dag-into-dag-quick)))))
 
 ;; ;dag1 and dag2 are dag-lsts
 ;; ;assumes each dag by itself has no duplicate nodes (at least, we don't check for them)
