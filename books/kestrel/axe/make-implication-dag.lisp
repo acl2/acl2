@@ -71,15 +71,18 @@
   :rule-classes (:type-prescription :rewrite)
   :hints (("Goal" :in-theory (enable make-implication-dag))))
 
-;; (defthm pseudo-dagp-of-make-implication-dag
-;;   (implies (and (or (quotep dag1)
-;;                     (pseudo-dagp dag1))
-;;                 (or (quotep dag2)
-;;                     (pseudo-dagp dag2))
-;;                 (not (quotep (make-implication-dag dag1 dag2))))
-;;            (pseudo-dagp (make-implication-dag dag1 dag2)))
-;;   :rule-classes (:type-prescription :rewrite)
-;;   :hints (("Goal" :in-theory (enable make-implication-dag))))
+(defthm pseudo-dagp-of-mv-nth-1-of-make-implication-dag
+  (implies (and (or (myquotep dag1)
+                    (pseudo-dagp dag1))
+                (or (myquotep dag2)
+                    (pseudo-dagp dag2))
+                (not (mv-nth 0 (make-implication-dag dag1 dag2)))
+                (not (quotep (mv-nth 1 (make-implication-dag dag1 dag2)))))
+           (pseudo-dagp (mv-nth 1 (make-implication-dag dag1 dag2))))
+  :hints (("Goal" :in-theory (e/d (make-implication-dag
+                                   PSEUDO-DAGP-REWRITE)
+                                  (myquotep
+                                   )))))
 
 (defthm true-listp-of-mv-nth-1-of-make-implication-dag
   (implies (and (or (quotep dag1)
