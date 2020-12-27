@@ -96,7 +96,7 @@
   (wrap-all 'not items)
   )
 
-(defun negate-terms (terms)
+(defund negate-terms (terms)
   (declare (xargs :guard (true-listp terms)))
   (if (endp terms)
       nil
@@ -106,7 +106,8 @@
 
 (defthm pseudo-term-listp-of-negate-terms
   (implies (pseudo-term-listp terms)
-           (pseudo-term-listp (negate-terms terms))))
+           (pseudo-term-listp (negate-terms terms)))
+  :hints (("Goal" :in-theory (enable negate-terms))))
 
 ;(local (in-theory (enable pseudo-termp)))
 
