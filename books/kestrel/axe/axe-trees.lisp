@@ -53,6 +53,13 @@
 
 (make-flag axe-treep)
 
+(defthm all-axe-treep-of-append
+  (equal (all-axe-treep (append x y))
+         (and (all-axe-treep x)
+              (all-axe-treep y)))
+  :hints (("Goal" :induct (append x y)
+           :in-theory (enable all-axe-treep append))))
+
 ;; Pseudo-terms are axe-trees.
 (defthm-flag-axe-treep
   (defthm axe-treep-when-pseudo-termp
