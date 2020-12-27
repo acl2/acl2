@@ -41,7 +41,7 @@
     (and (rule-itemp (first items))
          (rule-item-listp (rest items)))))
 
-(defun rule-item-list-listp (items)
+(defund rule-item-list-listp (items)
   (declare (xargs :guard t))
   (if (atom items)
       (null items)
@@ -76,7 +76,7 @@
   :hints (("Goal" :in-theory (enable elaborate-rule-item))))
 
 ;;Returns a list of rule-names.
-(defun elaborate-rule-items (items acc state)
+(defund elaborate-rule-items (items acc state)
   (declare (xargs :guard (and (rule-item-listp items)
                               (symbol-listp acc))
                   :stobjs state))
@@ -89,22 +89,29 @@
 
 (defthm true-listp-of-elaborate-rule-items
   (implies (true-listp acc)
-           (true-listp (elaborate-rule-items items acc state))))
+           (true-listp (elaborate-rule-items items acc state)))
+  :hints (("Goal" :in-theory (enable elaborate-rule-items))))
 
 (defthm symbol-listp-of-elaborate-rule-items
   (implies (symbol-listp acc)
-           (symbol-listp (elaborate-rule-items items acc state))))
+           (symbol-listp (elaborate-rule-items items acc state)))
+  :hints (("Goal" :in-theory (enable elaborate-rule-items))))
 
 ;;Returns a list of rule-names.
-(defun elaborate-rule-item-lists (item-lists state)
+(defund elaborate-rule-item-lists (item-lists state)
   (declare (xargs :guard (rule-item-list-listp item-lists)
+                  :guard-hints (("Goal" :in-theory (enable rule-item-list-listp)))
                   :stobjs state))
   (if (endp item-lists)
       nil
     (cons (elaborate-rule-items (first item-lists) nil state)
           (elaborate-rule-item-lists (rest item-lists) state))))
 
-(defun remove-from-all (rule-lists remove-rules)
+(defthm symbol-list-listp-of-elaborate-rule-items
+  (symbol-list-listp (elaborate-rule-item-lists item-lists state))
+  :hints (("Goal" :in-theory (enable elaborate-rule-item-lists))))
+
+(defund remove-from-all (rule-lists remove-rules)
   (declare (xargs :guard (and (symbol-list-listp rule-lists)
                               (symbol-listp remove-rules))))
   (if (endp rule-lists)
