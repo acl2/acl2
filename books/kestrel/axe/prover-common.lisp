@@ -490,10 +490,11 @@
 ;; copies a segment of nodes from FROM-DAG-ARRAY to DAG-ARRAY and returns the new dag (including the auxiliary data structures) and a RENAMING-ARRAY
 ;; Returns (mv erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist renaming-array).
 ;fixme should this use a worklist instead of copying a segment?
-(defund add-array-nodes-to-dag (nodenum max-nodenum
-                                       from-dag-array-name from-dag-array from-dag-array-len
-                                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                       renaming-array)
+(defund add-array-nodes-to-dag (nodenum ;smallest nodenum to copy
+                                max-nodenum ;largest nodenum to copy
+                                from-dag-array-name from-dag-array from-dag-array-len
+                                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                renaming-array)
   (declare ;(type (integer 0 2147483646) dag-len)
 ;(type (integer 0 2147483645) nodenum)
 ;(type (integer -1 2147483645) max-nodenum)
@@ -504,7 +505,6 @@
                       (pseudo-dag-arrayp from-dag-array-name from-dag-array from-dag-array-len)
                       (< max-nodenum from-dag-array-len)
                       (<= nodenum (+ 1 max-nodenum))
-                      (pseudo-dag-arrayp from-dag-array-name from-dag-array (+ 1 max-nodenum))
                       (renaming-arrayp 'renaming-array renaming-array nodenum) ;todo: add more guards?
                       (<= (+ 1 max-nodenum)
                           (alen1 'renaming-array renaming-array))
@@ -521,9 +521,9 @@
       (if (variablep expr)
           (mv-let (erp new-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
             (add-variable-to-dag-array expr dag-array dag-len
-                                             dag-parent-array ;;just passed through
-                                             dag-constant-alist ;;just passed through
-                                             dag-variable-alist)
+                                       dag-parent-array   ;;just passed through
+                                       dag-constant-alist ;;just passed through
+                                       dag-variable-alist)
             (if erp
                 (mv erp nil nil nil nil nil nil)
               (add-array-nodes-to-dag (+ 1 nodenum) max-nodenum from-dag-array-name from-dag-array from-dag-array-len dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
@@ -540,6 +540,33 @@
                   (mv erp nil nil nil nil nil nil)
                 (add-array-nodes-to-dag (+ 1 nodenum) max-nodenum from-dag-array-name from-dag-array from-dag-array-len dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                         (aset1 'renaming-array renaming-array nodenum new-nodenum))))))))))
+
+(defthm add-array-nodes-to-dag-return-type
+  (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                (integerp max-nodenum)
+                (natp nodenum)
+                (pseudo-dag-arrayp from-dag-array-name from-dag-array from-dag-array-len)
+                (< max-nodenum from-dag-array-len)
+                (<= nodenum (+ 1 max-nodenum))
+                (renaming-arrayp 'renaming-array renaming-array nodenum) ;todo: add more guards?
+                (<= (+ 1 max-nodenum)
+                    (alen1 'renaming-array renaming-array))
+                (bounded-renaming-entriesp (+ -1 nodenum) 'renaming-array renaming-array dag-len))
+           (mv-let (erp new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-renaming-array)
+             (add-array-nodes-to-dag nodenum max-nodenum
+                                     from-dag-array-name from-dag-array from-dag-array-len
+                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                     renaming-array)
+             (implies (not erp)
+                      (and (wf-dagp 'dag-array new-dag-array new-dag-len 'dag-parent-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
+                           (renaming-arrayp 'renaming-array new-renaming-array nodenum)
+                           (equal (alen1 'renaming-array new-renaming-array)
+                                  (alen1 'renaming-array renaming-array))
+                           ;;follows from the above:
+                           (array1p 'renaming-array new-renaming-array)))))
+  :hints (("Goal" :in-theory (enable add-array-nodes-to-dag
+                                     RENAMING-ARRAYP ;todo
+                                     ))))
 
 ;;
 ;; tags (part 1, since currently get-node-tag is used in the context stuff - change that?! maybe i already did?)
@@ -2706,6 +2733,18 @@
   :hints (("Goal" :cases ((equal 0 dag-len))
            :in-theory (e/d (find-node-to-split-for-prover) (natp)))))
 
+(defthm not-<-of--1-and-find-node-to-split-for-prover
+  (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                (nat-listp literal-nodenums)
+                (consp literal-nodenums)
+                (all-< literal-nodenums dag-len)
+                (find-node-to-split-for-prover dag-array-name dag-array dag-len literal-nodenums) ; no failure
+                )
+           (not (< (find-node-to-split-for-prover dag-array-name dag-array dag-len literal-nodenums)
+                   -1)))
+  :hints (("Goal" :use (:instance natp-of-find-node-to-split-for-prover)
+           :in-theory (disable natp-of-find-node-to-split-for-prover))))
+
 (defthm <-of-find-node-to-split-for-prover
   (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                 (nat-listp literal-nodenums)
@@ -2714,6 +2753,7 @@
                 (find-node-to-split-for-prover dag-array-name dag-array dag-len literal-nodenums) ; no failure
                 )
            (< (find-node-to-split-for-prover dag-array-name dag-array dag-len literal-nodenums) dag-len))
+  :rule-classes (:rewrite :linear)
   :hints (("Goal" :cases ((equal 0 dag-len))
            :in-theory (e/d (find-node-to-split-for-prover) (natp)))))
 
@@ -4458,3 +4498,12 @@
   (declare (xargs :guard t))
   (and (alistp options)
        (subsetp-eq (strip-cars options) '(:no-stp))))
+
+(defthm all-axe-treep-of-wrap-all
+  (equal (all-axe-treep (wrap-all 'not atoms))
+         (all-axe-treep atoms))
+  :hints (("Goal" :in-theory (enable all-axe-treep wrap-all))))
+
+(defund prover-resultp (result)
+  (declare (xargs :guard t))
+  (member-equal result '(:proved :failed :timed-out)))
