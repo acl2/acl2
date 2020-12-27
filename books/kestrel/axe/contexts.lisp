@@ -77,7 +77,7 @@
 (defmacro false-contextp (item)
   `(eq (false-context) ,item))
 
-(defun contextp (context)
+(defund contextp (context)
   (declare (xargs :guard t))
   (or (eq (false-context) context)
       ;;a non-false context is a list of conjuncts of the form <nodenum> or (not <nodenum>)
@@ -96,14 +96,41 @@
                     (< item bound))
                (and (call-of 'not item)
                     (consp (cdr item))
+                    (null (cddr item))
                     (natp (farg1 item))
                     (< (farg1 item) bound)))
            (possibly-negated-nodenumsp-with-bound (rest lst) bound)))))
 
-(defun contextp-with-bound (context bound)
+(defthm possibly-negated-nodenumsp-when-possibly-negated-nodenumsp-with-bound
+  (implies (possibly-negated-nodenumsp-with-bound lst bound)
+           (possibly-negated-nodenumsp lst))
+  :hints (("Goal" :in-theory (enable possibly-negated-nodenumsp
+                                     possibly-negated-nodenumsp-with-bound))))
+
+
+(defund contextp-with-bound (context bound)
   (declare (type rational bound))
   (or (eq (false-context) context)
       (possibly-negated-nodenumsp-with-bound context bound)))
+
+(defthm contextp-with-bound-monotone
+  (implies (and (contextp-with-bound context bound1)
+                (<= bound1 bound)
+                (natp bound1)
+                (natp bound))
+           (contextp-with-bound context bound))
+  :hints (("Goal" :in-theory (enable contextp-with-bound))))
+
+(defthm contextp-when-contextp-with-bound
+  (implies (contextp-with-bound context bound)
+           (contextp context))
+  :hints (("Goal" :in-theory (enable contextp-with-bound contextp))))
+
+(defthm contextp-with-bound-forward-to-context
+  (implies (contextp-with-bound context bound)
+           (contextp context))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable contextp-with-bound contextp))))
 
 ;rename the nodenums in the context according to renaming-array
 ;fixme there was a bug (a context node got renamed to a constant) which prevented this from returning a contextp - prove that it does, given that the renaming-array is good
@@ -131,12 +158,36 @@
                 new-nodenum-or-quotep)
               (fixup-possibly-negated-nodenums (rest context) renaming-array-name renaming-array))))))
 
-(defun fixup-context (context renaming-array-name renaming-array)
+;; ;; have to know that nothing gets mapped to a quotep
+;; (thm
+;;  (implies (and (renaming-arrayp renaming-array-name renaming-array renaming-array-len)
+;;                (contextp-with-bound context (alen1 renaming-array-name renaming-array)))
+;;           (contextp (fixup-possibly-negated-nodenums context renaming-array-name renaming-array)))
+;;  :hints (("Goal" :in-theory (e/d (fixup-possibly-negated-nodenums
+;;                                     CONTEXTP-WITH-BOUND
+;;                                     CONTEXTP)
+;;                                  (natp
+;;                                   myquotep)))))
+
+(defund fixup-context (context renaming-array-name renaming-array)
   (declare (xargs :guard (and (array1p renaming-array-name renaming-array)
-                              (contextp-with-bound context (alen1 renaming-array-name renaming-array)))))
+                              (contextp-with-bound context (alen1 renaming-array-name renaming-array)))
+                  :guard-hints (("Goal" :in-theory (enable contextp-with-bound)))))
   (if (false-contextp context) ;may be impossible for some calls of fixup-context?
       context
     (fixup-possibly-negated-nodenums context renaming-array-name renaming-array)))
+
+;; ;; have to know that nothing gets mapped to a quotep, or have to handle that (drop or return a false context, depending on the constant)
+;; (thm
+;;  (implies (and (renaming-arrayp renaming-array-name renaming-array renaming-array-len)
+;;                (contextp-with-bound context (alen1 renaming-array-name renaming-array)))
+;;           (contextp (fixup-context context renaming-array-name renaming-array)))
+;;  :hints (("Goal" :in-theory (enable FIXUP-CONTEXT))))
+
+
+;;;
+;;; max-nodenum-in-possibly-negated-nodenums-aux
+;;;
 
 (defund max-nodenum-in-possibly-negated-nodenums-aux (items acc)
   (declare (xargs :guard (and (rationalp acc)
@@ -152,18 +203,96 @@
                                                              (farg1 item)
                                                            item))))))
 
+(defthm integerp-of-max-nodenum-in-possibly-negated-nodenums-aux
+  (implies (and (possibly-negated-nodenumsp items)
+                (integerp acc))
+           (integerp (max-nodenum-in-possibly-negated-nodenums-aux items acc)))
+  :hints (("Goal" :in-theory (enable max-nodenum-in-possibly-negated-nodenums-aux
+                                     possibly-negated-nodenumsp
+                                     possibly-negated-nodenump))))
+
+(defthm <=-of-max-nodenum-in-possibly-negated-nodenums-aux-linear
+  (implies (and (possibly-negated-nodenumsp items)
+                (integerp acc))
+           (<= acc (max-nodenum-in-possibly-negated-nodenums-aux items acc)))
+  :rule-classes :linear
+  :hints (("Goal" :expand ((possibly-negated-nodenump (car items))
+                           (possibly-negated-nodenumsp items))
+           :do-not '(generalize eliminate-destructors)
+           :in-theory (enable max-nodenum-in-possibly-negated-nodenums-aux))))
+
+(defthm <-of-max-nodenum-in-possibly-negated-nodenums-aux-when-possibly-negated-nodenumsp-with-bound
+  (implies (and (possibly-negated-nodenumsp-with-bound context bound)
+                (natp bound)
+                (< acc bound))
+           (< (max-nodenum-in-possibly-negated-nodenums-aux context acc) bound))
+  :hints (("Goal" :in-theory (enable max-nodenum-in-possibly-negated-nodenums-aux
+                                     possibly-negated-nodenumsp-with-bound))))
+
+;;;
+;;; max-nodenum-in-possibly-negated-nodenums
+;;;
+
 ;returns -1 if there are no nodenums
 (defund max-nodenum-in-possibly-negated-nodenums (items)
   (declare (xargs :guard (possibly-negated-nodenumsp items)
                   :guard-hints (("Goal" :in-theory (enable possibly-negated-nodenumsp)))))
   (max-nodenum-in-possibly-negated-nodenums-aux items -1))
 
+(defthm integerp-of-max-nodenum-in-possibly-negated-nodenums
+  (implies (possibly-negated-nodenumsp items)
+           (integerp (max-nodenum-in-possibly-negated-nodenums items)))
+  :rule-classes (:rewrite :type-prescription)
+  :hints (("Goal" :in-theory (enable max-nodenum-in-possibly-negated-nodenums))))
+
+(defthm <=-of-max-nodenum-in-possibly-negated-nodenums-linear
+  (implies (possibly-negated-nodenumsp items)
+           (<= -1 (max-nodenum-in-possibly-negated-nodenums items)))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable max-nodenum-in-possibly-negated-nodenums))))
+
+(defthm <-of-max-nodenum-in-possibly-negated-nodenums-when-possibly-negated-nodenumsp-with-bound
+  (implies (and (possibly-negated-nodenumsp-with-bound context bound)
+                (natp bound))
+           (< (max-nodenum-in-possibly-negated-nodenums context) bound))
+  :hints (("Goal" :in-theory (enable max-nodenum-in-possibly-negated-nodenums))))
+
+;;;
+;;; max-nodenum-in-context
+;;;
+
 ;returns -1 if no nodenums are mentioned
-(defun max-nodenum-in-context (context)
+(defund max-nodenum-in-context (context)
   (declare (xargs :guard (contextp context)))
   (if (false-contextp context)
       -1
     (max-nodenum-in-possibly-negated-nodenums context)))
+
+(defthm integerp-of-max-nodenum-in-context
+  (implies (contextp context)
+           (integerp (max-nodenum-in-context context)))
+  :rule-classes (:rewrite :type-prescription)
+  :hints (("Goal" :in-theory (enable max-nodenum-in-context))))
+
+(defthm <-of-max-nodenum-in-context-linear
+  (implies (contextp context)
+           (<= -1 (max-nodenum-in-context context)))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable max-nodenum-in-context))))
+
+(defthm <-of-max-nodenum-in-context-when-possibly-negated-nodenumsp-with-bound
+  (implies (and (contextp-with-bound context bound)
+                (natp bound))
+           (< (max-nodenum-in-context context) bound))
+  :rule-classes (:rewrite :linear)
+  :hints (("Goal" :in-theory (enable max-nodenum-in-context
+                                     contextp-with-bound))))
+
+;; (thm
+;;  (implies (contextp context)
+;;           (equal (equal -1 (MAX-NODENUM-IN-CONTEXT context))
+;;                  (false-contextp context)))
+;;  :hints (("Goal" :in-theory (enable MAX-NODENUM-IN-CONTEXT))))
 
 ;strips off the nots
 ;each element of CONTEXT is <integer> or (not <integer>)
@@ -571,7 +700,7 @@
                 (< nodenum dag-len)
                 (pseudo-dag-arrayp dag-array-name dag-array dag-len))
            (contextp (get-context-from-negation-of-node nodenum dag-array-name dag-array dag-len)))
-  :hints (("Goal" :in-theory (enable get-context-from-negation-of-node))))
+  :hints (("Goal" :in-theory (enable contextp get-context-from-negation-of-node))))
 
 ;; ;returns a contextp equivalent to nodenum (flattens nested ANDs)
 ;; ;;fixme what about a negation of a boolor?
