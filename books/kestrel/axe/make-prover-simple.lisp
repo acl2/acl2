@@ -403,6 +403,7 @@
          (prove-clause-name (pack$ 'prove-clause-with- suffix '-prover))
          (prove-implication-name (pack$ 'prove-implication-with- suffix '-prover)) ;a macro
          (prove-implication-fn-name (pack$ 'prove-implication-with- suffix '-prover-fn))
+         (prove-implication-fn-helper-name (pack$ 'prove-implication-with- suffix '-prover-fn-helper))
          (clause-processor-name (pack$ suffix '-prover-clause-processor))
          (defthm-with-clause-processor-name (pack$ 'defthm-with- clause-processor-name))
          (defthm-with-clause-processor-fn-name (pack$ 'defthm-with- clause-processor-name '-fn))
@@ -3921,35 +3922,39 @@
        ;; TODO: Warning if no variable overlap?
        ;; Returns (mv erp event state) where a failure to prove causes erp to be non-nil.
        ;; TODO: Check all inputs, including arities.
-       (defund ,prove-implication-fn-name (dag-or-term1
-                                           dag-or-term2
-                                           rule-lists
-                                           interpreted-function-alist
-                                           monitor
-                                           state)
-         (declare (xargs :guard (and ;; (or (myquotep dag1)
-                                 ;;     (and (pseudo-dagp dag1)
-                                 ;;          (<= (len dag1) 2147483646)))
-                                 ;; (or (myquotep dag2)
-                                 ;;     (and (pseudo-dagp dag2)
-                                 ;;          (<= (len dag2) 2147483646)))
-                                 (rule-item-list-listp rule-lists)
-                                 (symbol-listp monitor))
+       (defund ,prove-implication-fn-helper-name (dag1
+                                                  dag2
+                                                  rule-lists
+                                                  interpreted-function-alist
+                                                  monitor
+                                                  state)
+         (declare (xargs :guard (and (or (myquotep dag1)
+                                         (and (pseudo-dagp dag1)
+                                              (<= (len dag1) 2147483646)))
+                                     (or (myquotep dag2)
+                                         (and (pseudo-dagp dag2)
+                                              (<= (len dag2) 2147483646)))
+                                     (rule-item-list-listp rule-lists)
+                                     (symbol-listp monitor)
+                                     (ilks-plist-worldp (w state)))
+                         :verify-guards nil
                          ;; :guard-hints (("Goal" :in-theory (enable alistp-guard-hack)))
-                         :stobjs state
-                         :mode :program ;because this translates its args if they are terms (todo:separate out just that part)
-                         ))
+                         :stobjs state))
          (b* (((when (not (interpreted-function-alistp interpreted-function-alist)))
                (er hard? ',prove-implication-fn-name "Ill-formed interpreted-function-alist: ~x0" interpreted-function-alist)
                (mv :bad-input nil state))
-              ((mv erp dag1) (dag-or-term-to-dag-basic dag-or-term1 (w state)))
+              ;; Form the implication to prove:
+              ((mv erp implication-dag-or-quotep) (make-implication-dag dag1 dag2)) ; todo: we will end up having to extract disjuncts from this implication
               ((when erp) (mv erp nil state))
-              ((mv erp dag2) (dag-or-term-to-dag-basic dag-or-term2 (w state)))
-              ((when erp) (mv erp nil state))
-              ((mv erp implication-dag) (make-implication-dag dag1 dag2)) ; todo: we will end up having to extract disjuncts from this
-              ((when erp) (mv erp nil state))
-              (dag-array (make-into-array 'dag-array implication-dag))
-              (top-nodenum (top-nodenum implication-dag))
+              ;; Handle the case of a constant DAG to prove (rare):
+              ((when (quotep implication-dag-or-quotep))
+               (if (unquote implication-dag-or-quotep)
+                   (prog2$ (cw "NOTE: Proved the DAG because it is a constant.")
+                           (mv (erp-nil) '(value-triple :ok) state))
+                 (prog2$ (cw "NOTE: Failed because the DAG is the constant nil.")
+                         (mv :failed nil state))))
+              (dag-array (make-into-array 'dag-array implication-dag-or-quotep))
+              (top-nodenum (top-nodenum implication-dag-or-quotep))
               (dag-len (+ 1 top-nodenum))
               ;; make auxiliary dag data structures:
               ((mv dag-parent-array dag-constant-alist dag-variable-alist)
@@ -3977,6 +3982,39 @@
                (prog2$ (cw "Proved.~%")
                        (mv (erp-nil) '(value-triple :ok) state))
              (mv :failed-to-prove nil state))))
+
+       ;; Try to prove that DAG1 implies DAG2, for all values of the variables.
+       ;; Returns (mv erp event state) where a failure to prove causes erp to be non-nil.
+       (defund ,prove-implication-fn-name (dag-or-term1
+                                           dag-or-term2
+                                           rule-lists
+                                           interpreted-function-alist
+                                           monitor
+                                           state)
+         (declare (xargs :guard (and ;; (or (myquotep dag1)
+                                 ;;     (and (pseudo-dagp dag1)
+                                 ;;          (<= (len dag1) 2147483646)))
+                                 ;; (or (myquotep dag2)
+                                 ;;     (and (pseudo-dagp dag2)
+                                 ;;          (<= (len dag2) 2147483646)))
+                                 (rule-item-list-listp rule-lists)
+                                 ;; (interpreted-function-alistp interpreted-function-alist)
+                                 (symbol-listp monitor)
+                                 (ilks-plist-worldp (w state)))
+                         ;; :guard-hints (("Goal" :in-theory (enable alistp-guard-hack)))
+                         :stobjs state
+                         :mode :program ;because this translates its args if they are terms (todo:separate out just that part)
+                         ))
+         (b* (((mv erp dag1) (dag-or-term-to-dag-basic dag-or-term1 (w state)))
+              ((when erp) (mv erp nil state))
+              ((mv erp dag2) (dag-or-term-to-dag-basic dag-or-term2 (w state)))
+              ((when erp) (mv erp nil state)))
+           (,prove-implication-fn-helper-name dag1
+                                              dag2
+                                              rule-lists
+                                              interpreted-function-alist
+                                              monitor
+                                              state)))
 
        ;; Returns (mv erp event state) where a failure to prove causes erp to be non-nil.
        (defmacro ,prove-implication-name (dag-or-term1
