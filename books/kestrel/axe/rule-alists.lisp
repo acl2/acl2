@@ -4,6 +4,8 @@
 (include-book "stored-rules")
 (include-book "kestrel/alists-light/uniquify-alist-eq" :dir :system)
 
+(in-theory (disable fgetprop)) ;move
+
 ;;
 ;; rule-alists (structures that index rules by the top function symbol of their LHSes)
 ;;
@@ -261,6 +263,12 @@
       (mv (erp-nil)
           (make-rule-alist-simple axe-rules t priorities)))))
 
+(defthm rule-alistp-of-mv-nth-1-of-make-rule-alist
+  (implies (symbol-listp rule-names)
+           (rule-alistp (mv-nth 1 (make-rule-alist rule-names wrld))))
+  :hints (("Goal" :in-theory (enable make-rule-alist
+                                     axe-rule-listp))))
+
 ;; Returns a rule-alist.  Doesn't return erp.
 (defund make-rule-alist! (rule-names wrld)
   (declare (xargs :guard (and (true-listp rule-names)
@@ -272,13 +280,6 @@
         (er hard? 'make-rule-alist! "Error making rule alist.")
       rule-alist)))
 
-(in-theory (disable fgetprop)) ;move
-
-(defthm rule-alistp-of-mv-nth-1-of-make-rule-alist
-  (implies (symbol-listp rule-names)
-           (rule-alistp (mv-nth 1 (make-rule-alist rule-names wrld))))
-  :hints (("Goal" :in-theory (enable make-rule-alist
-                                     axe-rule-listp))))
 
 ;; Returns (mv erp rule-alists).
 (defund make-rule-alists (rule-name-lists wrld)
@@ -295,6 +296,16 @@
          ((when erp) (mv erp nil)))
       (mv (erp-nil)
           (cons rule-alist rule-alists)))))
+
+(defthm true-listp-of-mv-nth-1-of-make-rule-alists
+  (true-listp (mv-nth 1 (make-rule-alists rule-name-lists wrld)))
+  :rule-classes :type-prescription
+  :hints (("Goal" :in-theory (enable make-rule-alists))))
+
+(defthm all-rule-alistp-of-mv-nth-1-of-make-rule-alists
+  (implies (symbol-list-listp rule-name-lists)
+           (all-rule-alistp (mv-nth 1 (make-rule-alists rule-name-lists wrld))))
+  :hints (("Goal" :in-theory (enable make-rule-alists))))
 
 ;todo: would prefer to just pass in named formulas here
 (defund extend-rule-alist2 (axe-rules rule-alist wrld)
