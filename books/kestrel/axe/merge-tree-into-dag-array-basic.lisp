@@ -18,6 +18,7 @@
 (include-book "interpreted-function-alistp")
 (include-book "axe-trees")
 ;(include-book "def-dag-builder-theorems")
+(local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 
 (mutual-recursion
  ;;TREE is a tree over variables, nodenums in the dag, and quoteps
@@ -36,7 +37,7 @@
                                (all-dargp-less-than (strip-cdrs var-replacement-alist) dag-len)
                                ;;(<= (+ (len vars) dag-len) 2147483645)
                                (interpreted-function-alistp interpreted-function-alist))
-                   :verify-guards nil
+                   :verify-guards nil ;; done below
                    ))
    (if (atom tree)
        (if (symbolp tree)
@@ -102,3 +103,55 @@
        (mv (erp-nil)
            (cons car-nodenum-or-quotep cdr-nodenums-or-quoteps)
            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))))
+
+(make-flag merge-tree-into-dag-array-basic)
+
+(defthm-flag-merge-tree-into-dag-array-basic
+  (defthm merge-tree-into-dag-array-basic-return-type
+    (implies (and (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
+                  (axe-treep tree)
+                  (bounded-axe-treep tree dag-len)
+                  (symbol-alistp var-replacement-alist)
+                  (all-dargp-less-than (strip-cdrs var-replacement-alist) dag-len)
+                  ;;(<= (+ (len vars) dag-len) 2147483645)
+                  (interpreted-function-alistp interpreted-function-alist))
+             (mv-let (erp nodenum-or-quotep new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
+               (merge-tree-into-dag-array-basic tree var-replacement-alist
+                                                dag-array dag-len dag-parent-array
+                                                dag-constant-alist dag-variable-alist
+                                                dag-array-name dag-parent-array-name
+                                                interpreted-function-alist)
+               (implies (not erp)
+                        (and (wf-dagp dag-array-name new-dag-array new-dag-len dag-parent-array-name new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
+                             (dargp-less-than nodenum-or-quotep new-dag-len)
+                             (<= dag-len new-dag-len)))))
+    :flag merge-tree-into-dag-array-basic)
+  (defthm merge-trees-into-dag-array-basic-return-type
+    (implies (and (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
+                  (true-listp trees)
+                  (all-axe-treep trees)
+                  (all-bounded-axe-treep trees dag-len)
+                  (symbol-alistp var-replacement-alist)
+                  (all-dargp-less-than (strip-cdrs var-replacement-alist) dag-len)
+                  ;;(<= (+ (len vars) dag-len) 2147483645)
+                  (interpreted-function-alistp interpreted-function-alist))
+             (mv-let (erp nodenums-or-quoteps new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
+               (merge-trees-into-dag-array-basic trees var-replacement-alist
+                                                 dag-array dag-len dag-parent-array
+                                                 dag-constant-alist dag-variable-alist
+                                                 dag-array-name dag-parent-array-name
+                                                 interpreted-function-alist)
+               (implies (not erp)
+                        (and (wf-dagp dag-array-name new-dag-array new-dag-len dag-parent-array-name new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
+                             (all-dargp-less-than nodenums-or-quoteps new-dag-len)
+                             (true-listp nodenums-or-quoteps)
+                             (<= dag-len new-dag-len)
+                             (equal (len nodenums-or-quoteps) (len trees))))))
+    :flag merge-trees-into-dag-array-basic)
+  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+           :in-theory (e/d (merge-tree-into-dag-array-basic
+                            merge-trees-into-dag-array-basic)
+                           (mv-nth
+                            myquotep)))))
+
+(verify-guards merge-tree-into-dag-array-basic)
