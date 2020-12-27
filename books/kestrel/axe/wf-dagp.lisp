@@ -17,6 +17,7 @@
 (include-book "dag-variable-alist")
 (include-book "make-dag-variable-alist")
 (include-book "make-dag-constant-alist")
+(include-book "dag-parent-array-with-name")
 
 ;;;
 ;;; wf-dagp ("well-formed DAG")
@@ -79,3 +80,23 @@
                     (make-empty-array dag-parent-array-name size)
                     nil nil))
   :hints (("Goal" :in-theory (enable wf-dagp))))
+
+(defthm wf-dagp-of-make-into-array-etc
+  (implies (and (pseudo-dagp dag)
+                (< (LEN DAG) 2147483647))
+           (WF-DAGP 'DAG-ARRAY
+                    (MAKE-INTO-ARRAY 'DAG-ARRAY DAG)
+                    (LEN DAG)
+                    'DAG-PARENT-ARRAY
+                    (MAKE-DAG-PARENT-ARRAY-WITH-NAME (LEN DAG)
+                                                     'DAG-ARRAY
+                                                     (MAKE-INTO-ARRAY 'DAG-ARRAY DAG)
+                                                     'DAG-PARENT-ARRAY)
+                    (MAKE-DAG-CONSTANT-ALIST 'DAG-ARRAY
+                                             (MAKE-INTO-ARRAY 'DAG-ARRAY DAG)
+                                             (LEN DAG))
+                    (MAKE-DAG-VARIABLE-ALIST 'DAG-ARRAY
+                                             (MAKE-INTO-ARRAY 'DAG-ARRAY DAG)
+                                             (LEN DAG))))
+  :hints (("Goal" :in-theory (enable wf-dagp
+                                     CAR-OF-CAR-WHEN-PSEUDO-DAGP-CHEAP))))
