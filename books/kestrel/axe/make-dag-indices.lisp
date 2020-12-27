@@ -180,7 +180,12 @@
                           nil         ;;empty dag-variable-alist
                           )))
 
-;; todo: mv-nth-0-of-make-dag-indices-with-len
+;;note that here we pass the dag-len as the parent-array-len
+(defthm mv-nth-0-of-make-dag-indices-with-len
+  (equal (mv-nth 0 (make-dag-indices-with-len dag-array-name dag-array dag-parent-array-name dag-len dag-len))
+         (make-dag-parent-array-with-name dag-len dag-array-name dag-array dag-parent-array-name))
+  :hints (("Goal" :in-theory (enable make-dag-indices-with-len make-dag-parent-array-with-name
+                                     MV-NTH-0-OF-MAKE-DAG-INDICES-AUX))))
 
 ;; We reason about make-dag-constant-alist instead of make-dag-indices-with-len, which is more complicated.
 (defthm mv-nth-1-of-make-dag-indices-with-len
