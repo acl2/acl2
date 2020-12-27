@@ -885,6 +885,32 @@
   (implies (alistp acc)
            (alistp (array-to-alist-aux n len array-name array acc))))
 
+(defthm len-of-array-to-alist-aux
+  (implies (and (natp len)
+                (natp n))
+           (equal (len (array-to-alist-aux n len array-name array acc))
+                  (+ (nfix (- len n))
+                     (len acc))))
+  :hints (("Goal" :in-theory (enable array-to-alist-aux))))
+
+(defthm consp-of-array-to-alist-aux
+  (implies (and (natp len)
+                (natp n))
+           (equal (consp (array-to-alist-aux n len array-name array acc))
+                  (or (posp (nfix (- len n)))
+                      (consp acc))))
+  :hints (("Goal" :in-theory (enable array-to-alist-aux))))
+
+(defthm car-of-array-to-alist-aux
+  (equal (car (array-to-alist-aux n len array-name array acc))
+         (if (and (natp len)
+                  (natp n)
+                  (< n len))
+             ;; usual case:
+             (cons (+ -1 len) (aref1 array-name array (+ -1 len)))
+           (car acc)))
+  :hints (("Goal" :in-theory (enable array-to-alist-aux))))
+
 ;; The indices in the result will be decreasing.
 (defun array-to-alist (len array-name array)
   (declare (xargs :guard (and (array1p array-name array)
