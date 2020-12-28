@@ -314,8 +314,8 @@
     (:REWRITE DAG-VARIABLE-ALISTP-FORWARD-TO-ALIST)
     (:REWRITE DARGP-LESS-THAN-MONO)
     (:REWRITE DARGP-LESS-THAN-OF-LIST-OF-QUOTE)
-    (:REWRITE
-     DARGP-LESS-THAN-OF-MV-NTH-1-OF-ADD-FUNCTION-CALL-EXPR-TO-DAG-ARRAY-GEN)
+    (:REWRITE DARGP-LESS-THAN-OF-MAYBE-REPLACE-NODENUM-USING-ASSUMPTIONS-FOR-AXE-PROVER-GEN)
+    (:REWRITE DARGP-LESS-THAN-OF-MV-NTH-1-OF-ADD-FUNCTION-CALL-EXPR-TO-DAG-ARRAY-GEN)
     (:REWRITE DARGP-LESS-THAN-WHEN-CONSP-CHEAP)
     (:REWRITE DARGP-LESS-THAN-WHEN-MYQUOTEP-CHEAP)
     (:REWRITE DARGP-LESS-THAN-WHEN-NATP-CHEAP)
@@ -333,8 +333,7 @@
     (:REWRITE MAXELEM-OF-CONS)
     (:REWRITE MV-NTH-6-OF-ADD-FUNCTION-CALL-EXPR-TO-DAG-ARRAY)
     (:REWRITE MV-NTH-OF-CONS)
-    (:REWRITE
-     MYQUOTEP-OF-REPLACE-NODENUM-USING-ASSUMPTIONS-FOR-AXE-PROVER)
+    (:REWRITE MYQUOTEP-OF-REPLACE-NODENUM-USING-ASSUMPTIONS-FOR-AXE-PROVER)
     (:REWRITE NAT-LISTP-WHEN-ALL-NATP)
     (:REWRITE NATP-OF-+-OF-1-ALT)
     (:REWRITE NATP-OF-MV-NTH-1-OF-ADD-FUNCTION-CALL-EXPR-TO-DAG-ARRAY)
@@ -1244,13 +1243,9 @@
                   ;; something using the assumptions.  Note that
                   ;; this uses the simplified args, so
                   ;; assumptions not in normal form may have no effect.
-                  (let ((assumption-match (replace-nodenum-using-assumptions-for-axe-prover nodenum equiv nodenums-to-assume-false dag-array))) ;currently, this can only be a constant?
-                    (mv (erp-nil)
-                        (if assumption-match
-                            ;; we replace the term with something it's equated to in nodenums-to-assume-false. we don't simplify the resulting thing (currently a constant). eventually, we might need to think about handling chains of equalities.:
-                            assumption-match
-                          nodenum)
-                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))))))
+                  (mv (erp-nil)
+                      (maybe-replace-nodenum-using-assumptions-for-axe-prover nodenum equiv nodenums-to-assume-false dag-array) ;currently, this can only replace it with a constant?
+                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))))))
 
         ;; Rewrite TREE repeatedly using RULE-ALIST and NODENUMS-TO-ASSUME-FALSE and add the result to the dag, returning a nodenum or a quotep.
         ;; TREE has nodenums and quoteps and variables (really? yes, from when we call this on a worklist of nodes) at the leaves.
