@@ -103,6 +103,48 @@
 (defthm not-<-of-LARGEST-NON-QUOTEP-and--1
   (not (< (LARGEST-NON-QUOTEP dags) '-1)))
 
+(defthmd nat-listp-forward-to-true-listp-for-axe
+  (implies (NAT-LISTP x) (true-listp x))
+  :rule-classes :forward-chaining)
+
+(defthmd nat-listp-forward-to-rational-listp-for-axe
+  (implies (NAT-LISTP x) (rational-listp x))
+  :rule-classes :forward-chaining)
+
+(defthmd axe-treep-of-cadr
+  (implies (and (axe-treep tree)
+                (symbolp (car tree))
+                (not (equal 'quote (car tree)))
+                )
+           (axe-treep (cadr tree)))
+  :hints (("Goal" :in-theory (enable axe-treep))))
+
+(defthmd axe-treep-of-caddr
+  (implies (and (axe-treep tree)
+                (symbolp (car tree))
+                (not (equal 'quote (car tree)))
+                )
+           (axe-treep (caddr tree)))
+  :hints (("Goal" :in-theory (enable axe-treep))))
+
+(defthmd axe-treep-of-cadddr
+  (implies (and (axe-treep tree)
+                (symbolp (car tree))
+                (not (equal 'quote (car tree)))
+                )
+           (axe-treep (cadddr tree)))
+  :hints (("Goal" :in-theory (enable axe-treep))))
+
+(defthm symbol-when-member-equal
+  (implies (and (member-equal x free)
+                (symbol-listp free))
+           (symbolp x)))
+
+(defthmd not-equal-of-quote-when-member-equal
+  (implies (and (member-equal x free)
+                (not (member-equal 'quote free)))
+           (not (equal 'quote x))))
+
 (defconst *make-prover-simple-rules*
   '((:COMPOUND-RECOGNIZER AXE-TREEP-COMPOUND-RECOGNIZER)
     (:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
@@ -117,7 +159,12 @@
     (:DEFINITION FIX)
     (:DEFINITION LENGTH)
     (:DEFINITION MAX)
-    (:DEFINITION MEMBER-EQUAL)
+    ;;    (:DEFINITION MEMBER-EQUAL) ;cases case splits?
+    symbol-when-member-equal
+    not-equal-of-quote-when-member-equal
+    axe-treep-of-cadr
+    axe-treep-of-caddr
+    axe-treep-of-cadddr
     ;;(:DEFINITION MV-NTH)
     (:DEFINITION NOT)
     (:DEFINITION NULL)
@@ -165,30 +212,27 @@
     (:EXECUTABLE-COUNTERPART ZP)
 ;(:FAKE-RUNE-FOR-LINEAR NIL)
 ;(:FAKE-RUNE-FOR-TYPE-SET NIL)
-    (:FORWARD-CHAINING ACL2-NUMBER-LISTP-FORWARD-TO-TRUE-LISTP)
+    (:forward-chaining nat-listp-forward-to-true-listp-for-axe)
+    (:forward-chaining nat-listp-forward-to-rational-listp-for-axe)
+    ;(:FORWARD-CHAINING ACL2-NUMBER-LISTP-FORWARD-TO-TRUE-LISTP)
     (:FORWARD-CHAINING ALISTP-FORWARD-TO-TRUE-LISTP)
     (:FORWARD-CHAINING ARRAY1P-FORWARD)
     (:FORWARD-CHAINING ARRAY1P-FORWARD-TO-<=-OF-ALEN1)
     (:FORWARD-CHAINING AXE-RULE-HYP-LISTP-FORWARD-TO-TRUE-LISTP)
-    (:FORWARD-CHAINING
-     BOUNDED-DAG-CONSTANT-ALISTP-FORWARD-TO-DAG-CONSTANT-ALISTP)
-    (:FORWARD-CHAINING
-     BOUNDED-DAG-PARENT-ARRAYP-FORWARD-TO-BOUNDED-DAG-PARENT-ARRAYP)
-    (:FORWARD-CHAINING
-     BOUNDED-DAG-VARIABLE-ALISTP-FORWARD-TO-DAG-VARIABLE-ALISTP)
+    (:FORWARD-CHAINING BOUNDED-DAG-CONSTANT-ALISTP-FORWARD-TO-DAG-CONSTANT-ALISTP)
+    (:FORWARD-CHAINING BOUNDED-DAG-PARENT-ARRAYP-FORWARD-TO-BOUNDED-DAG-PARENT-ARRAYP)
+    (:FORWARD-CHAINING BOUNDED-DAG-VARIABLE-ALISTP-FORWARD-TO-DAG-VARIABLE-ALISTP)
     (:FORWARD-CHAINING BOUNDED-INTEGER-ALISTP-FORWARD-TO-EQLABLE-ALISTP)
     (:FORWARD-CHAINING CONSP-ASSOC-EQUAL)
     (:FORWARD-CHAINING CONSP-FORWARD-TO-LEN-BOUND)
     (:FORWARD-CHAINING DAG-CONSTANT-ALISTP-FORWARD-TO-ALISTP)
     (:FORWARD-CHAINING DAG-PARENT-ARRAYP-FORWARD-TO-ARRAY1P)
     (:FORWARD-CHAINING DAG-VARIABLE-ALISTP-FORWARD-SYMBOL-ALISTP)
-    (:FORWARD-CHAINING
-     DAG-VARIABLE-ALISTP-FORWARD-TO-NAT-LISTP-OF-STRIP-CDRS)
+    (:FORWARD-CHAINING DAG-VARIABLE-ALISTP-FORWARD-TO-NAT-LISTP-OF-STRIP-CDRS)
     (:FORWARD-CHAINING EQLABLE-ALISTP-FORWARD-TO-ALISTP)
-    (:FORWARD-CHAINING INTEGER-LISTP-FORWARD-TO-RATIONAL-LISTP)
+    ;(:FORWARD-CHAINING INTEGER-LISTP-FORWARD-TO-RATIONAL-LISTP)
     (:FORWARD-CHAINING INTERPRETED-FUNCTION-ALISTP-FORWARD-TO-ALISTP)
-    (:FORWARD-CHAINING
-     INTERPRETED-FUNCTION-ALISTP-FORWARD-TO-SYMBOL-ALISTP)
+    (:FORWARD-CHAINING INTERPRETED-FUNCTION-ALISTP-FORWARD-TO-SYMBOL-ALISTP)
     (:FORWARD-CHAINING KEYWORD-VALUE-LISTP-ASSOC-KEYWORD)
     (:FORWARD-CHAINING KEYWORD-VALUE-LISTP-FORWARD-TO-TRUE-LISTP)
     (:FORWARD-CHAINING MYQUOTEP-FORWARD-TO-CONSP)
@@ -197,7 +241,7 @@
     (:FORWARD-CHAINING PSEUDO-DAG-ARRAYP-FORWARD-CHAINING-ANOTHER)
     (:FORWARD-CHAINING PSEUDO-DAG-ARRAYP-FORWARD-TO-<=-OF-ALEN1)
     (:FORWARD-CHAINING PSEUDO-DAG-ARRAYP-FORWARD-TO-NATP-ARG3)
-    (:FORWARD-CHAINING RATIONAL-LISTP-FORWARD-TO-ACL2-NUMBER-LISTP)
+    ;(:FORWARD-CHAINING RATIONAL-LISTP-FORWARD-TO-ACL2-NUMBER-LISTP)
     (:FORWARD-CHAINING SYMBOL-ALISTP-FORWARD-TO-EQLABLE-ALISTP)
     (:FORWARD-CHAINING SYMBOL-ALISTP-FORWARD-TO-TRUE-LISTP)
     (:FORWARD-CHAINING SYMBOL-LISTP-FORWARD-TO-TRUE-LISTP)
@@ -519,6 +563,13 @@
                           ;;list::nth-with-large-index
                           ;;list::nth-with-large-index-2
                           nat-listp
+                          rational-listp
+                          ;;ALL-AXE-TREEP ;try
+                          (:FORWARD-CHAINING ACL2-NUMBER-LISTP-FORWARD-TO-TRUE-LISTP)
+                          (:FORWARD-CHAINING INTEGER-LISTP-FORWARD-TO-RATIONAL-LISTP)
+                          (:FORWARD-CHAINING NAT-LISTP-FORWARD-TO-INTEGER-LISTP)
+                          (:FORWARD-CHAINING RATIONAL-LISTP-FORWARD-TO-ACL2-NUMBER-LISTP)
+                          member-equal
                           all-natp-when-not-consp
                           all-<-when-not-consp
                           all-dargp-when-not-consp
@@ -526,10 +577,14 @@
                           SYMBOL-ALISTP ;move
                           SYMBOL-LISTP ; prevent inductions
                           dag-function-call-exprp-redef
-                          axe-treep)))
+                          ;axe-treep
+                          axe-treep-of-cadr axe-treep-of-caddr axe-treep-of-cadddr
+                          )))
 
        (local (in-theory (enable natp-of-+-of-1-alt
-                                 natp-of-car-when-all-dargp-less-than-gen)))
+                                 natp-of-car-when-all-dargp-less-than-gen
+                                 nat-listp-forward-to-true-listp-for-axe
+                                 nat-listp-forward-to-rational-listp-for-axe)))
 
        ;;(in-theory (disable car-becomes-nth-of-0)) ;move to arrays-axe
 
@@ -1004,7 +1059,6 @@
                                       (bounded-axe-treep tree dag-len)
                                       (consp tree) ;; this case
                                       (member-eq (ffn-symb tree) '(if myif)) ;; this case
-                                      (= 3 (len (fargs tree))) ;; this case
                                       (rule-alistp rule-alist)
                                       (nat-listp nodenums-to-assume-false)
                                       (all-< nodenums-to-assume-false dag-len)
@@ -1023,6 +1077,8 @@
           (if (zp-fast count)
               (mv :count-exceeded nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
             (b* ((args (fargs tree))
+                 ((when (not (= 3 (len args)))) ;optimize?
+                  (mv :bad-arity nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
                  ;; First, try to resolve the if-test:
                  ((mv erp simplified-test dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
                   (,simplify-tree-name (first args) ;the test
@@ -1074,7 +1130,6 @@
                                       (bounded-axe-treep tree dag-len)
                                       (consp tree)         ;; this case
                                       (eq (ffn-symb tree) 'boolif) ;; this case
-                                      (= 3 (len (fargs tree)))     ;; this case
                                       (rule-alistp rule-alist)
                                       (nat-listp nodenums-to-assume-false)
                                       (all-< nodenums-to-assume-false dag-len)
@@ -1093,6 +1148,8 @@
           (if (zp-fast count)
               (mv :count-exceeded nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
             (b* ((args (fargs tree))
+                 ((when (not (= 3 (len args)))) ;optimize?
+                  (mv :bad-arity nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
                  ;; First, try to resolve the if-test:
                  ((mv erp simplified-test dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
                   (,simplify-tree-name (first args) ;the test
@@ -1268,27 +1325,23 @@
                   (quote ;; TREE is a quoted constant, so return it:
                    (mv (erp-nil) tree dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
                   ((if myif)
-                   (if (= 3 (len (fargs tree)))
-                       (,simplify-if-tree-name tree
+                   (,simplify-if-tree-name tree
+                                           equiv
+                                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                           rule-alist
+                                           nodenums-to-assume-false
+                                           equiv-alist ;don't pass this around?
+                                           print
+                                           info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count)))
+                  (boolif
+                   (,simplify-boolif-tree-name tree
                                                equiv
                                                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                rule-alist
                                                nodenums-to-assume-false
                                                equiv-alist ;don't pass this around?
                                                print
-                                               info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count))
-                     (mv :bad-arity tree dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))
-                  (boolif
-                   (if (= 3 (len (fargs tree)))
-                       (,simplify-boolif-tree-name tree
-                                                   equiv
-                                                   dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                   rule-alist
-                                                   nodenums-to-assume-false
-                                                   equiv-alist ;don't pass this around?
-                                                   print
-                                                   info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count))
-                     (mv :bad-arity tree dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))
+                                               info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count)))
                   ;; TODO: Consider adding back special handling for bvif, booland, and boolor (see below), but do it in separate functions
                   (t ;; TREE is a function call. fn may be a lambda or a short-circuit-function (if/myif/boolif/bvif/booland/boolor):
                    ;; (let ((args (fargs tree)))
@@ -1692,7 +1745,6 @@
                          (bounded-axe-treep tree dag-len)
                          (consp tree) ;; this case
                          (member-eq (ffn-symb tree) '(if myif)) ;; this case
-                         (= 3 (len (fargs tree)))               ;; this case
                          (rule-alistp rule-alist)
                          (nat-listp nodenums-to-assume-false)
                          (all-< nodenums-to-assume-false dag-len)
@@ -1722,7 +1774,6 @@
                          (bounded-axe-treep tree dag-len)
                          (consp tree)                              ;; this case
                          (eq (ffn-symb tree) 'boolif)              ;; this case
-                         (= 3 (len (fargs tree)))                  ;; this case
                          (rule-alistp rule-alist)
                          (nat-listp nodenums-to-assume-false)
                          (all-< nodenums-to-assume-false dag-len)
