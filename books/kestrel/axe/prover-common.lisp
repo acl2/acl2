@@ -1311,19 +1311,14 @@
                         (atom (darg1 expr-to-assume-false)) ;makes sure it's a nodenum
                         ))
               ;; expr-to-assume-false does not have a form we can use, so keep looking:
-              (replace-nodenum-using-assumptions-for-axe-prover nodenum equiv (rest nodenums-to-assume-false) dag-array
-                                                                ;;print
-                                                                )
+              (replace-nodenum-using-assumptions-for-axe-prover nodenum equiv (rest nodenums-to-assume-false) dag-array)
             ;; EXPR-TO-ASSUME-FALSE is of the form (not <nodenum-to-assume-non-nil>):
             (let ((nodenum-to-assume-non-nil (darg1 expr-to-assume-false)))
-              (if (and (eq 'iff equiv) ;fixme equivs may someday not be comparable using eq
-                       (eql nodenum nodenum-to-assume-non-nil))
-                  ;; NODENUM is equal to NODENUM-TO-ASSUME-NON-NIL, and since
-                  ;; we only must preserve IFF, we can replace it with 't:
-                  ;; TODO: If nodenum is the nodenum of a boolean (either
-                  ;; because of the ffn-symb or because we have a hyp to that
-                  ;; effect), we could replace it with *t* even if the equiv is
-                  ;; 'equal:
+              (if (and (eql nodenum nodenum-to-assume-non-nil)
+                       (eq 'iff equiv))
+                  ;; NODENUM is equal to NODENUM-TO-ASSUME-NON-NIL, and since we only must preserve IFF, we can replace
+                  ;; it with 't: TODO: If nodenum is the nodenum of a boolean (either because of the ffn-symb or because
+                  ;; we have a hyp to that effect?), we could replace it with *t* even if the equiv is 'equal:
                   *t*
                 (let ((expr-to-assume-non-nil (aref1 'dag-array dag-array nodenum-to-assume-non-nil)))
                   (if (not (and (call-of 'equal expr-to-assume-non-nil)
@@ -1381,7 +1376,7 @@
 
 ;; Currently it can only put in a quotep!
 (defthm myquotep-of-replace-nodenum-using-assumptions-for-axe-prover
-  (implies (and (replace-nodenum-using-assumptions-for-axe-prover nodenum equiv nodenums-to-assume-false dag-array)
+  (implies (and (replace-nodenum-using-assumptions-for-axe-prover nodenum equiv nodenums-to-assume-false dag-array) ;no failure
                 (natp nodenum)
                 ;;(symbolp equiv)
                 (all-natp nodenums-to-assume-false)
