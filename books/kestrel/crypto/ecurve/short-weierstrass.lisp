@@ -31,12 +31,13 @@
   (xdoc::topstring
    (xdoc::p
     "We provide executable formal specifications of operations on
-     elliptic curve in short Weierstrass form,
+     elliptic curves in short Weierstrass form,
      which are described by the equation")
    (xdoc::@[] "y^2 = x^3 + ax + b")
    (xdoc::p
     "where @($a$) and @($b$) are integers in a prime field @($\\{0,..,p-1\}$)
      for an appropriate prime number @($p > 3$),
+     satisfying the condition @($27a^3+4b^2\\neq0$),
      and where @($x$) and @($y$) range over the same prime field.
      The arithmetic operations in the equation above,
      namely addition and power (i.e. iterated multiplication),
@@ -49,6 +50,10 @@
      not the short Weierstrass form.
      We may extend our formalization to cover those curves in the future.
      We may also extend it to cover curves over non-prime finite fields.")
+   (xdoc::p
+    "The condition @($27a^3+4b^2\\neq0$),
+     where the operations are again field operations,
+     means that the cubic equation on the right has no multiple roots.")
    (xdoc::p
     "See Neal Koblitz's book ``A Course in Number Theory and Cryptography''
      (Second Edition) for background on elliptic curves.")
