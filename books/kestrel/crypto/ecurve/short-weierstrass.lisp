@@ -14,6 +14,8 @@
 
 (include-book "primes")
 (include-book "points")
+
+(include-book "centaur/fty/top" :dir :system)
 (include-book "kestrel/prime-fields/prime-fields" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
@@ -37,7 +39,7 @@
    (xdoc::p
     "where @($a$) and @($b$) are integers in a prime field @($\\{0,..,p-1\}$)
      for an appropriate prime number @($p > 3$),
-     satisfying the condition @($27a^3+4b^2\\neq0$),
+     satisfying the condition @($27a^3 + 4b^2 \\neq 0$),
      and where @($x$) and @($y$) range over the same prime field.
      The arithmetic operations in the equation above,
      namely addition and power (i.e. iterated multiplication),
@@ -51,7 +53,7 @@
      We may extend our formalization to cover those curves in the future.
      We may also extend it to cover curves over non-prime finite fields.")
    (xdoc::p
-    "The condition @($27a^3+4b^2\\neq0$),
+    "The condition @($27a^3 + 4b^2 \\neq 0$),
      where the operations are again field operations,
      means that the cubic equation on the right has no multiple roots.")
    (xdoc::p
@@ -68,6 +70,82 @@
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod short-weierstrass
+  :short "Fixtype of elliptic curves in short Weierstrass form."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This kind of curve is specified by
+     the prime @($p$) and the coefficients @($a$) and @($b$);
+     see @(see short-weierstrass-curves).
+     Thus, we formalize a curve as a triple of these numbers,
+     via a fixtype product.")
+   (xdoc::p
+    "Because @('primep') is slow on large numbers,
+     we do not include this requirement into the fixtype;
+     otherwise, it may take a long time to construct a value of this fixtype
+     for a practical curve.
+     We just require @($p$) to be greater than 3;
+     see @(see short-weierstrass-curves).
+     We express the primality of @($p$) separately.")
+   (xdoc::p
+    "We require @($a$) and @($b$) to be in the prime field of @($p$).
+     We also require them to satisfy the condition ensuring that
+     the cubic equation has no multiple roots;
+     see @(see short-weierstrass-curves).
+     We express this condition by saying that
+     @($27a^3 + 4b^2 \\mod p > 0$),
+     where the operations are not field operations:
+     this formulation is equivalent to requiring @($27a^3 + 4b^2$)
+     with field operation to be different from 0.")
+   (xdoc::p
+    "To fix the three components to satisfy the requirements above,
+     we pick 5 for @($p$), 0 for @($a$), and 1 for @($b$).
+     It would be fine to pick 4 for @($p$) as far as this fixtype is concerned
+     (since primality is not captured in the fixtype requirements),
+     but we pick a prime (the smallest one above 3)
+     since we know that this should be a prime."))
+  ((p nat :reqfix (if (and (> p 3)
+                           (fep a p)
+                           (fep b p)
+                           (posp (mod (+ (* 4 a a a) (* 27 b b)) p)))
+                      p
+                    5))
+   (a nat :reqfix (if (and (> p 3)
+                           (fep a p)
+                           (fep b p)
+                           (posp (mod (+ (* 4 a a a) (* 27 b b)) p)))
+                      a
+                    0))
+   (b nat :reqfix (if (and (> p 3)
+                           (fep a p)
+                           (fep b p)
+                           (posp (mod (+ (* 4 a a a) (* 27 b b)) p)))
+                      b
+                    1)))
+  :require (and (> p 3)
+                (fep a p)
+                (fep b p)
+                (posp (mod (+ (* 4 a a a) (* 27 b b)) p))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define short-weierstrass-primep ((curve short-weierstrass-p))
+  :returns (yes/no booleanp)
+  :short "Check that the prime of a short Weierstrass curve is prime."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is in a separate predicate
+     for the reason explained in @(tsee short-weierstrass)."))
+  (rtl::primep (short-weierstrass->p curve))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Uses of the following predicate will be replaced by SHORT-WEIERSTRASS-P
+; (see above), and the following predicate will be eventually eliminated.
 
 ;; Valid elliptic curve.
 ;; sec1-v2 section 2.2.1
