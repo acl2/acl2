@@ -1626,3 +1626,37 @@
            (< (lookup-equal var alist) dag-len))
   :hints (("Goal" :in-theory (e/d (all-dargp-less-than lookup-equal strip-cdrs)
                                   (myquotep)))))
+
+
+;;;
+;;; top-nodenum-of-dag
+;;;
+
+;this one has a better guard
+;deprecate the other one?
+(defund top-nodenum-of-dag (dag)
+  (declare (xargs :GUARD (pseudo-dagp dag)
+                  :guard-hints (("Goal" :in-theory (enable alistp-guard-hack)))
+                  ))
+  (let* ((entry (car dag))
+         (nodenum (car entry)))
+    nodenum))
+
+(defthmd top-nodenum-of-dag-when-pseudo-dagp
+  (implies (pseudo-dagp dag)
+           (equal (top-nodenum-of-dag dag)
+                  (+ -1 (len dag))))
+  :hints (("Goal" :in-theory (enable top-nodenum-of-dag pseudo-dagp))))
+
+;temporary
+(defthmd top-nodenum-of-dag-becomes-top-nodenum
+  (implies (pseudo-dagp dag)
+           (equal (top-nodenum-of-dag dag)
+                  (top-nodenum dag)))
+  :hints (("Goal" :in-theory (enable top-nodenum top-nodenum-of-dag))))
+
+(defthm natp-of-top-nodenum-of-dag
+  (implies (pseudo-dagp dag)
+           (natp (top-nodenum-of-dag dag)))
+  :rule-classes (:rewrite :type-prescription)
+  :hints (("Goal" :in-theory (enable top-nodenum-of-dag))))
