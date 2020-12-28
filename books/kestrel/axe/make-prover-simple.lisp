@@ -3937,8 +3937,9 @@
                                      (rule-item-list-listp rule-lists)
                                      (symbol-listp monitor)
                                      (ilks-plist-worldp (w state)))
-                         :verify-guards nil
-                         ;; :guard-hints (("Goal" :in-theory (enable alistp-guard-hack)))
+                         :guard-hints (("Goal" :use (:instance make-implication-dag-return-type)
+                                        :in-theory (e/d (array-len-with-slack top-nodenum-of-dag-when-pseudo-dagp wf-dagp)
+                                                        (symbol-listp top-nodenum myquotep get-global w quotep make-implication-dag-return-type))))
                          :stobjs state))
          (b* (((when (not (interpreted-function-alistp interpreted-function-alist)))
                (er hard? ',prove-implication-fn-name "Ill-formed interpreted-function-alist: ~x0" interpreted-function-alist)
@@ -3953,9 +3954,14 @@
                            (mv (erp-nil) '(value-triple :ok) state))
                  (prog2$ (cw "NOTE: Failed because the DAG is the constant nil.")
                          (mv :failed nil state))))
-              (dag-array (make-into-array 'dag-array implication-dag-or-quotep))
-              (top-nodenum (top-nodenum implication-dag-or-quotep))
+              (top-nodenum (top-nodenum-of-dag implication-dag-or-quotep))
               (dag-len (+ 1 top-nodenum))
+              ((when (>= dag-len 2147483647))
+               (prog2$ (cw "ERROR: DAG too big.")
+                       (mv :failed nil state)))
+              (slack-amount 0) ;todo: increase slack amount to dag-len?
+              ((mv erp dag-array) (make-dag-into-array2 'dag-array implication-dag-or-quotep slack-amount))
+              ((when erp) (mv erp nil state))
               ;; make auxiliary dag data structures:
               ((mv dag-parent-array dag-constant-alist dag-variable-alist)
                (make-dag-indices 'dag-array dag-array 'dag-parent-array dag-len))
