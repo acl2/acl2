@@ -139,15 +139,30 @@
 
    (xdoc::p
     "This is a library about the C language.
-     It is being populated with
-     a formalization of some aspects of the C language
+     It contains a formalization of (some aspects of) the C language
      and ATC (`ACL2 To C'), a C code generator for ACL2.")
 
-   (xdoc::h5 (xdoc::seetopic "c::atc" "ATC"))
+   ;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h5 (xdoc::seetopic "c::atc" "ATC, the C Code Generator for ACL2"))
 
    (xdoc::p
-    "A first simple working version of the C code generator has been added,
-     with user documentation and a working test.")
+    "This is a proof-generating C code generator for ACL2.
+     Besides the C code, it also generates proofs (i.e. ACL2 theorems)
+     asserting the correctness of the C code.")
+
+   (xdoc::p
+    "This currently covers a relatively simple subset of ACL2 and C.
+     The coverage is being extended.")
+
+   ;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h5 (xdoc::seetopic "c::language" "C Language Formalization"))
+
+   (xdoc::p
+    "This currently covers just
+     character sets, bytes, and keywords.
+     The coverage is being extended.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
