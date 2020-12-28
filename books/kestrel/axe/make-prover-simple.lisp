@@ -2296,7 +2296,8 @@
                  (if (member nodenum nodenums-to-assume-false) ;do we need this special case?  i guess it could help - what about more fancy use of nodenums-to-assume-false here?
                      (,rewrite-nodes-name
                       (rest worklist)
-                      result-array-name (aset1-safe result-array-name result-array nodenum *nil*)
+                      result-array-name
+                      (aset1-safe result-array-name result-array nodenum *nil*) ;; we can replace the node with nil
                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                       nodenums-to-assume-false rule-alist equiv-alist interpreted-function-alist print info tries monitored-symbols
                       case-designator prover-depth options (+ -1 count))
@@ -2409,7 +2410,7 @@
        ;; It would be nice to call a standard rewriter here, but the assumptions (nodenums-to-assume-false) are likely not in the right form.
        ;; TODO: can we use a better equiv?
        ;; TODO: Inline this?
-       (defund ,rewrite-literal-name (nodenum
+       (defund ,rewrite-literal-name (nodenum ;; should have no extractable disjuncts
                                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                       nodenums-to-assume-false
                                       rule-alist interpreted-function-alist
@@ -2436,7 +2437,7 @@
                             )
               ;; Rewrite this literal:
               ((mv erp result-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
-               ;;fixme would it make sense to memoize in this (moot if we call the new rewriter)?:
+               ;; TODO: would it make sense to memoize in this?
                (,rewrite-nodes-name (list nodenum)
                                     result-array-name
                                     result-array
@@ -2553,8 +2554,8 @@
        ;; Not a worklist algorithm of the usual sort (all elements of work-list are literals)
        ;; may extend the dag but doesn't change any nodes (new!).
        ;; TODO: If the only change is that some literals were dropped, perhaps we don't want to make another pass?
-       (defund ,rewrite-literals-name (work-list ;a list of nodenums
-                                       done-list ;a list of nodenums
+       (defund ,rewrite-literals-name (work-list ;a list of nodenums, with no extractable disjuncts
+                                       done-list ;a list of nodenums, with no extractable disjuncts
                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                        changep ;; whether anything has changed so far
                                        rule-alist
