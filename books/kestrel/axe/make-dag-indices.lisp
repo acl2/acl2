@@ -132,7 +132,7 @@
 (defund make-dag-indices (dag-array-name dag-array dag-parent-array-name dag-len)
   (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (symbolp dag-parent-array-name))))
-  (let* ((parent-array-len (max 1 dag-len)) ;arrays must have size at least 1
+  (let* ((parent-array-len (max 1 dag-len)) ;arrays must have size at least 1  ;TODO: Consider using alen1 of the dag-array here, since wf-dagp requires that
          (dag-parent-array (make-empty-array dag-parent-array-name parent-array-len)))
     (make-dag-indices-aux 0
                           dag-len
