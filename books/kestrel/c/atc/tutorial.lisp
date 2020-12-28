@@ -23,9 +23,6 @@
 
   (atc)
 
-  (xdoc::p
-   "This is the top page of the ATC tutorial.")
-
   (atc-tutorial-section "Scope of the Tutorial")
 
   (xdoc::p
@@ -207,7 +204,7 @@
 
 (def-atc-tutorial-page int-representation
 
-  "ACL2 representation of the C @('int') type and operations."
+  "ACL2 representation of the C @('int') type and operations"
 
   (xdoc::p
    "As stated in @(see atc-tutorial-approach),
@@ -221,7 +218,7 @@
     examples of their use, and of C code generated from them,
     are given in other pages.")
 
-  (atc-tutorial-section "The C @('int') Type and Operations")
+  (atc-tutorial-section "C @('int') Type and Operations")
 
   (xdoc::p
    "According to the C18 standard, the ``plain'' @('int') type consists of
@@ -255,7 +252,7 @@
     (the experiment consists in printing @('sizeof(int)') in a C program),
     even though one might expect it to be 64 bits instead,
     given that these are 64-bit machines with 64-bit operating systems.
-    (However, the C @('long') type appears to be 64 bits.)")
+    (However, the C @('long') type appears to be 64 bits on these platforms.)")
 
   (xdoc::p
    "C provides a variety of @('int') operations,
@@ -271,7 +268,8 @@
     to an @('int') operand and a @('long') operand:
     the first operand is converted to @('long') first,
     so that addition is performed on two @('long') values,
-    according to the usual arithmetic conversions in the C18 standard.")
+    according to the usual arithmetic conversions
+    described in the C18 standard.")
 
   (xdoc::p
    "This means that there are only certain instances of operations like @('+'),
@@ -315,9 +313,9 @@
     as the @('int') values 0 (for false) and 1 (for true),
     and thus the relational and equality operations,
     as well as the logical conjunction and disjunction operations,
-    all return that kind of result.
+    all return @('int') results.
     Note also that the left and right shift operations, in general,
-    may apply to operands of different types;
+    may apply to operands of different types (unlike other binary operations);
     however, here we are interested in the instances of those operations
     where both operands are @('int') values.")
 
@@ -428,7 +426,7 @@
     that are wrapped to form @(tsee sint) values.
     More precisely, these additional guard conditions
     are captured by the following predicates,
-    whose association to the above functions should be obvious:")
+    whose association to the above functions should be obvious from the names:")
   (xdoc::ul
    (xdoc::li "@(tsee sint-minus-okp)")
    (xdoc::li "@(tsee sint-add-okp)")
