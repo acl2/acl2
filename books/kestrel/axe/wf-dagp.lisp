@@ -81,6 +81,7 @@
                     nil nil))
   :hints (("Goal" :in-theory (enable wf-dagp))))
 
+;drop?
 (defthm wf-dagp-of-make-into-array-etc
   (implies (and (pseudo-dagp dag)
                 (< (LEN DAG) 2147483647))
@@ -100,3 +101,15 @@
                                              (LEN DAG))))
   :hints (("Goal" :in-theory (enable wf-dagp
                                      CAR-OF-CAR-WHEN-PSEUDO-DAGP-CHEAP))))
+
+(defthm wf-dagp-of-make-dag-parent-array-with-name2-etc
+  (implies (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+           (wf-dagp 'dag-array
+                    dag-array
+                    dag-len
+                    'dag-parent-array
+                    ;; note the "2" here:
+                    (make-dag-parent-array-with-name2 dag-len 'dag-array dag-array 'dag-parent-array)
+                    (make-dag-constant-alist 'dag-array dag-array dag-len)
+                    (make-dag-variable-alist 'dag-array dag-array dag-len)))
+  :hints (("Goal" :in-theory (enable wf-dagp))))
