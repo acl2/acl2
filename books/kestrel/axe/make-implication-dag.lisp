@@ -63,11 +63,31 @@
                               `(implies ,dag1-item ,dag2-item) ;fixme could the implies expression ever be present in the dag? ;ffixme what if the top nodes are the same? just return t!
                               extended-larger-dag)))))))))
 
+(defthm make-implication-dag-return-type
+  (implies (and (or (myquotep dag1)
+                    (pseudo-dagp dag1))
+                (or (myquotep dag2)
+                    (pseudo-dagp dag2))
+                ;; no error:
+                (not (mv-nth 0 (make-implication-dag dag1 dag2))))
+           (or (myquotep (mv-nth 1 (make-implication-dag dag1 dag2)))
+               (pseudo-dagp (mv-nth 1 (make-implication-dag dag1 dag2)))))
+  :hints (("Goal" :in-theory (enable make-implication-dag
+                                     pseudo-dagp-rewrite
+                                     bounded-dag-exprp))))
+
 (defthm true-listp-of-car-of-mv-nth-1-of-make-implication-dag
   (implies (and (not (mv-nth 0 (make-implication-dag dag1 dag2)))
                 (not (quotep (mv-nth 1 (make-implication-dag dag1 dag2))))
                 )
            (true-listp (car (mv-nth 1 (make-implication-dag dag1 dag2)))))
+  :rule-classes (:type-prescription :rewrite)
+  :hints (("Goal" :in-theory (enable make-implication-dag))))
+
+;; it's always a cons since it's either a quotep or a pseudo-dagp
+(defthm consp-of-mv-nth-1-of-make-implication-dag
+  (implies (not (mv-nth 0 (make-implication-dag dag1 dag2))) ; no error
+           (consp (mv-nth 1 (make-implication-dag dag1 dag2))))
   :rule-classes (:type-prescription :rewrite)
   :hints (("Goal" :in-theory (enable make-implication-dag))))
 
