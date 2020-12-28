@@ -20,7 +20,7 @@
                                        '((0 natp '7))
                                        :rule-lists (list '(implies))))
 
-;; todo: get this to prove without splitting
+;; todo: get this to prove without splitting (but there is only 1 literal before we split)
 (deftest
   (prove-implication-with-basic-prover '((1 natp 0) (0 . x))
                                        '((1 natp 0) (0 . x))
