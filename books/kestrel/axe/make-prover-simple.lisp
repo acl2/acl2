@@ -604,10 +604,6 @@
        ;;           ("Goal" :induct (len l) :expand (my-sublis-var-and-eval-lst alist l interpreted-function-alist)
        ;;            :in-theory (enable (:i len)))))
 
-       ;;todo: verify guards and remove this:
-       (defttag invariant-risk)
-       (set-register-invariant-risk nil) ;potentially dangerous but needed for execution speed
-
        ;;
        ;; The main mutual recursion for the Axe Prover:
        ;;
@@ -3972,28 +3968,39 @@
        ;; Try to prove that DAG1 implies DAG2, for all values of the variables.
        ;; TODO: Warning if no variable overlap?
        ;; Returns (mv erp event state) where a failure to prove causes erp to be non-nil.
-       ;; TODO: Check all inputs, including arities.
+       ;; Because this function has a guard that is simply a stobj recognizer, it has no invariant-risk.
        (defund ,prove-implication-fn-helper-name (dag1
                                                   dag2
                                                   rule-lists
                                                   interpreted-function-alist
                                                   monitor
                                                   state)
-         (declare (xargs :guard (and (or (myquotep dag1)
-                                         (and (pseudo-dagp dag1)
-                                              (<= (len dag1) 2147483646)))
-                                     (or (myquotep dag2)
-                                         (and (pseudo-dagp dag2)
-                                              (<= (len dag2) 2147483646)))
-                                     (rule-item-list-listp rule-lists)
-                                     (symbol-listp monitor)
-                                     (ilks-plist-worldp (w state)))
-                         :guard-hints (("Goal" :use (:instance make-implication-dag-return-type)
+         (declare (xargs :guard-hints (("Goal" :use (:instance make-implication-dag-return-type)
                                         :in-theory (e/d (array-len-with-slack top-nodenum-of-dag-when-pseudo-dagp wf-dagp)
                                                         (symbol-listp top-nodenum myquotep get-global w quotep make-implication-dag-return-type))))
                          :stobjs state))
-         (b* (((when (not (interpreted-function-alistp interpreted-function-alist)))
-               (er hard? ',prove-implication-fn-name "Ill-formed interpreted-function-alist: ~x0" interpreted-function-alist)
+         (b* (;; Check inputs:
+              ((when (not (or (myquotep dag1)
+                              (and (pseudo-dagp dag1)
+                                   (<= (len dag1) 2147483646)))))
+               (er hard? ',prove-implication-fn-helper-name "Bad first argument: ~x0" dag1)
+               (mv :bad-input nil state))
+              ((when (not (or (myquotep dag2)
+                              (and (pseudo-dagp dag2)
+                                   (<= (len dag2) 2147483646)))))
+               (er hard? ',prove-implication-fn-helper-name "Bad second argument: ~x0" dag2)
+               (mv :bad-input nil state))
+              ((when (not (rule-item-list-listp rule-lists)))
+               (er hard? ',prove-implication-fn-helper-name "Bad rule lists.: ~x0" rule-lists)
+               (mv :bad-input nil state))
+              ((when (not (interpreted-function-alistp interpreted-function-alist)))
+               (er hard? ',prove-implication-fn-helper-name "Ill-formed interpreted-function-alist: ~x0" interpreted-function-alist)
+               (mv :bad-input nil state))
+              ((when (not (symbol-listp monitor)))
+               (er hard? ',prove-implication-fn-helper-name "Bad :monitor argument: ~x0" monitor)
+               (mv :bad-input nil state))
+              ((when (not (ilks-plist-worldp (w state))))
+               (er hard? ',prove-implication-fn-helper-name "Bad world (this should not happen).")
                (mv :bad-input nil state))
               ;; Form the implication to prove:
               ((mv erp implication-dag-or-quotep) (make-implication-dag dag1 dag2)) ; todo: we will end up having to extract disjuncts from this implication
@@ -4042,6 +4049,8 @@
 
        ;; Try to prove that DAG1 implies DAG2, for all values of the variables.
        ;; Returns (mv erp event state) where a failure to prove causes erp to be non-nil.
+       ;; This function has no invariant-risk, because the functions it calls
+       ;; have guards that are either t or stobj recognizers.
        (defund ,prove-implication-fn-name (dag-or-term1 ; not yet translated
                                            dag-or-term2 ; not yet translated
                                            rule-lists
@@ -4055,9 +4064,9 @@
                          :stobjs state
                          :mode :program ;because this translates its args if they are terms
                          ))
-         (b* (((mv erp dag1) (dag-or-term-to-dag-basic dag-or-term1 (w state)))
+         (b* (((mv erp dag1) (dag-or-term-to-dag-basic-unguarded dag-or-term1 (w state)))
               ((when erp) (mv erp nil state))
-              ((mv erp dag2) (dag-or-term-to-dag-basic dag-or-term2 (w state)))
+              ((mv erp dag2) (dag-or-term-to-dag-basic-unguarded dag-or-term2 (w state)))
               ((when erp) (mv erp nil state)))
            ;; This helper function is in :logic mode and is guard-verified:
            (,prove-implication-fn-helper-name dag1
