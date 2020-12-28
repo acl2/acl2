@@ -153,7 +153,7 @@ h = 01
      on secp256k1, defined "
     (xdoc::ahref "http://www.secg.org/sec2-v2.pdf#page=13" "here")
     ", which is a
-     <see topic=\"ECURVE____SHORT-WEIERSTRASS\">Short Weierstrass</see>
+     <see topic=\"ECURVE____SHORT-WEIERSTRASS-CURVES\">Short Weierstrass</see>
      elliptic curve with @('a=0') and @('b=7'):")
    (xdoc::@[] "y^2=x^3+7")
    (xdoc::p "secp256k1 is used for Bitcoin and Ethereum.")

@@ -24,7 +24,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ short-weierstrass
+(defxdoc+ short-weierstrass-curves
   :parents (elliptic-curves)
   :short "Elliptic curves over prime fields in short Weierstrass form."
   :long
