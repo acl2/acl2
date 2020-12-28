@@ -185,7 +185,8 @@
                               (all-< nodenums dag-len))
                   :guard-hints (("Goal"
                                  :use (:instance pseudo-dagp-of-mv-nth-1-of-drop-non-supporters-array-node-list)
-                                 :in-theory (e/d (CAR-OF-CAR-WHEN-PSEUDO-DAGP-CHEAP)
+                                 :in-theory (e/d (CAR-OF-CAR-WHEN-PSEUDO-DAGP-CHEAP
+                                                  top-nodenum-of-dag-becomes-top-nodenum)
                                                  (pseudo-dagp-of-mv-nth-1-of-drop-non-supporters-array-node-list)))))
            (ignore dag-len))
   (b* (((mv renamed-nodenums dag)
