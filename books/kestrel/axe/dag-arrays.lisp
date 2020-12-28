@@ -18,6 +18,7 @@
 (include-book "dags") ;for pseudo-dagp
 (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system)
 (include-book "kestrel/acl2-arrays/expandable-arrays" :dir :system)
+(include-book "kestrel/utilities/erp" :dir :system)
 (include-book "rational-lists")
 (local (include-book "kestrel/lists-light/memberp" :dir :system))
 ;(include-book "kestrel/utilities/polarity" :dir :system) ;drop?
@@ -2189,16 +2190,22 @@
 
 ;; Convert DAG into an array named DAG-ARRAY-NAME, leaving SLACK-AMOUNT of
 ;; unused nodes if possible.
-;; TODO: Use this more instead of make-into-array?
+;; TODO: Use this more instead of make-into-array? But see make-dag-into-array2 !
 (defund make-dag-into-array (dag-array-name dag slack-amount)
-  (declare (type (integer 1 2147483646) slack-amount)
-           (type symbol dag-array-name)
-           (xargs :guard (and (pseudo-dagp dag)
-                              (< (top-nodenum dag)
-                                 *maximum-1-d-array-length*))
+  (declare (xargs :guard (and (pseudo-dagp dag)
+                              (symbolp dag-array-name)
+                              (< (top-nodenum-of-dag dag)
+                                 *maximum-1-d-array-length*)
+                              (posp slack-amount)
+                              (<= slack-amount 2147483646))
                   :guard-hints (("Goal" :use (:instance bounded-natp-alistp-when-pseudo-dagp)
-                                 :in-theory (e/d (car-of-car-when-pseudo-dagp-cheap array-len-with-slack)
-                                                 (bounded-natp-alistp-when-pseudo-dagp))))))
+                                 :in-theory (e/d (car-of-car-when-pseudo-dagp-cheap
+                                                  array-len-with-slack
+                                                  top-nodenum-of-dag-becomes-top-nodenum)
+                                                 (bounded-natp-alistp-when-pseudo-dagp))))
+                  :split-types t)
+           (type (integer 1 2147483646) slack-amount)
+           (type symbol dag-array-name))
   (let* ((dag-len (+ 1 (top-nodenum dag))) ;no need to search for the max key, since we know it's a dag
          (length-with-slack (array-len-with-slack dag-len slack-amount)))
     (make-into-array-with-len dag-array-name dag length-with-slack)))
@@ -2226,6 +2233,65 @@
                                      (+ (len dag) slack-amount)))
                            (dag-lst dag)
                            (array-name dag-array-name)))))
+
+;;;
+;;; make-dag-into-array2
+;;;
+
+;; Convert DAG into an array named DAG-ARRAY-NAME, leaving SLACK-AMOUNT of
+;; unused nodes if possible.
+;; TODO: Use this more instead of make-into-array and make-dag-into-array.
+;; Returns (mv erp dag-array).
+(defund make-dag-into-array2 (dag-array-name dag slack-amount)
+  (declare (xargs :guard (and (pseudo-dagp dag)
+                              (symbolp dag-array-name)
+                              (natp slack-amount))
+                  :guard-hints (("Goal" :use (:instance bounded-natp-alistp-when-pseudo-dagp)
+                                 :in-theory (e/d (car-of-car-when-pseudo-dagp-cheap
+                                                  array-len-with-slack
+                                                  top-nodenum-of-dag-becomes-top-nodenum)
+                                                 (bounded-natp-alistp-when-pseudo-dagp))))
+                  :split-types t)
+           (type symbol dag-array-name))
+  (let ((dag-len (+ 1 (top-nodenum-of-dag dag)))) ;no need to search for the max key, since we know it's a dag
+    (if (< *maximum-1-d-array-length* dag-len)
+        (mv :dag-too-big nil)
+      (let* ((length-with-slack (array-len-with-slack dag-len slack-amount)))
+        (mv (erp-nil)
+            (make-into-array-with-len dag-array-name dag length-with-slack))))))
+
+(defthm alen1-of-mv-nth-1-of-make-dag-into-array2
+  (implies (and (pseudo-dagp dag)
+                (not (mv-nth 0 (make-dag-into-array2 dag-array-name dag slack-amount))))
+           (equal (alen1 dag-array-name (mv-nth 1 (make-dag-into-array2 dag-array-name dag slack-amount)))
+                  (array-len-with-slack (len dag) slack-amount)))
+  :hints (("Goal" :in-theory (enable top-nodenum-of-dag-when-pseudo-dagp
+                                     ;;array-len-with-slack
+                                     make-dag-into-array2
+                                     car-of-car-when-pseudo-dagp-cheap))))
+
+(defthm pseudo-dag-arrayp-of-make-dag-into-array2
+  (implies (and (pseudo-dagp dag)
+                (symbolp dag-array-name)
+                (natp slack-amount)
+                (not (mv-nth 0 (make-dag-into-array2 dag-array-name dag slack-amount))))
+           (pseudo-dag-arrayp dag-array-name
+                              (mv-nth 1 (make-dag-into-array2 dag-array-name dag slack-amount))
+                              (len dag)))
+  :hints (("Goal" :in-theory (enable make-dag-into-array2 array-len-with-slack top-nodenum-of-dag-when-pseudo-dagp))))
+
+(defthm pseudo-dag-arrayp-of-make-dag-into-array2-gen
+  (implies (and (<= n (len dag))
+                (natp n)
+                (pseudo-dagp dag)
+                (symbolp dag-array-name)
+                (natp slack-amount)
+                (not (mv-nth 0 (make-dag-into-array2 dag-array-name dag slack-amount))))
+           (pseudo-dag-arrayp dag-array-name
+                              (mv-nth 1 (make-dag-into-array2 dag-array-name dag slack-amount))
+                              n))
+  :hints (("Goal" :use (:instance pseudo-dag-arrayp-of-make-dag-into-array2)
+           :in-theory (disable pseudo-dag-arrayp-of-make-dag-into-array2))))
 
 ;move or drop
 (defthm all-<-of-alen1-when-pseudo-dag-arrayp-list
