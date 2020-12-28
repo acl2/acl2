@@ -2317,7 +2317,7 @@
                                                   nodenums-to-assume-false rule-alist equiv-alist interpreted-function-alist print info tries monitored-symbols case-designator prover-depth options (+ -1 count))
                            ;;regular function call:
                            ;;first make sure that the args have been processed
-                           ;;ffffixme special handling for if and related operators?!?
+                           ;;ffffixme special handling for if and related operators?!? TODO: Do we at least rewrite the IF-test using an equiv of IFF?
                            (let* ((args (dargs expr))
                                   (extended-worklist-or-nil (get-args-not-done args result-array-name result-array worklist nil)))
                              (if extended-worklist-or-nil
@@ -2326,7 +2326,7 @@
                                                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                       nodenums-to-assume-false rule-alist equiv-alist interpreted-function-alist print info tries monitored-symbols
                                                       case-designator prover-depth options (+ -1 count))
-                               ;;all args are simplified:
+                               ;;all args are simplified (but under what equiv, just 'equal ?):
                                (b* ((args (lookup-args-in-result-array args result-array-name result-array)) ;combine this with the get-args-not-done somehow?
                                     (expr (cons fn args))
                                     (- (and (eq :verbose print)
@@ -2762,9 +2762,8 @@
                                          rule-alist
                                          interpreted-function-alist monitored-symbols print case-designator
                                          info tries prover-depth options))
-                (- (cw "  Done rewriting (~x0 literals).)~%" (len literal-nodenums)))
-                ((when erp) (mv erp nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
 
+                ((when erp) (mv erp nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
                 ;; TODO: Right here we could drop any literal of the form (equal <constant> <var>) - if the var appears in any other literal, rewriting should have put in the constant for it, so the var will no longer appear.
                 ;; ;todo: this printing should be moved outward!  because now info and tries are threaded through - to print stats for a smaller operation, we could subtract
                 ;;              (and print
@@ -2779,8 +2778,10 @@
                 ;;                   (cw "(~x0 tries.)~%" tries))
                 )
              (if provedp
-                 (mv (erp-nil) t literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
-               (b* ( ;; Maybe crunch (one advantage in doing this is to make the printed result of this step comprehensible if we are tracing):
+                 (prog2$ (cw "  Rewriting proved case ~s0.)~%" case-designator)
+                         (mv (erp-nil) t literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
+               (b* ((- (cw "  Done rewriting (~x0 literals).)~%" (len literal-nodenums)))
+                    ;; Maybe crunch (one advantage in doing this is to make the printed result of this step comprehensible if we are tracing):
                     ((mv erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist literal-nodenums)
                      (if (or (not (= prover-depth 0)) ;; can't crunch if prover-depth > 0 since that would change existing nodes:
                              (not (consp literal-nodenums)) ;;can't crunch if no nodenums (can this happen?)
@@ -3340,9 +3341,8 @@
                                  ))
                  ((when erp) (mv erp :failed dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
                  ((when provedp) (mv (erp-nil) :proved dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
-                 (- (cw "(True Case: ~s0~%" case-1-designator)) ; matching paren is printed in the caller
                  (- (and (or (eq t print) (eq :verbose print) (eq :verbose2 print))
-                         (progn$ (cw "(Negated lits (~x0) for this case:~%" (len literal-nodenums))
+                         (progn$ (cw "(Negated lits (~x0) for true case:~%" (len literal-nodenums))
                                  (print-axe-prover-case literal-nodenums 'dag-array dag-array dag-len)
                                  (cw ")~%")))))
               ;; Attempt to prove case #1:
@@ -3394,7 +3394,11 @@
                                  nil ;negated-flag=nil, since nodenum itself is the new literal.
                                  ))
                  ((when erp) (mv erp :failed dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
-                 ((when provedp) (mv (erp-nil) :proved dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))
+                 ((when provedp) (mv (erp-nil) :proved dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
+                 (- (and (or (eq t print) (eq :verbose print) (eq :verbose2 print))
+                         (progn$ (cw "(Negated lits (~x0) for false case:~%" (len literal-nodenums))
+                                 (print-axe-prover-case literal-nodenums 'dag-array dag-array dag-len)
+                                 (cw ")~%")))))
               ;; Attempt to prove case #2:
               (,prove-or-split-case-name literal-nodenums
                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
@@ -3420,7 +3424,7 @@
                                            interpreted-function-alist
                                            monitored-symbols
                                            print
-                                           case-designator ;the name of this case (a string?)
+                                           case-designator ;the name of this case
                                            info tries
                                            prover-depth options count)
           (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
@@ -3449,7 +3453,7 @@
                                     case-designator print info tries prover-depth options))
                  ((when erp) (mv erp :failed dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
                  ((when provedp)
-                  (cw "Proved case ~s0 by rewriting, etc.~%" case-designator)
+                  ;; (cw "Proved case ~s0 by rewriting, etc.~%" case-designator)
                   (mv (erp-nil) :proved dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
                  ((when (not literal-nodenums)) ;can this happen? i think so, e.g., by substitition
                   (cw "No literals left!~%")
@@ -3474,7 +3478,7 @@
                           (mv (erp-nil) :failed dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
                 ;;splitting on nodenum (which is not a call of NOT):
                 ;;instead of proving the clause C, we will prove both (or (not nodenum) C) and (or nodenum C)
-                (b* ((- (cw "Splitting on node ~x0:~%" nodenum))
+                (b* ((- (cw "(Splitting on node ~x0:~%" nodenum))
                      ;;todo: elide this if too big:
                      (- (print-dag-only-supporters 'dag-array dag-array nodenum))
                      ;; (- (and (or (eq t print) (eq :verbose print) (eq :verbose2 print))
@@ -3483,6 +3487,7 @@
                      ;;                 ;;(cw "parent array:~%")
                      ;;                 ;;(print-array2 'dag-parent-array dag-parent-array dag-len)
                      ;;                 )))
+                     (- (cw ")~%" nodenum))
                      ;;can we somehow avoid this saving? copy to a new array? ;change ,rewrite-literals-name to not destroy existing nodes?!
                      ;;(saved-dag-array dag-array) ;(saved-dag-alist (array-to-alist dag-len 'dag-array dag-array)) ;don't convert to an alist?  just restore later by making the old value of dag-array the new  under-the-hood value?  same for parents array?
                      ;;(saved-dag-len dag-len)
@@ -3495,7 +3500,7 @@
                      ;;  (dag-array dag-parent-array)
                      ;;  ;fixme consider making this not destructive:
                      ;;  (replace-nodenum-with-t-in-boolean-contexts nodenum dag-array dag-parent-array) ;this leaves the subtree at nodenum itself unchanged
-
+                     (- (cw "(True Case: ~s0~%" case-1-designator))
                      ((mv erp case-1-result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
                       (,prove-true-case-name nodenum ;; to be assumed true
                                              literal-nodenums
@@ -3510,12 +3515,12 @@
                      ((when erp) (mv erp :failed dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))
                   ;;fixme we could make an option to continue if case 1 fails, so that all the failed subgoals are printed
                   (if (not (eq :proved case-1-result))
-                      (prog2$ (cw "Failed on ~s0.)~%" case-1-designator) ;matches an open paren printed in ,prove-true-case-name
+                      (prog2$ (cw "Failed on ~s0.)~%" case-1-designator)
                               (mv (erp-nil)
                                   case-1-result ; will be :failed or :timed-out
                                   dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                   info tries))
-                    (b* ((- (cw "Proved ~s0)~%" case-1-designator)) ;end of case1
+                    (b* ((- (cw "Proved true case ~s0.)~%" case-1-designator)) ;end of case1
                          ;;restore the dag:
                          ;; (dag-array (compress1 'dag-array saved-dag-array)) ;(dag-array (make-into-array-with-len 'dag-array saved-dag-alist saved-dag-len)) ;leave some slack space?
                          ;; (dag-parent-array (compress1 'dag-parent-array saved-dag-parent-array)) ;(dag-parent-array (make-into-array-with-len 'dag-parent-array saved-dag-parent-alist saved-dag-len)) ;leave some slack space?
@@ -3543,7 +3548,7 @@
                          ((when erp) (mv erp :failed dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
                          (- (if (not (eq :proved case-2-result))
                                 (cw "Failed on ~s0.)~%" case-2-designator)
-                              (cw "Proved ~s0)~%" case-2-designator)))
+                              (cw "Proved false case ~s0.)~%" case-2-designator)))
                          ;;end of case2
                          )
                       (mv (erp-nil)
@@ -4008,6 +4013,8 @@
               (rule-lists (elaborate-rule-item-lists rule-lists state))
               ((mv erp rule-alists) (make-rule-alists rule-lists (w state)))
               ((when erp) (mv erp nil state))
+              (case-designator "MAIN_CASE") ; the name of this case
+              (- (cw "(Proving ~s0:~%" case-designator))
               ((mv erp result & & & & & ; dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                    & &                  ;info tries ;todo: use these
                    )
@@ -4017,7 +4024,7 @@
                                         interpreted-function-alist
                                         monitor
                                         t ;print
-                                        "MAIN_CASE" ;;case-designator ;the name of this case (a string?)
+                                        case-designator
                                         (empty-info-world) ;(and print (empty-info-world))
                                         (zero-tries)  ;(and print (zero-tries))
                                         0             ;prover-depth
@@ -4025,9 +4032,10 @@
                                         ))
               ((when erp) (mv erp nil state)))
            (if (eq result :proved)
-               (prog2$ (cw "Proved.~%")
+               (prog2$ (cw "Proved ~s0.)~%" case-designator)
                        (mv (erp-nil) '(value-triple :ok) state))
-             (mv :failed-to-prove nil state))))
+             (prog2$ (cw "Failed to prove ~s0.)~%" case-designator)
+                     (mv :failed-to-prove nil state)))))
 
        ;; Try to prove that DAG1 implies DAG2, for all values of the variables.
        ;; Returns (mv erp event state) where a failure to prove causes erp to be non-nil.
