@@ -307,7 +307,7 @@
                               (all-< nodenums dag-len))))
   (b* (((mv dag-array dag-len renamed-nodenums) (crunch-dag-array2 dag-array-name dag-array dag-len nodenums))
        ((mv dag-parent-array dag-constant-alist dag-variable-alist)
-        (make-dag-indices-with-len dag-array-name dag-array dag-parent-array-name dag-len (array-len-with-slack dag-len dag-len))))
+        (make-dag-indices dag-array-name dag-array dag-parent-array-name dag-len)))
     (mv dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist renamed-nodenums)))
 
 ;gen?

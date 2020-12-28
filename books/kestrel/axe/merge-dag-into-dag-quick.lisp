@@ -93,7 +93,7 @@
            (dag-array (make-into-array-with-len 'dag-array dag2 new-size))
            ;; make aux structures for dag2:
            ((mv dag-parent-array dag-constant-alist dag-variable-alist)
-            (make-dag-indices-with-len 'dag-array dag-array 'dag-parent-array dag2-len new-size))
+            (make-dag-indices 'dag-array dag-array 'dag-parent-array dag2-len))
            ;;now merge in the nodes from dag1:
            (rev-dag1 (reverse dag1))
            (renaming-array (make-empty-array 'renaming-array dag1-len)) ;will rename nodes in dag1 to nodes in the merged dag
