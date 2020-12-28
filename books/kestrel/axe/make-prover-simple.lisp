@@ -2299,27 +2299,14 @@
                    (b* ((- (and (eq :verbose print)
                                 (cw "Processing node ~x0 (may have to process the args first).~%" nodenum)))
                         (expr (aref1 'dag-array dag-array nodenum)))
-                     (if (atom expr) ;must be a variable - just add the node and rewrite that?
-                         (b* (((mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
-                               (simplify-var-and-add-to-dag-for-axe-prover expr
-                                                                           'equal ;fixme can we do better? the worklist would have to track which equivs to use?
-                                                                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                                           rule-alist nodenums-to-assume-false equiv-alist print
-                                                                           info tries interpreted-function-alist monitored-symbols
-                                                                           ;;0 ;embedded-dag-depth
-                                                                           case-designator
-                                                                           nil ;todo: drop
-                                                                           prover-depth
-                                                                           ;;options
-                                                                           ))
-                              ((when erp) (mv erp result-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))
+                     (if (atom expr) ;must be a variable - just see if its node needs to be replaced
+                         (let ((new-nodenum-or-quotep (maybe-replace-nodenum-using-assumptions-for-axe-prover nodenum 'equal nodenums-to-assume-false dag-array)))
                            ;;option to print the number of rule hits?
                            (,rewrite-nodes-name
                             (rest worklist)
                             result-array-name
                             (aset1-safe result-array-name result-array nodenum new-nodenum-or-quotep) ;; update the result-array
-                            dag-array dag-len dag-parent-array
-                            dag-constant-alist dag-variable-alist
+                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                             nodenums-to-assume-false rule-alist
                             equiv-alist interpreted-function-alist print info tries monitored-symbols case-designator prover-depth options (+ -1 count)))
                        (let ((fn (ffn-symb expr)))
@@ -2336,11 +2323,10 @@
                                   (extended-worklist-or-nil (get-args-not-done args result-array-name result-array worklist nil)))
                              (if extended-worklist-or-nil
                                  ;;when the current node is processed again, some work will be redone
-                                 (,rewrite-nodes-name
-                                  extended-worklist-or-nil result-array-name result-array
-                                  dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                  nodenums-to-assume-false rule-alist equiv-alist interpreted-function-alist print info tries monitored-symbols
-                                  case-designator prover-depth options (+ -1 count))
+                                 (,rewrite-nodes-name extended-worklist-or-nil result-array-name result-array
+                                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                      nodenums-to-assume-false rule-alist equiv-alist interpreted-function-alist print info tries monitored-symbols
+                                                      case-designator prover-depth options (+ -1 count))
                                ;;all args are simplified:
                                (b* ((args (lookup-args-in-result-array args result-array-name result-array)) ;combine this with the get-args-not-done somehow?
                                     (expr (cons fn args))
@@ -2360,12 +2346,11 @@
                                               (eq :verbose print))
                                              (cw ")~%"))))
                                  ;;option to print the number of rule hits?
-                                 (,rewrite-nodes-name
-                                  (rest worklist) result-array-name
-                                  (aset1-safe result-array-name result-array nodenum new-nodenum) ;; update the result-array
-                                  dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                  nodenums-to-assume-false rule-alist equiv-alist interpreted-function-alist print info tries
-                                  monitored-symbols case-designator prover-depth options (+ -1 count)))))))))))))))
+                                 (,rewrite-nodes-name (rest worklist) result-array-name
+                                                      (aset1-safe result-array-name result-array nodenum new-nodenum) ;; update the result-array
+                                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                      nodenums-to-assume-false rule-alist equiv-alist interpreted-function-alist print info tries
+                                                      monitored-symbols case-designator prover-depth options (+ -1 count)))))))))))))))
 
        (defthm ,(pack$ rewrite-nodes-name '-return-type)
          (implies (and (nat-listp worklist)
