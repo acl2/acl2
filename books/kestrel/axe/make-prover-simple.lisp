@@ -3991,30 +3991,24 @@
 
        ;; Try to prove that DAG1 implies DAG2, for all values of the variables.
        ;; Returns (mv erp event state) where a failure to prove causes erp to be non-nil.
-       (defund ,prove-implication-fn-name (dag-or-term1
-                                           dag-or-term2
+       (defund ,prove-implication-fn-name (dag-or-term1 ; not yet translated
+                                           dag-or-term2 ; not yet translated
                                            rule-lists
                                            interpreted-function-alist
                                            monitor
                                            state)
-         (declare (xargs :guard (and ;; (or (myquotep dag1)
-                                 ;;     (and (pseudo-dagp dag1)
-                                 ;;          (<= (len dag1) 2147483646)))
-                                 ;; (or (myquotep dag2)
-                                 ;;     (and (pseudo-dagp dag2)
-                                 ;;          (<= (len dag2) 2147483646)))
-                                 (rule-item-list-listp rule-lists)
-                                 ;; (interpreted-function-alistp interpreted-function-alist)
-                                 (symbol-listp monitor)
-                                 (ilks-plist-worldp (w state)))
-                         ;; :guard-hints (("Goal" :in-theory (enable alistp-guard-hack)))
+         (declare (xargs :guard (and (rule-item-list-listp rule-lists)
+                                     ;; (interpreted-function-alistp interpreted-function-alist)
+                                     (symbol-listp monitor)
+                                     (ilks-plist-worldp (w state)))
                          :stobjs state
-                         :mode :program ;because this translates its args if they are terms (todo:separate out just that part)
+                         :mode :program ;because this translates its args if they are terms
                          ))
          (b* (((mv erp dag1) (dag-or-term-to-dag-basic dag-or-term1 (w state)))
               ((when erp) (mv erp nil state))
               ((mv erp dag2) (dag-or-term-to-dag-basic dag-or-term2 (w state)))
               ((when erp) (mv erp nil state)))
+           ;; This helper function is in :logic mode and is guard-verified:
            (,prove-implication-fn-helper-name dag1
                                               dag2
                                               rule-lists
