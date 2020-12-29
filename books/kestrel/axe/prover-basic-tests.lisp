@@ -75,6 +75,14 @@
  (defthm-with-basic-prover-clause-processor boolor-4
    (boolor (natp x) nil)))
 
+(must-fail
+ (defthm-with-basic-prover-clause-processor boolor-5
+   (boolor x x)))
+
+(must-fail
+ (defthm-with-basic-prover-clause-processor boolor-6
+   (boolor (natp x) (natp x))))
+
 (defthm-with-basic-prover-clause-processor not-1
   (not nil)
   :rule-classes nil
@@ -322,3 +330,51 @@
   :rules (implies equal-same) ;todo: few to none of these rules should need to be given explicitly
   :rule-classes nil
   )
+
+(defthm-with-basic-prover-clause-processor contra-1
+  (boolor x (not x))
+  :rule-classes nil
+  :rules (posp) ;have to give some rules to enable making assumptions, etc.
+  )
+
+(defthm-with-basic-prover-clause-processor contra-1b
+  (boolor (not x) x)
+  :rule-classes nil
+  :rules (posp) ;have to give some rules to enable making assumptions, etc.
+  )
+
+(must-fail
+ (defthm-with-basic-prover-clause-processor contra-2
+   (boolor (equal x 3) (not x))
+   :rule-classes nil
+   :rules (posp) ;have to give some rules to enable making assumptions, etc.
+   ))
+
+(must-fail
+ (defthm-with-basic-prover-clause-processor contra-2b
+   (boolor x (equal x t))
+   :rule-classes nil
+   :rules (posp) ;have to give some rules to enable making assumptions, etc.
+   ))
+
+(defthm-with-basic-prover-clause-processor contra-2c
+  (boolor x (equal x nil))
+  :rule-classes nil
+  :rules (posp) ;have to give some rules to enable making assumptions, etc.
+  )
+
+(must-fail
+ (defthm-with-basic-prover-clause-processor contra-2d
+   (boolor (not x) (not (equal x t)))
+   :rule-classes nil
+   :rules (posp) ;have to give some rules to enable making assumptions, etc.
+   ))
+
+(must-fail
+ (defthm-with-basic-prover-clause-processor contra-2d
+   (boolor (not x) (equal x t))
+   :rule-classes nil
+   :rules (posp) ;have to give some rules to enable making assumptions, etc.
+   ))
+
+;; TODO: Test that machinery for detecting contradictions when making the assumption-array
