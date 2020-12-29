@@ -87,6 +87,9 @@
 
   (xdoc::evmac-topic-implementation-item-input "print")
 
+  "@('print-info/all') is a boolean flag indicating whether
+   @('print') is @(':info') or @(':all'), or not."
+
   xdoc::*evmac-topic-implementation-item-call*
 
   "@('const') is the symbol specified by @('const-name')."))
@@ -245,6 +248,7 @@
                                  (const symbolp)
                                  (output-file stringp)
                                  (print evmac-input-print-p)
+                                 (print-info/all booleanp)
                                  val)').")
                state)
   :mode :program
@@ -275,11 +279,14 @@
                                         output-file?
                                         ctx
                                         state))
-       ((er &) (acl2::evmac-process-input-print print ctx state)))
+       ((er &) (acl2::evmac-process-input-print print ctx state))
+       (print-info/all (or (eq print :info)
+                           (eq print :all))))
     (value (list fn1...fnp
                  const
                  output-file
-                 print))))
+                 print
+                 print-info/all))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1303,16 +1310,15 @@
 
 (define atc-gen-const ((const symbolp)
                        (tunit transunitp)
-                       (print evmac-input-print-p))
+                       (print-info/all booleanp))
   :returns (mv (local-event pseudo-event-formp)
                (exported-event pseudo-event-formp))
   :short "Generate the named constant for the abstract syntax tree
           of the generated C code (i.e. translation unit)."
-  (b* ((progressp (member-eq print '(:info :all)))
-       (progress-start?
-        (and progressp
+  (b* ((progress-start?
+        (and print-info/all
              `((cw-event "~%Generating the named constant ~x0..." ',const))))
-       (progress-end? (and progressp `((cw-event " done.~%"))))
+       (progress-end? (and print-info/all `((cw-event " done.~%"))))
        (defconst-event `(defconst ,const ',tunit))
        (local-event `(progn ,@progress-start?
                             (local ,defconst-event)
@@ -1321,7 +1327,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-wf-thm ((const symbolp) (print evmac-input-print-p) ctx state)
+(define atc-gen-wf-thm ((const symbolp)
+                        (print-info/all booleanp)
+                        ctx
+                        state)
   :returns (mv erp
                (val "A @('(tuple (local-event pseudo-event-formp)
                                  (exported-event pseudo-event-formp)
@@ -1356,11 +1365,10 @@
          :formula `(transunit-wfp ,const)
          :hints '(("Goal" :in-theory '((:e transunit-wfp))))
          :enable nil))
-       (progressp (member-eq print '(:info :all)))
        (progress-start?
-        (and progressp
+        (and print-info/all
              `((cw-event "~%Generating the theorem ~x0..." ',name))))
-       (progress-end? (and progressp `((cw-event " done.~%"))))
+       (progress-end? (and print-info/all `((cw-event " done.~%"))))
        (local-event `(progn ,@progress-start?
                             ,local-event
                             ,@progress-end?)))
@@ -1371,7 +1379,7 @@
 (define atc-gen-fn-thm ((fn symbolp)
                         (prec-fns symbol-listp)
                         (const symbolp)
-                        (print evmac-input-print-p)
+                        (print-info/all booleanp)
                         ctx
                         state)
   :returns (mv erp
@@ -1471,11 +1479,10 @@
          :formula `(implies ,guard (equal ,lhs ,rhs))
          :hints hints
          :enable nil))
-       (progressp (member-eq print '(:info :all)))
        (progress-start?
-        (and progressp
+        (and print-info/all
              `((cw-event "~%Generating the theorem ~x0..." ',name))))
-       (progress-end? (and progressp `((cw-event " done.~%"))))
+       (progress-end? (and print-info/all `((cw-event " done.~%"))))
        (local-event `(progn ,@progress-start?
                             ,local-event
                             ,@progress-end?)))
@@ -1554,6 +1561,7 @@
                             (const symbolp)
                             (output-file stringp)
                             (print evmac-input-print-p)
+                            (print-info/all booleanp)
                             (call pseudo-event-formp)
                             ctx
                             state)
@@ -1562,16 +1570,15 @@
   :short "Generate the file and the events."
   (b* (((er tunit) (atc-gen-transunit fn1...fnp ctx state))
        ((mv local-const-event exported-const-event)
-        (atc-gen-const const tunit print))
+        (atc-gen-const const tunit print-info/all))
        ((er (list wf-thm-local-event wf-thm-exported-event))
-        (atc-gen-wf-thm const print ctx state))
+        (atc-gen-wf-thm const print-info/all ctx state))
        ((er (list fn-thm-local-events fn-thm-exported-events))
-        (atc-gen-fn-thm-list fn1...fnp nil const print ctx state))
-       (progressp (member-eq print '(:info :all)))
-       ((acl2::run-when progressp)
+        (atc-gen-fn-thm-list fn1...fnp nil const print-info/all ctx state))
+       ((acl2::run-when print-info/all)
         (cw "~%Generating the file ~s0..." output-file))
        ((er &) (atc-gen-file tunit output-file state))
-       ((acl2::run-when progressp) (cw " done.~%"))
+       ((acl2::run-when print-info/all) (cw " done.~%"))
        (print-events (and (member-eq print '(:result :info :all))
                           (atc-gen-print-result output-file
                                                 exported-const-event
@@ -1606,9 +1613,16 @@
           generate the constant definition and the C file."
   (b* (((when (atc-table-lookup call (w state)))
         (value '(value-triple :redundant)))
-       ((er (list fn1...fnp const output-file print))
+       ((er (list fn1...fnp const output-file print print-info/all))
         (atc-process-inputs args ctx state)))
-    (atc-gen-everything fn1...fnp const output-file print call ctx state)))
+    (atc-gen-everything fn1...fnp
+                        const
+                        output-file
+                        print
+                        print-info/all
+                        call
+                        ctx
+                        state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
