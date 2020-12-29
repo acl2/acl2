@@ -152,9 +152,9 @@ h = 01
     "This library contains executable formal specifications of elliptic curve operations
      on secp256k1, defined "
     (xdoc::ahref "http://www.secg.org/sec2-v2.pdf#page=13" "here")
-    ", which is a
-     <see topic=\"ECURVE____SHORT-WEIERSTRASS\">Short Weierstrass</see>
-     elliptic curve with @('a=0') and @('b=7'):")
+    ", which is a "
+    (xdoc::seetopic "short-weierstrass-curves" "short Weierstrass")
+    " elliptic curve with @('a=0') and @('b=7'):")
    (xdoc::@[] "y^2=x^3+7")
    (xdoc::p "secp256k1 is used for Bitcoin and Ethereum.")
    (xdoc::p "For more information on secp256k1, see @(see secp256k1-domain-parameters).")

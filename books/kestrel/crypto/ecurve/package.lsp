@@ -39,6 +39,7 @@
             i*
             i+
             i-
+            nat
             nat=>bebytes
             nat-equiv
             patbind-unless
