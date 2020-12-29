@@ -153,29 +153,12 @@
            (< (MAX-KEY alist '0) '2147483646))
   :hints (("Goal" :in-theory (e/d (MAX-KEY max-when-<=) (max)))))
 
-
-(defthmd keyword-value-listp-of-cdr-of-header
-  (implies (array1p array-name array)
-           (keyword-value-listp (cdr (header array-name array))))
-  :hints (("Goal" :in-theory (enable array1p header))))
-
 (local
  (defthm <-of-min
   (equal (< x (min y z))
          (and (< x y)
               (< x z)))
   :hints (("Goal" :in-theory (enable min)))))
-;move
-;may be better than the other one
-(defthm aref1-of-cons-of-cons-of-header-irrel
-  (implies (and (natp n)
-                (equal (cadr (assoc-keyword :default header))
-                       (default array-name array)))
-           (equal (aref1 array-name
-                         (cons (cons :header header) array)
-                         n)
-                  (aref1 array-name array n)))
-  :hints (("Goal" :in-theory (enable aref1))))
 
 ;;;
 ;;; end of library stuff

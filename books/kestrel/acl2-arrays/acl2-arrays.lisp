@@ -269,6 +269,11 @@
            (consp (header name l)))
   :hints (("Goal" :in-theory (e/d (array1p-rewrite dimensions) (dimensions-intro)))))
 
+(defthmd keyword-value-listp-of-cdr-of-header-when-array1p
+  (implies (array1p array-name array)
+           (keyword-value-listp (cdr (header array-name array))))
+  :hints (("Goal" :in-theory (enable array1p header))))
+
 (defthm integerp-of-alen1-gen
   (implies (array1p array-name2 array) ;array-name2 is a free var
            (integerp (alen1 array-name array)))
@@ -1226,12 +1231,13 @@
 
 (defthm aref1-of-cons-of-cons-of-header
   (implies (natp n)
-           (equal (aref1 array-name (cons (cons :header header) dag-lst) n)
-                  (if (assoc-equal n dag-lst)
-                      (aref1 array-name dag-lst n)
+           (equal (aref1 array-name (cons (cons :header header) alist) n)
+                  (if (assoc-equal n alist)
+                      (aref1 array-name alist n)
                     (cadr (assoc-keyword :default header)))))
   :hints (("Goal" :in-theory (enable aref1 header))))
 
+;; This one has no IF in the RHS
 (defthm aref1-of-cons-of-cons-of-header-alt
   (implies (and (natp n)
                 (equal (default array-name array)
