@@ -175,27 +175,6 @@
       (myquotep val)
       (natp val)))
 
-;; have the tool generate this?
-(defthm node-replacement-arrayp-aux-of-cons-of-cons-of-header-irrel
-  (implies (and (natp index)
-                ;; the header doesn't change the default value:
-                (equal (cadr (assoc-keyword :default header))
-                       (default name l)))
-           (equal (node-replacement-arrayp-aux name (cons (cons :header header) l) index)
-                  (node-replacement-arrayp-aux name l index)))
-  :hints (("Goal" :in-theory (e/d (node-replacement-arrayp-aux
-                                   ;;default header
-                                   )
-                                  (myquotep
-                                   AREF1-OF-CONS-OF-CONS-OF-HEADER)))))
-
-;; have the tool generate this?
-(defthm node-replacement-arrayp-forward-to-array1p
-  (implies (node-replacement-arrayp array-name array)
-           (array1p array-name array))
-  :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable node-replacement-arrayp))))
-
 ;;;
 ;;; bounded-node-replacement-arrayp
 ;;;
