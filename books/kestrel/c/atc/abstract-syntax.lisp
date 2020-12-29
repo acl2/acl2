@@ -368,6 +368,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defoption tyspecseq-option
+  tyspecseq
+  :short "Fixtype of optional sequences of type specifiers."
+  :pred tyspecseq-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define irr-tyspecseq ()
   :returns (ty tyspecseqp)
   :short "An irrelevant type specifier sequence,
