@@ -314,8 +314,8 @@
     (:REWRITE DAG-VARIABLE-ALISTP-FORWARD-TO-ALIST)
     (:REWRITE DARGP-LESS-THAN-MONO)
     (:REWRITE DARGP-LESS-THAN-OF-LIST-OF-QUOTE)
-    (:REWRITE
-     DARGP-LESS-THAN-OF-MV-NTH-1-OF-ADD-FUNCTION-CALL-EXPR-TO-DAG-ARRAY-GEN)
+    (:REWRITE DARGP-LESS-THAN-OF-MAYBE-REPLACE-NODENUM-USING-ASSUMPTIONS-FOR-AXE-PROVER-GEN)
+    (:REWRITE DARGP-LESS-THAN-OF-MV-NTH-1-OF-ADD-FUNCTION-CALL-EXPR-TO-DAG-ARRAY-GEN)
     (:REWRITE DARGP-LESS-THAN-WHEN-CONSP-CHEAP)
     (:REWRITE DARGP-LESS-THAN-WHEN-MYQUOTEP-CHEAP)
     (:REWRITE DARGP-LESS-THAN-WHEN-NATP-CHEAP)
@@ -333,8 +333,7 @@
     (:REWRITE MAXELEM-OF-CONS)
     (:REWRITE MV-NTH-6-OF-ADD-FUNCTION-CALL-EXPR-TO-DAG-ARRAY)
     (:REWRITE MV-NTH-OF-CONS)
-    (:REWRITE
-     MYQUOTEP-OF-REPLACE-NODENUM-USING-ASSUMPTIONS-FOR-AXE-PROVER)
+    (:REWRITE MYQUOTEP-OF-REPLACE-NODENUM-USING-ASSUMPTIONS-FOR-AXE-PROVER)
     (:REWRITE NAT-LISTP-WHEN-ALL-NATP)
     (:REWRITE NATP-OF-+-OF-1-ALT)
     (:REWRITE NATP-OF-MV-NTH-1-OF-ADD-FUNCTION-CALL-EXPR-TO-DAG-ARRAY)
@@ -603,10 +602,6 @@
        ;;                             )))
        ;;           ("Goal" :induct (len l) :expand (my-sublis-var-and-eval-lst alist l interpreted-function-alist)
        ;;            :in-theory (enable (:i len)))))
-
-       ;;todo: verify guards and remove this:
-       (defttag invariant-risk)
-       (set-register-invariant-risk nil) ;potentially dangerous but needed for execution speed
 
        ;;
        ;; The main mutual recursion for the Axe Prover:
@@ -1248,13 +1243,9 @@
                   ;; something using the assumptions.  Note that
                   ;; this uses the simplified args, so
                   ;; assumptions not in normal form may have no effect.
-                  (let ((assumption-match (replace-nodenum-using-assumptions-for-axe-prover nodenum equiv nodenums-to-assume-false dag-array))) ;currently, this can only be a constant?
-                    (mv (erp-nil)
-                        (if assumption-match
-                            ;; we replace the term with something it's equated to in nodenums-to-assume-false. we don't simplify the resulting thing (currently a constant). eventually, we might need to think about handling chains of equalities.:
-                            assumption-match
-                          nodenum)
-                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))))))
+                  (mv (erp-nil)
+                      (maybe-replace-nodenum-using-assumptions-for-axe-prover nodenum equiv nodenums-to-assume-false dag-array) ;currently, this can only replace it with a constant?
+                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))))))
 
         ;; Rewrite TREE repeatedly using RULE-ALIST and NODENUMS-TO-ASSUME-FALSE and add the result to the dag, returning a nodenum or a quotep.
         ;; TREE has nodenums and quoteps and variables (really? yes, from when we call this on a worklist of nodes) at the leaves.
@@ -2300,34 +2291,22 @@
                  (if (member nodenum nodenums-to-assume-false) ;do we need this special case?  i guess it could help - what about more fancy use of nodenums-to-assume-false here?
                      (,rewrite-nodes-name
                       (rest worklist)
-                      result-array-name (aset1-safe result-array-name result-array nodenum *nil*)
+                      result-array-name
+                      (aset1-safe result-array-name result-array nodenum *nil*) ;; we can replace the node with nil
                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                       nodenums-to-assume-false rule-alist equiv-alist interpreted-function-alist print info tries monitored-symbols
                       case-designator prover-depth options (+ -1 count))
                    (b* ((- (and (eq :verbose print)
                                 (cw "Processing node ~x0 (may have to process the args first).~%" nodenum)))
                         (expr (aref1 'dag-array dag-array nodenum)))
-                     (if (atom expr) ;must be a variable - just add the node and rewrite that?
-                         (b* (((mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
-                               (simplify-var-and-add-to-dag-for-axe-prover expr
-                                                                           'equal ;fixme can we do better? the worklist would have to track which equivs to use?
-                                                                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                                           rule-alist nodenums-to-assume-false equiv-alist print
-                                                                           info tries interpreted-function-alist monitored-symbols
-                                                                           ;;0 ;embedded-dag-depth
-                                                                           case-designator
-                                                                           nil ;todo: drop
-                                                                           prover-depth
-                                                                           ;;options
-                                                                           ))
-                              ((when erp) (mv erp result-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))
+                     (if (atom expr) ;must be a variable - just see if its node needs to be replaced
+                         (let ((new-nodenum-or-quotep (maybe-replace-nodenum-using-assumptions-for-axe-prover nodenum 'equal nodenums-to-assume-false dag-array)))
                            ;;option to print the number of rule hits?
                            (,rewrite-nodes-name
                             (rest worklist)
                             result-array-name
                             (aset1-safe result-array-name result-array nodenum new-nodenum-or-quotep) ;; update the result-array
-                            dag-array dag-len dag-parent-array
-                            dag-constant-alist dag-variable-alist
+                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                             nodenums-to-assume-false rule-alist
                             equiv-alist interpreted-function-alist print info tries monitored-symbols case-designator prover-depth options (+ -1 count)))
                        (let ((fn (ffn-symb expr)))
@@ -2344,11 +2323,10 @@
                                   (extended-worklist-or-nil (get-args-not-done args result-array-name result-array worklist nil)))
                              (if extended-worklist-or-nil
                                  ;;when the current node is processed again, some work will be redone
-                                 (,rewrite-nodes-name
-                                  extended-worklist-or-nil result-array-name result-array
-                                  dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                  nodenums-to-assume-false rule-alist equiv-alist interpreted-function-alist print info tries monitored-symbols
-                                  case-designator prover-depth options (+ -1 count))
+                                 (,rewrite-nodes-name extended-worklist-or-nil result-array-name result-array
+                                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                      nodenums-to-assume-false rule-alist equiv-alist interpreted-function-alist print info tries monitored-symbols
+                                                      case-designator prover-depth options (+ -1 count))
                                ;;all args are simplified:
                                (b* ((args (lookup-args-in-result-array args result-array-name result-array)) ;combine this with the get-args-not-done somehow?
                                     (expr (cons fn args))
@@ -2368,12 +2346,11 @@
                                               (eq :verbose print))
                                              (cw ")~%"))))
                                  ;;option to print the number of rule hits?
-                                 (,rewrite-nodes-name
-                                  (rest worklist) result-array-name
-                                  (aset1-safe result-array-name result-array nodenum new-nodenum) ;; update the result-array
-                                  dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                  nodenums-to-assume-false rule-alist equiv-alist interpreted-function-alist print info tries
-                                  monitored-symbols case-designator prover-depth options (+ -1 count)))))))))))))))
+                                 (,rewrite-nodes-name (rest worklist) result-array-name
+                                                      (aset1-safe result-array-name result-array nodenum new-nodenum) ;; update the result-array
+                                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                      nodenums-to-assume-false rule-alist equiv-alist interpreted-function-alist print info tries
+                                                      monitored-symbols case-designator prover-depth options (+ -1 count)))))))))))))))
 
        (defthm ,(pack$ rewrite-nodes-name '-return-type)
          (implies (and (nat-listp worklist)
@@ -2413,7 +2390,7 @@
        ;; It would be nice to call a standard rewriter here, but the assumptions (nodenums-to-assume-false) are likely not in the right form.
        ;; TODO: can we use a better equiv?
        ;; TODO: Inline this?
-       (defund ,rewrite-literal-name (nodenum
+       (defund ,rewrite-literal-name (nodenum ;; should have no extractable disjuncts
                                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                       nodenums-to-assume-false
                                       rule-alist interpreted-function-alist
@@ -2440,7 +2417,7 @@
                             )
               ;; Rewrite this literal:
               ((mv erp result-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
-               ;;fixme would it make sense to memoize in this (moot if we call the new rewriter)?:
+               ;; TODO: would it make sense to memoize in this?
                (,rewrite-nodes-name (list nodenum)
                                     result-array-name
                                     result-array
@@ -2557,8 +2534,8 @@
        ;; Not a worklist algorithm of the usual sort (all elements of work-list are literals)
        ;; may extend the dag but doesn't change any nodes (new!).
        ;; TODO: If the only change is that some literals were dropped, perhaps we don't want to make another pass?
-       (defund ,rewrite-literals-name (work-list ;a list of nodenums
-                                       done-list ;a list of nodenums
+       (defund ,rewrite-literals-name (work-list ;a list of nodenums, with no extractable disjuncts
+                                       done-list ;a list of nodenums, with no extractable disjuncts
                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                        changep ;; whether anything has changed so far
                                        rule-alist
@@ -3972,28 +3949,39 @@
        ;; Try to prove that DAG1 implies DAG2, for all values of the variables.
        ;; TODO: Warning if no variable overlap?
        ;; Returns (mv erp event state) where a failure to prove causes erp to be non-nil.
-       ;; TODO: Check all inputs, including arities.
+       ;; Because this function has a guard that is simply a stobj recognizer, it has no invariant-risk.
        (defund ,prove-implication-fn-helper-name (dag1
                                                   dag2
                                                   rule-lists
                                                   interpreted-function-alist
                                                   monitor
                                                   state)
-         (declare (xargs :guard (and (or (myquotep dag1)
-                                         (and (pseudo-dagp dag1)
-                                              (<= (len dag1) 2147483646)))
-                                     (or (myquotep dag2)
-                                         (and (pseudo-dagp dag2)
-                                              (<= (len dag2) 2147483646)))
-                                     (rule-item-list-listp rule-lists)
-                                     (symbol-listp monitor)
-                                     (ilks-plist-worldp (w state)))
-                         :guard-hints (("Goal" :use (:instance make-implication-dag-return-type)
+         (declare (xargs :guard-hints (("Goal" :use (:instance make-implication-dag-return-type)
                                         :in-theory (e/d (array-len-with-slack top-nodenum-of-dag-when-pseudo-dagp wf-dagp)
                                                         (symbol-listp top-nodenum myquotep get-global w quotep make-implication-dag-return-type))))
                          :stobjs state))
-         (b* (((when (not (interpreted-function-alistp interpreted-function-alist)))
-               (er hard? ',prove-implication-fn-name "Ill-formed interpreted-function-alist: ~x0" interpreted-function-alist)
+         (b* (;; Check inputs:
+              ((when (not (or (myquotep dag1)
+                              (and (pseudo-dagp dag1)
+                                   (<= (len dag1) 2147483646)))))
+               (er hard? ',prove-implication-fn-helper-name "Bad first argument: ~x0" dag1)
+               (mv :bad-input nil state))
+              ((when (not (or (myquotep dag2)
+                              (and (pseudo-dagp dag2)
+                                   (<= (len dag2) 2147483646)))))
+               (er hard? ',prove-implication-fn-helper-name "Bad second argument: ~x0" dag2)
+               (mv :bad-input nil state))
+              ((when (not (rule-item-list-listp rule-lists)))
+               (er hard? ',prove-implication-fn-helper-name "Bad rule lists.: ~x0" rule-lists)
+               (mv :bad-input nil state))
+              ((when (not (interpreted-function-alistp interpreted-function-alist)))
+               (er hard? ',prove-implication-fn-helper-name "Ill-formed interpreted-function-alist: ~x0" interpreted-function-alist)
+               (mv :bad-input nil state))
+              ((when (not (symbol-listp monitor)))
+               (er hard? ',prove-implication-fn-helper-name "Bad :monitor argument: ~x0" monitor)
+               (mv :bad-input nil state))
+              ((when (not (ilks-plist-worldp (w state))))
+               (er hard? ',prove-implication-fn-helper-name "Bad world (this should not happen).")
                (mv :bad-input nil state))
               ;; Form the implication to prove:
               ((mv erp implication-dag-or-quotep) (make-implication-dag dag1 dag2)) ; todo: we will end up having to extract disjuncts from this implication
@@ -4042,6 +4030,8 @@
 
        ;; Try to prove that DAG1 implies DAG2, for all values of the variables.
        ;; Returns (mv erp event state) where a failure to prove causes erp to be non-nil.
+       ;; This function has no invariant-risk, because the functions it calls
+       ;; have guards that are either t or stobj recognizers.
        (defund ,prove-implication-fn-name (dag-or-term1 ; not yet translated
                                            dag-or-term2 ; not yet translated
                                            rule-lists
@@ -4055,9 +4045,9 @@
                          :stobjs state
                          :mode :program ;because this translates its args if they are terms
                          ))
-         (b* (((mv erp dag1) (dag-or-term-to-dag-basic dag-or-term1 (w state)))
+         (b* (((mv erp dag1) (dag-or-term-to-dag-basic-unguarded dag-or-term1 (w state)))
               ((when erp) (mv erp nil state))
-              ((mv erp dag2) (dag-or-term-to-dag-basic dag-or-term2 (w state)))
+              ((mv erp dag2) (dag-or-term-to-dag-basic-unguarded dag-or-term2 (w state)))
               ((when erp) (mv erp nil state)))
            ;; This helper function is in :logic mode and is guard-verified:
            (,prove-implication-fn-helper-name dag1

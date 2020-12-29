@@ -1429,6 +1429,51 @@
            (bounded-axe-treep (replace-nodenum-using-assumptions-for-axe-prover nodenum equiv nodenums-to-assume-false dag-array) dag-len))
   :hints (("Goal" :use (:instance myquotep-of-replace-nodenum-using-assumptions-for-axe-prover))))
 
+;;Returns a nodenum or quotep.
+(defund maybe-replace-nodenum-using-assumptions-for-axe-prover (nodenum equiv
+                                                                        nodenums-to-assume-false
+                                                                        dag-array)
+  (declare (xargs :guard (and (natp nodenum)
+                              (symbolp equiv)
+                              (all-natp nodenums-to-assume-false)
+                              (true-listp nodenums-to-assume-false)
+                              (pseudo-dag-arrayp 'dag-array dag-array (+ 1 (maxelem (cons nodenum nodenums-to-assume-false)))))))
+  (let ((assumption-match (replace-nodenum-using-assumptions-for-axe-prover nodenum equiv nodenums-to-assume-false dag-array))) ;currently, this can only be a constant?
+    (if assumption-match
+        ;; we replace the term with something it's equated to in nodenums-to-assume-false (currently can only be a constant). eventually, we might need to think about handling chains of equalities:
+        assumption-match
+      ;; no change:
+      nodenum)))
+
+(defthm dargp-less-than-of-maybe-replace-nodenum-using-assumptions-for-axe-prover
+  (implies (and (natp nodenum)
+                ;;(symbolp equiv)
+                (nat-listp nodenums-to-assume-false)
+                (pseudo-dag-arrayp 'dag-array dag-array (+ 1 nodenum))
+                ;; todo: is the force needed here?
+                (force (implies (consp nodenums-to-assume-false)
+                                (pseudo-dag-arrayp 'dag-array dag-array (+ 1 (maxelem nodenums-to-assume-false))))))
+           (dargp-less-than (maybe-replace-nodenum-using-assumptions-for-axe-prover nodenum equiv nodenums-to-assume-false dag-array)
+                            (+ 1 nodenum)))
+  :hints (("Goal" :in-theory (e/d (dargp-less-than maybe-replace-nodenum-using-assumptions-for-axe-prover)
+                                  (myquotep-of-replace-nodenum-using-assumptions-for-axe-prover))
+           :use (:instance myquotep-of-replace-nodenum-using-assumptions-for-axe-prover))))
+
+(defthm dargp-less-than-of-maybe-replace-nodenum-using-assumptions-for-axe-prover-gen
+  (implies (and (< nodenum n)
+                (natp n)
+                (natp nodenum)
+                ;;(symbolp equiv)
+                (nat-listp nodenums-to-assume-false)
+                (pseudo-dag-arrayp 'dag-array dag-array (+ 1 nodenum))
+                ;; todo: is the force needed here?
+                (force (implies (consp nodenums-to-assume-false)
+                                (pseudo-dag-arrayp 'dag-array dag-array (+ 1 (maxelem nodenums-to-assume-false))))))
+           (dargp-less-than (maybe-replace-nodenum-using-assumptions-for-axe-prover nodenum equiv nodenums-to-assume-false dag-array)
+                            n))
+  :hints (("Goal" :use (:instance dargp-less-than-of-maybe-replace-nodenum-using-assumptions-for-axe-prover)
+           :in-theory (disable dargp-less-than-of-maybe-replace-nodenum-using-assumptions-for-axe-prover))))
+
 ;x must be a nodenum or quotep:
 (defmacro isnodenum (x) `(not (consp ,x))) ;fixme would (atom be faster?)
 ;x must be a nodenum or quotep:
@@ -4286,6 +4331,7 @@
 
 ;; Returns (mv erp nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries).
 ;why is this separate?
+;rename?
 (defund simplify-var-and-add-to-dag-for-axe-prover (var equiv
                                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                         rule-alist

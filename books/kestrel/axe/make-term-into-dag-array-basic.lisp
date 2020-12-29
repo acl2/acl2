@@ -109,6 +109,17 @@
           (mv (erp-nil) nodenum-or-quotep)
         (mv (erp-nil) (array-to-alist dag-len 'make-term-into-dag-basic-array dag-array))))))
 
+;; Returns (mv erp dag-or-quotep).  Returns the DAG as a list but uses arrays to do the work.
+;; This wrapper has no invariant risk because it has a guard of t.
+(defund make-term-into-dag-basic-unguarded (term interpreted-function-alist)
+  (declare (xargs :guard t))
+  (if (not (and (pseudo-termp term)
+                (interpreted-function-alistp interpreted-function-alist)))
+      (prog2$ (er hard? 'make-term-into-dag-basic-unguarded "Bad input.")
+              (mv (erp-t) nil))
+    (make-term-into-dag-basic term interpreted-function-alist)))
+
+
 ;; Returns the dag-or-quotep.  Does not return erp.
 (defund make-term-into-dag-basic! (term interpreted-function-alist)
   (declare (xargs :guard (and (pseudo-termp term)
