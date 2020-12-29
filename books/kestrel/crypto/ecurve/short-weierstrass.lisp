@@ -35,11 +35,11 @@
     "We provide executable formal specifications of operations on
      elliptic curves in short Weierstrass form,
      which are described by the equation")
-   (xdoc::@[] "y^2 = x^3 + ax + b")
+   (xdoc::@[] "y^2 = x^3 + a x + b")
    (xdoc::p
     "where @($a$) and @($b$) are integers in a prime field @($\\{0,..,p-1\\}$)
      for an appropriate prime number @($p > 3$),
-     satisfying the condition @($4a^3 + 27b^2 \\neq 0$),
+     satisfying the condition @($4 a^3 + 27 b^2 \\neq 0$),
      and where @($x$) and @($y$) range over the same prime field.
      The arithmetic operations in the equation above,
      namely addition and power (i.e. iterated multiplication),
@@ -53,7 +53,7 @@
      We may extend our formalization to cover those curves in the future.
      We may also extend it to cover curves over non-prime finite fields.")
    (xdoc::p
-    "The condition @($4a^3 + 27b^2 \\neq 0$),
+    "The condition @($4 a^3 + 27 b^2 \\neq 0$),
      where the operations are again field operations,
      means that the cubic equation on the right has no multiple roots.")
    (xdoc::p
@@ -96,9 +96,9 @@
      the cubic equation has no multiple roots;
      see @(see short-weierstrass-curves).
      We express this condition by saying that
-     @($4a^3 + 27b^2 \\mod p > 0$),
+     @($4 a^3 + 27 b^2 \\mod p > 0$),
      where the operations are not field operations:
-     this formulation is equivalent to requiring @($4a^3 + 27b^2$)
+     this formulation is equivalent to requiring @($4 a^3 + 27 b^2$)
      with field operation to be different from 0.")
    (xdoc::p
     "To fix the three components to satisfy the requirements above,
