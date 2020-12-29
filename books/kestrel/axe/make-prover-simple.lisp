@@ -42,6 +42,7 @@
 (include-book "dag-or-term-to-dag-basic") ;todo: gen?
 (include-book "merge-tree-into-dag-array-basic") ;for merge-trees-into-dag-array-basic ;todo: gen?
 (include-book "kestrel/utilities/all-vars-in-term-bound-in-alistp" :dir :system)
+(include-book "make-assumption-array")
 
 (defthm all-axe-treep-of-keep-atoms-when-contextp
   (implies (and (contextp x)
@@ -314,6 +315,7 @@
     (:REWRITE DARGP-LESS-THAN-WHEN-MYQUOTEP-CHEAP)
     (:REWRITE DARGP-LESS-THAN-WHEN-NATP-CHEAP)
     (:REWRITE DARGP-LESS-THAN-WHEN-NOT-CONSP-CHEAP)
+    (:rewrite DARGP-LESS-THAN-OF-MAYBE-REPLACE-NODENUM-USING-ASSUMPTION-ARRAY)
     (:REWRITE EQUAL-OF-+-WHEN-NEGATIVE-CONSTANT)
     (:REWRITE EQUAL-OF-LEN-AND-0)
     (:REWRITE INFO-WORLDP-OF-INCREMENT-HIT-COUNT-IN-INFO-WORLD)
@@ -345,7 +347,6 @@
     (:REWRITE SYMBOL-ALISTP-OF-MV-NTH-1-OF-MATCH-HYP-WITH-NODENUM-TO-ASSUME-FALSE)
     (:REWRITE SYMBOL-ALISTP-OF-UNIFY-TERMS-AND-DAG-ITEMS-FAST)
     (:REWRITE SYMBOL-LISTP-OF-CDR)
-    (:REWRITE SYMBOL-LISTP-OF-GET-EQUIVS)
     (:REWRITE SYMBOLP-OF-CAR-WHEN-AXE-TREEP-CHEAP)
     (:REWRITE SYMBOLP-OF-CAR-WHEN-SYMBOL-LISTP-CHEAP)
     (:REWRITE SYMBOLP-OF-STORED-RULE-SYMBOL)
@@ -402,7 +403,16 @@
     (:TYPE-PRESCRIPTION TRIESP)
     (:TYPE-PRESCRIPTION TRUE-LISTP-OF-EVAL-AXE-BIND-FREE-FUNCTION-APPLICATION-BASIC)
     (:TYPE-PRESCRIPTION TRUE-LISTP-OF-MV-NTH-1-OF-MATCH-HYP-WITH-NODENUM-TO-ASSUME-FALSE)
-    (:TYPE-PRESCRIPTION WF-DAGP)))
+    (:TYPE-PRESCRIPTION WF-DAGP)
+    equivp-forward-to-symbolp
+    equivp-of-car-when-equiv-listp
+    (:e equivp)
+    (:e equiv-listp)
+    (:t equivp)
+    (:t equiv-listp)
+    equiv-listp-of-cdr
+    equiv-listp-of-get-equivs
+    ))
 
 (defun make-prover-simple-fn (suffix ;; gets added to generated names
                               apply-axe-evaluator-to-quoted-args-name
@@ -423,6 +433,7 @@
          (rewrite-nodes-name (pack$ 'rewrite-nodes-for- suffix '-prover))
          (rewrite-literal-name (pack$ 'rewrite-literal-for- suffix '-prover))
          (rewrite-literals-name (pack$ 'rewrite-literals-for- suffix '-prover))
+         (rewrite-clause-name (pack$ 'rewrite-clause-for- suffix '-prover))
          (rewrite-subst-and-elim-with-rule-alist-name (pack$ 'rewrite-subst-and-elim-with-rule-alist-for- suffix '-prover))
          (rewrite-subst-and-elim-with-rule-alists-name (pack$ 'rewrite-subst-and-elim-with-rule-alists-for- suffix '-prover))
          (prove-case-name (pack$ 'prove-case-with- suffix '-prover))
@@ -446,7 +457,7 @@
                                                                                                   dag-array dag-len dag-parent-array
                                                                                                   dag-constant-alist dag-variable-alist
                                                                                                   equiv-alist rule-alist
-                                                                                                  nodenums-to-assume-false print
+                                                                                                  nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes print
                                                                                                   info tries interpreted-function-alist
                                                                                                   monitored-symbols
                                                                                                   embedded-dag-depth case-designator
@@ -455,7 +466,7 @@
                                                               dag-array dag-len dag-parent-array
                                                               dag-constant-alist dag-variable-alist
                                                               equiv-alist rule-alist
-                                                              nodenums-to-assume-false print
+                                                              nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes print
                                                               info tries interpreted-function-alist
                                                               monitored-symbols
                                                               embedded-dag-depth case-designator
@@ -464,7 +475,7 @@
          (call-of-try-to-apply-rules `(,try-to-apply-rules-name stored-rules rule-alist args-to-match
                                                                 dag-array dag-len dag-parent-array
                                                                 dag-constant-alist dag-variable-alist
-                                                                nodenums-to-assume-false
+                                                                nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
                                                                 equiv-alist print
                                                                 info tries interpreted-function-alist
                                                                 monitored-symbols
@@ -473,7 +484,7 @@
          (call-of-simplify-if-tree `(,simplify-if-tree-name tree
                                                             equiv dag-array dag-len dag-parent-array
                                                             dag-constant-alist dag-variable-alist
-                                                            rule-alist nodenums-to-assume-false
+                                                            rule-alist nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
                                                             equiv-alist print
                                                             info tries interpreted-function-alist
                                                             monitored-symbols
@@ -482,7 +493,7 @@
          (call-of-simplify-boolif-tree `(,simplify-boolif-tree-name tree
                                                             equiv dag-array dag-len dag-parent-array
                                                             dag-constant-alist dag-variable-alist
-                                                            rule-alist nodenums-to-assume-false
+                                                            rule-alist nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
                                                             equiv-alist print
                                                             info tries interpreted-function-alist
                                                             monitored-symbols
@@ -491,7 +502,7 @@
          (call-of-simplify-fun-call `(,simplify-fun-call-name fn args
                                                               equiv dag-array dag-len dag-parent-array
                                                               dag-constant-alist dag-variable-alist
-                                                              rule-alist nodenums-to-assume-false
+                                                              rule-alist nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
                                                               equiv-alist print
                                                               info tries interpreted-function-alist
                                                               monitored-symbols
@@ -500,7 +511,7 @@
          (call-of-simplify-tree `(,simplify-tree-name tree
                                                       equiv dag-array dag-len dag-parent-array
                                                       dag-constant-alist dag-variable-alist
-                                                      rule-alist nodenums-to-assume-false
+                                                      rule-alist nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
                                                       equiv-alist print
                                                       info tries interpreted-function-alist
                                                       monitored-symbols
@@ -510,7 +521,7 @@
          (call-of-simplify-trees `(,simplify-trees-name trees equivs
                                                         dag-array dag-len dag-parent-array
                                                         dag-constant-alist dag-variable-alist
-                                                        rule-alist nodenums-to-assume-false
+                                                        rule-alist nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
                                                         equiv-alist print
                                                         info tries interpreted-function-alist
                                                         monitored-symbols
@@ -610,6 +621,7 @@
                                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                            equiv-alist rule-alist
                                                            nodenums-to-assume-false ;we keep the whole list as well as walking down it
+                                                           assumption-array assumption-array-num-valid-nodes
                                                            print
                                                            info tries interpreted-function-alist monitored-symbols
                                                            embedded-dag-depth ;used for the renaming-array-for-merge-embedded-dag
@@ -629,6 +641,9 @@
                                 (rule-alistp rule-alist)
                                 (nat-listp nodenums-to-assume-false)
                                 (all-< nodenums-to-assume-false dag-len)
+                                (assumption-arrayp 'assumption-array assumption-array)
+                                (natp assumption-array-num-valid-nodes)
+                                (<= assumption-array-num-valid-nodes (alen1 'assumption-array assumption-array))
                                 ;; print
                                 (info-worldp info)
                                 (triesp tries)
@@ -658,7 +673,7 @@
                                                    rule-symbol
                                                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                    equiv-alist rule-alist
-                                                   nodenums-to-assume-false
+                                                   nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
                                                    print info tries interpreted-function-alist
                                                    monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count)))
                          ((when erp) (mv erp nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))
@@ -673,7 +688,7 @@
                                                                    rule-symbol
                                                                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                                    equiv-alist rule-alist
-                                                                   nodenums-to-assume-false
+                                                                   nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
                                                                    print
                                                                    info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator
                                                                    prover-depth options (+ -1 count))))
@@ -684,6 +699,7 @@
                                                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                              equiv-alist rule-alist
                                                              nodenums-to-assume-false ;we keep the whole list as well as walking down it
+                                                             assumption-array assumption-array-num-valid-nodes
                                                              print
                                                              info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count)))))))
 
@@ -706,7 +722,7 @@
                                          rule-symbol
                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                          equiv-alist rule-alist
-                                         nodenums-to-assume-false
+                                         nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
                                          print info tries interpreted-function-alist
                                          monitored-symbols embedded-dag-depth
                                          case-designator
@@ -721,6 +737,9 @@
                                       (rule-alistp rule-alist)
                                       (nat-listp nodenums-to-assume-false)
                                       (all-< nodenums-to-assume-false dag-len)
+                                      (assumption-arrayp 'assumption-array assumption-array)
+                                      (natp assumption-array-num-valid-nodes)
+                                      (<= assumption-array-num-valid-nodes (alen1 'assumption-array assumption-array))
                                       ;; print
                                       (info-worldp info)
                                       (triesp tries)
@@ -748,7 +767,7 @@
                           (,relieve-rule-hyps-name
                            (rest hyps) (+ 1 hyp-num) alist rule-symbol ;alist may have been extended by a hyp with free vars
                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                           equiv-alist rule-alist nodenums-to-assume-false print info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator
+                           equiv-alist rule-alist nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes print info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator
                            prover-depth options (+ -1 count))
                         (prog2$ (and (member-eq rule-symbol monitored-symbols)
                                      (cw "(Failed. Reason: Failed to relieve axe-syntaxp hyp (number ~x0): ~x1 for ~x2.)~%" hyp-num hyp rule-symbol))
@@ -768,7 +787,7 @@
                                 (,relieve-rule-hyps-name (rest hyps) (+ 1 hyp-num)
                                                          (append result alist) ;; guaranteed to be disjoint given the analysis done when the rule was made and the call of axe-bind-free-result-okayp above
                                                          rule-symbol dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                         equiv-alist rule-alist nodenums-to-assume-false print info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator
+                                                         equiv-alist rule-alist nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes print info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator
                                                          prover-depth options (+ -1 count))))
                           ;; failed to relieve the axe-bind-free hyp:
                           (prog2$ (and (member-eq rule-symbol monitored-symbols)
@@ -789,7 +808,7 @@
                                                                      alist rule-symbol
                                                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                                      equiv-alist rule-alist
-                                                                     nodenums-to-assume-false print
+                                                                     nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes print
                                                                      info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count))
                         ;; No more free vars remain in the hyp, so we try to relieve the fully instantiated hyp:
                         (b* ((old-try-count tries)
@@ -799,7 +818,7 @@
                                                    'iff
                                                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                    rule-alist
-                                                   nodenums-to-assume-false equiv-alist print
+                                                   nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes equiv-alist print
                                                    info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator
                                                    prover-depth options (+ -1 count)))
                              ((when erp) (mv erp
@@ -812,7 +831,7 @@
                                           (,relieve-rule-hyps-name
                                            (rest hyps) (+ 1 hyp-num) alist rule-symbol ;alist may have been extended by a hyp with free vars
                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                           equiv-alist rule-alist nodenums-to-assume-false print info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count)))
+                                           equiv-alist rule-alist nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes print info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count)))
                                 ;;hyp rewrote to *nil* :
                                 (progn$
                                  (and old-try-count print (or (eq :verbose print) (eq :verbose2 print)) (< 100 try-diff) (cw "(~x1 tries wasted(p) ~x0:~x2 (rewrote to NIL))~%" rule-symbol try-diff hyp-num))
@@ -846,7 +865,8 @@
                                           rule-alist
                                           args-to-match ;a list of nodenums and/or quoteps
                                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                          nodenums-to-assume-false equiv-alist print info tries
+                                          nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
+                                          equiv-alist print info tries
                                           interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options count)
           (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                                       (true-listp stored-rules)
@@ -856,6 +876,9 @@
                                       (true-listp args-to-match)
                                       (nat-listp nodenums-to-assume-false)
                                       (all-< nodenums-to-assume-false dag-len)
+                                      (assumption-arrayp 'assumption-array assumption-array)
+                                      (natp assumption-array-num-valid-nodes)
+                                      (<= assumption-array-num-valid-nodes (alen1 'assumption-array assumption-array))
                                       (equiv-alistp equiv-alist)
                                       ;; print
                                       (info-worldp info)
@@ -882,7 +905,7 @@
                                                                   dag-len)))
               (if (eq :fail alist-or-fail)
                   ;; the rule didn't match, so try the next rule:
-                  (,try-to-apply-rules-name (rest stored-rules) rule-alist args-to-match dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nodenums-to-assume-false
+                  (,try-to-apply-rules-name (rest stored-rules) rule-alist args-to-match dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
                                             equiv-alist print info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count))
                 ;; The rule matched. now try to relieve its hyps:
                 (b* ((- (and (eq print :verbose) ;:verbose2?
@@ -899,7 +922,7 @@
                            hyps 1 alist-or-fail
                            (stored-rule-symbol stored-rule)
                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                           equiv-alist rule-alist nodenums-to-assume-false print info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count))
+                           equiv-alist rule-alist nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes print info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count))
                         ;;if there are no hyps, don't even bother: BOZO inefficient?:
 ;perhaps if we failed to relieve the hyp we should use the old value of info and/or tries?
                         (mv (erp-nil) t alist-or-fail dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))
@@ -924,7 +947,7 @@
                              (rest stored-rules)
                              rule-alist args-to-match
                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                             nodenums-to-assume-false  equiv-alist print
+                             nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes  equiv-alist print
                              info ;(cons (cons :fail (rule-symbol rule)) info)
                              tries
                              interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count)))))))))
@@ -1032,12 +1055,12 @@
                                         equiv
                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                         rule-alist
-                                        nodenums-to-assume-false
+                                        nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
                                         equiv-alist ;don't pass this around?
                                         print
                                         info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options count)
           (declare (xargs :guard (and (axe-treep tree)
-                                      (symbolp equiv)
+                                      (equivp equiv)
                                       (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                                       (bounded-axe-treep tree dag-len)
                                       (consp tree) ;; this case
@@ -1045,6 +1068,9 @@
                                       (rule-alistp rule-alist)
                                       (nat-listp nodenums-to-assume-false)
                                       (all-< nodenums-to-assume-false dag-len)
+                                      (assumption-arrayp 'assumption-array assumption-array)
+                                      (natp assumption-array-num-valid-nodes)
+                                      (<= assumption-array-num-valid-nodes (alen1 'assumption-array assumption-array))
                                       (equiv-alistp equiv-alist)
                                       ;; print
                                       (info-worldp info)
@@ -1067,7 +1093,7 @@
                   (,simplify-tree-name (first args) ;the test
                                        'iff ;can rewrite the test in a propositional context
                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                       rule-alist nodenums-to-assume-false equiv-alist print info tries interpreted-function-alist monitored-symbols embedded-dag-depth
+                                       rule-alist nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes equiv-alist print info tries interpreted-function-alist monitored-symbols embedded-dag-depth
                                        case-designator prover-depth options (+ -1 count)))
                  ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))
               (if (consp simplified-test) ;tests for quotep
@@ -1078,14 +1104,14 @@
                                          )
                                        equiv ;use the same equiv
                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                       rule-alist nodenums-to-assume-false equiv-alist print info tries interpreted-function-alist monitored-symbols
+                                       rule-alist nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes equiv-alist print info tries interpreted-function-alist monitored-symbols
                                        embedded-dag-depth case-designator prover-depth options (+ -1 count))
                 ;; The test was not resolved, so we must rewrite both branches: ;; todo: just call simplify-tree twice here?
                 (b* (((mv erp simplified-other-args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
                       (,simplify-trees-name (rest args)
                                             '(equal equal) ;;equiv-lst ;todo: use the same equiv as for the whole term?
                                             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                            rule-alist nodenums-to-assume-false
+                                            rule-alist nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
                                             equiv-alist print info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count)))
                      ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))
                   (,simplify-fun-call-name (ffn-symb tree)
@@ -1093,7 +1119,7 @@
                                            equiv
                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                            rule-alist
-                                           nodenums-to-assume-false
+                                           nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
                                            equiv-alist
                                            print
                                            info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count)))))))
@@ -1103,12 +1129,12 @@
                                             equiv
                                             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                             rule-alist
-                                            nodenums-to-assume-false
+                                            nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
                                             equiv-alist ;don't pass this around?
                                             print
                                             info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options count)
           (declare (xargs :guard (and (axe-treep tree)
-                                      (symbolp equiv)
+                                      (equivp equiv)
                                       (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                                       (bounded-axe-treep tree dag-len)
                                       (consp tree)         ;; this case
@@ -1116,6 +1142,9 @@
                                       (rule-alistp rule-alist)
                                       (nat-listp nodenums-to-assume-false)
                                       (all-< nodenums-to-assume-false dag-len)
+                                      (assumption-arrayp 'assumption-array assumption-array)
+                                      (natp assumption-array-num-valid-nodes)
+                                      (<= assumption-array-num-valid-nodes (alen1 'assumption-array assumption-array))
                                       (equiv-alistp equiv-alist)
                                       ;; print
                                       (info-worldp info)
@@ -1138,7 +1167,7 @@
                   (,simplify-tree-name (first args) ;the test
                                        'iff ;can rewrite the test in a propositional context
                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                       rule-alist nodenums-to-assume-false equiv-alist print info tries interpreted-function-alist monitored-symbols embedded-dag-depth
+                                       rule-alist nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes equiv-alist print info tries interpreted-function-alist monitored-symbols embedded-dag-depth
                                        case-designator prover-depth options (+ -1 count)))
                  ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))
               (if (consp simplified-test) ;tests for quotep
@@ -1149,14 +1178,14 @@
                                          )
                                        equiv ;use the same equiv, todo: consider using IFF here
                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                       rule-alist nodenums-to-assume-false equiv-alist print info tries interpreted-function-alist monitored-symbols
+                                       rule-alist nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes equiv-alist print info tries interpreted-function-alist monitored-symbols
                                        embedded-dag-depth case-designator prover-depth options (+ -1 count))
                 ;; The test was not resolved, so we must rewrite both branches: ;; todo: just call simplify-tree twice here?
                 (b* (((mv erp simplified-other-args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
                       (,simplify-trees-name (rest args)
                                             '(equal equal) ;;equiv-lst ;todo: use '(iff iff) here, or try the same equiv as for the whole term?
                                             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                            rule-alist nodenums-to-assume-false
+                                            rule-alist nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
                                             equiv-alist print info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count)))
                      ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))
                   (,simplify-fun-call-name (ffn-symb tree)
@@ -1164,7 +1193,7 @@
                                            equiv
                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                            rule-alist
-                                           nodenums-to-assume-false
+                                           nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
                                            equiv-alist
                                            print
                                            info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count)))))))
@@ -1176,7 +1205,7 @@
                                          equiv
                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                          rule-alist
-                                         nodenums-to-assume-false
+                                         nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
                                          equiv-alist ;don't pass this around?
                                          print
                                          info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options count)
@@ -1185,10 +1214,13 @@
                                       (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                                       (true-listp args)
                                       (all-dargp-less-than args dag-len)
-                                      (symbolp equiv)
+                                      (equivp equiv)
                                       (rule-alistp rule-alist)
                                       (nat-listp nodenums-to-assume-false)
                                       (all-< nodenums-to-assume-false dag-len)
+                                      (assumption-arrayp 'assumption-array assumption-array)
+                                      (natp assumption-array-num-valid-nodes)
+                                      (<= assumption-array-num-valid-nodes (alen1 'assumption-array assumption-array))
                                       (equiv-alistp equiv-alist)
                                       ;; print
                                       (info-worldp info)
@@ -1209,7 +1241,7 @@
                    (get-rules-for-fn fn rule-alist)
                    rule-alist args
                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                   nodenums-to-assume-false equiv-alist print info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count)))
+                   nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes equiv-alist print info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count)))
                  ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))
               (if rhs-or-nil
                   ;; A rule fired, so rewrite the instantiated RHS:
@@ -1218,7 +1250,7 @@
                    rhs-or-nil
                    equiv ;; was: 'equal
                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                   rule-alist nodenums-to-assume-false equiv-alist
+                   rule-alist nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes equiv-alist
                    print info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count))
                 ;; No rule fired, so no simplification can be done.  This node is ready to add to the dag:
                 (b* ((- (and (eq :verbose print) (cw "(Making ~x0 term with args: ~x1.)~%" fn args)))
@@ -1230,7 +1262,8 @@
                   ;; Finally, see if the node can be replaced by something using the assumptions.  Note that this uses
                   ;; the simplified args, so assumptions not in normal form may have no effect.
                   (mv (erp-nil)
-                      (maybe-replace-nodenum-using-assumptions-for-axe-prover nodenum equiv nodenums-to-assume-false dag-array) ;currently, this can only replace it with a constant?
+                      ;; (maybe-replace-nodenum-using-assumptions-for-axe-prover nodenum equiv nodenums-to-assume-false dag-array) ;currently, this can only replace it with a constant?
+                      (maybe-replace-nodenum-using-assumption-array nodenum equiv assumption-array assumption-array-num-valid-nodes)
                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))))))
 
         ;; Rewrite TREE repeatedly using RULE-ALIST and NODENUMS-TO-ASSUME-FALSE and add the result to the dag, returning a nodenum or a quotep.
@@ -1241,17 +1274,20 @@
                                      equiv
                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                      rule-alist
-                                     nodenums-to-assume-false
+                                     nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
                                      equiv-alist ;don't pass this around?
                                      print
                                      info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options count)
           (declare (xargs :guard (and (axe-treep tree)
-                                      (symbolp equiv)
+                                      (equivp equiv)
                                       (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                                       (bounded-axe-treep tree dag-len)
                                       (rule-alistp rule-alist)
                                       (nat-listp nodenums-to-assume-false)
                                       (all-< nodenums-to-assume-false dag-len)
+                                      (assumption-arrayp 'assumption-array assumption-array)
+                                      (natp assumption-array-num-valid-nodes)
+                                      (<= assumption-array-num-valid-nodes (alen1 'assumption-array assumption-array))
                                       (equiv-alistp equiv-alist)
                                       ;; print
                                       (info-worldp info)
@@ -1307,7 +1343,8 @@
                   ;;                                    info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count)))
                   ;;     (mv (erp-nil) tree dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))
                   (mv (erp-nil)
-                      (maybe-replace-nodenum-using-assumptions-for-axe-prover tree equiv nodenums-to-assume-false dag-array)
+                      ;;(maybe-replace-nodenum-using-assumptions-for-axe-prover tree equiv nodenums-to-assume-false dag-array)
+                      (maybe-replace-nodenum-using-assumption-array tree equiv assumption-array assumption-array-num-valid-nodes)
                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
               ;; TREE is not an atom:
               (let ((fn (ffn-symb tree)))
@@ -1319,7 +1356,7 @@
                                            equiv
                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                            rule-alist
-                                           nodenums-to-assume-false
+                                           nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
                                            equiv-alist ;don't pass this around?
                                            print
                                            info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count)))
@@ -1328,7 +1365,7 @@
                                                equiv
                                                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                rule-alist
-                                               nodenums-to-assume-false
+                                               nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
                                                equiv-alist ;don't pass this around?
                                                print
                                                info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count)))
@@ -1453,11 +1490,20 @@
                        ;;                            rule-alist nodenums-to-assume-false equiv-alist print info tries interpreted-function-alist monitored-symbols
                        ;;                            embedded-dag-depth case-designator prover-depth options (+ -1 count))
                    ;;Rewrite the args:
-                   (b* (((mv erp simplified-args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
-                         (,simplify-trees-name (fargs tree)
-                                               (get-equivs equiv fn equiv-alist)
+                   (b* ((args (fargs tree))
+                        (equivs (let ((equivs (get-equivs equiv fn equiv-alist)))
+                                  (if equivs
+                                      equivs
+                                    :equal ;means use 'equal for all equivs
+                                    )))
+                        ((when (and (not (equal :equal equivs))
+                                    (not (= (len equivs) (len args)))))
+                         (mv :bad-equivs nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
+                        ((mv erp simplified-args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
+                         (,simplify-trees-name args
+                                               equivs
                                                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                               rule-alist nodenums-to-assume-false
+                                               rule-alist nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
                                                equiv-alist print info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count)))
                         ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))
                      ;; Now we simplify the function applied to the simplified args:
@@ -1472,7 +1518,7 @@
                                                 equiv ; was: 'equal
                                                 dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                 rule-alist
-                                                nodenums-to-assume-false  equiv-alist print
+                                                nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes  equiv-alist print
                                                 info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count)))
                        ;; Handle ground terms:
                        ;; TODO: Think about how it is possible to even have a ground term here
@@ -1503,7 +1549,7 @@
                                                     equiv
                                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                     rule-alist
-                                                    nodenums-to-assume-false
+                                                    nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
                                                     equiv-alist ;don't pass this around?
                                                     print
                                                     info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count))))))))))))
@@ -1515,18 +1561,24 @@
         (defund ,simplify-trees-name (trees
                                       equivs
                                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                      rule-alist nodenums-to-assume-false
+                                      rule-alist
+                                      nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
                                       equiv-alist print info tries interpreted-function-alist monitored-symbols
                                       embedded-dag-depth case-designator prover-depth
                                       options count)
           (declare (xargs :guard (and (true-listp trees)
                                       (all-axe-treep trees)
-                                      (symbol-listp equivs)
+                                      (or (eq :equal equivs) ;means use 'equal for all the equivs
+                                          (and (equiv-listp equivs)
+                                               (equal (len equivs) (len trees))))
                                       (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                                       (all-bounded-axe-treep trees dag-len)
                                       (rule-alistp rule-alist)
                                       (nat-listp nodenums-to-assume-false)
                                       (all-< nodenums-to-assume-false dag-len)
+                                      (assumption-arrayp 'assumption-array assumption-array)
+                                      (natp assumption-array-num-valid-nodes)
+                                      (<= assumption-array-num-valid-nodes (alen1 'assumption-array assumption-array))
                                       (equiv-alistp equiv-alist)
                                       ;; print
                                       (info-worldp info)
@@ -1546,16 +1598,16 @@
               (b* ( ;; this simplifies the arguments in reverse order (TODO: why?)
                    ((mv erp rest-result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
                     (,simplify-trees-name (rest trees)
-                                          (rest equivs)
+                                          (if (eq :equal equivs) :equal (rest equivs))
                                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                          rule-alist nodenums-to-assume-false  equiv-alist print info tries interpreted-function-alist
+                                          rule-alist nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes  equiv-alist print info tries interpreted-function-alist
                                           monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count)))
                    ((when erp) (mv erp trees dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
                    ((mv erp first-result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
                     (,simplify-tree-name (first trees)
-                                         (first equivs)
+                                         (if (eq :equal equivs) 'equal (first equivs))
                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                         rule-alist nodenums-to-assume-false equiv-alist print info tries interpreted-function-alist monitored-symbols
+                                         rule-alist nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes equiv-alist print info tries interpreted-function-alist monitored-symbols
                                          embedded-dag-depth
                                          case-designator prover-depth options (+ -1 count)))
                    ((when erp) (mv erp trees dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))
@@ -1647,6 +1699,9 @@
                          (rule-alistp rule-alist)
                          (nat-listp nodenums-to-assume-false)
                          (all-< nodenums-to-assume-false dag-len)
+                         (assumption-arrayp 'assumption-array assumption-array)
+                         (natp assumption-array-num-valid-nodes)
+                         (<= assumption-array-num-valid-nodes (alen1 'assumption-array assumption-array))
                          (info-worldp info)
                          (triesp tries)
                          (interpreted-function-alistp interpreted-function-alist)
@@ -1678,6 +1733,9 @@
                          (rule-alistp rule-alist)
                          (nat-listp nodenums-to-assume-false)
                          (all-< nodenums-to-assume-false dag-len)
+                         (assumption-arrayp 'assumption-array assumption-array)
+                         (natp assumption-array-num-valid-nodes)
+                         (<= assumption-array-num-valid-nodes (alen1 'assumption-array assumption-array))
                          ;; print
                          (info-worldp info)
                          (triesp tries)
@@ -1707,6 +1765,9 @@
                          ;; (true-listp args-to-match)
                          (nat-listp nodenums-to-assume-false)
                          (all-< nodenums-to-assume-false dag-len)
+                         (assumption-arrayp 'assumption-array assumption-array)
+                         (natp assumption-array-num-valid-nodes)
+                         (<= assumption-array-num-valid-nodes (alen1 'assumption-array assumption-array))
                          (equiv-alistp equiv-alist)
                          ;; print
                          (info-worldp info)
@@ -1730,7 +1791,7 @@
            :FLAG ,TRY-TO-APPLY-RULES-name)
          (DEFTHM ,(pack$ SIMPLIFY-if-TREE-name '-return-type)
            (IMPLIES (and (axe-treep tree)
-                         (symbolp equiv)
+                         (equivp equiv)
                          (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                          (bounded-axe-treep tree dag-len)
                          (consp tree) ;; this case
@@ -1738,6 +1799,9 @@
                          (rule-alistp rule-alist)
                          (nat-listp nodenums-to-assume-false)
                          (all-< nodenums-to-assume-false dag-len)
+                         (assumption-arrayp 'assumption-array assumption-array)
+                         (natp assumption-array-num-valid-nodes)
+                         (<= assumption-array-num-valid-nodes (alen1 'assumption-array assumption-array))
                          (equiv-alistp equiv-alist)
                          ;; print
                          (info-worldp info)
@@ -1759,7 +1823,7 @@
            :FLAG ,SIMPLIFY-if-TREE-name)
          (DEFTHM ,(pack$ SIMPLIFY-boolif-TREE-name '-return-type)
            (IMPLIES (and (axe-treep tree)
-                         (symbolp equiv)
+                         (equivp equiv)
                          (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                          (bounded-axe-treep tree dag-len)
                          (consp tree)                              ;; this case
@@ -1767,6 +1831,9 @@
                          (rule-alistp rule-alist)
                          (nat-listp nodenums-to-assume-false)
                          (all-< nodenums-to-assume-false dag-len)
+                         (assumption-arrayp 'assumption-array assumption-array)
+                         (natp assumption-array-num-valid-nodes)
+                         (<= assumption-array-num-valid-nodes (alen1 'assumption-array assumption-array))
                          (equiv-alistp equiv-alist)
                          ;; print
                          (info-worldp info)
@@ -1791,11 +1858,14 @@
                          (not (equal 'quote fn))
                          (true-listp args)
                          (all-dargp-less-than args dag-len)
-                         (symbolp equiv)
+                         (equivp equiv)
                          (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                          (rule-alistp rule-alist)
                          (nat-listp nodenums-to-assume-false)
                          (all-< nodenums-to-assume-false dag-len)
+                         (assumption-arrayp 'assumption-array assumption-array)
+                         (natp assumption-array-num-valid-nodes)
+                         (<= assumption-array-num-valid-nodes (alen1 'assumption-array assumption-array))
                          (equiv-alistp equiv-alist)
                          (info-worldp info)
                          (triesp tries)
@@ -1816,12 +1886,15 @@
            :FLAG ,SIMPLIFY-fun-call-name)
          (DEFTHM ,(pack$ SIMPLIFY-TREE-name '-return-type)
            (IMPLIES (and (axe-treep tree)
-                         (symbolp equiv)
+                         (equivp equiv)
                          (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                          (bounded-axe-treep tree dag-len)
                          (rule-alistp rule-alist)
                          (nat-listp nodenums-to-assume-false)
                          (all-< nodenums-to-assume-false dag-len)
+                         (assumption-arrayp 'assumption-array assumption-array)
+                         (natp assumption-array-num-valid-nodes)
+                         (<= assumption-array-num-valid-nodes (alen1 'assumption-array assumption-array))
                          (equiv-alistp equiv-alist)
                          ;; print
                          (info-worldp info)
@@ -1844,12 +1917,17 @@
          (DEFTHM ,(pack$ SIMPLIFY-TREES-name '-return-type)
            (IMPLIES (and (true-listp trees)
                          (all-axe-treep trees)
-                         (symbol-listp equivs)
+                         (or (eq :equal equivs) ;means use 'equal for all the equivs
+                             (and (equiv-listp equivs)
+                                  (equal (len equivs) (len trees))))
                          (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                          (all-bounded-axe-treep trees dag-len)
                          (rule-alistp rule-alist)
                          (nat-listp nodenums-to-assume-false)
                          (all-< nodenums-to-assume-false dag-len)
+                         (assumption-arrayp 'assumption-array assumption-array)
+                         (natp assumption-array-num-valid-nodes)
+                         (<= assumption-array-num-valid-nodes (alen1 'assumption-array assumption-array))
                          (equiv-alistp equiv-alist)
                          ;; print
                          (info-worldp info)
@@ -1886,7 +1964,7 @@
                                                            rule-symbol
                                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                            equiv-alist rule-alist
-                                                           nodenums-to-assume-false
+                                                           nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
                                                            print info tries interpreted-function-alist
                                                            monitored-symbols embedded-dag-depth
                                                            case-designator
@@ -1898,7 +1976,7 @@
                                                                              alist rule-symbol
                                                                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                                              equiv-alist rule-alist
-                                                                             nodenums-to-assume-false
+                                                                             nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
                                                                              print
                                                                              info tries interpreted-function-alist monitored-symbols
                                                                              embedded-dag-depth
@@ -1907,7 +1985,7 @@
                                                         equivs
                                                         dag-array dag-len dag-parent-array
                                                         dag-constant-alist dag-variable-alist
-                                                        rule-alist nodenums-to-assume-false
+                                                        rule-alist nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
                                                         equiv-alist print
                                                         info tries interpreted-function-alist
                                                         monitored-symbols
@@ -1917,7 +1995,7 @@
                                                             rule-alist
                                                             args-to-match
                                                             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                            nodenums-to-assume-false equiv-alist print info tries
+                                                            nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes equiv-alist print info tries
                                                             interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options count)
                                   (axe-rule-hyp-listp hyps))
                   :do-not '(generalize eliminate-destructors)
@@ -1960,6 +2038,9 @@
                        (rule-alistp rule-alist)
                        (nat-listp nodenums-to-assume-false)
                        (all-< nodenums-to-assume-false dag-len)
+                       (assumption-arrayp 'assumption-array assumption-array)
+                       (natp assumption-array-num-valid-nodes)
+                       (<= assumption-array-num-valid-nodes (alen1 'assumption-array assumption-array))
                        ;; print
                        (info-worldp info)
                        (triesp tries)
@@ -1986,6 +2067,9 @@
                        ;; (true-listp args-to-match)
                        (nat-listp nodenums-to-assume-false)
                        (all-< nodenums-to-assume-false dag-len)
+                       (assumption-arrayp 'assumption-array assumption-array)
+                       (natp assumption-array-num-valid-nodes)
+                       (<= assumption-array-num-valid-nodes (alen1 'assumption-array assumption-array))
                        (equiv-alistp equiv-alist)
                        (info-worldp info)
                        (triesp tries)
@@ -2025,6 +2109,9 @@
                        ;; (true-listp args-to-match)
                        (nat-listp nodenums-to-assume-false)
                        (all-< nodenums-to-assume-false dag-len)
+                       (assumption-arrayp 'assumption-array assumption-array)
+                       (natp assumption-array-num-valid-nodes)
+                       (<= assumption-array-num-valid-nodes (alen1 'assumption-array assumption-array))
                        (equiv-alistp equiv-alist)
                        (info-worldp info)
                        (triesp tries)
@@ -2045,12 +2132,15 @@
 
        (defthm ,(pack$ simplify-tree-name '-return-type-corollary)
          (implies (and (axe-treep tree)
-                       (symbolp equiv)
+                       (equivp equiv)
                        (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                        (bounded-axe-treep tree dag-len)
                        (rule-alistp rule-alist)
                        (nat-listp nodenums-to-assume-false)
                        (all-< nodenums-to-assume-false dag-len)
+                       (assumption-arrayp 'assumption-array assumption-array)
+                       (natp assumption-array-num-valid-nodes)
+                       (<= assumption-array-num-valid-nodes (alen1 'assumption-array assumption-array))
                        (equiv-alistp equiv-alist)
                        ;; print
                        (info-worldp info)
@@ -2085,12 +2175,15 @@
 
        (defthm ,(pack$ simplify-tree-name '-return-type-corollary-linear)
          (implies (and (axe-treep tree)
-                       (symbolp equiv)
+                       (equivp equiv)
                        (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                        (bounded-axe-treep tree dag-len)
                        (rule-alistp rule-alist)
                        (nat-listp nodenums-to-assume-false)
                        (all-< nodenums-to-assume-false dag-len)
+                       (assumption-arrayp 'assumption-array assumption-array)
+                       (natp assumption-array-num-valid-nodes)
+                       (<= assumption-array-num-valid-nodes (alen1 'assumption-array assumption-array))
                        (equiv-alistp equiv-alist)
                        ;; print
                        (info-worldp info)
@@ -2116,12 +2209,17 @@
        (defthm ,(pack$ simplify-trees-name '-return-type-corollary)
            (implies (and (true-listp trees)
                          (all-axe-treep trees)
-                         (symbol-listp equivs)
+                         (or (eq :equal equivs) ;means use 'equal for all the equivs
+                             (and (equiv-listp equivs)
+                                  (equal (len equivs) (len trees))))
                          (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                          (all-bounded-axe-treep trees dag-len)
                          (rule-alistp rule-alist)
                          (nat-listp nodenums-to-assume-false)
                          (all-< nodenums-to-assume-false dag-len)
+                         (assumption-arrayp 'assumption-array assumption-array)
+                         (natp assumption-array-num-valid-nodes)
+                         (<= assumption-array-num-valid-nodes (alen1 'assumption-array assumption-array))
                          (equiv-alistp equiv-alist)
                          (info-worldp info)
                          (triesp tries)
@@ -2146,12 +2244,17 @@
        (defthm ,(pack$ simplify-trees-name '-return-type-corollary-linear)
          (implies (and (true-listp trees)
                        (all-axe-treep trees)
-                       (symbol-listp equivs)
+                       (or (eq :equal equivs) ;means use 'equal for all the equivs
+                           (and (equiv-listp equivs)
+                                (equal (len equivs) (len trees))))
                        (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                        (all-bounded-axe-treep trees dag-len)
                        (rule-alistp rule-alist)
                        (nat-listp nodenums-to-assume-false)
                        (all-< nodenums-to-assume-false dag-len)
+                       (assumption-arrayp 'assumption-array assumption-array)
+                       (natp assumption-array-num-valid-nodes)
+                       (<= assumption-array-num-valid-nodes (alen1 'assumption-array assumption-array))
                        (equiv-alistp equiv-alist)
                        (info-worldp info)
                        (triesp tries)
@@ -2253,7 +2356,8 @@
        (defund ,rewrite-nodes-name (worklist ;could track the equivs and polarities?
                                     result-array-name result-array
                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                    nodenums-to-assume-false rule-alist equiv-alist interpreted-function-alist
+                                    nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
+                                    rule-alist equiv-alist interpreted-function-alist
                                     print info tries monitored-symbols case-designator ;none of these should affect soundness
                                     prover-depth options count)
          (declare (xargs :guard (and (nat-listp worklist)
@@ -2263,6 +2367,9 @@
                                      (all-< worklist dag-len)
                                      (nat-listp nodenums-to-assume-false)
                                      (all-< nodenums-to-assume-false dag-len)
+                                     (assumption-arrayp 'assumption-array assumption-array)
+                                     (natp assumption-array-num-valid-nodes)
+                                     (<= assumption-array-num-valid-nodes (alen1 'assumption-array assumption-array))
                                      (rule-alistp rule-alist)
                                      (equiv-alistp equiv-alist)
                                      (interpreted-function-alistp interpreted-function-alist)
@@ -2285,28 +2392,32 @@
                    ;;we've already handled this node:
                    (,rewrite-nodes-name (rest worklist) result-array-name result-array
                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                        nodenums-to-assume-false rule-alist equiv-alist interpreted-function-alist print info tries monitored-symbols
+                                        nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
+                                        rule-alist equiv-alist interpreted-function-alist print info tries monitored-symbols
                                         case-designator prover-depth options (+ -1 count))
                  (b* ((- (and (eq :verbose print)
                               (cw "Processing node ~x0 (may have to process the args first).~%" nodenum)))
                       (expr (aref1 'dag-array dag-array nodenum)))
                    (if (atom expr) ;must be a variable - just see if its node needs to be replaced
-                       (let ((new-nodenum-or-quotep (maybe-replace-nodenum-using-assumptions-for-axe-prover nodenum 'equal nodenums-to-assume-false dag-array)))
+                       (let ((new-nodenum-or-quotep ;;(maybe-replace-nodenum-using-assumptions-for-axe-prover nodenum 'equal nodenums-to-assume-false dag-array)
+                              (maybe-replace-nodenum-using-assumption-array nodenum 'equal assumption-array assumption-array-num-valid-nodes)
+                              ))
                          ;;option to print the number of rule hits?
-                         (,rewrite-nodes-name
-                          (rest worklist)
-                          result-array-name
-                          (aset1-safe result-array-name result-array nodenum new-nodenum-or-quotep) ;; update the result-array
-                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                          nodenums-to-assume-false rule-alist
-                          equiv-alist interpreted-function-alist print info tries monitored-symbols case-designator prover-depth options (+ -1 count)))
+                         (,rewrite-nodes-name (rest worklist)
+                                              result-array-name
+                                              (aset1-safe result-array-name result-array nodenum new-nodenum-or-quotep) ;; update the result-array
+                                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                              nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
+                                              rule-alist
+                                              equiv-alist interpreted-function-alist print info tries monitored-symbols case-designator prover-depth options (+ -1 count)))
                      (let ((fn (ffn-symb expr)))
                        (if (eq 'quote fn)
                            (,rewrite-nodes-name (rest worklist)
                                                 result-array-name
                                                 (aset1-safe result-array-name result-array nodenum expr) ;; update the result-array
                                                 dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                nodenums-to-assume-false rule-alist equiv-alist interpreted-function-alist print info tries monitored-symbols case-designator prover-depth options (+ -1 count))
+                                                nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
+                                                rule-alist equiv-alist interpreted-function-alist print info tries monitored-symbols case-designator prover-depth options (+ -1 count))
                          ;;regular function call:
                          ;;first make sure that the args have been processed
                          ;;ffffixme special handling for if and related operators?!? TODO: Do we at least rewrite the IF-test using an equiv of IFF?
@@ -2316,7 +2427,8 @@
                                ;;when the current node is processed again, some work will be redone
                                (,rewrite-nodes-name extended-worklist-or-nil result-array-name result-array
                                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                    nodenums-to-assume-false rule-alist equiv-alist interpreted-function-alist print info tries monitored-symbols
+                                                    nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
+                                                    rule-alist equiv-alist interpreted-function-alist print info tries monitored-symbols
                                                     case-designator prover-depth options (+ -1 count))
                              ;;all args are simplified (but under what equiv, just 'equal ?):
                              (b* ((args (lookup-args-in-result-array args result-array-name result-array)) ;combine this with the get-args-not-done somehow?
@@ -2329,7 +2441,7 @@
                                                         'equal ;fixme can we do better?
                                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                         rule-alist
-                                                        nodenums-to-assume-false
+                                                        nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
                                                         equiv-alist print
                                                         info tries interpreted-function-alist monitored-symbols 0 case-designator prover-depth options (+ -1 count)))
                                   ((when erp) (mv erp result-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
@@ -2340,7 +2452,8 @@
                                (,rewrite-nodes-name (rest worklist) result-array-name
                                                     (aset1-safe result-array-name result-array nodenum new-nodenum) ;; update the result-array
                                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                    nodenums-to-assume-false rule-alist equiv-alist interpreted-function-alist print info tries
+                                                    nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
+                                                    rule-alist equiv-alist interpreted-function-alist print info tries
                                                     monitored-symbols case-designator prover-depth options (+ -1 count))))))))))))))
 
        (defthm ,(pack$ rewrite-nodes-name '-return-type)
@@ -2351,6 +2464,9 @@
                        (all-< worklist dag-len)
                        (nat-listp nodenums-to-assume-false)
                        (all-< nodenums-to-assume-false dag-len)
+                       (assumption-arrayp 'assumption-array assumption-array)
+                       (natp assumption-array-num-valid-nodes)
+                       (<= assumption-array-num-valid-nodes (alen1 'assumption-array assumption-array))
                        (rule-alistp rule-alist)
                        (equiv-alistp equiv-alist)
                        (interpreted-function-alistp interpreted-function-alist)
@@ -2363,7 +2479,8 @@
                   (mv-let (erp new-result-array new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries)
                     (,rewrite-nodes-name worklist result-array-name result-array
                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                         nodenums-to-assume-false rule-alist equiv-alist interpreted-function-alist
+                                         nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
+                                         rule-alist equiv-alist interpreted-function-alist
                                          print info tries monitored-symbols case-designator ;none of these should affect soundness
                                          prover-depth options count)
                     (implies (not erp)
@@ -2375,23 +2492,29 @@
                                   (<= dag-len new-dag-len)
                                   (info-worldp info)
                                   (triesp tries)))))
-         :hints (("Goal" :in-theory (enable ,rewrite-nodes-name))))
+         :hints (("Goal" :induct t
+                  :in-theory (enable ,rewrite-nodes-name))))
 
-       ;; Returns (mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries).
+       ;; Returns (mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries assumption-array).
        ;; It would be nice to call a standard rewriter here, but the assumptions (nodenums-to-assume-false) are likely not in the right form.
+       ;; The assumption-array returned has been changed but then changed back.
        ;; TODO: can we use a better equiv?
        ;; TODO: Inline this?
        (defund ,rewrite-literal-name (nodenum ;; should have no extractable disjuncts
                                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                      nodenums-to-assume-false
+                                      nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
                                       rule-alist interpreted-function-alist
                                       info tries monitored-symbols print case-designator ;none of these should affect soundness
-                                      prover-depth options)
+                                      prover-depth known-booleans options)
          (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                                      (natp nodenum)
                                      (< nodenum dag-len)
                                      (nat-listp nodenums-to-assume-false)
                                      (all-< nodenums-to-assume-false dag-len)
+                                     (assumption-arrayp 'assumption-array assumption-array)
+                                     (natp assumption-array-num-valid-nodes)
+                                     (<= assumption-array-num-valid-nodes (alen1 'assumption-array assumption-array))
+                                     (< nodenum assumption-array-num-valid-nodes)
                                      (rule-alistp rule-alist)
                                      (interpreted-function-alistp interpreted-function-alist)
                                      (info-worldp info)
@@ -2399,9 +2522,16 @@
                                      (symbol-listp monitored-symbols)
                                      (stringp case-designator)
                                      (natp prover-depth)
+                                     (symbol-listp known-booleans)
                                      (axe-prover-optionsp options))))
          (b* ((- (and (or (eq :verbose print) (eq :verbose2 print))
                       (cw "(Rewriting literal ~x0.~%" nodenum)))
+              ;; See what info this literal contributed to the assumption-array:
+              ((mv assumption-nodenum assumption-item)
+               (assumption-array-info-for-literal nodenum dag-array dag-len known-booleans))
+              ;; Clear out the assumption info from this node, so we don't use it to rewrite this literal to true:
+              ;; Note that the index used here may not be in nodenum of the literal:
+              (assumption-array (aset1 'assumption-array assumption-array assumption-nodenum nil))
               ;; Make an array to track results in the worklist algorithm:
               (result-array-name (pack$ 'result-array- prover-depth))
               (result-array (make-empty-array result-array-name dag-len) ;fixme dag-len here is overkill? use (+ 1 nodeum)?
@@ -2414,21 +2544,24 @@
                                     result-array
                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                     nodenums-to-assume-false
+                                    assumption-array ; has info from all literals except this one
+                                    assumption-array-num-valid-nodes
                                     rule-alist
                                     *congruence-table* ;do we need to pass this around?
                                     interpreted-function-alist print info tries monitored-symbols case-designator prover-depth options (+ -1 (expt 2 59))))
-              ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
+              ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries assumption-array))
               (- (and (or (eq :verbose print) (eq :verbose2 print))
                       (cw "  Done rewriting literal ~x0.)~%" nodenum)))
               (new-nodenum-or-quotep (aref1 result-array-name result-array nodenum))
               ((when (not new-nodenum-or-quotep)) ;todo: prove that this can't happen
                (er hard? ',rewrite-literal-name "Literal did not rewrite to anything!")
-               (mv :error nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                   info tries)))
+               (mv :error nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries assumption-array))
+              ;; Restore the information that was cleared out of the assumption array:
+              (assumption-array (aset1 'assumption-array assumption-array assumption-nodenum assumption-item)))
            (mv (erp-nil)
                new-nodenum-or-quotep
                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-               info tries)))
+               info tries assumption-array)))
 
        (defthm ,(pack$ rewrite-literal-name '-return-type)
          (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
@@ -2436,6 +2569,10 @@
                        (< nodenum dag-len)
                        (nat-listp nodenums-to-assume-false)
                        (all-< nodenums-to-assume-false dag-len)
+                       (assumption-arrayp 'assumption-array assumption-array)
+                       (natp assumption-array-num-valid-nodes)
+                       (<= assumption-array-num-valid-nodes (alen1 'assumption-array assumption-array))
+                       (< nodenum assumption-array-num-valid-nodes)
                        (rule-alistp rule-alist)
                        (interpreted-function-alistp interpreted-function-alist)
                        (info-worldp info)
@@ -2443,20 +2580,24 @@
                        (symbol-listp monitored-symbols)
                        (stringp case-designator)
                        (natp prover-depth)
+                       ;; (symbol-listp known-booleans)
                        (axe-prover-optionsp options))
-                  (mv-let (erp new-nodenum-or-quotep new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries)
+                  (mv-let (erp new-nodenum-or-quotep new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries new-assumption-array)
                     (,rewrite-literal-name nodenum
                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                           nodenums-to-assume-false
+                                           nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
                                            rule-alist interpreted-function-alist
                                            info tries monitored-symbols print case-designator ;none of these should affect soundness
-                                           prover-depth options)
+                                           prover-depth known-booleans options)
                     (implies (not erp)
                              (and (wf-dagp 'dag-array new-dag-array new-dag-len 'dag-parent-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
                                   (<= dag-len new-dag-len)
                                   (info-worldp info)
                                   (triesp tries)
-                                  (dargp-less-than new-nodenum-or-quotep new-dag-len)))))
+                                  (dargp-less-than new-nodenum-or-quotep new-dag-len)
+                                  (assumption-arrayp 'assumption-array new-assumption-array)
+                                  (equal (alen1 'assumption-array new-assumption-array)
+                                         (alen1 'assumption-array assumption-array))))))
          :hints (("Goal" :in-theory (e/d (,rewrite-literal-name
                                           type-of-aref1-when-result-arrayp-2)
                                          (natp)))))
@@ -2467,6 +2608,10 @@
                        (< nodenum dag-len)
                        (nat-listp nodenums-to-assume-false)
                        (all-< nodenums-to-assume-false dag-len)
+                       (assumption-arrayp 'assumption-array assumption-array)
+                       (natp assumption-array-num-valid-nodes)
+                       (<= assumption-array-num-valid-nodes (alen1 'assumption-array assumption-array))
+                       (< nodenum assumption-array-num-valid-nodes)
                        (rule-alistp rule-alist)
                        (interpreted-function-alistp interpreted-function-alist)
                        (info-worldp info)
@@ -2474,15 +2619,16 @@
                        (symbol-listp monitored-symbols)
                        (stringp case-designator)
                        (natp prover-depth)
+                       ;; (symbol-listp known-booleans)
                        (axe-prover-optionsp options))
-                  (mv-let (erp new-nodenum-or-quotep new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries)
+                  (mv-let (erp new-nodenum-or-quotep new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries assumption-array)
                     (,rewrite-literal-name nodenum
                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                           nodenums-to-assume-false
+                                           nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
                                            rule-alist interpreted-function-alist
                                            info tries monitored-symbols print case-designator ;none of these should affect soundness
-                                           prover-depth options)
-                    (declare (ignore new-nodenum-or-quotep new-dag-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries))
+                                           prover-depth known-booleans options)
+                    (declare (ignore new-nodenum-or-quotep new-dag-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries assumption-array))
                     (implies (not erp)
                              (natp new-dag-len))))
          :hints (("Goal" :use (:instance ,(pack$ rewrite-literal-name '-return-type))
@@ -2494,6 +2640,10 @@
                        (< nodenum dag-len)
                        (nat-listp nodenums-to-assume-false)
                        (all-< nodenums-to-assume-false dag-len)
+                       (assumption-arrayp 'assumption-array assumption-array)
+                       (natp assumption-array-num-valid-nodes)
+                       (<= assumption-array-num-valid-nodes (alen1 'assumption-array assumption-array))
+                       (< nodenum assumption-array-num-valid-nodes)
                        (rule-alistp rule-alist)
                        (interpreted-function-alistp interpreted-function-alist)
                        (info-worldp info)
@@ -2501,15 +2651,16 @@
                        (symbol-listp monitored-symbols)
                        (stringp case-designator)
                        (natp prover-depth)
+                       ;; (symbol-listp known-booleans)
                        (axe-prover-optionsp options))
-                  (mv-let (erp new-nodenum-or-quotep new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries)
+                  (mv-let (erp new-nodenum-or-quotep new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries assumption-array)
                     (,rewrite-literal-name nodenum
                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                           nodenums-to-assume-false
+                                           nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
                                            rule-alist interpreted-function-alist
                                            info tries monitored-symbols print case-designator ;none of these should affect soundness
-                                           prover-depth options)
-                    (declare (ignore new-nodenum-or-quotep new-dag-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries))
+                                           prover-depth known-booleans options)
+                    (declare (ignore new-nodenum-or-quotep new-dag-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries assumption-array))
                     (implies (not erp)
                              (<= dag-len new-dag-len))))
          :rule-classes :linear
@@ -2528,15 +2679,20 @@
        (defund ,rewrite-literals-name (work-list ;a list of nodenums, with no extractable disjuncts
                                        done-list ;a list of nodenums, with no extractable disjuncts
                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                       assumption-array assumption-array-num-valid-nodes
                                        changep ;; whether anything has changed so far
                                        rule-alist
                                        interpreted-function-alist monitored-symbols print case-designator
-                                       info tries prover-depth options)
+                                       info tries prover-depth known-booleans options)
          (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                                      (nat-listp work-list)
                                      (all-< work-list dag-len)
+                                     (assumption-arrayp 'assumption-array assumption-array)
+                                     (natp assumption-array-num-valid-nodes)
+                                     (all-< work-list assumption-array-num-valid-nodes)
                                      (nat-listp done-list)
                                      (all-< done-list dag-len)
+                                     (<= assumption-array-num-valid-nodes (alen1 'assumption-array assumption-array))
                                      (booleanp changep)
                                      (rule-alistp rule-alist)
                                      (interpreted-function-alistp interpreted-function-alist)
@@ -2546,6 +2702,7 @@
                                      (info-worldp info)
                                      (triesp tries)
                                      (natp prover-depth)
+                                     (symbol-listp known-booleans)
                                      (axe-prover-optionsp options))
                          :guard-hints (("Goal" :do-not-induct t))))
          (if (endp work-list)
@@ -2559,10 +2716,12 @@
                 (rest-work-list (rest work-list))
                 (other-literals (append rest-work-list done-list)) ;todo: save this append somehow?
                 ;; Rewrite the literal:
-                ((mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
+                ((mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries assumption-array)
                  (,rewrite-literal-name literal-nodenum
                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                        other-literals rule-alist interpreted-function-alist info tries monitored-symbols print case-designator prover-depth options))
+                                        other-literals
+                                        assumption-array assumption-array-num-valid-nodes
+                                        rule-alist interpreted-function-alist info tries monitored-symbols print case-designator prover-depth known-booleans options))
                 ((when erp) (mv erp nil nil done-list dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
                 ;; (- (cw "Node ~x0 rewrote to ~x1 in dag:~%" literal-nodenum new-nodenum-or-quotep))
                 ;; (- (if (quotep new-nodenum-or-quotep) (cw ":elided") (if (eql literal-nodenum new-nodenum-or-quote) :no-change (print-dag-only-supporters 'dag-array dag-array new-nodenum-or-quotep))))
@@ -2572,8 +2731,9 @@
                  (,rewrite-literals-name rest-work-list
                                          (cons literal-nodenum done-list)
                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                         assumption-array assumption-array-num-valid-nodes
                                          changep ;; no change to changep
-                                         rule-alist interpreted-function-alist monitored-symbols print case-designator info tries prover-depth options)
+                                         rule-alist interpreted-function-alist monitored-symbols print case-designator info tries prover-depth known-booleans options)
                ;; Rewriting changed the literal.  Harvest the disjuncts, raising them to top level, and add them to the done-list:
                (b* (((mv erp provedp extended-done-list dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
                      (get-disjuncts new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
@@ -2591,8 +2751,9 @@
                    (,rewrite-literals-name rest-work-list
                                            extended-done-list
                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                           assumption-array assumption-array-num-valid-nodes
                                            t ;; something changed
-                                           rule-alist interpreted-function-alist monitored-symbols print case-designator info tries prover-depth options)))))))
+                                           rule-alist interpreted-function-alist monitored-symbols print case-designator info tries prover-depth known-booleans options)))))))
 
        (defthm ,(pack$ rewrite-literals-name '-return-type)
          (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
@@ -2600,6 +2761,10 @@
                        (all-< work-list dag-len)
                        (nat-listp done-list)
                        (all-< done-list dag-len)
+                       (assumption-arrayp 'assumption-array assumption-array)
+                       (natp assumption-array-num-valid-nodes)
+                       (<= assumption-array-num-valid-nodes (alen1 'assumption-array assumption-array))
+                       (all-< work-list assumption-array-num-valid-nodes)
                        (booleanp changep)
                        (rule-alistp rule-alist)
                        (interpreted-function-alistp interpreted-function-alist)
@@ -2614,13 +2779,15 @@
                     (,rewrite-literals-name work-list
                                             done-list
                                             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                            assumption-array assumption-array-num-valid-nodes
                                             changep
                                             rule-alist
                                             interpreted-function-alist monitored-symbols print case-designator
-                                            info tries prover-depth options)
-                    (declare (ignore provedp changep))
+                                            info tries prover-depth known-booleans options)
                     (implies (not erp)
-                             (and (wf-dagp 'dag-array new-dag-array new-dag-len 'dag-parent-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
+                             (and (booleanp provedp)
+                                  (booleanp changep)
+                                  (wf-dagp 'dag-array new-dag-array new-dag-len 'dag-parent-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
                                   (<= dag-len new-dag-len)
                                   (info-worldp info)
                                   (triesp tries)
@@ -2628,6 +2795,7 @@
                                   (true-listp literal-nodenums)
                                   (all-< literal-nodenums new-dag-len)))))
          :hints (("Goal" :do-not '(generalize eliminate-destructors)
+                  :induct t
                   :in-theory (e/d (,rewrite-literals-name) (natp)))))
 
        (defthm ,(pack$ rewrite-literals-name '-return-type-corollary)
@@ -2636,6 +2804,10 @@
                        (all-< work-list dag-len)
                        (nat-listp done-list)
                        (all-< done-list dag-len)
+                       (assumption-arrayp 'assumption-array assumption-array)
+                       (natp assumption-array-num-valid-nodes)
+                       (<= assumption-array-num-valid-nodes (alen1 'assumption-array assumption-array))
+                       (all-< work-list assumption-array-num-valid-nodes)
                        (booleanp changep)
                        (rule-alistp rule-alist)
                        (interpreted-function-alistp interpreted-function-alist)
@@ -2650,10 +2822,11 @@
                     (,rewrite-literals-name work-list
                                             done-list
                                             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                            assumption-array assumption-array-num-valid-nodes
                                             changep
                                             rule-alist
                                             interpreted-function-alist monitored-symbols print case-designator
-                                            info tries prover-depth options)
+                                            info tries prover-depth known-booleans options)
                     (declare (ignore provedp changep literal-nodenums new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries))
                     (implies (not erp)
                              (pseudo-dag-arrayp 'dag-array new-dag-array new-dag-len))))
@@ -2667,10 +2840,11 @@
                     (,rewrite-literals-name work-list
                                             done-list
                                             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                            assumption-array assumption-array-num-valid-nodes
                                             changep
                                             rule-alist
                                             interpreted-function-alist monitored-symbols print case-designator
-                                            info tries prover-depth options)
+                                            info tries prover-depth known-booleans options)
                     (declare (ignore erp provedp changep new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries))
                     (true-listp literal-nodenums)))
          :rule-classes :type-prescription
@@ -2684,6 +2858,10 @@
                        (all-< work-list dag-len)
                        (nat-listp done-list)
                        (all-< done-list dag-len)
+                       (assumption-arrayp 'assumption-array assumption-array)
+                       (natp assumption-array-num-valid-nodes)
+                       (<= assumption-array-num-valid-nodes (alen1 'assumption-array assumption-array))
+                       (all-< work-list assumption-array-num-valid-nodes)
                        (booleanp changep)
                        (rule-alistp rule-alist)
                        (interpreted-function-alistp interpreted-function-alist)
@@ -2698,16 +2876,183 @@
                     (,rewrite-literals-name work-list
                                             done-list
                                             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                            assumption-array assumption-array-num-valid-nodes
                                             changep
                                             rule-alist
                                             interpreted-function-alist monitored-symbols print case-designator
-                                            info tries prover-depth options)
+                                            info tries prover-depth known-booleans options)
                     (declare (ignore provedp changep literal-nodenums new-dag-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries))
                     (implies (not erp)
                              (<= dag-len new-dag-len))))
          :rule-classes :linear
          :hints (("Goal" :do-not '(generalize eliminate-destructors)
                   :in-theory (e/d (,rewrite-literals-name) (natp)))))
+
+       ;; This is separate to keep the caller smaller and simpler
+       ;; Returns (mv erp provedp changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries).
+       (defund ,rewrite-clause-name (literal-nodenums
+                                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                    rule-alist rule-set-number
+                                    interpreted-function-alist monitored-symbols
+                                    case-designator print ;move print arg?
+                                    info tries prover-depth known-booleans options)
+         (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                                     (nat-listp literal-nodenums)
+                                     (all-< literal-nodenums dag-len)
+                                     (rule-alistp rule-alist)
+                                     (interpreted-function-alistp interpreted-function-alist)
+                                     (info-worldp info)
+                                     (triesp tries)
+                                     (symbol-listp monitored-symbols)
+                                     (stringp case-designator)
+                                     (natp prover-depth)
+                                     (symbol-listp known-booleans)
+                                     (axe-prover-optionsp options))
+                         :guard-hints (("Goal" :in-theory (e/d (<-of-+-of-1-strengthen-2 natp-of-+-of-1 rationalp-when-natp-for-axe) (natp))  :do-not-induct t))))
+         (b* ( ;; TODO: Do this in the callers?  Maintain an invariant about disjuncts having been extracted from literal-nodenums?  May not be true after we substitute, so do this there instead?
+              ((mv erp provedp literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+               (get-disjuncts-from-nodes literal-nodenums
+                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                         nil))
+              ((when erp) (mv erp nil nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
+              ((when provedp) (mv (erp-nil) t t nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
+              ((when (not literal-nodenums))
+               (cw "NOTE: No literals left.~%")
+               (mv (erp-nil)
+                   nil ; did not prove the clause
+                   nil ; changep
+                   literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
+              ;; Make the assumption-array:
+              ((mv provedp literal-nodenums assumption-array)
+               (make-assumption-array literal-nodenums dag-array dag-len known-booleans))
+              ((when provedp)
+               (cw "NOTE: Proved due to contradiction in assumptions.~%")
+               (mv (erp-nil)
+                   t ; proved the clause
+                   t
+                   literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
+              (- (cw "(Rewriting with rule set ~x0 (~x1 literals):~%" rule-set-number (len literal-nodenums))) ;the printed paren is closed below
+              ((mv erp provedp changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
+               (,rewrite-literals-name literal-nodenums
+                                       nil ;initial done-list
+                                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                       assumption-array
+                                       dag-len ;assumption-array-num-valid-nodes
+                                       nil     ;changep
+                                       rule-alist
+                                       interpreted-function-alist monitored-symbols print case-designator
+                                       info tries prover-depth known-booleans options))
+              ((when erp) (mv erp nil t literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))
+           (if provedp
+               (prog2$ (cw "  Rewriting proved case ~s0.)~%" case-designator)
+                       (mv (erp-nil)
+                           t ;proved the clause
+                           t literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
+             (b* ((- (cw "  Done rewriting (~x0 literals).)~%" (len literal-nodenums)))
+                  ;; Maybe crunch (one advantage in doing this is to make the printed result of this step comprehensible if we are tracing):
+                  ;; TODO: Do we want to do this if changep is nil?
+                  ((mv erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist literal-nodenums) ;todo: reorder these
+                   (if (or (not (= prover-depth 0)) ;; can't crunch if prover-depth > 0 since that would change existing nodes:
+                           (not (consp literal-nodenums)) ;;can't crunch if no nodenums (can this happen?)
+                           )
+                       (mv (erp-nil) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist literal-nodenums)
+                     (b* (;; (- (cw "(Crunching: ...")) ;; matching paren printed below
+                          ((mv dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist literal-nodenums)
+                           (crunch-dag-array2-with-indices 'dag-array dag-array dag-len 'dag-parent-array literal-nodenums))
+                          ;; TODO: Prove that this can't happen.  Need to know that
+                          ;; build-reduced-nodes maps all of the literal-nodenums to
+                          ;; nodenums (not constants -- currently)
+                          ((when (not (and (rational-listp literal-nodenums) ;todo: using nat-listp here didn't work
+                                           (all-< literal-nodenums dag-len))))
+                           (er hard? ',rewrite-subst-and-elim-with-rule-alist-name "Bad nodenum after crunching.")
+                           (mv :error-in-crunching
+                               dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist literal-nodenums))
+                          ;; (- (cw "Done.)~%"))
+                          )
+                       (mv (erp-nil) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist literal-nodenums))))
+                  ((when erp)
+                   (mv erp nil t literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))
+               (mv (erp-nil)
+                   nil ; didn't prove the clause
+                   changep
+                   literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))))
+
+       (defthm ,(pack$ rewrite-clause-name '-return-type)
+         (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                       (nat-listp literal-nodenums)
+                       (all-< literal-nodenums dag-len)
+                       (rule-alistp rule-alist)
+                       (interpreted-function-alistp interpreted-function-alist)
+                       (info-worldp info)
+                       (triesp tries)
+                       (symbol-listp monitored-symbols)
+                       (stringp case-designator)
+                       (natp prover-depth)
+                       ;; (symbol-listp known-booleans)
+                       (axe-prover-optionsp options))
+                  (mv-let (erp provedp changep new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries)
+                    (,rewrite-clause-name literal-nodenums
+                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                          rule-alist rule-set-number
+                                          interpreted-function-alist monitored-symbols
+                                          case-designator print ;move print arg?
+                                          info tries prover-depth known-booleans options)
+                    (implies (not erp)
+                             (and (booleanp provedp)
+                                  (booleanp changep)
+                                  (wf-dagp 'dag-array new-dag-array new-dag-len 'dag-parent-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
+                                  (implies (< 0 prover-depth)
+                                           (<= dag-len new-dag-len))
+                                  (all-natp new-literal-nodenums)
+                                  (true-listp new-literal-nodenums)
+                                  (all-< new-literal-nodenums new-dag-len)
+                                  (info-worldp new-info)
+                                  (triesp new-tries)))))
+         :hints (("Goal" :do-not '(generalize eliminate-destructors)
+                  :in-theory (e/d (,rewrite-clause-name) (natp)))))
+
+       (defthm ,(pack$ rewrite-clause-name '-return-type-linear)
+         (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                       (nat-listp literal-nodenums)
+                       (all-< literal-nodenums dag-len)
+                       (rule-alistp rule-alist)
+                       (interpreted-function-alistp interpreted-function-alist)
+                       (info-worldp info)
+                       (triesp tries)
+                       (symbol-listp monitored-symbols)
+                       (stringp case-designator)
+                       (natp prover-depth)
+                       ;; (symbol-listp known-booleans)
+                       (axe-prover-optionsp options))
+                  (mv-let (erp provedp changep new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries)
+                    (,rewrite-clause-name literal-nodenums
+                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                          rule-alist rule-set-number
+                                          interpreted-function-alist monitored-symbols
+                                          case-designator print ;move print arg?
+                                          info tries prover-depth known-booleans options)
+                    (declare (ignore provedp changep new-literal-nodenums new-dag-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries))
+                    (implies (not erp)
+                             (implies (< 0 prover-depth)
+                                      (<= dag-len new-dag-len)))))
+         :rule-classes :linear
+         :hints (("Goal" :use ,(pack$ rewrite-clause-name '-return-type)
+                  :in-theory (disable ,(pack$ rewrite-clause-name '-return-type)))))
+
+       (defthm ,(pack$ rewrite-clause-name '-return-type-2)
+         (implies (true-listp literal-nodenums)
+                  (mv-let (erp provedp changep new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries)
+                    (,rewrite-clause-name literal-nodenums
+                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                          rule-alist rule-set-number
+                                          interpreted-function-alist monitored-symbols
+                                          case-designator print ;move print arg?
+                                          info tries prover-depth known-booleans options)
+                    (declare (ignore erp provedp changep new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries))
+                    (true-listp  new-literal-nodenums)))
+         :rule-classes :type-prescription
+         :hints (("Goal" :do-not '(generalize eliminate-destructors)
+                  :in-theory (e/d (,rewrite-clause-name) (natp)))))
 
        ;; can this loop? probably, if the rules loop?
        ;; Returns (mv erp provedp literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries).
@@ -2721,7 +3066,7 @@
                                                              rule-alist rule-set-number
                                                              interpreted-function-alist monitored-symbols
                                                              case-designator print ;move print arg?
-                                                             info tries prover-depth options count)
+                                                             info tries prover-depth known-booleans options count)
          (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                                      (nat-listp literal-nodenums)
                                      (all-< literal-nodenums dag-len)
@@ -2732,30 +3077,22 @@
                                      (symbol-listp monitored-symbols)
                                      (stringp case-designator)
                                      (natp prover-depth)
+                                     (symbol-listp known-booleans)
                                      (axe-prover-optionsp options))
                          :guard-hints (("Goal" :in-theory (e/d (<-of-+-of-1-strengthen-2 natp-of-+-of-1 rationalp-when-natp-for-axe) (natp))  :do-not-induct t))
                          :measure (+ 1 (nfix count)))
                   (type (unsigned-byte 59) count))
          (if (zp-fast count)
              (mv :count-exceeded nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
-           (b* (;; TODO: Do this in the callers?  Maintain an invariant about disjuncts having been extracted from literal-nodenums?  May not be true after we substitute, so do this there instead?
-                ((mv erp provedp literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-                 (get-disjuncts-from-nodes literal-nodenums
-                                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                           nil))
+           (b* (((mv erp provedp changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
+                 (,rewrite-clause-name literal-nodenums
+                                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                       rule-alist rule-set-number
+                                       interpreted-function-alist monitored-symbols
+                                       case-designator print
+                                       info tries prover-depth known-booleans options))
                 ((when erp) (mv erp nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
-                ((when provedp) (mv (erp-nil) t nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
-                (- (cw "(Rewriting with rule set ~x0 (~x1 literals):~%" rule-set-number (len literal-nodenums))) ;the printed paren is closed below
-                ((mv erp provedp changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
-                 (,rewrite-literals-name literal-nodenums
-                                         nil ;initial done-list
-                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                         nil ;changep
-                                         rule-alist
-                                         interpreted-function-alist monitored-symbols print case-designator
-                                         info tries prover-depth options))
-
-                ((when erp) (mv erp nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
+                ((when provedp) (mv (erp-nil) t literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
                 ;; TODO: Right here we could drop any literal of the form (equal <constant> <var>) - if the var appears in any other literal, rewriting should have put in the constant for it, so the var will no longer appear.
                 ;; ;todo: this printing should be moved outward!  because now info and tries are threaded through - to print stats for a smaller operation, we could subtract
                 ;;              (and print
@@ -2769,51 +3106,37 @@
                 ;;                   (or (eq :verbose print) (eq t print)) ;new
                 ;;                   (cw "(~x0 tries.)~%" tries))
                 )
-             (if provedp
-                 (prog2$ (cw "  Rewriting proved case ~s0.)~%" case-designator)
-                         (mv (erp-nil) t literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
-               (b* ((- (cw "  Done rewriting (~x0 literals).)~%" (len literal-nodenums)))
-                    ;; Maybe crunch (one advantage in doing this is to make the printed result of this step comprehensible if we are tracing):
-                    ((mv erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist literal-nodenums)
-                     (if (or (not (= prover-depth 0)) ;; can't crunch if prover-depth > 0 since that would change existing nodes:
-                             (not (consp literal-nodenums)) ;;can't crunch if no nodenums (can this happen?)
-                             )
-                         (mv (erp-nil) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist literal-nodenums)
-                       (b* (;; (- (cw "(Crunching: ...")) ;; matching paren printed below
-                            ((mv dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist literal-nodenums)
-                             (crunch-dag-array2-with-indices 'dag-array dag-array dag-len 'dag-parent-array literal-nodenums))
-                            ;; TODO: Prove that this can't happen.  Need to know that
-                            ;; build-reduced-nodes maps all of the literal-nodenums to
-                            ;; nodenums (not constants -- currently)
-                            ((when (not (and (rational-listp literal-nodenums) ;todo: using nat-listp here didn't work
-                                             (all-< literal-nodenums dag-len))))
-                             (er hard? ',rewrite-subst-and-elim-with-rule-alist-name "Bad nodenum after crunching.")
-                             (mv :error-in-crunching
-                                 dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist literal-nodenums))
-                            ;; (- (cw "Done.)~%"))
-                            )
-                         (mv (erp-nil) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist literal-nodenums))))
+             (if changep
+                 ;;Something changed, so keep rewriting (what about loops?)
+                 (,rewrite-subst-and-elim-with-rule-alist-name
+                  literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                  rule-alist rule-set-number
+                  interpreted-function-alist monitored-symbols case-designator print info tries prover-depth known-booleans options (+ -1 count))
+               ;;Rewriting didn't change anything.
+               ;;fixme think about when exactly to do this
+               (b* ((- (cw "(Substituting:~%"))
+                    ((mv erp changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+                     (substitute-vars literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print prover-depth 0 nil))
                     ((when erp)
-                     (mv erp nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))
+                     (mv erp nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
+                    ((when (not (consp literal-nodenums)))
+                     (cw "NOTE: No literals left after substitution!~%") ;can happen if the only lit when we subst is a (negated) var equality
+                     (mv (erp-nil)
+                         nil ;; did not prove
+                         literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
+                    (- (cw "  Done substituting. ~x0 literals left.)~%" (len literal-nodenums))))
                  (if changep
-                     ;;Something changed, so keep rewriting (what about loops?)
+                     ;;Something changed, so start over:
                      (,rewrite-subst-and-elim-with-rule-alist-name
-                      literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                      literal-nodenums
+                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                       rule-alist rule-set-number
-                      interpreted-function-alist monitored-symbols case-designator print info tries prover-depth options (+ -1 count))
-                   ;;Rewriting didn't change anything.
-                   ;;fixme think about when exactly to do this
-                   (b* ((- (cw "(Substituting:~%"))
-                        ((mv erp changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-                         (substitute-vars literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print prover-depth 0 nil))
-                        ((when erp)
-                         (mv erp nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
-                        ((when (not literal-nodenums))
-                         (cw "NOTE: No literals left after substitution!~%") ;can happen if the only lit when we subst is a (negated) var equality
-                         (mv (erp-nil)
-                             nil ;; did not prove
-                             literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
-                        (- (cw "  Done substituting. ~x0 literals left.)~%" (len literal-nodenums))))
+                      interpreted-function-alist monitored-symbols case-designator print
+                      info tries prover-depth known-booleans options (+ -1 count))
+                   (b* (((mv erp changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+                         ;; TODO: Consider eliminating more than one tuple here, if possible
+                         (eliminate-a-tuple literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print))
+                        ((when erp) (mv erp nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))
                      (if changep
                          ;;Something changed, so start over:
                          (,rewrite-subst-and-elim-with-rule-alist-name
@@ -2821,30 +3144,18 @@
                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                           rule-alist rule-set-number
                           interpreted-function-alist monitored-symbols case-designator print
-                          info tries prover-depth options (+ -1 count))
-                       (b* (((mv erp changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-                             ;; TODO: Consider eliminating more than one tuple here, if possible
-                             (eliminate-a-tuple literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print))
-                            ((when erp) (mv erp nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))
-                         (if changep
-                             ;;Something changed, so start over:
-                             (,rewrite-subst-and-elim-with-rule-alist-name
-                              literal-nodenums
-                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                              rule-alist rule-set-number
-                              interpreted-function-alist monitored-symbols case-designator print
-                              info tries prover-depth options (+ -1 count))
-                           (prog2$
-                            (and (eq :verbose print) ;; TODO: improve this printing.
-                                 ;;should this be printed by the parent, after we attack the clause miter?
-                                 ;;yes, probably.
-                                 (prog2$ (cw "Case ~s0 didn't simplify to true.  Literal nodenums:~% ~x1~%(This case: ~x2)~%Literals:~%"
-                                             case-designator
-                                             literal-nodenums
-                                             (expressions-for-this-case-simple literal-nodenums dag-array dag-len))
-                                         (print-dag-only-supporters-lst literal-nodenums 'dag-array dag-array)))
-                            (mv (erp-nil) nil literal-nodenums
-                                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))))))))))))
+                          info tries prover-depth known-booleans options (+ -1 count))
+                       (prog2$
+                        (and (eq :verbose print) ;; TODO: improve this printing.
+                             ;;should this be printed by the parent, after we attack the clause miter?
+                             ;;yes, probably.
+                             (prog2$ (cw "Case ~s0 didn't simplify to true.  Literal nodenums:~% ~x1~%(This case: ~x2)~%Literals:~%"
+                                         case-designator
+                                         literal-nodenums
+                                         (expressions-for-this-case-simple literal-nodenums dag-array dag-len))
+                                     (print-dag-only-supporters-lst literal-nodenums 'dag-array dag-array)))
+                        (mv (erp-nil) nil literal-nodenums
+                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))))))))))
 
        (defthm ,(pack$ rewrite-subst-and-elim-with-rule-alist-name '-return-type)
          (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
@@ -2864,7 +3175,7 @@
                                                                   rule-alist rule-set-number
                                                                   interpreted-function-alist monitored-symbols
                                                                   case-designator print ;move print arg?
-                                                                  info tries prover-depth options count)
+                                                                  info tries prover-depth known-booleans options count)
                     (implies (not erp)
                              (and (booleanp provedp)
                                   (wf-dagp 'dag-array new-dag-array new-dag-len 'dag-parent-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
@@ -2899,7 +3210,7 @@
                                                                   rule-alist rule-set-number
                                                                   interpreted-function-alist monitored-symbols
                                                                   case-designator print ;move print arg?
-                                                                  info tries prover-depth options count)
+                                                                  info tries prover-depth known-booleans options count)
                     (declare (ignore provedp new-literal-nodenums new-dag-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries))
                     (implies (not erp)
                              (implies (< 0 prover-depth)
@@ -2916,7 +3227,7 @@
                                                                   rule-alist rule-set-number
                                                                   interpreted-function-alist monitored-symbols
                                                                   case-designator print ;move print arg?
-                                                                  info tries prover-depth options count)
+                                                                  info tries prover-depth known-booleans options count)
                     (declare (ignore erp provedp new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries))
                     (true-listp new-literal-nodenums)))
          :hints (("Goal" :induct t
@@ -2933,7 +3244,7 @@
                                                               rule-alists ;we use these one at a time
                                                               rule-set-number
                                                               interpreted-function-alist monitored-symbols case-designator print
-                                                              info tries prover-depth options)
+                                                              info tries prover-depth known-booleans options)
          (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                                      (nat-listp literal-nodenums)
                                      (all-< literal-nodenums dag-len)
@@ -2945,6 +3256,7 @@
                                      (symbol-listp monitored-symbols)
                                      (stringp case-designator)
                                      (natp prover-depth)
+                                     (symbol-listp known-booleans)
                                      (axe-prover-optionsp options))
                          :measure (len rule-alists)))
          (if (atom rule-alists)
@@ -2956,7 +3268,7 @@
                                                                (first rule-alists) ;; try the first rule-alist
                                                                rule-set-number
                                                                interpreted-function-alist monitored-symbols case-designator print
-                                                               info tries prover-depth options (+ -1 (expt 2 59))))
+                                                               info tries prover-depth known-booleans options (+ -1 (expt 2 59))))
                 ((when erp) (mv erp nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
                 ((when provedp) (mv (erp-nil) t literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))
              ;; Continue with the rest of the rule-alists:
@@ -2965,7 +3277,7 @@
                                                             (rest rule-alists)
                                                             (+ 1 rule-set-number)
                                                             interpreted-function-alist monitored-symbols case-designator print
-                                                            info tries prover-depth options))))
+                                                            info tries prover-depth known-booleans options))))
 
        (defthm ,(pack$ rewrite-subst-and-elim-with-rule-alists-name '-return-type)
          (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
@@ -2986,7 +3298,7 @@
                                                                    rule-alists ;we use these one at a time
                                                                    rule-set-number
                                                                    interpreted-function-alist monitored-symbols case-designator print
-                                                                   info tries prover-depth options)
+                                                                   info tries prover-depth known-booleans options)
                     (implies (not erp)
                              (and (booleanp provedp)
                                   (wf-dagp 'dag-array new-dag-array new-dag-len 'dag-parent-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
@@ -3008,7 +3320,7 @@
                                                                    rule-alists ;we use these one at a time
                                                                    rule-set-number
                                                                    interpreted-function-alist monitored-symbols case-designator print
-                                                                   info tries prover-depth options)
+                                                                   info tries prover-depth known-booleans options)
                     (declare (ignore erp provedp new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries))
                     (true-listp new-literal-nodenums)))
          :hints (("Goal" :induct t
@@ -3108,7 +3420,7 @@
                                  rule-alists
                                  interpreted-function-alist monitored-symbols
                                  case-designator print
-                                 info tries prover-depth options)
+                                 info tries prover-depth known-booleans options)
          (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                                      (nat-listp literal-nodenums)
                                      (all-< literal-nodenums dag-len)
@@ -3119,6 +3431,7 @@
                                      (symbol-listp monitored-symbols)
                                      (stringp case-designator)
                                      (natp prover-depth)
+                                     (symbol-listp known-booleans)
                                      (axe-prover-optionsp options))))
          (mv-let (erp provedp literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
            (,rewrite-subst-and-elim-with-rule-alists-name literal-nodenums
@@ -3126,7 +3439,7 @@
                                                           rule-alists
                                                           1 ; number the rule sets starting at 1
                                                           interpreted-function-alist monitored-symbols case-designator print
-                                                          info tries prover-depth options)
+                                                          info tries prover-depth known-booleans options)
            ;;combine these return cases?
            (if erp
                (mv erp nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
@@ -3153,7 +3466,7 @@
                                       rule-alists
                                       interpreted-function-alist monitored-symbols
                                       case-designator print
-                                      info tries prover-depth options)
+                                      info tries prover-depth known-booleans options)
                     (implies (not erp)
                              (and (booleanp provedp)
                                   (wf-dagp 'dag-array new-dag-array new-dag-len 'dag-parent-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
@@ -3184,7 +3497,7 @@
                                       rule-alists
                                       interpreted-function-alist monitored-symbols
                                       case-designator print
-                                      info tries prover-depth options)
+                                      info tries prover-depth known-booleans options)
                     (declare (ignore provedp new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries))
                     (implies (not erp)
                              (and (pseudo-dag-arrayp 'dag-array new-dag-array new-dag-len)
@@ -3211,7 +3524,7 @@
                                       rule-alists
                                       interpreted-function-alist monitored-symbols
                                       case-designator print
-                                      info tries prover-depth options)
+                                      info tries prover-depth known-booleans options)
                     (declare (ignore provedp new-dag-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries))
                     (implies (and (not erp)
                                   (<= new-dag-len bound)
@@ -3238,7 +3551,7 @@
                                       rule-alists
                                       interpreted-function-alist monitored-symbols
                                       case-designator print
-                                      info tries prover-depth options)
+                                      info tries prover-depth known-booleans options)
                     (declare (ignore provedp new-literal-nodenums new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries))
                     (implies (and (not erp)
                                   (<= bound new-dag-len)
@@ -3265,7 +3578,7 @@
                                       rule-alists
                                       interpreted-function-alist monitored-symbols
                                       case-designator print
-                                      info tries prover-depth options)
+                                      info tries prover-depth known-booleans options)
                     (declare (ignore provedp new-literal-nodenums new-dag-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries))
                     (implies (not erp)
                              (implies (< 0 prover-depth)
@@ -3282,7 +3595,7 @@
                                       rule-alists
                                       interpreted-function-alist monitored-symbols
                                       case-designator print
-                                      info tries prover-depth options)
+                                      info tries prover-depth known-booleans options)
                     (declare (ignore erp provedp new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries))
                     (true-listp new-literal-nodenums)))
          :rule-classes (:rewrite :type-prescription)
@@ -3303,7 +3616,7 @@
                                        print
                                        case-1-designator
                                        info tries
-                                       prover-depth options count)
+                                       prover-depth known-booleans options count)
           (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                                       (natp nodenum)
                                       (< nodenum dag-len)
@@ -3316,6 +3629,7 @@
                                       (symbol-listp monitored-symbols)
                                       (stringp case-1-designator)
                                       (natp prover-depth)
+                                      (symbol-listp known-booleans)
                                       (axe-prover-optionsp options))
                           :verify-guards nil ; done below
                           :measure (+ 1 (nfix count)))
@@ -3344,7 +3658,7 @@
                                          print case-1-designator
                                          info tries
                                          (+ 1 prover-depth) ;to indicate that nodes should not be changed
-                                         options (+ -1 count)))))
+                                         known-booleans options (+ -1 count)))))
 
         ;; Try to prove the clause assuming NODENUM is false.
         ;; Returns (mv erp result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries) where result is :proved, :failed, or :timed-out.
@@ -3358,7 +3672,7 @@
                                         print
                                         case-2-designator
                                         info tries
-                                        prover-depth options count)
+                                        prover-depth known-booleans options count)
           (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                                       (natp nodenum)
                                       (< nodenum dag-len)
@@ -3371,6 +3685,7 @@
                                       (symbol-listp monitored-symbols)
                                       (stringp case-2-designator)
                                       (natp prover-depth)
+                                      (symbol-listp known-booleans)
                                       (axe-prover-optionsp options))
                           :measure (+ 1 (nfix count)))
                    (type (unsigned-byte 59) count))
@@ -3398,7 +3713,7 @@
                                          print case-2-designator
                                          info tries
                                          (+ 1 prover-depth) ;to match what we do in the other case above
-                                         options (+ -1 count)))))
+                                         known-booleans options (+ -1 count)))))
 
         ;; Tries to prove the disjunction of LITERAL-NODENUMS.
         ;; Returns (mv erp result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries) where result is :proved, :failed, or :timed-out
@@ -3418,7 +3733,7 @@
                                            print
                                            case-designator ;the name of this case
                                            info tries
-                                           prover-depth options count)
+                                           prover-depth known-booleans options count)
           (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                                       (nat-listp literal-nodenums)
                                       (all-< literal-nodenums dag-len)
@@ -3429,6 +3744,7 @@
                                       (symbol-listp monitored-symbols)
                                       (stringp case-designator)
                                       (natp prover-depth)
+                                      (symbol-listp known-booleans)
                                       (axe-prover-optionsp options))
                           :measure (+ 1 (nfix count)))
                    (type (unsigned-byte 59) count))
@@ -3442,7 +3758,7 @@
                   (,prove-case-name literal-nodenums
                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                     rule-alists interpreted-function-alist monitored-symbols
-                                    case-designator print info tries prover-depth options))
+                                    case-designator print info tries prover-depth known-booleans options))
                  ((when erp) (mv erp :failed dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
                  ((when provedp)
                   ;; (cw "Proved case ~s0 by rewriting, etc.~%" case-designator)
@@ -3503,7 +3819,7 @@
                                              print
                                              case-1-designator
                                              info tries
-                                             prover-depth options (+ -1 count)))
+                                             prover-depth known-booleans options (+ -1 count)))
                      ((when erp) (mv erp :failed dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))
                   ;;fixme we could make an option to continue if case 1 fails, so that all the failed subgoals are printed
                   (if (not (eq :proved case-1-result))
@@ -3536,7 +3852,7 @@
                                                   print
                                                   case-2-designator
                                                   info tries
-                                                  prover-depth options (+ -1 count)))
+                                                  prover-depth known-booleans options (+ -1 count)))
                          ((when erp) (mv erp :failed dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
                          (- (if (not (eq :proved case-2-result))
                                 (cw "Failed on ~s0.)~%" case-2-designator)
@@ -3582,7 +3898,7 @@
                                              print
                                              case-1-designator
                                              info tries
-                                             prover-depth options count)
+                                             prover-depth known-booleans options count)
                       (implies (not erp)
                                (and (prover-resultp result)
                                     (wf-dagp 'dag-array new-dag-array new-dag-len 'dag-parent-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
@@ -3614,7 +3930,7 @@
                                               print
                                               case-2-designator
                                               info tries
-                                              prover-depth options count)
+                                              prover-depth known-booleans options count)
                       (implies (not erp)
                                (and (prover-resultp result)
                                     (wf-dagp 'dag-array new-dag-array new-dag-len 'dag-parent-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
@@ -3643,7 +3959,7 @@
                                                  print
                                                  case-designator
                                                  info tries
-                                                 prover-depth options count)
+                                                 prover-depth known-booleans options count)
                       (implies (not erp)
                                (and (prover-resultp result)
                                     (wf-dagp 'dag-array new-dag-array new-dag-len 'dag-parent-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
@@ -3682,7 +3998,7 @@
                                              print
                                              case-1-designator
                                              info tries
-                                             prover-depth options count)
+                                             prover-depth known-booleans options count)
                       (declare (ignore result new-dag-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries))
                       (implies (not erp)
                                (<= dag-len new-dag-len))))
@@ -3714,7 +4030,7 @@
                                              print
                                              case-1-designator
                                              info tries
-                                             prover-depth options count)
+                                             prover-depth known-booleans options count)
                       (declare (ignore result new-dag-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries))
                       (implies (not erp)
                                (natp new-dag-len))))
@@ -3748,7 +4064,7 @@
                                                print
                                                case-designator
                                                info tries
-                                               prover-depth options count)
+                                               prover-depth known-booleans options count)
                     (declare (ignore result new-dag-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries))
                     (implies (not erp)
                              (implies (< 0 prover-depth)
@@ -3773,7 +4089,7 @@
                                         print
                                         case-designator ;the name of this case
                                         info tries
-                                        prover-depth options)
+                                        prover-depth known-booleans options)
          (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                                      (true-listp literal-nodenums-or-quoteps)
                                      (all-dargp-less-than literal-nodenums-or-quoteps dag-len)
@@ -3784,6 +4100,7 @@
                                      (symbol-listp monitored-symbols)
                                      (stringp case-designator)
                                      (natp prover-depth)
+                                     (symbol-listp known-booleans)
                                      (axe-prover-optionsp options))))
          (b* ( ;; Handle any constant disjuncts
               ((mv provedp literal-nodenums)
@@ -3811,7 +4128,7 @@
                                         print
                                         case-designator
                                         info tries
-                                        prover-depth options
+                                        prover-depth known-booleans options
                                         (+ -1 (expt 2 59)) ;max fixnum?
                                         )))
 
@@ -3839,7 +4156,7 @@
                                              print
                                              case-designator
                                              info tries
-                                             prover-depth options)
+                                             prover-depth known-booleans options)
                     (implies (not erp)
                              (and (prover-resultp result)
                                   (wf-dagp 'dag-array new-dag-array new-dag-len 'dag-parent-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
@@ -4020,6 +4337,7 @@
                                         (empty-info-world) ;(and print (empty-info-world))
                                         (zero-tries)  ;(and print (zero-tries))
                                         0             ;prover-depth
+                                        (known-booleans (w state))
                                         nil           ;options
                                         ))
               ((when erp) (mv erp nil state)))
@@ -4187,7 +4505,7 @@
 
        ;; Returns (mv erp provedp).  Attempts to prove the clause (a disjunction
        ;; of terms) with the Axe Prover.
-       (defund ,prove-clause-name (clause name rule-alists monitored-symbols interpreted-function-alist print options)
+       (defund ,prove-clause-name (clause name rule-alists monitored-symbols interpreted-function-alist print known-booleans options)
          (declare (xargs :guard (and (pseudo-term-listp clause)
                                      (symbolp name)
                                      (all-rule-alistp rule-alists)
@@ -4196,7 +4514,7 @@
                                      (interpreted-function-alistp interpreted-function-alist)
                                      ;;... todo add more
                                      (axe-prover-optionsp options)
-                                     )))
+                                     (symbol-listp known-booleans))))
          (b* ((- (cw "(Proving clause with Axe prover:~%"))
               ((mv erp literal-nodenums-or-quoteps dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
                (make-terms-into-dag-array-basic clause 'dag-array 'dag-parent-array interpreted-function-alist))
@@ -4213,6 +4531,7 @@
                                         (and print (empty-info-world))
                                         (and print (zero-tries))
                                         0 ;prover-depth
+                                        known-booleans
                                         options))
               ((when erp) (mv erp nil))
               (- (and print (print-hit-counts print info (rules-from-rule-alists rule-alists))))
@@ -4264,6 +4583,7 @@
                                    monitored-symbols
                                    nil ;interpreted-function-alist ;todo?
                                    print
+                                   (known-booleans (w state))
                                    nil ;; options
                                    ))
               ((when erp) (mv erp (list clause))) ; error (and no change to clause set)
