@@ -73,7 +73,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod short-weierstrass
-  :short "Fixtype of elliptic curves in short Weierstrass form."
+  :short "Fixtype of elliptic curves over prime fields
+          in short Weierstrass form."
   :long
   (xdoc::topstring
    (xdoc::p
