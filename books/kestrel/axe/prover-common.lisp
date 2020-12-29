@@ -1278,9 +1278,8 @@
 ;; If there are multiple matches, the first one will fire, even if later ones might be better.
 (defund replace-nodenum-using-assumptions-for-axe-prover (nodenum
                                                           equiv ;todo: perhaps pass in an iff-flag
-                                                          nodenums-to-assume-false dag-array
-                                                          ;;print
-                                                          )
+                                                          nodenums-to-assume-false
+                                                          dag-array)
   (declare (xargs :guard (and (natp nodenum)
                               (symbolp equiv)
                               (all-natp nodenums-to-assume-false)
@@ -1326,9 +1325,7 @@
                                 (consp (rest (dargs expr-to-assume-non-nil))) ;todo: think about bad arities
                                 ))
                       ;; expr-to-assume-non-nil does not have a form we can use, so keep looking:
-                      (replace-nodenum-using-assumptions-for-axe-prover nodenum equiv (rest nodenums-to-assume-false) dag-array
-                                                                        ;;print
-                                                                        )
+                      (replace-nodenum-using-assumptions-for-axe-prover nodenum equiv (rest nodenums-to-assume-false) dag-array)
                     (let ((darg1 (darg1 expr-to-assume-non-nil))
                           (darg2 (darg2 expr-to-assume-non-nil)))
                       (if (and (eql nodenum darg2)
