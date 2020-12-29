@@ -464,4 +464,379 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(def-atc-tutorial-page int-programs
+
+  "ACL2 representation and generation of C @('int') programs"
+
+  (xdoc::p
+   "After describing
+    our ACL2 representation of the C @('int') type and operations
+    in @(see atc-tutorial-int-representation),
+    now we describe how that is used to represent and generate
+    C @('int') programs, i.e. programs that manipulate @('int') values.")
+
+  (xdoc::p
+   "We do that via a simple example,
+    but present concepts that apply more generally.
+    However, this page only describes the basics of
+    representing and generating C @('int') programs:
+    more advanced features are presented in upcoming tutorial pages.")
+
+  (atc-tutorial-section "Simple Example")
+
+  (xdoc::p
+   "Our simple example is a C program consisting of a single function:")
+  (xdoc::codeblock
+   "int f(int x, int y, int z) {"
+   "    return (x + y) * (z - 3);"
+   "}")
+
+  (xdoc::p
+   "This function takes three @('int') values
+    and returns an @('int') value resulting from
+    their combination via @('int') operations.
+    The function also involves the use of an @('int') constant.")
+
+  (atc-tutorial-section "Function Correspondence")
+
+  (xdoc::p
+   "There is a one-to-one representational correspondence
+    between C and ACL2 functions.
+    That is, every C function is represented by an ACL2 function,
+    whose name must be supplied to ATC in order to generate
+    the corresponding C function definition
+    (the exact use of ATC is described later in this page).")
+
+  (xdoc::p
+   "Thus, for the example program above,
+    we need an ACL2 function to represent @('f').
+    This generalizes to C programs with multiple functions.")
+
+  (atc-tutorial-section "Function and Parameter Names")
+
+  (xdoc::p
+   "The names of the function and its parameters
+    are represented by ACL2 symbols
+    whose names are identical to the C identifiers:")
+  (xdoc::codeblock
+   "(defun |f| (|x| |y| |z|)"
+   "  ...)")
+
+  (xdoc::p
+   "Note that we need the double bar notation because
+    the names are lowercase, consistently with the C convention.
+    If we omitted the double bars,
+    we would be representing a different C function:")
+  (xdoc::codeblock
+   "int F(int X, int Y, int Z) {"
+   "    ..."
+   "}")
+  (xdoc::p
+   "This is because, without the vertical bars,
+    the names of the symbols are uppercase.
+    This is a valid C function,
+    but does not follow the normal C naming conventions.")
+
+  (xdoc::p
+   "Package names are ignored for this purpose,
+    e.g. both @('acl2::|f|') and @('c::|f|') represent
+    the C identifier @('f').")
+
+  (xdoc::p
+   "In the envisioned use of ATC,
+    the user would write ACL2 functions with more conventional ACL2 names
+    for both functions and parameters
+    (i.e. without vertical bars).
+    The user would then use APT transformations to turn those names
+    into the form required to represent C names for ATC's purposes.")
+
+  (xdoc::p
+   "More details about the mapping from ACL2 names to C names
+    are given in an upcoming tutorial page.")
+
+  (atc-tutorial-section "Function Body")
+
+  (xdoc::p
+   "Given the representation of C @('int') operations (including constants)
+    described in @(see atc-tutorial-int-representation),
+    it should be easy to see how the body of the C function @('f') above
+    is represented as follows in ACL2:")
+  (xdoc::codeblock
+   "(defun |f| (|x| |y| |z|)"
+   "  (c::sint-mul (c::sint-add |x| |y|)"
+   "               (c::sint-sub |z| (c::sint-const 3))))")
+  (xdoc::p
+   "We represent the expression of the @('return') statement
+    that form the body of the function @('f').
+    In ACL2, terms are implicitly returned,
+    so there is no need to represent the @('return') statement explicitly.")
+
+  (xdoc::p
+   "The @('c::') package prefixes are generally needed
+    when the function is defined in a different ACL2 package from @('\"C\"').
+    The package of the symbols @('|f|'), @('|x|'), etc. do not matter,
+    in the sense that they do not represent anything in the C code.
+    However the functions @(tsee sint-const), @(tsee sint-add), etc.
+    must be the ones in the @('\"C\"') package,
+    from the file @('[books]/kestrel/c/atc/integers.lisp').")
+
+  (xdoc::p
+   "In the envisioned use of ATC,
+    the user would not write directly a function body of the form above.
+    Instead, they would obtain that kind of function body
+    via suitable APT transformations that turn
+    (conventional) ACL2 types and operations
+    into (ACL2 representations of) C types and operations,
+    under suitable preconditions.")
+
+  (atc-tutorial-section "Function Input and Ouput Types")
+
+  (xdoc::p
+   "Given the use of @(tsee sint-add) and @(tsee sint-sub)
+    on the ACL2 parameters @('|x|'), @('|y|'), and @('|z|'),
+    it would not be hard to infer automatically that
+    these represent @('int') parameters in C.
+    However, the required guard verification described below
+    implicitly requires the guard of @('|f|') to express or imply
+    that @(tsee sintp) holds on the function parameters.
+    For clarity, we require those to be expressed, not merely implied.")
+
+  (xdoc::p
+   "That is, the guard must include explicit conjuncts
+    that spell out the C types of the function's parameter.
+    For the example function, these are as follows:")
+  (xdoc::codeblock
+   "(defun |f| (|x| |y| |z|)"
+   "  (declare (xargs :guard (and (c::sintp |x|)"
+   "                              (c::sintp |y|)"
+   "                              (c::sintp |z|)"
+   "                              ...))) ; more conjuncts, described below"
+   "  (c::sint-mul (c::sint-add |x| |y|)"
+   "               (c::sint-sub |z| (c::sint-const 3))))")
+
+  (xdoc::p
+   "When generating C code for @('|f|'),
+    ATC looks for those conjuncts in the guard.
+    These may occur anywhere in the guard,
+    not necessarily in order,
+    but they must be easily extractable
+    by looking at the @(tsee and) tree structure of the guard:
+    the conjuncts of interest must be leaves in that tree,
+    one for each funcion parameter.
+    For instance, the following would be equally acceptable:")
+  (xdoc::codeblock
+   "(defun |f| (|x| |y| |z|)"
+   "  (declare (xargs :guard (and (and (c::sintp |z|)"
+   "                                   (c::sintp |x|))"
+   "                              (and ..."
+   "                                   (c::sintp |z|))"
+   "                              ...)))"
+   "  ...) ; body as above")
+
+  (xdoc::p
+   "ATC infers the output type of a function
+    by performing a C type analysis of the function's body.
+    For the function @('|f|') above,
+    the output type is obviously @('int'),
+    because the body is a call of @(tsee sint-mul),
+    which is known to return (the ACL2 representation of) an @('int') value.
+    ATC does not require explicit return type theorems for the ACL2 functions
+    that are translated to C functions.")
+
+  (atc-tutorial-section "Guard Verification")
+
+  (xdoc::p
+   "ATC requires that the ACL2 functions that represent C functions
+    are guard-verified (which implies that they must be in logic mode).
+    This ensures that the ACL2 functions that represent C operations
+    are always applied to values whose result is well-defined
+    according to the C18 standard.
+    It also ensures that @(tsee sint-const) is always applied
+    to a natural number representable as an @('int').")
+
+  (xdoc::p
+   "However, this generally requires guards to have additional conditions,
+    besides the @(tsee sintp) conjunts discussed above.
+    It should be clear that a C function like @('f')
+    does not yield a well-defined C18 result
+    for every possible value of its arguments.
+    For instance, sufficiently large values of @('x') and @('y')
+    would make the result of @('x + y') not representable as @('int'),
+    and thus not well-defined according to C18.")
+
+  (xdoc::p
+   "This should not be surprising.
+    It is fairly normal for programs to be correct
+    only under certain preconditions.
+    The example function @('f') above is a simple abstract example,
+    but in a practical development there must be natural preconditions
+    for the C functions that form the development;
+    otherwise, it would be impossible to formally prove correctness.")
+
+  (xdoc::p
+   "In a C program, there may be
+    functions that receive data from outside the program.
+    These functions should not assume any precondition on that data,
+    and diligently validate it before operating on it.
+    After validation, these C functions may called other C functions,
+    internal to the C program, in the sense that
+    they only receive data validated by the calling functions.
+    The validation provides preconditions
+    that may be assumed by the internal functions.")
+
+  (xdoc::p
+   "The example function @('f') may be regarded
+    as an internal function in the sense above.
+    For simplicity, we assume that every parameter of the function
+    is faily small, more precisely not above 10 in absolute value.
+    This is the function @('|f|') with the complete guard
+    and the hints and book inclusion and command to verify the guards:")
+  (xdoc::codeblock
+   "(local (include-book \"arithmetic-5/top\" :dir :system))"
+   ""
+   "(local (set-default-hints '((nonlinearp-default-hint"
+   "                             stable-under-simplificationp"
+   "                             hist"
+   "                             pspv))))"
+   ""
+   "(defun |f| (|x| |y| |z|)"
+   "  (declare (xargs :guard (and (c::sintp |x|)"
+   "                              (c::sintp |y|)"
+   "                              (c::sintp |z|)"
+   "                              ;; -10 <= x <= 10:"
+   "                              (<= -10 (c::sint->get |x|))"
+   "                              (<= (c::sint->get |x|) 10)"
+   "                              ;; -10 <= y <= 10:"
+   "                              (<= -10 (c::sint->get |y|))"
+   "                              (<= (c::sint->get |y|) 10)"
+   "                              ;; -10 <= z <= 10:"
+   "                              (<= -10 (c::sint->get |z|))"
+   "                              (<= (c::sint->get |z|) 10))"
+   "                  :guard-hints ((\"Goal\""
+   "                                 :in-theory (enable sbyte32p"
+   "                                                    sbyte32-fix"
+   "                                                    c::sintp"
+   "                                                    c::sint-add-okp"
+   "                                                    c::sint-sub-okp"
+   "                                                    c::sint-mul-okp"
+   "                                                    c::sint-add"
+   "                                                    c::sint-sub"
+   "                                                    c::sint->get)))))"
+   "  (c::sint-mul (c::sint-add |x| |y|)"
+   "               (c::sint-sub |z| (c::sint-const 3))))")
+
+  (xdoc::p
+   "The proof is carried out on the ACL2 integers
+    obtained by unwrapping the C integers;
+    it uses @('arithmetic-5'), with non-linear arithmetic enabled.
+    There may be other ways to verify the guards of this function.
+    ATC does not require any specific approach:
+    it only requires that guards are verified in some way,
+    and that the types of the parameters
+    are explicitly expressed in the guard.")
+
+  (xdoc::p
+   "In the envisioned use of ATC,
+    the user may verify the guards of @('|f|') not directly,
+    but by using APT transformations that generate
+    a guard-verified @('|f|') of the form above.
+    The fact that the results of those operations
+    are representable in the range of @('int') given the preconditions,
+    could have been proved in earlier stages of the derivation,
+    directly on ACL2 integers.
+    Then suitable APT transformations may turn those
+    into @('int') values.
+    This use of APT in conjunction with ATC may be described
+    in upcoming tutorial pages.")
+
+  (atc-tutorial-section "Code Generation")
+
+  (xdoc::p
+   "Given the guard-verified ACL2 function @('|f|) above,
+    the C function @('f') can be generated as follows:")
+  (xdoc::codeblock
+   "(include-book \"kestrel/c/atc/atc\" :dir :system)"
+   "(c::atc |f| :output-file \"f.c\")")
+
+  (xdoc::p
+   "First, we must include ATC.
+    To avoid certain trust tag messages,
+    the @(tsee include-book) form could be augmented with a @(':ttags') option;
+    see the tests in @('[books]/kestrel/c/atc/tests') for examples.")
+
+  (xdoc::p
+   "The ATC tool in invoked on one or more ACL2 function symbols,
+    in this case just @('|f|').
+    The @(':output-file') option says where the generated output file goes,
+    in this case @('f.c') in the current working directory.
+    This option is required: there is no default.")
+
+  (xdoc::p
+   "The above invocation of ATC generates the C file,
+    as conveyed by a message printed on the screen.
+    The invocation also prints certain event forms on the screen;
+    these will be described in an upcoming tutorial page,
+    and can be ignored for now.")
+
+  (xdoc::p
+   "Opening the file @('f.c') reveals exactly the function @('f') above.
+    ATC generates it from @('|f|').
+    It also generates correctness theorems,
+    but those are examined elsewhere, as mentioned above.")
+
+  (xdoc::p
+   "This example can be found in @('[books]/kestrel/c/atc/tests/f.lisp').")
+
+  (atc-tutorial-section "Compilation and Execution")
+
+  (xdoc::p
+   "On macOS or Linux, the generated file @('f.c') can be compiled via @('gcc').
+    In fact, any C compiler, also on Windows, can compile the file.
+    However, a plain compilation command like @('gcc f.c') may fail
+    due to the absence of a @('main') function.
+    This is, of course, easy to add;
+    it should be added to a separate file, so that it does not get overwritten
+    if the above call of ATC is run again.")
+
+  (xdoc::p
+   "For instance, one may add a file @('f-test.c') with the following content:")
+  (xdoc::codeblock
+   "#include <stdio.h>"
+   ""
+   "int main(void) {"
+   "    int x = 3;"
+   "    int y = -2;"
+   "    int z = 8;"
+   "    int r = f(x, y, z);"
+   "    printf(\"f(%d, %d, %d) = %d\n\", x, y, z, r);"
+   "}")
+  (xdoc::p
+   "This file calls the generated function on specific values,
+    and prints inputs and output.
+    The inclusion of @('stdio.h') is needed because of the use of @('printf').")
+  (xdoc::p
+   "This file is found in @('[books]/kestrel/c/atc/tests/f-test.c').")
+
+  (xdoc::p
+   "The two files may be compiled as follows on macOS or Linux:")
+  (xdoc::codeblock
+   "gcc -o f f.c f-test.c")
+  (xdoc::p
+   "The @('-o') option overrides the default name @('a.out') for the executable,
+    calling it @('f') instead.
+    The two file names are simply supplied to the compiler,
+    which will generate an executable containing
+    both the @('main') and the @('f') functions.")
+
+  (xdoc::p
+   "The executable may be run as follows:")
+  (xdoc::codeblock
+   "./f")
+  (xdoc::p
+   "This prints the following on the screen:")
+  (xdoc::codeblock
+   "f(3, -2, 8) = 5"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (def-atc-tutorial-topics)
