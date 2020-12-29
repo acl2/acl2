@@ -60,6 +60,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defomap var-table-scope
+  :short "Fixtype of scopes of variable tables."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A variable table is a symbol table for variables.
+     The table (see @(tsee var-table)) is organized as
+     a sequence with one element for each nested block scope [C18:6.2.1].
+     This fixtype contains information about such a block scope.
+     The information is organized as a finite map
+     from identifiers (variable names) to types.
+     Using a map is adequate because
+     the variables declared in a block must all have different names
+     [C18:6.2.1/2]."))
+  :key-type ident
+  :val-type tyspecseq
+  :pred var-table-scopep)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deflist var-table
   :short "Fixtype of variable tables, i.e. symbol tables for variables."
   :long
@@ -74,16 +94,13 @@
      The list is never empty:
      we always initialize the variable table one (empty) block.")
    (xdoc::p
-    "Each element of the sequence is just a set of variable names for now,
-     because currently all the variables have type @('int').
-     Note that currently we do not support variables with file scope.")
+    "Currently we do not support variables with file scope.
+     Thus, all the scopes here are block scopes.")
    (xdoc::p
-    "Using sets is adequate because the variables declared in a block
-     must all have different names [C18:6.2.1/2].
-     However, it is possible for two sets in the list not to be disjoint,
+    "It is possible for two scopes in the list to have overlapping domains,
      when a variable in an inner block hides one in an outer block
      [C18:6.2.1/4]."))
-  :elt-type ident-set
+  :elt-type var-table-scope
   :true-listp t
   :non-emptyp t
   :elementp-of-nil t
@@ -92,7 +109,7 @@
 
   (defrule var-tablep-of-cons-alt
     (iff (var-tablep (cons a x))
-         (and (ident-setp a)
+         (and (var-table-scopep a)
               (or (var-tablep x)
                   (eq x nil))))
     :enable var-tablep))
@@ -100,23 +117,22 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define var-table-lookup ((var identp) (vartable var-tablep))
-  :returns (yes/no booleanp)
+  :returns (type tyspecseq-optionp)
   :short "Look up a variable in a variable table."
   :long
   (xdoc::topstring
    (xdoc::p
-    "For now we just return a boolean,
-     indicating whether the variable is found or not.
-     We search for it in the sequence in order,
-     i.e. from innermost to outermost block.
-     This will be important when we extend variable tables
-     with information about the variables (particularly, types),
-     because a variable reference refers to the one in the innermost block,
-     when there are others."))
-  (and (mbt (not (endp vartable)))
-       (or (set::in (ident-fix var) (ident-set-fix (car vartable)))
-           (and (not (endp (cdr vartable)))
-                (var-table-lookup var (cdr vartable)))))
+    "If the variable is found, we return its type;
+     otherwise, we return @('nil').
+     We search for the variable in the sequence of scopes in order,
+     i.e. from innermost to outermost block."))
+  (b* (((unless (mbt (not (endp vartable)))) nil)
+       (varscope (var-table-scope-fix (car vartable)))
+       (pair (omap::in (ident-fix var) varscope))
+       ((when (consp pair)) (cdr pair))
+       (vartable (cdr vartable))
+       ((when (endp vartable)) nil))
+    (var-table-lookup var vartable))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -146,7 +162,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define var-table-add-var ((var identp) (vartable var-tablep))
+(define var-table-add-var ((var identp) (type tyspecseqp) (vartable var-tablep))
   :returns (mv (okp booleanp) (new-vartable var-tablep))
   :short "Add a variable to (the innermost block of) a variable table."
   :long
@@ -157,11 +173,12 @@
      Otherwise, we add the variable and return the variable table,
      along with @('t') as first result."))
   (b* ((var (ident-fix var))
+       (type (tyspecseq-fix type))
        (vartable (var-table-fix vartable))
-       (block (ident-set-fix (car vartable)))
-       ((when (set::in var block)) (mv nil vartable))
-       (new-block (set::insert var block)))
-    (mv t (cons new-block (cdr vartable))))
+       (varscope (car vartable))
+       ((when (omap::in var varscope)) (mv nil vartable))
+       (new-varscope (omap::update var type varscope)))
+    (mv t (cons new-varscope (cdr vartable))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -416,7 +433,8 @@
     (expr-case e
                :ident (and (ident-wfp e.get)
                            (var-table-lookup
-                            e.get (sym-table->variables symtab)))
+                            e.get (sym-table->variables symtab))
+                           t)
                :const (const-wfp e.get)
                :call (and (expr-list-wfp e.args symtab)
                           (b* ((ftype
@@ -518,7 +536,7 @@
                  (mv nil (sym-table-fix symtab)))
                 (vartable (sym-table->variables symtab))
                 ((mv okp new-vartable)
-                 (var-table-add-var decl.name vartable))
+                 (var-table-add-var decl.name decl.type vartable))
                 ((when (not okp)) (mv nil (sym-table-fix symtab)))
                 (new-symtab (change-sym-table symtab :variables new-vartable)))
              (mv t new-symtab))
@@ -559,7 +577,8 @@
        ((unless (tyspecseq-wfp param.type)) (mv nil (irr-sym-table)))
        ((unless (ident-wfp param.name)) (mv nil (irr-sym-table)))
        (vartable (sym-table->variables symtab))
-       ((mv okp new-vartable) (var-table-add-var param.name vartable))
+       ((mv okp new-vartable)
+        (var-table-add-var param.name param.type vartable))
        ((when (not okp)) (mv nil (irr-sym-table))))
     (mv t (change-sym-table symtab :variables new-vartable)))
   :hooks (:fix))
