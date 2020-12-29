@@ -441,6 +441,19 @@
     the condition that the divisor is not 0.")
 
   (xdoc::p
+   "Besides unary and binary @('int') operations,
+    C includes @('int') constants,
+    which may be regarded as (a large number of) nullary @('int') operations.
+    Our ACL2 representation in @('[books]/kestrel/c/atc/integers.lisp')
+    provides a function @(tsee sint-const),
+    whose calls on suitable ACL2 quoted integer constants
+    represent @('int') constants.
+    The quoted integer constant arguments must be
+    a natural number in the range of signed two's complement 32-bit integers:
+    this is enforced by the guard of @(tsee sint-const).
+    Note that C integer constants are always non-negative.")
+
+  (xdoc::p
    "See the documentation of the fixtype and functions mentioned above
     for more details.")
 
