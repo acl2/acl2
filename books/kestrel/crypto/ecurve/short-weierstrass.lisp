@@ -67,6 +67,7 @@
      ``The Elliptic Curve Digital Signature Algorithm (ECDSA)'',
      <i>International Journal of Information Security</i>,
      August 2001, Volume 1, Issue 1, pages 33-63."))
+  :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
