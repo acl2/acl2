@@ -1278,9 +1278,8 @@
 ;; If there are multiple matches, the first one will fire, even if later ones might be better.
 (defund replace-nodenum-using-assumptions-for-axe-prover (nodenum
                                                           equiv ;todo: perhaps pass in an iff-flag
-                                                          nodenums-to-assume-false dag-array
-                                                          ;;print
-                                                          )
+                                                          nodenums-to-assume-false
+                                                          dag-array)
   (declare (xargs :guard (and (natp nodenum)
                               (symbolp equiv)
                               (all-natp nodenums-to-assume-false)
@@ -1311,19 +1310,14 @@
                         (atom (darg1 expr-to-assume-false)) ;makes sure it's a nodenum
                         ))
               ;; expr-to-assume-false does not have a form we can use, so keep looking:
-              (replace-nodenum-using-assumptions-for-axe-prover nodenum equiv (rest nodenums-to-assume-false) dag-array
-                                                                ;;print
-                                                                )
+              (replace-nodenum-using-assumptions-for-axe-prover nodenum equiv (rest nodenums-to-assume-false) dag-array)
             ;; EXPR-TO-ASSUME-FALSE is of the form (not <nodenum-to-assume-non-nil>):
             (let ((nodenum-to-assume-non-nil (darg1 expr-to-assume-false)))
-              (if (and (eq 'iff equiv) ;fixme equivs may someday not be comparable using eq
-                       (eql nodenum nodenum-to-assume-non-nil))
-                  ;; NODENUM is equal to NODENUM-TO-ASSUME-NON-NIL, and since
-                  ;; we only must preserve IFF, we can replace it with 't:
-                  ;; TODO: If nodenum is the nodenum of a boolean (either
-                  ;; because of the ffn-symb or because we have a hyp to that
-                  ;; effect), we could replace it with *t* even if the equiv is
-                  ;; 'equal:
+              (if (and (eql nodenum nodenum-to-assume-non-nil)
+                       (eq 'iff equiv))
+                  ;; NODENUM is equal to NODENUM-TO-ASSUME-NON-NIL, and since we only must preserve IFF, we can replace
+                  ;; it with 't: TODO: If nodenum is the nodenum of a boolean (either because of the ffn-symb or because
+                  ;; we have a hyp to that effect?), we could replace it with *t* even if the equiv is 'equal:
                   *t*
                 (let ((expr-to-assume-non-nil (aref1 'dag-array dag-array nodenum-to-assume-non-nil)))
                   (if (not (and (call-of 'equal expr-to-assume-non-nil)
@@ -1331,9 +1325,7 @@
                                 (consp (rest (dargs expr-to-assume-non-nil))) ;todo: think about bad arities
                                 ))
                       ;; expr-to-assume-non-nil does not have a form we can use, so keep looking:
-                      (replace-nodenum-using-assumptions-for-axe-prover nodenum equiv (rest nodenums-to-assume-false) dag-array
-                                                                        ;;print
-                                                                        )
+                      (replace-nodenum-using-assumptions-for-axe-prover nodenum equiv (rest nodenums-to-assume-false) dag-array)
                     (let ((darg1 (darg1 expr-to-assume-non-nil))
                           (darg2 (darg2 expr-to-assume-non-nil)))
                       (if (and (eql nodenum darg2)
@@ -1381,7 +1373,7 @@
 
 ;; Currently it can only put in a quotep!
 (defthm myquotep-of-replace-nodenum-using-assumptions-for-axe-prover
-  (implies (and (replace-nodenum-using-assumptions-for-axe-prover nodenum equiv nodenums-to-assume-false dag-array)
+  (implies (and (replace-nodenum-using-assumptions-for-axe-prover nodenum equiv nodenums-to-assume-false dag-array) ;no failure
                 (natp nodenum)
                 ;;(symbolp equiv)
                 (all-natp nodenums-to-assume-false)
@@ -4329,124 +4321,124 @@
            (not (< x (+ 1 (MAXELEM lst)))))
   :hints (("Goal" :in-theory (enable maxelem all-<))))
 
-;; Returns (mv erp nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries).
-;why is this separate?
-;rename?
-(defund simplify-var-and-add-to-dag-for-axe-prover (var equiv
-                                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                        rule-alist
-                                                        nodenums-to-assume-false
-                                                        equiv-alist print
-                                                        info tries interpreted-function-alist monitored-symbols
-                                                        ;; embedded-dag-depth
-                                                        case-designator work-hard-when-instructedp prover-depth)
-  (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                              (symbolp equiv)
-                              (symbolp var)
-                              ;(<= dag-len 2147483645)
-                              (all-natp nodenums-to-assume-false)
-                              (true-listp nodenums-to-assume-false)
-                              (all-< nodenums-to-assume-false dag-len)))
-           (ignore rule-alist equiv-alist interpreted-function-alist monitored-symbols
-                   ;;embedded-dag-depth
-                   case-designator work-hard-when-instructedp
-                   prover-depth ;fixme
-                   ))
-  (prog2$ nil ;;(cw "Rewriting the variable ~x0" var) ;new!
-          ;; It's a variable:  FFIXME perhaps add it first and then use assumptions?
-          ;; First try looking it up in the assumptions (fixme make special version of replace-term-using-assumptions-for-axe-prover for a variable?):
-          ;; TOOD: Could we just rely on variable substitution to handle this?:
-          (let ((assumption-match (replace-term-using-assumptions-for-axe-prover var equiv nodenums-to-assume-false dag-array print)))
-            (if assumption-match
-                ;; We replace the variable with something it's equated to in nodenums-to-assume-false.
-                ;; We don't rewrite the result (by the second pass, nodenums-to-assume-false will be simplified - and maybe we should always do that?)
-;fixme what if there is a chain of equalities to follow?
-                (mv (erp-nil) assumption-match dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
-              ;; no match, so we just add the variable to the DAG:
-              ;;make this a macro? this one might be rare..  same for other adding to dag operations?
-              (mv-let (erp nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist) ;fixme simplify nodenum?
-                (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-                (mv erp nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))))))
+;; ;; Returns (mv erp nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries).
+;; ;why is this separate?
+;; ;rename?
+;; (defund simplify-var-and-add-to-dag-for-axe-prover (var equiv
+;;                                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+;;                                                         rule-alist
+;;                                                         nodenums-to-assume-false
+;;                                                         equiv-alist print
+;;                                                         info tries interpreted-function-alist monitored-symbols
+;;                                                         ;; embedded-dag-depth
+;;                                                         case-designator work-hard-when-instructedp prover-depth)
+;;   (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+;;                               (symbolp equiv)
+;;                               (symbolp var)
+;;                               ;(<= dag-len 2147483645)
+;;                               (all-natp nodenums-to-assume-false)
+;;                               (true-listp nodenums-to-assume-false)
+;;                               (all-< nodenums-to-assume-false dag-len)))
+;;            (ignore rule-alist equiv-alist interpreted-function-alist monitored-symbols
+;;                    ;;embedded-dag-depth
+;;                    case-designator work-hard-when-instructedp
+;;                    prover-depth ;fixme
+;;                    ))
+;;   (prog2$ nil ;;(cw "Rewriting the variable ~x0" var) ;new!
+;;           ;; It's a variable:  FFIXME perhaps add it first and then use assumptions?
+;;           ;; First try looking it up in the assumptions (fixme make special version of replace-term-using-assumptions-for-axe-prover for a variable?):
+;;           ;; TOOD: Could we just rely on variable substitution to handle this?:
+;;           (let ((assumption-match (replace-term-using-assumptions-for-axe-prover var equiv nodenums-to-assume-false dag-array print)))
+;;             (if assumption-match
+;;                 ;; We replace the variable with something it's equated to in nodenums-to-assume-false.
+;;                 ;; We don't rewrite the result (by the second pass, nodenums-to-assume-false will be simplified - and maybe we should always do that?)
+;; ;fixme what if there is a chain of equalities to follow?
+;;                 (mv (erp-nil) assumption-match dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
+;;               ;; no match, so we just add the variable to the DAG:
+;;               ;;make this a macro? this one might be rare..  same for other adding to dag operations?
+;;               (mv-let (erp nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist) ;fixme simplify nodenum?
+;;                 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+;;                 (mv erp nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))))))
 
-;todo: don't even take tries
-(defthm mv-nth-8-of-simplify-var-and-add-to-dag-for-axe-prover
-  (equal (mv-nth 8 (simplify-var-and-add-to-dag-for-axe-prover var equiv
-                                                               dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                               rule-alist
-                                                               nodenums-to-assume-false
-                                                               equiv-alist print
-                                                               info tries interpreted-function-alist monitored-symbols
-                                                               case-designator work-hard-when-instructedp prover-depth))
-         tries)
-  :hints (("Goal" :in-theory (enable simplify-var-and-add-to-dag-for-axe-prover))))
+;; ;todo: don't even take tries
+;; (defthm mv-nth-8-of-simplify-var-and-add-to-dag-for-axe-prover
+;;   (equal (mv-nth 8 (simplify-var-and-add-to-dag-for-axe-prover var equiv
+;;                                                                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+;;                                                                rule-alist
+;;                                                                nodenums-to-assume-false
+;;                                                                equiv-alist print
+;;                                                                info tries interpreted-function-alist monitored-symbols
+;;                                                                case-designator work-hard-when-instructedp prover-depth))
+;;          tries)
+;;   :hints (("Goal" :in-theory (enable simplify-var-and-add-to-dag-for-axe-prover))))
 
-;todo: don't even take info
-(defthm mv-nth-7-of-simplify-var-and-add-to-dag-for-axe-prover
-  (equal (mv-nth 7 (simplify-var-and-add-to-dag-for-axe-prover var equiv
-                                                               dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                               rule-alist
-                                                               nodenums-to-assume-false
-                                                               equiv-alist print
-                                                               info tries interpreted-function-alist monitored-symbols
-                                                               case-designator work-hard-when-instructedp prover-depth))
-         info)
-  :hints (("Goal" :in-theory (enable simplify-var-and-add-to-dag-for-axe-prover))))
+;; ;todo: don't even take info
+;; (defthm mv-nth-7-of-simplify-var-and-add-to-dag-for-axe-prover
+;;   (equal (mv-nth 7 (simplify-var-and-add-to-dag-for-axe-prover var equiv
+;;                                                                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+;;                                                                rule-alist
+;;                                                                nodenums-to-assume-false
+;;                                                                equiv-alist print
+;;                                                                info tries interpreted-function-alist monitored-symbols
+;;                                                                case-designator work-hard-when-instructedp prover-depth))
+;;          info)
+;;   :hints (("Goal" :in-theory (enable simplify-var-and-add-to-dag-for-axe-prover))))
 
-(defthm <-of-mv-nth-3-of-simplify-var-and-add-to-dag-for-axe-prover
-  (implies (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-           (<= dag-len
-               (mv-nth 3 (simplify-var-and-add-to-dag-for-axe-prover var equiv
-                                                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                                     rule-alist
-                                                                     nodenums-to-assume-false
-                                                                     equiv-alist print
-                                                                     info tries interpreted-function-alist monitored-symbols
-                                                                     case-designator work-hard-when-instructedp prover-depth))))
-  :rule-classes :linear
-  :hints (("Goal" :in-theory (enable simplify-var-and-add-to-dag-for-axe-prover))))
+;; (defthm <-of-mv-nth-3-of-simplify-var-and-add-to-dag-for-axe-prover
+;;   (implies (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+;;            (<= dag-len
+;;                (mv-nth 3 (simplify-var-and-add-to-dag-for-axe-prover var equiv
+;;                                                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+;;                                                                      rule-alist
+;;                                                                      nodenums-to-assume-false
+;;                                                                      equiv-alist print
+;;                                                                      info tries interpreted-function-alist monitored-symbols
+;;                                                                      case-designator work-hard-when-instructedp prover-depth))))
+;;   :rule-classes :linear
+;;   :hints (("Goal" :in-theory (enable simplify-var-and-add-to-dag-for-axe-prover))))
 
-(defthm simplify-var-and-add-to-dag-for-axe-prover-return-type
-  (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                (symbolp var))
-           (mv-let (erp nodenum new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries)
-             (simplify-var-and-add-to-dag-for-axe-prover var equiv
-                                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                         rule-alist
-                                                         nodenums-to-assume-false
-                                                         equiv-alist print
-                                                         info tries interpreted-function-alist monitored-symbols
-                                                         case-designator work-hard-when-instructedp prover-depth)
-             (declare (ignore nodenum info tries))
-             (implies (not erp)
-                      (wf-dagp 'dag-array new-dag-array new-dag-len 'dag-parent-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist))))
-  :hints (("Goal" :in-theory (enable simplify-var-and-add-to-dag-for-axe-prover))))
+;; (defthm simplify-var-and-add-to-dag-for-axe-prover-return-type
+;;   (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+;;                 (symbolp var))
+;;            (mv-let (erp nodenum new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries)
+;;              (simplify-var-and-add-to-dag-for-axe-prover var equiv
+;;                                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+;;                                                          rule-alist
+;;                                                          nodenums-to-assume-false
+;;                                                          equiv-alist print
+;;                                                          info tries interpreted-function-alist monitored-symbols
+;;                                                          case-designator work-hard-when-instructedp prover-depth)
+;;              (declare (ignore nodenum info tries))
+;;              (implies (not erp)
+;;                       (wf-dagp 'dag-array new-dag-array new-dag-len 'dag-parent-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist))))
+;;   :hints (("Goal" :in-theory (enable simplify-var-and-add-to-dag-for-axe-prover))))
 
-(defthm dargp-less-than-of-mv-nth-1-and-mv-nth-3-of-simplify-var-and-add-to-dag-for-axe-prover
-  (implies (and (not (mv-nth 0 (simplify-var-and-add-to-dag-for-axe-prover var equiv
-                                                                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                                           rule-alist
-                                                                           nodenums-to-assume-false
-                                                                           equiv-alist print
-                                                                           info tries interpreted-function-alist monitored-symbols
-                                                                           case-designator work-hard-when-instructedp prover-depth)))
-                (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                (all-natp nodenums-to-assume-false)
-                (all-< nodenums-to-assume-false dag-len))
-           (dargp-less-than (mv-nth 1 (simplify-var-and-add-to-dag-for-axe-prover var equiv
-                                                                                  dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                                                  rule-alist
-                                                                                  nodenums-to-assume-false
-                                                                                  equiv-alist print
-                                                                                  info tries interpreted-function-alist monitored-symbols
-                                                                                  case-designator work-hard-when-instructedp prover-depth))
-                            (mv-nth 3 (simplify-var-and-add-to-dag-for-axe-prover var equiv
-                                                                                  dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                                                  rule-alist
-                                                                                  nodenums-to-assume-false
-                                                                                  equiv-alist print
-                                                                                  info tries interpreted-function-alist monitored-symbols
-                                                                                  case-designator work-hard-when-instructedp prover-depth))))
-  :hints (("Goal" :in-theory (enable simplify-var-and-add-to-dag-for-axe-prover))))
+;; (defthm dargp-less-than-of-mv-nth-1-and-mv-nth-3-of-simplify-var-and-add-to-dag-for-axe-prover
+;;   (implies (and (not (mv-nth 0 (simplify-var-and-add-to-dag-for-axe-prover var equiv
+;;                                                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+;;                                                                            rule-alist
+;;                                                                            nodenums-to-assume-false
+;;                                                                            equiv-alist print
+;;                                                                            info tries interpreted-function-alist monitored-symbols
+;;                                                                            case-designator work-hard-when-instructedp prover-depth)))
+;;                 (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+;;                 (all-natp nodenums-to-assume-false)
+;;                 (all-< nodenums-to-assume-false dag-len))
+;;            (dargp-less-than (mv-nth 1 (simplify-var-and-add-to-dag-for-axe-prover var equiv
+;;                                                                                   dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+;;                                                                                   rule-alist
+;;                                                                                   nodenums-to-assume-false
+;;                                                                                   equiv-alist print
+;;                                                                                   info tries interpreted-function-alist monitored-symbols
+;;                                                                                   case-designator work-hard-when-instructedp prover-depth))
+;;                             (mv-nth 3 (simplify-var-and-add-to-dag-for-axe-prover var equiv
+;;                                                                                   dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+;;                                                                                   rule-alist
+;;                                                                                   nodenums-to-assume-false
+;;                                                                                   equiv-alist print
+;;                                                                                   info tries interpreted-function-alist monitored-symbols
+;;                                                                                   case-designator work-hard-when-instructedp prover-depth))))
+;;   :hints (("Goal" :in-theory (enable simplify-var-and-add-to-dag-for-axe-prover))))
 
 ;; This duplicates the term x, but if it's  the variable COUNT, that's ok.
 (defmacro zp-fast (x)

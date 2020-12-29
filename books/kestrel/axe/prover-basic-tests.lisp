@@ -20,8 +20,10 @@
                                        '((0 natp '7))
                                        :rule-lists (list '(implies))))
 
+;; todo: get this to prove without splitting (but there is only 1 literal before we split)
 (deftest
-  (prove-implication-with-basic-prover '((1 natp 0) (0 . x)) '((1 natp 0) (0 . x))
+  (prove-implication-with-basic-prover '((1 natp 0) (0 . x))
+                                       '((1 natp 0) (0 . x))
                                        :rule-lists (list '(implies))
                                        ))
 
@@ -312,3 +314,11 @@
    (not (booland (not x) (not y)))
    :rule-classes nil
    ))
+
+;; test with a non-boolean
+;; todo: get this to work without splitting?
+(defthm-with-basic-prover-clause-processor non-boolean-1
+  (implies (member-equal a x) (member-equal a x))
+  :rules (implies equal-same) ;todo: few to none of these rules should need to be given explicitly
+  :rule-classes nil
+  )
