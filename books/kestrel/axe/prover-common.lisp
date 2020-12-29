@@ -37,6 +37,7 @@
 (include-book "supporting-vars")
 (include-book "crunch-dag2")
 (include-book "worklists")
+(include-book "equivs")
 (include-book "make-var-names")
 (include-book "dag-size2") ; for size-array-for-sorted-nodes
 (include-book "misc/records" :dir :system) ; for axe-prover-hints, todo
@@ -564,9 +565,14 @@
                                   (alen1 'renaming-array renaming-array))
                            ;;follows from the above:
                            (array1p 'renaming-array new-renaming-array)))))
-  :hints (("Goal" :in-theory (enable add-array-nodes-to-dag
-                                     RENAMING-ARRAYP ;todo
-                                     ))))
+  :hints (("Goal" :induct (ADD-ARRAY-NODES-TO-DAG NODENUM MAX-NODENUM
+                                                  FROM-DAG-ARRAY-NAME FROM-DAG-ARRAY
+                                                  FROM-DAG-ARRAY-LEN DAG-ARRAY DAG-LEN
+                                                  DAG-PARENT-ARRAY DAG-CONSTANT-ALIST
+                                                  DAG-VARIABLE-ALIST RENAMING-ARRAY)
+           :in-theory (enable add-array-nodes-to-dag
+                              RENAMING-ARRAYP ;todo
+                              ))))
 
 ;;
 ;; tags (part 1, since currently get-node-tag is used in the context stuff - change that?! maybe i already did?)
@@ -1704,44 +1710,51 @@
 ;;           (equal (iff x y1)
 ;;                  (iff x y2))))
 
-;; Recognize an alist that maps symbols to lists of symbols
-(defund symbol-to-symbols-alistp (x)
+(defun equiv-list-listp (x)
+  (declare (xargs :guard t))
+  (if (atom x)
+      (null x)
+    (and (equiv-listp (first x))
+         (equiv-list-listp (rest x)))))
+
+;; Recognize an alist that maps symbols to lists of equivs
+(defund symbol-to-equivs-alistp (x)
   (declare (xargs :guard t))
   (and (symbol-alistp x)
-       (symbol-list-listp (strip-cdrs x))))
+       (equiv-list-listp (strip-cdrs x))))
 
-(defthm symbol-to-symbols-alistp-forward-to-symbol-alistp
-  (implies (symbol-to-symbols-alistp x)
+(defthm symbol-to-equivs-alistp-forward-to-symbol-alistp
+  (implies (symbol-to-equivs-alistp x)
            (symbol-alistp x))
   :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable symbol-to-symbols-alistp))))
+  :hints (("Goal" :in-theory (enable symbol-to-equivs-alistp))))
 
-(defthm symbol-listp-of-lookup-equal-when-symbol-to-symbols-alistp
-  (implies (symbol-to-symbols-alistp alist)
-           (symbol-listp (lookup-equal key alist)))
-  :hints (("Goal" :in-theory (enable symbol-to-symbols-alistp))))
+(defthm equiv-listp-of-lookup-equal-when-symbol-to-equivs-alistp
+  (implies (symbol-to-equivs-alistp alist)
+           (equiv-listp (lookup-equal key alist)))
+  :hints (("Goal" :in-theory (enable symbol-to-equivs-alistp))))
 
-(defund all-symbol-to-symbols-alistp (x)
+(defund all-symbol-to-equivs-alistp (x)
   (declare (xargs :guard t))
   (if (atom x)
       t
-    (and (symbol-to-symbols-alistp (first x))
-         (all-symbol-to-symbols-alistp (rest x)))))
+    (and (symbol-to-equivs-alistp (first x))
+         (all-symbol-to-equivs-alistp (rest x)))))
 
-(defthm symbol-to-symbols-alistp-of-lookup-equal-when-all-symbol-to-symbols-alistp-of-strip-cdrs
-  (implies (all-symbol-to-symbols-alistp (strip-cdrs alist))
-           (symbol-to-symbols-alistp (lookup-equal key alist)))
-  :hints (("Goal" :in-theory (enable all-symbol-to-symbols-alistp lookup-equal assoc-equal))))
+(defthm symbol-to-equivs-alistp-of-lookup-equal-when-all-symbol-to-equivs-alistp-of-strip-cdrs
+  (implies (all-symbol-to-equivs-alistp (strip-cdrs alist))
+           (symbol-to-equivs-alistp (lookup-equal key alist)))
+  :hints (("Goal" :in-theory (enable all-symbol-to-equivs-alistp lookup-equal assoc-equal))))
 
-(defthm symbol-alistp-of-lookup-equal-when-all-symbol-to-symbols-alistp-of-strip-cdrs
-  (implies (all-symbol-to-symbols-alistp (strip-cdrs alist))
+(defthm symbol-alistp-of-lookup-equal-when-all-symbol-to-equivs-alistp-of-strip-cdrs
+  (implies (all-symbol-to-equivs-alistp (strip-cdrs alist))
            (symbol-alistp (lookup-equal key alist)))
-  :hints (("Goal" :in-theory (enable all-symbol-to-symbols-alistp lookup-equal assoc-equal))))
+  :hints (("Goal" :in-theory (enable all-symbol-to-equivs-alistp lookup-equal assoc-equal))))
 
 (defund equiv-alistp (equiv-alist)
   (declare (xargs :guard t))
   (and (symbol-alistp equiv-alist)
-       (all-symbol-to-symbols-alistp (strip-cdrs equiv-alist))))
+       (all-symbol-to-equivs-alistp (strip-cdrs equiv-alist))))
 
 ;; equiv-alist maps equivs to alists from function names to the equiv-lists to maintain for their args
 (defund get-equivs (equiv fn equiv-alist)
@@ -1749,10 +1762,13 @@
                   :guard-hints (("Goal" :in-theory (enable equiv-alistp)))))
   (lookup-eq fn (lookup-eq equiv equiv-alist)))
 
-(defthm symbol-listp-of-get-equivs
+(defthm equiv-listp-of-get-equivs
   (implies (equiv-alistp equiv-alist)
-           (symbol-listp (get-equivs equiv fn equiv-alist)))
+           (equiv-listp (get-equivs equiv fn equiv-alist)))
   :hints (("Goal" :in-theory (enable get-equivs equiv-alistp))))
+
+
+
 
 ;in this table, you look up the equivalence to preserve and the function being rewritten, and you get the list of equivalences to use for the function's arguments
 (defconst *congruence-table*
@@ -1961,6 +1977,14 @@
   (get-disjuncts-from-nodes nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc)
   (mv erp provedp extended-acc dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
 
+(defthm get-disjuncts-from-nodes-of-nil
+  (equal (get-disjuncts-from-nodes nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc)
+         (mv (erp-nil)
+             nil ;provedp
+             (reverse acc)
+             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+  :hints (("Goal" :in-theory (enable get-disjuncts-from-nodes))))
+
 ;move
 (local
  (defthm nat-listp-of-append
@@ -2006,6 +2030,28 @@
   :rule-classes :type-prescription
   :hints (("Goal" :in-theory (e/d (get-disjuncts-from-nodes) (natp)))))
 
+(defthm <=-of-mv-nth-4-of-get-disjuncts-from-nodes
+  (implies  (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                 (nat-listp nodenums)
+                 (all-< nodenums dag-len)
+                 (nat-listp acc)
+                 (all-< acc dag-len))
+            (<= dag-len
+                (mv-nth 4 (get-disjuncts-from-nodes nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc))))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (e/d (get-disjuncts-from-nodes) (natp)))))
+
+(defthm <-of-0-and-mv-nth-4-of-get-disjuncts-from-nodes
+  (implies  (and (consp nodenums) ; implies (< 0 dag-len)
+                 (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                 (nat-listp nodenums)
+                 (all-< nodenums dag-len)
+                 (nat-listp acc)
+                 (all-< acc dag-len))
+            (< 0
+                (mv-nth 4 (get-disjuncts-from-nodes nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc))))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (e/d (get-disjuncts-from-nodes) (natp)))))
 
 
 ;can be used to test get-disjuncts:
