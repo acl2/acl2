@@ -601,11 +601,13 @@
            (and (equal (chop-r (chop-r x m r) k r)
                        (chop-r x k r))
                 (equal (chop-r (chop-r x k r) m r)
-                       (chop-r x k r))))
+                       (chop-r x k r))
+		(<= (chop-r x k r) (chop-r x m r))))
   :enable chop-r
-  :use (:instance fl/int-rewrite
-         (x (* (expt r m) x))
-         (n (expt r (- m k)))))
+  :use ((:instance fl/int-rewrite
+          (x (* (expt r m) x))
+          (n (expt r (- m k))))
+        (:instance chop-r-down (x (chop-r x m r)) (n k))))
 
 (defruled chop-r-shift
   (implies (and (real/rationalp x)
@@ -752,15 +754,16 @@
   :use (:instance chop-r-monotone (r 2))
   :rule-classes ())
 
-(defruled chop-chop
-  (implies (and (real/rationalp x)
+(defrule chop-chop
+  (implies (and (rationalp x)
                 (integerp k)
                 (integerp m)
                 (<= k m))
            (and (equal (chop (chop x m) k)
                        (chop x k))
                 (equal (chop (chop x k) m)
-                       (chop x k))))
+                       (chop x k))
+		(<= (chop x k) (chop x m))))
   :enable chop-r-chop-r)
 
 (defruled chop-shift

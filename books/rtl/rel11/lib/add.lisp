@@ -74,35 +74,26 @@
                  (iff (= (bits (+ x y) (1- n) 0) (1- (expt 2 n)))
                       (= (+ (bits x (1- n) 0) (bits y (1- n) 0)) (1- (expt 2 n)))))))
 
-(defun rc-carry (x y k)
-  (declare (xargs :guard (and (integerp x)
-                              (integerp y)
-                              (natp k))))
+(defund cbit (x y cin k)
   (if (zp k)
-      0
+      cin
     (logior (logand (bitn x (1- k)) (bitn y (1- k)))
-	    (logior (logand (bitn x (1- k)) (rc-carry x y (1- k)))
-		    (logand (bitn y (1- k)) (rc-carry x y (1- k)))))))
+	    (logior (logand (bitn x (1- k)) (cbit x y cin (1- k)))
+		    (logand (bitn y (1- k)) (cbit x y cin  (1- k)))))))
 
-(defun rc-sum (x y k)
-  (declare (xargs :guard (and (integerp x)
-                              (integerp y)
-                              (natp k))))
-  (if (zp k)
-      0
-    (cat (logxor (bitn x (1- k))
-		 (logxor (bitn y (1- k)) (rc-carry x y (1- k))))
-	 1
-	 (rc-sum x y (1- k))
-	 (1- k))))
-
-(defthm ripple-carry
+(defthm ripple-carry-lemma
   (implies (and (integerp x)
                 (integerp y)
-                (natp n))
-           (equal (+ (bits x (1- n) 0) (bits y (1- n) 0))
-                  (cat (rc-carry x y n) 1 (rc-sum x y n) n)))
-  :rule-classes ())
+                (bitp cin)
+		(natp i))
+	   (equal (bitn (+ x y cin) i)
+		  (logxor (logxor (bitn x i) (bitn y i))
+			  (cbit x y cin i)))))
+
+
+;;;**********************************************************************
+;;;                 Parallel Prefix Adders
+;;;**********************************************************************
 
 (defun gen (x y i j)
   (declare (xargs :measure (nfix (1+ i))
@@ -134,6 +125,23 @@
   :rule-classes (:rewrite
                  (:forward-chaining :trigger-terms ((prop x y i j)))))
 
+(defthmd gen-i-i
+  (implies (and (integerp x)
+		(integerp y)
+		(natp i))
+	   (equal (gen x y i i)
+		  (logand (bitn x i) (bitn y i))))
+  :hints (("Goal" :in-theory (enable gen) :use ((:instance bitn-0-1 (n i)) (:instance bitn-0-1 (x y) (n i))))))
+
+(defthmd prop-i-i
+  (implies (and (integerp x)
+		(integerp y)
+		(natp i))
+	   (equal (prop x y i i)
+		  (logxor (bitn x i) (bitn y i))))
+  :hints (("Goal" :expand ((prop x y i i))
+                  :use ((:instance bitn-0-1 (n i)) (:instance bitn-0-1 (x y) (n i))))))
+
 (defthmd gen-val
   (implies (natp j)
            (equal (gen x y i j)
@@ -142,27 +150,13 @@
                       1
                     0))))
 
-(defthmd gen-val-cor1
-  (implies (natp j)
-           (equal (gen x y i j)
-                  (bitn (+ (bits x i j) (bits y i j))
-			(1+ (- i j))))))
-
-(defthmd gen-val-cor2
-  (implies (and (integerp x)
-                (integerp y))
-           (equal (+ (bits x i 0) (bits y i 0))
-		  (+ (* (expt 2 (1+ i)) (gen x y i 0))
-		     (bits (+ x y) i 0)))))
-
-(defthm gen-special-case
-  (implies (and (integerp i)
-                (integerp j)
-                (>= i j)
-                (>= j 0)
-                (= (bitn (+ (bits x i j) (bits y i j)) (- i j)) 0))
-           (equal (gen x y i j)
-                  (logior (bitn x i) (bitn y i))))
+(defthm bits-sum
+  (implies (and (integerp x) (integerp y))
+           (equal (bits (+ x y) i j)
+                  (bits (+ (bits x i j)
+                           (bits y i j)
+                           (gen x y (1- j) 0))
+                        (- i j) 0)))
   :rule-classes ())
 
 (defthmd prop-val
@@ -173,6 +167,221 @@
                       1
                     0))))
 
+(defund gp (x y i j)
+  (cons (gen x y i j) (prop x y i j)))
+
+(defund gp0 (x y i)
+  (gp x y i i))
+
+(defund fco (gp1 gp2)
+  (cons (logior (car gp1) (logand (cdr gp1) (car gp2)))
+	(logand (cdr gp1) (cdr gp2))))
+
+(defthmd fco-assoc
+  (implies (and (bitp g1) (bitp p1)
+		(bitp g2) (bitp p2)
+		(bitp g3) (bitp p3))
+	   (equal (fco (fco (cons g1 p1) (cons g2 p2))
+		       (cons g3 p3))
+		  (fco (cons g1 p1)
+		       (fco (cons g2 p2) (cons g3 p3))))))
+
+(defthmd gp-decomp
+  (implies (and (integerp x)
+		(integerp y)
+		(natp j)
+		(natp i)
+		(natp k)
+		(<= j k)
+		(< k i))
+	   (equal (fco (gp x y i (1+ k)) (gp x y k j))
+		  (gp x y i j))))
+
+(defthmd cbit-rewrite
+  (implies (and (integerp x)
+		(integerp y)
+		(bitp cin)
+		(natp i))
+	   (equal (cbit x y cin (1+ i))
+		  (logior (gen x y i 0)
+			  (logand (prop x y i 0) cin)))))
+
+(defun rc (x y i)
+  (if (zp i)
+      (gp0 x y 0)
+    (fco (gp0 x y i) (rc x y (1- i)))))
+
+(defthmd rc-correct
+  (implies (and (integerp x)
+		(integerp y)
+		(natp i))
+	   (equal (rc x y i)
+		  (gp x y i 0))))
+
+(defun lf (x y i d)
+  (if (zp d)
+      (gp0 x y i)
+    (if (< (mod i (expt 2 d)) (expt 2 (1- d)))
+	(lf x y i (1- d))
+      (fco (lf x y i (1- d))
+	   (lf x y
+	       (+ (chop i (- d)) (expt 2 (1- d)) -1)
+	       (1- d))))))
+
+(defthmd lf-correct-gen
+  (implies (and (integerp x)
+		(integerp y)
+		(natp i)
+		(natp d))
+	   (equal (lf x y i d)
+		  (gp x y i (chop i (- d))))))
+
+(defthmd lf-correct
+  (implies (and (integerp x)
+		(integerp y)
+		(natp n)
+		(bvecp i n))
+	   (equal (lf x y i n)
+		  (gp x y i 0))))
+
+(defund ks (x y i d)
+  (if (zp d)
+      (gp0 x y i)
+    (if (< i (expt 2 (1- d)))
+	(ks x y i (1- d))
+      (fco (ks x y i (1- d))
+	   (ks x y (- i (expt 2 (1- d))) (1- d))))))
+
+(defthmd ks-correct-gen
+  (implies (and (integerp x)
+		(integerp y)
+		(natp i)
+		(natp d))
+	   (equal (ks x y i d)
+		  (gp x y i (max 0 (1+ (- i (expt 2 d))))))))
+
+(defthmd ks-correct
+  (implies (and (integerp x)
+		(integerp y)
+		(natp n)
+		(bvecp i n))
+	   (equal (ks x y i n)
+		  (gp x y i 0))))
+
+(defund pi2 (k)
+  (if (zp k)
+      0
+    (if (integerp (/ k 2))
+	(1+ (pi2 (/ k 2)))
+      0)))
+
+(defthmd pi2-upper
+  (implies (not (zp k))
+	   (<= (expt 2 (pi2 k)) k)))
+
+(defthmd pi2-lemma
+  (implies (and (not (zp k)) (integerp p))
+           (iff (integerp (/ k (expt 2 p)))
+	        (<= p (pi2 k)))))
+
+(defund bk0 (x y i d)
+  (if (zp d)
+      (gp0 x y i)
+    (if (< (pi2 (1+ i)) d)
+	(bk0 x y i (1- d))
+      (fco (bk0 x y i (1- d))
+	   (bk0 x y (- i (expt 2 (1- d))) (1- d))))))
+
+(defund bk (x y i n)
+  (declare (xargs :hints (("Goal" :use ((:instance pi2-upper (k (1+ i))))))))
+  (let ((p (pi2 (1+ i))))
+    (if (or (zp n) (not (bvecp i n)) (= i (1- (expt 2 p))))
+        (bk0 x y i n)
+      (fco (bk0 x y i n)
+	   (bk x y (- i (expt 2 p)) n)))))
+		
+(defthmd bk0-correct-gen
+  (implies (and (integerp x)
+		(integerp y)
+		(natp i)
+		(natp d))
+	   (equal (bk0 x y i d)
+	          (gp x y i (1+ (- i (expt 2 (min (pi2 (1+ i)) d))))))))
+
+(defthmd bk0-correct
+  (implies (and (integerp x)
+		(integerp y)
+		(natp n)
+		(bvecp i n))
+	   (equal (bk0 x y i n)
+		  (gp x y i (1+ (- i (expt 2 (pi2 (1+ i)))))))))
+
+(defthmd bk-correct
+  (implies (and (integerp x)
+		(integerp y)
+		(natp n)
+		(bvecp i n))
+	   (equal (bk x y i n)
+		  (gp x y i 0))))
+
+(defund hc0 (x y i k d)
+  (let ((p (pi2 (1+ i))))
+    (if (or (zp d) (< p k))
+	(bk0 x y i k)
+      (if (< i (expt 2 (+ k d -1)))
+	  (hc0 x y i k (1- d))
+	(fco (hc0 x y i k (1- d))
+	     (hc0 x y (- i (expt 2 (+ k d -1))) k (1- d)))))))
+
+(defund hc (x y i k n)
+  (declare (xargs :hints (("Goal" :use ((:instance pi2-upper (k (1+ i))))))))
+  (let ((p (pi2 (1+ i))))
+    (if (or (zp n) (not (bvecp i n)) (>= (pi2 (1+ i)) k) (= i (1- (expt 2 p))))
+	(hc0 x y i k (- n k))
+      (fco (hc0 x y i k (- n k))
+           (hc x y (- i (expt 2 p)) k n)))))
+
+(defthmd hack-1
+  (implies (and (integerp i) (integerp (expt 2 (1- (+ k d))))
+                (< i (expt 2 (1- (+ k d))))
+		(<= (expt 2 (1- (+ k d))) (1+ i)))
+           (equal (expt 2 (1- (+ k d))) (1+ i))))
+
+(defthmd hc0-correct-gen
+  (implies (and (integerp x)
+		(integerp y)
+		(natp i)
+		(natp k)
+		(natp d)
+		(>= (pi2 (1+ i)) k))
+	   (let ((m (max 0 (- (1+ i) (expt 2 (+ k d))))))
+	     (equal (hc0 x y i k d)
+		    (gp x y i m)))))
+
+(defthmd hc0-correct
+  (implies (and (integerp x)
+		(integerp y)
+		(natp n)
+		(natp k)
+		(<= k n)
+		(bvecp i n)
+		(integerp (/ (1+ i) (expt 2 k))))
+	   (equal (hc0 x y i k (- n k))
+		  (gp x y i 0))))
+
+(defthmd hc-correct
+  (implies (and (integerp x)
+		(integerp y)
+		(natp n)
+		(natp k)
+		(<= k n)
+		(bvecp i n))
+	   (equal (hc x y i k n)
+		  (gp x y i 0))))
+
+;;-------------------------------------------------------------------------------------
+
+;; I don't know why the results below are here;  I'm just afraid to throw them out.
 (defthmd prop-as-logxor
   (implies (and (natp i)
                 (natp j)
@@ -223,15 +432,6 @@
 	     (equal (prop x y i j)
 		    (logand (prop x y i (1+ k))
 			    (prop x y k j))))
-  :rule-classes ())
-
-(defthm bits-sum
-  (implies (and (integerp x) (integerp y))
-           (equal (bits (+ x y) i j)
-                  (bits (+ (bits x i j)
-                           (bits y i j)
-                           (gen x y (1- j) 0))
-                        (- i j) 0)))
   :rule-classes ())
 
 (defthm bits-sum-shift

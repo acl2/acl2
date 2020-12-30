@@ -507,7 +507,8 @@
            (and (equal (chop (chop x m) k)
                        (chop x k))
                 (equal (chop (chop x k) m)
-                       (chop x k)))))
+                       (chop x k))
+		(<= (chop x k) (chop x m)))))
 
 (defthmd chop-shift
   (implies (and (rationalp x)
