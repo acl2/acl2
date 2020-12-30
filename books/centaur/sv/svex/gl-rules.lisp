@@ -509,8 +509,10 @@
            (implies (and (not (equal (nfix cycle) (nfix ncycle)))
                          (svar-p var)
                          (svex-cycle-var-p var))
-                    (not (member var (alist-keys (svar-alist-add-cycle-num x cycle))))))
-         :hints(("Goal" :in-theory (enable svar-alist-add-cycle-num alist-keys)))))
+                    (not (svex-env-boundp var  (svar-alist-add-cycle-num x cycle)))))
+         :hints(("Goal" :in-theory (enable svar-alist-add-cycle-num
+                                           svex-env-boundp
+                                           alist-keys)))))
 
 (local (defthm svex-env-lookup-of-cycle-var-in-non-cycle-env
          (implies (and (not (svarlist-has-svex-cycle-var (alist-keys (svex-env-fix x))))

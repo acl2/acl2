@@ -74,7 +74,7 @@
     (mv svdesign state)))
 
 
-(defsvtv counter-step
+(defsvtv counter-step-svtv
   :mod *counter*
   :inputs '(("clk"    0  1)
             ("reset"  reset _)
@@ -82,7 +82,19 @@
   :outputs '(("count" count _))
   :state-machine t)
 
+(defconst *counter-step-fsm*
+  (b* (((svtv x) (counter-step-svtv)))
+    (make-svtv-fsm :values x.outexprs
+                   :nextstate x.nextstate
+                   :design *counter*)))
 
+
+(make-event
+ `(defun counter-step ()
+    (declare (xargs :guard t))
+    ',*counter-step-fsm*))
+
+(in-theory (disable counter-step (counter-step)))
 
 (local (defun my-satlink-config ()
          (declare (Xargs :guard t))
@@ -100,13 +112,14 @@
 (define counter-run-step ((ins svex-env-p)
                           (st svex-env-p))
   :guard (equal (alist-keys st)
-                (svex-alist-keys (svtv->nextstate (counter-step))))
+                (svex-alist-keys (svtv-fsm->nextstate (counter-step))))
   :guard-hints (("goal" :in-theory (enable ;; 
                                            (counter-step))))
+  :guard-debug t
   :prepwork ((local (in-theory (enable svtv-fsm-run-outs-and-states))))
   :returns (mv (step svex-env-p)
                (nextst svex-env-p))
-  (b* (((svtv counter) (counter-step))
+  (b* (((svtv-fsm counter) (counter-step))
        (ins (make-fast-alist ins))
        ((mv (list step) (list nextst))
         (svtv-fsm-run-outs-and-states (list ins) st (counter-step)
@@ -122,7 +135,7 @@
   :measure (len ins)
   :verify-guards nil
   (b* (((when (atom ins)) t)
-       ((svtv counter) (counter-step))
+       ((svtv-fsm counter) (counter-step))
        (in (car ins))
        ((mv step nextst) (counter-run-step in st))
        (count (svex-env-lookup 'count step))

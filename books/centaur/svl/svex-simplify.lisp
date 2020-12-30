@@ -434,7 +434,7 @@
                     (mv err (cons (car lst) rest)))
                    ((4vec-p (car lst))
                     (mv err
-                        (cons (list 'quote (car lst))
+                        (cons (car lst)
                               rest)))
                    (t
                     (mv t nil))))))
