@@ -4113,7 +4113,7 @@
               ;; constants get evaluated, contradictions get found (when making the assumption-array), etc.
               (rule-alists (if (not rule-alists)
                                (prog2$ (cw "NOTE: Using a very simple default rule set.~%")
-                                       (list *default-axe-prover-rules*))
+                                       *default-axe-prover-rule-alists*)
                              rule-alists))
               ;; Handle any constant disjuncts
               ((mv provedp literal-nodenums)
