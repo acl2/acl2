@@ -16,6 +16,8 @@
 
 (include-book "./add")
 
+(include-book "./ppa")
+
 (include-book "./mult")
 
 (include-book "./util")
