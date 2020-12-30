@@ -62,7 +62,7 @@
             (if (eq 'iff equiv)
                 *t* ;; We know the node is non-nil and only have to preserve iff
               ;; Can't rewrite since we are in an 'equal context and only know that nodenum is non-nil:
-              (prog2$ (cw "NOTE: We know node ~x0 is non-nil, but we are rewriting it in an equal context." nodenum)
+              (prog2$ (cw "NOTE: Rewriting non-nil node ~x0 in an equal context.~%" nodenum)
                       nodenum))
           ;; we have a replacement (some constant) for nodenum:
           (if (eq 'iff equiv)
