@@ -10,9 +10,10 @@
 
 (in-package "ACL2")
 
-(include-book "prover-common")
+(include-book "get-disjuncts")
 (include-book "make-term-into-dag-array-basic")
 (include-book "dag-to-term")
+(include-book "dag-array-printing")
 
 (defund get-disjuncts-tester (term state)
   (declare (xargs :stobjs state
