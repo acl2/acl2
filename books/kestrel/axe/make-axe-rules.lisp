@@ -907,7 +907,7 @@
                                wrld)
             acc))))
 
-(defthm symbol-when-memberp
+(defthm symbolp-when-memberp
   (implies (and (memberp x free)
                 (symbol-listp free))
            (symbolp x)))
