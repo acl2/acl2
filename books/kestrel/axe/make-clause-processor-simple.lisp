@@ -12,7 +12,7 @@
 
 (in-package "ACL2")
 
-(include-book "make-prover-simple")
+(include-book "kestrel/utilities/pack" :dir :system)
 
 ;; Returns an event
 (defun make-clause-processor-simple-fn (suffix ;; gets added to generated names
