@@ -30,6 +30,8 @@
 (include-book "make-implication-dag")
 (include-book "elaborate-rule-items")
 (include-book "axe-clause-utilities")
+(include-book "kestrel/utilities/defconst-computed" :dir :system)
+(include-book "kestrel/utilities/equal" :dir :system) ; for equal-same
 ;(include-book "kestrel/utilities/submit-events" :dir :system)
 (include-book "rewriter-common") ; for axe-bind-free-result-okayp, etc.
 ;(include-book "contexts") ;for max-nodenum-in-context
@@ -413,6 +415,12 @@
     equiv-listp-of-cdr
     equiv-listp-of-get-equivs
     ))
+
+(defconst *default-axe-prover-rules*
+  '(implies equal-same))
+
+(defconst-computed-erp-and-val *default-axe-prover-rule-alists*
+  (make-rule-alists (list *default-axe-prover-rules*) (w state)))
 
 (defun make-prover-simple-fn (suffix ;; gets added to generated names
                               apply-axe-evaluator-to-quoted-args-name
@@ -4100,7 +4108,13 @@
                                      (natp prover-depth)
                                      (symbol-listp known-booleans)
                                      (axe-prover-optionsp options))))
-         (b* ( ;; Handle any constant disjuncts
+         (b* (;; If no, rule-alists are given, rewrite with a single set of simple rules.  This makes sure that
+              ;; constants get evaluated, contradictions get found (when making the assumption-array), etc.
+              (rule-alists (if (not rule-alists)
+                               (prog2$ (cw "NOTE: Using a very simple default rule set.~%")
+                                       (list *default-axe-prover-rules*))
+                             rule-alists))
+              ;; Handle any constant disjuncts
               ((mv provedp literal-nodenums)
                (handle-constant-disjuncts literal-nodenums-or-quoteps nil))
               ((when provedp)
