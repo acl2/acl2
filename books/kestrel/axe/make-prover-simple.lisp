@@ -26,6 +26,7 @@
 ;; schemes.
 
 (include-book "prover-common")
+(include-book "get-disjuncts")
 (include-book "rule-alists")
 (include-book "make-implication-dag")
 (include-book "elaborate-rule-items")
