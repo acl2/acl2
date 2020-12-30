@@ -70,3 +70,11 @@
                           (slice (+ -1 width) shift-amount x))
                     0)))
   :hints (("Goal" :in-theory (enable bvshr))))
+
+(defthmd bvshr-rewrite-for-constant-shift-amount
+  (implies (and (syntaxp (quotep shift-amount))
+                (syntaxp (quotep width)) ; will usually be true
+                )
+           (equal (bvshr width x shift-amount)
+                  (slice (+ -1 width) shift-amount x)))
+  :hints (("Goal" :in-theory (enable bvshr))))

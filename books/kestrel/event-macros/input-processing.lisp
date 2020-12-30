@@ -13,6 +13,7 @@
 (include-book "evmac-input-hints-p")
 (include-book "evmac-input-print-p")
 
+(include-book "kestrel/error-checking/ensure-list-has-no-duplicates" :dir :system)
 (include-book "kestrel/error-checking/ensure-symbol-is-fresh-event-name" :dir :system)
 (include-book "kestrel/std/util/defmacro-plus" :dir :system)
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
@@ -20,10 +21,64 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ event-macro-input-processors
+(defxdoc event-macro-input-processing
   :parents (event-macros)
-  :short "Utilities to process inputs
-          that are common to multiple event macros."
+  :short "Input processing in event macros."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Event macros normally take inputs from the user.
+     Thus, it is generally necessary to validate these inputs,
+     and often transform them slightly
+     (e.g. supply a default value, or translate a term),
+     derive additional information from them
+     (e.g. retrieve the formals and guard of a function symbol),
+     etc.
+     We call all of this `input processing'.")
+   (xdoc::p
+    "Input processing is normally the first thing
+     that an event macro implementation does,
+     before using the result of input processing
+     to generate event, possibly files, etc.")
+   (xdoc::p
+    "Event macro "
+    (xdoc::seetopic "event-macro-applicability-conditions"
+                    "applicability conditions")
+    " are a form of input validation,
+     but we do not consider them part of input processing,
+     for the purpose of this event macro library.
+     Applicability conditions are ``deep'', undecidable checks,
+     while the input validation that is part of input processing
+     is normally decidable, and often relatively simple.
+     There are also cases in which the inputs cannot completely validated
+     until they are subjected to the more core processing
+     performed by the event macro,
+     e.g. if the event macro is a code generator for ACL2,
+     it may be more natural to perform certain validation checks on ACL2 terms
+     while they are being translated to constructs of the target language.
+     These examples show that input processing does not necessarily perform
+     a complete validation of the inputs of the event macro;
+     it only makes those that can be conveniently done
+     as a first phase in the macro,
+     before the phase(s) to generate events, files, etc.")
+   (xdoc::p
+    "An event macros should throw "
+    (xdoc::seetopic "er" "soft errors")
+    " when some input validation fails.
+     This allows the soft errors to be potentially caught programmatically,
+     when an event macro is used that way.
+     Hard errors should be used only for internal implementation errors,
+     e.g. some expected condition that fails to hold.")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc+ event-macro-input-processors
+  :parents (event-macro-input-processing)
+  :short (xdoc::topstring
+          "Utilities for"
+          (xdoc::seetopic "event-macro-input-processing"
+                          "input processing")
+          ".")
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -66,12 +121,12 @@
       (b* ((hints$ (keyword-value-list-to-alist hints))
            (kwds (strip-cars hints$))
            ((er &)
-            (ensure-list-no-duplicates$ kwds
-                                        (msg "The list of keywords ~x0 ~
-                                              in the keyword-value list ~
-                                              that forms the :HINTS input"
-                                             kwds)
-                                        t nil)))
+            (ensure-list-has-no-duplicates$ kwds
+                                            (msg "The list of keywords ~x0 ~
+                                                  in the keyword-value list ~
+                                                  that forms the :HINTS input"
+                                                 kwds)
+                                            t nil)))
         (value hints$))
     (if (true-listp hints)
         (value hints)
@@ -190,7 +245,8 @@
        :returns (mv erp
                     (result
                      "A @('(tuple (fn symbolp)
-                                  (updated-names-to-avoid symbol-listp))').")
+                                  (updated-names-to-avoid symbol-listp)
+                                  result)').")
                     state)
        :mode :program
        :short ,short

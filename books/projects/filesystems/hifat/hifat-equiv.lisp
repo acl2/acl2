@@ -214,7 +214,7 @@
   (implies
    (m1-file-p file)
    (equal (m1-directory-file-p
-           (m1-file dir-ent (m1-file->contents file)))
+           (m1-file d-e (m1-file->contents file)))
           (m1-directory-file-p file)))
   :hints (("goal" :in-theory (enable m1-directory-file-p))))
 
@@ -285,14 +285,14 @@
         (hifat-no-dups-p fs)
         (m1-regular-file-p (cdar fs)))
    (hifat-equiv (cons (cons (caar fs)
-                            (m1-file dir-ent (m1-file->contents (cdar fs))))
+                            (m1-file d-e (m1-file->contents (cdar fs))))
                       (cdr fs))
                 fs))
   :hints
   (("goal"
     :expand
     (hifat-equiv (cons (cons (caar fs)
-                             (m1-file dir-ent (m1-file->contents (cdar fs))))
+                             (m1-file d-e (m1-file->contents (cdar fs))))
                        (cdr fs))
                  fs)
     :in-theory (e/d (hifat-no-dups-p hifat-subsetp)
@@ -300,7 +300,7 @@
     :use
     ((:instance hifat-subsetp-reflexive-lemma-4
                 (x (list (cons (car (car fs))
-                               (m1-file dir-ent
+                               (m1-file d-e
                                         (m1-file->contents (cdr (car fs)))))))
                 (y (cdr fs)))
      (:instance hifat-subsetp-reflexive-lemma-4
@@ -315,7 +315,7 @@
                 (m1-file-alist-p tail)
                 (hifat-no-dups-p (cons head tail)))
            (hifat-equiv (cons (cons (car head)
-                                    (m1-file dir-ent contents))
+                                    (m1-file d-e contents))
                               tail)
                         (cons head tail)))
   :hints
@@ -335,13 +335,13 @@
                              contents)
                 (m1-file-alist-p contents))
            (hifat-equiv (cons (cons (car head)
-                                    (m1-file dir-ent contents))
+                                    (m1-file d-e contents))
                               tail)
                         (cons head tail)))
   :hints
   (("goal"
     :expand ((hifat-equiv (cons (cons (car head)
-                                      (m1-file dir-ent contents))
+                                      (m1-file d-e contents))
                                 tail)
                           (cons head tail))
              (hifat-equiv (m1-file->contents (cdr head))
@@ -354,11 +354,11 @@
                      (y tail))
           (:instance hifat-subsetp-reflexive-lemma-4
                      (x (list (cons (car head)
-                                    (m1-file dir-ent contents))))
+                                    (m1-file d-e contents))))
                      (y tail))
           (:instance m1-directory-file-p-of-m1-file
                      (contents contents)
-                     (dir-ent dir-ent))))))
+                     (d-e d-e))))))
 
 (local
  (defthm hifat-equiv-of-cons-lemma-4
@@ -449,7 +449,7 @@
      (x
       (list
        (cons (fat32-filename-fix (car (car fs)))
-             (m1-file (m1-file->dir-ent file1)
+             (m1-file (m1-file->d-e file1)
                       (hifat-file-alist-fix (m1-file->contents file1))))))
      (y (hifat-file-alist-fix (cdr fs)))))))
 
@@ -477,9 +477,23 @@
      (x
       (list
        (cons (fat32-filename-fix (car (car fs)))
-             (m1-file (m1-file->dir-ent file1)
+             (m1-file (m1-file->d-e file1)
                       (hifat-file-alist-fix (m1-file->contents file1))))))
      (y (hifat-file-alist-fix (cdr fs)))))))
+
+(defthm hifat-equiv-of-hifat-file-alist-fix-1
+  (equal (hifat-equiv (hifat-file-alist-fix fs1)
+                      fs2)
+         (hifat-equiv fs1 fs2))
+  :hints (("goal" :in-theory (enable hifat-equiv)
+           :do-not-induct t)))
+
+(defthm hifat-equiv-of-hifat-file-alist-fix-2
+  (equal (hifat-equiv fs1
+                      (hifat-file-alist-fix fs2))
+         (hifat-equiv fs1 fs2))
+  :hints (("goal" :in-theory (enable hifat-equiv)
+           :do-not-induct t)))
 
 (defthm
   hifat-subsetp-of-put-assoc-1
@@ -525,3 +539,142 @@
            (hifat-subsetp (remove-assoc-equal name x)
                           y))
   :hints (("goal" :in-theory (enable hifat-subsetp))))
+
+(defthm
+  hifat-place-file-when-hifat-equiv-lemma-3
+  (implies (and (hifat-equiv (m1-file->contents file1)
+                             (m1-file->contents file2))
+                (syntaxp (not (term-order file1 file2)))
+                (m1-directory-file-p (m1-file-fix file1))
+                (m1-directory-file-p (m1-file-fix file2)))
+           (hifat-equiv (put-assoc-equal (fat32-filename-fix (car path))
+                                         (m1-file-fix file1)
+                                         (hifat-file-alist-fix fs))
+                        (put-assoc-equal (fat32-filename-fix (car path))
+                                         (m1-file-fix file2)
+                                         (hifat-file-alist-fix fs))))
+  :instructions (:promote (:dive 1)
+                          (:rewrite put-assoc-under-hifat-equiv-1
+                                    ((file2 (m1-file-fix file2))))
+                          :top
+                          :bash :bash
+                          :bash :bash))
+
+(defthm
+  hifat-place-file-when-hifat-equiv-lemma-1
+  (implies
+   (and
+    (hifat-equiv
+     (mv-nth
+      0
+      (hifat-place-file
+       (m1-file->contents (cdr (assoc-equal (fat32-filename-fix (car path))
+                                            (hifat-file-alist-fix fs))))
+       (cdr path)
+       file1))
+     (mv-nth
+      0
+      (hifat-place-file
+       (m1-file->contents (cdr (assoc-equal (fat32-filename-fix (car path))
+                                            (hifat-file-alist-fix fs))))
+       (cdr path)
+       file2)))
+    (syntaxp (not (term-order file1 file2))))
+   (hifat-equiv
+    (put-assoc-equal
+     (fat32-filename-fix (car path))
+     (m1-file
+      (m1-file->d-e (cdr (assoc-equal (fat32-filename-fix (car path))
+                                          (hifat-file-alist-fix fs))))
+      (mv-nth
+       0
+       (hifat-place-file
+        (m1-file->contents (cdr (assoc-equal (fat32-filename-fix (car path))
+                                             (hifat-file-alist-fix fs))))
+        (cdr path)
+        file1)))
+     (hifat-file-alist-fix fs))
+    (put-assoc-equal
+     (fat32-filename-fix (car path))
+     (m1-file
+      (m1-file->d-e (cdr (assoc-equal (fat32-filename-fix (car path))
+                                          (hifat-file-alist-fix fs))))
+      (mv-nth
+       0
+       (hifat-place-file
+        (m1-file->contents (cdr (assoc-equal (fat32-filename-fix (car path))
+                                             (hifat-file-alist-fix fs))))
+        (cdr path)
+        file2)))
+     (hifat-file-alist-fix fs))))
+  :hints
+  (("goal"
+    :in-theory (disable (:rewrite put-assoc-under-hifat-equiv-1))
+    :use
+    (:instance
+     (:rewrite put-assoc-under-hifat-equiv-1)
+     (fs (hifat-file-alist-fix fs))
+     (file1
+      (m1-file
+       (m1-file->d-e (cdr (assoc-equal (fat32-filename-fix (car path))
+                                           (hifat-file-alist-fix fs))))
+       (mv-nth
+        0
+        (hifat-place-file
+         (m1-file->contents (cdr (assoc-equal (fat32-filename-fix (car path))
+                                              (hifat-file-alist-fix fs))))
+         (cdr path)
+         file1))))
+     (file2
+      (m1-file
+       (m1-file->d-e (cdr (assoc-equal (fat32-filename-fix (car path))
+                                           (hifat-file-alist-fix fs))))
+       (mv-nth
+        0
+        (hifat-place-file
+         (m1-file->contents (cdr (assoc-equal (fat32-filename-fix (car path))
+                                              (hifat-file-alist-fix fs))))
+         (cdr path)
+         file2))))
+     (name (fat32-filename-fix (car path)))))))
+
+(defthm hifat-place-file-correctness-lemma-3
+  (implies (and (fat32-filename-p name)
+                (not (m1-regular-file-p (cdr (assoc-equal name x))))
+                (m1-file-alist-p x)
+                (hifat-subsetp y x))
+           (not (m1-regular-file-p (cdr (assoc-equal name y)))))
+  :hints (("goal" :in-theory (enable hifat-subsetp))))
+
+(defthm hifat-find-file-correctness-lemma-1
+  (and (equal (hifat-equiv (hifat-file-alist-fix fs1)
+                           fs2)
+              (hifat-equiv fs1 fs2))
+       (equal (hifat-equiv fs1 (hifat-file-alist-fix fs2))
+              (hifat-equiv fs1 fs2)))
+  :hints (("goal" :in-theory (enable hifat-equiv))))
+
+(defthm
+  abs-pwrite-correctness-lemma-29
+  (implies
+   (and (fat32-filename-p name)
+        (m1-directory-file-p (cdr (assoc-equal name y)))
+        (hifat-subsetp y x))
+   (m1-directory-file-p (cdr (assoc-equal name x))))
+  :hints (("goal" :in-theory (enable hifat-subsetp))))
+
+(defthm hifat-place-file-when-hifat-equiv-1
+  (implies (and (hifat-equiv (m1-file->contents file1)
+                             (m1-file->contents file2))
+                (syntaxp (not (term-order file1 file2)))
+                (m1-directory-file-p (m1-file-fix file1))
+                (m1-directory-file-p (m1-file-fix file2)))
+           (and
+            (hifat-equiv (mv-nth 0 (hifat-place-file fs path file1))
+                         (mv-nth 0 (hifat-place-file fs path file2)))
+            (equal (mv-nth 1 (hifat-place-file fs path file1))
+                   (mv-nth 1 (hifat-place-file fs path file2)))))
+  :hints (("goal" :in-theory (enable hifat-place-file)
+           :induct
+           (mv (mv-nth 0 (hifat-place-file fs path file1))
+               (mv-nth 0 (hifat-place-file fs path file2))))))

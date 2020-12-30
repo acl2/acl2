@@ -88,7 +88,7 @@
 
   (defrule ubyte8s=>hexstring-of-hexstring=>ubyte8s
     (implies (and (stringp string)
-                  (str::hex-digit-listp (explode string))
+                  (str::hex-digit-char-listp (explode string))
                   (evenp (length string)))
              (equal (ubyte8s=>hexstring (hexstring=>ubyte8s string))
                     (str::upcase-string string)))

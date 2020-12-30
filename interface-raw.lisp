@@ -2125,7 +2125,7 @@
                                            ',guard
                                            (stobjs-in ',fn (w *the-live-state*))
                                            (list ,@formals)
-                                           ',wrld)
+                                           (w *the-live-state*))
                   (er hard! 'program-only
                     "~@0"
                     (program-only-er-msg ',fn
@@ -8073,7 +8073,7 @@
                   functions to execute efficiently, which might not be the ~
                   case for an :ideal mode function.  These functions should ~
                   have their guards verified: ~&0."
-                 acc))))
+                 (remove-duplicates-eq acc)))))
    (t
     (let* ((trip (car trips))
            (fn (and (eq (car trip) 'event-landmark)

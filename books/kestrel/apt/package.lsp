@@ -118,12 +118,11 @@
                          ensure-boolean-or-auto-and-return-boolean$
                          ensure-doublet-list$
                          ensure-function-arity$
-                         ensure-function-defined$
-                         ensure-function-guard-verified$
                          ensure-function-has-args$
+                         ensure-function-is-defined$
+                         ensure-function-is-guard-verified$
+                         ensure-function-is-logic-mode$
                          ensure-function-known-measure$
-                         ensure-function-logic-mode$
-                         ensure-function-name$
                          ensure-function-name-or-numbered-wildcard$
                          ensure-function-no-stobjs$
                          ensure-function-not-in-termination-thm$
@@ -138,7 +137,7 @@
                          ensure-function/macro/lambda$
                          ensure-keyword-value-list
                          ensure-keyword-value-list$
-                         ensure-list-no-duplicates$
+                         ensure-list-has-no-duplicates$
                          ensure-list-subset$
                          ensure-named-formulas
                          ensure-symbol-different$
@@ -156,8 +155,9 @@
                          ensure-term-not-call-of$
                          ensure-tuple$
                          ensure-value-is-boolean$
-                         ensure-value-is-legal-variable-name$
+                         ensure-value-is-function-name$
                          ensure-value-is-in-list$
+                         ensure-value-is-legal-variable-name$
                          ensure-value-is-not-in-list$
                          ensure-value-is-symbol$
                          ensure-value-is-symbol-list$

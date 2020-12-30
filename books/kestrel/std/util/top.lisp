@@ -29,6 +29,8 @@
 (include-book "defsurj")
 (include-book "defsurj-doc")
 (include-book "defthm-commutative")
+(include-book "deftutorial")
+(include-book "deftutorial-doc")
 (include-book "tuple")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

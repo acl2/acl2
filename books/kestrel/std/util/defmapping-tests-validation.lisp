@@ -82,7 +82,7 @@
 
 ;; lambda expression in program mode:
 (must-fail
- (defmapping map (lambda (x) (assert-event x)) dom id id))
+ (defmapping map (lambda (x) (digit-char-p x)) dom id id))
 
 ;; non-closed lambda expression:
 (must-fail (defmapping map (lambda (x) (+ x y)) dom id id))
@@ -99,7 +99,7 @@
   (defmapping map (lambda (x) (cons (g x) (g x))) dom id id)))
 
 ;; macro that abbreviates a lambda expression in program mode:
-(must-fail (defmapping map assert-event dom id id))
+(must-fail (defmapping map digit-char-p dom id id))
 
 ;; macro that abbreviates a lambda expression with stobjs:
 (must-succeed*
@@ -149,7 +149,7 @@
 
 ;; lambda expression in program mode:
 (must-fail
- (defmapping map dom (lambda (x) (assert-event x)) id id))
+ (defmapping map dom (lambda (x) (digit-char-p x)) id id))
 
 ;; non-closed lambda expression:
 (must-fail (defmapping map dom (lambda (x) (+ x y)) id id))
@@ -166,7 +166,7 @@
   (defmapping map dom (lambda (x) (cons (g x) (g x))) id id)))
 
 ;; macro that abbreviates a lambda expression in program mode:
-(must-fail (defmapping map dom assert-event id id))
+(must-fail (defmapping map dom digit-char-p id id))
 
 ;; macro that abbreviates a lambda expression with stobjs:
 (must-succeed*
@@ -228,7 +228,7 @@
 
 ;; lambda expression in program mode:
 (must-fail
- (defmapping map dom dom (lambda (x) (assert-event x)) id))
+ (defmapping map dom dom (lambda (x) (digit-char-p x)) id))
 
 ;; lambda expression with the wrong arity:
 (must-succeed*
@@ -271,7 +271,7 @@
  :with-output-off nil)
 
 ;; macro that abbreviates a lambda expression in program mode:
-(must-fail (defmapping map dom dom assert-event id))
+(must-fail (defmapping map dom dom digit-char-p id))
 
 ;; macro that abbreviates a lambda expression with stobjs:
 (must-succeed*
@@ -337,7 +337,7 @@
 
 ;; lambda expression in program mode:
 (must-fail
- (defmapping map dom dom id (lambda (x) (assert-event x))))
+ (defmapping map dom dom id (lambda (x) (digit-char-p x))))
 
 ;; lambda expression with the wrong arity:
 (must-succeed*
@@ -386,7 +386,7 @@
  :with-output-off nil)
 
 ;; macro that abbreviates a lambda expression in program mode:
-(must-fail (defmapping map dom dom id assert-event))
+(must-fail (defmapping map dom dom id digit-char-p))
 
 ;; macro that abbreviates a lambda expression with stobjs:
 (must-succeed*

@@ -36,28 +36,32 @@
                          (:REWRITE <-OF-+-ARG2-WHEN-NEGATIVE-CONSTANT))
                      (10 10 (:REWRITE FOLD-CONSTS-IN-+))
                      (10 10 (:REWRITE +-COMBINE-CONSTANTS)))
-(<-OF-*-AND-*-SAME-HELPER (723 721 (:REWRITE DEFAULT-*-2))
-                          (640 640 (:REWRITE DEFAULT-REALPART))
-                          (503 503 (:REWRITE DEFAULT-+-2))
-                          (242 242 (:REWRITE DEFAULT-IMAGPART))
-                          (237 237 (:REWRITE DEFAULT-COMPLEX-2))
-                          (237 237 (:REWRITE DEFAULT-COMPLEX-1))
-                          (168 168
-                               (:REWRITE <-OF-+-COMBINE-CONSTANTS-1))
-                          (168 168
-                               (:REWRITE <-OF-+-ARG2-WHEN-NEGATIVE-CONSTANT))
-                          (104 104 (:REWRITE FOLD-CONSTS-IN-+))
-                          (104 104 (:REWRITE +-COMBINE-CONSTANTS))
+(<-OF-*-AND-*-CANCEL-ARG1-AND-ARG1 (6 6 (:REWRITE DEFAULT-<-2))
+                                   (6 6 (:REWRITE DEFAULT-<-1))
+                                   (6 6 (:REWRITE DEFAULT-*-2))
+                                   (6 6 (:REWRITE DEFAULT-*-1)))
+(<-OF-*-AND-*-SAME-HELPER (449 447 (:REWRITE DEFAULT-*-2))
+                          (446 446 (:REWRITE DEFAULT-REALPART))
+                          (310 310 (:REWRITE DEFAULT-+-2))
+                          (154 154 (:REWRITE DEFAULT-IMAGPART))
                           (77 77
                               (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
-                          (40 40
+                          (77 77
+                              (:REWRITE <-OF-+-COMBINE-CONSTANTS-1))
+                          (77 77
+                              (:REWRITE <-OF-+-ARG2-WHEN-NEGATIVE-CONSTANT))
+                          (73 73 (:REWRITE DEFAULT-COMPLEX-2))
+                          (73 73 (:REWRITE DEFAULT-COMPLEX-1))
+                          (40 40 (:REWRITE FOLD-CONSTS-IN-+))
+                          (40 40 (:REWRITE +-COMBINE-CONSTANTS))
+                          (38 38
                               (:REWRITE EQUAL-OF-+-WHEN-NEGATIVE-CONSTANT))
-                          (40 40
+                          (38 38
                               (:REWRITE EQUAL-OF-+-COMBINE-CONSTANTS))
-                          (23 21
-                              (:REWRITE RATIONALP-OF-+-WHEN-RATIONALP-ARG2))
-                          (21 21
-                              (:REWRITE RATIONALP-OF-+-WHEN-RATIONALP-ARG1))
+                          (6 4
+                             (:REWRITE RATIONALP-OF-+-WHEN-RATIONALP-ARG2))
+                          (4 4
+                             (:REWRITE RATIONALP-OF-+-WHEN-RATIONALP-ARG1))
                           (2 2 (:REWRITE RATIONALP-UNARY--)))
 (<=-OF-*-AND-*-SAME-HELPER (33 33 (:REWRITE DEFAULT-*-2))
                            (27 9 (:REWRITE <-OF-*-AND-*-CANCEL))
@@ -108,6 +112,10 @@
 (<=-OF-*-AND-*-SAME-FORWARD-4)
 (<=-OF-*-AND-*-SAME-LINEAR)
 (<=-OF-*-AND-*-SAME-ALT-LINEAR)
+(<-OF-*-CANCEL-1 (3 3 (:REWRITE DEFAULT-<-2))
+                 (3 3 (:REWRITE DEFAULT-<-1))
+                 (1 1 (:REWRITE DEFAULT-*-2))
+                 (1 1 (:REWRITE DEFAULT-*-1)))
 (<-OF-*-CANCEL-2 (3 3 (:REWRITE DEFAULT-<-2))
                  (3 3 (:REWRITE DEFAULT-<-1))
                  (1 1 (:REWRITE DEFAULT-*-2))

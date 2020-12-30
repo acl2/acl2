@@ -38,10 +38,10 @@
                          defun-sk-strengthen
                          defun-sk-witness
                          defxdoc+
-                         ensure-function-name$
-                         ensure-list-no-duplicates$
+                         ensure-list-has-no-duplicates$
                          ensure-symbol-is-fresh-event-name$
                          ensure-value-is-boolean$
+                         ensure-value-is-function-name$
                          ensure-value-is-symbol$
                          ensure-value-is-symbol-list$
                          er-soft+

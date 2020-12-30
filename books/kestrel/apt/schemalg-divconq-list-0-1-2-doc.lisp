@@ -31,7 +31,7 @@
 
     (xdoc::p
      "This is a divide-and-conquer schema over (true or dotted) lists,
-      with a one base case for lists of length 0,
+      with one base case for lists of length 0,
       one base case for lists of length 1,
       and one recursive case for list of length 2 or more."))
 
@@ -42,7 +42,7 @@
      "(schemalg old"
      "          :schema :divconq-list-0-1-2"
      "          :list-input     ; default :auto"
-     "          :cddr-output    ; default :auto"
+     "          :cdr-output     ; default :auto"
      "          :fvar-0-name    ; default :auto"
      "          :fvar-1-name    ; default :auto"
      "          :fvar-2-name    ; default :auto"
@@ -94,16 +94,16 @@
        in the description of the @('old') input above."))
 
     (xdoc::desc
-     "@(':cddr-output') &mdash; default @(':auto')"
+     "@(':cdr-output') &mdash; default @(':auto')"
      (xdoc::p
       "Specifies the name of the variable to use for
-       the solution (i.e. output) for the @(tsee cddr) of the list,
+       the solution (i.e. output) for the @(tsee cdr) of the list,
        in the generated sub-specification for the recursive case.")
      (xdoc::p
       "It must be one of the following:")
      (xdoc::ul
       (xdoc::li
-       "@(':auto'), to use the symbol @('cddr-output'),
+       "@(':auto'), to use the symbol @('cdr-output'),
         in the same package as @('old').")
       (xdoc::li
        "Any other symbol, to use as the name."))
@@ -227,10 +227,10 @@
      (xdoc::p
       "Function variable used for lists of length 2 or more:")
      (xdoc::codeblock
-      "(soft::defunvar ?h (* * * ... * *) => *)")
+      "(soft::defunvar ?h (* * ... * *) => *)")
      (xdoc::p
-      "where the number of arguments is @('m+3'),
-       i.e. the same as @('?f') plus two.")
+      "where the number of arguments is @('m+2'),
+       i.e. the same as @('?f') plus one.")
      (xdoc::p
       "In the " *schemalg-design-notes* ",
        @('?h') is denoted by @($h$)."))
@@ -244,11 +244,10 @@
       "  (cond ((atom x) (?g0 x z1 ... zm))"
       "        ((atom (cdr x)) (?g1 (car x) (cdr x) z1 ... zm))"
       "        (t (?h (car x)"
-      "               (cadr x)"
       "               z1"
       "               ..."
       "               zm"
-      "               (algo[?g0][?g1][?h] (cddr x) z1 ... zm)))))")
+      "               (algo[?g0][?g1][?h] (cdr x) z1 ... zm)))))")
      (xdoc::p
       "In the " *schemalg-design-notes* ",
        @('algo[?g0][?g1][?h]') is denoted by @($A(g_0,g_1,h)$)
@@ -290,10 +289,9 @@
       "  (forall (x x1 ... xn y)"
       "          (impliez (and (consp x)"
       "                        (consp (cdr x))"
-      "                        iorel<(cddr x),x1,...,xn,y>)"
+      "                        iorel<(cdr x),x1,...,xn,y>)"
       "                   iorel<x,x1,...,xn,"
       "                         (?h (car x)"
-      "                             (cadr x)"
       "                             a1<x1,...,xn>"
       "                             ..."
       "                             am<x1,...,xn>"

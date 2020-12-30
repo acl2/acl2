@@ -8,13 +8,13 @@
                      (218 218
                           (:TYPE-PRESCRIPTION TRUE-LISTP-OF-ALIST-KEYS))
                      (218 46 (:REWRITE SUBSETP-WHEN-ATOM-RIGHT))
-                     (196 75 (:REWRITE DEFAULT-CDR))
+                     (200 75 (:REWRITE DEFAULT-CDR))
                      (168 56 (:REWRITE ALIST-KEYS-WHEN-ATOM))
                      (120 5 (:REWRITE SUBSETP-MEMBER . 3))
                      (118 4 (:REWRITE SUBSETP-MEMBER . 1))
                      (111 48 (:REWRITE SUBSETP-TRANS2))
-                     (105 2 (:REWRITE CONSP-OF-HONS-ASSOC-EQUAL))
-                     (93 1 (:DEFINITION MEMBER-EQUAL))
+                     (109 2 (:REWRITE CONSP-OF-HONS-ASSOC-EQUAL))
+                     (95 1 (:DEFINITION MEMBER-EQUAL))
                      (83 83 (:TYPE-PRESCRIPTION 4VP))
                      (80 40
                          (:TYPE-PRESCRIPTION TRUE-LISTP-APPEND))
@@ -30,6 +30,8 @@
                      (9 2 (:REWRITE MEMBER-WHEN-ATOM))
                      (7 7 (:REWRITE DEFAULT-CAR))
                      (5 5 (:REWRITE SUBSETP-MEMBER . 4))
+                     (5 5 (:REWRITE INTERSECTP-MEMBER . 3))
+                     (5 5 (:REWRITE INTERSECTP-MEMBER . 2))
                      (2 2 (:REWRITE SUBSETP-REFL)))
 (4V-SEXPR-EVAL-MONOTONIC
      (1270 10 (:DEFINITION 4V-SEXPR-EVAL))
@@ -65,11 +67,11 @@
      (10 10
          (:TYPE-PRESCRIPTION HONS-ASSOC-EQUAL)))
 (4V-SEXPR-ALIST-<=-APPEND
-     (225 18 (:REWRITE DEFAULT-CDR))
-     (171 4 (:REWRITE CONSP-OF-HONS-ASSOC-EQUAL))
+     (237 18 (:REWRITE DEFAULT-CDR))
+     (183 4 (:REWRITE CONSP-OF-HONS-ASSOC-EQUAL))
      (168 168
           (:REWRITE CONSP-WHEN-MEMBER-EQUAL-OF-ATOM-LISTP))
-     (134 6 (:DEFINITION MEMBER-EQUAL))
+     (146 6 (:DEFINITION MEMBER-EQUAL))
      (81 14 (:REWRITE SUBSETP-MEMBER . 3))
      (68 34
          (:TYPE-PRESCRIPTION TRUE-LISTP-APPEND))
@@ -93,6 +95,8 @@
      (14 14 (:TYPE-PRESCRIPTION SUBSETP-EQUAL))
      (14 14 (:REWRITE SUBSETP-MEMBER . 4))
      (14 14 (:REWRITE SUBSETP-MEMBER . 2))
+     (14 14 (:REWRITE INTERSECTP-MEMBER . 3))
+     (14 14 (:REWRITE INTERSECTP-MEMBER . 2))
      (12 12 (:REWRITE DEFAULT-CAR))
      (8 8 (:REWRITE SUBSETP-TRANS2))
      (8 8 (:REWRITE SUBSETP-TRANS))
@@ -328,6 +332,8 @@
                         (23 15 (:REWRITE SUBSETP-MEMBER . 3))
                         (15 15 (:REWRITE SUBSETP-MEMBER . 4))
                         (15 15 (:REWRITE SUBSETP-MEMBER . 2))
+                        (15 15 (:REWRITE INTERSECTP-MEMBER . 3))
+                        (15 15 (:REWRITE INTERSECTP-MEMBER . 2))
                         (12 12 (:REWRITE DEFAULT-CDR))
                         (3 1 (:REWRITE SUBSETP-WHEN-ATOM-RIGHT))
                         (2 2 (:REWRITE SUBSETP-TRANS2))

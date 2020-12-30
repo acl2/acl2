@@ -201,6 +201,11 @@
    (:rewrite
     :corollary (implies (and (subsetp x y) (not (member a y)))
                         (not (member a x))))))
+(defthm subsetp-trans2
+  (implies (and (subsetp y z)
+                (subsetp x y))
+           (subsetp x z))
+  :hints(("Goal" :in-theory (enable subsetp-member))))
 
 ;; The following is redundant with the eponymous theorem in
 ;; books/std/lists/nth.lisp, from where it was taken with thanks.
@@ -967,8 +972,10 @@
            nil)))
 
 (defthm integerp-of-car-of-last-when-integer-listp
-  (implies (and (integer-listp l) (consp l))
-           (integerp (car (last l)))))
+  (implies (integer-listp l)
+           (equal
+            (integerp (car (last l)))
+            (consp l))))
 
 (defthm non-negativity-of-car-of-last-when-nat-listp
   (implies (nat-listp l)
@@ -1991,9 +1998,47 @@
   (local (in-theory (disable min)))
   (defthm painful-debugging-lemma-22
     (implies (< z y) (iff (equal (min x y) z) (equal x z)))
+    :hints (("Goal" :in-theory (enable min))))
+
+  (defthm painful-debugging-lemma-23 (iff (< (min x y) y) (< x y))
+    :hints (("Goal" :in-theory (enable min))))
+
+  (defthm painful-debugging-lemma-24
+    (implies (equal (+ w y) z)
+             (iff (equal (+ w (min x y)) z)
+                  (<= y x)))
+    :hints (("Goal" :in-theory (enable min))))
+
+  (defthm painful-debugging-lemma-25
+    (zp (+ (- x) (min x y)))
+    :rule-classes :type-prescription
     :hints (("Goal" :in-theory (enable min)))))
 
 (defthm member-of-nth-when-not-intersectp
   (implies (and (not (intersectp-equal l x))
                 (< (nfix n) (len l)))
            (not (member-equal (nth n l) x))))
+
+(defthm true-list-listp-of-remove
+  (implies (true-list-listp l)
+           (true-list-listp (remove-equal x l))))
+
+(defthm subsetp-of-set-difference$-when-subsetp
+  (implies (subsetp-equal x y)
+           (subsetp-equal (set-difference-equal x z)
+                          (set-difference-equal y z)))
+  :hints (("goal" :induct (mv (set-difference-equal x z)
+                              (subsetp-equal x y))
+           :in-theory (e/d nil (intersectp-is-commutative)))))
+
+(defthm
+  true-list-listp-of-set-difference
+  (implies (true-list-listp l1)
+           (true-list-listp (set-difference-equal l1 l2)))
+  :hints (("goal" :in-theory (enable set-difference-equal true-list-listp))))
+
+(defthm last-of-append
+  (equal (last (append x y))
+         (cond ((consp y) (last y))
+               ((consp x) (cons (car (last x)) y))
+               (t y))))

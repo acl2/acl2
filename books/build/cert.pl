@@ -1000,7 +1000,7 @@ unless ($no_makefile) {
 
     print $mf "\n\n";
 
-    print $mf "# Note: This variable lists the certificates for all books to be built \n";
+    print $mf "# Note: This variable lists the certificates for all books to be built\n";
     print $mf "# along with any pcert or acl2x files to be built along the way.\n";
     print $mf "${var_prefix}_ALLCERTS := \$(${var_prefix}_CERTS)";
 
@@ -1062,7 +1062,7 @@ unless ($no_makefile) {
         print $mf "${var_prefix}_${reqparams{$reqparam}} :=";
         foreach my $cert (@certs) {
             if ($depdb->cert_get_param($cert, $reqparam)) {
-                print $mf " \\\n     " . make_encode($cert) . " ";
+                print $mf "  \\\n     " . make_encode($cert);
             }
         }
         print $mf "\n\n";

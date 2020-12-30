@@ -1,6 +1,7 @@
 ; C Library
 ;
 ; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -30,57 +31,11 @@
    (xdoc::evmac-section-intro
 
     (xdoc::p
-     "ATC translates a subset of ACL2 to C.
-      The ACL2 subset is designed to be close to C,
-      i.e. to be essentially ``C written in ACL2'',
-      so that it is easy to translate to C.
-      ATC is meant to be used in conjunction with "
-     (xdoc::seetopic "apt::apt" "APT")
-     ": one uses APT transformations
-      to refine ACL2 specifications and code
-      to the subset recognized by ATC, which ATC translates to C.
-      Thus, ATC can be used at the end of an APT derivation.")
-
-    (xdoc::p
-     "Currently ATC recognizes and translates
-      a very limited subset of ACL2 to a very limited subset of C.
-      This is just a first step (the development of ATC has just started);
-      we plan to extend ATC to increasingly larger subsets of ACL2 and C.")
-
-    (xdoc::p
-     "We also aim at generating, along with the C code,
-      an ACL2 proof of the correctness of
-      the output C code with respect to the input ACL2 code.
-      This requires a formal semantics of C,
-      which we are also developing.")
-
-    (xdoc::p
-     "ATC is related to "
-     (xdoc::seetopic "java::atj" "ATJ")
-     ", the Java code generator for ACL2.
-      Aside from the obvious difference in target languages,
-      ATJ and ATC currently differ in their primary goals and emphases.
-      ATJ was built to recognize, and translate to reasonable Java,
-      essentially any ACL2 code (provided that it has known side effects);
-      ATJ also provides ways to extert finer-grained on the generated Java,
-      by using certain ACL2 types and operations
-      that represent Java types and operations
-      and that are translated to the corresponding Java constructs.
-      In contrast, ATC is being built to recognize, and translate to C,
-      only certain ACL2 types and operations
-      that represent C types and operations
-      and that are translated to the corresponding Java constructs;
-      ATC does not attempt to turn any ACL2 into C.
-      As a result, ATC is much simpler,
-      and should thus make the generation of proofs easier.
-      While there are plans to have ATJ generate proofs too,
-      that is a larger task.
-      Furthermore, ATC may be extended
-      towards recognizing any ACL2 code and translating it to reasonable C,
-      analogously to ATJ.
-      Thus, while eventually ATJ and ATC may provide similar features,
-      their starting points were different,
-      which will keep the two tools different for some time to come."))
+     "This manual page contains user-level reference documentation for ATC.
+      If you are new to ATC, you should start with the "
+     (xdoc::seetopic "atc-tutorial" "tutorial")
+     ", which provides user-level pedagogical information
+      on how ATC works and how to use ATC effectively."))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -89,9 +44,8 @@
     (xdoc::codeblock
      "(atc fn1 ... fn"
      "     :const-name  ...  ; default :auto"
-     "     :thm-name    ...  ; default :auto"
      "     :output-file ...  ; no default"
-     "     :verbose     ...  ; default nil"
+     "     :print       ...  ; default :result"
      "  )"))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -104,63 +58,8 @@
       "Names of target ACL2 functions to translate to C.")
      (xdoc::p
       "Each @('fni') must be a symbol that names a function
-       that satisfies the following conditions:")
-     (xdoc::ul
-      (xdoc::li
-       "The name of the symbol @('fni')
-        is a portable ASCII C identifier
-        as defined in Section `Portable ASCII C Identifiers' below.")
-      (xdoc::li
-       "The name of each symbol that is a formal argument of @('fni')
-        is a portable ASCII C identifier
-        as defined in Section `Portable ASCII C Identifiers' below.")
-      (xdoc::li
-       "The formal arguments must have must have symbol names
-        that are all distinct.
-        Even if they are in different packages,
-        they must have distinct symbol names
-        (the package names are ignored for this purpose).")
-      (xdoc::li
-       "The function @('fni') is in logic mode and guard-verified.")
-      (xdoc::li
-       (xdoc::p
-        "The function @('fni') has an "
-        (xdoc::seetopic "acl2::function-definedness" "unnormalized body")
-        " consisting exclusively of:")
-       (xdoc::ul
-        (xdoc::li
-         "The formal parameters of the function.")
-        (xdoc::li
-         "Calls of @(tsee sint-const) on quoted integers.")
-        (xdoc::li
-         "Calls of @(tsee sint-plus) on recursively allowed terms.")
-        (xdoc::li
-         "Calls of @(tsee sint-minus) on recursively allowed terms.")
-        (xdoc::li
-         "Calls of @(tsee sint-add) on recursively allowed terms.")
-        (xdoc::li
-         "Calls of @(tsee sint-sub) on recursively allowed terms.")
-        (xdoc::li
-         "Calls of @(tsee sint-mul) on recursively allowed terms.")
-        (xdoc::li
-         "Calls of @(tsee sint-div) on recursively allowed terms.")
-        (xdoc::li
-         "Calls of @(tsee sint-rem) on recursively allowed terms.")))
-      (xdoc::li
-       "The guard of @('fni') includes conjuncts of the form
-        @('(sintp x)') for every formal parameter @('x').
-        The conjuncts may be at any level of nesting,
-        but must be easily extractable by flattening
-        the @(tsee and) structure of the guard term."))
-     (xdoc::p
-      "The above conditions imply that @('fni') returns a single result,
-       i.e. not an @(tsee mv) result.")
-     (xdoc::p
-      "The target functions must have symbol names
-       that are all distinct.
-       Even if they are in different packages,
-       they must have distinct symbol names
-       (the package names are ignored for this purpose)."))
+       that satisfies the conditions discussed in the section
+       `Representation of C Code in ACL2'."))
 
     (xdoc::desc
      "@(':const-name') &mdash; default @(':auto')"
@@ -174,21 +73,10 @@
        "@(':auto'), to use the symbol @('*program*')
         in the @('\"C\"') package.")
       (xdoc::li
-       "Any other symbol, to use as the name of the constant.")))
-
-    (xdoc::desc
-     "@(':thm-name') &mdash; default @(':auto')"
+       "Any other symbol, to use as the name of the constant."))
      (xdoc::p
-      "Name of the generated ACL2 theorem
-       that proves properties of the generated C program.")
-     (xdoc::p
-      "It must be one of the following:")
-     (xdoc::ul
-      (xdoc::li
-       "@(':auto'), to use the symbol determined by the @(':const-name') input
-        followed by @('-theorem').")
-      (xdoc::li
-       "Any other symbol, to use as the name of the theorem.")))
+      "In the rest of this documentation page,
+       let @('*const*') be the symbol specified by this input."))
 
     (xdoc::desc
      "@(':output-file') &mdash; no default"
@@ -206,74 +94,313 @@
        if it exists, it is overwritten.
        The file must include a @('.c') extension."))
 
-   (xdoc::desc
-    "@(':verbose') &mdash; default @('nil')"
-    (xdoc::p
-     "Controls the amount of screen output:")
-    (xdoc::ul
-     (xdoc::li
-      "@('t'), to show all the output.")
-     (xdoc::li
-      "@('nil'), to suppress all the non-error output.")))
+    (xdoc::evmac-input-print tailrec))
 
-   (xdoc::evmac-subsection
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-    "Portable ASCII C Identifiers"
+   (xdoc::evmac-section
+    "Representation of C Code in ACL2"
 
     (xdoc::p
-     "A portable ASCII C identifier is
-      a non-empty sequences of ASCII characters that:")
+     "For now ATC supports the ACL2 representation of
+      a single C translation unit (which goes into the generated file).
+      This translation unit consists of one or more C function definitions.")
+
+    (xdoc::p
+     "Each C function definition is represented by an ACL2 function definition.
+      These are the target ACL2 functions @('fni') passed as inputs.
+      The order of the C functions in the translation unit is the same as
+      the order of the inputs @('fn1'), ..., @('fnp').")
+
+    (xdoc::p
+     "The name of the symbol @('fni')
+      must be a portable ASCII C identifier
+      as defined in Section `Portable ASCII C Identifiers' below.
+      The name of the symbol is used as
+      the name of the corresponding C function.
+      Therefore, the target functions must have all distinct symbol names;
+      even if they are in different packages,
+      they must have distinct symbol names
+      (the package names are ignored).")
+
+    (xdoc::p
+     "The name of each symbol that is a formal parameter of each @('fni')
+      must be a portable ASCII C identifier
+      as defined in Section `Portable ASCII C Identifiers' below.
+      The names of these symbols are used as
+      the names of the formal parameters of the corresponding C function,
+      in the same order.
+      Therefore, the formal parameters of each @('fni')
+      must have must have all distinct symbol names;
+      even if they are in different packages,
+      they must have distinct symbol names
+      (the package names are ignored).")
+
+    (xdoc::p
+     "The guard of each @('fni') must include conjuncts of the form
+      @('(sintp x)') for every formal parameter @('x').
+      The conjuncts may be at any level of nesting,
+      but must be easily extractable by flattening
+      the @(tsee and) structure of the (translated) guard term.
+      Thus, all the formal parameters of the C function represented by @('fni')
+      have type @('int');
+      the rest of the guard (i.e. additional requirements)
+      are not explicitly represented in the C code.
+      The C function returns an @('int') result;
+      that this is the correct return type
+      is guaranteed by the restrictions given below.")
+
+    (xdoc::p
+     "Each function @('fni') must be in logic mode and guard-verified.
+      Its "
+     (xdoc::seetopic "acl2::function-definedness" "unnormalized body")
+     " must be an <i>allowed outer term</i>,
+      inductively defined as one of the following
+      (where allowed non-boolean and boolean terms are defined
+      after the allowed outer terms):")
     (xdoc::ul
      (xdoc::li
-      "Consist of only
+      "An allowed non-boolean term.
+       That is, an allowed non-boolean term is also an allowed outer term.
+       This represents a C @('return') statement
+       whose expression is represented by the same term,
+       viewed as an allowed non-boolean term.")
+     (xdoc::li
+      "A call of @(tsee if) on
+       (i) a test that is an allowed boolean term and
+       (ii) branches that are allowed outer terms.
+       This represents a C @('if') conditional statement
+       whose test expression is represented by the test term
+       and whose branch blocks are represented by the branch terms.")
+     (xdoc::li
+      "A call of @(tsee if) on
+       (i) a test of the form @('(mbt ...)') or @('(mbt$ ...)'),
+       (ii) a `then' branch that is an allowed outer term, and
+       (iii) an `else' branch that may be any ACL2 term.
+       This represents the same C code represented by the `then' branch.
+       Both the test and the `else' branch are ignored;
+       the reason is that ATC generates C code under guard assumptions.
+       In translated terms,
+       @('(mbt x)') is
+       @('(return-last \'acl2::mbe1-raw \'t x)'), and
+       @('(mbt$ x)') is
+       @('(return-last \'acl2::mbe1-raw \'t (if x \'nil \'t))');
+       these are the patterns that ATC looks for.")
+     (xdoc::li
+      "A term of the form @('(let ((var init)) body)'),
+       where @('var') is a portable ASCII C identifier
+       as defined in Section `Portable ASCII C Identifiers' below,
+       @('init') is an allowed non-boolean term,
+       and @('body') is an allowed outer term.
+       This represents
+       a declaration of a C local variable represented  by @('var'),
+       initialized with the C expression represented by @('init'),
+       and followed by the C code represented by @('body');
+       the C type of the variable is determined from the initializer.
+       The @(tsee let) must have exactly one variable,
+       and its symbol name must be distinct from
+       the symbol names of all the other variables in scope
+       (both function parameters and variables bound in enclosing @(tsee let)s).
+       In translated terms,
+       @('(let ((var init)) body)') is @('((lambda (var) body) init)');
+       this is the pattern that ATC looks for."))
+    (xdoc::p
+     "An <i>allowed non-boolean term</i> is
+      inductively defined as one of the following:")
+    (xdoc::ul
+     (xdoc::li
+      "A formal parameter of the function.
+       This represents the corresponding C formal parameter,
+       as an expression.")
+     (xdoc::li
+      "A variable introduced by @(tsee let) (as described above).
+       This represents the corresponding C local variable,
+       as an expression.")
+     (xdoc::li
+      "A call of @(tsee sint-const) on a quoted integer.
+       This represents a C integer constants of type @('int').
+       The guard verification requirement ensures that
+       the quoted integer is within the range of type @('int').")
+     (xdoc::li
+      "A call of one of the following functions on allowed non-boolean terms:"
+      (xdoc::ul
+       (xdoc::li "@(tsee sint-plus)")
+       (xdoc::li "@(tsee sint-minus)")
+       (xdoc::li "@(tsee sint-bitnot)")
+       (xdoc::li "@(tsee sint-lognot)")
+       (xdoc::li "@(tsee sint-add)")
+       (xdoc::li "@(tsee sint-sub)")
+       (xdoc::li "@(tsee sint-mul)")
+       (xdoc::li "@(tsee sint-div)")
+       (xdoc::li "@(tsee sint-rem)")
+       (xdoc::li "@(tsee sint-shl-sint)")
+       (xdoc::li "@(tsee sint-shr-sint)")
+       (xdoc::li "@(tsee sint-lt)")
+       (xdoc::li "@(tsee sint-gt)")
+       (xdoc::li "@(tsee sint-le)")
+       (xdoc::li "@(tsee sint-ge)")
+       (xdoc::li "@(tsee sint-eq)")
+       (xdoc::li "@(tsee sint-ne)")
+       (xdoc::li "@(tsee sint-bitand)")
+       (xdoc::li "@(tsee sint-bitxor)")
+       (xdoc::li "@(tsee sint-bitior)")
+       (xdoc::li "@(tsee sint-logand)")
+       (xdoc::li "@(tsee sint-logor)"))
+      "This represents
+       the corresponding C operator applied to C @('int') values.
+       The guard verification requirement ensures that
+       the operators are always applied to values with a well-defined result,
+       and that result is an @('int') value.
+       If the operator is @('&&') or @('||'),
+       this represents a strict (i.e. not non-strict) use of them;
+       see below for how to represent non-strict uses of them,
+       but the strict version is slightly simpler when usable.")
+     (xdoc::li
+      "A call of @(tsee sint01) on an allowed boolean term.
+       This converts an allowed boolean term
+       to an allowed non-boolean term.")
+     (xdoc::li
+      "A call of @(tsee if) on
+       (i) a test that is an allowed boolean term and
+       (ii) branches that are allowed non-boolean terms.
+       This represents a C @('?:') conditional expression
+       whose test expression is represented by the test term
+       and whose branch expressions are represented by the branch terms.")
+     (xdoc::li
+      "A call of @(tsee if) on
+       (i) a test of the form @('(mbt ...)') or @('(mbt$ ...)'),
+       (ii) a `then' branch that is an allowed non-boolean term, and
+       (iii) an `else' branch that may be any ACL2 term.
+       This represents the same C code represented by the `then' branch.
+       Both the test and the `else' branch are ignored;
+       the reason is that ATC generates C code under guard assumptions.
+       In translated terms,
+       @('(mbt x)') is
+       @('(return-last \'acl2::mbe1-raw \'t x)'), and
+       @('(mbt$ x)') is
+       @('(return-last \'acl2::mbe1-raw \'t (if x \'nil \'t))');
+       these are the patterns that ATC looks for.")
+     (xdoc::li
+      "A call of a target function @('fnj'), with @('j < i'),
+       on allowed non-boolean terms.
+       The restriction @('j < i') means that
+       no (direct or indirect) recursion is allowed
+       and the target functions must be specified
+       in a topological order of their call graph.
+       This represents a call of the corresponding C function."))
+    (xdoc::p
+     "An <i>allowed boolean term</i> is
+      inductively defined as one of the following:")
+    (xdoc::ul
+     (xdoc::li
+      "A call of @(tsee sint-nonzerop) on an allowed non-boolean term.
+       This converts an allowed non-boolean term
+       to an allowed boolean term.")
+     (xdoc::li
+      "A call of one of the following functions and macros
+       on an allowed boolean term:"
+      (xdoc::ul
+       (xdoc::li "@(tsee not)")
+       (xdoc::li "@(tsee and)")
+       (xdoc::li "@(tsee or)"))
+      "The first one is a function, while the other two are macros.
+       This represents the corresponding C logical operator
+       (negation @('!'), conjunction @('&&'), disjunction @('||'));
+       conjunction and disjunctions are represented non-strictly.
+       In translated terms, @('(and x y)') and @('(or x y)') are
+       @('(if x y \'nil)') and @('(or x x y)'):
+       these are the patterns that ATC looks for."))
+    (xdoc::p
+     "Allowed outer terms represent C statements,
+      while allowed non-boolean and boolean terms represent C expressions;
+      the fact that expressions are ``inside'' statements
+      motivates the term `outer'.
+      The allowed boolean terms return ACL2 boolean values,
+      while the allowed outer (including non-boolean) terms return
+      ACL2 non-boolean values that represent C values:
+      the distinction between these two kinds of allowed terms
+      stems from the need to represent C's non-strictness in ACL2:
+      C's non-strict constructs are
+      @('if') statements,
+      @('?:') expressions,
+      @('&&') expressions, and
+      @('||') expressions;
+      C's only non-strict construct is @(tsee if)
+      (which the macros @(tsee and) and @(tsee or) expand to, see above).")
+
+    (xdoc::p
+     "The above restrictions imply that @('fni') returns a single result,
+      i.e. not an @(tsee mv) result.
+      By construction, this result has C type @('int').")
+
+    (xdoc::p
+     "The body of the C function represented by each @('fni')
+      is the compound statement consisting of
+      the block items (i.e. statements and declarations)
+      represented by the ACL2 function's body
+      (which is an allowed outer term).")
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+    (xdoc::evmac-subsection
+     "Portable ASCII C Identifiers"
+
+     (xdoc::p
+      "A portable ASCII C identifier is
+      a non-empty sequence of ASCII characters that:")
+     (xdoc::ul
+      (xdoc::li
+       "Consists of only
        the 26 uppercase Latin letters,
        the 26 lowercase Latin letters,
        the 10 numeric digits,
        and the underscore.")
-     (xdoc::li
-      "Start with a letter or underscore.")
-     (xdoc::li
-      "Differs from all the C keywords, which are"
-      (xdoc::codeblock
-       "auto       extern     short      while"
-       "break      float      signed     _Alignas"
-       "case       for        sizeof     _Alignof"
-       "char       goto       static     _Atomic"
-       "const      if         struct     _Bool"
-       "continue   inline     switch     _Complex"
-       "default    int        typedef    _Generic"
-       "do         long       union      _Imaginary"
-       "double     register   unsigned   _Noreturn"
-       "else       restrict   void       _Static_assert"
-       "enum       return     volatile   _Thread_local")))
+      (xdoc::li
+       "Starts with a letter or underscore.")
+      (xdoc::li
+       "Differs from all the C keywords, which are"
+       (xdoc::codeblock
+        "auto       extern     short      while"
+        "break      float      signed     _Alignas"
+        "case       for        sizeof     _Alignof"
+        "char       goto       static     _Atomic"
+        "const      if         struct     _Bool"
+        "continue   inline     switch     _Complex"
+        "default    int        typedef    _Generic"
+        "do         long       union      _Imaginary"
+        "double     register   unsigned   _Noreturn"
+        "else       restrict   void       _Static_assert"
+        "enum       return     volatile   _Thread_local")))
 
-    (xdoc::p
-     "The C18 standard allows the following characters in identifiers:")
-    (xdoc::ol
-     (xdoc::li
-      "The ten digits (but not in the starting position).
+     (xdoc::p
+      "The C18 standard allows the following characters in identifiers:")
+     (xdoc::ol
+      (xdoc::li
+       "The ten digits (but not in the starting position).
        Even though C18 does not prescribe the use of (a superset of) ASCII,
        these have obvious ASCII counterparts.")
-     (xdoc::li
-      "The 26 uppercase Latin letters,
+      (xdoc::li
+       "The 26 uppercase Latin letters,
        the 26 lowercase Latin letter,
        and the underscore.
        Even though C18 does not prescribe the use of (a superset of) ASCII,
        these have obvious ASCII counterparts.")
-     (xdoc::li
-      "Some ranges of universal characters
+      (xdoc::li
+       "Some ranges of universal characters
        (some of which cannot occur in the starting position),
        none of which are ASCII.")
-     (xdoc::li
-      "Other implementation-defined characters.
+      (xdoc::li
+       "Other implementation-defined characters.
        These are not portable."))
-    (xdoc::p
-     "Thus, portable ASCII C identifiers consists of only 1 and 2 above,
+     (xdoc::p
+      "Thus, portable ASCII C identifiers consists of only 1 and 2 above,
       excluding 3 (non-ASCII) and 4 (non-portable).")))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::evmac-section-generated
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
     (xdoc::evmac-subsection
      "Constant"
@@ -281,88 +408,89 @@
      (xdoc::p
       "ATC generates an event")
      (xdoc::codeblock
-      "(defconst <name> ...)")
+      "(defconst *const* ...)")
      (xdoc::p
-      "where @('<name>') is specified by the @(':const-name') input
-       and @('...') is the abstract syntax tree of
+      "where @('...') is the abstract syntax tree of
        the generated C translation unit,
-       which ATC also pretty-prints and
-       writes to the file specified by the @(':output-file') input."))
+       which ATC also pretty-prints and writes
+       to the file specified by the @(':output-file') input."))
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
     (xdoc::evmac-subsection
-     "Theorem"
+     "Theorems"
 
      (xdoc::p
       "ATC generates an event")
      (xdoc::codeblock
-      "(defthm <name> ...)")
+      "(defthm *const*-well-formed ...)")
      (xdoc::p
-      "where @('<name>') is specified by the @(':thm-name') input
-       and @('...') is a theorem about the named constant described above,
-       i.e. about the generated (abstract syntax tree of the) C program.
-       Currently, the theorem states that the program is statically well-formed,
-       i.e. it compiles according to the C18 standard.
-       We plan to extend the theorem to state
-       the C program's functional correctness
-       with respect to the ACL2 code from which it is generated.")))
+      "where @('...') is a theorem about @('*const*') stating that
+       the generated (abstract syntax tree of the) translation unit
+       is statically well-formed,
+       i.e. it compiles according to the C18 standard.")
+
+     (xdoc::p
+      "For each target function @('fn'), ATC generates an event")
+     (xdoc::codeblock
+      "(defthm *const*-fn-correct ...)")
+     (xdoc::p
+      "where @('...') is a theorem about @('fn') and @('*const*') stating that,
+       under the guard of @('fn'),
+       executing the C dynamic semantics on
+       the C function generated from @('fn')
+       yields the same result as the function @('fn').
+       That is,
+       the C function is functionally equivalent to the ACL2 function.")))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::evmac-section
-
     "Generated C Code"
 
     (xdoc::p
      "ATC generates a single C file that contains
-      a C function for each target ACL2 function @('fni').
-      The C function is defined as follows:")
-    (xdoc::ul
-     (xdoc::li
-      "Its name is the symbol name of @('fni').
-      The package of the symbol is ignored.")
-     (xdoc::li
-      "Its formal parameters are the symbol names of
-       the formal parameters of @('fni').
-       The packages of the symbols are ignored.
-       The parameters are in the same order.")
-     (xdoc::li
-      "The types of the formal parameters are all @('int').")
-     (xdoc::li
-      "The result type is @('int').")
-     (xdoc::li
-      "The body of the function is obtained by translating
-       the ACL2 terms described earlier
-       to the corresponding C constructs."))
+      a translation unit that contains
+      a C function for each target ACL2 function @('fni'),
+      as explained in Section `Representation of C Code in ACL2'.")
 
     (xdoc::p
-     "The condition, stated earlier, that @('fni') is guard-verified
+     "The guard verification requirement stated earlier for each @('fni')
       implies that the generated C operations
       never exhibit undefined behavior,
       provided that they are called with values
       whose ACL2 counterparts satisfy the guard of @('fni').")
 
-    (xdoc::p
-     "The C functions are generated in the same order in which
-      the target functions are listed, i.e. @('fn1') first, etc."))
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+    (xdoc::evmac-subsection
+     "Compiling and Running the C Code"
+
+     (xdoc::p
+      "The generated C code can be compiled and run as any other C code.
+       For instance, one can use @('gcc') on macOS or Linux.")
+
+     (xdoc::p
+      "Just compiling the generated C file may result in an error
+       due to the lack of a @('main') function in the file.
+       The code generated by ATC is meant to be called by external C code,
+       where presumably a @('main') function will exist.
+       To test the generated code,
+       one can write a separate C file with a @('main') function,
+       and compile both files together.
+       By default, an executable @('a.out') will be generated
+       (if using @('gcc') on macOS or Linux).")
+
+     (xdoc::p
+      "The directory @('[books]/kestrel/c/atc/tests')
+       contains some examples of C code generation
+       and handwritten C code to test the generated code.")))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::evmac-section
-
-    "Compiling and Running the C Code"
-
-    (xdoc::p
-     "The generated C code can be compiled and run as any other C code.
-      For instance, one can use @('gcc') on macOS or Linux.")
+    "Redundancy"
 
     (xdoc::p
-     "Just compiling the generated C file may result in an error
-      due to the lack of a @('main') function in the file.
-      The code generated by ATC is meant to be called by external C code,
-      where presumably a @('main') function will exist.
-      To test the generated code,
-      one can write a separate C file with a @('main') function
-      that calls the generated functions,
-      and compile both files together.
-      By default, an executable @('a.out') will be generated
-      (if using @('gcc') on macOS or Linux)."))))
+     "A call of @('atc') is redundant if an only if
+      it is identical to a previous successful call of @('atc')."))))

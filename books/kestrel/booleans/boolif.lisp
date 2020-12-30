@@ -79,3 +79,6 @@
            (equal (if test x y)
                   (boolif test x y)))
   :hints (("Goal" :in-theory (enable boolif))))
+
+;; This help justify some things that Axe does:
+(defcong iff equal (boolif test x y) 1 :hints (("Goal" :in-theory (enable boolif))))

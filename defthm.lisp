@@ -1415,7 +1415,7 @@
                                    (assert$ pair (cdr pair)))))
                      (warning$ ctx ("Double-rewrite")
                                `("In a ~x0 rule generated from ~x1~@2, ~
-                                  equivalence relation~#3~[ ~&3~ is~/s ~&3 ~
+                                  equivalence relation~#3~[ ~&3 is~/s ~&3 ~
                                   are~] maintained at ~n4 problematic ~
                                   occurrence~#5~[~/s~] of variable ~x6 in ~
                                   ~@7, but not at any binding occurrence of ~
@@ -7018,6 +7018,9 @@
         (t (acons key (list val) alist))))
 
 (defun add-congruence-rule (rune nume term wrld)
+
+; See the Essay on Patterned Congruences and Equivalences.
+
   (mv-let
    (flg x)
    (interpret-term-as-congruence-rule (base-symbol rune) term wrld)
@@ -7088,31 +7091,48 @@
                                                 (pequivs-property-field
                                                  prop :shallow))))
                         (t ; (eq flg :deep)
-                         (change pequivs-property prop
-                                 :deep
-                                 (cons-assoc-eq equiv2
-                                                pequiv
-                                                (pequivs-property-field
-                                                 prop :deep)))))))
+                         (let ((new (cons-assoc-eq equiv2
+                                                   pequiv
+                                                   (pequivs-property-field
+                                                    prop :deep))))
+                           (cond ((and (eq fn sym)
+
+; Normally we will set :deep-pequiv-p for fn based on parent prop; see below.
+; However, if fn and sym are the same then we do that here instead.  Except,
+; there is no need to set the :deep-pequiv-p field if it is already set.
+
+                                       (not (pequivs-property-field
+                                             prop
+                                             :deep-pequiv-p)))
+                                  (change pequivs-property prop
+                                          :deep new
+                                          :deep-pequiv-p t))
+                                 (t 
+                                  (change pequivs-property prop
+                                          :deep new))))))))
                (parent-prop
                 (and (eq flg :deep) ; optimization
+                     (not (eq fn sym)) ; optimization
                      (getpropc fn 'pequivs nil wrld))))
           (putprop sym 'pequivs new-prop
-                   (cond ((eq flg :shallow) wrld)
-                         ((null parent-prop) ; and flg is :deep
-                          (putprop fn 'pequivs
-                                   (make pequivs-property
-                                         :shallow nil
-                                         :deep nil
-                                         :deep-pequiv-p t)
-                                   wrld))
-                         ((pequivs-property-field parent-prop :deep-pequiv-p)
-                          wrld)
-                         (t
-                          (putprop fn 'pequivs
-                                   (change pequivs-property parent-prop
-                                           :deep-pequiv-p t)
-                                   wrld)))))))))))
+                   (cond
+                    ((or (eq fn sym) ; putprop above overrides putprop below
+                         (eq flg :shallow))
+                     wrld)
+                    ((null parent-prop) ; and flg is :deep
+                     (putprop fn 'pequivs
+                              (make pequivs-property
+                                    :shallow nil
+                                    :deep nil
+                                    :deep-pequiv-p t)
+                              wrld))
+                    ((pequivs-property-field parent-prop :deep-pequiv-p)
+                     wrld)
+                    (t
+                     (putprop fn 'pequivs
+                              (change pequivs-property parent-prop
+                                      :deep-pequiv-p t)
+                              wrld)))))))))))
 
 ;---------------------------------------------------------------------------
 ; Section:  :DEFINITION rules

@@ -344,7 +344,9 @@
 (JAVA::ATJ-JPRIM-CONSTR-FN-TO-PTYPE (7 7 (:REWRITE SUBSETP-MEMBER . 4))
                                     (7 7 (:REWRITE SUBSETP-MEMBER . 3))
                                     (7 7 (:REWRITE SUBSETP-MEMBER . 2))
-                                    (7 7 (:REWRITE SUBSETP-MEMBER . 1)))
+                                    (7 7 (:REWRITE SUBSETP-MEMBER . 1))
+                                    (7 7 (:REWRITE INTERSECTP-MEMBER . 3))
+                                    (7 7 (:REWRITE INTERSECTP-MEMBER . 2)))
 (JAVA::PRIMITIVE-TYPEP-OF-ATJ-JPRIM-CONSTR-FN-TO-PTYPE
      (9 1
         (:REWRITE JAVA::PRIMITIVE-TYPE-WHEN-NUMERIC-TYPEP))
@@ -361,7 +363,9 @@
 (JAVA::ATJ-JPRIM-DECONSTR-FN-TO-PTYPE (7 7 (:REWRITE SUBSETP-MEMBER . 4))
                                       (7 7 (:REWRITE SUBSETP-MEMBER . 3))
                                       (7 7 (:REWRITE SUBSETP-MEMBER . 2))
-                                      (7 7 (:REWRITE SUBSETP-MEMBER . 1)))
+                                      (7 7 (:REWRITE SUBSETP-MEMBER . 1))
+                                      (7 7 (:REWRITE INTERSECTP-MEMBER . 3))
+                                      (7 7 (:REWRITE INTERSECTP-MEMBER . 2)))
 (JAVA::PRIMITIVE-TYPEP-OF-ATJ-JPRIM-DECONSTR-FN-TO-PTYPE
      (9 1
         (:REWRITE JAVA::PRIMITIVE-TYPE-WHEN-NUMERIC-TYPEP))

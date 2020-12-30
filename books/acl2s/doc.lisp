@@ -5,6 +5,5 @@
 
 (include-book "defdata/top" :ttags :all)
 (include-book "cgen/top" :ttags :all)
-(include-book "defunc" :ttags :all)
+(include-book "top" :ttags :all)
 (include-book "ccg/ccg" :ttags ((:ccg)) :load-compiled-file nil)
-(include-book "utilities" :ttags :all)

@@ -3200,9 +3200,9 @@ Perhaps we can prove *1 by induction.  Three induction schemes are
 suggested by this conjecture.  Subsumption reduces that number to one.
 
 We will induct according to a scheme suggested by (LEQUAL A B).  This
-suggestion was produced using the :induction rules LEQUAL and 
-TERMINAL-MARKER.  If we let (:P A B) denote *1 above then the induction
-scheme we'll use is
+suggestion was produced using the :induction rules LEQUAL and TERMINAL-MARKER.
+If we let (:P A B) denote *1 above then the induction scheme we'll
+use is
 (AND (IMPLIES (AND (NOT (ATOM A))
                    (NOT (ATOM B))
                    (NOT (EQUAL (CAR A) (CAR B))))

@@ -480,6 +480,8 @@
                 (11 11 (:REWRITE SUBSETP-MEMBER . 4))
                 (11 11 (:REWRITE SUBSETP-MEMBER . 2))
                 (11 11 (:REWRITE SUBSETP-MEMBER . 1))
+                (11 11 (:REWRITE INTERSECTP-MEMBER . 3))
+                (11 11 (:REWRITE INTERSECTP-MEMBER . 2))
                 (2 2 (:TYPE-PRESCRIPTION SUBSETP-EQUAL))
                 (2 2 (:LINEAR LENGTH-EQUIV-LINEAR))
                 (1 1 (:REWRITE SUBSETP-WHEN-ATOM-RIGHT))

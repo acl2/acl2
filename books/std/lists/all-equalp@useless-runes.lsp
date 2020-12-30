@@ -24,6 +24,8 @@
 (MEMBER-EQUAL-WHEN-ALL-EQUALP (12 2
                                   (:REWRITE SUBSETP-IMPLIES-SUBSETP-CDR))
                               (8 8 (:REWRITE SUBSETP-MEMBER . 4))
+                              (8 8 (:REWRITE INTERSECTP-MEMBER . 3))
+                              (8 8 (:REWRITE INTERSECTP-MEMBER . 2))
                               (7 7 (:REWRITE DEFAULT-CDR))
                               (6 6 (:REWRITE SUBSETP-TRANS2))
                               (6 6 (:REWRITE SUBSETP-TRANS))

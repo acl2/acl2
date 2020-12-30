@@ -308,10 +308,10 @@
 
  <p>The @(':measure-hints') option is used as the @(tsee xargs) @(':hints')
  value in the generated definition.  A special value @(':auto'), which is the
- default, creates @(':hints') for the termination proof that include a
- @(':use') hint for the input function symbol's @(see termination-theorem) and
- as well as suitable theory modification if any of @(':disable'), @(':enable'),
- or @(':theory') have value other than their default of @(':none').</p>
+ default, creates @(':hints') for the termination proof that use the input
+ function symbol's @(see termination-theorem) as well as suitable theory
+ modification if any of @(':disable'), @(':enable'), or @(':theory') have value
+ other than their default of @(':none').</p>
 
  </blockquote>
 
@@ -624,7 +624,7 @@
 
  <p>Specify whether to verify guards for the new function.</p>
 
- <p>By default, guard verification is performed for the new function symbol
+ <p>By default, guard verification is performed for the new function symbol if
  and only if the input function symbol is guard-verified.  This default
  behavior is overridden by a Boolean value @('V') of @(':verify-guards'): guard
  verification is done if @('V') is @('t'), else is not done.</p>
@@ -633,10 +633,13 @@
  events are admitted, including the new definition and the @('OLD-becomes-NEW')
  theorem (see above), by calling @(tsee verify-guards) on the new function
  symbol.  The @(':guard-hints') are utilized, if supplied (and not @(':auto')).
- Otherwise, hints specify the theory used for simplification (see the
- discussion of @(':theory')) augmented by the @('OLD-becomes-NEW') theorem (see
- above) and, if the old function symbol is guard-verified, the hints apply its
- guard theorem with a @(':use') hint.</p>
+ Otherwise, a @(':guard-hints') value is generated that specifies the theory
+ used for simplification (see the discussion of @(':theory')) augmented by the
+ @('OLD-becomes-NEW') theorem (see above); also, if the old function symbol is
+ guard-verified, the hints apply its guard theorem with a @(':use') hint.  This
+ generated @(':guard-hints') value can cause  up to three different proof
+ attempts, each somewhat different from the others, when necessary.  (For
+ details use @(':show-only t').)</p>
 
  </blockquote>
 
@@ -701,6 +704,7 @@
  (defun bar (x)
    (declare (xargs :measure (nfix x)))
    (if (zp x) 0 (+ 1 1 (bar (+ -1 x)))))
+ (include-book \"kestrel/apt/simplify\" :dir :system)
  (simplify-defun bar
                  :new-name bar-simp
                  :thm-name bar-simplified
@@ -885,8 +889,9 @@
          (DECLARE (XARGS :GUARD (AND (TRUE-LISTP X) (CONSP X))
                          :MEASURE (LEN X)
                          :VERIFY-GUARDS T
-                         :GUARD-HINTS ((\"Goal\" :USE (:GUARD-THEOREM FOO) ...))
-                         :HINTS ((\"Goal\" :USE (:TERMINATION-THEOREM FOO) ...))))
+                         :GUARD-HINTS ... ; uses (:GUARD-THEOREM FOO)
+                         :HINTS ... ; uses (:GUARD-THEOREM FOO)
+                         ))
          (IF (CONSP (CDR X))
              (FOO$1 (APPEND NIL (CDR X)))
              X))
@@ -908,18 +913,11 @@
  @(':measure-hints') for the guard verification and termination proofs of the
  simplified function that is generated.  To see how these work, we can add such
  hints to the @('simplify-defun') form displayed in the section just above.
- Recall the hints generated for that form.</p>
-
- @({
-               :GUARD-HINTS ((\"Goal\" :USE (:GUARD-THEOREM FOO) ...))
-               :HINTS ((\"Goal\" :USE (:TERMINATION-THEOREM FOO) ...))
- })
-
- <p>We see that the default hints generated for the guard and termination
- proofs include @(':USE') hints specifying the use of the guard and termination
- theorems, respectively, for the function whose definition is being simplified.
- Suppose now that we add our own hints, for example rather nonsensical
- @(':guard-hints') and @(':measure-hints') as follows.</p>
+ Recall that the default hints generated for the guard and termination proofs
+ use the guard and termination theorems, respectively, for the function whose
+ definition is being simplified.  Suppose now that we add our own hints, for
+ example rather nonsensical @(':guard-hints') and @(':measure-hints') as
+ follows.</p>
 
  @({
  (simplify-defun foo
@@ -961,19 +959,9 @@
  <p>The resulting @(tsee defun) form contains simplifications for both the
  guard and the body.  The rewrite rule @('double') and the definition of
  @('natp') were applied during the simplification, in spite of being globally
- disabled, because of the specified @(':theory') for simplification.  Notice
+ disabled, because of the specified @(':theory') for simplification.  Note
  that this theory works its way into the generated @(':guard-hints') for the
  generated function.</p>
-
- @({
- (DEFUN FOO$1 (X)
-        (DECLARE (XARGS :GUARD (AND (INTEGERP X) (NOT (< X 0)))
-                        :VERIFY-GUARDS T
-                        :GUARD-HINTS ((\"Goal\"
-                                      :USE (:GUARD-THEOREM FOO))
-                                      '(:IN-THEORY '(DOUBLE NATP)))))
-        (CAR (CONS (* 2 X) 3)))
- })
 
  <p>For convenience, @(':enable') and/or @(':disable') keywords are available,
  provided that they are not used when @(':theory') is used.  For example,
@@ -987,11 +975,7 @@
  (DEFUN FOO$1 (X)
         (DECLARE (XARGS :GUARD (AND (INTEGERP X) (NOT (< X 0)))
                         :VERIFY-GUARDS T
-                        :GUARD-HINTS
-                        ((\"Goal\"
-                          :USE (:GUARD-THEOREM FOO))
-                         '(:IN-THEORY (E/D* (DOUBLE NATP)
-                                            (FOO (:E FOO) (:T FOO)))))))
+                        :GUARD-HINTS ...))
         (* 2 X))
  })
 

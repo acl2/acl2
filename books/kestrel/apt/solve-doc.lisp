@@ -127,7 +127,6 @@
      "(solve old"
      "       :method                 ; no default"
      "       :method-rules           ; default nil"
-     "       :solution               ; no default"
      "       :solution-name          ; default :auto"
      "       :solution-enable        ; default nil"
      "       :solution-guard         ; default t"
@@ -187,9 +186,8 @@
         @('[books]/kestrel/apt/solve-method-acl2-rewriter.lisp').")
       (xdoc::li
        "@(':axe-rewriter'), to use the Axe rewriter.
-        Until Axe is open-sourced in the community books,
-        this method is only available inside Kestrel, by including
-        @('kestrel-acl2/transformations/solve-method-axe-rewriter.lisp').")
+        This method is available by including
+        @('[books]/kestrel/apt/solve-method-axe-rewriter.lisp').")
       (xdoc::li
        "@(':manual'), to manually supply a solution."))
      (xdoc::p
@@ -213,58 +211,56 @@
        @(':method') is @(':acl2-rewriter') or @(':axe-rewriter')."))
 
     (xdoc::desc
-     "@(':solution') &mdash; no default"
-     (xdoc::p
-      "Specifies an existing function to use as solution,
-       when @(':method') is @(':manual').")
-     (xdoc::p
-      "It must be the name of an existing function
-       with @('n') arguments and 1 result.")
-     (xdoc::p
-      "This input may be present only if @(':method') is @(':manual').
-       If this input is present, then the inputs
-       @(':solution-name'),
-       @(':solution-enable'),
-       @(':solution-guard'),
-       @(':solution-guard-hints'), and
-       @(':solution-body')
-       must be all absent.
-       If any of these inputs are present,
-       then the @(':solution') input must be absent.
-       If @(':method') is @(':manual'),
-       exactly one of @(':solution') and @(':solution-body') must be present.")
-     (xdoc::p
-      "The existing function specified by this input
-       must be guard-verified if guards are to be verified,
-       according to the @(':verify-guards') input.")
-     (xdoc::p
-      "In the rest of the documentation page,
-       let @('f') be the name of this function."))
-
-    (xdoc::desc
      "@(':solution-name') &mdash; default @(':auto')"
      (xdoc::p
-      "Determines the name of the generated solution function for @('?f').")
+      "Determines the name of the solution function for @('?f'),
+       and whether the function is generated or not.")
      (xdoc::p
       "It must be one of the following:")
      (xdoc::ul
       (xdoc::li
        "@(':auto'), which may only be used
         when the name of @('?f') starts with a @('?').
-        In this case, the name of the solution is the symbol obtained
+        In this case, the function is generated,
+        and its name is the symbol obtained
         by removing the initial @('?') from the name of @('?f').")
       (xdoc::li
-       "Any other symbol, to use as the name of the solution function."))
+       "A symbol that names an existing function.
+        In this case, the function is not generated:
+        the existing function is used instead.
+        This is allowed only if @(':method') is @(':manual').")
+      (xdoc::li
+       "Any other symbol, to use as the name of the solution function,
+        which is generated in this case."))
      (xdoc::p
-      "This input must be absent if the @(':solution') input is present.")
+      "If this input is the name of an existing function, then the inputs
+       @(':solution-enable'),
+       @(':solution-guard'),
+       @(':solution-guard-hints'), and
+       @(':solution-body')
+       must be all absent.
+       If any of these inputs are present,
+       then the @(':solution-name') input must not be
+       the name of an existing function.")
+     (xdoc::p
+      "If this input is the name of an existing function,
+       it must be in logic mode and it must be "
+      (xdoc::seetopic "acl2::function-definedness" "defined")
+      ". Its arity must be the same as @('?f').
+       It must return a single result.
+       If guards must be verified
+       (as determined by the @(':verify-guards') input),
+       then the function must be guard-verified.")
      (xdoc::p
       "In the rest of the documentation page,
-       let @('f') be this name."))
+       let @('f') be the name of this function,
+       whether it already exists or is generated."))
 
     (xdoc::desc
      "@(':solution-enable') &mdash; default @('nil')"
      (xdoc::p
-      "Determines whether @('f') is enabled.")
+      "Determines whether @('f') is enabled,
+       when this function is generated.")
      (xdoc::p
       "It must be one of the following:")
      (xdoc::ul
@@ -273,12 +269,13 @@
       (xdoc::li
        "@('nil'), to disable it."))
      (xdoc::p
-      "This input must be absent if the @(':solution') input is present."))
+      "This input must be absent if @('f') already exists."))
 
     (xdoc::desc
      "@(':solution-guard') &mdash; default @('t')"
      (xdoc::p
-      "Determines the guard of @('f').")
+      "Determines the guard of @('f'),
+       when this function is generated.")
      (xdoc::p
       "It must be an untranslated term
        whose free variables are among @('x1'), ..., @('xn').
@@ -287,12 +284,13 @@
       "See Section `Solution Determination' below
        for a discussion about this input.")
      (xdoc::p
-      "This input must be absent if the @(':solution') input is present."))
+      "This input must be absent if @('f') already exists."))
 
     (xdoc::desc
      "@(':solution-guard-hints') &mdash; default @('nil')"
      (xdoc::p
-      "Determines the hints to verify the guards of @('f').")
+      "Determines the hints to verify the guards of @('f'),
+       when this function is generated.")
      (xdoc::p
       "See Section `Solution Determination' below
        for a discussion about this input.")
@@ -300,13 +298,13 @@
       "This input may be present only if guards are to be verified,
        as determined by the @(':verify-guards') input.")
      (xdoc::p
-      "This input must be absent if the @(':solution') input is present."))
+      "This input must be absent if @('f') already exists."))
 
     (xdoc::desc
      "@(':solution-body') &mdash; no default"
      (xdoc::p
       "Specifies the body of the solution function,
-       when @(':method') is @(':manual').")
+       when @(':method') is @(':manual') and @('f') is generated.")
      (xdoc::p
       "It must be an untranslated term
        whose free variables are among @('x1'), ..., @('xn').
@@ -315,10 +313,9 @@
       "See Section `Solution Determination' below
        for a discussion about this input.")
      (xdoc::p
-      "This input may be present only if @(':method') is @(':manual').
-       If this input is present, then the @(':solution') input must be absent.
-       If @(':method') is @(':manual'),
-       exactly one of @(':solution') and @(':solution-body') must be present."))
+      "This input must be present if
+       @(':method') is @(':manual') and @('f') is generated;
+       otherwise, this input must be absent."))
 
     (xdoc::desc
      "@(':solution-hints') &mdash; @('nil')"
@@ -344,177 +341,176 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h3 "Solution Determination")
+   (xdoc::evmac-section
+    "Solution Determination"
 
-   (xdoc::p
-    "The transformation attempts to find a solution for @('?f')
-     according to the chosen method, as explained below.
-     A solution may or may not be found.
-     If no solution is found, the transformation fails
-     with an informative error message.")
+    (xdoc::p
+     "The transformation attempts to find a solution for @('?f')
+      according to the chosen method, as explained below.
+      A solution may or may not be found.
+      If no solution is found, the transformation fails
+      with an informative error message.")
 
-   (xdoc::h4 "Rewriting")
+    (xdoc::evmac-subsection
+     "Rewriting"
 
-   (xdoc::p
-    "When the @(':method') input is @(':acl2-rewriter') or @(':axe-rewriter'),
-     the transformation calls the ACL2 or Axe rewriter
-     on the term @('matrix<(?f x1 ... xn)>'),
-     obtaining a rewritten term @('result').")
+     (xdoc::p
+      "When the @(':method') input is @(':acl2-rewriter') or @(':axe-rewriter'),
+       the transformation calls the ACL2 or Axe rewriter
+       on the term @('matrix<(?f x1 ... xn)>'),
+       obtaining a rewritten term @('result').")
 
-   (xdoc::p
-    "Consider the outer @(tsee if) tree structure of @('result'),
-     and collect all the leaves of such a tree:")
-   (xdoc::ul
-    (xdoc::li
-     "If @('result') is not a call of @(tsee if),
-      then @('result') is the only leaf.")
-    (xdoc::li
-     "If @('result') has the form @('(if a b c)'),
-      recursively collect the leaves of @('b') of @('c'),
-      and join them into a list."))
-   (xdoc::p
-    "For instance, if @('result') is @('(if a (if b c d) e)'),
-     the collected leaves are @('c'), @('d'), and @('e').")
+     (xdoc::p
+      "Consider the outer @(tsee if) tree structure of @('result'),
+      and collect all the leaves of such a tree:")
+     (xdoc::ul
+      (xdoc::li
+       "If @('result') is not a call of @(tsee if),
+        then @('result') is the only leaf.")
+      (xdoc::li
+       "If @('result') has the form @('(if a b c)'),
+        recursively collect the leaves of @('b') of @('c'),
+        and join them into a list."))
+     (xdoc::p
+      "For instance, if @('result') is @('(if a (if b c d) e)'),
+       the collected leaves are @('c'), @('d'), and @('e').")
 
-   (xdoc::p
-    "There are three cases to consider.")
+     (xdoc::p
+      "There are three cases to consider.")
 
-   (xdoc::p
-    "The first case is the one where all the collected leaves are @('t').
-     In this case, the transformation is successful,
-     and the determined solution is")
-   (xdoc::codeblock
-    "(defun f (x1 ... xn)"
-    "  nil)")
-   (xdoc::p
-    "The fact that @('matrix<(?f x1 ... xn)>') rewrote to @('t')
-     (under all the conditions in the @(tsee if) tree)
-     means that any @('?f') satisfies the constraints.
-     So anything can be used as the solution @('f').
-     We use the function that always returns @('nil') for simplicity.
-     While this may seem an unlikely case,
-     it may arise under certain conditions,
-     e.g. for some boundary cases.")
+     (xdoc::p
+      "The first case is the one where all the collected leaves are @('t').
+       In this case, the transformation is successful,
+       and the determined solution is")
+     (xdoc::codeblock
+      "(defun f (x1 ... xn)"
+      "  nil)")
+     (xdoc::p
+      "The fact that @('matrix<(?f x1 ... xn)>') rewrote to @('t')
+       (under all the conditions in the @(tsee if) tree)
+       means that any @('?f') satisfies the constraints.
+       So anything can be used as the solution @('f').
+       We use the function that always returns @('nil') for simplicity.
+       While this may seem an unlikely case,
+       it may arise under certain conditions,
+       e.g. for some boundary cases.")
 
-   (xdoc::p
-    "The second case is the one where one collected leaf has the form")
-   (xdoc::codeblock
-    "(equal (?f x1 ... xn) term<x1,...,xn>)")
-   (xdoc::p
-    "where @('term<x1,...,xn>') is a term
-     that may depend on @('x1'), ..., @('xn')
-     and that does not contain @('?f'),
-     and all the other collected leaves are @('t').
-     In this case, the transformation is successful,
-     and the determined solution is")
-   (xdoc::codeblock
-    "(defun f (x1 ... xn)"
-    "  term<x1,...,xn>)")
-   (xdoc::p
-    "The conditions under which the rewritten term is @('t')
-     put no constraints on the solution,
-     which can be therefore entirely determined
-     by the only equality leaf.")
+     (xdoc::p
+      "The second case is the one where one collected leaf has the form")
+     (xdoc::codeblock
+      "(equal (?f x1 ... xn) term<x1,...,xn>)")
+     (xdoc::p
+      "where @('term<x1,...,xn>') is a term
+       that may depend on @('x1'), ..., @('xn')
+       and that does not contain @('?f'),
+       and all the other collected leaves are @('t').
+       In this case, the transformation is successful,
+       and the determined solution is")
+     (xdoc::codeblock
+      "(defun f (x1 ... xn)"
+      "  term<x1,...,xn>)")
+     (xdoc::p
+      "The conditions under which the rewritten term is @('t')
+       put no constraints on the solution,
+       which can be therefore entirely determined
+       by the only equality leaf.")
 
-   (xdoc::p
-    "The third case is the one where the two cases do not apply.
-     In this case, the transformation fails.
-     No solution has been determined.")
+     (xdoc::p
+      "The third case is the one where the two cases above do not apply.
+       In this case, the transformation fails.
+       No solution has been determined.")
 
-   (xdoc::p
-    "Support for determining solutions in more cases
-     may be added in the future.")
+     (xdoc::p
+      "Support for determining solutions in more cases
+       may be added in the future.")
 
-   (xdoc::p
-    "Note that, in the second case above,
-     there is no general guarantee that
-     @('term<x1,...,xn>') can be guard-verified
-     without assumptions on @('x1'), ..., @('xn').
-     The @(':solution-guard') input may be used to add such assumptions,
-     and @(':solution-guard-hints') input may be used to verify guards,
-     but there is no general guarantee that suitable inputs always exist:
-     the ACL2 or Axe rewriter may produce a logically valid term
-     that cannot be guard-verified under any hypotheses on its variables.
-     Future extensions of this transformation may address this issue,
-     e.g. by limiting rewriting so that
-     only guard-verifiable terms are produced.")
+     (xdoc::p
+      "Note that, in the second case above,
+       there is no general guarantee that
+       @('term<x1,...,xn>') can be guard-verified
+       without assumptions on @('x1'), ..., @('xn').
+       The @(':solution-guard') input may be used to add such assumptions,
+       and @(':solution-guard-hints') input may be used to verify guards,
+       but there is no general guarantee that suitable inputs always exist:
+       the ACL2 or Axe rewriter may produce a logically valid term
+       that cannot be guard-verified under any hypotheses on its variables.
+       Future extensions of this transformation may address this issue,
+       e.g. by limiting rewriting so that
+       only guard-verifiable terms are produced.")
 
-   (xdoc::p
-    "When the transformation is successful,
-     the ACL2 or Axe rewriting provides
-     an ACL2 or Axe proof of correctness of the solution.
-     This should suffice to generate an ACL2 proof
-     of the @('old-if-new') refinement theorem in principle,
-     but in practice there may be technical difficulties in some cases.
-     Difficulties seem unlikely to happen when using the ACL2 rewriter,
-     because the same rewrites should apply during the generated proof.
-     Difficulties may be possible when using the Axe rewriter,
-     because its rewriting may not exactly correspond to ACL2's rewriting.
-     Future extensions of this transformation may address this issue,
-     e.g. by having the Axe rewriter produce an ACL2 proof
-     that this transformation may use to prove the refinement theorem.")
+     (xdoc::p
+      "When the transformation is successful,
+       the ACL2 or Axe rewriting provides
+       an ACL2 or Axe proof of correctness of the solution.
+       This should suffice to generate an ACL2 proof
+       of the @('old-if-new') refinement theorem in principle,
+       but in practice there may be technical difficulties in some cases.
+       Difficulties seem less likely to happen when using the ACL2 rewriter,
+       because the same rewrites should apply during the generated proof.
+       Difficulties may be more likely when using the Axe rewriter,
+       because its rewriting may not exactly correspond to ACL2's rewriting.
+       Future extensions of this transformation may address this issue,
+       e.g. by having the Axe rewriter produce an ACL2 proof
+       that this transformation may use to prove the refinement theorem.")
 
-   (xdoc::p
-    "In any case, the transformation attempts to prove a theorem
-     to confirm the correctness of ACL2's or Axe's rewriting in ACL2.
-     If that theorem is successful,
-     the transformation internally generates a theorem of the form")
-   (xdoc::codeblock
-    "(implies (equal (?f x1 ... xn)"
-    "                term<x1,...,xn>)"
-    "         matrix<(?f x1 ... xn)>)")
-   (xdoc::p
-    "which essentially says that the matrix of @('old')
-     if we replace @('(?f x1 ... xn)') with @('term<x1,...,xn>'),
-     i.e. that the inferred solution body satisfies the initial specification.
-     It is the latter theorem that is used to prove @('old-if-new').
-     Its formulation is equivalent to @('matrix<term<x1,...,xn>>'),
-     but the formulation used is more convenient
-     for generating the proof of @('old-if-new').")
+     (xdoc::p
+      "In any case, the transformation attempts to prove a theorem
+       to confirm the correctness of ACL2's or Axe's rewriting in ACL2.
+       If that theorem is successful,
+       the transformation internally generates a theorem of the form")
+     (xdoc::codeblock
+      "(implies (equal (?f x1 ... xn)"
+      "                term<x1,...,xn>)"
+      "         matrix<(?f x1 ... xn)>)")
+     (xdoc::p
+      "which essentially says that the matrix of @('old') holds
+       if we replace @('(?f x1 ... xn)') with @('term<x1,...,xn>'),
+       i.e. that the inferred solution body satisfies the initial specification.
+       It is the latter theorem that is used to prove @('old-if-new').
+       Its formulation is equivalent to @('matrix<term<x1,...,xn>>'),
+       but the formulation used is more convenient
+       for generating the proof of @('old-if-new')."))
 
-   (xdoc::h4 "Manual")
+    (xdoc::evmac-subsection
+     "Manual"
 
-   (xdoc::p
-    "When the @(':method') input is @(':manual'),
-     the transformation calls no inference tool.
-     Instead, the @(':solution') or @(':solution-body') input,
-     which must be supplied,
-     is used to determine the solution.")
+     (xdoc::p
+      "When the @(':method') input is @(':manual'),
+       the transformation calls no inference tool.
+       Instead, the generated or existing function @('f')
+       is the (purported) solution.")
 
-   (xdoc::p
-    "If the @(':solution') input is supplied,
-     it must refer to an existing function @('f'),
-     with the same number of arguments and results as @('?f').
-     It must be the case that")
-   (xdoc::codeblock
-    "(implies (equal (?f x1 ... xn)"
-    "                (f x1 ... xn))"
-    "         matrix<(?f x1 ... xn)>)")
-   (xdoc::p
-    "This proof is attempted via the @(':solution-hints') input.")
+     (xdoc::p
+      "If @('f') exists, it must have the same number of arguments as @('?f').
+       It must be the case that")
+     (xdoc::codeblock
+      "(implies (equal (?f x1 ... xn)"
+      "                (f x1 ... xn))"
+      "         matrix<(?f x1 ... xn)>)")
+     (xdoc::p
+      "This proof is attempted via the @(':solution-hints') input.")
 
-   (xdoc::p
-    "If the @(':solution-body') input is supplied,
-     the transformation generates the function")
-   (xdoc::codeblock
-    "(defun f (x1 ... xn)"
-    "  term<x1,...,xn>)")
-   (xdoc::p
-    "where @('term<x1,...,xn>') is the @(':solution-body') input;
-     it is a term whose free variables are among @('x1'), ..., @('xn').")
-   (xdoc::p
-    "It must be the case that")
-   (xdoc::codeblock
-    "(implies (equal (?f x1 ... xn)"
-    "                term<x1,...,xn>)"
-    "         matrix<(?f x1 ... xn)>)")
-   (xdoc::p
-    "This proof is attempted via the @(':solution-hints') input.")
-   (xdoc::p
-    "The guard of @('f') is determined by @(':solution-guard').
-     If guards are to be verified,
-     the verification of the guards of @('f')
-     are attempted using @(':solution-guard-hints').")
+     (xdoc::p
+      "If @('f') is generated, it has the form")
+     (xdoc::codeblock
+      "(defun f (x1 ... xn)"
+      "  term<x1,...,xn>)")
+     (xdoc::p
+      "where @('term<x1,...,xn>') is the @(':solution-body') input;
+       it is a term whose free variables are among @('x1'), ..., @('xn').")
+     (xdoc::p
+      "It must be the case that")
+     (xdoc::codeblock
+      "(implies (equal (?f x1 ... xn)"
+      "                term<x1,...,xn>)"
+      "         matrix<(?f x1 ... xn)>)")
+     (xdoc::p
+      "This proof is attempted via the @(':solution-hints') input.")
+     (xdoc::p
+      "The guard of @('f') is determined by @(':solution-guard').
+       If guards are to be verified,
+       the verification of the guards of @('f')
+       is attempted using @(':solution-guard-hints').")))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -530,7 +526,7 @@
       "  ...) ; see section 'Solution Determination' above")
      (xdoc::p
       "This is not generated if @(':method') is @(':manual')
-       and the @(':solution') input is present.")
+       and @(':solution-name') names an existing function.")
      (xdoc::p
       "In the " *solve-design-notes* ",
        @('f') is denoted by @($f_0$)."))

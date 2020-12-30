@@ -26,4 +26,5 @@
                 (natp l))
            (<= (pad-to-896-number-of-zeros l)
                other-solution))
-  :hints (("Goal" :in-theory (enable pad-to-896-number-of-zeros))))
+  :hints (("Goal" :in-theory (enable pad-to-896-number-of-zeros
+                                     acl2::mod-sum-cases))))

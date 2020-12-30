@@ -2563,7 +2563,8 @@
 
   (met ((stest sbase sbody) (split-term-on-fset (list fn) tbody))
     ;;(let ((cbodyp (normalized-if-to-parallel-cond sbody)))
-      (met ((typespec signature sig-hints decls) (defun::extract-function-declaration decls))
+    (met ((typespec signature fty-sig sig-hints decls) (defun::extract-function-declaration decls))
+      (declare (ignore fty-sig))
       (met ((default-value decls) (defun::extract-xarg-key-from-decls :default-value decls))
       ;;(met ((default-type decls) (defun::extract-xarg-key-from-decls :default-type decls))
       (met ((nx decls) (defun::extract-xarg-key-from-decls :non-executable decls))

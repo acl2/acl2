@@ -13,8 +13,10 @@
 (include-book "defun-sk2")
 (include-book "defund-sk2")
 
+(include-book "kestrel/error-checking/ensure-list-has-no-duplicates" :dir :system)
 (include-book "kestrel/error-checking/ensure-symbol-is-fresh-event-name" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-boolean" :dir :system)
+(include-book "kestrel/error-checking/ensure-value-is-function-name" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-symbol-list" :dir :system)
 (include-book "kestrel/event-macros/input-processing" :dir :system)
@@ -34,13 +36,13 @@
 
  :items
 
- ((xdoc::evmac-topic-implementation-item-input "name" "defequal")
+ ((xdoc::evmac-topic-implementation-item-input "name")
 
-  (xdoc::evmac-topic-implementation-item-input "left" "defequal")
+  (xdoc::evmac-topic-implementation-item-input "left")
 
-  (xdoc::evmac-topic-implementation-item-input "right" "defequal")
+  (xdoc::evmac-topic-implementation-item-input "right")
 
-  (xdoc::evmac-topic-implementation-item-input "vars" "defequal")
+  (xdoc::evmac-topic-implementation-item-input "vars")
 
   "@('n') is the arity of @('left') and @('right'),
    as described in the user documentation."
@@ -158,8 +160,8 @@
         (er-soft+ ctx t 0 "The :LEFT input must be present, but it is not."))
        ((unless right-present)
         (er-soft+ ctx t 0 "The :RIGHT input must be present, but it is not."))
-       ((er &) (ensure-function-name$ left "The :LEFT input" t 0))
-       ((er &) (ensure-function-name$ right "The :RIGHT input" t 0))
+       ((er &) (ensure-value-is-function-name$ left "The :LEFT input" t 0))
+       ((er &) (ensure-value-is-function-name$ right "The :RIGHT input" t 0))
        (left-guard (uguard left wrld))
        (right-guard (uguard right wrld))
        (left-arity (arity+ left wrld))
@@ -240,7 +242,7 @@
   (if (eq vars :auto)
       (value (defequal-process-vars-aux name n))
     (b* (((er &) (ensure-value-is-symbol-list$ vars "The :VARS input" t nil))
-         ((er &) (ensure-list-no-duplicates$
+         ((er &) (ensure-list-has-no-duplicates$
                   vars
                   (msg "The list ~x0 of variables specified by the :VARS input"
                        vars)
@@ -259,7 +261,7 @@
   :prepwork
 
   ((local (in-theory (enable acl2::ensure-value-is-symbol-list
-                             acl2::ensure-list-no-duplicates)))
+                             acl2::ensure-list-has-no-duplicates)))
 
    (define defequal-process-vars-aux ((name symbolp) (n natp))
      :returns (x1...xn symbol-listp)

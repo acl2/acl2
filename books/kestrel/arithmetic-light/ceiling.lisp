@@ -143,3 +143,28 @@
   :hints (("Goal" :use (:instance ceiling-upper-bound)
            :in-theory (disable ceiling-upper-bound
                                <-*-/-left-with-addend-alt))))
+
+(defthm ceiling-of-*-same
+  (implies (and (posp x)
+                (integerp y))
+           (equal (ceiling (* x y) x)
+                  y))
+  :hints (("Goal" :in-theory (enable ceiling))))
+
+(defthm ceiling-when-multiple
+  (implies (and (integerp (* (/ j) i))
+                (posp j)
+                (integerp i)
+                )
+           (equal (ceiling i j)
+                  (/ i j)))
+  :hints (("Goal" :in-theory (enable ceiling-in-terms-of-floor-cases))))
+
+(defthm ceiling-of-+-when-multiple
+  (implies (and (integerp (* (/ j) x))
+                (posp j)
+                (integerp x)
+                (integerp y))
+           (equal (ceiling (+ x y) j)
+                  (+ (/ x j) (ceiling y j))))
+  :hints (("Goal" :in-theory (enable ceiling-in-terms-of-floor-cases))))

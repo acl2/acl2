@@ -12,6 +12,7 @@
 (in-package "ACL2")
 
 (include-book "bvchop-def")
+(include-book "../arithmetic-light/power-of-2p")
 (local (include-book "../arithmetic-light/expt2"))
 (local (include-book "../arithmetic-light/times-and-divides"))
 (local (include-book "../arithmetic-light/divides"))
@@ -373,7 +374,8 @@
            :in-theory (enable (:i expt)
                               bvchop ;mod-cancel
                               mod-of-mod-when-mult
-                              unsigned-byte-p))))
+                              unsigned-byte-p
+                              mod-sum-cases))))
 
 ;make a constant version? maybe not for this one?
 (defthm bvchop-of-mask-gen
@@ -611,14 +613,16 @@
                 (natp size))
            (equal (bvchop size (+ (* x (expt 2 size)) y))
                   (bvchop size y)))
-  :hints (("Goal" :in-theory (enable bvchop equal-of-0-and-mod))))
+  :hints (("Goal" :in-theory (enable bvchop equal-of-0-and-mod
+                                     mod-sum-cases))))
 
 (defthm bvchop-of-+-of-minus-of-expt
   (implies (and (integerp x)
                 (natp size))
            (equal (bvchop size (+ x (- (expt 2 size))))
                   (bvchop size x)))
-  :hints (("Goal" :in-theory (enable bvchop))))
+  :hints (("Goal" :in-theory (enable bvchop
+                                     mod-sum-cases))))
 
 (defthm bvchop-of-mod-of-expt-2
   (implies (and (< j size)
@@ -667,3 +671,23 @@
                 (integerp x))
           (unsigned-byte-p n (bvchop m x)))
   :hints (("Goal" :in-theory (enable unsigned-byte-p))))
+
+;; Replaces mod with bvchop
+;; rename
+;kill the version with 4 hard-coded
+(defthmd mod-of-expt-of-2-constant-version
+  (implies (and (syntaxp (quotep k)) ;new..
+                (power-of-2p k) ;(equal k (expt 2 (+ -1 (integer-length k))))
+                (integerp x)
+                ;(natp k)
+                )
+           (equal (mod x k)
+                  (bvchop (+ -1 (integer-length k)) x)))
+  :hints (("Goal" :in-theory (e/d (power-of-2p) (mod-of-expt-of-2))
+           :use (:instance mod-of-expt-of-2
+                           (m (+ -1 (integer-length k)))))))
+
+(theory-invariant (incompatible (:definition bvchop) (:rewrite MOD-OF-EXPT-OF-2-CONSTANT-VERSION)))
+
+(defthm bitp-of-bvchop-of-1
+  (bitp (acl2::bvchop 1 x)))

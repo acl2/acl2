@@ -105,7 +105,7 @@
 
 ; Consider the following questions.
 
-; - How much work should we do when simplifying each subterm?  
+; - How much work should we do when simplifying each subterm?
 ; - How much work should we do when simplifying :assumptions?
 ; - How much work should we do when simplifying governors of each subterm?
 
@@ -125,17 +125,17 @@
 ;     hyps, after diving into them.  (See before-vs-after-lemmas below.)  The
 ;     :assumptions could therefore be used to simplify the governors, but not
 ;     vice-versa.  No forward-chaining or linear will be done.
-; 
+;
 ; (3) If the resulting top-level hyps don't allow the S command to reduce the
 ;     "before" to the "after", then the prover is called on to do this (using
 ;     ORELSE).  The prover will treat the :assumptions and governors
 ;     symmetrically.
-; 
+;
 ; (4) To get the greatest subterm simplification (goal A above), it makes sense
 ;     to try to get the greatest simplification for top-level hypothesis, since
 ;     presumably normal forms are best (e.g., for rewrite rules with
 ;     free-variable hyps and for forward-chaining).
-; 
+;
 ; From (2) we might want to simplify the hyps and governors separately, without
 ; any forward-chaining or linear.  But that is in tension with (4).  Now (3)
 ; suggests that we would ultimately do best to mimic the prover in support of
@@ -924,16 +924,17 @@
                           hyps
                           fn))))))))
 
-(defun simplify-hyp-list (thyps thints ctx state)
+(defun simplify-hyp-list (hyps governors thints ctx state)
 
-; Given a list of translated hypotheses, and theory and expand derived from the
-; top-level simplify[-defun[-sk]] call, we return (list* rewritten-hyps rrec
-; runes) when there is no error.
+; Given a context formed from the given translated hypotheses and governors,
+; and theory and expand derived from the top-level simplify[-defun[-sk]] call,
+; we return (list* rewritten-context rrec runes) when there is no error.
 
-  (b* (((mv erp
-            (list* ?rewritten-hyps rrec ttree pairs)
+  (b* ((context (append hyps governors))
+       ((mv erp
+            (list* ?rewritten-context rrec ttree pairs)
             state)
-        (acl2::rewrite$-hyps thyps
+        (acl2::rewrite$-hyps context
                              :thints thints
                              :ctx ctx
 
@@ -953,9 +954,19 @@
 ; implementation error until learning that we should handle this case
 ; differently.
 
-      (er-soft+ ctx :implementation-error nil
-                "Miscellaneous error attempting to simplify the given ~
-                 assumptions.")))))
+      (er-soft+ ctx :bad-input nil
+                "The error noted above was caused by an attempt to build a ~
+                 context from the given ~@0"
+                (cond
+                 (hyps
+                  (cond
+                   (governors (msg "list of assumptions,~|  ~y0,~|and list of ~
+                                    governing IF tests,~|  ~y1."
+                                   hyps governors))
+                   (t (msg "list of assumptions,~|  ~y0."
+                           hyps))))
+                 (t (msg "list of governing IF tests,~|  ~y0."
+                         governors))))))))
 
 (defconst *must-simplify-keywords*
 ; Keep this in sync with the default value in (show-)simplify-defun.
@@ -1667,7 +1678,7 @@
                                                 wrld))
          (equiv-at-subterm (equiv-from-geneqv geneqv-subterm))
          ((er (cons rrec runes1))
-          (simplify-hyp-list (append thyps governors) thints ctx state))
+          (simplify-hyp-list thyps governors thints ctx state))
          ((er (cons new-subterm runes2))
           (simplify-defun-term subterm bindings geneqv-subterm rrec
                                (get-must-simplify :body must-simplify)
@@ -1883,20 +1894,22 @@
 (defun fn-simp-defs-termination-hints (hints fn wrld
                                              computed-hint-lst
                                              theory
-                                             theory-alt)
+                                             theory-alt
+                                             verbose)
   (if (not (eq hints :auto))
       hints
     (let ((old-recursivep (getpropc fn 'recursivep nil wrld)))
       `(("Goal"
          ,@(and old-recursivep
                 `(:instructions
-                  ((:prove-termination ,fn ,theory ,theory-alt)))))
+                  ((:prove-termination ,fn ,theory ,theory-alt ,verbose)))))
         ,@computed-hint-lst))))
 
 (defun fn-simp-defs-verify-guards-hints (guard-hints fn wrld
                                                      computed-hint-lst
                                                      theory
-                                                     theory-alt)
+                                                     theory-alt
+                                                     verbose)
   (if (not (eq guard-hints :auto))
       guard-hints
     (let ((compliant-p (eq (symbol-class fn wrld)
@@ -1904,7 +1917,7 @@
       (cond (compliant-p
              `(("Goal"
                 :instructions
-                ((:prove-guard ,fn ,theory ,theory-alt)))))
+                ((:prove-guard ,fn ,theory ,theory-alt ,verbose)))))
             (computed-hint-lst
              `(,@computed-hint-lst))
             (t nil)))))
@@ -2136,7 +2149,8 @@
        (termination-hints (fn-simp-defs-termination-hints measure-hints fn wrld
                                                           computed-hint-lst
                                                           fn-runes
-                                                          theory))
+                                                          theory
+                                                          verbose))
        (new-def-event-pre
         (sd-new-def-event
 
@@ -2160,7 +2174,8 @@
                                           `(cons ',fn-simp-is-fn-name
                                                  ,fn-runes)
                                           `(cons ',fn-simp-is-fn-name
-                                                 ,theory)))
+                                                 ,theory)
+                                          verbose))
        (new-def-event-installed
         (sd-new-def-event defun? fn-simp formals fn-ruler-extenders simp-guard
                           simp-measure new-recursivep verify-guards-p

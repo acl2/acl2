@@ -146,3 +146,11 @@
            (integerp (* 1/2 (expt 2 n))))
   :hints (("Goal" :in-theory (e/d (expt)
                                   (expt-hack)))))
+
+(defthmd expt-diff-collect
+  (Implies (and (integerp m)
+                (integerp n))
+           (equal (* (/ (EXPT 2 N)) (EXPT 2 m))
+                  (expt 2 (- m n))))
+  :hints (("Goal" :in-theory (e/d (expt-of-+)
+                                  (NORMALIZE-FACTORS-GATHER-EXPONENTS)))))

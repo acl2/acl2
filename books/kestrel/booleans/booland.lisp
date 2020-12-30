@@ -102,3 +102,7 @@
   (equal (booland x (bool-fix y))
          (booland x y))
   :hints (("Goal" :in-theory (enable bool-fix$inline booland))))
+
+;; These help justify some things that Axe does:
+(defcong iff equal (booland x y) 1 :hints (("Goal" :in-theory (enable booland))))
+(defcong iff equal (booland x y) 2 :hints (("Goal" :in-theory (enable booland))))

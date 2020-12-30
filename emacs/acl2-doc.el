@@ -508,10 +508,10 @@ then restart the ACL2-Doc browser to view that manual."
                   (if (equal (length tuple) 4)
                       (if (eq (nth 0 tuple) 'TOP)
                           ""
-                        (format "Source: %s\n" (nth 3 tuple)))
+                        (format ":DOC source: %s\n" (nth 3 tuple)))
                     (if (eq (acl2-doc-state-top-name) 'ACL2)
                         ""
-                      "Source: ACL2 Sources\n"))
+                      ":DOC source: ACL2 Sources\n"))
                   (nth 2 tuple)))
   (set-buffer-modified-p nil)
   (force-mode-line-update))

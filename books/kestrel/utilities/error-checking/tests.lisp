@@ -89,20 +89,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (must-eval-to-t
- (b* (((er x) (ensure-list-no-duplicates nil "This" t nil 'test state)))
-   (value (equal x nil))))
-
-(must-eval-to-t
- (b* (((er x) (ensure-list-no-duplicates '(1 2 3) "This" t nil 'test state)))
-   (value (equal x nil))))
-
-(must-fail
- (ensure-list-no-duplicates '(1 2 2) "This" t nil 'test state)
- :with-output-off nil)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(must-eval-to-t
  (b* (((er x) (ensure-list-subset nil nil "This" t nil 'test state)))
    (value (equal x nil))))
 
@@ -418,34 +404,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (must-eval-to-t
- (b* (((er x) (ensure-function-name 'cons "This" t nil 'test state)))
-   (value (equal x nil))))
-
-(must-eval-to-t
- (b* (((er x) (ensure-function-name 'len "This" t nil 'test state)))
-   (value (equal x nil))))
-
-(must-succeed*
- (defun g (x) x)
- (must-eval-to-t
-  (b* (((er x) (ensure-function-name 'g "This" t nil 'test state)))
-    (value (equal x nil)))))
-
-(must-fail
- (ensure-function-name #\w "This" t nil 'test state)
- :with-output-off nil)
-
-(must-fail
- (ensure-function-name 'lenn "This" t nil 'test state)
- :with-output-off nil)
-
-(must-fail
- (ensure-function-name 'car-cdr-elim "This" t nil 'test state)
- :with-output-off nil)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(must-eval-to-t
  (b* (((er x) (ensure-function-name-list nil "This" t nil 'test state)))
    (value (equal x nil))))
 
@@ -637,20 +595,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (must-eval-to-t
- (b* (((er x) (ensure-function-logic-mode 'cons "This" t nil 'test state)))
-   (value (equal x nil))))
-
-(must-eval-to-t
- (b* (((er x) (ensure-function-logic-mode 'len "This" t nil 'test state)))
-   (value (equal x nil))))
-
-(must-fail
- (ensure-function-logic-mode 'untranslate "This" t nil 'test state)
- :with-output-off nil)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(must-eval-to-t
  (b* (((er x) (ensure-function-program-mode 'fmt "This" t nil 'test state)))
    (value (equal x nil))))
 
@@ -660,16 +604,6 @@
 
 (must-fail
  (ensure-function-program-mode 'len "This" t nil 'test state)
- :with-output-off nil)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(must-eval-to-t
- (b* (((er x) (ensure-function-defined 'len "This" t nil 'test state)))
-   (value (equal x nil))))
-
-(must-fail
- (ensure-function-defined 'cons "This" t nil 'test state)
  :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -853,23 +787,6 @@
 
 (must-fail
  (ensure-function-number-of-results 'error1 7 "This" t nil 'test state)
- :with-output-off nil)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(must-eval-to-t
- (b* (((er x) (ensure-function-guard-verified 'cons "This" t nil 'test state)))
-   (value (equal x nil))))
-
-(must-eval-to-t
- (b* (((er x) (ensure-function-guard-verified 'len "This" t nil 'test state)))
-   (value (equal x nil))))
-
-(must-succeed*
- (defun h (x) (declare (xargs :verify-guards nil)) x)
- (must-fail
-  (ensure-function-guard-verified 'h "This" t nil 'test state)
-  :with-output-off nil)
  :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

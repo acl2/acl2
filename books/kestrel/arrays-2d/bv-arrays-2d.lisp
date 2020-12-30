@@ -391,3 +391,10 @@
   :hints (("Goal" :in-theory (enable 2d-bv-arrayp
                                      2d-arrayp
                                      bv-arrayp-list))))
+
+(defthm 2d-bv-arrayp-of-nthcdr
+  (implies (and (2d-bv-arrayp bytesize numrows numcols val)
+                (<= n numrows))
+           (equal (2d-bv-arrayp bytesize numrows2 numcols (nthcdr n val))
+                  (equal numrows2 (- numrows (nfix n)))))
+  :hints (("Goal" :in-theory (enable 2d-bv-arrayp))))

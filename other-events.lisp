@@ -12058,6 +12058,22 @@
                  certify-book again."
                 full-book-name)))))
 
+(defun illegal-to-certify-check (before-p ctx state)
+
+; See the Essay on Illegal-states.
+
+  (cond ((f-get-global 'illegal-to-certify-message state)
+         (er soft ctx
+             "It is illegal to certify a book in this session, as explained ~
+              by the message on a possible invariance violation, printed ~
+              earlier ~@0.  To see the message again, evaluate ~
+              the following form:~|~x1"
+             (if before-p
+                 "in this session"
+               "during the certification attempt")
+             '(fmx "~@0~%~%" (@ illegal-to-certify-message))))
+        (t (value nil))))
+
 (defun chk-acceptable-certify-book (book-name full-book-name dir
                                               suspect-book-action-alist
                                               cert-op k ctx state)
@@ -12157,14 +12173,8 @@
                  :DOC defttag."
                 (ttag wrld)
                 '(defttag nil)))
-           ((f-get-global 'illegal-to-certify-message state)
-            (er soft ctx
-                "It is illegal to certify a book in this session, as ~
-                 explained by the message on a possible invariance violation, ~
-                 printed earlier in this session.  To see the message again, ~
-                 evaluate the following form:~|~x0"
-                '(fmx "~@0~%~%" (@ illegal-to-certify-message))))
            (t (value nil)))
+     (illegal-to-certify-check t ctx state)
      (chk-book-name book-name full-book-name ctx state)
      (cond ((or (eq cert-op :convert-pcert)
                 (symbol-name-equal k "T"))
@@ -15486,62 +15496,6 @@
          (expansion-alist-conflict (cdr acl2x-expansion-alist)
                                    elided-expansion-alist))))
 
-(defun chk-absstobj-invariants (extra-msg state)
-  (declare (xargs :stobjs state
-
-; If this were in :logic mode:
-;                 :guard-hints (("Goal" :in-theory (enable read-acl2-oracle)))
-
-                  ))
-  (er-let* ((msg
-             #+acl2-loop-only
-             (read-acl2-oracle state)
-             #-acl2-loop-only
-             (let ((temp (svref *inside-absstobj-update* 0)))
-               (cond
-                ((or (null temp)
-                     (eql temp 0)
-                     (eq temp :ignore))
-                 (value nil))
-                (t
-                 (let ((msg
-                        (msg "Possible invariance violation for an abstract ~
-                              stobj!  See :DOC set-absstobj-debug, and ~
-                              PROCEED AT YOUR OWN RISK.~@0"
-                             (cond
-                              ((natp temp) "")
-                              (t
-                               (msg "  Evaluation was aborted under a call of ~
-                                     abstract stobj export ~x0.~@1"
-                                    (cond ((symbolp temp) temp)
-                                          (t (cdr (last temp))))
-                                    (cond
-                                     ((symbolp temp) "")
-                                     (t
-                                      (msg "  Moreover, it appears that ~
-                                            evaluation was aborted within the ~
-                                            following stack of stobj updater ~
-                                            calls (innermost call appearing ~
-                                            first): ~x0."
-                                           (let ((y nil))
-                                             (loop
-                                              (if (atom temp)
-                                                  (return (nreverse
-                                                           (cons temp y)))
-                                                (push (pop temp) y)))))))))))))
-                   (pprogn
-                    (f-put-global 'illegal-to-certify-message msg state)
-                    (progn (setf (svref *inside-absstobj-update* 0)
-                                 (if (natp temp) 0 nil))
-                           (value msg)))))))))
-    (cond (msg (er soft 'chk-absstobj-invariants
-                   "~@0~@1"
-                   msg
-                   (if extra-msg
-                       (msg "  ~@0" extra-msg)
-                     "")))
-          (t (value nil)))))
-
 (defun symbol-package-name-set (syms acc)
   (declare (xargs :guard (and (symbol-listp syms)
                               (true-listp acc))))
@@ -16026,9 +15980,8 @@
   (mv-let (eof obj state)
     (read-file-iterate channel acc state)
     (mv eof (remove-eq nil obj) state))
-  #+cltl2
+  #+(and cltl2 acl2-loop-only)
   (mv-let (eof obj state)
-    #+acl2-loop-only
     (mv-let (erp val state)
       (read-acl2-oracle state)
       (declare (ignore erp))
@@ -16037,31 +15990,40 @@
                    (mv eof nil state)))
             (t
              (read-object channel state))))
-    #-acl2-loop-only
-    (let ((pos (file-position (get-input-stream-from-channel channel))))
-      (handler-case (read-object channel state)
-        (error (condition)
-               (declare (ignore condition))
-               (progn (setq error-start-pos pos)
-                      (mv nil nil state)))))
     (cond (eof (mv (reverse acc) state))
           (t
-           #-acl2-loop-only
-           (when error-start-pos
+           (read-file-iterate-safe channel
+                                   (if (eq obj nil)
+                                       acc
+                                     (cons obj acc))
+                                   state))))
+  #+(and cltl2 (not acl2-loop-only))
+  (mv
+   (loop
+    (let ((pos (file-position (get-input-stream-from-channel channel))))
+      (mv-let (eof obj state)
+        (handler-case (read-object channel state)
+          (error (condition)
+                 (declare (ignore condition))
+                 (progn (setq error-start-pos pos)
+                        (mv nil nil state))))
+        (cond
+         (eof (return (reverse acc)))
+         (t
+          (when error-start-pos
 
 ; When read breaks in the middle of an expression it seems to leave the
 ; file-pointer there rather than to proceed to the end of the original
 ; expression.  So we go back to where we were, and then read the entire object,
 ; throwing it away.
 
-             (file-position (get-input-stream-from-channel channel)
-                            error-start-pos)
-             (read-object-suppress channel state))
-           (read-file-iterate-safe channel
-                                   (if (eq obj nil)
-                                       acc
-                                     (cons obj acc))
-                                   state)))))
+            (file-position (get-input-stream-from-channel channel)
+                           error-start-pos)
+            (read-object-suppress channel state))
+          (setq acc (if (eq obj nil)
+                        acc
+                      (cons obj acc))))))))
+   state))
 
 (defun read-useless-runes (full-book-name envp useless-runes-r/w val ctx state)
 
@@ -16664,10 +16626,11 @@
                                                   1 nil nil 'certify-book
                                                   state))
                                                 (ignore
-                                                 (chk-absstobj-invariants
-                                                  "Your certify-book command ~
-                                                   is therefore aborted."
-                                                  state))
+                                                 (pprogn
+                                                  (chk-absstobj-invariants
+                                                   state)
+                                                  (illegal-to-certify-check
+                                                   nil ctx state)))
                                                 (expansion-alist
                                                  (value
                                                   (cond

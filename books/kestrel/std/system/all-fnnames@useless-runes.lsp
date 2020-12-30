@@ -26,6 +26,8 @@
      (6 6 (:REWRITE SUBSETP-MEMBER . 1))
      (6 6
         (:REWRITE MEMBER-EQUAL-WHEN-ALL-EQUALP))
+     (6 6 (:REWRITE INTERSECTP-MEMBER . 3))
+     (6 6 (:REWRITE INTERSECTP-MEMBER . 2))
      (5 5 (:REWRITE CONSP-OF-CDDR-BY-LEN)))
 (ALL-FNNAMES1-INCLUDES-ACC
      (136 10 (:REWRITE SUBSETP-WHEN-ATOM-RIGHT))
@@ -50,6 +52,8 @@
      (3 3 (:REWRITE SUBSETP-MEMBER . 1))
      (3 3
         (:REWRITE MEMBER-EQUAL-WHEN-ALL-EQUALP))
+     (3 3 (:REWRITE INTERSECTP-MEMBER . 3))
+     (3 3 (:REWRITE INTERSECTP-MEMBER . 2))
      (2 2 (:REWRITE CONSP-OF-CDDR-BY-LEN)))
 (ALL-FNNAMES1-MONOTONIC-ACC-ASSERTION)
 (ALL-FNNAMES1-MONOTONIC-ACC-ASSERTION-NECC (4 4 (:DEFINITION MV-NTH)))
@@ -73,13 +77,15 @@
      (79 79
          (:REWRITE MEMBER-EQUAL-WHEN-ALL-EQUALP))
      (71 53 (:REWRITE SUBSETP-MEMBER . 3))
+     (57 57 (:REWRITE INTERSECTP-MEMBER . 3))
+     (57 57 (:REWRITE INTERSECTP-MEMBER . 2))
      (36 36 (:REWRITE CONSP-OF-CDDR-BY-LEN)))
-(ALL-FNNAMES1-MONOTONIC-ACC (168 2 (:DEFINITION ALL-FNNAMES1))
-                            (96 2 (:DEFINITION ADD-TO-SET-EQUAL))
+(ALL-FNNAMES1-MONOTONIC-ACC (174 2 (:DEFINITION ALL-FNNAMES1))
+                            (102 2 (:DEFINITION ADD-TO-SET-EQUAL))
                             (53 5 (:REWRITE SUBSETP-CAR-MEMBER))
                             (38 19
                                 (:REWRITE CONSP-UNDER-IFF-WHEN-TRUE-LISTP))
-                            (35 3 (:REWRITE SUBSETP-MEMBER . 4))
+                            (37 3 (:REWRITE SUBSETP-MEMBER . 4))
                             (22 12 (:REWRITE DEFAULT-CAR))
                             (22 7 (:REWRITE SUBSETP-WHEN-ATOM-RIGHT))
                             (21 5 (:REWRITE SUBSETP-MEMBER . 2))
@@ -97,4 +103,6 @@
                                (:REWRITE MEMBER-EQUAL-WHEN-ALL-EQUALP))
                             (4 4 (:REWRITE CONSP-OF-CDR-BY-LEN))
                             (3 3 (:REWRITE SUBSETP-MEMBER . 3))
+                            (3 3 (:REWRITE INTERSECTP-MEMBER . 3))
+                            (3 3 (:REWRITE INTERSECTP-MEMBER . 2))
                             (2 2 (:REWRITE CONSP-OF-CDDR-BY-LEN)))

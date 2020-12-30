@@ -14,7 +14,7 @@
 (include-book "kestrel/crypto/ecurve/secp256k1" :dir :system)
 (include-book "kestrel/crypto/hmac/hmac-sha-256" :dir :system)
 (include-book "kestrel/crypto/keccak/keccak" :dir :system)
-(include-book "kestrel/bv-lists/all-integerp-of-repeat" :dir :system)
+(include-book "kestrel/typed-lists-light/all-integerp-of-repeat" :dir :system)
 (include-book "kestrel/bv-lists/unsigned-byte-listp" :dir :system)
 (include-book "kestrel/utilities/strings/strings-codes" :dir :system)
 (include-book "std/testing/assert-bang" :dir :system)
@@ -107,13 +107,13 @@
 
 ;; Note: secp256k1 uses "n" as the elliptic curve order, rather than "q".
 ;; Here's what we use for the above parameters:
-;;   q (RFC 6979) -> (secp256k1-order) (our specification of secp256k1)
+;;   q (RFC 6979) -> (secp256k1-group-prime) (our specification of secp256k1)
 ;;   G (RFC 6979) -> (secp256k1-generator) (our specification of secp256k1)
 
 ;; For convenience for following the RFC 6979 spec
-;; we define *q* as a synonym for (secp256k1-order)
+;; we define *q* as a synonym for (secp256k1-group-prime)
 
-(defconst *q* (ecurve::secp256k1-order))
+(defconst *q* (ecurve::secp256k1-group-prime))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -374,7 +374,8 @@
                                        (s k))
                                  :in-theory
                                  (e/d (pfield::fep ecurve::pointp)
-                                      (ecurve::pointp-of-secp256k1*))))))
+                                      (ecurve::pointp-of-secp256k1*
+                                       (:e ecurve::secp256k1-field-prime)))))))
 
 ;; "1. H(m) is transformed into an integer modulo q using the bits2int
 ;;     transform and an extra modular reduction:

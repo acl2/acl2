@@ -12,9 +12,14 @@
 
 (include-book "def-error-checker")
 
+(include-book "ensure-function-is-defined")
+(include-book "ensure-function-is-guard-verified")
+(include-book "ensure-function-is-logic-mode")
 (include-book "ensure-function-is-pure-if-raw")
+(include-book "ensure-list-has-no-duplicates")
 (include-book "ensure-symbol-is-fresh-event-name")
 (include-book "ensure-value-is-boolean")
+(include-book "ensure-value-is-function-name")
 (include-book "ensure-value-is-in-list")
 (include-book "ensure-value-is-legal-variable-name")
 (include-book "ensure-value-is-nil")

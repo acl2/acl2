@@ -21,34 +21,4 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "These are ordered printing levels")
-   (xdoc::codeblock
-    "nil < :error < :result < :info < :all")
-   (xdoc::p
-    "where the amount of printed material increases monotonically.")
-   (xdoc::p
-    "When @(':print') is @('nil'),
-     nothing is printed (not even errors).")
-   (xdoc::p
-    "When @(':print') is @(':error'),
-     only errors (if any) are printed.")
-   (xdoc::p
-    "When @(':print') is @(':result'),
-     besides errors (if any),
-     also the generated events described in
-     the event macro's reference documentation
-     are printed,
-     i.e. the resulting events.")
-   (xdoc::p
-    "When @(':print') is @(':info'),
-     besides errors (if any)
-     and the resulting events,
-     also some additional information, specific to the event macro,
-     is printed.")
-   (xdoc::p
-    "When @(':print') is @(':all'),
-     besides errors (if any),
-     the resulting events,
-     and the additional information,
-     also all the ACL2 output in response to the submitted events
-     (the resulting ones and some ancillary ones).")))
+    "See @(tsee event-macro-screen-printing).")))

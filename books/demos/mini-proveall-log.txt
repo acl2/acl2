@@ -1536,8 +1536,8 @@ Rules: ((:CONGRUENCE PERM-IMPLIES-PERM-CONS-2)
 ACL2 !>>>(DEFTHM APP-COMMUTES (PERM (APP A B) (APP B A)))
 
 ACL2 Warning [Double-rewrite] in ( DEFTHM APP-COMMUTES ...):  In a
-:REWRITE rule generated from APP-COMMUTES, equivalence relation PERM is
-maintained at one problematic occurrence of variable A in the right-
+:REWRITE rule generated from APP-COMMUTES, equivalence relation PERM
+is maintained at one problematic occurrence of variable A in the right-
 hand side, but not at any binding occurrence of A.  Consider replacing
 that occurrence of A in the right-hand side with (DOUBLE-REWRITE A).
 See :doc double-rewrite for more information on this issue.
@@ -2026,8 +2026,8 @@ Rules: NIL
 ACL2 !>>>(DEFTHM REV-REV-AGAIN (== (REV (REV X)) X))
 
 ACL2 Warning [Double-rewrite] in ( DEFTHM REV-REV-AGAIN ...):  In a
-:REWRITE rule generated from REV-REV-AGAIN, equivalence relation == is
-maintained at one problematic occurrence of variable X in the right-
+:REWRITE rule generated from REV-REV-AGAIN, equivalence relation ==
+is maintained at one problematic occurrence of variable X in the right-
 hand side, but not at any binding occurrence of X.  Consider replacing
 that occurrence of X in the right-hand side with (DOUBLE-REWRITE X).
 See :doc double-rewrite for more information on this issue.

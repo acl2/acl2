@@ -26,7 +26,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define pointp (point)
-  :short "Recognizer all possible points of all possible elliptic curves."
+  :short "Recognize all possible points of all possible elliptic curves."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -46,22 +46,24 @@
 
 (define point-in-pxp-p ((point pointp) (p natp))
   :guard (<= 2 p)
-  :short "Check if a point is in the cartesian product of a prime field."
+  :short "Check if a point is in the cartesian product of a prime field,
+          or it is the point at infinity."
   :long
   (xdoc::topstring
    (xdoc::p
     "This predicate checks if a point (as defined in @(tsee pointp))
-     is in the cartesian product
+     is either the point at infity,
+     or is in the cartesian product
      @($\\{0, \\ldots, p-1\\} \\times \\{0, \\ldots, p-1\\}$),
      where @($p \\geq 2$).
      In the context of elliptic curves, @($p$) is the prime,
-     and this predicate checks if the point is in the ``plane'' of the curve.
-     This applies to finite points that are pairs of natural numbers;
-     the point at infinity satisfies this predicate,
-     because it is ``outside'' the cartesian product of the field with itself.
-     The purpose of this predicate is to provide a preliminary constraint
-     for points of curves in specific fields (described by @($p$)),
-     and thus we must include the point at infinity in this predicate.")
+     and this predicate checks if the point, if finite,
+     is in the ``plane'' of the curve.")
+   (xdoc::p
+    "The purpose of this predicate is to provide a preliminary constraint
+     for points of curves in specific fields (described by @($p$)).
+     Thus, we must include the point at infinity in this predicate,
+     even though it is not actually on the the aforementioned plane.")
    (xdoc::p
     "We do not require the parameter @('p') to be prime here.
      It suffices, for the purpose of defining this predicate,

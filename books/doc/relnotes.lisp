@@ -139,15 +139,30 @@
 
    (xdoc::p
     "This is a library about the C language.
-     It is being populated with
-     a formalization of some aspects of the C language
+     It contains a formalization of (some aspects of) the C language
      and ATC (`ACL2 To C'), a C code generator for ACL2.")
 
-   (xdoc::h5 (xdoc::seetopic "c::atc" "ATC"))
+   ;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h5 (xdoc::seetopic "c::atc" "ATC, the C Code Generator for ACL2"))
 
    (xdoc::p
-    "A first simple working version of the C code generator has been added,
-     with user documentation and a working test.")
+    "This is a proof-generating C code generator for ACL2.
+     Besides the C code, it also generates proofs (i.e. ACL2 theorems)
+     asserting the correctness of the C code.")
+
+   (xdoc::p
+    "This currently covers a relatively simple subset of ACL2 and C.
+     The coverage is being extended.")
+
+   ;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h5 (xdoc::seetopic "c::language" "C Language Formalization"))
+
+   (xdoc::p
+    "This currently covers just
+     character sets, bytes, and keywords.
+     The coverage is being extended.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -356,7 +371,25 @@
       by removing the applicability condition that required
       the restriction predicate to be boolean-valued.
       The new function now uses @(tsee mbt$) instead of @(tsee mbt),
-      thus obviating the need for the removed applicability condition."))
+      thus obviating the need for the removed applicability condition.")
+    (xdoc::li
+     "The @(':thm-name') and @(':thm-enable') inputs have been renamed to
+      @(':old-to-new-name') and @(':old-to-new-enable'),
+      in line with other transformations.
+      Besides the name change, these two inputs now support
+      the APT defaults table.")
+    (xdoc::li
+     "A new @(':new-to-old-name') input has been added
+      to specify the name of the theorem @('new-to-old')
+      that rewrites calls of the new functions
+      to terms calls of the old function.
+      This theorem is now generated along with the converse one.
+      If the @(':new-to-old-name') input is absent,
+      it is taken from the APT defaults table.")
+    (xdoc::li
+     "A new @(':new-to-old-enable') input has been added
+      to specify whether the @('new-to-old') theorem is enabled or not.
+      If this input is absent, it is taken from the APT defaults table."))
 
    (xdoc::p
     "The @(tsee apt::tailrec) transformation has been improved as follows:")
@@ -463,6 +496,19 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "crypto::cryptography" "Cryptographic Library"))
+
+   (xdoc::p
+    "In the "
+    (xdoc::seetopic "ecurve::elliptic-curves" "sub-library for elliptic curves")
+    ", the files @('[books]/kestrel/crypto/ecurve/bls12-377-domain-parameters.lisp')
+    and @('[books]/kestrel/crypto/ecurve/bls12-377-prime.lisp') have been
+    added.  They introduce some parameters of the BLS12-377 elliptic curve,
+    and introduce a Pratt certificate of primality for the scalar field size @($r$)
+    of that elliptic curve.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "error-checking" "Error Checking Library"))
 
    (xdoc::p
@@ -499,19 +545,12 @@
      whose general form section should be normally a small fraction.")
 
    (xdoc::p
-    "The XDOC constructor @(tsee xdoc::evmac-topic-implementation)
-     has been simplified by removing its
-     @(':item-state'), @(':item-wrld'), and @(':item-ctx') options.
-     Instead, named constants have been provided for these common items.
-     This constructor has also been extended with a @(':default-parent') option.
-     A function has been also added to construct a common kind of items.")
-
-   (xdoc::p
     "The XDOC constructor @(tsee xdoc::evmac-topic-event-generation)
      has been extended with an additional option.")
 
    (xdoc::p
-    "New XDOC constructors have been added.")
+    "New XDOC constructors have been added
+     and some XDOC constructors have been improve.")
 
    (xdoc::p
     "A utility @(tsee evmac-prepare-proofs) has been added,
@@ -520,6 +559,10 @@
    (xdoc::p
     "Utilities have been added to generate various kinds of event forms
      from attributes of the event forms.")
+
+   (xdoc::p
+    "Some general XDOC topics about event macros have been added,
+     which can be referenced by the user documentation of event macros.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -555,6 +598,9 @@
    (xdoc::p
     "@(tsee fty::deflist) has been extended to generate a theorem
      about the list fixer applied to @(tsee repeat).")
+
+   (xdoc::p
+    "A macro @(tsee fty::defsubtype) has been added.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -820,9 +866,23 @@
      and to return its two conjuncts if that is the case.")
 
    (xdoc::p
-    "A new utility @(tsee flatten-conjuncts) has been added,
-     to view a (translated) term as a tree of @(tsee and)s
-     and to return the list of its leaves.")
+    "A new utility @(tsee check-or-call) has been added,
+     to check if a term is a (translated) call of @(tsee or)
+     and to return its two disjuncts if that is the case.")
+
+   (xdoc::p
+    "A new utility @(tsee check-mbt-call) has been added,
+     to check if a term is a (translated) call of @(tsee mbt)
+     and to return its argument if that is the case.")
+
+   (xdoc::p
+    "A new utility @(tsee check-mbt$-call) has been added,
+     to check if a term is a (translated) call of @(tsee mbt$)
+     and to return its argument if that is the case.")
+
+   (xdoc::p
+    "A theorem about the built-in @('flatten-ands-in-lit') has been added,
+     in @('[books]/kestrel/std/system/flatten-ands-in-lit').")
 
    (xdoc::p
     "A new utility @(tsee fresh-name-listp-msg-weak) has been added,

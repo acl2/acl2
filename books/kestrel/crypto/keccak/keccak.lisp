@@ -144,8 +144,7 @@
 (include-book "kestrel/bv-lists/bytes-to-bits-little" :dir :system)
 (include-book "kestrel/bv-lists/bits-to-bytes-little" :dir :system)
 
-(include-book "kestrel/bv-lists/all-unsigned-byte-p-of-repeat" :dir :system)
-(include-book "kestrel/bv-lists/all-unsigned-byte-p-of-reverse-list" :dir :system)
+(include-book "kestrel/bv-lists/all-unsigned-byte-p2" :dir :system)
 
 (include-book "kestrel/bv/defs-bitwise" :dir :system)
 (include-book "kestrel/bv/defs-shifts" :dir :system)

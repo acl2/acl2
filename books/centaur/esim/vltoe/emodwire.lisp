@@ -140,12 +140,12 @@ on the expression-slicing code.</p>")
      :hints(("Goal" :in-theory (enable natstr))))))
 
 
-(local (defthm digit-listp-encoding-help
-         (implies (str::digit-listp x)
+(local (defthm dec-digit-char-listp-encoding-help
+         (implies (str::dec-digit-char-listp x)
                   (and (not (member-equal #\] x))
                        (not (member-equal #\[ x))
                        (not (member-equal #\{ x))))
-         :hints(("Goal" :in-theory (enable str::digit-listp)))))
+         :hints(("Goal" :in-theory (enable str::dec-digit-char-listp)))))
 
 
 

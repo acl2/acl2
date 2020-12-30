@@ -80,12 +80,12 @@
     (b* ((point1 (secp256k1-point-to-pointp secp-point1))
          (point2 (secp256k1-point-to-pointp secp-point2))
          ((unless (point-on-weierstrass-elliptic-curve-p point1
-                                                         (secp256k1-prime)
+                                                         (secp256k1-field-prime)
                                                          (secp256k1-a)
                                                          (secp256k1-b)))
           (secp256k1-point 1 1))
          ((unless (point-on-weierstrass-elliptic-curve-p point2
-                                                         (secp256k1-prime)
+                                                         (secp256k1-field-prime)
                                                          (secp256k1-a)
                                                          (secp256k1-b)))
           (secp256k1-point 1 1))
@@ -96,14 +96,15 @@
          (secp-result (pointp-to-secp256k1-point result)))
       secp-result)
     :hooks (:fix)
-    :guard-hints (("Goal" :in-theory (enable secp256k1-b fep))))
+    :guard-hints (("Goal" :in-theory (e/d (secp256k1-b fep)
+                                          ((:e secp256k1-field-prime))))))
 
   (define secp256k1-mul-wrapper ((nat natp) (secp-point secp256k1-pointp))
     :returns (secp-result secp256k1-pointp)
     (b* ((nat (mbe :logic (nfix nat) :exec nat))
          (point (secp256k1-point-to-pointp secp-point))
          ((unless (point-on-weierstrass-elliptic-curve-p point
-                                                         (secp256k1-prime)
+                                                         (secp256k1-field-prime)
                                                          (secp256k1-a)
                                                          (secp256k1-b)))
           (secp256k1-point 1 1))
@@ -123,7 +124,8 @@
           (secp256k1-point 1 1)))
       secp-result)
     :hooks (:fix)
-    :guard-hints (("Goal" :in-theory (enable secp256k1-b fep)))
+    :guard-hints (("Goal" :in-theory (e/d (secp256k1-b fep)
+                                          ((:e secp256k1-field-prime)))))
     ///
 
     (defrule secp256k1-mul-wrapper-yields-pub-from-priv
