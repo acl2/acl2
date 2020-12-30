@@ -1345,7 +1345,7 @@
    (xdoc::p
     "Since this is a ground theorem,
      we expect that it should be easily provable
-     using just the executable counterpart of @(tsee transunit-wfp),
+     using just the executable counterpart of @(tsee transunit-check),
      which is an executable function."))
   (b* ((name (add-suffix const "-WELL-FORMED"))
        ((er &) (acl2::ensure-symbol-is-fresh-event-name$
@@ -1362,8 +1362,8 @@
        ((mv local-event exported-event)
         (acl2::evmac-generate-defthm
          name
-         :formula `(transunit-wfp ,const)
-         :hints '(("Goal" :in-theory '((:e transunit-wfp))))
+         :formula `(transunit-check ,const)
+         :hints '(("Goal" :in-theory '((:e transunit-check))))
          :enable nil))
        (progress-start?
         (and print-info/all
