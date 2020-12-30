@@ -39,9 +39,10 @@
                                                   )))
 
 (defthm-with-basic-prover-clause-processor test1
-  (natp 7)
-  :rules (implies) ;todo: if there are no rules, constants don't get evaluated.  should we rewrite once with no rules?
-  )
+  (natp 7))
+
+(defthm-with-basic-prover-clause-processor test1b
+  (not (natp 'a)))
 
 (defthm-with-basic-prover-clause-processor test2
   (implies (natp x)
@@ -112,12 +113,6 @@
 ;;   (implies (boolor (natp x) (natp y)) (natp y))
 ;;   :rules (implies booleanp-of-boolor)
 ;;   )
-
-;for axe
-;dup
-(defthmd equal-same
-  (equal (equal x x)
-         t))
 
 ;todo: prove without splitting.  need to look up if tests in assumptions somehow.
 (defthm-with-basic-prover-clause-processor if-1
