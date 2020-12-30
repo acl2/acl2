@@ -1188,7 +1188,7 @@
                                             rule-alist nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
                                             equiv-alist print info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count)))
                      ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))
-                  (,simplify-fun-call-name (ffn-symb tree)
+                  (,simplify-fun-call-name 'boolif
                                            (cons simplified-test simplified-other-args)
                                            equiv
                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
@@ -2547,7 +2547,7 @@
                                     assumption-array ; has info from all literals except this one
                                     assumption-array-num-valid-nodes
                                     rule-alist
-                                    *congruence-table* ;do we need to pass this around?
+                                    *equiv-alist* ;do we need to pass this around?
                                     interpreted-function-alist print info tries monitored-symbols case-designator prover-depth options (+ -1 (expt 2 59))))
               ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries assumption-array))
               (- (and (or (eq :verbose print) (eq :verbose2 print))
@@ -4376,6 +4376,7 @@
                                               monitor
                                               state)))
 
+       ;; Attempt to prove that DAG-OR-TERM1 implies DAG-OR-TERM2.
        ;; Returns (mv erp event state) where a failure to prove causes erp to be non-nil.
        (defmacro ,prove-implication-name (dag-or-term1
                                           dag-or-term2

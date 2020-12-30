@@ -23,6 +23,8 @@
 (include-book "kestrel/utilities/erp" :dir :system)
 (include-book "kestrel/utilities/make-cons-nest" :dir :system)
 (include-book "kestrel/utilities/conjuncts-and-disjuncts" :dir :system) ; for negate-terms
+(include-book "kestrel/bv/bvif" :dir :system) ; since the prover knows about BVIF
+(include-book "kestrel/bv/bool-to-bit" :dir :system) ; since the prover knows about BOOL-TO-BIT
 (include-book "all-less-than-or-equal")
 (include-book "merge-sort-less-than")
 (include-book "supporting-nodes")
@@ -59,6 +61,7 @@
 (local (include-book "kestrel/lists-light/cons" :dir :system))
 ;(local (include-book "kestrel/alists-light/strip-cdrs" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
+(local (include-book "check-equivs"))
 
 (local (in-theory (disable add-to-set-equal)))
 
@@ -487,6 +490,38 @@
 ;; (skip- proofs (verify-guards get-extra-assumptions))
 
 ;(local (in-theory (enable natp)))
+
+; Currently only 'equal and 'iff are supported as equivs
+(defconst *equiv-alist*
+  ;;fixme
+  ;;justify these by proving congruences?
+  (acons 'iff
+         (acons 'iff '(iff iff)
+                (acons 'bvif '(equal iff equal equal)
+;this means if we are trying to preserve iff, and we are rewriting a boolor, use iff and iff for the args:
+                       (acons 'boolor '(iff iff)
+                              (acons 'boolxor '(iff iff)
+                                     (acons 'boolif '(iff iff iff)
+                                            (acons 'booland '(iff iff)
+                                                   (acons 'not '(iff)
+                                                          nil)))))))
+         (acons 'equal
+                (acons 'bool-to-bit '(iff) ;new
+                       (acons 'iff '(iff iff)
+                              (acons 'bvif '(equal iff equal equal)
+                                     (acons 'boolor '(iff iff)
+                                            (acons 'boolxor '(iff iff)
+                                                   (acons 'boolif '(iff iff iff)
+                                                          (acons 'booland '(iff iff)
+                                                                 (acons 'not '(iff)
+                                                                        nil))))))))
+                nil)))
+
+(thm
+ (equiv-alistp *equiv-alist*))
+
+;; This generates THMs to check that *equiv-alist* is correct.
+(local (check-equiv-alist *equiv-alist*))
 
 ;; copies a segment of nodes from FROM-DAG-ARRAY to DAG-ARRAY and returns the new dag (including the auxiliary data structures) and a RENAMING-ARRAY
 ;; Returns (mv erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist renaming-array).
@@ -1704,100 +1739,6 @@
 ;;         (cons (aref1 'merge-dag-array array arg)
 ;;               (lookup-args-in-merge-dag-array (cdr args) array))))))
 
-;example justification:
-;; (thm
-;;  (implies (iff y1 y2)
-;;           (equal (iff x y1)
-;;                  (iff x y2))))
-
-(defun equiv-list-listp (x)
-  (declare (xargs :guard t))
-  (if (atom x)
-      (null x)
-    (and (equiv-listp (first x))
-         (equiv-list-listp (rest x)))))
-
-;; Recognize an alist that maps symbols to lists of equivs
-(defund symbol-to-equivs-alistp (x)
-  (declare (xargs :guard t))
-  (and (symbol-alistp x)
-       (equiv-list-listp (strip-cdrs x))))
-
-(defthm symbol-to-equivs-alistp-forward-to-symbol-alistp
-  (implies (symbol-to-equivs-alistp x)
-           (symbol-alistp x))
-  :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable symbol-to-equivs-alistp))))
-
-(defthm equiv-listp-of-lookup-equal-when-symbol-to-equivs-alistp
-  (implies (symbol-to-equivs-alistp alist)
-           (equiv-listp (lookup-equal key alist)))
-  :hints (("Goal" :in-theory (enable symbol-to-equivs-alistp))))
-
-(defund all-symbol-to-equivs-alistp (x)
-  (declare (xargs :guard t))
-  (if (atom x)
-      t
-    (and (symbol-to-equivs-alistp (first x))
-         (all-symbol-to-equivs-alistp (rest x)))))
-
-(defthm symbol-to-equivs-alistp-of-lookup-equal-when-all-symbol-to-equivs-alistp-of-strip-cdrs
-  (implies (all-symbol-to-equivs-alistp (strip-cdrs alist))
-           (symbol-to-equivs-alistp (lookup-equal key alist)))
-  :hints (("Goal" :in-theory (enable all-symbol-to-equivs-alistp lookup-equal assoc-equal))))
-
-(defthm symbol-alistp-of-lookup-equal-when-all-symbol-to-equivs-alistp-of-strip-cdrs
-  (implies (all-symbol-to-equivs-alistp (strip-cdrs alist))
-           (symbol-alistp (lookup-equal key alist)))
-  :hints (("Goal" :in-theory (enable all-symbol-to-equivs-alistp lookup-equal assoc-equal))))
-
-(defund equiv-alistp (equiv-alist)
-  (declare (xargs :guard t))
-  (and (symbol-alistp equiv-alist)
-       (all-symbol-to-equivs-alistp (strip-cdrs equiv-alist))))
-
-;; equiv-alist maps equivs to alists from function names to the equiv-lists to maintain for their args
-(defund get-equivs (equiv fn equiv-alist)
-  (declare (xargs :guard (equiv-alistp equiv-alist)
-                  :guard-hints (("Goal" :in-theory (enable equiv-alistp)))))
-  (lookup-eq fn (lookup-eq equiv equiv-alist)))
-
-(defthm equiv-listp-of-get-equivs
-  (implies (equiv-alistp equiv-alist)
-           (equiv-listp (get-equivs equiv fn equiv-alist)))
-  :hints (("Goal" :in-theory (enable get-equivs equiv-alistp))))
-
-
-
-
-;in this table, you look up the equivalence to preserve and the function being rewritten, and you get the list of equivalences to use for the function's arguments
-(defconst *congruence-table*
-  ;;fixme
-  ;;justify these by proving congruences?
-  (acons 'iff
-         (acons 'iff '(iff iff)
-                (acons 'bvif '(equal iff equal equal)
-;this means if we are trying to preserve iff, and we are rewriting a boolor, use iff and iff for the args:
-                       (acons 'boolor '(iff iff)
-                              (acons 'boolxor '(iff iff)
-                                     (acons 'boolif '(iff iff iff)
-                                            (acons 'booland '(iff iff)
-                                                   (acons 'not '(iff)
-                                                          nil)))))))
-         (acons 'equal
-                (acons 'bool-to-bit '(iff) ;new
-                       (acons 'iff '(iff iff)
-                              (acons 'bvif '(equal iff equal equal)
-                                     (acons 'boolor '(iff iff)
-                                            (acons 'boolxor '(iff iff)
-                                                   (acons 'boolif '(iff iff iff)
-                                                          (acons 'booland '(iff iff)
-                                                                 (acons 'not '(iff)
-                                                                        nil))))))))
-                nil)))
-
-(thm
- (equiv-alistp *congruence-table*))
 
 ;; Returns (mv erp provedp extended-acc dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist).
 ;; When NEGATED-FLG is nil, EXTENDED-ACC is ACC extended with the disjuncts of ITEM, except that if a true disjunct is found, we signal it by returning T for PROVEDP.
@@ -1856,7 +1797,9 @@
                                  ))
               (if (and (call-of 'not expr)
                        (= 1 (len (dargs expr))))
-                  ;;it's a call of not, so get the conjuncts and negate them all
+                  ;; EXPR is a call of not, so we can view it as (not (and x1 x2 ... xn)), which is the same as (or (not
+                  ;; x1) (not x2) ... (not xn)).  So, to get EXPR's disjuncts, we extract x1 through xn and then negate
+                  ;; them all.
                   (get-disjuncts (darg1 expr) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc
                                  t ; negated-flg
                                  )
@@ -1896,8 +1839,9 @@
                                ))
             (if (and (call-of 'not expr)
                      (= 1 (len (dargs expr))))
-                ;; to get the negated conjuncts of a call of not, we get the disjuncts of the argument
-                ;; note that (not (or x y)) is (and (not x) (not y)), whose negated conjuncts are just x and y
+                ;; EXPR is a call of NOT, so we can view it as (not (or x1 x2 ... xn)), which is the same as (and (not
+                ;; x1) (not x2) ... (not xn)).  So, to get EXPR's *negated* conjuncts, we just get x1 through xn
+                ;; (removing double negations), which are the disjuncts the argument to the NOT.
                 (get-disjuncts (darg1 expr) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc
                                nil) ;;negated-flg
               ;;it's not something we know how to get negated conjuncts from, so add its negation and return the item:
