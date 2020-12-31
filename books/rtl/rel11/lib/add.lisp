@@ -341,12 +341,6 @@
       (fco (hc0 x y i k (- n k))
            (hc x y (- i (expt 2 p)) k n)))))
 
-(defthmd hack-1
-  (implies (and (integerp i) (integerp (expt 2 (1- (+ k d))))
-                (< i (expt 2 (1- (+ k d))))
-		(<= (expt 2 (1- (+ k d))) (1+ i)))
-           (equal (expt 2 (1- (+ k d))) (1+ i))))
-
 (defthmd hc0-correct-gen
   (implies (and (integerp x)
 		(integerp y)

@@ -26,10 +26,13 @@
 ;; schemes.
 
 (include-book "prover-common")
+(include-book "get-disjuncts")
 (include-book "rule-alists")
 (include-book "make-implication-dag")
 (include-book "elaborate-rule-items")
 (include-book "axe-clause-utilities")
+(include-book "kestrel/utilities/defconst-computed" :dir :system)
+(include-book "kestrel/utilities/equal" :dir :system) ; for equal-same
 ;(include-book "kestrel/utilities/submit-events" :dir :system)
 (include-book "rewriter-common") ; for axe-bind-free-result-okayp, etc.
 ;(include-book "contexts") ;for max-nodenum-in-context
@@ -414,6 +417,12 @@
     equiv-listp-of-get-equivs
     ))
 
+(defconst *default-axe-prover-rules*
+  '(implies equal-same))
+
+(defconst-computed-erp-and-val *default-axe-prover-rule-alists*
+  (make-rule-alists (list *default-axe-prover-rules*) (w state)))
+
 (defun make-prover-simple-fn (suffix ;; gets added to generated names
                               apply-axe-evaluator-to-quoted-args-name
                               eval-axe-syntaxp-expr-name
@@ -447,8 +456,6 @@
          (prove-implication-fn-name (pack$ 'prove-implication-with- suffix '-prover-fn))
          (prove-implication-fn-helper-name (pack$ 'prove-implication-with- suffix '-prover-fn-helper))
          (clause-processor-name (pack$ suffix '-prover-clause-processor))
-         (defthm-with-clause-processor-name (pack$ 'defthm-with- clause-processor-name))
-         (defthm-with-clause-processor-fn-name (pack$ 'defthm-with- clause-processor-name '-fn))
 
          ;; Keep these in sync with the formals of each function:
 
@@ -1188,7 +1195,7 @@
                                             rule-alist nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
                                             equiv-alist print info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count)))
                      ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))
-                  (,simplify-fun-call-name (ffn-symb tree)
+                  (,simplify-fun-call-name 'boolif
                                            (cons simplified-test simplified-other-args)
                                            equiv
                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
@@ -2547,7 +2554,7 @@
                                     assumption-array ; has info from all literals except this one
                                     assumption-array-num-valid-nodes
                                     rule-alist
-                                    *congruence-table* ;do we need to pass this around?
+                                    *equiv-alist* ;do we need to pass this around?
                                     interpreted-function-alist print info tries monitored-symbols case-designator prover-depth options (+ -1 (expt 2 59))))
               ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries assumption-array))
               (- (and (or (eq :verbose print) (eq :verbose2 print))
@@ -4102,7 +4109,13 @@
                                      (natp prover-depth)
                                      (symbol-listp known-booleans)
                                      (axe-prover-optionsp options))))
-         (b* ( ;; Handle any constant disjuncts
+         (b* (;; If no, rule-alists are given, rewrite with a single set of simple rules.  This makes sure that
+              ;; constants get evaluated, contradictions get found (when making the assumption-array), etc.
+              (rule-alists (if (not rule-alists)
+                               (prog2$ (cw "NOTE: Using a very simple default rule set.~%")
+                                       *default-axe-prover-rule-alists*)
+                             rule-alists))
+              ;; Handle any constant disjuncts
               ((mv provedp literal-nodenums)
                (handle-constant-disjuncts literal-nodenums-or-quoteps nil))
               ((when provedp)
@@ -4376,6 +4389,7 @@
                                               monitor
                                               state)))
 
+       ;; Attempt to prove that DAG-OR-TERM1 implies DAG-OR-TERM2.
        ;; Returns (mv erp event state) where a failure to prove causes erp to be non-nil.
        (defmacro ,prove-implication-name (dag-or-term1
                                           dag-or-term2
@@ -4546,6 +4560,8 @@
        ;;) where CLAUSES is nil if the Axe Prover proved the goal and otherwise
        ;; is a singleton set containing the original clause (indicating that no change
        ;; was made).  TODO: Allow it to change the clause but not prove it entirely?
+       ;; We don't actually define the clause-processor here, because that
+       ;; requires a trust tag; see make-clause-processor-simple.lisp for that
        (defund ,clause-processor-name (clause hint state)
          (declare (xargs :stobjs state
                          :guard (and (pseudo-term-listp clause)
@@ -4595,65 +4611,13 @@
                  (prog2$ (er hard? ',clause-processor-name "Failed to prove but :must-prove was given.")
                          (mv (erp-t) (list clause)))
                ;; no change to clause set
-               (mv (erp-nil) (list clause))))))
-
-       ;; See also the define-trusted-clause-processor in prover2.lisp.
-       (define-trusted-clause-processor
-         ,clause-processor-name
-         nil ;supporters ; todo: Think about this (I don't understand what :doc define-trusted-clause-processor says about "supporters")
-         :ttag ,clause-processor-name)
-
-       ;; Returns a defthm event.
-       (defun ,defthm-with-clause-processor-fn-name (name term rules rule-lists remove-rules rule-classes print state)
-         (declare (xargs :guard (and (symbolp name)
-                                     ;; term need not be a pseudo-term
-                                     (rule-item-listp rules)
-                                     (rule-item-list-listp rule-lists)
-                                     (symbol-listp remove-rules) ;allow rule-items?
-                                     ;; todo: rule-classes
-                                     ;; print
-                                     )
-                         :stobjs state))
-         (b* (((when (and rules rule-lists))
-               (er hard? ',defthm-with-clause-processor-fn-name "Both :rules and :rule-lists were given for ~x0." name))
-              (rule-lists (if rules
-                              (list (elaborate-rule-items rules nil state))
-                            (elaborate-rule-item-lists rule-lists state)))
-              (rule-lists (remove-from-all rule-lists remove-rules)))
-           `(defthm ,name
-              ,term
-              :hints (("Goal" :clause-processor (,',clause-processor-name clause
-                                                                        '((:must-prove . t)
-                                                                          (:rule-lists . ,rule-lists)
-                                                                          (:print . ,print))
-                                                                        state)))
-              ,@(if (eq :auto rule-classes)
-                    nil
-                  `(:rule-classes ,rule-classes)))))
-
-       ;; Submit a defthm that uses the clause-processor:
-       (defmacro ,defthm-with-clause-processor-name (name
-                                                     term
-                                                     &key
-                                                     (rules 'nil)
-                                                     (rule-lists 'nil)
-                                                     (remove-rules 'nil)
-                                                     (rule-classes ':auto)
-                                                     (print 'nil))
-         (if (and (consp term)
-                  (eq :eval (car term)))
-             ;; Evaluate TERM:
-             `(make-event (,',defthm-with-clause-processor-fn-name ',name ,(cadr term) ',rules ',rule-lists ',remove-rules ',rule-classes ',print state))
-           ;; Don't evaluate TERM:
-           `(make-event (,',defthm-with-clause-processor-fn-name ',name ',term ',rules ',rule-lists ',remove-rules ',rule-classes ',print state))))
-
-       )))
+               (mv (erp-nil) (list clause)))))))))
 
 (defmacro make-prover-simple (suffix
-                                apply-axe-evaluator-to-quoted-args-name
-                                eval-axe-syntaxp-expr-name
-                                eval-axe-bind-free-function-application-name)
+                              apply-axe-evaluator-to-quoted-args-name
+                              eval-axe-syntaxp-expr-name
+                              eval-axe-bind-free-function-application-name)
   (make-prover-simple-fn suffix
-                           apply-axe-evaluator-to-quoted-args-name
-                           eval-axe-syntaxp-expr-name
-                           eval-axe-bind-free-function-application-name))
+                         apply-axe-evaluator-to-quoted-args-name
+                         eval-axe-syntaxp-expr-name
+                         eval-axe-bind-free-function-application-name))
