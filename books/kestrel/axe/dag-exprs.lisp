@@ -310,3 +310,22 @@
                   (myquotep expr)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable dag-exprp0))))
+
+;; In general, we need car-becomes-nth-of-0 to turn all things like this into nth.
+(defthm car-of-dargs-becomes-nth-0-of-dargs
+  (equal (car (dargs expr))
+         (nth 0 (dargs expr)))
+  :hints (("Goal" :in-theory (enable nth))))
+
+(defthm cadr-of-dargs-becomes-nth-1-of-dargs
+  (equal (cadr (dargs expr))
+         (nth 1 (dargs expr)))
+  :hints (("Goal" :expand (nth 1 (dargs expr))
+           :in-theory (enable nth))))
+
+(defthm caddr-of-dargs-becomes-nth-1-of-dargs
+  (equal (caddr (dargs expr))
+         (nth 2 (dargs expr)))
+  :hints (("Goal" :expand ((nth 1 (cdr (dargs expr)))
+                           (nth 2 (dargs expr)))
+           :in-theory (enable nth))))
