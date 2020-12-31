@@ -20,6 +20,7 @@
 (include-book "worklist-array")
 (include-book "kestrel/acl2-arrays/typed-acl2-arrays" :dir :system)
 (include-book "all-dargp")
+(local (include-book "merge-sort-less-than-rules"))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
@@ -30,17 +31,6 @@
 (in-theory (disable bounded-dag-exprp)) ;move?
 
 (local (in-theory (enable not-<-of-car-when-all-<)))
-
-;move this stuff:
-
-(defthm all-natp-of-merge-sort-<
-  (equal (all-natp (merge-sort-< lst))
-         (all-natp lst)))
-
-(defthm all-<-of-merge-sort-<
-  (equal (all-< (merge-sort-< lst) val)
-         (all-< lst val))
-  :hints (("Goal" :in-theory (enable merge-sort-<))))
 
 ;todo: rename to aref1-list?
 ;not tail-rec..

@@ -14,12 +14,51 @@
 
 (include-book "dag-arrays")
 (include-book "worklists")
+(include-book "merge-sort-less-than")
+(include-book "dag-size2") ; for size-array-for-sorted-nodes
 (include-book "kestrel/utilities/forms" :dir :system) ; for call-of
+(local (include-book "merge-sort-less-than-rules"))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/cons" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))
+
+;not tail recursive
+;often lst will be sorted, but really the sortedness isn't crucial, just that equal elements are all grouped together
+(defund remove-duplicates-from-grouped-list (lst)
+  (declare (xargs :guard (true-listp lst)))
+  (if (endp lst)
+      nil
+    (if (endp (cdr lst))
+        lst
+      (let ((elem (car lst)))
+        (if (equal elem (car (cdr lst)))
+            (remove-duplicates-from-grouped-list (cdr lst))
+          (cons elem
+                (remove-duplicates-from-grouped-list (cdr lst))))))))
+
+(defthm true-listp-of-remove-duplicates-from-grouped-list
+  (implies (true-listp lst)
+           (true-listp (remove-duplicates-from-grouped-list lst)))
+  :hints (("Goal" :in-theory (enable remove-duplicates-from-grouped-list))))
+
+(defthm eqlable-listp-of-remove-duplicates-from-grouped-list
+  (implies (eqlable-listp lst)
+           (eqlable-listp (remove-duplicates-from-grouped-list lst)))
+  :hints (("Goal" :in-theory (enable remove-duplicates-from-grouped-list))))
+
+(defthm all-natp-of-remove-duplicates-from-grouped-list
+  (implies (all-natp x)
+           (all-natp (remove-duplicates-from-grouped-list x)))
+  :hints (("Goal" :in-theory (enable remove-duplicates-from-grouped-list))))
+
+(defthm all-<-of-remove-duplicates-from-grouped-list
+  (equal (all-< (remove-duplicates-from-grouped-list x) bound)
+         (all-< x bound))
+  :hints (("Goal" :in-theory (enable remove-duplicates-from-grouped-list))))
+
+
 
 ;dup
 (defthmd natp-of-+-of-1-alt
@@ -431,3 +470,113 @@
            (< (smallest-size-node nodenums size-array size-array-len)
               bound))
   :hints (("Goal" :in-theory (e/d (smallest-size-node) (natp)))))
+
+(defthm all-<-of-find-node-to-split-candidates-work-list
+  (implies (and (all-< worklist dag-len)
+                (all-< acc dag-len)
+                (nat-listp worklist)
+                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                (array1p 'done-array done-array)
+                (all-< worklist (alen1 'done-array done-array)))
+           (all-< (find-node-to-split-candidates-work-list worklist dag-array-name dag-array dag-len
+                                                           done-array ;tracks which nodenums we have already considered
+                                                           acc)
+                  dag-len))
+  :hints (("Goal" :in-theory (e/d (find-node-to-split-candidates-work-list
+                                   car-becomes-nth-of-0)
+                                  (dargp-less-than
+                                   ;member-of-cons ;todo
+                                   )))))
+
+;returns a nodenum to split on, or nil
+;can we speed this up?
+;destroys 'size-array and 'done-array
+;;fffixme could the node to spit on ever be a literal?  or the negation of a literal? avoid that (could lead to loops)
+;redid this now that we are not dropping unused nodes (thus, this now only examines nodes that support the literals)
+;todo: have this return the size of the split node, so we know whether to print it?
+(defund find-node-to-split-for-prover (dag-array-name dag-array dag-len
+                                                     literal-nodenums ;can't be empty
+                                                     )
+  (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                              (nat-listp literal-nodenums)
+                              (consp literal-nodenums)
+                              (all-< literal-nodenums dag-len))
+                  :guard-hints (("Goal" :cases ((equal 0 dag-len))
+                                 :in-theory (enable all-rationalp-when-all-natp)))))
+  (let* ((max-literal-nodenum (maxelem literal-nodenums))
+         (done-array (make-empty-array 'done-array (+ 1 max-literal-nodenum)))
+         ;;won't include any nodes that are calls to not:
+         (candidate-nodenums (find-node-to-split-candidates-work-list literal-nodenums dag-array-name dag-array dag-len done-array nil))
+         (candidate-nodenums (merge-sort-< candidate-nodenums))
+         (candidate-nodenums (remove-duplicates-from-grouped-list candidate-nodenums))
+         (literals-after-stripping-nots (strip-nots-lst literal-nodenums dag-array-name dag-array dag-len))
+         (literals-after-stripping-nots (merge-sort-< literals-after-stripping-nots))
+         ;remove dups from literals-after-stripping-nots?
+         ;;fixme take advantage of the sorting to call a linear-time version of this:
+         (candidate-nodenums (set-difference$ candidate-nodenums literals-after-stripping-nots)))
+    (if (endp candidate-nodenums)
+        nil
+      (if (endp (rest candidate-nodenums))
+          (first candidate-nodenums) ;only one candidate, no need to compare sizes
+        (let* ((size-array (size-array-for-sorted-nodes candidate-nodenums dag-array-name dag-array dag-len 'size-array)))
+          (smallest-size-node candidate-nodenums size-array dag-len))))))
+
+(defthm natp-of-find-node-to-split-for-prover
+  (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                (nat-listp literal-nodenums)
+                (consp literal-nodenums)
+                (all-< literal-nodenums dag-len)
+                (find-node-to-split-for-prover dag-array-name dag-array dag-len literal-nodenums) ; no failure
+                )
+           (natp (find-node-to-split-for-prover dag-array-name dag-array dag-len literal-nodenums)))
+  :hints (("Goal" :cases ((equal 0 dag-len))
+           :in-theory (e/d (find-node-to-split-for-prover) (natp)))))
+
+(defthm not-<-of--1-and-find-node-to-split-for-prover
+  (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                (nat-listp literal-nodenums)
+                (consp literal-nodenums)
+                (all-< literal-nodenums dag-len)
+                (find-node-to-split-for-prover dag-array-name dag-array dag-len literal-nodenums) ; no failure
+                )
+           (not (< (find-node-to-split-for-prover dag-array-name dag-array dag-len literal-nodenums)
+                   -1)))
+  :hints (("Goal" :use (:instance natp-of-find-node-to-split-for-prover)
+           :in-theory (disable natp-of-find-node-to-split-for-prover))))
+
+(defthm <-of-find-node-to-split-for-prover
+  (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                (nat-listp literal-nodenums)
+                (consp literal-nodenums)
+                (all-< literal-nodenums dag-len)
+                (find-node-to-split-for-prover dag-array-name dag-array dag-len literal-nodenums) ; no failure
+                )
+           (< (find-node-to-split-for-prover dag-array-name dag-array dag-len literal-nodenums) dag-len))
+  :rule-classes (:rewrite :linear)
+  :hints (("Goal" :cases ((equal 0 dag-len))
+           :in-theory (e/d (find-node-to-split-for-prover) (natp)))))
+
+(defthm dargp-less-than-of-find-node-to-split-for-prover
+  (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                (nat-listp literal-nodenums)
+                (consp literal-nodenums)
+                (all-< literal-nodenums dag-len)
+                (find-node-to-split-for-prover dag-array-name dag-array dag-len literal-nodenums) ; no failure
+                )
+           (dargp-less-than (find-node-to-split-for-prover dag-array-name dag-array dag-len literal-nodenums)
+                            dag-len))
+  :hints (("Goal" :in-theory (e/d (dargp-less-than) (natp)))))
+
+(defthm dargp-less-than-of-find-node-to-split-for-prover-gen
+  (implies (and (<= dag-len bound)
+                (natp bound)
+                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                (nat-listp literal-nodenums)
+                (consp literal-nodenums)
+                (all-< literal-nodenums dag-len)
+                (find-node-to-split-for-prover dag-array-name dag-array dag-len literal-nodenums) ; no failure
+                )
+           (dargp-less-than (find-node-to-split-for-prover dag-array-name dag-array dag-len literal-nodenums)
+                            bound))
+  :hints (("Goal" :use dargp-less-than-of-find-node-to-split-for-prover
+           :in-theory (disable dargp-less-than-of-find-node-to-split-for-prover))))

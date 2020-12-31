@@ -13,8 +13,15 @@
 (in-package "ACL2")
 
 (include-book "dag-arrays")
-(include-book "dag-variable-alist")
+(include-book "make-dag-variable-alist")
 (include-book "worklists")
+(include-book "axe-trees")
+(include-book "make-var-names")
+(include-book "dag-array-printing")
+(include-book "supporting-vars")
+(include-book "rebuild-nodes")
+(include-book "merge-term-into-dag-array-basic")
+(include-book "kestrel/utilities/make-cons-nest" :dir :system)
 (include-book "kestrel/utilities/forms" :dir :system) ; for call-of
 (include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
 (local (include-book "kestrel/lists-light/nth" :dir :system))
@@ -23,6 +30,7 @@
 (local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))
+(local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 
 ;dup in prove-with-stp
 (defthm assoc-equal-when-member-equal-of-strip-cars
@@ -191,3 +199,252 @@
                     vars2))
   :hints (("Goal" :use (:instance member-equal-of-var-okay-to-elim)
            :in-theory (disable member-equal-of-var-okay-to-elim))))
+
+;;;
+;;; tuple elimination
+;;;
+
+(defund get-known-true-listp-vars (nodenums-to-assume-false dag-array dag-len)
+  (declare (xargs :guard (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+                              (nat-listp nodenums-to-assume-false)
+                              (all-< nodenums-to-assume-false dag-len))))
+  (if (endp nodenums-to-assume-false)
+      nil
+    (let* ((nodenum (car nodenums-to-assume-false))
+           (not-expr (aref1 'dag-array dag-array nodenum)))
+      (if (and (consp not-expr)
+               (eq 'not (ffn-symb not-expr))
+               (= 1 (len (dargs not-expr)))
+               (not (consp (first (dargs not-expr)))))
+          (let ((expr (aref1 'dag-array dag-array (first (dargs not-expr)))))
+            (if (and (consp expr)
+                     (eq 'true-listp (ffn-symb expr))
+                     (= 1 (len (dargs expr)))
+                     (not (consp (first (dargs expr)))))
+                (let ((possible-var (aref1 'dag-array dag-array (first (dargs expr)))))
+                  (if (not (consp possible-var)) ;check for variable
+                      (cons possible-var (get-known-true-listp-vars (cdr nodenums-to-assume-false) dag-array dag-len))
+                    (get-known-true-listp-vars (cdr nodenums-to-assume-false) dag-array dag-len)))
+              (get-known-true-listp-vars (cdr nodenums-to-assume-false) dag-array dag-len)))
+        (get-known-true-listp-vars (cdr nodenums-to-assume-false) dag-array dag-len)))))
+
+(defthm symbol-listp-of-get-known-true-listp-vars
+  (implies (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+                (nat-listp nodenums-to-assume-false)
+                (all-< nodenums-to-assume-false dag-len))
+           (symbol-listp (get-known-true-listp-vars nodenums-to-assume-false dag-array dag-len)))
+  :hints (("Goal" :in-theory (e/d (get-known-true-listp-vars) (natp)))))
+
+(defthm subsetp-equal-of-get-known-true-listp-vars
+  (implies (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+                (nat-listp nodenums-to-assume-false)
+                (all-< nodenums-to-assume-false dag-len))
+           (subsetp-equal (get-known-true-listp-vars nodenums-to-assume-false dag-array dag-len)
+                          (strip-cars (make-dag-variable-alist 'dag-array dag-array dag-len))))
+  :hints (("Goal" :in-theory (e/d (get-known-true-listp-vars) (natp)))))
+
+(defthm not-<-of-+-1-and-maxelem
+  (implies (and (all-< items bound)
+                (nat-listp items)
+                (integerp bound)
+                (consp items))
+           (not (< bound (binary-+ '1 (maxelem items)))))
+  :hints (("Goal" :in-theory (enable all-< maxelem))))
+
+(defthm axe-treep-of-list-of-cons
+  (equal (axe-treep (list 'cons x y))
+         (and (axe-treep x)
+              (axe-treep y)))
+  :hints (("Goal" :in-theory (enable axe-treep))))
+
+(defthm bounded-axe-treep-of-list-of-cons
+  (equal (bounded-axe-treep (list 'cons x y) bound)
+         (and (bounded-axe-treep x bound)
+              (bounded-axe-treep y bound)))
+  :hints (("Goal" :in-theory (enable bounded-axe-treep
+                                     ALL-BOUNDED-AXE-TREEP))))
+
+(defthm axe-treep-of-make-cons-nest
+  (equal (axe-treep (make-cons-nest items))
+         (all-axe-treep items))
+  :hints (("Goal" :in-theory (e/d (make-cons-nest)
+                                  (axe-treep)))))
+
+(defthm bounded-axe-treep-of-make-cons-nest
+  (equal (bounded-axe-treep (make-cons-nest items) bound)
+         (all-bounded-axe-treep items bound))
+  :hints (("Goal" :in-theory (e/d (make-cons-nest
+                                   all-bounded-axe-treep)
+                                  (bounded-axe-treep)))))
+
+;because the var names are symbols
+(defthm all-axe-treep-of-make-var-names-aux
+  (all-axe-treep (make-var-names-aux base-symbol startnum endnum))
+  :hints (("Goal" :in-theory (enable make-var-names-aux))))
+
+;because the var names are symbols
+(defthm all-bounded-axe-treep-of-make-var-names-aux
+  (all-bounded-axe-treep (make-var-names-aux base-symbol startnum endnum) bound)
+  :hints (("Goal" :in-theory (enable all-bounded-axe-treep make-var-names-aux))))
+
+;move
+(defthm subsetp-equal-of-intersection-equal
+  (implies (or (subsetp-equal x z)
+               (subsetp-equal y z))
+           (subsetp-equal (intersection-equal x y) z)))
+
+;fixme does the tuple really have to be true-list?  what if we know only a lower bound on the length?  could we still do elim?
+;;returns (mv erp changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+;;should we do one destructor or all of them?
+;if we ever implement clause mitering, this will need to fix up the test-cases, because it changes the vars in the dag..
+;;smashes the appropriate translation-array and 'tag-array (does it still?)
+;doesn't change any existing nodes in the dag (just builds new ones)
+(defund eliminate-a-tuple (literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print)
+  (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                              (nat-listp literal-nodenums)
+                              (all-< literal-nodenums dag-len)
+                              (consp literal-nodenums) ;; because var-okay-to-elim asks for the max literal nodenum
+                              )
+                  :guard-hints (("Goal" :cases ((equal dag-variable-alist (make-dag-variable-alist 'dag-array dag-array dag-len))) ;why is this :cases hint needed?
+                                 :in-theory (e/d (car-becomes-nth-of-0
+                                                           <-of-nth-when-all-<
+                                                           ;FIND-VAR-AND-EXPR-TO-SUBST
+                                                           ;NODENUM-OF-VAR-TO-SUBSTP
+                                                           natp-of-lookup-equal-when-dag-variable-alistp
+                                                           natp-of-cdr-of-assoc-equal-when-dag-variable-alistp)
+                                                        (natp))))))
+  (let* ((true-listp-vars (get-known-true-listp-vars literal-nodenums dag-array dag-len))
+         (var-length-alist (get-var-length-alist-for-tuple-elimination literal-nodenums dag-array dag-len nil))
+         (vars-given-lengths (strip-cars var-length-alist))
+         (true-listp-vars-given-lengths (intersection-eq true-listp-vars vars-given-lengths))
+;fixme do we need this check for soundness?  as long as we know the length of the var and that it is a true-listp, replacing it with a cons nest should be sound, right?  maybe we don't want to do it if there are array ops?
+         (var-to-elim (var-okay-to-elim true-listp-vars-given-lengths dag-array dag-len dag-variable-alist literal-nodenums))
+         )
+    (if (not var-to-elim)
+        (mv (erp-nil) nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+      (b* ((var var-to-elim) ;fixme
+           (res (assoc-eq var dag-variable-alist))
+           ((when (not res)) ;todo: strengthen guard and prove that this cannot happen
+            (mv :var-not-in-dag-variable-alist nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+           (nodenum-of-var (cdr res)))
+        (progn$ (cw "(Eliminating destructors for variable ~x0." var)
+                (and (eq :verbose print) (cw "literals: ~x0~%" literal-nodenums))
+                (and (eq :verbose print) (print-dag-only-supporters-lst literal-nodenums 'dag-array dag-array))
+                (let* ((len-of-var (lookup-eq var var-length-alist))
+                       (dag-vars (vars-that-support-dag-nodes literal-nodenums 'dag-array dag-array dag-len))
+                       (new-vars (make-var-names-aux (pack$ var '-) 0 (+ -1 len-of-var))) ;ffixme call a no-clash version?
+                       )
+                  (if (intersection-eq new-vars dag-vars)
+                      (progn$ (cw "new vars: ~x0dag vars: ~x1.~%" new-vars dag-vars)
+                              (er hard? 'eliminate-a-tuple "variable clash") ;fffixme handle this better
+                              (mv (erp-t) nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+                    (b* ((cons-nest (make-cons-nest new-vars)) ;inefficient to build this first as a term and then merge into dag?
+                         ((mv erp cons-nest-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+                          ;; TODO: Call something simpler here (could also take advantage of the fact that the entire term, even the vars, is new to the dag):
+                          (merge-term-into-dag-array-basic cons-nest
+                                                            nil ;no var replacement
+                                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                            'dag-array 'dag-parent-array
+                                                            nil ;; no interpreted functions
+                                                            ))
+                         ((when erp) (mv erp nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+                         ;; TODO: Prove this can't happen and drop this check
+                         ((when (consp cons-nest-nodenum)) ;check for a quoted constant
+                          (mv :unexpected-result nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+                         ((mv erp literal-nodenums ;fixme could these ever be quoteps? if so, call handle-constant-disjuncts and return provedp?
+                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+                          ;; ;this puts in the cons nest for the var everywhere it appears (fixme i guess nth of cons will then fire a lot..)
+                          ;; this used to be accomplished by rewriting - yuck
+                          (rebuild-literals-with-substitution literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                              nodenum-of-var cons-nest-nodenum))
+                         ((when erp) (mv erp nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+                         (- (cw ")~%")))
+                      (mv (erp-nil)
+                          t ;; changep is true
+                          literal-nodenums
+                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                          ;;(split-test-cases test-cases var new-vars) ;slow?
+                          )))))))))
+
+(defthm eliminate-a-tuple-return-type
+  (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                (nat-listp literal-nodenums)
+                (all-< literal-nodenums dag-len)
+                (consp literal-nodenums)
+                ;(equal dag-variable-alist (make-dag-variable-alist 'dag-array dag-array dag-len))
+                ;;(not (mv-nth 0 (eliminate-a-tuple literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print)))
+                )
+           (mv-let (erp changep new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
+             (eliminate-a-tuple literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print)
+             (declare (ignore changep))
+             (implies (not erp)
+                      (and (all-natp new-literal-nodenums)
+                           (true-listp new-literal-nodenums)
+                           (equal (len new-literal-nodenums) (len literal-nodenums))
+                           (consp new-literal-nodenums)
+                           (all-< new-literal-nodenums new-dag-len)
+                           (wf-dagp 'dag-array new-dag-array new-dag-len 'dag-parent-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
+                           (<= dag-len new-dag-len)))))
+  :hints (("Goal" :in-theory (e/d (eliminate-a-tuple natp-of-cdr-of-assoc-equal-when-dag-variable-alistp)
+                                  (natp)))))
+
+(defthm eliminate-a-tuple-return-type-corollary
+  (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                (nat-listp literal-nodenums)
+                (all-< literal-nodenums dag-len)
+                (consp literal-nodenums)
+                ;(equal dag-variable-alist (make-dag-variable-alist 'dag-array dag-array dag-len))
+                ;;(not (mv-nth 0 (eliminate-a-tuple literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print)))
+                )
+           (mv-let (erp changep new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
+             (eliminate-a-tuple literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print)
+             (declare (ignore changep new-literal-nodenums new-dag-parent-array new-dag-constant-alist new-dag-variable-alist))
+             (implies (and (not erp)
+                           (<= bound new-dag-len)
+                           (natp bound))
+                      (and (pseudo-dag-arrayp 'dag-array new-dag-array bound)))))
+  :hints (("Goal" :use (eliminate-a-tuple-return-type)
+           :in-theory (disable eliminate-a-tuple-return-type))))
+
+(defthm eliminate-a-tuple-return-type-corollary-linear
+  (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                (nat-listp literal-nodenums)
+                (all-< literal-nodenums dag-len)
+                (consp literal-nodenums))
+           (mv-let (erp changep new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
+             (eliminate-a-tuple literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print)
+             (declare (ignore changep new-literal-nodenums new-dag-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist))
+             (implies (not erp)
+                      (<= dag-len new-dag-len))))
+  :rule-classes :linear
+  :hints (("Goal" :use (eliminate-a-tuple-return-type)
+           :in-theory (disable eliminate-a-tuple-return-type))))
+
+(defthm eliminate-a-tuple-return-type-2
+  (implies (natp dag-len)
+           (mv-let (erp changep new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
+             (eliminate-a-tuple literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print)
+             (declare (ignore erp changep new-literal-nodenums new-dag-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist))
+             (natp new-dag-len)))
+  :rule-classes (:rewrite :type-prescription)
+  :hints (("Goal" :in-theory (e/d (eliminate-a-tuple natp-of-cdr-of-assoc-equal-when-dag-variable-alistp)
+                                  (natp)))))
+
+(defthm eliminate-a-tuple-return-type-3
+  (implies (natp dag-len)
+           (mv-let (erp changep new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
+             (eliminate-a-tuple literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print)
+             (declare (ignore erp changep new-literal-nodenums new-dag-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist))
+             (integerp new-dag-len)))
+  :hints (("Goal" :in-theory (e/d (eliminate-a-tuple natp-of-cdr-of-assoc-equal-when-dag-variable-alistp)
+                                  (natp)))))
+
+(defthm eliminate-a-tuple-return-type-4
+  (implies (true-listp literal-nodenums)
+           (mv-let (erp changep new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
+             (eliminate-a-tuple literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print)
+             (declare (ignore erp changep new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist))
+             (true-listp new-literal-nodenums)))
+  :rule-classes (:rewrite :type-prescription)
+  :hints (("Goal" :in-theory (e/d (eliminate-a-tuple natp-of-cdr-of-assoc-equal-when-dag-variable-alistp)
+                                  (natp)))))

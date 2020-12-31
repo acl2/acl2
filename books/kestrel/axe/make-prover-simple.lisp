@@ -26,6 +26,9 @@
 ;; schemes.
 
 (include-book "prover-common")
+(include-book "splitting")
+(include-book "elim")
+(include-book "substitute-vars")
 (include-book "get-disjuncts")
 (include-book "rule-alists")
 (include-book "make-implication-dag")
@@ -40,6 +43,7 @@
 (include-book "hit-counts")
 (include-book "get-args-not-done")
 (include-book "tries")
+(include-book "result-array")
 (include-book "my-sublis-var-and-eval-basic") ;todo: gen
 (include-book "instantiate-hyp-basic") ;todo: gen
 (include-book "dag-or-term-to-dag-basic") ;todo: gen?
