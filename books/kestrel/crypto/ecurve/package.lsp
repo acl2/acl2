@@ -29,6 +29,7 @@
             byte-list-fix
             byte-listp
             define
+            define-sk
             defrule
             defruled
             defrulel
