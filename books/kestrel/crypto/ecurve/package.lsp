@@ -56,6 +56,7 @@
             primes::bls12-377-scalar-field-prime
             primes::secp256k1-field-prime
             primes::secp256k1-group-prime
+            rule
             str::strval16s
             ///
             )
