@@ -66,6 +66,7 @@
 (include-book "unsigned-byte-fixing")
 (include-book "unsigned-byte-list-fixing")
 (include-book "untranslate-preprocessing")
+(include-book "use-io-pairs")
 (include-book "user-interface")
 (include-book "verify-guards-program")
 (include-book "zp-lists")

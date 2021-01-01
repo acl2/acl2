@@ -3261,6 +3261,34 @@
                 ))))
       formals)))
 
+(defun cltl-def-memoize-invoke (fn-def old-fn invoke)
+
+; Fn-def is a definition (defun fn ...), old-symbol-fn is the existing
+; symbol-function of fn, and invoke is a function symbol.  We return a
+; definition of invoke, which we want to invoke when calling fn.
+
+  (let ((gsym (gensym))
+        (fn (car fn-def))
+        (formals (cadr fn-def))
+        (decls (butlast (cddr fn-def) 1)))
+    (eval `(defvar ,gsym nil))
+    `(,fn ,formals
+       ,@decls
+       (if ,gsym
+
+; We could lay down the body of f, (car (last fn-def)) instead of the funcall
+; just below.  We are guessing that the overhead of memoization, the possible
+; benefit of code compactness, and the possible efficiency of separate
+; compilation of f (admittedly a wild guess) make it unimportant to do avoid
+; funcall here.
+
+           (funcall
+            #-gcl ,old-fn
+            #+gcl ',old-fn ; old-fn could be (lisp:lambda-block ...)
+            ,@formals)
+         (let ((,gsym t))
+           (,invoke ,@formals))))))
+
 (defun memoize-fn (fn &key
                       (condition t)
                       (inline t)
@@ -3273,6 +3301,7 @@
                       (forget nil)
                       (memo-table-init-size *mht-default-size*)
                       (aokp nil)
+                      (invoke nil)
                       &aux
                       (wrld (w *the-live-state*))
                       (memoize-fn-signature-error
@@ -3374,7 +3403,11 @@
 
    (with-warnings-suppressed ; e.g., might avoid redefinition warnings
     (memoize-fn-init fn inline wrld)
-    (let* ((cl-defun (memoize-look-up-def fn cl-defun inline wrld))
+    (let* ((cl-defun0 (memoize-look-up-def fn cl-defun inline wrld))
+           (old-fn (symbol-function fn))
+           (cl-defun (if invoke
+                         (cltl-def-memoize-invoke cl-defun0 old-fn invoke)
+                       cl-defun0))
            (formals
             (cond
              ((eq formals :default)
@@ -3421,11 +3454,11 @@
               (symbol-to-fixnum-create fn))
              (fn-col-base ; performance counting
               (ma-index fnn))
-             (old-fn (symbol-function fn))
              (body
               (progn
                 (assert old-fn)
                 (cond
+                 (invoke (car (last cl-defun)))
                  (inline
 
 ; When memoize-look-up-def is called with a non-nil value of inline and it
