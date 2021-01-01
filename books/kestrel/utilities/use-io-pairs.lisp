@@ -64,15 +64,20 @@
 
  @({
  Example:
- (use-io-pair
-  'rtl::primep #.primes::*bn-254-group-prime* t
-  :test 'eql
+ (use-io-pairs
+  'rtl::primep
+  '((#.primes::*secp256k1-field-prime* . t)
+    (#.primes::*bn-254-group-prime* . t)
+    (#.primes::*baby-jubjub-subgroup-prime* . t))
+  :debug t
   :hints '((\"Goal\"
             :in-theory
-            (enable primes::primep-of-bn-254-group-prime-constant))))
+            (enable primes::primep-of-baby-jubjub-subgroup-prime-constant
+                    primes::primep-of-bn-254-group-prime-constant
+                    primes::primep-of-secp256k1-field-prime-constant))))
 
  General Form:
- (use-io-pair fn input output &key hints debug test)
+ (use-io-pairs fn pairs &key hints debug test)
  })
 
  <p>where all arguments are evaluated to produce the following.</p>
@@ -83,8 +88,8 @@
  @(see state) or a user-defined @(tsee stobj)), which also returns a single
  value</li>
 
- <li>@('input') and @('output'): @('(f input)') must evaluate to
- @('output')</li>
+ <li>@('pairs'): A list of conses @('(input . output)'), sometimes called ``I/O
+ pairs'', where @('fn') maps @('input') to @('output')</li>
 
  <li>@('hints') (optional, default @('nil')): when non-@('nil'), used as the
  @(':hints') argument to a theorem that proves @('(f input)') equals
@@ -96,10 +101,13 @@
  than by computing with the body of @('fn')</li>
 
  <li>@('test') (optional, default @(''equal')): called to test equality of an
- input to @('fn') to one of the specified I/O pairs, so that the result is
- looked up rather than computed</li>
+ input to @('fn') to one of inputs (cars) of the specified I/O pairs, so that
+ the result is looked up rather than computed</li>
 
  </ul>
+
+ <p>Also see @(see use-io-pair) for a similar utility for a single I/O
+ pair.</p>
 
  <p>A more general utility, which allows the substitution of one function for
  another during execution, is available with the @(':invoke') argument of
