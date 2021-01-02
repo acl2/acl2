@@ -36,11 +36,11 @@
  (use-io-pair fn input output &key hints debug test)
  })
 
- <p>where all arguments are evaluated.  The value of @('fn') must be a unary
- function symbol whose argument is an ordinary value (not @(see state) or a
- user-defined @(tsee stobj)); also, @('fn') must return a single value.  (It
- would likely be straightforward to remove the restriction to a single input
- and output.)</p>
+ <p>where all arguments are evaluated.  The value of @('fn') must be a @(see
+ guard)-verified unary function symbol whose argument is an ordinary value (not
+ @(see state) or a user-defined @(tsee stobj)); also, @('fn') must return a
+ single value.  (It would likely be straightforward to remove the restriction
+ to a single input and output.)</p>
 
  <p>@('use-io-pair') is merely a convenient way to invoke the utility @(see
  use-io-pairs) when there is a single input/output pair, essentially as
@@ -59,7 +59,7 @@
   :long "<p>WARNING: This utility may undergo significant changes until the end
  of January 2021.</p>
 
- <p>Note: For examples, look in the @(see community-books) at the book,,
+ <p>Note: For examples, look in the @(see community-books) at the book,
  @('kestrel/utilities/use-io-pairs-tests.lisp').</p>
 
  @({
@@ -84,30 +84,59 @@
 
  <ul>
 
- <li>@('fn'): A unary function symbol whose argument is an ordinary value (not
- @(see state) or a user-defined @(tsee stobj)), which also returns a single
- value</li>
+ <li>@('fn'): A @(see guard)-verified unary function symbol whose argument is
+ an ordinary value (not @(see state) or a user-defined @(tsee stobj)), which
+ also returns a single value</li>
 
  <li>@('pairs'): A list of conses @('(input . output)'), sometimes called ``I/O
  pairs'', where @('fn') maps @('input') to @('output')</li>
 
  <li>@('hints') (optional, default @('nil')): when non-@('nil'), used as the
- @(':hints') argument to a theorem that proves @('(f input)') equals
- @('output')</li>
+ @(':hints') argument to the theorem discussed below.</li>
 
  <li>@('debug') (optional, default @('nil')): when non-@('nil'), causes @(tsee
  cw) to print a message to the terminal when an I/O pair is being used during
  evaluation, that is, when the output is obtained by lookup on the input rather
  than by computing with the body of @('fn')</li>
 
- <li>@('test') (optional, default @(''equal')): called to test equality of an
- input to @('fn') to one of inputs (cars) of the specified I/O pairs, so that
- the result is looked up rather than computed</li>
+ <li>@('test') (optional, default @(''equal')): the equality
+ variant (@(''')@(tsee eq), @(''')@(tsee eql), or @(''')@(tsee equal)) called
+ to test equality of an input of @('fn') to one of inputs (cars) of the
+ specified I/O pairs, so that the result is looked up rather than computed (as
+ explained below)</li>
 
  </ul>
 
- <p>Also see @(see use-io-pair) for a similar utility for a single I/O
- pair.</p>
+ <p>This macro defines a new function, called @('new-fn'), that computes @('(fn
+ x)') by looking first for an I/O pair @('(x . y)') in the given @('pairs')
+ input and returning @('y') in that case, and otherwise just calling @('fn').
+ The definition thus has the following form, where in this display we assume
+ that the unique formal of @('fn') is @('x'), and we write @('PAIRS') and
+ @('TEST') for the given @('pairs') and @('test') inputs.</p>
+
+ @({
+ (defun new-fn (x)
+   <declare_forms>
+   (let ((pair (assoc x 'PAIRS :test 'TEST)))
+     (if pair
+         (cdr pair)
+       (fn x))))
+ })
+
+ <p>A generated proof obligation has the following form, where @('hints') is
+ the supplied non-@('nil') value of the @(':hints') keyword, if supplied, else
+ the @(':hints') keyword is omitted.</p>
+
+ @({
+ (defthm <generated_name>
+   (equal (fn x)
+          (new-fn x))
+   :hints hints ; omitted if the given :hints is nil or omitted
+   :rule-classes nil)
+ })
+
+ <p>Also see @(see use-io-pair) for an equivalent utility that applies only in
+ the case of a single I/O pair.</p>
 
  <p>A more general utility, which allows the substitution of one function for
  another during execution, is available with the @(':invoke') argument of
