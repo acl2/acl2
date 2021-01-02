@@ -96,11 +96,59 @@
    :rule-classes nil
    ))
 
-;todo
-;; (defthm-with-basic-prover-clause-processor implies-or-1
-;;   (implies (or (natp x) (natp y)) (natp y))
-;;   :rules (implies)
-;;   )
+(must-fail
+ (defthm-with-basic-prover-clause-processor implies-or-1
+   (implies (or (natp x) (natp y))
+            (natp y))))
+
+(defthm-with-basic-prover-clause-processor or-1
+  (implies x
+           (or x y)))
+
+(defthm-with-basic-prover-clause-processor or-2
+  (implies y
+           (or x y)))
+
+(defthm-with-basic-prover-clause-processor or-3
+  (implies (or x y)
+           (or x y)))
+
+(defthm-with-basic-prover-clause-processor or-3b
+  (implies (or (natp x) (natp y))
+           (or (natp x) (natp y))))
+
+(must-fail
+ (defthm-with-basic-prover-clause-processor or-false-1
+   (implies (or x y)
+            x)))
+
+(must-fail
+ (defthm-with-basic-prover-clause-processor or-false-2
+   (implies (or x y)
+            y)))
+
+(defthm-with-basic-prover-clause-processor and-1
+  (implies (and x y)
+           x)
+  :rule-classes nil)
+
+(defthm-with-basic-prover-clause-processor and-2
+  (implies (and x y)
+           y)
+  :rule-classes nil)
+
+(must-fail
+ (defthm-with-basic-prover-clause-processor and-false-1
+   (implies x
+            (and x y))
+   :rule-classes nil))
+
+(must-fail
+ (defthm-with-basic-prover-clause-processor and-false-2
+   (implies y
+            (and x y))
+   :rule-classes nil))
+
 
 ;todo
 ;; (defthm-with-basic-prover-clause-processor implies-boolor-1
