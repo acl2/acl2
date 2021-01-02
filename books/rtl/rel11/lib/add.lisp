@@ -604,6 +604,7 @@
                (= (expo (bits (+ a b 1) (1- n) 0)) (1- (expo (w0 a b n))))))
   :rule-classes ())
 
+#|
 ;; Leading zero counter:
 
 (defund zseg (x k i)
@@ -632,6 +633,7 @@
 		(> x 0))
 	   (equal (clz x n)
 	          (- (1- (expt 2 n)) (expo x)))))
+|#
 
 )
 
