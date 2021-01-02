@@ -85,6 +85,27 @@
                                              acc ; has been extended for darg2
                                              nil ; negated-flg
                                              ))))
+                  (if (if (not (= 3 (len (dargs expr))))
+                          (prog2$ (er hard? 'get-disjuncts "Bad arity for IF.")
+                                  (mv :bad-arity nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+                        (if (equal (darg1 expr) (darg2 expr))
+                            ;; (if x x y) is just (or x and y), so get disjuncts from the arguments:
+                            (b* (((mv erp provedp acc dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+                                  (get-disjuncts (darg1 expr) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                 acc
+                                                 nil ;negated-flg
+                                                 ))
+                                 ((when erp) (mv erp nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+                                 ((when provedp) (mv (erp-nil) t nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))
+                              (get-disjuncts (darg3 expr) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                             acc ; has been extended for darg1
+                                             nil ; negated-flg
+                                             ))
+                          ;; TODO: Handle more cases of if, such as (if x t y)
+                          (mv (erp-nil)
+                              nil ; provedp
+                              (add-to-set-eql item acc)
+                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))))
                   (not (if (not (= 1 (len (dargs expr))))
                            (prog2$ (er hard? 'get-disjuncts "Bad arity for NOT.")
                                    (mv :bad-arity nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
@@ -113,7 +134,6 @@
                                               nil ;negated-flg
                                               ))))
                   (t ;;it's not something we know how to get disjuncts from:
-                   ;; TODO: Handle if?  Handle implies?
                    (mv (erp-nil)
                        nil ; provedp
                        (add-to-set-eql item acc)
@@ -158,6 +178,30 @@
                                             acc ; has been extended for darg2
                                             t   ;negated-flg
                                             ))))
+                (if (if (not (= 3 (len (dargs expr))))
+                        (prog2$ (er hard? 'get-disjuncts "Bad arity for IF.")
+                                (mv :bad-arity nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+                      ;; Treat (if x y nil) as (and x y)
+                      (if (equal (darg3 expr) *nil*)
+                          ;; To get the negated conjuncts of an AND, we get the negated conjuncts from the arguments and union the results:
+                          (b* (((mv erp provedp acc dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+                                (get-disjuncts (darg1 expr) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc
+                                               t ;negated-flg
+                                               ))
+                               ((when erp) (mv erp nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+                               ((when provedp) (mv (erp-nil) t nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))
+                            (get-disjuncts (darg2 expr) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                           acc ; has been extended for darg1
+                                           t   ;negated-flg
+                                           ))
+                        ;; TODO: Handle any other kinds of IF?
+                        ;;it's not something we know how to get negated conjuncts from, so add its negation and return the item:
+                        (mv-let (erp negated-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+                          (add-function-call-expr-to-dag-array 'not (list item) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+                          (mv erp
+                              nil                                  ; provedp
+                              (add-to-set-eql negated-nodenum acc) ;meaningless if erp is t.
+                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))))
                 (not (if (not (= 1 (len (dargs expr))))
                          (prog2$ (er hard? 'get-disjuncts "Bad arity for NOT.")
                                  (mv :bad-arity nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
@@ -171,7 +215,7 @@
                  (mv-let (erp negated-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
                    (add-function-call-expr-to-dag-array 'not (list item) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
                    (mv erp
-                       nil                                   ; provedp
+                       nil                                      ; provedp
                        (add-to-set-eql negated-nodenum acc) ;meaningless if erp is t.
                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))))))))))
 
