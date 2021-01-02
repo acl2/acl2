@@ -109,3 +109,4 @@ allow extending table guards.
 
 (set-termination-method :foo)
 |#
+

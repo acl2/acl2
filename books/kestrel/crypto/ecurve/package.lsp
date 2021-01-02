@@ -29,6 +29,7 @@
             byte-list-fix
             byte-listp
             define
+            define-sk
             defrule
             defruled
             defrulel
@@ -56,6 +57,7 @@
             primes::bls12-377-scalar-field-prime
             primes::secp256k1-field-prime
             primes::secp256k1-group-prime
+            rule
             str::strval16s
             ///
             )

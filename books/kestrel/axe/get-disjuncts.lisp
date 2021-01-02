@@ -54,40 +54,90 @@
                     nil ; meaningless
                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
               ;; A nil constant gets dropped:
-              (mv (erp-nil)
-                  nil ;provedp
-                  acc ; not extended
-                  dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+              (prog2$ (cw "NOTE: Dropping nil disjunct.~%")
+                      (mv (erp-nil)
+                          nil ;provedp
+                          acc ; not extended
+                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))
           (let ((expr (aref1 'dag-array dag-array item)))
-            (if (and (call-of 'boolor expr)
-                     (= 2 (len (dargs expr))))
-                ;; it is a boolor, so get disjuncts from the arguments:
-                (b* (((mv erp provedp acc dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-                      ;;todo: why do we handle arg2 first?
-                      (get-disjuncts (darg2 expr) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                     acc
-                                     nil ;negated-flg
-                                     ))
-                     ((when erp) (mv erp nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
-                     ((when provedp) (mv (erp-nil) t nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))
-                  (get-disjuncts (darg1 expr) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                 acc ; has been extended for darg2
-                                 nil ; negated-flg
-                                 ))
-              (if (and (call-of 'not expr)
-                       (= 1 (len (dargs expr))))
-                  ;; EXPR is a call of not, so we can view it as (not (and x1 x2 ... xn)), which is the same as (or (not
-                  ;; x1) (not x2) ... (not xn)).  So, to get EXPR's disjuncts, we extract x1 through xn and then negate
-                  ;; them all.
-                  (get-disjuncts (darg1 expr) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc
-                                 t ; negated-flg
-                                 )
-                ;;it's not something we know how to get disjuncts from:
-                ;; TODO: Handle if?  Handle implies?
+            (if (variablep expr)
+                ;; Can't get disjuncts from a variable:
                 (mv (erp-nil)
                     nil ; provedp
                     (add-to-set-eql item acc)
-                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))))
+                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+              (let ((fn (ffn-symb expr)))
+                ;;todo: handle fn=quote ?
+                (case fn
+                  (boolor (if (not (= 2 (len (dargs expr))))
+                              (prog2$ (er hard? 'get-disjuncts "Bad arity for BOOLOR.")
+                                      (mv :bad-arity nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+                            ;; it is a boolor, so get disjuncts from the arguments:
+                            (b* (((mv erp provedp acc dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+                                  ;;todo: why do we handle arg2 first?
+                                  (get-disjuncts (darg2 expr) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                 acc
+                                                 nil ;negated-flg
+                                                 ))
+                                 ((when erp) (mv erp nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+                                 ((when provedp) (mv (erp-nil) t nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))
+                              (get-disjuncts (darg1 expr) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                             acc ; has been extended for darg2
+                                             nil ; negated-flg
+                                             ))))
+                  (if (if (not (= 3 (len (dargs expr))))
+                          (prog2$ (er hard? 'get-disjuncts "Bad arity for IF.")
+                                  (mv :bad-arity nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+                        (if (equal (darg1 expr) (darg2 expr))
+                            ;; (if x x y) is just (or x and y), so get disjuncts from the arguments:
+                            (b* (((mv erp provedp acc dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+                                  (get-disjuncts (darg1 expr) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                 acc
+                                                 nil ;negated-flg
+                                                 ))
+                                 ((when erp) (mv erp nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+                                 ((when provedp) (mv (erp-nil) t nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))
+                              (get-disjuncts (darg3 expr) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                             acc ; has been extended for darg1
+                                             nil ; negated-flg
+                                             ))
+                          ;; TODO: Handle more cases of if, such as (if x t y)
+                          (mv (erp-nil)
+                              nil ; provedp
+                              (add-to-set-eql item acc)
+                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))))
+                  (not (if (not (= 1 (len (dargs expr))))
+                           (prog2$ (er hard? 'get-disjuncts "Bad arity for NOT.")
+                                   (mv :bad-arity nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+                         ;; EXPR is a call of not, so we can view it as (not (and x1 x2 ... xn)), which is the same as (or (not
+                         ;; x1) (not x2) ... (not xn)).  So, to get EXPR's disjuncts, we extract x1 through xn and then negate
+                         ;; them all.  That is, we get the negated conjuncts of the argument of the NOT.
+                         (get-disjuncts (darg1 expr) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc
+                                        t ; negated-flg
+                                        )))
+                  (implies (if (not (= 2 (len (dargs expr))))
+                               (prog2$ (er hard? 'get-disjuncts "Bad arity for IMPLIES.")
+                                       (mv :bad-arity nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+                             ;; EXPR is (implies <x> <y>), which is the same as (or (not <x>) <y>), so its disjuncts
+                             ;; are the disjuncts of (not <x>) [see above case for NOT], together with the disjuncts of
+                             ;; y:
+                             (b* (((mv erp provedp acc dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+                                   ;;todo: why do we handle arg2 first?
+                                   (get-disjuncts (darg1 expr) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                  acc
+                                                  t ; negated-flg
+                                                  ))
+                                  ((when erp) (mv erp nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+                                  ((when provedp) (mv (erp-nil) t nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))
+                               (get-disjuncts (darg2 expr) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                              acc ; has been extended for darg1
+                                              nil ;negated-flg
+                                              ))))
+                  (t ;;it's not something we know how to get disjuncts from:
+                   (mv (erp-nil)
+                       nil ; provedp
+                       (add-to-set-eql item acc)
+                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))))))
       ;; The negated-flag is t, so we are returning the negations of the conjuncts of ITEM:
       (if (consp item) ;test for quotep
           (if (unquote item)
@@ -102,34 +152,72 @@
                 nil ; meaningless
                 dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
         (let ((expr (aref1 'dag-array dag-array item)))
-          (if (and (call-of 'booland expr)
-                   (= 2 (len (dargs expr))))
-              ;; To get the negated conjuncts of a booland, we get the negated conjuncts from the arguments and union the results:
-              (b* (((mv erp provedp acc dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-                    ;; TODO: Why do we process arg2 first?
-                    (get-disjuncts (darg2 expr) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc
-                                   t ;negated-flg
-                                   ))
-                   ((when erp) (mv erp nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
-                   ((when provedp) (mv (erp-nil) t nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))
-                (get-disjuncts (darg1 expr) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                               acc ; has been extended for darg2
-                               t   ;negated-flg
-                               ))
-            (if (and (call-of 'not expr)
-                     (= 1 (len (dargs expr))))
-                ;; EXPR is a call of NOT, so we can view it as (not (or x1 x2 ... xn)), which is the same as (and (not
-                ;; x1) (not x2) ... (not xn)).  So, to get EXPR's *negated* conjuncts, we just get x1 through xn
-                ;; (removing double negations), which are the disjuncts the argument to the NOT.
-                (get-disjuncts (darg1 expr) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc
-                               nil) ;;negated-flg
-              ;;it's not something we know how to get negated conjuncts from, so add its negation and return the item:
+          (if (variablep expr)
+              ;; Can't get negated conjuncts from a variable, so add its negation and return the item:
               (mv-let (erp negated-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
                 (add-function-call-expr-to-dag-array 'not (list item) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
                 (mv erp
-                    nil ; provedp
+                    nil                                  ; provedp
                     (add-to-set-eql negated-nodenum acc) ;meaningless if erp is t.
-                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))))))))
+                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+            (let ((fn (ffn-symb expr)))
+              (case fn
+                ;;todo: handle fn=quote ?
+                (booland (if (not (= 2 (len (dargs expr))))
+                             (prog2$ (er hard? 'get-disjuncts "Bad arity for BOOLAND.")
+                                     (mv :bad-arity nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+                           ;; To get the negated conjuncts of a booland, we get the negated conjuncts from the arguments and union the results:
+                           (b* (((mv erp provedp acc dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+                                 ;; TODO: Why do we process arg2 first?
+                                 (get-disjuncts (darg2 expr) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc
+                                                t ;negated-flg
+                                                ))
+                                ((when erp) (mv erp nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+                                ((when provedp) (mv (erp-nil) t nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))
+                             (get-disjuncts (darg1 expr) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                            acc ; has been extended for darg2
+                                            t   ;negated-flg
+                                            ))))
+                (if (if (not (= 3 (len (dargs expr))))
+                        (prog2$ (er hard? 'get-disjuncts "Bad arity for IF.")
+                                (mv :bad-arity nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+                      ;; Treat (if x y nil) as (and x y)
+                      (if (equal (darg3 expr) *nil*)
+                          ;; To get the negated conjuncts of an AND, we get the negated conjuncts from the arguments and union the results:
+                          (b* (((mv erp provedp acc dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+                                (get-disjuncts (darg1 expr) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc
+                                               t ;negated-flg
+                                               ))
+                               ((when erp) (mv erp nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+                               ((when provedp) (mv (erp-nil) t nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))
+                            (get-disjuncts (darg2 expr) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                           acc ; has been extended for darg1
+                                           t   ;negated-flg
+                                           ))
+                        ;; TODO: Handle any other kinds of IF?
+                        ;;it's not something we know how to get negated conjuncts from, so add its negation and return the item:
+                        (mv-let (erp negated-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+                          (add-function-call-expr-to-dag-array 'not (list item) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+                          (mv erp
+                              nil                                  ; provedp
+                              (add-to-set-eql negated-nodenum acc) ;meaningless if erp is t.
+                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))))
+                (not (if (not (= 1 (len (dargs expr))))
+                         (prog2$ (er hard? 'get-disjuncts "Bad arity for NOT.")
+                                 (mv :bad-arity nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+                       ;; EXPR is a call of NOT, so we can view it as (not (or x1 x2 ... xn)), which is the same as (and (not
+                       ;; x1) (not x2) ... (not xn)).  So, to get EXPR's *negated* conjuncts, we just get x1 through xn
+                       ;; (removing double negations), which are the disjuncts the argument to the NOT.
+                       (get-disjuncts (darg1 expr) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc
+                                      nil ;;negated-flg
+                                      )))
+                (t ;;it's not something we know how to get negated conjuncts from, so add its negation and return the item:
+                 (mv-let (erp negated-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+                   (add-function-call-expr-to-dag-array 'not (list item) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+                   (mv erp
+                       nil                                      ; provedp
+                       (add-to-set-eql negated-nodenum acc) ;meaningless if erp is t.
+                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))))))))))
 
 ;; (mv-let (erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
 ;;   (make-term-into-dag-array-basic '(booland x y) 'dag-array-name 'dag-parent-array-name nil)

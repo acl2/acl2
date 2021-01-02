@@ -46,22 +46,16 @@
 
 (defthm-with-basic-prover-clause-processor test2
   (implies (natp x)
-           (natp x))
-  :rules (implies) ;todo
-  )
+           (natp x)))
 
 (must-fail
  (defthm-with-basic-prover-clause-processor test3
    (implies (integerp x)
-            (natp x))
-   :rules (implies) ;todo
-   ))
+            (natp x))))
 
 (defthm-with-basic-prover-clause-processor test4
   (implies t
-           (natp 7))
-  :rules (implies) ;todo
-  )
+           (natp 7)))
 
 (defthm-with-basic-prover-clause-processor boolor-1
   (boolor t x))
@@ -102,11 +96,59 @@
    :rule-classes nil
    ))
 
-;todo
-;; (defthm-with-basic-prover-clause-processor implies-or-1
-;;   (implies (or (natp x) (natp y)) (natp y))
-;;   :rules (implies)
-;;   )
+(must-fail
+ (defthm-with-basic-prover-clause-processor implies-or-1
+   (implies (or (natp x) (natp y))
+            (natp y))))
+
+(defthm-with-basic-prover-clause-processor or-1
+  (implies x
+           (or x y)))
+
+(defthm-with-basic-prover-clause-processor or-2
+  (implies y
+           (or x y)))
+
+(defthm-with-basic-prover-clause-processor or-3
+  (implies (or x y)
+           (or x y)))
+
+(defthm-with-basic-prover-clause-processor or-3b
+  (implies (or (natp x) (natp y))
+           (or (natp x) (natp y))))
+
+(must-fail
+ (defthm-with-basic-prover-clause-processor or-false-1
+   (implies (or x y)
+            x)))
+
+(must-fail
+ (defthm-with-basic-prover-clause-processor or-false-2
+   (implies (or x y)
+            y)))
+
+(defthm-with-basic-prover-clause-processor and-1
+  (implies (and x y)
+           x)
+  :rule-classes nil)
+
+(defthm-with-basic-prover-clause-processor and-2
+  (implies (and x y)
+           y)
+  :rule-classes nil)
+
+(must-fail
+ (defthm-with-basic-prover-clause-processor and-false-1
+   (implies x
+            (and x y))
+   :rule-classes nil))
+
+(must-fail
+ (defthm-with-basic-prover-clause-processor and-false-2
+   (implies y
+            (and x y))
+   :rule-classes nil))
+
 
 ;todo
 ;; (defthm-with-basic-prover-clause-processor implies-boolor-1
@@ -114,27 +156,24 @@
 ;;   :rules (implies booleanp-of-boolor)
 ;;   )
 
-;todo: prove without splitting.  need to look up if tests in assumptions somehow.
 (defthm-with-basic-prover-clause-processor if-1
   (implies (natp x)
            (equal (if (natp x) x y) x))
-  :rules (implies equal-same)
-  :rule-classes nil
-  )
+  :rule-classes nil)
 
-;todo: prove without splitting.  need to look up if tests in assumptions somehow, even if non-boolean.
+;todo: prove without splitting.  need to look up if tests in assumptions somehow, even if non-boolean. done?
 (defthm-with-basic-prover-clause-processor if-2
   (implies (member-equal '1 x)
            (equal (if (member-equal '1 x) x y) x))
-  :rules (implies equal-same)
+;  :rules (implies equal-same)
   :rule-classes nil
   )
 
-;; only one literal, and its a negated equality of a var that could be used to substitute
+;; only one literal, and its a negated equality of a var that could be used to
+;; substitute.  After substitution, no literals are left.
 (must-fail
  (defthm-with-basic-prover-clause-processor subst-1
    (not (equal x (car y)))
-   :rules (implies equal-same) ;todo: doesn't try to subst if no rules given?
    :rule-classes nil
    ))
 
@@ -142,9 +181,7 @@
 (defthm-with-basic-prover-clause-processor subst-2
   (implies (equal x (car y))
            (equal (len x) (len (car y))))
-  :rules (implies equal-same)
-  :rule-classes nil
-  )
+  :rule-classes nil)
 
 (deftest
   (local (include-book "boolean-rules-axe")) ;drop?
@@ -323,54 +360,42 @@
 ;; todo: get this to work without splitting?
 (defthm-with-basic-prover-clause-processor non-boolean-1
   (implies (member-equal a x) (member-equal a x))
-  :rules (implies equal-same) ;todo: few to none of these rules should need to be given explicitly
   :rule-classes nil
   )
 
 (defthm-with-basic-prover-clause-processor contra-1
   (boolor x (not x))
   :rule-classes nil
-  :rules (posp) ;have to give some rules to enable making assumptions, etc.
   )
 
 (defthm-with-basic-prover-clause-processor contra-1b
   (boolor (not x) x)
   :rule-classes nil
-  :rules (posp) ;have to give some rules to enable making assumptions, etc.
   )
 
 (must-fail
  (defthm-with-basic-prover-clause-processor contra-2
    (boolor (equal x 3) (not x))
-   :rule-classes nil
-   :rules (posp) ;have to give some rules to enable making assumptions, etc.
-   ))
+   :rule-classes nil))
 
 (must-fail
  (defthm-with-basic-prover-clause-processor contra-2b
    (boolor x (equal x t))
-   :rule-classes nil
-   :rules (posp) ;have to give some rules to enable making assumptions, etc.
-   ))
+   :rule-classes nil))
 
 (defthm-with-basic-prover-clause-processor contra-2c
   (boolor x (equal x nil))
   :rule-classes nil
-  :rules (posp) ;have to give some rules to enable making assumptions, etc.
   )
 
 (must-fail
  (defthm-with-basic-prover-clause-processor contra-2d
    (boolor (not x) (not (equal x t)))
-   :rule-classes nil
-   :rules (posp) ;have to give some rules to enable making assumptions, etc.
-   ))
+   :rule-classes nil))
 
 (must-fail
  (defthm-with-basic-prover-clause-processor contra-2d
    (boolor (not x) (equal x t))
-   :rule-classes nil
-   :rules (posp) ;have to give some rules to enable making assumptions, etc.
-   ))
+   :rule-classes nil))
 
 ;; TODO: Test that machinery for detecting contradictions when making the assumption-array
