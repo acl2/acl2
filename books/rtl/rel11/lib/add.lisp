@@ -81,7 +81,7 @@
 	    (logior (logand (bitn x (1- k)) (cbit x y cin (1- k)))
 		    (logand (bitn y (1- k)) (cbit x y cin  (1- k)))))))
 
-(defthm ripple-carry-lemma
+(defthmd ripple-carry-lemma
   (implies (and (integerp x)
                 (integerp y)
                 (bitp cin)
@@ -299,7 +299,7 @@
         (bk0 x y i n)
       (fco (bk0 x y i n)
 	   (bk x y (- i (expt 2 p)) n)))))
-		
+
 (defthmd bk0-correct-gen
   (implies (and (integerp x)
 		(integerp y)

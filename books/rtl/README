@@ -470,8 +470,8 @@ Definition 9.4   eta
 Lemma 9.13       sum-eta-lemma
 Lemma 9.14       booth8-corollary
 
-Chapter 9        srt.lisp
----------        --------
+Chapter 10       srt.lisp
+----------       --------
 Lemma 10.1       remd-recurrence
 Lemma 10.2       remd0-bound
 Lemma 10.3       remd-bnd-next
@@ -488,8 +488,8 @@ Lemma 10.13      sqrt-containment
 Lemma 10.14      rem-sqrt-bnds-next
 Lemma 10.15      srt-sqrt-rad-4
 
-Chapter 9        div.lisp
----------        --------
+Chapter 11       div.lisp
+----------       --------
 Definition 11.1  rcp24
 Lemma 11.1       rcp24-spec
 Lemma 11.2       init-approx
@@ -497,10 +497,10 @@ Lemma 11.3       r-exactp, markstein
 Lemma 11.4       quotient-refinement-1, quotient-refinement-2
 Lemma 11.5       recip-refinement-1, recip-refinement-2
 Lemma 11.6       harrison-lemma
-Definition 11.1  divsp
+Definition 11.2  divsp
 Lemma 11.7       divsp-small-cases
 Theorem 11.1     divsp-correct
-Definition 11.2  divdp
+Definition 11.3  divdp
 Lemma 11.8       rcp24-rtz-error
 Lemma 11.9       divdp-small-cases
 Theorem 11.2     divdp-correct
