@@ -609,6 +609,21 @@
           (n (expt r (- m k))))
         (:instance chop-r-down (x (chop-r x m r)) (n k))))
 
+(defruled chop-r-plus
+  (implies (and (real/rationalp x)
+	        (real/rationalp y)
+	        (integerp k)
+		(radixp r))
+           (and (equal (chop-r (+ x (chop-r y k r)) k r)
+		       (+ (chop-r x k r) (chop-r y k r)))
+		(equal (chop-r (+ (chop-r x k r) (chop-r y k r)) k r)
+		       (+ (chop-r x k r) (chop-r y k r)))
+		(equal (chop-r (- x (chop-r y k r)) k r)
+		       (- (chop-r x k r) (chop-r y k r)))
+		(equal (chop-r (- (chop-r x k r) (chop-r y k r)) k r)
+		       (- (chop-r x k r) (chop-r y k r)))))
+  :enable chop-r)
+
 (defruled chop-r-shift
   (implies (and (real/rationalp x)
                 (integerp k)
@@ -765,6 +780,20 @@
                        (chop x k))
 		(<= (chop x k) (chop x m))))
   :enable chop-r-chop-r)
+
+(defrule chop-plus
+  (implies (and (rationalp x)
+	        (rationalp y)
+	        (integerp k))
+           (and (equal (chop (+ x (chop y k)) k)
+		       (+ (chop x k) (chop y k)))
+		(equal (chop (+ (chop x k) (chop y k)) k)
+		       (+ (chop x k) (chop y k)))
+		(equal (chop (- x (chop y k)) k)
+		       (- (chop x k) (chop y k)))
+		(equal (chop (- (chop x k) (chop y k)) k)
+		       (- (chop x k) (chop y k)))))
+  :enable chop-r-plus)
 
 (defruled chop-shift
   (implies (and (real/rationalp x)

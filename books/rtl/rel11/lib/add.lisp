@@ -603,6 +603,36 @@
            (or (= (expo (bits (+ a b 1) (1- n) 0)) (expo (w0 a b n)))
                (= (expo (bits (+ a b 1) (1- n) 0)) (1- (expo (w0 a b n))))))
   :rule-classes ())
+
+;; Leading zero counter:
+
+(defund zseg (x k i)
+  (if (zp k)
+      (if (= (bitn x i) 0)
+	  1
+	0)
+    (if (and (= (zseg x (1- k) (1+ (* 2 i))) 1)
+	     (= (zseg x (1- k) (* 2 i)) 1))
+	1
+      0)))
+
+(defund zcount (x k i)
+  (if (zp k)
+      0
+    (if (= (zseg x (1- k) (1+ (* 2 i))) 1)
+	(+ (expt 2 (1- k)) (zcount x (1- k) (* 2 i)))
+      (zcount x (1- k) (1+ (* 2 i))))))
+
+(defund clz (x n)
+  (zcount x n 0))
+
+(defthmd clz-thm
+  (implies (and (natp n)
+                (bvecp x (expt 2 n))
+		(> x 0))
+	   (equal (clz x n)
+	          (- (1- (expt 2 n)) (expo x)))))
+
 )
 
 ;;;**********************************************************************
