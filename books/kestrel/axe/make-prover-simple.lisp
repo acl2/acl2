@@ -4321,9 +4321,9 @@
               ;; Handle the case of a constant DAG to prove (rare):
               ((when (quotep implication-dag-or-quotep))
                (if (unquote implication-dag-or-quotep)
-                   (prog2$ (cw "NOTE: Proved the DAG because it is a constant.")
+                   (prog2$ (cw "NOTE: Proved the DAG because it is a constant.~%")
                            (mv (erp-nil) '(value-triple :ok) state))
-                 (prog2$ (cw "NOTE: Failed because the DAG is the constant nil.")
+                 (prog2$ (cw "NOTE: Failed because the DAG is the constant nil.~%")
                          (mv :failed nil state))))
               (top-nodenum (top-nodenum-of-dag implication-dag-or-quotep))
               (dag-len (+ 1 top-nodenum))
