@@ -18,6 +18,8 @@
 
 (include-book "./ppa")
 
+(include-book "./clz")
+
 (include-book "./mult")
 
 (include-book "./util")
@@ -37,6 +39,8 @@
 (include-book "./reps")
 
 (include-book "./round")
+
+(include-book "./drnd")
 
 (include-book "./sqrt")
 
