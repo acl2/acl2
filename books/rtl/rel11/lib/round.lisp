@@ -1655,6 +1655,15 @@
   (equal (drnd (- x) mode f)
          (- (drnd x (flip-mode mode) f))))
 
+(defthmd drnd-rewrite
+  (implies (and (formatp f)
+                (rationalp x)
+                (<= (abs x) (spn f))
+                (common-mode-p mode))
+           (equal (drnd x mode f)
+                  (- (rnd (+ x (* (sgn x) (spn f))) mode (prec f))
+		     (* (sgn x) (spn f))))))
+
 (defthm drnd-exactp-a
   (implies (and (formatp f)
                 (rationalp x)
@@ -1770,14 +1779,6 @@
 	     (equal (drnd (rto x n) mode f)
 		    (drnd x mode f))))
 
-(defthmd rnd-drnd-up
-  (implies (and (formatp f)
-                (rationalp x)
-                (< (abs x) (spn f))
-                (common-mode-p mode)
-                (= (abs (rnd x mode (prec f))) (spn f)))
-           (equal (abs (drnd x mode f)) (spn f))))
-
 (defthmd rnd-drnd-exactp
   (implies (and (formatp f)
                 (rationalp x)
@@ -1785,15 +1786,6 @@
                 (common-mode-p mode)
                 (= (drnd x mode f) x))
            (equal (rnd x mode (prec f)) x)))
-
-(defthmd drnd-rewrite
-  (implies (and (formatp f)
-                (rationalp x)
-                (<= (abs x) (spn f))
-                (common-mode-p mode))
-           (equal (drnd x mode f)
-                  (- (rnd (+ x (* (sgn x) (spn f))) mode (prec f))
-		     (* (sgn x) (spn f))))))
 
 (defthmd drnd-tiny-a
   (implies (and (formatp f)
@@ -1837,5 +1829,31 @@
              (equal (drnd x mode f)
                     (drnd y mode f)))
     :rule-classes ())
+
+(defthmd rnd-drnd
+  (implies (and (formatp f)
+                (> (prec f) 2)
+		(rationalp m)
+		(< 0 m)
+		(< m 1)
+		(common-mode-p mode))
+	   (let* ((x (* (spn f) m))
+		  (p (prec f))
+		  (r (rnd x mode p))
+		  (d (drnd x mode f)))
+	     (case mode
+	       ((rdn rtz) (and (< r (spn f)) (< d (spn f))))
+	       ((rup raz) (and (iff (< r (spn f)) (<= m (- 1 (expt 2 (- p)))))
+	                       (iff (< d (spn f)) (<= m (- 1 (expt 2 (- 1 p)))))))
+	       ((rne rna) (and (iff (< r (spn f)) (< m (- 1 (expt 2 (- (1+ p))))))
+	                       (iff (< d (spn f)) (< m (- 1 (expt 2 (- p)))))))))))
+
+(defthmd rnd-drnd-up
+  (implies (and (formatp f)
+                (rationalp x)
+                (< (abs x) (spn f))
+                (common-mode-p mode)
+                (= (abs (rnd x mode (prec f))) (spn f)))
+           (equal (abs (drnd x mode f)) (spn f))))
 
 )
