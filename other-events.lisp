@@ -22210,7 +22210,9 @@
   (let ((*inside-trace$* t))
     (when (eq direction :in)
       (incf *trace-level*))
-    (let ((trace-level *trace-level*))
+    (let ((trace-level *trace-level*)
+          (*trace-output* (get-output-stream-from-channel
+                           (f-get-global 'trace-co *the-live-state*))))
       (when (not (eq msgp :fmt!))
         (cond
          ((eq direction :in)
