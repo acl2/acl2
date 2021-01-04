@@ -1183,6 +1183,7 @@
                  ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))
               (if (consp simplified-test) ;tests for quotep
                   ;; The test was resolved, so just simplify the appropriate branch:
+                  ;; TODO: Drop the bool-fix calls if the EQUIV is IFF?
                   (,simplify-tree-name (if (unquote simplified-test)
                                            `(bool-fix$inline ,(second args)) ;then branch
                                          `(bool-fix$inline ,(third args)) ;else branch
@@ -3615,10 +3616,10 @@
 
        (mutual-recursion
 
-        ;; Try to prove the clause assuming NODENUM is true.
+        ;; Try to prove the clause assuming NODENUM is non-nil.
         ;; Returns (mv erp result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries) where result is :proved, :failed, or :timed-out.
         ;; This is separate to keep the main function smaller.
-        (defund ,prove-true-case-name (nodenum ;; to be assumed true
+        (defund ,prove-true-case-name (nodenum ;; to be assumed non-nil
                                        literal-nodenums
                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                        rule-alists
