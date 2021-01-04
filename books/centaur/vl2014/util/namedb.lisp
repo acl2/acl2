@@ -801,8 +801,10 @@ matches a current prefix.</p>"
     (local (defthm lemma
              ;; Ugh, kind of ugly, but not too bad really.  This is just addressing
              ;; the particular case that doesn't default to indexed name generation
-             (implies (and (not (hons-assoc-equal name (vl-namedb->names db)))
-                           (vl-unlike-any-prefix-p name (alist-keys (vl-namedb->pmap db))))
+             (implies (and (not (hons-assoc-equal (str-fix name)
+                                                  (vl-namedb->names db)))
+                           (vl-unlike-any-prefix-p (str-fix name)
+                                                   (alist-keys (vl-namedb->pmap db))))
                       (equal
                        (vl-namedb-allnames (vl-namedb (cons (cons name t) (vl-namedb->names db))
                                                       (vl-namedb->pmap db)
@@ -816,10 +818,7 @@ matches a current prefix.</p>"
                (cons fresh-name
                      (vl-namedb-allnames db))))
       :hints(("Goal" :in-theory (disable
-                                 CONS-OF-STR-FIX-K-UNDER-VL-NAMEDB-NAMESET-EQUIV
-; Matt K. mod, 11/28/2020: Accommodate fix for storing patterned congruences.
-                                 (:congruence cons-streqv-congruence-on-k-under-vl-namedb-nameset-equiv)
-      ))))
+                                 CONS-OF-STR-FIX-K-UNDER-VL-NAMEDB-NAMESET-EQUIV))))
 
     (defthm vl-namedb->names-of-vl-namedb-plain-name
       (vl-namedb->names (mv-nth 1 (vl-namedb-plain-name name db)))))
