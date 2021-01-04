@@ -195,30 +195,30 @@
 
 ;(local (in-theory (enable natp)))
 
-; Currently only 'equal and 'iff are supported as equivs
+; Currently only 'equal and 'iff are supported as equivs.
+;; No entries are needed here for IF, MYIF, or BOOLIF, because all Axe provers handle them specially.
+;; We could drop BVIF except the simple provers do not (yet) handle it specially.
 (defconst *equiv-alist*
-  ;;fixme
-  ;;justify these by proving congruences?
-  (acons 'iff
+  (acons 'iff ; outer equiv that must be preserved
          (acons 'iff '(iff iff)
                 (acons 'bvif '(equal iff equal equal)
 ;this means if we are trying to preserve iff, and we are rewriting a boolor, use iff and iff for the args:
                        (acons 'boolor '(iff iff)
                               (acons 'boolxor '(iff iff)
-                                     (acons 'boolif '(iff iff iff)
-                                            (acons 'booland '(iff iff)
-                                                   (acons 'not '(iff)
-                                                          nil)))))))
-         (acons 'equal
+                                     (acons 'booland '(iff iff)
+                                            (acons 'not '(iff)
+                                                   nil))))))
+         (acons 'equal ; outer equiv that must be preserved
+                ;; We only include things here for which we can do better than using
+                ;; an equiv of EQUAL for all arguments:
                 (acons 'bool-to-bit '(iff) ;new
                        (acons 'iff '(iff iff)
                               (acons 'bvif '(equal iff equal equal)
                                      (acons 'boolor '(iff iff)
                                             (acons 'boolxor '(iff iff)
-                                                   (acons 'boolif '(iff iff iff)
-                                                          (acons 'booland '(iff iff)
-                                                                 (acons 'not '(iff)
-                                                                        nil))))))))
+                                                   (acons 'booland '(iff iff)
+                                                          (acons 'not '(iff)
+                                                                 nil)))))))
                 nil)))
 
 (thm
