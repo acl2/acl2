@@ -26,7 +26,7 @@
 ;; This may extend the dag, since some of the disjuncts may not already exist in the dag (ex: for (not (booland x y)), the disjuncts are (not x) and (not y), and these may not exist in the dag).
 ;; TODO: In theory this could blow up due to shared structure, but I haven't seen that happen.
 ;ffixme handle non-predicates (in which case we'll have an if nest, not a boolor nest)?
-(defund get-disjuncts (item dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc negated-flg)
+(defund get-disjuncts (item dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc negated-flg print)
   (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                               (dargp-less-than item dag-len)
                               (nat-listp acc)
@@ -54,7 +54,7 @@
                     nil ; meaningless
                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
               ;; A nil constant gets dropped:
-              (prog2$ (cw "NOTE: Dropping nil disjunct.~%")
+              (prog2$ (and print (cw "NOTE: Dropping nil disjunct.~%"))
                       (mv (erp-nil)
                           nil ;provedp
                           acc ; not extended
@@ -78,12 +78,14 @@
                                   (get-disjuncts (darg2 expr) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                  acc
                                                  nil ;negated-flg
+                                                 print
                                                  ))
                                  ((when erp) (mv erp nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
                                  ((when provedp) (mv (erp-nil) t nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))
                               (get-disjuncts (darg1 expr) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                              acc ; has been extended for darg2
                                              nil ; negated-flg
+                                             print
                                              ))))
                   (if (if (not (= 3 (len (dargs expr))))
                           (prog2$ (er hard? 'get-disjuncts "Bad arity for IF.")
@@ -94,12 +96,14 @@
                                   (get-disjuncts (darg1 expr) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                  acc
                                                  nil ;negated-flg
+                                                 print
                                                  ))
                                  ((when erp) (mv erp nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
                                  ((when provedp) (mv (erp-nil) t nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))
                               (get-disjuncts (darg3 expr) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                              acc ; has been extended for darg1
                                              nil ; negated-flg
+                                             print
                                              ))
                           ;; TODO: Handle more cases of if, such as (if x t y)
                           (mv (erp-nil)
@@ -114,6 +118,7 @@
                          ;; them all.  That is, we get the negated conjuncts of the argument of the NOT.
                          (get-disjuncts (darg1 expr) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc
                                         t ; negated-flg
+                                        print
                                         )))
                   (implies (if (not (= 2 (len (dargs expr))))
                                (prog2$ (er hard? 'get-disjuncts "Bad arity for IMPLIES.")
@@ -126,12 +131,14 @@
                                    (get-disjuncts (darg1 expr) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                   acc
                                                   t ; negated-flg
+                                                  print
                                                   ))
                                   ((when erp) (mv erp nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
                                   ((when provedp) (mv (erp-nil) t nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))
                                (get-disjuncts (darg2 expr) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                               acc ; has been extended for darg1
                                               nil ;negated-flg
+                                              print
                                               ))))
                   (t ;;it's not something we know how to get disjuncts from:
                    (mv (erp-nil)
@@ -171,13 +178,13 @@
                                  ;; TODO: Why do we process arg2 first?
                                  (get-disjuncts (darg2 expr) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc
                                                 t ;negated-flg
-                                                ))
+                                                print))
                                 ((when erp) (mv erp nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
                                 ((when provedp) (mv (erp-nil) t nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))
                              (get-disjuncts (darg1 expr) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                             acc ; has been extended for darg2
                                             t   ;negated-flg
-                                            ))))
+                                            print))))
                 (if (if (not (= 3 (len (dargs expr))))
                         (prog2$ (er hard? 'get-disjuncts "Bad arity for IF.")
                                 (mv :bad-arity nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
@@ -187,13 +194,13 @@
                           (b* (((mv erp provedp acc dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
                                 (get-disjuncts (darg1 expr) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc
                                                t ;negated-flg
-                                               ))
+                                               print))
                                ((when erp) (mv erp nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
                                ((when provedp) (mv (erp-nil) t nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))
                             (get-disjuncts (darg2 expr) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                            acc ; has been extended for darg1
                                            t   ;negated-flg
-                                           ))
+                                           print))
                         ;; TODO: Handle any other kinds of IF?
                         ;;it's not something we know how to get negated conjuncts from, so add its negation and return the item:
                         (mv-let (erp negated-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
@@ -210,7 +217,7 @@
                        ;; (removing double negations), which are the disjuncts the argument to the NOT.
                        (get-disjuncts (darg1 expr) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc
                                       nil ;;negated-flg
-                                      )))
+                                      print)))
                 (t ;;it's not something we know how to get negated conjuncts from, so add its negation and return the item:
                  (mv-let (erp negated-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
                    (add-function-call-expr-to-dag-array 'not (list item) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
@@ -222,10 +229,10 @@
 ;; (mv-let (erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
 ;;   (make-term-into-dag-array-basic '(booland x y) 'dag-array-name 'dag-parent-array-name nil)
 ;;   (declare (ignore erp))
-;;   (get-disjuncts nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nil t))
+;;   (get-disjuncts nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nil t print))
 
 (def-dag-builder-theorems
-  (get-disjuncts item dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc negated-flg)
+  (get-disjuncts item dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc negated-flg print)
   (mv erp
       provedp ;todo: when this was missing, def-dag-builder-theorems did now throw a nice error
       disjuncts dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
@@ -235,14 +242,14 @@
   (implies  (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                  (dargp-less-than item dag-len)
                  (nat-listp acc))
-            (nat-listp (mv-nth 2 (get-disjuncts item dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc negated-flg))))
+            (nat-listp (mv-nth 2 (get-disjuncts item dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc negated-flg print))))
   :hints (("Goal" :in-theory (e/d (get-disjuncts) (natp)))))
 
 (verify-guards get-disjuncts :hints (("Goal" :in-theory (e/d (car-becomes-nth-of-0) (natp)))))
 
 (defthm true-listp-of-mv-nth-2-of-get-disjuncts
   (implies  (true-listp acc)
-            (true-listp (mv-nth 2 (get-disjuncts item dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc negated-flg))))
+            (true-listp (mv-nth 2 (get-disjuncts item dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc negated-flg print))))
   :hints (("Goal" :in-theory (e/d (get-disjuncts) (natp)))))
 
 (defthm all-<-of-mv-nth-2-of-get-disjuncts
@@ -250,16 +257,17 @@
                  (dargp-less-than item dag-len)
                  (nat-listp acc)
                  (all-< acc dag-len)
-                 (not (mv-nth 0 (get-disjuncts item dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc negated-flg))))
-            (all-< (mv-nth 2 (get-disjuncts item dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc negated-flg))
-                   (mv-nth 4 (get-disjuncts item dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc negated-flg))))
+                 (not (mv-nth 0 (get-disjuncts item dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc negated-flg print))))
+            (all-< (mv-nth 2 (get-disjuncts item dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc negated-flg print))
+                   (mv-nth 4 (get-disjuncts item dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc negated-flg print))))
   :hints (("Goal" :in-theory (e/d (get-disjuncts CAR-BECOMES-NTH-OF-0) (natp)))))
 
 ;; Extends ACC with nodenums whose disjunction is equivalent to the disjunction of the NODENUMS.
 ;; Returns (mv erp provedp extended-acc dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist).
 (defund get-disjuncts-from-nodes (nodenums ;todo: we could now allow constants
                                   dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                  acc)
+                                  acc
+                                  print)
   (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                               (nat-listp nodenums)
                               (all-< nodenums dag-len)
@@ -279,17 +287,18 @@
                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                          acc ; will be extended
                          nil ; negated-flg
+                         print
                          ))
          ((when erp) (mv erp nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
          ((when provedp) (mv (erp-nil) t nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))
-      (get-disjuncts-from-nodes (rest nodenums) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc))))
+      (get-disjuncts-from-nodes (rest nodenums) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc print))))
 
 (def-dag-builder-theorems
-  (get-disjuncts-from-nodes nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc)
+  (get-disjuncts-from-nodes nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc print)
   (mv erp provedp extended-acc dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
 
 (defthm get-disjuncts-from-nodes-of-nil
-  (equal (get-disjuncts-from-nodes nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc)
+  (equal (get-disjuncts-from-nodes nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc print)
          (mv (erp-nil)
              nil ;provedp
              (reverse acc)
@@ -318,9 +327,7 @@
                  (all-< nodenums dag-len)
                  (nat-listp acc)
                  (all-< acc dag-len))
-            (nat-listp (mv-nth 2 (get-disjuncts-from-nodes nodenums
-                                                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                           acc))))
+            (nat-listp (mv-nth 2 (get-disjuncts-from-nodes nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc print))))
   :hints (("Goal" :in-theory (e/d (get-disjuncts-from-nodes) (natp)))))
 
 (defthm all-<-of-mv-nth-2-of-get-disjuncts-from-nodes
@@ -329,15 +336,13 @@
                  (all-< nodenums dag-len)
                  (nat-listp acc)
                  (all-< acc dag-len))
-            (all-< (mv-nth 2 (get-disjuncts-from-nodes nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc))
-                   (mv-nth 4 (get-disjuncts-from-nodes nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc))))
+            (all-< (mv-nth 2 (get-disjuncts-from-nodes nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc print))
+                   (mv-nth 4 (get-disjuncts-from-nodes nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc print))))
   :hints (("Goal" :in-theory (e/d (get-disjuncts-from-nodes) (natp)))))
 
 (defthm true-listp-of-mv-nth-2-of-get-disjuncts-from-nodes
   (implies (true-listp acc)
-           (true-listp (mv-nth 2 (get-disjuncts-from-nodes nodenums
-                                                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                           acc))))
+           (true-listp (mv-nth 2 (get-disjuncts-from-nodes nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc print))))
   :rule-classes :type-prescription
   :hints (("Goal" :in-theory (e/d (get-disjuncts-from-nodes) (natp)))))
 
@@ -348,7 +353,7 @@
                  (nat-listp acc)
                  (all-< acc dag-len))
             (<= dag-len
-                (mv-nth 4 (get-disjuncts-from-nodes nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc))))
+                (mv-nth 4 (get-disjuncts-from-nodes nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc print))))
   :rule-classes :linear
   :hints (("Goal" :in-theory (e/d (get-disjuncts-from-nodes) (natp)))))
 
@@ -360,7 +365,7 @@
                  (nat-listp acc)
                  (all-< acc dag-len))
             (< 0
-                (mv-nth 4 (get-disjuncts-from-nodes nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc))))
+                (mv-nth 4 (get-disjuncts-from-nodes nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc print))))
   :rule-classes :linear
   :hints (("Goal" :in-theory (e/d (get-disjuncts-from-nodes) (natp)))))
 
