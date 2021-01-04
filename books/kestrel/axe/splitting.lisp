@@ -210,7 +210,7 @@
           acc
         (let ((args (dargs expr)))
           ;;instead of skipping the nots, just include not as a function here?  then x will have a smaller size than (not x) in the size array
-          (cond ((and (or (eq 'myif fn) (eq 'if fn))
+          (cond ((and (member-eq fn '(if myif))
                       (= 3 (len args)))
                  (strip-nots-and-maybe-extend (first args) dag-array-name dag-array acc))
                 ((and (eq fn 'bvif)
@@ -488,7 +488,7 @@
                                    ;member-of-cons ;todo
                                    )))))
 
-;returns a nodenum to split on, or nil
+;; Returns a nodenum to split on, or nil.
 ;can we speed this up?
 ;destroys 'size-array and 'done-array
 ;;fffixme could the node to spit on ever be a literal?  or the negation of a literal? avoid that (could lead to loops)
