@@ -399,3 +399,8 @@
    :rule-classes nil))
 
 ;; TODO: Test that machinery for detecting contradictions when making the assumption-array
+
+;; todo: get this to work:
+;; (defthm-with-basic-prover-clause-processor test1
+;;   (EQUAL (IF C NIL T) (EQUAL NIL C))
+;;   :rule-classes nil)
