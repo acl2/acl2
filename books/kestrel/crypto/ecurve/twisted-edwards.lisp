@@ -1025,3 +1025,24 @@
                                                               point2
                                                               curve)
                                          curve))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define twisted-edwards-neutral ()
+  :returns (point pointp)
+  :short "Neutral point of the twisted Edwards curve group."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is always @($(0,1)$).
+     See the paper referenced in @(see twisted-edwards-curves)."))
+  (point-finite 0 1)
+  ///
+
+  (defrule point-on-twisted-edwards-p-of-twisted-edwards-neutral
+    (point-on-twisted-edwards-p (twisted-edwards-neutral) curve)
+    :enable point-on-twisted-edwards-p
+    :prep-books
+    ((include-book "kestrel/prime-fields/prime-fields-rules" :dir :system)))
+
+  (in-theory (disable (:e twisted-edwards-neutral))))
