@@ -1083,3 +1083,38 @@
           (p (twisted-edwards->p curve)))
     :prep-books
     ((include-book "kestrel/prime-fields/prime-fields-rules" :dir :system))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define twisted-edwards-sub ((point1 pointp)
+                             (point2 pointp)
+                             (curve twisted-edwards-p))
+  :guard (and (twisted-edwards-primep curve)
+              (twisted-edwards-completep curve)
+              (point-on-twisted-edwards-p point1 curve)
+              (point-on-twisted-edwards-p point2 curve))
+  :returns (point pointp)
+  :short "Subtraction of two points of the twisted Edwards group."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is, as usual in groups, essentially an abbreviation for
+     adding the first point to the negation of the second point."))
+  (twisted-edwards-add point1
+                       (twisted-edwards-neg point2 curve)
+                       curve)
+  :hooks (:fix)
+  ///
+
+  (defrule point-on-twisted-edwards-p-of-twisted-edwards-sub
+    (implies (and (twisted-edwards-p curve)
+                  (twisted-edwards-primep curve)
+                  (twisted-edwards-completep curve)
+                  (pointp point1)
+                  (pointp point2)
+                  (point-on-twisted-edwards-p point1 curve)
+                  (point-on-twisted-edwards-p point2 curve))
+             (point-on-twisted-edwards-p (twisted-edwards-sub point1
+                                                              point2
+                                                              curve)
+                                         curve))))
