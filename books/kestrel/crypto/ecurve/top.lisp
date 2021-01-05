@@ -24,6 +24,7 @@
 
 (include-book "bls12-377-domain-parameters")
 
+(include-book "prime-field-squares")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -39,4 +40,5 @@
    secp256k1
    secp256k1-interface
    secp256k1-attachment
-   bls12-377-domain-parameters))
+   bls12-377-domain-parameters
+   prime-field-squares))
