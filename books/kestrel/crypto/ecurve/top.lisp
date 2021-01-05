@@ -13,6 +13,8 @@
 (include-book "short-weierstrass")
 (include-book "short-weierstrass-validation")
 
+(include-book "twisted-edwards")
+
 (include-book "secp256k1-domain-parameters")
 (include-book "secp256k1-interface")
 (include-book "secp256k1-types")
@@ -35,6 +37,7 @@
 (xdoc::order-subtopics elliptic-curves
   (points
    short-weierstrass
+   twisted-edwards
    secp256k1-domain-parameters
    secp256k1-types
    secp256k1
