@@ -245,7 +245,8 @@
        :returns (mv erp
                     (result
                      "A @('(tuple (fn symbolp)
-                                  (updated-names-to-avoid symbol-listp))').")
+                                  (updated-names-to-avoid symbol-listp)
+                                  result)').")
                     state)
        :mode :program
        :short ,short

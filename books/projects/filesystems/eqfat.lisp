@@ -272,112 +272,112 @@
 #|
 Some (rather awful) testing forms are
 (b* (((mv contents &)
-      (get-cc-contents fat32$c 2 *ms-max-dir-size*)))
-  (get-dir-filenames fat32$c contents *ms-max-dir-size*))
+(get-cc-contents fat32$c 2 *ms-max-dir-size*)))
+(get-dir-filenames fat32$c contents *ms-max-dir-size*))
 (b* (((mv dir-contents &)
-      (get-cc-contents fat32$c 2 *ms-max-dir-size*)))
-  (lofat-to-hifat fat32$c))
+(get-cc-contents fat32$c 2 *ms-max-dir-size*)))
+(lofat-to-hifat fat32$c))
 (b* (((mv dir-contents &)
-      (get-cc-contents fat32$c 2 *ms-max-dir-size*))
-     (fs (lofat-to-hifat fat32$c)))
-  (hifat-open (list "INITRD  IMG") nil nil))
+(get-cc-contents fat32$c 2 *ms-max-dir-size*))
+(fs (lofat-to-hifat fat32$c)))
+(hifat-open (list "INITRD  IMG") nil nil))
 (b* (((mv dir-contents &)
-      (get-cc-contents fat32$c 2 *ms-max-dir-size*))
-     (fs (lofat-to-hifat fat32$c))
-     ((mv fd-table file-table & &)
-      (hifat-open (list "INITRD  IMG") nil nil)))
-  (hifat-pread 0 6 49 fs fd-table file-table))
+(get-cc-contents fat32$c 2 *ms-max-dir-size*))
+(fs (lofat-to-hifat fat32$c))
+((mv fd-table file-table & &)
+(hifat-open (list "INITRD  IMG") nil nil)))
+(hifat-pread 0 6 49 fs fd-table file-table))
 (b* (((mv dir-contents &)
-      (get-cc-contents fat32$c 2 *ms-max-dir-size*))
-     (fs (lofat-to-hifat fat32$c))
-     ((mv fd-table file-table & &)
-      (hifat-open (list "INITRD  IMG") nil nil)))
-  (hifat-pwrite 0 "ornery" 49 fs fd-table file-table))
+(get-cc-contents fat32$c 2 *ms-max-dir-size*))
+(fs (lofat-to-hifat fat32$c))
+((mv fd-table file-table & &)
+(hifat-open (list "INITRD  IMG") nil nil)))
+(hifat-pwrite 0 "ornery" 49 fs fd-table file-table))
 (b* (((mv dir-contents &)
-      (get-cc-contents fat32$c 2 *ms-max-dir-size*))
-     (fs (lofat-to-hifat fat32$c))
-     ((mv fd-table file-table & &)
-      (hifat-open (list "INITRD  IMG") nil nil))
-     ((mv fs & &)
-      (hifat-pwrite 0 "ornery" 49 fs fd-table file-table))
-     ((mv fat32$c d-e-list)
-      (hifat-to-lofat-helper fat32$c fs)))
-  (mv fat32$c d-e-list))
+(get-cc-contents fat32$c 2 *ms-max-dir-size*))
+(fs (lofat-to-hifat fat32$c))
+((mv fd-table file-table & &)
+(hifat-open (list "INITRD  IMG") nil nil))
+((mv fs & &)
+(hifat-pwrite 0 "ornery" 49 fs fd-table file-table))
+((mv fat32$c d-e-list)
+(hifat-to-lofat-helper fat32$c fs)))
+(mv fat32$c d-e-list))
 (b* (((mv dir-contents &)
-      (get-cc-contents fat32$c 2 *ms-max-dir-size*))
-     (fs (lofat-to-hifat fat32$c))
-     ((mv fd-table file-table & &)
-      (hifat-open (list "INITRD  IMG") nil nil))
-     ((mv fs & &)
-      (hifat-pwrite 0 "ornery" 49 fs fd-table file-table)))
-  (hifat-to-lofat fat32$c fs))
+(get-cc-contents fat32$c 2 *ms-max-dir-size*))
+(fs (lofat-to-hifat fat32$c))
+((mv fd-table file-table & &)
+(hifat-open (list "INITRD  IMG") nil nil))
+((mv fs & &)
+(hifat-pwrite 0 "ornery" 49 fs fd-table file-table)))
+(hifat-to-lofat fat32$c fs))
 (time$
- (b*
-     ((str (lofat-to-string
-            fat32$c))
-      ((unless (and (stringp str)
-                    (>= (length str) *initialbytcnt*)))
-       (mv fat32$c -1))
-      ((mv fat32$c error-code)
-       (read-reserved-area fat32$c str))
-      ((unless (equal error-code 0))
-       (mv fat32$c "it was read-reserved-area"))
-      (fat-read-size (/ (* (bpb_fatsz32 fat32$c)
-                           (bpb_bytspersec fat32$c))
-                        4))
-      ((unless (integerp fat-read-size))
-       (mv fat32$c "it was fat-read-size"))
-      (data-byte-count (* (count-of-clusters fat32$c)
-                          (cluster-size fat32$c)))
-      ((unless (> data-byte-count 0))
-       (mv fat32$c "it was data-byte-count"))
-      (tmp_bytspersec (bpb_bytspersec fat32$c))
-      (tmp_init (* tmp_bytspersec
-                   (+ (bpb_rsvdseccnt fat32$c)
-                      (* (bpb_numfats fat32$c)
-                         (bpb_fatsz32 fat32$c)))))
-      ((unless (>= (length str)
-                   (+ tmp_init
-                      (data-region-length fat32$c))))
-       (mv fat32$c "it was (length str)"))
-      (fat32$c (resize-fat fat-read-size fat32$c))
-      (fat32$c
-       (update-fat fat32$c
-                   (subseq str
-                           (* (bpb_rsvdseccnt fat32$c)
-                              (bpb_bytspersec fat32$c))
-                           (+ (* (bpb_rsvdseccnt fat32$c)
-                                 (bpb_bytspersec fat32$c))
-                              (* fat-read-size 4)))
-                   fat-read-size))
-      (fat32$c
-       (resize-data-region data-byte-count fat32$c))
-      (data-region-string
-       (subseq str tmp_init
-               (+ tmp_init
-                  (data-region-length fat32$c))))
-      (fat32$c
-       (update-data-region fat32$c data-region-string
-                           (data-region-length fat32$c)
-                           0)))
-   (mv fat32$c error-code)))
+(b*
+((str (lofat-to-string
+fat32$c))
+((unless (and (stringp str)
+(>= (length str) *initialbytcnt*)))
+(mv fat32$c -1))
+((mv fat32$c error-code)
+(read-reserved-area fat32$c str))
+((unless (equal error-code 0))
+(mv fat32$c "it was read-reserved-area"))
+(fat-read-size (/ (* (bpb_fatsz32 fat32$c)
+(bpb_bytspersec fat32$c))
+4))
+((unless (integerp fat-read-size))
+(mv fat32$c "it was fat-read-size"))
+(data-byte-count (* (count-of-clusters fat32$c)
+(cluster-size fat32$c)))
+((unless (> data-byte-count 0))
+(mv fat32$c "it was data-byte-count"))
+(tmp_bytspersec (bpb_bytspersec fat32$c))
+(tmp_init (* tmp_bytspersec
+(+ (bpb_rsvdseccnt fat32$c)
+(* (bpb_numfats fat32$c)
+(bpb_fatsz32 fat32$c)))))
+((unless (>= (length str)
+(+ tmp_init
+(data-region-length fat32$c))))
+(mv fat32$c "it was (length str)"))
+(fat32$c (resize-fat fat-read-size fat32$c))
+(fat32$c
+(update-fat fat32$c
+(subseq str
+(* (bpb_rsvdseccnt fat32$c)
+(bpb_bytspersec fat32$c))
+(+ (* (bpb_rsvdseccnt fat32$c)
+(bpb_bytspersec fat32$c))
+(* fat-read-size 4)))
+fat-read-size))
+(fat32$c
+(resize-data-region data-byte-count fat32$c))
+(data-region-string
+(subseq str tmp_init
+(+ tmp_init
+(data-region-length fat32$c))))
+(fat32$c
+(update-data-region fat32$c data-region-string
+(data-region-length fat32$c)
+0)))
+(mv fat32$c error-code)))
 (time$
- (b*
-     (((mv channel state)
-       (open-output-channel "test/disk2.raw" :character state))
-      (state
-         (princ$
-          (lofat-to-string fat32$c)
-          channel state))
-      (state
-       (close-output-channel channel state)))
-   (mv fat32$c state)))
+(b*
+(((mv channel state)
+(open-output-channel "test/disk2.raw" :character state))
+(state
+(princ$
+(lofat-to-string fat32$c)
+channel state))
+(state
+(close-output-channel channel state)))
+(mv fat32$c state)))
 (b* (((mv dir-contents &)
-      (get-cc-contents fat32$c 2 *ms-max-dir-size*))
-     (fs (lofat-to-hifat fat32$c))
-     ((mv fs & &)
-      (hifat-mkdir fs (list "" "TMP        "))))
-  (hifat-to-lofat fat32$c fs))
+(get-cc-contents fat32$c 2 *ms-max-dir-size*))
+(fs (lofat-to-hifat fat32$c))
+((mv fs & &)
+(hifat-mkdir fs (list "" "TMP        "))))
+(hifat-to-lofat fat32$c fs))
 |#
 
 (defund lofat-file-contents-p (contents)
@@ -909,7 +909,7 @@ Some (rather awful) testing forms are
                               (d-e-list-p d-e-list))))
   (b*
       ((d-e (mbe :exec d-e
-                     :logic (d-e-fix d-e)))
+                 :logic (d-e-fix d-e)))
        ((when (atom d-e-list))
         (list d-e))
        ((when (equal (d-e-filename d-e)
@@ -921,7 +921,7 @@ Some (rather awful) testing forms are
     (list* (mbe :logic (d-e-fix (car d-e-list))
                 :exec (car d-e-list))
            (place-d-e (cdr d-e-list)
-                          d-e))))
+                      d-e))))
 
 (defthm d-e-list-p-of-place-d-e
   (d-e-list-p (place-d-e d-e-list d-e)))
@@ -929,11 +929,11 @@ Some (rather awful) testing forms are
 (defthm find-d-e-of-place-d-e
   (implies (d-e-list-p d-e-list)
            (equal (find-d-e (place-d-e d-e-list d-e)
-                                filename)
+                            filename)
                   (if (equal (d-e-filename d-e)
                              filename)
                       (mv (d-e-fix d-e) 0)
-                      (find-d-e d-e-list filename)))))
+                    (find-d-e d-e-list filename)))))
 
 (defthm
   place-d-e-of-d-e-fix
@@ -951,9 +951,9 @@ Some (rather awful) testing forms are
    (len (place-d-e d-e-list d-e))
    (if (zp (mv-nth 1
                    (find-d-e d-e-list
-                                 (d-e-filename d-e))))
+                             (d-e-filename d-e))))
        (len d-e-list)
-       (+ 1 (len d-e-list)))))
+     (+ 1 (len d-e-list)))))
 
 (defthm
   useful-d-e-list-p-of-place-d-e
@@ -995,7 +995,7 @@ Some (rather awful) testing forms are
    (fat-length
     (mv-nth 0
             (clear-cc fat32$c
-                                masked-current-cluster length)))
+                      masked-current-cluster length)))
    (fat-length fat32$c))
   :hints (("goal" :in-theory (enable clear-cc))))
 
@@ -1005,7 +1005,7 @@ Some (rather awful) testing forms are
    (count-of-clusters
     (mv-nth 0
             (clear-cc fat32$c
-                                masked-current-cluster length)))
+                      masked-current-cluster length)))
    (count-of-clusters fat32$c))
   :hints (("goal" :in-theory (enable clear-cc))))
 
@@ -1017,7 +1017,7 @@ Some (rather awful) testing forms are
     (mv-nth
      0
      (clear-cc fat32$c
-                         masked-current-cluster length))))
+               masked-current-cluster length))))
   :hints (("goal" :in-theory (enable clear-cc))))
 
 (defthm
@@ -1026,7 +1026,7 @@ Some (rather awful) testing forms are
    (cluster-size
     (mv-nth 0
             (clear-cc fat32$c
-                                masked-current-cluster length)))
+                      masked-current-cluster length)))
    (cluster-size fat32$c))
   :hints (("goal" :in-theory (enable clear-cc))))
 
@@ -1035,7 +1035,7 @@ Some (rather awful) testing forms are
   (equal (max-entry-count
           (mv-nth 0
                   (clear-cc fat32$c
-                                      masked-current-cluster length)))
+                            masked-current-cluster length)))
          (max-entry-count fat32$c))
   :hints (("goal" :in-theory (enable clear-cc))))
 
@@ -1045,7 +1045,7 @@ Some (rather awful) testing forms are
    (pseudo-root-d-e
     (mv-nth 0
             (clear-cc fat32$c
-                                masked-current-cluster length)))
+                      masked-current-cluster length)))
    (pseudo-root-d-e fat32$c))
   :hints (("goal" :in-theory (enable clear-cc))))
 
@@ -1058,7 +1058,7 @@ Some (rather awful) testing forms are
    (equal
     (mv-nth 1
             (clear-cc fat32$c
-                                masked-current-cluster length))
+                      masked-current-cluster length))
     (mv-nth 1
             (get-cc-contents
              fat32$c
@@ -1083,7 +1083,7 @@ Some (rather awful) testing forms are
     (effective-fat
      (mv-nth 0
              (clear-cc fat32$c
-                                 masked-current-cluster length)))))
+                       masked-current-cluster length)))))
   :hints (("goal" :in-theory (enable clear-cc))))
 
 (defthmd clear-cc-correctness-3
@@ -1176,7 +1176,7 @@ Some (rather awful) testing forms are
     (stobj-set-indices-in-fa-table
      (mv-nth 0
              (clear-cc fat32$c
-                                 masked-current-cluster length))
+                       masked-current-cluster length))
      (mv-nth 0
              (fat32-build-index-list (effective-fat fat32$c)
                                      masked-current-cluster
@@ -1290,7 +1290,7 @@ Some (rather awful) testing forms are
        (effective-fat
         (mv-nth 0
                 (clear-cc fat32$c
-                                    masked-current-cluster1 length1)))
+                          masked-current-cluster1 length1)))
        masked-current-cluster2
        length2 cluster-size)
       (fat32-build-index-list (effective-fat fat32$c)
@@ -1320,7 +1320,7 @@ Some (rather awful) testing forms are
    (equal (d-e-cc
            (mv-nth 0
                    (clear-cc fat32$c
-                                       masked-current-cluster length))
+                             masked-current-cluster length))
            d-e)
           (d-e-cc fat32$c d-e)))
   :hints (("goal" :in-theory (enable d-e-cc))))
@@ -1333,27 +1333,27 @@ Some (rather awful) testing forms are
     (effective-fat
      (mv-nth 0
              (clear-cc fat32$c
-                                 masked-current-cluster length)))
+                       masked-current-cluster length)))
     (if
-     (equal (mv-nth 1
-                    (clear-cc fat32$c
-                                        masked-current-cluster length))
-            0)
-     (set-indices-in-fa-table
-      (effective-fat fat32$c)
-      (mv-nth 0
-              (fat32-build-index-list (effective-fat fat32$c)
-                                      masked-current-cluster
-                                      length (cluster-size fat32$c)))
-      (make-list-ac
-       (len
-        (mv-nth
-         0
-         (fat32-build-index-list (effective-fat fat32$c)
-                                 masked-current-cluster
-                                 length (cluster-size fat32$c))))
-       0 nil))
-     (effective-fat fat32$c))))
+        (equal (mv-nth 1
+                       (clear-cc fat32$c
+                                 masked-current-cluster length))
+               0)
+        (set-indices-in-fa-table
+         (effective-fat fat32$c)
+         (mv-nth 0
+                 (fat32-build-index-list (effective-fat fat32$c)
+                                         masked-current-cluster
+                                         length (cluster-size fat32$c)))
+         (make-list-ac
+          (len
+           (mv-nth
+            0
+            (fat32-build-index-list (effective-fat fat32$c)
+                                    masked-current-cluster
+                                    length (cluster-size fat32$c))))
+          0 nil))
+      (effective-fat fat32$c))))
   :hints (("goal" :in-theory (enable clear-cc)))
   :rule-classes
   (:rewrite
@@ -1369,20 +1369,20 @@ Some (rather awful) testing forms are
       (effective-fat
        (mv-nth 0
                (clear-cc fat32$c
-                                   masked-current-cluster length)))
+                         masked-current-cluster length)))
       (if
-       (equal (mv-nth 1
-                      (d-e-cc fat32$c d-e))
-              0)
-       (set-indices-in-fa-table
-        (effective-fat fat32$c)
-        (mv-nth 0
-                (d-e-cc fat32$c d-e))
-        (make-list-ac
-         (len (mv-nth 0
-                      (d-e-cc fat32$c d-e)))
-         0 nil))
-       (effective-fat fat32$c))))
+          (equal (mv-nth 1
+                         (d-e-cc fat32$c d-e))
+                 0)
+          (set-indices-in-fa-table
+           (effective-fat fat32$c)
+           (mv-nth 0
+                   (d-e-cc fat32$c d-e))
+           (make-list-ac
+            (len (mv-nth 0
+                         (d-e-cc fat32$c d-e)))
+            0 nil))
+        (effective-fat fat32$c))))
     :hints (("goal" :in-theory (enable d-e-cc
                                        clear-cc))))
    (:rewrite
@@ -1397,20 +1397,20 @@ Some (rather awful) testing forms are
       (effective-fat
        (mv-nth 0
                (clear-cc fat32$c
-                                   masked-current-cluster length)))
+                         masked-current-cluster length)))
       (if
-       (equal (mv-nth 1
-                      (d-e-cc fat32$c d-e))
-              0)
-       (set-indices-in-fa-table
-        (effective-fat fat32$c)
-        (mv-nth 0
-                (d-e-cc fat32$c d-e))
-        (make-list-ac
-         (len (mv-nth 0
-                      (d-e-cc fat32$c d-e)))
-         0 nil))
-       (effective-fat fat32$c))))
+          (equal (mv-nth 1
+                         (d-e-cc fat32$c d-e))
+                 0)
+          (set-indices-in-fa-table
+           (effective-fat fat32$c)
+           (mv-nth 0
+                   (d-e-cc fat32$c d-e))
+           (make-list-ac
+            (len (mv-nth 0
+                         (d-e-cc fat32$c d-e)))
+            0 nil))
+        (effective-fat fat32$c))))
     :hints (("goal" :in-theory (enable d-e-cc
                                        clear-cc))))))
 
@@ -1498,10 +1498,10 @@ Some (rather awful) testing forms are
       (get-cc-contents
        (mv-nth 0
                (clear-cc fat32$c
-                                   masked-current-cluster1 length1))
+                         masked-current-cluster1 length1))
        masked-current-cluster2 length2)
       (get-cc-contents fat32$c
-                                 masked-current-cluster2 length2)))
+                       masked-current-cluster2 length2)))
     :hints (("goal" :cases ((<= (+ 2 (count-of-clusters fat32$c))
                                 masked-current-cluster1)))
             ("subgoal 2" :in-theory (enable clear-cc)))))
@@ -1526,7 +1526,7 @@ Some (rather awful) testing forms are
    (equal (d-e-cc-contents
            (mv-nth 0
                    (clear-cc fat32$c
-                                       masked-current-cluster length))
+                             masked-current-cluster length))
            d-e)
           (d-e-cc-contents fat32$c d-e)))
   :hints (("goal" :in-theory (enable d-e-cc
@@ -1553,26 +1553,26 @@ Some (rather awful) testing forms are
      (mv-nth
       0
       (clear-cc fat32$c
-                          masked-current-cluster length)))
+                masked-current-cluster length)))
     (if
-     (and
-      (equal
-       (mv-nth 1
-               (fat32-build-index-list
-                (effective-fat fat32$c)
-                masked-current-cluster
-                length (cluster-size fat32$c)))
-       0)
-      (member-equal
-       i
-       (mv-nth 0
-               (fat32-build-index-list
-                (effective-fat fat32$c)
-                masked-current-cluster length
-                (cluster-size fat32$c)))))
-     (fat32-update-lower-28 (fati i fat32$c)
-                            0)
-     (fati i fat32$c))))
+        (and
+         (equal
+          (mv-nth 1
+                  (fat32-build-index-list
+                   (effective-fat fat32$c)
+                   masked-current-cluster
+                   length (cluster-size fat32$c)))
+          0)
+         (member-equal
+          i
+          (mv-nth 0
+                  (fat32-build-index-list
+                   (effective-fat fat32$c)
+                   masked-current-cluster length
+                   (cluster-size fat32$c)))))
+        (fat32-update-lower-28 (fati i fat32$c)
+                               0)
+      (fati i fat32$c))))
   :hints
   (("goal"
     :in-theory (e/d (clear-cc)
@@ -1626,21 +1626,21 @@ Some (rather awful) testing forms are
        (mv-nth
         0
         (clear-cc fat32$c
-                            masked-current-cluster length)))
+                  masked-current-cluster length)))
       (if
-       (and
-        (equal
-         (mv-nth 1
-                 (d-e-cc fat32$c d-e))
-         0)
-        (member-equal
-         i
-         (mv-nth
-          0
-          (d-e-cc fat32$c d-e))))
-       (fat32-update-lower-28 (fati i fat32$c)
-                              0)
-       (fati i fat32$c))))
+          (and
+           (equal
+            (mv-nth 1
+                    (d-e-cc fat32$c d-e))
+            0)
+           (member-equal
+            i
+            (mv-nth
+             0
+             (d-e-cc fat32$c d-e))))
+          (fat32-update-lower-28 (fati i fat32$c)
+                                 0)
+        (fati i fat32$c))))
     :hints (("goal" :in-theory (enable d-e-cc))))
    (:rewrite
     :corollary
@@ -1666,21 +1666,21 @@ Some (rather awful) testing forms are
        (mv-nth
         0
         (clear-cc fat32$c
-                            masked-current-cluster length)))
+                  masked-current-cluster length)))
       (if
-       (and
-        (equal
-         (mv-nth 1
-                 (d-e-cc fat32$c d-e))
-         0)
-        (member-equal
-         i
-         (mv-nth
-          0
-          (d-e-cc fat32$c d-e))))
-       (fat32-update-lower-28 (fati i fat32$c)
-                              0)
-       (fati i fat32$c))))
+          (and
+           (equal
+            (mv-nth 1
+                    (d-e-cc fat32$c d-e))
+            0)
+           (member-equal
+            i
+            (mv-nth
+             0
+             (d-e-cc fat32$c d-e))))
+          (fat32-update-lower-28 (fati i fat32$c)
+                                 0)
+        (fati i fat32$c))))
     :hints
     (("goal" :in-theory (enable d-e-cc))))))
 
@@ -1713,7 +1713,7 @@ Some (rather awful) testing forms are
                2097152 (cluster-size fat32$c))
       :in-theory
       (disable unsigned-byte-p
-       (:linear non-negativity-of-car-of-last-when-nat-listp))
+               (:linear non-negativity-of-car-of-last-when-nat-listp))
       :use
       ((:instance
         nat-listp-forward-to-integer-listp
@@ -1736,7 +1736,7 @@ Some (rather awful) testing forms are
                                 fat32$c)))
        ((mv fat32$c error-code)
         (clear-cc fat32$c
-                            first-cluster *ms-max-dir-size*))
+                  first-cluster *ms-max-dir-size*))
        ((unless (equal error-code 0))
         (mv fat32$c *eio*))
        (fat32$c
@@ -1754,9 +1754,9 @@ Some (rather awful) testing forms are
         (mv fat32$c 0))
        ;; Reversing the effects of clear-cc
        (fat32$c (stobj-set-indices-in-fa-table
-                         fat32$c cc
-                         (append (cdr cc)
-                                 (list last-value)))))
+                 fat32$c cc
+                 (append (cdr cc)
+                         (list last-value)))))
     (mv fat32$c error-code)))
 
 (defthm
@@ -1906,445 +1906,6 @@ Some (rather awful) testing forms are
    (pseudo-root-d-e fat32$c))
   :hints (("goal" :in-theory (enable update-dir-contents))))
 
-(defthm
-  update-dir-contents-correctness-1-lemma-1
-  (implies
-   (and
-    (lofat-fs-p fat32$c)
-    (fat32-masked-entry-p first-cluster)
-    (<
-     (+
-      -1
-      (count-free-clusters
-       (set-indices-in-fa-table
-        (effective-fat fat32$c)
-        (mv-nth
-         0
-         (fat32-build-index-list (effective-fat fat32$c)
-                                 first-cluster
-                                 2097152 (cluster-size fat32$c)))
-        '(0))))
-     (+ -1
-        (len (make-clusters dir-contents
-                            (cluster-size fat32$c)))))
-    (not
-     (equal
-      (count-free-clusters
-       (set-indices-in-fa-table
-        (effective-fat fat32$c)
-        (mv-nth
-         0
-         (fat32-build-index-list (effective-fat fat32$c)
-                                 first-cluster
-                                 2097152 (cluster-size fat32$c)))
-        '(0)))
-      (len (make-clusters dir-contents
-                          (cluster-size fat32$c)))))
-    (equal
-     (mv-nth 1
-             (fat32-build-index-list (effective-fat fat32$c)
-                                     first-cluster
-                                     2097152 (cluster-size fat32$c)))
-     0)
-    (not
-     (consp
-      (cdr
-       (mv-nth 0
-               (fat32-build-index-list (effective-fat fat32$c)
-                                       first-cluster 2097152
-                                       (cluster-size fat32$c)))))))
-   (equal
-    (stobj-set-indices-in-fa-table
-     (update-fati
-      first-cluster
-      (fat32-update-lower-28 (fati first-cluster fat32$c)
-                             268435455)
-      (mv-nth 0
-              (clear-cc fat32$c first-cluster 2097152)))
-     (mv-nth 0
-             (fat32-build-index-list (effective-fat fat32$c)
-                                     first-cluster
-                                     2097152 (cluster-size fat32$c)))
-     (list
-      (fat32-entry-mask
-       (fati
-        (car (mv-nth 0
-                     (fat32-build-index-list (effective-fat fat32$c)
-                                             first-cluster 2097152
-                                             (cluster-size fat32$c))))
-        fat32$c))))
-    fat32$c))
-  :hints
-  (("goal" :in-theory
-    (e/d (clear-cc stobj-set-indices-in-fa-table
-                             fat32-update-lower-28-of-fat32-entry-mask)
-         (get-cc-contents-correctness-2))
-    :expand (fat32-build-index-list (effective-fat fat32$c)
-                                    first-cluster 2097152
-                                    (cluster-size fat32$c)))))
-
-(defthm
-  update-dir-contents-correctness-1-lemma-4
-  (implies
-   (and (fat32-masked-entry-p first-cluster)
-        (< first-cluster
-           (+ 2 (count-of-clusters fat32$c))))
-   (equal
-    (fati
-     first-cluster
-     (stobj-set-indices-in-fa-table
-      fat32$c
-      (mv-nth 0
-              (fat32-build-index-list (effective-fat fat32$c)
-                                      first-cluster
-                                      2097152 (cluster-size fat32$c)))
-      (make-list-ac
-       (len (mv-nth 0
-                    (fat32-build-index-list (effective-fat fat32$c)
-                                            first-cluster 2097152
-                                            (cluster-size fat32$c))))
-       0 nil)))
-    (nth
-     first-cluster
-     (effective-fat
-      (stobj-set-indices-in-fa-table
-       fat32$c
-       (mv-nth
-        0
-        (fat32-build-index-list (effective-fat fat32$c)
-                                first-cluster
-                                2097152 (cluster-size fat32$c)))
-       (make-list-ac
-        (len (mv-nth 0
-                     (fat32-build-index-list (effective-fat fat32$c)
-                                             first-cluster 2097152
-                                             (cluster-size fat32$c))))
-        0 nil))))))
-  :hints
-  (("goal"
-    :in-theory (disable (:rewrite nth-of-effective-fat))
-    :use
-    (:instance
-     (:rewrite nth-of-effective-fat)
-     (fat32$c
-      (stobj-set-indices-in-fa-table
-       fat32$c
-       (mv-nth
-        0
-        (fat32-build-index-list (effective-fat fat32$c)
-                                first-cluster
-                                2097152 (cluster-size fat32$c)))
-       (make-list-ac
-        (len (mv-nth 0
-                     (fat32-build-index-list (effective-fat fat32$c)
-                                             first-cluster 2097152
-                                             (cluster-size fat32$c))))
-        0 nil)))
-     (n first-cluster)))))
-
-(defthm
-  update-dir-contents-correctness-1-lemma-2
-  (implies
-   (and
-    (equal
-     (stobj-set-indices-in-fa-table
-      (update-fati
-       first-cluster
-       (fat32-update-lower-28
-        (fati
-         first-cluster
-         (stobj-set-indices-in-fa-table
-          fat32$c
-          (mv-nth 0
-                  (fat32-build-index-list (effective-fat fat32$c)
-                                          first-cluster
-                                          2097152 (cluster-size fat32$c)))
-          (make-list-ac
-           (len
-            (cdr
-             (mv-nth
-              0
-              (fat32-build-index-list (effective-fat fat32$c)
-                                      first-cluster
-                                      2097152 (cluster-size fat32$c)))))
-           0 '(0))))
-        268435455)
-       (stobj-set-indices-in-fa-table
-        fat32$c
-        (mv-nth 0
-                (fat32-build-index-list (effective-fat fat32$c)
-                                        first-cluster
-                                        2097152 (cluster-size fat32$c)))
-        (make-list-ac
-         (len
-          (cdr
-           (mv-nth 0
-                   (fat32-build-index-list (effective-fat fat32$c)
-                                           first-cluster
-                                           2097152 (cluster-size fat32$c)))))
-         0 '(0))))
-      (mv-nth 0
-              (fat32-build-index-list (effective-fat fat32$c)
-                                      first-cluster
-                                      2097152 (cluster-size fat32$c)))
-      (append
-       (cdr (mv-nth 0
-                    (fat32-build-index-list (effective-fat fat32$c)
-                                            first-cluster
-                                            2097152 (cluster-size fat32$c))))
-       (list
-        (fat32-entry-mask
-         (fati
-          (car
-           (last
-            (cdr
-             (mv-nth
-              0
-              (fat32-build-index-list (effective-fat fat32$c)
-                                      first-cluster
-                                      2097152 (cluster-size fat32$c))))))
-          fat32$c)))))
-     (stobj-set-indices-in-fa-table
-      fat32$c
-      (mv-nth 0
-              (fat32-build-index-list (effective-fat fat32$c)
-                                      first-cluster
-                                      2097152 (cluster-size fat32$c)))
-      (append
-       (cdr (mv-nth 0
-                    (fat32-build-index-list (effective-fat fat32$c)
-                                            first-cluster
-                                            2097152 (cluster-size fat32$c))))
-       (list
-        (fat32-entry-mask
-         (fati
-          (car
-           (last
-            (cdr
-             (mv-nth
-              0
-              (fat32-build-index-list (effective-fat fat32$c)
-                                      first-cluster
-                                      2097152 (cluster-size fat32$c))))))
-          fat32$c))))))
-    (lofat-fs-p fat32$c)
-    (fat32-masked-entry-p first-cluster)
-    (< first-cluster
-       (+ 2 (count-of-clusters fat32$c)))
-    (consp
-     (cdr (mv-nth 0
-                  (fat32-build-index-list (effective-fat fat32$c)
-                                          first-cluster
-                                          2097152 (cluster-size fat32$c))))))
-   (equal
-    (stobj-set-indices-in-fa-table
-     (update-fati
-      first-cluster
-      (fat32-update-lower-28 (fati first-cluster fat32$c)
-                             268435455)
-      (stobj-set-indices-in-fa-table
-       fat32$c
-       (mv-nth 0
-               (fat32-build-index-list (effective-fat fat32$c)
-                                       first-cluster
-                                       2097152 (cluster-size fat32$c)))
-       (make-list-ac
-        (len
-         (cdr
-          (mv-nth 0
-                  (fat32-build-index-list (effective-fat fat32$c)
-                                          first-cluster
-                                          2097152 (cluster-size fat32$c)))))
-        0 '(0))))
-     (mv-nth 0
-             (fat32-build-index-list (effective-fat fat32$c)
-                                     first-cluster
-                                     2097152 (cluster-size fat32$c)))
-     (append
-      (cdr (mv-nth 0
-                   (fat32-build-index-list (effective-fat fat32$c)
-                                           first-cluster
-                                           2097152 (cluster-size fat32$c))))
-      (list
-       (fat32-entry-mask
-        (fati
-         (car
-          (last
-           (cdr
-            (mv-nth
-             0
-             (fat32-build-index-list (effective-fat fat32$c)
-                                     first-cluster
-                                     2097152 (cluster-size fat32$c))))))
-         fat32$c)))))
-    fat32$c))
-  :hints
-  (("goal"
-    :in-theory
-    (disable
-     (:rewrite fat32-update-lower-28-of-fat32-update-lower-28)
-     (:rewrite clear-cc-reversibility-lemma-2)
-     nth-of-set-indices-in-fa-table-when-member
-     (:rewrite stobj-set-indices-in-fa-table-correctness-1)
-     (:rewrite cdr-cons)
-     (:rewrite cluster-size-of-stobj-set-indices-in-fa-table)
-     (:rewrite fat-length-of-stobj-set-indices-in-fa-table)
-     (:rewrite fat32-entry-mask-correctness-1)
-     (:rewrite fat32-masked-entry-list-p-of-append)
-     (:rewrite
-      fat32-masked-entry-list-p-of-cdr-when-fat32-masked-entry-list-p)
-     (:rewrite fat32-masked-entry-list-p-of-cons)
-     (:rewrite fat32-masked-entry-list-p-of-fat32-build-index-list)
-     (:rewrite len-of-append)
-     (:rewrite list-fix-when-true-listp)
-     (:rewrite lofat-fs-p-correctness-1)
-     (:rewrite lofat-fs-p-of-stobj-set-indices-in-fa-table)
-     (:rewrite stobj-set-indices-in-fa-table-of-stobj-set-indices-in-fa-table)
-     (:rewrite
-      stobj-set-indices-in-fa-table-of-stobj-set-indices-in-fa-table-lemma-3)
-     (:rewrite subsetp-member . 1)
-     (:rewrite subsetp-refl)
-     (:type-prescription fat-entry-count)
-     (:type-prescription member-equal))
-    :use
-    ((:instance
-      (:rewrite nth-of-set-indices-in-fa-table-when-member)
-      (val 0)
-      (index-list
-       (mv-nth 0
-               (fat32-build-index-list (effective-fat fat32$c)
-                                       first-cluster
-                                       2097152 (cluster-size fat32$c))))
-      (fa-table (effective-fat fat32$c))
-      (n first-cluster))
-     (:instance (:rewrite fat32-update-lower-28-of-fat32-update-lower-28)
-                (masked-entry2 268435455)
-                (masked-entry1 0)
-                (entry (nth first-cluster (effective-fat fat32$c))))
-     (:instance (:rewrite clear-cc-reversibility-lemma-2)
-                (length 2097152)
-                (masked-current-cluster first-cluster)
-                (fat32$c fat32$c))
-     (:instance
-      (:rewrite stobj-set-indices-in-fa-table-correctness-1)
-      (value-list
-       (make-list-ac
-        (len (mv-nth 0
-                     (fat32-build-index-list (effective-fat fat32$c)
-                                             first-cluster
-                                             2097152 (cluster-size fat32$c))))
-        0 nil))
-      (index-list
-       (mv-nth 0
-               (fat32-build-index-list (effective-fat fat32$c)
-                                       first-cluster
-                                       2097152 (cluster-size fat32$c))))
-      (fat32$c fat32$c))))))
-
-(defthm
-  update-dir-contents-correctness-1-lemma-3
-  (implies
-   (and
-    (lofat-fs-p fat32$c)
-    (fat32-masked-entry-p first-cluster)
-    (<= 2 first-cluster)
-    (< first-cluster
-       (+ 2 (count-of-clusters fat32$c)))
-    (equal
-     (mv-nth 1
-             (fat32-build-index-list (effective-fat fat32$c)
-                                     first-cluster
-                                     2097152 (cluster-size fat32$c)))
-     0)
-    (consp
-     (cdr (mv-nth 0
-                  (fat32-build-index-list (effective-fat fat32$c)
-                                          first-cluster 2097152
-                                          (cluster-size fat32$c))))))
-   (equal
-    (stobj-set-indices-in-fa-table
-     (update-fati
-      first-cluster
-      (fat32-update-lower-28 (fati first-cluster fat32$c)
-                             268435455)
-      (mv-nth 0
-              (clear-cc fat32$c first-cluster 2097152)))
-     (mv-nth 0
-             (fat32-build-index-list (effective-fat fat32$c)
-                                     first-cluster
-                                     2097152 (cluster-size fat32$c)))
-     (append
-      (cdr (mv-nth 0
-                   (fat32-build-index-list (effective-fat fat32$c)
-                                           first-cluster 2097152
-                                           (cluster-size fat32$c))))
-      (list
-       (fat32-entry-mask
-        (fati
-         (car
-          (last
-           (cdr
-            (mv-nth
-             0
-             (fat32-build-index-list (effective-fat fat32$c)
-                                     first-cluster 2097152
-                                     (cluster-size fat32$c))))))
-         fat32$c)))))
-    fat32$c))
-  :hints
-  (("goal"
-    :in-theory
-    (e/d
-     (clear-cc)
-     (get-cc-contents-correctness-2
-      (:rewrite
-       stobj-set-indices-in-fa-table-of-stobj-set-indices-in-fa-table-lemma-3)))
-    :use
-    (:instance
-     (:rewrite
-      stobj-set-indices-in-fa-table-of-stobj-set-indices-in-fa-table-lemma-3)
-     (value-list
-      (append
-       (cdr (mv-nth 0
-                    (fat32-build-index-list (effective-fat fat32$c)
-                                            first-cluster 2097152
-                                            (cluster-size fat32$c))))
-       (list
-        (fat32-entry-mask
-         (fati
-          (car
-           (last
-            (cdr
-             (mv-nth
-              0
-              (fat32-build-index-list (effective-fat fat32$c)
-                                      first-cluster 2097152
-                                      (cluster-size fat32$c))))))
-          fat32$c)))))
-     (index-list
-      (mv-nth 0
-              (fat32-build-index-list (effective-fat fat32$c)
-                                      first-cluster 2097152
-                                      (cluster-size fat32$c))))
-     (v 268435455)
-     (fat32$c
-      (stobj-set-indices-in-fa-table
-       fat32$c
-       (mv-nth
-        0
-        (fat32-build-index-list (effective-fat fat32$c)
-                                first-cluster
-                                2097152 (cluster-size fat32$c)))
-       (make-list-ac
-        (len
-         (cdr
-          (mv-nth 0
-                  (fat32-build-index-list (effective-fat fat32$c)
-                                          first-cluster 2097152
-                                          (cluster-size fat32$c)))))
-        0 '(0))))
-     (i first-cluster)))))
-
 (defthmd
   update-dir-contents-correctness-1
   (implies
@@ -2393,7 +1954,7 @@ Some (rather awful) testing forms are
         (delete-d-e (cdr d-e-list) filename)))
     (list* (d-e-fix d-e)
            (delete-d-e (cdr d-e-list)
-                           filename))))
+                       filename))))
 
 (defthm d-e-list-p-of-delete-d-e
   (d-e-list-p (delete-d-e d-e-list filename)))
@@ -2408,7 +1969,7 @@ Some (rather awful) testing forms are
   (implies
    (useful-d-e-list-p d-e-list)
    (equal (find-d-e (delete-d-e d-e-list filename1)
-                        filename2)
+                    filename2)
           (if (equal filename1 filename2)
               (mv (d-e-fix nil) *enoent*)
             (find-d-e d-e-list filename2))))
@@ -2417,7 +1978,7 @@ Some (rather awful) testing forms are
     :in-theory
     (e/d
      (useful-d-e-list-p d-e-filename len-when-d-e-p
-                            nth-when->=-n-len-l)
+                        nth-when->=-n-len-l)
      ((:rewrite d-e-filename-of-d-e-set-filename)
       (:rewrite string=>nats-of-nats=>string)
       (:rewrite nth-update-nth)))
@@ -2483,7 +2044,7 @@ Some (rather awful) testing forms are
            (equal (mv-nth 1 (find-d-e d-e-list filename))
                   0)
            (not (d-e-directory-p (mv-nth 0
-                                             (find-d-e d-e-list filename)))))
+                                         (find-d-e d-e-list filename)))))
       (<
        (hifat-entry-count
         (mv-nth 0
@@ -2517,7 +2078,7 @@ Some (rather awful) testing forms are
                                                  d-e-list entry-limit))
                   0)
            (d-e-directory-p (mv-nth 0
-                                        (find-d-e d-e-list filename)))
+                                    (find-d-e d-e-list filename)))
            (not-intersectp-list
             x
             (mv-nth
@@ -2624,7 +2185,7 @@ Some (rather awful) testing forms are
                                                 d-e-list entry-limit))
                  0)
           (d-e-directory-p (mv-nth 0
-                                       (find-d-e d-e-list filename))))
+                                   (find-d-e d-e-list filename))))
      (<
       (hifat-entry-count
        (mv-nth 0
@@ -2664,7 +2225,7 @@ Some (rather awful) testing forms are
                                                 d-e-list entry-limit))
                  0)
           (d-e-directory-p (mv-nth 0
-                                       (find-d-e d-e-list filename))))
+                                   (find-d-e d-e-list filename))))
      (not-intersectp-list
       (mv-nth
        0
@@ -2699,7 +2260,7 @@ Some (rather awful) testing forms are
                                                 d-e-list entry-limit))
                  0)
           (d-e-directory-p (mv-nth 0
-                                       (find-d-e d-e-list filename)))
+                                   (find-d-e d-e-list filename)))
           (not-intersectp-list
            x
            (mv-nth
@@ -2752,11 +2313,11 @@ Some (rather awful) testing forms are
            (update-nth 0 229
                        (string=>nats (d-e-filename d-e)))))
          (clear-d-e (nthcdr *ms-d-e-length* dir-contents)
-                        filename))))
+                    filename))))
     (append
      d-e
      (clear-d-e (nthcdr *ms-d-e-length* dir-contents)
-                    filename))))
+                filename))))
 
 (defthm
   len-of-clear-d-e
@@ -2784,16 +2345,16 @@ Some (rather awful) testing forms are
   make-d-e-list-of-clear-d-e
   (equal
    (make-d-e-list (nats=>string (clear-d-e (string=>nats dir-contents)
-                                                   filename)))
+                                           filename)))
    (delete-d-e (make-d-e-list dir-contents)
-                   filename))
+               filename))
   :hints (("goal" :in-theory (enable make-d-e-list d-e-fix
                                      clear-d-e
                                      len-when-d-e-p string=>nats
                                      nats=>string)
            :induct (make-d-e-list dir-contents)
            :expand (clear-d-e (chars=>nats (explode dir-contents))
-                                  filename))))
+                              filename))))
 
 (encapsulate
   ()
@@ -2810,17 +2371,17 @@ Some (rather awful) testing forms are
        (equal
         (make-d-e-list
          (implode (append (nats=>chars (clear-d-e (string=>nats dir-contents)
-                                                      filename))
+                                                  filename))
                           (make-list-ac n ,(code-char 0) nil))))
         (delete-d-e (make-d-e-list dir-contents)
-                        filename)))
+                    filename)))
       :hints
       (("goal" :induct (make-d-e-list dir-contents)
         :in-theory (e/d (make-d-e-list d-e-fix clear-d-e
-                                           string=>nats))
+                                       string=>nats))
         :expand ((make-d-e-list dir-contents)
                  (clear-d-e (chars=>nats (explode dir-contents))
-                                filename)))))))
+                            filename)))))))
 
 (defthm
   lofat-to-hifat-helper-of-clear-cc
@@ -2853,7 +2414,7 @@ Some (rather awful) testing forms are
     (lofat-to-hifat-helper
      (mv-nth 0
              (clear-cc fat32$c
-                                 masked-current-cluster length))
+                       masked-current-cluster length))
      d-e-list entry-limit)
     (lofat-to-hifat-helper fat32$c
                            d-e-list entry-limit)))
@@ -3064,44 +2625,7 @@ Some (rather awful) testing forms are
             '0)))))
 
 (defthmd
-  get-cc-contents-of-update-dir-contents-coincident-lemma-3
-  (implies
-   (<
-    (+
-     (count-free-clusters (effective-fat fat32$c))
-     (len
-      (mv-nth
-       0
-       (fat32-build-index-list
-        (effective-fat fat32$c)
-        (fat32-entry-mask (fati first-cluster fat32$c))
-        (+ 2097152
-           (- (cluster-size fat32$c)))
-        (cluster-size fat32$c)))))
-    (+ -1
-       (len (make-clusters dir-contents
-                           (cluster-size fat32$c)))))
-   (not
-    (equal
-     (binary-+
-      '1
-      (binary-+
-       (count-free-clusters (effective-fat fat32$c))
-       (len
-        (mv-nth
-         '0
-         (fat32-build-index-list
-          (effective-fat fat32$c)
-          (fat32-entry-mask
-           (fati first-cluster fat32$c))
-          (binary-+ '2097152
-                    (unary-- (cluster-size fat32$c)))
-          (cluster-size fat32$c))))))
-     (len (make-clusters dir-contents
-                         (cluster-size fat32$c)))))))
-
-(defthmd
-  get-cc-contents-of-update-dir-contents-coincident-lemma-4
+  get-cc-contents-of-update-dir-contents-coincident-lemma-2
   (implies
    (and (integerp first-cluster)
         (or (< first-cluster *ms-first-data-cluster*)
@@ -3182,7 +2706,6 @@ Some (rather awful) testing forms are
        :in-theory
        (e/d
         (update-dir-contents
-         get-cc-contents-of-update-dir-contents-coincident-lemma-3
          (:linear hifat-to-lofat-inversion-lemma-16))
         ((:rewrite nth-of-set-indices-in-fa-table-when-member)
          (:rewrite get-cc-contents-of-place-contents-coincident)))
@@ -3248,7 +2771,6 @@ Some (rather awful) testing forms are
       :in-theory
       (e/d
        (update-dir-contents
-        get-cc-contents-of-update-dir-contents-coincident-lemma-3
         (:linear hifat-to-lofat-inversion-lemma-16)
         (:rewrite fati-of-clear-cc . 1))
        ((:rewrite nth-of-set-indices-in-fa-table-when-member)))
@@ -3269,7 +2791,7 @@ Some (rather awful) testing forms are
         (fa-table (effective-fat fat32$c))
         (n first-cluster))
        (:rewrite update-dir-contents-correctness-1)
-       get-cc-contents-of-update-dir-contents-coincident-lemma-4)))))
+       get-cc-contents-of-update-dir-contents-coincident-lemma-2)))))
 
 (defthm
   d-e-cc-contents-of-update-dir-contents-disjoint
@@ -3381,125 +2903,6 @@ Some (rather awful) testing forms are
            :induct (lofat-to-hifat-helper fat32$c
                                           d-e-list entry-limit))))
 
-(defthm
-  d-e-cc-contents-of-lofat-remove-file-disjoint-lemma-6
-  (implies
-   (equal
-    (mv-nth
-     3
-     (lofat-to-hifat-helper
-      fat32$c
-      (make-d-e-list
-       (string=>nats (mv-nth 0
-                             (d-e-cc-contents
-                              fat32$c
-                              (mv-nth 0
-                                      (find-d-e (cdr d-e-list)
-                                                    filename))))))
-      (+
-       -2 entry-limit
-       (-
-        (hifat-entry-count
-         (mv-nth
-          0
-          (lofat-to-hifat-helper
-           fat32$c
-           (make-d-e-list
-            (string=>nats (mv-nth 0
-                                  (d-e-cc-contents
-                                   fat32$c (car d-e-list)))))
-           (+ -1 entry-limit))))))))
-    0)
-   (equal
-    (lofat-to-hifat-helper
-     fat32$c
-     (make-d-e-list
-      (string=>nats (mv-nth 0
-                            (d-e-cc-contents
-                             fat32$c
-                             (mv-nth 0
-                                     (find-d-e (cdr d-e-list)
-                                                   filename))))))
-     (+ -1 entry-limit))
-    (lofat-to-hifat-helper
-     fat32$c
-     (make-d-e-list
-      (string=>nats (mv-nth 0
-                            (d-e-cc-contents
-                             fat32$c
-                             (mv-nth 0
-                                     (find-d-e (cdr d-e-list)
-                                                   filename))))))
-     (+
-      -2 entry-limit
-      (-
-       (hifat-entry-count
-        (mv-nth
-         0
-         (lofat-to-hifat-helper
-          fat32$c
-          (make-d-e-list
-           (string=>nats (mv-nth 0
-                                 (d-e-cc-contents
-                                  fat32$c (car d-e-list)))))
-          (+ -1 entry-limit)))))))))
-  :hints
-  (("goal"
-    :in-theory (e/d (nfix)
-                    ((:linear lofat-to-hifat-helper-correctness-3)))
-    :use
-    ((:instance
-      (:rewrite lofat-to-hifat-helper-correctness-4)
-      (entry-limit1
-       (+
-        -2 entry-limit
-        (-
-         (hifat-entry-count
-          (mv-nth
-           0
-           (lofat-to-hifat-helper
-            fat32$c
-            (make-d-e-list
-             (string=>nats (mv-nth 0
-                                   (d-e-cc-contents
-                                    fat32$c (car d-e-list)))))
-            (+ -1 entry-limit)))))))
-      (entry-limit2 (+ -1 entry-limit))
-      (d-e-list
-       (make-d-e-list
-        (string=>nats (mv-nth 0
-                              (d-e-cc-contents
-                               fat32$c
-                               (mv-nth 0
-                                       (find-d-e (cdr d-e-list)
-                                                     filename)))))))
-      (fat32$c fat32$c))
-     (:instance
-      (:linear lofat-to-hifat-helper-correctness-3)
-      (entry-limit
-       (+
-        -2 entry-limit
-        (-
-         (hifat-entry-count
-          (mv-nth
-           0
-           (lofat-to-hifat-helper
-            fat32$c
-            (make-d-e-list
-             (string=>nats (mv-nth 0
-                                   (d-e-cc-contents
-                                    fat32$c (car d-e-list)))))
-            (+ -1 entry-limit)))))))
-      (d-e-list
-       (make-d-e-list
-        (string=>nats (mv-nth 0
-                              (d-e-cc-contents
-                               fat32$c
-                               (mv-nth 0
-                                       (find-d-e (cdr d-e-list)
-                                                     filename)))))))
-      (fat32$c fat32$c))))))
-
 ;; Slightly better version of
 ;; d-e-cc-contents-of-update-dir-contents-disjoint.
 (defthm
@@ -3591,7 +2994,7 @@ Some (rather awful) testing forms are
     (> (+ *ms-first-data-cluster*
           (count-of-clusters fat32$c))
        (d-e-first-cluster (mv-nth 0
-                                      (find-d-e d-e-list filename)))))
+                                  (find-d-e d-e-list filename)))))
    (and
     (equal (mv-nth 1
                    (d-e-cc-contents
@@ -3603,8 +3006,8 @@ Some (rather awful) testing forms are
      (mv-nth
       0
       (d-e-cc fat32$c
-                            (mv-nth 0
-                                    (find-d-e d-e-list filename)))))))
+              (mv-nth 0
+                      (find-d-e d-e-list filename)))))))
   :hints
   (("goal" :in-theory
     (e/d (lofat-to-hifat-helper)
@@ -3624,11 +3027,11 @@ Some (rather awful) testing forms are
   :hints
   (("goal" :in-theory (enable d-e-cc-contents nfix)
     :expand ((get-cc-contents fat32$c
-                                        (d-e-first-cluster d-e)
-                                        (d-e-file-size d-e))
+                              (d-e-first-cluster d-e)
+                              (d-e-file-size d-e))
              (get-cc-contents fat32$c
-                                        (d-e-first-cluster d-e)
-                                        2097152))))
+                              (d-e-first-cluster d-e)
+                              2097152))))
   :rule-classes :linear)
 
 (defthm
@@ -3648,7 +3051,7 @@ Some (rather awful) testing forms are
     (<=
      2
      (d-e-first-cluster (mv-nth 0
-                                    (find-d-e d-e-list filename))))
+                                (find-d-e d-e-list filename))))
     (<
      (d-e-first-cluster (mv-nth 0 (find-d-e d-e-list filename)))
      (+ 2 (count-of-clusters fat32$c))))
@@ -3680,11 +3083,11 @@ Some (rather awful) testing forms are
       (d-e-list-p d-e-list)
       (not
        (d-e-directory-p (mv-nth 0
-                                    (find-d-e d-e-list filename))))
+                                (find-d-e d-e-list filename))))
       (<=
        2
        (d-e-first-cluster (mv-nth 0
-                                      (find-d-e d-e-list filename))))
+                                  (find-d-e d-e-list filename))))
       (< (d-e-first-cluster
           (mv-nth 0 (find-d-e d-e-list filename)))
          (+ 2 (count-of-clusters fat32$c))))
@@ -3699,7 +3102,7 @@ Some (rather awful) testing forms are
           (mv-nth '0
                   (find-d-e d-e-list filename)))
          (d-e-file-size (mv-nth '0
-                                    (find-d-e d-e-list filename)))
+                                (find-d-e d-e-list filename)))
          (cluster-size fat32$c))))))
     :hints (("goal" :in-theory (enable d-e-cc))))
    (:rewrite
@@ -3720,7 +3123,7 @@ Some (rather awful) testing forms are
       (<=
        2
        (d-e-first-cluster (mv-nth 0
-                                      (find-d-e d-e-list filename))))
+                                  (find-d-e d-e-list filename))))
       (< (d-e-first-cluster
           (mv-nth 0 (find-d-e d-e-list filename)))
          (+ 2 (count-of-clusters fat32$c))))
@@ -3753,7 +3156,7 @@ Some (rather awful) testing forms are
       (<=
        2
        (d-e-first-cluster (mv-nth 0
-                                      (find-d-e d-e-list filename))))
+                                  (find-d-e d-e-list filename))))
       (<
        (d-e-first-cluster (mv-nth 0 (find-d-e d-e-list filename)))
        (+ 2 (count-of-clusters fat32$c))))
@@ -3781,7 +3184,7 @@ Some (rather awful) testing forms are
       (<=
        2
        (d-e-first-cluster (mv-nth 0
-                                      (find-d-e d-e-list filename))))
+                                  (find-d-e d-e-list filename))))
       (<
        (d-e-first-cluster (mv-nth 0 (find-d-e d-e-list filename)))
        (+ 2 (count-of-clusters fat32$c)))
@@ -3813,7 +3216,7 @@ Some (rather awful) testing forms are
               (d-e-cc fat32$c d-e))
       (mv-nth 0
               (d-e-cc fat32$c
-                                    (pseudo-root-d-e fat32$c))))))
+                      (pseudo-root-d-e fat32$c))))))
    (equal (root-d-e-list
            (mv-nth 0
                    (update-dir-contents fat32$c
@@ -3970,8 +3373,8 @@ Some (rather awful) testing forms are
    (equal (d-e-cc
            (mv-nth 0
                    (clear-cc fat32$c
-                                       (d-e-first-cluster d-e1)
-                                       *ms-max-dir-size*))
+                             (d-e-first-cluster d-e1)
+                             *ms-max-dir-size*))
            d-e2)
           (d-e-cc fat32$c d-e2)))
   :hints
@@ -4119,134 +3522,6 @@ Some (rather awful) testing forms are
                    (d-e-cc-contents fat32$c d-e)))
           (car path))))))))))
 
-(defthm
-  d-e-cc-contents-of-lofat-remove-file-coincident-lemma-4
-  (implies
-   (and
-    (d-e-directory-p
-     (mv-nth
-      0
-      (find-d-e
-       (make-d-e-list
-        (mv-nth 0
-                (d-e-cc-contents fat32$c d-e)))
-       (car path))))
-    (<=
-     2
-     (d-e-first-cluster
-      (mv-nth
-       0
-       (find-d-e
-        (make-d-e-list
-         (mv-nth
-          0
-          (d-e-cc-contents
-           fat32$c
-           (mv-nth
-            0
-            (find-d-e
-             (make-d-e-list
-              (mv-nth
-               0
-               (d-e-cc-contents fat32$c d-e)))
-             (car path))))))
-        (cadr path)))))
-    (<
-     (d-e-first-cluster
-      (mv-nth
-       0
-       (find-d-e
-        (make-d-e-list
-         (mv-nth
-          0
-          (d-e-cc-contents
-           fat32$c
-           (mv-nth
-            0
-            (find-d-e
-             (make-d-e-list
-              (mv-nth
-               0
-               (d-e-cc-contents fat32$c d-e)))
-             (car path))))))
-        (cadr path))))
-     (+ 2 (count-of-clusters fat32$c)))
-    (equal
-     (mv-nth
-      3
-      (lofat-to-hifat-helper
-       fat32$c
-       (make-d-e-list
-        (mv-nth 0
-                (d-e-cc-contents fat32$c d-e)))
-       entry-limit))
-     0)
-    (not-intersectp-list
-     (mv-nth 0
-             (d-e-cc fat32$c d-e))
-     (mv-nth
-      2
-      (lofat-to-hifat-helper
-       fat32$c
-       (make-d-e-list
-        (mv-nth 0
-                (d-e-cc-contents fat32$c d-e)))
-       entry-limit))))
-   (not
-    (intersectp-equal
-     (mv-nth 0
-             (d-e-cc fat32$c d-e))
-     (mv-nth
-      0
-      (d-e-cc
-       fat32$c
-       (mv-nth
-        0
-        (find-d-e
-         (make-d-e-list
-          (mv-nth
-           0
-           (d-e-cc-contents
-            fat32$c
-            (mv-nth
-             0
-             (find-d-e
-              (make-d-e-list
-               (mv-nth
-                0
-                (d-e-cc-contents fat32$c d-e)))
-              (car path))))))
-         (cadr path))))))))
-  :hints
-  (("goal"
-    :in-theory
-    (disable
-     (:rewrite
-      get-cc-contents-of-lofat-remove-file-coincident-lemma-5
-      . 1))
-    :use
-    (:instance
-     (:rewrite
-      get-cc-contents-of-lofat-remove-file-coincident-lemma-5
-      . 1)
-     (filename (cadr path))
-     (d-e-list
-      (make-d-e-list
-       (mv-nth
-        0
-        (d-e-cc-contents
-         fat32$c
-         (mv-nth
-          0
-          (find-d-e
-           (make-d-e-list
-            (mv-nth 0
-                    (d-e-cc-contents fat32$c d-e)))
-           (car path)))))))
-     (fat32$c fat32$c)
-     (x (mv-nth 0
-                (d-e-cc fat32$c d-e)))))))
-
 ;; Slightly better version of d-e-cc-of-clear-cc.
 (defthm
   d-e-cc-contents-of-lofat-remove-file-coincident-lemma-6
@@ -4265,8 +3540,8 @@ Some (rather awful) testing forms are
    (equal (d-e-cc
            (mv-nth 0
                    (clear-cc fat32$c
-                                       (d-e-first-cluster d-e1)
-                                       (d-e-file-size d-e1)))
+                             (d-e-first-cluster d-e1)
+                             (d-e-file-size d-e1)))
            d-e2)
           (d-e-cc fat32$c d-e2)))
   :hints
@@ -4397,15 +3672,15 @@ Some (rather awful) testing forms are
                                      (d-e-first-cluster d-e)
                                      2097152 (cluster-size fat32$c))
              (get-cc-contents fat32$c
-                                        (d-e-first-cluster d-e)
-                                        2097152)
+                              (d-e-first-cluster d-e)
+                              2097152)
              (fat32-build-index-list (effective-fat fat32$c)
                                      (d-e-first-cluster d-e)
                                      (d-e-file-size d-e)
                                      (cluster-size fat32$c))
              (get-cc-contents fat32$c
-                                        (d-e-first-cluster d-e)
-                                        (d-e-file-size d-e))))))
+                              (d-e-first-cluster d-e)
+                              (d-e-file-size d-e))))))
 
 (encapsulate
   ()
@@ -4427,12 +3702,12 @@ Some (rather awful) testing forms are
         (explode
          (mv-nth 0
                  (get-cc-contents fat32$c
-                                            masked-current-cluster length))))
+                                  masked-current-cluster length))))
        y)
       0))
     :hints
     (("goal" :induct (get-cc-contents fat32$c
-                                                masked-current-cluster length)
+                                      masked-current-cluster length)
       :in-theory (enable get-cc-contents
                          nfix mod-sum-cases)))))
 
@@ -4577,11 +3852,11 @@ Some (rather awful) testing forms are
                                               d-e-list entry-limit))
                0)
         (d-e-directory-p (mv-nth 0
-                                     (find-d-e d-e-list filename))))
+                                 (find-d-e d-e-list filename))))
    (and
     (<= *ms-first-data-cluster*
         (d-e-first-cluster (mv-nth 0
-                                       (find-d-e d-e-list filename))))
+                                   (find-d-e d-e-list filename))))
     (< (d-e-first-cluster (mv-nth 0 (find-d-e d-e-list filename)))
        (+ *ms-first-data-cluster*
           (count-of-clusters fat32$c)))))
@@ -4604,8 +3879,8 @@ Some (rather awful) testing forms are
              (lofat-to-hifat-helper fat32$c (cdr d-e-list)
                                     (+ -1 entry-limit))))
     (d-e-directory-p (mv-nth 0
-                                 (find-d-e (cdr d-e-list)
-                                               filename))))
+                             (find-d-e (cdr d-e-list)
+                                       filename))))
    (not
     (intersectp-equal
      (mv-nth '0
@@ -4615,8 +3890,8 @@ Some (rather awful) testing forms are
       (fat32-build-index-list
        (effective-fat fat32$c)
        (d-e-first-cluster (mv-nth '0
-                                      (find-d-e (cdr d-e-list)
-                                                    filename)))
+                                  (find-d-e (cdr d-e-list)
+                                            filename)))
        '2097152
        (cluster-size fat32$c))))))
   :hints (("goal" :in-theory (e/d (d-e-cc)))))
@@ -4797,8 +4072,8 @@ Some (rather awful) testing forms are
    (equal (lofat-to-hifat-helper
            (mv-nth 0
                    (clear-cc fat32$c
-                                       (d-e-first-cluster d-e)
-                                       (d-e-file-size d-e)))
+                             (d-e-first-cluster d-e)
+                             (d-e-file-size d-e)))
            d-e-list entry-limit)
           (lofat-to-hifat-helper fat32$c
                                  d-e-list entry-limit)))
@@ -4861,7 +4136,7 @@ Some (rather awful) testing forms are
     (equal
      (mv-nth 1
              (get-cc-contents fat32$c
-                                        first-cluster *ms-max-dir-size*))
+                              first-cluster *ms-max-dir-size*))
      0)
     (equal (mv-nth 1
                    (update-dir-contents fat32$c
@@ -4881,8 +4156,7 @@ Some (rather awful) testing forms are
   (("goal"
     :in-theory
     (e/d
-     (update-dir-contents
-      get-cc-contents-of-update-dir-contents-coincident-lemma-3)
+     (update-dir-contents)
      ((:rewrite nth-of-set-indices-in-fa-table-when-member)))
     :expand
     ((fat32-build-index-list (effective-fat fat32$c)
@@ -5120,7 +4394,6 @@ Some (rather awful) testing forms are
      (("goal" :in-theory
        (e/d (update-dir-contents
              place-contents
-             get-cc-contents-of-update-dir-contents-coincident-lemma-3
              (:linear hifat-to-lofat-inversion-lemma-16)
              (:rewrite fati-of-clear-cc . 1))
             nil)
@@ -5175,7 +4448,6 @@ Some (rather awful) testing forms are
     (("goal" :in-theory
       (e/d (update-dir-contents
             place-contents
-            get-cc-contents-of-update-dir-contents-coincident-lemma-3
             (:linear hifat-to-lofat-inversion-lemma-16)
             (:rewrite fati-of-clear-cc . 1))
            nil)))))
@@ -5201,95 +4473,34 @@ Some (rather awful) testing forms are
                     (update-dir-contents fat32$c first-cluster dir-contents))
             d-e)
     (if
-     (equal (mv-nth 1
-                    (update-dir-contents fat32$c (d-e-first-cluster d-e)
-                                         dir-contents))
-            0)
-     (mv
-      (cons
-       (d-e-first-cluster d-e)
-       (find-n-free-clusters
-        (update-nth
-         (d-e-first-cluster d-e)
-         (fat32-update-lower-28 (fati (d-e-first-cluster d-e) fat32$c)
-                                268435455)
-         (set-indices-in-fa-table
-          (effective-fat fat32$c)
-          (mv-nth 0 (d-e-cc fat32$c d-e))
-          (make-list-ac (len (mv-nth 0 (d-e-cc fat32$c d-e)))
-                        0 nil)))
-        (+ -1
-           (len (make-clusters dir-contents (cluster-size fat32$c))))))
-      0)
-     (d-e-cc fat32$c d-e))))
+        (equal (mv-nth 1
+                       (update-dir-contents fat32$c (d-e-first-cluster d-e)
+                                            dir-contents))
+               0)
+        (mv
+         (cons
+          (d-e-first-cluster d-e)
+          (find-n-free-clusters
+           (update-nth
+            (d-e-first-cluster d-e)
+            (fat32-update-lower-28 (fati (d-e-first-cluster d-e) fat32$c)
+                                   268435455)
+            (set-indices-in-fa-table
+             (effective-fat fat32$c)
+             (mv-nth 0 (d-e-cc fat32$c d-e))
+             (make-list-ac (len (mv-nth 0 (d-e-cc fat32$c d-e)))
+                           0 nil)))
+           (+ -1
+              (len (make-clusters dir-contents (cluster-size fat32$c))))))
+         0)
+      (d-e-cc fat32$c d-e))))
   :hints (("goal" :do-not-induct t
            :in-theory (e/d (d-e-cc d-e-cc-correctness-1)
                            (get-cc-alt))
            :use d-e-cc-correctness-1)))
 
 (defthm
-  lofat-remove-file-correctness-1-lemma-18
-  (implies
-   (and (< (fat32-entry-mask (fati (d-e-first-cluster d-e)
-                                   fat32$c))
-           (+ 2 (count-of-clusters fat32$c)))
-        (< (d-e-first-cluster d-e)
-           (+ 2 (count-of-clusters fat32$c))))
-   (equal
-    (fat32-entry-mask
-     (nth
-      (d-e-first-cluster d-e)
-      (set-indices-in-fa-table
-       (effective-fat fat32$c)
-       (cons
-        (d-e-first-cluster d-e)
-        (mv-nth '0
-                (fat32-build-index-list
-                 (effective-fat fat32$c)
-                 (fat32-entry-mask (fati (d-e-first-cluster d-e)
-                                         fat32$c))
-                 (binary-+ '2097152
-                           (binary-* '-1
-                                     (cluster-size fat32$c)))
-                 (cluster-size fat32$c))))
-       (make-list-ac
-        (len
-         (mv-nth '0
-                 (fat32-build-index-list
-                  (effective-fat fat32$c)
-                  (fat32-entry-mask (fati (d-e-first-cluster d-e)
-                                          fat32$c))
-                  (binary-+ '2097152
-                            (binary-* '-1
-                                      (cluster-size fat32$c)))
-                  (cluster-size fat32$c))))
-        '0
-        '(0)))))
-    '0))
-  :hints
-  (("goal"
-    :in-theory (disable (:rewrite nth-of-set-indices-in-fa-table-when-member))
-    :use
-    ((:instance
-      (:rewrite nth-of-set-indices-in-fa-table-when-member)
-      (val 0)
-      (index-list
-       (cons
-        (d-e-first-cluster d-e)
-        (mv-nth 0
-                (fat32-build-index-list
-                 (effective-fat fat32$c)
-                 (fat32-entry-mask (fati (d-e-first-cluster d-e)
-                                         fat32$c))
-                 (+ 2097152
-                    (* -1 (cluster-size fat32$c)))
-                 (cluster-size fat32$c)))))
-      (fa-table (effective-fat fat32$c))
-      (n (d-e-first-cluster d-e)))))))
-
-;; The hypotheses are minimal.
-(defthm
-  lofat-remove-file-correctness-1-lemma-62
+  lofat-remove-file-correctness-lemma-74
   (implies
    (and
     (useful-d-e-list-p d-e-list)
@@ -5299,7 +4510,7 @@ Some (rather awful) testing forms are
            0)
     (<= *ms-first-data-cluster*
         (d-e-first-cluster (mv-nth 0
-                                       (find-d-e d-e-list filename))))
+                                   (find-d-e d-e-list filename))))
     (< (d-e-first-cluster (mv-nth 0 (find-d-e d-e-list filename)))
        (+ *ms-first-data-cluster*
           (count-of-clusters fat32$c))))
@@ -5307,8 +4518,8 @@ Some (rather awful) testing forms are
     (mv-nth
      '0
      (d-e-cc fat32$c
-                           (mv-nth '0
-                                   (find-d-e d-e-list filename))))
+             (mv-nth '0
+                     (find-d-e d-e-list filename))))
     (mv-nth '2
             (lofat-to-hifat-helper fat32$c
                                    (delete-d-e d-e-list filename)
@@ -5349,8 +4560,8 @@ Some (rather awful) testing forms are
                    (+ -1 entry-limit))))))))
      0)
     (d-e-directory-p (mv-nth 0
-                                 (find-d-e (cdr d-e-list)
-                                               filename1)))
+                             (find-d-e (cdr d-e-list)
+                                       filename1)))
     (equal
      (mv-nth
       0
@@ -5360,8 +4571,8 @@ Some (rather awful) testing forms are
         (update-dir-contents
          fat32$c
          (d-e-first-cluster (mv-nth 0
-                                        (find-d-e (cdr d-e-list)
-                                                      filename1)))
+                                    (find-d-e (cdr d-e-list)
+                                              filename1)))
          (nats=>string
           (clear-d-e
            (string=>nats (mv-nth 0
@@ -5369,7 +4580,7 @@ Some (rather awful) testing forms are
                                   fat32$c
                                   (mv-nth 0
                                           (find-d-e (cdr d-e-list)
-                                                        filename1)))))
+                                                    filename1)))))
            filename2))))
        (cdr d-e-list)
        (+
@@ -5389,7 +4600,7 @@ Some (rather awful) testing forms are
       (m1-file
        (mv-nth 0
                (find-d-e (cdr d-e-list)
-                             filename1))
+                         filename1))
        (remove-assoc-equal
         filename2
         (mv-nth
@@ -5402,7 +4613,7 @@ Some (rather awful) testing forms are
                     fat32$c
                     (mv-nth 0
                             (find-d-e (cdr d-e-list)
-                                          filename1)))))
+                                      filename1)))))
           (+
            -1 entry-limit
            (-
@@ -5443,8 +4654,8 @@ Some (rather awful) testing forms are
        (update-dir-contents
         fat32$c
         (d-e-first-cluster (mv-nth 0
-                                       (find-d-e (cdr d-e-list)
-                                                     filename1)))
+                                   (find-d-e (cdr d-e-list)
+                                             filename1)))
         (nats=>string
          (clear-d-e
           (string=>nats (mv-nth 0
@@ -5452,7 +4663,7 @@ Some (rather awful) testing forms are
                                  fat32$c
                                  (mv-nth 0
                                          (find-d-e (cdr d-e-list)
-                                                       filename1)))))
+                                                   filename1)))))
           filename2))))
       (cdr d-e-list)
       (+
@@ -5472,7 +4683,7 @@ Some (rather awful) testing forms are
      (m1-file
       (mv-nth 0
               (find-d-e (cdr d-e-list)
-                            filename1))
+                        filename1))
       (remove-assoc-equal
        filename2
        (mv-nth 0
@@ -5484,7 +4695,7 @@ Some (rather awful) testing forms are
                           fat32$c
                           (mv-nth 0
                                   (find-d-e (cdr d-e-list)
-                                                filename1)))))
+                                            filename1)))))
                 entry-limit))))
      (mv-nth
       0
@@ -5523,15 +4734,15 @@ Some (rather awful) testing forms are
                   (+ -1 entry-limit)))))))
      (entry-limit2 entry-limit)
      (d-e-list (make-d-e-list
-                    (mv-nth 0
-                            (d-e-cc-contents
-                             fat32$c
-                             (mv-nth 0
-                                     (find-d-e (cdr d-e-list)
-                                                   filename1))))))))))
+                (mv-nth 0
+                        (d-e-cc-contents
+                         fat32$c
+                         (mv-nth 0
+                                 (find-d-e (cdr d-e-list)
+                                           filename1))))))))))
 
 (defthm
-  lofat-remove-file-correctness-1-lemma-16
+  lofat-remove-file-correctness-lemma-75
   (implies
    (and
     (syntaxp (variablep entry-limit))
@@ -5540,8 +4751,8 @@ Some (rather awful) testing forms are
                                           (+ -1 entry-limit)))
            0)
     (d-e-directory-p (mv-nth 0
-                                 (find-d-e (cdr d-e-list)
-                                               filename1)))
+                             (find-d-e (cdr d-e-list)
+                                       filename1)))
     (equal
      (mv-nth
       0
@@ -5551,8 +4762,8 @@ Some (rather awful) testing forms are
         (update-dir-contents
          fat32$c
          (d-e-first-cluster (mv-nth 0
-                                        (find-d-e (cdr d-e-list)
-                                                      filename1)))
+                                    (find-d-e (cdr d-e-list)
+                                              filename1)))
          (nats=>string
           (clear-d-e
            (string=>nats (mv-nth 0
@@ -5560,7 +4771,7 @@ Some (rather awful) testing forms are
                                   fat32$c
                                   (mv-nth 0
                                           (find-d-e (cdr d-e-list)
-                                                        filename1)))))
+                                                    filename1)))))
            filename2))))
        (cdr d-e-list)
        (+ -1 entry-limit)))
@@ -5569,7 +4780,7 @@ Some (rather awful) testing forms are
       (m1-file
        (mv-nth 0
                (find-d-e (cdr d-e-list)
-                             filename1))
+                         filename1))
        (remove-assoc-equal
         filename2
         (mv-nth
@@ -5582,7 +4793,7 @@ Some (rather awful) testing forms are
                     fat32$c
                     (mv-nth 0
                             (find-d-e (cdr d-e-list)
-                                          filename1)))))
+                                      filename1)))))
           (+ -1 entry-limit)))))
       (mv-nth 0
               (lofat-to-hifat-helper fat32$c (cdr d-e-list)
@@ -5597,8 +4808,8 @@ Some (rather awful) testing forms are
        (update-dir-contents
         fat32$c
         (d-e-first-cluster (mv-nth 0
-                                       (find-d-e (cdr d-e-list)
-                                                     filename1)))
+                                   (find-d-e (cdr d-e-list)
+                                             filename1)))
         (nats=>string
          (clear-d-e
           (string=>nats (mv-nth 0
@@ -5606,7 +4817,7 @@ Some (rather awful) testing forms are
                                  fat32$c
                                  (mv-nth 0
                                          (find-d-e (cdr d-e-list)
-                                                       filename1)))))
+                                                   filename1)))))
           filename2))))
       (cdr d-e-list)
       (+ -1 entry-limit)))
@@ -5615,7 +4826,7 @@ Some (rather awful) testing forms are
      (m1-file
       (mv-nth 0
               (find-d-e (cdr d-e-list)
-                            filename1))
+                        filename1))
       (remove-assoc-equal
        filename2
        (mv-nth 0
@@ -5627,7 +4838,7 @@ Some (rather awful) testing forms are
                           fat32$c
                           (mv-nth 0
                                   (find-d-e (cdr d-e-list)
-                                                filename1)))))
+                                            filename1)))))
                 entry-limit))))
      (mv-nth 0
              (lofat-to-hifat-helper fat32$c (cdr d-e-list)
@@ -5644,11 +4855,11 @@ Some (rather awful) testing forms are
      (entry-limit2 entry-limit)
      (d-e-list
       (make-d-e-list (mv-nth 0
-                                 (d-e-cc-contents
-                                  fat32$c
-                                  (mv-nth 0
-                                          (find-d-e (cdr d-e-list)
-                                                        filename1))))))
+                             (d-e-cc-contents
+                              fat32$c
+                              (mv-nth 0
+                                      (find-d-e (cdr d-e-list)
+                                                filename1))))))
      (fat32$c fat32$c)))))
 
 (defthm
@@ -5674,8 +4885,8 @@ Some (rather awful) testing forms are
                    (+ -1 entry-limit))))))))
      0)
     (d-e-directory-p (mv-nth 0
-                                 (find-d-e (cdr d-e-list)
-                                               filename1)))
+                             (find-d-e (cdr d-e-list)
+                                       filename1)))
     (useful-d-e-list-p d-e-list))
    (equal
     (put-assoc-equal
@@ -5683,7 +4894,7 @@ Some (rather awful) testing forms are
      (m1-file
       (mv-nth 0
               (find-d-e (cdr d-e-list)
-                            filename1))
+                        filename1))
       (remove-assoc-equal
        filename2
        (mv-nth
@@ -5696,7 +4907,7 @@ Some (rather awful) testing forms are
                    fat32$c
                    (mv-nth 0
                            (find-d-e (cdr d-e-list)
-                                         filename1)))))
+                                     filename1)))))
          (+
           -1 entry-limit
           (-
@@ -5731,7 +4942,7 @@ Some (rather awful) testing forms are
      (m1-file
       (mv-nth 0
               (find-d-e (cdr d-e-list)
-                            filename1))
+                        filename1))
       (remove-assoc-equal
        filename2
        (mv-nth 0
@@ -5743,7 +4954,7 @@ Some (rather awful) testing forms are
                           fat32$c
                           (mv-nth 0
                                   (find-d-e (cdr d-e-list)
-                                                filename1)))))
+                                            filename1)))))
                 entry-limit))))
      (mv-nth
       0
@@ -5782,16 +4993,16 @@ Some (rather awful) testing forms are
      (entry-limit2 entry-limit)
      (d-e-list
       (make-d-e-list (mv-nth 0
-                                 (d-e-cc-contents
-                                  fat32$c
-                                  (mv-nth 0
-                                          (find-d-e (cdr d-e-list)
-                                                        filename1))))))
+                             (d-e-cc-contents
+                              fat32$c
+                              (mv-nth 0
+                                      (find-d-e (cdr d-e-list)
+                                                filename1))))))
      (fat32$c fat32$c))
     :in-theory (enable nfix))))
 
 (defthm
-  lofat-remove-file-correctness-1-lemma-20
+  lofat-remove-file-correctness-lemma-76
   (implies
    (and
     (equal (mv-nth 3
@@ -5799,8 +5010,8 @@ Some (rather awful) testing forms are
                                           (+ -1 entry-limit)))
            0)
     (d-e-directory-p (mv-nth 0
-                                 (find-d-e (cdr d-e-list)
-                                               filename1)))
+                             (find-d-e (cdr d-e-list)
+                                       filename1)))
     (<=
      2
      (d-e-first-cluster
@@ -5812,7 +5023,7 @@ Some (rather awful) testing forms are
                          fat32$c
                          (mv-nth 0
                                  (find-d-e (cdr d-e-list)
-                                               filename1)))))
+                                           filename1)))))
                filename2))))
     (<
      (d-e-first-cluster
@@ -5824,7 +5035,7 @@ Some (rather awful) testing forms are
                          fat32$c
                          (mv-nth 0
                                  (find-d-e (cdr d-e-list)
-                                               filename1)))))
+                                           filename1)))))
                filename2)))
      (+ 2 (count-of-clusters fat32$c)))
     (useful-d-e-list-p d-e-list)
@@ -5850,7 +5061,7 @@ Some (rather awful) testing forms are
                           fat32$c
                           (mv-nth 0
                                   (find-d-e (cdr d-e-list)
-                                                filename1)))))
+                                            filename1)))))
                 filename2)))))))
   :hints
   (("goal"
@@ -5862,279 +5073,19 @@ Some (rather awful) testing forms are
       (entry-limit (- entry-limit 1))
       (filename filename2)
       (d-e-list (make-d-e-list
-                     (mv-nth 0
-                             (d-e-cc-contents
-                              fat32$c
-                              (mv-nth 0
-                                      (find-d-e (cdr d-e-list)
-                                                    filename1))))))
-      (fat32$c fat32$c)
-      (x (mv-nth 0
-                 (d-e-cc fat32$c
-                                       (car d-e-list)))))))))
-
-(defthm
-  lofat-remove-file-correctness-1-lemma-21
-  (implies
-   (and
-    (equal (mv-nth 3
-                   (lofat-to-hifat-helper fat32$c (cdr d-e-list)
-                                          (+ -1 entry-limit)))
-           0)
-    (d-e-directory-p (mv-nth 0
-                                 (find-d-e (cdr d-e-list)
-                                               filename1)))
-    (<=
-     2
-     (d-e-first-cluster
-      (mv-nth 0
-              (find-d-e
-               (make-d-e-list
-                (mv-nth 0
-                        (d-e-cc-contents
-                         fat32$c
-                         (mv-nth 0
-                                 (find-d-e (cdr d-e-list)
-                                               filename1)))))
-               filename2))))
-    (<
-     (d-e-first-cluster
-      (mv-nth 0
-              (find-d-e
-               (make-d-e-list
-                (mv-nth 0
-                        (d-e-cc-contents
-                         fat32$c
-                         (mv-nth 0
-                                 (find-d-e (cdr d-e-list)
-                                               filename1)))))
-               filename2)))
-     (+ 2 (count-of-clusters fat32$c)))
-    (useful-d-e-list-p d-e-list))
-   (not
-    (intersectp-equal
-     (mv-nth 0
-             (d-e-cc fat32$c
-                                   (mv-nth 0
-                                           (find-d-e (cdr d-e-list)
-                                                         filename1))))
-     (mv-nth
-      0
-      (d-e-cc
-       fat32$c
-       (mv-nth 0
-               (find-d-e
-                (make-d-e-list
                  (mv-nth 0
                          (d-e-cc-contents
                           fat32$c
                           (mv-nth 0
                                   (find-d-e (cdr d-e-list)
-                                                filename1)))))
-                filename2)))))))
-  :hints
-  (("goal"
-    :in-theory
-    (disable
-     (:rewrite
-      get-cc-contents-of-lofat-remove-file-coincident-lemma-5
-      . 1))
-    :use
-    (:instance
-     (:rewrite
-      get-cc-contents-of-lofat-remove-file-coincident-lemma-5
-      . 1)
-     (entry-limit (- entry-limit 1))
-     (filename filename2)
-     (d-e-list
-      (make-d-e-list (mv-nth 0
-                                 (d-e-cc-contents
-                                  fat32$c
-                                  (mv-nth 0
-                                          (find-d-e (cdr d-e-list)
-                                                        filename1))))))
-     (fat32$c fat32$c)
-     (x (mv-nth 0
-                (d-e-cc fat32$c
-                                      (mv-nth 0
-                                              (find-d-e (cdr d-e-list)
-                                                            filename1)))))))))
+                                            filename1))))))
+      (fat32$c fat32$c)
+      (x (mv-nth 0
+                 (d-e-cc fat32$c
+                         (car d-e-list)))))))))
 
 (defthm
-  lofat-remove-file-correctness-1-lemma-24
-  (implies
-   (and
-    (not (zp entry-limit))
-    (useful-d-e-list-p d-e-list)
-    (equal
-     (mv-nth
-      3
-      (lofat-to-hifat-helper
-       fat32$c
-       (make-d-e-list
-        (mv-nth
-         0
-         (d-e-cc-contents fat32$c (car d-e-list))))
-       (+ -1 entry-limit)))
-     0)
-    (equal
-     (mv-nth
-      3
-      (lofat-to-hifat-helper
-       fat32$c (cdr d-e-list)
-       (+
-        -1 entry-limit
-        (-
-         (hifat-entry-count
-          (mv-nth 0
-                  (lofat-to-hifat-helper
-                   fat32$c
-                   (make-d-e-list
-                    (mv-nth 0
-                            (d-e-cc-contents
-                             fat32$c (car d-e-list))))
-                   (+ -1 entry-limit))))))))
-     0)
-    (not-intersectp-list
-     (mv-nth 0
-             (d-e-cc fat32$c (car d-e-list)))
-     (mv-nth
-      2
-      (lofat-to-hifat-helper
-       fat32$c (cdr d-e-list)
-       (+
-        -1 entry-limit
-        (-
-         (hifat-entry-count
-          (mv-nth 0
-                  (lofat-to-hifat-helper
-                   fat32$c
-                   (make-d-e-list
-                    (mv-nth 0
-                            (d-e-cc-contents
-                             fat32$c (car d-e-list))))
-                   (+ -1 entry-limit)))))))))
-    (equal
-     (mv-nth
-      1
-      (find-d-e
-       (make-d-e-list
-        (mv-nth
-         0
-         (d-e-cc-contents fat32$c (car d-e-list))))
-       filename2))
-     0))
-   (not-intersectp-list
-    (mv-nth 0
-            (d-e-cc fat32$c (car d-e-list)))
-    (mv-nth
-     2
-     (lofat-to-hifat-helper
-      fat32$c (cdr d-e-list)
-      (+
-       -1 entry-limit
-       (-
-        (hifat-entry-count
-         (remove-assoc-equal
-          filename2
-          (mv-nth 0
-                  (lofat-to-hifat-helper
-                   fat32$c
-                   (make-d-e-list
-                    (mv-nth 0
-                            (d-e-cc-contents
-                             fat32$c (car d-e-list))))
-                   (+ -1 entry-limit)))))))))))
-  :hints
-  (("goal"
-    :in-theory
-    (e/d (nfix)
-         ((:linear lofat-to-hifat-helper-correctness-3)
-          lofat-to-hifat-helper-after-delete-and-clear-2-lemma-2))
-    :use
-    ((:instance
-      lofat-to-hifat-helper-after-delete-and-clear-2-lemma-2
-      (entry-limit (+ -1 entry-limit))
-      (l
-       (mv-nth
-        2
-        (lofat-to-hifat-helper
-         fat32$c (cdr d-e-list)
-         (+
-          -1 entry-limit
-          (-
-           (hifat-entry-count
-            (remove-assoc-equal
-             filename2
-             (mv-nth
-              0
-              (lofat-to-hifat-helper
-               fat32$c
-               (make-d-e-list
-                (mv-nth 0
-                        (d-e-cc-contents
-                         fat32$c (car d-e-list))))
-               (+ -1 entry-limit))))))))))
-      (filename filename2)
-      (d-e-list
-       (make-d-e-list
-        (mv-nth
-         0
-         (d-e-cc-contents fat32$c (car d-e-list)))))
-      (fat32$c fat32$c))
-     (:instance
-      (:rewrite lofat-to-hifat-helper-correctness-4)
-      (entry-limit1
-       (+
-        -1 entry-limit
-        (-
-         (hifat-entry-count
-          (mv-nth 0
-                  (lofat-to-hifat-helper
-                   fat32$c
-                   (make-d-e-list
-                    (mv-nth 0
-                            (d-e-cc-contents
-                             fat32$c (car d-e-list))))
-                   (+ -1 entry-limit)))))))
-      (entry-limit2
-       (+
-        -1 entry-limit
-        (-
-         (hifat-entry-count
-          (remove-assoc-equal
-           filename2
-           (mv-nth
-            0
-            (lofat-to-hifat-helper
-             fat32$c
-             (make-d-e-list
-              (mv-nth 0
-                      (d-e-cc-contents
-                       fat32$c (car d-e-list))))
-             (+ -1 entry-limit))))))))
-      (d-e-list (cdr d-e-list))
-      (fat32$c fat32$c))
-     (:instance
-      (:linear lofat-to-hifat-helper-correctness-3)
-      (entry-limit
-       (+
-        -1 entry-limit
-        (-
-         (hifat-entry-count
-          (mv-nth 0
-                  (lofat-to-hifat-helper
-                   fat32$c
-                   (make-d-e-list
-                    (mv-nth 0
-                            (d-e-cc-contents
-                             fat32$c (car d-e-list))))
-                   (+ -1 entry-limit)))))))
-      (d-e-list (cdr d-e-list))
-      (fat32$c fat32$c))))))
-
-(defthm
-  lofat-remove-file-correctness-1-lemma-25
+  lofat-remove-file-correctness-lemma-77
   (implies
    (and
     (not (zp entry-limit))
@@ -6281,22 +5232,22 @@ Some (rather awful) testing forms are
        (implode (nats=>chars (clear-d-e dir-contents filename1)))
        filename2)))
     (len (explode (remove1-d-e (nats=>string dir-contents)
-                                   filename2)))))
+                               filename2)))))
   :hints
   (("goal"
     :in-theory (e/d (remove1-d-e clear-d-e
-                                     len-when-d-e-p
-                                     nats=>string)
+                                 len-when-d-e-p
+                                 nats=>string)
                     (nats=>chars-of-take))
     :induct (clear-d-e dir-contents filename1)
     :expand
     ((remove1-d-e
       (implode (append (nats=>chars (take 32 dir-contents))
                        (nats=>chars (clear-d-e (nthcdr 32 dir-contents)
-                                                   filename1))))
+                                               filename1))))
       filename2)
      (remove1-d-e (nats=>string dir-contents)
-                      filename2)))
+                  filename2)))
    ("subgoal *1/3''"
     :expand
     (remove1-d-e
@@ -6311,10 +5262,10 @@ Some (rather awful) testing forms are
            (string=>nats (d-e-filename (take 32 dir-contents)))))))
        (nats=>chars
         (clear-d-e (nthcdr 32 dir-contents)
-                       (d-e-filename (take 32 dir-contents))))))
+                   (d-e-filename (take 32 dir-contents))))))
      filename2))))
 
-(defthm lofat-remove-file-correctness-1-lemma-30
+(defthm lofat-remove-file-correctness-lemma-79
   (>= (len (explode (remove1-d-e dir-contents filename)))
       (- (len (explode dir-contents))
          *ms-d-e-length*))
@@ -6341,101 +5292,21 @@ Some (rather awful) testing forms are
        filename3)))
     (len
      (explode (remove1-d-e (remove1-d-e (nats=>string dir-contents)
-                                                filename2)
-                               filename3)))))
+                                        filename2)
+                           filename3)))))
   :hints
   (("goal"
     :in-theory (e/d (remove1-d-e clear-d-e
-                                     len-when-d-e-p
-                                     nats=>string)
+                                 len-when-d-e-p
+                                 nats=>string)
                     (nats=>chars-of-take))
     :induct (clear-d-e dir-contents filename1)
     :expand
     ((remove1-d-e
       (implode (append (nats=>chars (take 32 dir-contents))
                        (nats=>chars (clear-d-e (nthcdr 32 dir-contents)
-                                                   filename1))))
+                                               filename1))))
       filename2)))))
-
-(make-event
- `(defthm
-    lofat-remove-file-correctness-1-lemma-32
-    (implies
-     (and (unsigned-byte-listp 8 dir-contents)
-          (not (equal filename1 filename2))
-          (not (equal (char-code (char filename2 0))
-                      229)))
-     (equal
-      (len
-       (explode
-        (remove1-d-e
-         (implode (append (nats=>chars (clear-d-e dir-contents filename1))
-                          (make-list-ac n ,(code-char 0) nil)))
-         filename2)))
-      (len
-       (explode
-        (remove1-d-e (implode (append (nats=>chars dir-contents)
-                                          (make-list-ac n (code-char 0) nil)))
-                         filename2)))))
-    :hints
-    (("goal"
-      :in-theory (enable remove1-d-e clear-d-e
-                         len-when-d-e-p
-                         nats=>string)
-      :induct (clear-d-e dir-contents filename1)
-      :expand
-      ((remove1-d-e
-        (implode (append (nats=>chars (take 32 dir-contents))
-                         (nats=>chars (clear-d-e (nthcdr 32 dir-contents)
-                                                     filename1))))
-        filename2)
-       (remove1-d-e (nats=>string dir-contents)
-                        filename2))))))
-
-(make-event
- `(defthm
-    lofat-remove-file-correctness-1-lemma-33
-    (implies
-     (and (unsigned-byte-listp 8 dir-contents)
-          (not (equal filename1 filename2))
-          (not (equal filename1 filename3))
-          (not (equal (char-code (char filename2 0))
-                      229))
-          (not (equal (char-code (char filename3 0))
-                      229)))
-     (equal
-      (len
-       (explode
-        (remove1-d-e
-         (remove1-d-e
-          (implode
-           (append
-            (nats=>chars (clear-d-e dir-contents filename1))
-            (make-list-ac n ,(code-char 0) nil)))
-          filename2)
-         filename3)))
-      (len
-       (explode
-        (remove1-d-e
-         (remove1-d-e
-          (implode (append (nats=>chars dir-contents)
-                           (make-list-ac n (code-char 0) nil)))
-          filename2)
-         filename3)))))
-    :hints
-    (("goal"
-      :in-theory (enable remove1-d-e clear-d-e
-                         len-when-d-e-p
-                         nats=>string)
-      :induct (clear-d-e dir-contents filename1)
-      :expand
-      ((remove1-d-e
-        (implode
-         (append
-          (nats=>chars (take 32 dir-contents))
-          (nats=>chars (clear-d-e (nthcdr 32 dir-contents)
-                                      filename1))))
-        filename2))))))
 
 (encapsulate
   ()
@@ -6542,29 +5413,6 @@ Some (rather awful) testing forms are
 
   (make-event
    `(defthm
-      lofat-place-file-correctness-lemma-140
-      (implies
-       (and (>= (+ -32 (len (explode contents)))
-                (len (explode (remove1-d-e contents *current-dir-fat32-name*))))
-            (equal (mod (len (explode contents))
-                        *ms-d-e-length*)
-                   0)
-            (equal (mod n *ms-d-e-length*) 0))
-       (>=
-        (+ -32
-           (len (append (explode contents)
-                        (make-list-ac n ,(code-char 0) nil))))
-        (len
-         (explode
-          (remove1-d-e (implode (append (explode contents)
-                                        (make-list-ac n ,(code-char 0) nil)))
-                       *current-dir-fat32-name*)))))
-      :hints (("goal" :in-theory (enable remove1-d-e nfix)
-               :induct (remove1-d-e contents *current-dir-fat32-name*)))
-      :rule-classes :linear))
-
-  (make-event
-   `(defthm
       lofat-place-file-correctness-lemma-141
       (implies
        (and (stringp contents)
@@ -6640,8 +5488,8 @@ Some (rather awful) testing forms are
                    (+ -1 entry-limit))))))))
      0)
     (d-e-directory-p (mv-nth 0
-                                 (find-d-e (cdr d-e-list)
-                                               filename1)))
+                             (find-d-e (cdr d-e-list)
+                                       filename1)))
     (<=
      2
      (d-e-first-cluster
@@ -6653,7 +5501,7 @@ Some (rather awful) testing forms are
                          fat32$c
                          (mv-nth 0
                                  (find-d-e (cdr d-e-list)
-                                               filename1)))))
+                                           filename1)))))
                filename2))))
     (<
      (d-e-first-cluster
@@ -6665,7 +5513,7 @@ Some (rather awful) testing forms are
                          fat32$c
                          (mv-nth 0
                                  (find-d-e (cdr d-e-list)
-                                               filename1)))))
+                                           filename1)))))
                filename2)))
      (+ 2 (count-of-clusters fat32$c)))
     (useful-d-e-list-p d-e-list)
@@ -6710,7 +5558,7 @@ Some (rather awful) testing forms are
                          fat32$c
                          (mv-nth 0
                                  (find-d-e (cdr d-e-list)
-                                               filename1)))))
+                                           filename1)))))
                filename2))))
     (mv-nth
      2
@@ -6752,11 +5600,11 @@ Some (rather awful) testing forms are
      (filename filename2)
      (d-e-list
       (make-d-e-list (mv-nth 0
-                                 (d-e-cc-contents
-                                  fat32$c
-                                  (mv-nth 0
-                                          (find-d-e (cdr d-e-list)
-                                                        filename1))))))
+                             (d-e-cc-contents
+                              fat32$c
+                              (mv-nth 0
+                                      (find-d-e (cdr d-e-list)
+                                                filename1))))))
      (fat32$c fat32$c)))))
 
 (encapsulate
@@ -6808,7 +5656,7 @@ Some (rather awful) testing forms are
                         (+ *ms-first-data-cluster* (count-of-clusters fat32$c)))))
         nil)
        ((mv & error-code) (d-e-cc-contents fat32$c
-                                                         root-d-e))
+                                           root-d-e))
        ((mv cc &)
         (d-e-cc fat32$c root-d-e)))
     (and (equal error-code 0)
@@ -6822,22 +5670,22 @@ Some (rather awful) testing forms are
      (mv-nth
       1
       (d-e-cc-contents fat32$c
-                                     (pseudo-root-d-e fat32$c)))
+                       (pseudo-root-d-e fat32$c)))
      0)
     (no-duplicatesp-equal
      (mv-nth 0
              (d-e-cc fat32$c
-                                   (pseudo-root-d-e fat32$c)))))
+                     (pseudo-root-d-e fat32$c)))))
    (good-root-d-e-p (pseudo-root-d-e fat32$c)
-                        fat32$c))
+                    fat32$c))
   :hints
   (("goal"
     :do-not-induct t
     :in-theory (e/d (good-root-d-e-p)))))
 
 (defun
-  insert-d-e-helper
-  (dir-contents ac parent-d-e current-d-e)
+    insert-d-e-helper
+    (dir-contents ac parent-d-e current-d-e)
   (declare
    (xargs
     :guard (and (stringp dir-contents)
@@ -6948,49 +5796,53 @@ Some (rather awful) testing forms are
    (* 32
       (+ 2
          (len (place-d-e (make-d-e-list (nats=>string dir-contents))
-                             d-e)))))
+                         d-e)))))
   :hints (("goal" :in-theory (e/d (insert-d-e len-when-d-e-p)))))
 
-(defthm make-d-e-list-of-insert-d-e-lemma-1
-  (implies (< (nfix n) *ms-d-e-length*)
-           (natp (nth n (d-e-fix d-e))))
-  :hints (("goal" :in-theory (disable (:linear nth-when-d-e-p))
-           :use (:instance (:linear nth-when-d-e-p)
-                           (d-e (d-e-fix d-e)))))
-  :rule-classes :type-prescription)
+(encapsulate
+  ()
 
-(defthm
-  make-d-e-list-of-insert-d-e-lemma-3
-  (implies
-   (and (not (equal (nth 0 (explode (d-e-filename d-e)))
-                    (code-char 0)))
-        (not (useless-d-e-p (d-e-fix d-e))))
-   (equal (make-d-e-list (implode (nats=>chars (d-e-fix d-e))))
-          (list (d-e-fix d-e))))
-  :hints
-  (("goal"
-    :in-theory (enable make-d-e-list
-                       insert-d-e string=>nats
-                       nats=>string
-                       len-when-d-e-p)
-    :do-not-induct t
-    :expand
-    (make-d-e-list (implode (nats=>chars (d-e-fix d-e)))))))
+  (local
+   (defthm lemma
+     (implies (< (nfix n) *ms-d-e-length*)
+              (natp (nth n (d-e-fix d-e))))
+     :hints (("goal" :in-theory (disable (:linear nth-when-d-e-p))
+              :use (:instance (:linear nth-when-d-e-p)
+                              (d-e (d-e-fix d-e)))))
+     :rule-classes :type-prescription))
 
-;; Hypotheses are minimal
-(defthm
-  make-d-e-list-of-insert-d-e
-  (implies
-   (and (not (equal (nth 0 (explode (d-e-filename d-e)))
-                    (code-char 0)))
-        (not (useless-d-e-p (d-e-fix d-e))))
-   (equal (make-d-e-list
-           (nats=>string (insert-d-e (string=>nats dir-contents)
-                                         d-e)))
-          (place-d-e (make-d-e-list dir-contents)
-                         d-e)))
-  :hints (("goal" :in-theory (enable make-d-e-list insert-d-e
-                                     string=>nats nats=>string))))
+  (defthm
+    make-d-e-list-of-insert-d-e-lemma-1
+    (implies
+     (and (not (equal (nth 0 (explode (d-e-filename d-e)))
+                      (code-char 0)))
+          (not (useless-d-e-p (d-e-fix d-e))))
+     (equal (make-d-e-list (implode (nats=>chars (d-e-fix d-e))))
+            (list (d-e-fix d-e))))
+    :hints
+    (("goal"
+      :in-theory (enable make-d-e-list
+                         insert-d-e string=>nats
+                         nats=>string
+                         len-when-d-e-p)
+      :do-not-induct t
+      :expand
+      (make-d-e-list (implode (nats=>chars (d-e-fix d-e)))))))
+
+  ;; Hypotheses are minimal
+  (defthm
+    make-d-e-list-of-insert-d-e
+    (implies
+     (and (not (equal (nth 0 (explode (d-e-filename d-e)))
+                      (code-char 0)))
+          (not (useless-d-e-p (d-e-fix d-e))))
+     (equal (make-d-e-list
+             (nats=>string (insert-d-e (string=>nats dir-contents)
+                                       d-e)))
+            (place-d-e (make-d-e-list dir-contents)
+                       d-e)))
+    :hints (("goal" :in-theory (enable make-d-e-list insert-d-e
+                                       string=>nats nats=>string)))))
 
 (defthm stringp-of-insert-d-e
   (implies (unsigned-byte-listp 8 dir-contents)
@@ -7016,10 +5868,14 @@ Some (rather awful) testing forms are
   lofat-place-file-correctness-lemma-5
   (implies
    (good-root-d-e-p root-d-e fat32$c)
-   (equal
-    (mv-nth 1
-            (d-e-cc-contents fat32$c root-d-e))
-    0))
+   (and
+    (equal
+     (mv-nth 1
+             (d-e-cc-contents fat32$c root-d-e))
+     0)
+    (no-duplicatesp-equal
+     (mv-nth 0
+             (d-e-cc fat32$c root-d-e)))))
   :hints (("goal" :do-not-induct t
            :in-theory (enable good-root-d-e-p))))
 
@@ -7139,11 +5995,11 @@ Some (rather awful) testing forms are
   (nats=>string
    (append (d-e-set-first-cluster-file-size
             (d-e-set-filename (d-e-fix nil)
-                                  *current-dir-fat32-name*)
+                              *current-dir-fat32-name*)
             current-dir-first-cluster 0)
            (d-e-set-first-cluster-file-size
             (d-e-set-filename (d-e-fix nil)
-                                  *parent-dir-fat32-name*)
+                              *parent-dir-fat32-name*)
             parent-dir-first-cluster 0))))
 
 (defthm
@@ -7159,7 +6015,7 @@ Some (rather awful) testing forms are
   make-d-e-list-of-make-empty-subdir-contents
   (equal
    (make-d-e-list (make-empty-subdir-contents current-dir-first-cluster
-                                                  parent-dir-first-cluster))
+                                              parent-dir-first-cluster))
    nil)
   :hints (("goal" :do-not-induct t
            :in-theory (enable make-empty-subdir-contents
@@ -7573,11 +6429,11 @@ Some (rather awful) testing forms are
                                     (+ -1 entry-limit))))
     (<= 2
         (d-e-first-cluster (mv-nth 0
-                                       (find-d-e (cdr d-e-list)
-                                                     filename))))
+                                   (find-d-e (cdr d-e-list)
+                                             filename))))
     (< (d-e-first-cluster (mv-nth 0
-                                      (find-d-e (cdr d-e-list)
-                                                    filename)))
+                                  (find-d-e (cdr d-e-list)
+                                            filename)))
        (+ 2 (count-of-clusters fat32$c))))
    (not
     (member-equal
@@ -7588,17 +6444,17 @@ Some (rather awful) testing forms are
         (effective-fat fat32$c)
         (mv-nth 0
                 (d-e-cc fat32$c
-                                      (mv-nth 0
-                                              (find-d-e (cdr d-e-list)
-                                                            filename))))
+                        (mv-nth 0
+                                (find-d-e (cdr d-e-list)
+                                          filename))))
         (make-list-ac
          (len
           (mv-nth
            0
            (d-e-cc fat32$c
-                                 (mv-nth 0
-                                         (find-d-e (cdr d-e-list)
-                                                       filename)))))
+                   (mv-nth 0
+                           (find-d-e (cdr d-e-list)
+                                     filename)))))
          0 nil))
        1))
      (mv-nth 0
@@ -7620,17 +6476,17 @@ Some (rather awful) testing forms are
           (mv-nth
            0
            (d-e-cc fat32$c
-                                 (mv-nth 0
-                                         (find-d-e (cdr d-e-list)
-                                                       filename))))
+                   (mv-nth 0
+                           (find-d-e (cdr d-e-list)
+                                     filename))))
           (make-list-ac
            (len
             (mv-nth
              0
              (d-e-cc fat32$c
-                                   (mv-nth 0
-                                           (find-d-e (cdr d-e-list)
-                                                         filename)))))
+                     (mv-nth 0
+                             (find-d-e (cdr d-e-list)
+                                       filename)))))
            0 nil))
          1)))
       (fa-table
@@ -7638,21 +6494,21 @@ Some (rather awful) testing forms are
         (effective-fat fat32$c)
         (mv-nth 0
                 (d-e-cc fat32$c
-                                      (mv-nth 0
-                                              (find-d-e (cdr d-e-list)
-                                                            filename))))
+                        (mv-nth 0
+                                (find-d-e (cdr d-e-list)
+                                          filename))))
         (make-list-ac
          (len
           (mv-nth
            0
            (d-e-cc fat32$c
-                                 (mv-nth 0
-                                         (find-d-e (cdr d-e-list)
-                                                       filename)))))
+                   (mv-nth 0
+                           (find-d-e (cdr d-e-list)
+                                     filename)))))
          0 nil))))))))
 
 (defthm
-  lofat-place-file-correctness-1-lemma-31
+  lofat-place-file-correctness-lemma-86
   (implies
    (and
     (equal
@@ -7935,8 +6791,8 @@ Some (rather awful) testing forms are
          268435455)
         (mv-nth 0
                 (clear-cc fat32$c
-                                    (d-e-first-cluster (car d-e-list))
-                                    (d-e-file-size (car d-e-list)))))
+                          (d-e-first-cluster (car d-e-list))
+                          (d-e-file-size (car d-e-list)))))
        (car d-e-list)
        (lofat-file->contents file)
        (len (explode (lofat-file->contents file)))
@@ -8009,8 +6865,8 @@ Some (rather awful) testing forms are
          268435455)
         (mv-nth 0
                 (clear-cc fat32$c
-                                    (d-e-first-cluster (car d-e-list))
-                                    (d-e-file-size (car d-e-list)))))
+                          (d-e-first-cluster (car d-e-list))
+                          (d-e-file-size (car d-e-list)))))
        (car d-e-list)
        (lofat-file->contents file)
        (len (explode (lofat-file->contents file)))
@@ -8098,8 +6954,8 @@ Some (rather awful) testing forms are
          (mv-nth
           0
           (clear-cc fat32$c
-                              (d-e-first-cluster (car d-e-list))
-                              (d-e-file-size (car d-e-list))))))
+                    (d-e-first-cluster (car d-e-list))
+                    (d-e-file-size (car d-e-list))))))
        (+
         -1
         (len
@@ -8234,8 +7090,8 @@ Some (rather awful) testing forms are
          268435455)
         (mv-nth 0
                 (clear-cc fat32$c
-                                    (d-e-first-cluster (car d-e-list))
-                                    (d-e-file-size (car d-e-list)))))
+                          (d-e-first-cluster (car d-e-list))
+                          (d-e-file-size (car d-e-list)))))
        (car d-e-list)
        (lofat-file->contents file)
        (len (explode (lofat-file->contents file)))
@@ -8310,8 +7166,8 @@ Some (rather awful) testing forms are
          268435455)
         (mv-nth 0
                 (clear-cc fat32$c
-                                    (d-e-first-cluster (car d-e-list))
-                                    (d-e-file-size (car d-e-list)))))
+                          (d-e-first-cluster (car d-e-list))
+                          (d-e-file-size (car d-e-list)))))
        (car d-e-list)
        (lofat-file->contents file)
        (len (explode (lofat-file->contents file)))
@@ -8452,8 +7308,8 @@ Some (rather awful) testing forms are
              (mv-nth
               0
               (clear-cc fat32$c
-                                  (d-e-first-cluster (car d-e-list))
-                                  (d-e-file-size (car d-e-list))))))))
+                        (d-e-first-cluster (car d-e-list))
+                        (d-e-file-size (car d-e-list))))))))
          (- (length (lofat-file->contents file))))
         (code-char 0)
         nil)))
@@ -8536,19 +7392,19 @@ Some (rather awful) testing forms are
         268435455)
        (mv-nth 0
                (clear-cc fat32$c
-                                   (d-e-first-cluster (car d-e-list))
-                                   (d-e-file-size (car d-e-list))))))))))
+                         (d-e-first-cluster (car d-e-list))
+                         (d-e-file-size (car d-e-list))))))))))
 
 (defthm
-  d-e-cc-contents-of-lofat-place-file-coincident-lemma-6
+  d-e-cc-contents-of-lofat-place-file-coincident-lemma-3
   (and
    (implies
     (and (d-e-directory-p d-e)
          (<= 2 (d-e-first-cluster d-e)))
     (equal (mv-nth 1
                    (clear-cc fat32$c
-                                       (d-e-first-cluster d-e)
-                                       *ms-max-dir-size*))
+                             (d-e-first-cluster d-e)
+                             *ms-max-dir-size*))
            (mv-nth 1
                    (d-e-cc-contents fat32$c d-e))))
    (implies
@@ -8556,15 +7412,15 @@ Some (rather awful) testing forms are
          (<= 2 (d-e-first-cluster d-e)))
     (equal (mv-nth 1
                    (clear-cc fat32$c
-                                       (d-e-first-cluster d-e)
-                                       (d-e-file-size d-e)))
+                             (d-e-first-cluster d-e)
+                             (d-e-file-size d-e)))
            (mv-nth 1
                    (d-e-cc-contents fat32$c d-e)))))
   :hints (("goal" :in-theory (enable d-e-cc-contents
                                      clear-cc-correctness-1))))
 
 (defthm
-  d-e-cc-contents-of-lofat-place-file-coincident-lemma-7
+  d-e-cc-contents-of-lofat-place-file-coincident-lemma-6
   t
   :rule-classes
   ((:rewrite
@@ -8576,23 +7432,23 @@ Some (rather awful) testing forms are
      (equal
       (effective-fat (mv-nth 0
                              (clear-cc fat32$c
-                                                 (d-e-first-cluster d-e)
-                                                 *ms-max-dir-size*)))
+                                       (d-e-first-cluster d-e)
+                                       *ms-max-dir-size*)))
       (if
-       (equal (mv-nth 1
-                      (clear-cc fat32$c
-                                          (d-e-first-cluster d-e)
-                                          *ms-max-dir-size*))
-              0)
-       (set-indices-in-fa-table
-        (effective-fat fat32$c)
-        (mv-nth 0
-                (d-e-cc fat32$c d-e))
-        (make-list-ac
-         (len (mv-nth 0
-                      (d-e-cc fat32$c d-e)))
-         0 nil))
-       (effective-fat fat32$c))))
+          (equal (mv-nth 1
+                         (clear-cc fat32$c
+                                   (d-e-first-cluster d-e)
+                                   *ms-max-dir-size*))
+                 0)
+          (set-indices-in-fa-table
+           (effective-fat fat32$c)
+           (mv-nth 0
+                   (d-e-cc fat32$c d-e))
+           (make-list-ac
+            (len (mv-nth 0
+                         (d-e-cc fat32$c d-e)))
+            0 nil))
+        (effective-fat fat32$c))))
     :hints (("goal" :in-theory (enable d-e-cc
                                        d-e-cc-contents))))
    (:rewrite
@@ -8604,23 +7460,23 @@ Some (rather awful) testing forms are
      (equal
       (effective-fat (mv-nth 0
                              (clear-cc fat32$c
-                                                 (d-e-first-cluster d-e)
-                                                 (d-e-file-size d-e))))
+                                       (d-e-first-cluster d-e)
+                                       (d-e-file-size d-e))))
       (if
-       (equal (mv-nth 1
-                      (clear-cc fat32$c
-                                          (d-e-first-cluster d-e)
-                                          (d-e-file-size d-e)))
-              0)
-       (set-indices-in-fa-table
-        (effective-fat fat32$c)
-        (mv-nth 0
-                (d-e-cc fat32$c d-e))
-        (make-list-ac
-         (len (mv-nth 0
-                      (d-e-cc fat32$c d-e)))
-         0 nil))
-       (effective-fat fat32$c))))
+          (equal (mv-nth 1
+                         (clear-cc fat32$c
+                                   (d-e-first-cluster d-e)
+                                   (d-e-file-size d-e)))
+                 0)
+          (set-indices-in-fa-table
+           (effective-fat fat32$c)
+           (mv-nth 0
+                   (d-e-cc fat32$c d-e))
+           (make-list-ac
+            (len (mv-nth 0
+                         (d-e-cc fat32$c d-e)))
+            0 nil))
+        (effective-fat fat32$c))))
     :hints (("goal" :in-theory (enable d-e-cc
                                        d-e-cc-contents))))))
 
@@ -8659,7 +7515,7 @@ Some (rather awful) testing forms are
    (and
     (not (equal (mv-nth 1
                         (find-d-e d-e-list
-                                      (d-e-filename d-e)))
+                                  (d-e-filename d-e)))
                 0))
     (equal (mv-nth 3
                    (lofat-to-hifat-helper fat32$c
@@ -9065,29 +7921,30 @@ Some (rather awful) testing forms are
   :hints (("goal" :do-not-induct t
            :use lofat-to-hifat-helper-correctness-4)))
 
-(defthm
-  lofat-remove-file-correctness-lemma-14
-  (implies
-   (and
+(local
+ (defthm
+   lofat-remove-file-correctness-lemma-14
+   (implies
+    (and
+     (< x
+        (hifat-entry-count
+         (mv-nth 0
+                 (lofat-to-hifat-helper fat32$c d-e-list entry-limit1))))
+     (equal (mv-nth 3
+                    (lofat-to-hifat-helper fat32$c d-e-list entry-limit1))
+            0)
+     (>= (nfix entry-limit2)
+         (mv-nth 1
+                 (lofat-to-hifat-helper fat32$c d-e-list entry-limit1))))
     (< x
        (hifat-entry-count
         (mv-nth 0
-                (lofat-to-hifat-helper fat32$c d-e-list entry-limit1))))
-    (equal (mv-nth 3
-                   (lofat-to-hifat-helper fat32$c d-e-list entry-limit1))
-           0)
-    (>= (nfix entry-limit2)
-        (mv-nth 1
-                (lofat-to-hifat-helper fat32$c d-e-list entry-limit1))))
-   (< x
-      (hifat-entry-count
-       (mv-nth 0
-               (lofat-to-hifat-helper fat32$c d-e-list entry-limit2)))))
-  :hints (("goal" :do-not-induct t
-           :use lofat-to-hifat-helper-correctness-4)))
+                (lofat-to-hifat-helper fat32$c d-e-list entry-limit2)))))
+   :hints (("goal" :do-not-induct t
+            :use lofat-to-hifat-helper-correctness-4))))
 
 (defthm
-  lofat-place-file-correctness-lemma-70
+  lofat-place-file-correctness-lemma-38
   (implies
    (and
     (equal
@@ -9368,310 +8225,6 @@ Some (rather awful) testing forms are
 
   (local (include-book "std/lists/intersectp" :dir :system))
 
-  ;; hypotheses minimised.
-  (defthm
-    lofat-place-file-correctness-lemma-37
-    (implies
-     (and
-      (equal
-       (mv-nth
-        2
-        (place-contents
-         (update-fati
-          i
-          (fat32-update-lower-28 (fati i fat32$c)
-                                 268435455)
-          (mv-nth
-           0
-           (clear-cc
-            fat32$c
-            (d-e-first-cluster (mv-nth 0 (find-d-e d-e-list name)))
-            2097152)))
-         (mv-nth 0 (find-d-e d-e-list name))
-         (make-empty-subdir-contents i (d-e-first-cluster root-d-e))
-         0 i))
-       0)
-      (d-e-directory-p (mv-nth 0 (find-d-e d-e-list name)))
-      (good-root-d-e-p root-d-e fat32$c)
-      (non-free-index-listp x (effective-fat fat32$c))
-      (equal (mv-nth 3
-                     (lofat-to-hifat-helper fat32$c
-                                            d-e-list entry-limit))
-             0)
-      (not-intersectp-list
-       (mv-nth 0
-               (d-e-cc fat32$c root-d-e))
-       (mv-nth 2
-               (lofat-to-hifat-helper fat32$c
-                                      d-e-list entry-limit)))
-      (not-intersectp-list
-       x
-       (mv-nth 2
-               (lofat-to-hifat-helper fat32$c
-                                      d-e-list entry-limit)))
-      (fat32-masked-entry-p i)
-      (<= 2 i)
-      (< i
-         (+ 2 (count-of-clusters fat32$c)))
-      (equal
-       (fat32-entry-mask
-        (nth
-         i
-         (set-indices-in-fa-table
-          (effective-fat fat32$c)
-          (mv-nth
-           0
-           (d-e-cc fat32$c
-                   (mv-nth 0 (find-d-e d-e-list name))))
-          (make-list-ac
-           (len (mv-nth 0
-                        (d-e-cc
-                         fat32$c
-                         (mv-nth 0 (find-d-e d-e-list name)))))
-           0 nil))))
-       0)
-      (useful-d-e-list-p d-e-list))
-     (and
-      (hifat-equiv
-       (mv-nth
-        0
-        (lofat-to-hifat-helper
-         (mv-nth
-          0
-          (update-dir-contents
-           (mv-nth
-            0
-            (place-contents
-             (update-fati
-              i
-              (fat32-update-lower-28 (fati i fat32$c)
-                                     268435455)
-              (mv-nth 0
-                      (clear-cc
-                       fat32$c
-                       (d-e-first-cluster
-                        (mv-nth 0 (find-d-e d-e-list name)))
-                       2097152)))
-             (mv-nth 0 (find-d-e d-e-list name))
-             (make-empty-subdir-contents i (d-e-first-cluster root-d-e))
-             0 i))
-           (d-e-first-cluster root-d-e)
-           (nats=>string
-            (insert-d-e
-             (string=>nats
-              (mv-nth
-               0
-               (d-e-cc-contents fat32$c root-d-e)))
-             (d-e-set-first-cluster-file-size
-              (mv-nth 0 (find-d-e d-e-list name))
-              i 0)))))
-         (place-d-e d-e-list
-                    (d-e-set-first-cluster-file-size
-                     (mv-nth 0 (find-d-e d-e-list name))
-                     i 0))
-         entry-limit))
-       (put-assoc-equal
-        name (m1-file d-e nil)
-        (mv-nth 0
-                (lofat-to-hifat-helper fat32$c
-                                       d-e-list entry-limit))))
-      (not-intersectp-list
-       x
-       (mv-nth
-        2
-        (lofat-to-hifat-helper
-         (mv-nth
-          0
-          (update-dir-contents
-           (mv-nth
-            0
-            (place-contents
-             (update-fati
-              i
-              (fat32-update-lower-28 (fati i fat32$c)
-                                     268435455)
-              (mv-nth 0
-                      (clear-cc
-                       fat32$c
-                       (d-e-first-cluster
-                        (mv-nth 0 (find-d-e d-e-list name)))
-                       2097152)))
-             (mv-nth 0 (find-d-e d-e-list name))
-             (make-empty-subdir-contents i (d-e-first-cluster root-d-e))
-             0 i))
-           (d-e-first-cluster root-d-e)
-           (nats=>string
-            (insert-d-e
-             (string=>nats
-              (mv-nth
-               0
-               (d-e-cc-contents fat32$c root-d-e)))
-             (d-e-set-first-cluster-file-size
-              (mv-nth 0 (find-d-e d-e-list name))
-              i 0)))))
-         (place-d-e d-e-list
-                    (d-e-set-first-cluster-file-size
-                     (mv-nth 0 (find-d-e d-e-list name))
-                     i 0))
-         entry-limit)))
-      (equal
-       (mv-nth
-        3
-        (lofat-to-hifat-helper
-         (mv-nth
-          0
-          (update-dir-contents
-           (mv-nth
-            0
-            (place-contents
-             (update-fati
-              i
-              (fat32-update-lower-28 (fati i fat32$c)
-                                     268435455)
-              (mv-nth 0
-                      (clear-cc
-                       fat32$c
-                       (d-e-first-cluster
-                        (mv-nth 0 (find-d-e d-e-list name)))
-                       2097152)))
-             (mv-nth 0 (find-d-e d-e-list name))
-             (make-empty-subdir-contents i (d-e-first-cluster root-d-e))
-             0 i))
-           (d-e-first-cluster root-d-e)
-           (nats=>string
-            (insert-d-e
-             (string=>nats
-              (mv-nth
-               0
-               (d-e-cc-contents fat32$c root-d-e)))
-             (d-e-set-first-cluster-file-size
-              (mv-nth 0 (find-d-e d-e-list name))
-              i 0)))))
-         (place-d-e d-e-list
-                    (d-e-set-first-cluster-file-size
-                     (mv-nth 0 (find-d-e d-e-list name))
-                     i 0))
-         entry-limit))
-       0)))
-    :hints
-    (("goal"
-      :induct (induction-scheme d-e-list
-                                entry-limit fat32$c x)
-      :expand ((:free (fat32$c entry-limit)
-                      (lofat-to-hifat-helper fat32$c
-                                             d-e-list entry-limit))
-               (:free (x1 x2 y)
-                      (not-intersectp-list x1 (cons x2 y)))
-               (:free (d-e fat32$c
-                           d-e-list entry-limit)
-                      (lofat-to-hifat-helper fat32$c
-                                             (cons d-e d-e-list)
-                                             entry-limit))
-               (:free (x) (intersectp-equal nil x)))))
-    :rule-classes
-    ((:rewrite
-      :corollary
-      (implies
-       (and
-        (equal
-         (mv-nth
-          2
-          (place-contents
-           (update-fati
-            i
-            (fat32-update-lower-28 (fati i fat32$c)
-                                   268435455)
-            (mv-nth
-             0
-             (clear-cc
-              fat32$c
-              (d-e-first-cluster (mv-nth 0 (find-d-e d-e-list name)))
-              2097152)))
-           (mv-nth 0 (find-d-e d-e-list name))
-           (make-empty-subdir-contents i (d-e-first-cluster root-d-e))
-           0 i))
-         0)
-        (d-e-directory-p (mv-nth 0 (find-d-e d-e-list name)))
-        (good-root-d-e-p root-d-e fat32$c)
-        (non-free-index-listp x (effective-fat fat32$c))
-        (equal (mv-nth 3
-                       (lofat-to-hifat-helper fat32$c
-                                              d-e-list entry-limit))
-               0)
-        (not-intersectp-list
-         (mv-nth 0
-                 (d-e-cc fat32$c root-d-e))
-         (mv-nth 2
-                 (lofat-to-hifat-helper fat32$c
-                                        d-e-list entry-limit)))
-        (not-intersectp-list
-         x
-         (mv-nth 2
-                 (lofat-to-hifat-helper fat32$c
-                                        d-e-list entry-limit)))
-        (fat32-masked-entry-p i)
-        (<= 2 i)
-        (< i
-           (+ 2 (count-of-clusters fat32$c)))
-        (case-split
-         (equal
-          (fat32-entry-mask
-           (nth
-            i
-            (set-indices-in-fa-table
-             (effective-fat fat32$c)
-             (mv-nth
-              0
-              (d-e-cc fat32$c
-                      (mv-nth 0 (find-d-e d-e-list name))))
-             (make-list-ac
-              (len (mv-nth 0
-                           (d-e-cc
-                            fat32$c
-                            (mv-nth 0 (find-d-e d-e-list name)))))
-              0 nil))))
-          0))
-        (useful-d-e-list-p d-e-list))
-       (not-intersectp-list
-        x
-        (mv-nth
-         2
-         (lofat-to-hifat-helper
-          (mv-nth
-           0
-           (update-dir-contents
-            (mv-nth
-             0
-             (place-contents
-              (update-fati
-               i
-               (fat32-update-lower-28 (fati i fat32$c)
-                                      268435455)
-               (mv-nth 0
-                       (clear-cc
-                        fat32$c
-                        (d-e-first-cluster
-                         (mv-nth 0 (find-d-e d-e-list name)))
-                        2097152)))
-              (mv-nth 0 (find-d-e d-e-list name))
-              (make-empty-subdir-contents i (d-e-first-cluster root-d-e))
-              0 i))
-            (d-e-first-cluster root-d-e)
-            (nats=>string
-             (insert-d-e
-              (string=>nats
-               (mv-nth
-                0
-                (d-e-cc-contents fat32$c root-d-e)))
-              (d-e-set-first-cluster-file-size
-               (mv-nth 0 (find-d-e d-e-list name))
-               i 0)))))
-          (place-d-e d-e-list
-                     (d-e-set-first-cluster-file-size
-                      (mv-nth 0 (find-d-e d-e-list name))
-                      i 0))
-          entry-limit)))))))
-
   ;; this is derived from a subgoal of lofat-place-file-correctness-1-lemma-1, by
   ;; means of the following proof-builder instructions.
   ;; ((:in-theory (enable fat32-filename-list-p))
@@ -9694,7 +8247,7 @@ Some (rather awful) testing forms are
   ;;  :drop :bash)
   ;; the hypotheses have been minimised.
   (defthm
-    lofat-place-file-correctness-1-lemma-23
+    lofat-place-file-correctness-lemma-30
     (implies
      (and
       (equal (mv-nth 1 (find-d-e d-e-list filename))
@@ -10170,7 +8723,6 @@ Some (rather awful) testing forms are
         (:rewrite intersectp-equal-of-atom-left)
         (:rewrite lofat-place-file-correctness-lemma-58)
         (:linear lofat-place-file-correctness-1-lemma-25)
-        (:rewrite lofat-place-file-correctness-lemma-70)
         (:rewrite nth-of-set-indices-in-fa-table-when-member)
         (:rewrite lofat-place-file-correctness-lemma-18)
         (:rewrite lofat-place-file-correctness-lemma-121
@@ -11000,7 +9552,7 @@ Some (rather awful) testing forms are
                                             i 0))
           entry-limit)))))))
 
-  (defthm
+  (defthmd
     lofat-place-file-correctness-lemma-189
     (implies
      (and
@@ -11244,153 +9796,7 @@ Some (rather awful) testing forms are
           entry-limit))))))))
 
 (defthm
-  lofat-place-file-correctness-lemma-38
-  (implies
-   (and
-    (equal
-     (mv-nth
-      2
-      (place-contents
-       (update-fati
-        i
-        (fat32-update-lower-28 (fati i fat32$c)
-                               268435455)
-        (mv-nth
-         0
-         (clear-cc
-          fat32$c
-          (d-e-first-cluster (mv-nth 0 (find-d-e d-e-list name)))
-          2097152)))
-       (mv-nth 0 (find-d-e d-e-list name))
-       (make-empty-subdir-contents i (d-e-first-cluster root-d-e))
-       0 i))
-     0)
-    (d-e-directory-p (mv-nth 0 (find-d-e d-e-list name)))
-    (good-root-d-e-p root-d-e fat32$c)
-    (equal (mv-nth 3
-                   (lofat-to-hifat-helper fat32$c
-                                          d-e-list entry-limit))
-           0)
-    (not-intersectp-list
-     (mv-nth 0
-             (d-e-cc fat32$c root-d-e))
-     (mv-nth 2
-             (lofat-to-hifat-helper fat32$c
-                                    d-e-list entry-limit)))
-    (fat32-masked-entry-p i)
-    (<= 2 i)
-    (< i
-       (+ 2 (count-of-clusters fat32$c)))
-    (case-split
-     (equal
-      (fat32-entry-mask
-       (nth
-        i
-        (set-indices-in-fa-table
-         (effective-fat fat32$c)
-         (mv-nth
-          0
-          (d-e-cc fat32$c
-                  (mv-nth 0 (find-d-e d-e-list name))))
-         (make-list-ac
-          (len (mv-nth 0
-                       (d-e-cc
-                        fat32$c
-                        (mv-nth 0 (find-d-e d-e-list name)))))
-          0 nil))))
-      0))
-    (useful-d-e-list-p d-e-list))
-   (and
-    (hifat-equiv
-     (mv-nth
-      0
-      (lofat-to-hifat-helper
-       (mv-nth
-        0
-        (update-dir-contents
-         (mv-nth
-          0
-          (place-contents
-           (update-fati
-            i
-            (fat32-update-lower-28 (fati i fat32$c)
-                                   268435455)
-            (mv-nth 0
-                    (clear-cc
-                     fat32$c
-                     (d-e-first-cluster
-                      (mv-nth 0 (find-d-e d-e-list name)))
-                     2097152)))
-           (mv-nth 0 (find-d-e d-e-list name))
-           (make-empty-subdir-contents i (d-e-first-cluster root-d-e))
-           0 i))
-         (d-e-first-cluster root-d-e)
-         (nats=>string
-          (insert-d-e
-           (string=>nats
-            (mv-nth
-             0
-             (d-e-cc-contents fat32$c root-d-e)))
-           (d-e-set-first-cluster-file-size
-            (mv-nth 0 (find-d-e d-e-list name))
-            i 0)))))
-       (place-d-e d-e-list
-                  (d-e-set-first-cluster-file-size
-                   (mv-nth 0 (find-d-e d-e-list name))
-                   i 0))
-       entry-limit))
-     (put-assoc-equal
-      name (m1-file (d-e-fix nil) nil)
-      (mv-nth 0
-              (lofat-to-hifat-helper fat32$c
-                                     d-e-list entry-limit))))
-    (equal
-     (mv-nth
-      3
-      (lofat-to-hifat-helper
-       (mv-nth
-        0
-        (update-dir-contents
-         (mv-nth
-          0
-          (place-contents
-           (update-fati
-            i
-            (fat32-update-lower-28 (fati i fat32$c)
-                                   268435455)
-            (mv-nth 0
-                    (clear-cc
-                     fat32$c
-                     (d-e-first-cluster
-                      (mv-nth 0 (find-d-e d-e-list name)))
-                     2097152)))
-           (mv-nth 0 (find-d-e d-e-list name))
-           (make-empty-subdir-contents i (d-e-first-cluster root-d-e))
-           0 i))
-         (d-e-first-cluster root-d-e)
-         (nats=>string
-          (insert-d-e
-           (string=>nats
-            (mv-nth
-             0
-             (d-e-cc-contents fat32$c root-d-e)))
-           (d-e-set-first-cluster-file-size
-            (mv-nth 0 (find-d-e d-e-list name))
-            i 0)))))
-       (place-d-e d-e-list
-                  (d-e-set-first-cluster-file-size
-                   (mv-nth 0 (find-d-e d-e-list name))
-                   i 0))
-       entry-limit))
-     0)))
-  :hints (("goal" :in-theory (disable lofat-place-file-correctness-lemma-37)
-           :do-not-induct t
-           :use (:instance lofat-place-file-correctness-lemma-37
-                           (x nil)
-                           (d-e (d-e-fix nil))))))
-
-(defthm
-  lofat-place-file-correctness-1-lemma-37
+  lofat-place-file-correctness-lemma-91
   (implies
    (and
     (< 0
@@ -11404,11 +9810,11 @@ Some (rather awful) testing forms are
     (lofat-regular-file-p file)
     (<= 2
         (d-e-first-cluster (mv-nth 0
-                                       (find-d-e d-e-list filename))))
+                                   (find-d-e d-e-list filename))))
     (< (d-e-first-cluster (mv-nth 0 (find-d-e d-e-list filename)))
        (+ 2 (count-of-clusters fat32$c)))
     (not (d-e-directory-p (mv-nth 0
-                                      (find-d-e d-e-list filename))))
+                                  (find-d-e d-e-list filename))))
     (zp
      (mv-nth
       2
@@ -11462,7 +9868,7 @@ Some (rather awful) testing forms are
           (d-e-first-cluster
            (mv-nth 0 (find-d-e d-e-list filename)))
           (d-e-file-size (mv-nth 0
-                                     (find-d-e d-e-list filename))))))
+                                 (find-d-e d-e-list filename))))))
        (mv-nth 0 (find-d-e d-e-list filename))
        (lofat-file->contents file)
        (len (explode (lofat-file->contents file)))
@@ -11724,12 +10130,12 @@ Some (rather awful) testing forms are
       (mv-nth 0
               (lofat-to-hifat-helper fat32$c
                                      d-e-list entry-limit))))))
-  :hints (("goal" :in-theory (disable lofat-place-file-correctness-1-lemma-23)
-           :use (:instance lofat-place-file-correctness-1-lemma-23
+  :hints (("goal" :in-theory (disable lofat-place-file-correctness-lemma-30)
+           :use (:instance lofat-place-file-correctness-lemma-30
                            (x nil)))))
 
 (defthm
-  lofat-place-file-correctness-lemma-159
+  lofat-place-file-correctness-lemma-31
   (implies
    (and
     (<= *ms-first-data-cluster* i)
@@ -11993,7 +10399,6 @@ Some (rather awful) testing forms are
       entry-limit))
     0))
   :hints (("goal" :do-not-induct t
-           :in-theory (disable lofat-place-file-correctness-lemma-189)
            :use (:instance lofat-place-file-correctness-lemma-189
                            (x nil)))))
 
@@ -12018,85 +10423,15 @@ Some (rather awful) testing forms are
          (implode
           (append
            (nats=>chars (insert-d-e (string=>nats dir-contents)
-                                        d-e))
+                                    d-e))
            (make-list-ac n ,(code-char 0) nil))))
         (place-d-e (make-d-e-list dir-contents)
-                       d-e)))
+                   d-e)))
       :hints
       (("goal" :do-not-induct t
         :in-theory
         (e/d (make-d-e-list d-e-fix insert-d-e string=>nats
-                                nats=>string fat32-filename-p)))))))
-
-(defthm
-  lofat-fs-p-of-lofat-place-file-lemma-2
-  (implies
-   (<=
-    1
-    (count-free-clusters
-     (set-indices-in-fa-table
-      (effective-fat fat32$c)
-      (mv-nth
-       0
-       (d-e-cc
-        fat32$c
-        (mv-nth
-         0
-         (find-d-e
-          (make-d-e-list
-           (mv-nth 0
-                   (d-e-cc-contents fat32$c d-e)))
-          (fat32-filename-fix (car path))))))
-      (make-list-ac
-       (len
-        (mv-nth
-         0
-         (d-e-cc
-          fat32$c
-          (mv-nth
-           0
-           (find-d-e
-            (make-d-e-list
-             (mv-nth
-              0
-              (d-e-cc-contents fat32$c d-e)))
-            (fat32-filename-fix (car path)))))))
-       0 nil))))
-   (<
-    (nfix 0)
-    (len
-     (find-n-free-clusters
-      (set-indices-in-fa-table
-       (effective-fat fat32$c)
-       (mv-nth
-        '0
-        (d-e-cc
-         fat32$c
-         (mv-nth
-          '0
-          (find-d-e
-           (make-d-e-list
-            (mv-nth '0
-                    (d-e-cc-contents fat32$c d-e)))
-           (fat32-filename-fix (car path))))))
-       (make-list-ac
-        (len
-         (mv-nth
-          '0
-          (d-e-cc
-           fat32$c
-           (mv-nth
-            '0
-            (find-d-e
-             (make-d-e-list
-              (mv-nth
-               '0
-               (d-e-cc-contents fat32$c d-e)))
-             (fat32-filename-fix (car path)))))))
-        '0
-        'nil))
-      1))))
-  :rule-classes :linear)
+                            nats=>string fat32-filename-p)))))))
 
 (defthm
   lofat-fs-p-of-lofat-place-file-lemma-3
@@ -12180,117 +10515,6 @@ Some (rather awful) testing forms are
      '2))))
 
 (defthm
-  lofat-fs-p-of-lofat-place-file-lemma-6
-  (implies
-   (<=
-    1
-    (count-free-clusters
-     (set-indices-in-fa-table
-      (effective-fat fat32$c)
-      (mv-nth
-       0
-       (fat32-build-index-list
-        (effective-fat fat32$c)
-        (d-e-first-cluster
-         (d-e-set-filename '(0 0 0 0 0 0 0 0 0 0 0 0
-                                   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
-                               (fat32-filename-fix (car path))))
-        0 (cluster-size fat32$c)))
-      (make-list-ac
-       (len
-        (mv-nth
-         0
-         (fat32-build-index-list
-          (effective-fat fat32$c)
-          (d-e-first-cluster
-           (d-e-set-filename '(0 0 0 0 0 0 0 0 0 0 0 0
-                                     0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
-                                 (fat32-filename-fix (car path))))
-          0 (cluster-size fat32$c))))
-       0 nil))))
-   (<=
-    *ms-first-data-cluster*
-    (nth
-     '0
-     (find-n-free-clusters
-      (set-indices-in-fa-table
-       (effective-fat fat32$c)
-       (mv-nth
-        '0
-        (fat32-build-index-list
-         (effective-fat fat32$c)
-         (d-e-first-cluster
-          (d-e-set-filename '(0 0 0 0 0 0 0 0 0 0 0 0
-                                    0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
-                                (fat32-filename-fix (car path))))
-         '0
-         (cluster-size fat32$c)))
-       (make-list-ac
-        (len
-         (mv-nth
-          '0
-          (fat32-build-index-list
-           (effective-fat fat32$c)
-           (d-e-first-cluster
-            (d-e-set-filename '(0 0 0 0 0 0 0 0 0 0 0 0
-                                      0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
-                                  (fat32-filename-fix (car path))))
-           '0
-           (cluster-size fat32$c))))
-        '0
-        'nil))
-      '1))))
-  :hints
-  (("goal"
-    :in-theory (enable (:linear find-n-free-clusters-correctness-7))
-    :use
-    (:instance
-     (:linear find-n-free-clusters-correctness-7)
-     (n 1)
-     (fa-table
-      (set-indices-in-fa-table
-       (effective-fat fat32$c)
-       (mv-nth
-        0
-        (fat32-build-index-list
-         (effective-fat fat32$c)
-         (d-e-first-cluster
-          (d-e-set-filename '(0 0 0 0 0 0 0 0 0 0 0 0
-                                    0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
-                                (fat32-filename-fix (car path))))
-         0 (cluster-size fat32$c)))
-       (make-list-ac
-        (len
-         (mv-nth
-          0
-          (fat32-build-index-list
-           (effective-fat fat32$c)
-           (d-e-first-cluster
-            (d-e-set-filename '(0 0 0 0 0 0 0 0 0 0 0 0
-                                      0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
-                                  (fat32-filename-fix (car path))))
-           0 (cluster-size fat32$c))))
-        0 nil)))
-     (m 0))))
-  :rule-classes :linear)
-
-;; Consider making this linear, later.
-(defthm
-  lofat-fs-p-of-lofat-place-file-lemma-8
-  (implies (<= 1
-               (count-free-clusters (effective-fat fat32$c)))
-           (not (< (nth '0
-                        (find-n-free-clusters (effective-fat fat32$c)
-                                              '1))
-                   '0))))
-
-(defthm
-  lofat-place-file-guard-lemma-3
-  (implies (lofat-directory-file-p file)
-           (d-e-list-p (lofat-file->contents file)))
-  :hints (("goal" :in-theory (enable lofat-directory-file-p))))
-
-(defthm
   lofat-place-file-guard-lemma-4
   (implies
    (<=
@@ -12360,642 +10584,6 @@ Some (rather awful) testing forms are
              (car path))))))
         0 nil))
       1)))))
-
-(defthm
-  lofat-place-file-guard-lemma-5
-  (implies
-   (<=
-    1
-    (count-free-clusters
-     (set-indices-in-fa-table
-      (effective-fat fat32$c)
-      (mv-nth
-       0
-       (fat32-build-index-list
-        (effective-fat fat32$c)
-        (d-e-first-cluster
-         (d-e-set-filename '(0 0 0 0 0 0 0 0 0 0 0 0
-                                   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
-                               (car path)))
-        0 (cluster-size fat32$c)))
-      (make-list-ac
-       (len
-        (mv-nth
-         0
-         (fat32-build-index-list
-          (effective-fat fat32$c)
-          (d-e-first-cluster
-           (d-e-set-filename '(0 0 0 0 0 0 0 0 0 0 0 0
-                                     0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
-                                 (car path)))
-          0 (cluster-size fat32$c))))
-       0 nil))))
-   (<=
-    *ms-first-data-cluster*
-    (nth
-     '0
-     (find-n-free-clusters
-      (set-indices-in-fa-table
-       (effective-fat fat32$c)
-       (mv-nth
-        '0
-        (fat32-build-index-list
-         (effective-fat fat32$c)
-         (d-e-first-cluster
-          (d-e-set-filename '(0 0 0 0 0 0 0 0 0 0 0 0
-                                    0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
-                                (car path)))
-         '0
-         (cluster-size fat32$c)))
-       (make-list-ac
-        (len
-         (mv-nth
-          '0
-          (fat32-build-index-list
-           (effective-fat fat32$c)
-           (d-e-first-cluster
-            (d-e-set-filename '(0 0 0 0 0 0 0 0 0 0 0 0
-                                      0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
-                                  (car path)))
-           '0
-           (cluster-size fat32$c))))
-        '0
-        'nil))
-      '1))))
-  :rule-classes :linear
-  :hints
-  (("goal"
-    :in-theory (disable (:linear find-n-free-clusters-correctness-7))
-    :use
-    (:instance
-     (:linear find-n-free-clusters-correctness-7)
-     (n 1)
-     (fa-table
-      (set-indices-in-fa-table
-       (effective-fat fat32$c)
-       (mv-nth
-        0
-        (fat32-build-index-list
-         (effective-fat fat32$c)
-         (d-e-first-cluster
-          (d-e-set-filename '(0 0 0 0 0 0 0 0 0 0 0 0
-                                    0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
-                                (car path)))
-         0 (cluster-size fat32$c)))
-       (make-list-ac
-        (len
-         (mv-nth
-          0
-          (fat32-build-index-list
-           (effective-fat fat32$c)
-           (d-e-first-cluster
-            (d-e-set-filename '(0 0 0 0 0 0 0 0 0 0 0 0
-                                      0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
-                                  (car path)))
-           0 (cluster-size fat32$c))))
-        0 nil)))
-     (m 0)))))
-
-(defthm
-  hifat-cluster-count-of-put-assoc
-  (implies
-   (m1-file-alist-p fs)
-   (equal
-    (hifat-cluster-count (put-assoc-equal name file fs)
-                         cluster-size)
-    (b*
-        ((new-contents (m1-file->contents file))
-         ((when (and (atom (assoc-equal name fs))
-                     (m1-regular-file-p file)))
-          (+ (hifat-cluster-count fs cluster-size)
-             (len (make-clusters new-contents cluster-size))))
-         ((when (atom (assoc-equal name fs)))
-          (+ (hifat-cluster-count fs cluster-size)
-             (+ (hifat-cluster-count new-contents cluster-size)
-                (nfix (ceiling (* 32 (+ 2 (len new-contents)))
-                               cluster-size)))))
-         (old-contents
-          (m1-file->contents (cdr (assoc-equal name fs))))
-         ((when
-           (and (m1-directory-file-p (cdr (assoc-equal name fs)))
-                (m1-regular-file-p file)))
-          (+ (hifat-cluster-count fs cluster-size)
-             (len (make-clusters new-contents cluster-size))
-             (- (hifat-cluster-count old-contents cluster-size))
-             (- (nfix (ceiling (* 32 (+ 2 (len old-contents)))
-                               cluster-size)))))
-         ((when (m1-directory-file-p (cdr (assoc-equal name fs))))
-          (+ (hifat-cluster-count fs cluster-size)
-             (hifat-cluster-count new-contents cluster-size)
-             (nfix (ceiling (* 32 (+ 2 (len new-contents)))
-                            cluster-size))
-             (- (hifat-cluster-count old-contents cluster-size))
-             (- (nfix (ceiling (* 32 (+ 2 (len old-contents)))
-                               cluster-size)))))
-         ((when (m1-regular-file-p file))
-          (+ (hifat-cluster-count fs cluster-size)
-             (len (make-clusters new-contents cluster-size))
-             (- (len (make-clusters old-contents cluster-size))))))
-      (+ (hifat-cluster-count fs cluster-size)
-         (hifat-cluster-count new-contents cluster-size)
-         (nfix (ceiling (* 32 (+ 2 (len new-contents)))
-                        cluster-size))
-         (- (len (make-clusters old-contents cluster-size)))))))
-  :hints (("goal" :in-theory (enable hifat-cluster-count)
-           :induct (put-assoc-equal name file fs))))
-
-(defthm
-  hifat-cluster-count-of-hifat-place-file-lemma-2
-  (implies
-   (and
-    (equal (len (cdr path)) 1)
-    (m1-directory-file-p (cdr (assoc-equal (car path) fs)))
-    (m1-file-alist-p fs)
-    (hifat-no-dups-p fs)
-    (fat32-filename-list-p path)
-    (consp
-     (assoc-equal (cadr path)
-                  (m1-file->contents (cdr (assoc-equal (car path) fs))))))
-   (equal
-    (mv-nth 1
-            (hifat-find-file
-             (m1-file->contents (cdr (assoc-equal (car path) fs)))
-             (cdr path)))
-    0))
-  :hints
-  (("goal"
-    :expand ((hifat-find-file
-              (m1-file->contents (cdr (assoc-equal (car path) fs)))
-              (cdr path))
-             (len (cdr path))
-             (len (cddr path))))))
-
-(defthmd hifat-cluster-count-of-hifat-place-file-lemma-3
-  (implies (equal (+ 1 (len (cddr path))) 1)
-           (not (consp (cddr path))))
-  :hints (("goal" :expand (len (cddr path)))))
-
-(encapsulate
-  ()
-
-  (local (include-book "arithmetic-3/top" :dir :system))
-
-  (defthm
-    hifat-cluster-count-of-hifat-place-file-lemma-6
-    (implies (and (integerp cluster-size)
-                  (<= 512 cluster-size))
-             (and
-              (equal (ceiling 64 cluster-size)
-                     1)
-              (equal (ceiling 96 cluster-size)
-                     1)))))
-
-(defthm
-  hifat-cluster-count-of-hifat-place-file-lemma-1
-  (implies
-   (and
-    (consp path)
-    (m1-directory-file-p (cdr (assoc-equal (car path) fs)))
-    (< 1 (len (cdr path)))
-    (equal
-     (hifat-cluster-count
-      (mv-nth 0
-              (hifat-place-file
-               (m1-file->contents (cdr (assoc-equal (car path) fs)))
-               (cdr path)
-               file))
-      cluster-size)
-     (+
-      (len (make-clusters (m1-file->contents file)
-                          cluster-size))
-      (hifat-cluster-count
-       (m1-file->contents (cdr (assoc-equal (car path) fs)))
-       cluster-size)
-      (-
-       (ceiling
-        (+
-         64
-         (*
-          32
-          (len
-           (m1-file->contents
-            (mv-nth
-             0
-             (hifat-find-file
-              (m1-file->contents (cdr (assoc-equal (car path) fs)))
-              (take (+ -1 (len (cdr path)))
-                    (cdr path))))))))
-        cluster-size))
-      (ceiling
-       (+
-        96
-        (*
-         32
-         (len
-          (m1-file->contents
-           (mv-nth
-            0
-            (hifat-find-file
-             (m1-file->contents (cdr (assoc-equal (car path) fs)))
-             (take (+ -1 (len (cdr path)))
-                   (cdr path))))))))
-       cluster-size)))
-    (m1-file-alist-p fs)
-    (hifat-no-dups-p fs)
-    (fat32-filename-list-p path))
-   (equal
-    (+
-     (hifat-cluster-count fs cluster-size)
-     (- (hifat-cluster-count
-         (m1-file->contents (cdr (assoc-equal (car path) fs)))
-         cluster-size))
-     (hifat-cluster-count
-      (mv-nth 0
-              (hifat-place-file
-               (m1-file->contents (cdr (assoc-equal (car path) fs)))
-               (cdr path)
-               file))
-      cluster-size))
-    (+
-     (hifat-cluster-count fs cluster-size)
-     (len (make-clusters (m1-file->contents file)
-                         cluster-size))
-     (-
-      (ceiling
-       (+ 64
-          (* 32
-             (len (m1-file->contents
-                   (mv-nth 0
-                           (hifat-find-file fs
-                                            (take (len (cdr path))
-                                                  path)))))))
-       cluster-size))
-     (ceiling
-      (+ 96
-         (* 32
-            (len (m1-file->contents
-                  (mv-nth 0
-                          (hifat-find-file fs
-                                           (take (len (cdr path))
-                                                 path)))))))
-      cluster-size))))
-  :hints (("goal" :expand ((hifat-find-file fs
-                                            (cons (car path)
-                                                  (take (len (cddr path))
-                                                        (cdr path))))
-                           (take (+ 1 (len (cddr path)))
-                                 path))
-           :cases ((equal (consp (cdr (take (+ 1 (len (cddr path)))
-                                            path)))
-                          (< 1
-                             (len (take (+ 1 (len (cddr path)))
-                                        path))))))))
-
-(defthm
-  hifat-cluster-count-of-hifat-place-file-lemma-4
-  (implies
-   (and
-    (m1-directory-file-p (cdr (assoc-equal (car path) fs)))
-    (< 1 (len (cdr path)))
-    (equal
-     (hifat-cluster-count
-      (mv-nth 0
-              (hifat-place-file
-               (m1-file->contents (cdr (assoc-equal (car path) fs)))
-               (cdr path)
-               file))
-      cluster-size)
-     (+
-      (hifat-cluster-count (m1-file->contents file)
-                           cluster-size)
-      (ceiling (+ 64
-                  (* 32 (len (m1-file->contents file))))
-               cluster-size)
-      (hifat-cluster-count
-       (m1-file->contents (cdr (assoc-equal (car path) fs)))
-       cluster-size)
-      (-
-       (ceiling
-        (+
-         64
-         (*
-          32
-          (len
-           (m1-file->contents
-            (mv-nth
-             0
-             (hifat-find-file
-              (m1-file->contents (cdr (assoc-equal (car path) fs)))
-              (take (+ -1 (len (cdr path)))
-                    (cdr path))))))))
-        cluster-size))
-      (ceiling
-       (+
-        96
-        (*
-         32
-         (len
-          (m1-file->contents
-           (mv-nth
-            0
-            (hifat-find-file
-             (m1-file->contents (cdr (assoc-equal (car path) fs)))
-             (take (+ -1 (len (cdr path)))
-                   (cdr path))))))))
-       cluster-size)))
-    (m1-file-alist-p fs)
-    (hifat-no-dups-p fs)
-    (fat32-filename-list-p path))
-   (equal
-    (+
-     (hifat-cluster-count fs cluster-size)
-     (- (hifat-cluster-count
-         (m1-file->contents (cdr (assoc-equal (car path) fs)))
-         cluster-size))
-     (hifat-cluster-count
-      (mv-nth 0
-              (hifat-place-file
-               (m1-file->contents (cdr (assoc-equal (car path) fs)))
-               (cdr path)
-               file))
-      cluster-size))
-    (+
-     (hifat-cluster-count fs cluster-size)
-     (hifat-cluster-count (m1-file->contents file)
-                          cluster-size)
-     (ceiling (+ 64
-                 (* 32 (len (m1-file->contents file))))
-              cluster-size)
-     (-
-      (ceiling
-       (+ 64
-          (* 32
-             (len (m1-file->contents
-                   (mv-nth 0
-                           (hifat-find-file fs
-                                            (take (len (cdr path))
-                                                  path)))))))
-       cluster-size))
-     (ceiling
-      (+ 96
-         (* 32
-            (len (m1-file->contents
-                  (mv-nth 0
-                          (hifat-find-file fs
-                                           (take (len (cdr path))
-                                                 path)))))))
-      cluster-size))))
-  :hints (("goal" :expand ((hifat-find-file fs
-                                            (cons (car path)
-                                                  (take (len (cddr path))
-                                                        (cdr path))))
-                           (take (+ 1 (len (cddr path)))
-                                 path))
-           :cases ((equal (consp (cdr (take (+ 1 (len (cddr path)))
-                                            path)))
-                          (< 1
-                             (len (take (+ 1 (len (cddr path)))
-                                        path))))))))
-
-(encapsulate
-  ()
-
-  (local
-   (defthmd
-     hifat-cluster-count-of-hifat-place-file-lemma-5
-     (implies
-      (and (m1-file-alist-p fs)
-           (hifat-no-dups-p fs)
-           (fat32-filename-list-p path)
-           (m1-file-p file)
-           (integerp cluster-size)
-           (<= 512 cluster-size))
-      (equal
-       (hifat-cluster-count
-        (mv-nth 0 (hifat-place-file fs path file))
-        cluster-size)
-       (b*
-           ((new-contents (m1-file->contents file))
-            ((when
-                 (not (zp (mv-nth 1
-                                  (hifat-place-file fs path file)))))
-             (hifat-cluster-count fs cluster-size))
-            ;; This may be inaccurate because the parent directory's length
-            ;; will change.
-            ((when
-                 (and (not (zp (mv-nth 1 (hifat-find-file fs path))))
-                      (m1-regular-file-p file)))
-             (+
-              (hifat-cluster-count fs cluster-size)
-              (len (make-clusters new-contents cluster-size))
-              (nfix
-               (ceiling
-                (*
-                 32
-                 (+
-                  3
-                  (len
-                   (m1-file->contents
-                    (mv-nth
-                     0
-                     (hifat-find-file fs (butlast path 1)))))))
-                cluster-size))
-              (-
-               (nfix
-                (ceiling
-                 (*
-                  32
-                  (+
-                   2
-                   (len
-                    (m1-file->contents
-                     (mv-nth
-                      0
-                      (hifat-find-file fs (butlast path 1)))))))
-                 cluster-size)))))
-            ;; This may be inaccurate because the parent directory's length
-            ;; will change.
-            ((when
-                 (not (zp (mv-nth 1 (hifat-find-file fs path)))))
-             (+ (hifat-cluster-count fs cluster-size)
-                (hifat-cluster-count new-contents cluster-size)
-                (nfix (ceiling (* 32 (+ 2 (len new-contents)))
-                               cluster-size))
-                (nfix
-                 (ceiling
-                  (*
-                   32
-                   (+
-                    3
-                    (len
-                     (m1-file->contents
-                      (mv-nth
-                       0
-                       (hifat-find-file fs (butlast path 1)))))))
-                  cluster-size))
-                (-
-                 (nfix
-                  (ceiling
-                   (*
-                    32
-                    (+
-                     2
-                     (len
-                      (m1-file->contents
-                       (mv-nth
-                        0
-                        (hifat-find-file fs (butlast path 1)))))))
-                   cluster-size)))))
-            (old-file (mv-nth 0 (hifat-find-file fs path)))
-            (old-contents (m1-file->contents old-file))
-            ((when (and (m1-regular-file-p file)
-                        (m1-regular-file-p old-file)))
-             (+ (hifat-cluster-count fs cluster-size)
-                (len (make-clusters new-contents cluster-size))
-                (- (len (make-clusters old-contents cluster-size)))))
-            ((when (m1-regular-file-p file))
-             (+ (hifat-cluster-count fs cluster-size)
-                (len (make-clusters new-contents cluster-size))
-                (- (hifat-cluster-count old-contents cluster-size))
-                (- (nfix (ceiling (* 32 (+ 2 (len old-contents)))
-                                  cluster-size)))))
-            ((when (m1-regular-file-p old-file))
-             (+ (hifat-cluster-count fs cluster-size)
-                (hifat-cluster-count new-contents cluster-size)
-                (nfix (ceiling (* 32 (+ 2 (len new-contents)))
-                               cluster-size))
-                (- (len (make-clusters old-contents cluster-size))))))
-         (+ (hifat-cluster-count fs cluster-size)
-            (hifat-cluster-count new-contents cluster-size)
-            (nfix (ceiling (* 32 (+ 2 (len new-contents)))
-                           cluster-size))
-            (- (hifat-cluster-count old-contents cluster-size))
-            (- (nfix (ceiling (* 32 (+ 2 (len old-contents)))
-                              cluster-size)))))))
-     :hints
-     (("goal" :in-theory
-       (e/d (nfix hifat-place-file hifat-find-file
-                  hifat-cluster-count-of-hifat-place-file-lemma-3)
-            ((:rewrite nfix-when-natp)))
-       :induct (hifat-place-file fs path file)))))
-
-  (defthm
-    hifat-cluster-count-of-hifat-place-file
-    (implies
-     (and (integerp cluster-size)
-          (<= 512 cluster-size))
-     (equal
-      (hifat-cluster-count
-       (mv-nth 0 (hifat-place-file fs path file))
-       cluster-size)
-      (b*
-          ((new-contents (m1-file->contents file))
-           (fs (hifat-file-alist-fix fs))
-           (path (fat32-filename-list-fix path))
-           (file (m1-file-fix file))
-           ((when
-                (not (zp (mv-nth 1
-                                 (hifat-place-file fs path file)))))
-            (hifat-cluster-count fs cluster-size))
-           ;; This may be inaccurate because the parent directory's length
-           ;; will change.
-           ((when
-                (and (not (zp (mv-nth 1 (hifat-find-file fs path))))
-                     (m1-regular-file-p file)))
-            (+
-             (hifat-cluster-count fs cluster-size)
-             (len (make-clusters new-contents cluster-size))
-             (nfix
-              (ceiling
-               (*
-                32
-                (+
-                 3
-                 (len
-                  (m1-file->contents
-                   (mv-nth
-                    0
-                    (hifat-find-file fs (butlast path 1)))))))
-               cluster-size))
-             (-
-              (nfix
-               (ceiling
-                (*
-                 32
-                 (+
-                  2
-                  (len
-                   (m1-file->contents
-                    (mv-nth
-                     0
-                     (hifat-find-file fs (butlast path 1)))))))
-                cluster-size)))))
-           ;; This may be inaccurate because the parent directory's length
-           ;; will change.
-           ((when
-                (not (zp (mv-nth 1 (hifat-find-file fs path)))))
-            (+ (hifat-cluster-count fs cluster-size)
-               (hifat-cluster-count new-contents cluster-size)
-               (nfix (ceiling (* 32 (+ 2 (len new-contents)))
-                              cluster-size))
-               (nfix
-                (ceiling
-                 (*
-                  32
-                  (+
-                   3
-                   (len
-                    (m1-file->contents
-                     (mv-nth
-                      0
-                      (hifat-find-file fs (butlast path 1)))))))
-                 cluster-size))
-               (-
-                (nfix
-                 (ceiling
-                  (*
-                   32
-                   (+
-                    2
-                    (len
-                     (m1-file->contents
-                      (mv-nth
-                       0
-                       (hifat-find-file fs (butlast path 1)))))))
-                  cluster-size)))))
-           (old-file (mv-nth 0 (hifat-find-file fs path)))
-           (old-contents (m1-file->contents old-file))
-           ((when (and (m1-regular-file-p file)
-                       (m1-regular-file-p old-file)))
-            (+ (hifat-cluster-count fs cluster-size)
-               (len (make-clusters new-contents cluster-size))
-               (- (len (make-clusters old-contents cluster-size)))))
-           ((when (m1-regular-file-p file))
-            (+ (hifat-cluster-count fs cluster-size)
-               (len (make-clusters new-contents cluster-size))
-               (- (hifat-cluster-count old-contents cluster-size))
-               (- (nfix (ceiling (* 32 (+ 2 (len old-contents)))
-                                 cluster-size)))))
-           ((when (m1-regular-file-p old-file))
-            (+ (hifat-cluster-count fs cluster-size)
-               (hifat-cluster-count new-contents cluster-size)
-               (nfix (ceiling (* 32 (+ 2 (len new-contents)))
-                              cluster-size))
-               (- (len (make-clusters old-contents cluster-size))))))
-        (+ (hifat-cluster-count fs cluster-size)
-           (hifat-cluster-count new-contents cluster-size)
-           (nfix (ceiling (* 32 (+ 2 (len new-contents)))
-                          cluster-size))
-           (- (hifat-cluster-count old-contents cluster-size))
-           (- (nfix (ceiling (* 32 (+ 2 (len old-contents)))
-                             cluster-size)))))))
-    :hints
-    (("goal"
-      :use (:instance
-            hifat-cluster-count-of-hifat-place-file-lemma-5
-            (fs (hifat-file-alist-fix fs))
-            (path (fat32-filename-list-fix path))
-            (file (m1-file-fix file)))))))
 
 (defthm
   d-e-cc-contents-of-lofat-place-file-disjoint-lemma-2
@@ -13155,10 +10743,10 @@ Some (rather awful) testing forms are
               (mv-nth
                0
                (find-d-e (make-d-e-list
-                              (mv-nth 0
-                                      (d-e-cc-contents
-                                       fat32$c root-d-e)))
-                             (fat32-filename-fix (car path)))))))
+                          (mv-nth 0
+                                  (d-e-cc-contents
+                                   fat32$c root-d-e)))
+                         (fat32-filename-fix (car path)))))))
            0 nil))
          1)))
       (fa-table
@@ -13203,733 +10791,14 @@ Some (rather awful) testing forms are
 
 (defthm
   d-e-cc-contents-of-lofat-place-file-coincident-lemma-2
-  (implies
-   (and
-    (d-e-directory-p
-     (mv-nth
-      0
-      (find-d-e
-       (make-d-e-list
-        (mv-nth 0
-                (d-e-cc-contents fat32$c d-e)))
-       (car path))))
-    (<=
-     1
-     (count-free-clusters
-      (set-indices-in-fa-table
-       (effective-fat fat32$c)
-       (mv-nth
-        0
-        (d-e-cc
-         fat32$c
-         (mv-nth
-          0
-          (find-d-e
-           (make-d-e-list
-            (mv-nth
-             0
-             (d-e-cc-contents
-              fat32$c
-              (mv-nth
-               0
-               (find-d-e
-                (make-d-e-list
-                 (mv-nth
-                  0
-                  (d-e-cc-contents fat32$c d-e)))
-                (car path))))))
-           (cadr path)))))
-       (make-list-ac
-        (len
-         (mv-nth
-          0
-          (d-e-cc
-           fat32$c
-           (mv-nth
-            0
-            (find-d-e
-             (make-d-e-list
-              (mv-nth
-               0
-               (d-e-cc-contents
-                fat32$c
-                (mv-nth
-                 0
-                 (find-d-e
-                  (make-d-e-list
-                   (mv-nth
-                    0
-                    (d-e-cc-contents fat32$c d-e)))
-                  (car path))))))
-             (cadr path))))))
-        0 nil))))
-    (equal
-     (mv-nth
-      3
-      (lofat-to-hifat-helper
-       fat32$c
-       (make-d-e-list
-        (mv-nth 0
-                (d-e-cc-contents fat32$c d-e)))
-       entry-limit))
-     0)
-    (<=
-     2
-     (d-e-first-cluster
-      (mv-nth
-       0
-       (find-d-e
-        (make-d-e-list
-         (mv-nth
-          0
-          (d-e-cc-contents
-           fat32$c
-           (mv-nth
-            0
-            (find-d-e
-             (make-d-e-list
-              (mv-nth
-               0
-               (d-e-cc-contents fat32$c d-e)))
-             (car path))))))
-        (cadr path)))))
-    (<
-     (d-e-first-cluster
-      (mv-nth
-       0
-       (find-d-e
-        (make-d-e-list
-         (mv-nth
-          0
-          (d-e-cc-contents
-           fat32$c
-           (mv-nth
-            0
-            (find-d-e
-             (make-d-e-list
-              (mv-nth
-               0
-               (d-e-cc-contents fat32$c d-e)))
-             (car path))))))
-        (cadr path))))
-     (+ 2 (count-of-clusters fat32$c))))
-   (not
-    (member-equal
-     (nth
-      '0
-      (find-n-free-clusters
-       (set-indices-in-fa-table
-        (effective-fat fat32$c)
-        (mv-nth
-         '0
-         (d-e-cc
-          fat32$c
-          (mv-nth
-           '0
-           (find-d-e
-            (make-d-e-list
-             (mv-nth
-              '0
-              (d-e-cc-contents
-               fat32$c
-               (mv-nth
-                '0
-                (find-d-e
-                 (make-d-e-list
-                  (mv-nth
-                   '0
-                   (d-e-cc-contents fat32$c d-e)))
-                 (car path))))))
-            (car (cdr path))))))
-        (make-list-ac
-         (len
-          (mv-nth
-           '0
-           (d-e-cc
-            fat32$c
-            (mv-nth
-             '0
-             (find-d-e
-              (make-d-e-list
-               (mv-nth
-                '0
-                (d-e-cc-contents
-                 fat32$c
-                 (mv-nth
-                  '0
-                  (find-d-e
-                   (make-d-e-list
-                    (mv-nth
-                     '0
-                     (d-e-cc-contents fat32$c d-e)))
-                   (car path))))))
-              (car (cdr path)))))))
-         '0
-         'nil))
-       '1))
-     (mv-nth
-      '0
-      (d-e-cc
-       fat32$c
-       (mv-nth
-        '0
-        (find-d-e
-         (make-d-e-list
-          (mv-nth '0
-                  (d-e-cc-contents fat32$c d-e)))
-         (car path))))))))
-  :hints
-  (("goal"
-    :in-theory (disable (:rewrite non-free-index-listp-correctness-2 . 1))
-    :use
-    ((:instance
-      (:rewrite non-free-index-listp-correctness-2 . 1)
-      (x
-       (mv-nth
-        0
-        (d-e-cc
-         fat32$c
-         (mv-nth
-          0
-          (find-d-e
-           (make-d-e-list
-            (mv-nth 0
-                    (d-e-cc-contents fat32$c d-e)))
-           (car path))))))
-      (key
-       (nth
-        0
-        (find-n-free-clusters
-         (set-indices-in-fa-table
-          (effective-fat fat32$c)
-          (mv-nth
-           0
-           (d-e-cc
-            fat32$c
-            (mv-nth
-             0
-             (find-d-e
-              (make-d-e-list
-               (mv-nth
-                0
-                (d-e-cc-contents
-                 fat32$c
-                 (mv-nth
-                  0
-                  (find-d-e
-                   (make-d-e-list
-                    (mv-nth
-                     0
-                     (d-e-cc-contents fat32$c d-e)))
-                   (car path))))))
-              (cadr path)))))
-          (make-list-ac
-           (len
-            (mv-nth
-             0
-             (d-e-cc
-              fat32$c
-              (mv-nth
-               0
-               (find-d-e
-                (make-d-e-list
-                 (mv-nth
-                  0
-                  (d-e-cc-contents
-                   fat32$c
-                   (mv-nth
-                    0
-                    (find-d-e (make-d-e-list
-                                   (mv-nth 0
-                                           (d-e-cc-contents
-                                            fat32$c d-e)))
-                                  (car path))))))
-                (cadr path))))))
-           0 nil))
-         1)))
-      (fa-table
-       (set-indices-in-fa-table
-        (effective-fat fat32$c)
-        (mv-nth
-         0
-         (d-e-cc
-          fat32$c
-          (mv-nth
-           0
-           (find-d-e
-            (make-d-e-list
-             (mv-nth
-              0
-              (d-e-cc-contents
-               fat32$c
-               (mv-nth
-                0
-                (find-d-e
-                 (make-d-e-list
-                  (mv-nth
-                   0
-                   (d-e-cc-contents fat32$c d-e)))
-                 (car path))))))
-            (cadr path)))))
-        (make-list-ac
-         (len
-          (mv-nth
-           0
-           (d-e-cc
-            fat32$c
-            (mv-nth
-             0
-             (find-d-e
-              (make-d-e-list
-               (mv-nth
-                0
-                (d-e-cc-contents
-                 fat32$c
-                 (mv-nth
-                  0
-                  (find-d-e
-                   (make-d-e-list
-                    (mv-nth
-                     0
-                     (d-e-cc-contents fat32$c d-e)))
-                   (car path))))))
-              (cadr path))))))
-         0 nil))))))))
-
-(defthm
-  d-e-cc-contents-of-lofat-place-file-coincident-lemma-4
   (implies (equal (mv-nth 1 (find-d-e d-e-list filename))
                   0)
            (< 0 (len d-e-list)))
   :rule-classes :linear)
 
-(defthm
-  d-e-cc-contents-of-lofat-place-file-coincident-lemma-11
-  (implies
-   (and
-    (d-e-directory-p
-     (mv-nth
-      0
-      (find-d-e
-       (make-d-e-list
-        (mv-nth 0
-                (d-e-cc-contents fat32$c d-e)))
-       (car path))))
-    (<=
-     2
-     (d-e-first-cluster
-      (mv-nth
-       0
-       (find-d-e
-        (make-d-e-list
-         (mv-nth
-          0
-          (d-e-cc-contents
-           fat32$c
-           (mv-nth
-            0
-            (find-d-e
-             (make-d-e-list
-              (mv-nth
-               0
-               (d-e-cc-contents fat32$c d-e)))
-             (car path))))))
-        (cadr path)))))
-    (<
-     (d-e-first-cluster
-      (mv-nth
-       0
-       (find-d-e
-        (make-d-e-list
-         (mv-nth
-          0
-          (d-e-cc-contents
-           fat32$c
-           (mv-nth
-            0
-            (find-d-e
-             (make-d-e-list
-              (mv-nth
-               0
-               (d-e-cc-contents fat32$c d-e)))
-             (car path))))))
-        (cadr path))))
-     (+ 2 (count-of-clusters fat32$c)))
-    (<=
-     1
-     (count-free-clusters
-      (set-indices-in-fa-table
-       (effective-fat fat32$c)
-       (mv-nth
-        0
-        (d-e-cc
-         fat32$c
-         (mv-nth
-          0
-          (find-d-e
-           (make-d-e-list
-            (mv-nth
-             0
-             (d-e-cc-contents
-              fat32$c
-              (mv-nth
-               0
-               (find-d-e
-                (make-d-e-list
-                 (mv-nth
-                  0
-                  (d-e-cc-contents fat32$c d-e)))
-                (car path))))))
-           (cadr path)))))
-       (make-list-ac
-        (len
-         (mv-nth
-          0
-          (d-e-cc
-           fat32$c
-           (mv-nth
-            0
-            (find-d-e
-             (make-d-e-list
-              (mv-nth
-               0
-               (d-e-cc-contents
-                fat32$c
-                (mv-nth
-                 0
-                 (find-d-e
-                  (make-d-e-list
-                   (mv-nth
-                    0
-                    (d-e-cc-contents fat32$c d-e)))
-                  (car path))))))
-             (cadr path))))))
-        0 nil))))
-    (equal (mv-nth 1
-                   (d-e-cc-contents fat32$c d-e))
-           0)
-    (equal
-     (mv-nth
-      3
-      (lofat-to-hifat-helper
-       fat32$c
-       (make-d-e-list
-        (mv-nth 0
-                (d-e-cc-contents fat32$c d-e)))
-       entry-limit))
-     0)
-    (not-intersectp-list
-     (mv-nth 0
-             (d-e-cc fat32$c d-e))
-     (mv-nth
-      2
-      (lofat-to-hifat-helper
-       fat32$c
-       (make-d-e-list
-        (mv-nth 0
-                (d-e-cc-contents fat32$c d-e)))
-       entry-limit))))
-   (not
-    (member-equal
-     (nth
-      0
-      (find-n-free-clusters
-       (set-indices-in-fa-table
-        (effective-fat fat32$c)
-        (mv-nth
-         0
-         (d-e-cc
-          fat32$c
-          (mv-nth
-           0
-           (find-d-e
-            (make-d-e-list
-             (mv-nth
-              0
-              (d-e-cc-contents
-               fat32$c
-               (mv-nth
-                0
-                (find-d-e
-                 (make-d-e-list
-                  (mv-nth
-                   0
-                   (d-e-cc-contents fat32$c d-e)))
-                 (car path))))))
-            (cadr path)))))
-        (make-list-ac
-         (len
-          (mv-nth
-           0
-           (d-e-cc
-            fat32$c
-            (mv-nth
-             0
-             (find-d-e
-              (make-d-e-list
-               (mv-nth
-                0
-                (d-e-cc-contents
-                 fat32$c
-                 (mv-nth
-                  0
-                  (find-d-e
-                   (make-d-e-list
-                    (mv-nth
-                     0
-                     (d-e-cc-contents fat32$c d-e)))
-                   (car path))))))
-              (cadr path))))))
-         0 nil))
-       1))
-     (mv-nth 0
-             (d-e-cc fat32$c d-e)))))
-  :hints
-  (("goal"
-    :in-theory (disable (:rewrite non-free-index-listp-correctness-2 . 1))
-    :use
-    ((:instance
-      (:rewrite non-free-index-listp-correctness-2 . 1)
-      (x (mv-nth 0
-                 (d-e-cc fat32$c d-e)))
-      (key
-       (nth
-        0
-        (find-n-free-clusters
-         (set-indices-in-fa-table
-          (effective-fat fat32$c)
-          (mv-nth
-           0
-           (d-e-cc
-            fat32$c
-            (mv-nth
-             0
-             (find-d-e
-              (make-d-e-list
-               (mv-nth
-                0
-                (d-e-cc-contents
-                 fat32$c
-                 (mv-nth
-                  0
-                  (find-d-e
-                   (make-d-e-list
-                    (mv-nth
-                     0
-                     (d-e-cc-contents fat32$c d-e)))
-                   (car path))))))
-              (cadr path)))))
-          (make-list-ac
-           (len
-            (mv-nth
-             0
-             (d-e-cc
-              fat32$c
-              (mv-nth
-               0
-               (find-d-e
-                (make-d-e-list
-                 (mv-nth
-                  0
-                  (d-e-cc-contents
-                   fat32$c
-                   (mv-nth
-                    0
-                    (find-d-e (make-d-e-list
-                                   (mv-nth 0
-                                           (d-e-cc-contents
-                                            fat32$c d-e)))
-                                  (car path))))))
-                (cadr path))))))
-           0 nil))
-         1)))
-      (fa-table
-       (set-indices-in-fa-table
-        (effective-fat fat32$c)
-        (mv-nth
-         0
-         (d-e-cc
-          fat32$c
-          (mv-nth
-           0
-           (find-d-e
-            (make-d-e-list
-             (mv-nth
-              0
-              (d-e-cc-contents
-               fat32$c
-               (mv-nth
-                0
-                (find-d-e
-                 (make-d-e-list
-                  (mv-nth
-                   0
-                   (d-e-cc-contents fat32$c d-e)))
-                 (car path))))))
-            (cadr path)))))
-        (make-list-ac
-         (len
-          (mv-nth
-           0
-           (d-e-cc
-            fat32$c
-            (mv-nth
-             0
-             (find-d-e
-              (make-d-e-list
-               (mv-nth
-                0
-                (d-e-cc-contents
-                 fat32$c
-                 (mv-nth
-                  0
-                  (find-d-e
-                   (make-d-e-list
-                    (mv-nth
-                     0
-                     (d-e-cc-contents fat32$c d-e)))
-                   (car path))))))
-              (cadr path))))))
-         0 nil))))))))
-
-(defthm
-  d-e-cc-contents-of-lofat-place-file-coincident-lemma-12
-  (implies
-   (and
-    (lofat-fs-p fat32$c)
-    (d-e-p d-e)
-    (d-e-directory-p d-e)
-    (equal (mv-nth 1
-                   (d-e-cc-contents fat32$c d-e))
-           0)
-    (<=
-     (+
-      32
-      (*
-       32
-       (len
-        (make-d-e-list
-         (mv-nth 0
-                 (d-e-cc-contents fat32$c d-e))))))
-     2097152)
-    (equal
-     (mv-nth
-      1
-      (update-dir-contents
-       fat32$c
-       (d-e-first-cluster d-e)
-       (nats=>string
-        (flatten
-         (place-d-e
-          (make-d-e-list
-           (mv-nth 0
-                   (d-e-cc-contents fat32$c d-e)))
-          (d-e-set-first-cluster-file-size
-           (d-e-set-filename
-            '(0 0 0 0 0 0 0 0 0 0 0 0
-                0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
-            (d-e-filename (lofat-file->d-e file)))
-           0 0))))))
-     0))
-   (equal
-    (d-e-cc-contents
-     (mv-nth
-      0
-      (update-dir-contents
-       fat32$c
-       (d-e-first-cluster d-e)
-       (nats=>string
-        (flatten
-         (place-d-e
-          (make-d-e-list
-           (mv-nth 0
-                   (d-e-cc-contents fat32$c d-e)))
-          (d-e-set-first-cluster-file-size
-           (d-e-set-filename
-            '(0 0 0 0 0 0 0 0 0 0 0 0
-                0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
-            (d-e-filename (lofat-file->d-e file)))
-           0 0))))))
-     d-e)
-    (if
-     (equal
-      (mv-nth
-       1
-       (update-dir-contents
-        fat32$c
-        (d-e-first-cluster d-e)
-        (nats=>string
-         (flatten
-          (place-d-e
-           (make-d-e-list
-            (mv-nth 0
-                    (d-e-cc-contents fat32$c d-e)))
-           (d-e-set-first-cluster-file-size
-            (d-e-set-filename
-             '(0 0 0 0 0 0 0 0 0 0 0 0
-                 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
-             (d-e-filename (lofat-file->d-e file)))
-            0 0))))))
-      0)
-     (cons
-      (implode
-       (append
-        (explode
-         (nats=>string
-          (flatten
-           (place-d-e
-            (make-d-e-list
-             (mv-nth 0
-                     (d-e-cc-contents fat32$c d-e)))
-            (d-e-set-first-cluster-file-size
-             (d-e-set-filename
-              '(0 0 0 0 0 0 0 0 0 0 0 0
-                  0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
-              (d-e-filename (lofat-file->d-e file)))
-             0 0)))))
-        (make-list-ac
-         (+
-          (-
-           (len
-            (explode
-             (nats=>string
-              (flatten
-               (place-d-e
-                (make-d-e-list
-                 (mv-nth
-                  0
-                  (d-e-cc-contents fat32$c d-e)))
-                (d-e-set-first-cluster-file-size
-                 (d-e-set-filename
-                  '(0 0 0 0 0 0 0 0 0 0 0 0
-                      0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
-                  (d-e-filename (lofat-file->d-e file)))
-                 0 0)))))))
-          (*
-           (cluster-size fat32$c)
-           (len
-            (make-clusters
-             (nats=>string
-              (flatten
-               (place-d-e
-                (make-d-e-list
-                 (mv-nth
-                  0
-                  (d-e-cc-contents fat32$c d-e)))
-                (d-e-set-first-cluster-file-size
-                 (d-e-set-filename
-                  '(0 0 0 0 0 0 0 0 0 0 0 0
-                      0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
-                  (d-e-filename (lofat-file->d-e file)))
-                 0 0))))
-             (cluster-size fat32$c)))))
-         (code-char 0) nil)))
-      '(0))
-     (d-e-cc-contents fat32$c d-e)))))
-
 (make-event
  `(defthm
-    d-e-cc-contents-of-lofat-place-file-coincident-lemma-13
+    d-e-cc-contents-of-lofat-place-file-coincident-lemma-4
     (implies (and (equal (nth 0 (explode filename))
                          (code-char 0))
                   (useful-d-e-list-p d-e-list))
@@ -13938,7 +10807,7 @@ Some (rather awful) testing forms are
     :hints (("goal" :in-theory (enable useful-d-e-list-p)))))
 
 (defthm
-  lofat-place-file-correctness-lemma-69
+  lofat-place-file-correctness-lemma-35
   (implies
    (and (equal (mv-nth 3
                        (lofat-to-hifat-helper fat32$c d-e-list entry-limit1))
@@ -13965,7 +10834,7 @@ Some (rather awful) testing forms are
            :use lofat-to-hifat-helper-correctness-4)))
 
 (defthm
-  lofat-place-file-correctness-lemma-82
+  lofat-place-file-correctness-lemma-37
   (implies
    (and
     (useful-d-e-list-p d-e-list)
@@ -14025,9 +10894,8 @@ Some (rather awful) testing forms are
                                            entry-limit))
              (:free (x) (intersectp-equal nil x))))))
 
-;; How did I ever think this kind of forcing would be a good idea?
 (defthmd
-  lofat-place-file-correctness-1-lemma-16
+  lofat-place-file-correctness-lemma-41
   (implies
    (and
     (useful-d-e-list-p d-e-list)
@@ -14076,1434 +10944,22 @@ Some (rather awful) testing forms are
                                             d-e-list entry-limit)))
     :in-theory (enable not-intersectp-list))))
 
-(defthm
-  lofat-place-file-correctness-lemma-45
-  (implies
-   (and
-    (<=
-     (len (make-clusters (lofat-file->contents file)
-                         (cluster-size fat32$c)))
-     (count-free-clusters (effective-fat fat32$c)))
-    (lofat-fs-p fat32$c)
-    (equal
-     (mv-nth 1
-             (d-e-cc-contents fat32$c root-d-e))
-     0))
-   (not
-    (<
-     (+ (count-free-clusters (effective-fat fat32$c))
-        (len (mv-nth 0
-                     (d-e-cc fat32$c root-d-e)))
-        (- (len (make-clusters (lofat-file->contents file)
-                               (cluster-size fat32$c)))))
-     (len
-      (make-clusters
-       (mv-nth 0
-               (d-e-cc-contents fat32$c root-d-e))
-       (cluster-size fat32$c))))))
-  :hints (("goal" :in-theory (enable len-of-make-clusters
-                                     (:REWRITE LOFAT-TO-HIFAT-INVERSION-LEMMA-15)))))
-
 ;; Introduce a rewrite rule gingerly...
 (defthm
-  lofat-place-file-correctness-1-lemma-20
+  lofat-place-file-correctness-lemma-43
   (implies (lofat-regular-file-p file)
            (iff (equal (len (explode (lofat-file->contents file)))
                        0)
                 (equal (lofat-file->contents file) "")))
   :hints (("goal" :expand (len (explode (lofat-file->contents file))))))
 
-(defthm
-  lofat-place-file-correctness-1-lemma-21
-  (implies
-   (and
-    (lofat-fs-p fat32$c)
-    (equal
-     (mv-nth
-      3
-      (lofat-to-hifat-helper
-       fat32$c
-       (make-d-e-list
-        (mv-nth 0
-                (d-e-cc-contents fat32$c root-d-e)))
-       entry-limit))
-     0)
-    (equal
-     (mv-nth 1
-             (d-e-cc-contents fat32$c root-d-e))
-     0)
-    (<=
-     (+
-      (len (make-clusters (lofat-file->contents file)
-                          (cluster-size fat32$c)))
-      (hifat-cluster-count
-       (mv-nth
-        0
-        (lofat-to-hifat-helper
-         fat32$c
-         (make-d-e-list
-          (mv-nth
-           0
-           (d-e-cc-contents fat32$c root-d-e)))
-         entry-limit))
-       (cluster-size fat32$c))
-      (-
-       (hifat-cluster-count
-        (mv-nth
-         0
-         (lofat-to-hifat-helper
-          fat32$c
-          (make-d-e-list
-           (mv-nth
-            0
-            (d-e-cc-contents fat32$c root-d-e)))
-          entry-limit))
-        (cluster-size fat32$c)))
-      (-
-       (len
-        (make-clusters
-         (mv-nth
-          0
-          (d-e-cc-contents
-           fat32$c
-           (mv-nth
-            0
-            (find-d-e
-             (make-d-e-list
-              (mv-nth
-               0
-               (d-e-cc-contents fat32$c root-d-e)))
-             (car path)))))
-         (cluster-size fat32$c)))))
-     (count-free-clusters (effective-fat fat32$c)))
-    (<=
-     2
-     (d-e-first-cluster
-      (mv-nth
-       0
-       (find-d-e
-        (make-d-e-list
-         (mv-nth
-          0
-          (d-e-cc-contents fat32$c root-d-e)))
-        (car path)))))
-    (<
-     (d-e-first-cluster
-      (mv-nth
-       0
-       (find-d-e
-        (make-d-e-list
-         (mv-nth
-          0
-          (d-e-cc-contents fat32$c root-d-e)))
-        (car path))))
-     (+ 2 (count-of-clusters fat32$c))))
-   (not
-    (<
-     (+
-      (count-free-clusters (effective-fat fat32$c))
-      (len (mv-nth 0
-                   (d-e-cc fat32$c root-d-e)))
-      (- (len (make-clusters (lofat-file->contents file)
-                             (cluster-size fat32$c))))
-      (len
-       (mv-nth
-        0
-        (d-e-cc
-         fat32$c
-         (mv-nth
-          0
-          (find-d-e
-           (make-d-e-list
-            (mv-nth
-             0
-             (d-e-cc-contents fat32$c root-d-e)))
-           (car path)))))))
-     (len
-      (make-clusters
-       (mv-nth 0
-               (d-e-cc-contents fat32$c root-d-e))
-       (cluster-size fat32$c))))))
-  :hints (("goal" :in-theory (enable len-of-make-clusters
-                                     (:rewrite lofat-to-hifat-inversion-lemma-15)))))
-
-(defthm
-  lofat-place-file-correctness-1-lemma-22
-  (implies
-   (and
-    (lofat-fs-p fat32$c)
-    (equal
-     (mv-nth
-      3
-      (lofat-to-hifat-helper
-       fat32$c
-       (make-d-e-list
-        (mv-nth 0
-                (d-e-cc-contents fat32$c root-d-e)))
-       entry-limit))
-     0)
-    (equal
-     (mv-nth 1
-             (d-e-cc-contents fat32$c root-d-e))
-     0)
-    (<=
-     (+
-      (len (make-clusters (lofat-file->contents file)
-                          (cluster-size fat32$c)))
-      (hifat-cluster-count
-       (mv-nth
-        0
-        (lofat-to-hifat-helper
-         fat32$c
-         (make-d-e-list
-          (mv-nth
-           0
-           (d-e-cc-contents fat32$c root-d-e)))
-         entry-limit))
-       (cluster-size fat32$c))
-      (-
-       (hifat-cluster-count
-        (mv-nth
-         0
-         (lofat-to-hifat-helper
-          fat32$c
-          (make-d-e-list
-           (mv-nth
-            0
-            (d-e-cc-contents fat32$c root-d-e)))
-          entry-limit))
-        (cluster-size fat32$c)))
-      (-
-       (len
-        (make-clusters
-         (mv-nth
-          0
-          (d-e-cc-contents
-           fat32$c
-           (mv-nth
-            0
-            (find-d-e
-             (make-d-e-list
-              (mv-nth
-               0
-               (d-e-cc-contents fat32$c root-d-e)))
-             (car path)))))
-         (cluster-size fat32$c)))))
-     (count-free-clusters (effective-fat fat32$c)))
-    (<=
-     2
-     (d-e-first-cluster
-      (mv-nth
-       0
-       (find-d-e
-        (make-d-e-list
-         (mv-nth
-          0
-          (d-e-cc-contents fat32$c root-d-e)))
-        (car path)))))
-    (<
-     (d-e-first-cluster
-      (mv-nth
-       0
-       (find-d-e
-        (make-d-e-list
-         (mv-nth
-          0
-          (d-e-cc-contents fat32$c root-d-e)))
-        (car path))))
-     (+ 2 (count-of-clusters fat32$c))))
-   (not
-    (<
-     (+
-      1
-      (count-free-clusters (effective-fat fat32$c))
-      (len (mv-nth 0
-                   (d-e-cc fat32$c root-d-e)))
-      (- (len (make-clusters (lofat-file->contents file)
-                             (cluster-size fat32$c))))
-      (len
-       (mv-nth
-        0
-        (d-e-cc
-         fat32$c
-         (mv-nth
-          0
-          (find-d-e
-           (make-d-e-list
-            (mv-nth
-             0
-             (d-e-cc-contents fat32$c root-d-e)))
-           (car path)))))))
-     (len
-      (make-clusters
-       (mv-nth 0
-               (d-e-cc-contents fat32$c root-d-e))
-       (cluster-size fat32$c))))))
-  :hints (("goal" :in-theory (enable len-of-make-clusters
-                                     (:REWRITE LOFAT-TO-HIFAT-INVERSION-LEMMA-15)))))
-
-(defthm
-  lofat-place-file-correctness-1-lemma-29
-  (implies
-   (and
-    (equal
-     (mv-nth
-      1
-      (d-e-cc-contents fat32$c (car d-e-list)))
-     0)
-    (no-duplicatesp-equal
-     (mv-nth 0
-             (d-e-cc fat32$c (car d-e-list))))
-    (<
-     (nth
-      0
-      (find-n-free-clusters
-       (set-indices-in-fa-table
-        (effective-fat fat32$c)
-        (mv-nth 0
-                (d-e-cc fat32$c (car d-e-list)))
-        (make-list-ac
-         (len
-          (mv-nth 0
-                  (d-e-cc fat32$c (car d-e-list))))
-         0 nil))
-       1))
-     (+ 2 (count-of-clusters fat32$c))))
-   (not
-    (<
-     (binary-+ '2
-               (count-of-clusters fat32$c))
-     (binary-+
-      '1
-      (nth
-       '0
-       (find-n-free-clusters
-        (set-indices-in-fa-table
-         (effective-fat fat32$c)
-         (mv-nth '0
-                 (d-e-cc fat32$c (car d-e-list)))
-         (make-list-ac
-          (len
-           (mv-nth '0
-                   (d-e-cc fat32$c (car d-e-list))))
-          '0
-          'nil))
-        '1))))))
-  :hints
-  (("goal"
-    :use
-    ((:instance
-      (:rewrite painful-debugging-lemma-13)
-      (x
-       (nth
-        0
-        (find-n-free-clusters
-         (set-indices-in-fa-table
-          (effective-fat fat32$c)
-          (mv-nth 0
-                  (d-e-cc fat32$c (car d-e-list)))
-          (make-list-ac
-           (len
-            (mv-nth
-             0
-             (d-e-cc fat32$c (car d-e-list))))
-           0 nil))
-         1)))
-      (y (+ 2
-            (count-of-clusters fat32$c))))))))
-
-(defthm
-  lofat-place-file-correctness-1-lemma-42
-  (implies
-   (and
-    (syntaxp (variablep entry-limit))
-    (not (zp entry-limit))
-    (d-e-directory-p (mv-nth 0
-                                 (find-d-e (cdr d-e-list)
-                                               filename1)))
-    (equal (mv-nth 3
-                   (lofat-to-hifat-helper fat32$c (cdr d-e-list)
-                                          (+ -1 entry-limit)))
-           0)
-    (useful-d-e-list-p d-e-list))
-   (equal
-    (put-assoc-equal
-     filename1
-     (m1-file
-      (mv-nth 0
-              (find-d-e (cdr d-e-list)
-                            filename1))
-      (put-assoc-equal
-       filename2
-       (m1-file
-        (d-e-set-first-cluster-file-size
-         (mv-nth 0
-                 (find-d-e (cdr d-e-list)
-                               filename1))
-         (nth 0
-              (find-n-free-clusters (effective-fat fat32$c)
-                                    1))
-         (len (explode (lofat-file->contents file))))
-        (lofat-file->contents file))
-       (mv-nth 0
-               (lofat-to-hifat-helper
-                fat32$c
-                (make-d-e-list
-                 (mv-nth 0
-                         (d-e-cc-contents
-                          fat32$c
-                          (mv-nth 0
-                                  (find-d-e (cdr d-e-list)
-                                                filename1)))))
-                (+ -1 entry-limit)))))
-     (mv-nth 0
-             (lofat-to-hifat-helper fat32$c (cdr d-e-list)
-                                    (+ -1 entry-limit))))
-    (put-assoc-equal
-     filename1
-     (m1-file
-      (mv-nth 0
-              (find-d-e (cdr d-e-list)
-                            filename1))
-      (put-assoc-equal
-       filename2
-       (m1-file
-        (d-e-set-first-cluster-file-size
-         (mv-nth 0
-                 (find-d-e (cdr d-e-list)
-                               filename1))
-         (nth 0
-              (find-n-free-clusters (effective-fat fat32$c)
-                                    1))
-         (len (explode (lofat-file->contents file))))
-        (lofat-file->contents file))
-       (mv-nth 0
-               (lofat-to-hifat-helper
-                fat32$c
-                (make-d-e-list
-                 (mv-nth 0
-                         (d-e-cc-contents
-                          fat32$c
-                          (mv-nth 0
-                                  (find-d-e (cdr d-e-list)
-                                                filename1)))))
-                entry-limit))))
-     (mv-nth 0
-             (lofat-to-hifat-helper fat32$c (cdr d-e-list)
-                                    (+ -1 entry-limit))))))
-  :hints
-  (("goal"
-    :use
-    (:instance
-     (:rewrite lofat-to-hifat-helper-correctness-4)
-     (entry-limit1 (- entry-limit 1))
-     (entry-limit2 entry-limit)
-     (d-e-list (make-d-e-list
-                    (mv-nth 0
-                            (d-e-cc-contents
-                             fat32$c
-                             (mv-nth 0
-                                     (find-d-e (cdr d-e-list)
-                                                   filename1))))))))))
-
-(defthm
-  lofat-place-file-correctness-1-lemma-43
-  (implies
-   (and
-    (not (zp entry-limit))
-    (equal (mv-nth 3
-                   (lofat-to-hifat-helper fat32$c (cdr d-e-list)
-                                          (+ -1 entry-limit)))
-           0)
-    (d-e-directory-p (mv-nth 0
-                                 (find-d-e (cdr d-e-list)
-                                               filename1)))
-    (equal
-     (mv-nth
-      0
-      (lofat-to-hifat-helper
-       (mv-nth
-        0
-        (update-dir-contents
-         (mv-nth
-          0
-          (place-contents
-           (update-fati
-            (nth 0
-                 (find-n-free-clusters (effective-fat fat32$c)
-                                       1))
-            (fat32-update-lower-28
-             (fati (nth 0
-                        (find-n-free-clusters (effective-fat fat32$c)
-                                              1))
-                   fat32$c)
-             268435455)
-            fat32$c)
-           (d-e-set-filename '(0 0 0 0 0 0 0 0 0 0 0 0
-                                     0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
-                                 filename2)
-           (lofat-file->contents file)
-           (len (explode (lofat-file->contents file)))
-           (nth 0
-                (find-n-free-clusters (effective-fat fat32$c)
-                                      1))))
-         (d-e-first-cluster (mv-nth 0
-                                        (find-d-e (cdr d-e-list)
-                                                      filename1)))
-         (nats=>string
-          (insert-d-e
-           (string=>nats (mv-nth 0
-                                 (d-e-cc-contents
-                                  fat32$c
-                                  (mv-nth 0
-                                          (find-d-e (cdr d-e-list)
-                                                        filename1)))))
-           (d-e-set-first-cluster-file-size
-            (d-e-set-filename '(0 0 0 0 0 0 0 0 0 0 0 0
-                                      0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
-                                  filename2)
-            (nth 0
-                 (find-n-free-clusters (effective-fat fat32$c)
-                                       1))
-            (len (explode (lofat-file->contents file))))))))
-       (cdr d-e-list)
-       (+ -1 entry-limit)))
-     (put-assoc-equal
-      filename1
-      (m1-file
-       (mv-nth 0
-               (find-d-e (cdr d-e-list)
-                             filename1))
-       (put-assoc-equal
-        filename2
-        (m1-file
-         (d-e-set-first-cluster-file-size
-          (mv-nth 0
-                  (find-d-e (cdr d-e-list)
-                                filename1))
-          (nth
-           0
-           (find-n-free-clusters
-            (set-indices-in-fa-table
-             (effective-fat fat32$c)
-             (mv-nth
-              0
-              (d-e-cc fat32$c
-                                    (mv-nth 0
-                                            (find-d-e (cdr d-e-list)
-                                                          filename1))))
-             (make-list-ac
-              (len
-               (mv-nth
-                0
-                (d-e-cc fat32$c
-                                      (mv-nth 0
-                                              (find-d-e (cdr d-e-list)
-                                                            filename1)))))
-              0 nil))
-            1))
-          (len (explode (lofat-file->contents file))))
-         (lofat-file->contents file))
-        (mv-nth
-         0
-         (lofat-to-hifat-helper
-          fat32$c
-          (make-d-e-list
-           (mv-nth 0
-                   (d-e-cc-contents
-                    fat32$c
-                    (mv-nth 0
-                            (find-d-e (cdr d-e-list)
-                                          filename1)))))
-          (+ -1 entry-limit)))))
-      (mv-nth 0
-              (lofat-to-hifat-helper fat32$c (cdr d-e-list)
-                                     (+ -1 entry-limit)))))
-    (useful-d-e-list-p d-e-list))
-   (equal
-    (mv-nth
-     0
-     (lofat-to-hifat-helper
-      (mv-nth
-       0
-       (update-dir-contents
-        (mv-nth
-         0
-         (place-contents
-          (update-fati
-           (nth 0
-                (find-n-free-clusters (effective-fat fat32$c)
-                                      1))
-           (fat32-update-lower-28
-            (fati (nth 0
-                       (find-n-free-clusters (effective-fat fat32$c)
-                                             1))
-                  fat32$c)
-            268435455)
-           fat32$c)
-          (d-e-set-filename '(0 0 0 0 0 0 0 0 0 0 0 0
-                                    0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
-                                filename2)
-          (lofat-file->contents file)
-          (len (explode (lofat-file->contents file)))
-          (nth 0
-               (find-n-free-clusters (effective-fat fat32$c)
-                                     1))))
-        (d-e-first-cluster (mv-nth 0
-                                       (find-d-e (cdr d-e-list)
-                                                     filename1)))
-        (nats=>string
-         (insert-d-e
-          (string=>nats (mv-nth 0
-                                (d-e-cc-contents
-                                 fat32$c
-                                 (mv-nth 0
-                                         (find-d-e (cdr d-e-list)
-                                                       filename1)))))
-          (d-e-set-first-cluster-file-size
-           (d-e-set-filename '(0 0 0 0 0 0 0 0 0 0 0 0
-                                     0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
-                                 filename2)
-           (nth 0
-                (find-n-free-clusters (effective-fat fat32$c)
-                                      1))
-           (len (explode (lofat-file->contents file))))))))
-      (cdr d-e-list)
-      (+ -1 entry-limit)))
-    (put-assoc-equal
-     filename1
-     (m1-file
-      (mv-nth 0
-              (find-d-e (cdr d-e-list)
-                            filename1))
-      (put-assoc-equal
-       filename2
-       (m1-file
-        (d-e-set-first-cluster-file-size
-         (mv-nth 0
-                 (find-d-e (cdr d-e-list)
-                               filename1))
-         (nth
-          0
-          (find-n-free-clusters
-           (set-indices-in-fa-table
-            (effective-fat fat32$c)
-            (mv-nth
-             0
-             (d-e-cc fat32$c
-                                   (mv-nth 0
-                                           (find-d-e (cdr d-e-list)
-                                                         filename1))))
-            (make-list-ac
-             (len
-              (mv-nth
-               0
-               (d-e-cc fat32$c
-                                     (mv-nth 0
-                                             (find-d-e (cdr d-e-list)
-                                                           filename1)))))
-             0 nil))
-           1))
-         (len (explode (lofat-file->contents file))))
-        (lofat-file->contents file))
-       (mv-nth 0
-               (lofat-to-hifat-helper
-                fat32$c
-                (make-d-e-list
-                 (mv-nth 0
-                         (d-e-cc-contents
-                          fat32$c
-                          (mv-nth 0
-                                  (find-d-e (cdr d-e-list)
-                                                filename1)))))
-                entry-limit))))
-     (mv-nth 0
-             (lofat-to-hifat-helper fat32$c (cdr d-e-list)
-                                    (+ -1 entry-limit))))))
-  :hints
-  (("goal"
-    :use
-    (:instance
-     (:rewrite lofat-to-hifat-helper-correctness-4)
-     (entry-limit2 entry-limit)
-     (d-e-list
-      (make-d-e-list (mv-nth 0
-                                 (d-e-cc-contents
-                                  fat32$c
-                                  (mv-nth 0
-                                          (find-d-e (cdr d-e-list)
-                                                        filename1))))))
-     (entry-limit1 (- entry-limit 1))))))
-
-(encapsulate
-  ()
-
-  (local
-   (defthm
-     lemma
-     (implies (not (not-intersectp-list '(nil) x))
-              (not (non-free-index-listp x fa-table)))
-     :hints (("goal" :induct (non-free-index-listp x fa-table)
-              :in-theory (enable not-intersectp-list intersectp-equal)))))
-
-  (defthm
-    lofat-place-file-correctness-1-lemma-70
-    (implies
-     (and
-      (not-intersectp-list
-       (mv-nth
-        2
-        (lofat-to-hifat-helper
-         (mv-nth
-          0
-          (update-dir-contents
-           (mv-nth
-            0
-            (place-contents
-             (update-fati
-              (nth 0
-                   (find-n-free-clusters (effective-fat fat32$c)
-                                         1))
-              (fat32-update-lower-28
-               (fati (nth 0
-                          (find-n-free-clusters (effective-fat fat32$c)
-                                                1))
-                     fat32$c)
-               268435455)
-              fat32$c)
-             (d-e-set-filename '(0 0 0 0 0 0 0 0 0 0 0 0
-                                   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
-                               filename2)
-             (lofat-file->contents file)
-             (len (explode (lofat-file->contents file)))
-             (nth 0
-                  (find-n-free-clusters (effective-fat fat32$c)
-                                        1))))
-           (d-e-first-cluster (mv-nth 0
-                                      (find-d-e (cdr d-e-list)
-                                                filename1)))
-           (nats=>string
-            (insert-d-e
-             (string=>nats (mv-nth 0
-                                   (d-e-cc-contents
-                                    fat32$c
-                                    (mv-nth 0
-                                            (find-d-e (cdr d-e-list)
-                                                      filename1)))))
-             (d-e-set-first-cluster-file-size
-              (d-e-set-filename '(0 0 0 0 0 0 0 0 0 0 0 0
-                                    0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
-                                filename2)
-              (nth 0
-                   (find-n-free-clusters (effective-fat fat32$c)
-                                         1))
-              (len (explode (lofat-file->contents file))))))))
-         (cdr d-e-list)
-         (+ -1 entry-limit)))
-       x)
-      (non-free-index-listp x (effective-fat fat32$c)))
-     (not-intersectp-list
-      (cons
-       nil
-       (mv-nth
-        2
-        (lofat-to-hifat-helper
-         (mv-nth
-          0
-          (update-dir-contents
-           (mv-nth
-            0
-            (place-contents
-             (update-fati
-              (nth 0
-                   (find-n-free-clusters (effective-fat fat32$c)
-                                         1))
-              (fat32-update-lower-28
-               (fati (nth 0
-                          (find-n-free-clusters (effective-fat fat32$c)
-                                                1))
-                     fat32$c)
-               268435455)
-              fat32$c)
-             (d-e-set-filename '(0 0 0 0 0 0 0 0 0 0 0 0
-                                   0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
-                               filename2)
-             (lofat-file->contents file)
-             (len (explode (lofat-file->contents file)))
-             (nth 0
-                  (find-n-free-clusters (effective-fat fat32$c)
-                                        1))))
-           (d-e-first-cluster (mv-nth 0
-                                      (find-d-e (cdr d-e-list)
-                                                filename1)))
-           (nats=>string
-            (insert-d-e
-             (string=>nats (mv-nth 0
-                                   (d-e-cc-contents
-                                    fat32$c
-                                    (mv-nth 0
-                                            (find-d-e (cdr d-e-list)
-                                                      filename1)))))
-             (d-e-set-first-cluster-file-size
-              (d-e-set-filename '(0 0 0 0 0 0 0 0 0 0 0 0
-                                    0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
-                                filename2)
-              (nth 0
-                   (find-n-free-clusters (effective-fat fat32$c)
-                                         1))
-              (len (explode (lofat-file->contents file))))))))
-         (cdr d-e-list)
-         (+ -1 entry-limit))))
-      x))
-    :hints
-    (("goal"
-      :in-theory (disable (:rewrite not-intersectp-list-of-append-2))
-      :use
-      ((:instance
-        (:rewrite not-intersectp-list-of-append-2)
-        (l x)
-        (y
-         (mv-nth
-          2
-          (lofat-to-hifat-helper
-           (mv-nth
-            0
-            (update-dir-contents
-             (mv-nth
-              0
-              (place-contents
-               (update-fati
-                (nth 0
-                     (find-n-free-clusters (effective-fat fat32$c)
-                                           1))
-                (fat32-update-lower-28
-                 (fati
-                  (nth 0
-                       (find-n-free-clusters (effective-fat fat32$c)
-                                             1))
-                  fat32$c)
-                 268435455)
-                fat32$c)
-               (d-e-set-filename
-                '(0 0 0 0 0 0 0 0 0 0 0 0
-                    0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
-                filename2)
-               (lofat-file->contents file)
-               (len (explode (lofat-file->contents file)))
-               (nth 0
-                    (find-n-free-clusters (effective-fat fat32$c)
-                                          1))))
-             (d-e-first-cluster (mv-nth 0
-                                        (find-d-e (cdr d-e-list)
-                                                  filename1)))
-             (nats=>string
-              (insert-d-e
-               (string=>nats
-                (mv-nth 0
-                        (d-e-cc-contents
-                         fat32$c
-                         (mv-nth 0
-                                 (find-d-e (cdr d-e-list)
-                                           filename1)))))
-               (d-e-set-first-cluster-file-size
-                (d-e-set-filename
-                 '(0 0 0 0 0 0 0 0 0 0 0 0
-                     0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
-                 filename2)
-                (nth 0
-                     (find-n-free-clusters (effective-fat fat32$c)
-                                           1))
-                (len (explode (lofat-file->contents file))))))))
-           (cdr d-e-list)
-           (+ -1 entry-limit))))
-        (x (list nil))))))))
-
-(defthm
-  lofat-place-file-correctness-1-lemma-73
-  (implies
-   (and
-    (consp d-e-list)
-    (<= (+ -1 entry-limit)
-        (hifat-entry-count
-         (mv-nth 0
-                 (lofat-to-hifat-helper fat32$c (cdr d-e-list)
-                                        (+ -1 entry-limit)))))
-    (useful-d-e-list-p d-e-list)
-    (not (equal (mv-nth 1
-                        (find-d-e (cdr d-e-list)
-                                      (d-e-filename (car d-e-list))))
-                0))
-    (equal (mv-nth 3
-                   (lofat-to-hifat-helper fat32$c (cdr d-e-list)
-                                          (+ -1 entry-limit)))
-           0))
-   (not
-    (<
-     (hifat-entry-count
-      (cons (cons (d-e-filename (car d-e-list))
-                  (m1-file (car d-e-list)
-                           (mv-nth 0
-                                   (d-e-cc-contents
-                                    fat32$c (car d-e-list)))))
-            (mv-nth 0
-                    (lofat-to-hifat-helper fat32$c (cdr d-e-list)
-                                           (+ -1 entry-limit)))))
-     entry-limit)))
-  :hints (("goal" :in-theory (enable hifat-entry-count)))
-  :rule-classes (:rewrite :linear))
-
-(defthm lofat-place-file-correctness-1-lemma-75
+(defthm lofat-place-file-correctness-lemma-45
   (equal (make-clusters "" cluster-size)
          nil)
   :hints (("goal" :in-theory (enable make-clusters))))
 
-(encapsulate
-  ()
-
-  (local (include-book "arithmetic-5/top" :dir :system))
-
-  (set-default-hints
-   '((nonlinearp-default-hint stable-under-simplificationp
-                              hist pspv)))
-
-  (defthm
-    lofat-place-file-correctness-1-lemma-80
-    (implies
-     (lofat-fs-p fat32$c)
-     (iff
-      (<
-       (count-free-clusters (effective-fat fat32$c))
-       (+
-        (-
-         (ceiling
-          (len
-           (explode
-            (mv-nth
-             0
-             (d-e-cc-contents
-              fat32$c
-              (mv-nth
-               0
-               (find-d-e
-                (make-d-e-list
-                 (mv-nth
-                  0
-                  (d-e-cc-contents fat32$c root-d-e)))
-                (car path)))))))
-          (cluster-size fat32$c)))
-        (ceiling
-         (+
-          32
-          (len
-           (explode
-            (mv-nth
-             0
-             (d-e-cc-contents
-              fat32$c
-              (mv-nth
-               0
-               (find-d-e
-                (make-d-e-list
-                 (mv-nth
-                  0
-                  (d-e-cc-contents fat32$c root-d-e)))
-                (car path))))))))
-         (cluster-size fat32$c))))
-      (and
-       (zp (count-free-clusters (effective-fat fat32$c)))
-       (equal
-        (ceiling
-         (+
-          32
-          (len
-           (explode
-            (mv-nth
-             0
-             (d-e-cc-contents
-              fat32$c
-              (mv-nth
-               0
-               (find-d-e
-                (make-d-e-list
-                 (mv-nth
-                  0
-                  (d-e-cc-contents fat32$c root-d-e)))
-                (car path))))))))
-         (cluster-size fat32$c))
-        (+
-         1
-         (ceiling
-          (len
-           (explode
-            (mv-nth
-             0
-             (d-e-cc-contents
-              fat32$c
-              (mv-nth
-               0
-               (find-d-e
-                (make-d-e-list
-                 (mv-nth
-                  0
-                  (d-e-cc-contents fat32$c root-d-e)))
-                (car path)))))))
-          (cluster-size fat32$c)))))))
-    :hints (("goal" :do-not-induct t)))
-
-  (defthm
-    lofat-place-file-correctness-1-lemma-86
-    (implies
-     (lofat-fs-p fat32$c)
-     (and
-      (<=
-       (ceiling
-        (len
-         (explode (mv-nth 0
-                          (d-e-cc-contents
-                           fat32$c root-d-e))))
-        (cluster-size fat32$c))
-       (ceiling
-        (+
-         32
-         (len
-          (explode (mv-nth 0
-                           (d-e-cc-contents
-                            fat32$c root-d-e)))))
-        (cluster-size fat32$c)))
-      (>=
-       (+
-        1
-        (ceiling
-         (len
-          (explode (mv-nth 0
-                           (d-e-cc-contents
-                            fat32$c root-d-e))))
-         (cluster-size fat32$c)))
-       (ceiling
-        (+
-         32
-         (len
-          (explode (mv-nth 0
-                           (d-e-cc-contents
-                            fat32$c root-d-e)))))
-        (cluster-size fat32$c)))))
-    :rule-classes :linear))
-
-(defthmd
-  lofat-place-file-correctness-1-lemma-83
-  (implies
-   (and
-    (lofat-fs-p fat32$c)
-    (equal
-     (mv-nth 1
-             (d-e-cc-contents fat32$c root-d-e))
-     0))
-   (<=
-    (len
-     (make-clusters
-      (mv-nth 0
-              (d-e-cc-contents fat32$c root-d-e))
-      (cluster-size fat32$c)))
-    (len (mv-nth 0
-                 (d-e-cc fat32$c root-d-e)))))
-  :rule-classes (:rewrite :linear)
-  :hints (("goal" :in-theory (enable len-of-make-clusters
-                                     lofat-to-hifat-inversion-lemma-15))))
-
 (defthm
-  lofat-place-file-correctness-1-lemma-84
-  (implies
-   (and
-    (<=
-     1
-     (+
-      (count-free-clusters (effective-fat fat32$c))
-      (ceiling
-       (len
-        (explode
-         (mv-nth
-          0
-          (d-e-cc-contents
-           fat32$c
-           (mv-nth
-            0
-            (find-d-e
-             (make-d-e-list
-              (mv-nth
-               0
-               (d-e-cc-contents fat32$c root-d-e)))
-             (car path)))))))
-       (cluster-size fat32$c))))
-    (lofat-fs-p fat32$c)
-    (equal
-     (mv-nth
-      3
-      (lofat-to-hifat-helper
-       fat32$c
-       (make-d-e-list
-        (mv-nth 0
-                (d-e-cc-contents fat32$c root-d-e)))
-       entry-limit))
-     0)
-    (not-intersectp-list
-     (mv-nth 0
-             (d-e-cc fat32$c root-d-e))
-     (mv-nth
-      2
-      (lofat-to-hifat-helper
-       fat32$c
-       (make-d-e-list
-        (mv-nth 0
-                (d-e-cc-contents fat32$c root-d-e)))
-       entry-limit)))
-    (equal
-     (mv-nth 1
-             (d-e-cc-contents fat32$c root-d-e))
-     0)
-    (<=
-     2
-     (d-e-first-cluster
-      (mv-nth
-       0
-       (find-d-e
-        (make-d-e-list
-         (mv-nth
-          0
-          (d-e-cc-contents fat32$c root-d-e)))
-        (car path)))))
-    (<
-     (d-e-first-cluster
-      (mv-nth
-       0
-       (find-d-e
-        (make-d-e-list
-         (mv-nth
-          0
-          (d-e-cc-contents fat32$c root-d-e)))
-        (car path))))
-     (+ 2 (count-of-clusters fat32$c))))
-   (not
-    (member-equal
-     (nth
-      '0
-      (find-n-free-clusters
-       (set-indices-in-fa-table
-        (effective-fat fat32$c)
-        (mv-nth
-         '0
-         (d-e-cc
-          fat32$c
-          (mv-nth
-           '0
-           (find-d-e
-            (make-d-e-list
-             (mv-nth
-              '0
-              (d-e-cc-contents fat32$c root-d-e)))
-            (car path)))))
-        (make-list-ac
-         (ceiling
-          (len
-           (explode$inline
-            (mv-nth
-             '0
-             (d-e-cc-contents
-              fat32$c
-              (mv-nth
-               '0
-               (find-d-e (make-d-e-list
-                              (mv-nth '0
-                                      (d-e-cc-contents
-                                       fat32$c root-d-e)))
-                             (car path)))))))
-          (cluster-size fat32$c))
-         '0
-         'nil))
-       '1))
-     (mv-nth '0
-             (d-e-cc fat32$c root-d-e)))))
-  :hints
-  (("goal"
-    :in-theory (e/d (lofat-to-hifat-inversion-lemma-15)
-                    ((:rewrite non-free-index-listp-correctness-2
-                               . 1)))
-    :use
-    ((:instance
-      (:rewrite non-free-index-listp-correctness-2 . 1)
-      (fa-table
-       (set-indices-in-fa-table
-        (effective-fat fat32$c)
-        (mv-nth
-         0
-         (d-e-cc
-          fat32$c
-          (mv-nth
-           0
-           (find-d-e
-            (make-d-e-list
-             (mv-nth
-              0
-              (d-e-cc-contents fat32$c root-d-e)))
-            (car path)))))
-        (make-list-ac
-         (ceiling
-          (len
-           (explode
-            (mv-nth
-             0
-             (d-e-cc-contents
-              fat32$c
-              (mv-nth
-               0
-               (find-d-e (make-d-e-list
-                              (mv-nth 0
-                                      (d-e-cc-contents
-                                       fat32$c root-d-e)))
-                             (car path)))))))
-          (cluster-size fat32$c))
-         0 nil)))
-      (x (mv-nth 0
-                 (d-e-cc fat32$c root-d-e)))
-      (key
-       (nth
-        0
-        (find-n-free-clusters
-         (set-indices-in-fa-table
-          (effective-fat fat32$c)
-          (mv-nth
-           0
-           (d-e-cc
-            fat32$c
-            (mv-nth
-             0
-             (find-d-e
-              (make-d-e-list
-               (mv-nth
-                0
-                (d-e-cc-contents fat32$c root-d-e)))
-              (car path)))))
-          (make-list-ac
-           (ceiling
-            (len
-             (explode
-              (mv-nth
-               0
-               (d-e-cc-contents
-                fat32$c
-                (mv-nth 0
-                        (find-d-e
-                         (make-d-e-list
-                          (mv-nth 0
-                                  (d-e-cc-contents
-                                   fat32$c root-d-e)))
-                         (car path)))))))
-            (cluster-size fat32$c))
-           0 nil))
-         1))))))))
-
-(defthm
-  lofat-place-file-correctness-1-lemma-87
-  (implies
-   (lofat-fs-p fat32$c)
-   (<=
-    0
-    (+
-     (-
-      (ceiling
-       (+
-        64
-        (*
-         32
-         (len
-          (mv-nth
-           0
-           (lofat-to-hifat-helper
-            fat32$c
-            (make-d-e-list
-             (mv-nth
-              0
-              (d-e-cc-contents
-               fat32$c
-               (mv-nth 0
-                       (find-d-e
-                        (make-d-e-list
-                         (mv-nth 0
-                                 (d-e-cc-contents
-                                  fat32$c root-d-e)))
-                        (car path))))))
-            entry-limit)))))
-       (cluster-size fat32$c)))
-     (ceiling
-      (+
-       96
-       (*
-        32
-        (len
-         (mv-nth
-          0
-          (lofat-to-hifat-helper
-           fat32$c
-           (make-d-e-list
-            (mv-nth
-             0
-             (d-e-cc-contents
-              fat32$c
-              (mv-nth
-               0
-               (find-d-e (make-d-e-list
-                              (mv-nth 0
-                                      (d-e-cc-contents
-                                       fat32$c root-d-e)))
-                             (car path))))))
-           entry-limit)))))
-      (cluster-size fat32$c)))))
-  :hints
-  (("goal"
-    :use
-    (:instance
-     (:linear painful-debugging-lemma-16)
-     (j (cluster-size fat32$c))
-     (i1
-      (+
-       64
-       (*
-        32
-        (len
-         (mv-nth
-          0
-          (lofat-to-hifat-helper
-           fat32$c
-           (make-d-e-list
-            (mv-nth
-             0
-             (d-e-cc-contents
-              fat32$c
-              (mv-nth
-               0
-               (find-d-e (make-d-e-list
-                              (mv-nth 0
-                                      (d-e-cc-contents
-                                       fat32$c root-d-e)))
-                             (car path))))))
-           entry-limit))))))
-     (i2
-      (+
-       96
-       (*
-        32
-        (len
-         (mv-nth
-          0
-          (lofat-to-hifat-helper
-           fat32$c
-           (make-d-e-list
-            (mv-nth
-             0
-             (d-e-cc-contents
-              fat32$c
-              (mv-nth
-               0
-               (find-d-e (make-d-e-list
-                              (mv-nth 0
-                                      (d-e-cc-contents
-                                       fat32$c root-d-e)))
-                             (car path))))))
-           entry-limit)))))))))
-  :rule-classes :linear)
-
-(defthm
-  lofat-place-file-correctness-1-lemma-88
-  (implies
-   (lofat-fs-p fat32$c)
-   (<=
-    (ceiling
-     (+
-      64
-      (*
-       32
-       (len
-        (make-d-e-list
-         (mv-nth
-          0
-          (d-e-cc-contents
-           fat32$c
-           (mv-nth
-            0
-            (find-d-e
-             (make-d-e-list
-              (mv-nth
-               0
-               (d-e-cc-contents fat32$c root-d-e)))
-             (car path)))))))))
-     (cluster-size fat32$c))
-    (ceiling
-     (+
-      96
-      (*
-       32
-       (len
-        (make-d-e-list
-         (mv-nth
-          0
-          (d-e-cc-contents
-           fat32$c
-           (mv-nth
-            0
-            (find-d-e
-             (make-d-e-list
-              (mv-nth
-               0
-               (d-e-cc-contents fat32$c root-d-e)))
-             (car path)))))))))
-     (cluster-size fat32$c))))
-  :hints
-  (("goal"
-    :use
-    (:instance
-     (:linear painful-debugging-lemma-16)
-     (j (cluster-size fat32$c))
-     (i1
-      (+
-       64
-       (*
-        32
-        (len
-         (make-d-e-list
-          (mv-nth
-           0
-           (d-e-cc-contents
-            fat32$c
-            (mv-nth
-             0
-             (find-d-e
-              (make-d-e-list
-               (mv-nth
-                0
-                (d-e-cc-contents fat32$c root-d-e)))
-              (car path))))))))))
-     (i2
-      (+
-       96
-       (*
-        32
-        (len
-         (make-d-e-list
-          (mv-nth
-           0
-           (d-e-cc-contents
-            fat32$c
-            (mv-nth
-             0
-             (find-d-e
-              (make-d-e-list
-               (mv-nth
-                0
-                (d-e-cc-contents fat32$c root-d-e)))
-              (car path)))))))))))))
-  :rule-classes :linear)
-
-(defthm
-  lofat-place-file-correctness-1-lemma-41
+  lofat-place-file-correctness-lemma-47
   (implies (and (< (d-e-first-cluster root-d-e)
                    (+ 2 (count-of-clusters fat32$c)))
                 (<= 1
@@ -15516,85 +10972,11 @@ Some (rather awful) testing forms are
   :rule-classes (:rewrite :linear))
 
 (defthm
-  lofat-place-file-correctness-lemma-35
-  (implies
-   (and
-    (consp d-e-list)
-    (not (equal (mv-nth 1
-                        (find-d-e (cdr d-e-list)
-                                      (d-e-filename (car d-e-list))))
-                0))
-    (equal
-     (mv-nth
-      3
-      (lofat-to-hifat-helper
-       fat32$c (cdr d-e-list)
-       (+
-        -1 entry-limit
-        (-
-         (hifat-entry-count
-          (mv-nth 0
-                  (lofat-to-hifat-helper
-                   fat32$c
-                   (make-d-e-list
-                    (mv-nth 0
-                            (d-e-cc-contents
-                             fat32$c (car d-e-list))))
-                   (+ -1 entry-limit))))))))
-     0)
-    (useful-d-e-list-p d-e-list))
-   (hifat-equiv
-    (cons
-     (cons (d-e-filename (car d-e-list))
-           (m1-file (d-e-set-first-cluster-file-size (car d-e-list)
-                                                         i 0)
-                    nil))
-     (mv-nth
-      0
-      (lofat-to-hifat-helper
-       fat32$c (cdr d-e-list)
-       (+
-        -1 entry-limit
-        (-
-         (hifat-entry-count
-          (mv-nth 0
-                  (lofat-to-hifat-helper
-                   fat32$c
-                   (make-d-e-list
-                    (mv-nth 0
-                            (d-e-cc-contents
-                             fat32$c (car d-e-list))))
-                   (+ -1 entry-limit)))))))))
-    (cons
-     (cons (d-e-filename (car d-e-list))
-           (m1-file d-e nil))
-     (mv-nth
-      0
-      (lofat-to-hifat-helper
-       fat32$c (cdr d-e-list)
-       (+
-        -1 entry-limit
-        (-
-         (hifat-entry-count
-          (mv-nth 0
-                  (lofat-to-hifat-helper
-                   fat32$c
-                   (make-d-e-list
-                    (mv-nth 0
-                            (d-e-cc-contents
-                             fat32$c (car d-e-list))))
-                   (+ -1 entry-limit)))))))))))
-  :hints (("goal" :in-theory (enable hifat-equiv
-                                     hifat-subsetp hifat-no-dups-p
-                                     hifat-equiv-of-cons-lemma-5)
-           :do-not-induct t)))
-
-(defthm
   lofat-place-file-correctness-lemma-4
   (implies
    (and
     (d-e-directory-p (mv-nth 0
-                                 (find-d-e (cdr d-e-list) name)))
+                             (find-d-e (cdr d-e-list) name)))
     (good-root-d-e-p root-d-e fat32$c)
     (equal (mv-nth 3
                    (lofat-to-hifat-helper fat32$c (cdr d-e-list)
@@ -15615,17 +10997,17 @@ Some (rather awful) testing forms are
         (effective-fat fat32$c)
         (mv-nth 0
                 (d-e-cc fat32$c
-                                      (mv-nth 0
-                                              (find-d-e (cdr d-e-list)
-                                                            name))))
+                        (mv-nth 0
+                                (find-d-e (cdr d-e-list)
+                                          name))))
         (make-list-ac
          (len
           (mv-nth
            0
            (d-e-cc fat32$c
-                                 (mv-nth 0
-                                         (find-d-e (cdr d-e-list)
-                                                       name)))))
+                   (mv-nth 0
+                           (find-d-e (cdr d-e-list)
+                                     name)))))
          0 nil))))
      0)
     (useful-d-e-list-p d-e-list)
@@ -15704,9 +11086,9 @@ Some (rather awful) testing forms are
      (a i)
      (y (mv-nth 0
                 (d-e-cc fat32$c
-                                      (mv-nth 0
-                                              (find-d-e (cdr d-e-list)
-                                                            name)))))
+                        (mv-nth 0
+                                (find-d-e (cdr d-e-list)
+                                          name)))))
      (x (mv-nth 0
                 (d-e-cc fat32$c root-d-e)))))))
 
@@ -15757,66 +11139,7 @@ Some (rather awful) testing forms are
                                (d-e-cc fat32$c root-d-e)))
                     (x (mv-nth 0
                                (d-e-cc fat32$c
-                                                     (car d-e-list))))))))
-
-(defthm
-  lofat-place-file-correctness-lemma-49
-  (implies
-   (and
-    (consp d-e-list)
-    (non-free-index-listp x (effective-fat fat32$c))
-    (equal
-     (mv-nth
-      1
-      (d-e-cc-contents fat32$c (car d-e-list)))
-     0)
-    (not
-     (intersectp-equal
-      x
-      (mv-nth 0
-              (d-e-cc fat32$c (car d-e-list)))))
-    (fat32-masked-entry-p i)
-    (useful-d-e-list-p d-e-list)
-    (case-split (member-equal i x)))
-   (not
-    (equal
-     (fat32-entry-mask
-      (nth
-       i
-       (set-indices-in-fa-table
-        (effective-fat fat32$c)
-        (mv-nth 0
-                (d-e-cc fat32$c (car d-e-list)))
-        (make-list-ac
-         (len
-          (mv-nth 0
-                  (d-e-cc fat32$c (car d-e-list))))
-         0 nil))))
-     0)))
-  :hints
-  (("goal"
-    :do-not-induct t
-    :in-theory (disable intersectp-member
-                        (:rewrite set-indices-in-fa-table-correctness-3))
-    :use
-    ((:instance intersectp-member
-      (a i)
-      (y (mv-nth 0
-                 (d-e-cc fat32$c (car d-e-list))))
-      (x x))
-     (:instance
-      (:rewrite set-indices-in-fa-table-correctness-3)
-      (value-list
-       (make-list-ac
-        (len
-         (mv-nth 0
-                 (d-e-cc fat32$c (car d-e-list))))
-        0 nil))
-      (index-list
-       (mv-nth 0
-               (d-e-cc fat32$c (car d-e-list))))
-      (fa-table (effective-fat fat32$c))
-      (n i))))))
+                                       (car d-e-list))))))))
 
 (defthm
   lofat-place-file-correctness-lemma-59
@@ -15917,121 +11240,7 @@ Some (rather awful) testing forms are
       0)))))
 
 (defthm
-  lofat-place-file-correctness-lemma-41
-  (implies
-   (and
-    (not
-     (member-intersectp-equal
-      (set-difference-equal
-       x1
-       (cons x2
-             (mv-nth 2
-                     (lofat-to-hifat-helper fat32$c1
-                                            d-e-list1 entry-limit1))))
-      (mv-nth 2
-              (lofat-to-hifat-helper fat32$c2
-                                     d-e-list2 entry-limit1))))
-    (equal (mv-nth 3
-                   (lofat-to-hifat-helper fat32$c2
-                                          d-e-list2 entry-limit1))
-           0)
-    (equal (mv-nth 3
-                   (lofat-to-hifat-helper fat32$c1
-                                          d-e-list1 entry-limit1))
-           0)
-    (<= (mv-nth 1
-                (lofat-to-hifat-helper fat32$c2
-                                       d-e-list2 entry-limit1))
-        (nfix entry-limit2))
-    (<= (mv-nth 1
-                (lofat-to-hifat-helper fat32$c1
-                                       d-e-list1 entry-limit1))
-        (nfix entry-limit2)))
-   (not
-    (member-intersectp-equal
-     (set-difference-equal
-      x1
-      (cons x2
-            (mv-nth 2
-                    (lofat-to-hifat-helper fat32$c1
-                                           d-e-list1 entry-limit2))))
-     (mv-nth 2
-             (lofat-to-hifat-helper fat32$c2
-                                    d-e-list2 entry-limit2)))))
-  :hints (("goal" :do-not-induct t
-           :use ((:instance lofat-to-hifat-helper-correctness-4
-                            (d-e-list d-e-list2)
-                            (fat32$c fat32$c2))
-                 (:instance lofat-to-hifat-helper-correctness-4
-                            (d-e-list d-e-list1)
-                            (fat32$c fat32$c1))))))
-
-(defthmd
-  lofat-place-file-correctness-lemma-67
-  (implies
-   (and
-    (<= 2
-        (d-e-first-cluster (mv-nth 0 (find-d-e d-e-list name))))
-    (< (d-e-first-cluster (mv-nth 0 (find-d-e d-e-list name)))
-       (+ 2 (count-of-clusters fat32$c)))
-    (equal (mv-nth 3
-                   (lofat-to-hifat-helper fat32$c
-                                          d-e-list entry-limit))
-           0)
-    (useful-d-e-list-p d-e-list))
-   (not
-    (not-intersectp-list
-     (mv-nth
-      0
-      (d-e-cc fat32$c
-                            (mv-nth 0 (find-d-e d-e-list name))))
-     (mv-nth 2
-             (lofat-to-hifat-helper fat32$c
-                                    d-e-list entry-limit)))))
-  :hints
-  (("goal"
-    :in-theory
-    (e/d
-     (lofat-to-hifat-helper not-intersectp-list)
-     ((:rewrite nfix-when-zp)
-      (:rewrite nth-of-nats=>chars)
-      (:definition natp)
-      (:rewrite nth-of-effective-fat)
-      (:linear nth-when-d-e-p)
-      (:rewrite explode-of-d-e-filename)
-      (:rewrite
-       hifat-entry-count-of-lofat-to-hifat-helper-of-delete-d-e-lemma-3)
-      (:rewrite d-e-p-when-member-equal-of-d-e-list-p)
-      (:rewrite take-of-len-free)
-      (:rewrite natp-of-car-when-nat-listp)))))
-  :rule-classes
-  ((:rewrite
-    :corollary
-    (implies
-     (and
-      (equal x
-             (mv-nth
-              0
-              (d-e-cc fat32$c
-                                    (mv-nth 0 (find-d-e d-e-list name)))))
-      (<= 2
-          (d-e-first-cluster (mv-nth 0 (find-d-e d-e-list name))))
-      (< (d-e-first-cluster (mv-nth 0 (find-d-e d-e-list name)))
-         (+ 2 (count-of-clusters fat32$c)))
-      (equal (mv-nth 3
-                     (lofat-to-hifat-helper fat32$c
-                                            d-e-list entry-limit))
-             0)
-      (useful-d-e-list-p d-e-list))
-     (not
-      (not-intersectp-list
-       x
-       (mv-nth 2
-               (lofat-to-hifat-helper fat32$c
-                                      d-e-list entry-limit))))))))
-
-(defthm
-  lofat-place-file-correctness-lemma-80
+  lofat-place-file-correctness-lemma-49
   (implies
    (and
     (equal
@@ -16064,46 +11273,6 @@ Some (rather awful) testing forms are
     :in-theory (disable lofat-to-hifat-helper-correctness-4)
     :use lofat-to-hifat-helper-correctness-4)))
 
-(defthm
-  lofat-place-file-correctness-lemma-53
-  (implies
-   (and
-    (fat32-masked-entry-list-p value-list)
-    (equal (len index-list)
-           (len value-list))
-    (lofat-fs-p fat32$c)
-    (equal
-     (mv-nth
-      '3
-      (lofat-to-hifat-helper
-       (stobj-set-indices-in-fa-table fat32$c index-list value-list)
-       d-e-list entry-limit))
-     '0)
-    (not-intersectp-list
-     index-list
-     (mv-nth
-      2
-      (lofat-to-hifat-helper
-       (stobj-set-indices-in-fa-table fat32$c index-list value-list)
-       d-e-list entry-limit))))
-   (non-free-index-list-listp
-    (mv-nth
-     2
-     (lofat-to-hifat-helper
-      (stobj-set-indices-in-fa-table fat32$c index-list value-list)
-      d-e-list entry-limit))
-    (effective-fat fat32$c)))
-  :hints
-  (("goal"
-    :do-not-induct t
-    :in-theory (e/d nil
-                    (non-free-index-list-listp-of-lofat-to-hifat-helper))
-    :use
-    (:instance non-free-index-list-listp-of-lofat-to-hifat-helper
-               (fat32$c
-                (stobj-set-indices-in-fa-table fat32$c
-                                               index-list value-list))))))
-
 (encapsulate
   ()
 
@@ -16123,7 +11292,7 @@ Some (rather awful) testing forms are
 
   ;; Hypotheses minimised...
   (defthm
-    lofat-place-file-correctness-lemma-99
+    lofat-place-file-correctness-lemma-53
     (implies
      (and
       (>= (d-e-first-cluster
@@ -16161,20 +11330,20 @@ Some (rather awful) testing forms are
        (lofat-to-hifat-helper find-d-e
                               place-d-e not-intersectp-list)
        (  (:rewrite nth-of-effective-fat)
-        (:rewrite nth-of-nats=>chars)
-        (:rewrite
-         hifat-entry-count-of-lofat-to-hifat-helper-of-delete-d-e-lemma-3)
-        (:linear nth-when-d-e-p)
-        (:rewrite explode-of-d-e-filename)
-        (:rewrite d-e-list-p-of-cdr-when-d-e-list-p)
-        (:rewrite
-         d-e-p-when-member-equal-of-d-e-list-p)))
+          (:rewrite nth-of-nats=>chars)
+          (:rewrite
+           hifat-entry-count-of-lofat-to-hifat-helper-of-delete-d-e-lemma-3)
+          (:linear nth-when-d-e-p)
+          (:rewrite explode-of-d-e-filename)
+          (:rewrite d-e-list-p-of-cdr-when-d-e-list-p)
+          (:rewrite
+           d-e-p-when-member-equal-of-d-e-list-p)))
       :induct (lofat-to-hifat-helper fat32$c
                                      d-e-list entry-limit)
       :do-not-induct t))))
 
 (defthm
-  lofat-place-file-correctness-lemma-104
+  lofat-place-file-correctness-lemma-54
   (implies
    (and (natp entry-limit)
         (useful-d-e-list-p d-e-list))
@@ -16190,1176 +11359,6 @@ Some (rather awful) testing forms are
             (:apply-linear lofat-to-hifat-helper-correctness-3)
             :top (:bash ("Goal" :in-theory (enable nfix))))
   :rule-classes :linear)
-
-(defthm
-  lofat-place-file-correctness-lemma-85
-  (implies
-   (and (useful-d-e-list-p d-e-list)
-        (zp (mv-nth 3
-                    (lofat-to-hifat-helper fat32$c d-e-list entry-limit)))
-        (>= (d-e-first-cluster (mv-nth 0 (find-d-e d-e-list name)))
-            *ms-first-data-cluster*)
-        (> (+ *ms-first-data-cluster*
-              (count-of-clusters fat32$c))
-           (d-e-first-cluster (mv-nth 0 (find-d-e d-e-list name)))))
-   (member-equal
-    (mv-nth 0
-            (d-e-cc fat32$c
-                    (mv-nth 0 (find-d-e d-e-list name))))
-    (mv-nth 2
-            (lofat-to-hifat-helper fat32$c d-e-list entry-limit))))
-  :hints
-  (("goal"
-    :in-theory
-    (e/d
-     (find-d-e lofat-to-hifat-helper)
-     ((:rewrite d-e-cc-contents-of-lofat-place-file-coincident-lemma-13)
-      (:rewrite nth-of-nats=>chars)
-      (:linear nth-when-d-e-p)
-      (:rewrite nth-of-effective-fat)
-      (:rewrite explode-of-d-e-filename)
-      (:rewrite
-       hifat-entry-count-of-lofat-to-hifat-helper-of-delete-d-e-lemma-3))))))
-
-;; Not great, but...
-(defthm
-  lofat-place-file-correctness-lemma-111
-  (implies
-   (and
-    (not (zp entry-limit))
-    (not (equal (mv-nth 1
-                        (find-d-e d-e-list
-                                      (d-e-filename d-e)))
-                0))
-    (<= 2
-        (d-e-first-cluster (mv-nth 0 (find-d-e d-e-list name))))
-    (< (d-e-first-cluster (mv-nth 0 (find-d-e d-e-list name)))
-       (+ 2 (count-of-clusters fat32$c)))
-    (not (d-e-directory-p (mv-nth 0 (find-d-e d-e-list name))))
-    (member-equal
-     i
-     (mv-nth
-      0
-      (d-e-cc fat32$c
-                            (mv-nth 0 (find-d-e d-e-list name)))))
-    (equal
-     (mv-nth
-      3
-      (lofat-to-hifat-helper
-       fat32$c d-e-list
-       (+
-        -1 entry-limit
-        (-
-         (hifat-entry-count
-          (mv-nth
-           0
-           (lofat-to-hifat-helper
-            fat32$c
-            (make-d-e-list
-             (mv-nth 0
-                     (d-e-cc-contents fat32$c d-e)))
-            (+ -1 entry-limit))))))))
-     0)
-    (equal
-     (strip-cars
-      (mv-nth
-       0
-       (lofat-to-hifat-helper
-        (mv-nth
-         0
-         (place-contents
-          (update-fati
-           i
-           (fat32-update-lower-28 (fati i fat32$c)
-                                  268435455)
-           (mv-nth 0
-                   (clear-cc
-                    fat32$c
-                    (d-e-first-cluster
-                     (mv-nth 0 (find-d-e d-e-list name)))
-                    (d-e-file-size
-                     (mv-nth 0 (find-d-e d-e-list name))))))
-          (mv-nth 0 (find-d-e d-e-list name))
-          (lofat-file->contents file)
-          (len (explode (lofat-file->contents file)))
-          i))
-        (place-d-e d-e-list
-                       (d-e-set-first-cluster-file-size
-                        (mv-nth 0 (find-d-e d-e-list name))
-                        i
-                        (len (explode (lofat-file->contents file)))))
-        (+
-         -1 entry-limit
-         (-
-          (hifat-entry-count
-           (mv-nth
-            0
-            (lofat-to-hifat-helper
-             fat32$c
-             (make-d-e-list
-              (mv-nth
-               0
-               (d-e-cc-contents fat32$c d-e)))
-             (+ -1 entry-limit)))))))))
-     (strip-cars
-      (mv-nth
-       0
-       (lofat-to-hifat-helper
-        fat32$c d-e-list
-        (+
-         -1 entry-limit
-         (-
-          (hifat-entry-count
-           (mv-nth
-            0
-            (lofat-to-hifat-helper
-             fat32$c
-             (make-d-e-list
-              (mv-nth
-               0
-               (d-e-cc-contents fat32$c d-e)))
-             (+ -1 entry-limit))))))))))
-    (< i
-       (+ 2 (count-of-clusters fat32$c)))
-    (lofat-fs-p fat32$c)
-    (fat32-masked-entry-p i)
-    (lofat-regular-file-p file)
-    (useful-d-e-list-p d-e-list)
-    (<= 2 i)
-    (equal
-     (mv-nth
-      3
-      (lofat-to-hifat-helper
-       fat32$c
-       (make-d-e-list
-        (mv-nth 0
-                (d-e-cc-contents fat32$c d-e)))
-       (+ -1 entry-limit)))
-     0)
-    (not
-     (member-intersectp-equal
-      (mv-nth
-       2
-       (lofat-to-hifat-helper
-        fat32$c
-        (make-d-e-list
-         (mv-nth 0
-                 (d-e-cc-contents fat32$c d-e)))
-        (+ -1 entry-limit)))
-      (mv-nth
-       2
-       (lofat-to-hifat-helper
-        fat32$c d-e-list
-        (+
-         -1 entry-limit
-         (-
-          (hifat-entry-count
-           (mv-nth
-            0
-            (lofat-to-hifat-helper
-             fat32$c
-             (make-d-e-list
-              (mv-nth
-               0
-               (d-e-cc-contents fat32$c d-e)))
-             (+ -1 entry-limit))))))))))
-    (consp
-     (assoc-equal
-      (d-e-filename d-e)
-      (mv-nth
-       0
-       (lofat-to-hifat-helper
-        (mv-nth
-         0
-         (place-contents
-          (update-fati
-           i
-           (fat32-update-lower-28 (fati i fat32$c)
-                                  268435455)
-           (mv-nth 0
-                   (clear-cc
-                    fat32$c
-                    (d-e-first-cluster
-                     (mv-nth 0 (find-d-e d-e-list name)))
-                    (d-e-file-size
-                     (mv-nth 0 (find-d-e d-e-list name))))))
-          (mv-nth 0 (find-d-e d-e-list name))
-          (lofat-file->contents file)
-          (len (explode (lofat-file->contents file)))
-          i))
-        (place-d-e d-e-list
-                       (d-e-set-first-cluster-file-size
-                        (mv-nth 0 (find-d-e d-e-list name))
-                        i
-                        (len (explode (lofat-file->contents file)))))
-        (+
-         -1 entry-limit
-         (-
-          (hifat-entry-count
-           (mv-nth
-            0
-            (lofat-to-hifat-helper
-             (mv-nth
-              0
-              (place-contents
-               (update-fati
-                i
-                (fat32-update-lower-28 (fati i fat32$c)
-                                       268435455)
-                (mv-nth
-                 0
-                 (clear-cc
-                  fat32$c
-                  (d-e-first-cluster
-                   (mv-nth 0 (find-d-e d-e-list name)))
-                  (d-e-file-size
-                   (mv-nth 0 (find-d-e d-e-list name))))))
-               (mv-nth 0 (find-d-e d-e-list name))
-               (lofat-file->contents file)
-               (len (explode (lofat-file->contents file)))
-               i))
-             (make-d-e-list
-              (mv-nth
-               0
-               (d-e-cc-contents fat32$c d-e)))
-             (+ -1 entry-limit)))))))))))
-   (equal
-    (mv-nth
-     3
-     (lofat-to-hifat-helper
-      (update-fati
-       i
-       (fat32-update-lower-28 (fati i fat32$c)
-                              268435455)
-       (mv-nth
-        0
-        (clear-cc
-         fat32$c
-         (d-e-first-cluster (mv-nth 0 (find-d-e d-e-list name)))
-         (d-e-file-size (mv-nth 0 (find-d-e d-e-list name))))))
-      (place-d-e d-e-list
-                     (d-e-set-first-cluster-file-size
-                      (mv-nth 0 (find-d-e d-e-list name))
-                      i
-                      (len (explode (lofat-file->contents file)))))
-      (+
-       -1 entry-limit
-       (-
-        (hifat-entry-count
-         (mv-nth
-          0
-          (lofat-to-hifat-helper
-           (mv-nth
-            0
-            (place-contents
-             (update-fati
-              i
-              (fat32-update-lower-28 (fati i fat32$c)
-                                     268435455)
-              (mv-nth
-               0
-               (clear-cc
-                fat32$c
-                (d-e-first-cluster
-                 (mv-nth 0 (find-d-e d-e-list name)))
-                (d-e-file-size
-                 (mv-nth 0 (find-d-e d-e-list name))))))
-             (mv-nth 0 (find-d-e d-e-list name))
-             (lofat-file->contents file)
-             (len (explode (lofat-file->contents file)))
-             i))
-           (make-d-e-list
-            (mv-nth 0
-                    (d-e-cc-contents fat32$c d-e)))
-           (+ -1 entry-limit))))))))
-    0))
-  :hints
-  (("goal"
-    :do-not-induct t
-    :in-theory
-    (e/d nil
-         ((:definition member-intersectp-equal)
-          (:rewrite not-intersectp-list-of-lofat-to-hifat-helper)
-          (:rewrite lofat-place-file-correctness-lemma-56)
-          (:rewrite lofat-to-hifat-helper-of-clear-cc)
-          (:rewrite lofat-place-file-correctness-lemma-82)
-          (:definition free-index-listp)
-          (:rewrite hifat-to-lofat-inversion-lemma-17)
-          (:rewrite nth-of-effective-fat)
-          (:linear hifat-entry-count-when-hifat-subsetp))))))
-
-;; Not great, but OK for now.
-(defthm
-  lofat-place-file-correctness-lemma-54
-  (implies
-   (and
-    (not (equal (mv-nth 1
-                        (find-d-e (cdr d-e-list)
-                                  (d-e-filename (car d-e-list))))
-                0))
-    (<= 2
-        (d-e-first-cluster (mv-nth 0 (find-d-e (cdr d-e-list) name))))
-    (< (d-e-first-cluster (mv-nth 0 (find-d-e (cdr d-e-list) name)))
-       (+ 2 (count-of-clusters fat32$c)))
-    (not (d-e-directory-p (mv-nth 0 (find-d-e (cdr d-e-list) name))))
-    (member-equal i
-                  (mv-nth 0
-                          (d-e-cc fat32$c
-                                  (mv-nth 0 (find-d-e (cdr d-e-list) name)))))
-    (equal
-     (mv-nth
-      3
-      (lofat-to-hifat-helper
-       fat32$c (cdr d-e-list)
-       (+
-        -1 entry-limit
-        (-
-         (hifat-entry-count
-          (mv-nth
-           0
-           (lofat-to-hifat-helper
-            fat32$c
-            (make-d-e-list (mv-nth 0
-                                   (d-e-cc-contents fat32$c (car d-e-list))))
-            (+ -1 entry-limit))))))))
-     0)
-    (equal
-     (strip-cars
-      (mv-nth
-       0
-       (lofat-to-hifat-helper
-        (mv-nth
-         0
-         (place-contents
-          (update-fati
-           i
-           (fat32-update-lower-28 (fati i fat32$c)
-                                  268435455)
-           (mv-nth
-            0
-            (clear-cc
-             fat32$c
-             (d-e-first-cluster (mv-nth 0 (find-d-e (cdr d-e-list) name)))
-             (d-e-file-size (mv-nth 0 (find-d-e (cdr d-e-list) name))))))
-          (mv-nth 0 (find-d-e (cdr d-e-list) name))
-          (lofat-file->contents file)
-          (len (explode (lofat-file->contents file)))
-          i))
-        (place-d-e (cdr d-e-list)
-                   (d-e-set-first-cluster-file-size
-                    (mv-nth 0 (find-d-e (cdr d-e-list) name))
-                    i
-                    (len (explode (lofat-file->contents file)))))
-        (+
-         -1 entry-limit
-         (-
-          (hifat-entry-count
-           (mv-nth
-            0
-            (lofat-to-hifat-helper
-             fat32$c
-             (make-d-e-list (mv-nth 0
-                                    (d-e-cc-contents fat32$c (car d-e-list))))
-             (+ -1 entry-limit)))))))))
-     (strip-cars
-      (mv-nth
-       0
-       (lofat-to-hifat-helper
-        fat32$c (cdr d-e-list)
-        (+
-         -1 entry-limit
-         (-
-          (hifat-entry-count
-           (mv-nth
-            0
-            (lofat-to-hifat-helper
-             fat32$c
-             (make-d-e-list (mv-nth 0
-                                    (d-e-cc-contents fat32$c (car d-e-list))))
-             (+ -1 entry-limit))))))))))
-    (lofat-fs-p fat32$c)
-    (fat32-masked-entry-p i)
-    (lofat-regular-file-p file)
-    (useful-d-e-list-p d-e-list)
-    (<= 2 i)
-    (equal
-     (mv-nth
-      3
-      (lofat-to-hifat-helper
-       fat32$c
-       (make-d-e-list (mv-nth 0
-                              (d-e-cc-contents fat32$c (car d-e-list))))
-       (+ -1 entry-limit)))
-     0)
-    (not
-     (member-intersectp-equal
-      (mv-nth
-       2
-       (lofat-to-hifat-helper
-        fat32$c
-        (make-d-e-list (mv-nth 0
-                               (d-e-cc-contents fat32$c (car d-e-list))))
-        (+ -1 entry-limit)))
-      (mv-nth
-       2
-       (lofat-to-hifat-helper
-        fat32$c (cdr d-e-list)
-        (+
-         -1 entry-limit
-         (-
-          (hifat-entry-count
-           (mv-nth
-            0
-            (lofat-to-hifat-helper
-             fat32$c
-             (make-d-e-list (mv-nth 0
-                                    (d-e-cc-contents fat32$c (car d-e-list))))
-             (+ -1 entry-limit)))))))))))
-   (not
-    (consp
-     (assoc-equal
-      (d-e-filename (car d-e-list))
-      (mv-nth
-       0
-       (lofat-to-hifat-helper
-        (mv-nth
-         0
-         (place-contents
-          (update-fati
-           i
-           (fat32-update-lower-28 (fati i fat32$c)
-                                  268435455)
-           (mv-nth
-            0
-            (clear-cc
-             fat32$c
-             (d-e-first-cluster (mv-nth 0 (find-d-e (cdr d-e-list) name)))
-             (d-e-file-size (mv-nth 0 (find-d-e (cdr d-e-list) name))))))
-          (mv-nth 0 (find-d-e (cdr d-e-list) name))
-          (lofat-file->contents file)
-          (len (explode (lofat-file->contents file)))
-          i))
-        (place-d-e (cdr d-e-list)
-                   (d-e-set-first-cluster-file-size
-                    (mv-nth 0 (find-d-e (cdr d-e-list) name))
-                    i
-                    (len (explode (lofat-file->contents file)))))
-        (+
-         -1 entry-limit
-         (-
-          (hifat-entry-count
-           (mv-nth
-            0
-            (lofat-to-hifat-helper
-             (mv-nth
-              0
-              (place-contents
-               (update-fati
-                i
-                (fat32-update-lower-28 (fati i fat32$c)
-                                       268435455)
-                (mv-nth
-                 0
-                 (clear-cc
-                  fat32$c
-                  (d-e-first-cluster
-                   (mv-nth 0 (find-d-e (cdr d-e-list) name)))
-                  (d-e-file-size (mv-nth 0 (find-d-e (cdr d-e-list) name))))))
-               (mv-nth 0 (find-d-e (cdr d-e-list) name))
-               (lofat-file->contents file)
-               (len (explode (lofat-file->contents file)))
-               i))
-             (make-d-e-list (mv-nth 0
-                                    (d-e-cc-contents fat32$c (car d-e-list))))
-             (+ -1 entry-limit))))))))))))
-  :hints
-  (("goal"
-    :do-not-induct t
-    :in-theory
-    (disable (:rewrite member-of-strip-cars)
-             (:rewrite lofat-to-hifat-helper-of-clear-cc)
-             (:rewrite not-intersectp-list-of-lofat-to-hifat-helper)
-             (:rewrite lofat-place-file-correctness-lemma-82)
-             (:rewrite hifat-to-lofat-inversion-lemma-17)
-             (:definition member-intersectp-equal))
-    :use
-    (:instance
-     (:rewrite member-of-strip-cars)
-     (alist
-      (mv-nth
-       0
-       (lofat-to-hifat-helper
-        (mv-nth
-         0
-         (place-contents
-          (update-fati
-           i
-           (fat32-update-lower-28 (fati i fat32$c)
-                                  268435455)
-           (mv-nth
-            0
-            (clear-cc
-             fat32$c
-             (d-e-first-cluster (mv-nth 0 (find-d-e (cdr d-e-list) name)))
-             (d-e-file-size (mv-nth 0 (find-d-e (cdr d-e-list) name))))))
-          (mv-nth 0 (find-d-e (cdr d-e-list) name))
-          (lofat-file->contents file)
-          (len (explode (lofat-file->contents file)))
-          i))
-        (place-d-e (cdr d-e-list)
-                   (d-e-set-first-cluster-file-size
-                    (mv-nth 0 (find-d-e (cdr d-e-list) name))
-                    i
-                    (len (explode (lofat-file->contents file)))))
-        (+
-         -1 entry-limit
-         (-
-          (hifat-entry-count
-           (mv-nth
-            0
-            (lofat-to-hifat-helper
-             (mv-nth
-              0
-              (place-contents
-               (update-fati
-                i
-                (fat32-update-lower-28 (fati i fat32$c)
-                                       268435455)
-                (mv-nth
-                 0
-                 (clear-cc
-                  fat32$c
-                  (d-e-first-cluster
-                   (mv-nth 0 (find-d-e (cdr d-e-list) name)))
-                  (d-e-file-size (mv-nth 0 (find-d-e (cdr d-e-list) name))))))
-               (mv-nth 0 (find-d-e (cdr d-e-list) name))
-               (lofat-file->contents file)
-               (len (explode (lofat-file->contents file)))
-               i))
-             (make-d-e-list (mv-nth 0
-                                    (d-e-cc-contents fat32$c (car d-e-list))))
-             (+ -1 entry-limit)))))))))
-     (x (d-e-filename (car d-e-list)))))))
-
-(defthmd lofat-place-file-correctness-lemma-62
-  (equal (set-equiv (list* x1 x2 y1)
-                    (cons x2 y2))
-         (set-equiv (remove-equal x2 (list* x1 y1))
-                    (remove-equal x2 y2)))
-  :instructions ((:dive 1 1)
-                 (:rewrite commutativity-2-of-cons-under-flatten-equiv-lemma-1)
-                 :up (:rewrite cons-equal-under-set-equiv-1)
-                 :top :bash))
-
-(defthm
-  lofat-place-file-correctness-lemma-63
-  (implies
-   (flatten-equiv
-    (mv-nth
-     2
-     (lofat-to-hifat-helper
-      (mv-nth
-       0
-       (place-contents
-        (update-fati
-         i
-         (fat32-update-lower-28 (fati i fat32$c)
-                                268435455)
-         (mv-nth
-          0
-          (clear-cc
-           fat32$c
-           (d-e-first-cluster
-            (mv-nth 0
-                    (find-d-e d-e-list name)))
-           (d-e-file-size (mv-nth 0
-                                      (find-d-e d-e-list
-                                                    name))))))
-        (mv-nth 0
-                (find-d-e d-e-list name))
-        (lofat-file->contents file)
-        (len (explode (lofat-file->contents file)))
-        i))
-      (place-d-e d-e-list
-                     (d-e-set-first-cluster-file-size
-                      (mv-nth 0
-                              (find-d-e d-e-list name))
-                      i
-                      (len (explode (lofat-file->contents file)))))
-      entry-limit))
-    (cons
-     (cons
-      i
-      (find-n-free-clusters
-       (update-nth
-        i
-        (fat32-update-lower-28 (fati i fat32$c)
-                               268435455)
-        (set-indices-in-fa-table
-         (effective-fat fat32$c)
-         (mv-nth
-          0
-          (d-e-cc fat32$c
-                                (mv-nth 0
-                                        (find-d-e d-e-list
-                                                      name))))
-         (make-list-ac
-          (len
-           (mv-nth
-            0
-            (d-e-cc fat32$c
-                                  (mv-nth 0
-                                          (find-d-e d-e-list
-                                                        name)))))
-          0 nil)))
-       (+ -1
-          (len (make-clusters (lofat-file->contents file)
-                              (cluster-size fat32$c))))))
-     (remove-equal
-      (mv-nth 0
-              (d-e-cc fat32$c
-                                    (mv-nth 0
-                                            (find-d-e d-e-list
-                                                          name))))
-      (mv-nth 2
-              (lofat-to-hifat-helper fat32$c d-e-list
-                                     entry-limit)))))
-   (flatten-equiv
-    (list*
-     (cons
-      i
-      (find-n-free-clusters
-       (update-nth
-        i
-        (fat32-update-lower-28 (fati i fat32$c)
-                               268435455)
-        (set-indices-in-fa-table
-         (effective-fat fat32$c)
-         (mv-nth
-          0
-          (d-e-cc fat32$c
-                                (mv-nth 0
-                                        (find-d-e d-e-list
-                                                      name))))
-         (make-list-ac
-          (len
-           (mv-nth
-            0
-            (d-e-cc fat32$c
-                                  (mv-nth 0
-                                          (find-d-e d-e-list
-                                                        name)))))
-          0 nil)))
-       (+ -1
-          (len (make-clusters (lofat-file->contents file)
-                              (cluster-size fat32$c))))))
-     (mv-nth 0
-             (d-e-cc fat32$c d-e))
-     (remove-equal
-      (mv-nth 0
-              (d-e-cc fat32$c
-                                    (mv-nth 0
-                                            (find-d-e d-e-list
-                                                          name))))
-      (mv-nth 2
-              (lofat-to-hifat-helper fat32$c d-e-list
-                                     entry-limit))))
-    (cons
-     (mv-nth 0
-             (d-e-cc fat32$c d-e))
-     (mv-nth
-      2
-      (lofat-to-hifat-helper
-       (mv-nth
-        0
-        (place-contents
-         (update-fati
-          i
-          (fat32-update-lower-28 (fati i fat32$c)
-                                 268435455)
-          (mv-nth
-           0
-           (clear-cc
-            fat32$c
-            (d-e-first-cluster
-             (mv-nth 0
-                     (find-d-e d-e-list name)))
-            (d-e-file-size (mv-nth 0
-                                       (find-d-e d-e-list
-                                                     name))))))
-         (mv-nth 0
-                 (find-d-e d-e-list name))
-         (lofat-file->contents file)
-         (len (explode (lofat-file->contents file)))
-         i))
-       (place-d-e d-e-list
-                      (d-e-set-first-cluster-file-size
-                       (mv-nth 0
-                               (find-d-e d-e-list name))
-                       i
-                       (len (explode (lofat-file->contents file)))))
-       entry-limit)))))
-  :instructions
-  (:promote
-   (:=
-    (mv-nth
-     2
-     (lofat-to-hifat-helper
-      (mv-nth
-       0
-       (place-contents
-        (update-fati
-         i
-         (fat32-update-lower-28 (fati i fat32$c)
-                                268435455)
-         (mv-nth
-          0
-          (clear-cc
-           fat32$c
-           (d-e-first-cluster
-            (mv-nth 0
-                    (find-d-e d-e-list name)))
-           (d-e-file-size (mv-nth 0
-                                      (find-d-e d-e-list
-                                                    name))))))
-        (mv-nth 0
-                (find-d-e d-e-list name))
-        (lofat-file->contents file)
-        (len (explode (lofat-file->contents file)))
-        i))
-      (place-d-e d-e-list
-                     (d-e-set-first-cluster-file-size
-                      (mv-nth 0
-                              (find-d-e d-e-list name))
-                      i
-                      (len (explode (lofat-file->contents file)))))
-      entry-limit))
-    (cons
-     (cons
-      i
-      (find-n-free-clusters
-       (update-nth
-        i
-        (fat32-update-lower-28 (fati i fat32$c)
-                               268435455)
-        (set-indices-in-fa-table
-         (effective-fat fat32$c)
-         (mv-nth
-          0
-          (d-e-cc fat32$c
-                                (mv-nth 0
-                                        (find-d-e d-e-list
-                                                      name))))
-         (make-list-ac
-          (len
-           (mv-nth
-            0
-            (d-e-cc fat32$c
-                                  (mv-nth 0
-                                          (find-d-e d-e-list
-                                                        name)))))
-          0 nil)))
-       (+ -1
-          (len (make-clusters (lofat-file->contents file)
-                              (cluster-size fat32$c))))))
-     (remove-equal
-      (mv-nth 0
-              (d-e-cc fat32$c
-                                    (mv-nth 0
-                                            (find-d-e d-e-list
-                                                          name))))
-      (mv-nth 2
-              (lofat-to-hifat-helper fat32$c d-e-list
-                                     entry-limit))))
-    :equiv flatten-equiv)
-   :bash))
-
-(defthm
-  lofat-place-file-correctness-lemma-125
-  (implies
-   (and
-    (equal (fat32-entry-mask (fati i fat32$c))
-           0)
-    (<= 2
-        (d-e-first-cluster (mv-nth 0
-                                       (find-d-e d-e-list
-                                                     name))))
-    (< (d-e-first-cluster (mv-nth 0
-                                      (find-d-e d-e-list name)))
-       (+ 2 (count-of-clusters fat32$c)))
-    (equal
-     (mv-nth
-      3
-      (lofat-to-hifat-helper
-       fat32$c d-e-list
-       (+
-        -1 entry-limit
-        (-
-         (hifat-entry-count
-          (mv-nth 0
-                  (lofat-to-hifat-helper
-                   fat32$c
-                   (make-d-e-list
-                    (mv-nth 0
-                            (d-e-cc-contents
-                             fat32$c d-e)))
-                   entry-limit)))))))
-     0)
-    (flatten-equiv
-     (mv-nth
-      2
-      (lofat-to-hifat-helper
-       (mv-nth
-        0
-        (place-contents
-         (update-fati
-          i
-          (fat32-update-lower-28 (fati i fat32$c)
-                                 268435455)
-          (mv-nth
-           0
-           (clear-cc
-            fat32$c
-            (d-e-first-cluster
-             (mv-nth 0
-                     (find-d-e d-e-list name)))
-            (d-e-file-size (mv-nth 0
-                                       (find-d-e d-e-list
-                                                     name))))))
-         (mv-nth 0
-                 (find-d-e d-e-list name))
-         (lofat-file->contents file)
-         (len (explode (lofat-file->contents file)))
-         i))
-       (place-d-e d-e-list
-                      (d-e-set-first-cluster-file-size
-                       (mv-nth 0
-                               (find-d-e d-e-list name))
-                       i
-                       (len (explode (lofat-file->contents file)))))
-       (+
-        -1 entry-limit
-        (-
-         (hifat-entry-count
-          (mv-nth 0
-                  (lofat-to-hifat-helper
-                   fat32$c
-                   (make-d-e-list
-                    (mv-nth 0
-                            (d-e-cc-contents
-                             fat32$c d-e)))
-                   entry-limit)))))))
-     (cons
-      (cons
-       i
-       (find-n-free-clusters
-        (update-nth
-         i
-         (fat32-update-lower-28 (fati i fat32$c)
-                                268435455)
-         (set-indices-in-fa-table
-          (effective-fat fat32$c)
-          (mv-nth
-           0
-           (d-e-cc fat32$c
-                                 (mv-nth 0
-                                         (find-d-e d-e-list
-                                                       name))))
-          (make-list-ac
-           (len
-            (mv-nth
-             0
-             (d-e-cc fat32$c
-                                   (mv-nth 0
-                                           (find-d-e d-e-list
-                                                         name)))))
-           0 nil)))
-        (+ -1
-           (len (make-clusters (lofat-file->contents file)
-                               (cluster-size fat32$c))))))
-      (remove-equal
-       (mv-nth 0
-               (d-e-cc fat32$c
-                                     (mv-nth 0
-                                             (find-d-e d-e-list
-                                                           name))))
-       (mv-nth
-        2
-        (lofat-to-hifat-helper
-         fat32$c d-e-list
-         (+
-          -1 entry-limit
-          (-
-           (hifat-entry-count
-            (mv-nth
-             0
-             (lofat-to-hifat-helper
-              fat32$c
-              (make-d-e-list
-               (mv-nth 0
-                       (d-e-cc-contents
-                        fat32$c d-e)))
-              entry-limit))))))))))
-    (< i
-       (+ 2 (count-of-clusters fat32$c)))
-    (fat32-masked-entry-p i)
-    (useful-d-e-list-p d-e-list)
-    (equal
-     (mv-nth
-      3
-      (lofat-to-hifat-helper
-       fat32$c
-       (make-d-e-list
-        (mv-nth
-         0
-         (d-e-cc-contents fat32$c d-e)))
-       entry-limit))
-     0)
-    (not
-     (member-intersectp-equal
-      (mv-nth
-       2
-       (lofat-to-hifat-helper
-        fat32$c
-        (make-d-e-list
-         (mv-nth
-          0
-          (d-e-cc-contents fat32$c d-e)))
-        entry-limit))
-      (mv-nth
-       2
-       (lofat-to-hifat-helper
-        fat32$c d-e-list
-        (+
-         -1 entry-limit
-         (-
-          (hifat-entry-count
-           (mv-nth
-            0
-            (lofat-to-hifat-helper
-             fat32$c
-             (make-d-e-list
-              (mv-nth 0
-                      (d-e-cc-contents
-                       fat32$c d-e)))
-             entry-limit))))))))))
-   (not
-    (member-intersectp-equal
-     (mv-nth
-      2
-      (lofat-to-hifat-helper
-       fat32$c
-       (make-d-e-list
-        (mv-nth
-         0
-         (d-e-cc-contents fat32$c d-e)))
-       entry-limit))
-     (mv-nth
-      2
-      (lofat-to-hifat-helper
-       (mv-nth
-        0
-        (place-contents
-         (update-fati
-          i
-          (fat32-update-lower-28 (fati i fat32$c)
-                                 268435455)
-          (mv-nth
-           0
-           (clear-cc
-            fat32$c
-            (d-e-first-cluster
-             (mv-nth 0
-                     (find-d-e d-e-list name)))
-            (d-e-file-size (mv-nth 0
-                                       (find-d-e d-e-list
-                                                     name))))))
-         (mv-nth 0
-                 (find-d-e d-e-list name))
-         (lofat-file->contents file)
-         (len (explode (lofat-file->contents file)))
-         i))
-       (place-d-e d-e-list
-                      (d-e-set-first-cluster-file-size
-                       (mv-nth 0
-                               (find-d-e d-e-list name))
-                       i
-                       (len (explode (lofat-file->contents file)))))
-       (+
-        -1 entry-limit
-        (-
-         (hifat-entry-count
-          (mv-nth 0
-                  (lofat-to-hifat-helper
-                   fat32$c
-                   (make-d-e-list
-                    (mv-nth 0
-                            (d-e-cc-contents
-                             fat32$c d-e)))
-                   entry-limit))))))))))
-  :instructions
-  (:promote
-   (:=
-    (mv-nth
-     2
-     (lofat-to-hifat-helper
-      (mv-nth
-       0
-       (place-contents
-        (update-fati
-         i
-         (fat32-update-lower-28 (fati i fat32$c)
-                                268435455)
-         (mv-nth
-          0
-          (clear-cc
-           fat32$c
-           (d-e-first-cluster
-            (mv-nth 0
-                    (find-d-e d-e-list name)))
-           (d-e-file-size (mv-nth 0
-                                      (find-d-e d-e-list
-                                                    name))))))
-        (mv-nth 0
-                (find-d-e d-e-list name))
-        (lofat-file->contents file)
-        (len (explode (lofat-file->contents file)))
-        i))
-      (place-d-e d-e-list
-                     (d-e-set-first-cluster-file-size
-                      (mv-nth 0
-                              (find-d-e d-e-list name))
-                      i
-                      (len (explode (lofat-file->contents file)))))
-      (+
-       -1 entry-limit
-       (-
-        (hifat-entry-count
-         (mv-nth 0
-                 (lofat-to-hifat-helper
-                  fat32$c
-                  (make-d-e-list
-                   (mv-nth 0
-                           (d-e-cc-contents
-                            fat32$c d-e)))
-                  entry-limit)))))))
-    (cons
-     (cons
-      i
-      (find-n-free-clusters
-       (update-nth
-        i
-        (fat32-update-lower-28 (fati i fat32$c)
-                               268435455)
-        (set-indices-in-fa-table
-         (effective-fat fat32$c)
-         (mv-nth
-          0
-          (d-e-cc fat32$c
-                                (mv-nth 0
-                                        (find-d-e d-e-list
-                                                      name))))
-         (make-list-ac
-          (len
-           (mv-nth
-            0
-            (d-e-cc fat32$c
-                                  (mv-nth 0
-                                          (find-d-e d-e-list
-                                                        name)))))
-          0 nil)))
-       (+ -1
-          (len (make-clusters (lofat-file->contents file)
-                              (cluster-size fat32$c))))))
-     (remove-equal
-      (mv-nth 0
-              (d-e-cc fat32$c
-                                    (mv-nth 0
-                                            (find-d-e d-e-list
-                                                          name))))
-      (mv-nth
-       2
-       (lofat-to-hifat-helper
-        fat32$c d-e-list
-        (+
-         -1 entry-limit
-         (-
-          (hifat-entry-count
-           (mv-nth
-            0
-            (lofat-to-hifat-helper
-             fat32$c
-             (make-d-e-list
-              (mv-nth 0
-                      (d-e-cc-contents
-                       fat32$c d-e)))
-             entry-limit)))))))))
-    :equiv flatten-equiv)
-   (:dive 1)
-   (:rewrite member-intersectp-is-commutative)
-   :x :top
-   :bash :bash))
-
-(defthm
-  lofat-place-file-correctness-lemma-114
-  (implies
-   (and
-    (<=
-     (len
-      (make-clusters
-       (nats=>string
-        (insert-d-e
-         (string=>nats
-          (mv-nth 0
-                  (d-e-cc-contents fat32$c d-e)))
-         (d-e-set-first-cluster-file-size
-          (mv-nth 0 (find-d-e d-e-list name))
-          (nth
-           0
-           (find-n-free-clusters
-            (set-indices-in-fa-table
-             (effective-fat fat32$c)
-             (mv-nth 0
-                     (d-e-cc
-                      fat32$c
-                      (mv-nth 0 (find-d-e d-e-list name))))
-             (make-list-ac
-              (len (mv-nth 0
-                           (d-e-cc
-                            fat32$c
-                            (mv-nth 0 (find-d-e d-e-list name)))))
-              0 nil))
-            1))
-          (len (explode (lofat-file->contents file))))))
-       (cluster-size fat32$c)))
-     (+
-      (count-free-clusters (effective-fat fat32$c))
-      (- (len (make-clusters (lofat-file->contents file)
-                             (cluster-size fat32$c))))
-      (len (mv-nth 0
-                   (d-e-cc fat32$c d-e)))
-      (len
-       (mv-nth
-        0
-        (d-e-cc fat32$c
-                              (mv-nth 0 (find-d-e d-e-list name)))))))
-    (lofat-fs-p fat32$c))
-   (not
-    (<
-     (+
-      -1
-      (count-free-clusters (effective-fat fat32$c))
-      (- (len (make-clusters (lofat-file->contents file)
-                             (cluster-size fat32$c))))
-      (len (mv-nth 0
-                   (d-e-cc fat32$c d-e)))
-      (len
-       (mv-nth
-        0
-        (d-e-cc fat32$c
-                              (mv-nth 0 (find-d-e d-e-list name))))))
-     0)))
-  :hints (("Goal" :do-not-induct t)))
 
 (defthm
   lofat-place-file-correctness-lemma-93
@@ -17393,167 +11392,7 @@ Some (rather awful) testing forms are
     :use lofat-to-hifat-helper-correctness-4)))
 
 (defthm
-  lofat-place-file-correctness-lemma-47
-  (implies
-   (and
-    (equal (len (mv-nth 0 (d-e-cc fat32$c d-e)))
-           (+ 1
-              (- (count-free-clusters (effective-fat fat32$c)))))
-    (equal (mv-nth 1 (d-e-cc-contents fat32$c d-e))
-           0)
-    (no-duplicatesp-equal (mv-nth 0 (d-e-cc fat32$c d-e)))
-    (fat32-masked-entry-p i)
-    (<= 2 i)
-    (< i (+ 2 (count-of-clusters fat32$c)))
-    (equal
-     (fat32-entry-mask
-      (nth
-       i
-       (set-indices-in-fa-table
-        (effective-fat fat32$c)
-        (mv-nth 0 (d-e-cc fat32$c d-e))
-        (make-list-ac (+ 1
-                         (- (count-free-clusters (effective-fat fat32$c))))
-                      0 nil))))
-     0))
-   (atom
-    (find-n-free-clusters
-     (update-nth
-      i
-      (fat32-update-lower-28 (fati i fat32$c)
-                             268435455)
-      (set-indices-in-fa-table
-       (effective-fat fat32$c)
-       (mv-nth 0 (d-e-cc fat32$c d-e))
-       (make-list-ac (+ 1
-                        (- (count-free-clusters (effective-fat fat32$c))))
-                     0 nil)))
-     (+ -1
-        (len (make-clusters
-              (make-empty-subdir-contents i (d-e-first-cluster root-d-e))
-              (cluster-size fat32$c)))))))
-  :hints
-  (("goal"
-    :in-theory
-    (e/d
-     (lofat-to-hifat-helper not-intersectp-list)
-     ((:rewrite nth-of-nats=>chars)
-      (:linear nth-when-d-e-p)
-      (:rewrite explode-of-d-e-filename)
-      (:rewrite lofat-to-hifat-helper-of-clear-cc)
-      (:rewrite subdir-contents-p-when-zero-length)
-      (:rewrite natp-of-car-when-nat-listp)
-      (:rewrite integerp-of-car-when-integer-listp)
-      (:rewrite make-d-e-list-of-clear-d-e-lemma-1)
-      (:rewrite subsetp-when-atom-right)
-      (:rewrite d-e-cc-contents-of-update-dir-contents-coincident)
-      (:definition char)
-      (:definition binary-append)
-      (:rewrite d-e-p-when-member-equal-of-d-e-list-p)
-      (:rewrite len-of-nats=>chars)
-      (:rewrite len-of-insert-d-e)
-      (:rewrite subsetp-when-atom-left)
-      (:rewrite str::explode-when-not-stringp)
-      (:rewrite
-       fat32-build-index-list-of-effective-fat-of-place-contents-disjoint)
-      (:rewrite member-when-atom)
-      (:rewrite m1-file-alist-p-of-cdr-when-m1-file-alist-p)
-      (:rewrite d-e-cc-contents-of-update-dir-contents-disjoint)
-      (:rewrite non-free-index-listp-of-update-nth)
-      (:rewrite nth-of-set-indices-in-fa-table-when-member)
-      (:rewrite d-e-list-p-of-cdr-when-d-e-list-p)
-      (:rewrite natp-of-car-when-nat-listp)
-      (:definition make-list-ac)
-      (:rewrite useful-d-e-list-p-of-place-d-e)
-      (:rewrite nth-of-set-indices-in-fa-table-when-member)
-      (:rewrite intersectp-when-subsetp)
-      (:rewrite subsetp-car-member)
-      (:rewrite hifat-to-lofat-inversion-lemma-2)
-      (:rewrite subsetp-implies-subsetp-cdr)
-      (:definition assoc-equal)
-      (:rewrite place-contents-expansion-2)
-      (:rewrite assoc-of-car-when-member)
-      (:rewrite flatten-subset-no-duplicatesp-lemma-2)
-      (:rewrite consp-of-assoc-of-hifat-file-alist-fix)
-      (:rewrite put-assoc-equal-without-change . 2)
-      (:rewrite fat32-filename-p-correctness-1)
-      (:rewrite free-index-listp-correctness-1)
-      (:rewrite stringp-when-nonempty-stringp)
-      (:rewrite m1-file-alist-p-when-subsetp-equal)
-      (:rewrite d-e-cc-of-update-dir-contents)
-      (:rewrite d-e-cc-of-clear-cc)
-      (:rewrite d-e-cc-contents-of-clear-cc)
-      (:rewrite lofat-find-file-correctness-1-lemma-7)
-      (:rewrite lofat-to-hifat-helper-of-update-dir-contents)
-      (:rewrite lofat-place-file-correctness-lemma-82)
-      (:rewrite natp-of-caar-when-file-table-p)
-      (:rewrite natp-of-caar-when-fd-table-p)
-      (:rewrite m1-regular-file-p-correctness-1)
-      (:rewrite member-intersectp-is-commutative-lemma-2)
-      (:rewrite fati-of-clear-cc . 3)
-      (:rewrite hifat-no-dups-p-of-cdr)
-      (:rewrite file-table-p-when-subsetp-equal)
-      (:rewrite fd-table-p-when-subsetp-equal)
-      (:rewrite effective-fat-of-clear-cc . 3)
-      (:rewrite effective-fat-of-clear-cc . 2)
-      (:rewrite file-table-p-when-not-consp)
-      (:rewrite d-e-cc-contents-of-lofat-remove-file-disjoint-lemma-4)
-      (:definition len)
-      (:rewrite m1-file-p-of-cdar-when-m1-file-alist-p)
-      (:rewrite m1-file-alist-p-of-lofat-to-hifat-helper)
-      (:rewrite not-intersectp-list-when-subsetp-1)
-      (:rewrite m1-directory-file-p-when-m1-file-p)
-      (:rewrite m1-file-fix-when-m1-file-p)
-      (:definition nfix)
-      (:rewrite fat32-filename-fix-when-fat32-filename-p)
-      (:type-prescription assoc-when-zp-len)))
-    :do-not-induct t))
-  :rule-classes
-  ((:rewrite
-    :corollary
-    (implies
-     (and
-      (equal (len (mv-nth 0 (d-e-cc fat32$c d-e)))
-             (+ 1
-                (- (count-free-clusters (effective-fat fat32$c)))))
-      (equal (mv-nth 1 (d-e-cc-contents fat32$c d-e))
-             0)
-      (no-duplicatesp-equal (mv-nth 0 (d-e-cc fat32$c d-e)))
-      (fat32-masked-entry-p i)
-      (<= 2 i)
-      (< i (+ 2 (count-of-clusters fat32$c)))
-      (equal
-       (fat32-entry-mask
-        (nth
-         i
-         (set-indices-in-fa-table
-          (effective-fat fat32$c)
-          (mv-nth 0 (d-e-cc fat32$c d-e))
-          (make-list-ac (+ 1
-                           (- (count-free-clusters (effective-fat fat32$c))))
-                        0 nil))))
-       0))
-     (equal
-      (find-n-free-clusters
-       (update-nth
-        i
-        (fat32-update-lower-28 (fati i fat32$c)
-                               268435455)
-        (set-indices-in-fa-table
-         (effective-fat fat32$c)
-         (mv-nth 0 (d-e-cc fat32$c d-e))
-         (make-list-ac (+ 1
-                          (- (count-free-clusters (effective-fat fat32$c))))
-                       0 nil)))
-       (+
-        -1
-        (len (make-clusters
-              (make-empty-subdir-contents i (d-e-first-cluster root-d-e))
-              (cluster-size fat32$c)))))
-      nil)))))
-
-(defthm
-  lofat-place-file-correctness-lemma-73
+  lofat-place-file-correctness-lemma-62
   (implies
    (and
     (not
@@ -17601,57 +11440,11 @@ Some (rather awful) testing forms are
                             (d-e-list d-e-list2))))))
 
 (defthm
-  lofat-place-file-correctness-lemma-81
-  (implies
-   (and
-    (hifat-equiv
-     fs1
-     (put-assoc-equal
-      name
-      (m1-file
-       d-e
-       (mv-nth 0
-               (hifat-place-file
-                (mv-nth 0
-                        (lofat-to-hifat-helper fat32$c
-                                               d-e-list entry-limit1))
-                path file)))
-      fs2))
-    (equal (mv-nth 3
-                   (lofat-to-hifat-helper fat32$c
-                                          d-e-list entry-limit1))
-           0)
-    (>= (nfix entry-limit2)
-        (mv-nth 1
-                (lofat-to-hifat-helper fat32$c
-                                       d-e-list entry-limit1))))
-   (equal
-    (hifat-equiv
-     (cons x fs1)
-     (cons
-      x
-      (put-assoc-equal
-       name
-       (m1-file
-        d-e
-        (mv-nth 0
-                (hifat-place-file
-                 (mv-nth 0
-                         (lofat-to-hifat-helper fat32$c
-                                                d-e-list entry-limit2))
-                 path file)))
-       fs2)))
-    t))
-  :hints (("goal" :do-not-induct t
-           :in-theory (disable lofat-to-hifat-helper-correctness-4)
-           :use lofat-to-hifat-helper-correctness-4)))
-
-(defthm
   lofat-place-file-correctness-lemma-48
   (implies
    (and
     (d-e-directory-p (mv-nth 0
-                                 (find-d-e d-e-list name)))
+                             (find-d-e d-e-list name)))
     (equal (mv-nth 3
                    (lofat-to-hifat-helper fat32$c d-e-list
                                           entry-limit1))
@@ -17666,7 +11459,7 @@ Some (rather awful) testing forms are
                            fat32$c
                            (mv-nth 0
                                    (find-d-e d-e-list
-                                                 name)))))
+                                             name)))))
                  entry-limit1)))
     (useful-d-e-list-p d-e-list))
    (equal
@@ -17684,7 +11477,7 @@ Some (rather awful) testing forms are
                    fat32$c
                    (mv-nth 0
                            (find-d-e d-e-list
-                                         name)))))
+                                     name)))))
          entry-limit2))
        path file))
      (mv-nth
@@ -17700,23 +11493,23 @@ Some (rather awful) testing forms are
                    fat32$c
                    (mv-nth 0
                            (find-d-e d-e-list
-                                         name)))))
+                                     name)))))
          entry-limit1))
        path file)))
     t))
- :hints
- (("goal"
-   :use
-   (:instance
-    lofat-to-hifat-helper-correctness-4
-    (d-e-list
-     (make-d-e-list (mv-nth 0
-                                (d-e-cc-contents
-                                     fat32$c
-                                     (mv-nth 0
-                                             (find-d-e d-e-list
-                                                           name))))))
-    (fat32$c fat32$c)))))
+  :hints
+  (("goal"
+    :use
+    (:instance
+     lofat-to-hifat-helper-correctness-4
+     (d-e-list
+      (make-d-e-list (mv-nth 0
+                             (d-e-cc-contents
+                              fat32$c
+                              (mv-nth 0
+                                      (find-d-e d-e-list
+                                                name))))))
+     (fat32$c fat32$c)))))
 
 (defthm
   lofat-place-file-correctness-lemma-95
@@ -17808,40 +11601,7 @@ Some (rather awful) testing forms are
      (fat32$c fat32$c)))))
 
 (defthm
-  lofat-place-file-correctness-lemma-112
-  (implies
-   (and
-    (equal (mv-nth 1
-                   (fat32-build-index-list fa-table masked-current-cluster
-                                           length cluster-size))
-           0)
-    (>
-     (len fa-table)
-     (fat32-entry-mask
-      (nth
-       (car
-        (last (mv-nth 0
-                      (fat32-build-index-list fa-table masked-current-cluster
-                                              length cluster-size))))
-       fa-table))))
-   (fat32-is-eof
-    (fat32-entry-mask
-     (nth
-      (car
-       (last (mv-nth 0
-                     (fat32-build-index-list fa-table masked-current-cluster
-                                             length cluster-size))))
-      fa-table))))
-  :hints (("goal" :in-theory (enable fat32-build-index-list))))
-
-;; This is a more general form of a theorem in the prefixp book, I think...
-(defthm lofat-place-file-correctness-lemma-117
-  (implies (prefixp x y)
-           (prefixp x (append y z)))
-  :hints (("goal" :in-theory (enable prefixp))))
-
-(defthm
-  lofat-place-file-correctness-lemma-119
+  lofat-place-file-correctness-lemma-63
   (<
    (binary-*
     (cluster-size fat32$c)
@@ -17903,41 +11663,7 @@ Some (rather awful) testing forms are
            :in-theory (enable d-e-cc fat32-build-index-list))))
 
 (defthm
-  lofat-place-file-correctness-lemma-128
-  (implies
-   (consp
-    (cdr (mv-nth 0
-                 (fat32-build-index-list (effective-fat fat32$c)
-                                         (d-e-first-cluster d-e)
-                                         2097152 (cluster-size fat32$c)))))
-   (equal
-    (fat32-build-index-list
-     (update-nth
-      (d-e-first-cluster d-e)
-      (fat32-update-lower-28 (fati (d-e-first-cluster d-e) fat32$c)
-                             268435455)
-      (set-indices-in-fa-table
-       (effective-fat fat32$c)
-       (mv-nth 0
-               (fat32-build-index-list (effective-fat fat32$c)
-                                       (d-e-first-cluster d-e)
-                                       2097152 (cluster-size fat32$c)))
-       (make-list-ac
-        (len
-         (cdr
-          (mv-nth 0
-                  (fat32-build-index-list (effective-fat fat32$c)
-                                          (d-e-first-cluster d-e)
-                                          2097152 (cluster-size fat32$c)))))
-        0 '(0))))
-     (d-e-first-cluster d-e)
-     2097152 (cluster-size fat32$c))
-    (mv (list (d-e-first-cluster d-e)) 0)))
-  :hints (("goal" :do-not-induct t
-           :in-theory (enable fat32-build-index-list))))
-
-(defthm
-  lofat-place-file-correctness-lemma-129
+  lofat-place-file-correctness-lemma-67
   (implies
    (and
     (consp
@@ -17978,63 +11704,7 @@ Some (rather awful) testing forms are
   (local (include-book "std/lists/prefixp" :dir :system))
 
   (defthm
-    lofat-place-file-correctness-lemma-126
-    (implies
-     (and
-      (lofat-fs-p fat32$c)
-      (d-e-directory-p d-e)
-      (equal (mv-nth 1 (d-e-cc-contents fat32$c d-e))
-             0)
-      (not
-       (intersectp-equal
-        x
-        (mv-nth 0
-                (fat32-build-index-list (effective-fat fat32$c)
-                                        (d-e-first-cluster d-e)
-                                        2097152 (cluster-size fat32$c)))))
-      (not
-       (consp
-        (cdr (mv-nth 0
-                     (fat32-build-index-list (effective-fat fat32$c)
-                                             (d-e-first-cluster d-e)
-                                             2097152 (cluster-size fat32$c)))))))
-     (not
-      (intersectp-equal
-       x
-       (mv-nth
-        0
-        (fat32-build-index-list
-         (set-indices-in-fa-table
-          (update-nth
-           (d-e-first-cluster d-e)
-           (fat32-update-lower-28 (fati (d-e-first-cluster d-e) fat32$c)
-                                  268435455)
-           (set-indices-in-fa-table
-            (effective-fat fat32$c)
-            (mv-nth 0
-                    (fat32-build-index-list (effective-fat fat32$c)
-                                            (d-e-first-cluster d-e)
-                                            2097152 (cluster-size fat32$c)))
-            '(0)))
-          (mv-nth 0
-                  (fat32-build-index-list (effective-fat fat32$c)
-                                          (d-e-first-cluster d-e)
-                                          2097152 (cluster-size fat32$c)))
-          (list (fat32-entry-mask (fati (d-e-first-cluster d-e)
-                                        fat32$c))))
-         (d-e-first-cluster d-e)
-         2097152 (cluster-size fat32$c))))))
-    :hints
-    (("goal" :do-not-induct t
-      :in-theory (enable place-contents-correctness-1
-                         d-e-cc d-e-cc-contents
-                         fat32-build-index-list get-cc-contents)
-      :expand (fat32-build-index-list (effective-fat fat32$c)
-                                      (d-e-first-cluster d-e)
-                                      2097152 (cluster-size fat32$c)))))
-
-  (defthm
-    lofat-place-file-correctness-lemma-130
+    lofat-place-file-correctness-lemma-69
     (implies
      (and
       (lofat-fs-p fat32$c)
@@ -18204,107 +11874,8 @@ Some (rather awful) testing forms are
     :hints (("goal" :do-not-induct t
              :in-theory (enable d-e-cc fat32-build-index-list))))
 
-  (defthm
-    lofat-place-file-correctness-lemma-124
-    (implies
-     (and
-      (lofat-fs-p fat32$c)
-      (d-e-p d-e)
-      (d-e-directory-p d-e)
-      (<= 2 (d-e-first-cluster d-e))
-      (equal (mv-nth 1 (d-e-cc-contents fat32$c d-e))
-             0)
-      (not
-       (member-equal
-        (d-e-first-cluster d-e)
-        (cdr (mv-nth 0
-                     (fat32-build-index-list (effective-fat fat32$c)
-                                             (d-e-first-cluster d-e)
-                                             2097152 (cluster-size fat32$c))))))
-      (no-duplicatesp-equal
-       (cdr (mv-nth 0
-                    (fat32-build-index-list (effective-fat fat32$c)
-                                            (d-e-first-cluster d-e)
-                                            2097152 (cluster-size fat32$c)))))
-      (not
-       (intersectp-equal
-        x
-        (mv-nth 0
-                (fat32-build-index-list (effective-fat fat32$c)
-                                        (d-e-first-cluster d-e)
-                                        2097152 (cluster-size fat32$c)))))
-      (< 0 (cluster-size fat32$c))
-      (consp
-       (cdr (mv-nth 0
-                    (fat32-build-index-list (effective-fat fat32$c)
-                                            (d-e-first-cluster d-e)
-                                            2097152 (cluster-size fat32$c)))))
-      (< (d-e-first-cluster d-e)
-         (+ 2 (count-of-clusters fat32$c))))
-     (not
-      (intersectp-equal
-       x
-       (mv-nth
-        0
-        (fat32-build-index-list
-         (set-indices-in-fa-table
-          (update-nth
-           (d-e-first-cluster d-e)
-           (fat32-update-lower-28 (fati (d-e-first-cluster d-e) fat32$c)
-                                  268435455)
-           (set-indices-in-fa-table
-            (effective-fat fat32$c)
-            (mv-nth 0
-                    (fat32-build-index-list (effective-fat fat32$c)
-                                            (d-e-first-cluster d-e)
-                                            2097152 (cluster-size fat32$c)))
-            (make-list-ac
-             (len
-              (cdr
-               (mv-nth
-                0
-                (fat32-build-index-list (effective-fat fat32$c)
-                                        (d-e-first-cluster d-e)
-                                        2097152 (cluster-size fat32$c)))))
-             0 '(0))))
-          (mv-nth 0
-                  (fat32-build-index-list (effective-fat fat32$c)
-                                          (d-e-first-cluster d-e)
-                                          2097152 (cluster-size fat32$c)))
-          (append
-           (cdr
-            (mv-nth 0
-                    (fat32-build-index-list (effective-fat fat32$c)
-                                            (d-e-first-cluster d-e)
-                                            2097152 (cluster-size fat32$c))))
-           (list
-            (fat32-entry-mask
-             (fati
-              (car
-               (last
-                (cdr
-                 (mv-nth
-                  0
-                  (fat32-build-index-list (effective-fat fat32$c)
-                                          (d-e-first-cluster d-e)
-                                          2097152 (cluster-size fat32$c))))))
-              fat32$c)))))
-         (d-e-first-cluster d-e)
-         2097152 (cluster-size fat32$c))))))
-    :hints
-    (("goal"
-      :do-not-induct t
-      :in-theory
-      (e/d (place-contents-correctness-1 d-e-cc
-                                         d-e-cc-contents fat32-build-index-list)
-           (lofat-place-file-correctness-lemma-123))
-      :use (:instance (:linear lofat-place-file-correctness-lemma-123)
-                      (length 2097152)
-                      (masked-current-cluster (d-e-first-cluster d-e))
-                      (fat32$c fat32$c)))))
-
-  (defthm
-    lofat-place-file-correctness-lemma-133
+  (defthmd
+    lofat-place-file-correctness-lemma-15
     (implies
      (and (lofat-fs-p fat32$c)
           (non-free-index-listp x (effective-fat fat32$c))
@@ -18413,27 +11984,10 @@ Some (rather awful) testing forms are
     l))
   :hints
   (("goal"
-    :in-theory (enable not-intersectp-list))))
+    :in-theory (enable not-intersectp-list lofat-place-file-correctness-lemma-15))))
 
 (defthm
-  lofat-place-file-correctness-lemma-150
-  (>= (binary-+ (binary-* 32 (len x))
-                (binary-+ (len (d-e-set-filename (d-e-fix d-e1)
-                                                 filename1))
-                          (len (d-e-set-filename (d-e-fix d-e2)
-                                                 filename2))))
-      32)
-  :hints
-  (("goal"
-    :do-not-induct t
-    :in-theory
-    (e/d (insert-d-e remove1-d-e
-                     len-when-d-e-p subdir-contents-p)
-         ((:rewrite d-e-cc-contents-of-lofat-remove-file-disjoint-lemma-7
-                    . 5))))))
-
-(defthm
-  lofat-place-file-correctness-lemma-151
+  lofat-place-file-correctness-lemma-72
   (implies
    (stringp dir-contents)
    (subdir-contents-p
@@ -18462,13 +12016,13 @@ Some (rather awful) testing forms are
 
   (local (include-book "rtl/rel9/arithmetic/top" :dir :system))
 
-  (defthm lofat-place-file-correctness-lemma-152
+  (defthm lofat-place-file-correctness-lemma-73
     (implies (and (integerp x) (equal (mod x 32) 0))
              (equal (mod (binary-+ x (binary-* 32 (len y)))
                          32)
                     0)))
 
-  (defthm lofat-place-file-correctness-lemma-153
+  (defthm lofat-place-file-correctness-lemma-79
     (implies (and (lofat-fs-p fat32$c)
                   (integerp w)
                   (equal (mod w 32) 0))
@@ -18478,55 +12032,7 @@ Some (rather awful) testing forms are
                     0))))
 
 (defthm
-  lofat-place-file-correctness-lemma-155
-  (implies
-   (syntaxp (quotep fs))
-   (hifat-equiv
-    (mv-nth 0
-            (hifat-place-file fs path
-                              (m1-file-hifat-file-alist-fix d-e fs)))
-    (mv-nth 0
-            (hifat-place-file fs path
-                              (m1-file-hifat-file-alist-fix nil fs)))))
-  :hints
-  (("goal" :use (:instance (:rewrite hifat-place-file-when-hifat-equiv-1)
-                           (file1 (m1-file-hifat-file-alist-fix d-e fs))
-                           (path path)
-                           (fs fs)
-                           (file2 (m1-file-hifat-file-alist-fix nil fs))))))
-
-(defthm
-  lofat-place-file-correctness-lemma-157
-  (implies
-   (lofat-fs-p fat32$c)
-   (>=
-    2097152
-    (*
-     (cluster-size fat32$c)
-     (len
-      (make-clusters (make-empty-subdir-contents i (d-e-first-cluster d-e))
-                     (cluster-size fat32$c))))))
-  :hints
-  (("goal"
-    :do-not-induct t
-    :in-theory (enable make-empty-subdir-contents
-                       make-clusters len-when-d-e-p)
-    :expand
-    (make-clusters
-     (nats=>string (append (d-e-set-first-cluster-file-size
-                            '(46 32 32 32 32 32 32 32 32 32 32 0
-                                 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
-                            i 0)
-                           (d-e-set-first-cluster-file-size
-                            '(46 46 32 32 32 32 32 32 32 32 32 0
-                                 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
-                            (d-e-first-cluster d-e)
-                            0)))
-     (cluster-size fat32$c))))
-  :rule-classes (:linear :rewrite))
-
-(defthm
-  lofat-place-file-correctness-lemma-168
+  lofat-place-file-correctness-lemma-80
   (implies
    (lofat-fs-p fat32$c)
    (equal
@@ -18542,31 +12048,7 @@ Some (rather awful) testing forms are
                                          (cluster-size fat32$c))))))
 
 (defthm
-  lofat-place-file-correctness-lemma-170
-  (implies
-   (and (lofat-fs-p fat32$c)
-        (< current-dir-first-cluster
-           (+ 2 (count-of-clusters fat32$c))))
-   (equal
-    (mv-nth
-     '2
-     (place-contents
-      (update-fati
-       current-dir-first-cluster
-       (fat32-update-lower-28 (fati current-dir-first-cluster fat32$c)
-                              '268435455)
-       (mv-nth '0
-               (clear-cc fat32$c masked-current-cluster length)))
-      (car d-e-list)
-      (make-empty-subdir-contents current-dir-first-cluster
-                                  parent-dir-first-cluster)
-      '0
-      current-dir-first-cluster))
-    '0))
-  :hints (("goal" :do-not-induct t)))
-
-(defthm
-  lofat-place-file-correctness-lemma-175
+  lofat-place-file-correctness-lemma-81
   (implies
    (and (lofat-fs-p fat32$c)
         (> (fat-entry-count fat32$c) i))
@@ -18588,50 +12070,7 @@ Some (rather awful) testing forms are
     :in-theory (disable d-e-cc-of-update-dir-contents-coincident))))
 
 (defthm
-  lofat-place-file-correctness-lemma-79
-  (implies
-   (and
-    (hifat-equiv
-     y
-     (put-assoc-equal
-      name
-      (m1-file-hifat-file-alist-fix
-       d-e
-       (mv-nth
-        0
-        (hifat-place-file
-         (mv-nth 0
-                 (lofat-to-hifat-helper fat32$c d-e-list entry-limit1))
-         path
-         (m1-file d-e (lofat-file->contents file)))))
-      z))
-    (equal (mv-nth 3
-                   (lofat-to-hifat-helper fat32$c d-e-list entry-limit1))
-           0)
-    (>= (nfix entry-limit2)
-        (mv-nth 1
-                (lofat-to-hifat-helper fat32$c d-e-list entry-limit1))))
-   (hifat-equiv
-    (cons
-     x
-     (put-assoc-equal
-      name
-      (m1-file-hifat-file-alist-fix
-       d-e
-       (mv-nth
-        0
-        (hifat-place-file
-         (mv-nth 0
-                 (lofat-to-hifat-helper fat32$c d-e-list entry-limit2))
-         path
-         (m1-file d-e (lofat-file->contents file)))))
-      z))
-    (cons x y)))
-  :hints (("goal" :do-not-induct t
-           :use lofat-to-hifat-helper-correctness-4)))
-
-(defthm
-  lofat-place-file-correctness-lemma-88
+  lofat-place-file-correctness-lemma-82
   (implies
    (and
     (hifat-equiv
@@ -18672,91 +12111,6 @@ Some (rather awful) testing forms are
     (cons x y)))
   :hints (("goal" :do-not-induct t
            :use lofat-to-hifat-helper-correctness-4)))
-
-(defthm
-  lofat-place-file-correctness-lemma-105
-  (implies
-   (and (hifat-equiv
-         (mv-nth 0
-                 (lofat-to-hifat-helper fat32$c d-e-list entry-limit1))
-         x)
-        (equal (mv-nth 3
-                       (lofat-to-hifat-helper fat32$c d-e-list entry-limit1))
-               0)
-        (>= (nfix entry-limit2)
-            (mv-nth 1
-                    (lofat-to-hifat-helper fat32$c d-e-list entry-limit1))))
-   (hifat-equiv
-    (cons
-     (cons
-      name
-      (m1-file-hifat-file-alist-fix
-       d-e
-       (mv-nth 0
-               (lofat-to-hifat-helper fat32$c d-e-list entry-limit2))))
-     fs)
-    (cons (cons name
-                (m1-file-hifat-file-alist-fix d-e x))
-          fs)))
-  :hints
-  (("goal" :do-not-induct t
-    :use lofat-to-hifat-helper-correctness-4)))
-
-(defthm
-  lofat-place-file-correctness-lemma-115
-  (implies
-   (and (equal (mv-nth 3
-                       (lofat-to-hifat-helper fat32$c d-e-list entry-limit))
-               0)
-        (equal (d-e-first-cluster d-e) 0)
-        (not (d-e-directory-p d-e))
-        (d-e-p d-e)
-        (useful-d-e-list-p d-e-list))
-   (subsetp-equal
-    (mv-nth 2
-            (lofat-to-hifat-helper fat32$c (place-d-e d-e-list d-e)
-                                   entry-limit))
-    (cons nil
-          (mv-nth 2
-                  (lofat-to-hifat-helper fat32$c d-e-list entry-limit)))))
-  :hints
-  (("goal"
-    :in-theory
-    (e/d
-     (lofat-to-hifat-helper)
-     ((:rewrite nfix-when-zp)
-      (:rewrite nth-of-effective-fat)
-      (:rewrite nth-of-nats=>chars)
-      (:linear nth-when-d-e-p)
-      (:rewrite explode-of-d-e-filename)
-      (:rewrite
-       hifat-entry-count-of-lofat-to-hifat-helper-of-delete-d-e-lemma-3)))
-    :induct (mv (mv-nth 0
-                        (lofat-to-hifat-helper fat32$c d-e-list entry-limit))
-                (place-d-e d-e-list d-e))
-    :do-not-induct t))
-  :rule-classes
-  ((:rewrite
-    :corollary
-    (implies
-     (and
-      (equal (mv-nth 3
-                     (lofat-to-hifat-helper fat32$c d-e-list entry-limit))
-             0)
-      (equal (d-e-first-cluster d-e) 0)
-      (not (d-e-directory-p d-e))
-      (d-e-p d-e)
-      (useful-d-e-list-p d-e-list)
-      (subsetp-equal
-       (cons nil
-             (mv-nth 2
-                     (lofat-to-hifat-helper fat32$c d-e-list entry-limit)))
-       x))
-     (subsetp-equal
-      (mv-nth 2
-              (lofat-to-hifat-helper fat32$c (place-d-e d-e-list d-e)
-                                     entry-limit))
-      x)))))
 
 (defthm
   lofat-place-file-correctness-lemma-13
@@ -18789,8 +12143,8 @@ Some (rather awful) testing forms are
         fat32$c)
        (d-e-install-directory-bit
         (d-e-set-filename '(0 0 0 0 0 0 0 0 0 0 0 0
-                                  0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
-                              (car path))
+                              0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
+                          (car path))
         nil)
        (lofat-file->contents file)
        (len (explode (lofat-file->contents file)))
@@ -18800,8 +12154,8 @@ Some (rather awful) testing forms are
      (d-e-set-first-cluster-file-size
       (d-e-install-directory-bit
        (d-e-set-filename '(0 0 0 0 0 0 0 0 0 0 0 0
-                                 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
-                             (car path))
+                             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
+                         (car path))
        nil)
       (nth 0
            (find-n-free-clusters (effective-fat fat32$c)
@@ -18848,8 +12202,8 @@ Some (rather awful) testing forms are
       (d-e-set-first-cluster-file-size
        (d-e-install-directory-bit
         (d-e-set-filename '(0 0 0 0 0 0 0 0 0 0 0 0
-                                  0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
-                              (car path))
+                              0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
+                          (car path))
         nil)
        (nth 0
             (find-n-free-clusters (effective-fat fat32$c)
@@ -18863,8 +12217,8 @@ Some (rather awful) testing forms are
      (d-e2
       (d-e-install-directory-bit
        (d-e-set-filename '(0 0 0 0 0 0 0 0 0 0 0 0
-                                 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
-                             (car path))
+                             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
+                         (car path))
        nil))
      (fat32$c
       (update-fati
@@ -18908,8 +12262,8 @@ Some (rather awful) testing forms are
         fat32$c)
        (d-e-install-directory-bit
         (d-e-set-filename '(0 0 0 0 0 0 0 0 0 0 0 0
-                                  0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
-                              (car path))
+                              0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
+                          (car path))
         'nil)
        (lofat-file->contents$inline file)
        (len (explode$inline (lofat-file->contents$inline file)))
@@ -18919,8 +12273,8 @@ Some (rather awful) testing forms are
      (d-e-set-first-cluster-file-size
       (d-e-install-directory-bit
        (d-e-set-filename '(0 0 0 0 0 0 0 0 0 0 0 0
-                                 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
-                             (car path))
+                             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
+                         (car path))
        'nil)
       (nth '0
            (find-n-free-clusters (effective-fat fat32$c)
@@ -18951,8 +12305,8 @@ Some (rather awful) testing forms are
       (d-e-set-first-cluster-file-size
        (d-e-install-directory-bit
         (d-e-set-filename '(0 0 0 0 0 0 0 0 0 0 0 0
-                                  0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
-                              (car path))
+                              0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
+                          (car path))
         nil)
        (nth 0
             (find-n-free-clusters (effective-fat fat32$c)
@@ -18966,8 +12320,8 @@ Some (rather awful) testing forms are
      (d-e1
       (d-e-install-directory-bit
        (d-e-set-filename '(0 0 0 0 0 0 0 0 0 0 0 0
-                                 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
-                             (car path))
+                             0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
+                         (car path))
        nil))
      (fat32$c
       (update-fati
@@ -19026,7 +12380,7 @@ Some (rather awful) testing forms are
         '268435455)
        fat32$c)
       (d-e-install-directory-bit (make-d-e-with-filename (car path))
-                                     'nil)
+                                 'nil)
       (lofat-file->contents$inline file)
       (len (explode$inline (lofat-file->contents$inline file)))
       (nth '0
@@ -19047,7 +12401,7 @@ Some (rather awful) testing forms are
      (contents (lofat-file->contents file))
      (d-e
       (d-e-install-directory-bit (make-d-e-with-filename (car path))
-                                     nil))
+                                 nil))
      (fat32$c
       (update-fati
        (nth 0
@@ -19143,316 +12497,6 @@ Some (rather awful) testing forms are
            :in-theory (e/d (lofat-regular-file-p)))))
 
 (defthm
-  lofat-place-file-correctness-lemma-29
-  (implies
-   (and
-    (good-root-d-e-p root-d-e fat32$c)
-    (lofat-file-p file)
-    (<= (len (make-clusters (lofat-file->contents file)
-                            (cluster-size fat32$c)))
-        (count-free-clusters (effective-fat fat32$c)))
-    (not
-     (d-e-directory-p
-      (mv-nth
-       0
-       (find-d-e
-        (make-d-e-list
-         (mv-nth
-          0
-          (d-e-cc-contents fat32$c root-d-e)))
-        (car path)))))
-    (< 0
-       (len (explode (lofat-file->contents file))))
-    (<= 1
-        (count-free-clusters (effective-fat fat32$c))))
-   (not
-    (intersectp-equal
-     (mv-nth '0
-             (d-e-cc fat32$c root-d-e))
-     (mv-nth
-      '0
-      (d-e-cc
-       (mv-nth
-        '0
-        (place-contents
-         (update-fati
-          (nth '0
-               (find-n-free-clusters (effective-fat fat32$c)
-                                     '1))
-          (fat32-update-lower-28
-           (fati (nth '0
-                      (find-n-free-clusters (effective-fat fat32$c)
-                                            '1))
-                 fat32$c)
-           '268435455)
-          fat32$c)
-         (mv-nth
-          '0
-          (find-d-e
-           (make-d-e-list
-            (mv-nth
-             '0
-             (d-e-cc-contents fat32$c root-d-e)))
-           (car path)))
-         (lofat-file->contents$inline file)
-         (len (explode$inline (lofat-file->contents$inline file)))
-         (nth '0
-              (find-n-free-clusters (effective-fat fat32$c)
-                                    '1))))
-       (d-e-set-first-cluster-file-size
-        (mv-nth
-         '0
-         (find-d-e
-          (make-d-e-list
-           (mv-nth
-            '0
-            (d-e-cc-contents fat32$c root-d-e)))
-          (car path)))
-        (nth '0
-             (find-n-free-clusters (effective-fat fat32$c)
-                                   '1))
-        (len (explode$inline (lofat-file->contents$inline file)))))))))
-  :hints
-  (("goal"
-    :do-not-induct t
-    :in-theory
-    (disable (:rewrite d-e-cc-of-place-contents-coincident-2))
-    :use
-    (:instance
-     (:rewrite d-e-cc-of-place-contents-coincident-2)
-     (d-e1
-      (d-e-set-first-cluster-file-size
-       (mv-nth
-        0
-        (find-d-e
-         (make-d-e-list
-          (mv-nth
-           0
-           (d-e-cc-contents fat32$c root-d-e)))
-         (car path)))
-       (nth 0
-            (find-n-free-clusters (effective-fat fat32$c)
-                                  1))
-       (len (explode (lofat-file->contents file)))))
-     (first-cluster (nth 0
-                         (find-n-free-clusters (effective-fat fat32$c)
-                                               1)))
-     (file-length (len (explode (lofat-file->contents file))))
-     (contents (lofat-file->contents file))
-     (d-e2
-      (mv-nth
-       0
-       (find-d-e
-        (make-d-e-list
-         (mv-nth
-          0
-          (d-e-cc-contents fat32$c root-d-e)))
-        (car path))))
-     (fat32$c
-      (update-fati
-       (nth 0
-            (find-n-free-clusters (effective-fat fat32$c)
-                                  1))
-       (fat32-update-lower-28
-        (fati (nth 0
-                   (find-n-free-clusters (effective-fat fat32$c)
-                                         1))
-              fat32$c)
-        268435455)
-       fat32$c))))))
-
-(defthm
-  lofat-place-file-correctness-lemma-30
-  (implies
-   (and
-    (good-root-d-e-p root-d-e fat32$c)
-    (lofat-file-p file)
-    (<= (len (make-clusters (lofat-file->contents file)
-                            (cluster-size fat32$c)))
-        (count-free-clusters (effective-fat fat32$c)))
-    (not
-     (d-e-directory-p
-      (mv-nth
-       0
-       (find-d-e
-        (make-d-e-list
-         (mv-nth
-          0
-          (d-e-cc-contents fat32$c root-d-e)))
-        (car path)))))
-    (< 0
-       (len (explode (lofat-file->contents file))))
-    (<= 1
-        (count-free-clusters (effective-fat fat32$c))))
-   (not
-    (intersectp-equal
-     (mv-nth '0
-             (d-e-cc fat32$c root-d-e))
-     (mv-nth
-      '0
-      (d-e-cc
-       (mv-nth
-        '0
-        (place-contents
-         (update-fati
-          (nth '0
-               (find-n-free-clusters (effective-fat fat32$c)
-                                     '1))
-          (fat32-update-lower-28
-           (fati (nth '0
-                      (find-n-free-clusters (effective-fat fat32$c)
-                                            '1))
-                 fat32$c)
-           '268435455)
-          fat32$c)
-         (mv-nth
-          '0
-          (find-d-e
-           (make-d-e-list
-            (mv-nth
-             '0
-             (d-e-cc-contents fat32$c root-d-e)))
-           (car path)))
-         (lofat-file->contents$inline file)
-         (len (explode$inline (lofat-file->contents$inline file)))
-         (nth '0
-              (find-n-free-clusters (effective-fat fat32$c)
-                                    '1))))
-       (d-e-set-first-cluster-file-size
-        (mv-nth
-         '0
-         (find-d-e
-          (make-d-e-list
-           (mv-nth
-            '0
-            (d-e-cc-contents fat32$c root-d-e)))
-          (car path)))
-        (nth '0
-             (find-n-free-clusters (effective-fat fat32$c)
-                                   '1))
-        (len (explode$inline (lofat-file->contents$inline file)))))))))
-  :hints (("goal" :do-not-induct t)))
-
-(defthm
-  lofat-place-file-correctness-lemma-31
-  (implies
-   (and
-    (good-root-d-e-p root-d-e fat32$c)
-    (non-free-index-listp x (effective-fat fat32$c))
-    (lofat-file-p file)
-    (<= (len (make-clusters (lofat-file->contents file)
-                            (cluster-size fat32$c)))
-        (count-free-clusters (effective-fat fat32$c)))
-    (not
-     (d-e-directory-p
-      (mv-nth
-       0
-       (find-d-e
-        (make-d-e-list
-         (mv-nth
-          0
-          (d-e-cc-contents fat32$c root-d-e)))
-        (car path)))))
-    (< 0
-       (len (explode (lofat-file->contents file))))
-    (<= 1
-        (count-free-clusters (effective-fat fat32$c))))
-   (not
-    (intersectp-equal
-     x
-     (mv-nth
-      0
-      (d-e-cc
-       (mv-nth
-        0
-        (place-contents
-         (update-fati
-          (nth 0
-               (find-n-free-clusters (effective-fat fat32$c)
-                                     1))
-          (fat32-update-lower-28
-           (fati (nth 0
-                      (find-n-free-clusters (effective-fat fat32$c)
-                                            1))
-                 fat32$c)
-           268435455)
-          fat32$c)
-         (mv-nth
-          0
-          (find-d-e
-           (make-d-e-list
-            (mv-nth
-             0
-             (d-e-cc-contents fat32$c root-d-e)))
-           (car path)))
-         (lofat-file->contents file)
-         (len (explode (lofat-file->contents file)))
-         (nth 0
-              (find-n-free-clusters (effective-fat fat32$c)
-                                    1))))
-       (d-e-set-first-cluster-file-size
-        (mv-nth
-         0
-         (find-d-e
-          (make-d-e-list
-           (mv-nth
-            0
-            (d-e-cc-contents fat32$c root-d-e)))
-          (car path)))
-        (nth 0
-             (find-n-free-clusters (effective-fat fat32$c)
-                                   1))
-        (len (explode (lofat-file->contents file)))))))))
-  :hints
-  (("goal"
-    :do-not-induct t
-    :in-theory
-    (disable (:rewrite d-e-cc-of-place-contents-coincident-2))
-    :use
-    (:instance
-     (:rewrite d-e-cc-of-place-contents-coincident-2)
-     (d-e1
-      (d-e-set-first-cluster-file-size
-       (mv-nth
-        0
-        (find-d-e
-         (make-d-e-list
-          (mv-nth
-           0
-           (d-e-cc-contents fat32$c root-d-e)))
-         (car path)))
-       (nth 0
-            (find-n-free-clusters (effective-fat fat32$c)
-                                  1))
-       (len (explode (lofat-file->contents file)))))
-     (first-cluster (nth 0
-                         (find-n-free-clusters (effective-fat fat32$c)
-                                               1)))
-     (file-length (len (explode (lofat-file->contents file))))
-     (contents (lofat-file->contents file))
-     (d-e2
-      (mv-nth
-       0
-       (find-d-e
-        (make-d-e-list
-         (mv-nth
-          0
-          (d-e-cc-contents fat32$c root-d-e)))
-        (car path))))
-     (fat32$c
-      (update-fati
-       (nth 0
-            (find-n-free-clusters (effective-fat fat32$c)
-                                  1))
-       (fat32-update-lower-28
-        (fati (nth 0
-                   (find-n-free-clusters (effective-fat fat32$c)
-                                         1))
-              fat32$c)
-        268435455)
-       fat32$c))))))
-
-(defthm
   lofat-place-file-correctness-lemma-39
   (implies
    (and
@@ -19518,8 +12562,8 @@ Some (rather awful) testing forms are
               0
               (find-d-e
                (make-d-e-list (mv-nth 0
-                                          (d-e-cc-contents
-                                           fat32$c root-d-e)))
+                                      (d-e-cc-contents
+                                       fat32$c root-d-e)))
                (car path))))))
           0 nil))
         1))
@@ -19551,8 +12595,8 @@ Some (rather awful) testing forms are
             0
             (find-d-e
              (make-d-e-list (mv-nth 0
-                                        (d-e-cc-contents
-                                         fat32$c root-d-e)))
+                                    (d-e-cc-contents
+                                     fat32$c root-d-e)))
              (car path)))))
          (make-list-ac
           (len
@@ -19610,293 +12654,6 @@ Some (rather awful) testing forms are
              (car path))))))
         0 nil)))
      (n2 0)))))
-
-(defthm
-  lofat-place-file-correctness-lemma-72
-  (implies
-   (and
-    (good-root-d-e-p root-d-e fat32$c)
-    (equal
-     (mv-nth
-      3
-      (lofat-to-hifat-helper
-       fat32$c
-       (make-d-e-list
-        (mv-nth 0
-                (d-e-cc-contents fat32$c root-d-e)))
-       entry-limit))
-     0)
-    (lofat-regular-file-p file)
-    (<= (len (make-clusters (lofat-file->contents file)
-                            (cluster-size fat32$c)))
-        (count-free-clusters (effective-fat fat32$c)))
-    (<=
-     (+ 2 (count-of-clusters fat32$c))
-     (d-e-first-cluster
-      (mv-nth
-       0
-       (find-d-e
-        (make-d-e-list
-         (mv-nth
-          0
-          (d-e-cc-contents fat32$c root-d-e)))
-        (car path)))))
-    (< 0
-       (len (explode (lofat-file->contents file)))))
-   (no-duplicatesp-equal
-    (mv-nth
-     0
-     (d-e-cc
-      (mv-nth
-       0
-       (place-contents
-        (update-fati
-         (nth 0
-              (find-n-free-clusters (effective-fat fat32$c)
-                                    1))
-         (fat32-update-lower-28
-          (fati (nth 0
-                     (find-n-free-clusters (effective-fat fat32$c)
-                                           1))
-                fat32$c)
-          268435455)
-         fat32$c)
-        (mv-nth
-         0
-         (find-d-e
-          (make-d-e-list
-           (mv-nth
-            0
-            (d-e-cc-contents fat32$c root-d-e)))
-          (car path)))
-        (lofat-file->contents file)
-        (len (explode (lofat-file->contents file)))
-        (nth 0
-             (find-n-free-clusters (effective-fat fat32$c)
-                                   1))))
-      (d-e-set-first-cluster-file-size
-       (mv-nth
-        0
-        (find-d-e
-         (make-d-e-list
-          (mv-nth
-           0
-           (d-e-cc-contents fat32$c root-d-e)))
-         (car path)))
-       (nth 0
-            (find-n-free-clusters (effective-fat fat32$c)
-                                  1))
-       (len (explode (lofat-file->contents file))))))))
-  :hints
-  (("goal"
-    :do-not-induct t
-    :in-theory
-    (disable (:rewrite d-e-cc-of-place-contents-coincident-2))
-    :use
-    (:instance
-     (:rewrite d-e-cc-of-place-contents-coincident-2)
-     (d-e1
-      (d-e-set-first-cluster-file-size
-       (mv-nth
-        0
-        (find-d-e
-         (make-d-e-list
-          (mv-nth
-           0
-           (d-e-cc-contents fat32$c root-d-e)))
-         (car path)))
-       (nth 0
-            (find-n-free-clusters (effective-fat fat32$c)
-                                  1))
-       (len (explode (lofat-file->contents file)))))
-     (first-cluster (nth 0
-                         (find-n-free-clusters (effective-fat fat32$c)
-                                               1)))
-     (file-length (len (explode (lofat-file->contents file))))
-     (contents (lofat-file->contents file))
-     (d-e2
-      (mv-nth
-       0
-       (find-d-e
-        (make-d-e-list
-         (mv-nth
-          0
-          (d-e-cc-contents fat32$c root-d-e)))
-        (car path))))
-     (fat32$c
-      (update-fati
-       (nth 0
-            (find-n-free-clusters (effective-fat fat32$c)
-                                  1))
-       (fat32-update-lower-28
-        (fati (nth 0
-                   (find-n-free-clusters (effective-fat fat32$c)
-                                         1))
-              fat32$c)
-        268435455)
-       fat32$c))))))
-
-(defthm
-  lofat-place-file-correctness-lemma-43
-  (implies
-   (and
-    (good-root-d-e-p root-d-e fat32$c)
-    (equal
-     (mv-nth
-      3
-      (lofat-to-hifat-helper
-       fat32$c
-       (make-d-e-list
-        (mv-nth 0
-                (d-e-cc-contents fat32$c root-d-e)))
-       entry-limit))
-     0)
-    (lofat-regular-file-p file)
-    (<= (len (make-clusters (lofat-file->contents file)
-                            (cluster-size fat32$c)))
-        (count-free-clusters (effective-fat fat32$c)))
-    (<=
-     (+ 2 (count-of-clusters fat32$c))
-     (d-e-first-cluster
-      (mv-nth
-       0
-       (find-d-e
-        (make-d-e-list
-         (mv-nth
-          0
-          (d-e-cc-contents fat32$c root-d-e)))
-        (car path)))))
-    (< 0
-       (len (explode (lofat-file->contents file)))))
-   (free-index-listp
-    (mv-nth
-     0
-     (d-e-cc
-      (mv-nth
-       0
-       (place-contents
-        (update-fati
-         (nth 0
-              (find-n-free-clusters (effective-fat fat32$c)
-                                    1))
-         (fat32-update-lower-28
-          (fati (nth 0
-                     (find-n-free-clusters (effective-fat fat32$c)
-                                           1))
-                fat32$c)
-          268435455)
-         fat32$c)
-        (mv-nth
-         0
-         (find-d-e
-          (make-d-e-list
-           (mv-nth
-            0
-            (d-e-cc-contents fat32$c root-d-e)))
-          (car path)))
-        (lofat-file->contents file)
-        (len (explode (lofat-file->contents file)))
-        (nth 0
-             (find-n-free-clusters (effective-fat fat32$c)
-                                   1))))
-      (d-e-set-first-cluster-file-size
-       (mv-nth
-        0
-        (find-d-e
-         (make-d-e-list
-          (mv-nth
-           0
-           (d-e-cc-contents fat32$c root-d-e)))
-         (car path)))
-       (nth 0
-            (find-n-free-clusters (effective-fat fat32$c)
-                                  1))
-       (len (explode (lofat-file->contents file))))))
-    (effective-fat fat32$c)))
-  :hints
-  (("goal"
-    :do-not-induct t
-    :in-theory
-    (disable (:rewrite d-e-cc-of-place-contents-coincident-2))
-    :use
-    (:instance
-     (:rewrite d-e-cc-of-place-contents-coincident-2)
-     (d-e1
-      (d-e-set-first-cluster-file-size
-       (mv-nth
-        0
-        (find-d-e
-         (make-d-e-list
-          (mv-nth
-           0
-           (d-e-cc-contents fat32$c root-d-e)))
-         (car path)))
-       (nth 0
-            (find-n-free-clusters (effective-fat fat32$c)
-                                  1))
-       (len (explode (lofat-file->contents file)))))
-     (first-cluster (nth 0
-                         (find-n-free-clusters (effective-fat fat32$c)
-                                               1)))
-     (file-length (len (explode (lofat-file->contents file))))
-     (contents (lofat-file->contents file))
-     (d-e2
-      (mv-nth
-       0
-       (find-d-e
-        (make-d-e-list
-         (mv-nth
-          0
-          (d-e-cc-contents fat32$c root-d-e)))
-        (car path))))
-     (fat32$c
-      (update-fati
-       (nth 0
-            (find-n-free-clusters (effective-fat fat32$c)
-                                  1))
-       (fat32-update-lower-28
-        (fati (nth 0
-                   (find-n-free-clusters (effective-fat fat32$c)
-                                         1))
-              fat32$c)
-        268435455)
-       fat32$c))))))
-
-(defthm
-  lofat-place-file-correctness-lemma-60
-  (implies
-   (and
-    (equal (mv-nth 3
-                   (lofat-to-hifat-helper fat32$c
-                                          d-e-list entry-limit))
-           0)
-    (useful-d-e-list-p d-e-list)
-    (>= (d-e-first-cluster (mv-nth 0 (find-d-e d-e-list name)))
-        *ms-first-data-cluster*)
-    (> (+ *ms-first-data-cluster*
-          (count-of-clusters fat32$c))
-       (d-e-first-cluster (mv-nth 0 (find-d-e d-e-list name)))))
-   (member-equal
-    (mv-nth
-     0
-     (d-e-cc fat32$c
-                           (mv-nth 0 (find-d-e d-e-list name))))
-    (mv-nth 2
-            (lofat-to-hifat-helper fat32$c
-                                   d-e-list entry-limit))))
-  :hints
-  (("goal"
-    :in-theory
-    (e/d
-     (find-d-e lofat-to-hifat-helper hifat-entry-count)
-     ((:rewrite nth-of-effective-fat)
-      (:rewrite nth-of-nats=>chars)
-      (:linear nth-when-d-e-p)
-      (:rewrite nfix-when-zp)
-      (:rewrite explode-of-d-e-filename)
-      (:rewrite
-       hifat-entry-count-of-lofat-to-hifat-helper-of-delete-d-e-lemma-3)
-      (:rewrite d-e-p-when-member-equal-of-d-e-list-p))))))
 
 (defthm
   lofat-place-file-correctness-lemma-52
@@ -19958,7 +12715,7 @@ Some (rather awful) testing forms are
     :in-theory
     (e/d
      (find-d-e lofat-to-hifat-helper hifat-entry-count
-                   lofat-to-hifat-helper-correctness-4)
+               lofat-to-hifat-helper-correctness-4)
      ((:rewrite nth-of-effective-fat)
       (:rewrite nth-of-nats=>chars)
       (:linear nth-when-d-e-p)
@@ -20146,3 +12903,43 @@ Some (rather awful) testing forms are
                        (:rewrite lofat-to-hifat-inversion-lemma-4)
                        lofat-to-hifat-inversion-lemma-15
                        good-root-d-e-p))))
+
+;; slightly better version of d-e-cc-contents-of-clear-cc.
+(defthm
+  lofat-place-file-guard-lemma-9
+  (implies
+   (and (lofat-fs-p fat32$c)
+        (d-e-directory-p d-e1)
+        (not (intersectp-equal (mv-nth '0 (d-e-cc fat32$c d-e1))
+                               (mv-nth '0 (d-e-cc fat32$c d-e2)))))
+   (equal (d-e-cc-contents (mv-nth 0
+                                   (clear-cc fat32$c (d-e-first-cluster d-e1)
+                                             *ms-max-dir-size*))
+                           d-e2)
+          (d-e-cc-contents fat32$c d-e2)))
+  :hints
+  (("goal" :in-theory (e/d (d-e-cc)
+                           (d-e-cc-contents-of-clear-cc))
+    :use (:instance d-e-cc-contents-of-clear-cc (d-e d-e2)
+                    (masked-current-cluster (d-e-first-cluster d-e1))
+                    (length *ms-max-dir-size*)))))
+
+;; slightly better version of d-e-cc-contents-of-clear-cc.
+(defthm
+  lofat-place-file-guard-lemma-11
+  (implies
+   (and (lofat-fs-p fat32$c)
+        (not (d-e-directory-p d-e1))
+        (not (intersectp-equal (mv-nth '0 (d-e-cc fat32$c d-e1))
+                               (mv-nth '0 (d-e-cc fat32$c d-e2)))))
+   (equal (d-e-cc-contents (mv-nth 0
+                                   (clear-cc fat32$c (d-e-first-cluster d-e1)
+                                             (d-e-file-size d-e1)))
+                           d-e2)
+          (d-e-cc-contents fat32$c d-e2)))
+  :hints
+  (("goal" :in-theory (e/d (d-e-cc)
+                           (d-e-cc-contents-of-clear-cc))
+    :use (:instance d-e-cc-contents-of-clear-cc (d-e d-e2)
+                    (masked-current-cluster (d-e-first-cluster d-e1))
+                    (length (d-e-file-size d-e1))))))

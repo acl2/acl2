@@ -131,3 +131,11 @@
                 (natp n))
            (all-< (aref1 dag-parent-array-name dag-parent-array n) dag-len))
   :hints (("Goal" :in-theory (enable bounded-dag-parent-arrayp))))
+
+(defthm bounded-dag-parent-arrayp-monotone
+  (implies (and (bounded-dag-parent-arrayp dag-parent-array-name dag-parent-array dag-len)
+                (<= dag-len n)
+                (natp dag-len)
+                (natp n))
+           (bounded-dag-parent-arrayp dag-parent-array-name dag-parent-array n))
+  :hints (("Goal" :in-theory (enable bounded-dag-parent-arrayp))))

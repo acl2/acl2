@@ -17,7 +17,7 @@
 ;; TODO: Add support for mutual-recursion
 ;; TODO: Maybe split he corollaries into a different tool
 
-(include-book "parent-array")
+(include-book "dag-parent-array")
 (include-book "wf-dagp")
 
 (defun index-of-simple (item lst)
@@ -188,7 +188,7 @@
                   (bounded-dag-constant-alistp (mv-nth ,dag-constant-alist-rv ,call)
                                                (mv-nth ,dag-len-rv ,call)))
          :hints (("Goal" :use (:instance ,(pack$ 'type-of- fn))
-                  :in-theory '(wf-dagp))))
+                  :in-theory '(wf-dagp-forward))))
 
        ;; implied by wf-dagp (someday, when wf-dagp is never opened, we might not need this)
        (defthm ,(pack$ 'bounded-dag-dag-variable-alistp-of-mv-nth- dag-variable-alist-rv '-of- fn)
@@ -198,7 +198,7 @@
                   (bounded-dag-variable-alistp (mv-nth ,dag-variable-alist-rv ,call)
                                                (mv-nth ,dag-len-rv ,call)))
          :hints (("Goal" :use (:instance ,(pack$ 'type-of- fn))
-                  :in-theory '(wf-dagp))))
+                  :in-theory '(wf-dagp-forward))))
 
        ;; This one takes hyps
        ;; (defthm ,(pack$ 'pseudo-dag-arrayp-of-mv-nth- dag-array-rv '-of- fn)

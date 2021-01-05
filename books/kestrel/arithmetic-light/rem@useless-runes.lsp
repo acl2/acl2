@@ -1,0 +1,9 @@
+(REM-OF-0 (5 4 (:REWRITE DEFAULT-*-2))
+          (5 4 (:REWRITE DEFAULT-*-1))
+          (4 4
+             (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
+          (2 1 (:REWRITE DEFAULT-+-1))
+          (1 1 (:REWRITE DEFAULT-UNARY-MINUS))
+          (1 1 (:REWRITE DEFAULT-NUMERATOR))
+          (1 1 (:REWRITE DEFAULT-DENOMINATOR))
+          (1 1 (:REWRITE DEFAULT-+-2)))

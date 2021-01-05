@@ -1,6 +1,7 @@
 ; C Library
 ;
 ; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -37,7 +38,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ atc-pretty-printer
-  :parents (atc)
+  :parents (atc-implementation)
   :short "A pretty-printer of C abstract syntax for ATC."
   :long
   (xdoc::topstring
@@ -763,7 +764,7 @@
   :returns (part msgp)
   :short "Pretty-print a declaration."
   (b* (((decl decl) decl))
-    (pprint-line (msg "~@0 ~@1 = ~@2"
+    (pprint-line (msg "~@0 ~@1 = ~@2;"
                       (pprint-tyspecseq decl.type)
                       (pprint-ident decl.name)
                       (pprint-expr decl.init (expr-grade-top)))

@@ -563,8 +563,8 @@ svl-run-phase-wog) instead, which has the same arguments but no guards.
                              (list (cons #\0 signame)))
                  (mv signame nil nil))))
             (mv (get-substr signame 0 pos-of-[)
-                (Str::digit-list-value pos1)
-                (str::digit-list-value pos2)))
+                (Str::dec-digit-chars-value pos1)
+                (str::dec-digit-chars-value pos2)))
         (mv signame nil nil))))
 
 

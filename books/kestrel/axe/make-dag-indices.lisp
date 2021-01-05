@@ -12,16 +12,18 @@
 
 (in-package "ACL2")
 
-;; A DAG has 3 kinds of indices, the parent-array, constant-alist, and variable-alist.  The file contains utilities to make all 3.
+;; A DAG has 3 kinds of indices, the parent-array, constant-alist, and
+;; variable-alist.  The file contains a utility to make all 3 simultaneously.
 
 ;; TODO: Consider making versions of these that assume the dag-array-name and
 ;; dag-parent-array-name are the standard names (and rename the existing
 ;; functions).
 
-(include-book "parent-array")
-(include-book "parent-array-with-name")
+(include-book "dag-parent-array")
+(include-book "dag-parent-array-with-name")
 (include-book "make-dag-constant-alist")
 (include-book "make-dag-variable-alist")
+(include-book "wf-dagp")
 
 ;;;
 ;;; make-dag-indices-aux
@@ -127,26 +129,27 @@
 ;;; make-dag-indices
 ;;;
 
-;returns (mv dag-parent-array dag-constant-alist dag-variable-alist)
-;handles the bottommost DAG-LEN nodes in DAG-ARRAY.
+;; Returns (mv dag-parent-array dag-constant-alist dag-variable-alist).
+;; Handles the bottommost DAG-LEN nodes in DAG-ARRAY.
+;; The alen1 of the parent-array returned always matches the alen1 of
+;; DAG-ARRAY, as is often required.
 (defund make-dag-indices (dag-array-name dag-array dag-parent-array-name dag-len)
   (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (symbolp dag-parent-array-name))))
-  (let* ((parent-array-len (max 1 dag-len)) ;arrays must have size at least 1
-         (dag-parent-array (make-empty-array dag-parent-array-name parent-array-len)))
+  (let* ((dag-parent-array (make-empty-array dag-parent-array-name (alen1 dag-array-name dag-array))))
     (make-dag-indices-aux 0
                           dag-len
                           dag-array-name dag-array
                           dag-parent-array-name dag-parent-array
-                          nil         ;;empty dag-constant-alist
-                          nil         ;;empty dag-variable-alist
+                          nil ;;empty dag-constant-alist
+                          nil ;;empty dag-variable-alist
                           )))
 
 ;; We reason about make-dag-parent-array-with-name instead of make-dag-indices, which is more complicated.
 (defthm mv-nth-0-of-make-dag-indices
   (equal (mv-nth 0 (make-dag-indices dag-array-name dag-array dag-parent-array-name dag-len))
-         (make-dag-parent-array-with-name dag-len dag-array-name dag-array dag-parent-array-name))
-  :hints (("Goal" :in-theory (enable make-dag-indices make-dag-parent-array-with-name mv-nth-0-of-make-dag-indices-aux))))
+         (make-dag-parent-array-with-name2 dag-len dag-array-name dag-array dag-parent-array-name))
+  :hints (("Goal" :in-theory (enable make-dag-indices make-dag-parent-array-with-name2 mv-nth-0-of-make-dag-indices-aux))))
 
 ;; We reason about make-dag-constant-alist instead of make-dag-indices, which is more complicated.
 (defthm mv-nth-1-of-make-dag-indices
@@ -160,87 +163,10 @@
          (make-dag-variable-alist dag-array-name dag-array dag-len))
   :hints (("Goal" :in-theory (enable make-dag-indices make-dag-variable-alist))))
 
-;;;
-;;; make-dag-indices-with-len
-;;;
-
-;returns (mv dag-parent-array dag-constant-alist dag-variable-alist)
-;parent-array-len may be (should be for efficiency?) larger than dag-len?
-(defund make-dag-indices-with-len (dag-array-name dag-array dag-parent-array-name dag-len parent-array-len)
-  (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                              (symbolp dag-parent-array-name)
-                              (integerp parent-array-len)
-                              (<= dag-len parent-array-len)
-                              (<= parent-array-len 2147483646))))
-  (let* ((parent-array-len (max 1 parent-array-len)) ;arrays must have size at least 1
-         (dag-parent-array (make-empty-array dag-parent-array-name parent-array-len)))
-    (make-dag-indices-aux 0 dag-len dag-array-name dag-array
-                          dag-parent-array-name dag-parent-array
-                          nil         ;;empty dag-constant-alist
-                          nil         ;;empty dag-variable-alist
-                          )))
-
-;; todo: mv-nth-0-of-make-dag-indices-with-len
-
-;; We reason about make-dag-constant-alist instead of make-dag-indices-with-len, which is more complicated.
-(defthm mv-nth-1-of-make-dag-indices-with-len
-  (equal (mv-nth 1 (make-dag-indices-with-len dag-array-name dag-array dag-parent-array-name dag-len parent-array-len))
-         (make-dag-constant-alist dag-array-name dag-array dag-len))
-  :hints (("Goal" :in-theory (enable make-dag-indices-with-len make-dag-constant-alist))))
-
-;; We reason about make-dag-variable-alist instead of make-dag-indices-with-len, which is more complicated.
-(defthm mv-nth-2-of-make-dag-indices-with-len
-  (equal (mv-nth 2 (make-dag-indices-with-len dag-array-name dag-array dag-parent-array-name dag-len parent-array-len))
-         (make-dag-variable-alist dag-array-name dag-array dag-len))
-  :hints (("Goal" :in-theory (enable make-dag-indices-with-len make-dag-variable-alist))))
-
-(defthm alen1-of-mv-nth-0-of-make-dag-indices-with-len
+(defthm wf-dagp-after-make-dag-indices
   (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
- ;               (posp dag-len)
-                (symbolp dag-parent-array-name)
-                (posp parent-array-len)
-                (<= parent-array-len 2147483646))
-           (equal (alen1 dag-parent-array-name (mv-nth 0 (make-dag-indices-with-len dag-array-name dag-array dag-parent-array-name dag-len parent-array-len)))
-                  parent-array-len))
-  :hints (("Goal" :in-theory (enable make-dag-indices-with-len pseudo-dag-arrayp))))
-
-(defthm dag-parent-arrayp-of-mv-nth-0-of-make-dag-indices-with-len
-  (implies (and (natp dag-len)
-                (<= dag-len parent-array-len)
-                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                (symbolp dag-parent-array-name)
-                (posp parent-array-len)
-                (<= parent-array-len 2147483646))
-           (dag-parent-arrayp dag-parent-array-name
-                              (mv-nth 0 (make-dag-indices-with-len dag-array-name dag-array dag-parent-array-name dag-len parent-array-len))))
-  :hints (("Goal" :in-theory (enable make-dag-indices-with-len pseudo-dag-arrayp))))
-
-(defthm bounded-dag-parent-entriesp-of-mv-nth-0-of-make-dag-indices-with-len
-  (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                (symbolp dag-parent-array-name)
-                (natp dag-len)
-                (natp limit)
-                (<= dag-len limit)
-                (<= dag-len parent-array-len)
-                (posp parent-array-len)
-                (< parent-array-len 2147483647)
-                (natp m)
-                (< m parent-array-len)
-                )
-           (bounded-dag-parent-entriesp m ;(+ -1 dag-len)
-                                        dag-parent-array-name
-                                        (mv-nth 0 (make-dag-indices-with-len dag-array-name dag-array dag-parent-array-name dag-len parent-array-len))
-                                        limit))
-  :hints (("Goal" :in-theory (enable make-dag-indices-with-len))))
-
-(defthm bounded-dag-parent-arrayp-of-mv-nth-0-of-make-dag-indices-with-len
-  (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                (symbolp dag-parent-array-name)
-                ;; (posp dag-len)
-                (<= dag-len parent-array-len)
-                (posp parent-array-len)
-                (<= parent-array-len 2147483646))
-           (bounded-dag-parent-arrayp dag-parent-array-name
-                               (mv-nth 0 (make-dag-indices-with-len dag-array-name dag-array dag-parent-array-name dag-len parent-array-len))
-                               dag-len))
-  :hints (("Goal" :in-theory (enable bounded-dag-parent-arrayp))))
+                (symbolp dag-parent-array-name))
+           (mv-let (dag-parent-array dag-constant-alist dag-variable-alist)
+             (make-dag-indices dag-array-name dag-array dag-parent-array-name dag-len)
+             (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)))
+  :hints (("Goal" :in-theory (enable wf-dagp))))

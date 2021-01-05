@@ -6517,7 +6517,8 @@
                                  :commutative (nth 9 tuple)
                                  :forget     (nth 10 tuple)
                                  :memo-table-init-size (nth 11 tuple)
-                                 :aokp       (nth 12 tuple))))))
+                                 :aokp       (nth 12 tuple)
+                                 :invoke     (nth 14 tuple))))))
         #+hons
         (unmemoize
          (without-interrupts
@@ -8073,7 +8074,7 @@
                   functions to execute efficiently, which might not be the ~
                   case for an :ideal mode function.  These functions should ~
                   have their guards verified: ~&0."
-                 acc))))
+                 (remove-duplicates-eq acc)))))
    (t
     (let* ((trip (car trips))
            (fn (and (eq (car trip) 'event-landmark)

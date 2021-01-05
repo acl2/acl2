@@ -19,7 +19,6 @@
 (include-book "../sparse/rules")
 (include-book "filter-and-combine-symbol-alists")
 (include-book "lift-r1cs-common")
-(include-book "kestrel/utilities/keywords-to-acl2-package" :dir :system)
 (include-book "kestrel/axe/def-simplified" :dir :system)
 (include-book "kestrel/prime-fields/prime-fields-rules-axe" :dir :system)
 (include-book "kestrel/prime-fields/rules2" :dir :system)
@@ -66,6 +65,7 @@
                              rules ;to override the default
                              ;; nil ;rule-alists
                              ;; drop? but we need to know that all lookups of vars give integers:
+                             ;; TODO: Use the more compact machinery for this:
                              (make-fep-assumptions-from-keyword-vars vars prime)
                              ;; TODO: Add more functions to this?
                              ;; TODO: Make this once and store it?

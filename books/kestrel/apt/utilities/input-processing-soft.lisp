@@ -29,7 +29,8 @@
                                     (x-x1...xn symbol-listp)
                                     (x-a1...am pseudo-term-listp)
                                     (y symbolp)
-                                    (iorel pseudo-lambdap))').")
+                                    (iorel pseudo-lambdap)
+                                    result)').")
                state)
   :mode :program
   :parents (input-processors)

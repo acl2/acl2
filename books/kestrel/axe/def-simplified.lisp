@@ -15,17 +15,13 @@
 ;; See also unroll-spec-basic.  That one involves skip-proofs but can embed the DAG in a function (and state a theorem).
 ;;TODO: What about xor simplification?  maybe ok to delay?
 
+;; TODO: Add -basic to the name of this file and the things defined here.
+
 (include-book "rewriter-basic")
 (include-book "rule-lists")
-(include-book "dag-to-term")
-;(include-book "dag-size-fast") ; for dag-or-quotep-size-less-thanp
-;(include-book "dag-to-term-with-lets")
 (include-book "rules-in-rule-lists")
-;(include-book "evaluator") ;; since this calls dag-val-with-axe-evaluator to embed the resulting dag in a function, introduces a skip-proofs
 (include-book "kestrel/utilities/make-event-quiet" :dir :system)
 (include-book "kestrel/utilities/redundancy" :dir :system)
-(include-book "kestrel/utilities/strip-stars-from-name" :dir :system)
-(include-book "kestrel/utilities/system/fresh-names" :dir :system) ;drop?
 
 (defun def-simplified-rules ()
   (append (base-rules)
@@ -78,17 +74,20 @@
         (mv (erp-t) nil state))
        (term (translate-term term 'def-simplified-fn (w state)))
        (assumptions (translate-terms assumptions 'def-simplified-fn (w state)))
+       ((mv erp rule-alist)
+        (make-rule-alist
+         ;; Either use the user-supplied rules or the usual rules
+         ;; plus any user-supplied extra rules:
+         (or rules
+             (set-difference-eq (append (def-simplified-rules)
+                                        extra-rules)
+                                remove-rules))
+         (w state)))
+       ((when erp) (mv erp nil state))
        ((mv erp dag)
         (simplify-term-basic term
                              assumptions
-                             (make-rule-alist
-                              ;; Either use the user-supplied rules or the usual rules
-                              ;; plus any user-supplied extra rules:
-                              (or rules
-                                  (set-difference-eq (append (def-simplified-rules)
-                                                             extra-rules)
-                                                     remove-rules))
-                              (w state))
+                             rule-alist
                              interpreted-function-alist
                              monitor
                              memoizep

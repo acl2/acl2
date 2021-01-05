@@ -20,6 +20,8 @@
 
 ;; See size-array-for-nodes-aux in dag-size2.lisp for an example of how to use the worklist-array.
 
+;; The worklist array maps nodenums to either :examined, or nil.
+
 (include-book "merge-sort-less-than")
 (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system)
 (include-book "dags") ;for all-dargp-less-than
@@ -92,6 +94,12 @@
   (implies (and (all-dargp args)
                 (all-natp acc))
            (all-natp (get-unexamined-nodenum-args args worklist-array acc)))
+  :hints (("Goal" :in-theory (enable get-unexamined-nodenum-args))))
+
+(defthm natp-listp-of-get-unexamined-nodenum-args
+  (implies (and (all-dargp args)
+                (nat-listp acc))
+           (nat-listp (get-unexamined-nodenum-args args worklist-array acc)))
   :hints (("Goal" :in-theory (enable get-unexamined-nodenum-args))))
 
 (defthm all-rationalp-of-get-unexamined-nodenum-args

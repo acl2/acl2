@@ -14,13 +14,15 @@
 
 (include-book "kestrel/acl2-arrays/typed-acl2-arrays" :dir :system)
 (include-book "kestrel/acl2-arrays/expandable-arrays" :dir :system)
-(include-book "node-replacement-pairs")
+(include-book "node-replacement-alist")
 (include-book "dargp-less-than")
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 
-;; Currently, we build the node-replacement-array by calling make-into-array on
-;; the pairs produced by make-node-replacement-pairs-and-add-to-dag-array.
+;; We can build the node-replacement-array by calling make-into-array on the
+;; node-replacement-alist produced by make-node-replacement-alist-and-add-to-dag-array.
+
+;; See also node-replacement-array2.lisp.
 
 (local (in-theory (disable ;symbolp-of-car-of-car-when-symbol-term-alistp
                    assoc-equal
@@ -51,63 +53,63 @@
   (implies (all-dargp-less-than (strip-cdrs alist) bound)
            (all-dargp-less-than (strip-cdrs (cdr alist)) bound)))
 
-(defthm not-node-replacement-pairsp
+(defthm not-node-replacement-alistp
   (implies (and (not (integerp (cdr (assoc-equal index alist))))
                 (cdr (assoc-equal index alist))
                 (not (consp (cdr (assoc-equal index alist)))))
-           (not (node-replacement-pairsp alist bound)))
-  :hints (("Goal" :in-theory (enable node-replacement-pairsp
+           (not (node-replacement-alistp alist bound)))
+  :hints (("Goal" :in-theory (enable node-replacement-alistp
                                      assoc-equal))))
 
-(defthm not-node-replacement-pairsp-2
+(defthm not-node-replacement-alistp-2
   (implies (and (<= BOUND (CDR (ASSOC-EQUAL INDEX ALIST)))
                 (not (consp (CDR (ASSOC-EQUAL INDEX ALIST))))
                 (ASSOC-EQUAL INDEX ALIST)
                 ;(natp bound)
                 )
-           (not (node-replacement-pairsp alist bound)))
-  :hints (("Goal" :in-theory (enable node-replacement-pairsp
+           (not (node-replacement-alistp alist bound)))
+  :hints (("Goal" :in-theory (enable node-replacement-alistp
                                      assoc-equal))))
 
-(defthm not-node-replacement-pairsp-3
+(defthm not-node-replacement-alistp-3
   (implies (and (< (CDR (ASSOC-EQUAL INDEX ALIST)) 0)
 ;                (not (consp (CDR (ASSOC-EQUAL INDEX ALIST))))
                 (ASSOC-EQUAL INDEX ALIST)
                 ;(natp bound)
                 )
-           (not (node-replacement-pairsp alist bound)))
-  :hints (("Goal" :in-theory (enable node-replacement-pairsp
+           (not (node-replacement-alistp alist bound)))
+  :hints (("Goal" :in-theory (enable node-replacement-alistp
                                      assoc-equal))))
 
-(defthm integerp-of-cdr-of-assoc-equal-when-node-replacement-pairsp
-  (implies (and (node-replacement-pairsp alist bound)
+(defthm integerp-of-cdr-of-assoc-equal-when-node-replacement-alistp
+  (implies (and (node-replacement-alistp alist bound)
                 (assoc-equal index alist))
            (equal (integerp (cdr (assoc-equal index alist)))
                   (not (consp (cdr (assoc-equal index alist))))))
-  :hints (("Goal" :in-theory (enable node-replacement-pairsp
+  :hints (("Goal" :in-theory (enable node-replacement-alistp
                                      assoc-equal))))
 
-(defthm not-cdddr-of-assoc-equal-when-node-replacement-pairsp
-  (implies (and (node-replacement-pairsp alist bound)
+(defthm not-cdddr-of-assoc-equal-when-node-replacement-alistp
+  (implies (and (node-replacement-alistp alist bound)
                 (assoc-equal index alist))
            (not (cdddr (assoc-equal index alist))))
-  :hints (("Goal" :in-theory (enable node-replacement-pairsp
+  :hints (("Goal" :in-theory (enable node-replacement-alistp
                                      assoc-equal))))
 
-(defthm consp-cddr-of-assoc-equal-when-node-replacement-pairsp
-  (implies (and (node-replacement-pairsp alist bound)
+(defthm consp-cddr-of-assoc-equal-when-node-replacement-alistp
+  (implies (and (node-replacement-alistp alist bound)
                 (assoc-equal index alist))
            (equal (consp (cddr (assoc-equal index alist)))
                   (consp (cdr (assoc-equal index alist)))))
-  :hints (("Goal" :in-theory (enable node-replacement-pairsp
+  :hints (("Goal" :in-theory (enable node-replacement-alistp
                                      assoc-equal))))
 
-(defthm equal-of-quote-and-cadr-of-assoc-equal-when-node-replacement-pairsp
-  (implies (and (node-replacement-pairsp alist bound)
+(defthm equal-of-quote-and-cadr-of-assoc-equal-when-node-replacement-alistp
+  (implies (and (node-replacement-alistp alist bound)
                 (assoc-equal index alist))
            (equal (equal 'quote (cadr (assoc-equal index alist)))
                   (consp (cdr (assoc-equal index alist)))))
-  :hints (("Goal" :in-theory (enable node-replacement-pairsp
+  :hints (("Goal" :in-theory (enable node-replacement-alistp
                                      assoc-equal))))
 
 ;; (defthm BOUNDED-INTEGER-ALISTP-of-+-of-1-and-max-key
@@ -118,16 +120,16 @@
 ;;   :hints (("Goal" :in-theory (enable BOUNDED-INTEGER-ALISTP MAX-KEY))))
 
 ;disable?
-(defthm natp-alistp-when-node-replacement-pairsp
-  (implies (node-replacement-pairsp alist bound)
+(defthm natp-alistp-when-node-replacement-alistp
+  (implies (node-replacement-alistp alist bound)
            (natp-alistp alist))
-  :hints (("Goal" :in-theory (enable node-replacement-pairsp natp-alistp))))
+  :hints (("Goal" :in-theory (enable node-replacement-alistp natp-alistp))))
 
-(defthm node-replacement-pairsp-forward-to-true-listp
-  (implies (node-replacement-pairsp alist bound)
+(defthm node-replacement-alistp-forward-to-true-listp
+  (implies (node-replacement-alistp alist bound)
            (true-listp alist))
   :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable node-replacement-pairsp))))
+  :hints (("Goal" :in-theory (enable node-replacement-alistp))))
 
 (defthm <-of-max-key-bound
   (implies (and
@@ -151,29 +153,12 @@
            (< (MAX-KEY alist '0) '2147483646))
   :hints (("Goal" :in-theory (e/d (MAX-KEY max-when-<=) (max)))))
 
-
-(defthmd keyword-value-listp-of-cdr-of-header
-  (implies (array1p array-name array)
-           (keyword-value-listp (cdr (header array-name array))))
-  :hints (("Goal" :in-theory (enable array1p header))))
-
 (local
  (defthm <-of-min
   (equal (< x (min y z))
          (and (< x y)
               (< x z)))
   :hints (("Goal" :in-theory (enable min)))))
-;move
-;may be better than the other one
-(defthm aref1-of-cons-of-cons-of-header-irrel
-  (implies (and (natp n)
-                (equal (cadr (assoc-keyword :default header))
-                       (default array-name array)))
-           (equal (aref1 array-name
-                         (cons (cons :header header) array)
-                         n)
-                  (aref1 array-name array n)))
-  :hints (("Goal" :in-theory (enable aref1))))
 
 ;;;
 ;;; end of library stuff
@@ -184,43 +169,11 @@
 ;;;
 
 ;; Each node maps to nil (no replacement), or to a replacement (a quotep or a nodenum).
-;; TODO: Bake in the name
+;; TODO: Bake in the name of the array
 (def-typed-acl2-array2 node-replacement-arrayp
   (or (null val)
       (myquotep val)
       (natp val)))
-
-;; it might get the default value
-;; have the tool generate this?
-(defthm node-replacement-arrayp-aux-of-cons-of-cons-of-header-irrel
-  (implies (and (natp index)
-                (equal (cadr (assoc-keyword :default header))
-                       (default name l)))
-           (equal (node-replacement-arrayp-aux name (cons (cons :header header) l) index)
-                  (node-replacement-arrayp-aux name l index)))
-  :hints (("Goal" :in-theory (e/d (node-replacement-arrayp-aux
-                                   ;;default header
-                                   )
-                                  (myquotep
-                                   AREF1-OF-CONS-OF-CONS-OF-HEADER)))))
-
-;; (defun node-replacement-arrayp (array-name array array-len)
-;;   (declare (xargs :guard t))
-;;   (and (node-replacement-arrayp-aux array-name array)
-;;        (natp array-len)
-;;        (< array-len (alen1 array-name array))))
-
-;; (defthm node-replacement-arrayp-forward-to-natp
-;;   (implies (node-replacement-arrayp array-name array array-len)
-;;            (natp array-len))
-;;   :rule-classes :forward-chaining
-;;   :hints (("Goal" :in-theory (enable node-replacement-arrayp))))
-
-(defthm node-replacement-arrayp-forward-to-array1p
-  (implies (node-replacement-arrayp array-name array)
-           (array1p array-name array))
-  :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable node-replacement-arrayp))))
 
 ;;;
 ;;; bounded-node-replacement-arrayp
@@ -237,7 +190,7 @@
   :extra-guards ((natp bound)))
 
 (defthm bounded-node-replacement-arrayp-aux-of-make-into-array
-  (implies (and (node-replacement-pairsp alist bound)
+  (implies (and (node-replacement-alistp alist bound)
                 (natp index)
                 (< (max-key alist 0) 2147483646)
                 (<= index (max-key alist 0))
@@ -246,17 +199,17 @@
   :hints (("Goal" :in-theory (enable bounded-node-replacement-arrayp-aux make-into-array aref1))))
 
 (defthm bounded-node-replacement-arrayp-of-make-into-array
-  (implies (and (node-replacement-pairsp node-replacement-pairs bound)
+  (implies (and (node-replacement-alistp node-replacement-alist bound)
                 (natp bound)
                 (<= bound 2147483646)
-                ;(equal (alen1 ..) (+ 1 (max-key node-replacement-pairs 0)))
+                ;(equal (alen1 ..) (+ 1 (max-key node-replacement-alist 0)))
                 )
            (bounded-node-replacement-arrayp 'node-replacement-array
-                                            (make-into-array 'node-replacement-array node-replacement-pairs)
+                                            (make-into-array 'node-replacement-array node-replacement-alist)
                                             bound))
   :hints (("Goal" :in-theory (e/d (bounded-NODE-REPLACEMENT-ARRAYP
                                    bounded-NODE-REPLACEMENT-ARRAYP-aux
-                                   NODE-REPLACEMENT-PAIRSP
+                                   NODE-REPLACEMENT-ALISTP
                                    ;;MAKE-INTO-ARRAY
                                    BOUNDED-NATP-ALISTP-redef
                                    ) (alistp
@@ -282,23 +235,11 @@
            (bounded-node-replacement-arrayp array-name array bound))
   :hints (("Goal" :in-theory (enable bounded-node-replacement-arrayp))))
 
-;; (defun bounded-node-replacement-arrayp (array-name array array-len bound)
-;;   (declare (xargs :guard (natp bound)))
-;;   (and (bounded-node-replacement-arrayp-aux array-name array bound)
-;;        (natp array-len)
-;;        (< array-len (alen1 array-name array))))
-
 (defthm node-replacement-arrayp-aux-when-bounded-node-replacement-arrayp-aux
   (implies (bounded-node-replacement-arrayp-aux name array index bound)
            (node-replacement-arrayp-aux name array index))
   :hints (("Goal" :in-theory (enable bounded-node-replacement-arrayp-aux
                                      node-replacement-arrayp-aux))))
-
-;; (defthm node-replacement-arrayp-aux-when-bounded-node-replacement-arrayp-aux
-;;   (implies (bounded-node-replacement-arrayp-aux name array bound)
-;;            (node-replacement-arrayp-aux name array))
-;;   :hints (("Goal" :in-theory (enable bounded-node-replacement-arrayp-aux
-;;                                      node-replacement-arrayp-aux))))
 
 (defthm node-replacement-arrayp-when-bounded-node-replacement-arrayp
   (implies (bounded-node-replacement-arrayp name array bound)
@@ -309,7 +250,10 @@
 ;;; lookup-in-node-replacement-array
 ;;;
 
-;; Returns nil or a nodenum/quotep.
+;; Returns nil (no replacement for NODENUM) or a nodenum/quotep with which to replace NODENUM.
+;; TODO: Make a version that gives back NODENUM if no replacement is made.  We
+;; could even have the array map non-replaced nodes to themselves, to avoid
+;; having to check whether the result is nil.
 (defund lookup-in-node-replacement-array (nodenum node-replacement-array num-valid-nodes)
   (declare (xargs :guard (and (natp nodenum)
                               (natp num-valid-nodes)
@@ -317,6 +261,7 @@
                               (<= num-valid-nodes (alen1 'node-replacement-array node-replacement-array)))))
   (if (<= num-valid-nodes nodenum) ;can't possibly be replaced, and looking it up would be illegal
       nil
+    ;; either nil or a replacement (a nodenum or quotep):
     (aref1 'node-replacement-array node-replacement-array nodenum)))
 
 (defthm dargp-of-lookup-in-node-replacement-array
@@ -340,28 +285,16 @@
                 (natp bound)
                 (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array bound))
            (dargp-less-than (lookup-in-node-replacement-array nodenum node-replacement-array num-valid-nodes)
-                                       bound))
+                            bound))
   :hints (("Goal" :use (:instance type-of-aref1-when-bounded-node-replacement-arrayp
                                   (array-name 'node-replacement-array)
                                   (array node-replacement-array)
                                   (index nodenum))
            :in-theory (e/d (lookup-in-node-replacement-array) (type-of-aref1-when-bounded-node-replacement-arrayp)))))
 
-;; (defthm dargp-less-than-of-lookup-in-node-replacement-array-gen
-;;   (implies (and (<= bound bound2)
-;;                 (lookup-in-node-replacement-array nodenum node-replacement-array num-valid-nodes) ;; node is being replaced with something
-;;                 (natp nodenum)
-;;                 (natp num-valid-nodes)
-;;                 (natp bound)
-;;                 (node-replacement-arrayp 'node-replacement-array node-replacement-array num-valid-nodes bound))
-;;            (dargp-less-than (lookup-in-node-replacement-array nodenum node-replacement-array num-valid-nodes)
-;;                                        bound2))
-;;   :hints (("Goal" :use (:instance dargp-less-than-of-lookup-in-node-replacement-array)
-;;            :in-theory (disable dargp-less-than-of-lookup-in-node-replacement-array))))
-
-;; Returns nil or a nodenum/quotep.
-
-;;add support in typed arrays machinery for make-into-array?
+;;;
+;;; add-node-replacement-entry-and-maybe-expand
+;;;
 
 ;; Returns (mv node-replacement-array num-valid-nodes).
 (defund add-node-replacement-entry-and-maybe-expand (nodenum replacement array-name array num-valid-nodes)

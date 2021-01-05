@@ -32,10 +32,10 @@
 (include-book "binary")
 (include-book "std/testing/assert-bang" :dir :system)
 
-(assert! (and (equal (bit-digit-list-value (explode "0")) #b0)
-              (equal (bit-digit-list-value (explode "1")) #b1)
-              (equal (bit-digit-list-value (explode "01")) #b01)
-              (equal (bit-digit-list-value (explode "0101011101")) #b0101011101)))
+(assert! (and (equal (bin-digit-chars-value (explode "0")) #b0)
+              (equal (bin-digit-chars-value (explode "1")) #b1)
+              (equal (bin-digit-chars-value (explode "01")) #b01)
+              (equal (bin-digit-chars-value (explode "0101011101")) #b0101011101)))
 
 (assert! (equal (strval2 "") nil))
 (assert! (equal (strval2 "0") 0))

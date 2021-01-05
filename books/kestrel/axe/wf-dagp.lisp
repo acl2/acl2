@@ -12,9 +12,12 @@
 
 (in-package "ACL2")
 
-(include-book "parent-array")
+(include-book "dag-parent-array")
 (include-book "dag-constant-alist")
 (include-book "dag-variable-alist")
+(include-book "make-dag-variable-alist")
+(include-book "make-dag-constant-alist")
+(include-book "dag-parent-array-with-name")
 
 ;;;
 ;;; wf-dagp ("well-formed DAG")
@@ -25,8 +28,10 @@
   (declare (xargs :guard t))
   (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
        (bounded-dag-parent-arrayp dag-parent-array-name dag-parent-array dag-len)
-       (bounded-dag-constant-alistp dag-constant-alist dag-len)
-       (bounded-dag-variable-alistp dag-variable-alist dag-len)
+       ;; Says that the dag-constant-alist is in sync with the dag:
+       (equal dag-constant-alist (make-dag-constant-alist dag-array-name dag-array dag-len)) ;;(bounded-dag-constant-alistp dag-constant-alist dag-len)
+       ;; Says that the dag-variable-alist is in sync with the dag:
+       (equal dag-variable-alist (make-dag-variable-alist dag-array-name dag-array dag-len)) ;;(bounded-dag-variable-alistp dag-variable-alist dag-len)
        (equal (alen1 dag-array-name dag-array)
               (alen1 dag-parent-array-name dag-parent-array))))
 
@@ -35,8 +40,9 @@
   (equal (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
          (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
               (bounded-dag-parent-arrayp dag-parent-array-name dag-parent-array dag-len)
+              (equal dag-constant-alist (make-dag-constant-alist dag-array-name dag-array dag-len)) ;(bounded-dag-constant-alistp dag-variable-alist dag-len)
               (bounded-dag-constant-alistp dag-constant-alist dag-len)
-              (bounded-dag-variable-alistp dag-variable-alist dag-len)
+              (equal dag-variable-alist (make-dag-variable-alist dag-array-name dag-array dag-len)) ;(bounded-dag-variable-alistp dag-variable-alist dag-len)
               (equal (alen1 dag-array-name dag-array)
                      (alen1 dag-parent-array-name dag-parent-array))))
   :hints (("Goal" :in-theory (enable wf-dagp))))
@@ -48,7 +54,9 @@
                 (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                 (bounded-dag-parent-arrayp dag-parent-array-name dag-parent-array dag-len)
                 (bounded-dag-constant-alistp dag-constant-alist dag-len)
+                (equal dag-constant-alist (make-dag-constant-alist dag-array-name dag-array dag-len))
                 (bounded-dag-variable-alistp dag-variable-alist dag-len)
+                (equal dag-variable-alist (make-dag-variable-alist dag-array-name dag-array dag-len))
                 (equal (alen1 dag-array-name dag-array)
                        (alen1 dag-parent-array-name dag-parent-array))))
   :rule-classes :forward-chaining
@@ -71,4 +79,37 @@
                     dag-parent-array-name
                     (make-empty-array dag-parent-array-name size)
                     nil nil))
+  :hints (("Goal" :in-theory (enable wf-dagp))))
+
+;drop?
+(defthm wf-dagp-of-make-into-array-etc
+  (implies (and (pseudo-dagp dag)
+                (< (LEN DAG) 2147483647))
+           (WF-DAGP 'DAG-ARRAY
+                    (MAKE-INTO-ARRAY 'DAG-ARRAY DAG)
+                    (LEN DAG)
+                    'DAG-PARENT-ARRAY
+                    (MAKE-DAG-PARENT-ARRAY-WITH-NAME (LEN DAG)
+                                                     'DAG-ARRAY
+                                                     (MAKE-INTO-ARRAY 'DAG-ARRAY DAG)
+                                                     'DAG-PARENT-ARRAY)
+                    (MAKE-DAG-CONSTANT-ALIST 'DAG-ARRAY
+                                             (MAKE-INTO-ARRAY 'DAG-ARRAY DAG)
+                                             (LEN DAG))
+                    (MAKE-DAG-VARIABLE-ALIST 'DAG-ARRAY
+                                             (MAKE-INTO-ARRAY 'DAG-ARRAY DAG)
+                                             (LEN DAG))))
+  :hints (("Goal" :in-theory (enable wf-dagp
+                                     CAR-OF-CAR-WHEN-PSEUDO-DAGP-CHEAP))))
+
+(defthm wf-dagp-of-make-dag-parent-array-with-name2-etc
+  (implies (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+           (wf-dagp 'dag-array
+                    dag-array
+                    dag-len
+                    'dag-parent-array
+                    ;; note the "2" here:
+                    (make-dag-parent-array-with-name2 dag-len 'dag-array dag-array 'dag-parent-array)
+                    (make-dag-constant-alist 'dag-array dag-array dag-len)
+                    (make-dag-variable-alist 'dag-array dag-array dag-len)))
   :hints (("Goal" :in-theory (enable wf-dagp))))

@@ -13,10 +13,12 @@
 (in-package "ACL2")
 
 (include-book "dag-arrays")
-(include-book "parent-array") ;todo: drop.  but need ALL-DARGP-LESS-THAN-WHEN-NO-ATOMS etc
+(include-book "dag-parent-array") ;todo: drop.  but need ALL-DARGP-LESS-THAN-WHEN-NO-ATOMS etc
 (include-book "kestrel/utilities/erp" :dir :system)
+(include-book "kestrel/lists-light/repeat" :dir :system)
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
+(local (include-book "kestrel/lists-light/append" :dir :system))
 
 ;; TODO: Define translation-arrayp and use it instead of translation-arrayp-aux.
 
@@ -396,3 +398,117 @@
           ("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (e/d (translate-args-with-changep car-becomes-nth-of-0)
                            (dargp)))))
+
+;;;
+;;; translate-nodes
+;;;
+
+;; This throws an error if a node translates to a constant.
+;; Returns (mv changed-nodes unchanged-nodes).
+;; TODO: Compare to the renaming-array stuff.
+;; TODO: Compare to translate-args?
+(defund translate-nodes (nodenums translation-array changed-acc unchanged-acc)
+  (declare (xargs :guard (and (true-listp nodenums)
+                              (array1p 'translation-array translation-array)
+                              (all-natp nodenums)
+                              (all-< nodenums (alen1 'translation-array translation-array))
+                              (translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array)
+                              (true-listp changed-acc)
+                              (true-listp unchanged-acc))
+                  :guard-debug t
+                  ))
+  (if (endp nodenums)
+      (mv changed-acc
+          unchanged-acc)
+    (b* ((nodenum (first nodenums))
+         (res (aref1 'translation-array translation-array nodenum))
+         ;; for guard proof:
+         ((when (not (natp res))) ;can't happen?
+          (er hard? 'translate-nodes "A literal translated to a non-natp.")
+          ;; for ease of reasoning:
+          (mv (append (repeat (len nodenums) 0) changed-acc)
+              unchanged-acc)))
+      (if (= res nodenum)
+          ;; no change:
+          (translate-nodes (rest nodenums) translation-array changed-acc (cons nodenum unchanged-acc))
+        (progn$ ;; (cw "~x0 became ~x1.~%" nodenum res)
+                (translate-nodes (rest nodenums) translation-array (cons res changed-acc) unchanged-acc))))))
+
+;(local (in-theory (disable reverse-removal)))
+
+;rename
+(defthm len-of-translate-nodes
+  (equal (+ (len (mv-nth 0 (translate-nodes nodenums translation-array changed-acc unchanged-acc)))
+            (len (mv-nth 1 (translate-nodes nodenums translation-array changed-acc unchanged-acc))))
+         (+ (len nodenums)
+            (len changed-acc)
+            (len unchanged-acc)))
+  :hints (("Goal" :in-theory (enable translate-nodes))))
+
+(local
+ (defthm nat-listp-of-repeat
+   (implies (natp x)
+            (nat-listp (repeat n x)))
+   :hints (("Goal" :in-theory (enable nat-listp repeat)))))
+
+(local
+ (defthm all-<-of-repeat
+   (implies (< x bound)
+            (all-< (repeat n x) bound))
+   :hints (("Goal" :in-theory (enable nat-listp repeat)))))
+
+(defthm nat-listp-of-mv-nth-0-of-translate-nodes
+  (implies (and (nat-listp nodenums)
+                (nat-listp changed-acc)
+                (nat-listp unchanged-acc))
+           (nat-listp (mv-nth 0 (translate-nodes nodenums translation-array changed-acc unchanged-acc))))
+  :hints (("Goal" :in-theory (enable translate-nodes))))
+
+(defthm nat-listp-of-mv-nth-1-of-translate-nodes
+  (implies (and (nat-listp nodenums)
+                (nat-listp changed-acc)
+                (nat-listp unchanged-acc))
+           (nat-listp (mv-nth 1 (translate-nodes nodenums translation-array changed-acc unchanged-acc))))
+  :hints (("Goal" :in-theory (enable translate-nodes))))
+
+(defthm true-listp-of-mv-nth-0-of-translate-nodes
+  (implies (true-listp changed-acc)
+           (true-listp (mv-nth 0 (translate-nodes nodenums translation-array changed-acc unchanged-acc))))
+  :hints (("Goal" :in-theory (enable translate-nodes))))
+
+(defthm true-listp-of-mv-nth-1-of-translate-nodes
+  (implies (true-listp unchanged-acc)
+           (true-listp (mv-nth 1 (translate-nodes nodenums translation-array changed-acc unchanged-acc))))
+  :hints (("Goal" :in-theory (enable translate-nodes))))
+
+(defthm all-<-of-mv-nth-0-of-translate-nodes
+  (implies (and (posp bound)
+                (all-< changed-acc bound)
+                ;(all-< unchanged-acc bound)
+                (array1p 'translation-array translation-array)
+                (all-natp nodenums)
+                (all-< nodenums (alen1 'translation-array translation-array))
+                (translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array)
+                (bounded-translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array bound))
+           (all-< (mv-nth 0 (translate-nodes nodenums translation-array changed-acc unchanged-acc)) bound))
+  :hints (("Goal" :in-theory (enable translate-nodes))))
+
+(defthm all-<-of-mv-nth-1-of-translate-nodes
+  (implies (and (posp bound)
+;(all-< changed-acc bound)
+                (all-< unchanged-acc bound)
+                (array1p 'translation-array translation-array)
+                (all-natp nodenums)
+                (all-< nodenums (alen1 'translation-array translation-array))
+                (translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array)
+                (bounded-translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array bound))
+           (all-< (mv-nth 1 (translate-nodes nodenums translation-array changed-acc unchanged-acc)) bound))
+  :hints (("subgoal *1/3"
+           :use (:instance <-OF-AREF1-WHEN-BOUNDED-TRANSLATION-ARRAYP-AUX
+                           (nodenum (car nodenums))
+                           (bound2 bound)
+                           (nodenum2 (+ -1
+                                        (ALEN1 'TRANSLATION-ARRAY
+                                               TRANSLATION-ARRAY))))
+           :in-theory (disable <-OF-AREF1-WHEN-BOUNDED-TRANSLATION-ARRAYP-AUX))
+          ("Goal" :in-theory (enable translate-nodes))))

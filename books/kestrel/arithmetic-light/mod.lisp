@@ -661,3 +661,14 @@
            (unsigned-byte-p size (mod x y)))
   :hints (("Goal"
            :in-theory (enable unsigned-byte-p))))
+
+(defthm mod-of-+-of---when-equal-of-mod
+  (implies (and (syntaxp (not (quotep x1))) ; prevent ACL2 from matching (- x1) with a constant
+                (equal (mod x1 y) k)
+                (syntaxp (quotep k))
+                (integerp x1)
+                (integerp x2)
+                (posp y)
+                )
+           (equal (mod (+ (- x1) x2) y)
+                  (mod (+ (- k) x2) y))))

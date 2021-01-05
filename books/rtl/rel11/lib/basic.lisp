@@ -507,7 +507,21 @@
            (and (equal (chop (chop x m) k)
                        (chop x k))
                 (equal (chop (chop x k) m)
-                       (chop x k)))))
+                       (chop x k))
+		(<= (chop x k) (chop x m)))))
+
+(defthmd chop-plus
+  (implies (and (rationalp x)
+	        (rationalp y)
+	        (integerp k))
+           (and (equal (chop (+ x (chop y k)) k)
+		       (+ (chop x k) (chop y k)))
+		(equal (chop (+ (chop x k) (chop y k)) k)
+		       (+ (chop x k) (chop y k)))
+		(equal (chop (- x (chop y k)) k)
+		       (- (chop x k) (chop y k)))
+		(equal (chop (- (chop x k) (chop y k)) k)
+		       (- (chop x k) (chop y k))))))
 
 (defthmd chop-shift
   (implies (and (rationalp x)

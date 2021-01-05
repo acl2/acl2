@@ -7,8 +7,8 @@
 (include-book "../hifat")
 
 (defund
-    hifat-subsetp
-    (m1-file-alist1 m1-file-alist2)
+  hifat-subsetp
+  (m1-file-alist1 m1-file-alist2)
   (declare
    (xargs
     :guard (and (m1-file-alist-p m1-file-alist1)
@@ -230,15 +230,15 @@
     :use (:instance hifat-subsetp-reflexive-lemma-4
                     (x nil)))))
 
-(defund hifat-equiv (m1-file-alist1 m1-file-alist2)
-  (declare (xargs :guard (and (m1-file-alist-p m1-file-alist1)
-                              (hifat-no-dups-p m1-file-alist1)
-                              (m1-file-alist-p m1-file-alist2)
-                              (hifat-no-dups-p m1-file-alist2))))
-  (b* ((m1-file-alist1 (hifat-file-alist-fix m1-file-alist1))
-       (m1-file-alist2 (hifat-file-alist-fix m1-file-alist2)))
-    (and (hifat-subsetp m1-file-alist1 m1-file-alist2)
-         (hifat-subsetp m1-file-alist2 m1-file-alist1))))
+(defund hifat-equiv (fs1 fs2)
+  (declare (xargs :guard (and (m1-file-alist-p fs1)
+                              (hifat-no-dups-p fs1)
+                              (m1-file-alist-p fs2)
+                              (hifat-no-dups-p fs2))))
+  (let ((fs1 (hifat-file-alist-fix fs1))
+        (fs2 (hifat-file-alist-fix fs2)))
+    (and (hifat-subsetp fs1 fs2)
+         (hifat-subsetp fs2 fs1))))
 
 ;; A bug was here: after we changed the definition of hifat-equiv, we placed
 ;; this defequiv form somewhat later in the file, with the result that two

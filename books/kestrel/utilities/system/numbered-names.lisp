@@ -309,7 +309,7 @@
     (if digits-of-index
         (b* (((when (eql (car digits-of-index) #\0))
               (mv nil nil nil))
-             (index (str::digit-list-value digits-of-index))
+             (index (str::dec-digit-chars-value digits-of-index))
              (name-chars-without-index-and-end-marker
               (take (- (len name-chars-without-end-marker)
                        (len digits-of-index))

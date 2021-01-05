@@ -24,7 +24,7 @@
     :hints (("Goal" :in-theory (enable MEMBER))))
 
   ;; Tricky test involving remove-guard-holders:
-  (assert-equal (make-axe-rules '(member-of-cons) (w state))
+  (assert-equal (make-axe-rules! '(member-of-cons) (w state))
                 '(((MEMBER-EQUAL A (CONS B X))
                    (IF (EQUAL A B)
                        (CONS B X)

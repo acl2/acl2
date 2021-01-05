@@ -23,3 +23,7 @@
                       (8 8 (:TYPE-PRESCRIPTION TRUE-LISTP))
                       (6 6 (:REWRITE CONSP-OF-STRIP-CARS)))
 (STRIP-CARS-OF-CDR (8 8 (:REWRITE DEFAULT-CAR)))
+(MEMBER-EQUAL-OF-STRIP-CARS-IFF (77 74 (:REWRITE DEFAULT-CAR))
+                                (44 24 (:REWRITE DEFAULT-CDR))
+                                (18 6 (:REWRITE CAR-OF-STRIP-CARS))
+                                (12 12 (:REWRITE CONSP-OF-STRIP-CARS)))

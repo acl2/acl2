@@ -63,8 +63,8 @@
   (xdoc::topstring-p
    "The most significant digit comes first,
     followed by the least significant one.")
-  (b* ((hi-digit (str::hex-digit-val hi-char))
-       (lo-digit (str::hex-digit-val lo-char)))
+  (b* ((hi-digit (str::hex-digit-char-value hi-char))
+       (lo-digit (str::hex-digit-char-value lo-char)))
     (+ (* 16 hi-digit) lo-digit)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

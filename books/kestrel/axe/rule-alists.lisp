@@ -4,9 +4,13 @@
 (include-book "stored-rules")
 (include-book "kestrel/alists-light/uniquify-alist-eq" :dir :system)
 
+(in-theory (disable fgetprop)) ;move
+
 ;;
 ;; rule-alists (structures that index rules by the top function symbol of their LHSes)
 ;;
+
+;; TODO: Consider using a property list world to make the lookups faster.
 
 ;; A rule-alist is a database of rules used by Axe.  It maps function symbols
 ;; to lists of stored rules.
@@ -244,33 +248,64 @@
     (cons (make-rule-alist-simple (first rule-sets) remove-duplicate-rulesp priorities)
           (make-rule-alists-simple (rest rule-sets) remove-duplicate-rulesp priorities))))
 
+;; Returns (mv erp rule-alist).
 (defund make-rule-alist (rule-names wrld)
   (declare (xargs :guard (and (true-listp rule-names)
                               (symbol-listp rule-names)
                               (ilks-plist-worldp wrld))))
-  (let ((axe-rules (make-axe-rules rule-names wrld))
-        (priorities (table-alist 'axe-rule-priorities-table wrld))
-        ) ;todo: optimize this routine to not make the rules first
+  (b* (((mv erp axe-rules) (make-axe-rules rule-names wrld))
+       ((when erp) (mv erp nil))
+       (priorities (table-alist 'axe-rule-priorities-table wrld))
+       ) ;todo: optimize this routine to not make the rules first
     (if (not (alistp priorities))
-        (er hard? 'make-rule-alist "Ill-formed priorities table.")
-      (make-rule-alist-simple axe-rules t priorities))))
+        (prog2$ (er hard? 'make-rule-alist "Ill-formed priorities table.")
+                (mv :bad-priorities-table nil))
+      (mv (erp-nil)
+          (make-rule-alist-simple axe-rules t priorities)))))
 
-(in-theory (disable fgetprop)) ;move
-
-(defthm rule-alistp-of-make-rule-alist
+(defthm rule-alistp-of-mv-nth-1-of-make-rule-alist
   (implies (symbol-listp rule-names)
-           (rule-alistp (make-rule-alist rule-names wrld)))
+           (rule-alistp (mv-nth 1 (make-rule-alist rule-names wrld))))
   :hints (("Goal" :in-theory (enable make-rule-alist
                                      axe-rule-listp))))
 
+;; Returns a rule-alist.  Doesn't return erp.
+(defund make-rule-alist! (rule-names wrld)
+  (declare (xargs :guard (and (true-listp rule-names)
+                              (symbol-listp rule-names)
+                              (ilks-plist-worldp wrld))))
+  (mv-let (erp rule-alist)
+    (make-rule-alist rule-names wrld)
+    (if erp
+        (er hard? 'make-rule-alist! "Error making rule alist.")
+      rule-alist)))
+
+
+;; Returns (mv erp rule-alists).
 (defund make-rule-alists (rule-name-lists wrld)
   (declare (xargs :guard (and (true-listp rule-name-lists)
                               (symbol-list-listp rule-name-lists)
                               (ilks-plist-worldp wrld))))
   (if (endp rule-name-lists)
-      nil
-    (cons (make-rule-alist (first rule-name-lists) wrld)
-          (make-rule-alists (rest rule-name-lists) wrld))))
+      (mv (erp-nil) nil)
+    (b* (((mv erp rule-alist)
+          (make-rule-alist (first rule-name-lists) wrld))
+         ((when erp) (mv erp nil))
+         ((mv erp rule-alists)
+          (make-rule-alists (rest rule-name-lists) wrld))
+         ((when erp) (mv erp nil)))
+      (mv (erp-nil)
+          (cons rule-alist rule-alists)))))
+
+(defthm true-listp-of-mv-nth-1-of-make-rule-alists
+  (true-listp (mv-nth 1 (make-rule-alists rule-name-lists wrld)))
+  :rule-classes :type-prescription
+  :hints (("Goal" :in-theory (enable make-rule-alists))))
+
+(defthm all-rule-alistp-of-mv-nth-1-of-make-rule-alists
+  (implies (symbol-list-listp rule-name-lists)
+           (all-rule-alistp (mv-nth 1 (make-rule-alists rule-name-lists wrld))))
+  :hints (("Goal" :in-theory (enable make-rule-alists))))
 
 ;todo: would prefer to just pass in named formulas here
 (defund extend-rule-alist2 (axe-rules rule-alist wrld)
@@ -293,18 +328,36 @@
     (cons (extend-rule-alist2 axe-rules (first rule-alists) wrld)
           (extend-rule-alists2 axe-rules (rest rule-alists) wrld))))
 
+;; Returns (mv erp rule-alist).
 ;compare to extend-rule-alistXXX
 (defund add-to-rule-alist (rule-names rule-alist wrld)
   (declare (xargs :guard (and (symbol-listp rule-names)
                               (true-listp rule-names)
                               (rule-alistp rule-alist)
                               (ilks-plist-worldp wrld))))
-  (let ((axe-rules (make-axe-rules rule-names wrld))
-        (priorities (table-alist 'axe-rule-priorities-table wrld)))
+  (b* (((mv erp axe-rules) (make-axe-rules rule-names wrld))
+       ((when erp) (mv erp nil))
+       (priorities (table-alist 'axe-rule-priorities-table wrld)))
     (if (not (alistp priorities))
-        (er hard? 'add-to-rule-alist "Ill-formed priorities table.")
-      (extend-rule-alist axe-rules t priorities rule-alist))))
+        (prog2$ (er hard? 'add-to-rule-alist "Ill-formed priorities table.")
+                (mv :bad-priorities-table nil))
+      (mv (erp-nil)
+          (extend-rule-alist axe-rules t priorities rule-alist)))))
 
+;; Returns the rule-alist.  Does not return erp.
+(defund add-to-rule-alist! (rule-names rule-alist wrld)
+  (declare (xargs :guard (and (symbol-listp rule-names)
+                              (true-listp rule-names)
+                              (rule-alistp rule-alist)
+                              (ilks-plist-worldp wrld))))
+  (mv-let (erp rule-alist)
+    (add-to-rule-alist rule-names rule-alist wrld)
+    (if erp
+        (er hard? 'add-to-rule-alist! "Error adding to rule alist.")
+      rule-alist)))
+
+
+;; Returns (mv erp rule-alists).
 (defun add-to-rule-alists (rule-names rule-alists wrld)
   (declare (xargs :guard (and (symbol-listp rule-names)
                               (true-listp rule-names)
@@ -312,9 +365,15 @@
                               (true-listp rule-alists)
                               (ilks-plist-worldp wrld))))
   (if (endp rule-alists)
-      nil
-    (cons (add-to-rule-alist rule-names (first rule-alists) wrld)
-          (add-to-rule-alists rule-names (rest rule-alists) wrld))))
+      (mv (erp-nil) nil)
+    (b* (((mv erp rule-alist)
+          (add-to-rule-alist rule-names (first rule-alists) wrld))
+         ((when erp) (mv erp nil))
+         ((mv erp rule-alists)
+          (add-to-rule-alists rule-names (rest rule-alists) wrld))
+         ((when erp) (mv erp nil)))
+      (mv (erp-nil)
+          (cons rule-alist rule-alists)))))
 
 (defun remove-from-stored-rules (rule-names-to-remove stored-rules)
   (declare (xargs :guard (and (symbol-listp rule-names-to-remove)

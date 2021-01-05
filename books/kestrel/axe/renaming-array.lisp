@@ -97,6 +97,11 @@
        (<= array-len (alen1 array-name array))
        (renaming-arrayp-aux array-name array (+ -1 array-len))))
 
+(defthm renaming-arrayp-of-0
+  (equal (renaming-arrayp array-name array 0)
+         (array1p array-name array))
+  :hints (("Goal" :in-theory (enable renaming-arrayp))))
+
 ;; Rename any of the ARGS that are nodenums according to the RENAMING-ARRAY.
 (defund rename-args (args renaming-array-name renaming-array)
   (declare (xargs :guard (and (array1p renaming-array-name renaming-array)

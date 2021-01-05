@@ -1,6 +1,7 @@
 ; C Library
 ;
 ; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -18,7 +19,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ atc-abstract-syntax
-  :parents (atc)
+  :parents (atc-implementation)
   :short "An abstract syntax of C for ATC."
   :long
   (xdoc::topstring
@@ -356,6 +357,32 @@
   (:ullong ())
   :pred tyspecseqp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist tyspecseq-list
+  :short "Fixtype of lists of sequences of type specifiers."
+  :elt-type tyspecseq
+  :true-listp t
+  :elementp-of-nil nil
+  :pred tyspecseq-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption tyspecseq-option
+  tyspecseq
+  :short "Fixtype of optional sequences of type specifiers."
+  :pred tyspecseq-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define irr-tyspecseq ()
+  :returns (ty tyspecseqp)
+  :short "An irrelevant type specifier sequence,
+          usable as a dummy return value."
+  (with-guard-checking :none (ec-call (tyspecseq-fix :irrelevant)))
+  ///
+  (in-theory (disable (:e irr-tyspecseq))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod tyname
@@ -631,6 +658,15 @@
   :true-listp t
   :elementp-of-nil nil
   :pred param-decl-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection param-decl-list->type-list ((x param-decl-listp))
+  :result-type tyspecseq-listp
+  :short "Lift @(tsee param-decl->type) to lists."
+  (param-decl->type x)
+  ///
+  (fty::deffixequiv param-decl-list->type-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

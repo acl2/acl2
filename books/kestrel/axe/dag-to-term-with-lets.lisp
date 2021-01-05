@@ -14,7 +14,7 @@
 
 ;; See also dag-to-term-with-lets-simple.lisp.
 
-(include-book "parent-array-with-name")
+(include-book "dag-parent-array-with-name")
 (include-book "supporting-nodes")
 (include-book "kestrel/acl2-arrays/typed-acl2-arrays" :dir :system)
 (local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))

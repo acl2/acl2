@@ -50,3 +50,6 @@
   (iff (bool-fix x)
        x)
   :hints (("Goal" :in-theory (enable bool-fix))))
+
+;; This helps justify some things that Axe does:
+(defcong iff equal (bool-fix$inline x) 1 :hints (("Goal" :in-theory (enable bool-fix))))

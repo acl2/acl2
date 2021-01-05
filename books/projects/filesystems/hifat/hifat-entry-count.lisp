@@ -10,9 +10,6 @@
 
 ;; We're not counting this very directory, because the root does not have a
 ;; directory entry for itself.
-;;
-;; Before disabling, this rule used to cause 436909 frames and 8297 tries in
-;; the main book; now those numbers are 4997 and 63 respectively.
 (defund
   hifat-entry-count (fs)
   (declare (xargs :guard (and (m1-file-alist-p fs)

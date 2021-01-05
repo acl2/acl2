@@ -69,3 +69,8 @@
          (and (natp a)
               (nat-listp x)))
   :hints (("Goal" :in-theory (enable nat-listp))))
+
+(defthm nat-listp-of-append
+  (equal (nat-listp (append x y))
+         (and (nat-listp (true-list-fix x))
+              (nat-listp y))))

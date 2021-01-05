@@ -51,3 +51,11 @@
                                      bits-to-bytes
                                      len-mult-of-8p)
            :expand (bits-to-bytes (byte-to-bits (car bytes))))))
+
+;; Somewhat unusal because the inner function operates on a single byte but the
+;; outer function returns a list of bytes.
+(defthm bits-to-bytes-of-byte-to-bits
+  (implies (unsigned-byte-p 8 byte)
+           (equal (bits-to-bytes (byte-to-bits byte))
+                  (list byte)))
+  :hints (("Goal" :expand (bits-to-bytes (byte-to-bits byte)))))

@@ -25,7 +25,7 @@
 ;; Check whether ALIST is an alist that binds exactly the symbols in
 ;; EXPECTED-SYMBOLS, in that order, to either quoted constants or nodenums less
 ;; than DAG-LEN.
-(defun axe-bind-free-result-okayp (alist expected-symbols dag-len)
+(defund axe-bind-free-result-okayp (alist expected-symbols dag-len)
   (declare (xargs :guard (and (natp dag-len)
                               (symbol-listp expected-symbols))))
   (if (atom alist)
@@ -46,12 +46,14 @@
          (and (alistp alist)
               (equal expected-symbols (strip-cars alist))
               (all-dargp-less-than (strip-cdrs alist) dag-len)))
-  :hints (("Goal" :in-theory (e/d (strip-cdrs default-cdr default-car) (MYQUOTEP natp)))))
+  :hints (("Goal" :in-theory (e/d (strip-cdrs default-cdr default-car axe-bind-free-result-okayp dargp-less-than)
+                                  (myquotep natp)))))
 
 (defthm axe-bind-free-result-okayp-forward-to-alistp
   (implies (axe-bind-free-result-okayp alist expected-symbols dag-len)
            (alistp alist))
-  :rule-classes :forward-chaining)
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable axe-bind-free-result-okayp))))
 
 ;make tail recursive?
 (defun make-equalities-from-dotted-pairs (pairs)

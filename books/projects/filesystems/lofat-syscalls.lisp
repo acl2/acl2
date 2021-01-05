@@ -1535,11 +1535,33 @@
                               (fat32-filename-list-p path)
                               (natp size))))
   (b*
-      (((mv fs error-code) (lofat-to-hifat fat32$c))
-       ((unless (equal error-code 0)) (mv fat32$c -1 *eio*))
-       ((mv fs retval error-code) (hifat-truncate fs path size))
-       ((mv fat32$c &) (hifat-to-lofat fat32$c fs)))
-    (mv fat32$c retval error-code)))
+      (((unless (unsigned-byte-p 32 size))
+        (mv fat32$c -1 *enospc*))
+       ((mv root-d-e-list &)
+        (root-d-e-list fat32$c))
+       ((mv file error-code)
+        (lofat-find-file fat32$c root-d-e-list path))
+       ((when (and (equal error-code 0)
+                   (lofat-directory-file-p file)))
+        ;; Can't truncate a directory file.
+        (mv fat32$c -1 *eisdir*))
+       ((mv oldtext d-e)
+        (if (equal error-code 0)
+            ;; Regular file
+            (mv (coerce (lofat-file->contents file) 'list)
+                (lofat-file->d-e file))
+          ;; Nonexistent file
+          (mv nil (d-e-fix nil))))
+       (file
+        (make-lofat-file
+         :d-e d-e
+         :contents (coerce (make-character-list
+                            (take size oldtext))
+                           'string)))
+       ((mv fat32$c error-code)
+        (lofat-place-file fat32$c (pseudo-root-d-e fat32$c) path file)))
+    (mv fat32$c (if (equal error-code 0) 0 -1)
+        error-code)))
 
 (defthm lofat-fs-p-of-lofat-truncate
   (implies
@@ -1574,14 +1596,40 @@
                               (stringp buf)
                               (natp offset)
                               (fd-table-p fd-table)
-                              (file-table-p file-table))))
+                              (file-table-p file-table))
+                  :guard-debug t
+                  :guard-hints (("Goal" :do-not-induct t
+                                 :in-theory (enable len-of-insert-text)))))
   (b*
-      (((mv fs error-code) (lofat-to-hifat fat32$c))
-       ((unless (equal error-code 0)) (mv fat32$c -1 *eio*))
-       ((mv fs retval error-code)
-        (hifat-pwrite fd buf offset fs fd-table file-table))
-       ((mv fat32$c &) (hifat-to-lofat fat32$c fs)))
-    (mv fat32$c retval error-code)))
+      ((fd-table-entry (assoc-equal fd fd-table))
+       ((unless (consp fd-table-entry))
+        (mv fat32$c -1 *ebadf*))
+       (file-table-entry (assoc-equal (cdr fd-table-entry)
+                                      file-table))
+       ((unless (consp file-table-entry))
+        (mv fat32$c -1 *ebadf*))
+       (path (file-table-element->fid (cdr file-table-entry)))
+       ((mv root-d-e-list &)
+        (root-d-e-list fat32$c))
+       ((mv file error-code)
+        (lofat-find-file fat32$c root-d-e-list path))
+       ((mv oldtext d-e)
+        (if (and (equal error-code 0)
+                 (lofat-regular-file-p file))
+            (mv (coerce (lofat-file->contents file) 'list)
+                (lofat-file->d-e file))
+          (mv nil (d-e-fix nil))))
+       ((unless (unsigned-byte-p 32 (+ offset (length buf))))
+        (mv fat32$c -1 *enospc*))
+       (file
+        (make-lofat-file
+         :d-e d-e
+         :contents (coerce (insert-text oldtext offset buf)
+                           'string)))
+       ((mv fat32$c error-code)
+        (lofat-place-file fat32$c (pseudo-root-d-e fat32$c) path file)))
+    (mv fat32$c (if (equal error-code 0) 0 -1)
+        error-code)))
 
 (defthm integerp-of-lofat-pwrite
   (integerp (mv-nth 1 (lofat-pwrite fd buf offset fat32$c fd-table
@@ -1601,38 +1649,48 @@
                               (file-table-p file-table))))
   (hifat-close fd fd-table file-table))
 
-(defund lofat-truncate (fat32$c path size)
-  (declare (xargs :stobjs fat32$c
-                  :guard (and (lofat-fs-p fat32$c)
-                              (fat32-filename-list-p path)
-                              (natp size))))
-  (b*
-      (((mv fs error-code) (lofat-to-hifat fat32$c))
-       ((unless (equal error-code 0)) (mv fat32$c -1 *eio*))
-       ((mv fs retval error-code) (hifat-truncate fs path size))
-       ((mv fat32$c &) (hifat-to-lofat fat32$c fs)))
-    (mv fat32$c retval error-code)))
-
 (defund lofat-mkdir (fat32$c path)
   (declare (xargs :stobjs fat32$c
                   :guard (and (lofat-fs-p fat32$c)
                               (fat32-filename-list-p path))))
-  (b*
-      (((mv fs error-code) (lofat-to-hifat fat32$c))
-       ((unless (equal error-code 0)) (mv fat32$c -1 *eio*))
-       ((mv fs retval error-code) (hifat-mkdir fs path))
-       ((mv fat32$c &) (hifat-to-lofat fat32$c fs)))
-    (mv fat32$c retval error-code)))
+  (b* ((dirname (dirname path))
+       ;; Never pass relative paths to syscalls - make them always begin
+       ;; with "/".
+       ((mv root-d-e-list &) (root-d-e-list fat32$c))
+       ((mv parent-dir errno)
+        (lofat-find-file fat32$c root-d-e-list dirname))
+       ((unless (or (atom dirname)
+                    (and (equal errno 0)
+                         (m1-directory-file-p parent-dir))))
+        (mv fat32$c -1 *enoent*))
+       ((when (equal errno 0))
+        (mv fat32$c -1 *eexist*))
+       (basename (basename path))
+       ((unless (equal (length basename) 11))
+        (mv fat32$c -1 *enametoolong*))
+       (d-e
+        (d-e-install-directory-bit
+         (d-e-fix nil)
+         t))
+       (file (make-lofat-file :d-e d-e
+                              :contents nil))
+       ((mv fat32$c error-code)
+        (lofat-place-file fat32$c
+                          (pseudo-root-d-e fat32$c)
+                          path file))
+       ((unless (equal error-code 0))
+        (mv fat32$c -1 error-code)))
+    (mv fat32$c 0 0)))
 
 (defthm integerp-of-lofat-mkdir
   (integerp (mv-nth 1 (lofat-mkdir fat32$c path)))
   :hints (("Goal" :in-theory (enable lofat-mkdir)) ))
 
 (defthm lofat-fs-p-of-lofat-mkdir
-  (implies
-   (lofat-fs-p fat32$c)
-   (lofat-fs-p (mv-nth 0 (lofat-mkdir fat32$c path))))
-  :hints (("Goal" :in-theory (enable lofat-mkdir)) ))
+  (implies (lofat-fs-p fat32$c)
+           (lofat-fs-p (mv-nth 0 (lofat-mkdir fat32$c path))))
+  :hints (("goal" :in-theory (e/d (lofat-mkdir)
+                                  (nth make-list-ac-removal)))))
 
 ;; Semantics under consideration: each directory stream is a list of directory
 ;; entries, and each readdir operation removes a directory entry from the front

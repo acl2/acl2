@@ -748,3 +748,31 @@
 (defthmd integerp-when-fep
   (implies (fep x p)
            (integerp x)))
+
+;; Changes inner + to add
+(defthmd add-of-+-arg2
+  (implies (and (integerp y1)
+                (integerp y2))
+           (equal (add x (+ y1 y2) p)
+                  (add x (add y1 y2 p) p)))
+  :hints (("Goal" :in-theory (enable add))))
+
+;; Changes inner + to add
+(defthmd add-of-+-arg1
+  (implies (and (integerp y1)
+                (integerp y2))
+           (equal (add (+ y1 y2) x p)
+                  (add (add y1 y2 p) x p)))
+  :hints (("Goal" :in-theory (enable add))))
+
+(defthm add-same-arg1-arg3
+  (implies (posp p)
+           (equal (add p x p)
+                  (mod (ifix x) p)))
+  :hints (("Goal" :in-theory (enable add))))
+
+(defthm add-same-arg2-arg3
+  (implies (posp p)
+           (equal (add x p p)
+                  (mod (ifix x) p)))
+  :hints (("Goal" :in-theory (enable add))))

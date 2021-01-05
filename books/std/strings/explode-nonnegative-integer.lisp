@@ -241,23 +241,23 @@
 
 
 
-(defthm digit-val-of-digit-to-char
+(defthm dec-digit-char-value-of-digit-to-char
   (implies (and (force (natp n))
                 (force (<= 0 n))
                 (force (<= n 9)))
-           (equal (str::digit-val (digit-to-char n))
+           (equal (str::dec-digit-char-value (digit-to-char n))
                   n))
-  :hints(("Goal" :in-theory (enable str::digit-val
+  :hints(("Goal" :in-theory (enable str::dec-digit-char-value
                                     digit-to-char))))
 
 
-(defsection digit-to-char-of-digit-val
+(defsection digit-to-char-of-dec-digit-char-value
 
  (local (defun test (n)
           (declare (xargs :ruler-extenders :all))
           (and (let ((char (code-char n)))
                  (or (not (str::dec-digit-char-p char))
-                     (equal (digit-to-char (str::digit-val char))
+                     (equal (digit-to-char (str::dec-digit-char-value char))
                             char)))
                (if (zp n)
                    t
@@ -270,7 +270,7 @@
                         (<= i n))
                    (let ((char (code-char i)))
                      (implies (str::dec-digit-char-p char)
-                              (equal (digit-to-char (str::digit-val char))
+                              (equal (digit-to-char (str::dec-digit-char-value char))
                                      char))))))
 
  (local (defthm l1
@@ -278,13 +278,13 @@
                         (<= i 255))
                    (let ((char (code-char i)))
                      (implies (str::dec-digit-char-p char)
-                              (equal (digit-to-char (str::digit-val char))
+                              (equal (digit-to-char (str::dec-digit-char-value char))
                                      char))))
           :hints(("Goal" :use ((:instance l0 (n 255)))))))
 
- (defthm digit-to-char-of-digit-val
+ (defthm digit-to-char-of-dec-digit-char-value
    (implies (str::dec-digit-char-p char)
-            (equal (digit-to-char (str::digit-val char))
+            (equal (digit-to-char (str::dec-digit-char-value char))
                    char))
    :hints(("Goal" :use ((:instance l1 (i (char-code char))))))))
 
@@ -293,7 +293,7 @@
   (declare (xargs :guard (and (character-listp x)
                               (str::dec-digit-char-listp x))))
   (if (consp x)
-      (+ (str::digit-val (car x))
+      (+ (str::dec-digit-char-value (car x))
          (* 10 (basic-unexplode-core (cdr x))))
     0))
 

@@ -15,3 +15,9 @@ nonstrict
 
 mbt.c
 mbt
+
+calls.c
+calls
+
+locvars.c
+locvars

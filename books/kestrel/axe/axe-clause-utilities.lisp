@@ -20,7 +20,7 @@
 ;it can help to think about the case where they are all false, to see what is contradictory
 ;fixme add the ability to read the output of this back in and apply the prover to it
 ;fixme make tail rec (could just print each one instead of consing up the list..)
-(defun expressions-for-this-case (items dag-array dag-len)
+(defund expressions-for-this-case (items dag-array dag-len)
   (declare (xargs :guard (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                               (possibly-negated-nodenumsp items)
                               (all-< (strip-nots-from-possibly-negated-nodenums items)
@@ -45,6 +45,30 @@
             (cons `(not ,item)
                   (expressions-for-this-case (cdr items) dag-array dag-len))))))))
 
+;; in this version, the items are all nodenums.  todo: drop the version just above?
+(defund expressions-for-this-case-simple (items dag-array dag-len)
+  (declare (xargs :guard (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+                              (nat-listp items)
+                              (all-< items dag-len))
+                  :guard-hints (("Goal" :expand ((possibly-negated-nodenumsp items))
+                                 :in-theory (enable strip-not-from-possibly-negated-nodenum
+                                                    strip-nots-from-possibly-negated-nodenums
+                                                    DAG-FUNCTION-CALL-EXPRP-REDEF)))))
+  (if (endp items)
+      nil
+    (let* ((item (first items)))
+      (let ((expr (aref1 'dag-array dag-array item)))
+        (if (and (consp expr)
+                 (eq 'not (ffn-symb expr))
+                 (consp (dargs expr)) ;for guards
+                 )
+            ;; if the item is a NOT, negate it by stripping the NOT:
+            (cons (first (dargs expr))
+                  (expressions-for-this-case (cdr items) dag-array dag-len))
+          ;; if the item isn't a NOT, negate it by adding a NOT:
+          (cons `(not ,item)
+                (expressions-for-this-case (cdr items) dag-array dag-len)))))))
+
 ;any non-nil constant proves the clause (we are proving a disjunction), any nil is dropped (because (or nil x) = x)
 ;;returns (mv provedp remaining-disjunct-nodenums)
 ;is there another version of this?  See get-axe-disjunction-from-dag-items.
@@ -52,7 +76,7 @@
 ;; TODO: Should we remove duplicate disjuncts too?
 ;; TODO: Deprecate! (Why?)
 ;; Also used in prover.lisp
-(defun handle-constant-disjuncts (disjuncts acc)
+(defund handle-constant-disjuncts (disjuncts acc)
   (declare (xargs :guard (and (true-listp disjuncts)
                               (all-dargp disjuncts)
                               (true-listp acc))))
@@ -62,9 +86,27 @@
       (if (consp disjunct)
           ;; it's a quotep:
           (if (unquote disjunct)
-              ;; A disjunct that is a non-nil constant proves the disjuntion:
+              ;; A disjunct that is a non-nil constant proves the disjunction:
               (mv t nil) ;second RV is irrelevant
             ;; Drop the nil disjunct:
             (handle-constant-disjuncts (rest disjuncts) acc))
         ;; it's a nodenum:
         (handle-constant-disjuncts (rest disjuncts) (cons disjunct acc))))))
+
+(defthm all-<-of-mv-nth-1-of-handle-constant-disjuncts
+  (implies (and (all-dargp-less-than disjuncts bound)
+                (all-< acc bound))
+           (all-< (mv-nth 1 (handle-constant-disjuncts disjuncts acc)) bound))
+  :hints (("Goal" :in-theory (enable handle-constant-disjuncts))))
+
+(defthm nat-listp-of-mv-nth-1-of-handle-constant-disjuncts
+  (implies (and (all-dargp-less-than disjuncts bound)
+                (nat-listp acc))
+           (nat-listp (mv-nth 1 (handle-constant-disjuncts disjuncts acc))))
+  :hints (("Goal" :in-theory (enable handle-constant-disjuncts))))
+
+(defthm true-listp-of-mv-nth-1-of-handle-constant-disjuncts
+  (implies (true-listp acc)
+           (true-listp (mv-nth 1 (handle-constant-disjuncts disjuncts acc))))
+  :rule-classes :type-prescription
+  :hints (("Goal" :in-theory (enable handle-constant-disjuncts))))

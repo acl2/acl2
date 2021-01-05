@@ -1170,3 +1170,4 @@ fix s+ form so that it has access to pkg.
   (declare (xargs :guard (true-listp xs)))
   (for ((x in xs)) (always (or (proper-symbolp x)
                                (rquotep x)))))
+

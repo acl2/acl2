@@ -175,3 +175,10 @@
            (all-dargp args))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable all-myquotep))))
+
+(defthm dargp-of-cdr-of-assoc-equal
+  (implies (and (all-dargp (strip-cdrs alist))
+                (assoc-equal var alist))
+           (dargp (cdr (assoc-equal var alist))))
+  :hints (("Goal" :in-theory (e/d (strip-cdrs)
+                                  ()))))

@@ -12,11 +12,18 @@
 
 (in-package "ACL2")
 
+;; See tests in rewriter-basic-tests.lisp
+
 (include-book "make-rewriter-simple")
+(include-book "evaluator-basic")
 (include-book "axe-syntaxp-evaluator-basic")
 (include-book "axe-bind-free-evaluator-basic")
-(include-book "evaluator-basic")
 
+;; Create a "basic" rewriter.  Here, "basic" refers to the set of functions to
+;; evaluate and to the sets of axe-syntaxp and axe-bind-free functions that the
+;; rewriter "knows" about.  To understand what gets generated, see
+;; make-rewriter-simple-fn.  The main interface functions are
+;; simplify-term-basic, simp-term-basic, and simp-terms-basic.
 (make-rewriter-simple basic
                       apply-axe-evaluator-basic-to-quoted-args
                       eval-axe-syntaxp-expr-basic

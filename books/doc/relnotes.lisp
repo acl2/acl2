@@ -139,15 +139,30 @@
 
    (xdoc::p
     "This is a library about the C language.
-     It is being populated with
-     a formalization of some aspects of the C language
+     It contains a formalization of (some aspects of) the C language
      and ATC (`ACL2 To C'), a C code generator for ACL2.")
 
-   (xdoc::h5 (xdoc::seetopic "c::atc" "ATC"))
+   ;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h5 (xdoc::seetopic "c::atc" "ATC, the C Code Generator for ACL2"))
 
    (xdoc::p
-    "A first simple working version of the C code generator has been added,
-     with user documentation and a working test.")
+    "This is a proof-generating C code generator for ACL2.
+     Besides the C code, it also generates proofs (i.e. ACL2 theorems)
+     asserting the correctness of the C code.")
+
+   (xdoc::p
+    "This currently covers a relatively simple subset of ACL2 and C.
+     The coverage is being extended.")
+
+   ;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h5 (xdoc::seetopic "c::language" "C Language Formalization"))
+
+   (xdoc::p
+    "This currently covers just
+     character sets, bytes, and keywords.
+     The coverage is being extended.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -483,14 +498,28 @@
 
    (xdoc::h4 (xdoc::seetopic "crypto::cryptography" "Cryptographic Library"))
 
+   ;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h5 (xdoc::seetopic "ecurve::elliptic-curves"
+                             "Elliptic Curve Library"))
+
    (xdoc::p
-    "In the "
-    (xdoc::seetopic "ecurve::elliptic-curves" "sub-library for elliptic curves")
-    ", the files @('[books]/kestrel/crypto/ecurve/bls12-377-domain-parameters.lisp')
-    and @('[books]/kestrel/crypto/ecurve/bls12-377-prime.lisp') have been
-    added.  They introduce some parameters of the BLS12-377 elliptic curve,
-    and introduce a Pratt certificate of primality for the scalar field size @($r$)
-    of that elliptic curve.")
+    "The formalization of "
+    (xdoc::seetopic "ecurve::short-weierstrass-curves"
+                    "short Weierstrass curves")
+    " has been extended and improved.")
+
+   (xdoc::p
+    "A formalization of "
+    (xdoc::seetopic "ecurve::twisted-edwards-curves" "twisted Edwards curves")
+    " has been added.")
+
+   (xdoc::p
+    "The files
+     @('[books]/kestrel/crypto/ecurve/bls12-377-domain-parameters.lisp') and
+     @('[books]/kestrel/crypto/ecurve/bls12-377-prime.lisp')
+     have been added.
+     They introduce some parameters of the BLS12-377 elliptic curve.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

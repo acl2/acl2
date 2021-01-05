@@ -20,6 +20,7 @@
 (include-book "worklist-array")
 (include-book "kestrel/acl2-arrays/typed-acl2-arrays" :dir :system)
 (include-book "all-dargp")
+(local (include-book "merge-sort-less-than-rules"))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
@@ -31,54 +32,7 @@
 
 (local (in-theory (enable not-<-of-car-when-all-<)))
 
-;move this stuff:
-
-(defthm all-natp-of-merge-sort-<
-  (equal (all-natp (merge-sort-< lst))
-         (all-natp lst)))
-
-(defthm all-<-of-merge-sort-<
-  (equal (all-< (merge-sort-< lst) val)
-         (all-< lst val))
-  :hints (("Goal" :in-theory (enable merge-sort-<))))
-
-;todo: have defmergesort do this
-(defthm consp-of-merge-<
-  (equal (consp (merge-< x1 x2 acc))
-         (or (consp x1)
-             (consp x2)
-             (consp acc)))
-  :hints (("Goal" :in-theory (enable merge-<))))
-
-;; (thm
-;;  (equal (consp (mv-nth 1 (SPLIT-LIST-FAST-AUX LST TAIL ACC)))
-;;         (consp lst)))
-
-;; (thm
-;;  (equal (CONSP (MV-NTH 1 (SPLIT-LIST-FAST x)))
-;;         (consp (cdr x)))
-;;  :hints (("Goal" :expand ((SPLIT-LIST-FAST-AUX X X NIL)
-;;                           (SPLIT-LIST-FAST-AUX (CDR X)
-;;                                                (CDDR X)
-;;                                                (LIST (CAR X))))
-;;           :in-theory (enable SPLIT-LIST-FAST SPLIT-LIST-FAST-AUX))))
-
-;; (defthm consp-of-mv-nth-0-of-split-list-fast-aux
-;;   (implies (and (consp lst)
-;;                 (<= (len tail) (len lst)))
-;;            (consp (mv-nth 0 (split-list-fast-aux lst tail acc))))
-;;   :hints (("Goal" :in-theory (enable split-list-fast-aux))))
-
-;todo: have defmergesort do this
-;strengthen (see above)
-(defthm consp-of-merge-sort-<
-  (implies (consp lst)
-           (consp (merge-sort-< lst)))
-  :hints (("Subgoal *1/2" :use (:instance split-list-fast-aux-len-theorem (tail lst) (acc nil)))
-          ("Goal"
-           :in-theory (e/d (merge-sort-< SPLIT-LIST-FAST)
-                           (split-list-fast-aux-len-theorem)))))
-
+;todo: rename to aref1-list?
 ;not tail-rec..
 (defund lookup-lst-array (array-name array indices)
   (declare (xargs :guard (and (all-natp indices)
@@ -86,10 +40,10 @@
                               (array1p array-name array)
                               (all-< indices (alen1 array-name array))
                               )))
-  (if (consp indices)
-      (cons (aref1 array-name array (car indices))
-            (lookup-lst-array array-name array (cdr indices)))
-      nil))
+  (if (endp indices)
+      nil
+    (cons (aref1 array-name array (car indices))
+          (lookup-lst-array array-name array (cdr indices)))))
 
 (defund sum-list-tail-aux (lst acc)
   (declare (xargs :guard (and (true-listp lst)
@@ -186,8 +140,11 @@
 ;; worklist (for any :examined node, all its descendants are either on the
 ;; worklist or have a valid entry in the size-array).
 (defund size-array-for-nodes-aux (worklist ;must be sorted
-                                  dag-array-name dag-array dag-len size-array-name size-array worklist-array)
-  (declare (xargs :guard (and (array1p size-array-name size-array) ;; need to say that it contains integers or nil, or :examined
+                                  dag-array-name dag-array dag-len
+                                  size-array-name size-array ;; tracks the results being computed
+                                  worklist-array ;; tracks the status of nodes (whether they are :examined)
+                                  )
+  (declare (xargs :guard (and (array1p size-array-name size-array) ;; need to say that it contains integers or nil
                               (array1p 'worklist-array worklist-array) ;maps nodes to :examined or nil
                               (true-listp worklist)
                               (all-natp worklist)

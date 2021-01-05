@@ -185,7 +185,8 @@
                               (all-< nodenums dag-len))
                   :guard-hints (("Goal"
                                  :use (:instance pseudo-dagp-of-mv-nth-1-of-drop-non-supporters-array-node-list)
-                                 :in-theory (e/d (CAR-OF-CAR-WHEN-PSEUDO-DAGP-CHEAP)
+                                 :in-theory (e/d (CAR-OF-CAR-WHEN-PSEUDO-DAGP-CHEAP
+                                                  top-nodenum-of-dag-becomes-top-nodenum)
                                                  (pseudo-dagp-of-mv-nth-1-of-drop-non-supporters-array-node-list)))))
            (ignore dag-len))
   (b* (((mv renamed-nodenums dag)
@@ -229,7 +230,8 @@
 ;;   :rule-classes (:rewrite :type-prescription)
 ;;   :hints (("Goal"
 ;;            :use (:instance pseudo-dagp-of-mv-nth-1-of-drop-non-supporters-array-node-list)
-;;            :in-theory (e/d (crunch-dag-array2) (pseudo-dagp-of-mv-nth-1-of-drop-non-supporters-array-node-list)))))
+;;            :in-theory (e/d (crunch-dag-array2) (pseudo-dagp-of-mv-nth-1-of-drop-non-supporters-array-node-list
+;;                                                 natp)))))
 
 (defthm <=-of-mv-nth-1-of-crunch-dag-array2
   (implies (and (true-listp nodenums)
@@ -305,7 +307,7 @@
                               (all-< nodenums dag-len))))
   (b* (((mv dag-array dag-len renamed-nodenums) (crunch-dag-array2 dag-array-name dag-array dag-len nodenums))
        ((mv dag-parent-array dag-constant-alist dag-variable-alist)
-        (make-dag-indices-with-len dag-array-name dag-array dag-parent-array-name dag-len (array-len-with-slack dag-len dag-len))))
+        (make-dag-indices dag-array-name dag-array dag-parent-array-name dag-len)))
     (mv dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist renamed-nodenums)))
 
 ;gen?
@@ -317,7 +319,7 @@
                 (symbolp dag-parent-array-name)
                 (all-< nodenums dag-len))
            (natp (mv-nth 1 (crunch-dag-array2-with-indices dag-array-name dag-array dag-len dag-parent-array-name nodenums))))
-  :hints (("Goal" :in-theory (enable crunch-dag-array2-with-indices))))
+  :hints (("Goal" :in-theory (e/d (crunch-dag-array2-with-indices) (natp)))))
 
 (defthm dag-constant-alistp-of-mv-nth-3-of-crunch-dag-array2-with-indices
   (implies (and (true-listp nodenums)
@@ -403,6 +405,7 @@
 
 (defthm true-listp-of-mv-nth-5-of-crunch-dag-array2-with-indices
   (true-listp (mv-nth 5 (crunch-dag-array2-with-indices dag-array-name dag-array dag-len dag-parent-array-name nodenums)))
+  :rule-classes :type-prescription
   :hints (("Goal" :in-theory (enable crunch-dag-array2-with-indices))))
 
 (local
@@ -458,4 +461,4 @@
                     (mv-nth 2 (crunch-dag-array2-with-indices dag-array-name dag-array dag-len dag-parent-array-name nodenums))
                     (mv-nth 3 (crunch-dag-array2-with-indices dag-array-name dag-array dag-len dag-parent-array-name nodenums))
                     (mv-nth 4 (crunch-dag-array2-with-indices dag-array-name dag-array dag-len dag-parent-array-name nodenums))))
-  :hints (("Goal" :in-theory (enable wf-dagp))))
+  :hints (("Goal" :in-theory (enable wf-dagp crunch-dag-array2-with-indices))))

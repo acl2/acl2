@@ -21,19 +21,83 @@
 (include-book "std/testing/assert-bang-stobj" :dir :system)
 (include-book "kestrel/utilities/deftest" :dir :system)
 
+;;;
+;;; tests of simp-term-basic
+;;;
+
+;; A simple test that applies the rewrite rule CAR-CONS to simplify a term:
 (assert!
- (mv-let (erp dag)
+ (mv-let (erp term)
+   (simp-term-basic '(car (cons (foo x) (foo y)))
+                    nil     ; assumptions
+                    (make-rule-alist! '(car-cons) (w state))
+                    nil     ; interpreted-function-alist
+                    nil     ; monitored-symbols
+                    t       ; memoizep
+                    t       ; count-hitsp
+                    (w state))
+   (and (not erp) ;no error
+        ;; resulting term is (FOO X):
+        (equal term '(foo x)))))
+
+;; A test that computes a ground term
+(assert!
+ (mv-let (erp term)
+   (simp-term-basic '(binary-+ '3 '4)
+                    nil     ; assumptions
+                    nil     ; rule-alist
+                    nil     ; interpreted-function-alist
+                    nil     ; monitored-symbols
+                    t       ; memoizep
+                    t       ; count-hitsp
+                    (w state))
+   (and (not erp)
+        (equal term ''7))))
+
+;; A test that uses an assumption
+(assert!
+ (mv-let (erp term)
+   (simp-term-basic '(natp x)
+                    '((natp x))     ; assumptions
+                    nil     ; rule-alist
+                    nil     ; interpreted-function-alist
+                    nil     ; monitored-symbols
+                    t       ; memoizep
+                    t       ; count-hitsp
+                    (w state))
+   (and (not erp)
+        (equal term ''t))))
+
+;; A test that returns a variable
+(assert!
+ (mv-let (erp res)
+   (simp-term-basic '(car (cons x y)) nil (make-rule-alist! '(car-cons) (w state)) nil nil nil nil (w state))
+   (and (not erp)
+        (equal res 'x))))
+
+;; A test that returns a constant
+(assert!
+ (mv-let (erp res)
+   (simp-term-basic '(car (cons '2 y)) nil (make-rule-alist! '(car-cons) (w state)) nil nil nil nil (w state))
+   (and (not erp)
+        (equal res ''2))))
+
+;;;
+;;; tests of simplify-term
+;;;
+
+(assert!
+ (mv-let (erp result) ;; result is always DAG or a quotep
    (simplify-term-basic '(binary-+ '0 '0)
                         nil ; assumptions
                         nil ; rule-alist
                         nil ; interpreted-function-alist
-                        nil ;monitored-symbols
+                        nil ; monitored-symbols
                         t   ; memoizep
                         t   ; count-hitsp
                         (w state))
    (and (not erp)
-        (equal dag
-               ''0))))
+        (equal result ''0))))
 
 (deftest
   (defthm if-same-branches
@@ -53,7 +117,7 @@
                                  't)
                              't)
                           nil
-                          (make-rule-alist '(if-same-branches)
+                          (make-rule-alist! '(if-same-branches)
                                            (w state))
                           nil nil nil nil (w state))
      (and (not erp)
@@ -68,7 +132,7 @@
  (mv-let (erp res)
    (simplify-term-basic '(if (natp x) (natp x) y)
                         nil
-                        (make-rule-alist nil
+                        (make-rule-alist! nil
                                          (w state))
                         nil nil nil nil (w state))
    (and (not erp)
@@ -79,7 +143,7 @@
  (mv-let (erp res)
    (simplify-term-basic '(if (foo x) (foo x) y)
                         nil
-                        (make-rule-alist nil
+                        (make-rule-alist! nil
                                          (w state))
                         nil nil nil nil (w state))
    (and (not erp)
@@ -164,7 +228,7 @@
  (mv-let (erp res)
    (simplify-term-basic '(if (natp x) (natp x) y)
                         nil
-                        (make-rule-alist nil
+                        (make-rule-alist! nil
                                          (w state))
                         nil nil t nil (w state))
    (and (not erp)
@@ -175,7 +239,7 @@
  (mv-let (erp res)
    (simplify-term-basic '(if (natp x) y (natp x))
                         nil
-                        (make-rule-alist nil
+                        (make-rule-alist! nil
                                          (w state))
                         nil nil t nil (w state))
    (and (not erp)
@@ -186,7 +250,7 @@
  (mv-let (erp res)
    (simplify-term-basic '(if (foo x) (foo x) y)
                         nil
-                        (make-rule-alist nil
+                        (make-rule-alist! nil
                                          (w state))
                         nil nil t nil (w state))
    (and (not erp)
@@ -197,7 +261,7 @@
  (mv-let (erp res)
    (simplify-term-basic '(if (foo x) y (foo x))
                         nil
-                        (make-rule-alist nil
+                        (make-rule-alist! nil
                                          (w state))
                         nil nil t nil (w state))
    (and (not erp)
@@ -208,7 +272,7 @@
  (mv-let (erp res)
    (simplify-term-basic '(if (not (natp x)) (not (natp x)) y)
                         nil
-                        (make-rule-alist nil
+                        (make-rule-alist! nil
                                          (w state))
                         nil nil t nil (w state))
    (and (not erp)
@@ -219,7 +283,7 @@
  (mv-let (erp res)
    (simplify-term-basic '(if (not (natp x)) (natp x) y)
                         nil
-                        (make-rule-alist nil
+                        (make-rule-alist! nil
                                          (w state))
                         nil nil t nil (w state))
    (and (not erp)
@@ -230,7 +294,7 @@
  (mv-let (erp res)
    (simplify-term-basic '(if (not (natp x)) y (not (natp x)))
                         nil
-                        (make-rule-alist nil
+                        (make-rule-alist! nil
                                          (w state))
                         nil nil t nil (w state))
    (and (not erp)
@@ -241,7 +305,7 @@
  (mv-let (erp res)
    (simplify-term-basic '(if (not (natp x)) y (natp x))
                         nil
-                        (make-rule-alist nil
+                        (make-rule-alist! nil
                                          (w state))
                         nil nil t nil (w state))
    (and (not erp)
@@ -252,7 +316,7 @@
  (mv-let (erp res)
    (simplify-term-basic '(if (not (foo x)) (not (foo x)) y)
                         nil
-                        (make-rule-alist nil
+                        (make-rule-alist! nil
                                          (w state))
                         nil nil t nil (w state))
    (and (not erp)
@@ -263,7 +327,7 @@
  (mv-let (erp res)
    (simplify-term-basic '(if (not (foo x)) (foo x) y)
                         nil
-                        (make-rule-alist nil
+                        (make-rule-alist! nil
                                          (w state))
                         nil nil t nil (w state))
    (and (not erp)
@@ -274,7 +338,7 @@
  (mv-let (erp res)
    (simplify-term-basic '(if (not (foo x)) y (not (foo x)))
                         nil
-                        (make-rule-alist nil
+                        (make-rule-alist! nil
                                          (w state))
                         nil nil t nil (w state))
    (and (not erp)
@@ -285,24 +349,31 @@
  (mv-let (erp res)
    (simplify-term-basic '(if (not (foo x)) y (foo x))
                         nil
-                        (make-rule-alist nil
+                        (make-rule-alist! nil
                                          (w state))
                         nil nil t nil (w state))
    (and (not erp)
         (equal (dag-to-term res) '(if (not (foo x)) y (foo x))))))
 
-;;
-;; test simp-term-basic
-;;
-
+;; Test with a non-boolean assumptions that appears in an IF test.  This works
+;; because we lookup IF tests in the refined-assumption alist.
 (assert!
  (mv-let (erp res)
-   (simp-term-basic '(car (cons x y)) nil (make-rule-alist '(car-cons) (w state)) nil nil nil nil (w state))
+   (simplify-term-basic '(if (member-equal x y) w z)
+                        '((member-equal x y))
+                        (make-rule-alist! nil
+                                         (w state))
+                        nil nil t nil (w state))
    (and (not erp)
-        (equal res 'x))))
+        (equal (dag-to-term res) 'w))))
 
-(assert!
- (mv-let (erp res)
-   (simp-term-basic '(car (cons '2 y)) nil (make-rule-alist '(car-cons) (w state)) nil nil nil nil (w state))
-   (and (not erp)
-        (equal res ''2))))
+;; ;; TODO: get this to work.  The known assumption appears in a call of NOT.  I suppose we could rewrite "if of not".
+;; (assert!
+;;  (mv-let (erp res)
+;;    (simplify-term-basic '(if (not (member-equal x y)) w z)
+;;                         '((member-equal x y))
+;;                         (make-rule-alist! nil
+;;                                          (w state))
+;;                         nil nil t nil (w state))
+;;    (and (not erp)
+;;         (equal (dag-to-term res) 'w))))

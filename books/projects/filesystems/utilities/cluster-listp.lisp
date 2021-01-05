@@ -64,6 +64,13 @@
                              cluster-size)
               (cluster-listp y cluster-size))))
 
+(defthm
+  cluster-listp-of-resize-list
+  (implies (and (cluster-listp lst cluster-size)
+                (<= (nfix n) (len lst)))
+           (cluster-listp (resize-list lst n default-value)
+                          cluster-size)))
+
 (defund
   make-clusters (text cluster-size)
   (declare
@@ -157,9 +164,9 @@
   :hints (("goal" :in-theory (disable make-clusters-correctness-2)
            :use len-of-make-clusters)))
 
-(defthm
-  cluster-listp-of-resize-list
-  (implies (and (cluster-listp lst cluster-size)
-                (<= (nfix n) (len lst)))
-           (cluster-listp (resize-list lst n default-value)
-                          cluster-size)))
+(defthm make-clusters-of-nil
+  (implies (and (atom text) (not (stringp text)))
+           (equal (make-clusters text cluster-size)
+                  nil))
+  :hints (("goal" :in-theory (enable make-clusters)))
+  :rule-classes :type-prescription)

@@ -59,3 +59,8 @@
                   (myquotep item)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable dargp))))
+
+(defthmd myquotep-when-dargp
+  (implies (dargp item)
+           (equal (myquotep item)
+                  (consp item))))

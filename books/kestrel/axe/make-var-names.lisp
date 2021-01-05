@@ -15,6 +15,8 @@
 ;; todo: compare to new-var-names
 
 (include-book "kestrel/utilities/pack" :dir :system)
+(local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
+(local (include-book "kestrel/lists-light/revappend" :dir :system))
 
 ;use pack?
 (defund make-var-names-aux (base-symbol startnum endnum)
@@ -36,6 +38,22 @@
   (symbol-listp (make-var-names-aux base-symbol startnum endnum))
   :hints (("Goal" :in-theory (enable make-var-names-aux))))
 
+(defthm len-of-make-var-names-aux
+  (implies (and (natp startnum)
+                (integerp endnum)
+                (<= startnum (+ 1 endnum)))
+           (equal (len (make-var-names-aux base-symbol startnum endnum))
+                  (+ 1 (- endnum startnum))))
+  :hints (("Goal" :in-theory (enable make-var-names-aux))))
+
+(defthm consp-of-make-var-names-aux
+  (implies (and (natp startnum)
+                (integerp endnum)
+                (<= startnum (+ 1 endnum)))
+           (equal (consp (make-var-names-aux base-symbol startnum endnum))
+                  (<= startnum endnum)))
+  :hints (("Goal" :in-theory (enable make-var-names-aux))))
+
 ;was called make-var-names
 (defund make-var-names-x (namecount)
   (declare (xargs ;:mode :program
@@ -47,3 +65,24 @@
                   :guard (and (natp count)
                               (symbolp base-name))))
   (reverse (make-var-names-aux base-name 0 (+ -1 count))))
+
+(defthm symbol-listp-of-make-var-names
+  (symbol-listp (make-var-names count base-name))
+  :hints (("Goal" :in-theory (enable make-var-names))))
+
+(defthm true-listp-of-make-var-names
+  (true-listp (make-var-names count base-name))
+  :rule-classes :type-prescription
+  :hints (("Goal" :in-theory (enable make-var-names))))
+
+(defthm len-of-make-var-names
+  (implies (natp count)
+           (equal (len (make-var-names count base-name))
+                  count))
+  :hints (("Goal" :in-theory (enable make-var-names))))
+
+(defthm consp-of-make-var-names
+  (implies (natp count)
+           (equal (consp (make-var-names count base-name))
+                  (posp count)))
+  :hints (("Goal" :in-theory (enable make-var-names))))
