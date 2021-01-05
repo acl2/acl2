@@ -1046,3 +1046,40 @@
     ((include-book "kestrel/prime-fields/prime-fields-rules" :dir :system)))
 
   (in-theory (disable (:e twisted-edwards-neutral))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define twisted-edwards-neg ((point pointp) (curve twisted-edwards-p))
+  :guard (and (twisted-edwards-primep curve)
+              (twisted-edwards-completep curve)
+              (point-on-twisted-edwards-p point curve))
+  :returns (point1 pointp)
+  :short "Negation of a point of the twisted Edwards curve group."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the inverse with respect to the group addition operation.")
+   (xdoc::p
+    "It is obtained by negating the @($x$) coordinate.
+     See the paper referenced in @(see twisted-edwards-curves)."))
+  (point-finite (neg (point-finite->x point)
+                     (twisted-edwards->p curve))
+                (point-finite->y point))
+  :guard-hints (("Goal" :in-theory (enable point-on-twisted-edwards-p fep)))
+  :hooks (:fix)
+  ///
+
+  (defrule point-on-twisted-edwards-p-of-twisted-edwards-neg
+    (implies (and (twisted-edwards-p curve)
+                  (twisted-edwards-primep curve)
+                  (twisted-edwards-completep curve)
+                  (point-on-twisted-edwards-p point curve))
+             (point-on-twisted-edwards-p (twisted-edwards-neg point curve)
+                                         curve))
+    :enable (point-on-twisted-edwards-p)
+    :disable pfield::fep-of-neg
+    :use (:instance pfield::fep-of-neg
+          (x (point-finite->x point))
+          (p (twisted-edwards->p curve)))
+    :prep-books
+    ((include-book "kestrel/prime-fields/prime-fields-rules" :dir :system))))
