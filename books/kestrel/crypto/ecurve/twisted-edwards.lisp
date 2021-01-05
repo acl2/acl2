@@ -1118,3 +1118,80 @@
                                                               point2
                                                               curve)
                                          curve))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define twisted-edwards-mul ((scalar integerp)
+                             (point pointp)
+                             (curve twisted-edwards-p))
+  :guard (and (twisted-edwards-primep curve)
+              (twisted-edwards-completep curve)
+              (point-on-twisted-edwards-p point curve))
+  :returns (point1 pointp)
+  :short "Scalar multiplication in the twisted Edwards group."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the group were multiplicative, this would be exponentiation.
+     Since the twisted Edwards group is additive,
+     here we talk about scalar multiplication instead.")
+   (xdoc::p
+    "We first define the operation for non-negative scalars,
+     by simple recursion in the same manner as exponentiation:
+     multiplication by 0 yields the neutral element;
+     multiplication by a non-zero scalar yields the sum of the point and
+     the scalar multiplication by the scalar minus one.
+     Then we extend it to negative scalars,
+     by negating the result of multiplying by the negated scalar.")
+   (xdoc::p
+    "For the recursive auxiliary function on non-negative scalars,
+     we need to defer guard verification;
+     we first need to prove that it returns a point on the curve."))
+  (b* ((scalar (ifix scalar)))
+    (if (>= scalar 0)
+        (twisted-edwards-mul-nonneg scalar point curve)
+      (twisted-edwards-neg
+       (twisted-edwards-mul-nonneg (- scalar) point curve)
+       curve)))
+  :hooks (:fix)
+
+  :prepwork
+  ((define twisted-edwards-mul-nonneg ((scalar natp)
+                                       (point pointp)
+                                       (curve twisted-edwards-p))
+     :guard (and (twisted-edwards-primep curve)
+                 (twisted-edwards-completep curve)
+                 (point-on-twisted-edwards-p point curve))
+     :returns (point1 pointp)
+     (if (zp scalar)
+         (twisted-edwards-neutral)
+       (twisted-edwards-add point
+                            (twisted-edwards-mul-nonneg (1- scalar) point curve)
+                            curve))
+     :hooks (:fix)
+     :verify-guards nil ; done below
+     ///
+     (defrule point-on-twisted-edwards-p-of-twisted-edwards-mul-nonneg
+       (implies (and (twisted-edwards-p curve)
+                     (twisted-edwards-primep curve)
+                     (twisted-edwards-completep curve)
+                     (pointp point)
+                     (point-on-twisted-edwards-p point curve))
+                (point-on-twisted-edwards-p (twisted-edwards-mul-nonneg scalar
+                                                                        point
+                                                                        curve)
+                                            curve)))
+     (verify-guards twisted-edwards-mul-nonneg)))
+
+  ///
+
+  (defrule point-on-twisted-edwards-p-of-twisted-edwards-mul
+    (implies (and (twisted-edwards-p curve)
+                  (twisted-edwards-primep curve)
+                  (twisted-edwards-completep curve)
+                  (pointp point)
+                  (point-on-twisted-edwards-p point curve))
+             (point-on-twisted-edwards-p (twisted-edwards-mul scalar
+                                                              point
+                                                              curve)
+                                         curve))))
