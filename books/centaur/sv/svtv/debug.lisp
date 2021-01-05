@@ -32,7 +32,7 @@
 (in-package "SV")
 
 (include-book "process")
-(include-book "fsm")
+(include-book "fsm-base")
 (include-book "vcd")
 (include-book "oslib/date" :dir :system)
 (local (include-book "std/basic/arith-equivs" :dir :system))

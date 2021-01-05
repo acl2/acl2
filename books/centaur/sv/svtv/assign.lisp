@@ -1323,6 +1323,13 @@
                 (lhs->svex (cdar x)))
           (svtv-name-lhs-map-to-svex-alist (cdr x))))
   ///
+  (defret lookup-in-<fn>
+    (equal (svex-lookup var alist)
+           (b* ((look (hons-assoc-equal (svar-fix var) x)))
+             (and look
+                  (lhs->svex (cdr look)))))
+    :hints(("Goal" :in-theory (enable svex-lookup svex-alist-fix))))
+
   (local (in-theory (enable svtv-name-lhs-map-fix))))
 
 (encapsulate nil
@@ -1417,6 +1424,9 @@ except that we memoize the results."
                     (and look
                          (svex-subst look subst))))
            :hints(("Goal" :in-theory (enable svex-alist-subst svex-lookup svex-acons)))))
+
+  (local (defcong svex-envs-similar equal (lhs-eval x env) 2
+           :hints(("Goal" :in-theory (enable lhs-eval lhrange-eval lhatom-eval)))))
 
   (defcong svtv-fsm-eval/namemap-equiv svex-alist-eval-equiv
     (svtv-fsm-renamed-outexprs outvars x) 2
@@ -1602,7 +1612,26 @@ except that we memoize the results."
                                       svtv-fsm-step-outs
                                       svtv-fsm-renamed-step-env
                                       svtv-fsm-step-outs-renamed
-                                      svtv-fsm-renamed-outexprs)))))
+                                      svtv-fsm-renamed-outexprs))))
+
+  (local (defthm car-of-hons-assoc-equal
+           (equal (car (hons-assoc-equal key x))
+                  (and (hons-assoc-equal key x)
+                       key))))
+
+  (local (defthm hons-assoc-equal-of-fal-extract
+           (equal (hons-assoc-equal key (fal-extract vars al))
+                  (and (member-equal key vars)
+                       (hons-assoc-equal key al)))
+           :hints(("Goal" :in-theory (enable fal-extract hons-assoc-equal)))))
+
+  (defretd lookup-of-<fn>
+    (equal (svex-env-lookup var outs)
+           (let ((look (hons-assoc-equal (svar-fix var) (svtv-fsm->namemap x))))
+             (if (and (member-equal (svar-fix var) (svarlist-fix outvars))
+                      look)
+                 (lhs-eval (cdr look) full-outs)
+               (4vec-x))))))
 
 
 (define svtv-fsm-run-renamed-input-envs ((inputs svex-envlist-p)
@@ -1752,7 +1781,19 @@ except that we memoize the results."
   (if (atom outvars)
       nil
     (cons (svtv-fsm-step-extract-renamed-outs (car outvars) (car full-outs) x)
-          (svtv-fsm-run-extract-renamed-outs (cdr outvars) (cdr full-outs) x))))
+          (svtv-fsm-run-extract-renamed-outs (cdr outvars) (cdr full-outs) x)))
+  ///
+  (local (defun ind (n outvars full-outs)
+           (if (zp n)
+               (list outvars full-outs)
+             (ind (1- n) (cdr outvars) (cdr full-outs)))))
+  (defret nth-of-<fn>
+    (equal (nth n outs)
+           (svtv-fsm-step-extract-renamed-outs
+            (nth n outvars) (nth n full-outs) x))
+    :hints (("goal" :induct (ind n outvars full-outs) :in-theory (enable nth))
+            (and stable-under-simplificationp
+                 '(:in-theory (enable svtv-fsm-step-extract-renamed-outs fal-extract svex-alist-eval))))))
 
 (define svtv-fsm-run-renamed-output-signals ((outvars svarlist-list-p)
                                       (x svtv-fsm-p))

@@ -32,10 +32,17 @@
 (in-package "SV")
 
 (include-book "design-fsm")
-(include-book "cycle-compile")
-(include-book "pipeline")
+;; (include-book "cycle-compile")
+(include-book "cycle-base")
+;; (include-book "pipeline")
+(include-book "assign")
+(include-book "probe")
 (include-book "../svex/alist-equiv")
 (include-book "std/stobjs/nicestobj" :dir :system)
+
+(local (include-book "std/util/termhints" :dir :system))
+(local (defstub hq (x) nil))
+(local (acl2::termhint-add-quotesym hq))
 
 (local (include-book "std/lists/resize-list" :dir :System))
 (local (in-theory (disable nth update-nth resize-list
@@ -302,8 +309,7 @@ particular times and certain outputs are read at particular times.</li>
        ((when err) nil)
        ((svtv-fsm fsm)))
     (and (ec-call (svex-alist-eval-equiv values fsm.values))
-         (ec-call (svex-alist-eval-equiv nextstate fsm.nextstate))
-         (equal (svex-alist-keys nextstate) (svex-alist-keys fsm.nextstate))
+         (ec-call (svex-alist-eval-equiv! nextstate fsm.nextstate))
          ;; (not (hons-dups-p (svex-alist-keys nextstate)))
          (equal (non-exec (svtv-data$c->moddb svtv-data$c)) moddb)
          (equal (non-exec (svtv-data$c->aliases svtv-data$c)) aliases))))
@@ -335,40 +341,202 @@ particular times and certain outputs are read at particular times.</li>
   :enabled t
   (non-exec (svtv-data$c-namemap-okp x namemap)))
 
-(define svtv-data$c-cycle-fsm-okp (svtv-data$c (values svex-alist-p) (nextstate svex-alist-p))
-  :enabled t
-  (b* (((svtv-fsm cycle-fsm)
-        (ec-call (svtv-fsm-to-cycle (svtv-data$c->cycle-phases svtv-data$c)
-                                    (svtv-data$c->base-fsm svtv-data$c)))))
-    (and (ec-call (svex-alist-eval-equiv values cycle-fsm.values))
-         (ec-call (svex-alist-eval-equiv nextstate cycle-fsm.nextstate))
-         (equal (svex-alist-keys nextstate) (svex-alist-keys cycle-fsm.nextstate)))))
 
+
+
+(defsection svtv-data$c-cycle-fsm-okp
+  (defun-sk svtv-data$c-cycle-fsm-okp (svtv-data$c values nextstate)
+    (declare (xargs :guard (and (svex-alist-p values)
+                                (svex-alist-p nextstate))
+                    :stobjs svtv-data$c))
+    (forall env
+            (non-exec
+             (b* ((base-fsm (svtv-data$c->base-fsm svtv-data$c))
+                  (phases (svtv-data$c->cycle-phases svtv-data$c))
+                  (statevars (svex-alist-keys (svtv-fsm->nextstate base-fsm)))
+                  (prev-st (svex-env-extract statevars env)))
+               (and (ec-call
+                     (svex-envs-equivalent (svex-alist-eval values env)
+                                           (svtv-cycle-eval-outs
+                                            env prev-st phases base-fsm)))
+                    (ec-call
+                     (svex-envs-equivalent (svex-alist-eval nextstate env)
+                                           (svtv-cycle-eval-nextst
+                                            env prev-st phases base-fsm)))
+                    (equal (svex-alist-keys nextstate) statevars)))))
+    :rewrite :direct)
+
+  (in-theory (disable svtv-data$c-cycle-fsm-okp))
+
+  (defcong svex-alist-eval-equiv equal (svtv-data$c-cycle-fsm-okp svtv-data$c values nextstate) 2
+    :hints (("goal" :cases ((svtv-data$c-cycle-fsm-okp svtv-data$c values nextstate)))
+            (b* ((conc (assoc 'svtv-data$c-cycle-fsm-okp clause))
+                 (other (if (eq (caddr conc) 'values)
+                            'values-equiv
+                          'values)))
+              (and conc
+                   `(:expand (,conc)
+                     :use ((:instance svtv-data$c-cycle-fsm-okp-necc
+                            (values ,other)
+                            (env (svtv-data$c-cycle-fsm-okp-witness . ,(cdr conc)))))
+                     :in-theory (disable svtv-data$c-cycle-fsm-okp-necc))))))
+
+  (defcong svex-alist-eval-equiv! equal (svtv-data$c-cycle-fsm-okp svtv-data$c values nextstate) 3
+    :hints (("goal" :cases ((svtv-data$c-cycle-fsm-okp svtv-data$c values nextstate)))
+            (b* ((conc (assoc 'svtv-data$c-cycle-fsm-okp clause))
+                 (other (if (eq (cadddr conc) 'nextstate)
+                            'nextstate-equiv
+                          'nextstate)))
+              (and conc
+                   `(:expand (,conc)
+                     :use ((:instance svtv-data$c-cycle-fsm-okp-necc
+                            (nextstate ,other)
+                            (env (svtv-data$c-cycle-fsm-okp-witness . ,(cdr conc)))))
+                     :in-theory (disable svtv-data$c-cycle-fsm-okp-necc))))))
+
+
+  (defthm cycle-fsm-okp-when-equivalent-values/nextstate
+    (implies (svtv-data$c-cycle-fsm-okp svtv-data values1 nextstate1)
+             (iff (svtv-data$c-cycle-fsm-okp svtv-data values nextstate)
+                  (and (svex-alist-eval-equiv values1 values)
+                       (svex-alist-eval-equiv! nextstate1 nextstate))))
+    :hints((acl2::use-termhint
+            (and (svtv-data$c-cycle-fsm-okp svtv-data values nextstate)
+                 (if (svex-alist-eval-equiv values1 values)
+                     `(:use ((:instance svex-envs-equivalent-implies-alist-eval-equiv
+                              (x nextstate1) (y nextstate))
+                             (:instance svtv-data$c-cycle-fsm-okp-necc
+                              (svtv-data$c svtv-data)
+                              (values values) (nextstate nextstate1)
+                              (env (svex-alist-eval-equiv-envs-equivalent-witness nextstate1 nextstate)))
+                             (:instance svtv-data$c-cycle-fsm-okp-necc
+                              (svtv-data$c svtv-data)
+                              (values values) (nextstate nextstate)
+                              (env (svex-alist-eval-equiv-envs-equivalent-witness nextstate1 nextstate))))
+                       :in-theory (e/d (svex-alist-eval-equiv!-when-svex-alist-eval-equiv)
+                                       (svtv-data$c-cycle-fsm-okp-necc)))
+                   `(:use ((:instance svex-envs-equivalent-implies-alist-eval-equiv
+                              (x values1) (y values))
+                             (:instance svtv-data$c-cycle-fsm-okp-necc
+                              (svtv-data$c svtv-data)
+                              (values values1) (nextstate nextstate1)
+                              (env (svex-alist-eval-equiv-envs-equivalent-witness values1 values)))
+                             (:instance svtv-data$c-cycle-fsm-okp-necc
+                              (svtv-data$c svtv-data)
+                              (values values) (nextstate nextstate)
+                              (env (svex-alist-eval-equiv-envs-equivalent-witness values1 values))))
+                       :in-theory (disable svtv-data$c-cycle-fsm-okp-necc)))))))
+
+  (acl2::def-updater-independence-thm cycle-fsm-okp-updater-independence
+    (let ((new acl2::new) (old acl2::old))
+      (implies (and (equal (svtv-data$c->base-fsm new)
+                           (svtv-data$c->base-fsm old))
+                    (equal (svtv-data$c->cycle-phases new)
+                           (svtv-data$c->cycle-phases old)))
+               (equal (svtv-data$c-cycle-fsm-okp new values nextstate)
+                      (svtv-data$c-cycle-fsm-okp old values nextstate))))
+    :hints (("goal" :cases ((svtv-data$c-cycle-fsm-okp acl2::new values nextstate)))
+            (acl2::use-termhint
+             (b* ((new acl2::new) (old acl2::old)
+                  ((mv ok-data notok-data)
+                   (if (svtv-data$c-cycle-fsm-okp new values nextstate)
+                       (mv new old)
+                     (mv old new)))
+                  (witness (svtv-data$c-cycle-fsm-okp-witness notok-data values nextstate)))
+               `(:expand ((svtv-data$c-cycle-fsm-okp ,(hq notok-data) values nextstate))
+                 :use ((:instance svtv-data$c-cycle-fsm-okp-necc
+                        (svtv-data$c ,(hq ok-data))
+                        (env ,(hq witness))))
+                 :in-theory (disable svtv-data$c-cycle-fsm-okp-necc)))))))
+                  
 (define svtv-data$a-cycle-fsm-okp (x (values svex-alist-p) (nextstate svex-alist-p))
   :enabled t
   (non-exec (svtv-data$c-cycle-fsm-okp x values nextstate)))
 
-(define svtv-data$c-pipeline-okp (svtv-data$c (results svex-alist-p))
-  :enabled t
-  (non-exec
-   (b* ((fsm (svtv-data$c->cycle-fsm svtv-data$c))
-        (probes (svtv-data$c->pipeline-probes svtv-data$c))
-        (result
-         (svtv-probealist-extract-alist
-          probes
-          (svtv-fsm-run-renamed-compile
-           (svtv-data$c->pipeline-inputs svtv-data$c)
-           (svtv-data$c->pipeline-overrides svtv-data$c)
-           (svtv-data$c->pipeline-initst svtv-data$c)
-           fsm
-           (svtv-probealist-outvars probes) nil))))
-     (ec-call (svex-alist-eval-equiv results result)))))
+(defsection svtv-data$c-pipeline-okp
+  (defun-sk svtv-data$c-pipeline-okp (svtv-data$c results)
+    (declare (xargs :guard (svex-alist-p results)
+                    :stobjs svtv-data$c))
+    (forall env
+            (non-exec
+             (ec-call
+              (svex-envs-equivalent
+               (svex-alist-eval results env)
+               (b* ((fsm (svtv-data$c->cycle-fsm svtv-data$c))
+                    (probes (svtv-data$c->pipeline-probes svtv-data$c))
+                    (run (svtv-fsm-run-renamed
+                          (svex-alistlist-eval (svtv-data$c->pipeline-inputs svtv-data$c) env)
+                          (svex-alistlist-eval (svtv-data$c->pipeline-overrides svtv-data$c) env)
+                          (svex-alist-eval (svtv-data$c->pipeline-initst svtv-data$c) env)
+                          fsm (svtv-probealist-outvars probes))))
+                 (svtv-probealist-extract probes run))))))
+    :rewrite :direct)
+
+  (in-theory (disable svtv-data$c-pipeline-okp))
+
+  (defcong svex-alist-eval-equiv equal (svtv-data$c-pipeline-okp svtv-data$c results) 2
+    :hints (("goal" :cases ((svtv-data$c-pipeline-okp svtv-data$c results)))
+            (b* ((conc (assoc 'svtv-data$c-pipeline-okp clause))
+                 (other (if (eq (caddr conc) 'results)
+                            'results-equiv
+                          'results)))
+              (and conc
+                   `(:expand (,conc)
+                     :use ((:instance svtv-data$c-pipeline-okp-necc
+                            (results ,other)
+                            (env (svtv-data$c-pipeline-okp-witness . ,(cdr conc)))))
+                     :in-theory (disable svtv-data$c-pipeline-okp-necc))))))
+
+  (acl2::def-updater-independence-thm pipeline-okp-updater-independence
+    (let ((new acl2::new) (old acl2::old))
+      (implies (and (equal (svtv-data$c->cycle-fsm new)
+                           (svtv-data$c->cycle-fsm old))
+                    (equal (svtv-data$c->pipeline-probes new)
+                           (svtv-data$c->pipeline-probes old))
+                    (equal (svtv-data$c->pipeline-inputs new)
+                           (svtv-data$c->pipeline-inputs old))
+                    (equal (svtv-data$c->pipeline-overrides new)
+                           (svtv-data$c->pipeline-overrides old))
+                    (equal (svtv-data$c->pipeline-initst new)
+                           (svtv-data$c->pipeline-initst old)))
+               (equal (svtv-data$c-pipeline-okp new results)
+                      (svtv-data$c-pipeline-okp old results))))
+    :hints (("goal" :cases ((svtv-data$c-pipeline-okp acl2::new results)))
+            (acl2::use-termhint
+             (b* ((new acl2::new) (old acl2::old)
+                  ((mv ok-data notok-data)
+                   (if (svtv-data$c-pipeline-okp new results)
+                       (mv new old)
+                     (mv old new)))
+                  (witness (svtv-data$c-pipeline-okp-witness notok-data results)))
+               `(:expand ((svtv-data$c-pipeline-okp ,(hq notok-data) results))
+                 :use ((:instance svtv-data$c-pipeline-okp-necc
+                        (svtv-data$c ,(hq ok-data))
+                        (env ,(hq witness))))
+                 :in-theory (disable svtv-data$c-pipeline-okp-necc)))))))
+  
+
+;; (define svtv-data$c-pipeline-okp (svtv-data$c (results svex-alist-p))
+;;   :enabled t
+;;   (non-exec
+;;    (b* ((fsm (svtv-data$c->cycle-fsm svtv-data$c))
+;;         (probes (svtv-data$c->pipeline-probes svtv-data$c))
+;;         (result
+;;          (svtv-probealist-extract-alist
+;;           probes
+;;           (svtv-fsm-run-renamed-compile
+;;            (svtv-data$c->pipeline-inputs svtv-data$c)
+;;            (svtv-data$c->pipeline-overrides svtv-data$c)
+;;            (svtv-data$c->pipeline-initst svtv-data$c)
+;;            fsm
+;;            (svtv-probealist-outvars probes) nil))))
+;;      (ec-call (svex-alist-eval-equiv results result)))))
 
 
 (define svtv-data$a-pipeline-okp (x (results svex-alist-p))
   :enabled t
   (non-exec (svtv-data$c-pipeline-okp x results)))
-  
+
 
 (define svtv-data$ap (x)
   (non-exec
@@ -383,14 +551,16 @@ particular times and certain outputs are read at particular times.</li>
                                (svtv-data$c-namemap-okp x (svtv-data$c->namemap x)))
                       
                       (implies (svtv-data$c->cycle-fsm-validp x)
-                               (svtv-data$c-cycle-fsm-okp x
-                                                          (svtv-data$c->cycle-values x)
-                                                          (svtv-data$c->cycle-nextstate x)))
+                               (ec-call
+                                (svtv-data$c-cycle-fsm-okp x
+                                                           (svtv-data$c->cycle-values x)
+                                                           (svtv-data$c->cycle-nextstate x))))
 
                       (implies (and (svtv-data$c->pipeline-validp x)
                                     (svtv-data$c->cycle-fsm-validp x)
                                     (svtv-data$c->namemap-validp x))
-                               (svtv-data$c-pipeline-okp x (svtv-data$c->pipeline-results x))))))))
+                               (ec-call
+                                (svtv-data$c-pipeline-okp x (svtv-data$c->pipeline-results x)))))))))
 
 (define svtv-data$a-compute-base-fsm ((x svtv-data$ap))
   :guard (and (not (svtv-data$a->namemap-validp x))
@@ -591,111 +761,7 @@ particular times and certain outputs are read at particular times.</li>
 
 
 
-(local
- (defsection svtv-fsm-to-cycle-cong
-   (defret eval-outs-lookup-of-<fn>
-     (equal (svex-eval (svex-lookup var outs) env)
-            (svex-env-lookup var (svtv-cycle-eval-outs env
-                                                       (svex-alist-eval prev-st env)
-                                                       phases x)))
-     :hints (("goal" :use eval-outs-of-<fn>
-              :in-theory (disable eval-outs-of-<fn>)))
-     :fn svtv-cycle-compile)
 
-   (local
-    (defret outs-lookup-exists-of-<fn>
-      (iff (svex-lookup var outs)
-           (svex-env-boundp var (svtv-cycle-eval-outs env
-                                                      (svex-alist-eval prev-st env)
-                                                      phases x)))
-      :hints (("goal" :use eval-outs-of-<fn>
-               :in-theory (disable eval-outs-of-<fn>)))
-      :fn svtv-cycle-compile))
-
-   (defret eval-nextst-lookup-of-<fn>
-     (equal (svex-eval (svex-lookup var nextst) env)
-            (svex-env-lookup var (svtv-cycle-eval-nextst env
-                                                       (svex-alist-eval prev-st env)
-                                                       phases x)))
-     :hints (("goal" :use eval-nextsts-of-<fn>
-              :in-theory (disable eval-nextsts-of-<fn>)))
-     :fn svtv-cycle-compile)
-
-   (local
-    (defret nextst-lookup-exists-of-<fn>
-      (iff (svex-lookup var nextst)
-           (svex-env-boundp var (svtv-cycle-eval-nextst env
-                                                      (svex-alist-eval prev-st env)
-                                                      phases x)))
-      :hints (("goal" :use eval-nextsts-of-<fn>
-               :in-theory (disable eval-nextsts-of-<fn>)))
-      :fn svtv-cycle-compile))
-
-   (defthm svtv-fsm-eval-equiv-congruence-of-svtv-cycle-compile-outs
-     (implies (svtv-fsm-eval-equiv fsm fsm-equiv)
-              (svex-alist-eval-equiv (mv-nth 0 (svtv-cycle-compile prev-st phases fsm))
-                                     (mv-nth 0 (svtv-cycle-compile prev-st phases fsm-equiv))))
-     :hints((witness) (witness))
-     :rule-classes :congruence)
-
-   (defthm svtv-fsm-eval-equiv-congruence-of-svtv-cycle-compile-nextst
-     (implies (svtv-fsm-eval-equiv fsm fsm-equiv)
-              (svex-alist-eval-equiv (mv-nth 1 (svtv-cycle-compile prev-st phases fsm))
-                                     (mv-nth 1 (svtv-cycle-compile prev-st phases fsm-equiv))))
-     :hints((witness) (witness))
-     :rule-classes :congruence)
-   
-   (defthm prev-st-congruence-of-svtv-cycle-compile-outs
-     (implies (svex-alist-eval-equiv prev-st prev-st-equiv)
-              (svex-alist-eval-equiv (mv-nth 0 (svtv-cycle-compile prev-st phases fsm))
-                                     (mv-nth 0 (svtv-cycle-compile prev-st-equiv phases fsm))))
-     :hints((witness :ruleset svex-alist-eval-equiv-witnessing) ;; (witness)
-            (witness :ruleset svex-eval-equiv-witnessing)
-            )
-     :rule-classes :congruence)
-
-   (defthm prev-st-congruence-of-svtv-cycle-compile-nextst
-     (implies (svex-alist-eval-equiv prev-st prev-st-equiv)
-              (svex-alist-eval-equiv (mv-nth 1 (svtv-cycle-compile prev-st phases fsm))
-                                     (mv-nth 1 (svtv-cycle-compile prev-st-equiv phases fsm))))
-     :hints((witness :ruleset svex-alist-eval-equiv-witnessing) ;; (witness)
-            (witness :ruleset svex-eval-equiv-witnessing)
-            )
-     :rule-classes :congruence)
-
-   (defthm svtv-fsm-eval-equiv-congruence-of-svtv-cycle-compile-nextst
-     (implies (svtv-fsm-eval-equiv fsm fsm-equiv)
-              (svex-alist-eval-equiv (mv-nth 1 (svtv-cycle-compile prev-st phases fsm))
-                                     (mv-nth 1 (svtv-cycle-compile prev-st phases fsm-equiv))))
-     :hints((witness) (witness))
-     :rule-classes :congruence)
-
-   (defthm svtv-fsm-eval-equiv-congruence-of-svtv-cycle-compile-outs
-     (implies (svtv-fsm-eval-equiv fsm fsm-equiv)
-              (svex-alist-eval-equiv (mv-nth 0 (svtv-cycle-compile prev-st phases fsm))
-                                     (mv-nth 0 (svtv-cycle-compile prev-st phases fsm-equiv))))
-     :hints((witness) (witness))
-     :rule-classes :congruence)
-
-   (defthm svtv-fsm-eval-equiv-congruence-of-svtv-cycle-compile-nextst
-     (implies (svtv-fsm-eval-equiv fsm fsm-equiv)
-              (svex-alist-eval-equiv (mv-nth 1 (svtv-cycle-compile prev-st phases fsm))
-                                     (mv-nth 1 (svtv-cycle-compile prev-st phases fsm-equiv))))
-     :hints((witness) (witness))
-     :rule-classes :congruence)
-
-   (defthm svtv-fsm-under-svtv-fsm-eval-equiv
-     (implies (syntaxp (not (and (equal design (list 'quote (design-fix nil)))
-                                 (equal user-names ''nil)
-                                 (equal namemap ''nil))))
-              (svtv-fsm-eval-equiv (svtv-fsm values nextstate design user-names namemap)
-                                   (svtv-fsm values nextstate (design-fix nil) nil nil)))
-     :hints(("Goal" :in-theory (enable svtv-fsm-eval-equiv))))
-
-   
-
-   (defcong svtv-fsm-eval-equiv svtv-fsm-eval-equiv (svtv-fsm-to-cycle phases fsm) 2
-     :hints(("Goal" :in-theory (enable svtv-fsm-to-cycle))))))
 
 ;; (defun svtv-data-corr (c a)
 ;;   (equal c a))
@@ -727,7 +793,14 @@ particular times and certain outputs are read at particular times.</li>
   :hints(("Goal" :in-theory (enable svtv-data$c->cycle-fsm svtv-fsm-eval/namemap-equiv))))
 
 
-
+(defthm svtv-fsm-under-svtv-fsm-eval-equiv
+  (implies (syntaxp (not (and (or (equal design (list 'quote (design-fix nil)))
+                                  (equal design ''nil))
+                              (equal user-names ''nil)
+                              (equal namemap ''nil))))
+           (svtv-fsm-eval-equiv (svtv-fsm values nextstate design user-names namemap)
+                                (svtv-fsm values nextstate (design-fix nil) nil nil)))
+  :hints(("Goal" :in-theory (enable svtv-fsm-eval-equiv))))
 
 (defsection svtv-data
 
@@ -743,6 +816,7 @@ particular times and certain outputs are read at particular times.</li>
                             svtv-data$c-compute-namemap
                             svtv-data$c->base-fsm
                             (design-p)
+                            (design-fix)
                             (svtv-fsm-p)
                             (svarlist-addr-p)
                             (design->modalist)
@@ -765,7 +839,24 @@ particular times and certain outputs are read at particular times.</li>
                                       svtv-data$c->cycle-fsm-validp^
                                       svtv-data$c->namemap-validp
                                       svtv-data$c->namemap-validp^
-                                      ))))))
+                                      )))
+            (and stable-under-simplificationp
+                 (let ((lit (hons-assoc-equal 'svtv-data$c-cycle-fsm-okp clause)))
+                   (and lit
+                        `(:Expand ,lit
+                          :use ((:instance svtv-data$c-cycle-fsm-okp-necc
+                                 (svtv-data$c svtv-data)
+                                 (values (svtv-data$c->cycle-values svtv-data))
+                                 (nextstate (svtv-data$c->cycle-nextstate svtv-data))
+                                 (env (svtv-data$c-cycle-fsm-okp-witness . ,(cdr lit)))))))))
+            (and stable-under-simplificationp
+                 (let ((lit (hons-assoc-equal 'svtv-data$c-pipeline-okp clause)))
+                   (and lit
+                        `(:Expand ,lit
+                          :use ((:instance svtv-data$c-pipeline-okp-necc
+                                 (svtv-data$c svtv-data)
+                                 (results (svtv-data$c->pipeline-results svtv-data))
+                                 (env (svtv-data$c-pipeline-okp-witness . ,(cdr lit))))))))))))
   (local (defun make-svtv-data-accessor-defs (fields)
            (declare (xargs :mode :program))
            (if (atom fields)
@@ -790,16 +881,16 @@ particular times and certain outputs are read at particular times.</li>
                  :pkg-sym 'sv-package))
               (make-svtv-data-updater-defs (cdr fields))))))
 
-  (local (defthm values-of-svtv-fsm-to-cycle-of-svtv-fsm-normalize
-           (implies (syntaxp (not (and (equal user-names ''nil)
-                                       (equal namemap ''nil))))
-                    (equal (svtv-fsm->values
-                            (svtv-fsm-to-cycle phases
-                                               (svtv-fsm values nextstate design user-names namemap)))
-                           (svtv-fsm->values
-                            (svtv-fsm-to-cycle phases
-                                               (svtv-fsm values nextstate design nil nil)))))
-           :hints(("Goal" :in-theory (enable svtv-fsm-to-cycle svtv-cycle-compile)))))
+  ;; (local (defthm values-of-svtv-fsm-to-cycle-of-svtv-fsm-normalize
+  ;;          (implies (syntaxp (not (and (equal user-names ''nil)
+  ;;                                      (equal namemap ''nil))))
+  ;;                   (equal (svtv-fsm->values
+  ;;                           (svtv-fsm-to-cycle phases
+  ;;                                              (svtv-fsm values nextstate design user-names namemap)))
+  ;;                          (svtv-fsm->values
+  ;;                           (svtv-fsm-to-cycle phases
+  ;;                                              (svtv-fsm values nextstate design nil nil)))))
+  ;;          :hints(("Goal" :in-theory (enable svtv-fsm-to-cycle svtv-cycle-compile)))))
   
 
   (make-event
@@ -821,271 +912,10 @@ particular times and certain outputs are read at particular times.</li>
                   (svtv-data-pipeline-okp :logic svtv-data$a-pipeline-okp :exec svtv-data$c-pipeline-okp)
 
                   ,@(make-svtv-data-updater-defs *svtv-data-nonstobj-fields*)
-                  
-                  
-                  ;; ;; (svtv-data-invalidate-base-fsm :logic svtv-data$a-invalidate-base-fsm :exec svtv-data$c-invalidate-base-fsm)
-                  ;; ;; (svtv-data-invalidate-cycle-fsm :logic svtv-data$a-invalidate-cycle-fsm :exec svtv-data$c-invalidate-cycle-fsm)
-                  ;; ;; (svtv-data-invalidate-namemap :logic svtv-data$a-invalidate-namemap :exec svtv-data$c-invalidate-namemap)
-                  ;; (update-svtv-data->cycle-phases :logic update-svtv-data$a->cycle-phases :exec update-svtv-data$c->cycle-phases$inline)
-                  ;; (svtv-data-compute-cycle :logic svtv-data$a-compute-cycle :exec svtv-data$c-compute-cycle :protect t)
-                  ;; (update-svtv-data->user-names :logic update-svtv-data$a->user-names :exec update-svtv-data$c->user-names$inline)
+
                   (svtv-data-compute-namemap :logic svtv-data$a-compute-namemap :exec svtv-data$c-compute-namemap :protect t)
-                  ;; (svtv-data->base-fsm :logic svtv-data$a->base-fsm :exec svtv-data$c->base-fsm)
-                  ;; (svtv-data->cycle-fsm :logic svtv-data$a->cycle-fsm :exec svtv-data$c->cycle-fsm)
                   ))))
 
-  
-(local (include-book "std/lists/nthcdr" :dir :system))
-(local (include-book "std/lists/take" :dir :system))
-
-(local (fty::deflist svexlist :elt-type svex :true-listp t))
-
-(local (defthm svex-lookup-of-pairlis
-         (equal (svex-lookup var (pairlis$ x y))
-                (b* ((index (index-of (svar-fix var) x)))
-                  (and index
-                       (svex-fix (nth index y)))))
-         :hints(("Goal" :in-theory (enable svex-lookup svarlist-fix index-of)))))
 
 
 
-(local
- (encapsulate nil
-   ;; (local (defthm svex-eval-of-nth-split
-   ;;          (equal (svex-eval (nth n x) env)
-   ;;                 (if (< (nfix n) (len x))
-   ;;                     (nth n (svexlist-eval x env))
-   ;;                   (4vec-x)))
-   ;;          :hints(("Goal" :in-theory (enable nth svexlist-eval)))))
-   (local (defcong svexlist-eval-equiv equal (consp x) 1
-            :hints (("goal" :use ((:instance consp-of-svexlist-eval (x x))
-                                  (:instance consp-of-svexlist-eval (x x-equiv)))
-                     :in-theory (disable consp-of-svexlist-eval)))))
-
-   (local (defun ind (n x x-equiv)
-            (if (zp n)
-                (list x x-equiv)
-              (ind (1- n) (cdr x) (cdr x-equiv)))))
-
-   (defcong svexlist-eval-equiv svex-eval-equiv (nth n x) 2
-     :hints (("goal" :induct (ind n x x-equiv) :in-theory (enable nth))))))
-
-(local (defcong svexlist-eval-equiv svex-alist-eval-equiv (pairlis$ x y) 2
-         :hints ((witness))))
-
-(local (defcong svexlist-eval-equiv svexlist-eval-equiv (nthcdr n x) 2))
-
-(local (defcong svexlist-eval-equiv svexlist-eval-equiv (take n x) 2))
-
-(local (defthm svexlist-rewrite-fixpoint-under-svexlist-eval-equiv
-         (svexlist-eval-equiv (svexlist-rewrite-fixpoint x :count count :verbosep verbosep)
-                              x)
-         :hints ((witness))))
-
-(local (defthm pairlis-svex-alist-keys-svex-alist-vals
-         (equal (pairlis$ (svex-alist-keys x) (svex-alist-vals x))
-                (svex-alist-fix x))
-         :hints(("Goal" :in-theory (enable pairlis$ svex-alist-keys svex-alist-vals svex-alist-fix)))))
-
-(define svtv-data-rewrite-base-fsm (svtv-data &key ((count natp) '4) (verbosep 'nil))
-  :guard-hints (("goal" :do-not-induct t)
-                (and stable-under-simplificationp
-                     '(:in-theory (enable svtv-data$ap))))
-  :returns new-svtv-data
-  (b* ((values (svtv-data->base-values svtv-data))
-       (nextstate (svtv-data->base-nextstate svtv-data))
-       (svexes (append (svex-alist-vals values) (svex-alist-vals nextstate)))
-       (svexes-rw (svexlist-rewrite-fixpoint svexes :count count :verbosep verbosep))
-       (values-keys (svex-alist-keys values))
-       (values-len (len values-keys))
-       (values-rw (pairlis$ values-keys (take values-len svexes-rw)))
-       (nextstate-keys (svex-alist-keys nextstate))
-       (nextstate-rw (pairlis$ nextstate-keys (nthcdr values-len svexes-rw)))
-       (svtv-data (update-svtv-data->base-values values-rw svtv-data)))
-    (update-svtv-data->base-nextstate nextstate-rw svtv-data))
-  ///
-  (defret svtv-data$c-get-of-<fn>
-    (implies (and (equal key (svtv-data$c-field-fix k))
-                  (not (equal key :base-values))
-                  (not (equal key :base-nextstate)))
-             (equal (svtv-data$c-get k new-svtv-data)
-                    (svtv-data$c-get key svtv-data)))))
-
-(define svtv-data-maybe-rewrite-base-fsm (do-it svtv-data &key ((count natp) '4) (verbosep 'nil))
-  :guard-hints (("goal" :do-not-induct t)
-                (and stable-under-simplificationp
-                     '(:in-theory (enable svtv-data$ap)))
-                )
-  :returns new-svtv-data
-  (if do-it
-      (svtv-data-rewrite-base-fsm svtv-data :count count :verbosep verbosep)
-    svtv-data)
-  ///
-  (defret svtv-data$c-get-of-<fn>
-    (implies (and (equal key (svtv-data$c-field-fix k))
-                  (not (equal key :base-values))
-                  (not (equal key :base-nextstate)))
-             (equal (svtv-data$c-get k new-svtv-data)
-                    (svtv-data$c-get key svtv-data)))))
-
-
-(define svtv-data-rewrite-cycle-fsm (svtv-data &key ((count natp) '4) (verbosep 'nil))
-  :guard-hints (("goal" :do-not-induct t)
-                (and stable-under-simplificationp
-                     '(:in-theory (enable svtv-data$ap)))
-                )
-  :returns new-svtv-data
-  (b* ((values (svtv-data->cycle-values svtv-data))
-       (nextstate (svtv-data->cycle-nextstate svtv-data))
-       (svexes (append (svex-alist-vals values) (svex-alist-vals nextstate)))
-       (svexes-rw (svexlist-rewrite-fixpoint svexes :count count :verbosep verbosep))
-       (values-keys (svex-alist-keys values))
-       (values-len (len values-keys))
-       (values-rw (pairlis$ values-keys (take values-len svexes-rw)))
-       (nextstate-keys (svex-alist-keys nextstate))
-       (nextstate-rw (pairlis$ nextstate-keys (nthcdr values-len svexes-rw)))
-       (svtv-data (update-svtv-data->cycle-values values-rw svtv-data)))
-    (update-svtv-data->cycle-nextstate nextstate-rw svtv-data))
-  ///
-  (defret svtv-data$c-get-of-<fn>
-    (implies (and (equal key (svtv-data$c-field-fix k))
-                  (not (equal key :cycle-values))
-                  (not (equal key :cycle-nextstate)))
-             (equal (svtv-data$c-get k new-svtv-data)
-                    (svtv-data$c-get key svtv-data)))))
-
-
-(define svtv-data-maybe-rewrite-cycle-fsm (do-it svtv-data &key ((count natp) '4) (verbosep 'nil))
-  :guard-hints (("goal" :do-not-induct t)
-                (and stable-under-simplificationp
-                     '(:in-theory (enable svtv-data$ap)))
-                )
-  :returns new-svtv-data
-  (if do-it
-      (svtv-data-rewrite-cycle-fsm svtv-data :count count :verbosep verbosep)
-    svtv-data)
-  ///
-  (defret svtv-data$c-get-of-<fn>
-    (implies (and (equal key (svtv-data$c-field-fix k))
-                  (not (equal key :cycle-values))
-                  (not (equal key :cycle-nextstate)))
-             (equal (svtv-data$c-get k new-svtv-data)
-                    (svtv-data$c-get key svtv-data)))))
-
-
-
-(local (defthm eval-lookup-of-svex-alist-rewrite-fixpoint
-         (equal (svex-eval (svex-lookup v (svex-alist-rewrite-fixpoint x :count count :verbosep verbosep)) env)
-                (svex-eval (svex-lookup v x) env))
-         :hints (("goal" :use ((:instance svex-env-lookup-of-svex-alist-eval
-                                (k v) (x (svex-alist-rewrite-fixpoint x :count count :verbosep verbosep)))
-                               (:instance svex-env-lookup-of-svex-alist-eval
-                                (k v) (x x)))
-                  :in-theory (disable svex-env-lookup-of-svex-alist-eval)))))
-
-(local (defthm svex-alist-rewrite-fixpoint-under-svex-alist-eval-equiv
-         (svex-alist-eval-equiv (svex-alist-rewrite-fixpoint x :count count :verbosep verbosep)
-                              x)
-         :hints ((witness) (witness))))
-
-(define svtv-data-rewrite-pipeline (svtv-data &key ((count natp) '4) (verbosep 'nil))
-  :guard-hints (("goal" :do-not-induct t)
-                (and stable-under-simplificationp
-                     '(:in-theory (enable svtv-data$ap)))
-                )
-  :returns new-svtv-data
-  (b* ((results (svtv-data->pipeline-results svtv-data))
-       (results-rw (svex-alist-rewrite-fixpoint results :count count :verbosep verbosep)))
-    (update-svtv-data->pipeline-results results-rw svtv-data))
-  ///
-  (defret svtv-data$c-get-of-<fn>
-    (implies (and (equal key (svtv-data$c-field-fix k))
-                  (not (equal key :pipeline-results)))
-             (equal (svtv-data$c-get k new-svtv-data)
-                    (svtv-data$c-get key svtv-data)))))
-
-
-(define svtv-data-maybe-rewrite-pipeline (do-it svtv-data &key ((count natp) '4) (verbosep 'nil))
-  :guard-hints (("goal" :do-not-induct t)
-                (and stable-under-simplificationp
-                     '(:in-theory (enable svtv-data$ap)))
-                )
-  :returns new-svtv-data
-  (if do-it
-      (svtv-data-rewrite-pipeline svtv-data :count count :verbosep verbosep)
-    svtv-data)
-  ///
-  (defret svtv-data$c-get-of-<fn>
-    (implies (and (equal key (svtv-data$c-field-fix k))
-                  (not (equal key :pipeline-results)))
-             (equal (svtv-data$c-get k new-svtv-data)
-                    (svtv-data$c-get key svtv-data)))))
-       
-(local (in-theory (disable hons-dups-p)))
-
-
-(local (defret no-dups-when-equal-svex-alist-keys-<fn>
-         (implies (and (equal (svex-alist-keys y)
-                              (svex-alist-keys (svtv-fsm->nextstate fsm)))
-                       (not err))
-                  (no-duplicatesp-equal (svex-alist-keys y)))
-         :fn svtv-design-to-fsm))
-                    
-
-(define svtv-data-compute-cycle-fsm (svtv-data)
-  :guard (and (svtv-data->base-fsm-validp svtv-data)
-              (not (svtv-data->pipeline-validp svtv-data)))
-  :guard-hints (("goal" :do-not-induct t)
-                (and stable-under-simplificationp
-                     '(:in-theory (enable svtv-data$ap)))
-                )
-  :returns new-svtv-data
-  (b* (((svtv-fsm cycle-fsm)
-        (svtv-fsm-to-cycle (svtv-data->cycle-phases svtv-data)
-                           (svtv-data->base-fsm svtv-data)))
-       (svtv-data (update-svtv-data->cycle-values cycle-fsm.values svtv-data))
-       (svtv-data (update-svtv-data->cycle-nextstate cycle-fsm.nextstate svtv-data)))
-    (update-svtv-data->cycle-fsm-validp t svtv-data))
-  ///
-  (defret svtv-data$c-get-of-<fn>
-    (implies (and (equal key (svtv-data$c-field-fix k))
-                  (not (equal key :cycle-values))
-                  (not (equal key :cycle-nextstate))
-                  (not (equal key :cycle-fsm-validp)))
-             (equal (svtv-data$c-get k new-svtv-data)
-                    (svtv-data$c-get key svtv-data))))
-
-  (defret cycle-fsm-validp-of-<fn>
-    (svtv-data$c->cycle-fsm-validp new-svtv-data)))
-
-
-(define svtv-data-compute-pipeline (svtv-data &key ((rewrite booleanp) 't))
-  :guard (and (svtv-data->base-fsm-validp svtv-data)
-              (svtv-data->namemap-validp svtv-data)
-              (svtv-data->cycle-fsm-validp svtv-data)
-              (equal (svex-alist-keys (svtv-data->pipeline-initst svtv-data))
-                     (svex-alist-keys (svtv-data->cycle-nextstate svtv-data)))
-              )
-  :guard-debug t
-  :guard-hints (("goal" :do-not-induct t)
-                (and stable-under-simplificationp
-                     '(:in-theory (enable svtv-data$ap))))
-  :returns new-svtv-data
-  (b* ((fsm (svtv-data->cycle-fsm svtv-data))
-       (probes (svtv-data->pipeline-probes svtv-data))
-       (inputs (svtv-data->pipeline-inputs svtv-data))
-       (overrides (svtv-data->pipeline-overrides svtv-data))
-       (initst (svtv-data->pipeline-initst svtv-data))
-       (outvars (svtv-probealist-outvars probes))
-       (outs (svtv-fsm-run-renamed-compile inputs overrides initst fsm outvars rewrite))
-       (result (svtv-probealist-extract-alist probes outs))
-       (svtv-data (update-svtv-data->pipeline-results result svtv-data)))
-    (update-svtv-data->pipeline-validp t svtv-data))
-  ///
-  (defret svtv-data$c-get-of-<fn>
-    (implies (and (equal key (svtv-data$c-field-fix k))
-                  (not (equal key :pipeline-results))
-                  (not (equal key :pipeline-validp)))
-             (equal (svtv-data$c-get k new-svtv-data)
-                    (svtv-data$c-get key svtv-data)))))
-       

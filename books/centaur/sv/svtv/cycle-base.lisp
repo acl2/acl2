@@ -32,7 +32,7 @@
 (in-package "SV")
 
 (include-book "../svtv/fsm-base")
-
+(local (std::add-default-post-define-hook :fix))
 (local (in-theory (disable hons-dups-p)))
 
 ;; Let's standardize on having a cycle in which the signals that aren't set to
@@ -288,6 +288,9 @@
     :hints(("Goal" :in-theory (enable svtv-fsm-final-state
                                       svtv-cycle-eval-nextst
                                       svtv-cycle-step-phase-nextsts-is-fsm-step-of-fsm-inputs)
-            :induct (svtv-cycle-eval-nextst ins prev-st phases x)))))
+            :induct (svtv-cycle-eval-nextst ins prev-st phases x))))
+
+  (defret len-of-<fn>
+    (equal (len fsm-ins) (len phases))))
 
 

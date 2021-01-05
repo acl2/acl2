@@ -33,6 +33,7 @@
 
 (include-book "assign")
 (include-book "fsm")
+(include-book "probe")
 (include-book "compose-phases")
 (include-book "../svex/rewrite")
 (include-book "../svex/alist-equiv")
@@ -311,6 +312,28 @@
                                
          
 
+(define make-fast-alistlist (x)
+  :returns (new-x (equal new-x x))
+  (if (atom x)
+      x
+    (cons-with-hint
+     (make-fast-alist (car x))
+     (make-fast-alistlist (cdr x))
+     x)))
+
+(define fast-alistlist-clean-aux (x)
+  (if (atom x)
+      nil
+    (let ((ans1 (fast-alist-clean (car x))))
+      (declare (ignore ans1))
+      (fast-alistlist-clean-aux (cdr x)))))
+
+(define fast-alistlist-clean (x)
+  (mbe :logic x
+       :exec (let ((ans1 (fast-alistlist-clean-aux x)))
+               (declare (ignore ans1))
+               x)))
+  
 
 (define svtv-fsm-run-compile ((ins svex-alistlist-p)
                               (prev-st svex-alist-p)
@@ -321,12 +344,14 @@
               (not (acl2::hons-dups-p (svex-alist-keys (svtv-fsm->nextstate x)))))
   :returns (out-alists svex-alistlist-p)
   (b* (((svtv-fsm x))
-       ((acl2::with-fast x.nextstate x.values))
+       ((acl2::with-fast x.nextstate x.values prev-st))
        (composedata (make-svtv-composedata :nextstates x.nextstate
-                                           :input-substs ins
+                                           :input-substs (make-fast-alistlist ins)
                                            :initst prev-st
-                                           :rewrite rewrite)))
-    (svtv-fsm-run-compile-phases 0 signals x.values composedata))
+                                           :rewrite rewrite))
+       (ans (svtv-fsm-run-compile-phases 0 signals x.values composedata)))
+    (fast-alistlist-clean ins)
+    ans)
   ///
   (defret svex-alistlist-eval-of-<fn>
     (equal (svex-alistlist-eval out-alists env)
@@ -373,33 +398,6 @@
 (local (in-theory (disable hons-dups-p)))
 
 
-
-(defsection svex-alistlist-eval-equiv
-  (def-universal-equiv svex-alistlist-eval-equiv
-    :qvars (n)
-    :equiv-terms ((svex-alist-eval-equiv (nth n x))
-                  (equal (len x)))
-    :defquant t)
-  
-  (in-theory (disable svex-alistlist-eval-equiv svex-alistlist-eval-equiv-necc))
-
-  (defcong svex-alistlist-eval-equiv svex-alist-eval-equiv (car x) 1
-    :hints (("goal" :use ((:instance svex-alistlist-eval-equiv-necc (n 0) (y x-equiv))))))
-
-  (defcong svex-alistlist-eval-equiv svex-alistlist-eval-equiv (cdr x) 1
-    :hints (("goal" :use ((:instance svex-alistlist-eval-equiv-necc
-                           (n (+ (nfix (svex-alistlist-eval-equiv-witness (cdr x) (cdr x-equiv))) 1))
-                           (y x-equiv)))
-             :expand ((:free (x y) (svex-alistlist-eval-equiv (cdr x) y))
-                      (:free (x y) (svex-alistlist-eval-equiv y (cdr x)))))))
-
-  (defcong svex-alistlist-eval-equiv svex-alist-eval-equiv (nth n x) 2
-    :hints (("goal" :use ((:instance svex-alistlist-eval-equiv-necc (n n) (y x-equiv))))))
-
-  (defcong svex-alistlist-eval-equiv svex-envlists-similar (svex-alistlist-eval x env) 1
-    :hints ((witness)
-            (and stable-under-simplificationp
-                 '(:in-theory (enable svex-alistlist-eval-equiv))))))
 
 
 (define svtv-fsm-run-renamed-compile ((ins svex-alistlist-p)
@@ -497,118 +495,46 @@
        
 
 
-(defprod svtv-probe
-  ((signal svar-p)
-   (time natp)))
 
-(fty::defalist svtv-probealist :key-type svar :val-type svtv-probe :true-listp t)
+                               
 
-(local (defthm svex-env-p-nth-of-svex-envlist
-         (implies (svex-envlist-p x)
-                  (svex-env-p (nth n x)))
-         :hints(("Goal" :in-theory (enable svex-envlist-p)))))
+(local (defthm rassoc-equal-of-lookup
+         (implies (And (hons-assoc-equal key x)
+                       (alistp x))
+                  (rassoc-equal (cdr (hons-assoc-equal key x)) x))
+         :hints(("Goal" :in-theory (enable hons-assoc-equal rassoc-equal)))))
 
-(local (defthm nth-of-svex-envlist-fix
-         (equal (nth n (svex-envlist-fix x))
-                (svex-env-fix (nth n x)))
-         :hints(("Goal" :in-theory (enable svex-envlist-fix)))))
-
-(define svtv-probealist-extract ((probes svtv-probealist-p)
-                                 ;; Should all be fast alists
-                                 (vals svex-envlist-p))
-  :returns (result svex-env-p)
-  (b* (((when (atom probes)) nil)
-       ((unless (mbt (consp (car probes))))
-        (svtv-probealist-extract (cdr probes) vals))
-       ((cons var (svtv-probe probe)) (car probes))
-       (env (nth probe.time vals)))
-    (cons (cons (svar-fix var)
-                (svex-env-lookup probe.signal env))
-          (svtv-probealist-extract (cdr probes) vals)))
-  ///
-  (defcong svex-envlists-similar equal (svtv-probealist-extract probes vals) 2)
-  (local (in-theory (enable svtv-probealist-fix))))
-
-
-
-
-(local (defthm nth-of-svex-alistlist-fix
-         (equal (nth n (svex-alistlist-fix x))
-                (svex-alist-fix (nth n x)))
-         :hints(("Goal" :in-theory (enable svex-alistlist-fix)))))
-
-;; (local (defthm svex-alist-eval-equiv-of-cons
-;;          (implies (and (svex-alist-eval-equiv rest1 rest2)
-;;                        (svex-eval-equiv v1 v2))
-;;                   (equal (svex-alist-eval-equiv (cons (cons k v1) rest1)
-;;                                                 (cons (cons k v2) rest2))
-
-
-(define svtv-probealist-extract-alist ((probes svtv-probealist-p)
-                                       (vals svex-alistlist-p))
-  :returns (result svex-alist-p)
-  (b* (((when (atom probes)) nil)
-       ((unless (mbt (consp (car probes))))
-        (svtv-probealist-extract-alist (cdr probes) vals))
-       ((cons var (svtv-probe probe)) (car probes))
-       (alist (nth probe.time vals)))
-    (cons (cons (svar-fix var)
-                (or (svex-fastlookup probe.signal alist) (svex-x)))
-          (svtv-probealist-extract-alist (cdr probes) vals)))
-  ///
-  (defret eval-of-<fn>
-    (equal (svex-alist-eval result env)
-           (svtv-probealist-extract probes (svex-alistlist-eval vals env)))
-    :hints(("Goal" :in-theory (enable svtv-probealist-extract svex-alist-eval))))
-
-  (defret eval-lookup-of-<fn>
-    (equal (svex-eval (svex-lookup var result) env)
-           (svex-env-lookup var (svtv-probealist-extract probes (svex-alistlist-eval vals env))))
-    :hints(("Goal" :use eval-of-<fn>
-            :in-theory (disable eval-of-<fn> <fn>))))
-
-  (local
-   (defret lookup-exists-of-<fn>
-     (iff (svex-lookup var result)
-          (svex-env-boundp var (svtv-probealist-extract probes (svex-alistlist-eval vals env))))
-    :hints(("Goal" :use eval-of-<fn>
-            :in-theory (disable eval-of-<fn> <fn>)))))
-
-  ;; (local
-  ;;  (defret len-of-<fn>
-  ;;    (equal (len result)
-  ;;           (svex-env-boundp var (svtv-probealist-extract probes (svex-alistlist-eval vals env))))
-  ;;   :hints(("Goal" :use eval-of-<fn>
-  ;;           :in-theory (disable eval-of-<fn> <fn>)))))
-
-
-  (defcong svex-alistlist-eval-equiv svex-alist-eval-equiv (svtv-probealist-extract-alist probes vals) 2
-    :hints (("goal" :in-theory (disable svtv-probealist-extract-alist))
-            (witness) (witness)))
-
-  (local (in-theory (enable svtv-probealist-fix))))
-
-
-(local (defthm svarlist-list-p-of-update-nth
-         (implies (and (svarlist-list-p x)
-                       (svarlist-p v))
-                  (svarlist-list-p (update-nth n v x)))
-         :hints(("Goal" :in-theory (enable update-nth svarlist-list-p)))))
+(local (defthm alistp-when-svtv-probealist-p-rw
+         (implies (svtv-probealist-p probes)
+                  (alistp probes))
+         :hints(("Goal" :in-theory (enable svtv-probealist-p)))))
 
 (local (defthm svarlist-p-of-nth
          (implies (svarlist-list-p x)
                   (svarlist-p (nth n x)))
          :hints(("Goal" :in-theory (enable nth svarlist-p)))))
-  
-(define svtv-probealist-outvars ((probes svtv-probealist-p))
-  :returns (outvars svarlist-list-p)
-  (b* (((when (atom probes)) nil)
-       ((unless (mbt (consp (car probes))))
-        (svtv-probealist-outvars (cdr probes)))
-       (rest (svtv-probealist-outvars (cdr probes)))
-       ((cons ?var (svtv-probe probe)) (car probes))
-       (vars1 (nth probe.time rest)))
-    (update-nth probe.time (cons probe.signal vars1) rest))
-  ///
-  (local (in-theory (enable svtv-probealist-fix))))
-                               
+
+(defthm lookup-in-pipeline
+  (equal (svex-eval (svex-lookup name
+                                 (svtv-probealist-extract-alist
+                                  probes
+                                  (svtv-fsm-run-renamed-compile
+                                   inputs overrides initst fsm
+                                   (svtv-probealist-outvars probes) rewrite)))
+                    env)
+         (b* ((inputs-eval (svex-alistlist-eval inputs env))
+              (overrides-eval (svex-alistlist-eval overrides env))
+              (initst-eval (svex-alist-eval initst env))
+              (probe-look (hons-assoc-equal (svar-fix name) (svtv-probealist-fix probes)))
+              ((svtv-probe probe) (cdr probe-look))
+              (lhs-look (hons-assoc-equal probe.signal (svtv-fsm->namemap fsm)))
+              (lhs (cdr lhs-look))
+              (ins (svtv-fsm-run-renamed-input-envs
+                    (take (len (svtv-probealist-outvars probes)) inputs-eval)
+                    overrides-eval fsm)))
+           (if (and probe-look lhs-look)
+               (lhs-eval lhs (nth probe.time (svtv-fsm-eval ins initst-eval fsm)))
+             (4vec-x))))
+  :hints(("Goal" :in-theory (enable SVTV-FSM-RUN-RENAMED-IS-EXTRACT-OF-EVAL
+                                    lookup-of-svtv-fsm-step-extract-renamed-outs
+                                    svtv-fsm-eval-renamed-is-svtv-fsm-eval-of-renamed-input-envs))))

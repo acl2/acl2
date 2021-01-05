@@ -68,4 +68,57 @@
 
   (defcong svex-alist-eval-equiv set-equiv (svex-alist-keys x) 1
     :hints (("goal" :in-theory (enable acl2::set-unequal-witness-correct))
-            (witness))))
+            (witness)))
+
+
+  (defund svex-alist-eval-equiv-envs-equivalent-witness (x y)
+     (b* ((key (svex-alist-eval-equiv-witness x y)))
+       (svex-eval-equiv-witness (svex-lookup key x) (svex-lookup key y))))
+
+   (defthmd svex-envs-equivalent-implies-alist-eval-equiv
+     (implies (let ((env (svex-alist-eval-equiv-envs-equivalent-witness x y)))
+                (svex-envs-equivalent (svex-alist-eval x env) (svex-alist-eval y env)))
+              (svex-alist-eval-equiv x y))
+     :hints (("goal" :in-theory (e/d (svex-alist-eval-equiv
+                                      svex-eval-equiv
+                                      svex-alist-eval-equiv-envs-equivalent-witness)
+                                     (svex-envs-equivalent-necc))
+              :use ((:instance svex-envs-equivalent-necc
+                     (k (svex-alist-eval-equiv-witness x y))
+                     (x (svex-alist-eval x (svex-alist-eval-equiv-envs-equivalent-witness x y)))
+                     (y (svex-alist-eval y (svex-alist-eval-equiv-envs-equivalent-witness x y)))))))))
+
+
+(defsection svex-alist-eval-equiv!
+  ;; Svex-alist-eval-equiv, plus keys are equal, not just set-equiv.
+  (def-universal-equiv svex-alist-eval-equiv!
+    :qvars (var)
+    :equiv-terms ((svex-eval-equiv (svex-lookup var x))
+                  (equal (svex-alist-keys x)))
+    :defquant t)
+
+  (in-theory (disable svex-alist-eval-equiv! svex-alist-eval-equiv!-necc))
+
+  (defexample svex-alist-eval-equiv!-svex-example
+    :pattern (svex-lookup var alist)
+    :templates (var)
+    :instance-rulename svex-alist-eval-equiv!-instancing)
+
+  (local (defthm svex-lookup-under-iff
+           (iff (svex-lookup k x)
+                (member-equal (svar-fix k) (svex-alist-keys x)))
+           :hints(("Goal" :in-theory (enable svex-lookup svex-alist-keys)))))
+
+  (local (in-theory (disable member-svex-alist-keys)))
+
+  (defrefinement svex-alist-eval-equiv! svex-alist-eval-equiv
+    :hints((witness)))
+
+  (defcong svex-alist-eval-equiv! equal (svex-alist-keys x) 1
+    :hints (("goal" :in-theory (enable svex-alist-eval-equiv!))))
+
+  (defthmd svex-alist-eval-equiv!-when-svex-alist-eval-equiv
+     (implies (and (svex-alist-eval-equiv x y)
+                   (equal (svex-alist-keys x) (svex-alist-keys y)))
+              (equal (svex-alist-eval-equiv! x y) t))
+     :hints ((witness))))

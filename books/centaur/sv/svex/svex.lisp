@@ -38,7 +38,7 @@
 (local (include-book "std/lists/append" :dir :system))
 (local (include-book "centaur/misc/equal-sets" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
-
+(local (std::add-default-post-define-hook :fix))
 
 ;; (local (in-theory (enable bitops::loghead** bitops::logtail** bitops::logbitp**)))
 ;; (local (DEFTHM
@@ -503,6 +503,7 @@ typically be @(see memoize)d in some way or another.</p>"
 (define svarlist-filter ((x svarlist-p))
   :returns (new-x svarlist-p)
   :verify-guards nil
+  :hooks nil
   (mbe :logic
        (if (atom x)
            nil

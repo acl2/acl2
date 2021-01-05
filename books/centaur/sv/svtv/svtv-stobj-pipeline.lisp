@@ -1,0 +1,92 @@
+; Centaur SV Hardware Verification Tutorial
+; Copyright (C) 2016 Centaur Technology
+;
+; Contact:
+;   Centaur Technology Formal Verification Group
+;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+;   http://www.centtech.com/
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
+;
+; Original authors: Sol Swords <sswords@centtech.com>
+
+
+(in-package "SV")
+
+(include-book "svtv-stobj")
+(include-book "pipeline")
+
+(local (include-book "std/util/termhints" :dir :system))
+(local (defstub hq (x) nil))
+(local (acl2::termhint-add-quotesym hq))
+
+(local (in-theory (disable hons-dups-p)))
+
+(local (defret no-dups-when-equal-svex-alist-keys-<fn>
+         (implies (and (equal (svex-alist-keys y)
+                              (svex-alist-keys (svtv-fsm->nextstate fsm)))
+                       (not err))
+                  (no-duplicatesp-equal (svex-alist-keys y)))
+         :fn svtv-design-to-fsm))
+
+(local (defthm svtv-data$c-pipeline-okp-of-compile
+         (b* ((fsm (svtv-data$c->cycle-fsm svtv-data))
+              (probes (svtv-data$c->pipeline-probes svtv-data))
+              (inputs (svtv-data$c->pipeline-inputs svtv-data))
+              (overrides (svtv-data$c->pipeline-overrides svtv-data))
+              (initst (svtv-data$c->pipeline-initst svtv-data))
+              (outvars (svtv-probealist-outvars probes))
+              (outs (svtv-fsm-run-renamed-compile inputs overrides initst fsm outvars rewrite))
+              (result (svtv-probealist-extract-alist probes outs)))
+           (svtv-data$c-pipeline-okp svtv-data result))
+         :hints(("Goal" :in-theory (enable svtv-data$c-pipeline-okp)))))
+
+
+(define svtv-data-compute-pipeline (svtv-data &key ((rewrite booleanp) 't))
+  :guard (and (svtv-data->base-fsm-validp svtv-data)
+              (svtv-data->namemap-validp svtv-data)
+              (svtv-data->cycle-fsm-validp svtv-data)
+              (equal (svex-alist-keys (svtv-data->pipeline-initst svtv-data))
+                     (svex-alist-keys (svtv-data->cycle-nextstate svtv-data)))
+              )
+  :guard-debug t
+  :guard-hints (("goal" :do-not-induct t)
+                (and stable-under-simplificationp
+                     '(:in-theory (enable svtv-data$ap))))
+  :returns new-svtv-data
+  (b* ((fsm (svtv-data->cycle-fsm svtv-data))
+       (probes (svtv-data->pipeline-probes svtv-data))
+       (inputs (svtv-data->pipeline-inputs svtv-data))
+       (overrides (svtv-data->pipeline-overrides svtv-data))
+       (initst (svtv-data->pipeline-initst svtv-data))
+       (outvars (svtv-probealist-outvars probes))
+       (outs (make-fast-alistlist (svtv-fsm-run-renamed-compile inputs overrides initst fsm outvars rewrite)))
+       (result (svtv-probealist-extract-alist probes outs))
+       (- (fast-alistlist-clean outs))
+       (svtv-data (update-svtv-data->pipeline-results result svtv-data)))
+    (update-svtv-data->pipeline-validp t svtv-data))
+  ///
+  (defret svtv-data$c-get-of-<fn>
+    (implies (and (equal key (svtv-data$c-field-fix k))
+                  (not (equal key :pipeline-results))
+                  (not (equal key :pipeline-validp)))
+             (equal (svtv-data$c-get k new-svtv-data)
+                    (svtv-data$c-get key svtv-data)))))
