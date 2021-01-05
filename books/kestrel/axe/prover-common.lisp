@@ -163,6 +163,7 @@
 ;;              item))
 ;;  :hints (("Goal" :in-theory (enable PSEUDO-DAG-ARRAYP-AUX))))
 
+;move?
 (defund make-var-lookup-terms (vars alist-nodenum)
   (declare (xargs :guard (true-listp vars)))
   (if (endp vars)
@@ -170,55 +171,40 @@
     (cons `(lookup-equal ',(car vars) ,alist-nodenum)
           (make-var-lookup-terms (cdr vars) alist-nodenum))))
 
-;; (defun lookup-lst (lst alist)
-;;   (declare (xargs :guard (and (alist-with-integer-keysp alist)
-;;                               (all-integerp lst))))
-;;   (if (atom lst)
-;;       nil
-;;       (cons (lookup (car lst) alist)
-;;             (lookup-lst (cdr lst) alist))))
+;; An entry in the equiv-table means, for example, "If we are trying to
+;; preserve iff, and we are rewriting a boolor, use iff and iff for the args."
 
-;; ;;known-predicates are items of the form <nodenum> or (not <nodenum>):
-;; ;returns a list of terms
-;; (defun get-extra-assumptions (known-predicates predicate-nodenum-term-alist)
-;;   (if (endp known-predicates)
-;;       nil
-;;     (let ((predicate (car known-predicates)))
-;;       (cons (if (and (consp predicate)
-;;                      ;(eq 'not (ffn-symb predicate)) ;if it's a consp it must be a not
-;;                      )
-;;                 `(not ,(lookup (first (fargs predicate)) predicate-nodenum-term-alist))
-;;               (lookup predicate predicate-nodenum-term-alist))
-;;             (get-extra-assumptions (cdr known-predicates) predicate-nodenum-term-alist)))))
-
-;; (skip- proofs (verify-guards get-extra-assumptions))
-
-;(local (in-theory (enable natp)))
-
-; Currently only 'equal and 'iff are supported as equivs.
+;; Currently only 'equal and 'iff are supported as equivs.
 ;; No entries are needed here for IF, MYIF, or BOOLIF, because all Axe provers handle them specially.
 ;; We could drop BVIF except the simple provers do not (yet) handle it specially.
 (defconst *equiv-alist*
   (acons 'iff ; outer equiv that must be preserved
-         (acons 'iff '(iff iff)
-                (acons 'bvif '(equal iff equal equal)
-;this means if we are trying to preserve iff, and we are rewriting a boolor, use iff and iff for the args:
-                       (acons 'boolor '(iff iff)
-                              (acons 'boolxor '(iff iff)
-                                     (acons 'booland '(iff iff)
-                                            (acons 'not '(iff)
-                                                   nil))))))
+         (acons 'not '(iff)
+                (acons 'iff '(iff iff)
+                       (acons 'implies '(iff iff)
+                              (acons 'bool-to-bit '(iff)
+                                     (acons 'bool-fix$inline '(iff)
+                                            ;; TODO: Remove this?  A BVIF in an IFF context is just T:
+                                            ;; (acons 'bvif '(equal iff equal equal)
+                                            (acons 'boolor '(iff iff)
+                                                   (acons 'boolxor '(iff iff)
+                                                          (acons 'booland '(iff iff)
+                                                                 nil)))
+                                            ;;)
+                                            )))))
          (acons 'equal ; outer equiv that must be preserved
                 ;; We only include things here for which we can do better than using
                 ;; an equiv of EQUAL for all arguments:
-                (acons 'bool-to-bit '(iff) ;new
+                (acons 'not '(iff)
                        (acons 'iff '(iff iff)
-                              (acons 'bvif '(equal iff equal equal)
-                                     (acons 'boolor '(iff iff)
-                                            (acons 'boolxor '(iff iff)
-                                                   (acons 'booland '(iff iff)
-                                                          (acons 'not '(iff)
-                                                                 nil)))))))
+                              (acons 'implies '(iff iff)
+                                     (acons 'bool-to-bit '(iff)
+                                            (acons 'bool-fix$inline '(iff)
+                                                   (acons 'bvif '(equal iff equal equal)
+                                                          (acons 'boolor '(iff iff)
+                                                                 (acons 'boolxor '(iff iff)
+                                                                        (acons 'booland '(iff iff)
+                                                                               nil)))))))))
                 nil)))
 
 (thm
