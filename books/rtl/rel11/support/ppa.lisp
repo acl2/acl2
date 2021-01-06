@@ -106,7 +106,7 @@
   :hints (("Goal" :in-theory (enable partsum-5)
                   :use (rc-4))))
 
-(defthm ripple-carry-lemma
+(defthmd ripple-carry-lemma
   (implies (and (integerp x)
                 (integerp y)
                 (bitp cin)
@@ -115,7 +115,7 @@
 		  (logxor (logxor (bitn x i) (bitn y i))
 			  (cbit x y cin i))))
   :hints (("Goal" :in-theory (enable partsum-4) :use (rc-5 (:instance bitn-0-1 (n i)) (:instance bitn-0-1 (x y) (n i))))))
-                        
+
 ;;--------------------------------------------------------------------------------------------------------------------------------------
 
 (defthmd gen-i-i
@@ -426,8 +426,8 @@
 		  (gp x y i (chop i (- d)))))
   :hints (("Goal" :in-theory (enable lf))
           ("Subgoal *1/9" :use (lf-12))
-	  ("Subgoal *1/8" :use (lf-12 lf-13))	  
-	  ("Subgoal *1/4" :use (lf-3))	  
+	  ("Subgoal *1/8" :use (lf-12 lf-13))
+	  ("Subgoal *1/4" :use (lf-3))
 	  ("Subgoal *1/1" :in-theory (enable chop gp0))))
 
 (defthmd lf-correct
@@ -468,7 +468,7 @@
 		       (gp x y i (max 0 (1+ (- i (expt 2 (1- d))))))))
 	   (equal (ks x y i d)
 		  (gp x y i (max 0 (1+ (- i (expt 2 d)))))))
-  :hints (("Goal" :in-theory (enable ks) :nonlinearp t)  
+  :hints (("Goal" :in-theory (enable ks) :nonlinearp t)
           ("Subgoal 2" :use (ks-1))))
 
 (defthmd ks-3
@@ -643,7 +643,7 @@
   :hints (("Goal" :use ((:instance pi2-lemma (k (1+ i)) (p d))
                         (:instance bk0-2 (x (1+ i))))
 	          :nonlinearp t)))
-		
+
 (defthmd bk0-correct-gen
   (implies (and (integerp x)
 		(integerp y)
@@ -652,7 +652,7 @@
 	   (equal (bk0 x y i d)
 	          (gp x y i (1+ (- i (expt 2 (min (pi2 (1+ i)) d)))))))
   :hints (("Goal" :in-theory (enable bk0))
-          ("Subgoal *1/3" :use (bk0-5 bk0-6))	  
+          ("Subgoal *1/3" :use (bk0-5 bk0-6))
 	  ("Subgoal *1/1'''" :in-theory (enable gp0))))
 
 (defthmd bk0-correct
@@ -759,7 +759,7 @@
 		(bvecp i n))
 	   (equal (hc x y i k n)
 		  (gp x y i 0)))
-  :hints (("Goal" :in-theory (enable hc) :nonlinearp t)  
+  :hints (("Goal" :in-theory (enable hc) :nonlinearp t)
           ("Subgoal *1/1" :in-theory (enable hc hc0) :use (hc0-correct (:instance bk0-correct-gen (d k)) (:instance pi2-lemma (k (1+ i)) (p k))))
           ("Subgoal *1/2" :in-theory (enable bvecp) :use ((:instance pi2-upper (k (1+ i)))))
           ("Subgoal *1/3" :in-theory (enable hc hc0)

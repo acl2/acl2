@@ -7446,29 +7446,6 @@
                 (dir (abs-fs-fix root2))))))
   :rule-classes :congruence)
 
-(local
- (defthm
-   collapse-seq-congruence-lemma-5
-   (implies
-    (and
-     (not
-      (consp
-       (abs-addrs (frame-val->dir (cdr (assoc-equal (car seq)
-                                                    (frame->frame frame)))))))
-     (absfat-equiv (frame-val->dir (cdr (assoc-equal (car seq)
-                                                     (frame->frame frame))))
-                   dir))
-    (not (consp (abs-addrs (abs-fs-fix dir)))))
-   :instructions
-   (:promote
-    (:=
-     (abs-addrs (abs-fs-fix dir))
-     (abs-addrs
-      (abs-fs-fix (frame-val->dir (cdr (assoc-equal (car seq)
-                                                    (frame->frame frame))))))
-     :equiv set-equiv)
-    :bash)))
-
 (encapsulate
   ()
 
@@ -8580,17 +8557,6 @@
                 (mv-nth 1 (collapse frame)))
            (not (member-equal x (frame-addrs-before frame x n))))
   :hints (("goal" :in-theory (enable frame-addrs-before collapse))))
-
-(defthm
-  partial-collapse-correctness-lemma-33
-  (implies (and (member-equal 0 seq)
-                (no-duplicatesp-equal (strip-cars (frame->frame frame))))
-           (not (equal (len (frame->frame (collapse-seq frame seq)))
-                       (+ (len (frame->frame frame))
-                          (- (len seq))))))
-  :hints (("goal" :in-theory (e/d (valid-seqp)
-                                  (ctx-app-ok-of-ctx-app-list-seq-lemma-1))
-           :use ctx-app-ok-of-ctx-app-list-seq-lemma-1)))
 
 (defthm
   partial-collapse-correctness-lemma-35

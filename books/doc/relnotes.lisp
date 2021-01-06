@@ -498,14 +498,28 @@
 
    (xdoc::h4 (xdoc::seetopic "crypto::cryptography" "Cryptographic Library"))
 
+   ;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h5 (xdoc::seetopic "ecurve::elliptic-curves"
+                             "Elliptic Curve Library"))
+
    (xdoc::p
-    "In the "
-    (xdoc::seetopic "ecurve::elliptic-curves" "sub-library for elliptic curves")
-    ", the files @('[books]/kestrel/crypto/ecurve/bls12-377-domain-parameters.lisp')
-    and @('[books]/kestrel/crypto/ecurve/bls12-377-prime.lisp') have been
-    added.  They introduce some parameters of the BLS12-377 elliptic curve,
-    and introduce a Pratt certificate of primality for the scalar field size @($r$)
-    of that elliptic curve.")
+    "The formalization of "
+    (xdoc::seetopic "ecurve::short-weierstrass-curves"
+                    "short Weierstrass curves")
+    " has been extended and improved.")
+
+   (xdoc::p
+    "A formalization of "
+    (xdoc::seetopic "ecurve::twisted-edwards-curves" "twisted Edwards curves")
+    " has been added.")
+
+   (xdoc::p
+    "The files
+     @('[books]/kestrel/crypto/ecurve/bls12-377-domain-parameters.lisp') and
+     @('[books]/kestrel/crypto/ecurve/bls12-377-prime.lisp')
+     have been added.
+     They introduce some parameters of the BLS12-377 elliptic curve.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

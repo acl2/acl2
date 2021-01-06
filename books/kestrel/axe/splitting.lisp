@@ -210,49 +210,56 @@
           acc
         (let ((args (dargs expr)))
           ;;instead of skipping the nots, just include not as a function here?  then x will have a smaller size than (not x) in the size array
-          (cond ((and (or (eq 'myif fn) (eq 'if fn))
-                      (= 3 (len args)))
-                 (strip-nots-and-maybe-extend (first args) dag-array-name dag-array acc))
-                ((and (eq fn 'bvif)
-                      (= 4 (len args)))
-                 (strip-nots-and-maybe-extend (second args) dag-array-name dag-array acc)) ;the test of the bvif is arg2
-                ((and (eq fn 'bool-to-bit) ;new
-                      (= 1 (len args)))
-                 (strip-nots-and-maybe-extend (first args) dag-array-name dag-array acc))
-                ;; might we ever not want to split on the argument of a boolor or booland?
-                ;; should we split for a boolxor?
+          (cond
+           ;; For an IF/MYIF/BOOLIF, consider splitting on the test.  (For BOOLIF, we could also split on the other
+           ;; args, but once we split on the test, the whole BOOLIF should go away.)
+           ((and (member-eq fn '(if myif boolif))
+                 (= 3 (len args)))
+            (strip-nots-and-maybe-extend (first args) dag-array-name dag-array acc))
+           ;; ;;which one should we choose?
+           ;; ((and (eq fn 'boolif)
+           ;;       (= 3 (len args)))
+           ;;  (strip-nots-and-maybe-extend (first args) dag-array-name dag-array
+           ;;                               (strip-nots-and-maybe-extend (second args) dag-array-name dag-array
+           ;;                                                            (strip-nots-and-maybe-extend (third args) dag-array-name dag-array acc))))
+           ;; For a BVIF, consider splitting on the test:
+           ((and (eq fn 'bvif)
+                 (= 4 (len args)))
+            (strip-nots-and-maybe-extend (second args) dag-array-name dag-array acc)) ;the test of the bvif is arg2
+           ;; For BOOL-TO-BIT, consider splitting on the argument:
+           ((and (eq fn 'bool-to-bit)
+                 (= 1 (len args)))
+            (strip-nots-and-maybe-extend (first args) dag-array-name dag-array acc))
+           ;; might we ever not want to split on the argument of a boolor or booland?
+           ;; should we split for a boolxor?
 ;fffixme the args to booland (say) may be boolands, so we want to strip the bool ops (not just nots!) from them too. i guess we'll take the smallest node, but we may waste time (when using this to split a miter) checking whether these booland nodes (which we should never split on) have both true and false test cases...
-                ((and (member-eq fn '(boolor booland boolxor))
-                      (= 2 (len args)))
-                 (strip-nots-and-maybe-extend (first args) dag-array-name dag-array
-                                              (strip-nots-and-maybe-extend (second args) dag-array-name dag-array acc)))
-                ;;which one should we choose?
-                ((and (eq fn 'boolif)
-                      (= 3 (len args)))
-                 (strip-nots-and-maybe-extend (first args) dag-array-name dag-array
-                                              (strip-nots-and-maybe-extend (second args) dag-array-name dag-array
-                                                                           (strip-nots-and-maybe-extend (third args) dag-array-name dag-array acc))))
-                ;;equality of a pred and something else..
-                ((and (eq fn 'iff) ;had 'equal here but the prover had trouble using the fact that the arg was non-nil
-                      (= 2 (len args)))
-                 (let ((arg1 (first args)))
-                   (if (and (integerp arg1)
-                            (let ((arg1-expr (aref1 dag-array-name dag-array arg1)))
-                              (and (consp arg1-expr)
-                                   ;; Do we need this check?:
-                                   ;;(member-eq (ffn-symb arg1-expr) *known-predicates-except-not-basic*) ;or pass in a list of known booleans
-                                   )))
-                       (strip-nots-and-maybe-extend arg1 dag-array-name dag-array acc) ;fixme what about arg2?
-                     (let ((arg2 (second args)))
-                       (if (and (integerp arg2)
-                                (let ((arg2-expr (aref1 dag-array-name dag-array arg2)))
-                                  (and (consp arg2-expr)
-                                       ;; Do we need this check?:
-                                       ;;(member-eq (ffn-symb arg2-expr) *known-predicates-except-not-basic*) ;or pass in a list of known booleans
-                                       )))
-                           (strip-nots-and-maybe-extend arg2 dag-array-name dag-array acc)
-                         acc)))))
-                (t acc)))))))
+           ((and (member-eq fn '(boolor booland boolxor))
+                 (= 2 (len args)))
+            (strip-nots-and-maybe-extend (first args) dag-array-name dag-array
+                                         (strip-nots-and-maybe-extend (second args) dag-array-name dag-array acc)))
+
+           ;;equality of a pred and something else..
+           ((and (eq fn 'iff) ;had 'equal here but the prover had trouble using the fact that the arg was non-nil
+                 (= 2 (len args)))
+            (let ((arg1 (first args)))
+              (if (and (integerp arg1)
+                       (let ((arg1-expr (aref1 dag-array-name dag-array arg1)))
+                         (and (consp arg1-expr)
+                              ;; Do we need this check?:
+                              ;;(member-eq (ffn-symb arg1-expr) *known-predicates-except-not-basic*) ;or pass in a list of known booleans
+                              )))
+                  (strip-nots-and-maybe-extend arg1 dag-array-name dag-array acc) ;fixme what about arg2?
+                (let ((arg2 (second args)))
+                  (if (and (integerp arg2)
+                           (let ((arg2-expr (aref1 dag-array-name dag-array arg2)))
+                             (and (consp arg2-expr)
+                                  ;; Do we need this check?:
+                                  ;;(member-eq (ffn-symb arg2-expr) *known-predicates-except-not-basic*) ;or pass in a list of known booleans
+                                  )))
+                      (strip-nots-and-maybe-extend arg2 dag-array-name dag-array acc)
+                    acc)))))
+           ;; TODO: Consider splitting on a known-boolean argument to EQUAL?
+           (t acc)))))))
 
 (defthm true-listp-of-maybe-add-split-candidates
   (equal (true-listp (maybe-add-split-candidates expr dag-array-name dag-array dag-len acc))
@@ -488,7 +495,7 @@
                                    ;member-of-cons ;todo
                                    )))))
 
-;returns a nodenum to split on, or nil
+;; Returns a nodenum to split on, or nil.
 ;can we speed this up?
 ;destroys 'size-array and 'done-array
 ;;fffixme could the node to spit on ever be a literal?  or the negation of a literal? avoid that (could lead to loops)

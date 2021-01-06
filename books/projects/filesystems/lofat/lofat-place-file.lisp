@@ -11575,7 +11575,7 @@
     (("goal"
       :in-theory (e/d (not-intersectp-list hifat-entry-count
                                            lofat-to-hifat-helper-correctness-4)
-                      ((:type-prescription make-d-e-list)))
+                      ())
       :induct (induction-scheme d-e-list entry-limit fat32$c x)
       :do-not-induct t
       :expand ((:free (fat32$c entry-limit)
@@ -11591,16 +11591,7 @@
        '(:in-theory (e/d (not-intersectp-list hifat-entry-count
                                               lofat-to-hifat-helper-correctness-4
                                               lofat-place-file-spec-2)
-                         ((:type-prescription make-d-e-list)))
-                    :do-not-induct t
-                    :expand ((:free (fat32$c entry-limit)
-                                    (lofat-to-hifat-helper fat32$c d-e-list entry-limit))
-                             (:free (x1 x2 y)
-                                    (not-intersectp-list x1 (cons x2 y)))
-                             (:free (d-e fat32$c d-e-list entry-limit)
-                                    (lofat-to-hifat-helper fat32$c (cons d-e d-e-list)
-                                                           entry-limit))
-                             (find-d-e d-e-list name)))))
+                         ()))))
     :rule-classes
     ((:rewrite
       :corollary
@@ -13499,20 +13490,11 @@
                       (lofat-to-hifat-helper fat32$c (cons d-e d-e-list)
                                              entry-limit))
                (find-d-e d-e-list name)))
-     (if stable-under-simplificationp
-         '(:in-theory (e/d (not-intersectp-list hifat-entry-count
-                                                lofat-to-hifat-helper-correctness-4
-                                                lofat-place-file-spec-1 find-d-e))
-                      :do-not-induct t
-                      :expand ((:free (fat32$c entry-limit)
-                                      (lofat-to-hifat-helper fat32$c d-e-list entry-limit))
-                               (:free (x1 x2 y)
-                                      (not-intersectp-list x1 (cons x2 y)))
-                               (:free (d-e fat32$c d-e-list entry-limit)
-                                      (lofat-to-hifat-helper fat32$c (cons d-e d-e-list)
-                                                             entry-limit))
-                               (find-d-e d-e-list name)))
-       nil))
+     (if (not stable-under-simplificationp)
+         ()
+       '(:in-theory (e/d (not-intersectp-list hifat-entry-count
+                                              lofat-to-hifat-helper-correctness-4
+                                              lofat-place-file-spec-1 find-d-e)))))
     :rule-classes
     ((:rewrite
       :corollary

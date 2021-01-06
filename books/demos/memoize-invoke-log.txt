@@ -153,8 +153,8 @@ Rules: NIL
 ACL2 !>>(TRACE$ G1)
  ((G1))
 ACL2 !>>(F1 3)
-(G1 3)
-(G1 (3))
+1> (G1 3)
+<1 (G1 (3))
 (3)
 ACL2 !>>(DEFUN FIB (N)
                (DECLARE (XARGS :GUARD (NATP N)))
@@ -531,8 +531,8 @@ check with (set-guard-checking :none), as recommended for new users.
 To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
 
 ACL2 !>>(F2 '(A B C))
-(G2 (A B C))
-(G2 A)
+1> (G2 (A B C))
+<1 (G2 A)
 A
 ACL2 !>>(DEFN F3 (X Y)
               (DECLARE (TYPE RATIONAL X Y))
@@ -674,7 +674,7 @@ Rules: NIL
 ACL2 !>>(TRACE$ G3)
  ((G3))
 ACL2 !>>(F3 3 4)
-(G3 3 4)
-(G3 7)
+1> (G3 3 4)
+<1 (G3 7)
 7
 ACL2 !>>Bye.

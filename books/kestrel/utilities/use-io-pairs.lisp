@@ -2,6 +2,9 @@
 ; Written by Matt Kaufmann
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
+; This tool was created in response to a suggestion from Eric McCarthy, who we
+; thank along with Eric Smith and Alessandro Coglio for helpful feedback.
+
 ; For examples see use-io-pairs-tests.lisp.
 
 ; Possible future enhancements:

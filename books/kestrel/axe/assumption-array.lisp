@@ -39,7 +39,8 @@
 (defund maybe-replace-nodenum-using-assumption-array (nodenum
                                                       equiv
                                                       assumption-array
-                                                      assumption-array-num-valid-nodes)
+                                                      assumption-array-num-valid-nodes
+                                                      print)
   (declare (xargs :guard (and (natp nodenum)
                               (equivp equiv)
                               (assumption-arrayp 'assumption-array assumption-array)
@@ -62,7 +63,7 @@
             (if (eq 'iff equiv)
                 *t* ;; We know the node is non-nil and only have to preserve iff
               ;; Can't rewrite since we are in an 'equal context and only know that nodenum is non-nil:
-              (prog2$ (cw "NOTE: Rewriting non-nil node ~x0 in an equal context.~%" nodenum)
+              (prog2$ (and print (cw "NOTE: Rewriting non-nil node ~x0 in an equal context.~%" nodenum))
                       nodenum))
           ;; we have a replacement (some constant) for nodenum:
           (if (eq 'iff equiv)
@@ -82,8 +83,8 @@
                 (assumption-arrayp 'assumption-array assumption-array)
                 (natp assumption-array-num-valid-nodes)
                 (<= assumption-array-num-valid-nodes (alen1 'assumption-array assumption-array)))
-           (or (equal nodenum (maybe-replace-nodenum-using-assumption-array nodenum equiv assumption-array assumption-array-num-valid-nodes))
-               (myquotep (maybe-replace-nodenum-using-assumption-array nodenum equiv assumption-array assumption-array-num-valid-nodes))))
+           (or (equal nodenum (maybe-replace-nodenum-using-assumption-array nodenum equiv assumption-array assumption-array-num-valid-nodes print))
+               (myquotep (maybe-replace-nodenum-using-assumption-array nodenum equiv assumption-array assumption-array-num-valid-nodes print))))
   :hints (("Goal" :use (:instance type-of-aref1-when-assumption-arrayp
                                   (array-name 'assumption-array)
                                   (array assumption-array)
@@ -103,7 +104,7 @@
                 (assumption-arrayp 'assumption-array assumption-array)
                 (natp assumption-array-num-valid-nodes)
                 (<= assumption-array-num-valid-nodes (alen1 'assumption-array assumption-array)))
-           (dargp-less-than (maybe-replace-nodenum-using-assumption-array nodenum equiv assumption-array assumption-array-num-valid-nodes)
+           (dargp-less-than (maybe-replace-nodenum-using-assumption-array nodenum equiv assumption-array assumption-array-num-valid-nodes print)
                             bound))
   :hints (("Goal" :use (:instance maybe-replace-nodenum-using-assumption-array-return-type)
            :in-theory (disable maybe-replace-nodenum-using-assumption-array-return-type))))

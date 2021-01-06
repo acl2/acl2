@@ -44,6 +44,7 @@
          nil ; no rules
          nil ; no ifns
          nil ; no monitored rules
+         nil ;print
          state))
        (axe-provedp (not failedp)))
     (if (and acl2-provedp

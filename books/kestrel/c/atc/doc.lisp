@@ -94,7 +94,7 @@
        if it exists, it is overwritten.
        The file must include a @('.c') extension."))
 
-    (xdoc::evmac-input-print tailrec))
+    (xdoc::evmac-input-print atc))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

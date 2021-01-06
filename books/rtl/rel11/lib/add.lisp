@@ -299,7 +299,7 @@
         (bk0 x y i n)
       (fco (bk0 x y i n)
 	   (bk x y (- i (expt 2 p)) n)))))
-		
+
 (defthmd bk0-correct-gen
   (implies (and (integerp x)
 		(integerp y)
