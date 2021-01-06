@@ -29,6 +29,7 @@
 (include-book "bls12-377-domain-parameters")
 
 (include-book "prime-field-squares")
+(include-book "prime-field-squares-euler-criterion")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

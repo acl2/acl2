@@ -653,17 +653,3 @@
                   (x (i+ 1 (gamma$)))
                   (x-equiv 0)
                   (y (i- (hide 1))))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; This is useful to show an integer is not a square.
-; It is not part of the closure proof per se.
-
-(defthmd weak-euler-criterion-contrapositive
-  (implies (and (not (=p (expt a (/ (- (prime) 1) 2)) 1))
-                (integerp a)
-                (not (=p a 0)))
-           (non-square a))
-  :hints (("Goal" :use ((:instance weak-euler-criterion
-                         (a a)
-                         (sqrt{a} (non-square-witness a)))))))
