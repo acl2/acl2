@@ -995,12 +995,14 @@
            (not (< (nth n x) k)))
   :hints (("Goal" :in-theory (e/d (nth) (nth-of-cdr)))))
 
+;; Returns (mv success-flg alist-for-free-vars).
 ;; hyp is a tree with leaves that are quoteps, nodenums (from vars already bound), and free vars
-;; Returns (mv success-flg alist-for-free-vars)..
 ;; if success-flg is nil, the alist returned is irrelevant
 ;; the alist returned maps variables to nodenums or quoteps
 (defund match-hyp-with-nodenum-to-assume-false (hyp nodenum-to-assume-false dag-array dag-len)
   (declare (xargs :guard (and (axe-treep hyp)
+                              (consp hyp)
+                              (not (equal 'quote (ffn-symb hyp)))
                               (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                               (natp nodenum-to-assume-false)
                               (< nodenum-to-assume-false dag-len))
