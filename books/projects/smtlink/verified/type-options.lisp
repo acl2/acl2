@@ -54,11 +54,11 @@
   :val-type return-spec-list-p
   :true-listp t)
 
-;; (defthm arg-decl-p-of-assoc-equal-from-function-description-alist-p
-;;   (implies (and (function-description-alist-p y)
-;;                 (assoc-equal x y))
-;;            (and (consp (assoc-equal x y))
-;;                 (arg-decl-p (cdr (assoc-equal x y))))))
+(defthm consp-of-assoc-equal-from-function-description-alist-p
+  (implies (and (function-description-alist-p y)
+                (assoc-equal x y))
+           (and (consp (assoc-equal x y))
+                (return-spec-list-p (cdr (assoc-equal x y))))))
 
 (encapsulate ()
 (local (in-theory (disable (:rewrite default-cdr))))

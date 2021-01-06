@@ -374,9 +374,8 @@
          (fn-description (cdr conspair))
          ;; return-judgement could be ''t which means it could be anything
          ((mv return-judgement &)
-          (returns-judgement fn actuals actuals actuals-judgements-top
-                             actuals-judgements-top fn-description path-cond
-                             (type-options->supertype options) ''t nil state))
+          (returns-judgement fn actuals actuals-judgements-top fn-description
+                             path-cond state))
          ((if (equal return-judgement ''t))
           (prog2$ (er hard? 'type-inference-bottomup=>type-judgement-fn
                       "Failed to find type judgements for return of function ~
