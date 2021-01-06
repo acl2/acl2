@@ -568,7 +568,7 @@
                     (mv-let
                       (instantiated-hyp free-vars-flg)
                       ;; TODO: This bakes in the basic evaluator:
-                      (instantiate-hyp-basic hyp alist nil interpreted-function-alist)
+                      (instantiate-hyp-basic hyp alist interpreted-function-alist)
                       ;; Now instantiated-hyp is an axe-tree with leaves that are quoteps, nodenums (from vars already bound), and free vars yet to be bound.
                       (if (fquotep instantiated-hyp) ;; we know the instantiated-hyp is a cons, because hyp is
                           ;; The instantiated-hyp is a quoted constant:
