@@ -950,6 +950,19 @@
                (= (expo (bits (+ a b 1) (1- n) 0)) (1- (expo (w0 a b n))))))
   :rule-classes ())
 
+(defthm lza-thm-1
+  (implies (and (not (zp n))
+                (bvecp a n)
+                (bvecp b n)
+                (> (+ a b) (expt 2 n)))
+           (and (>= (w0 a b n) 2)
+                (or (= (expo (bits (+ a b) (1- n) 0)) (expo (w0 a b n)))
+                    (= (expo (bits (+ a b) (1- n) 0)) (1- (expo (w0 a b n)))))
+                (or (= (expo (bits (+ a b 1) (1- n) 0)) (expo (w0 a b n)))
+                    (= (expo (bits (+ a b 1) (1- n) 0)) (1- (expo (w0 a b n)))))))
+  :rule-classes ()
+  :hints (("Goal" :use (lza-thm lza-cor))))
+
 ;;;**********************************************************************
 ;;;                    Trailing One Prediction
 ;;;**********************************************************************

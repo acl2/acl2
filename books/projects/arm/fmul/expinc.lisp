@@ -80,7 +80,7 @@
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
                 (= (expa) 0))
-           (<= (sa) (1- (expt 2 (- 53 (clz))))))
+           (<= (sa) (1- (expt 2 (- 53 (clz*))))))
   :hints (("Goal" :in-theory (enable bvecp sa clz-expo clz-rewrite)
                   :use (expa-expb-0 bvecp-mana expa-0-mana
 		        (:instance expo>= (x (mana)) (n 0))
@@ -90,7 +90,7 @@
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
                 (= (expb) 0))
-           (<= (sb) (1- (expt 2 (- 53 (clz))))))
+           (<= (sb) (1- (expt 2 (- 53 (clz*))))))
   :hints (("Goal" :in-theory (enable bvecp sb clz-expo clz-rewrite)
                   :use (expa-expb-0 bvecp-manb expb-0-manb
 		        (:instance expo>= (x (manb)) (n 0))
@@ -105,7 +105,7 @@
 (local-defthmd expinc-case-2-4
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0))
-           (<= (prod) (* (1- (expt 2 53)) (1- (expt 2 (- 53 (clz)))))))
+           (<= (prod) (* (1- (expt 2 53)) (1- (expt 2 (- 53 (clz*)))))))
   :hints (("Goal" :in-theory (enable prod-rewrite clz-rewrite)
                   :nonlinearp t
                   :use (natp-s expa-expb-0 expinc-case-2-1 expinc-case-2-2 expinc-case-2-3))))
@@ -113,7 +113,7 @@
 (local-defthmd expinc-case-2-5
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(> (+ (ea) (eb) (1- (expt 2 10))) (clz)))
+		(> (+ (ea) (eb) (1- (expt 2 10))) (clz*)))
            (< (lprodshft) (- (expt 2 106) (expt 2 53))))
   :hints (("Goal" :in-theory (enable case-2-13)
                   :nonlinearp t
@@ -124,7 +124,7 @@
 		(= (expinc) 1)
 		(= (exprndinc) 1)
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(> (+ (ea) (eb) (1- (expt 2 10))) (clz)))
+		(> (+ (ea) (eb) (1- (expt 2 10))) (clz*)))
            (equal (bits (lprodshft) 104 53)
 	          (1- (expt 2 52))))
   :hints (("Goal" :in-theory (enable case-2-28 fracunrnd)
@@ -135,7 +135,7 @@
 		(= (expinc) 1)
 		(= (exprndinc) 1)
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(> (+ (ea) (eb) (1- (expt 2 10))) (clz)))
+		(> (+ (ea) (eb) (1- (expt 2 10))) (clz*)))
            (>= (bits (lprodshft) 104 0)
 	       (- (expt 2 105) (expt 2 53))))
   :rule-classes ()
@@ -148,7 +148,7 @@
 		(= (expinc) 1)
 		(= (exprndinc) 1)
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(> (+ (ea) (eb) (1- (expt 2 10))) (clz)))
+		(> (+ (ea) (eb) (1- (expt 2 10))) (clz*)))
            ())
   :rule-classes ()
   :hints (("Goal" :use (expinc-case-2-5 expinc-case-2-7 case-2-29))))
@@ -156,7 +156,7 @@
 (local-defthmd expinc-case-2-9
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(= (+ (ea) (eb) (1- (expt 2 10))) (clz)))
+		(= (+ (ea) (eb) (1- (expt 2 10))) (clz*)))
            (< (lprodshft) (- (expt 2 105) (expt 2 52))))
   :hints (("Goal" :in-theory (enable case-2-37)
                   :nonlinearp t
@@ -165,7 +165,7 @@
 (local-defthmd expinc-case-2-10
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(= (+ (ea) (eb) (1- (expt 2 10))) (clz)))
+		(= (+ (ea) (eb) (1- (expt 2 10))) (clz*)))
            (equal (frac105)
 	          (bits (* 2 (lprodshft)) 104 0)))
   :hints (("Goal" :in-theory (enable ash-rewrite bvecp)
@@ -178,7 +178,7 @@
 		(= (expinc) 1)
 		(= (exprndinc) 1)
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(= (+ (ea) (eb) (1- (expt 2 10))) (clz)))
+		(= (+ (ea) (eb) (1- (expt 2 10))) (clz*)))
            (equal (bits (lprodshft) 103 52)
 	          (1- (expt 2 52))))
   :hints (("Goal" :in-theory (enable expinc-case-2-10 ash-rewrite bvecp)
@@ -190,7 +190,7 @@
 		(= (expinc) 1)
 		(= (exprndinc) 1)
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(= (+ (ea) (eb) (1- (expt 2 10))) (clz)))
+		(= (+ (ea) (eb) (1- (expt 2 10))) (clz*)))
            ())
   :rule-classes ()
   :hints (("Goal" :in-theory (enable expinc-case-2-11)
@@ -203,7 +203,7 @@
 		(= (expinc) 1)
 		(= (exprndinc) 1)
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0)
-		(< (+ (ea) (eb) (1- (expt 2 10))) (clz)))
+		(< (+ (ea) (eb) (1- (expt 2 10))) (clz*)))
            ())
   :rule-classes ()
   :hints (("Goal" :in-theory (enable lexpinc expdiffbiasedzero-rewrite case-2-71))))

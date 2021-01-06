@@ -467,7 +467,7 @@
                 (natp i)
                 (<= i n)
                 (loop-0-invariant i (1+ k) c z x))
-           (mv-let (c z) (clz-loop-0 i n k c z)
+           (mv-let (c z) (clz128-loop-0 i n k c z)
              (loop-0-invariant n (1+ k) c z x)))
   :hints (("Subgoal *1/4" :use (loop-0-step-lemma))))
 
@@ -477,7 +477,7 @@
                 (< k 7)
                 (= n (expt 2 (- 6 k)))
                 (loop-0-invariant 0 (1+ k) c z x))
-           (mv-let (c z) (clz-loop-0 0 n k c z)
+           (mv-let (c z) (clz128-loop-0 0 n k c z)
              (loop-0-invariant n (1+ k) c z x)))
   :hints (("Goal" :use ((:instance loop-0-induct (i 0))))))
 
@@ -527,7 +527,7 @@
                 (< k 7)
                 (= n (expt 2 (- 6 k)))
                 (check-all k c z x))
-           (mv-let (c z) (clz-loop-0 0 n k c z)
+           (mv-let (c z) (clz128-loop-0 0 n k c z)
              (check-all (1+ k) c z x)))
   :hints (("Goal" :use (loop-0-lemma check-high-low)
                   :in-theory (enable check-all loop-0-invariant))))
@@ -537,7 +537,7 @@
                 (natp k)
                 (<= k 7)
                 (check-all k c z x))
-           (mv-let (n c z) (clz-loop-1 k (/ 128 (expt 2 k)) c z)
+           (mv-let (n c z) (clz128-loop-1 k (/ 128 (expt 2 k)) c z)
              (declare (ignore n))
              (check-all 7 c z x)))
   :hints (("Subgoal *1/4" :use ((:instance loop-1-step-lemma (n (expt 2 (- 6 k))))))))
@@ -545,7 +545,7 @@
 (defthmd loop-1-lemma
   (implies (and (bvecp x 128)
                 (check-all 0 c z x))
-           (mv-let (n c z) (clz-loop-1 0 128 c z)
+           (mv-let (n c z) (clz128-loop-1 0 128 c z)
              (declare (ignore n))
              (check-all 7 c z x)))
   :hints (("Goal" :use ((:instance loop-1-induct (k 0))))))
@@ -567,42 +567,42 @@
                 (natp i)
                 (< i 128)
                 (check-low i 0 c z x))
-           (mv-let (z c) (clz-loop-2 i x z c)
+           (mv-let (z c) (clz128-loop-2 i x z c)
              (check-low 128 0 c z x)))
-  :hints (("Goal" :induct (clz-loop-2 i x z c))
+  :hints (("Goal" :induct (clz128-loop-2 i x z c))
           ("Subgoal *1/1" :use (loop-2-step-lemma))))
 
 (defthmd loop-2-lemma
   (implies (bvecp x 128)
-           (mv-let (z c) (clz-loop-2 0 x z c)
+           (mv-let (z c) (clz128-loop-2 0 x z c)
              (check-all 0 c z x)))
   :hints (("Goal" :in-theory (enable check-all) :use ((:instance loop-2-induct (i 0))))))
 
 ;; Our main result follows from loop-1-lemma, loop-2-lemma, check-all-lzcnt,
 ;; and lzcnt-expo:
 
-(defthmd clz-lzcnt
+(defthmd clz128-lzcnt
   (implies (and (bvecp x 128) (> x 0))
-           (equal (clz x) (lzcnt x 128)))
-  :hints (("Goal" :expand ((clz x))
+           (equal (clz128 x) (lzcnt x 128)))
+  :hints (("Goal" :expand ((clz128 x))
                   :use ((:instance loop-2-lemma (z ()) (c ()))
-                        (:instance loop-1-lemma (z (mv-nth 0 (clz-loop-2 0 x () ())))
-			                        (c (mv-nth 1 (clz-loop-2 0 x () ()))))
+                        (:instance loop-1-lemma (z (mv-nth 0 (clz128-loop-2 0 x () ())))
+			                        (c (mv-nth 1 (clz128-loop-2 0 x () ()))))
                         (:instance check-all-lzcnt
-			  (z (mv-nth 2 (clz-loop-1 0 128
-			                           (mv-nth 1 (clz-loop-2 0 x () ()))
-                                                   (mv-nth 0 (clz-loop-2 0 x () ())))))
-			  (c (mv-nth 1 (clz-loop-1 0 128
-			                           (mv-nth 1 (clz-loop-2 0 x () ()))
-                                                   (mv-nth 0 (clz-loop-2 0 x ()
+			  (z (mv-nth 2 (clz128-loop-1 0 128
+			                           (mv-nth 1 (clz128-loop-2 0 x () ()))
+                                                   (mv-nth 0 (clz128-loop-2 0 x () ())))))
+			  (c (mv-nth 1 (clz128-loop-1 0 128
+			                           (mv-nth 1 (clz128-loop-2 0 x () ()))
+                                                   (mv-nth 0 (clz128-loop-2 0 x ()
                                                                          ()))))))))))
 
-(defthm clz-0
-  (equal (clz 0) 127)
-  :hints (("Goal" :in-theory (enable clz))))
+(defthm clz128-0
+  (equal (clz128 0) 127)
+  :hints (("Goal" :in-theory (enable clz128))))
 						   
-(defthmd clz-expo
+(defthmd clz128-expo
   (implies (bvecp x 128)
-           (equal (clz x) (- 127 (expo x))))
-  :hints (("Goal" :cases ((= x 0)) :in-theory (enable clz-lzcnt lzcnt-expo))))
+           (equal (clz128 x) (- 127 (expo x))))
+  :hints (("Goal" :cases ((= x 0)) :in-theory (enable clz128-lzcnt lzcnt-expo))))
 
