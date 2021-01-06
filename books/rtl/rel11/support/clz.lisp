@@ -2,6 +2,7 @@
 
 (include-book "basic")
 (include-book "bits")
+(include-book "log")
 (include-book "float")
 (include-book "definitions")
 (add-macro-alias cat binary-cat)
@@ -21,7 +22,7 @@
   (if (zp k)
       0
     (if (= (zseg x (1- k) (1+ (* 2 i))) 1)
-	(+ (expt 2 (1- k)) (zcount x (1- k) (* 2 i)))
+	(logior (expt 2 (1- k)) (zcount x (1- k) (* 2 i)))
       (zcount x (1- k) (1+ (* 2 i))))))
 
 (defund clz (x n)
@@ -56,6 +57,17 @@
 	  ("Subgoal *1/2" :in-theory (enable zseg seg))
 	  ("Subgoal *1/1" :in-theory (enable zseg seg))))
 
+(defthmd expo-seg
+  (implies (and (integerp x)
+		(natp k)
+		(natp i))
+	   (and (>= (expo (seg x k i)) 0)
+		(<= (expo (seg x k i)) (1- (expt 2 k)))))
+  :hints (("Goal" :in-theory (enable seg)
+	          :use ((:instance bits-bounds (i (1- (* (expt 2 k) (1+ i)))) (j (* (expt 2 k) i)))
+		        (:instance expo<= (x (seg x k i)) (n (1- (expt 2 k))))
+		        (:instance expo>= (x (seg x k i)) (n 0))))))
+
 (defthmd c-val-1
   (implies (and (integerp x)
 		(not (zp k))
@@ -67,7 +79,9 @@
 	   (equal (zcount x k i)
 		  (1- (- (expt 2 k) (expo (seg x k i))))))
   :hints (("Goal" :nonlinearp t
-	          :in-theory (enable zcount seg-cat cat-0 z-val))))
+                  :use ((:instance expo-seg (k (1- k)) (i (* 2 i)))
+		        (:instance logior-expt-cor (n (1- k)) (x 1) (y (zcount x (1- k) (* 2 i)))))
+	          :in-theory (enable bvecp zcount seg-cat cat-0 z-val))))
 
 (defthmd c-val-2
   (implies (and (integerp x)

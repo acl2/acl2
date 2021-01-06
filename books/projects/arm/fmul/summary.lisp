@@ -257,7 +257,7 @@
 
 ;; Leading zero count (assuming that expa and expb are not both 0):
 
-(defund clz ()
+(defund clz* ()
   (let* ((clz (bits 0 5 0))
          (clz (if1 (log= (expa) 0)
                    (logior clz (clz53 (mana)))
@@ -282,21 +282,21 @@
 (defund expshftint ()
   (if1 (logior1 (expbiasedzero) (expbiasedneg))
        (mv-nth 0 (mv-list 7 (rightshft (expa) (expb) (prod))))
-       (mv-nth 0 (mv-list 7 (leftshft (expa) (expb) (prod) (clz))))))
+       (mv-nth 0 (mv-list 7 (leftshft (expa) (expb) (prod) (clz*))))))
 
 ;; Indication of exponent increment:
 
 (defund expinc ()
   (if1 (logior1 (expbiasedzero) (expbiasedneg))
        (mv-nth 1 (mv-list 7 (rightshft (expa) (expb) (prod))))
-       (mv-nth 1 (mv-list 7 (leftshft (expa) (expb) (prod) (clz))))))
+       (mv-nth 1 (mv-list 7 (leftshft (expa) (expb) (prod) (clz*))))))
 
 ;; FMA outputs:
 
 (defund stkfma ()
   (if1 (logior1 (expbiasedzero) (expbiasedneg))
        (mv-nth 3 (mv-list 7 (rightshft (expa) (expb) (prod))))
-       (mv-nth 3 (mv-list 7 (leftshft (expa) (expb) (prod) (clz))))))
+       (mv-nth 3 (mv-list 7 (leftshft (expa) (expb) (prod) (clz*))))))
 
 (defund expzero () (log= (bits (expshftint) 11 0) 3072))
 
@@ -315,7 +315,7 @@
 (defund frac105 ()
   (if1 (logior1 (expbiasedzero) (expbiasedneg))
        (mv-nth 2 (mv-list 7 (rightshft (expa) (expb) (prod))))
-       (mv-nth 2 (mv-list 7 (leftshft (expa) (expb) (prod) (clz))))))
+       (mv-nth 2 (mv-list 7 (leftshft (expa) (expb) (prod) (clz*))))))
 
 (defund data-fma ()
   (let ((d (setbitn 0 117 116 (sign))))
@@ -338,17 +338,17 @@
 (defund lsb ()
   (if1 (logior1 (expbiasedzero) (expbiasedneg))
        (mv-nth 4 (mv-list 7 (rightshft (expa) (expb) (prod))))
-       (mv-nth 4 (mv-list 7 (leftshft (expa) (expb) (prod) (clz))))))
+       (mv-nth 4 (mv-list 7 (leftshft (expa) (expb) (prod) (clz*))))))
 
 (defund grd ()
   (if1 (logior1 (expbiasedzero) (expbiasedneg))
        (mv-nth 5 (mv-list 7 (rightshft (expa) (expb) (prod))))
-       (mv-nth 5 (mv-list 7 (leftshft (expa) (expb) (prod) (clz))))))
+       (mv-nth 5 (mv-list 7 (leftshft (expa) (expb) (prod) (clz*))))))
 
 (defund stk ()
   (if1 (logior1 (expbiasedzero) (expbiasedneg))
        (mv-nth 6 (mv-list 7 (rightshft (expa) (expb) (prod))))
-       (mv-nth 6 (mv-list 7 (leftshft (expa) (expb) (prod) (clz))))))
+       (mv-nth 6 (mv-list 7 (leftshft (expa) (expb) (prod) (clz*))))))
 
 (defund rndup ()
   (logior1 (logior1 (logand1 (logand1 (log= (rmode) (rmodenear)) (grd))
@@ -632,7 +632,7 @@
 (defthmd clz-rewrite
   (implies (and (not (specialp))
                 (> (+ (ea) (eb) (1- (expt 2 10))) 0))
-	   (equal (clz)
+	   (equal (clz*)
 	          (if (= (expa) 0)
 		      (clz53 (mana))
 		    (if (= (expb) 0)

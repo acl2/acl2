@@ -16,6 +16,8 @@
 
 (include-book "./add")
 
+(include-book "./lza2")
+
 (include-book "./ppa")
 
 (include-book "./clz")
