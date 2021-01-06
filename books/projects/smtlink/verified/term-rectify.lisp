@@ -476,16 +476,16 @@
 
 (local (in-theory (enable term-rectify-cp term-rectify-fn)))
 
-(skip-proofs
-(defthm correctness-of-term-rectify-cp
-  (implies (and (ev-smtcp-meta-extract-global-facts)
-                (pseudo-term-listp cl)
-                (alistp a)
-                (ev-smtcp
-                 (conjoin-clauses
-                  (acl2::clauses-result
-                   (term-rectify-cp cl hint state)))
-                 a))
-           (ev-smtcp (disjoin cl) a))
-  :rule-classes :clause-processor)
-)
+;; (skip-proofs
+;; (defthm correctness-of-term-rectify-cp
+;;   (implies (and (ev-smtcp-meta-extract-global-facts)
+;;                 (pseudo-term-listp cl)
+;;                 (alistp a)
+;;                 (ev-smtcp
+;;                  (conjoin-clauses
+;;                   (acl2::clauses-result
+;;                    (term-rectify-cp cl hint state)))
+;;                  a))
+;;            (ev-smtcp (disjoin cl) a))
+;;   :rule-classes :clause-processor)
+;; )

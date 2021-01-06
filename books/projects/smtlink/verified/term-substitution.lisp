@@ -146,14 +146,6 @@
 
 (verify-guards term-substitution)
 
-(skip-proofs
- (defthm correctness-of-term-substitution
-   (implies (and (ev-smtcp-meta-extract-global-facts)
-                 (pseudo-termp term)
-                 (alistp a)
-                 (ev-smtcp term a))
-            (ev-smtcp (term-substitution term sub-alst skip-conj) sub-alst))))
-
 (define term-substitution-linear ((term-lst pseudo-term-listp)
                                   (subterm-lst pseudo-term-listp)
                                   (subst-lst pseudo-term-listp)

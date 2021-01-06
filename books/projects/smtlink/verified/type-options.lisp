@@ -34,33 +34,31 @@
                 (type-tuple-list-p (cdr (assoc-equal y x))))))
 
 (defprod return-spec
-  ((formals symbol-listp)
-   (return-type symbolp)
-   (returns-thm symbolp)
+  ((returns-thm symbolp)
    (replace-thm symbolp)))
 
 (deflist return-spec-list
   :elt-type return-spec-p
   :true-listp t)
 
-(fty::deftypes function-description
-  (deftagsum arg-decl
-    (:next ((next arg-check-p)))
-    (:done ((r return-spec-p))))
-  (defalist arg-check
-    :key-type symbolp
-    :val-type arg-decl-p))
+;; (fty::deftypes function-description
+;;   (deftagsum arg-decl
+;;     (:next ((next arg-check-p)))
+;;     (:done ((r return-spec-p))))
+;;   (defalist arg-check
+;;     :key-type symbolp
+;;     :val-type arg-decl-p))
 
 (defalist function-description-alist
   :key-type symbolp
-  :val-type arg-decl-p
+  :val-type return-spec-list-p
   :true-listp t)
 
-(defthm arg-decl-p-of-assoc-equal-from-function-description-alist-p
-  (implies (and (function-description-alist-p y)
-                (assoc-equal x y))
-           (and (consp (assoc-equal x y))
-                (arg-decl-p (cdr (assoc-equal x y))))))
+;; (defthm arg-decl-p-of-assoc-equal-from-function-description-alist-p
+;;   (implies (and (function-description-alist-p y)
+;;                 (assoc-equal x y))
+;;            (and (consp (assoc-equal x y))
+;;                 (arg-decl-p (cdr (assoc-equal x y))))))
 
 (encapsulate ()
 (local (in-theory (disable (:rewrite default-cdr))))
