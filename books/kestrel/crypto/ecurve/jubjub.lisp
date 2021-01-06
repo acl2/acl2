@@ -23,8 +23,8 @@
   (xdoc::topstring
    (xdoc::p
     "This elliptic curve is defined in Section 5.4.8.3 of the "
-    (xdoc::seetopic "https://zips.z.cash/protocol/protocol.pdf"
-                    "Zcash Protocol Specification (Version 2020.1.15)")
+    (xdoc::ahref "https://zips.z.cash/protocol/protocol.pdf"
+                 "Zcash Protocol Specification (Version 2020.1.15)")
     ". It is a complete twisted Edwards elliptic curve;
      see @(see twisted-edwards-curves) for
      general information about twisted Edwards curves.")
