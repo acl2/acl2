@@ -302,6 +302,8 @@
     (:REWRITE BOUNDED-AXE-TREEP-OF-CAR)
     (:REWRITE BOUNDED-AXE-TREEP-OF-CONS)
     (:REWRITE BOUNDED-AXE-TREEP-OF-MV-NTH-0-OF-INSTANTIATE-HYP-BASIC)
+    consp-of-mv-nth-0-of-instantiate-hyp-basic
+    not-equal-of-quote-and-car-of-mv-nth-0-of-instantiate-hyp-basic
     (:REWRITE BOUNDED-AXE-TREEP-OF-MY-SUBLIS-VAR-AND-EVAL-BASIC)
     ;; (:REWRITE BOUNDED-AXE-TREEP-OF-REPLACE-NODENUM-USING-ASSUMPTIONS-FOR-AXE-PROVER)
     (:REWRITE BOUNDED-AXE-TREEP-WHEN-NATP-STRONG)
@@ -624,6 +626,9 @@
        (mutual-recursion
 
         ;; Returns (mv erp hyps-relievedp extended-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
+        ;; Look through the nodenums-to-assume-false-to-walk-down, trying to find a known fact that can be used to
+        ;; instantiate the free vars in HYP.  If found, extend the alist to bind those free vars and then try to use
+        ;; relieve all the OTHER-HYPS.
         (defund ,relieve-free-var-hyp-and-all-others-name (nodenums-to-assume-false-to-walk-down
                                                            hyp ;partly instantiated
                                                            hyp-num
@@ -645,6 +650,8 @@
                                 (nat-listp nodenums-to-assume-false-to-walk-down)
                                 (all-< nodenums-to-assume-false-to-walk-down dag-len)
                                 (axe-treep hyp)
+                                (consp hyp) ;; hyp cannot be a var
+                                (not (eq 'quote (ffn-symb hyp))) ;; hyp cannot be a quotep
                                 (natp hyp-num)
                                 (axe-rule-hyp-listp other-hyps)
                                 (symbolp rule-symbol)
@@ -672,47 +679,50 @@
               ;;failed to relieve the hyps:
               (mv (erp-nil) ;we could return an error of :count-exceeded here if (zp-fast count), but that might be slower
                   nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
-            (let* ((nodenum-to-assume-false (first nodenums-to-assume-false-to-walk-down)))
-              (mv-let (matchp alist-for-free-vars)
-                (match-hyp-with-nodenum-to-assume-false hyp nodenum-to-assume-false dag-array dag-len) ;fixme this could extend the alist
-                (if matchp
-                    (b* ((new-alist (append alist-for-free-vars alist)) ;skip this append?
-                         ((mv erp other-hyps-relievedp extended-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
-                          (,relieve-rule-hyps-name other-hyps
-                                                   (+ 1 hyp-num)
-                                                   new-alist
-                                                   rule-symbol
-                                                   dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                   equiv-alist rule-alist
-                                                   nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
-                                                   print info tries interpreted-function-alist
-                                                   monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count)))
-                         ((when erp) (mv erp nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))
-                      (if other-hyps-relievedp
-                          (mv (erp-nil) t extended-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
-                        ;;this nodenum-to-assume-false matches, but we couldn't relieve the rest of the hyps:
-                        (,relieve-free-var-hyp-and-all-others-name (rest nodenums-to-assume-false-to-walk-down)
-                                                                   hyp
-                                                                   hyp-num
-                                                                   other-hyps
-                                                                   alist ;the original alist
-                                                                   rule-symbol
-                                                                   dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                                   equiv-alist rule-alist
-                                                                   nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
-                                                                   print
-                                                                   info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator
-                                                                   prover-depth options (+ -1 count))))
-                  ;;this nodenum-to-assume-false didn't match:
-                  (,relieve-free-var-hyp-and-all-others-name (rest nodenums-to-assume-false-to-walk-down)
-                                                             hyp hyp-num other-hyps
-                                                             alist rule-symbol
-                                                             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                             equiv-alist rule-alist
-                                                             nodenums-to-assume-false ;we keep the whole list as well as walking down it
-                                                             assumption-array assumption-array-num-valid-nodes
-                                                             print
-                                                             info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count)))))))
+            (b* ((nodenum-to-assume-false (first nodenums-to-assume-false-to-walk-down))
+                 ((mv matchp alist-for-free-vars)
+                  (match-hyp-with-nodenum-to-assume-false hyp nodenum-to-assume-false dag-array dag-len) ;fixme this could extend the alist
+                  ))
+              (if matchp
+                  (b* ((new-alist (append alist-for-free-vars alist)) ;skip this append?
+                       ;; Try to relieve all the other-hyps using the new-alist:
+                       ((mv erp other-hyps-relievedp extended-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
+                        (,relieve-rule-hyps-name other-hyps
+                                                 (+ 1 hyp-num)
+                                                 new-alist
+                                                 rule-symbol
+                                                 dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                 equiv-alist rule-alist
+                                                 nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
+                                                 print info tries interpreted-function-alist
+                                                 monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count)))
+                       ((when erp) (mv erp nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))
+                    (if other-hyps-relievedp
+                        ;; This hyp, and all the other ones, were relieved:
+                        (mv (erp-nil) t extended-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
+                      ;;this nodenum-to-assume-false matches, but we couldn't relieve the rest of the hyps:
+                      (,relieve-free-var-hyp-and-all-others-name (rest nodenums-to-assume-false-to-walk-down)
+                                                                 hyp
+                                                                 hyp-num
+                                                                 other-hyps
+                                                                 alist ;the original alist
+                                                                 rule-symbol
+                                                                 dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                                 equiv-alist rule-alist
+                                                                 nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
+                                                                 print
+                                                                 info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator
+                                                                 prover-depth options (+ -1 count))))
+                ;;this nodenum-to-assume-false didn't match:
+                (,relieve-free-var-hyp-and-all-others-name (rest nodenums-to-assume-false-to-walk-down)
+                                                           hyp hyp-num other-hyps
+                                                           alist rule-symbol
+                                                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                           equiv-alist rule-alist
+                                                           nodenums-to-assume-false ;we keep the whole list as well as walking down it
+                                                           assumption-array assumption-array-num-valid-nodes
+                                                           print
+                                                           info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count))))))
 
         ;; ;print something like this:?
         ;;                               (prog2$
@@ -809,7 +819,7 @@
                     ;; fixme precompute the list of vars in the hyp?
                     (mv-let
                       (instantiated-hyp free-vars-flg)
-                      (instantiate-hyp-basic hyp alist nil interpreted-function-alist)
+                      (instantiate-hyp-basic hyp alist interpreted-function-alist)
                       ;; INSTANTIATED-HYP is now a tree with leaves that are quoteps, nodenums (from vars already bound), and free vars.
                       (if free-vars-flg ;can't be a work-hard since there are free vars?
                           ;; ALIST doesn't bind all the variables in the HYP, so we'll search for free variable matches in NODENUMS-TO-ASSUME-FALSE.
@@ -2752,6 +2762,10 @@
                                     done-list ; will be extended with the disjuncts
                                     nil       ;negated-flg
                                     print))
+                    ;; TODO: Should we use the assumption-array to check for redundant disjuncts and drop them?  Should
+                    ;; we use the assumption-array to check for contradictions?  In either case we might want to use the
+                    ;; assumption-array without the information from this literal??  TODO: Should we use the new
+                    ;; disjuncts to add information to the assumption-array?
                     ((when erp) (mv erp nil nil done-list dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))
                  (if provedp
                      (mv (erp-nil)

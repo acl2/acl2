@@ -12,7 +12,7 @@
 
 (in-package "ACL2")
 
-(include-book "dags") ;for ALL-DARGP
+(include-book "all-dargp")
 (include-book "kestrel/utilities/pseudo-termp" :dir :system) ;make local?
 (include-book "kestrel/alists-light/uniquify-alist-eq" :dir :system)
 (include-book "renaming-array")
@@ -47,7 +47,8 @@
 (defthm true-listp-of-dargs-when-dag-exprp0
   (implies (and (dag-exprp0 expr)
                 ;; (consp expr)
-                (not (equal 'quote (car expr))))
+                ;; (not (equal 'quote (car expr)))
+                )
            (true-listp (dargs expr)))
   :hints (("Goal" :in-theory (enable dag-exprp0))))
 

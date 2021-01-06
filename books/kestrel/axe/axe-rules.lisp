@@ -180,6 +180,19 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable axe-rule-hypp))))
 
+;; Shows that an axe-rule-hyp must be a cons (and so can't be a symbol):
+(thm
+ (implies (axe-rule-hypp hyp)
+          (and (consp hyp)
+               (not (symbolp hyp))))
+ :hints (("Goal" :in-theory (enable axe-rule-hypp))))
+
+;; Shows that an axe-rule-hyp can't be a quoted constant:
+(thm
+ (implies (axe-rule-hypp hyp)
+          (not (quotep hyp)))
+ :hints (("Goal" :in-theory (enable axe-rule-hypp))))
+
 ;;;
 ;;; axe-rule-hyp-listp
 ;;;
