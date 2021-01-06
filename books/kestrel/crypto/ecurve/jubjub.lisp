@@ -58,7 +58,15 @@
 (define jubjub-a ()
   :returns (a (fep a (jubjub-q)))
   :short "The Jubjub coefficient @($a$)."
-  (neg 1 (jubjub-q)))
+  (neg 1 (jubjub-q))
+  ///
+
+  (defrule pfield-squarep-of-jubjub-a
+    (pfield-squarep (jubjub-a) (jubjub-q))
+    :use (:instance pfield-squarep-suff
+          (x (jubjub-a))
+          (r 3465144826073652318776269530687742778270252468765361963008)
+          (p (jubjub-q)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
