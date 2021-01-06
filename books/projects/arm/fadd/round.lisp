@@ -168,7 +168,7 @@
   :hints (("Goal" :in-theory (enable common-mode-p ieee-rounding-mode-p flip-mode modep mode fpscr-rc)
                   :use ((:instance bvecp-member (x (bits (rin) 23 22)) (n 2))))))
 
-(local-defund z1 ()
+(local-defund z3 ()
   (* (expt 2 (- (+ 53 (1- (expt 2 10))) (expshft)))
      (abs (+ (a) (b)))))
 
@@ -176,13 +176,13 @@
 
 (local-defun e1 () (expo (x1)))
 
-(local-in-theory (disable (z1) (x1) (e1)))
+(local-in-theory (disable (z3) (x1) (e1)))
 
-(local-defthm rationalp-z1
+(local-defthm rationalp-z3
   (implies (= (mulovfl) 0)
-           (rationalp (z1)))
+           (rationalp (z3)))
   :rule-classes (:type-prescription)
-  :hints (("Goal" :in-theory (enable expshft-rewrite z1))))
+  :hints (("Goal" :in-theory (enable expshft-rewrite z3))))
 
 (defthmd expo-fl
   (implies (and (rationalp x) (>= x 1))
@@ -202,20 +202,20 @@
 (local-defthm rnd-expshft-pos-1
   (and (iff (<= (* (x1) (expt 2 (+ -1076 (expshft))))
                 (abs (+ (a) (b))))
-            (<= (x1) (z1)))
+            (<= (x1) (z3)))
        (iff (< (* (x1) (expt 2 (+ -1076 (expshft))))
                 (abs (+ (a) (b))))
-            (< (x1) (z1))))
+            (< (x1) (z3))))
   :rule-classes ()
-  :hints (("goal" :in-theory (enable z1) :nonlinearp t)))
+  :hints (("goal" :in-theory (enable z3) :nonlinearp t)))
 
 (local-defthm rnd-expshft-pos-2
   (iff (< (abs (+ (a) (b)))
           (+ (expt 2 (+ -1076 (expshft)))
              (* (x1) (expt 2 (+ -1076 (expshft))))))
-       (< (z1) (+ 1 (x1))))
+       (< (z3) (+ 1 (x1))))
   :rule-classes ()
-  :hints (("goal" :in-theory (enable z1) :nonlinearp t)))
+  :hints (("goal" :in-theory (enable z3) :nonlinearp t)))
 
 (defthm natp-expshft
   (implies (= (mulovfl) 0)
@@ -225,19 +225,19 @@
 
 (local-defthm rnd-expshft-pos-3
   (implies (and (= (mulovfl) 0) (not (= (expshft) 0)))
-           (and (>= (z1) (x1))
-	        (< (z1) (1+ (x1)))
-		(iff (= (z1) (x1)) (and (= (bits (sumshft) 52 0) 0) (= (stk) 0)))))
+           (and (>= (z3) (x1))
+	        (< (z3) (1+ (x1)))
+		(iff (= (z3) (x1)) (and (= (bits (sumshft) 52 0) 0) (= (stk) 0)))))
   :rule-classes ()
   :hints (("Goal" :in-theory (e/d (absval x1 chop) (abs))
                   :use (rnd-expshft-pos-1 rnd-expshft-pos-2 expshft-sumshft))))
 
 (local-defthm rnd-expshft-pos-4
   (implies (and (= (mulovfl) 0) (not (= (expshft) 0)))
-           (and (= (fl (z1)) (x1))
-	        (iff (integerp (z1)) (and (= (bits (sumshft) 52 0) 0) (= (stk) 0)))))
+           (and (= (fl (z3)) (x1))
+	        (iff (integerp (z3)) (and (= (bits (sumshft) 52 0) 0) (= (stk) 0)))))
   :rule-classes ()
-  :hints (("Goal" :in-theory (e/d (z1 absval) (abs))
+  :hints (("Goal" :in-theory (e/d (z3 absval) (abs))
                   :use (rnd-expshft-pos-3))))
 
 (local-defthmd rnd-5
@@ -293,13 +293,13 @@
 
 (local-defthmd rnd-expshft-pos-9
   (implies (and (= (mulovfl) 0) (not (= (expshft) 0)) (= (expo (sumshft)) 107))
-           (equal (rnd (z1) (modep) 53)
+           (equal (rnd (z3) (modep) 53)
 	          (if (= (incovfl) 0)
 		      (rtz (x1) 53)
 		    (fp+ (rtz (x1) 53) 53))))
   :hints (("Goal" :in-theory (enable rnd-expshft-pos-8)
                   :use (expo-x1 stk-0-1 rnd-expshft-pos-3 rnd-expshft-pos-4
-		        (:instance roundup-pos-thm (mode (modep)) (z (z1)) (n 53))
+		        (:instance roundup-pos-thm (mode (modep)) (z (z3)) (n 53))
 		        (:instance expo-lower-bound (x (x1)))))))
 
 (defthm incovfl-0-1
@@ -309,7 +309,7 @@
 
 (local-defthmd rnd-expshft-pos-10
   (implies (and (= (mulovfl) 0) (not (= (expshft) 0)) (= (expo (sumshft)) 107))
-           (equal (rnd (z1) (modep) 53)
+           (equal (rnd (z3) (modep) 53)
 	          (* 4
 		     (+ (bits (sumshft) 107 55) (incovfl)))))
   :hints (("Goal" :in-theory (enable bits-x1 expo-x1 rnd-expshft-pos-9)
@@ -317,7 +317,7 @@
 
 (local-defthmd rnd-expshft-pos-11
   (implies (and (= (mulovfl) 0) (not (= (expshft) 0)) (= (expo (sumshft)) 107))
-           (equal (rnd (z1) (modep) 53)
+           (equal (rnd (z3) (modep) 53)
 	          (* 4 (sumovfl))))
   :hints (("Goal" :in-theory (enable rnd-expshft-pos-10 sumunrnd sumovfl bits-bits bvecp)
                   :use (incovfl-0-1 (:instance bits-bounds (x (sumunrnd)) (i 53) (j 1))))))
@@ -327,19 +327,19 @@
            (equal (rnd (abs (+ (a) (b))) (modep) 53)
 	          (* (expt 2 (- (expshft) (+ (1- (expt 2 10)) 51)))
 		     (sumovfl))))
-  :hints (("Goal" :in-theory (e/d (z1) (abs))
+  :hints (("Goal" :in-theory (e/d (z3) (abs))
                   :use (rnd-expshft-pos-11
 		        (:instance rnd-shift (x (abs (+ (a) (b)))) (mode (modep))
 			                     (n 53) (k (- (+ 53 (1- (expt 2 10))) (expshft))))))))
 
 (local-defthmd rnd-expshft-pos-13
   (implies (and (= (mulovfl) 0) (not (= (expshft) 0)) (= (expo (sumshft)) 107))
-           (iff (exactp (z1) 53)
+           (iff (exactp (z3) 53)
 	        (and (= (bits (sumshft) 54 0) 0)
 		     (= (stk) 0))))
   :hints (("Goal" :in-theory (enable bits-x1)
                   :use (stk-0-1 rnd-expshft-pos-3 rnd-expshft-pos-4 expo-x1
-		        (:instance roundup-pos-thm (mode (modep)) (z (z1)) (n 53))
+		        (:instance roundup-pos-thm (mode (modep)) (z (z3)) (n 53))
 			(:instance bitn-plus-bits (x (sumshft)) (n 54) (m 53))
 			(:instance bitn-plus-bits (x (sumshft)) (n 54) (m 0))
 			(:instance bitn-plus-bits (x (sumshft)) (n 53) (m 0))
@@ -347,7 +347,7 @@
 
 (local-defthmd rnd-expshft-pos-14
   (implies (and (= (mulovfl) 0) (not (= (expshft) 0)) (= (expo (sumshft)) 107))
-           (iff (exactp (z1) 53)
+           (iff (exactp (z3) 53)
 	        (and (= (govfl) 0)
 		     (= (sovfl) 0))))
   :hints (("Goal" :in-theory (enable rnd-expshft-pos-13 govfl-rewrite sovfl-rewrite)
@@ -358,7 +358,7 @@
            (iff (exactp (abs (+ (a) (b))) 53)
 	        (and (= (govfl) 0)
 		     (= (sovfl) 0))))
-  :hints (("Goal" :in-theory (e/d (z1) (abs))
+  :hints (("Goal" :in-theory (e/d (z3) (abs))
                   :use (rnd-expshft-pos-14
 		        (:instance exactp-shift (x (abs (+ (a) (b))))
 			                        (k (- (+ 53 (1- (expt 2 10))) (expshft)))
@@ -392,13 +392,13 @@
 
 (local-defthmd rnd-expshft-pos-9-b
   (implies (and (= (mulovfl) 0) (not (= (expshft) 0)) (= (expo (sumshft)) 106))
-           (equal (rnd (z1) (modep) 53)
+           (equal (rnd (z3) (modep) 53)
 	          (if (= (incnorm) 0)
 		      (rtz (x1) 53)
 		    (fp+ (rtz (x1) 53) 53))))
   :hints (("Goal" :in-theory (enable rnd-expshft-pos-8-b)
                   :use (expo-x1 stk-0-1 rnd-expshft-pos-3 rnd-expshft-pos-4
-		        (:instance roundup-pos-thm (mode (modep)) (z (z1)) (n 53))
+		        (:instance roundup-pos-thm (mode (modep)) (z (z3)) (n 53))
 		        (:instance expo-lower-bound (x (x1)))))))
 
 (defthm incnorm-0-1
@@ -408,7 +408,7 @@
 
 (local-defthmd rnd-expshft-pos-10-b
   (implies (and (= (mulovfl) 0) (not (= (expshft) 0)) (= (expo (sumshft)) 106))
-           (equal (rnd (z1) (modep) 53)
+           (equal (rnd (z3) (modep) 53)
 	          (* 2
 		     (+ (bits (sumshft) 107 54) (incnorm)))))
   :hints (("Goal" :in-theory (enable bits-x1 expo-x1 rnd-expshft-pos-9-b)
@@ -418,7 +418,7 @@
 
 (local-defthmd rnd-expshft-pos-11-b
   (implies (and (= (mulovfl) 0) (not (= (expshft) 0)) (= (expo (sumshft)) 106))
-           (equal (rnd (z1) (modep) 53)
+           (equal (rnd (z3) (modep) 53)
 	          (* 2 (sumnorm))))
   :hints (("Goal" :in-theory (enable rnd-expshft-pos-10-b sumunrnd sumnorm bits-bits bvecp)
                   :use (incnorm-0-1
@@ -431,14 +431,14 @@
            (equal (rnd (abs (+ (a) (b))) (modep) 53)
 	          (* (expt 2 (- (expshft) (+ (1- (expt 2 10)) 52)))
 		     (sumnorm))))
-  :hints (("Goal" :in-theory (e/d (z1) (abs))
+  :hints (("Goal" :in-theory (e/d (z3) (abs))
                   :use (rnd-expshft-pos-11-b
 		        (:instance rnd-shift (x (abs (+ (a) (b)))) (mode (modep))
 			                     (n 53) (k (- (+ 53 (1- (expt 2 10))) (expshft))))))))
 
 (local-defthmd rnd-expshft-pos-13-b
   (implies (and (= (mulovfl) 0) (not (= (expshft) 0)) (= (expo (sumshft)) 106))
-           (iff (exactp (z1) 53)
+           (iff (exactp (z3) 53)
 	        (and (= (bits (sumshft) 53 0) 0)
 		     (= (stk) 0))))
   :hints (("Goal" :in-theory (enable bitn-x1 bits-x1)
@@ -446,12 +446,12 @@
 			(:instance bitn-plus-bits (x (sumshft)) (n 54) (m 53))
 			(:instance bitn-plus-bits (x (sumshft)) (n 54) (m 0))
 			(:instance bitn-plus-bits (x (sumshft)) (n 53) (m 0))
-		        (:instance roundup-pos-thm (mode (modep)) (z (z1)) (n 53))
+		        (:instance roundup-pos-thm (mode (modep)) (z (z3)) (n 53))
 		        (:instance expo-lower-bound (x (x1)))))))
 
 (local-defthmd rnd-expshft-pos-14-b
   (implies (and (= (mulovfl) 0) (not (= (expshft) 0)) (= (expo (sumshft)) 106))
-           (iff (exactp (z1) 53)
+           (iff (exactp (z3) 53)
 	        (and (= (gnorm) 0)
 		     (= (snorm) 0))))
   :hints (("Goal" :in-theory (enable rnd-expshft-pos-13-b gnorm-rewrite snorm-rewrite)  
@@ -462,7 +462,7 @@
            (iff (exactp (abs (+ (a) (b))) 53)
 	        (and (= (gnorm) 0)
 		     (= (snorm) 0))))
-  :hints (("Goal" :in-theory (e/d (z1) (abs))
+  :hints (("Goal" :in-theory (e/d (z3) (abs))
                   :use (rnd-expshft-pos-14-b
 		        (:instance exactp-shift (x (abs (+ (a) (b))))
 			                        (k (- (+ 53 (1- (expt 2 10))) (expshft)))

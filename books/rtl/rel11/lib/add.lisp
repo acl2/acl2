@@ -545,6 +545,11 @@
                               (integerp b))))
   (logxor a b))
 
+(defund g0 (a b)
+  (declare (xargs :guard (and (integerp a)
+                              (integerp b))))
+  (logand a b))
+
 (defund k0 (a b n)
   (declare (xargs :guard (and (integerp a)
                               (integerp b)
@@ -585,26 +590,91 @@
 	          (if (= (bitn (p0 a b) j) (bitn (k0 a b n) (1- j)))
 		      1 0))))
 
-(defthm lza-thm
+(defthm lza-thm-1
   (implies (and (not (zp n))
                 (bvecp a n)
                 (bvecp b n)
                 (> (+ a b) (expt 2 n)))
            (and (>= (w0 a b n) 2)
                 (or (= (expo (bits (+ a b) (1- n) 0)) (expo (w0 a b n)))
-                    (= (expo (bits (+ a b) (1- n) 0)) (1- (expo (w0 a b n)))))))
+                    (= (expo (bits (+ a b) (1- n) 0)) (1- (expo (w0 a b n)))))
+                (or (= (expo (bits (+ a b 1) (1- n) 0)) (expo (w0 a b n)))
+                    (= (expo (bits (+ a b 1) (1- n) 0)) (1- (expo (w0 a b n)))))))
   :rule-classes ())
 
-(defthm lza-cor
+(defund z1 (a b n)
+  (declare (xargs :guard (and (integerp a)
+                              (integerp b)
+                              (integerp n))))
+  (logior (logand (logxor (bits (p0 a b) n 1) (k0 a b n))
+		  (logxor (p0 a b) (* 2 (k0 a b n))))
+	  (logand (logxor (bits (p0 a b) n 1) (g0 a b))
+		  (logxor (p0 a b) (* 2 (g0 a b))))))
+
+(defund w1 (a b n)
+  (declare (xargs :guard (and (integerp a)
+                              (integerp b)
+                              (integerp n))))
+  (bits (lognot (z1 a b n)) (- n 2) 0))
+
+(defthmd w1-rewrite
+  (implies (and (integerp a)
+                (integerp b)
+		(not (zp n))
+                (not (zp j))
+		(< j (1- n)))
+	   (equal (bitn (w1 a b n) j)
+	          (if (and (or (= (bitn (p0 a b) (1+ j)) (bitn (k0 a b n) j))
+		               (= (bitn (p0 a b) j) (bitn (k0 a b n) (1- j))))
+			   (or (= (bitn (p0 a b) (1+ j)) (bitn (g0 a b) j))
+			       (= (bitn (p0 a b) j) (bitn (g0 a b) (1- j)))))
+		      1 0))))
+
+(defthmd lza-thm-2-case-1
   (implies (and (not (zp n))
                 (bvecp a n)
                 (bvecp b n)
+                (= (+ a b) (1- (expt 2 n)))
+		(natp i))
+	   (equal (w1 a b n) 0)))
+
+(defthmd lza-thm-2-case-2
+  (implies (and (natp n)
+                (> n 1)
+                (bvecp a n)
+                (bvecp b n)
+		(or (= (+ a b) (expt 2 n))
+		    (= (+ a b) (- (expt 2 n) 2))))
+	   (equal (w1 a b n)
+	          1)))
+
+(defthm lza-thm-2-case-3
+  (implies (and (not (zp n))
+                (bvecp a n)
+                (bvecp b n)
+		(= (bitn (p0 a b) (1- n)) 1)
                 (> (+ a b) (expt 2 n)))
-           (or (= (expo (bits (+ a b 1) (1- n) 0)) (expo (w0 a b n)))
-               (= (expo (bits (+ a b 1) (1- n) 0)) (1- (expo (w0 a b n))))))
+           (and (>= (w1 a b n) 2)
+                (or (= (expo (bits (+ a b) (1- n) 0)) (expo (w1 a b n)))
+                    (= (expo (bits (+ a b) (1- n) 0)) (1- (expo (w1 a b n)))))
+                (or (= (expo (bits (+ a b 1) (1- n) 0)) (expo (w1 a b n)))
+                    (= (expo (bits (+ a b 1) (1- n) 0)) (1- (expo (w1 a b n)))))))
   :rule-classes ())
 
-#|
+(defthm lza-thm-2-case-4
+  (implies (and (not (zp n))
+                (bvecp a n)
+                (bvecp b n)
+		(= (bitn (p0 a b) (1- n)) 1)
+                (< (+ a b) (- (expt 2 n) 2)))
+           (and (>= (w1 a b n) 2)
+                (or (= (expo (bits (lognot (+ a b)) (1- n) 0)) (expo (w1 a b n)))
+                    (= (expo (bits (lognot (+ a b)) (1- n) 0)) (1- (expo (w1 a b n)))))
+                (or (= (expo (bits (lognot (+ a b 1)) (1- n) 0)) (expo (w1 a b n)))
+                    (= (expo (bits (lognot (+ a b 1)) (1- n) 0)) (1- (expo (w1 a b n)))))))
+  :rule-classes ())
+
+
 ;; Leading zero counter:
 
 (defund zseg (x k i)
@@ -621,7 +691,7 @@
   (if (zp k)
       0
     (if (= (zseg x (1- k) (1+ (* 2 i))) 1)
-	(+ (expt 2 (1- k)) (zcount x (1- k) (* 2 i)))
+	(logior (expt 2 (1- k)) (zcount x (1- k) (* 2 i)))
       (zcount x (1- k) (1+ (* 2 i))))))
 
 (defund clz (x n)
@@ -633,7 +703,6 @@
 		(> x 0))
 	   (equal (clz x n)
 	          (- (1- (expt 2 n)) (expo x)))))
-|#
 
 )
 
