@@ -2762,6 +2762,10 @@
                                     done-list ; will be extended with the disjuncts
                                     nil       ;negated-flg
                                     print))
+                    ;; TODO: Should we use the assumption-array to check for redundant disjuncts and drop them?  Should
+                    ;; we use the assumption-array to check for contradictions?  In either case we might want to use the
+                    ;; assumption-array without the information from this literal??  TODO: Should we use the new
+                    ;; disjuncts to add information to the assumption-array?
                     ((when erp) (mv erp nil nil done-list dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))
                  (if provedp
                      (mv (erp-nil)
