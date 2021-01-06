@@ -10,8 +10,6 @@
 
 (in-package "ECURVE")
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (include-book "kestrel/prime-fields/prime-fields" :dir :system)
 (include-book "std/util/define-sk" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
