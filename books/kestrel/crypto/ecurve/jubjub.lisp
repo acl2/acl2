@@ -58,6 +58,11 @@
 (define jubjub-a ()
   :returns (a (fep a (jubjub-q)))
   :short "The Jubjub coefficient @($a$)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We show that this coefficient is a square,
+     by exhibiting a square root of it."))
   (neg 1 (jubjub-q))
   ///
 
@@ -73,7 +78,46 @@
 (define jubjub-d ()
   :returns (d (fep d (jubjub-q)))
   :short "The Jubjub coefficient @($d$)."
-  (neg (div 10240 10241 (jubjub-q)) (jubjub-q)))
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We show that this coefficient is not a square,
+     using Euler's criterion.
+     We use the fast modular exponentiation operation
+     from the @('arithmetic-3') library
+     to calculate the modular exponentiation of the coefficient,
+     which must be different from 1
+     in order for the criterion to apply."))
+  (neg (div 10240 10241 (jubjub-q)) (jubjub-q))
+  ///
+
+  (local (include-book "arithmetic-3/top" :dir :system))
+
+  (defruledl mod-expt-fast-lemma
+    (not (equal (acl2::mod-expt-fast (jubjub-d)
+                                     (/ (1- (jubjub-q)) 2)
+                                     (jubjub-q))
+                1)))
+
+  (defruledl mod-expt-lemma
+    (not (equal (mod (expt (jubjub-d)
+                           (/ (1- (jubjub-q)) 2))
+                     (jubjub-q))
+                1))
+    :use (mod-expt-fast-lemma
+          (:instance acl2::mod-expt-fast
+           (a (jubjub-d))
+           (i (/ (1- (jubjub-q)) 2))
+           (n (jubjub-q))))
+    :disable ((:e expt)))
+
+  (local (include-book "prime-field-squares-euler-criterion"))
+
+  (defrule not-pfield-squarep-of-jubjub-d
+    (not (pfield-squarep (jubjub-d) (jubjub-q)))
+    :enable (weak-euler-criterion-contrapositive)
+    :use mod-expt-lemma
+    :disable ((:e expt))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -89,5 +133,13 @@
     (twisted-edwards-primep (jubjub-curve))
     :enable twisted-edwards-primep
     :disable ((:e twisted-edwards-primep)))
+
+  (defrule twisted-edwards-completep-of-jubjub-curve
+    (twisted-edwards-completep (jubjub-curve))
+    :enable twisted-edwards-completep
+    :disable (pfield-squarep-of-jubjub-a
+              not-pfield-squarep-of-jubjub-d)
+    :use (pfield-squarep-of-jubjub-a
+          not-pfield-squarep-of-jubjub-d))
 
   (in-theory (disable (:e jubjub-curve))))
