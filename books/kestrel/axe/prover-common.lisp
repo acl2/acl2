@@ -996,26 +996,28 @@
   :hints (("Goal" :in-theory (e/d (nth) (nth-of-cdr)))))
 
 ;; hyp is a tree with leaves that are quoteps, nodenums (from vars already bound), and free vars
-;; returns (mv success-flg alist-for-free-vars)
+;; Returns (mv success-flg alist-for-free-vars)..
 ;; if success-flg is nil, the alist returned is irrelevant
 ;; the alist returned maps variables to nodenums or quoteps
 (defund match-hyp-with-nodenum-to-assume-false (hyp nodenum-to-assume-false dag-array dag-len)
-   (declare (xargs :guard (and (axe-treep hyp)
-                               (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                               (natp nodenum-to-assume-false)
-                               (< nodenum-to-assume-false dag-len))
-                   :guard-hints (("Goal" :in-theory (enable car-becomes-nth-of-0))))
-            (ignore dag-len) ;todo
-            )
-  ;; if hyp is of the form (not <x>) then try to match <x> with the nodenum-to-assume-false
-  ;;ffixme what if hyp is of the form (equal .. nil) or (equal nil ..)?
-   (if (and (call-of 'not hyp)
-            (= 1 (len (fargs hyp))))
+  (declare (xargs :guard (and (axe-treep hyp)
+                              (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+                              (natp nodenum-to-assume-false)
+                              (< nodenum-to-assume-false dag-len))
+                  :guard-hints (("Goal" :in-theory (enable car-becomes-nth-of-0))))
+           (ignore dag-len) ;todo
+           )
+  (if (and (call-of 'not hyp) ;; TODO: Avoid checking this over and over.  Also, do we know that hyp is always a cons?
+           (consp (fargs hyp)) ; for the guard proof, should always be true if arities are right.
+           )
+      ;; If hyp is of the form (not <x>) then try to match <x> with the nodenum-to-assume-false:
+      ;; TODO: what if hyp is of the form (equal .. nil) or (equal nil ..)?
       (unify-tree-with-dag-node (farg1 hyp) nodenum-to-assume-false dag-array nil)
     ;;otherwise we require the expr assumed false to be a call of NOT
     (let ((expr-to-assume-false (aref1 'dag-array dag-array nodenum-to-assume-false))) ;could do this at a shallower level?
       (if (and (call-of 'not expr-to-assume-false)
-               (= 1 (len (dargs expr-to-assume-false))))
+               (consp (dargs expr-to-assume-false)) ; for the guard proof, should always be true if arities are right.
+               )
           (let ((arg (darg1 expr-to-assume-false)))
             (if (consp arg) ;whoa, it's a constant!
                 (mv nil nil)
