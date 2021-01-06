@@ -22,6 +22,8 @@
 (include-book "secp256k1")
 (include-book "secp256k1-attachment")
 
+(include-book "jubjub")
+
 (include-book "points-fty")
 
 (include-book "bls12-377-domain-parameters")
