@@ -515,6 +515,11 @@
     " has been added.")
 
    (xdoc::p
+    "A formalization of the "
+    (xdoc::seetopic "ecurve::jubjub" "Jubjub twisted Edwards elliptic curve")
+    " has been added.")
+
+   (xdoc::p
     "The files
      @('[books]/kestrel/crypto/ecurve/bls12-377-domain-parameters.lisp') and
      @('[books]/kestrel/crypto/ecurve/bls12-377-prime.lisp')
