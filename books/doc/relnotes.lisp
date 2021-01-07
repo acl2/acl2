@@ -515,6 +515,11 @@
     " has been added.")
 
    (xdoc::p
+    "A formalization of "
+    (xdoc::seetopic "ecurve::montgomery-curves" "Montgomery curves")
+    " has been added.")
+
+   (xdoc::p
     "A formalization of the "
     (xdoc::seetopic "ecurve::jubjub" "Jubjub twisted Edwards elliptic curve")
     " has been added.")

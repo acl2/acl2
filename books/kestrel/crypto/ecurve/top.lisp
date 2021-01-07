@@ -15,6 +15,8 @@
 
 (include-book "twisted-edwards")
 
+(include-book "montgomery")
+
 (include-book "secp256k1-domain-parameters")
 (include-book "secp256k1-interface")
 (include-book "secp256k1-types")
@@ -41,6 +43,7 @@
   (points
    short-weierstrass
    twisted-edwards
+   montgomery
    secp256k1-domain-parameters
    secp256k1-types
    secp256k1
