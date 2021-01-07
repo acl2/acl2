@@ -79,20 +79,21 @@
   ((p nat :reqfix (if (> p 2) p 3))
    (a :reqfix (if (and (> p 2)
                        (fep a p)
-                       (/= a 2)
-                       (/= a (- p 2)))
+                       (not (equal a 2))
+                       (not (equal a (mod -2 p))))
                   a
                 0))
    (b :reqfix (if (and (fep b p)
-                       (/= b 0))
+                       (not (equal b 0)))
                   b
                 1)))
   :require (and (> p 2)
                 (fep a p)
                 (fep b p)
-                (/= a 2)
-                (/= a (- p 2))
-                (/= b 0)))
+                (not (equal a 2))
+                (not (equal a (mod -2 p)))
+                (not (equal b 0)))
+  :prepwork ((local (include-book "arithmetic-3/top" :dir :system))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
