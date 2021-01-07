@@ -16,7 +16,6 @@
 (include-book "centaur/fty/top" :dir :system)
 (include-book "kestrel/crypto/ecurve/points-fty" :dir :system)
 (include-book "kestrel/prime-fields/prime-fields" :dir :system)
-(include-book "std/testing/assert-bang" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
