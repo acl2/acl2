@@ -1195,3 +1195,34 @@
                                                               point
                                                               curve)
                                          curve))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define twisted-edwards-compress ((point pointp) (curve twisted-edwards-p))
+  :guard (and (twisted-edwards-primep curve)
+              (point-on-twisted-edwards-p point curve))
+  :returns (mv (p bitp) (y natp))
+  :short "Turn a point on a twisted Edwards curve into compressed form."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is based on Appendix A.3.3.2 of the "
+    (xdoc::ahref "https://zips.z.cash/protocol/protocol.pdf"
+                 "Zcash Protocol Specification (Version 2020.1.15)")
+    ", but quite likely it is much more general than
+     not only Zcash, but also twisted Edwards curves.")
+   (xdoc::p
+    "The compression consists in keeping the whole @($y$) coordinate
+     but only the lowest bit (i.e. the parity) of the @($x$) coordinate.
+     This, together with the information that the point is on the curve,
+     should suffice to reconstruct the full @($x$) coordinate.
+     Eventually we should prove this, and define a decompression function."))
+  (declare (ignore curve)) ; only used in the guard
+  (mv (mod (point-finite->x point) 2) (point-finite->y point))
+  :hooks (:fix)
+  :prepwork
+  ((defrule returns-lemma
+     (implies (and (natp x)
+                   (not (equal (mod x 2) 0)))
+              (equal (mod x 2) 1))
+     :prep-books ((include-book "arithmetic-3/top" :dir :system)))))
