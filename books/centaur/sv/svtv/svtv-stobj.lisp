@@ -556,11 +556,13 @@ particular times and certain outputs are read at particular times.</li>
                                                            (svtv-data$c->cycle-values x)
                                                            (svtv-data$c->cycle-nextstate x))))
 
-                      (implies (and (svtv-data$c->pipeline-validp x)
-                                    (svtv-data$c->cycle-fsm-validp x)
-                                    (svtv-data$c->namemap-validp x))
-                               (ec-call
-                                (svtv-data$c-pipeline-okp x (svtv-data$c->pipeline-results x)))))))))
+                      (implies (and (svtv-data$c->cycle-fsm-validp x)
+                                    (svtv-data$c->pipeline-validp x))
+                               (and (equal (svex-alist-keys (svtv-data$c->pipeline-initst x))
+                                           (svex-alist-keys (svtv-data$c->cycle-nextstate x)))
+                                    (implies (svtv-data$c->namemap-validp x)
+                                             (ec-call
+                                              (svtv-data$c-pipeline-okp x (svtv-data$c->pipeline-results x)))))))))))
 
 (define svtv-data$a-compute-base-fsm ((x svtv-data$ap))
   :guard (and (not (svtv-data$a->namemap-validp x))
@@ -642,7 +644,9 @@ particular times and certain outputs are read at particular times.</li>
 
 (define update-svtv-data$a->pipeline-validp ((validp booleanp) (x svtv-data$ap))
   :guard (or (not validp)
-             (svtv-data$a-pipeline-okp x (svtv-data$a->pipeline-results x)))
+             (and (svtv-data$a-pipeline-okp x (svtv-data$a->pipeline-results x))
+                  (equal (svex-alist-keys (svtv-data$a->pipeline-initst x))
+                         (svex-alist-keys (svtv-data$a->cycle-nextstate x)))))
   :enabled t
   (non-exec (update-svtv-data$c->pipeline-validp validp x)))
 

@@ -533,7 +533,7 @@
                     (take (len (svtv-probealist-outvars probes)) inputs-eval)
                     overrides-eval fsm)))
            (if (and probe-look lhs-look)
-               (lhs-eval lhs (nth probe.time (svtv-fsm-eval ins initst-eval fsm)))
+               (lhs-eval-zero lhs (nth probe.time (svtv-fsm-eval ins initst-eval fsm)))
              (4vec-x))))
   :hints(("Goal" :in-theory (enable SVTV-FSM-RUN-RENAMED-IS-EXTRACT-OF-EVAL
                                     lookup-of-svtv-fsm-step-extract-renamed-outs

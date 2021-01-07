@@ -135,28 +135,19 @@
 
 
 
-(define lhatom->svex-zero ((x lhatom-p))
-  :returns (xx svex-p)
-  (lhatom-case x
-    :z (svex-quote 0)
-    :var (svex-rsh x.rsh (svex-var x.name))))
+;; (define lhatom->svex-zero ((x lhatom-p))
+;;   :returns (xx svex-p)
+;;   (lhatom-case x
+;;     :z (svex-quote 0)
+;;     :var (svex-rsh x.rsh (svex-var x.name))))
 
-(define lhrange->svex-zero ((x lhrange-p))
-  :returns (s svex-p)
-  (b* (((lhrange x) x))
-    (svex-concat x.w
-                 (lhatom->svex-zero x.atom)
-                 (svex-quote (4vec-z)))))
+;; (define lhrange->svex-zero ((x lhrange-p))
+;;   :returns (s svex-p)
+;;   (b* (((lhrange x) x))
+;;     (svex-concat x.w
+;;                  (lhatom->svex-zero x.atom)
+;;                  (svex-quote (4vec-z)))))
 
-(define lhs->svex-zero ((x lhs-p))
-  :returns (xx svex-p)
-  :prepwork ((local (in-theory (enable lhs-fix))))
-  (if (atom x)
-      (svex-quote 0)
-    (b* (((lhrange xf) (car x)))
-      (svex-concat xf.w
-                   (lhatom->svex-zero xf.atom)
-                   (lhs->svex-zero (cdr x))))))
 
 
 (define svtv-outputs->outalist ((x svtv-lines-p) (phase natp))

@@ -1320,14 +1320,14 @@
                           (svar-p (caar x)))))
         (svtv-name-lhs-map-to-svex-alist (cdr x))))
     (cons (cons (caar x)
-                (lhs->svex (cdar x)))
+                (lhs->svex-zero (cdar x)))
           (svtv-name-lhs-map-to-svex-alist (cdr x))))
   ///
   (defret lookup-in-<fn>
     (equal (svex-lookup var alist)
            (b* ((look (hons-assoc-equal (svar-fix var) x)))
              (and look
-                  (lhs->svex (cdr look)))))
+                  (lhs->svex-zero (cdr look)))))
     :hints(("Goal" :in-theory (enable svex-lookup svex-alist-fix))))
 
   (local (in-theory (enable svtv-name-lhs-map-fix))))
@@ -1425,8 +1425,8 @@ except that we memoize the results."
                          (svex-subst look subst))))
            :hints(("Goal" :in-theory (enable svex-alist-subst svex-lookup svex-acons)))))
 
-  (local (defcong svex-envs-similar equal (lhs-eval x env) 2
-           :hints(("Goal" :in-theory (enable lhs-eval lhrange-eval lhatom-eval)))))
+  (local (defcong svex-envs-similar equal (lhs-eval-zero x env) 2
+           :hints(("Goal" :in-theory (enable lhs-eval-zero lhrange-eval lhatom-eval)))))
 
   (defcong svtv-fsm-eval/namemap-equiv svex-alist-eval-equiv
     (svtv-fsm-renamed-outexprs outvars x) 2
@@ -1536,12 +1536,12 @@ except that we memoize the results."
                                                         match-ext)))))
              ;; BOZO replace vars-of-lhs->svex with this
              (local (defthm vars-of-lhs->svex-strict
-                      (set-equiv (svex-vars (lhs->svex x))
+                      (set-equiv (svex-vars (lhs->svex-zero x))
                                  (lhs-vars x))
-                      :hints(("Goal" :in-theory (enable svex-vars lhs->svex lhs-vars
+                      :hints(("Goal" :in-theory (enable svex-vars lhs->svex-zero lhs-vars
                                                         lhatom-vars lhatom->svex svex-rsh
                                                         match-concat match-ext match-rsh)
-                              :induct (lhs->svex x)
+                              :induct (lhs->svex-zero x)
                               ;; :expand ((SVEX-CONCAT (LHRANGE->W (CAR X))
                               ;;                       '(0 . -1)
                               ;;                       (LHS->SVEX (CDR X))))
@@ -1630,7 +1630,7 @@ except that we memoize the results."
            (let ((look (hons-assoc-equal (svar-fix var) (svtv-fsm->namemap x))))
              (if (and (member-equal (svar-fix var) (svarlist-fix outvars))
                       look)
-                 (lhs-eval (cdr look) full-outs)
+                 (lhs-eval-zero (cdr look) full-outs)
                (4vec-x))))))
 
 

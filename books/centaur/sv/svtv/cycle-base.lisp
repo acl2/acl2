@@ -294,3 +294,18 @@
     (equal (len fsm-ins) (len phases))))
 
 
+
+
+
+
+(define svtv-cycle-run-fsm-inputs ((ins svex-envlist-p)
+                                   (phases svtv-cyclephaselist-p))
+  :returns (fsm-ins svex-envlist-p)
+  :prepwork ((local (defthm svex-envlist-p-of-append
+                      (implies (and (svex-envlist-p x)
+                                    (svex-envlist-p y))
+                               (svex-envlist-p (append x y))))))
+  (if (atom ins)
+      nil
+    (append (svtv-cycle-fsm-inputs (car ins) phases)
+            (svtv-cycle-run-fsm-inputs (cdr ins) phases))))

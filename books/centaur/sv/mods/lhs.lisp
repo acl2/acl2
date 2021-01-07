@@ -287,6 +287,19 @@ the order given (LSBs-first).</p>")
   ///
   (deffixequiv lhs-eval))
 
+(define lhs-eval-zero ((x lhs-p) (env svex-env-p))
+  :parents (lhs)
+  :returns (val 4vec-p)
+  (if (atom x)
+      0
+    (4vec-concat (2vec (lhrange->w (car x)))
+                 (lhrange-eval (car x) env)
+                 (lhs-eval-zero (cdr x) env)))
+  ///
+  (deffixequiv lhs-eval-zero))
+
+
+
 
 
 (define lhs-width ((x lhs-p))
@@ -2385,6 +2398,31 @@ bits of @('foo'):</p>
   (defthm vars-of-lhs->svex
     (implies (not (member v (lhs-vars x)))
              (not (member v (svex-vars (lhs->svex x)))))
+    :hints(("Goal" :in-theory (enable lhatom-vars lhatom->svex)))))
+
+
+
+(define lhs->svex-zero ((x lhs-p))
+  :returns (xx svex-p)
+  :prepwork ((local (in-theory (enable lhs-fix))))
+  (if (atom x)
+      (svex-quote 0)
+    (b* (((lhrange xf) (car x)))
+      (svex-concat xf.w
+                   (lhatom->svex xf.atom)
+                   (lhs->svex-zero (cdr x)))))
+  ///
+  (deffixequiv lhs->svex-zero)
+
+  (defthm lhs->svex-zero-correct
+    (equal (svex-eval (lhs->svex-zero x) env)
+           (lhs-eval-zero x env))
+    :hints(("Goal" :in-theory (enable svex-eval svex-apply svexlist-eval 4veclist-nth-safe
+                                      lhs-eval-zero lhrange-eval))))
+
+  (defthm vars-of-lhs->svex-zero
+    (implies (not (member v (lhs-vars x)))
+             (not (member v (svex-vars (lhs->svex-zero x)))))
     :hints(("Goal" :in-theory (enable lhatom-vars lhatom->svex)))))
 
 
