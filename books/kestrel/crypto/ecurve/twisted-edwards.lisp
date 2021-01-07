@@ -28,6 +28,9 @@
   (xdoc::topstring
    (xdoc::p
     "Twisted Edwards curves are introduced in "
+    (xdoc::ahref
+     "https://eprint.iacr.org/2008/013.pdf"
+     "Bernstein, Birkner, Joye, Lange, and Peters's ``Twisted Edwards Curves''")
     (xdoc::ahref "https://eprint.iacr.org/2008/013.pdf" "this paper")
     ".")
    (xdoc::p
