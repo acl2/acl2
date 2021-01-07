@@ -16,6 +16,7 @@
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (include-book "kestrel/alists-light/symbol-alistp" :dir :system)
 (include-book "kestrel/alists-light/acons" :dir :system)
+(include-book "kestrel/utilities/terms" :dir :system) ; for get-fns-in-term
 (local (include-book "kestrel/utilities/remove-guard-holders" :dir :system))
 
 (in-theory (disable getprops
@@ -210,3 +211,24 @@
                 (consp alist))
            (consp (car alist)))
   :hints (("Goal" :in-theory (enable interpreted-function-alistp))))
+
+(defun interpreted-function-completep-aux (alist all-fns)
+  (declare (xargs :guard (and (interpreted-function-alistp alist)
+                              (symbol-listp all-fns))
+                  :guard-hints (("Goal" :in-theory (enable INTERPRETED-FUNCTION-ALISTP)))))
+  (if (endp alist)
+      t
+    (let* ((pair (first alist))
+           (fn (car pair))
+           (info (cdr pair))
+           ;; (formals (car info))
+           (body (cadr info))
+           (mentioned-fns (get-fns-in-term body)))
+      (if (not (subsetp-equal mentioned-fns all-fns))
+          (prog2$ (cw "WARNING: Intepreted-function-alist is missing defs for: ~x0 (called by ~x1)." (set-difference-eq mentioned-fns all-fns) fn)
+                  nil)
+        (interpreted-function-completep-aux (rest alist) all-fns)))))
+
+(defun interpreted-function-completep (alist)
+  (declare (xargs :guard (interpreted-function-alistp alist)))
+  (interpreted-function-completep-aux alist (strip-cars alist)))
