@@ -81,18 +81,18 @@
      we pick 3 for @($p$), 1 for @($a$), and 1 for @($d$)."))
   ((p nat :reqfix (if (> p 2) p 3))
    (a :reqfix (if (and (fep a p)
-                       (/= a 0))
+                       (not (equal a 0)))
                   a
                 1))
    (d :reqfix (if (and (fep d p)
-                       (/= d 0))
+                       (not (equal d 0)))
                   d
                 1)))
   :require (and (> p 2)
                 (fep a p)
                 (fep d p)
-                (/= a 0)
-                (/= d 0)))
+                (not (equal a 0))
+                (not (equal d 0))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
