@@ -16,6 +16,7 @@
 (include-book "kestrel/utilities/def-constant-opener" :dir :system) ;reduce?
 (include-book "kestrel/lists-light/append-with-key" :dir :system)
 (include-book "kestrel/lists-light/memberp" :dir :system)
+(include-book "kestrel/typed-lists-light/bit-listp" :dir :system)
 (include-book "kestrel/bv/bvcat" :dir :system)
 (include-book "kestrel/bv/bvplus" :dir :system)
 (include-book "kestrel/bv/bitxor" :dir :system)
@@ -224,14 +225,6 @@
 
 (defthm pfield::booleanp-of-fe-listp
   (booleanp (fe-listp elems prime)))
-
-
-(defun acl2::bit-listp (x)
-  (declare (xargs :guard t))
-  (if (atom x)
-      (null x)
-    (and (acl2::bitp (first x))
-         (acl2::bit-listp (rest x)))))
 
 (defthm acl2::bitp-when-bit-listp-and-memberp
   (implies (and (acl2::bit-listp free)
