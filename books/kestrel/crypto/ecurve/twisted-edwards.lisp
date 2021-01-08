@@ -75,24 +75,43 @@
      We express the primality of @($p$) separately.")
    (xdoc::p
     "We require @($a$) and @($d$) to be in the prime field of @($p$).
-     We also require them to be non-zero.")
+     We also require them to be distinct and non-zero.")
    (xdoc::p
     "To fix the three components to satisfy the requirements above,
-     we pick 3 for @($p$), 1 for @($a$), and 1 for @($d$)."))
-  ((p nat :reqfix (if (> p 2) p 3))
-   (a :reqfix (if (and (fep a p)
-                       (not (equal a 0)))
+     we pick 3 for @($p$), 1 for @($a$), and 2 for @($d$)."))
+  ((p nat :reqfix (if (and (> p 2)
+                           (fep a p)
+                           (fep d p)
+                           (not (equal a d))
+                           (not (equal a 0))
+                           (not (equal d 0)))
+                      p
+                    3))
+   (a :reqfix (if (and (> p 2)
+                       (fep a p)
+                       (fep d p)
+                       (not (equal a d))
+                       (not (equal a 0))
+                       (not (equal d 0)))
                   a
                 1))
-   (d :reqfix (if (and (fep d p)
+   (d :reqfix (if (and (> p 2)
+                       (fep a p)
+                       (fep d p)
+                       (not (equal a d))
+                       (not (equal a 0))
                        (not (equal d 0)))
                   d
-                1)))
+                2)))
   :require (and (> p 2)
                 (fep a p)
                 (fep d p)
+                (not (equal a d))
                 (not (equal a 0))
                 (not (equal d 0)))
+
+  :prepwork ((local (in-theory (enable fep))))
+
   ///
 
   (defrule twisted-edwards->p-lower-bound
