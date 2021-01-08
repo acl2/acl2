@@ -93,7 +93,12 @@
                 (not (equal a 2))
                 (not (equal a (mod -2 p)))
                 (not (equal b 0)))
-  :prepwork ((local (include-book "arithmetic-3/top" :dir :system))))
+  :prepwork ((local (include-book "arithmetic-3/top" :dir :system)))
+  ///
+
+  (defrule montgomery->p-lower-bound
+    (> (montgomery->p curve) 2)
+    :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
