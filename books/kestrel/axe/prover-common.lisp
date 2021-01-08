@@ -1620,7 +1620,8 @@
 (defund axe-prover-optionsp (options)
   (declare (xargs :guard t))
   (and (alistp options)
-       (subsetp-eq (strip-cars options) '(:no-stp))))
+       (subsetp-eq (strip-cars options) '(:splitp ;whether to split into cases
+                                          :no-stp))))
 
 (defthm all-axe-treep-of-wrap-all
   (equal (all-axe-treep (wrap-all 'not atoms))
