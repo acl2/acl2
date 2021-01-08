@@ -32,6 +32,7 @@
 
 (include-book "prime-field-squares")
 (include-book "prime-field-squares-euler-criterion")
+(include-book "prime-field-extra-rules")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
