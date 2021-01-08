@@ -92,7 +92,12 @@
                 (fep a p)
                 (fep d p)
                 (not (equal a 0))
-                (not (equal d 0))))
+                (not (equal d 0)))
+  ///
+
+  (defrule twisted-edwards->p-lower-bound
+    (> (twisted-edwards->p curve) 2)
+    :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
