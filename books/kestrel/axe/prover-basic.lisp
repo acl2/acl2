@@ -24,6 +24,6 @@
 ;; rewriter "knows" about.  To understand what gets generated, see
 ;; make-prover-simple-fn.
 (make-prover-simple basic
-                    apply-axe-evaluator-basic-to-quoted-args
+                    axe-evaluator-basic
                     eval-axe-syntaxp-expr-basic
                     eval-axe-bind-free-function-application-basic)
