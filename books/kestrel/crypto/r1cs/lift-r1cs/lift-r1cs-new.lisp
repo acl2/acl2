@@ -10,7 +10,9 @@
 
 (in-package "R1CS")
 
-;; This is for R1CSes in sparse form
+;; A new version of the lifter for R1CSes in sparse form.  This version creates
+;; a defconst containing the resulting DAG, but it does not embed the DAG in a
+;; defun (thus, this version does not depend on any skip-proofs).
 
 (include-book "lift-r1cs-rules")
 (include-book "lift-r1cs-rule-lists")
