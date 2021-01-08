@@ -1297,13 +1297,13 @@
   :guard (and (equal (alist-keys prev-st) (svex-alist-keys (svtv-fsm->nextstate x)))
               (not (acl2::hons-dups-p (svex-alist-keys (svtv-fsm->nextstate x)))))
   :returns (env svex-env-p)
-  (svtv-fsm-step-env (svtv-fsm-renamed-env inputs override-tests x)
-                     prev-st x)
+  (base-fsm-step-env (svtv-fsm-renamed-env inputs override-tests x)
+                     prev-st (svtv-fsm->base-fsm x))
   ///
   (defret svtv-fsm-renamed-step-env-of-extract-states
     (equal (svtv-fsm-renamed-step-env
             inputs override-tests
-            (svex-env-extract (svex-alist-keys (svtv-fsm->nextstate x)) prev-st)
+            (svex-env-extract (svex-alist-keys (base-fsm->nextstate (svtv-fsm->base-fsm x))) prev-st)
             x)
            env))
 
@@ -1453,7 +1453,7 @@ except that we memoize the results."
   (defret svtv-fsm-step-renamed-of-extract-states
     (equal (svtv-fsm-step-renamed
             inputs override-tests
-            (svex-env-extract (svex-alist-keys (svtv-fsm->nextstate x)) prev-st)
+            (svex-env-extract (svex-alist-keys (base-fsm->nextstate (svtv-fsm->base-fsm x))) prev-st)
             x)
            nextstate))
 
@@ -1480,7 +1480,7 @@ except that we memoize the results."
   (defret svtv-fsm-step-outs-renamed-of-extract-states
     (equal (svtv-fsm-step-outs-renamed
             inputs override-tests outvars
-            (svex-env-extract (svex-alist-keys (svtv-fsm->nextstate x)) prev-st)
+            (svex-env-extract (svex-alist-keys (base-fsm->nextstate (svtv-fsm->base-fsm x))) prev-st)
             x)
            outs))
 
@@ -1505,7 +1505,7 @@ except that we memoize the results."
   (defret svtv-fsm-step-full-outs-renamed-of-extract-states
     (equal (svtv-fsm-step-full-outs-renamed
             inputs override-tests
-            (svex-env-extract (svex-alist-keys (svtv-fsm->nextstate x)) prev-st)
+            (svex-env-extract (svex-alist-keys (base-fsm->nextstate (svtv-fsm->base-fsm x))) prev-st)
             x)
            outs)))
 
@@ -1605,11 +1605,11 @@ except that we memoize the results."
            (svtv-fsm-step-extract-renamed-outs
             outvars
             (svex-env-extract (svtv-fsm-step-renamed-output-signals outvars x)
-                              (svtv-fsm-step-outs (svtv-fsm-renamed-env inputs override-tests x)
-                                                  prev-st x))
+                              (base-fsm-step-outs (svtv-fsm-renamed-env inputs override-tests x)
+                                                  prev-st (svtv-fsm->base-fsm x)))
             x))
     :hints(("Goal" :in-theory (enable svtv-fsm-step-renamed-output-signals
-                                      svtv-fsm-step-outs
+                                      base-fsm-step-outs
                                       svtv-fsm-renamed-step-env
                                       svtv-fsm-step-outs-renamed
                                       svtv-fsm-renamed-outexprs))))
@@ -1685,17 +1685,17 @@ except that we memoize the results."
   ///
   (defretd <fn>-is-svtv-fsm-final-state-of-renamed-input-envs
     (equal final-st
-           (svtv-fsm-final-state (svtv-fsm-run-renamed-input-envs inputs override-tests x)
-                                 prev-st x))
-    :hints(("Goal" :in-theory (enable svtv-fsm-final-state svtv-fsm-run-renamed-input-envs
+           (base-fsm-final-state (svtv-fsm-run-renamed-input-envs inputs override-tests x)
+                                 prev-st (svtv-fsm->base-fsm x)))
+    :hints(("Goal" :in-theory (enable base-fsm-final-state svtv-fsm-run-renamed-input-envs
                                       svtv-fsm-step-renamed
                                       svtv-fsm-renamed-step-env
-                                      svtv-fsm-step))))
+                                      base-fsm-step))))
 
   (defret svtv-fsm-final-state-renamed-of-extract-states
     (equal (svtv-fsm-final-state-renamed
             inputs override-tests
-            (svex-env-extract (svex-alist-keys (svtv-fsm->nextstate x)) prev-st)
+            (svex-env-extract (svex-alist-keys (base-fsm->nextstate (svtv-fsm->base-fsm x))) prev-st)
             x)
            final-st)))
 
@@ -1708,20 +1708,20 @@ except that we memoize the results."
 
 
 
-(defsection nth-of-svtv-fsm-eval
+(defsection nth-of-base-fsm-eval
   (local (defun nth-of-sfe-ind (n ins prev-st x)
            (if (atom ins)
                (list n prev-st)
              (nth-of-sfe-ind (1- n) (cdr ins)
-                             (svtv-fsm-step (car ins) prev-st x)
+                             (base-fsm-step (car ins) prev-st x)
                              x))))
-  (defthmd nth-of-svtv-fsm-eval
-    (equal (nth n (svtv-fsm-eval ins prev-st x))
+  (defthmd nth-of-base-fsm-eval
+    (equal (nth n (base-fsm-eval ins prev-st x))
            (and (< (nfix n) (len ins))
-                (b* ((st (svtv-fsm-final-state (take n ins) prev-st x)))
-                  (svtv-fsm-step-outs (nth n ins) st x))))
-    :hints(("Goal" :in-theory (enable svtv-fsm-final-state
-                                      svtv-fsm-eval nth)
+                (b* ((st (base-fsm-final-state (take n ins) prev-st x)))
+                  (base-fsm-step-outs (nth n ins) st x))))
+    :hints(("Goal" :in-theory (enable base-fsm-final-state
+                                      base-fsm-eval nth)
             :induct (nth-of-sfe-ind n ins prev-st x)))))
 
 
@@ -1757,20 +1757,20 @@ except that we memoize the results."
   ///
   (defretd <fn>-is-svtv-fsm-eval-of-renamed-input-envs
     (equal outs
-           (svtv-fsm-eval (svtv-fsm-run-renamed-input-envs inputs override-tests x)
-                          prev-st x))
-    :hints(("Goal" :in-theory (enable svtv-fsm-eval svtv-fsm-run-renamed-input-envs
+           (base-fsm-eval (svtv-fsm-run-renamed-input-envs inputs override-tests x)
+                          prev-st (svtv-fsm->base-fsm x)))
+    :hints(("Goal" :in-theory (enable base-fsm-eval svtv-fsm-run-renamed-input-envs
                                       svtv-fsm-step-full-outs-renamed
                                       svtv-fsm-step-renamed
                                       svtv-fsm-renamed-step-env
-                                      svtv-fsm-step
-                                      svtv-fsm-step-outs))))
+                                      base-fsm-step
+                                      base-fsm-step-outs))))
 
   
   (defret <fn>-of-extract-states
     (equal (svtv-fsm-eval-renamed
             inputs override-tests
-            (svex-env-extract (svex-alist-keys (svtv-fsm->nextstate x)) prev-st)
+            (svex-env-extract (svex-alist-keys (base-fsm->nextstate (svtv-fsm->base-fsm x))) prev-st)
             x)
            outs)))
 
@@ -1897,27 +1897,27 @@ except that we memoize the results."
            outs))
 
 
-  (defretd <fn>-is-extract-of-svtv-fsm-run
+  (defretd <fn>-is-extract-of-base-fsm-run
     (equal outs
            (svtv-fsm-run-extract-renamed-outs
             outvars
-            (svtv-fsm-run
+            (base-fsm-run
              (svtv-fsm-run-renamed-input-envs
               (take (len outvars) inputs)
               override-tests x)
              prev-st
-             x
+             (svtv-fsm->base-fsm x)
              (svtv-fsm-run-renamed-output-signals outvars x))
             x))
-    :hints(("Goal" :in-theory (enable svtv-fsm-run
+    :hints(("Goal" :in-theory (enable base-fsm-run
                                       svex-envlist-extract
-                                      svtv-fsm-eval
+                                      base-fsm-eval
                                       svtv-fsm-run-renamed-output-signals
                                       svtv-fsm-run-renamed-input-envs
                                       svtv-fsm-run-extract-renamed-outs
                                       svtv-fsm-step-outs-renamed-is-extract-of-step-outs
                                       svtv-fsm-step-renamed
-                                      svtv-fsm-step
+                                      base-fsm-step
                                       svtv-fsm-renamed-step-env)
             :induct <call>)))
 
@@ -1960,10 +1960,10 @@ except that we memoize the results."
 
 
 
-(define svtv-fsm-mod-alias-guard ((x svtv-fsm-p) (moddb moddb-ok) aliases)
+(define svtv-fsm-mod-alias-guard ((top modname-p)
+                                  (moddb moddb-ok) aliases)
   :enabled t
-  (b* ((modidx (moddb-modname-get-index
-                (design->top (svtv-fsm->design x)) moddb)))
+  (b* ((modidx (moddb-modname-get-index top moddb)))
     (and modidx
          (svtv-mod-alias-guard modidx moddb aliases))))
 
@@ -1971,21 +1971,19 @@ except that we memoize the results."
 (define svtv-fsm-add-names ((names svtv-namemap-p)
                             (x svtv-fsm-p)
                             &key
+                            ((top modname-p) 'nil)
                             ((moddb moddb-ok) 'moddb)
                             (aliases 'aliases))
-  :guard (svtv-fsm-mod-alias-guard x moddb aliases)
+  :guard (svtv-fsm-mod-alias-guard top moddb aliases)
   :returns (mv err
                (new-fsm (implies (not err) (svtv-fsm-p new-fsm))))
   (b* (((svtv-fsm x))
        ((mv errs lhsmap)
         (svtv-namemap->lhsmap
          names 
-         (moddb-modname-get-index
-          (design->top x.design) moddb)
+         (moddb-modname-get-index top moddb)
          moddb aliases))
        ((when errs)
         (mv (msg-list errs) nil)))
     (mv nil
-        (change-svtv-fsm x
-                         :user-names (append names x.user-names)
-                         :namemap (append lhsmap x.namemap)))))
+        (change-svtv-fsm x :namemap (append lhsmap x.namemap)))))

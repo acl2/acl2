@@ -57,8 +57,7 @@ names in SystemVerilog hierarchical syntax (strings)."
   )
 
 
-
-(defprod svtv-fsm
+(defprod base-fsm
   ((values svex-alist-p
             "Functions of internal signals of the design, using canonical
              names as input and output variables.")
@@ -66,10 +65,25 @@ names in SystemVerilog hierarchical syntax (strings)."
                "Next-state functions for stateholding signals.  No variable should
                 be both a key of updates and nextstates -- usually the nextstate
                 keys have delay values in their names and the updates keys
-                don't.")
-   (design design-p
-           "Original design from which the FSM was derived.")
-   (user-names svtv-namemap-p
-               "Mapping for signal names given by the user.")
+                don't.")))
+
+
+(defprod svtv-fsm
+  ((base-fsm base-fsm-p)
+   ;; (design design-p
+   ;;         "Original design from which the FSM was derived.")
+   ;; (user-names svtv-namemap-p
+   ;;             "Mapping for signal names given by the user.")
    (namemap svtv-name-lhs-map-p
-            "Processed name map giving the canonical LHS of each name.")))
+            "Processed name map giving the canonical LHS of each name."))
+  :extra-binder-names (values nextstate))
+
+(define svtv-fsm->values ((x svtv-fsm-p))
+  :enabled t
+  (base-fsm->values (svtv-fsm->base-fsm x)))
+
+(define svtv-fsm->nextstate ((x svtv-fsm-p))
+  :enabled t
+  (base-fsm->nextstate (svtv-fsm->base-fsm x)))
+
+

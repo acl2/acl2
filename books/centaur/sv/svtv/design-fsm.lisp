@@ -70,8 +70,96 @@
          :true-listp t
          :elementp-of-nil nil))
 
+(defprod flatten-res
+  ((assigns assigns)
+   (fixups assigns)
+   (constraints constraintlist)))
+
+(defprod flatnorm-res
+  ((assigns svex-alist)
+   (delays svar-map)
+   (constraints constraintlist)))
+
+(define flatten-res-vars ((x flatten-res-p))
+  (b* (((flatten-res x)))
+    (append (assigns-vars x.assigns)
+            (assigns-vars x.fixups)
+            (constraintlist-vars x.constraints))))
 
 
+;; simple wrapper for svex-design-flatten that wraps the result into a flatten-res
+(define svtv-design-flatten ((x design-p)
+                             &key
+                             ((moddb "overwritten") 'moddb)
+                             ((aliases "overwritten") 'aliases))
+  :guard (svarlist-addr-p (modalist-vars (design->modalist x)))
+  :returns (mv err
+               (res flatten-res-p)
+               new-moddb new-aliases)
+  :guard-hints (("goal" :in-theory (enable modscope-okp modscope-local-bound modscope->modidx)))
+  (b* (((mv err assigns fixups constraints moddb aliases) (svex-design-flatten x))
+       (aliases (if err
+                    aliases
+                  (aliases-indexed->named aliases (make-modscope-top
+                                                   :modidx (moddb-modname-get-index
+                                                            (design->top x) moddb))
+                                          moddb))))
+    (mv err
+        (make-flatten-res :assigns assigns :fixups fixups :constraints constraints)
+        moddb aliases))
+  ///
+  (defretd normalize-stobjs-of-<fn>
+    (implies (syntaxp (not (and (equal aliases ''nil)
+                                (equal moddb ''nil))))
+             (equal <call>
+                    (let ((moddb nil) (aliases nil)) <call>)))
+    :hints(("Goal" :in-theory (enable normalize-stobjs-of-svex-design-flatten)))))
+
+(define svtv-normalize-assigns ((flatten flatten-res-p) aliases)
+  :returns (res flatnorm-res-p)
+  :guard (svarlist-boundedp (flatten-res-vars flatten) (aliass-length aliases))
+  :guard-hints (("goal" :in-theory (enable flatten-res-vars)))
+  (b* (((flatten-res flatten))
+       ((mv assigns delays constraints)
+        (svex-normalize-assigns flatten.assigns flatten.fixups flatten.constraints aliases)))
+    (make-flatnorm-res :assigns assigns :delays delays :constraints constraints)))
+
+(define svtv-compose-assigns/delays ((flatnorm flatnorm-res-p))
+  :returns (fsm base-fsm-p)
+  :prepwork ((local (include-book "std/alists/fast-alist-clean" :dir :system))
+             (local (defthm svex-alist-p-of-fast-alist-fork
+                      (implies (and (svex-alist-p x)
+                                    (svex-alist-p y))
+                               (svex-alist-p (fast-alist-fork x y)))))
+             (local (defthm cdr-last-of-svex-alist-p
+                      (implies (svex-alist-p x)
+                               (equal (cdr (last x)) nil))))
+             (local (defthm svex-alist-p-of-fast-alist-clean
+                      (implies (svex-alist-p x)
+                               (svex-alist-p (fast-alist-clean x)))))
+
+             (local (defthm no-duplicate-svex-alist-keys-of-fast-alist-fork
+                      (implies  (no-duplicatesp-equal (svex-alist-keys y))
+                                (no-duplicatesp-equal (svex-alist-keys (fast-alist-fork x y))))
+                      :hints(("Goal" :in-theory (enable svex-alist-keys svex-lookup)))))
+             (local (defthm svex-alist-keys-of-cdr-last
+                      (equal (svex-alist-keys (cdr (last x))) nil)
+                      :hints(("Goal" :in-theory (enable svex-alist-keys)))))
+             (local (defthm no-duplicate-svex-alist-keys-of-fast-alist-clean
+                      (no-duplicatesp-equal (svex-alist-keys (fast-alist-clean x)))
+                      :hints(("Goal" :in-theory (enable svex-alist-keys)))))
+             (local (in-theory (disable fast-alist-clean))))
+  (b* (((flatnorm-res flatnorm))
+       (override-alist (svarlist-to-override-alist (svex-alist-keys flatnorm.assigns)))
+       (overridden-assigns (with-fast-alist override-alist
+                             (svex-alist-compose flatnorm.assigns override-alist)))
+       (updates1 (make-fast-alist
+                  (with-fast-alist overridden-assigns
+                    (svex-assigns-compose overridden-assigns :rewrite t))))
+       (updates2 (svex-alist-compose override-alist updates1))
+       (masks (svexlist-mask-alist (svex-alist-vals updates2)))
+       (nextstates (with-fast-alist updates2 (svex-compose-delays flatnorm.delays updates2 masks))))
+    (make-base-fsm :values updates1 :nextstate (fast-alist-clean nextstates))))
 
 
 ;; BOZO this could probably be broken into a few parts.
@@ -108,7 +196,7 @@
   
   :returns (mv err
                (fsm (implies (not err)
-                             (svtv-fsm-p fsm)))
+                             (base-fsm-p fsm)))
                (new-moddb moddb-basics-ok) new-aliases)
   :guard (modalist-addr-p (design->modalist x))
   (b* (((mv err assigns delays & moddb aliases)
@@ -136,14 +224,13 @@
        (masks (svexlist-mask-alist (svex-alist-vals updates2)))
        (nextstates (with-fast-alist updates2 (svex-compose-delays delays updates2 masks))))
     (mv nil
-        (make-svtv-fsm :values updates1
-                       :nextstate (fast-alist-clean nextstates)
-                       :design x)
+        (make-base-fsm :values updates1
+                       :nextstate (fast-alist-clean nextstates))
         moddb aliases))
   ///
   (defret no-duplicate-nextstates-of-<fn>
     (implies (not err)
-             (no-duplicatesp-equal (svex-alist-keys (svtv-fsm->nextstate fsm)))))
+             (no-duplicatesp-equal (svex-alist-keys (base-fsm->nextstate fsm)))))
 
   (defret <fn>-normalize-stobjs
     (implies (syntaxp (and (not (equal moddb ''nil))
