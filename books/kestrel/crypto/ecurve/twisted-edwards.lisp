@@ -116,7 +116,17 @@
 
   (defrule twisted-edwards->p-lower-bound
     (> (twisted-edwards->p curve) 2)
-    :rule-classes :linear))
+    :rule-classes :linear)
+
+  (defrule posp-of-twisted-edwards->a
+    (posp (twisted-edwards->a curve))
+    :enable twisted-edwards->a
+    :rule-classes :type-prescription)
+
+  (defrule posp-of-twisted-edwards->d
+    (posp (twisted-edwards->d curve))
+    :enable twisted-edwards->d
+    :rule-classes :type-prescription))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
