@@ -229,6 +229,9 @@
                   nil)
         (interpreted-function-completep-aux (rest alist) all-fns)))))
 
-(defun interpreted-function-completep (alist)
-  (declare (xargs :guard (interpreted-function-alistp alist)))
-  (interpreted-function-completep-aux alist (strip-cars alist)))
+(defun interpreted-function-completep (alist built-in-fns)
+  (declare (xargs :guard (and (interpreted-function-alistp alist)
+                              (symbol-listp built-in-fns))))
+  (interpreted-function-completep-aux alist
+                                      (append (strip-cars alist)
+                                              built-in-fns)))
