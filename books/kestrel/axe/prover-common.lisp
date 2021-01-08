@@ -1462,9 +1462,7 @@
      ;;print the close paren:
      (cw ")~%"))))
 
-;recall that the case is the negation of all the literals
-;fixme similar name to print-negated-literal-list
-(defund print-axe-prover-case (literal-nodenums dag-array-name dag-array dag-len)
+(defund print-axe-prover-case-aux (literal-nodenums dag-array-name dag-array dag-len)
   (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (all-natp literal-nodenums)
                               (true-listp literal-nodenums)
@@ -1473,7 +1471,19 @@
       nil
     (progn$ (print-negated-literal (first literal-nodenums) dag-array-name dag-array dag-len)
             (cw "~%")
-            (print-axe-prover-case (rest literal-nodenums) dag-array-name dag-array dag-len))))
+            (print-axe-prover-case-aux (rest literal-nodenums) dag-array-name dag-array dag-len))))
+
+;recall that the case is the negation of all the literals
+;fixme similar name to print-negated-literal-list
+(defund print-axe-prover-case (literal-nodenums dag-array-name dag-array dag-len case-adjective)
+  (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                              (all-natp literal-nodenums)
+                              (true-listp literal-nodenums)
+                              (all-< literal-nodenums dag-len))))
+  (progn$
+   (cw "(Negated lits (~x0) for ~s1 case:~%" (len literal-nodenums) case-adjective)
+   (print-axe-prover-case-aux literal-nodenums dag-array-name dag-array dag-len)
+   (cw ")~%")))
 
 (defthm <-of-+-1-of-maxelem
   (implies (and (all-< lst x)

@@ -3677,9 +3677,7 @@
                  ((when provedp) (mv (erp-nil) :proved dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
                  (- (cw "(True case reduced dag: ~x0)~%" (drop-non-supporters-array 'dag-array dag-array nodenum nil)))
                  (- (and (or (eq t print) (eq :verbose print) (eq :verbose2 print))
-                         (progn$ (cw "(Negated lits (~x0) for true case:~%" (len literal-nodenums))
-                                 (print-axe-prover-case literal-nodenums 'dag-array dag-array dag-len)
-                                 (cw ")~%")))))
+                         (print-axe-prover-case literal-nodenums 'dag-array dag-array dag-len "true"))))
               ;; Attempt to prove case #1:
               (,prove-or-split-case-name literal-nodenums
                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
@@ -3732,9 +3730,7 @@
                  ((when erp) (mv erp :failed dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
                  ((when provedp) (mv (erp-nil) :proved dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
                  (- (and (or (eq t print) (eq :verbose print) (eq :verbose2 print))
-                         (progn$ (cw "(Negated lits (~x0) for false case:~%" (len literal-nodenums))
-                                 (print-axe-prover-case literal-nodenums 'dag-array dag-array dag-len)
-                                 (cw ")~%")))))
+                         (print-axe-prover-case literal-nodenums 'dag-array dag-array dag-len "false"))))
               ;; Attempt to prove case #2:
               (,prove-or-split-case-name literal-nodenums
                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
@@ -3807,10 +3803,7 @@
                                                 (eq :verbose print) ;new
                                                 (eq :verbose2 print) ;new
                                                 )
-                                            (progn$
-                                             (cw "(Negated lits (~x0) for this case:~%" (len literal-nodenums))
-                                             (print-axe-prover-case literal-nodenums 'dag-array dag-array dag-len)
-                                             (cw ")~%")))
+                                            (print-axe-prover-case literal-nodenums 'dag-array dag-array dag-len "this"))
                                        (cw ")~%")))
                           (mv (erp-nil) :failed dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
                 ;;splitting on nodenum (which is not a call of NOT):
