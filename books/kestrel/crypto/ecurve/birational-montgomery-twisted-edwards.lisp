@@ -17,7 +17,8 @@
 
 (defxdoc+ birational-montgomery-twisted-edwards
   :parents (elliptic-curves montgomery twisted-edwards)
-  :short "Mapping between Montgomery curves and twisted Edwards curves."
+  :short "Birational equivalence between
+          Montgomery curves and twisted Edwards curves."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -32,24 +33,24 @@
     ". That is, there are:")
    (xdoc::ul
     (xdoc::li
-     "An isomorphic mapping between
+     "A mapping between
       the set of Montgomery curves
       and the set of twisted Edwards curves.")
     (xdoc::li
-     "Given isomorphic Montgomery and twisted Edwards curves,
-      there is an isomorphic mapping between
+     "Given Montgomery and twisted Edwards curves related by the above mapping,
+      there is a mapping between
       the set of points of one curve
       and the set of points of the other curve."))
    (xdoc::p
-    "Here `birational' means that the isomorphic mappings
-     between the sets of points of two isomorphic curves
+    "Here `birational' means that the mappings
+     between the sets of points of two corresponding curves
      are rational functions.
      Their denominators are 0 only for a finite number of points of the curves;
-     the complete isomorphisms can be therefore defined with ease
+     the complete mappings can be therefore defined
      via the rational formulas plus a few special explicit cases.")
    (xdoc::p
-    "Here we define all these isomorphic mappings.
-     We plan to prove the isomorphism claims at some point."))
+    "Here we define these mappings.
+     We plan to prove properties of them at some point."))
   :order-subtopics t
   :default-parent t)
 
@@ -156,4 +157,79 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; TODO: define mappings between points
+(define montgomery-point-to-twisted-edwards-point ((point pointp)
+                                                   (curve montgomery-p))
+  :guard (and (montgomery-primep curve)
+              (point-on-montgomery-p point curve)
+              (not (eq (point-kind point) :infinite))
+              (not (equal (point-finite->x point)
+                          (neg 1 (montgomery->p curve))))
+              (not (equal (point-finite->y point)
+                          0)))
+  :returns (point1 pointp)
+  :short "Map a point on a Montgomery curve to
+          the corresponding point on the corresponding twisted Edwards curve."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now we only define the mapping for
+     the points for which the rational formulas work.
+     That is, we require the denominators to be non-zero in the guard.")
+   (xdoc::p
+    "It remains to prove that the resulting point in on the curve
+     @('(montgomery-to-twisted-edwards curve)').
+     It also remains to extend the mapping to other points
+     (the ones for which the rational formulas do not work)."))
+  (b* ((p (montgomery->p curve))
+       (mx (point-finite->x point))
+       (my (point-finite->y point))
+       (tex (div mx my p))
+       (tey (div (sub mx 1 p)
+                 (add mx 1 p)
+                 p)))
+    (point-finite tex tey))
+  :guard-hints (("Goal" :in-theory (enable point-on-montgomery-p)))
+  :prepwork
+  ((local (include-book "kestrel/prime-fields/prime-fields-rules" :dir :system)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define twisted-edwards-point-to-montgomery-point ((point pointp)
+                                                   (curve twisted-edwards-p))
+  :guard (and (twisted-edwards-primep curve)
+              (point-on-twisted-edwards-p point curve)
+              (not (equal (point-finite->x point) 0))
+              (not (equal (point-finite->y point) 1)))
+  :returns (point1 pointp)
+  :short "Map a point on a Twisted Edwards curve to
+          the corresponding point on the corresponding Montgomery curve."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now we only define the mapping for
+     the points for which the rational formulas work.
+     That is, we require the denominators to be non-zero in the guard.")
+   (xdoc::p
+    "It remains to prove that the resulting point in on the curve
+     @('(montgomery-to-twisted-edwards curve)').
+     It also remains to extend the mapping to other points
+     (the ones for which the rational formulas do not work)."))
+  (b* ((p (twisted-edwards->p curve))
+       (tex (point-finite->x point))
+       (tey (point-finite->y point))
+       (mx (div (add 1 tey p)
+                (sub 1 tey p)
+                p))
+       (my (div (add 1 tey p)
+                (mul (sub 1 tey p)
+                     tex
+                     p)
+                p)))
+    (point-finite mx my))
+  :guard-hints (("Goal" :in-theory (enable point-on-twisted-edwards-p
+                                           twisted-edwards-primep)))
+  :prepwork
+  ((local (include-book "kestrel/prime-fields/prime-fields-rules" :dir :system))
+   (local (include-book "kestrel/prime-fields/bind-free-rules" :dir :system)))
+  :hooks (:fix))
