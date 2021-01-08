@@ -336,7 +336,12 @@
                                                      cddr-of-assoc-equal-when-interpreted-function-alistp
                                                      true-listp-of-cadr-of-assoc-equal-when-interpreted-function-alistp
                                                      consp-of-cdr-of-assoc-equal-when-interpreted-function-alistp
-                                                     consp-of-cddr-of-assoc-equal-when-interpreted-function-alistp)))))))))
+                                                     consp-of-cddr-of-assoc-equal-when-interpreted-function-alistp))))))
+
+       ;; The list of all functions this evaluator knows about
+       (defconst ,(pack$ '* base-name '-fns*)
+         (append '(if myif) ;always built-in
+                 ',(get-fns-from-fns-and-aliases fns-and-aliases))))))
 
 (defmacro make-evaluator-simple (base-name ;a symbol
                                  arity-fn-call-alist-alist

@@ -430,14 +430,16 @@
   (make-rule-alists (list *default-axe-prover-rules*) (w state)))
 
 (defun make-prover-simple-fn (suffix ;; gets added to generated names
-                              apply-axe-evaluator-to-quoted-args-name
+                              evaluator-base-name
                               eval-axe-syntaxp-expr-name
-                              eval-axe-bind-free-function-application-name)
+                              eval-axe-bind-free-function-application-name
+                              )
   (declare (xargs :guard (and (symbolp suffix)
-                              (symbolp apply-axe-evaluator-to-quoted-args-name)
+                              (symbolp evaluator-base-name)
                               (symbolp eval-axe-syntaxp-expr-name)
                               (symbolp eval-axe-bind-free-function-application-name))))
-  (let* ((relieve-free-var-hyp-and-all-others-name (pack$ 'relieve-free-var-hyp-and-all-others-for- suffix '-prover))
+  (let* ((apply-axe-evaluator-to-quoted-args-name (pack$ 'apply- evaluator-base-name '-to-quoted-args))
+         (relieve-free-var-hyp-and-all-others-name (pack$ 'relieve-free-var-hyp-and-all-others-for- suffix '-prover))
          (relieve-rule-hyps-name (pack$ 'relieve-rule-hyps-for- suffix '-prover))
          (try-to-apply-rules-name (pack$ 'try-to-apply-rules-for- suffix '-prover))
          (simplify-if-tree-name (pack$ 'simplify-if-tree-and-add-to-dag-for- suffix '-prover))
@@ -3673,6 +3675,7 @@
                                  print))
                  ((when erp) (mv erp :failed dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
                  ((when provedp) (mv (erp-nil) :proved dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
+                 (- (cw "(True case reduced dag: ~x0)~%" (drop-non-supporters-array 'dag-array dag-array nodenum nil)))
                  (- (and (or (eq t print) (eq :verbose print) (eq :verbose2 print))
                          (progn$ (cw "(Negated lits (~x0) for true case:~%" (len literal-nodenums))
                                  (print-axe-prover-case literal-nodenums 'dag-array dag-array dag-len)
@@ -4326,7 +4329,7 @@
               ((when (not (interpreted-function-alistp interpreted-function-alist)))
                (er hard? ',prove-implication-fn-helper-name "Ill-formed interpreted-function-alist: ~x0" interpreted-function-alist)
                (mv :bad-input nil state))
-              ((when (not (interpreted-function-completep interpreted-function-alist)))
+              ((when (not (interpreted-function-completep interpreted-function-alist ,(pack$ '* evaluator-base-name '-fns*))))
                (er hard? ',prove-implication-fn-helper-name "Incomplete interpreted-function-alist (see warning above): ~x0" interpreted-function-alist)
                (mv :bad-input nil state))
               ((when (not (symbol-listp monitor)))

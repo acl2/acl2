@@ -226,6 +226,24 @@
   (booleanp (fe-listp elems prime)))
 
 
+(defun acl2::bit-listp (x)
+  (declare (xargs :guard t))
+  (if (atom x)
+      (null x)
+    (and (acl2::bitp (first x))
+         (acl2::bit-listp (rest x)))))
+
+(defthm acl2::bitp-when-bit-listp-and-memberp
+  (implies (and (acl2::bit-listp free)
+                (acl2::memberp x free))
+           (acl2::bitp x)))
+
+(defun gen-bit-listp-assumption (vars)
+  (declare (xargs :guard (and (symbol-listp vars)
+                              (consp vars))))
+  `(acl2::bit-listp ,(acl2::make-append-with-key-nest vars)))
+
+
 ;;  could let things happen earlier (before subst)?
 (defthm bitp-when-equal-1
   (implies (and (equal x free)
@@ -621,6 +639,26 @@
                               add acl2::power-of-2p
                               mul
                               neg))))
+
+(defthmd neg-of-mul-of-power-of-2
+  (implies (and (syntaxp (quotep k))
+                (acl2::power-of-2p k)
+                (bitp x)
+                (posp p))
+           (equal (neg (mul k x p) p)
+                  (add (- k)
+                       (acl2::bvcat 1
+                                    (acl2::bitnot x)
+                                    (+ -1 (integer-length k))
+                                    0)
+                       p)))
+  :hints (("Goal" :cases ((equal x 0))
+           :in-theory (enable bitp acl2::bvcat
+                              acl2::logapp
+                              add acl2::power-of-2p
+                              mul
+                              neg))))
+
 
 ;special case of add-of-neg-of-mul-of-power-of-2-other for k=1
 (defthm add-of-neg-of-when-bitp
