@@ -18,6 +18,6 @@
 (include-book "kestrel/axe/axe-bind-free-evaluator-basic" :dir :system)
 
 (make-prover-simple r1cs
-                    apply-axe-evaluator-r1cs-to-quoted-args
+                    axe-evaluator-r1cs
                     eval-axe-syntaxp-expr-r1cs
                     eval-axe-bind-free-function-application-basic)
