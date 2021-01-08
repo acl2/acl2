@@ -17,6 +17,8 @@
 
 (include-book "montgomery")
 
+(include-book "birational-montgomery-twisted-edwards")
+
 (include-book "secp256k1-domain-parameters")
 (include-book "secp256k1-interface")
 (include-book "secp256k1-types")
