@@ -161,7 +161,6 @@
            (equal (if (natp x) x y) x))
   :rule-classes nil)
 
-;todo: prove without splitting.  need to look up if tests in assumptions somehow, even if non-boolean. done?
 (defthm-with-basic-prover-clause-processor if-2
   (implies (member-equal '1 x)
            (equal (if (member-equal '1 x) x y) x))

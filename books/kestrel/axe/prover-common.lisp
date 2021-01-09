@@ -1617,11 +1617,17 @@
   `(mbe :logic (zp ,x)
         :exec (= 0 ,x)))
 
-(defund axe-prover-optionsp (options)
+(defund simple-prover-optionsp (options)
   (declare (xargs :guard t))
-  (and (alistp options)
-       (subsetp-eq (strip-cars options) '(:splitp ;whether to split into cases
-                                          :no-stp))))
+  (and (symbol-alistp options)
+       (subsetp-eq (strip-cars options) '(:no-splitp ;whether to split into cases
+                                          ))))
+
+(defthm simple-prover-optionsp-forward-to-symbol-alistp
+  (implies (simple-prover-optionsp options)
+           (symbol-alistp options))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable simple-prover-optionsp))))
 
 (defthm all-axe-treep-of-wrap-all
   (equal (all-axe-treep (wrap-all 'not atoms))

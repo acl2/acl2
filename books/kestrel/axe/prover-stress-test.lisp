@@ -43,6 +43,7 @@
          formula
          nil ; no rules
          nil ; no ifns
+         nil ; no-splitp
          nil ; no monitored rules
          nil ;print
          state))
