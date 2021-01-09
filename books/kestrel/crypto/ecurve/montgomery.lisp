@@ -10,6 +10,8 @@
 
 (in-package "ECURVE")
 
+(include-book "prime-field-squares")
+
 (include-book "centaur/fty/top" :dir :system)
 (include-book "kestrel/crypto/ecurve/points-fty" :dir :system)
 (include-book "kestrel/prime-fields/prime-fields" :dir :system)
@@ -149,6 +151,216 @@
     (equal b.y^2 x^3+a.x^2+x))
   :guard-hints (("Goal" :in-theory (enable fep)))
   :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule only-point-with-y-0-when-aa-minus-4-non-square
+  :short "Theorem about the only point with zero ordinate
+          for certain Montgomery curves."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If @($A^2 - 4$) is not a square,
+     then @($(0,0)$) is the only point on a Montgomery curve
+     with @($y = 0$).
+     The proof is carried out via a series of lemmas
+     that explain it.
+     It requires some algebraic manipulations that are not simplifications;
+     thus, it would be interesting to see whether and how it is possible
+     to carry out the proofs more automatically
+     via sufficiently general rules.")
+   (xdoc::p
+    "This theorem has some significance, in particular, for the "
+    (xdoc::seetopic "birational-montgomery-twisted-edwards"
+                    "birational equivalence between
+                     Montgomery and twisted Edwards curves")
+    ": points with @($y = 0$) on a Montgomery curve
+     are not amenable to the rational mapping,
+     because they make a denominator zero;
+     thus, they have to be treated specially for the mapping.
+     This theorem, under the aforementioned condition on @($A$),
+     tells us that there is just one such point to worry about."))
+  (b* ((p (montgomery->p curve))
+       (a (montgomery->a curve))
+       (x (point-finite->x point)))
+    (implies (and (montgomery-primep curve)
+                  (not (pfield-squarep (sub (mul a a p) 4 p) p))
+                  (not (equal (point-kind point) :infinite))
+                  (equal (point-finite->y point) 0))
+             (equal (point-on-montgomery-p point curve)
+                    (equal x 0))))
+  :enable (point-on-montgomery-p montgomery-primep)
+  :use (lemma)
+
+  :prep-books
+  ((include-book "kestrel/prime-fields/prime-fields-rules" :dir :system))
+
+  :prep-lemmas
+
+  (;; if the point is finite, has y = 0, and is on the curve,
+   ;; then x^3 + a x^2 + x = 0:
+   (defrule step1
+     (b* ((p (montgomery->p curve))
+          (a (montgomery->a curve))
+          (x (point-finite->x point)))
+       (implies (and (not (equal (point-kind point) :infinite))
+                     (equal (point-finite->y point) 0)
+                     (point-on-montgomery-p point curve))
+                (equal (add (mul x (mul x x p) p)
+                            (add (mul a (mul x x p) p)
+                                 x
+                                 p)
+                            p)
+                       0)))
+     :rule-classes nil
+     :enable point-on-montgomery-p
+     :prep-books
+     ((include-book "kestrel/prime-fields/prime-fields-rules" :dir :system)))
+
+   ;; if x^3 + a x^2 + x = 0,
+   ;; then x (x^2 + a x + 1) = 0:
+   (defrule step2
+     (b* ((p (montgomery->p curve))
+          (a (montgomery->a curve))
+          (x (point-finite->x point)))
+       (implies (equal (add (mul x (mul x x p) p)
+                            (add (mul a (mul x x p) p)
+                                 x
+                                 p)
+                            p)
+                       0)
+                (equal (mul x
+                            (add (mul x x p)
+                                 (add (mul a x p)
+                                      1
+                                      p)
+                                 p)
+                            p)
+                       0)))
+     :rule-classes nil
+     :prep-books
+     ((include-book "kestrel/prime-fields/prime-fields-rules" :dir :system)))
+
+   ;; if x (x^2 + a x + 1) = 0,
+   ;; then x = 0 or x^2 + a x + 1 = 0:
+   (defrule step3
+     (b* ((p (montgomery->p curve))
+          (a (montgomery->a curve))
+          (x (point-finite->x point)))
+       (implies (and (montgomery-primep curve)
+                     (not (equal (point-kind point) :infinite))
+                     (point-on-montgomery-p point curve))
+                (implies (equal (mul x
+                                     (add (mul x x p)
+                                          (add (mul a x p)
+                                               1
+                                               p)
+                                          p)
+                                     p)
+                                0)
+                         (or (equal x 0)
+                             (equal (add (mul x x p)
+                                         (add (mul a x p)
+                                              1
+                                              p)
+                                         p)
+                                    0)))))
+     :rule-classes nil
+     :enable (point-on-montgomery-p montgomery-primep)
+     :disable pfield::mul-of-add-arg2
+     :prep-books
+     ((include-book "kestrel/prime-fields/prime-fields-rules" :dir :system)))
+
+   ;; if x^2 + a x + 1 = 0,
+   ;; then 4 x^2 + 4 a x + 4 = 0
+   ;; (i.e. multiply by 4, in order to complete the square in the next step):
+   (defrule step4
+     (b* ((p (montgomery->p curve))
+          (a (montgomery->a curve))
+          (x (point-finite->x point)))
+       (implies (equal (add (mul x x p)
+                            (add (mul a x p)
+                                 1
+                                 p)
+                            p)
+                       0)
+                (equal (mul 4
+                            (add (mul x x p)
+                                 (add (mul a x p)
+                                      1
+                                      p)
+                                 p)
+                            p)
+                       0)))
+     :rule-classes nil
+     :prep-books
+     ((include-book "kestrel/prime-fields/prime-fields-rules" :dir :system)))
+
+   ;; if 4 x^2 + 4 a x + 4 = 0,
+   ;; then (2 x + a)^2 = a^2 - 4
+   ;; (we have completed the square):
+   (defrule step5
+     (b* ((p (montgomery->p curve))
+          (a (montgomery->a curve))
+          (x (point-finite->x point)))
+       (implies (equal (mul 4
+                            (add (mul x x p)
+                                 (add (mul a x p)
+                                      1
+                                      p)
+                                 p)
+                            p)
+                       0)
+                (equal (mul (add (mul 2 x p) a p)
+                            (add (mul 2 x p) a p)
+                            p)
+                       (sub (mul a a p) 4 p))))
+     :rule-classes nil
+     :prep-books
+     ((include-book "kestrel/prime-fields/prime-fields-rules" :dir :system)))
+
+   ;; if (2 x + a)^2 = a^2 - 4,
+   ;; then false (i.e. nil),
+   ;; because by hypothesis a^2 - 4 is not a square:
+   (defrule step6
+     (b* ((p (montgomery->p curve))
+          (a (montgomery->a curve))
+          (x (point-finite->x point)))
+       (implies (not (pfield-squarep (sub (mul a a p) 4 p) p))
+                (implies (equal (mul (add (mul 2 x p) a p)
+                                     (add (mul 2 x p) a p)
+                                     p)
+                                (sub (mul a a p) 4 p))
+                         nil)))
+     :rule-classes nil
+     :use (:instance pfield-squarep-suff
+           (p (montgomery->p curve))
+           (x (sub (mul (montgomery->a curve)
+                        (montgomery->a curve)
+                        (montgomery->p curve))
+                   4
+                   (montgomery->p curve)))
+           (r (add (mul 2
+                        (point-finite->x point)
+                        (montgomery->p curve))
+                   (montgomery->a curve)
+                   (montgomery->p curve)))))
+
+   ;; combine steps 1-6 above to show that
+   ;; if the point is finite, has y = 0, and is on the curve,
+   ;; then x = 0 (because the other disjunct led to nil above):
+   (defrule lemma
+     (b* ((p (montgomery->p curve))
+          (a (montgomery->a curve))
+          (x (point-finite->x point)))
+       (implies (and (montgomery-primep curve)
+                     (not (pfield-squarep (sub (mul a a p) 4 p) p))
+                     (not (equal (point-kind point) :infinite))
+                     (equal (point-finite->y point) 0)
+                     (point-on-montgomery-p point curve))
+                (equal x 0)))
+     :rule-classes nil
+     :use (step1 step2 step3 step4 step5 step6))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
