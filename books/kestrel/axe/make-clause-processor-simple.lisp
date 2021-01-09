@@ -47,13 +47,14 @@
          :ttag ,clause-processor-name)
 
        ;; Returns a defthm event.
-       (defun ,defthm-with-clause-processor-fn-name (name term rules rule-lists remove-rules rule-classes print state)
+       (defun ,defthm-with-clause-processor-fn-name (name term rules rule-lists remove-rules no-splitp rule-classes print state)
          (declare (xargs :guard (and (symbolp name)
                                      ;; term need not be a pseudo-term
                                      (rule-item-listp rules)
                                      (rule-item-list-listp rule-lists)
                                      (symbol-listp remove-rules) ;allow rule-items?
                                      ;; todo: rule-classes
+                                     (booleanp no-splitp)
                                      ;; print
                                      )
                          :stobjs state))
@@ -68,6 +69,7 @@
               :hints (("Goal" :clause-processor (,',clause-processor-name clause
                                                                           '((:must-prove . t)
                                                                             (:rule-lists . ,rule-lists)
+                                                                            (:no-splitp . ,no-splitp)
                                                                             (:print . ,print))
                                                                           state)))
               ,@(if (eq :auto rule-classes)
@@ -81,14 +83,15 @@
                                                      (rules 'nil)
                                                      (rule-lists 'nil)
                                                      (remove-rules 'nil)
+                                                     (no-splitp 'nil) ; whether to prevent splitting into cases
                                                      (rule-classes ':auto)
                                                      (print 'nil))
          (if (and (consp term)
                   (eq :eval (car term)))
              ;; Evaluate TERM:
-             `(make-event (,',defthm-with-clause-processor-fn-name ',name ,(cadr term) ',rules ',rule-lists ',remove-rules ',rule-classes ',print state))
+             `(make-event (,',defthm-with-clause-processor-fn-name ',name ,(cadr term) ',rules ',rule-lists ',remove-rules ',no-splitp ',rule-classes ',print state))
            ;; Don't evaluate TERM:
-           `(make-event (,',defthm-with-clause-processor-fn-name ',name ',term ',rules ',rule-lists ',remove-rules ',rule-classes ',print state))))
+           `(make-event (,',defthm-with-clause-processor-fn-name ',name ',term ',rules ',rule-lists ',remove-rules ',no-splitp ',rule-classes ',print state))))
 
        )))
 
