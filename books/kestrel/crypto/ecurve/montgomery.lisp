@@ -17,6 +17,8 @@
 (include-book "kestrel/prime-fields/prime-fields" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
+(local (include-book "kestrel/prime-fields/prime-fields-rules" :dir :system))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ montgomery-curves
@@ -192,9 +194,6 @@
   :enable (point-on-montgomery-p montgomery-primep)
   :use (lemma)
 
-  :prep-books
-  ((include-book "kestrel/prime-fields/prime-fields-rules" :dir :system))
-
   :prep-lemmas
 
   (;; if the point is finite, has y = 0, and is on the curve,
@@ -213,9 +212,7 @@
                             p)
                        0)))
      :rule-classes nil
-     :enable point-on-montgomery-p
-     :prep-books
-     ((include-book "kestrel/prime-fields/prime-fields-rules" :dir :system)))
+     :enable point-on-montgomery-p)
 
    ;; if x^3 + a x^2 + x = 0,
    ;; then x (x^2 + a x + 1) = 0:
@@ -237,9 +234,7 @@
                                  p)
                             p)
                        0)))
-     :rule-classes nil
-     :prep-books
-     ((include-book "kestrel/prime-fields/prime-fields-rules" :dir :system)))
+     :rule-classes nil)
 
    ;; if x (x^2 + a x + 1) = 0,
    ;; then x = 0 or x^2 + a x + 1 = 0:
@@ -267,9 +262,7 @@
                                     0)))))
      :rule-classes nil
      :enable (point-on-montgomery-p montgomery-primep)
-     :disable pfield::mul-of-add-arg2
-     :prep-books
-     ((include-book "kestrel/prime-fields/prime-fields-rules" :dir :system)))
+     :disable pfield::mul-of-add-arg2)
 
    ;; if x^2 + a x + 1 = 0,
    ;; then 4 x^2 + 4 a x + 4 = 0
@@ -292,9 +285,7 @@
                                  p)
                             p)
                        0)))
-     :rule-classes nil
-     :prep-books
-     ((include-book "kestrel/prime-fields/prime-fields-rules" :dir :system)))
+     :rule-classes nil)
 
    ;; if 4 x^2 + 4 a x + 4 = 0,
    ;; then (2 x + a)^2 = a^2 - 4
@@ -315,9 +306,7 @@
                             (add (mul 2 x p) a p)
                             p)
                        (sub (mul a a p) 4 p))))
-     :rule-classes nil
-     :prep-books
-     ((include-book "kestrel/prime-fields/prime-fields-rules" :dir :system)))
+     :rule-classes nil)
 
    ;; if (2 x + a)^2 = a^2 - 4,
    ;; then false (i.e. nil),
@@ -447,8 +436,6 @@
        (y1+l.[x3-x1] (add y1 l.[x3-x1] p))
        (y3 (neg y1+l.[x3-x1] p)))
     (point-finite x3 y3))
-  :prepwork
-  ((local (include-book "kestrel/prime-fields/prime-fields-rules" :dir :system)))
   :guard-hints (("Goal" :in-theory (enable montgomery-primep
                                            point-on-montgomery-p
                                            fep)))
@@ -508,9 +495,7 @@
     :disable pfield::fep-of-neg
     :use (:instance pfield::fep-of-neg
           (x (point-finite->y point))
-          (p (montgomery->p curve)))
-    :prep-books
-    ((include-book "kestrel/prime-fields/prime-fields-rules" :dir :system))))
+          (p (montgomery->p curve)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
