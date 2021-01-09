@@ -1024,6 +1024,12 @@
     "The macro @(tsee std::define-sk) has been moved
      from @('[books]/kestrel/utilities/') to @('[books]/std/util/').")
 
+   (xdoc::p
+    "A new event macro @(tsee add-io-pairs) has been added, to speed
+     up a function using verified input-output pairs.  Related
+     utilities include @(tsee add-io-pair), @(tsee remove-io-pairs),
+     @(tsee show-io-pairs), and @(tsee get-io-pairs).")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Licensing Changes")

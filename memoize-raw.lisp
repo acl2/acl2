@@ -1798,6 +1798,7 @@
    forget               ; Boolean, clears memo when outermost call exits
    memo-table-init-size ; integer, reasonable default of *mht-default-size*
    aokp                 ; use of attachments is allowed
+   invoke               ; for :invoke argument of memoize
 
 ; [Jared] multithreading notes: we could probably add a lock here that was only
 ; on a per-function basis.  That could help avoid needing the global lock, much
@@ -3598,7 +3599,8 @@
                                 :record-time       *record-time*
                                 :forget            forget
                                 :memo-table-init-size memo-table-init-size
-                                :aokp aokp)
+                                :aokp aokp
+                                :invoke invoke)
                     *memoize-info-ht*)
               (mf-sethash fnn fn *memoize-info-ht*)
               (and condition (loop for s in sts do
@@ -3786,7 +3788,9 @@
                  :memo-table-init-size
                  (access memoize-info-ht-entry v :memo-table-init-size)
                  :aokp
-                 (access memoize-info-ht-entry v :aokp))
+                 (access memoize-info-ht-entry v :aokp)
+                 :invoke
+                 (access memoize-info-ht-entry v :invoke))
 
 ; Warning: Keep the following list in sync with the set of *record-xxx*
 ; globals, and with rememoize-all.
@@ -3874,10 +3878,10 @@
 (defun-one-output profiled-functions ()
 
 ; For purposes of this function, the profiled functions are defined as those
-; produced by memoize-fn with null :condition and :inline fields.  We could
-; probably allow :inline to be non-nil, but it will always be nil for functions
-; profiled using profile-fn in raw Lisp or profile in the loop, so we enforce a
-; nil value for :inline, not just :condition.
+; produced by memoize-fn with null :condition, :inline, and :invoke fields.  We
+; could probably allow :inline to be non-nil, but it will always be nil for
+; functions profiled using profile-fn in raw Lisp or profile in the loop, so we
+; enforce a nil value for :inline, not just :condition.
 
   (with-global-memoize-lock
    (let (lst)
@@ -3885,7 +3889,8 @@
       (lambda (k v)
         (when (and (symbolp k)
                    (null (access memoize-info-ht-entry v :condition))
-                   (null (access memoize-info-ht-entry v :inline)))
+                   (null (access memoize-info-ht-entry v :inline))
+                   (null (access memoize-info-ht-entry v :invoke)))
           (push k lst)))
       *memoize-info-ht*)
      lst)))
