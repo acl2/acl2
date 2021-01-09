@@ -99,7 +99,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define twisted-edward-to-montgomery ((tecurve twisted-edwards-p))
+(define twisted-edwards-to-montgomery ((tecurve twisted-edwards-p))
   :guard (twisted-edwards-primep tecurve)
   :returns (mcurve montgomery-p)
   :short "Map a twisted Edwards curve to a Montgomery curve."
