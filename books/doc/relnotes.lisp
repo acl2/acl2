@@ -525,6 +525,13 @@
     " has been added.")
 
    (xdoc::p
+    "A formalization of the "
+    (xdoc::seetopic "ecurve:: birational-montgomery-twisted-edwards"
+                    "birational equivalence between
+                     Montgomery and twisted Edwards curves")
+    " has been added.")
+
+   (xdoc::p
     "The files
      @('[books]/kestrel/crypto/ecurve/bls12-377-domain-parameters.lisp') and
      @('[books]/kestrel/crypto/ecurve/bls12-377-prime.lisp')
