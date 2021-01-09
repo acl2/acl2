@@ -526,7 +526,7 @@
 
    (xdoc::p
     "A formalization of the "
-    (xdoc::seetopic "ecurve:: birational-montgomery-twisted-edwards"
+    (xdoc::seetopic "ecurve::birational-montgomery-twisted-edwards"
                     "birational equivalence between
                      Montgomery and twisted Edwards curves")
     " has been added.")
