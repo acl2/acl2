@@ -69,7 +69,7 @@
                   :use ((:instance bitn-0-1 (x a) (n j))
 		        (:instance bitn-0-1 (x b) (n j))))))
 
-(local-defthmd g0-rewrite
+(defthmd g0-rewrite
   (implies (and (integerp a)
                 (integerp b)
 		(integerp j))
@@ -659,118 +659,6 @@
                     (= (expo (bits (+ a b) (1- n) 0)) (1- (expo (w1 a b n)))))))
   :rule-classes ()
   :hints (("Goal" :use assumps-goal :in-theory (enable goal))))
-
-;;----------------------------------------------------------------------------------------
-
-(local-defund equivs (x y n)
-  (and (iff (= (bits (+ x y) (1- n) 0) (1- (expt 2 n)))
-            (= (bits (logxor x y) (1- n) 0) (1- (expt 2 n))))
-       (iff (= (bits (+ x y) (1- n) 0) (1- (expt 2 n)))
-            (= (+ (bits x (1- n) 0) (bits y (1- n) 0)) (1- (expt 2 n))))))
-
-(local-defthmd lutz-1
-   (implies (and (integerp z) (natp n))
-            (iff (= (bits z n 0) (1- (expt 2 (1+ n))))
-	         (and (= (bitn z n) 1)
-		      (= (bits z (1- n) 0) (1- (expt 2 n))))))
-  :hints (("Goal" :use ((:instance bitn-plus-bits (x z) (m 0))
-                        (:instance bits-bounds (x z) (i (1- n)) (j 0))
-			(:instance bitn-0-1 (x z)))
-		  :nonlinearp t)))
-
-(local-defthmd lutz-2
-   (implies (and (integerp x) (integerp y) (natp n))
-            (iff (= (+ (bits x n 0) (bits y n 0)) (1- (expt 2 (1+ n))))
-	         (and (not (= (bitn x n) (bitn y n)))
-		      (= (+ (bits x (1- n) 0) (bits y (1- n) 0)) (1- (expt 2 n))))))
-  :hints (("Goal" :use (bitn-0-1
-                        (:instance bitn-0-1 (x y))
-			(:instance bitn-plus-bits (m 0))
-                        (:instance bitn-plus-bits (x y) (m 0))
-                        (:instance bits-bounds (i (1- n)) (j 0))
-                        (:instance bits-bounds (x y) (i (1- n)) (j 0)))
-		  :nonlinearp t)))
-
-(local-defthmd lutz-3
-   (implies (and (integerp x) (integerp y) (natp n)
-                 (equivs x y n)
-		 (not (= (bits (+ x y) (1- n) 0) (1- (expt 2 n)))))
-	    (equivs x y (1+ n)))
-  :hints (("Goal" :in-theory (enable equivs logxor)
-                  :use (lutz-2
-                        (:instance lutz-1 (z (+ x y)))
-			(:instance lutz-1 (z (logxor x y))))
-		  :nonlinearp t)))
-
-(local-defthmd lutz-4
-  (implies (and (integerp x) (integerp y) (natp n))
-           (equal (bits (+ x y) n 0)
-                  (mod (+ (bits x n 0) (bits y n 0))
-                       (expt 2 (1+ n)))))
-  :hints (("Goal" :in-theory (enable bits-mod))))
-
-(local-defthmd lutz-5
-  (implies (and (integerp x) (integerp y) (natp n)
-                (= (+ (bits x (1- n) 0) (bits y (1- n) 0)) (1- (expt 2 n))))
-           (equal (bits (+ x y) n 0)
-                  (mod (+ (* (expt 2 n) (+ (bitn x n) (bitn y n)))
-		          (1- (expt 2 n)))
-                       (expt 2 (1+ n)))))
-  :hints (("Goal" :in-theory (enable lutz-4)
-                  :nonlinearp t
-                  :use (bitn-0-1
-		        (:instance bitn-0-1 (x y))
-			(:instance bitn-plus-bits (m 0))
-		        (:instance bitn-plus-bits (x y) (m 0))))))
-
-(local-defthmd lutz-6
-  (implies (and (integerp x) (integerp y) (natp n)
-                (= (+ (bits x (1- n) 0) (bits y (1- n) 0)) (1- (expt 2 n))))
-           (iff (= (bits (+ x y) n 0) (1- (expt 2 (1+ n))))
-                (not (= (bitn x n) (bitn y n)))))
-  :hints (("Goal" :in-theory (enable lutz-5)
-                  :nonlinearp t
-                  :use (bitn-0-1
-		        (:instance bitn-0-1 (x y))))))
-
-(local-defthmd lutz-7
-   (implies (and (integerp x) (integerp y) (natp n)
-                 (equivs x y n)
-		 (= (bits (+ x y) (1- n) 0) (1- (expt 2 n))))
-	    (equivs x y (1+ n)))
-  :hints (("Goal" :in-theory (enable equivs logxor)
-                  :use (lutz-2 lutz-6 bitn-logxor bitn-0-1
-		        (:instance bitn-0-1 (x y))
-                        (:instance lutz-1 (z (+ x y)))
-			(:instance lutz-1 (z (logxor x y))))
-		  :nonlinearp t)))
-
-(local-defthmd lutz-8
-   (implies (and (integerp x) (integerp y) (not (zp n))
-                 (equivs x y (1- n)))
-	    (equivs x y n))
-  :hints (("Goal" :use ((:instance lutz-3 (n (1- n)))
-                        (:instance lutz-7 (n (1- n)))))))
-
-(local-defthmd lutz-9
-   (implies (and (integerp x) (integerp y))
-	    (equivs x y 0))
-  :hints (("Goal" :in-theory (enable equivs))))
-
-(local-defthmd lutz-10
-   (implies (and (integerp x) (integerp y) (natp n))
-	    (equivs x y n))
-  :hints (("Goal" :induct (nats n))
-          ("Subgoal *1/2" :use (lutz-8))
-	  ("Subgoal *1/1" :use (lutz-9))))
-
-(local-defthmd lutz-lemma
-   (implies (and (integerp x) (integerp y) (natp n))
-            (and (iff (= (bits (+ x y) (1- n) 0) (1- (expt 2 n)))
-                      (= (bits (logxor x y) (1- n) 0) (1- (expt 2 n))))
-                 (iff (= (bits (+ x y) (1- n) 0) (1- (expt 2 n)))
-                      (= (+ (bits x (1- n) 0) (bits y (1- n) 0)) (1- (expt 2 n))))))
-  :hints (("Goal" :in-theory (enable equivs) :use (lutz-10))))
 
 ;;----------------------------------------------------------------------------------------
 

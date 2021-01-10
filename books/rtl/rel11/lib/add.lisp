@@ -372,166 +372,6 @@
 		(bvecp i n))
 	   (equal (hc x y i k n)
 		  (gp x y i 0))))
-
-;;-------------------------------------------------------------------------------------
-
-;; I don't know why the results below are here;  I'm just afraid to throw them out.
-(defthmd prop-as-logxor
-  (implies (and (natp i)
-                (natp j)
-                (<= j i)
-                (integerp x)
-                (integerp y))
-           (equal (prop x y i j)
-                  (if (equal (logxor (bits x i j) (bits y i j))
-                             (1- (expt 2 (1+ (- i j)))))
-                      1
-                    0))))
-
-(defthm gen-extend
-    (implies (and (integerp i)
-		  (integerp j)
-		  (integerp k)
-		  (> i k)
-		  (>= k j)
-		  (>= j 0))
-	     (equal (gen x y i j)
-		    (logior (gen x y i (1+ k))
-			    (logand (prop x y i (1+ k))
-				    (gen x y k j)))))
-  :rule-classes ())
-
-(defthm gen-extend-cor
-  (implies (and (integerp x)
-                (integerp y)
-                (natp i)
-                (natp j)
-                (natp k)
-                (> i k)
-                (>= k j))
-           (equal (gen x y i j)
-                  (bitn (+ (bits x i (1+ k))
-                           (bits y i (1+ k))
-                           (gen x y k j))
-                        (- i k))))
-  :rule-classes ())
-
-(defthm prop-extend
-    (implies (and (integerp i)
-		  (integerp j)
-		  (integerp k)
-		  (> i k)
-		  (>= k j)
-		  (>= j 0))
-	     (equal (prop x y i j)
-		    (logand (prop x y i (1+ k))
-			    (prop x y k j))))
-  :rule-classes ())
-
-(defthm bits-sum-shift
-    (implies (and (integerp x)
-		  (integerp y)
-		  (natp i)
-		  (natp j)
-		  (> j 0)
-		  (>= i j))
-           (equal (bits (+ (* (expt 2 j) x) y) i j)
-                  (bits (+ (bits (* (expt 2 j) x) i j)
-                           (bits y i j))
-                        (- i j) 0)))
-    :rule-classes ())
-
-(defthmd bits-sum-swallow
-  (implies (and (equal (bitn x k) 0)
-                (integerp x)
-                (natp y)
-                (integerp i)
-                (integerp j)
-                (integerp k)
-                (>= i j)
-                (> j k)
-                (>= k 0)
-                (<= y (expt 2 k)))
-           (equal (bits (+ x y) i j)
-                  (bits x i j))))
-
-(defthmd bits-sum-cor
-  (implies (and (integerp x)
-                (integerp y)
-                (>= i j)
-                (>= j 0)
-                (= (gen x y i j) 0)
-                (= (gen x y (1- j) 0) 0))
-           (equal (bits (+ x y) i j)
-                  (+ (bits x i j) (bits y i j)))))
-
-(defthm bits-sum-3
-  (implies (and (integerp x) (integerp y) (integerp z))
-           (equal (bits (+ x y z) i j)
-                  (bits (+ (bits x i j)
-                           (bits y i j)
-                           (bits z i j)
-                           (gen x y (1- j) 0)
-                           (gen (+ x y) z (1- j) 0))
-                        (- i j) 0)))
-  :rule-classes ())
-
-(defthm bits-sum-plus-1
-    (implies (and (integerp x)
-		  (integerp y)
-		  (integerp i)
-		  (integerp j)
-		  (>= i j)
-		  (>= j 0))
-	     (equal (bits (+ 1 x y) i j)
-		    (bits (+ (bits x i j)
-			     (bits y i j)
-			     (logior (prop x y (1- j) 0)
-				     (gen x y (1- j) 0) ))
-			  (- i j) 0)))
-  :rule-classes ())
-
-(defthmd logand-gen-0
-  (implies (and (integerp i)
-                (integerp j)
-                (>= i j)
-                (>= j 0)
-                (= (logand (bits x i j) (bits y i j)) 0))
-           (equal (gen x y i j) 0)))
-
-
-(defthm logand-gen-0-cor
-  (implies (and (integerp x)
-                (integerp y)
-                (integerp i)
-                (integerp j)
-                (>= i j)
-                (>= j 0)
-                (= (logand x y) 0))
-           (equal (bits (+ x y) i j)
-                  (+ (bits x i j) (bits y i j))))
-  :rule-classes ())
-
-(defthmd gen-plus
-  (implies (and (integerp x)
-                (integerp y)
-                (integerp z)
-		(natp k)
-		(= (logand z y) 0)
-		(= (gen x y k 0) 1))
-	   (equal (gen (+ x y) z k 0) 0)))
-
-(defthmd gen-extend-3
-    (implies (and (natp i)
-		  (natp j)
-		  (> i j)
-		  (integerp x)
-		  (integerp y)
-                  (bvecp z (1+ j))
-		  (= (logand y z) 0))
-	     (equal (gen (+ x y) z i 0)
-		    (logand (prop x y i (1+ j))
-			    (gen (+ x y) z j 0)))))
 )
 
 ;;;**********************************************************************
@@ -570,6 +410,14 @@
 	          (if (= (bitn a j) (bitn b j))
 		      0 1))))
 
+(defthmd g0-rewrite
+  (implies (and (integerp a)
+                (integerp b)
+		(integerp j))
+	   (equal (bitn (g0 a b) j)
+	          (if (and (= (bitn a j) 1) (= (bitn b j) 1))
+		      1 0))))
+
 (defthmd k0-rewrite
   (implies (and (integerp a)
                 (integerp b)
@@ -590,7 +438,15 @@
 	          (if (= (bitn (p0 a b) j) (bitn (k0 a b n) (1- j)))
 		      1 0))))
 
-(defthm lza-thm-1
+(defthmd lza-thm-1-case-1
+  (implies (and (not (zp n))
+                (bvecp a n)
+                (bvecp b n)
+		(= (+ a b) (expt 2 n)))
+	   (equal (w0 a b n)
+	          1)))
+
+(defthm lza-thm-1-case-2
   (implies (and (not (zp n))
                 (bvecp a n)
                 (bvecp b n)
