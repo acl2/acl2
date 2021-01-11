@@ -1,7 +1,8 @@
 (in-package "RTL")
 
 (include-book "bits")
-(local (include-book "lza"))
+(include-book "log")
+(include-book "float")
 (include-book "add")
 
 (local (include-book "arithmetic-5/top" :dir :system))

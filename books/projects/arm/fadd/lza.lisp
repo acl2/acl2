@@ -73,7 +73,7 @@
                     (= (expo (bits (s0p) 127 0)) (1- (expo (w3p)))))))
   :rule-classes ()
   :hints (("Goal" :in-theory (enable p0 k0 w0 w3p kp pp s0p)
-                  :use ((:instance lza-thm-1 (a (in1lzap)) (b (in2lza)) (n 128))))))
+                  :use ((:instance lza-thm-1-case-2 (a (in1lzap)) (b (in2lza)) (n 128))))))
 
 (local-defthm expo-s0p-1
   (implies (and (rationalp x) (>= x 2))
