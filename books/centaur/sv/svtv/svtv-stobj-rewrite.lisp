@@ -95,49 +95,56 @@
                  :expand ((append x y) (len x))
                  :induct (nthcdr n x)))))
 
+(define base-fsm-rewrite ((fsm base-fsm-p)
+                           &key ((count natp) '4) (verbosep 'nil))
+  :returns (new-fsm base-fsm-p)
+  (b* (((base-fsm fsm))
+       (svexes (append (svex-alist-vals fsm.values) (svex-alist-vals fsm.nextstate)))
+       (svexes-rw (svexlist-rewrite-fixpoint svexes :count count :verbosep verbosep))
+       (values-keys (svex-alist-keys fsm.values))
+       (values-len (len values-keys))
+       (values-rw (pairlis$ values-keys (take values-len svexes-rw)))
+       (nextstate-keys (svex-alist-keys fsm.nextstate))
+       (nextstate-rw (pairlis$ nextstate-keys (nthcdr values-len svexes-rw))))
+    (make-base-fsm :values values-rw :nextstate nextstate-rw))
+  ///
+  (defret base-fsm-eval-equiv-of-<fn>
+    (base-fsm-eval-equiv new-fsm fsm)
+    :hints(("Goal" :in-theory (enable base-fsm-eval-equiv)))))
 
 
 
 
-
-(define svtv-data-rewrite-base-fsm (svtv-data &key ((count natp) '4) (verbosep 'nil))
+(define svtv-data-rewrite-phase-fsm (svtv-data &key ((count natp) '4) (verbosep 'nil))
+  :guard (or (svtv-data->phase-fsm-validp svtv-data)
+             (not (svtv-data->cycle-fsm-validp svtv-data)))
   :guard-hints (("goal" :do-not-induct t)
                 (and stable-under-simplificationp
                      '(:in-theory (enable svtv-data$ap))))
   :returns new-svtv-data
-  (b* ((values (svtv-data->base-values svtv-data))
-       (nextstate (svtv-data->base-nextstate svtv-data))
-       (svexes (append (svex-alist-vals values) (svex-alist-vals nextstate)))
-       (svexes-rw (svexlist-rewrite-fixpoint svexes :count count :verbosep verbosep))
-       (values-keys (svex-alist-keys values))
-       (values-len (len values-keys))
-       (values-rw (pairlis$ values-keys (take values-len svexes-rw)))
-       (nextstate-keys (svex-alist-keys nextstate))
-       (nextstate-rw (pairlis$ nextstate-keys (nthcdr values-len svexes-rw)))
-       (svtv-data (update-svtv-data->base-values values-rw svtv-data)))
-    (update-svtv-data->base-nextstate nextstate-rw svtv-data))
+  (update-svtv-data->phase-fsm
+   (base-fsm-rewrite (svtv-data->phase-fsm svtv-data)
+                     :count count :verbosep verbosep)
+   svtv-data)
   ///
   (defret svtv-data$c-get-of-<fn>
     (implies (and (equal key (svtv-data$c-field-fix k))
-                  (not (equal key :base-values))
-                  (not (equal key :base-nextstate)))
+                  (not (equal key :phase-fsm)))
              (equal (svtv-data$c-get k new-svtv-data)
                     (svtv-data$c-get key svtv-data)))))
 
-(define svtv-data-maybe-rewrite-base-fsm (do-it svtv-data &key ((count natp) '4) (verbosep 'nil))
-  :guard-hints (("goal" :do-not-induct t)
-                (and stable-under-simplificationp
-                     '(:in-theory (enable svtv-data$ap)))
-                )
+(define svtv-data-maybe-rewrite-phase-fsm (do-it svtv-data &key ((count natp) '4) (verbosep 'nil))
+  :guard (or (not do-it)
+             (svtv-data->phase-fsm-validp svtv-data)
+             (not (svtv-data->cycle-fsm-validp svtv-data)))
   :returns new-svtv-data
   (if do-it
-      (svtv-data-rewrite-base-fsm svtv-data :count count :verbosep verbosep)
+      (svtv-data-rewrite-phase-fsm svtv-data :count count :verbosep verbosep)
     svtv-data)
   ///
   (defret svtv-data$c-get-of-<fn>
     (implies (and (equal key (svtv-data$c-field-fix k))
-                  (not (equal key :base-values))
-                  (not (equal key :base-nextstate)))
+                  (not (equal key :phase-fsm)))
              (equal (svtv-data$c-get k new-svtv-data)
                     (svtv-data$c-get key svtv-data)))))
 
@@ -146,32 +153,29 @@
 
 
 (define svtv-data-rewrite-cycle-fsm (svtv-data &key ((count natp) '4) (verbosep 'nil))
+  :guard (or (svtv-data->cycle-fsm-validp svtv-data)
+             (not (svtv-data->pipeline-validp svtv-data)))
   :guard-hints (("goal" :do-not-induct t)
                 (and stable-under-simplificationp
                      '(:in-theory (enable svtv-data$ap)))
                 )
   :returns new-svtv-data
-  (b* ((values (svtv-data->cycle-values svtv-data))
-       (nextstate (svtv-data->cycle-nextstate svtv-data))
-       (svexes (append (svex-alist-vals values) (svex-alist-vals nextstate)))
-       (svexes-rw (svexlist-rewrite-fixpoint svexes :count count :verbosep verbosep))
-       (values-keys (svex-alist-keys values))
-       (values-len (len values-keys))
-       (values-rw (pairlis$ values-keys (take values-len svexes-rw)))
-       (nextstate-keys (svex-alist-keys nextstate))
-       (nextstate-rw (pairlis$ nextstate-keys (nthcdr values-len svexes-rw)))
-       (svtv-data (update-svtv-data->cycle-values values-rw svtv-data)))
-    (update-svtv-data->cycle-nextstate nextstate-rw svtv-data))
+  (update-svtv-data->cycle-fsm
+   (base-fsm-rewrite (svtv-data->cycle-fsm svtv-data)
+                     :count count :verbosep verbosep)
+   svtv-data)
   ///
   (defret svtv-data$c-get-of-<fn>
     (implies (and (equal key (svtv-data$c-field-fix k))
-                  (not (equal key :cycle-values))
-                  (not (equal key :cycle-nextstate)))
+                  (not (equal key :cycle-fsm)))
              (equal (svtv-data$c-get k new-svtv-data)
                     (svtv-data$c-get key svtv-data)))))
 
 
 (define svtv-data-maybe-rewrite-cycle-fsm (do-it svtv-data &key ((count natp) '4) (verbosep 'nil))
+  :guard (or (not do-it)
+             (svtv-data->cycle-fsm-validp svtv-data)
+             (not (svtv-data->pipeline-validp svtv-data)))
   :guard-hints (("goal" :do-not-induct t)
                 (and stable-under-simplificationp
                      '(:in-theory (enable svtv-data$ap)))
@@ -183,8 +187,7 @@
   ///
   (defret svtv-data$c-get-of-<fn>
     (implies (and (equal key (svtv-data$c-field-fix k))
-                  (not (equal key :cycle-values))
-                  (not (equal key :cycle-nextstate)))
+                  (not (equal key :cycle-fsm)))
              (equal (svtv-data$c-get k new-svtv-data)
                     (svtv-data$c-get key svtv-data)))))
 
@@ -205,18 +208,21 @@
          :hints ((witness) (witness))))
 
 (define svtv-data-rewrite-pipeline (svtv-data &key ((count natp) '4) (verbosep 'nil))
+  ;; :guard (or (not (svtv-data->pipeline-validp svtv-data))
+  ;;            ;; (svtv-data->flatten-validp svtv-data)
+  ;;            )
   :guard-hints (("goal" :do-not-induct t)
                 (and stable-under-simplificationp
                      '(:in-theory (enable svtv-data$ap)))
                 )
   :returns new-svtv-data
-  (b* ((results (svtv-data->pipeline-results svtv-data))
+  (b* ((results (svtv-data->pipeline svtv-data))
        (results-rw (svex-alist-rewrite-fixpoint results :count count :verbosep verbosep)))
-    (update-svtv-data->pipeline-results results-rw svtv-data))
+    (update-svtv-data->pipeline results-rw svtv-data))
   ///
   (defret svtv-data$c-get-of-<fn>
     (implies (and (equal key (svtv-data$c-field-fix k))
-                  (not (equal key :pipeline-results)))
+                  (not (equal key :pipeline)))
              (equal (svtv-data$c-get k new-svtv-data)
                     (svtv-data$c-get key svtv-data)))))
 
@@ -233,7 +239,7 @@
   ///
   (defret svtv-data$c-get-of-<fn>
     (implies (and (equal key (svtv-data$c-field-fix k))
-                  (not (equal key :pipeline-results)))
+                  (not (equal key :pipeline)))
              (equal (svtv-data$c-get k new-svtv-data)
                     (svtv-data$c-get key svtv-data)))))
        

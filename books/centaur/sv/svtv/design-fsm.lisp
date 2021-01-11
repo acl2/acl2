@@ -113,7 +113,29 @@
                                 (equal moddb ''nil))))
              (equal <call>
                     (let ((moddb nil) (aliases nil)) <call>)))
-    :hints(("Goal" :in-theory (enable normalize-stobjs-of-svex-design-flatten)))))
+    :hints(("Goal" :in-theory (enable normalize-stobjs-of-svex-design-flatten))))
+
+  (defret moddb-okp-of-<fn>
+    (implies (not err)
+             (and (moddb-mods-ok new-moddb)
+                  (moddb-basics-ok new-moddb))))
+
+  (defret modname-of-<fn>
+    (implies (not err)
+             (moddb-modname-get-index (design->top x) new-moddb)))
+
+  ;; (defret modidx-of-<fn>
+  ;;   (implies (not err)
+  ;;            (< (moddb-modname-get-index (design->top x) new-moddb)
+  ;;               (nfix (nth *moddb->nmods1* new-moddb))))
+  ;;   :rule-classes :linear)
+
+  (defret totalwires-of-<fn>
+    (implies (not err)
+             (<= (moddb-mod-totalwires
+                  (moddb-modname-get-index (design->top x) new-moddb) new-moddb)
+                 (len new-aliases)))
+    :rule-classes :linear))
 
 (define svtv-normalize-assigns ((flatten flatten-res-p) aliases)
   :returns (res flatnorm-res-p)
@@ -159,7 +181,10 @@
        (updates2 (svex-alist-compose override-alist updates1))
        (masks (svexlist-mask-alist (svex-alist-vals updates2)))
        (nextstates (with-fast-alist updates2 (svex-compose-delays flatnorm.delays updates2 masks))))
-    (make-base-fsm :values updates1 :nextstate (fast-alist-clean nextstates))))
+    (make-base-fsm :values updates1 :nextstate (fast-alist-clean nextstates)))
+  ///
+  (defret no-duplicate-nextstates-of-<fn>
+    (no-duplicatesp-equal (svex-alist-keys (base-fsm->nextstate fsm)))))
 
 
 ;; BOZO this could probably be broken into a few parts.

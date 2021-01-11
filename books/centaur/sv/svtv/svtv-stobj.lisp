@@ -178,13 +178,6 @@ particular times and certain outputs are read at particular times.</li>
    (cons 'progn (make-svtv-data-field-defs *svtv-data-nonstobj-fields*))))
 
 
-(define update-svtv-data$a->design ((design design-p) x)
-  :guard (and (not (svtv-data$a->flatten-validp x))
-              (modalist-addr-p (design->modalist design)))
-  :enabled t
-  :hooks nil
-  (non-exec (update-svtv-data$c->design design x)))
-
 
   
 
@@ -501,22 +494,22 @@ particular times and certain outputs are read at particular times.</li>
                     :stobjs svtv-data$c))
     (forall env
             (non-exec
-             (ec-call
-              (svex-envs-equivalent
-               (svex-alist-eval results env)
-               (b* ((fsm (svtv-data$c->cycle-fsm svtv-data$c))
-                    (rename-fsm (make-svtv-fsm :base-fsm fsm
-                                               ;; :design (svtv-data$c->design svtv-data$c)
-                                               ;; :user-names (svtv-data$c->user-names svtv-data$c)
-                                               :namemap (svtv-data$c->namemap svtv-data$c)))
-                    ((pipeline-setup pipe) (svtv-data$c->pipeline-setup svtv-data$c))
-                    (run (svtv-fsm-run-renamed
-                          (svex-alistlist-eval pipe.inputs env)
-                          (svex-alistlist-eval pipe.overrides env)
-                          (svex-alist-eval pipe.initst env)
-                          rename-fsm (svtv-probealist-outvars pipe.probes))))
-                 (and (equal (svex-alist-keys pipe.initst)
-                             (svex-alist-keys (base-fsm->nextstate fsm)))
+             (b* ((fsm (svtv-data$c->cycle-fsm svtv-data$c))
+                  (rename-fsm (make-svtv-fsm :base-fsm fsm
+                                             ;; :design (svtv-data$c->design svtv-data$c)
+                                             ;; :user-names (svtv-data$c->user-names svtv-data$c)
+                                             :namemap (svtv-data$c->namemap svtv-data$c)))
+                  ((pipeline-setup pipe) (svtv-data$c->pipeline-setup svtv-data$c))
+                  (run (svtv-fsm-run-renamed
+                        (svex-alistlist-eval pipe.inputs env)
+                        (svex-alistlist-eval pipe.overrides env)
+                        (svex-alist-eval pipe.initst env)
+                        rename-fsm (svtv-probealist-outvars pipe.probes))))
+               (and (equal (svex-alist-keys pipe.initst)
+                           (svex-alist-keys (base-fsm->nextstate fsm)))
+                    (ec-call
+                     (svex-envs-equivalent
+                      (svex-alist-eval results env)
                       (svtv-probealist-extract pipe.probes run)))))))
     :rewrite :direct)
 
@@ -585,25 +578,25 @@ particular times and certain outputs are read at particular times.</li>
 (define svtv-data$ap (x)
   (non-exec
    (and ;; (svtv-data$cp x)
-        (modalist-addr-p (design->modalist (svtv-data$c->design x)))
-        (implies (svtv-data$c->flatten-validp x)
-                 (and (svtv-data$c-flatten-okp x (svtv-data$c->flatten x))
-                      (implies (svtv-data$c->flatnorm-validp x)
-                               (svtv-data$c-flatnorm-okp x (svtv-data$c->flatnorm x)))
+    (modalist-addr-p (design->modalist (svtv-data$c->design x)))
+    (implies (svtv-data$c->flatten-validp x)
+             (svtv-data$c-flatten-okp x (svtv-data$c->flatten x)))
+    (implies (svtv-data$c->flatnorm-validp x)
+             (svtv-data$c-flatnorm-okp x (svtv-data$c->flatnorm x)))
 
-                      (implies (svtv-data$c->namemap-validp x)
-                               (svtv-data$c-namemap-okp x (svtv-data$c->namemap x)))
+    (implies (svtv-data$c->namemap-validp x)
+             (svtv-data$c-namemap-okp x (svtv-data$c->namemap x)))
 
-                      (implies (svtv-data$c->phase-fsm-validp x)
-                               (svtv-data$c-phase-fsm-okp x (svtv-data$c->phase-fsm x)))
+    (implies (svtv-data$c->phase-fsm-validp x)
+             (svtv-data$c-phase-fsm-okp x (svtv-data$c->phase-fsm x)))
 
-                      (implies (svtv-data$c->cycle-fsm-validp x)
-                               (ec-call
-                                (svtv-data$c-cycle-fsm-okp x (svtv-data$c->cycle-fsm x))))
+    (implies (svtv-data$c->cycle-fsm-validp x)
+             (ec-call
+              (svtv-data$c-cycle-fsm-okp x (svtv-data$c->cycle-fsm x))))
 
-                      (implies (svtv-data$c->pipeline-validp x)
-                               (ec-call
-                                (svtv-data$c-pipeline-okp x (svtv-data$c->pipeline x))))))))
+    (implies (svtv-data$c->pipeline-validp x)
+             (ec-call
+              (svtv-data$c-pipeline-okp x (svtv-data$c->pipeline x))))))
   ///
   (defthm svtv-data$ap-implies-modalist-addr-p
     (implies (svtv-data$ap x)
@@ -616,46 +609,55 @@ particular times and certain outputs are read at particular times.</li>
 
   (defthm svtv-data$ap-implies-flatnorm-okp
     (implies (and (svtv-data$ap x)
-                  (svtv-data$c->flatten-validp x)
+                  ;; (svtv-data$c->flatten-validp x)
                   (svtv-data$c->flatnorm-validp x))
              (svtv-data$c-flatnorm-okp x (svtv-data$c->flatnorm x))))
 
   (defthm svtv-data$ap-implies-phase-fsm-okp
     (implies (and (svtv-data$ap x)
-                  (svtv-data$c->flatten-validp x)
+                  ;; (svtv-data$c->flatten-validp x)
                   (svtv-data$c->phase-fsm-validp x))
              (svtv-data$c-phase-fsm-okp x (svtv-data$c->phase-fsm x))))
 
   (defthm svtv-data$ap-implies-cycle-fsm-okp
     (implies (and (svtv-data$ap x)
-                  (svtv-data$c->flatten-validp x)
+                  ;; (svtv-data$c->flatten-validp x)
                   (svtv-data$c->cycle-fsm-validp x))
              (svtv-data$c-cycle-fsm-okp x (svtv-data$c->cycle-fsm x))))
 
   (defthm svtv-data$ap-implies-pipeline-okp
     (implies (and (svtv-data$ap x)
-                  (svtv-data$c->flatten-validp x)
+                  ;; (svtv-data$c->flatten-validp x)
                   (svtv-data$c->pipeline-validp x))
              (svtv-data$c-pipeline-okp x (svtv-data$c->pipeline x))))
 
-  (defthm svtv-data$ap-of-update-design
+  (defthm no-duplicatesp-nextstate-keys-of-svtv-data->phase-fsm
     (implies (and (svtv-data$ap x)
-                  (not (svtv-data$c->flatten-validp x))
-                  (modalist-addr-p (design->modalist design)))
-             (svtv-data$ap (update-svtv-data$c->design design x)))))
+                  (svtv-data$a->phase-fsm-validp x)
+                  ;; (svtv-data$a->flatten-validp x)
+                  )
+             (no-duplicatesp-equal
+              (svex-alist-keys (base-fsm->nextstate (svtv-data$c->phase-fsm x)))))
+    :hints(("Goal" :in-theory (e/d (svtv-data$ap)
+                                   (no-duplicate-nextstates-of-svtv-compose-assigns/delays))
+            :use ((:instance no-duplicate-nextstates-of-svtv-compose-assigns/delays
+                   (flatnorm (svtv-normalize-assigns (svtv-data$c->flatten x)
+                                                     (svtv-data$c->aliases x)))))))))
 
 
 (define svtv-data$c-compute-flatten (svtv-data$c)
   :guard (modalist-addr-p (design->modalist (svtv-data$c->design svtv-data$c)))
-  :returns new-svtv-data$c
+  :returns (mv err new-svtv-data$c)
   (b* ((design (svtv-data$c->design svtv-data$c)))
     (stobj-let ((moddb (svtv-data$c->moddb svtv-data$c))
                 (aliases (svtv-data$c->aliases svtv-data$c)))
                (err flatten moddb aliases)
                (svtv-design-flatten design)
                (b* ((svtv-data$c (update-svtv-data$c->flatten flatten svtv-data$c))
-                    ((when err) svtv-data$c))
-                 (update-svtv-data$c->flatten-validp t svtv-data$c))))
+                    ((when err)
+                     (mv err svtv-data$c))
+                    (svtv-data$c (update-svtv-data$c->flatten-validp t svtv-data$c)))
+                 (mv nil svtv-data$c))))
   ///
   (defret <fn>-preserves-svtv-data$ap
     (implies (and (svtv-data$ap svtv-data$c)
@@ -666,7 +668,20 @@ particular times and certain outputs are read at particular times.</li>
                   (not (svtv-data$c->pipeline-validp svtv-data$c)))
              (svtv-data$ap new-svtv-data$c))
     :hints(("Goal" :in-theory (enable svtv-data$ap svtv-data$c-flatten-okp
-                                      normalize-stobjs-of-svtv-design-flatten)))))
+                                      normalize-stobjs-of-svtv-design-flatten))))
+
+  (defret svtv-data$c-get-of-<fn>
+    (implies (and (equal key (svtv-data$c-field-fix k))
+                  (not (equal key :flatten))
+                  (not (equal key :flatten-validp))
+                  (not (equal key :moddb))
+                  (not (equal key :aliases)))
+             (equal (svtv-data$c-get k new-svtv-data$c)
+                    (svtv-data$c-get key svtv-data$c))))
+
+  (defret flatten-validp-of-<fn>
+    (implies (not err)
+             (svtv-data$c->flatten-validp new-svtv-data$c))))
 
 (define svtv-data$a-compute-flatten ((x svtv-data$ap))
   :guard (and (not (svtv-data$a->flatnorm-validp x))
@@ -675,7 +690,8 @@ particular times and certain outputs are read at particular times.</li>
               (not (svtv-data$a->pipeline-validp x))
               (not (svtv-data$a->namemap-validp x)))
   :enabled t :hooks nil
-  (non-exec (svtv-data$c-compute-flatten x)))
+  (b* (((mv a b) (non-exec (svtv-data$c-compute-flatten x))))
+    (mv a b)))
 
 
 (define svtv-data$c-compute-flatnorm (svtv-data$c)
@@ -694,9 +710,15 @@ particular times and certain outputs are read at particular times.</li>
              (svtv-data$ap new-svtv-data$c))
     :hints(("Goal" :in-theory (enable svtv-data$ap svtv-data$c-flatnorm-okp))))
 
+  (defret svtv-data$c-get-of-<fn>
+    (implies (and (equal key (svtv-data$c-field-fix k))
+                  (not (equal key :flatnorm))
+                  (not (equal key :flatnorm-validp)))
+             (equal (svtv-data$c-get k new-svtv-data$c)
+                    (svtv-data$c-get key svtv-data$c))))
+
   (defret flatnorm-validp-of-<fn>
-    (implies (not err)
-             (svtv-data$c->flatnorm-validp new-svtv-data$c))))
+    (svtv-data$c->flatnorm-validp new-svtv-data$c)))
 
 (define svtv-data$a-compute-flatnorm ((x svtv-data$ap))
   :guard (svtv-data$a->flatten-validp x)
@@ -795,26 +817,45 @@ particular times and certain outputs are read at particular times.</li>
 
 
 
+(defthm svtv-data$ap-of-update-design
+  (implies (and (svtv-data$ap x)
+                (not (svtv-data$c->flatten-validp x))
+                (not (svtv-data$c->namemap-validp x))
+                (modalist-addr-p (design->modalist design)))
+           (svtv-data$ap (update-svtv-data$c->design design x)))
+  :hints(("Goal" :in-theory (enable svtv-data$ap))))
+
+(define update-svtv-data$a->design ((design design-p) x)
+  :guard (and (not (svtv-data$a->flatten-validp x))
+              (not (svtv-data$a->namemap-validp x))
+              (modalist-addr-p (design->modalist design)))
+  :enabled t
+  :hooks nil
+  (non-exec (update-svtv-data$c->design design x)))
+
+
+
 (defthm update-flatten-preserves-svtv-data$ap
   (implies (and (svtv-data$ap x)
-                (or (not (svtv-data$a->flatten-validp x))
-                    (and (svtv-data$a-flatten-okp x flatten)
-                         (not (svtv-data$a->namemap-validp x))
-                         (not (svtv-data$a->flatnorm-validp x))
-                         (not (svtv-data$a->phase-fsm-validp x))
-                         (not (svtv-data$a->cycle-fsm-validp x))
-                         (not (svtv-data$a->pipeline-validp x)))))
+                (and (or (not (svtv-data$a->flatten-validp x))
+                         (svtv-data$a-flatten-okp x flatten))
+                     (not (svtv-data$a->namemap-validp x))
+                     (not (svtv-data$a->flatnorm-validp x))
+                     (not (svtv-data$a->phase-fsm-validp x))
+                     (not (svtv-data$a->cycle-fsm-validp x))
+                     (not (svtv-data$a->pipeline-validp x))))
            (svtv-data$ap (update-svtv-data$c->flatten flatten x)))
   :hints(("Goal" :in-theory (enable svtv-data$ap))))
 
 (define update-svtv-data$a->flatten ((flatten flatten-res-p) (x svtv-data$ap))
-  :guard (or (not (svtv-data$a->flatten-validp x))
-             (and (svtv-data$a-flatten-okp x flatten)
-                  (not (svtv-data$a->namemap-validp x))
-                  (not (svtv-data$a->flatnorm-validp x))
-                  (not (svtv-data$a->phase-fsm-validp x))
-                  (not (svtv-data$a->cycle-fsm-validp x))
-                  (not (svtv-data$a->pipeline-validp x))))
+  :guard 
+  (and (or (not (svtv-data$a->flatten-validp x))
+           (svtv-data$a-flatten-okp x flatten))
+       (not (svtv-data$a->namemap-validp x))
+       (not (svtv-data$a->flatnorm-validp x))
+       (not (svtv-data$a->phase-fsm-validp x))
+       (not (svtv-data$a->cycle-fsm-validp x))
+       (not (svtv-data$a->pipeline-validp x)))
   :enabled t :hooks nil
   (non-exec (update-svtv-data$c->flatten flatten x)))
 
@@ -1207,8 +1248,8 @@ particular times and certain outputs are read at particular times.</li>
                                              :exec svtv-data$c-compute-flatten :protect t)
                   (svtv-data-compute-flatnorm :logic svtv-data$a-compute-flatnorm
                                              :exec svtv-data$c-compute-flatnorm :protect t)
-                  (svtv-data-compute-namemap :logic svtv-data$a-compute-flatnorm
-                                             :exec svtv-data$c-compute-flatnorm :protect t)
+                  (svtv-data-compute-namemap :logic svtv-data$a-compute-namemap
+                                             :exec svtv-data$c-compute-namemap :protect t)
                   
                   ,@(make-svtv-data-updater-defs *svtv-data-nonstobj-fields*)
                   ))))

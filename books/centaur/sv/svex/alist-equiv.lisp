@@ -86,7 +86,15 @@
               :use ((:instance svex-envs-equivalent-necc
                      (k (svex-alist-eval-equiv-witness x y))
                      (x (svex-alist-eval x (svex-alist-eval-equiv-envs-equivalent-witness x y)))
-                     (y (svex-alist-eval y (svex-alist-eval-equiv-envs-equivalent-witness x y)))))))))
+                     (y (svex-alist-eval y (svex-alist-eval-equiv-envs-equivalent-witness x y))))))))
+
+   (defcong svex-alist-equiv equal (svex-alist-eval-equiv x y) 1
+     :hints (("goal" :cases ((svex-alist-eval-equiv x y)))
+             (witness)))
+
+   (defcong svex-alist-equiv equal (svex-alist-eval-equiv x y) 2
+     :hints (("goal" :cases ((svex-alist-eval-equiv x y)))
+             (witness))))
 
 
 (defsection svex-alist-eval-equiv!
@@ -112,6 +120,11 @@
   (local (in-theory (disable member-svex-alist-keys)))
 
   (defrefinement svex-alist-eval-equiv! svex-alist-eval-equiv
+    :hints((witness)))
+
+  
+
+  (defrefinement svex-alist-equiv svex-alist-eval-equiv!
     :hints((witness)))
 
   (defcong svex-alist-eval-equiv! equal (svex-alist-keys x) 1

@@ -40,53 +40,57 @@
 
 (local (in-theory (disable hons-dups-p)))
 
-(local (defret no-dups-when-equal-svex-alist-keys-<fn>
-         (implies (and (equal (svex-alist-keys y)
-                              (svex-alist-keys (svtv-fsm->nextstate fsm)))
-                       (not err))
-                  (no-duplicatesp-equal (svex-alist-keys y)))
-         :fn svtv-design-to-fsm))
+;; (local (defret no-dups-when-equal-svex-alist-keys-<fn>
+;;          (implies (and (equal (svex-alist-keys y)
+;;                               (svex-alist-keys (svtv-fsm->nextstate fsm)))
+;;                        (not err))
+;;                   (no-duplicatesp-equal (svex-alist-keys y)))
+;;          :fn svtv-design-to-fsm))
 
 (local (defthm svtv-data$c-pipeline-okp-of-compile
          (b* ((fsm (svtv-data$c->cycle-fsm svtv-data))
-              (probes (svtv-data$c->pipeline-probes svtv-data))
-              (inputs (svtv-data$c->pipeline-inputs svtv-data))
-              (overrides (svtv-data$c->pipeline-overrides svtv-data))
-              (initst (svtv-data$c->pipeline-initst svtv-data))
-              (outvars (svtv-probealist-outvars probes))
-              (outs (svtv-fsm-run-renamed-compile inputs overrides initst fsm outvars rewrite))
-              (result (svtv-probealist-extract-alist probes outs)))
-           (svtv-data$c-pipeline-okp svtv-data result))
+              ((pipeline-setup setup) (svtv-data$c->pipeline-setup svtv-data))
+              (outvars (svtv-probealist-outvars setup.probes))
+              (outs (svtv-fsm-run-renamed-compile setup.inputs setup.overrides setup.initst
+                                                  (make-svtv-fsm :base-fsm fsm
+                                                                 :namemap (svtv-data$c->namemap svtv-data))
+                                                  outvars
+                                                  rewrite))
+              (result (svtv-probealist-extract-alist setup.probes outs)))
+           (implies (equal (svex-alist-keys setup.initst)
+                           (svex-alist-keys (base-fsm->nextstate fsm)))
+                    (svtv-data$c-pipeline-okp svtv-data result)))
          :hints(("Goal" :in-theory (enable svtv-data$c-pipeline-okp)))))
 
 
 (define svtv-data-compute-pipeline (svtv-data &key ((rewrite booleanp) 't))
-  :guard (and (svtv-data->base-fsm-validp svtv-data)
-              (svtv-data->namemap-validp svtv-data)
+  :guard (and (svtv-data->phase-fsm-validp svtv-data)
+              ;; (svtv-data->flatten-validp svtv-data)
+              ;; (svtv-data->namemap-validp svtv-data)
               (svtv-data->cycle-fsm-validp svtv-data)
-              (equal (svex-alist-keys (svtv-data->pipeline-initst svtv-data))
-                     (svex-alist-keys (svtv-data->cycle-nextstate svtv-data)))
-              )
+              (equal (svex-alist-keys (pipeline-setup->initst (svtv-data->pipeline-setup svtv-data)))
+                     (svex-alist-keys (base-fsm->nextstate (svtv-data->cycle-fsm svtv-data)))))
   :guard-debug t
   :guard-hints (("goal" :do-not-induct t)
                 (and stable-under-simplificationp
                      '(:in-theory (enable svtv-data$ap))))
   :returns new-svtv-data
   (b* ((fsm (svtv-data->cycle-fsm svtv-data))
-       (probes (svtv-data->pipeline-probes svtv-data))
-       (inputs (svtv-data->pipeline-inputs svtv-data))
-       (overrides (svtv-data->pipeline-overrides svtv-data))
-       (initst (svtv-data->pipeline-initst svtv-data))
-       (outvars (svtv-probealist-outvars probes))
-       (outs (make-fast-alistlist (svtv-fsm-run-renamed-compile inputs overrides initst fsm outvars rewrite)))
-       (result (svtv-probealist-extract-alist probes outs))
+       ((pipeline-setup setup) (svtv-data->pipeline-setup svtv-data))
+       (outvars (svtv-probealist-outvars setup.probes))
+       (outs (make-fast-alistlist (svtv-fsm-run-renamed-compile
+                                   setup.inputs setup.overrides setup.initst
+                                   (make-svtv-fsm :base-fsm fsm
+                                                  :namemap (svtv-data->namemap svtv-data))
+                                   outvars rewrite)))
+       (result (svtv-probealist-extract-alist setup.probes outs))
        (- (fast-alistlist-clean outs))
-       (svtv-data (update-svtv-data->pipeline-results result svtv-data)))
+       (svtv-data (update-svtv-data->pipeline result svtv-data)))
     (update-svtv-data->pipeline-validp t svtv-data))
   ///
   (defret svtv-data$c-get-of-<fn>
     (implies (and (equal key (svtv-data$c-field-fix k))
-                  (not (equal key :pipeline-results))
+                  (not (equal key :pipeline))
                   (not (equal key :pipeline-validp)))
              (equal (svtv-data$c-get k new-svtv-data)
                     (svtv-data$c-get key svtv-data)))))
