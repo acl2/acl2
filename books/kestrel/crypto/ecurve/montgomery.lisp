@@ -156,7 +156,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule only-point-with-y-0-when-aa-minus-4-non-square
+(defrule montgomery-only-point-with-y-0-when-aa-minus-4-non-square
   :short "Theorem about the only point with zero ordinate
           for certain Montgomery curves."
   :long
