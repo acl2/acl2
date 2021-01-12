@@ -353,6 +353,81 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defrule montgomery-not-point-with-x-minus1-when-a-minus-2-over-b-not-square
+  :short "Theorem about no points with abscissa -1 on a Montgomery curve."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If @($(A - 2) / B$) is not a square,
+     then the Montgomery curve has no pont with @($x = -1$).
+     The proof is obtained by substituting  @($x = -1$) in the curve equation,
+     obtaining an equality of @($y^2$) to @($(A - 2) / B$),
+     and thus concluding the impossibility of @($x = -1$).
+     But we need to disable some distributivity rules
+     because otherwise they take things in the wrong direction.")
+   (xdoc::p
+    "This theorem has some significance, in particular, for the "
+    (xdoc::seetopic "birational-montgomery-twisted-edwards"
+                    "birational equivalence between
+                     Montgomery and twisted Edwards curves")
+    ": points with @($x = -1$) on a Montgomery curve
+     are not amenable to the rational mapping,
+     because they make a denominator zero.
+     This theorem, under the aforementioned condition on @($A$) and @($B$),
+     tells us that there is no such point.")
+   (xdoc::p
+    "Note that @($(A - 2) / B$) is the @($d$) coefficient
+     of the birationally equivalent twisted Edwards curve.
+     In particular, if the Montgomery curve is birationally equivalent
+     to a complete twisted Edwards curve, which is characterized by
+     @($a$) being a square and @($d$) not being a square,
+     then the hypothesis of this theorem is satisfied.
+     Since complete twisted Edwards curves are often used
+     because of their completeness,
+     this theorem tells us that
+     the birationally equivalent Montgomery curve
+     has no exceptional point for @($x = -1$)."))
+  (b* ((p (montgomery->p curve))
+       (a (montgomery->a curve))
+       (b (montgomery->b curve))
+       (x (point-finite->x point)))
+    (implies (and (equal (point-kind point) :finite)
+                  (point-on-montgomery-p point curve)
+                  (montgomery-primep curve)
+                  (not (pfield-squarep (div (sub a 2 p) b p) p)))
+             (not (equal x (neg 1 p)))))
+  :use (lemma (:instance pfield-squarep-suff
+               (p (montgomery->p curve))
+               (x (div (sub (montgomery->a curve)
+                            2
+                            (montgomery->p curve))
+                       (montgomery->b curve)
+                       (montgomery->p curve)))
+               (r (point-finite->y point))))
+  :enable point-on-montgomery-p
+
+  :prep-lemmas
+  ((defruled lemma
+     (b* ((p (montgomery->p curve))
+          (a (montgomery->a curve))
+          (b (montgomery->b curve))
+          (x (point-finite->x point))
+          (y (point-finite->y point)))
+       (implies (and (equal (point-kind point) :finite)
+                     (point-on-montgomery-p point curve)
+                     (montgomery-primep curve)
+                     (equal x (neg 1 p)))
+                (equal (mul y y p)
+                       (div (sub a 2 p) b p))))
+     :enable (point-on-montgomery-p
+              montgomery-primep
+              div)
+     :disable (pfield::mul-of-add-arg1
+               pfield::mul-of-add-arg2
+               pfield::mul-of-1-arg1-gen))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define montgomery-add ((point1 pointp) (point2 pointp) (curve montgomery-p))
   :guard (and (montgomery-primep curve)
               (point-on-montgomery-p point1 curve)
