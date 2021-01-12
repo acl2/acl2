@@ -56,7 +56,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Theorem @(tsee only-point-with-y-0-when-aa-minus-4-non-square),
+    "Theorem @(tsee montgomery-only-point-with-y-0-when-aa-minus-4-non-square),
      limits certain exceptional points in the birational mapping
      under a certain condition on the Montgomery curve.
      Here we show that Jubjub, in Montgomery form,
