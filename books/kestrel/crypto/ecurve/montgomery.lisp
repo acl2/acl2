@@ -589,3 +589,79 @@
                   (montgomery-neg point2 curve)
                   curve)
   :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define montgomery-mul ((scalar integerp)
+                        (point pointp)
+                        (curve montgomery-p))
+  :guard (and (montgomery-primep curve)
+              (point-on-montgomery-p point curve))
+  :returns (mv (okp booleanp) (point1 pointp))
+  :short "Scalar multiplication in the Montgomery group."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the group were multiplicative, this would be exponentiation.
+     Since the Montgomery group is additive,
+     here we talk about scalar multiplication instead.")
+   (xdoc::p
+    "We first define the operation for non-negative scalars,
+     by simple recursion in the same manner as exponentiation:
+     multiplication by 0 yields the neutral element;
+     multiplication by a non-zero scalar yields the sum of the point and
+     the scalar multiplication by the scalar minus one.
+     Then we extend it to negative scalars,
+     by negating the result of multiplying by the negated scalar.")
+   (xdoc::p
+    "We also return a flag saying whether
+     the resulting point is on the curve or not.
+     This is always the case, because addition is closed in the group
+     (i.e. adding two points on the curve always yields a point on the curve).
+     However, we have not proved that yet,
+     and thus for now we resort to using this additional flag.
+     We plan to remove it eventually."))
+  (b* ((scalar (ifix scalar))
+       ((when (>= scalar 0)) (montgomery-mul-nonneg scalar point curve))
+       ((mv okp point1) (montgomery-mul-nonneg (- scalar) point curve))
+       ((when (not okp)) (mv nil (point-fix point))))
+    (mv t (montgomery-neg point1 curve)))
+  :hooks (:fix)
+
+  :prepwork
+  ((define montgomery-mul-nonneg ((scalar natp)
+                                  (point pointp)
+                                  (curve montgomery-p))
+     :guard (and (montgomery-primep curve)
+                 (point-on-montgomery-p point curve))
+     :returns (mv (okp booleanp) (point1 pointp))
+     (b* (((when (zp scalar)) (mv t (montgomery-neutral)))
+          ((mv okp point1) (montgomery-mul-nonneg (1- scalar) point curve))
+          ((when (not okp)) (mv nil (point-fix point)))
+          (point2 (montgomery-add point point1 curve)))
+       (if (point-on-montgomery-p point2 curve)
+           (mv t point2)
+         (mv nil (point-fix point))))
+     :hooks (:fix)
+     :verify-guards nil ; done below
+     ///
+     (defrule point-on-montgomery-p-of-montgomery-mul-nonneg
+       (implies (and (montgomery-p curve)
+                     (montgomery-primep curve)
+                     (pointp point)
+                     (point-on-montgomery-p point curve))
+                (point-on-montgomery-p
+                 (mv-nth 1 (montgomery-mul-nonneg scalar point curve))
+                 curve)))
+     (verify-guards montgomery-mul-nonneg)))
+
+  ///
+
+  (defrule point-on-montgomery-p-of-montgomery-mul
+    (implies (and (montgomery-p curve)
+                  (montgomery-primep curve)
+                  (pointp point)
+                  (point-on-montgomery-p point curve))
+             (point-on-montgomery-p
+              (mv-nth 1 (montgomery-mul scalar point curve))
+              curve))))
