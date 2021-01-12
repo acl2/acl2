@@ -34,11 +34,11 @@
   (and (symbol-listp vars)
        (no-duplicatesp-eq vars)))
 
-;; A coefficient is an element of the field.  TODO: Consider, for readability,
-;; allowing large coefficients to be represented by negative numbers.
-(defun coefficientp (coeff prime)
-  (declare (xargs :guard (rtl::primep prime)))
-  (fep coeff prime))
+;; ;; A coefficient is an element of the field.  TODO: Consider, for readability,
+;; ;; allowing large coefficients to be represented by negative numbers.
+;; (defun coefficientp (coeff prime)
+;;   (declare (xargs :guard (rtl::primep prime)))
+;;   (fep coeff prime))
 
 ;; A "pseudo-variable" is either a variable or the constant 1.
 (defun pseudo-varp (x)
