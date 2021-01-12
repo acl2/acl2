@@ -244,7 +244,6 @@
                 (pseudo-termp judge-else)
                 (pseudo-termp else)
                 (pseudo-termp cond)
-                (symbol-listp names)
                 (alistp a)
                 (ev-smtcp `(if ,cond ,judge-then ,judge-else) a))
            (ev-smtcp (type-judgement-if-top judge-then then judge-else else
@@ -373,9 +372,9 @@
                   ''t))
          (fn-description (cdr conspair))
          ;; return-judgement could be ''t which means it could be anything
-         ((mv return-judgement &)
+         (return-judgement
           (returns-judgement fn actuals actuals-judgements-top fn-description
-                             path-cond state))
+                             path-cond ''t state))
          ((if (equal return-judgement ''t))
           (prog2$ (er hard? 'type-inference-bottomup=>type-judgement-fn
                       "Failed to find type judgements for return of function ~

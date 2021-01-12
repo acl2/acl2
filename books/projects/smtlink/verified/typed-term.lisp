@@ -548,3 +548,10 @@
   (b* ((tterm-lst (typed-term-list-fix tterm-lst)))
     `(implies ,(typed-term-list->path-cond tterm-lst)
               ,(typed-term-list->judgements tterm-lst))))
+
+(defthm correctness-of-make-typed-term
+  (implies (and (ev-smtcp-meta-extract-global-facts)
+                (alistp a))
+           (ev-smtcp (correct-typed-term (make-typed-term)) a))
+  :hints (("Goal"
+           :in-theory (enable correct-typed-term))))

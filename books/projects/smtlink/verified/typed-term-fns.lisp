@@ -835,19 +835,17 @@
   ///
   (defthm correctness-of-typed-term-if->top
     (implies (and (ev-smtcp-meta-extract-global-facts)
-                  (and (or (equal (typed-term->kind tterm) 'ifp)
-                           ;; (equal (typed-term->kind tterm) 'lambdap)
-                           (equal (typed-term->kind tterm) 'fncallp))
-                       (good-typed-term-p tterm options))
+                  (good-typed-term-p tterm options)
                   (type-options-p options)
                   (alistp a)
                   (ev-smtcp (correct-typed-term tterm) a))
              (ev-smtcp (correct-typed-term (typed-term->top tterm options))
                        a))
     :hints (("Goal"
+             :do-not-induct t
              :in-theory (enable correct-typed-term)
-             :expand ((good-typed-if-p tterm options)
-                      (good-typed-fncall-p tterm options))))))
+             :expand ((good-typed-fncall-p tterm options)
+                      (good-typed-if-p tterm options))))))
 
 (defthm lemma1
   (implies (and (good-typed-fncall-p tterm options)
@@ -1299,7 +1297,7 @@
   (defthm correctness-of-make-typed-fncall
     (implies (and (ev-smtcp-meta-extract-global-facts)
                   (type-options-p options)
-                  (good-typed-term-p tt-top options)
+                  (typed-term-p tt-top)
                   (good-typed-term-list-p tt-actuals options)
                   (alistp a)
                   (ev-smtcp (correct-typed-term tt-top) a)

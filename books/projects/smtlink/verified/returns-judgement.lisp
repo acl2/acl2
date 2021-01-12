@@ -21,14 +21,6 @@
 
 (set-state-ok t)
 
-(defprod returns
-  ((returns-thm pseudo-termp)
-   (replace-thm pseudo-termp)))
-
-(deflist returns-list
-  :elt-type returns-p
-  :true-listp t)
-
 ;;-------------------------------------------------------
 ;; Returns judgements
 
@@ -61,26 +53,88 @@
     formals))
 )
 
-(define hypotheses-implies ((thm pseudo-termp)
-                            (fn symbolp)
-                            (actuals pseudo-term-listp)
-                            (judgements pseudo-termp)
-                            (path-cond pseudo-termp))
+(define get-hypotheses-and-conclusion ((thm pseudo-termp)
+                                       (fn symbolp)
+                                       (actuals pseudo-term-listp))
   :returns (mv (ok booleanp)
-               (judge pseudo-termp))
+               (hypo pseudo-termp)
+               (concl pseudo-termp))
   (b* ((thm (pseudo-term-fix thm))
        (fn (symbol-fix fn))
-       (actuals (pseudo-term-list-fix actuals))
-       (judgements (pseudo-term-fix judgements))
-       (path-cond (pseudo-term-fix path-cond)))
+       (actuals (pseudo-term-list-fix actuals)))
     (case-match thm
-      ((& (!fn . !actuals)) (mv t thm))
-      (('implies hypotheses return-judge)
-       (if (path-test-list `(if ,judgements ,path-cond 'nil)
-                           hypotheses)
-           (mv t return-judge)
-         (mv nil ''t)))
-      (& (mv nil ''t)))))
+      ((& (!fn . !actuals)) (mv t ''t thm))
+      (('implies hypo concl) (mv t hypo concl))
+      (& (mv nil nil nil)))))
+
+(defthm correctness-of-get-hypotheses-and-conclusion
+  (implies (and (ev-smtcp-meta-extract-global-facts)
+                (pseudo-termp thm)
+                (alistp a)
+                (ev-smtcp thm a)
+                (ev-smtcp
+                 (mv-nth 1 (get-hypotheses-and-conclusion thm fn actuals))
+                 a))
+           (ev-smtcp
+            (mv-nth 2 (get-hypotheses-and-conclusion thm fn actuals))
+            a))
+  :hints (("Goal"
+           :in-theory (e/d (get-hypotheses-and-conclusion)
+                           (symbol-listp
+                            pseudo-term-listp-of-symbol-listp)))))
+
+(define expand-lambda ((thm pseudo-termp))
+  :returns (expanded-thm pseudo-termp)
+  (b* ((thm (pseudo-term-fix thm)))
+    (if (and (not (acl2::variablep thm))
+             (not (acl2::quotep thm))
+             (pseudo-lambdap (car thm)))
+        (lambda-substitution (car thm) (cdr thm))
+      thm)))
+
+(defthm correctness-of-expand-lambda
+  (implies (and (ev-smtcp-meta-extract-global-facts)
+                (pseudo-termp thm)
+                (alistp a)
+                (ev-smtcp thm a))
+           (ev-smtcp (expand-lambda thm) a))
+  :hints (("Goal"
+           :in-theory (e/d () ())
+           :expand (expand-lambda thm))))
+
+(define get-substed-theorem ((respec return-spec-p)
+                             (fn symbolp)
+                             (actuals pseudo-term-listp)
+                             state)
+  :returns (substed-thm pseudo-termp)
+  :guard (not (equal fn 'quote))
+  (b* (((unless (mbt (not (equal fn 'quote)))) ''t)
+       (respec (return-spec-fix respec))
+       (fn (symbol-fix fn))
+       (actuals (pseudo-term-list-fix actuals))
+       (returns-name (return-spec->returns-thm respec))
+       (returns-thm-raw
+        (acl2::meta-extract-formula-w returns-name (w state)))
+       ((unless (pseudo-termp returns-thm-raw))
+        (prog2$ (er hard? 'returns-judgement=>get-substed-theorem
+                    "Formula returned by meta-extract ~p0 is not a pseudo-termp: ~p1~%"
+                    returns-name returns-thm-raw)
+                ''t))
+       (returns-thm-expanded (expand-lambda returns-thm-raw))
+       (formals (get-formals fn state)))
+    (acl2::substitute-into-term returns-thm-expanded
+                                (pairlis$ formals actuals))))
+
+(defthm correctness-of-get-substed-theorem
+   (implies (and (ev-smtcp-meta-extract-global-facts)
+                 (alistp a)
+                 (symbolp fn)
+                 (pseudo-term-listp actuals)
+                 (return-spec-p respec))
+            (ev-smtcp (get-substed-theorem respec fn actuals state) a))
+   :hints (("Goal"
+            :in-theory (e/d () (w))
+            :expand (get-substed-theorem respec fn actuals state))))
 
 (defthm correctness-of-path-test-list-corollary
   (implies (and (ev-smtcp-meta-extract-global-facts)
@@ -99,47 +153,6 @@
                             (path-cond `(if ,judgements ,path-cond 'nil))
                             (expr-conj expr-conj))))))
 
-(defthm correctness-of-hypotheses-implies
-  (implies (and (ev-smtcp-meta-extract-global-facts)
-                (pseudo-termp thm)
-                (alistp a)
-                (symbolp fn)
-                (pseudo-term-listp actuals)
-                (pseudo-termp judgements)
-                (pseudo-termp path-cond)
-                (ev-smtcp thm a)
-                (ev-smtcp judgements a)
-                (ev-smtcp path-cond a)
-                (mv-nth 0 (hypotheses-implies thm fn actuals judgements
-                                              path-cond)))
-           (ev-smtcp (mv-nth 1 (hypotheses-implies thm fn actuals judgements
-                                                   path-cond))
-                     a))
-  :hints (("Goal"
-           :in-theory (e/d ()
-                           (pseudo-termp))
-           :expand (hypotheses-implies thm fn actuals judgements path-cond))))
-
-(define expand-lambda ((thm pseudo-termp))
-  :returns (expanded-thm pseudo-termp)
-  (b* ((thm (pseudo-term-fix thm)))
-    (if (and (not (acl2::variablep thm))
-             (not (acl2::quotep thm))
-             (pseudo-lambdap (car thm)))
-        (lambda-substitution (car thm) (cdr thm))
-      thm)))
-
-(defthm correctness-of-expand-lambda
-  (implies (and (ev-smtcp-meta-extract-global-facts)
-                (pseudo-termp thm)
-                (alistp a)
-                (ev-smtcp thm a))
-           (ev-smtcp (expand-lambda thm) a))
-  :hints (("Goal"
-           :in-theory (e/d ()
-                           ())
-           :expand (expand-lambda thm))))
-
 (encapsulate ()
   (local (in-theory (disable (:definition assoc-equal)
                              (:definition symbol-listp)
@@ -151,48 +164,24 @@
                                      (actuals-judgements pseudo-termp)
                                      (return-spec return-spec-p)
                                      (path-cond pseudo-termp)
-                                     ;; (supertype type-to-types-alist-p)
+                                     (acc pseudo-termp)
                                      state)
-  :returns (mv (judgement pseudo-termp)
-               (returns-thms returns-p))
+  :returns (judgement pseudo-termp)
   :guard (not (equal fn 'quote))
   (b* ((fn (symbol-fix fn))
-       ((unless (mbt (not (equal fn 'quote)))) (mv ''t (make-returns)))
-       (actuals (pseudo-term-list-fix actuals))
-       (return-spec (return-spec-fix return-spec))
-       (returns-name (return-spec->returns-thm return-spec))
-       (replace-name (return-spec->replace-thm return-spec))
-       (returns-thm-raw
-        (acl2::meta-extract-formula-w returns-name (w state)))
-       ((unless (pseudo-termp returns-thm-raw))
-        (prog2$ (er hard? 'returns-judgement=>construct-returns-judgement
-                    "Formula returned by meta-extract ~p0 is not a pseudo-termp: ~p1~%"
-                    returns-name returns-thm-raw)
-                (mv ''t (make-returns))))
-       (replace-thm
-        (acl2::meta-extract-formula-w replace-name (w state)))
-       ((unless (pseudo-termp replace-thm))
-        (prog2$ (er hard? 'returns-judgement=>construct-returns-judgement
-                    "Formula returned by meta-extract ~p0 is not a pseudo-termp: ~p1~%"
-                    replace-name replace-thm)
-                (mv ''t (make-returns))))
-       (returns-thm-expanded (expand-lambda returns-thm-raw))
-       (formals (get-formals fn state))
-       (alst (pairlis$ formals actuals))
+       (acc (pseudo-term-fix acc))
        (returns-thm-substed
-        (acl2::substitute-into-term returns-thm-expanded alst))
-       (replace-thm-substed
-        (acl2::substitute-into-term replace-thm alst))
-       ((mv ok return-judge)
-        (hypotheses-implies returns-thm-expanded fn actuals actuals-judgements
-                            path-cond))
+        (get-substed-theorem return-spec fn actuals state))
+       ((mv ok hypo return-judge)
+        (get-hypotheses-and-conclusion returns-thm-substed fn actuals))
        ((unless ok)
         (prog2$ (er hard? 'returns-judgement=>construct-returns-judgement
-                    "Hypotheses for returns-judgements aren't satisfied.~%")
-                (mv ''t (make-returns)))))
-    (mv return-judge
-        (make-returns :returns-thm returns-thm-substed
-                      :replace-thm replace-thm-substed))))
+                    "Malformed returns theorem ~p0.~%" returns-thm-substed)
+                ''t))
+       (hypo-implied
+        (path-test-list `(if ,actuals-judgements ,path-cond 'nil) hypo))
+       ((unless hypo-implied) acc))
+    `(if ,return-judge ,acc 'nil)))
 )
 
 (defthm correctness-of-construct-returns-judgement
@@ -204,169 +193,46 @@
                  (pseudo-termp actuals-judgements)
                  (return-spec-p return-spec)
                  (pseudo-termp path-cond)
+                 (pseudo-termp acc)
                  (ev-smtcp actuals-judgements a)
-                 (ev-smtcp path-cond a))
-            (ev-smtcp (mv-nth 0 (construct-returns-judgement fn actuals
-                                                             actuals-judgements
-                                                             return-spec
-                                                             path-cond
-                                                             state))
-                      a))
+                 (ev-smtcp path-cond a)
+                 (ev-smtcp acc a))
+            (ev-smtcp
+             (construct-returns-judgement fn actuals actuals-judgements
+                                          return-spec path-cond acc state)
+             a))
    :hints (("Goal"
-            :do-not-induct t
-            :in-theory (e/d ()
-                            (w symbol-listp
-                             assoc-equal
-                             correctness-of-path-test-list-corollary
-                             acl2::pseudo-termp-opener))
+            :in-theory (e/d () (w))
             :expand (construct-returns-judgement fn actuals
                                                  actuals-judgements
                                                  return-spec
                                                  path-cond
-                                                 state))))
+                                                 acc state))))
 
-;; (local
-;;  (defthm acl2-count-of-arg-decl-next->next
-;;    (implies (and (not (equal (arg-decl-kind arg-decl) :done)))
-;;             (< (acl2-count (arg-decl-next->next arg-decl))
-;;                (acl2-count (arg-decl-fix arg-decl))))
-;;    :hints (("Goal" :in-theory (enable arg-decl-fix arg-decl-next->next)))))
-
-;; (defines returns-judgement
-;;   :well-founded-relation l<
-;;   :verify-guards nil
-
-;; (define returns-judgement-single-arg ((fn symbolp)
-;;                                       (actuals pseudo-term-listp)
-;;                                       (actuals-total pseudo-term-listp)
-;;                                       (actuals-judgements pseudo-termp)
-;;                                       (actuals-judgements-total pseudo-termp)
-;;                                       (arg-check arg-check-p)
-;;                                       (path-cond pseudo-termp)
-;;                                       (supertype type-to-types-alist-p)
-;;                                       (acc pseudo-termp)
-;;                                       (thm-acc returns-list-p)
-;;                                       state)
-;;   :returns (mv (judgements pseudo-termp)
-;;                (returns-thms returns-list-p))
-;;   :guard (and (consp actuals)
-;;               (not (equal actuals-judgements ''t))
-;;               (not (equal fn 'quote)))
-;;   :measure (list (len (pseudo-term-list-fix actuals))
-;;                  (acl2-count (arg-check-fix arg-check)))
-;;   (b* (((unless (mbt (not (equal fn 'quote)))) (mv ''t nil))
-;;        (actuals (pseudo-term-list-fix actuals))
-;;        (actuals-judgements (pseudo-term-fix actuals-judgements))
-;;        (acc (pseudo-term-fix acc))
-;;        (thm-acc (returns-list-fix thm-acc))
-;;        ((unless (is-conjunct? actuals-judgements))
-;;         (prog2$ (er hard? 'returns-judgement=>returns-judgement-single-arg
-;;                 "Actuals judgements is not a conjunct ~p0.~%"
-;;                 actuals-judgements)
-;;             (mv ''t nil)))
-;;        (arg-check (arg-check-fix arg-check))
-;;        ((unless (consp arg-check)) (mv acc thm-acc))
-;;        ((cons check-hd check-tl) arg-check)
-;;        ((cons type arg-decl) check-hd)
-;;        ((unless (mbt (and (consp actuals)
-;;                           (not (equal actuals-judgements ''t)))))
-;;         (mv ''t nil))
-;;        ((cons actual actuals-tl) actuals)
-;;        ((list & actual-judge actuals-judge-tl &) actuals-judgements)
-;;        ((if (equal type 't))
-;;         (returns-judgement fn actuals-tl actuals-total
-;;                            actuals-judge-tl actuals-judgements-total arg-decl
-;;                            path-cond supertype acc thm-acc state))
-;;        (guard-term `(,type ,actual))
-;;        (yes? (path-test actual-judge guard-term))
-;;        ((unless yes?)
-;;         (returns-judgement-single-arg fn actuals actuals-total actuals-judgements
-;;                                       actuals-judgements-total check-tl
-;;                                       path-cond supertype acc thm-acc state))
-;;        ((mv new-acc new-thm-acc)
-;;         (returns-judgement fn actuals-tl actuals-total
-;;                            actuals-judge-tl actuals-judgements-total arg-decl
-;;                            path-cond supertype acc thm-acc state)))
-;;     (returns-judgement-single-arg fn actuals actuals-total actuals-judgements
-;;                                   actuals-judgements-total check-tl path-cond
-;;                                   supertype new-acc new-thm-acc state)))
-
-;; (define returns-judgement ((fn symbolp)
-;;                            (actuals pseudo-term-listp)
-;;                            (actuals-total pseudo-term-listp)
-;;                            (actuals-judgements pseudo-termp)
-;;                            (actuals-judgements-total pseudo-termp)
-;;                            (arg-decl arg-decl-p)
-;;                            (path-cond pseudo-termp)
-;;                            (supertype type-to-types-alist-p)
-;;                            (acc pseudo-termp)
-;;                            (thm-acc returns-list-p)
-;;                            state)
-;;   :returns (mv (judgements pseudo-termp)
-;;                (returns-thms returns-list-p))
-;;   :measure (list (len (pseudo-term-list-fix actuals))
-;;                  (acl2-count (arg-decl-fix arg-decl)))
-;;   :guard (not (equal fn 'quote))
-;;   (b* (((unless (mbt (not (equal fn 'quote)))) (mv ''t nil))
-;;        (actuals (pseudo-term-list-fix actuals))
-;;        (actuals-judgements (pseudo-term-fix actuals-judgements))
-;;        (arg-decl (arg-decl-fix arg-decl))
-;;        (acc (pseudo-term-fix acc))
-;;        (thm-acc (returns-list-fix thm-acc))
-;;        ((if (and (equal (arg-decl-kind arg-decl) :done)
-;;                  (null actuals)
-;;                  (equal actuals-judgements ''t)))
-;;         (b* (((mv the-judge the-thm)
-;;               (construct-returns-judgement fn actuals-total
-;;                                            actuals-judgements-total
-;;                                            (arg-decl-done->r arg-decl)
-;;                                            path-cond state)))
-;;           (mv `(if ,the-judge ,acc 'nil) (cons the-thm thm-acc))))
-;;        ((if (and (equal (arg-decl-kind arg-decl) :done)
-;;                  (or actuals (not (equal actuals-judgements ''t)))))
-;;         (prog2$ (er hard? 'returns-judgement=>returns-judgement
-;;                     "Run out of arg-decls.~%")
-;;                 (mv ''t nil)))
-;;        ((if (or (null actuals)
-;;                 (equal actuals-judgements ''t)))
-;;         (prog2$ (er hard? 'returns-judgement=>returns-judgement
-;;                     "Run out of actuals or actuals-judgements.~%")
-;;                 (mv ''t nil)))
-;;        (arg-check (arg-decl-next->next arg-decl)))
-;;     (returns-judgement-single-arg fn actuals actuals-total actuals-judgements
-;;                                   actuals-judgements-total arg-check path-cond
-;;                                   supertype acc thm-acc state)))
-;; )
-
-;; (verify-guards returns-judgement
-;;   :hints (("Goal"
-;;            :in-theory (disable pseudo-termp))))
-
-(define returns-judgement((fn symbolp)
-                          (actuals pseudo-term-listp)
-                          (actuals-judgements pseudo-termp)
-                          (respec-lst return-spec-list-p)
-                          (path-cond pseudo-termp)
-                          state)
+(define returns-judgement ((fn symbolp)
+                           (actuals pseudo-term-listp)
+                           (actuals-judgements pseudo-termp)
+                           (respec-lst return-spec-list-p)
+                           (path-cond pseudo-termp)
+                           (acc pseudo-termp)
+                           state)
   :measure (len respec-lst)
-  :returns (mv (judge pseudo-termp)
-               (thms returns-list-p))
+  :returns (judge pseudo-termp)
   :guard (not (equal fn 'quote))
-  (b* (((unless (mbt (not (equal fn 'quote)))) (mv ''t nil))
+  (b* (((unless (mbt (not (equal fn 'quote)))) ''t)
        (fn (symbol-fix fn))
        (actuals (pseudo-term-list-fix actuals))
        (actuals-judgements (pseudo-term-fix actuals-judgements))
        (respec-lst (return-spec-list-fix respec-lst))
        (path-cond (pseudo-term-fix path-cond))
-       ((unless (consp respec-lst)) (mv ''t nil))
+       (acc (pseudo-term-fix acc))
+       ((unless (consp respec-lst)) acc)
        ((cons respec-hd respec-tl) respec-lst)
-       ((mv judge-hd thm-hd)
+       (acc-hd
         (construct-returns-judgement fn actuals actuals-judgements
-                                     respec-hd path-cond state))
-       ((mv judge-tl thm-tl)
-        (returns-judgement fn actuals actuals-judgements
-                           respec-tl path-cond state)))
-    (mv `(if ,judge-hd ,judge-tl 'nil) (cons thm-hd thm-tl))))
+                                     respec-hd path-cond acc state)))
+    (returns-judgement fn actuals actuals-judgements
+                       respec-tl path-cond acc-hd state)))
 
 (defthm correctness-of-returns-judgement
   (implies (and (ev-smtcp-meta-extract-global-facts)
@@ -377,10 +243,176 @@
                 (pseudo-termp actuals-judgements)
                 (pseudo-termp path-cond)
                 (return-spec-list-p respec-lst)
+                (pseudo-termp acc)
                 (ev-smtcp actuals-judgements a)
-                (ev-smtcp path-cond a))
+                (ev-smtcp path-cond a)
+                (ev-smtcp acc a))
            (ev-smtcp
-            (mv-nth 0 (returns-judgement fn actuals actuals-judgements
-                                         respec-lst path-cond state))
+            (returns-judgement fn actuals actuals-judgements
+                               respec-lst path-cond acc state)
             a))
   :hints (("Goal" :in-theory (enable returns-judgement))))
+
+;;---------------------------------------------------------------
+;; Choose returns judgements (the inverse of returns-judgement)
+(define filter-judges ((judge pseudo-termp)
+                       (filter pseudo-termp)
+                       (supertypes type-to-types-alist-p)
+                       (acc pseudo-termp))
+  :returns (new-judge pseudo-termp)
+  :measure (acl2-count (pseudo-term-fix judge))
+  :verify-guards nil
+  (b* ((judge (pseudo-term-fix judge))
+       (filter (pseudo-term-fix filter))
+       (acc (pseudo-term-fix acc))
+       ((if (and (type-predicate-p judge supertypes)
+                 (path-test filter judge)))
+        `(if ,judge ,acc 'nil))
+       ((if (type-predicate-p judge supertypes)) acc)
+       ((unless (is-conjunct? judge)) `(if ,judge ,acc 'nil))
+       ((if (equal judge ''t)) acc)
+       ((list & judge-left judge-right &) judge)
+       (left-acc (filter-judges judge-left filter supertypes acc)))
+    (filter-judges judge-right filter supertypes left-acc)))
+
+(verify-guards filter-judges)
+
+(defthm correctness-of-filter-judges
+    (implies (and (ev-smtcp-meta-extract-global-facts)
+                  (pseudo-termp judge)
+                  (pseudo-termp acc)
+                  (alistp a)
+                  (ev-smtcp judge a)
+                  (ev-smtcp acc a))
+             (ev-smtcp (filter-judges judge filter supertype acc) a))
+    :hints (("Goal" :in-theory (enable filter-judges))))
+
+(define generate-judge-alist-one ((judges pseudo-termp)
+                                  (term pseudo-termp)
+                                  (supertypes type-to-types-alist-p)
+                                  (acc pseudo-termp))
+  :returns (term-judge pseudo-termp)
+  :measure (acl2-count (pseudo-term-fix judges))
+  :verify-guards nil
+  (b* ((judges (pseudo-term-fix judges))
+       (term (pseudo-term-fix term))
+       (acc (pseudo-term-fix acc))
+       ((if (judgement-of-term judges term supertypes))
+        `(if ,judges ,acc 'nil))
+       ((unless (is-conjunct? judges)) acc)
+       ((if (equal judges ''t)) acc)
+       ((list & judge-left judge-right &) judges)
+       (new-acc (generate-judge-alist-one judge-left term supertypes acc)))
+    (generate-judge-alist-one judge-right term supertypes new-acc)))
+
+(verify-guards generate-judge-alist-one)
+
+(defthm correctness-of-generate-judge-alist-one
+  (implies (and (ev-smtcp-meta-extract-global-facts)
+                (pseudo-termp judges)
+                (pseudo-termp term)
+                (pseudo-termp acc)
+                (alistp a)
+                (ev-smtcp judges a)
+                (ev-smtcp acc a))
+           (ev-smtcp (generate-judge-alist-one judges term supertypes acc) a))
+  :hints (("Goal"
+           :in-theory (enable generate-judge-alist-one))))
+
+(define generate-judge-alist ((judges pseudo-termp)
+                              (actuals pseudo-term-listp)
+                              (supertypes type-to-types-alist-p))
+  :returns (judge-alst pseudo-term-alistp)
+  (b* ((actuals (pseudo-term-list-fix actuals))
+       ((unless (consp actuals)) nil)
+       ((cons ac-hd ac-tl) actuals))
+    (acons ac-hd
+           (generate-judge-alist-one judges ac-hd supertypes ''t)
+           (generate-judge-alist judges ac-tl supertypes))))
+
+(defthm correctness-of-generate-judge-alist
+  (implies (and (ev-smtcp-meta-extract-global-facts)
+                (pseudo-termp judges)
+                (pseudo-term-listp actuals)
+                (alistp a)
+                (ev-smtcp judges a))
+           (or (ev-smtcp-lst
+                (strip-cdrs
+                 (generate-judge-alist judges actuals supertypes))
+                a)
+               (null (generate-judge-alist judges actuals supertypes))))
+  :hints (("Goal"
+           :in-theory (enable generate-judge-alist))))
+
+(encapsulate ()
+  (local
+   (in-theory (disable symbol-listp
+                       pseudo-term-listp-of-symbol-listp
+                       equal-fixed-and-x-of-pseudo-termp)))
+
+  (local
+   (defthm crock
+     (implies (and (pseudo-term-alistp x))
+              (pseudo-term-listp (strip-cdrs x))))
+   )
+
+(define choose-returns ((returns-judge pseudo-termp)
+                        (fn symbolp)
+                        (actuals pseudo-term-listp)
+                        (actuals-judge pseudo-termp)
+                        (path-cond pseudo-termp)
+                        (respec-lst return-spec-list-p)
+                        (supertypes type-to-types-alist-p)
+                        state)
+  :returns (expected-judge-lst pseudo-term-listp)
+  :measure (len respec-lst)
+  :guard (not (equal fn 'quote))
+  (b* ((returns-judge (pseudo-term-fix returns-judge))
+       (fn (symbol-fix fn))
+       (actuals (pseudo-term-list-fix actuals))
+       (actuals-judge (pseudo-term-fix actuals-judge))
+       (path-cond (pseudo-term-fix path-cond))
+       (respec-lst (return-spec-list-fix respec-lst))
+       ((unless (consp respec-lst)) nil)
+       ((cons respec-hd respec-tl) respec-lst)
+       (returns-thm-substed (get-substed-theorem respec-hd fn actuals state))
+       ((mv ok hypo concl)
+        (get-hypotheses-and-conclusion returns-thm-substed fn actuals))
+       ((unless ok)
+        (er hard? 'returns-judgement=>choose-returns
+            "Malformed returns theorem ~p0.~%" returns-thm-substed))
+       ;; (conclusion returns-thm-substed) => returns-judge
+       (ok1 (path-test-list concl returns-judge))
+       ;; actuals-judge & path-cond => (hypotheses returns-thm-substed)
+       (ok2 (path-test-list `(if ,actuals-judge ,path-cond 'nil) hypo))
+       ;; if returns-judge includes the conclusion of returns-thm-substed
+       ;; and actuals-judge satisfy the hypotheses of returns-thm-substed
+       ((unless (and ok1 ok2))
+        (choose-returns returns-judge fn actuals actuals-judge path-cond
+                        respec-tl supertypes state))
+       (judges (filter-judges actuals-judge hypo supertypes ''t))
+       (judge-alst (generate-judge-alist judges actuals nil)))
+    (strip-cdrs judge-alst)))
+)
+
+(defthm correctness-of-choose-returns
+  (implies (and (ev-smtcp-meta-extract-global-facts)
+                (pseudo-termp returns-judge)
+                (symbolp fn)
+                (pseudo-term-listp actuals)
+                (pseudo-termp actuals-judge)
+                (pseudo-termp path-cond)
+                (return-spec-list-p respec-lst)
+                (type-to-types-alist-p supertypes)
+                (alistp a)
+                (ev-smtcp returns-judge a)
+                (ev-smtcp actuals-judge a)
+                (ev-smtcp path-cond a))
+           (or (ev-smtcp-lst (choose-returns returns-judge fn actuals
+                                             actuals-judge path-cond
+                                             respec-lst supertypes state)
+                             a)
+               (null (choose-returns returns-judge fn actuals
+                                     actuals-judge path-cond
+                                     respec-lst supertypes state))))
+  :hints (("Goal" :in-theory (enable choose-returns))))
