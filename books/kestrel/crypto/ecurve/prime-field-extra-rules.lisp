@@ -36,6 +36,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defrule equal-of-mul-same-and-1 ; square roots of 1
+  (implies (and (rtl::primep p)
+                (fep x p))
+           (equal (equal (mul x x p) 1)
+                  (or (equal x 1)
+                      (equal x (neg 1 p)))))
+  :use (:instance pfield::equal-of-0-and-mul
+        (p p) (x (add x 1 p)) (y (sub x 1 p)))
+  :disable pfield::equal-of-0-and-mul)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defrule equal-of-div-and-0
   (implies (and (rtl::primep p)
                 (fep a p)
