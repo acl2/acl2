@@ -209,6 +209,79 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defrule twisted-edwards-only-points-with-x-0-or-y-1
+  :short "Theorem about the only points with zero abscissa or unit ordinate
+          on twisted Edwards curves."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The points @($(0,1)$) and @($(0,-1)$) are the only ones
+     with @($x = 0$) or @($y = 1$).
+     The proof is fairly simple:
+     substituting @($x = 0$) or @($y = 1$) in the curve equation
+     gives a simplified equation
+     from which the other coordinate is determined.")
+   (xdoc::p
+    "This theorem has some significance, in particular, for the "
+    (xdoc::seetopic "birational-montgomery-twisted-edwards"
+                    "birational equivalence between
+                     Montgomery and twisted Edwards curves")
+    ": points with @($x = 0$ or @($y = 0$) on a twisted Edwards curve
+     are not amenable to the rational mapping,
+     because they make a denominator zero;
+     thus, they have to be treated specially for the mapping.
+     This theorem tells us that there are just two such points."))
+  (b* ((p (twisted-edwards->p curve))
+       (x (point-finite->x point))
+       (y (point-finite->y point)))
+    (implies (and (twisted-edwards-primep curve)
+                  (or (equal x 0)
+                      (equal y 1)))
+             (implies (point-on-twisted-edwards-p point curve)
+                      (or (equal point (point-finite 0 1))
+                          (equal point (point-finite 0 (neg 1 p)))))))
+  :enable (point-on-twisted-edwards-p
+           point-finite
+           point-finite->x
+           point-finite->y
+           point-fix
+           pointp)
+  :use (lemma1 lemma2)
+
+  :prep-books
+  ((include-book "kestrel/prime-fields/prime-fields-rules" :dir :system))
+
+  :prep-lemmas
+
+  ((defrule lemma1 ; x = 0 ==> y in {+1, -1}
+     (b* ((p (twisted-edwards->p curve))
+          (x (point-finite->x point))
+          (y (point-finite->y point)))
+       (implies (and (point-on-twisted-edwards-p point curve)
+                     (twisted-edwards-primep curve)
+                     (equal x 0))
+                (or (equal y 1)
+                    (equal y (neg 1 p)))))
+     :rule-classes nil
+     :enable (point-on-twisted-edwards-p twisted-edwards-primep)
+     :prep-books
+     ((include-book "kestrel/prime-fields/prime-fields-rules" :dir :system)
+      (include-book "prime-field-extra-rules")))
+
+   (defrule lemma2 ; y = 1 ==> x = 0
+     (b* ((x (point-finite->x point))
+          (y (point-finite->y point)))
+       (implies (and (point-on-twisted-edwards-p point curve)
+                     (twisted-edwards-primep curve)
+                     (equal y 1))
+                (equal x 0)))
+     :rule-classes nil
+     :enable (point-on-twisted-edwards-p twisted-edwards-primep)
+     :prep-books
+     ((include-book "kestrel/prime-fields/bind-free-rules" :dir :system)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define twisted-edwards-add ((point1 pointp)
                              (point2 pointp)
                              (curve twisted-edwards-p))

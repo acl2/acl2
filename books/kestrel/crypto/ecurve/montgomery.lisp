@@ -181,7 +181,7 @@
      because they make a denominator zero;
      thus, they have to be treated specially for the mapping.
      This theorem, under the aforementioned condition on @($A$),
-     tells us that there is just one such point to worry about."))
+     tells us that there is just one such point."))
   (b* ((p (montgomery->p curve))
        (a (montgomery->a curve))
        (x (point-finite->x point)))
