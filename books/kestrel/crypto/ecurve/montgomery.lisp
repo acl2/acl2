@@ -14,6 +14,7 @@
 
 (include-book "centaur/fty/top" :dir :system)
 (include-book "kestrel/crypto/ecurve/points-fty" :dir :system)
+(include-book "kestrel/fty/deffixequiv-sk" :dir :system)
 (include-book "kestrel/prime-fields/prime-fields" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
@@ -665,3 +666,51 @@
              (point-on-montgomery-p
               (mv-nth 1 (montgomery-mul scalar point curve))
               curve))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define montgomery-point-orderp ((point pointp)
+                                 (order natp)
+                                 (curve montgomery-p))
+  :guard (and (montgomery-primep curve)
+              (point-on-montgomery-p point curve))
+  :returns (yes/no booleanp)
+  :short "Check if a point on a Montgomery curve has a certain order."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A point @($P$) has order @($n$) if and only if
+     @($n P$) is the neutral element and
+     @($m P$) is not for every @($m < n$).")
+   (xdoc::p
+    "Every point on the curve has an order,
+     so there should really be a function that returns that.
+     However, defining that function requires some theorems
+     that we do not have yet;
+     thus, for now we define this predicate instead.
+     We plan to define the function that returns the order eventually."))
+  (b* ((order (nfix order))
+       ((mv okp order*point) (montgomery-mul order point curve)))
+    (and okp
+         (equal order*point
+                (montgomery-neutral))
+         (montgomery-point-order-leastp point order curve)))
+  :hooks (:fix)
+
+  :prepwork
+  ((define-sk montgomery-point-order-leastp ((point pointp)
+                                             (order natp)
+                                             (curve montgomery-p))
+     :guard (and (montgomery-primep curve)
+                 (point-on-montgomery-p point curve))
+     (forall (order1)
+             (implies (and (natp order1)
+                           (< order1 (nfix order)))
+                      (b* (((mv okp order1*point)
+                            (montgomery-mul order1 point curve)))
+                        (implies okp
+                                 (not (equal order1*point
+                                             (montgomery-neutral)))))))
+     ///
+     (fty::deffixequiv-sk montgomery-point-order-leastp
+       :args ((point pointp) (order natp) (curve montgomery-p))))))
