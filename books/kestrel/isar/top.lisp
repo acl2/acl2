@@ -16,7 +16,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc isar
-  :parents (kestrel-books acl2::projects)
+  :parents (acl2::kestrel-books acl2::projects)
   :short "An ACL2 library for Isar-style proofs."
   :long
   (xdoc::topstring

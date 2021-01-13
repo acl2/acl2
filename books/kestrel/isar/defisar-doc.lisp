@@ -16,7 +16,7 @@
 
 (defxdoc defisar
 
-  :parents (std/util std/util-extensions)
+  :parents (isar)
 
   :short "Prove a theorem in an Isar style."
 
