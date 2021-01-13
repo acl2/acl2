@@ -16019,6 +16019,7 @@
 
             (file-position (get-input-stream-from-channel channel)
                            error-start-pos)
+            (setq error-start-pos nil)
             (read-object-suppress channel state))
           (setq acc (if (eq obj nil)
                         acc
