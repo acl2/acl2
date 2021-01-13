@@ -169,6 +169,9 @@
                 (symbol-listp fns))
            (interpreted-function-alistp (add-fns-to-interpreted-function-alist fns alist wrld))))
 
+;; Create an interpreted-function-alist for FNS, a list of function names, by
+;; getting their formals and bodies from WRLD.  TODO: Make a variant that also
+;; adds all necessary supporting functions.
 (defun make-interpreted-function-alist (fns wrld)
   (declare (xargs :guard (and (symbol-listp fns)
                               (plist-worldp wrld))))
