@@ -992,8 +992,8 @@ constructed separately.)</p>"
                 (and stable-under-simplificationp
                      '(:in-theory (enable sv::name-p)))
                 (and stable-under-simplificationp
-                     '(:in-theory (enable sv::lhssvex-p
-                                          sv::lhssvex-unbounded-p
+                     '(:in-theory (enable ;; sv::lhssvex-p
+                                          ;; sv::lhssvex-unbounded-p
                                           sv::svex-concat
                                           sv::4vec-index-p))))
   :guard-debug t
@@ -1157,15 +1157,15 @@ constructed separately.)</p>"
                 (and stable-under-simplificationp
                      '(:in-theory (enable sv::name-p)))
                 (and stable-under-simplificationp
-                     '(:in-theory (enable sv::lhssvex-p
-                                          sv::lhssvex-unbounded-p
+                     '(:in-theory (enable ;; sv::lhssvex-p
+                                          ;; sv::lhssvex-unbounded-p
                                           sv::svex-concat
                                           sv::4vec-index-p))))
   :guard-debug t
-  :prepwork ((local (defthm lhssvex-unbounded-p-of-svex-var-from-name
-                      (sv::lhssvex-unbounded-p (svex-var-from-name name))
-                      :hints(("Goal" :in-theory (enable svex-var-from-name
-                                                        sv::lhssvex-unbounded-p))))))
+  ;; :prepwork ((local (defthm lhssvex-unbounded-p-of-svex-var-from-name
+  ;;                     (sv::lhssvex-unbounded-p (svex-var-from-name name))
+  ;;                     :hints(("Goal" :in-theory (enable svex-var-from-name
+  ;;                                                       sv::lhssvex-unbounded-p))))))
   (b* (((fun (fail vttree)) (mv vttree (make-vl-portinfo-bad)))
        ((vl-plainarg x) (vl-plainarg-fix x))
        (y (vl-port-fix y))
@@ -1590,7 +1590,10 @@ constructed separately.)</p>"
       (b* (((when (and (not x.conn-expr) (not x.port-lhs)))
             ;; Blank port connected to blank expr
             (mv (ok) nil nil))
-           (lhsp (sv::lhssvex-p x.conn-svex))
+           (xwidth (if (and range (not x.replicatedp))
+                       (* x.port-size (vl-range-size range))
+                     x.port-size))
+           (lhsp (sv::lhssvex-bounded-p xwidth x.conn-svex))
            ((when (and (not lhsp) x.interfacep))
             (mv (fatal :type :vl-interfaceport-bad-connection
                        :msg "Non-LHS connection on interfaceport: .~s0(~a1)"
@@ -1605,15 +1608,23 @@ constructed separately.)</p>"
             ;; Blank port expression.  Assign Z to the connection if LHS, otherwise don't do anything.
             (mv (ok)
                 (and lhsp
-                     (list (cons (sv::svex->lhs x.conn-svex)
+                     (list (cons (sv::svex->lhs-bound xwidth x.conn-svex)
                                  (sv::make-driver :value (sv::svex-z)))))
                 nil))
+
+           ((unless (equal x.port-size (sv::lhs-width x.port-lhs)))
+            (mv (fatal :type :vl-port-resolution-programming-error
+                       :msg "On port ~s0: Port size ~a1 didn't match port expression width ~a2"
+                       :args (list x.portname x.port-size (sv::lhs-width x.port-lhs)))
+                nil nil))
+
            ;; In all other cases we're either going to create an alias or else
            ;; an assignment with the port expression on the LHS.
            (alias? (and lhsp x.conn-expr)) ;; when connection is blank, assign, don't alias!
            (conn (if alias?
-                     (sv::svex->lhs x.conn-svex)
+                     (sv::svex->lhs-bound xwidth x.conn-svex)
                    (sv::make-driver :value x.conn-svex))))
+
         (if range
             (b* ((size (vl-range-size range))
                  ;; LSB first since this is used to generate an svex-lhs in the

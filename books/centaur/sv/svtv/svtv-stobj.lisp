@@ -1416,3 +1416,12 @@ particular times and certain outputs are read at particular times.</li>
 
 
 
+(define svtv-data-invalidate (svtv-data)
+  :enabled t
+  (b* ((svtv-data (update-svtv-data->flatten-validp nil svtv-data))
+       (svtv-data (update-svtv-data->namemap-validp nil svtv-data))
+       (svtv-data (update-svtv-data->flatnorm-validp nil svtv-data))
+       (svtv-data (update-svtv-data->phase-fsm-validp nil svtv-data))
+       (svtv-data (update-svtv-data->cycle-fsm-validp nil svtv-data))
+       (svtv-data (update-svtv-data->pipeline-validp nil svtv-data)))
+    svtv-data))

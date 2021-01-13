@@ -5841,44 +5841,49 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
            :in-theory (disable len-of-elab-modinst-list-names))))
 
 
-
-(define moddb-wireidx->path ((wireidx natp)
-                             (modidx natp)
-                             (moddb moddb-ok))
+(define moddb-wireidx->path/decl ((wireidx natp)
+                                  (modidx natp)
+                                  (moddb moddb-ok))
   :parents (moddb)
-  :short "Convert a wire index to a path relative to the module it's in."
+  :short "Convert a wire index to a path relative to the module it's in, and additionally
+          return the wire declaation."
   :verify-guards nil
   :guard (and (< modidx (moddb->nmods moddb))
               (< wireidx (moddb-mod-totalwires modidx moddb)))
   :measure (nfix modidx)
-  :returns (path path-p)
+  :returns (mv (path (path-p path))
+               (wire (wire-p wire)))
   :prepwork ((local (in-theory (disable acl2::nth-when-too-large-cheap
                                         acl2::nfix-when-not-natp
                                         acl2::nth-when-atom
                                         acl2::natp-rw))))
-  :hooks ((:fix :hints (("goal" :induct (moddb-wireidx->path wireidx modidx moddb)
-             :expand ((:free (moddb) (moddb-wireidx->path wireidx modidx moddb)))))))
+  :hooks ((:fix :hints (("goal" :induct (moddb-wireidx->path/decl wireidx modidx moddb)
+                         :expand ((:free (moddb) (moddb-wireidx->path/decl wireidx modidx moddb)))))))
   (b* ((wireidx (lnfix wireidx))
        (modidx (lnfix modidx))
        ((unless (mbt (< modidx (moddb->nmods moddb))))
-        (make-path-wire :name "ERROR"))
-       ((stobj-get donep name nextmod nextwire)
+        ;; impossible
+        (mv (path-fix nil) (wire-fix nil)))
+       ((stobj-get donep wire/name nextmod nextwire)
         ((elab-mod (moddb->modsi modidx moddb)))
         (b* (((unless (mbt (< wireidx (elab-mod->totalwires elab-mod))))
-              (mv t "ERROR" nil nil))
+              (mv t (wire-fix nil) nil nil))
              ((when (< wireidx (elab-mod-nwires elab-mod)))
-              (mv t (wire->name (elab-mod-wiretablei wireidx elab-mod)) nil nil))
+              (mv t (elab-mod-wiretablei wireidx elab-mod) nil nil))
              (inst (elab-mod-wire-find-inst wireidx elab-mod))
              (name (elab-mod->instname inst elab-mod))
              (nextmod (elab-mod->inst-modidx inst elab-mod))
              (offset (elab-mod->inst-wireoffset inst elab-mod))
              (nextwire (- wireidx offset)))
           (mv nil name nextmod nextwire)))
-       ((when donep) (make-path-wire :name name))
+       ((when donep) ;; done
+        (mv (make-path-wire :name (wire->name wire/name)) wire/name))
        ((unless (mbt (< nextmod modidx)))
-        (make-path-wire :name "ERROR")))
-    (make-path-scope :subpath (moddb-wireidx->path nextwire nextmod moddb)
-                     :namespace name))
+        (mv (path-fix nil) (wire-fix nil)))
+       ((mv subpath wire) (moddb-wireidx->path/decl nextwire nextmod moddb)))
+    (mv (make-path-scope :subpath subpath
+                         :namespace wire/name)
+        wire))
   ///
   (local (defthm have-insts-when-totalwires->-nwires
            (implies (and (elab-mod-of-good-moddb elab-mod)
@@ -5891,7 +5896,7 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
            :rule-classes (:rewrite :linear)))
 
 
-  (verify-guards moddb-wireidx->path
+  (verify-guards moddb-wireidx->path/decl
     :hints (("goal" :in-theory (disable elab-mod-of-good-moddb-redef
                                         elab-mod-wire-find-inst-correct1
                                         elab-mod-wire-find-inst-correct2)
@@ -5902,6 +5907,40 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
                     (elab-mod (nth modidx (nth *moddb->modsi* moddb)))
                     (wire wireidx)))
              :do-not-induct t))))
+
+
+(define moddb-wireidx->path ((wireidx natp)
+                             (modidx natp)
+                             (moddb moddb-ok))
+  :parents (moddb)
+  :short "Convert a wire index to a path relative to the module it's in."
+  :guard (and (< modidx (moddb->nmods moddb))
+              (< wireidx (moddb-mod-totalwires modidx moddb)))
+  :returns (path path-p)
+  ;; (b* ((wireidx (lnfix wireidx))
+  ;;      (modidx (lnfix modidx))
+  ;;      ((unless (mbt (< modidx (moddb->nmods moddb))))
+  ;;       (make-path-wire :name "ERROR"))
+  ;;      ((stobj-get donep name nextmod nextwire)
+  ;;       ((elab-mod (moddb->modsi modidx moddb)))
+  ;;       (b* (((unless (mbt (< wireidx (elab-mod->totalwires elab-mod))))
+  ;;             (mv t "ERROR" nil nil))
+  ;;            ((when (< wireidx (elab-mod-nwires elab-mod)))
+  ;;             (mv t (wire->name (elab-mod-wiretablei wireidx elab-mod)) nil nil))
+  ;;            (inst (elab-mod-wire-find-inst wireidx elab-mod))
+  ;;            (name (elab-mod->instname inst elab-mod))
+  ;;            (nextmod (elab-mod->inst-modidx inst elab-mod))
+  ;;            (offset (elab-mod->inst-wireoffset inst elab-mod))
+  ;;            (nextwire (- wireidx offset)))
+  ;;         (mv nil name nextmod nextwire)))
+  ;;      ((when donep) (make-path-wire :name name))
+  ;;      ((unless (mbt (< nextmod modidx)))
+  ;;       (make-path-wire :name "ERROR")))
+  ;;   (make-path-scope :subpath (moddb-wireidx->path nextwire nextmod moddb)
+  ;;                    :namespace name))
+  (b* (((mv path ?wire) (moddb-wireidx->path/decl wireidx modidx moddb)))
+    path))
+
 
 (define moddb-path->wireidx/decl ((path path-p)
                                   (modidx natp)

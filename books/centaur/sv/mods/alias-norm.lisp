@@ -860,6 +860,9 @@ question -- so then concatenate on that bit's path to w.  Got that?</p>")
                         (lhs-pairs-set-aliases x y (aliases-bound-fix aliases)))
                :in-theory (disable (:d lhs-pairs-set-aliases)))))))
 
+
+(local (in-theory (disable lhs-vars-when-consp)))
+
 (define lhs-alias-canonicalize-top ((x lhs-p) (aliases aliases-normorderedp))
   :guard (svarlist-boundedp (lhs-vars x) (aliass-length aliases))
   :verify-guards nil
@@ -871,7 +874,8 @@ question -- so then concatenate on that bit's path to w.  Got that?</p>")
                        (and stable-under-simplificationp
                             '(:expand ((lhs-vars nil)
                                        (lhs-vars x))
-                              :in-theory (enable svar-boundedp lhatom-vars)))))
+                              :in-theory (e/d (svar-boundedp lhatom-vars)
+                                              (lhs-vars-when-consp))))))
   (b* (((mv first rest) (lhs-decomp x))
        ((unless first) nil)
        ((lhrange first) first))

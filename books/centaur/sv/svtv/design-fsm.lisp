@@ -73,7 +73,8 @@
 (defprod flatten-res
   ((assigns assigns)
    (fixups assigns)
-   (constraints constraintlist)))
+   (constraints constraintlist)
+   (var-decl-map var-decl-map-p)))
 
 (defprod flatnorm-res
   ((assigns svex-alist)
@@ -98,14 +99,17 @@
                new-moddb new-aliases)
   :guard-hints (("goal" :in-theory (enable modscope-okp modscope-local-bound modscope->modidx)))
   (b* (((mv err assigns fixups constraints moddb aliases) (svex-design-flatten x))
-       (aliases (if err
-                    aliases
-                  (aliases-indexed->named aliases (make-modscope-top
-                                                   :modidx (moddb-modname-get-index
-                                                            (design->top x) moddb))
-                                          moddb))))
+       ((mv aliases var-decl-map)
+        (if err
+            (mv aliases nil)
+          (time$ (aliases-indexed->named aliases (make-modscope-top
+                                                  :modidx (moddb-modname-get-index
+                                                           (design->top x) moddb))
+                                         moddb)
+                 :msg "; aliases renamed: ~st sec, ~sa bytes.~%"))))
     (mv err
-        (make-flatten-res :assigns assigns :fixups fixups :constraints constraints)
+        (make-flatten-res :assigns assigns :fixups fixups :constraints constraints
+                          :var-decl-map var-decl-map)
         moddb aliases))
   ///
   (defretd normalize-stobjs-of-<fn>
@@ -143,7 +147,7 @@
   :guard-hints (("goal" :in-theory (enable flatten-res-vars)))
   (b* (((flatten-res flatten))
        ((mv assigns delays constraints)
-        (svex-normalize-assigns flatten.assigns flatten.fixups flatten.constraints aliases)))
+        (svex-normalize-assigns flatten.assigns flatten.fixups flatten.constraints flatten.var-decl-map aliases)))
     (make-flatnorm-res :assigns assigns :delays delays :constraints constraints)))
 
 (define svtv-compose-assigns/delays ((flatnorm flatnorm-res-p))
