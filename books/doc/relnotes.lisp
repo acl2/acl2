@@ -166,6 +166,15 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "isar::isar" "Isar Library"))
+
+   (xdoc::p
+    "This is a library to support proofs in the style of Isabelle's
+     Isar (Intelligent Semi-Automated Reasoning) language.
+     It is just a small step in that direction for now.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "json::json" "JSON Library"))
 
    (xdoc::p
