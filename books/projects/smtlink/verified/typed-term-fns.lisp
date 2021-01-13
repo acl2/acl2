@@ -497,9 +497,17 @@
 (defthm good-typed-term-of-make-typed-term
   (good-typed-term-p (make-typed-term) options)
   :hints (("Goal" :in-theory (enable good-typed-term-p
+                                     good-typed-quote-p))))
+
+(defthm good-typed-term-of-change-typed-term
+  (implies (pseudo-termp path-cond)
+           (good-typed-term-p
+            (change-typed-term (make-typed-term)
+                               :path-cond path-cond)
+            options))
+  :hints (("Goal" :in-theory (enable good-typed-term-p
                                      good-typed-quote-p
-                                     is-conjunct-list?
-                                     judgement-of-term))))
+                                     typed-term->kind))))
 
 (defthm good-typed-term-of-make-typed-term-list-with-path-cond
   (good-typed-term-list-p (make-typed-term-list nil path-cond ''t)
@@ -805,17 +813,21 @@
              :in-theory (enable correct-typed-term)
              :expand (good-typed-if-p tterm options)))))
 
+(local
+ (defthm crock2
+   (implies (and (type-options-p options)
+                 (good-typed-term-p tterm options))
+            (typed-term-p tterm))))
+
 (define typed-term->top ((tterm typed-term-p)
                          (options type-options-p))
   :guard (and (or (equal (typed-term->kind tterm) 'ifp)
-                  ;; (equal (typed-term->kind tterm) 'lambdap)
                   (equal (typed-term->kind tterm) 'fncallp))
               (good-typed-term-p tterm options))
   :returns (new-tt typed-term-p)
   (b* (((unless (mbt (and (typed-term-p tterm)
                           (type-options-p options)
                           (or (equal (typed-term->kind tterm) 'ifp)
-                              ;; (equal (typed-term->kind tterm) 'lambdap)
                               (equal (typed-term->kind tterm) 'fncallp))
                           (good-typed-term-p tterm options))))
         (make-typed-term))
@@ -828,11 +840,19 @@
        ((if err)
         (prog2$ (er hard? 'typed-term=>typed-term->top
                     "Malformed judgements ~q0" tt.judgements)
-                (make-typed-term))))
+                tterm)))
     (make-typed-term :term tt.term
                      :path-cond tt.path-cond
                      :judgements top-judge))
   ///
+  (more-returns
+   (new-tt (implies (and (type-options-p options)
+                         (or (equal (typed-term->kind tterm) 'ifp)
+                             (equal (typed-term->kind tterm) 'fncallp))
+                         (good-typed-term-p tterm options))
+                    (equal (typed-term->path-cond new-tt)
+                           (typed-term->path-cond tterm)))
+           :name typed-term->top-maintains-path-cond))
   (defthm correctness-of-typed-term-if->top
     (implies (and (ev-smtcp-meta-extract-global-facts)
                   (good-typed-term-p tterm options)
@@ -1072,7 +1092,11 @@
               (good-typed-term-p tt-else options))
   :returns (new-tt (good-typed-term-p new-tt options)
                    :hints (("Goal"
-                            :in-theory (enable good-typed-if-p))))
+                            :in-theory (e/d (good-typed-if-p)
+                                            (good-typed-term-of-change-typed-term))
+                            :use ((:instance
+                                   good-typed-term-of-change-typed-term
+                                   (path-cond (typed-term->path-cond tt-top)))))))
   (b* (((unless (mbt (and (type-options-p options)
                           (typed-term-p tt-top)
                           (typed-term-p tt-cond)
@@ -1096,7 +1120,7 @@
         (prog2$
          (er hard? 'typed-term=>make-typed-term-if
              "Inconsistent inputs.~%")
-         tt-cond)))
+         (change-typed-term (make-typed-term) :path-cond ttp.path-cond))))
     (make-typed-term
      :term `(if ,ttc.term ,ttt.term ,tte.term)
      :path-cond ttp.path-cond
@@ -1109,7 +1133,18 @@
   ///
   (more-returns
    (new-tt (typed-term-p new-tt)
-           :name typed-term-of-make-typed-if))
+           :name typed-term-of-make-typed-if)
+   (new-tt (implies (and (type-options-p options)
+                         (typed-term-p tt-top)
+                         (typed-term-p tt-cond)
+                         (typed-term-p tt-then)
+                         (typed-term-p tt-else)
+                         (good-typed-term-p tt-cond options)
+                         (good-typed-term-p tt-then options)
+                         (good-typed-term-p tt-else options))
+                    (equal (typed-term->path-cond new-tt)
+                           (typed-term->path-cond tt-top)))
+           :name make-typed-if-maintains-path-cond))
   (defthm correctness-of-make-typed-if
     (implies (and (ev-smtcp-meta-extract-global-facts)
                   (type-options-p options)

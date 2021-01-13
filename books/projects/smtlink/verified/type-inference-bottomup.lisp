@@ -527,9 +527,9 @@
 
 ;; -------------------------------------------------------
 
-(define type-judge-cp ((cl pseudo-term-listp)
-                       (hints t)
-                       state)
+(define type-judge-bottomup-cp ((cl pseudo-term-listp)
+                                (hints t)
+                                state)
   (b* (((unless (type-inference-hints-p hints))
         (value (list cl)))
        ((type-inference-hints h) hints)
@@ -537,16 +537,16 @@
        (judges (type-judgement goal ''t h.type-options h.names state)))
     (value (list (list `(implies ,judges ,goal))))))
 
-(local (in-theory (enable type-judge-cp)))
+(local (in-theory (enable type-judge-bottomup-cp)))
 
-(defthm correctness-of-type-judge-cp
+(defthm correctness-of-type-judge-bottomup-cp
   (implies (and (ev-smtcp-meta-extract-global-facts)
                 (pseudo-term-listp cl)
                 (alistp a)
                 (ev-smtcp
                  (conjoin-clauses
                   (acl2::clauses-result
-                   (type-judge-cp cl hints state)))
+                   (type-judge-bottomup-cp cl hints state)))
                  a))
            (ev-smtcp (disjoin cl) a))
   :rule-classes :clause-processor)

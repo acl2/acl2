@@ -105,7 +105,6 @@
                            ()))))
 
 ;;----------------------------------------------------------------
-
 (define unify-variable ((tterm t)
                         (expected pseudo-termp)
                         (options type-options-p))
@@ -414,7 +413,7 @@
           ;;(unify-lambda tterm expected options state)
           (prog2$ (er hard? 'type-inference-topdown=>unify-type
                       "Found lambda term in goal.~%")
-                  (make-typed-term))))
+                  tterm)))
       (unify-fncall tterm expected options names state)))
 
   (define unify-type-list ((tterm-lst typed-term-list-p)
@@ -573,7 +572,8 @@
                                     acl2::pseudo-termp-cadr-from-pseudo-term-listp
                                     acl2::symbolp-of-car-when-symbol-listp
                                     pseudo-term-listp-of-symbol-listp
-                                    acl2::pseudo-termp-opener))
+                                    acl2::pseudo-termp-opener
+                                    typed-term->top-maintains-path-cond))
                               :expand (unify-if tterm expected options names
                                                 state)))))
   (defthm correctness-of-unify-fncall
@@ -598,7 +598,8 @@
                                     acl2::pseudo-termp-cadr-from-pseudo-term-listp
                                     acl2::symbolp-of-car-when-symbol-listp
                                     pseudo-term-listp-of-symbol-listp
-                                    acl2::pseudo-termp-opener))
+                                    acl2::pseudo-termp-opener
+                                    typed-term->top-maintains-path-cond))
                    :expand (unify-fncall tterm expected options names state)))))
   (defthm correctness-of-unify-type
     (implies (and (ev-smtcp-meta-extract-global-facts)
@@ -630,6 +631,105 @@
     :flag unify-type-list
     :hints ((and stable-under-simplificationp
                  '(:in-theory (e/d ()
+                                   (pseudo-termp
+                                    acl2::symbol-listp-when-not-consp
+                                    consp-of-is-conjunct?
+                                    acl2::pseudo-termp-cadr-from-pseudo-term-listp
+                                    acl2::symbolp-of-car-when-symbol-listp
+                                    pseudo-term-listp-of-symbol-listp
+                                    acl2::pseudo-termp-opener
+                                    pseudo-term-listp-of-symbol-listp))
+                   :expand
+                   ((unify-type-list tterm-lst expected-lst options names state)
+                    (unify-type-list nil expected-lst options names state)
+                    (unify-type-list tterm-lst nil options names state)
+                    (unify-type-list nil nil options names state))))))
+  :hints(("Goal"
+          :in-theory (disable pseudo-termp
+                              correctness-of-path-test-list
+                              symbol-listp
+                              correctness-of-path-test
+                              acl2::symbol-listp-when-not-consp
+                              consp-of-is-conjunct?
+                              acl2::pseudo-termp-cadr-from-pseudo-term-listp
+                              acl2::symbolp-of-car-when-symbol-listp
+                              pseudo-term-listp-of-symbol-listp
+                              acl2::pseudo-termp-opener))))
+
+(local
+(defthm crock3
+  (implies (and (type-options-p options)
+                (good-typed-term-p tterm options))
+           (typed-term-p tterm)))
+)
+
+(defthm-unify-type-flag
+  (defthm unify-if-maintains-path-cond
+    (implies (and (pseudo-termp expected)
+                  (type-options-p options)
+                  (equal (typed-term->kind tterm) 'ifp)
+                  (good-typed-term-p tterm options)
+                  (symbol-listp names))
+             (equal (typed-term->path-cond
+                     (unify-if tterm expected options names state))
+                    (typed-term->path-cond tterm)))
+    :flag unify-if
+    :hints ((and stable-under-simplificationp
+                 '(:in-theory (e/d ()
+                                   (pseudo-termp
+                                    symbol-listp
+                                    acl2::symbol-listp-when-not-consp
+                                    consp-of-is-conjunct?
+                                    acl2::pseudo-termp-cadr-from-pseudo-term-listp
+                                    acl2::symbolp-of-car-when-symbol-listp
+                                    pseudo-term-listp-of-symbol-listp
+                                    acl2::pseudo-termp-opener))
+                              :expand (unify-if tterm expected options names
+                                                state)))))
+  (defthm unify-fncall-maintains-path-cond
+    (implies (and (type-options-p options)
+                  (pseudo-termp expected)
+                  (equal (typed-term->kind tterm) 'fncallp)
+                  (good-typed-term-p tterm options)
+                  (symbol-listp names))
+             (equal (typed-term->path-cond
+                     (unify-fncall tterm expected options names state))
+                    (typed-term->path-cond tterm)))
+    :flag unify-fncall
+    :hints ((and stable-under-simplificationp
+                 '(:in-theory (e/d ()
+                                   (pseudo-termp
+                                    symbol-listp
+                                    acl2::symbol-listp-when-not-consp
+                                    consp-of-is-conjunct?
+                                    acl2::pseudo-termp-cadr-from-pseudo-term-listp
+                                    acl2::symbolp-of-car-when-symbol-listp
+                                    pseudo-term-listp-of-symbol-listp
+                                    acl2::pseudo-termp-opener))
+                   :expand (unify-fncall tterm expected options names state)))))
+  (defthm unify-type-maintains-path-cond
+    (implies (and (type-options-p options)
+                  (pseudo-termp expected)
+                  (good-typed-term-p tterm options)
+                  (symbol-listp names))
+             (equal (typed-term->path-cond
+                     (unify-type tterm expected options names state))
+                    (typed-term->path-cond tterm)))
+    :flag unify-type
+    :hints ((and stable-under-simplificationp
+                 '(:in-theory (e/d () ())
+                   :expand (unify-type tterm expected options names state)))))
+  (defthm unify-type-list-maintains-path-cond
+    (implies (and (type-options-p options)
+                  (pseudo-term-listp expected-lst)
+                  (good-typed-term-list-p tterm-lst options)
+                  (symbol-listp names))
+             (equal (typed-term-list->path-cond
+                     (unify-type-list tterm-lst expected-lst options names state))
+                    (typed-term-list->path-cond tterm-lst)))
+    :flag unify-type-list
+    :hints ((and stable-under-simplificationp
+                 '(:in-theory (e/d (typed-term-list->path-cond)
                                    (pseudo-termp
                                     acl2::symbol-listp-when-not-consp
                                     consp-of-is-conjunct?
