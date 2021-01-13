@@ -22,6 +22,18 @@
 (in-theory (disable getprops
                     acons))
 
+;; For each interpreted function, we store its formals and body.
+;; TODO: Check that the vars in the body are a subset of the formals.
+(defun interpreted-function-infop (info)
+  (declare (xargs :guard t))
+  (and (true-listp info)
+       (= 2 (len info))
+       (symbol-listp (first info))
+       (pseudo-termp (second info))))
+
+;; Defines all-interpreted-function-infop.
+(defforall-simple interpreted-function-infop :guard t)
+
 ;;
 ;; interpreted-function-alistp
 ;;
@@ -30,16 +42,6 @@
 ;; form (list formals body). TODO: Consider making the items in the alist cons
 ;; pairs instead.
 
-(defun interpreted-function-infop (info)
-  (declare (xargs :guard t))
-  (and (true-listp info)
-       (= 2 (len info))
-       (symbol-listp (first info))
-       (pseudo-termp (second info))))
-
-(defforall-simple interpreted-function-infop :guard t)
-
-;; TODO: Strengthen
 (defund interpreted-function-alistp (alist)
   (declare (xargs :guard t))
   (and (symbol-alistp alist)
