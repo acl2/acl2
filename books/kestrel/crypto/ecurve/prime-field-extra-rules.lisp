@@ -36,6 +36,54 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; x^2 = y^2 <==> x = y \/ x = - y
+(defrule equal-of-square-and-square
+  (implies (and (rtl::primep p)
+                (fep x p)
+                (fep y p))
+           (equal (equal (mul x x p)
+                         (mul y y p))
+                  (or (equal x y)
+                      (equal x (neg y p)))))
+  :use (step1 step2)
+
+  ;; The proof is staged in two steps.
+  ;; The first one needs the distributivity laws,
+  ;; while the second one is sabotaged by them.
+  ;; Another interesting case of algebraic manipulation
+  ;; in which the rewriting may not necessarily follow
+  ;; a unique "direction".
+
+  :prep-lemmas
+
+  (;; x^2 = y^2 <==> (x + y) * (x - y) = 0
+   (defruled step1
+     (implies (and (rtl::primep p)
+                   (fep x p)
+                   (fep y p))
+              (equal (equal (mul x x p)
+                            (mul y y p))
+                     (equal (mul (add x y p)
+                                 (sub x y p)
+                                 p)
+                            0))))
+
+   ;; (x + y) * (x - y) = 0 <==> x = y \/ x = - y
+   (defruled step2
+     (implies (and (rtl::primep p)
+                   (fep x p)
+                   (fep y p))
+              (equal (equal 0 (mul (add x y p)
+                                   (sub x y p)
+                                   p))
+                     (or (equal x y)
+                         (equal x (neg y p)))))
+     :disable (pfield::mul-of-add-arg1
+               pfield::mul-of-add-arg2
+               pfield::mul-of-1-arg1-gen))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defrule equal-of-mul-same-and-1 ; square roots of 1
   (implies (and (rtl::primep p)
                 (fep x p))
