@@ -10,6 +10,7 @@
 
 (in-package "ZCASH")
 
+(include-book "blake2-hash")
 (include-book "pedersen-hash")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
