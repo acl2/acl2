@@ -15,5 +15,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defpkg "ZCASH" (append (set-difference-eq *std-pkg-symbols*
-                                          '())
-                       '(defxdoc+)))
+                                           '())
+                        '(bit-listp
+                          defxdoc+)))
