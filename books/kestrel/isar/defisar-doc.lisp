@@ -16,7 +16,7 @@
 
 (defxdoc defisar
 
-  :parents (std/util std/util-extensions)
+  :parents (isar)
 
   :short "Prove a theorem in an Isar style."
 
@@ -35,7 +35,10 @@
       The script, starting with the hypotheses of the theorem's formula,
       derives intermediate facts, provable via ACL2's @(':hints') mechanism,
       and eventually derives the conclusion of the theorem's formula,
-      thus proving the theorem."))
+      thus proving the theorem.")
+    (xdoc::p
+     "See the file @('[books]/kestrel/isar/defisar-tests.lisp')
+      for examples of use of this macro."))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
