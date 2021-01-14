@@ -1,6 +1,6 @@
-; Top book for sparse R1CS formalization
+; Top file for sparse R1CS gadget library
 ;
-; Copyright (C) 2020-2021 Kestrel Institute
+; Copyright (C) 2021 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -10,8 +10,4 @@
 
 (in-package "R1CS")
 
-(include-book "r1cs")
-(include-book "rules")
-(include-book "rules-axe")
-(include-book "rule-lists")
-(include-book "gadgets/top")
+(include-book "boolean")
