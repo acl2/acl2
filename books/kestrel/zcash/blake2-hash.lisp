@@ -15,8 +15,6 @@
 (include-book "kestrel/fty/byte-list" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
-(local (in-theory (disable blake::blake2s)))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ blake2-hash
@@ -53,19 +51,8 @@
      to 8 bytes.
      It puts no restrictions on the size of the data (i.e. input),
      but we follow the guard in the BLAKE2 library.
-     The output must be 32 bytes, i.e. 256 bits.")
-   (xdoc::p
-    "Currently the function @('blake::blake2s') in the library
-     does not seem to have return tyep theorems,
-     so for now we add a run-time check,
-     which is expected never to fail.
-     We will remove it when those theorems are added to the library."))
-  (b* ((output (blake::blake2s input pers 32)))
-    (if (and (acl2::all-unsigned-byte-p 8 output)
-             (true-listp output)
-             (= (len output) 32))
-        output
-      (repeat 32 0)))
+     The output must be 32 bytes, i.e. 256 bits."))
+  (blake::blake2s input pers 32)
   :guard-hints (("Goal" :in-theory (enable verify-guards-lemma)))
 
   :prepwork
