@@ -129,7 +129,7 @@
   :hints (("Goal" :in-theory (enable bytes-to-words))))
 
 ;; Convert a list of 64 bytes into a block
-(defun bytes-to-block (bytes)
+(defund bytes-to-block (bytes)
   (declare (xargs :guard (and (true-listp bytes)
                               (= *bb* (len bytes))
                               (all-unsigned-byte-p 8 bytes))))
@@ -140,8 +140,8 @@
            (blockp (bytes-to-block bytes)))
   :hints (("Goal" :in-theory (enable blockp bytes-to-block))))
 
-;; Convert a list of bytes into a list of locks
-(defun bytes-to-blocks (bytes)
+;; Convert a list of bytes into a list of blocks
+(defund bytes-to-blocks (bytes)
   (declare (xargs :guard (and (true-listp bytes)
                               (equal 0 (mod (len bytes) *bb*)) ;; we have an integral number of blocks
                               (all-unsigned-byte-p 8 bytes))))
@@ -303,7 +303,7 @@
 
 (local (in-theory (disable natp)))
 
-(defun loop2 (i v m)
+(defund loop2 (i v m)
   (declare (xargs :guard (and (natp i)
                               (<= i *r*)
                               (blockp v)
@@ -439,17 +439,26 @@
            (true-listp (loop1 i bound h d)))
   :hints (("Goal" :in-theory (enable loop1))))
 
-;; Convert a list of 4 bytes into a word, in little endian fashion.
+;; Convert a 32-bit word into a list of 4 bytes, in little endian fashion.
 ;; todo: prove inversion
 (defund word-to-bytes (word)
   (declare (xargs :guard (wordp word)))
   (list (slice 7 0 word)
         (slice 15 8 word)
         (slice 23 16 word)
-        (slice 31 24 word) ;; most significatn word
+        (slice 31 24 word) ;; most significant byte
         ))
 
-;; Convert a list of bytes into a list of words, in little endian fashion.
+(defthm len-of-word-to-bytes
+  (equal (len (word-to-bytes word))
+         4)
+  :hints (("Goal" :in-theory (enable word-to-bytes))))
+
+(defthm all-unsigned-byte-p-of-word-to-bytes
+  (all-unsigned-byte-p 8 (word-to-bytes word))
+  :hints (("Goal" :in-theory (enable word-to-bytes))))
+
+;; Convert a list of 32-bit words into a list of bytes, in little endian fashion.
 (defund words-to-bytes (words)
   (declare (xargs :guard (and (true-listp words)
                               (all-wordp words))))
@@ -458,9 +467,17 @@
     (append (word-to-bytes (first words))
             (words-to-bytes (rest words)))))
 
-;;todo: prove return type
+(defthm len-of-words-to-bytes
+  (equal (len (words-to-bytes words))
+         (* 4 (len words)))
+  :hints (("Goal" :in-theory (enable words-to-bytes))))
+
+(defthm all-unsigned-byte-p-of-words-to-bytes
+  (all-unsigned-byte-p 8 (words-to-bytes words))
+  :hints (("Goal" :in-theory (enable words-to-bytes))))
+
 ;;TODO: Consider the case when ll is the max.  Then (+ ll *bb*) is > 2^64, contrary to the documentation of f.
-(defun blake2s-main (d ll kk nn)
+(defund blake2s-main (d ll kk nn)
   (declare (xargs :guard (and (true-listp d)
                               (all-blockp d)
                               (< 0 (len d))
@@ -493,6 +510,18 @@
                  t))))
     (take nn (words-to-bytes h))))
 
+(defthm len-of-blake2s-main
+  (implies (and (posp nn)
+                (<= nn 32))
+           (equal (len (blake2s-main d ll kk nn))
+                  nn))
+  :hints (("Goal" :in-theory (enable blake2s-main))))
+
+(defthm all-unsigned-byte-p-of-blake2s-main
+  (implies (<= nn 32)
+           (all-unsigned-byte-p 8 (blake2s-main d ll kk nn)))
+  :hints (("Goal" :in-theory (enable blake2s-main))))
+
 ;; (local
 ;;  (defthm ceiling-helper
 ;;    (implies (and (< x 18446744073709551552)
@@ -514,13 +543,12 @@
             (<= (ceiling x 64) 288230376151711743))
    :hints (("Goal" :in-theory (enable acl2::ceiling-in-terms-of-floor)))))
 
-
-;;todo: prove return type
+;; Returns the hash, as list of bytes of length NN.
 ;; TODO: Think about the case where we have a max length message and a key
-(defun blake2s (data-bytes
-                key-bytes
-                nn ;; number of hash bytes to produce
-                )
+(defund blake2s (data-bytes
+                 key-bytes
+                 nn ;; number of hash bytes to produce
+                 )
   (declare (xargs :guard (and (all-unsigned-byte-p 8 data-bytes)
                               (true-listp data-bytes)
                               ;; TODO I want to say this:
@@ -543,5 +571,17 @@
                   ll
                   kk
                   nn)))
+
+(defthm len-of-blake2s
+  (implies (and (posp nn)
+                (<= nn 32))
+           (equal (len (blake2s data-bytes key-bytes nn))
+                  nn))
+  :hints (("Goal" :in-theory (enable blake2s))))
+
+(defthm all-unsigned-byte-p-of-blake2s
+  (implies (<= nn 32)
+           (all-unsigned-byte-p 8 (blake2s data-bytes key-bytes nn)))
+  :hints (("Goal" :in-theory (enable blake2s))))
 
 ;; (assert-equal (blake2s (list (char-code #\a) (char-code #\b) (char-code #\c)) 32) '(#x50 #x8C #x5E #x8C #x32 #x7C #x14 #xE2 #xE1 #xA7 #x2B #xA3 #x4E #xEB #x45 #x2F #x37 #x45 #x8B #x20 #x9E #xD6 #x3A #x29 #x4D #x99 #x9B #x4C #x86 #x67 #x59 #x82))
