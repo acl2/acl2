@@ -10,7 +10,7 @@
 
 (in-package "ZCASH")
 
-(include-book "xdoc/defxdoc-plus" :dir :system)
+(include-book "pedersen-hash")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
