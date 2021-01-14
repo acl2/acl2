@@ -11,8 +11,8 @@
 (in-package "ZCASH")
 
 (include-book "kestrel/crypto/ecurve/jubjub" :dir :system)
-(include-book "kestrel/fty/byte-list" :dir :system)
 (include-book "kestrel/utilities/bits-as-digits" :dir :system)
+(include-book "kestrel/utilities/bytes-as-digits" :dir :system)
 (include-book "kestrel/utilities/strings/strings-codes" :dir :system)
 (include-book "std/util/defval" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
@@ -48,6 +48,45 @@
   ///
   (defret len-of-i2lebsp
     (equal (len bits) (nfix l))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define lebs2ip ((s bit-listp))
+  :returns (x natp :rule-classes :type-prescription)
+  :short "The function @('$\\mathsf{LEBS2IP}$') [ZPS:5.2]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The @('$\\ell$') argument can be determined from the @($S$) argument:
+     it is the length of @($S$).
+     Thus, in our formalization we just have one argument."))
+  (acl2::lebits=>nat s)
+  ///
+  (local (include-book "arithmetic-3/top" :dir :system))
+  (defret lebs2ip-upper-bound
+    (< x (expt 2 (len s)))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define leos2ip ((s byte-listp))
+  :returns (x natp :rule-classes :type-prescription)
+  :short "The function @('$\\mathsf{LEOS2IP}$') [ZPS:5.2]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The @('$\\ell$') argument can be determined from the @($S$) argument:
+     it is the length of @(S$) times 8.
+     Thus, in our formalization we just have one argument."))
+  (acl2::lebytes=>nat s)
+  ///
+  (local (include-book "arithmetic-3/top" :dir :system))
+  (defret leos2ip-upper-bound
+    (< x (expt 2 (* 8 (len s))))
+    :rule-classes :linear
+    :hints (("Goal"
+             :use (:instance acl2::lebytes=>nat-upper-bound
+                   (acl2::digits s))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
