@@ -235,6 +235,14 @@
      An older version of these books used to live in the @(tsee x86isa::x86isa)
      library.")
 
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "zcash::zcash" "Zcash Library"))
+
+   (xdoc::p
+    "This is a library about the Zcash blockchain currency,
+     which is based on zero-knowledge proofs.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Changes to Existing Libraries")
