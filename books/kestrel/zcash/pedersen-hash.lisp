@@ -11,7 +11,9 @@
 (in-package "ZCASH")
 
 (include-book "kestrel/crypto/ecurve/jubjub" :dir :system)
+(include-book "kestrel/fty/byte-list" :dir :system)
 (include-book "kestrel/utilities/bits-as-digits" :dir :system)
+(include-book "kestrel/utilities/strings/strings-codes" :dir :system)
 (include-book "std/util/defval" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
@@ -129,3 +131,19 @@
   ///
   (defret len-of-jubjub-extract
     (equal (len bits) *l-merkle-sapling*)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defval *urs*
+  :short "The constant @($\\mathsf{URS}$) [ZPS:5.9]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is copied and pasted from [ZPS], and visually compared with it.
+     Nonetheless, eventually it would be good to replicate, in ACL2,
+     its calculation, which is described in [ZPS:5.9]."))
+  (acl2::string=>nats
+   "096b36a5804bfacef1691e173c366a47ff5ba84a44f26ddd7e8d9f79d5b42df0")
+  ///
+  (assert-event (byte-listp *urs*))
+  (assert-event (equal (len *urs*) 64)))
