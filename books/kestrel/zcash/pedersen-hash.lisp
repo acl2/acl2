@@ -76,7 +76,7 @@
   (xdoc::topstring
    (xdoc::p
     "The @('$\\ell$') argument can be determined from the @($S$) argument:
-     it is the length of @(S$) times 8.
+     it is the length of @($S$) times 8.
      Thus, in our formalization we just have one argument."))
   (acl2::lebytes=>nat s)
   ///
