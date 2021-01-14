@@ -33,6 +33,7 @@
 (include-book "solidity/top")
 (include-book "std/top")
 (include-book "utilities/top")
+(include-book "zcash/top")
 
 ; (depends-on "images/kestrel-logo.png")
 
