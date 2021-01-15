@@ -11,3 +11,4 @@
 (in-package "PFIELD")
 
 (include-book "boolean-rules")
+(include-book "boolean-alt-rules")
