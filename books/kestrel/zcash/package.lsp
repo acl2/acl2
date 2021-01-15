@@ -11,6 +11,8 @@
 (in-package "ACL2")
 
 (include-book "std/portcullis" :dir :system)
+(include-book "kestrel/crypto/ecurve/portcullis" :dir :system)
+(include-book "kestrel/prime-fields/portcullis" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -18,4 +20,15 @@
                                            '())
                         '(bit-listp
                           byte-listp
-                          defxdoc+)))
+                          defxdoc+
+                          ecurve::jubjub-curve
+                          ecurve::jubjub-q
+                          ecurve::jubjub-a
+                          ecurve::jubjub-d
+                          pfield::fep
+                          pfield::add
+                          pfield::neg
+                          pfield::sub
+                          pfield::mul
+                          pfield::inv
+                          pfield::div)))

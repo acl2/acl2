@@ -100,7 +100,7 @@
    (xdoc::p
     "These are all finite points."))
   (and (ecurve::pointp x)
-       (ecurve::point-on-twisted-edwards-p x (ecurve::jubjub-curve)))
+       (ecurve::point-on-twisted-edwards-p x (jubjub-curve)))
   ///
   (defruled point-finite-when-jubjub-pointp
     (implies (jubjub-pointp x)
@@ -122,12 +122,12 @@
   :guard-hints (("Goal" :in-theory (enable jubjub-pointp)))
   ///
   (defret jubjub-point->u-upper-bound
-    (< u (ecurve::jubjub-q))
+    (< u (jubjub-q))
     :hyp (jubjub-pointp point)
     :rule-classes :linear
     :hints (("Goal" :in-theory (enable jubjub-pointp
                                        ecurve::point-on-twisted-edwards-p
-                                       ecurve::jubjub-curve)))))
+                                       jubjub-curve)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -145,12 +145,12 @@
   :guard-hints (("Goal" :in-theory (enable jubjub-pointp)))
   ///
   (defret jubjub-point->v-upper-bound
-    (< v (ecurve::jubjub-q))
+    (< v (jubjub-q))
     :hyp (jubjub-pointp point)
     :rule-classes :linear
     :hints (("Goal" :in-theory (enable jubjub-pointp
                                        ecurve::point-on-twisted-edwards-p
-                                       ecurve::jubjub-curve)))))
+                                       jubjub-curve)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -186,3 +186,188 @@
   ///
   (assert-event (byte-listp *urs*))
   (assert-event (equal (len *urs*) 64)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defval *jubjub-l*
+  :short "The constant @($\\ell_\\mathbb{J}$) [ZPS:5.4.8.3]."
+  256)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define maybe-jubjub-pointp (x)
+  :returns (yes/no booleanp)
+  :short "Recognize Jubjub points and @('nil')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are optional Jubjub points.
+     Useful, for instance, as results of functions that may return
+     either Jubjub points or an error value."))
+  (or (jubjub-pointp x)
+      (eq x nil))
+  ///
+  (defrule maybe-jubjub-pointp-when-jubjub-pointp
+    (implies (jubjub-pointp x)
+             (maybe-jubjub-pointp x))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define jubjub-abst ((bits bit-listp))
+  :guard (= (len bits) *jubjub-l*)
+  :returns (point? maybe-jubjub-pointp
+                   :hints (("Goal"
+                            :in-theory (enable returns-lemma
+                                               ecurve::pfield-squarep))))
+  :short "The function @($\\mathsf{abst}_\\mathbb{J}$) [ZPS:5.4.8.3]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The definition in [ZPS] takes a square root @($u$) at some point,
+     which may or may not exist; if it does, it is not exactly specified.
+     So we use @(tsee pfield-squarep) and @('pfield-square->root') here.
+     It should be the case that the definition
+     does not depend on the exact square root chosen;
+     we should prove that eventually.")
+   (xdoc::p
+    "Note that, when @($u = 0$) and @($\\tilde{u} = 1$)
+     (which happens, for instance, when the input bit sequence is
+     @('(1 0 ... 0 1)'), i.e. 254 zeros surrounded by ones),
+     the prescribed result is @($(q_\\mathbb{J}, 1)$) in [ZPS].
+     However, we need to reduce that modulo @($q_\\mathbb{J}$),
+     in order for it to be a field element in our model.
+     For simplicity, we do the reduction in all cases,
+     which always coerces an integer to the corresponding field element;
+     we do that via the field negation operation, to ease proofs.")
+   (xdoc::p
+    "To prove that this returns an optional Jubjub point,
+     we locally prove a key lemma, @('returns-lemma').
+     It says that, when the square of @($u$) is
+     the argument of the square root as used in the definition,
+     @($(u,v)$) is on the curve:
+     this is easily proved by simple algebraic manipulations,
+     which turn the equality of the square into the curve equation."))
+  (b* ((q (jubjub-q))
+       (a (jubjub-a))
+       (d (jubjub-d))
+       (v* (butlast bits 1))
+       (u~ (car (last bits)))
+       (v (lebs2ip v*))
+       ((when (>= v q)) nil)
+       (a-d.v^2 (sub a (mul d (mul v v q) q) q))
+       ((when (equal a-d.v^2 0)) nil)
+       (u^2 (div (sub 1 (mul v v q) q)
+                 a-d.v^2
+                 q))
+       ((unless (ecurve::pfield-squarep u^2 q)) nil)
+       (u (ecurve::pfield-square->root u^2 q)))
+    (if (= (mod u 2) u~)
+        (ecurve::point-finite u v)
+      (ecurve::point-finite (neg u q) v)))
+
+  :prepwork
+
+  ((local (include-book "kestrel/prime-fields/prime-fields-rules" :dir :system))
+
+   ;; When the following are enabled (particularly a and d),
+   ;; prime field rules fire that combine their values in undesired ways.
+   ;; So we disable them completely, but prove their needed properties.
+   ;; Perhaps these should be moved to a more central place,
+   ;; and these nullary functions should be always kept disabled.
+
+   (defrulel fep-of-jubjub-a
+     (fep (jubjub-a) (jubjub-q)))
+
+   (defrulel fep-of-jubjub-d
+     (fep (jubjub-d) (jubjub-q)))
+
+   (defrulel jubjub-a-d-different
+     (not (equal (jubjub-a) (jubjub-d))))
+
+   (defrulel jubjub-a-not-zero
+     (not (equal (jubjub-a) 0)))
+
+   (defrulel jubjub-d-not-zero
+     (not (equal (jubjub-d) 0)))
+
+   (defrulel primep-of-jubjub-q
+     (rtl::primep (jubjub-q)))
+
+   (defrulel jubjub-q-not-two
+     (not (equal (jubjub-q) 2)))
+
+   (local (in-theory (disable (:e jubjub-a)
+                              (:e jubjub-d)
+                              (:e jubjub-q)
+                              jubjub-q)))
+
+   ;; This is they lemma for the :returns theorem.
+
+   (defruledl returns-lemma
+     (b* ((q (jubjub-q))
+          (a (jubjub-a))
+          (d (jubjub-d)))
+       (implies (and (fep u q)
+                     (fep v q)
+                     (not (equal (sub a (mul d (mul v v q) q) q) 0))
+                     (equal (mul u u q)
+                            (div (sub 1 (mul v v q) q)
+                                 (sub a (mul d (mul v v q) q) q)
+                                 q)))
+                (jubjub-pointp (ecurve::point-finite u v))))
+     :use (step1 step2)
+
+     :prep-lemmas
+
+     ((defrule step1
+        (b* ((q (jubjub-q))
+             (a (jubjub-a))
+             (d (jubjub-d)))
+          (implies (and (fep u q)
+                        (fep v q)
+                        (not (equal (sub a (mul d (mul v v q) q) q) 0))
+                        (equal (mul u u q)
+                               (div (sub 1 (mul v v q) q)
+                                    (sub a (mul d (mul v v q) q) q)
+                                    q)))
+                   (equal (mul (mul u u q)
+                               (sub a (mul d (mul v v q) q) q)
+                               q)
+                          (sub 1 (mul v v q) q))))
+        :enable div
+        :disable ((:rewrite pfield::mul-of-add-arg1)
+                  (:rewrite pfield::mul-of-add-arg2)
+                  (:rewrite pfield::mul-associative)))
+
+      (defrule step2
+        (b* ((q (jubjub-q))
+             (a (jubjub-a))
+             (d (jubjub-d)))
+          (implies (and (fep u q)
+                        (fep v q)
+                        (equal (mul (mul u u q)
+                                    (sub a (mul d (mul v v q) q) q)
+                                    q)
+                               (sub 1 (mul v v q) q)))
+                   (jubjub-pointp (ecurve::point-finite u v))))
+        :enable (jubjub-pointp
+                 ecurve::point-on-twisted-edwards-p
+                 jubjub-curve)
+        :prep-books
+        ((include-book "kestrel/prime-fields/bind-free-rules" :dir :system))))))
+
+  :verify-guards nil ; done below
+
+  ///
+
+  (local (include-book "std/lists/len" :dir :system))
+  (local (include-book "std/lists/last" :dir :system))
+  (local (include-book "kestrel/prime-fields/bind-free-rules" :dir :system))
+
+  (defrulel verify-guards-lemma
+    (implies (bitp x)
+             (acl2-numberp x)))
+
+  (verify-guards jubjub-abst
+    :hints (("Goal" :in-theory (e/d (ecurve::pfield-squarep)
+                                    (bitp))))))
