@@ -1047,6 +1047,12 @@
      utilities include @(tsee add-io-pair), @(tsee remove-io-pairs),
      @(tsee show-io-pairs), and @(tsee get-io-pairs).")
 
+   (xdoc::p
+    "A new event macro @(tsee defmin-int) has been added,
+     to declarative define the minimum of
+     a (possibly infinite) set of integers.
+     This is similar to @(tsee defmax-nat).")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Licensing Changes")

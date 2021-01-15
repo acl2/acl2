@@ -79,7 +79,7 @@
 
 ; True iff the set defined by X has a maximum.
 ; That is, there is a natural number Y in the set
-; that is also an upper of the set.
+; that is also an upper bound of the set.
 ; Note that (EXISTSP-WITNESS X) is that Y.
 
 (defun-sk existsp (x)

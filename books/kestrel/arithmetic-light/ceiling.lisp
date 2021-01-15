@@ -168,3 +168,16 @@
            (equal (ceiling (+ x y) j)
                   (+ (/ x j) (ceiling y j))))
   :hints (("Goal" :in-theory (enable ceiling-in-terms-of-floor-cases))))
+
+(defthm equal-of-0-and-ceiling
+  (implies (and (natp i)
+                (posp j))
+           (equal (equal 0 (ceiling i j))
+                  (equal 0 i)))
+  :hints (("Goal" :in-theory (enable ceiling))))
+
+(defthm <-of-0-and-ceiling
+  (implies (and (posp i)
+                (posp j))
+           (< 0 (ceiling i j)))
+  :hints (("Goal" :in-theory (enable ceiling))))
