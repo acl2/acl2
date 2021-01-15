@@ -26,6 +26,11 @@
    '()                           ;; c vector (just zero)
    ))
 
+(defthm r1cs-constraintp-of-make-boolean-constraint
+  (implies (symbolp var-name)
+           (r1cs::r1cs-constraintp (make-boolean-constraint var-name)))
+  :hints (("Goal" :in-theory (enable make-boolean-constraint))))
+
 ;; Prove that, if we make a boolean constraint for a var, then the constraint
 ;; holds over a valuation (that binds the var) iff the value of the var is
 ;; either 0 or 1.
