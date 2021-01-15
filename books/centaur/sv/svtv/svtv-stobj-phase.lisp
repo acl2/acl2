@@ -54,4 +54,23 @@
 
   (defret phase-fsm-validp-of-<fn>
     (svtv-data$c->phase-fsm-validp new-svtv-data)))
+
+(define svtv-data-maybe-compute-phase-fsm (svtv-data)
+  :guard (svtv-data->flatnorm-validp svtv-data)
+  :returns new-svtv-data
+  (if (svtv-data->phase-fsm-validp svtv-data)
+      svtv-data
+    (b* ((svtv-data (update-svtv-data->cycle-fsm-validp nil svtv-data)))
+      (svtv-data-compute-phase-fsm svtv-data)))
+  ///
+  (defret svtv-data$c-get-of-<fn>
+    (implies (and (equal key (svtv-data$c-field-fix k))
+                  (not (equal key :phase-fsm-validp))
+                  (not (equal key :cycle-fsm-validp))
+                  (not (equal key :phase-fsm)))
+             (equal (svtv-data$c-get k new-svtv-data)
+                    (svtv-data$c-get key svtv-data))))
+
+  (defret phase-fsm-validp-of-<fn>
+    (svtv-data$c->phase-fsm-validp new-svtv-data)))
   

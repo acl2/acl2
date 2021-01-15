@@ -220,7 +220,34 @@
 
 
 
+(define svtv-data-maybe-compute-cycle-fsm ((phases svtv-cyclephaselist-p)
+                                           svtv-data)
+  :guard (svtv-data->phase-fsm-validp svtv-data)
+  :returns new-svtv-data
+  (if (and (equal (svtv-cyclephaselist-fix phases)
+                  (svtv-data->cycle-phases svtv-data))
+           (svtv-data->cycle-fsm-validp svtv-data))
+      svtv-data
+    (b* ((svtv-data (update-svtv-data->cycle-fsm-validp nil svtv-data))
+         (svtv-data (update-svtv-data->cycle-phases phases svtv-data))
+         (svtv-data (update-svtv-data->pipeline-validp nil svtv-data)))
+      (svtv-data-compute-cycle-fsm svtv-data)))
+  ///
+  (defret svtv-data$c-get-of-<fn>
+    (implies (and (equal key (svtv-data$c-field-fix k))
+                  (not (equal key :cycle-fsm))
+                  (not (equal key :cycle-fsm-validp))
+                  (not (equal key :pipeline-validp))
+                  (not (equal key :cycle-phases)))
+             (equal (svtv-data$c-get k new-svtv-data)
+                    (svtv-data$c-get key svtv-data))))
 
+  (defret cycle-fsm-validp-of-<fn>
+    (svtv-data$c->cycle-fsm-validp new-svtv-data))
+
+  (defret cycle-phases-validp-of-<fn>
+    (equal (svtv-data$c->cycle-phases new-svtv-data)
+           (svtv-cyclephaselist-fix phases))))
 
 
        

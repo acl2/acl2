@@ -61,6 +61,22 @@
   (defcong base-fsm-eval-equiv svex-alist-eval-equiv (base-fsm->values fsm) 1)
   (defcong base-fsm-eval-equiv svex-alist-eval-equiv! (base-fsm->nextstate fsm) 1))
 
+;; (define base-fsm-eval-equiv! ((x base-fsm-p) (y base-fsm-p))
+;;   (b* (((base-fsm x))
+;;        ((base-fsm y)))
+;;     (and (ec-call (svex-alist-eval-equiv! x.values y.values))
+;;          (ec-call (svex-alist-eval-equiv! x.nextstate y.nextstate))
+;;          ;; (equal x.design y.design)
+;;          ;; (equal x.user-names y.user-names)
+;;          ;; (equal x.namemap y.namemap)
+;;          ))
+;;   ///
+;;   (defequiv base-fsm-eval-equiv!)
+;;   (defrefinement base-fsm-eval-equiv! base-fsm-eval-equiv
+;;     :hints(("Goal" :in-theory (enable base-fsm-eval-equiv))))
+
+;;   (defcong base-fsm-eval-equiv! svex-alist-eval-equiv! (base-fsm->values fsm) 1))
+
 
 (define svtv-fsm-eval/namemap-equiv ((x svtv-fsm-p) (y svtv-fsm-p))
   (b* (((svtv-fsm x))
@@ -79,6 +95,26 @@
   (defcong svtv-fsm-eval/namemap-equiv base-fsm-eval-equiv (svtv-fsm->base-fsm fsm) 1)
 
   (defcong svtv-fsm-eval/namemap-equiv equal (svtv-fsm->namemap fsm) 1))
+
+
+;; (define svtv-fsm-eval/namemap-equiv! ((x svtv-fsm-p) (y svtv-fsm-p))
+;;   (b* (((svtv-fsm x))
+;;        ((svtv-fsm y)))
+;;     (and (base-fsm-eval-equiv! x.base-fsm y.base-fsm)
+;;          (equal x.namemap y.namemap)))
+;;   ///
+;;   (defequiv svtv-fsm-eval/namemap-equiv!)
+
+;;   (defrefinement svtv-fsm-eval/namemap-equiv! svtv-fsm-eval/namemap-equiv
+;;     :hints (("Goal" :in-theory (enable svtv-fsm-eval/namemap-equiv))))
+
+;;   ;; (defrefinement svtv-fsm-eval/namemap-equiv svtv-fsm-eval-equiv
+;;   ;;   :hints(("Goal" :in-theory (enable svtv-fsm-eval-equiv))))
+
+;;   (defcong base-fsm-eval-equiv! svtv-fsm-eval/namemap-equiv!
+;;     (svtv-fsm base-fsm namemap) 1)
+
+;;   (defcong svtv-fsm-eval/namemap-equiv! base-fsm-eval-equiv! (svtv-fsm->base-fsm fsm) 1))
 
 
 

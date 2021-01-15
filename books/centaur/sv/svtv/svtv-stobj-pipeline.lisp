@@ -93,4 +93,39 @@
                   (not (equal key :pipeline))
                   (not (equal key :pipeline-validp)))
              (equal (svtv-data$c-get k new-svtv-data)
-                    (svtv-data$c-get key svtv-data)))))
+                    (svtv-data$c-get key svtv-data))))
+
+  (defret svtv-data$c->pipeline-validp-of-<fn>
+    (equal (svtv-data$c->pipeline-validp new-svtv-data) t)))
+
+
+(define svtv-data-maybe-compute-pipeline ((pipeline-setup pipeline-setup-p)
+                                          svtv-data
+                                          &key ((rewrite booleanp) 't))
+  :guard (and (svtv-data->phase-fsm-validp svtv-data)
+              (svtv-data->cycle-fsm-validp svtv-data)
+              (equal (svex-alist-keys (pipeline-setup->initst pipeline-setup))
+                     (svex-alist-keys (base-fsm->nextstate (svtv-data->cycle-fsm svtv-data)))))
+  :returns new-svtv-data
+  (if (and (equal (pipeline-setup-fix pipeline-setup)
+                  (svtv-data->pipeline-setup svtv-data))
+           (svtv-data->pipeline-validp svtv-data))
+      svtv-data
+    (b* ((svtv-data (update-svtv-data->pipeline-validp nil svtv-data))
+         (svtv-data (update-svtv-data->pipeline-setup pipeline-setup svtv-data)))
+      (svtv-data-compute-pipeline svtv-data :rewrite rewrite)))
+  ///
+  (defret svtv-data$c-get-of-<fn>
+    (implies (and (equal key (svtv-data$c-field-fix k))
+                  (not (equal key :pipeline))
+                  (not (equal key :pipeline-validp))
+                  (not (equal key :pipeline-setup)))
+             (equal (svtv-data$c-get k new-svtv-data)
+                    (svtv-data$c-get key svtv-data))))
+
+  (defret svtv-data$c->pipeline-validp-of-<fn>
+    (equal (svtv-data$c->pipeline-validp new-svtv-data) t))
+
+  (defret svtv-data$c->pipeline-setup-of-<fn>
+    (equal (svtv-data$c->pipeline-setup new-svtv-data)
+           (pipeline-setup-fix pipeline-setup))))

@@ -404,3 +404,57 @@ of @(see svex-env-lookup), and they bind the same variables.")
 
   (defcong svex-envs-similar svex-envs-similar (append a b) 2
     :hints ((witness))))
+
+
+
+
+
+(define svex-alist-extract-aux ((keys svarlist-p)
+                                (alist svex-alist-p))
+  :returns (sub-alist svex-alist-p)
+  (if (atom keys)
+      nil
+    (cons (cons (svar-fix (car keys))
+                (or (svex-fastlookup (car keys) alist) (svex-x)))
+          (svex-alist-extract-aux (cdr keys) alist))))
+
+(define svex-alist-extract ((keys svarlist-p)
+                            (alist svex-alist-p))
+  :returns (sub-alist svex-alist-p)
+  :verify-guards nil
+  (mbe :logic
+       (if (atom keys)
+           nil
+         (cons (cons (svar-fix (car keys))
+                     (or (svex-fastlookup (car keys) alist) (svex-x)))
+               (svex-alist-extract (cdr keys) alist)))
+       :exec (with-fast-alist alist (svex-alist-extract-aux keys alist)))
+  ///
+  (local (defthm svex-alist-extract-aux-elim
+           (equal (svex-alist-extract-aux x alist)
+                  (svex-alist-extract x alist))
+           :hints(("Goal" :in-theory (enable svex-alist-extract-aux)))))
+
+  (verify-guards svex-alist-extract)
+
+  (defret svex-alist-eval-of-svex-alist-extract
+    (equal (svex-alist-eval sub-alist env)
+           (svex-env-extract keys (svex-alist-eval alist env)))
+    :hints(("Goal" :in-theory (enable svex-env-extract)
+            :induct t
+            :expand ((svex-alist-eval nil env)
+                     (:free (a b) (svex-alist-eval (cons a b) env))))))
+
+  (defret lookup-in-svex-alist-extract
+    (equal (svex-lookup v sub-alist)
+           (and (member (svar-fix v) (svarlist-fix keys))
+                (or (svex-lookup v alist) (svex-x))))
+    :hints(("Goal"
+            :in-theory
+            (e/d (svex-lookup hons-assoc-equal svarlist-fix)
+
+; Matt K.:  The following rewrite rule made the proof fail after introducing
+; the change, after v8-0, to keep LET expressions on right-hand-sides of
+; rewrite rules, like this one.
+
+                 (hons-assoc-equal-of-svex-alist-fix))))))

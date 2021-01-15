@@ -76,7 +76,7 @@ names in SystemVerilog hierarchical syntax (strings)."
    ;;             "Mapping for signal names given by the user.")
    (namemap svtv-name-lhs-map-p
             "Processed name map giving the canonical LHS of each name."))
-  :extra-binder-names (values nextstate))
+  :extra-binder-names (values nextstate renamed-values renamed-fsm))
 
 (define svtv-fsm->values ((x svtv-fsm-p))
   :enabled t

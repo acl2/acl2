@@ -32,9 +32,7 @@
 (in-package "SV")
 
 (include-book "svtv-stobj-pipeline")
-(include-book "svtv-stobj-cycle")
-(include-book "svtv-stobj-rewrite")
-(include-book "svtv-stobj-phase")
+(include-book "svtv-stobj-defcycle")
 (include-book "process")
 (include-book "centaur/misc/hons-remove-dups" :dir :System)
 
@@ -246,15 +244,7 @@
     (cons (cons name ext-entrylist)
           (svtv-lines-expand (cdr lines) nphases namemap))))
     
-(define svtv-data-invalidate (svtv-data)
-  :enabled t
-  (b* ((svtv-data (update-svtv-data->flatten-validp nil svtv-data))
-       (svtv-data (update-svtv-data->namemap-validp nil svtv-data))
-       (svtv-data (update-svtv-data->flatnorm-validp nil svtv-data))
-       (svtv-data (update-svtv-data->phase-fsm-validp nil svtv-data))
-       (svtv-data (update-svtv-data->cycle-fsm-validp nil svtv-data))
-       (svtv-data (update-svtv-data->pipeline-validp nil svtv-data)))
-    svtv-data))
+
 
 
 (define svtv-compute-trivial-cycle ((pre-simplify booleanp) svtv-data)
@@ -291,9 +281,7 @@
                                   (initial-state-vars)
                                   svtv-data)
   :guard (and (svtv-data->phase-fsm-validp svtv-data)
-              (svtv-data->cycle-fsm-validp svtv-data)
-              (svtv-data->namemap-validp svtv-data)
-              (not (svtv-data->pipeline-validp svtv-data)))
+              (svtv-data->cycle-fsm-validp svtv-data))
   (b* ((namemap (svtv-data->namemap svtv-data))
 
        ;; Compute pipeline
@@ -313,9 +301,7 @@
                                    :inputs inputs
                                    :overrides override-tests
                                    :initst initst))
-       (svtv-data (update-svtv-data->pipeline-setup setup svtv-data))
-       (svtv-data (svtv-data-compute-pipeline svtv-data :rewrite pre-simplify))
-
+       (svtv-data (svtv-data-maybe-compute-pipeline setup svtv-data :rewrite pre-simplify))
        (svtv-data (svtv-data-maybe-rewrite-pipeline simplify svtv-data)))
     svtv-data))
 
@@ -357,6 +343,9 @@
                :nphases nphases)))
 
 
+
+
+
 (define defsvtv-stobj-main ((name symbolp)
                             (ins true-list-listp)
                             (overrides true-list-listp)
@@ -375,28 +364,18 @@
   :returns (mv err
                (svtv (implies (not err) (svtv-p svtv)))
                (new-svtv-data))
-  (b* ((svtv-data (svtv-data-invalidate svtv-data))
-       
-       ;; Compute base FSM
-       (svtv-data (update-svtv-data->design design svtv-data))
-       ((mv err svtv-data) (svtv-data-compute-flatten svtv-data))
-       ((when err)
-        (mv err nil svtv-data))
-       (svtv-data (svtv-data-compute-flatnorm svtv-data))
-       (svtv-data (svtv-data-compute-phase-fsm svtv-data))
-
-       (svtv-data (svtv-compute-trivial-cycle pre-simplify svtv-data))
-
-       ;; Add namemap
+  (b* ((phases (list (make-svtv-cyclephase :constants nil
+                                                 :inputs-free t
+                                                 :outputs-captured t)))
        (outs+ (append internals outs))
 
-
        (user-names (defsvtv-compute-user-namemap ins overrides outs+))
-       (svtv-data (update-svtv-data->user-names user-names svtv-data))
-       ((mv err svtv-data) (svtv-data-compute-namemap svtv-data))
+       
+       ((mv err svtv-data)
+        (svtv-data-defcycle-core design phases user-names svtv-data :rewrite-cycle pre-simplify))
+
        ((when err)
         (mv err nil svtv-data))
-
 
        (svtv-data (defsvtv-compute-pipeline
                     outs+ ins overrides simplify compose-simplify initial-state-vars svtv-data))
@@ -471,3 +450,4 @@
                    ;; ,state-machine
                    ,initial-state-vars ;; ,keep-final-state ,keep-all-states
                    ,define-macros ',parents ,short ,long ,stobj state))))
+
