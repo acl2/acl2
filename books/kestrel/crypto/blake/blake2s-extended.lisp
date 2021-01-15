@@ -148,27 +148,6 @@
            (all-unsigned-byte-p 8 (blake2s-extended-main d ll kk nn parameter-block)))
   :hints (("Goal" :in-theory (enable blake2s-extended-main))))
 
-;; (local
-;;  (defthm ceiling-helper
-;;    (implies (and (< x 18446744073709551552)
-;;                  (natp x))
-;;             (< (ceiling x 64) 288230376151711744))
-;;    :hints (("Goal" :in-theory (enable acl2::ceiling-in-terms-of-floor)))))
-
-(local
- (defthm ceiling-helper2
-   (implies (and (< x 18446744073709551552)
-                 (natp x))
-            (<= (ceiling x 64) 288230376151711744))
-   :hints (("Goal" :in-theory (enable acl2::ceiling-in-terms-of-floor)))))
-
-(local
- (defthm ceiling-helper3
-   (implies (and (< x 18446744073709551552)
-                 (natp x))
-            (<= (ceiling x 64) 288230376151711743))
-   :hints (("Goal" :in-theory (enable acl2::ceiling-in-terms-of-floor)))))
-
 ;; This function replaces the function blake2s.
 ;; Returns the hash, as a list of bytes of length NN.
 ;; TODO: Think about the case where we have a max length message and a key
