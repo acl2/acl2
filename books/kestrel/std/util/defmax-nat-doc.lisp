@@ -40,8 +40,8 @@
       which may or may not have a maximum;
       if it does not, we regard @($\\max$) as returning a special value
       distinct from all the natural numbers, e.g. @($\\bot$).
-      Thus, the notation defines a function from @($n$)-tuples
-      to natural numbers or @($\\bot$).")
+      Thus, the mathematical notation above defines a function
+      from @($n$)-tuples to natural numbers or @($\\bot$).")
 
     (xdoc::p
      "This macro introduces such a function,
@@ -59,7 +59,10 @@
       It also introduces theorems to help reason about the function,
       in particular to establish that the maximum exists
       without having to calculate it explicitly,
-      and to establish that the maximum is a certain value."))
+      and to establish that the maximum is a certain value.")
+
+    (xdoc::p
+     "See @(tsee defmin-int) for a related tool."))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -94,7 +97,7 @@
     (xdoc::desc
      "@('(x1 ... xn)')"
      (xdoc::p
-      "True list of the names of the zero or more variables
+      "List of the names of the zero or more variables
        to use as @($x_1,\\ldots,x_n$).")
      (xdoc::p
       "These are the formal parameters of @('f')."))
@@ -108,7 +111,7 @@
        @('x1'), ..., @('xn'), and @('y').")
      (xdoc::p
       "We write this term as @('body<x1,...,xn,y>'),
-       to emphasize its dependence on the variables."))
+       emphasizing its dependence on the variables."))
 
     (xdoc::desc
      "@(':guard') &mdash; default @('t')"
@@ -202,7 +205,7 @@
       "  (exists (y)"
       "          (and (natp y)"
       "               (f.elementp x1 ... xn y)"
-      "               (f.unboundp x1 ... xn y))))"
+      "               (f.uboundp x1 ... xn y))))"
       ""
       "(defthm booleanp-of-f.existsp"
       "  (booleanp (f.existsp x1 ... xn)))"))
@@ -320,5 +323,6 @@
      or to other suitably ordered domains.")
 
    (xdoc::p
-    "Besides maxima, similar macros could be introduced to declaratively define
-     minima, suprema, and infima.")))
+    "Besides maxima and minima (also see @(tsee defmin-int)),
+     similar macros could be introduced to declaratively define
+     suprema and infima.")))
