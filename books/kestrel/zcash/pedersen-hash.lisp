@@ -390,14 +390,7 @@
 
   (verify-guards jubjub-abst
     :hints (("Goal" :in-theory (e/d (ecurve::pfield-squarep)
-                                    (bitp)))))
-
-  (defrule jubjub-pointp-of-jubjub-abst
-    (implies (jubjub-abst bits)
-             (jubjub-pointp (jubjub-abst bits)))
-    :use maybe-jubjub-pointp-of-jubjub-abst
-    :disable maybe-jubjub-pointp-of-jubjub-abst
-    :enable maybe-jubjub-pointp))
+                                    (bitp))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -418,6 +411,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define jubjub-add ((point1 jubjub-pointp) (point2 jubjub-pointp))
+  :returns (point jubjub-pointp
+                  :hyp (and (jubjub-pointp point1) (jubjub-pointp point2))
+                  :hints (("Goal" :in-theory (enable jubjub-pointp))))
+  :short "Group addition [ZPS:4.1.8], on Jubjub."
+  (ecurve::twisted-edwards-add point1 point2 (jubjub-curve))
+  :guard-hints (("Goal" :in-theory (enable jubjub-pointp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define group-hash ((d byte-listp) (m byte-listp))
   :guard (and (= (len d) 8)
               (< (len m) (- blake::*blake2s-max-data-byte-length* 128)))
@@ -434,7 +437,7 @@
      which is the length of @($\\mathsf{URS)$)."))
   (b* ((hash (blake2s-256 d (append *urs* m)))
        (point (jubjub-abst (leos2bsp hash)))
-       ((when (not point)) nil)
+       ((unless (jubjub-pointp point)) nil)
        (qoint (jubjub-mul (jubjub-h) point))
        ((when (equal qoint (ecurve::twisted-edwards-neutral))) nil))
     qoint)
@@ -523,3 +526,149 @@
   (defret multiple-of-3-len-of-pedersen-hash
     (integerp (/ (len m1) 3))
     :hints (("Goal" :use len-of-pedersen-pad))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define pedersen-enc ((3bits bit-listp))
+  :guard (= (len 3bits) 3)
+  :returns (i integerp :hyp (bit-listp 3bits))
+  :short "The function @($\\mathsf{enc}$) in [ZPS:5.4.1.7]."
+  (b* ((s0 (first 3bits))
+       (s1 (second 3bits))
+       (s2 (third 3bits)))
+    (* (- 1 (* 2 s2))
+       (+ 1 s0 (* 2 s1)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defval *pedersen-c*
+  :short "The constant @($c$) in [ZPS:5.4.1.7]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We take the value from [ZPS].
+     Eventually we should confirm that it satisfies
+     the property described in [ZPS]."))
+  63)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define pedersen-segment-scalar ((segment bit-listp))
+  :guard (integerp (/ (len segment) 3))
+  :returns (i integerp :hyp (bit-listp segment))
+  :short "The function @($\\langle\\bullet\\rangle$) in [ZPS:5.4.1.7]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This returns the scalar that is used in the Jubjub multiplication,
+     i.e. @($\\langle M_i \\rangle$) for the segment @($M_i$)."))
+  (pedersen-segment-scalar-loop 1 segment)
+
+  :prepwork
+  ((local (include-book "arithmetic-3/top" :dir :system))
+   (define pedersen-segment-scalar-loop ((j posp) (segment bit-listp))
+     :guard (integerp (/ (len segment) 3))
+     :returns (i integerp :hyp (and (posp j) (bit-listp segment)))
+     (if (consp segment)
+         (+ (* (pedersen-enc (take 3 segment))
+               (expt 2 (* 4 (1- j))))
+            (pedersen-segment-scalar-loop (1+ j) (nthcdr 3 segment)))
+       0)
+     :measure (len segment)
+     :prepwork ((local (include-book "std/lists/nthcdr" :dir :system)))
+
+     :verify-guards nil ; done below
+
+     ///
+
+     (defrulel verify-guards-lemma
+       (implies (and (integerp (/ (len x) 3))
+                     (consp x))
+                (>= (len x) 3))
+       :cases ((equal (len x) 1)
+               (equal (len x) 2))
+       :rule-classes :linear
+       :prep-books ((include-book "std/lists/len" :dir :system)))
+
+     (verify-guards pedersen-segment-scalar-loop))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define pedersen-segment-point ((d byte-listp) (i posp))
+  :guard (= (len d) 8)
+  :returns (point? maybe-jubjub-pointp)
+  :short "The function @($\\mathcal{I}$) in [ZPS:5.4.1.7]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This returns a Jubjub point from (the index of) a segment.
+     However, @(tsee find-group-hash) may return @('nil'),
+     so we need to allow that case here.
+     [ZPS] does not explicitly handles that case,
+     perhaps because it is not going to happen with overwhelming probability.")
+   (xdoc::p
+    "We need to turn the index @($i$) into four bytes (i.e. 32 bits),
+     presumably in big endian and truncating any higher bytes."))
+  (b* ((i1 (1- i))
+       (i1-32bit (mod i1 (expt 2 32)))
+       (m (acl2::nat=>bebytes 4 i1-32bit)))
+    (find-group-hash d m))
+  :prepwork ((local (include-book "arithmetic-3/top" :dir :system)))
+  :guard-hints (("Goal" :in-theory (disable blake::bvplus-intro))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define pedersen-segment-addend ((d byte-listp) (segment bit-listp) (i posp))
+  :guard (and (= (len d) 8)
+              (integerp (/ (len segment) 3)))
+  :returns (point? maybe-jubjub-pointp)
+  :short "The addend point in the definition of
+          @($\\mathsf{PedersenHashPoint}$) [ZPS:5.4.1.7]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is @($[\\langle{M_i\\rangle]\\mathcal{I}_i^D$)."))
+  (b* ((ipoint (pedersen-segment-point d i))
+       ((unless (jubjub-pointp ipoint)) nil)
+       (scalar (pedersen-segment-scalar segment)))
+    (jubjub-mul scalar ipoint)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define pedersen-point ((d byte-listp) (m bit-listp))
+  :guard (and (= (len d) 8) (consp m))
+  :returns (point? maybe-jubjub-pointp)
+  :short "The function @($\\mathsf{PedersenHashToPoint}$) [ZPS:5.4.1.7]."
+  (b* ((m1 (pedersen-pad m)))
+    (pedersen-point-loop 1 d m1))
+
+  :prepwork
+  ((define pedersen-point-loop ((i posp) (d byte-listp) (m1 bit-listp))
+     :guard (and (= (len d) 8)
+                 (integerp (/ (len m1) 3)))
+     :returns (point? maybe-jubjub-pointp)
+     (b* (((when (<= (len m1) (* 3 *pedersen-c*)))
+           (pedersen-segment-addend d m1 i))
+          (point1 (pedersen-segment-addend d (take (* 3 *pedersen-c*) m1) i))
+          ((unless (jubjub-pointp point1)) nil)
+          (point2 (pedersen-point-loop (1+ i) d (nthcdr (* 3 *pedersen-c*) m1)))
+          ((unless (jubjub-pointp point2)) nil))
+       (jubjub-add point1 point2))
+     :measure (len m1)
+     :prepwork ((local (include-book "std/lists/nthcdr" :dir :system))))
+   (local (include-book "arithmetic/top" :dir :system))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define pedersen ((d byte-listp) (m bit-listp))
+  :guard (and (= (len d) 8) (consp m))
+  :returns (hash bit-listp)
+  :short "The function @($\\mathsf{PedersenHash}$) [ZPS:5.4.1.7]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We return @('nil') if, instead of a point, an error is returned.
+     This is distinguishes from a valid hash, which is not empty."))
+  (b* ((point (pedersen-point d m))
+       ((unless (jubjub-pointp point)) nil))
+    (jubjub-extract point)))
