@@ -32,4 +32,10 @@
                                       32)
                     (hex-string-to-bytes! "79e9fa3e5f9eb03e114b97a81b0104c19724726d1f23f9ec1810239195be01ca"))
 
-;; TODO: Add a test with a salt.
+;; A test with a salt
+(acl2::assert-equal (blake2s-extended '(0 1 2)
+                                      nil ;key
+                                      '(78 97 67 108 56 56 56 56) ;salt
+                                      nil ;personalization
+                                      32)
+                    (hex-string-to-bytes! "500b8ddc2ab792780fe152de2d99f1e97f39fafb6691ae4126168b48acf91a87"))
