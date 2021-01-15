@@ -18,7 +18,9 @@
 
 (defpkg "ZCASH" (append (set-difference-eq *std-pkg-symbols*
                                            '())
-                        '(bit-listp
+                        '(bitp
+                          bytep
+                          bit-listp
                           byte-listp
                           defxdoc+
                           ecurve::jubjub-curve

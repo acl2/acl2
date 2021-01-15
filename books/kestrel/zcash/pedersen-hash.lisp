@@ -10,6 +10,8 @@
 
 (in-package "ZCASH")
 
+(include-book "blake2-hash")
+
 (include-book "kestrel/crypto/ecurve/jubjub" :dir :system)
 (include-book "kestrel/utilities/bits-as-digits" :dir :system)
 (include-book "kestrel/utilities/bytes-as-digits" :dir :system)
@@ -17,7 +19,6 @@
 (include-book "kestrel/utilities/strings/strings-codes" :dir :system)
 (include-book "std/util/defval" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -389,4 +390,82 @@
 
   (verify-guards jubjub-abst
     :hints (("Goal" :in-theory (e/d (ecurve::pfield-squarep)
-                                    (bitp))))))
+                                    (bitp)))))
+
+  (defrule jubjub-pointp-of-jubjub-abst
+    (implies (jubjub-abst bits)
+             (jubjub-pointp (jubjub-abst bits)))
+    :use maybe-jubjub-pointp-of-jubjub-abst
+    :disable maybe-jubjub-pointp-of-jubjub-abst
+    :enable maybe-jubjub-pointp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define jubjub-h ()
+  :returns (h natp)
+  :short "The constant @($h_\\mathbb{J}$) [ZPS:5.4.8.3]."
+  8)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define jubjub-mul ((scalar integerp) (point jubjub-pointp))
+  :returns (point1 jubjub-pointp
+                   :hyp (jubjub-pointp point)
+                   :hints (("Goal" :in-theory (enable jubjub-pointp))))
+  :short "Scalar multiplication [ZPS:4.1.8], on Jubjub."
+  (ecurve::twisted-edwards-mul scalar point (jubjub-curve))
+  :guard-hints (("Goal" :in-theory (enable jubjub-pointp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define group-hash ((d byte-listp) (m byte-listp))
+  :guard (and (= (len d) 8)
+              (< (len m) (- blake::*blake2s-max-data-byte-length* 128)))
+  :returns (point? maybe-jubjub-pointp)
+  :short "The function
+          @($\\mathsf{GroupHash_\\mathsf{URS}^{\\mathbb{J}^(r)*}}$)
+          [ZPS:5.4.8.5]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "[ZPS] allows the argument @($M$) to have any length,
+     but there is a (large) limit (see guard of @(tsee blake2s-256)).
+     The limit here must be dimished by 64,
+     which is the length of @($\\mathsf{URS)$)."))
+  (b* ((hash (blake2s-256 d (append *urs* m)))
+       (point (jubjub-abst (leos2bsp hash)))
+       ((when (not point)) nil)
+       (qoint (jubjub-mul (jubjub-h) point))
+       ((when (equal qoint (ecurve::twisted-edwards-neutral))) nil))
+    qoint)
+  :guard-hints (("Goal" :do-not-induct t)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define find-group-hash ((d byte-listp) (m byte-listp))
+  :guard (and (= (len d) 8)
+              (< (len m) (- blake::*blake2s-max-data-byte-length* 129)))
+  :returns (point? maybe-jubjub-pointp)
+  :short "The function @($\\mathsf{FindGroupHash^{\\mathbb{J}^(r)*}}$)
+          [ZPS:5.4.8.5]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Since we need to append a byte to the message input,
+     we need to diminish its maximum size by one in the guard."))
+  (find-group-hash-loop 0 d m)
+
+  :prepwork
+  ((define find-group-hash-loop ((i natp) (d byte-listp) (m byte-listp))
+     :guard (and (= (len d) 8)
+                 (< (len m) (- blake::*blake2s-max-data-byte-length* 129)))
+     :returns (point? maybe-jubjub-pointp)
+     (if (mbt (natp i))
+         (if (< i 256)
+             (b* ((point? (group-hash d (append m (list i)))))
+               (or point?
+                   (find-group-hash-loop (1+ i) d m)))
+           nil)
+       (acl2::impossible))
+     :guard-hints (("Goal" :in-theory (enable bytep)))
+     :measure (nfix (- 256 i)))))
