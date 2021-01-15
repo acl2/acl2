@@ -469,3 +469,57 @@
        (acl2::impossible))
      :guard-hints (("Goal" :in-theory (enable bytep)))
      :measure (nfix (- 256 i)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defval *uncommitted-sapling*
+  :short "The constant @($\\mathsf{Uncommitted}^\\mathsf{Sapling}$) [ZPS:5.3]."
+  (i2lebsp *l-merkle-sapling* 1))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define pedersen-pad ((m bit-listp))
+  :guard (consp m)
+  :returns (m1 bit-listp :hyp (bit-listp m))
+  :short "Pedersen hash padding [ZPS:5.4.1.7]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The message is padded with zero bits on the right
+     to make its length a multiple of 3."))
+  (case (mod (len m) 3)
+    (0 m)
+    (1 (append m (list 0 0)))
+    (2 (append m (list 0))))
+  ///
+
+  (local (include-book "arithmetic-3/top" :dir :system))
+
+  (defruledl lemma1
+    (implies (and (integerp i)
+                  (equal (mod i 3) 0))
+             (equal (* 3 (ceiling i 3))
+                    i)))
+
+  (defruledl lemma2
+    (implies (and (integerp i)
+                  (equal (mod i 3) 1))
+             (equal (* 3 (ceiling i 3))
+                    (+ i 2))))
+
+  (defruledl lemma3
+    (implies (and (integerp i)
+                  (equal (mod i 3) 2))
+             (equal (* 3 (ceiling i 3))
+                    (+ i 1))))
+
+  (defret len-of-pedersen-pad
+    (equal (len m1)
+           (* 3 (ceiling (len m) 3)))
+    :hints (("Goal" :use ((:instance lemma1 (i (len m)))
+                          (:instance lemma2 (i (len m)))
+                          (:instance lemma3 (i (len m)))))))
+
+  (defret multiple-of-3-len-of-pedersen-hash
+    (integerp (/ (len m1) 3))
+    :hints (("Goal" :use len-of-pedersen-pad))))
