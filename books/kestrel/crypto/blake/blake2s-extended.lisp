@@ -174,12 +174,12 @@
 ;; TODO: Think about the case where we have a max length message and a key
 (defund blake2s-extended (data-bytes
                           key-bytes
-                          salt ; 8 bytes, or nil meaning no salt
-                          personalization ; 8 bytes, or nil meaning no personalization
+                          salt ; a list of 8 bytes, or nil for no salt
+                          personalization ; a list of 8 bytes, or nil for no personalization
                           nn ;; number of hash bytes to produce
                           )
-  (declare (xargs :guard (and (all-unsigned-byte-p 8 data-bytes)
-                              (true-listp data-bytes)
+  (declare (xargs :guard (and (true-listp data-bytes)
+                              (all-unsigned-byte-p 8 data-bytes)
                               ;; TODO I want to say this:
                               ;; (< (len data-bytes) *blake2s-max-data-byte-length*)
                               ;; But there are two potential issues related to
@@ -188,11 +188,9 @@
                               ;; and the expression (+ ll *bb*) in blake2s-extended-main
                               ;; can overflow.
                               (< (len data-bytes) (- *blake2s-max-data-byte-length* 64))
-                              (all-unsigned-byte-p 8 key-bytes)
                               (true-listp key-bytes)
+                              (all-unsigned-byte-p 8 key-bytes)
                               (<= (len key-bytes) 32)
-                              (posp nn)
-                              (<= nn 32)
                               (or (null salt)
                                   (and (true-listp salt)
                                        (all-unsigned-byte-p 8 salt)
@@ -200,7 +198,9 @@
                               (or (null personalization)
                                   (and (true-listp personalization)
                                        (all-unsigned-byte-p 8 personalization)
-                                       (equal 8 (len personalization)))))))
+                                       (equal 8 (len personalization))))
+                              (posp nn)
+                              (<= nn 32))))
   (let* ((ll (len data-bytes))
          (kk (len key-bytes))
          (salt (if salt salt (repeat 8 0)))
