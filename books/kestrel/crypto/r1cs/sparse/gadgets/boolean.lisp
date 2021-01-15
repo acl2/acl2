@@ -15,8 +15,9 @@
 (local (include-book "kestrel/crypto/r1cs/sparse/rules" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 
-;; Make a constraint (in sparse form) that asserts that a var is a boolean
-;; (that is, either 0 or 1).  The constraint is of the form: (b)(b - 1) = 0.
+;; Make an R1CS constraint (in sparse form) that asserts that a var is a
+;; boolean (that is, either 0 or 1).  The constraint is of the form: (b)(b - 1)
+;; = 0.  We sometimes call this a "bit constraint".
 (defund make-boolean-constraint (var-name)
   (declare (xargs :guard (symbolp var-name)))
   (r1cs-constraint
