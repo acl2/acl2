@@ -32,38 +32,6 @@
            (fep x prime))
   :hints (("Goal" :in-theory (enable fep bitp))))
 
-(defun constrain-to-be-bit (b prime)
-  (declare (xargs :guard (and (rtl::primep prime)
-                              (fep b prime))))
-  (equal (mul (sub 1 b prime) b prime)
-         0))
-
-(defthm constrain-to-be-bit-correct
-  (implies (and (fep x prime)
-                (rtl::primep prime))
-           (iff (constrain-to-be-bit x prime)
-                (bitp x)))
-  :hints (("Goal" :in-theory (disable pfield::equal-of-add-move-negations-bind-free))))
-
-;; For when we have "add of neg" instead of sub.
-(defthm equal-of-0-and-mul-of-add-of-1-and-neg-same
-  (implies (and (fep x prime)
-                (rtl::primep prime))
-           (equal (equal 0 (mul x (add 1 (neg x prime) prime) prime))
-                  (bitp x)))
-  :hints (("Goal" :use (:instance constrain-to-be-bit-correct)
-           :in-theory (disable constrain-to-be-bit-correct))))
-
-;; For when we have "add of neg" instead of sub.
-(defthm equal-of-0-and-mul-of-add-of-1-and-neg-same-alt
-  (implies (and (fep x prime)
-                (rtl::primep prime))
-           (equal (equal 0 (mul (add 1 (neg x prime) prime) x prime))
-                  (bitp x)))
-  :hints (("Goal" :use (:instance constrain-to-be-bit-correct)
-           :in-theory (disable constrain-to-be-bit-correct))))
-
-
 ;;
 ;; Selection constraint (if-then-else)
 ;;
