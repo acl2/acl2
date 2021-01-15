@@ -245,7 +245,7 @@
    (xdoc::p
     "The definition in [ZPS] takes a square root @($u$) at some point,
      which may or may not exist; if it does, it is not exactly specified.
-     So we use @(tsee pfield-squarep) and @('pfield-square->root') here.
+     So we use @(tsee ecurve::pfield-squarep) and @('pfield-square->root').
      It should be the case that the definition
      does not depend on the exact square root chosen;
      we should prove that eventually.")
