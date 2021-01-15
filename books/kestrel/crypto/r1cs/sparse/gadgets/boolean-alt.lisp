@@ -18,7 +18,7 @@
 ;; Make an R1CS constraint (in sparse form) that asserts that a var is a
 ;; boolean (that is, either 0 or 1).  The constraint is of the form: (b)(1-b)
 ;; = 0.  We sometimes call this a "bit constraint".
-(defund make-boolean-constraint (var-name)
+(defund make-boolean-constraint-alt (var-name)
   (declare (xargs :guard (symbolp var-name)))
   (r1cs-constraint
    (list `(1 ,var-name))         ;; a vector
@@ -29,13 +29,13 @@
 ;; Prove that, if we make a boolean constraint for a var, then the constraint
 ;; holds over a valuation (that binds the var) iff the value of the var is
 ;; either 0 or 1.
-(defthm make-boolean-constraint-correct
+(defthm make-boolean-constraint-alt-correct
   (implies (and (r1cs-valuationp valuation p)
                 (valuation-bindsp valuation var-name)
                 (rtl::primep p))
-           (iff (r1cs-constraint-holdsp (make-boolean-constraint var-name) valuation p)
+           (iff (r1cs-constraint-holdsp (make-boolean-constraint-alt var-name) valuation p)
                 (bitp (lookup-eq var-name valuation))))
-  :hints (("Goal" :in-theory (enable make-boolean-constraint
+  :hints (("Goal" :in-theory (enable make-boolean-constraint-alt
                                      r1cs-constraint-holdsp
                                      integerp-of-lookup-equal
                                      acl2-numberp-of-lookup-equal))))
