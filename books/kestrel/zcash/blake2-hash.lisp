@@ -10,7 +10,7 @@
 
 (in-package "ZCASH")
 
-(include-book "kestrel/crypto/blake/blake2s" :dir :system)
+(include-book "kestrel/crypto/blake/blake2s-extended" :dir :system)
 (include-book "kestrel/fty/bit-list" :dir :system)
 (include-book "kestrel/fty/byte-list" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
@@ -47,12 +47,12 @@
      to take @($\\ell$) as a parameter,
      at some point.")
    (xdoc::p
-    "[ZPS] sets the size of the BLAKE2s key (i.e. personalization string)
-     to 8 bytes.
-     It puts no restrictions on the size of the data (i.e. input),
+    "[ZPS] puts no restrictions on the size of the data (i.e. input),
      but we follow the guard in the BLAKE2 library.
-     The output must be 32 bytes, i.e. 256 bits."))
-  (blake::blake2s input pers 32)
+     The output must be 32 bytes, i.e. 256 bits.")
+   (xdoc::p
+    "We pass the empty list of bytes as both key and salt."))
+  (blake::blake2s-extended input nil nil pers 32)
   :guard-hints (("Goal" :in-theory (enable verify-guards-lemma)))
 
   :prepwork
