@@ -16,7 +16,7 @@
   :parents (verified)
   :short "Basic functions and types in Smtlink.")
 
-(defval *SMT-basics*
+(define SMT-basics ()
   :parents (SMT-basics)
   :short "Basic ACL2 functions supported in Smtlink."
   (append
