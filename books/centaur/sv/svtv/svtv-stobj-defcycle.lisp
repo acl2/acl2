@@ -73,13 +73,13 @@
 
 (defun defcycle-fn (name design phases names rewrite-phases rewrite-cycle stobj)
   `(make-event
-    (b* (((mv err svtv-stobj)
+    (b* (((mv err ,stobj)
           (svtv-data-defcycle-core ,design ,phases ,names
                                    ,stobj
                                    :rewrite-phases ,rewrite-phases
                                    :rewrite-cycle ,rewrite-cycle))
          ((when err)
-          (mv err nil state svtv-stobj))
+          (mv err nil state ,stobj))
          (fsm (make-svtv-fsm :base-fsm (svtv-data->cycle-fsm svtv-data)
                              :namemap (svtv-data->namemap svtv-data))))
       (mv nil
@@ -91,7 +91,7 @@
                     (defun ,',name ()
                       (declare (xargs :guard t))
                       ',fsm)))
-          state svtv-stobj))))
+          state ,stobj))))
 
 
 (defmacro defcycle (name &key

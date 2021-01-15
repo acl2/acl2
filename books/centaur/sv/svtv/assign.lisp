@@ -255,8 +255,8 @@
 
 (define svtv-env-to-4vec-assigns
   ((env svex-env-p
-        "The assignment given by the user -- keys are named variables in the
-         lhsmap.")
+        "The assignment given by the user -- keys are either named variables in the
+         lhsmap, or else override-val svars that refer to raw wires not in the namemap.")
    (map svtv-name-lhs-map-p
         "Mapping from user names to canonical signal LHSes"))
   :returns (assigns 4vec-assigns-p)
@@ -265,7 +265,11 @@
        ((unless (mbt (and (consp (car env))
                           (svar-p (caar env)))))
         (svtv-env-to-4vec-assigns (cdr env) map))
-       ((cons var val) (car env))
+       ((cons (svar var) val) (car env))
+       ((when var.override-val)
+        ;; This is intended as a raw input assignment, not a renamed one, and
+        ;; is skipped for our purposes here.
+        (svtv-env-to-4vec-assigns (cdr env) map))
        (look (hons-get var map))
        ((unless look)
         (er hard? 'svtv-env-to-4vec-assigns
@@ -827,18 +831,44 @@
     :hints(("Goal" :in-theory (enable <fn> svex-alist-vars netassigns-driver-vars)))))
 
 
+(define svtv-env-filter-raw-values ((env svex-env-p))
+  :returns (raw-env svex-env-p)
+  (b* (((when (atom env)) nil)
+       ((unless (mbt (and (consp (car env)) (svar-p (caar env)))))
+        (svtv-env-filter-raw-values (cdr env)))
+       ((cons (svar var) val) (car env))
+       ((unless var.override-val)
+        (svtv-env-filter-raw-values (cdr env))))
+    (cons (cons (change-svar var :override-val nil) (4vec-fix val))
+          (svtv-env-filter-raw-values (cdr env)))))
 
+(define svtv-subst-filter-raw-values ((env svex-alist-p))
+  :returns (raw-subst svex-alist-p)
+  (b* (((when (atom env)) nil)
+       ((unless (mbt (and (consp (car env)) (svar-p (caar env)))))
+        (svtv-subst-filter-raw-values (cdr env)))
+       ((cons (svar var) val) (car env))
+       ((unless var.override-val)
+        (svtv-subst-filter-raw-values (cdr env))))
+    (cons (cons (change-svar var :override-val nil) (svex-fix val))
+          (svtv-subst-filter-raw-values (cdr env))))
+  ///
+  (defret svex-alist-eval-of-<fn>
+    (equal (svex-alist-eval raw-subst env2)
+           (svtv-env-filter-raw-values (svex-alist-eval env env2)))
+    :hints(("Goal" :in-theory (enable svtv-env-filter-raw-values svex-alist-eval)))))
 
 (define svtv-subst-to-values ((subst svex-alist-p)
                               (map svtv-name-lhs-map-p)
                               (updates svex-alist-p))
   ;; :guard (lhslist-nonoverride-p (alist-vals map))
   :returns (val-subst svex-alist-p)
-  (netassigns->resolves
-   (assigns->netassigns
-    (assigns-to-overrideval-assigns
-     (svtv-subst-to-assigns subst map)
-     updates)))
+  (append (svtv-subst-filter-raw-values subst)
+          (netassigns->resolves
+           (assigns->netassigns
+            (assigns-to-overrideval-assigns
+             (svtv-subst-to-assigns subst map)
+             updates))))
   ///
   (defret override-test-keys-of-<fn>
     (implies (svar->override-test v)
@@ -865,17 +895,19 @@
 
 
 
+
 (define svtv-env-to-values ((env svex-env-p)
                             (map svtv-name-lhs-map-p)
                             (updates svex-alist-p))
   ;; :guard (lhslist-nonoverride-p (alist-vals map))
   :returns (val-inputs svex-env-p)
-  (4vec-netassigns->resolves
-   (4vec-assigns->netassigns
-    (4vec-assigns-to-overrideval-assigns
-     (svtv-env-to-4vec-assigns
-      env map)
-     updates)))
+  (append (svtv-env-filter-raw-values env)
+          (4vec-netassigns->resolves
+           (4vec-assigns->netassigns
+            (4vec-assigns-to-overrideval-assigns
+             (svtv-env-to-4vec-assigns
+              env map)
+             updates)))) 
   ;; (svex-alist-eval-likely-all-quotes
   ;;  (svtv-subst-to-values (svex-env-to-alist env) map updates)
   ;;  nil)
