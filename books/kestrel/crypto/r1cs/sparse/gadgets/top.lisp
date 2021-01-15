@@ -11,3 +11,4 @@
 (in-package "R1CS")
 
 (include-book "boolean")
+(include-book "boolean-alt")
