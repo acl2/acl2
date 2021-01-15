@@ -13,9 +13,11 @@
 (include-book "kestrel/crypto/ecurve/jubjub" :dir :system)
 (include-book "kestrel/utilities/bits-as-digits" :dir :system)
 (include-book "kestrel/utilities/bytes-as-digits" :dir :system)
+(include-book "kestrel/utilities/bits-and-bytes-as-digits" :dir :system)
 (include-book "kestrel/utilities/strings/strings-codes" :dir :system)
 (include-book "std/util/defval" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -87,6 +89,23 @@
     :hints (("Goal"
              :use (:instance acl2::lebytes=>nat-upper-bound
                    (acl2::digits s))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define leos2bsp ((bytes byte-listp))
+  :returns (bits bit-listp)
+  :short "The function @($\\mathsf{LEOS2BSP}$) [ZPS:5.2]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The @($\\ell$) argumnent can be determined from the other argument:
+     it is the length of the other argument times 8.
+     Thus, in our formalization we just have one argument."))
+  (acl2::lebytes=>bits bytes)
+  ///
+  (defret len-of-leos2bsp
+    (equal (len bits)
+           (* 8 (len bytes)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
