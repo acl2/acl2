@@ -203,6 +203,7 @@
            (blockp (padded-key-block key-bytes)))
   :hints (("Goal" :in-theory (enable padded-key-block blockp))))
 
+;; See RFC 7693 Sec 3.3 (Padding Data ...)
 (defund d-blocks (data-bytes key-bytes)
   (declare (xargs :guard (and (all-unsigned-byte-p 8 data-bytes)
                               (true-listp data-bytes)
@@ -211,25 +212,14 @@
                               (<= (len key-bytes) 32))))
   (if (and (not (consp data-bytes))
            (not (consp key-bytes)))
-      (list (repeat (/ *bb* 4) 0)) ;;special case, a single block of all 0s
+      ;; special case for unkeyed empty message: d contains a single block of
+      ;; all 0s:
+      (list (repeat (/ *bb* 4) 0))
     (let* ((padded-data-bytes (pad-data-bytes data-bytes)))
       (if (consp key-bytes)
           (cons (padded-key-block key-bytes)
                 (bytes-to-blocks padded-data-bytes))
         (bytes-to-blocks padded-data-bytes)))))
-
-(defthm equal-of-0-and-ceiling
-  (implies (and (natp i)
-                (posp j))
-           (equal (equal 0 (ceiling i j))
-                  (equal 0 i)))
-  :hints (("Goal" :in-theory (enable ceiling))))
-
-(defthm <-of-0-and-ceiling
-  (implies (and (posp i)
-                (posp j))
-           (< 0 (ceiling i j)))
-  :hints (("Goal" :in-theory (enable ceiling))))
 
 (defthm consp-of-d-blocks
   (consp (d-blocks data-bytes key-bytes))
@@ -263,6 +253,7 @@
                   (bvplus *w* x y)))
   :hints (("Goal" :in-theory (enable bvplus bvchop))))
 
+;; See RFC 7693 Sec 3.1 (Mixing Function G)
 (defund g (v a b c d x y)
   (declare (xargs :guard (and (blockp v)
                               (natp a)
@@ -303,7 +294,9 @@
 
 (local (in-theory (disable natp)))
 
-(defund loop2 (i v m)
+;; Formalization of the first FOR loop in the compression function F (RFC 7693
+;; Sec 3.2).
+(defund f-loop-1 (i v m)
   (declare (xargs :guard (and (natp i)
                               (<= i *r*)
                               (blockp v)
@@ -323,15 +316,17 @@
            (v (g v 1 6 11 12 (nth (nth 10 s) m) (nth (nth 11 s) m)))
            (v (g v 2 7  8 13 (nth (nth 12 s) m) (nth (nth 13 s) m)))
            (v (g v 3 4  9 14 (nth (nth 14 s) m) (nth (nth 15 s) m))))
-      (loop2 (+ 1 i) v m))))
+      (f-loop-1 (+ 1 i) v m))))
 
-(defthm blockp-of-loop2
+(defthm blockp-of-f-loop-1
   (implies (and (blockp v)
                 (blockp m))
-           (blockp (loop2 i v m)))
-  :hints (("Goal" :in-theory (enable loop2))))
+           (blockp (f-loop-1 i v m)))
+  :hints (("Goal" :in-theory (enable f-loop-1))))
 
-(defund loop3 (i h v)
+;; Formalization of the second FOR loop in the compression function F (RFC 7693
+;; Sec 3.2).
+(defund f-loop-2 (i h v)
   (declare (xargs :guard (and (natp i)
                               (<= i 8)
                               (true-listp h)
@@ -344,25 +339,26 @@
           (not (mbt (natp i))))
       h
     (let ((h (update-nth i (wordxor (nth i h) (wordxor (nth i v) (nth (+ i 8) v))) h)))
-      (loop3 (+ i 1) h v))))
+      (f-loop-2 (+ i 1) h v))))
 
-(defthm len-of-loop3
+(defthm len-of-f-loop-2
   (implies (equal 8 (len h))
-           (equal (len (loop3 i h v))
+           (equal (len (f-loop-2 i h v))
                   8))
-  :hints (("Goal" :in-theory (enable loop3))))
+  :hints (("Goal" :in-theory (enable f-loop-2))))
 
-(defthm all-wordp-of-loop3
+(defthm all-wordp-of-f-loop-2
   (implies (and (equal 8 (len h))
                 (all-wordp h))
-           (all-wordp (loop3 i h v)))
-  :hints (("Goal" :in-theory (enable loop3))))
+           (all-wordp (f-loop-2 i h v)))
+  :hints (("Goal" :in-theory (enable f-loop-2))))
 
-(defthm true-listp-of-loop3
+(defthm true-listp-of-f-loop-2
   (implies (true-listp h)
-           (true-listp (loop3 i h v)))
-  :hints (("Goal" :in-theory (enable loop3))))
+           (true-listp (f-loop-2 i h v)))
+  :hints (("Goal" :in-theory (enable f-loop-2))))
 
+;; See RFC 7693 Sec 3.2 (Compression Function F)
 (defund f (h m tvar f)
   (declare (xargs :guard (and (true-listp h)
                               (all-wordp h)
@@ -378,8 +374,8 @@
                             (wordxor (nth 14 v) #xFFFFFFFF) ;todo: use bvnot, or update for blake2b
                             v)
               v))
-         (v (loop2 0 v m))
-         (h (loop3 0 h v)))
+         (v (f-loop-1 0 v m))
+         (h (f-loop-2 0 h v)))
     h))
 
 (defthm len-of-f
@@ -399,6 +395,7 @@
            (all-wordp (f h m tvar f)))
   :hints (("Goal" :in-theory (enable f))))
 
+;; Formalization of the FOR loop in function BLAKE2 (RFC 7693 Sec 3.3).
 (defund loop1 (i bound h d)
   (declare (xargs :guard (and (natp i)
                               (natp bound)
@@ -476,6 +473,7 @@
   (all-unsigned-byte-p 8 (words-to-bytes words))
   :hints (("Goal" :in-theory (enable words-to-bytes))))
 
+;; See the function BLAKE2 in RFC 7693 Sec 3.3.
 ;;TODO: Consider the case when ll is the max.  Then (+ ll *bb*) is > 2^64, contrary to the documentation of f.
 (defund blake2s-main (d ll kk nn)
   (declare (xargs :guard (and (true-listp d)
@@ -494,9 +492,9 @@
   (let* ((h (iv))
          (h (update-nth 0
                         (wordxor (nth 0 h)
-                                   (wordxor #x01010000
-                                            (wordxor (acl2::bvshl 32 kk 8)
-                                                     nn)))
+                                 (wordxor #x01010000
+                                          (wordxor (acl2::bvshl 32 kk 8)
+                                                   nn)))
                         h))
          (dd (len d))
          (h (if (> dd 1)
