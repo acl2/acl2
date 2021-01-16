@@ -14,6 +14,7 @@
 (include-book "blake2-hash")
 (include-book "jubjub")
 (include-book "pedersen-hash")
+(include-book "randomness-beacon")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

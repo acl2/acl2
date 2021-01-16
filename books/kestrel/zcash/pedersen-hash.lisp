@@ -13,9 +13,7 @@
 (include-book "bit-byte-integer-conversions")
 (include-book "blake2-hash")
 (include-book "jubjub")
-
-(include-book "kestrel/utilities/strings/strings-codes" :dir :system)
-(include-book "xdoc/defxdoc-plus" :dir :system)
+(include-book "randomness-beacon")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -58,22 +56,6 @@
   ///
   (defret len-of-hash-extract
     (equal (len bits) *l-merkle-sapling*)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defval *urs*
-  :short "The constant @($\\mathsf{URS}$) [ZPS:5.9]."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is copied and pasted from [ZPS], and visually compared with it.
-     Nonetheless, eventually it would be good to replicate, in ACL2,
-     its calculation, which is described in [ZPS:5.9]."))
-  (acl2::string=>nats
-   "096b36a5804bfacef1691e173c366a47ff5ba84a44f26ddd7e8d9f79d5b42df0")
-  ///
-  (assert-event (byte-listp *urs*))
-  (assert-event (equal (len *urs*) 64)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
