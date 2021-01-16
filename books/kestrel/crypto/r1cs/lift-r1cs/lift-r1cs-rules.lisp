@@ -2,6 +2,7 @@
 
 ;; todo: reduce:
 (include-book "../gadgets")
+(include-book "../gadgets/xor-rules")
 (include-book "kestrel/axe/axe-syntax" :dir :system)
 (include-book "kestrel/axe/axe-syntax-functions-bv" :dir :system) ;for bind-bv-size-axe (todo: separate out the axe rules)
 (include-book "kestrel/prime-fields/prime-fields-rules" :dir :system)
@@ -193,75 +194,7 @@
                                   (x (add (mul k2 x p) y p)))
            :in-theory (disable bitp-of-add-of-constant-negated))))
 
-;proof is trivial by opening bitp?
-(defthm xor-idiom-1
-  (implies (and (bitp x)
-                (bitp y)
-                (fep z p)
-                (posp p)
-                (< 2 p)
-                (RTL::PRIMEP P))
-           (equal (equal (mul '2 (mul x y p) p) (add x (add y (mul '-1 z p) p) p))
-                  (equal z (acl2::bitxor x y))))
-  :hints (("Goal" :use (:instance r1cs::xor-constraint-correct
-                                  (a x)
-                                  (b y)
-                                  (c z)
-                                  (prime p))
-           :in-theory (e/d (R1CS::XOR-CONSTRAINT)
-                           (r1cs::xor-constraint-correct)))))
-
-;proof is trivial by opening bitp?
-(defthm xor-idiom-2
-  (implies (and (bitp x)
-                (bitp y)
-                (fep z p)
-                (posp p)
-                (< 2 p)
-                (RTL::PRIMEP P))
-           (equal (equal (mul '2 (mul x y p) p) (add y (add x (mul '-1 z p) p) p))
-                  (equal z (acl2::bitxor x y))))
-  :hints (("Goal" :use (:instance xor-idiom-1)
-           :in-theory (disable xor-idiom-1))))
-
 (local (in-theory (disable ACL2::BITP-BECOMES-UNSIGNED-BYTE-P)))
-
-(defthm xor-idiom-3
-  (implies (and (bitp x)
-                (bitp y)
-                (< 2 p)
-                (rtl::primep p))
-           (equal (add x (add y (mul '-2 (mul x y p) p) p) p)
-                  (acl2::bitxor x y)))
-  :hints (("Goal" :in-theory (enable bitp))))
-
-;not needed if term is commuted right?
-(defthm xor-idiom-3-alt
-  (implies (and (bitp x)
-                (bitp y)
-                (< 2 p)
-                (rtl::primep p))
-           (equal (add x (add y (mul '-2 (mul y x p) p) p) p)
-                  (acl2::bitxor x y)))
-  :hints (("Goal" :in-theory (enable bitp))))
-
-(defthm xor-idiom-4
-  (implies (and (bitp x)
-                (bitp y)
-                (< 2 p)
-                (rtl::primep p))
-           (equal (add (mul '-2 (mul x y p) p) (add x y p) p)
-                  (acl2::bitxor x y)))
-  :hints (("Goal" :in-theory (enable bitp))))
-
-(defthm xor-idiom-4-alt
-  (implies (and (bitp x)
-                (bitp y)
-                (< 2 p)
-                (rtl::primep p))
-           (equal (add (mul '-2 (mul x y p) p) (add y x p) p)
-                  (acl2::bitxor x y)))
-  :hints (("Goal" :in-theory (enable bitp))))
 
 ;; Note that there is no digit in the 1's place, likely because the
 ;; multiplication of that bit by 1 gets simplified, making that addend

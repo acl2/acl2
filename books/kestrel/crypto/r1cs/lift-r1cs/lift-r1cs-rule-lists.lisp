@@ -83,8 +83,8 @@
             ;;bitp-of-add-of-constant-negated-special ;;caused problems, possibly a loop, after adding fns to the evaluator.  TODO: why?
             pfield::neg-of-add
             pfield::neg-of-mul-when-constant
-            xor-idiom-3
-            xor-idiom-3-alt
+            pfield::xor-idiom-3
+            pfield::xor-idiom-3-alt
             acl2::lookup-equal-of-acons)
           (pfield::prime-field-proof-rules)
           (more-prime-fields-rules) ;todo

@@ -11,3 +11,8 @@
 (in-package "R1CS")
 
 (include-book "boolean")
+(include-book "boolean-alt")
+(include-book "conditional-equality")
+(include-book "selection")
+(include-book "nonzero")
+(include-book "xor")

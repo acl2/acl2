@@ -11,3 +11,8 @@
 (in-package "PFIELD")
 
 (include-book "boolean-rules")
+(include-book "boolean-alt-rules")
+;; (No special rules seem needed for conditional equality.)
+(include-book "selection-rules")
+(include-book "nonzero-rules")
+(include-book "xor-rules")
