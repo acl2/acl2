@@ -13,6 +13,7 @@
 (include-book "bit-byte-integer-conversions")
 
 (include-book "kestrel/crypto/ecurve/jubjub" :dir :system)
+(include-book "kestrel/crypto/primes/jubjub-subgroup-prime" :dir :system)
 (include-book "std/util/defval" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -317,3 +318,17 @@
   :returns (h natp)
   :short "The constant @($h_\\mathbb{J}$) in [ZPS:5.4.8.3]."
   8)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define jubjub-r ()
+  :returns (r natp)
+  :short "The constant @($r_\\mathbb{J}$) in [ZPS:5.4.8.3]."
+  (primes::jubjub-subgroup-prime)
+
+  ///
+
+  (defrule primep-of-jubjub-r
+    (rtl::primep (jubjub-r)))
+
+  (in-theory (disable (:e jubjub-r))))
