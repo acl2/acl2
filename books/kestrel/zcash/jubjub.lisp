@@ -334,3 +334,24 @@
     (rtl::primep (jubjub-r)))
 
   (in-theory (disable (:e jubjub-r))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define jubjub-r-pointp (x)
+  :returns (yes/no booleanp)
+  :short "Recognize elements of @($\\mathbb{J}^{(r)}$) [ZPS:5.4.8.3]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are the points of order @($r_\\mathbb{J}$)
+     plus @($\\mathcal{O}_\\mathbb{J}$)."))
+  (or (equal x (ecurve::twisted-edwards-neutral))
+      (and (jubjub-pointp x)
+           (ecurve::twisted-edwards-point-orderp x (jubjub-r) (jubjub-curve))))
+  :guard-hints (("Goal" :in-theory (enable jubjub-pointp)))
+  ///
+
+  (defrule jubjub-pointp-when-jubjub-r-pointp
+    (implies (jubjub-r-pointp x)
+             (jubjub-pointp x))
+    :enable ecurve::twisted-edwards-neutral))
