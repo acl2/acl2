@@ -355,3 +355,24 @@
     (implies (jubjub-r-pointp x)
              (jubjub-pointp x))
     :enable ecurve::twisted-edwards-neutral))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define jubjub-rstar-pointp (x)
+  :returns (yes/no booleanp)
+  :short "Recognize elements of @($\\mathbb{J}^{(r)*}$}) [ZPS:5.4.8.3]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are the points order @($r_\\mathbb{J}$).
+     That is, the points in @($\\mathbb{J}^{(r)}$)
+     minus @($\\mathcal{O}_\\mathbb{J}$)."))
+  (and (jubjub-pointp x)
+       (ecurve::twisted-edwards-point-orderp x (jubjub-r) (jubjub-curve)))
+  :guard-hints (("Goal" :in-theory (enable jubjub-pointp)))
+  ///
+
+  (defrule jubjub-r-pointp-when-jubjub-rstar-pointp
+    (implies (jubjub-rstar-pointp x)
+             (jubjub-r-pointp x))
+    :enable jubjub-r-pointp))
