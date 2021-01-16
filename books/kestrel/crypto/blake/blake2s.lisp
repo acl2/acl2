@@ -246,12 +246,13 @@
            (all-blockp (d-blocks data-bytes key-bytes)))
   :hints (("Goal" :in-theory (enable d-blocks))))
 
-(defthm bvplus-intro
+(local
+ (defthm bvplus-intro
   (implies (and (integerp x)
                 (integerp y))
            (equal (mod (+ x y) 4294967296)
                   (bvplus *w* x y)))
-  :hints (("Goal" :in-theory (enable bvplus bvchop))))
+  :hints (("Goal" :in-theory (enable bvplus bvchop)))))
 
 ;; See RFC 7693 Sec 3.1 (Mixing Function G)
 (defund g (v a b c d x y)
