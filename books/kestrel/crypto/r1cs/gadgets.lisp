@@ -33,31 +33,6 @@
   :hints (("Goal" :in-theory (enable fep bitp))))
 
 ;;
-;; Selection constraint (if-then-else)
-;;
-
-;; Selection constraint (z = if b then x else y).
-(defun selection-constraint (b x y z prime)
-  (declare (xargs :guard (and (rtl::primep prime)
-                              (fep b prime)
-                              (bitp b)
-                              (fep x prime)
-                              (fep y prime)
-                              (fep z prime))))
-  (equal (mul b (sub y x prime) prime)
-         (sub y z prime)))
-
-(defthm selection-constraint-correct
-  (implies (and (bitp b)
-                (fep x prime)
-                (fep y prime)
-                (fep z prime)
-                (rtl::primep prime))
-           (iff (selection-constraint b x y z prime)
-                (equal z (if (equal b 1) x y))))
-  :hints (("Goal" :in-theory (enable bitp))))
-
-;;
 ;; nonzero constraint
 ;;
 
