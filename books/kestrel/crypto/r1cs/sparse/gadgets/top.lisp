@@ -12,3 +12,4 @@
 
 (include-book "boolean")
 (include-book "boolean-alt")
+(include-book "conditional-equality")
