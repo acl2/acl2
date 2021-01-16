@@ -203,13 +203,7 @@
                 (RTL::PRIMEP P))
            (equal (equal (mul '2 (mul x y p) p) (add x (add y (mul '-1 z p) p) p))
                   (equal z (acl2::bitxor x y))))
-  :hints (("Goal" :use (:instance r1cs::xor-constraint-correct
-                                  (a x)
-                                  (b y)
-                                  (c z)
-                                  (prime p))
-           :in-theory (e/d (R1CS::XOR-CONSTRAINT)
-                           (r1cs::xor-constraint-correct)))))
+  :hints (("Goal" :in-theory (disable acl2::bitp-becomes-unsigned-byte-p))))
 
 ;proof is trivial by opening bitp?
 (defthm xor-idiom-2
