@@ -14,3 +14,4 @@
 (include-book "boolean-alt")
 (include-book "conditional-equality")
 (include-book "selection")
+(include-book "nonzero")
