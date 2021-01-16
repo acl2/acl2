@@ -41,9 +41,10 @@
            (r1cs::r1cs-constraintp (make-selection-constraint b x y z)))
   :hints (("Goal" :in-theory (enable make-selection-constraint))))
 
-;; Prove that, if we make a selection constraint for some vars b, x, y,
-;; and z, then the constraint holds over a valuation (that binds the vars) iff
-;; z = (if b then x else y).  The value of b in the valuation must be a bit.
+;; Prove that, if we make a selection constraint for some vars b, x, y, and z,
+;; then the constraint holds over a valuation (that binds the vars) iff the
+;; values of the variables satisfy: z = (if b then x else y).  The value of b
+;; in the valuation must be a bit.
 (defthm make-selection-constraint-correct
   (implies (and (r1cs-valuationp valuation p)
                 (valuation-bindsp valuation b)
