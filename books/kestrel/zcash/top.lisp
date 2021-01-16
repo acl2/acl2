@@ -10,6 +10,7 @@
 
 (in-package "ZCASH")
 
+(include-book "bit-byte-integer-conversions")
 (include-book "blake2-hash")
 (include-book "jubjub")
 (include-book "pedersen-hash")

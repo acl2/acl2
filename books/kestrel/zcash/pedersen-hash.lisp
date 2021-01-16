@@ -10,12 +10,10 @@
 
 (in-package "ZCASH")
 
+(include-book "bit-byte-integer-conversions")
 (include-book "blake2-hash")
 (include-book "jubjub")
 
-(include-book "kestrel/utilities/bits-as-digits" :dir :system)
-(include-book "kestrel/utilities/bytes-as-digits" :dir :system)
-(include-book "kestrel/utilities/bits-and-bytes-as-digits" :dir :system)
 (include-book "kestrel/utilities/strings/strings-codes" :dir :system)
 (include-book "std/util/defval" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
@@ -41,72 +39,6 @@
 (defval *l-merkle-sapling*
   :short "The constant @($\\ell_\\mathsf{MerkleSapling}$) [ZPS:5.3]."
   255)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define i2lebsp ((l natp) (x (integer-range-p 0 (expt 2 l) x)))
-  :returns (bits bit-listp)
-  :short "The function @($\\mathsf{I2LEBSP}$) [ZPS:5.2]."
-  (acl2::nat=>lebits l x)
-  ///
-  (defret len-of-i2lebsp
-    (equal (len bits) (nfix l))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define lebs2ip ((s bit-listp))
-  :returns (x natp :rule-classes :type-prescription)
-  :short "The function @('$\\mathsf{LEBS2IP}$') [ZPS:5.2]."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The @('$\\ell$') argument can be determined from the @($S$) argument:
-     it is the length of @($S$).
-     Thus, in our formalization we just have one argument."))
-  (acl2::lebits=>nat s)
-  ///
-  (local (include-book "arithmetic-3/top" :dir :system))
-  (defret lebs2ip-upper-bound
-    (< x (expt 2 (len s)))
-    :rule-classes :linear))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define leos2ip ((s byte-listp))
-  :returns (x natp :rule-classes :type-prescription)
-  :short "The function @('$\\mathsf{LEOS2IP}$') [ZPS:5.2]."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The @('$\\ell$') argument can be determined from the @($S$) argument:
-     it is the length of @($S$) times 8.
-     Thus, in our formalization we just have one argument."))
-  (acl2::lebytes=>nat s)
-  ///
-  (local (include-book "arithmetic-3/top" :dir :system))
-  (defret leos2ip-upper-bound
-    (< x (expt 2 (* 8 (len s))))
-    :rule-classes :linear
-    :hints (("Goal"
-             :use (:instance acl2::lebytes=>nat-upper-bound
-                   (acl2::digits s))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define leos2bsp ((bytes byte-listp))
-  :returns (bits bit-listp)
-  :short "The function @($\\mathsf{LEOS2BSP}$) [ZPS:5.2]."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The @($\\ell$) argumnent can be determined from the other argument:
-     it is the length of the other argument times 8.
-     Thus, in our formalization we just have one argument."))
-  (acl2::lebytes=>bits bytes)
-  ///
-  (defret len-of-leos2bsp
-    (equal (len bits)
-           (* 8 (len bytes)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
