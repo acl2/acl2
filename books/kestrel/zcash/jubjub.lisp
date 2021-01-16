@@ -317,7 +317,9 @@
 (define jubjub-h ()
   :returns (h natp)
   :short "The constant @($h_\\mathbb{J}$) in [ZPS:5.4.8.3]."
-  8)
+  8
+  ///
+  (in-theory (disable (:e jubjub-h))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
