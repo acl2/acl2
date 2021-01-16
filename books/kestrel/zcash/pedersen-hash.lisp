@@ -613,8 +613,7 @@
        (i1-32bit (mod i1 (expt 2 32)))
        (m (acl2::nat=>bebytes 4 i1-32bit)))
     (find-group-hash d m))
-  :prepwork ((local (include-book "arithmetic-3/top" :dir :system)))
-  :guard-hints (("Goal" :in-theory (disable blake::bvplus-intro))))
+  :prepwork ((local (include-book "arithmetic-3/top" :dir :system))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
