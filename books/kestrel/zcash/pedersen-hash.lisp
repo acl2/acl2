@@ -41,7 +41,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define jubjub-extract ((point jubjub-pointp))
+(define hash-extract ((point jubjub-pointp))
   :returns (bits bit-listp)
   :short "The function @($\\mathsf{Extract}_{\\mathbb{J}^{(r)}}$)
           [ZPS:5.4.8.4]."
@@ -56,7 +56,7 @@
   (i2lebsp *l-merkle-sapling* (jubjub-point->u point))
   :guard-hints (("Goal" :in-theory (enable jubjub-q)))
   ///
-  (defret len-of-jubjub-extract
+  (defret len-of-hash-extract
     (equal (len bits) *l-merkle-sapling*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -339,4 +339,4 @@
      This is distinguishes from a valid hash, which is not empty."))
   (b* ((point (pedersen-point d m))
        ((unless (jubjub-pointp point)) nil))
-    (jubjub-extract point)))
+    (hash-extract point)))
