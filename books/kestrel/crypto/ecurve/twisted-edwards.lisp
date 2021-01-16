@@ -15,6 +15,7 @@
 
 (include-book "centaur/fty/top" :dir :system)
 (include-book "kestrel/crypto/ecurve/points-fty" :dir :system)
+(include-book "kestrel/fty/deffixequiv-sk" :dir :system)
 (include-book "kestrel/prime-fields/prime-fields" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
@@ -1335,3 +1336,51 @@
                    (not (equal (mod x 2) 0)))
               (equal (mod x 2) 1))
      :prep-books ((include-book "arithmetic-3/top" :dir :system)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define twisted-edwards-point-orderp ((point pointp)
+                                      (order natp)
+                                      (curve twisted-edwards-p))
+  :guard (and (twisted-edwards-primep curve)
+              (twisted-edwards-completep curve)
+              (point-on-twisted-edwards-p point curve))
+  :returns (yes/no booleanp)
+  :short "Check if a point on a twisted Edwards curve has a certain order."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A point @($P$) has order @($n$) if and only if
+     @($n > 0$),
+     @($n P$) is the neutral element, and
+     @($m P$) is not for every @($m < n$).")
+   (xdoc::p
+    "Every point on the curve has an order,
+     so there should really be a function that returns that.
+     However, defining that function requires some theorems
+     that we do not have yet;
+     thus, for now we define this predicate instead.
+     We plan to define the function that returns the order eventually."))
+  (b* ((order (nfix order)))
+    (and (> order 0)
+         (equal (twisted-edwards-mul order point curve)
+                (twisted-edwards-neutral))
+         (twisted-edwards-point-order-leastp point order curve)))
+  :hooks (:fix)
+
+  :prepwork
+  ((define-sk twisted-edwards-point-order-leastp ((point pointp)
+                                                  (order natp)
+                                                  (curve twisted-edwards-p))
+     :guard (and (twisted-edwards-primep curve)
+                 (twisted-edwards-completep curve)
+                 (point-on-twisted-edwards-p point curve))
+     (forall (order1)
+             (implies (and (natp order1)
+                           (< 0 order1)
+                           (< order1 (nfix order)))
+                      (not (equal (twisted-edwards-mul order1 point curve)
+                                  (twisted-edwards-neutral)))))
+     ///
+     (fty::deffixequiv-sk twisted-edwards-point-order-leastp
+       :args ((point pointp) (order natp) (curve twisted-edwards-p))))))
