@@ -17,7 +17,8 @@
 
 ;; See also ../sparse/gadgets/xor.lisp
 
-;; TODO: Perhaps standardize these names
+;; TODO: Standardize these names
+;; TODO: Disable these rules?
 ;; TODO: Perhaps add more rules (e.g., ones with (mul 2 (mul a b p) p)).
 ;; TODO: Perhaps drop rules that deal with terms not in normal form
 
@@ -106,3 +107,58 @@
                          (mul (add a a p) b p))
                   (equal (mod (ifix c) p) ; just c, if we known (fep c p)
                          (acl2::bitxor a b)))))
+
+(defthm xor-idiom-1
+  (implies (and (bitp x)
+                (bitp y)
+                (fep z p)
+                (posp p)
+                (< 2 p)
+                (RTL::PRIMEP P))
+           (equal (equal (mul '2 (mul x y p) p) (add x (add y (mul '-1 z p) p) p))
+                  (equal z (acl2::bitxor x y)))))
+
+(defthm xor-idiom-2
+  (implies (and (bitp x)
+                (bitp y)
+                (fep z p)
+                (posp p)
+                (< 2 p)
+                (RTL::PRIMEP P))
+           (equal (equal (mul '2 (mul x y p) p) (add y (add x (mul '-1 z p) p) p))
+                  (equal z (acl2::bitxor x y))))
+  :hints (("Goal" :use (:instance xor-idiom-1)
+           :in-theory (disable xor-idiom-1))))
+
+(defthm xor-idiom-3
+  (implies (and (bitp x)
+                (bitp y)
+                (< 2 p)
+                (rtl::primep p))
+           (equal (add x (add y (mul '-2 (mul x y p) p) p) p)
+                  (acl2::bitxor x y))))
+
+;not needed if term is commuted right?
+(defthm xor-idiom-3-alt
+  (implies (and (bitp x)
+                (bitp y)
+                (< 2 p)
+                (rtl::primep p))
+           (equal (add x (add y (mul '-2 (mul y x p) p) p) p)
+                  (acl2::bitxor x y))))
+
+(defthm xor-idiom-4
+  (implies (and (bitp x)
+                (bitp y)
+                (< 2 p)
+                (rtl::primep p))
+           (equal (add (mul '-2 (mul x y p) p) (add x y p) p)
+                  (acl2::bitxor x y))))
+
+(defthm xor-idiom-4-alt
+  (implies (and (bitp x)
+                (bitp y)
+                (< 2 p)
+                (rtl::primep p))
+           (equal (add (mul '-2 (mul x y p) p) (add y x p) p)
+                  (acl2::bitxor x y))))
