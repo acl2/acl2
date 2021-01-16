@@ -19,7 +19,7 @@
 ;; Make an R1CS constraint (in sparse form) that asserts that a is non-zero.
 ;; This is done by exhibiting a multiplicative inverse of a.  If a were zero,
 ;; no such value would exist.  At least for now, the inverse must be a
-;; variable.  The constraint is of the form: (a-inverse)(a) = 0.
+;; variable.  The constraint is of the form: (a-inverse)(a) = 1.
 (defund make-nonzero-constraint (a a-inverse)
   (declare (xargs :guard (and (symbolp a)
                               (symbolp a-inverse))))
