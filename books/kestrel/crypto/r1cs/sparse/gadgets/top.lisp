@@ -15,3 +15,4 @@
 (include-book "conditional-equality")
 (include-book "selection")
 (include-book "nonzero")
+(include-book "xor")
