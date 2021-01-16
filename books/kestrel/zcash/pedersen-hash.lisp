@@ -22,6 +22,34 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defrule fep-of-jubjub-a
+  (fep (jubjub-a) (jubjub-q)))
+
+(defrule fep-of-jubjub-d
+  (fep (jubjub-d) (jubjub-q)))
+
+(defrule jubjub-a-d-different
+  (not (equal (jubjub-a) (jubjub-d))))
+
+(defrule jubjub-a-not-zero
+  (not (equal (jubjub-a) 0)))
+
+(defrule jubjub-d-not-zero
+  (not (equal (jubjub-d) 0)))
+
+(defrule primep-of-jubjub-q
+  (rtl::primep (jubjub-q)))
+
+(defrule jubjub-q-not-two
+  (not (equal (jubjub-q) 2)))
+
+(in-theory (disable (:e jubjub-a)
+                    (:e jubjub-d)
+                    (:e jubjub-q)
+                    jubjub-q))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defxdoc+ pedersen-hash
   :parents (zcash)
   :short "A formalization of Zcash's Pedersen hash."
@@ -187,6 +215,7 @@
      because we do not have an ACL2 definition of @($\\mathbb{J}^{(r)}$) yet,
      and in fact the function is well-defined on all of @($\\mathbb{J}$)."))
   (i2lebsp *l-merkle-sapling* (jubjub-point->u point))
+  :guard-hints (("Goal" :in-theory (enable jubjub-q)))
   ///
   (defret len-of-jubjub-extract
     (equal (len bits) *l-merkle-sapling*)))
@@ -288,40 +317,6 @@
   :prepwork
 
   ((local (include-book "kestrel/prime-fields/prime-fields-rules" :dir :system))
-
-   ;; When the following are enabled (particularly a and d),
-   ;; prime field rules fire that combine their values in undesired ways.
-   ;; So we disable them completely, but prove their needed properties.
-   ;; Perhaps these should be moved to a more central place,
-   ;; and these nullary functions should be always kept disabled.
-
-   (defrulel fep-of-jubjub-a
-     (fep (jubjub-a) (jubjub-q)))
-
-   (defrulel fep-of-jubjub-d
-     (fep (jubjub-d) (jubjub-q)))
-
-   (defrulel jubjub-a-d-different
-     (not (equal (jubjub-a) (jubjub-d))))
-
-   (defrulel jubjub-a-not-zero
-     (not (equal (jubjub-a) 0)))
-
-   (defrulel jubjub-d-not-zero
-     (not (equal (jubjub-d) 0)))
-
-   (defrulel primep-of-jubjub-q
-     (rtl::primep (jubjub-q)))
-
-   (defrulel jubjub-q-not-two
-     (not (equal (jubjub-q) 2)))
-
-   (local (in-theory (disable (:e jubjub-a)
-                              (:e jubjub-d)
-                              (:e jubjub-q)
-                              jubjub-q)))
-
-   ;; This is they lemma for the :returns theorem.
 
    (defruledl returns-lemma
      (b* ((q (jubjub-q))
