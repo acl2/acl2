@@ -360,7 +360,7 @@
 
 (define jubjub-rstar-pointp (x)
   :returns (yes/no booleanp)
-  :short "Recognize elements of @($\\mathbb{J}^{(r)*}$}) [ZPS:5.4.8.3]."
+  :short "Recognize elements of @($\\mathbb{J}^{(r)*}$) [ZPS:5.4.8.3]."
   :long
   (xdoc::topstring
    (xdoc::p
