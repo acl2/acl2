@@ -12,6 +12,7 @@
 
 (include-book "bit-byte-integer-conversions")
 (include-book "blake2-hash")
+(include-book "constants")
 (include-book "jubjub")
 (include-book "pedersen-hash")
 (include-book "randomness-beacon")

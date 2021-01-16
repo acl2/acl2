@@ -10,8 +10,8 @@
 
 (in-package "ZCASH")
 
-(include-book "bit-byte-integer-conversions")
 (include-book "blake2-hash")
+(include-book "constants")
 (include-book "jubjub")
 (include-book "randomness-beacon")
 
@@ -30,12 +30,6 @@
      but for now we put here everything needed to define Pedersen hash."))
   :order-subtopics t
   :default-parent t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defval *l-merkle-sapling*
-  :short "The constant @($\\ell_\\mathsf{MerkleSapling}$) [ZPS:5.3]."
-  255)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -110,12 +104,6 @@
        (acl2::impossible))
      :guard-hints (("Goal" :in-theory (enable bytep)))
      :measure (nfix (- 256 i)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defval *uncommitted-sapling*
-  :short "The constant @($\\mathsf{Uncommitted}^\\mathsf{Sapling}$) [ZPS:5.3]."
-  (i2lebsp *l-merkle-sapling* 1))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
