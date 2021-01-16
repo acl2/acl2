@@ -680,7 +680,8 @@
   (xdoc::topstring
    (xdoc::p
     "A point @($P$) has order @($n$) if and only if
-     @($n P$) is the neutral element and
+     @($n > 0$),
+     @($n P$) is the neutral element, and
      @($m P$) is not for every @($m < n$).")
    (xdoc::p
     "Every point on the curve has an order,
@@ -692,6 +693,7 @@
   (b* ((order (nfix order))
        ((mv okp order*point) (montgomery-mul order point curve)))
     (and okp
+         (> order 0)
          (equal order*point
                 (montgomery-neutral))
          (montgomery-point-order-leastp point order curve)))
@@ -705,6 +707,7 @@
                  (point-on-montgomery-p point curve))
      (forall (order1)
              (implies (and (natp order1)
+                           (< 0 order1)
                            (< order1 (nfix order)))
                       (b* (((mv okp order1*point)
                             (montgomery-mul order1 point curve)))
