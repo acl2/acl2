@@ -47,10 +47,10 @@
                 (valuation-bindsp valuation b)
                 (valuation-bindsp valuation c)
                 (rtl::primep p))
-           (iff (r1cs-constraint-holdsp (make-conditional-equality-constraint a b c) valuation p)
-                (or (equal (lookup-eq a valuation) 0)
-                    (equal (lookup-eq b valuation)
-                           (lookup-eq c valuation)))))
+           (equal (r1cs-constraint-holdsp (make-conditional-equality-constraint a b c) valuation p)
+                  (or (equal (lookup-eq a valuation) 0)
+                      (equal (lookup-eq b valuation)
+                             (lookup-eq c valuation)))))
   :hints (("Goal" :in-theory (enable make-conditional-equality-constraint
                                      r1cs-constraint-holdsp
                                      integerp-of-lookup-equal

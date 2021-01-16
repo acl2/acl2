@@ -38,8 +38,8 @@
   (implies (and (r1cs-valuationp valuation p)
                 (valuation-bindsp valuation var-name)
                 (rtl::primep p))
-           (iff (r1cs-constraint-holdsp (make-boolean-constraint-alt var-name) valuation p)
-                (bitp (lookup-eq var-name valuation))))
+           (equal (r1cs-constraint-holdsp (make-boolean-constraint-alt var-name) valuation p)
+                  (bitp (lookup-eq var-name valuation))))
   :hints (("Goal" :in-theory (enable make-boolean-constraint-alt
                                      r1cs-constraint-holdsp
                                      integerp-of-lookup-equal
