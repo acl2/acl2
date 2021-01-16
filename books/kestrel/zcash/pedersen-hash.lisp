@@ -11,42 +11,14 @@
 (in-package "ZCASH")
 
 (include-book "blake2-hash")
+(include-book "jubjub")
 
-(include-book "kestrel/crypto/ecurve/jubjub" :dir :system)
 (include-book "kestrel/utilities/bits-as-digits" :dir :system)
 (include-book "kestrel/utilities/bytes-as-digits" :dir :system)
 (include-book "kestrel/utilities/bits-and-bytes-as-digits" :dir :system)
 (include-book "kestrel/utilities/strings/strings-codes" :dir :system)
 (include-book "std/util/defval" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defrule fep-of-jubjub-a
-  (fep (jubjub-a) (jubjub-q)))
-
-(defrule fep-of-jubjub-d
-  (fep (jubjub-d) (jubjub-q)))
-
-(defrule jubjub-a-d-different
-  (not (equal (jubjub-a) (jubjub-d))))
-
-(defrule jubjub-a-not-zero
-  (not (equal (jubjub-a) 0)))
-
-(defrule jubjub-d-not-zero
-  (not (equal (jubjub-d) 0)))
-
-(defrule primep-of-jubjub-q
-  (rtl::primep (jubjub-q)))
-
-(defrule jubjub-q-not-two
-  (not (equal (jubjub-q) 2)))
-
-(in-theory (disable (:e jubjub-a)
-                    (:e jubjub-d)
-                    (:e jubjub-q)
-                    jubjub-q))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
