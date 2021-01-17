@@ -16,7 +16,8 @@
 
 (defpkg "ISAR" (append (set-difference-eq *std-pkg-symbols*
                                           '())
-                       '(defxdoc+
+                       '(cw-event
+                         defxdoc+
                          er-soft+
                          keyword-listp
                          packn-pos

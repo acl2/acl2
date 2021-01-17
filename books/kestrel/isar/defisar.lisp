@@ -10,6 +10,7 @@
 
 (in-package "ISAR")
 
+(include-book "kestrel/event-macros/cw-event" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
 (include-book "kestrel/std/system/pseudo-event-form-listp" :dir :system)
@@ -269,8 +270,12 @@
                state)
   :short "Execute a sequence of commands."
   (b* (((when (endp commands))
-        (cw "The proof is partial; no :QED command.~%")
-        (value events))
+        (value
+         (cons `(cw-event "~%~%~%~
+                          ******************** ~
+                          The proof is partial; no :QED command.~
+                          ~%~%~%~%")
+               events)))
        (command (car commands))
        ((unless (and (true-listp command)
                      (consp command)))
