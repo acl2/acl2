@@ -783,15 +783,15 @@
 
   (local (in-theory (enable nth)))
 
-  (local (defthm len-of-take-leading-digits-when-car-dec-digit-char-p
+  (local (defthm len-of-take-leading-dec-digit-chars-when-car-dec-digit-char-p
            (implies (str::dec-digit-char-p (car x))
-                    (< 0 (len (str::take-leading-digits x))))
-           :hints(("Goal" :in-theory (enable str::take-leading-digits)))
+                    (< 0 (len (str::take-leading-dec-digit-chars x))))
+           :hints(("Goal" :in-theory (enable str::take-leading-dec-digit-chars)))
            :rule-classes :linear))
 
-  (local (defthm len-of-take-leading-digits-upper-bound
-           (<= (len (str::take-leading-digits x)) (len x))
-           :hints(("Goal" :in-theory (enable str::take-leading-digits)))
+  (local (defthm len-of-take-leading-dec-digit-chars-upper-bound
+           (<= (len (str::take-leading-dec-digit-chars x)) (len x))
+           :hints(("Goal" :in-theory (enable str::take-leading-dec-digit-chars)))
            :rule-classes :linear))
 
 
@@ -874,15 +874,15 @@
     (<= (nfix index) new-index)
     :rule-classes :linear)
 
-  (local (defthm len-of-take-leading-digits-when-car-dec-digit-char-p
+  (local (defthm len-of-take-leading-dec-digit-chars-when-car-dec-digit-char-p
            (implies (str::dec-digit-char-p (car x))
-                    (< 0 (len (str::take-leading-digits x))))
-           :hints(("Goal" :in-theory (enable str::take-leading-digits)))
+                    (< 0 (len (str::take-leading-dec-digit-chars x))))
+           :hints(("Goal" :in-theory (enable str::take-leading-dec-digit-chars)))
            :rule-classes :linear))
 
-  (local (defthm len-of-take-leading-digits-upper-bound
-           (<= (len (str::take-leading-digits x)) (len x))
-           :hints(("Goal" :in-theory (enable str::take-leading-digits)))
+  (local (defthm len-of-take-leading-dec-digit-chars-upper-bound
+           (<= (len (str::take-leading-dec-digit-chars x)) (len x))
+           :hints(("Goal" :in-theory (enable str::take-leading-dec-digit-chars)))
            :rule-classes :linear))
 
 

@@ -304,8 +304,8 @@
        (name-chars-without-end-marker
         (take len-of-name-without-end-marker name-chars))
        (digits-of-index
-        (reverse (str::take-leading-digits (reverse
-                                            name-chars-without-end-marker)))))
+        (reverse (str::take-leading-dec-digit-chars
+                  (reverse name-chars-without-end-marker)))))
     (if digits-of-index
         (b* (((when (eql (car digits-of-index) #\0))
               (mv nil nil nil))

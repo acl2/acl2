@@ -125,7 +125,7 @@
     dec-digit-chars-value1
     dec-digit-chars-value
     skip-leading-digits
-    take-leading-digits
+    take-leading-dec-digit-chars
     digit-string-p-aux
     digit-string-p
     basic-natchars
@@ -151,7 +151,7 @@
     bin-digit-chars-value1
     bin-digit-chars-value
     skip-leading-bit-digits
-    take-leading-bit-digits
+    take-leading-bin-digit-chars
     bit-digit-string-p-aux
     bit-digit-string-p
     basic-natchars2
@@ -173,7 +173,7 @@
     hex-digit-chars-value1
     hex-digit-chars-value
     skip-leading-hex-digits
-    take-leading-hex-digits
+    take-leading-hex-digit-chars
     hex-digit-string-p-aux
     hex-digit-string-p
     hex-digit-to-char
@@ -198,7 +198,7 @@
     oct-digit-chars-value1
     oct-digit-chars-value
     skip-leading-octal-digits
-    take-leading-octal-digits
+    take-leading-oct-digit-chars
     octal-digit-string-p-aux
     octal-digit-string-p
     octal-digit-to-char

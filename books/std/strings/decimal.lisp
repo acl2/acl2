@@ -245,12 +245,12 @@ can run in raw lisp, with times reported in CCL on an AMD FX-8350.</p>
                                                 (< (len (skip-leading-digits x))
                                                    (len x)))))))
 
-(define take-leading-digits
+(define take-leading-dec-digit-chars
   :short "Collect any leading digits from the start of a character list."
   (x)
   :returns (head character-listp :hyp (character-listp x))
   (cond ((atom x)         nil)
-        ((dec-digit-char-p (car x)) (cons (car x) (take-leading-digits (cdr x))))
+        ((dec-digit-char-p (car x)) (cons (car x) (take-leading-dec-digit-chars (cdr x))))
         (t                nil))
   ///
   (local (defthm l0 ;; Gross, but gets us an equal congruence
@@ -261,22 +261,22 @@ can run in raw lisp, with times reported in CCL on an AMD FX-8350.</p>
                                              downcase-char
                                              dec-digit-char-p
                                              char-fix)))))
-  (defcong icharlisteqv equal (take-leading-digits x) 1
+  (defcong icharlisteqv equal (take-leading-dec-digit-chars x) 1
     :hints(("Goal" :in-theory (enable icharlisteqv))))
-  (defthm dec-digit-char-listp-of-take-leading-digits
-    (dec-digit-char-listp (take-leading-digits x)))
-  (defthm bound-of-len-of-take-leading-digits
-    (<= (len (take-leading-digits x)) (len x))
+  (defthm dec-digit-char-listp-of-take-leading-dec-digit-chars
+    (dec-digit-char-listp (take-leading-dec-digit-chars x)))
+  (defthm bound-of-len-of-take-leading-dec-digit-chars
+    (<= (len (take-leading-dec-digit-chars x)) (len x))
     :rule-classes :linear)
-  (defthm equal-of-take-leading-digits-and-length
-    (equal (equal (len (take-leading-digits x)) (len x))
+  (defthm equal-of-take-leading-dec-digit-chars-and-length
+    (equal (equal (len (take-leading-dec-digit-chars x)) (len x))
            (dec-digit-char-listp x)))
-  (defthm take-leading-digits-when-dec-digit-char-listp
+  (defthm take-leading-dec-digit-chars-when-dec-digit-char-listp
     (implies (dec-digit-char-listp x)
-             (equal (take-leading-digits x)
+             (equal (take-leading-dec-digit-chars x)
                     (list-fix x))))
-  (defthm consp-of-take-leading-digits
-    (equal (consp (take-leading-digits x))
+  (defthm consp-of-take-leading-dec-digit-chars
+    (equal (consp (take-leading-dec-digit-chars x))
            (dec-digit-char-p (car x)))))
 
 (define digit-string-p-aux
@@ -748,14 +748,14 @@ characters are digits.</p>"
 
   (defthm val-of-parse-nat-from-charlist
     (equal (mv-nth 0 (parse-nat-from-charlist x val len))
-           (+ (dec-digit-chars-value (take-leading-digits x))
-              (* (nfix val) (expt 10 (len (take-leading-digits x))))))
-    :hints(("Goal" :in-theory (enable take-leading-digits
+           (+ (dec-digit-chars-value (take-leading-dec-digit-chars x))
+              (* (nfix val) (expt 10 (len (take-leading-dec-digit-chars x))))))
+    :hints(("Goal" :in-theory (enable take-leading-dec-digit-chars
                                       dec-digit-chars-value))))
   (defthm len-of-parse-nat-from-charlist
     (equal (mv-nth 1 (parse-nat-from-charlist x val len))
-           (+ (nfix len) (len (take-leading-digits x))))
-    :hints(("Goal" :in-theory (enable take-leading-digits))))
+           (+ (nfix len) (len (take-leading-dec-digit-chars x))))
+    :hints(("Goal" :in-theory (enable take-leading-dec-digit-chars))))
   (defthm rest-of-parse-nat-from-charlist
     (equal (mv-nth 2 (parse-nat-from-charlist x val len))
            (skip-leading-digits x))
@@ -842,7 +842,7 @@ of our logical definition.</p>"
   (verify-guards parse-nat-from-string
     :hints(("Goal" :in-theory (enable dec-digit-char-p
                                       dec-digit-char-value
-                                      take-leading-digits
+                                      take-leading-dec-digit-chars
                                       dec-digit-chars-value
                                       )))))
 
