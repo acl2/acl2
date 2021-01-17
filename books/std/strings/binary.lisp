@@ -268,12 +268,12 @@ tolerate non-bit digits after the number.</p>"
              (< (len (skip-leading-bit-digits x))
                 (len x)))))
 
-(define take-leading-bit-digits
+(define take-leading-bin-digit-chars
   :short "Collect any leading 0-1 characters from the start of a character list."
   ((x character-listp))
   :returns (head character-listp)
   (cond ((atom x)             nil)
-        ((bin-digit-char-p (car x)) (cons (car x) (take-leading-bit-digits (cdr x))))
+        ((bin-digit-char-p (car x)) (cons (car x) (take-leading-bin-digit-chars (cdr x))))
         (t                    nil))
   ///
   (local (defthm l0 ;; Gross, but gets us an equal congruence
@@ -284,22 +284,22 @@ tolerate non-bit digits after the number.</p>"
                                              downcase-char
                                              bin-digit-char-p
                                              char-fix)))))
-  (defcong icharlisteqv equal (take-leading-bit-digits x) 1
+  (defcong icharlisteqv equal (take-leading-bin-digit-chars x) 1
     :hints(("Goal" :in-theory (enable icharlisteqv))))
-  (defthm bin-digit-char-listp-of-take-leading-bit-digits
-    (bin-digit-char-listp (take-leading-bit-digits x)))
-  (defthm bound-of-len-of-take-leading-bit-digits
-    (<= (len (take-leading-bit-digits x)) (len x))
+  (defthm bin-digit-char-listp-of-take-leading-bin-digit-chars
+    (bin-digit-char-listp (take-leading-bin-digit-chars x)))
+  (defthm bound-of-len-of-take-leading-bin-digit-chars
+    (<= (len (take-leading-bin-digit-chars x)) (len x))
     :rule-classes :linear)
-  (defthm equal-of-take-leading-bit-digits-and-length
-    (equal (equal (len (take-leading-bit-digits x)) (len x))
+  (defthm equal-of-take-leading-bin-digit-chars-and-length
+    (equal (equal (len (take-leading-bin-digit-chars x)) (len x))
            (bin-digit-char-listp x)))
-  (defthm take-leading-bit-digits-when-bin-digit-char-listp
+  (defthm take-leading-bin-digit-chars-when-bin-digit-char-listp
     (implies (bin-digit-char-listp x)
-             (equal (take-leading-bit-digits x)
+             (equal (take-leading-bin-digit-chars x)
                     (list-fix x))))
-  (defthm consp-of-take-leading-bit-digits
-    (equal (consp (take-leading-bit-digits x))
+  (defthm consp-of-take-leading-bin-digit-chars
+    (equal (consp (take-leading-bin-digit-chars x))
            (bin-digit-char-p (car x)))))
 
 (define bit-digit-string-p-aux
@@ -618,15 +618,15 @@ the characters are 0 or 1.</p>"
                                       char-fix))))
   (defthm val-of-parse-bits-from-charlist
     (equal (mv-nth 0 (parse-bits-from-charlist x val len))
-           (+ (bin-digit-chars-value (take-leading-bit-digits x))
-              (ash (nfix val) (len (take-leading-bit-digits x)))))
-    :hints(("Goal" :in-theory (enable take-leading-bit-digits
+           (+ (bin-digit-chars-value (take-leading-bin-digit-chars x))
+              (ash (nfix val) (len (take-leading-bin-digit-chars x)))))
+    :hints(("Goal" :in-theory (enable take-leading-bin-digit-chars
                                       bin-digit-chars-value))))
 
   (defthm len-of-parse-bits-from-charlist
     (equal (mv-nth 1 (parse-bits-from-charlist x val len))
-           (+ (nfix len) (len (take-leading-bit-digits x))))
-    :hints(("Goal" :in-theory (enable take-leading-bit-digits))))
+           (+ (nfix len) (len (take-leading-bin-digit-chars x))))
+    :hints(("Goal" :in-theory (enable take-leading-bin-digit-chars))))
 
   (defthm rest-of-parse-bits-from-charlist
     (equal (mv-nth 2 (parse-bits-from-charlist x val len))
@@ -695,7 +695,7 @@ of our logical definition.</p>"
          (mv val len)))
   ///
   ;; Minor speed hint
-  (local (in-theory (disable BOUND-OF-LEN-OF-TAKE-LEADING-BIT-DIGITS
+  (local (in-theory (disable BOUND-OF-LEN-OF-TAKE-LEADING-BIN-DIGIT-CHARS
                              ACL2::RIGHT-SHIFT-TO-LOGTAIL
                              BIN-DIGIT-CHAR-LISTP-OF-CDR-WHEN-BIN-DIGIT-CHAR-LISTP)))
 
@@ -703,7 +703,7 @@ of our logical definition.</p>"
     :hints(("Goal" :in-theory (enable bin-digit-char-p
                                       bin-digit-char-value
                                       bin-digit-chars-value
-                                      take-leading-bit-digits)))))
+                                      take-leading-bin-digit-chars)))))
 
 
 (define strval2

@@ -125,7 +125,7 @@
 
   (local (in-theory (disable len nthcdr (:d svtv-parse-path-indices) cons-equal
                              string-listp member-equal default-car default-cdr
-                             str::take-leading-digits-when-dec-digit-char-listp
+                             str::take-leading-dec-digit-chars-when-dec-digit-char-listp
                              str::explode-when-not-stringp
                              ;; acl2::member-when-atom
                              )))
@@ -205,7 +205,7 @@
     :otf-flg t)
   (local (in-theory (disable len nthcdr (:d svtv-parse-path/select-aux) cons-equal
                              string-listp member-equal default-car default-cdr
-                             str::take-leading-digits-when-dec-digit-char-listp
+                             str::take-leading-dec-digit-chars-when-dec-digit-char-listp
                              str::explode-when-not-stringp
                              acl2::lower-bound-of-len-when-sublistp
                              ;; acl2::member-when-atom
