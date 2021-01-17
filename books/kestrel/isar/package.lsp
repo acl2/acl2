@@ -20,9 +20,11 @@
                          defxdoc+
                          er-soft+
                          keyword-listp
+                         make-event-terse
                          packn-pos
                          pseudo-event-formp
                          pseudo-event-form-listp
+                         restore-output
                          run-unless
                          tuple
                          tuplep)))

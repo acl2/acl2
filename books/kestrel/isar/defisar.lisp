@@ -11,6 +11,8 @@
 (in-package "ISAR")
 
 (include-book "kestrel/event-macros/cw-event" :dir :system)
+(include-book "kestrel/event-macros/make-event-terse" :dir :system)
+(include-book "kestrel/event-macros/restore-output" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
 (include-book "kestrel/std/system/pseudo-event-form-listp" :dir :system)
@@ -155,7 +157,11 @@
                       assume-fact))
        (thm-hints '(("Goal" :in-theory nil)))
        (thm-event `(local (defthm ,thm-name ,thm-formula :hints ,thm-hints)))
-       (events (cons thm-event events))
+       (thm-event (restore-output thm-event))
+       (print-event `(cw-event "~%~%~%~s0~%~x1~%~%"
+                               "****************************************"
+                               '(:assume ,@assume-args)))
+       (events (list* thm-event print-event events))
        (fact-info (make-fact-info :thm-name thm-name :formula assume-fact))
        (facts (acons assume-id fact-info facts)))
     (value (list events facts)))
@@ -227,7 +233,11 @@
                       derive-fact))
        (thm-hints derive-hints)
        (thm-event `(local (defthm ,thm-name ,thm-formula :hints ,thm-hints)))
-       (events (cons thm-event events))
+       (thm-event (restore-output thm-event))
+       (print-event `(cw-event "~%~%~%~s0~%~x1~%~%"
+                               "****************************************"
+                               '(:derive ,@derive-args)))
+       (events (list* thm-event print-event events))
        (fact-info (make-fact-info :thm-name thm-name :formula derive-fact))
        (facts (acons derive-id fact-info facts)))
     (value (list events facts)))
@@ -249,8 +259,12 @@
        (hints `(("Goal" :in-theory nil :use ,fact-thm-names)))
        (local-thm `(local
                     (defthm ,name ,formula :hints ,hints)))
+       (local-thm (restore-output local-thm))
        (exported-thm `(defthm ,name ,formula))
-       (events (cons exported-thm (cons local-thm events))))
+       (print-event `(cw-event "~%~%~%~s0~%~x1~%~%"
+                               "****************************************"
+                               '(:qed)))
+       (events (list* exported-thm local-thm print-event events)))
     events))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -271,10 +285,9 @@
   :short "Execute a sequence of commands."
   (b* (((when (endp commands))
         (value
-         (cons `(cw-event "~%~%~%~
-                          ******************** ~
-                          The proof is partial; no :QED command.~
-                          ~%~%~%~%")
+         (cons `(cw-event "~%~%~%~s0~s1~s0~%"
+                          "!!!!!!!!!!!!!!!!!!!!"
+                          "The proof is partial (no :QED).")
                events)))
        (command (car commands))
        ((unless (and (true-listp command)
@@ -341,19 +354,22 @@
                    but it is ~x0 instead." proof))
        ((mv erp events state) (defisar-proof proof name formula ctx state))
        ((when erp) (mv erp '(_) state)))
-    (value `(encapsulate () ,@events))))
+    (value `(progn
+              (encapsulate () ,@events)
+              (value-triple :invisible)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection defisar-macro-definition
   :short "Definition of the @(tsee defisar) macro."
   (defmacro defisar (name formula &key proof)
-    `(make-event (defisar-fn
-                   ',name
-                   ',formula
-                   ',proof
-                   (cons 'defisar ',name)
-                   state))))
+    `(make-event-terse (defisar-fn
+                         ',name
+                         ',formula
+                         ',proof
+                         (cons 'defisar ',name)
+                         state)
+                       :suppress-errors nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
