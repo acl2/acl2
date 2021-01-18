@@ -129,10 +129,10 @@
                               :d (jubjub-d))
   ///
 
-  (defrule twisted-edwards-primep-of-jubjub-curve
-    (twisted-edwards-primep (jubjub-curve))
-    :enable twisted-edwards-primep
-    :disable ((:e twisted-edwards-primep)))
+  (defrule twisted-edwards-curve-primep-of-jubjub-curve
+    (twisted-edwards-curve-primep (jubjub-curve))
+    :enable twisted-edwards-curve-primep
+    :disable ((:e twisted-edwards-curve-primep)))
 
   (defrule twisted-edwards-curve-completep-of-jubjub-curve
     (twisted-edwards-curve-completep (jubjub-curve))

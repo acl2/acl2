@@ -100,7 +100,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define twisted-edwards-to-montgomery ((tecurve twisted-edwards-curvep))
-  :guard (twisted-edwards-primep tecurve)
+  :guard (twisted-edwards-curve-primep tecurve)
   :returns (mcurve montgomery-p)
   :short "Map a twisted Edwards curve to a Montgomery curve."
   :long
@@ -122,7 +122,7 @@
        (ma (mul 2 (div a+d a-d tecurve.p) tecurve.p))
        (mb (div (mod 4 tecurve.p) a-d tecurve.p)))
     (make-montgomery :p tecurve.p :a ma :b mb))
-  :guard-hints (("Goal" :in-theory (enable twisted-edwards-primep)))
+  :guard-hints (("Goal" :in-theory (enable twisted-edwards-curve-primep)))
   :hooks (:fix)
   :prepwork
   ((local (include-book "kestrel/prime-fields/prime-fields-rules" :dir :system))
@@ -198,7 +198,7 @@
 (define twisted-edwards-point-to-montgomery-point
   ((point pointp)
    (curve twisted-edwards-curvep))
-  :guard (and (twisted-edwards-primep curve)
+  :guard (and (twisted-edwards-curve-primep curve)
               (point-on-twisted-edwards-p point curve)
               (not (equal (point-finite->x point) 0))
               (not (equal (point-finite->y point) 1)))
@@ -229,7 +229,7 @@
                 p)))
     (point-finite mx my))
   :guard-hints (("Goal" :in-theory (enable point-on-twisted-edwards-p
-                                           twisted-edwards-primep)))
+                                           twisted-edwards-curve-primep)))
   :prepwork
   ((local (include-book "kestrel/prime-fields/prime-fields-rules" :dir :system))
    (local (include-book "kestrel/prime-fields/bind-free-rules" :dir :system)))
