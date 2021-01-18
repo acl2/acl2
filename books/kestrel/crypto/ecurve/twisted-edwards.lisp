@@ -1140,7 +1140,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define twisted-edwards-neutral ()
+(define twisted-edwards-zero ()
   :returns (point pointp)
   :short "Neutral point of the twisted Edwards curve group."
   :long
@@ -1151,13 +1151,13 @@
   (point-finite 0 1)
   ///
 
-  (defrule point-on-twisted-edwards-p-of-twisted-edwards-neutral
-    (point-on-twisted-edwards-p (twisted-edwards-neutral) curve)
+  (defrule point-on-twisted-edwards-p-of-twisted-edwards-zero
+    (point-on-twisted-edwards-p (twisted-edwards-zero) curve)
     :enable point-on-twisted-edwards-p
     :prep-books
     ((include-book "kestrel/prime-fields/prime-fields-rules" :dir :system)))
 
-  (in-theory (disable (:e twisted-edwards-neutral))))
+  (in-theory (disable (:e twisted-edwards-zero))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1276,7 +1276,7 @@
                  (point-on-twisted-edwards-p point curve))
      :returns (point1 pointp)
      (if (zp scalar)
-         (twisted-edwards-neutral)
+         (twisted-edwards-zero)
        (twisted-edwards-add point
                             (twisted-edwards-mul-nonneg (1- scalar) point curve)
                             curve))
@@ -1366,7 +1366,7 @@
   (b* ((order (nfix order)))
     (and (> order 0)
          (equal (twisted-edwards-mul order point curve)
-                (twisted-edwards-neutral))
+                (twisted-edwards-zero))
          (twisted-edwards-point-order-leastp point order curve)))
   :hooks (:fix)
 
@@ -1383,7 +1383,7 @@
                            (< 0 order1)
                            (< order1 (nfix order)))
                       (not (equal (twisted-edwards-mul order1 point curve)
-                                  (twisted-edwards-neutral)))))
+                                  (twisted-edwards-zero)))))
      ///
      (fty::deffixequiv-sk twisted-edwards-point-order-leastp
        :args ((point pointp) (order natp) (curve twisted-edwards-curvep))))))
