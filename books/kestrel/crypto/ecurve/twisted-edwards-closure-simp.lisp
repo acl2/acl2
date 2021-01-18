@@ -29,7 +29,7 @@
 ; the simplified one is based on the constrained (prime)
 ; from the odd prime fields library,
 ; and takes the a, c, and d coefficients as parameters
-; instead of a curve (of the twisted-edwards fixtype) as parameter;
+; instead of a curve (of the twisted-edwards-curve fixtype) as parameter;
 ; however, the simplified operation works on points,
 ; not just coordinates like the core proof.
 ; Note that the c parameter is present because the core proof is based on that;

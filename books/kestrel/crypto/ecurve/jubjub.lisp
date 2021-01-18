@@ -30,7 +30,7 @@
      general information about twisted Edwards curves.")
    (xdoc::p
     "Here we define the Jubjub curve,
-     as a constant value of the fixtype @(tsee twisted-edwards)
+     as a constant value of the fixtype @(tsee twisted-edwards-curve)
      of twisted Edwards elliptic curves."))
   :order-subtopics t
   :default-parent t)
@@ -122,11 +122,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define jubjub-curve ()
-  :returns (curve twisted-edwards-p)
+  :returns (curve twisted-edwards-curvep)
   :short "The Jubjub curve."
-  (make-twisted-edwards :p (jubjub-q)
-                        :a (jubjub-a)
-                        :d (jubjub-d))
+  (make-twisted-edwards-curve :p (jubjub-q)
+                              :a (jubjub-a)
+                              :d (jubjub-d))
   ///
 
   (defrule twisted-edwards-primep-of-jubjub-curve

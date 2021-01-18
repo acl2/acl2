@@ -16,7 +16,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ birational-montgomery-twisted-edwards
-  :parents (elliptic-curves montgomery twisted-edwards)
+  :parents (elliptic-curves montgomery twisted-edwards-curves)
   :short "Birational equivalence between
           Montgomery curves and twisted Edwards curves."
   :long
@@ -25,7 +25,7 @@
     "There is a birational equivalence between "
     (xdoc::seetopic "montgomery-curves" "Montgomery curves")
     " and "
-    (xdoc::seetopic "twisted-edwards" "twisted Edwards curves")
+    (xdoc::seetopic "twisted-edwards-curves" "twisted Edwards curves")
     ", described in Section 3 of "
     (xdoc::ahref
      "https://eprint.iacr.org/2008/013.pdf"
@@ -58,7 +58,7 @@
 
 (define montgomery-to-twisted-edwards ((mcurve montgomery-p))
   :guard (montgomery-primep mcurve)
-  :returns (tecurve twisted-edwards-p)
+  :returns (tecurve twisted-edwards-curvep)
   :short "Map a Montgomery curve to a twisted Edwards curve."
   :long
   (xdoc::topstring
@@ -81,7 +81,7 @@
   (b* (((montgomery mcurve) mcurve)
        (a (div (add mcurve.a 2 mcurve.p) mcurve.b mcurve.p))
        (d (div (sub mcurve.a 2 mcurve.p) mcurve.b mcurve.p)))
-    (make-twisted-edwards :p mcurve.p :a a :d d))
+    (make-twisted-edwards-curve :p mcurve.p :a a :d d))
   :guard-hints (("Goal" :in-theory (enable montgomery-primep)))
   :hooks (:fix)
   :prepwork
@@ -99,7 +99,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define twisted-edwards-to-montgomery ((tecurve twisted-edwards-p))
+(define twisted-edwards-to-montgomery ((tecurve twisted-edwards-curvep))
   :guard (twisted-edwards-primep tecurve)
   :returns (mcurve montgomery-p)
   :short "Map a twisted Edwards curve to a Montgomery curve."
@@ -116,7 +116,7 @@
      This is carried out via a number of rules from the prime fields library,
      along with a few specific lemmas that involve
      particular constants that appear in the formulas."))
-  (b* (((twisted-edwards tecurve) tecurve)
+  (b* (((twisted-edwards-curve tecurve) tecurve)
        (a-d (sub tecurve.a tecurve.d tecurve.p))
        (a+d (add tecurve.a tecurve.d tecurve.p))
        (ma (mul 2 (div a+d a-d tecurve.p) tecurve.p))
@@ -195,8 +195,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define twisted-edwards-point-to-montgomery-point ((point pointp)
-                                                   (curve twisted-edwards-p))
+(define twisted-edwards-point-to-montgomery-point
+  ((point pointp)
+   (curve twisted-edwards-curvep))
   :guard (and (twisted-edwards-primep curve)
               (point-on-twisted-edwards-p point curve)
               (not (equal (point-finite->x point) 0))
@@ -215,7 +216,7 @@
      @('(montgomery-to-twisted-edwards curve)').
      It also remains to extend the mapping to other points
      (the ones for which the rational formulas do not work)."))
-  (b* ((p (twisted-edwards->p curve))
+  (b* ((p (twisted-edwards-curve->p curve))
        (tex (point-finite->x point))
        (tey (point-finite->y point))
        (mx (div (add 1 tey p)
