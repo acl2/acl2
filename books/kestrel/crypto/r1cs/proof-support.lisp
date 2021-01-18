@@ -16,6 +16,7 @@
 (include-book "kestrel/utilities/def-constant-opener" :dir :system) ;reduce?
 (include-book "kestrel/lists-light/append-with-key" :dir :system)
 (include-book "kestrel/lists-light/memberp" :dir :system)
+(include-book "kestrel/typed-lists-light/bit-listp" :dir :system)
 (include-book "kestrel/bv/bvcat" :dir :system)
 (include-book "kestrel/bv/bvplus" :dir :system)
 (include-book "kestrel/bv/bitxor" :dir :system)
@@ -224,6 +225,16 @@
 
 (defthm pfield::booleanp-of-fe-listp
   (booleanp (fe-listp elems prime)))
+
+(defthm acl2::bitp-when-bit-listp-and-memberp
+  (implies (and (acl2::bit-listp free)
+                (acl2::memberp x free))
+           (acl2::bitp x)))
+
+(defun gen-bit-listp-assumption (vars)
+  (declare (xargs :guard (and (symbol-listp vars)
+                              (consp vars))))
+  `(acl2::bit-listp ,(acl2::make-append-with-key-nest vars)))
 
 
 ;;  could let things happen earlier (before subst)?
@@ -621,6 +632,26 @@
                               add acl2::power-of-2p
                               mul
                               neg))))
+
+(defthmd neg-of-mul-of-power-of-2
+  (implies (and (syntaxp (quotep k))
+                (acl2::power-of-2p k)
+                (bitp x)
+                (posp p))
+           (equal (neg (mul k x p) p)
+                  (add (- k)
+                       (acl2::bvcat 1
+                                    (acl2::bitnot x)
+                                    (+ -1 (integer-length k))
+                                    0)
+                       p)))
+  :hints (("Goal" :cases ((equal x 0))
+           :in-theory (enable bitp acl2::bvcat
+                              acl2::logapp
+                              add acl2::power-of-2p
+                              mul
+                              neg))))
+
 
 ;special case of add-of-neg-of-mul-of-power-of-2-other for k=1
 (defthm add-of-neg-of-when-bitp

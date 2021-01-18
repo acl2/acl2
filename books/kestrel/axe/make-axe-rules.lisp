@@ -495,7 +495,8 @@
               (if free-vars
                   ;; Normal hyp with free vars that will get bound by matching with assumptions:
                   ;; TODO: Wrap the hyp in a marker that indicates that free vars are present?
-                  (b* (;; Strip and note the work-hard, if any:
+                  (b* (;; (- (cw "NOTE: Free vars in rule ~x0.~%" rule-symbol))
+                       ;; Strip and note the work-hard, if any:
                        ;; Previously, a work-hard with free vars was an error, but Axe generates some rules like that.
                        ((mv hyp work-hardp)
                         (if (and (call-of 'work-hard hyp)
@@ -907,7 +908,7 @@
                                wrld)
             acc))))
 
-(defthm symbol-when-memberp
+(defthm symbolp-when-memberp
   (implies (and (memberp x free)
                 (symbol-listp free))
            (symbolp x)))

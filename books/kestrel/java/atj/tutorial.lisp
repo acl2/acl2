@@ -2306,7 +2306,7 @@
   (xdoc::p
    "As conveyed by the message shown on the screen by ATJ,
     three Java files are generated, in the current directory.
-    The first two files, @('Acl2Code.java') and @('Acl2CodeEnvironment'),
+    The first two files, @('Acl2Code.java') and @('Acl2CodeEnvironment.java'),
     are the same as before.
     The third file, @('Acl2CodeTests.java'), is new.
     Opening the new file reveals that it contains
@@ -2447,7 +2447,7 @@
   (xdoc::p
    "In the shallow embedding, "
    (xdoc::seetopic "atj-tutorial-aij" "AIJ")
-   " plays a more limited role than in th deep embedding.
+   " plays a more limited role than in the deep embedding.
     The shallow embedding uses "
    (xdoc::seetopic "atj-tutorial-acl2-values"
                    "AIJ's default Java representation of the ACL2 values")
@@ -2534,7 +2534,7 @@
 
   (xdoc::p
    "As in the deep embedding approach,
-    two Java files, @('Acl2Code.java') and @('Acl2CodeEnvironment'),
+    two Java files, @('Acl2Code.java') and @('Acl2CodeEnvironment.java'),
     are generated (in the current directory),
     each of which contains
     a single Java class with the same name (without @('.java'));
@@ -2651,7 +2651,7 @@
     Introducing these synonym methods may be the closest way
     to mimic ACL2's ability to refer to the same symbol
     using different package prefixes:
-    while @('acl2::not') and @('common-list::not') denote the same ACL2 symbol,
+    while @('acl2::not') and @('common-lisp::not') denote the same ACL2 symbol,
     in the generated Java code the method calls
     @('ACL2.not(x)') and @('COMMON_LISP.not(x)') have the same effect
     (presumably a JIT could remove the run-time penalty of these synonyms).")
@@ -2766,7 +2766,7 @@
   (xdoc::p
    "This tutorial page provides an initial description of
     the effect of ATJ's @(':guards') option
-    when @(':guards') is @('t'), i.e. in the "
+    when @(':deep') is @('nil'), i.e. in the "
    (xdoc::seetopic "atj-tutorial-shallow" "shallow embedding approach")
    ". We say `initial description' because the @(':guards t') option,
     combined with other tools and methodologies,

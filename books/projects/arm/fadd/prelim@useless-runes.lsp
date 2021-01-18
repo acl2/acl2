@@ -820,7 +820,7 @@
 (P1)
 (K1 (5 5
        (:TYPE-PRESCRIPTION |(< (logand x y) 0)| . 1)))
-(W1)
+(RTL::W3)
 (RTL::LZA128-LEMMA)
 (RTL::LOVFLMASK)
 (RTL::GOVFLMASK)

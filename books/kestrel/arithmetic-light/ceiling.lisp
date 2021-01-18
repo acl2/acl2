@@ -168,3 +168,43 @@
            (equal (ceiling (+ x y) j)
                   (+ (/ x j) (ceiling y j))))
   :hints (("Goal" :in-theory (enable ceiling-in-terms-of-floor-cases))))
+
+(defthm equal-of-0-and-ceiling
+  (implies (and (natp i)
+                (posp j))
+           (equal (equal 0 (ceiling i j))
+                  (equal 0 i)))
+  :hints (("Goal" :in-theory (enable ceiling))))
+
+(defthm <-of-0-and-ceiling
+  (implies (and (posp i)
+                (posp j))
+           (< 0 (ceiling i j)))
+  :hints (("Goal" :in-theory (enable ceiling))))
+
+(defthm ceiling-monotone
+  (implies (and (<= i1 i2)
+                (rationalp i1)
+                (rationalp i2)
+                (rationalp j)
+                (< 0 j))
+           (<= (ceiling i1 j) (ceiling i2 j)))
+  :hints (("Goal" :use floor-weak-monotone
+           :in-theory (e/d (ceiling-in-terms-of-floor
+                            floor-when-multiple)
+                           (floor-weak-monotone)))))
+
+(defthm ceiling-upper-bound-when-<-constant-linear
+  (implies (and (syntaxp (quotep j))
+                (< i k) ; k is a free var
+                (syntaxp (quotep k))
+                (integerp k)
+                (integerp i)
+                (rationalp j)
+                (< 0 j))
+           ;; The term (ceiling (+ -1 k) j) should get computed:
+           (<= (ceiling i j) (ceiling (+ -1 k) j)))
+  :rule-classes ((:linear :trigger-terms ((ceiling i j))))
+  :hints (("Goal" :use (:instance ceiling-monotone
+                                  (i1 i) (i2 (+ -1 k)))
+           :in-theory (disable ceiling-monotone))))

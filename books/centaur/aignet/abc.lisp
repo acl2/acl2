@@ -342,7 +342,7 @@
        (status-code
         (* (if negative -1 1)
            (str::dec-digit-chars-value
-            (str::take-leading-digits past-status))))
+            (str::take-leading-dec-digit-chars past-status))))
        (status (case status-code
                  (0 :refuted)
                  (1 :proved)

@@ -13,7 +13,8 @@
 
 ;; Some simple rewrite rules about IF.  These may be needed by Axe if not by
 ;; ACL2.  I suppose some might help during backchaining, but most of this
-;; reasoning may be built into ACL2.
+;; knowledge may be built into ACL2, and the ACL2 rewriter usually handles IF
+;; by splitting a proof into cases.
 
 (defthmd if-same-branches
   (equal (if test x x)
@@ -40,3 +41,10 @@
   (equal (if (not test) x y)
          (if test y x))
   :hints (("Goal" :in-theory (enable if))))
+
+;; When rewriting an IF in an IFF context (e.g., when it appears in the test of
+;; another IF), replace (if test t nil) with just the test.  This was needed
+;; for a call of the SIMPLIFY tool.
+(defthm if-of-t-and-nil-under-iff
+  (iff (if test t nil)
+       test))

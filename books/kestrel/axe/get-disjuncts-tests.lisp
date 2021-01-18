@@ -10,9 +10,10 @@
 
 (in-package "ACL2")
 
-(include-book "prover-common")
+(include-book "get-disjuncts")
 (include-book "make-term-into-dag-array-basic")
 (include-book "dag-to-term")
+(include-book "dag-array-printing")
 
 (defund get-disjuncts-tester (term state)
   (declare (xargs :stobjs state
@@ -28,6 +29,7 @@
         (get-disjuncts nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                        nil ;acc
                        nil ;negated-flg
+                       t ;print
                        ))
        ((when erp) (er hard? 'get-disjuncts-tester "Error getting disjuncts.")))
     (if provedp

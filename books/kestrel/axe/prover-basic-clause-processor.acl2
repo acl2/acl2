@@ -1,0 +1,11 @@
+; Cert-flags for prover-basic-clause-processor.lisp
+;
+; Copyright (C) 2020 Kestrel Technology, LLC
+;
+; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
+;
+; Author: Eric Smith (eric.smith@kestrel.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; cert-flags: ? T :TTAGS :ALL

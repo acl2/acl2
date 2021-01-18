@@ -304,12 +304,12 @@ FX-8350.</p>
              (< (len (skip-leading-octal-digits x))
                 (len x)))))
 
-(define take-leading-octal-digits (x)
+(define take-leading-oct-digit-chars (x)
   :short "Collect any leading octal digit characters from the start of a character
           list."
   :returns (head character-listp :hyp (character-listp x))
   (cond ((atom x)               nil)
-        ((oct-digit-char-p (car x)) (cons (car x) (take-leading-octal-digits (cdr x))))
+        ((oct-digit-char-p (car x)) (cons (car x) (take-leading-oct-digit-chars (cdr x))))
         (t                      nil))
   ///
   (local (defthm l0 ;; Gross, but gets us an equal congruence
@@ -320,22 +320,22 @@ FX-8350.</p>
                                              downcase-char
                                              oct-digit-char-p
                                              char-fix)))))
-  (defcong icharlisteqv equal (take-leading-octal-digits x) 1
+  (defcong icharlisteqv equal (take-leading-oct-digit-chars x) 1
     :hints(("Goal" :in-theory (enable icharlisteqv))))
-  (defthm oct-digit-char-listp-of-take-leading-octal-digits
-    (oct-digit-char-listp (take-leading-octal-digits x)))
-  (defthm bound-of-len-of-take-leading-octal-digits
-    (<= (len (take-leading-octal-digits x)) (len x))
+  (defthm oct-digit-char-listp-of-take-leading-oct-digit-chars
+    (oct-digit-char-listp (take-leading-oct-digit-chars x)))
+  (defthm bound-of-len-of-take-leading-oct-digit-chars
+    (<= (len (take-leading-oct-digit-chars x)) (len x))
     :rule-classes :linear)
-  (defthm equal-of-take-leading-octal-digits-and-length
-    (equal (equal (len (take-leading-octal-digits x)) (len x))
+  (defthm equal-of-take-leading-oct-digit-chars-and-length
+    (equal (equal (len (take-leading-oct-digit-chars x)) (len x))
            (oct-digit-char-listp x)))
-  (defthm take-leading-octal-digits-when-oct-digit-char-listp
+  (defthm take-leading-oct-digit-chars-when-oct-digit-char-listp
     (implies (oct-digit-char-listp x)
-             (equal (take-leading-octal-digits x)
+             (equal (take-leading-oct-digit-chars x)
                     (list-fix x))))
-  (defthm consp-of-take-leading-octal-digits
-    (equal (consp (take-leading-octal-digits x))
+  (defthm consp-of-take-leading-oct-digit-chars
+    (equal (consp (take-leading-oct-digit-chars x))
            (oct-digit-char-p (car x)))))
 
 (define octal-digit-string-p-aux
@@ -732,14 +732,14 @@ oct-digit-chars-value), and somewhat better performance:</p>
   ///
   (defthm val-of-parse-octal-from-charlist
       (equal (mv-nth 0 (parse-octal-from-charlist x val len))
-             (+ (oct-digit-chars-value (take-leading-octal-digits x))
-                (ash (nfix val) (* 3 (len (take-leading-octal-digits x))))))
-      :hints(("Goal" :in-theory (enable take-leading-octal-digits
+             (+ (oct-digit-chars-value (take-leading-oct-digit-chars x))
+                (ash (nfix val) (* 3 (len (take-leading-oct-digit-chars x))))))
+      :hints(("Goal" :in-theory (enable take-leading-oct-digit-chars
                                         oct-digit-chars-value))))
   (defthm len-of-parse-octal-from-charlist
     (equal (mv-nth 1 (parse-octal-from-charlist x val len))
-           (+ (nfix len) (len (take-leading-octal-digits x))))
-    :hints(("Goal" :in-theory (enable take-leading-octal-digits))))
+           (+ (nfix len) (len (take-leading-oct-digit-chars x))))
+    :hints(("Goal" :in-theory (enable take-leading-oct-digit-chars))))
 
   (defthm rest-of-parse-octal-from-charlist
     (equal (mv-nth 2 (parse-octal-from-charlist x val len))
@@ -804,13 +804,13 @@ of our logical definition.</p>"
          (mv val len)))
   ///
   ;; Minor speed hint
-  (local (in-theory (disable BOUND-OF-LEN-OF-TAKE-LEADING-OCTAL-DIGITS
+  (local (in-theory (disable BOUND-OF-LEN-OF-TAKE-LEADING-OCT-DIGIT-CHARS
                              ACL2::RIGHT-SHIFT-TO-LOGTAIL
                              OCT-DIGIT-CHAR-LISTP-OF-CDR-WHEN-OCT-DIGIT-CHAR-LISTP)))
 
   (verify-guards parse-octal-from-string
     :hints(("Goal" :in-theory (enable parse-octal-from-charlist
-                                      take-leading-octal-digits
+                                      take-leading-oct-digit-chars
                                       oct-digit-chars-value
                                       )))))
 

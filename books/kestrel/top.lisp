@@ -24,6 +24,7 @@
 (include-book "hdwallet/top")
 (include-book "ethereum/top")
 (include-book "fty/top")
+(include-book "isar/top")
 (include-book "java/top")
 (include-book "json/top")
 (include-book "prime-fields/top")
@@ -32,6 +33,7 @@
 (include-book "solidity/top")
 (include-book "std/top")
 (include-book "utilities/top")
+(include-book "zcash/top")
 
 ; (depends-on "images/kestrel-logo.png")
 

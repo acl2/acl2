@@ -3402,7 +3402,9 @@
                 (aokp
                  (and (access memoize-info-ht-entry entry :ext-anc-attachments)
                       t))
-                (cl-defun (access memoize-info-ht-entry entry :cl-defun)))
+                (cl-defun (access memoize-info-ht-entry entry :cl-defun))
+                (invoke
+                 (access memoize-info-ht-entry entry :invoke)))
            (push `(memoize-fn ',name
                               :condition ',condition
                               :inline ',inline
@@ -3416,7 +3418,9 @@
                               ,@(and aokp
                                      `(:aokp ',aokp))
                               ,@(and cl-defun
-                                     `(:cl-defun ',cl-defun)))
+                                     `(:cl-defun ',cl-defun))
+                              ,@(and invoke
+                                     `(:invoke ',invoke)))
                  (get name '*undo-stack*))))
         (otherwise
          (er hard 'maybe-push-undo-stack
@@ -6517,12 +6521,13 @@
                                  :commutative (nth 9 tuple)
                                  :forget     (nth 10 tuple)
                                  :memo-table-init-size (nth 11 tuple)
-                                 :aokp       (nth 12 tuple))))))
+                                 :aokp       (nth 12 tuple)
+                                 :invoke     (nth 14 tuple))))))
         #+hons
         (unmemoize
          (without-interrupts
-          (unmemoize-fn (cadr (cddr trip)))
           (maybe-push-undo-stack 'unmemoize (cadr (cddr trip)))
+          (unmemoize-fn (cadr (cddr trip)))
           (setf (cdr status) 'maybe-push-undo-stack-completed)))))))
 
 ; Finally, we make sure always to leave the *current-acl2-world-key* as the

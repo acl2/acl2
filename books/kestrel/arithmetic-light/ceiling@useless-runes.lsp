@@ -338,3 +338,90 @@
      (3 3 (:REWRITE FLOOR-PEEL-OFF-CONSTANT))
      (3 3
         (:REWRITE FLOOR-OF-PLUS-NORMALIZE-NEGATIVE-CONSTANT)))
+(EQUAL-OF-0-AND-CEILING (16 1
+                            (:DEFINITION NONNEGATIVE-INTEGER-QUOTIENT))
+                        (12 4 (:LINEAR <-OF-*-SAME-LINEAR-SPECIAL))
+                        (11 11 (:REWRITE DEFAULT-<-2))
+                        (11 11 (:REWRITE DEFAULT-<-1))
+                        (8 8
+                           (:LINEAR <=-OF-*-AND-*-SAME-ALT-LINEAR))
+                        (8 8 (:LINEAR <-OF-*-AND-*))
+                        (7 5 (:REWRITE DEFAULT-+-2))
+                        (6 6 (:REWRITE DEFAULT-*-2))
+                        (6 6 (:REWRITE DEFAULT-*-1))
+                        (6 5 (:REWRITE DEFAULT-+-1))
+                        (4 4 (:REWRITE INTEGERP-OF-*))
+                        (4 4 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-4))
+                        (4 4 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-3))
+                        (4 4 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-1))
+                        (3 3 (:REWRITE DEFAULT-UNARY-/))
+                        (3 1 (:DEFINITION NFIX))
+                        (2 1 (:REWRITE DENOMINATOR-WHEN-INTEGERP))
+                        (1 1 (:REWRITE EQUAL-OF-*-AND-CONSTANT))
+                        (1 1 (:REWRITE DEFAULT-UNARY-MINUS))
+                        (1 1 (:REWRITE DEFAULT-NUMERATOR))
+                        (1 1 (:REWRITE DEFAULT-DENOMINATOR))
+                        (1 1 (:DEFINITION IFIX)))
+(<-OF-0-AND-CEILING)
+(CEILING-MONOTONE
+     (351 351
+          (:TYPE-PRESCRIPTION FLOOR-TYPE-WHEN-NONPOSITIVE-AND-NONNEGATIVE))
+     (351 351
+          (:TYPE-PRESCRIPTION FLOOR-TYPE-NON-NEGATIVE))
+     (351 351
+          (:TYPE-PRESCRIPTION FLOOR-TYPE-1-PART-1-BETTER))
+     (69 49 (:REWRITE DEFAULT-<-2))
+     (63 21 (:REWRITE FLOOR-WHEN-<))
+     (61 49 (:REWRITE DEFAULT-<-1))
+     (59 43 (:REWRITE DEFAULT-*-2))
+     (47 43 (:REWRITE DEFAULT-*-1))
+     (38 6 (:LINEAR <-OF-*-SAME-LINEAR-SPECIAL))
+     (28 5 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-2))
+     (25 25 (:REWRITE DEFAULT-UNARY-/))
+     (22 10 (:REWRITE DEFAULT-UNARY-MINUS))
+     (22 6 (:REWRITE DEFAULT-+-2))
+     (21 21
+         (:REWRITE FLOOR-WHEN-NOT-RATIONALP-OF-QUOTIENT))
+     (21 21
+         (:REWRITE FLOOR-WHEN-NEGATIVE-AND-SMALL-CHEAP))
+     (21 21
+         (:REWRITE FLOOR-WHEN-I-IS-NOT-AN-ACL2-NUMBERP))
+     (21 21
+         (:REWRITE FLOOR-MINUS-NEGATIVE-CONSTANT))
+     (21 3
+         (:REWRITE *-OF-FLOOR-OF-SAME-WHEN-MULTIPLE))
+     (19 19
+         (:REWRITE FLOOR-WHEN-NOT-RATIONALP-ARG1))
+     (18 18 (:TYPE-PRESCRIPTION MOD))
+     (18 6 (:LINEAR FLOOR-BOUND-ARG1-LINEAR))
+     (14 6 (:REWRITE DEFAULT-+-1))
+     (12 12
+         (:LINEAR <=-OF-*-AND-*-SAME-ALT-LINEAR))
+     (12 12 (:LINEAR <-OF-*-AND-*))
+     (8 8 (:REWRITE INTEGERP-OF-*))
+     (5 5 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-4))
+     (5 5 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-3))
+     (5 5 (:LINEAR <-OF-*-AND-*-SAME-LINEAR-1))
+     (5 1
+        (:LINEAR FLOOR-UPPER-BOUND-ALT-LINEAR))
+     (3 3 (:REWRITE *-OF-*-COMBINE-CONSTANTS))
+     (3 1 (:DEFINITION NATP))
+     (2 2
+        (:REWRITE <-OF-FLOOR-OF-CONSTANT-AND-CONSTANT-GEN))
+     (1 1 (:TYPE-PRESCRIPTION NATP))
+     (1 1 (:REWRITE <-OF-0-AND-FLOOR)))
+(CEILING-UPPER-BOUND-WHEN-<-CONSTANT-LINEAR
+     (52 4 (:REWRITE CEILING-WHEN-MULTIPLE))
+     (27 27 (:REWRITE DEFAULT-*-2))
+     (27 27 (:REWRITE DEFAULT-*-1))
+     (26 2 (:REWRITE CEILING-OF-+-WHEN-MULTIPLE))
+     (12 4 (:REWRITE CEILING-WHEN-<=))
+     (9 9 (:REWRITE DEFAULT-UNARY-/))
+     (8 8 (:REWRITE DEFAULT-+-2))
+     (8 8 (:REWRITE DEFAULT-+-1))
+     (7 7 (:REWRITE DEFAULT-<-2))
+     (7 7 (:REWRITE DEFAULT-<-1))
+     (6 6 (:REWRITE DEFAULT-UNARY-MINUS))
+     (4 2 (:REWRITE INTEGERP-OF--))
+     (2 2 (:REWRITE INTEGERP-OF-*))
+     (1 1 (:REWRITE FOLD-CONSTS-IN-+)))

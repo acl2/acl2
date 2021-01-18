@@ -13,6 +13,7 @@
 (in-package "ACL2")
 
 (include-book "kestrel/sequences/defforall" :dir :system) ;reduce?
+(local (include-book "kestrel/lists-light/revappend" :dir :system))
 
 (defforall all-<= (x n) (<= x n) :fixed (n) :declares ((xargs :guard (and (rational-listp x) (rationalp n))))) ;why did (rationalp x) work as a guard?
 
@@ -39,3 +40,15 @@
                 )
            (<= (nth n items) x))
   :hints (("Goal" :in-theory (e/d (all-<= nth) ()))))
+
+(defthm not-all-<=-when-<-and-member-equal
+  (implies (and (< n free)
+                (member-equal free x))
+           (not (all-<= x n))))
+
+;todo: have deffoall prove this one instead
+(defthm all-<=-of-revappend-strong
+  (equal (all-<= (revappend x1 x2) n)
+         (and (all-<= x1 n)
+              (all-<= x2 n)))
+  :hints (("Goal" :in-theory (enable all-<=))))

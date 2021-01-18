@@ -47,11 +47,11 @@
 ; of modules.
 
 
-(defthm take-leading-digits-under-iff
+(defthm take-leading-dec-digit-chars-under-iff
   ;; BOZO consider moving to string library
-  (iff (str::take-leading-digits x)
+  (iff (str::take-leading-dec-digit-chars x)
        (str::dec-digit-char-p (car x)))
-  :hints(("Goal" :in-theory (enable str::take-leading-digits))))
+  :hints(("Goal" :in-theory (enable str::take-leading-dec-digit-chars))))
 
 
 

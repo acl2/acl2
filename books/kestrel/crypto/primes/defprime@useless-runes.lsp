@@ -1,0 +1,6 @@
+(PRIMES::DEFPRIME-FN (3 3 (:REWRITE DEFAULT-CDR))
+                     (2 2 (:REWRITE DEFAULT-SYMBOL-NAME))
+                     (2 2 (:REWRITE DEFAULT-CAR))
+                     (2 1 (:DEFINITION TRUE-LISTP))
+                     (1 1 (:REWRITE DEFAULT-<-2))
+                     (1 1 (:REWRITE DEFAULT-<-1)))

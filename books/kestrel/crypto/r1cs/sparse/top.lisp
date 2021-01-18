@@ -1,6 +1,6 @@
 ; Top book for sparse R1CS formalization
 ;
-; Copyright (C) 2020 Kestrel Institute
+; Copyright (C) 2020-2021 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -14,3 +14,4 @@
 (include-book "rules")
 (include-book "rules-axe")
 (include-book "rule-lists")
+(include-book "gadgets/top")

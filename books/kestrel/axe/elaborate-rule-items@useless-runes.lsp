@@ -39,11 +39,10 @@
 (TRUE-LISTP-OF-ELABORATE-RULE-ITEMS (17 17 (:REWRITE DEFAULT-CDR))
                                     (15 5 (:DEFINITION BINARY-APPEND))
                                     (10 10 (:REWRITE DEFAULT-CAR)))
-(SYMBOL-LISTP-OF-ELABORATE-RULE-ITEMS (82 45 (:REWRITE DEFAULT-CDR))
-                                      (80 43 (:REWRITE DEFAULT-CAR))
-                                      (39 39 (:REWRITE CONSP-OF-REVERSE))
-                                      (17 4 (:DEFINITION BINARY-APPEND))
-                                      (11 2 (:DEFINITION TRUE-LIST-FIX)))
+(SYMBOL-LISTP-OF-ELABORATE-RULE-ITEMS (16 16 (:REWRITE DEFAULT-CAR))
+                                      (15 15 (:REWRITE DEFAULT-CDR))
+                                      (9 3 (:DEFINITION BINARY-APPEND))
+                                      (3 1 (:DEFINITION TRUE-LIST-FIX)))
 (ELABORATE-RULE-ITEM-LISTS
      (10 2 (:DEFINITION LEN))
      (8 4
@@ -54,6 +53,13 @@
      (4 2 (:REWRITE DEFAULT-+-2))
      (4 2 (:DEFINITION TRUE-LISTP))
      (2 2 (:REWRITE DEFAULT-+-1)))
+(SYMBOL-LIST-LISTP-OF-ELABORATE-RULE-ITEMS
+     (27 3 (:DEFINITION SYMBOL-LISTP))
+     (12 3 (:REWRITE SYMBOL-LISTP-OF-CDR))
+     (11 10 (:REWRITE DEFAULT-CAR))
+     (10 9 (:REWRITE DEFAULT-CDR))
+     (6 3
+        (:REWRITE SYMBOLP-OF-CAR-WHEN-SYMBOL-LISTP-CHEAP)))
 (REMOVE-FROM-ALL (26 26 (:REWRITE DEFAULT-CDR))
                  (24 24 (:REWRITE DEFAULT-CAR))
                  (10 5 (:DEFINITION TRUE-LISTP)))

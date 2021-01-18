@@ -112,7 +112,6 @@
     (:rewrite
      1st-complete-under-path-of-frame->frame-of-partial-collapse-lemma-57)
     (:rewrite abs-separate-of-frame->frame-of-collapse-this-lemma-1)
-    (:rewrite partial-collapse-correctness-lemma-33)
     (:rewrite abs-find-file-correctness-lemma-40)
     (:definition binary-append)
     (:rewrite abs-addrs-of-ctx-app-1-lemma-4)
@@ -1771,28 +1770,6 @@
     :trigger-terms
     ((abs-find-file-src (partial-collapse frame (dirname path))
                         (dirname path))))))
-
-(defthm
-  abs-mkdir-correctness-lemma-54
-  (implies
-   (and
-    (not
-     (equal
-      0
-      (abs-find-file-src (partial-collapse frame (dirname path))
-                         (dirname path))))
-    (mv-nth 1 (collapse frame))
-    (consp (assoc-equal 0 frame)))
-   (< '0
-      (1st-complete (frame->frame frame))))
-  :hints (("goal" :in-theory (enable collapse)
-           :do-not-induct t))
-  :rule-classes
-  ((:forward-chaining
-    :trigger-terms
-    ((abs-find-file-src (partial-collapse frame (dirname path))
-                        (dirname path))))
-   :linear))
 
 (defthm
   abs-mkdir-correctness-lemma-55

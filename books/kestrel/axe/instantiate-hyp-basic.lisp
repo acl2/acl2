@@ -70,53 +70,55 @@
 ;this one does *not* wrap remaining free vars in :free
 (mutual-recursion
  ;; Returns (mv term free-vars-flg) where TERM has been instantiated with ALIST and FREE-VARS-FLG indicates whether any variables remain in TERM.
- (defund instantiate-hyp-basic (term alist free-vars-flg interpreted-function-alist)
+ (defund instantiate-hyp-basic (term alist interpreted-function-alist)
    (declare (xargs :verify-guards nil ;done below
                    :guard (and (pseudo-termp term)
                                (symbol-alistp alist)
                                (all-dargp (strip-cdrs alist))
-                               (booleanp free-vars-flg)
                                (interpreted-function-alistp interpreted-function-alist))))
    (if (variablep term)
        (let ((match (assoc-eq term alist)))
          (if match
-             (mv (cdr match) free-vars-flg) ;the var has a binding in the alist and so is not free
-           (mv term t)                      ;the var is free
+             (mv (cdr match) nil) ;the var has a binding in the alist and so is not free
+           (mv term t)            ;no match for the var, so it is free
            ))
      (let ((fn (ffn-symb term)))
        (if (eq 'quote fn)
-           (mv term free-vars-flg)
-         ;;a function call (used to handle IFs specially but that didn't seem worth it):
-         (mv-let (ground-termp args free-vars-flg)
-           (instantiate-hyp-basic-lst (fargs term) alist free-vars-flg interpreted-function-alist)
-           (if ground-termp
+           (mv term nil) ; no free vars
+         ;;a function call (previously, we handled IFs specially but that didn't seem worth it):
+         (mv-let (all-quotep args free-vars-in-args-flg)
+           (instantiate-hyp-basic-lst (fargs term) alist interpreted-function-alist)
+           (if all-quotep
+               ;; Try to evaluate the ground term:
                (mv-let (erp res)
                  (apply-axe-evaluator-basic-to-quoted-args fn args interpreted-function-alist)
                  (if erp ;; May be :unknown-function
                      ;; If this message is printed a lot, we could suppress it:
                      (progn$ ;; (cw "(Note: Failed to apply ~x0 to constant args.  Consider adding it to the evaluator or adding a constant-opener rule.)~%" fn)
-                             (mv (cons fn args) ;; Return the ground term unevaluated
-                                 free-vars-flg))
+                      (mv (cons fn args) ;; Return the ground term unevaluated
+                          nil ; no free vars since it's a ground term (even though we couldn't evaluate it)
+                          ))
                    (mv (enquote res)
-                       free-vars-flg)))
-             (mv (cons fn args) free-vars-flg)))))))
+                       nil ; no free vars
+                       )))
+             ;; The term has free vars iff the args did:
+             (mv (cons fn args) free-vars-in-args-flg)))))))
 
- ;; Returns (mv ground-termp args free-vars-flg).
- (defund instantiate-hyp-basic-lst (terms alist free-vars-flg interpreted-function-alist)
+ ;; Returns (mv all-quotep args free-vars-flg).
+ (defund instantiate-hyp-basic-lst (terms alist interpreted-function-alist)
    (declare (xargs :guard (and (pseudo-term-listp terms)
                                (symbol-alistp alist)
                                (all-dargp (strip-cdrs alist))
-                               (booleanp free-vars-flg)
                                (interpreted-function-alistp interpreted-function-alist))))
    (if (endp terms)
-       (mv t nil free-vars-flg)
-     (mv-let (new-first free-vars-flg)
-       (instantiate-hyp-basic (first terms) alist free-vars-flg interpreted-function-alist)
-       (mv-let (rest-ground-termp new-rest free-vars-flg)
-         (instantiate-hyp-basic-lst (rest terms) alist free-vars-flg interpreted-function-alist)
-         (mv (and rest-ground-termp (quotep new-first))
-             (cons new-first new-rest)
-             free-vars-flg))))))
+       (mv t nil nil)
+     (mv-let (instantiated-first first-term-free-vars-flg)
+       (instantiate-hyp-basic (first terms) alist interpreted-function-alist)
+       (mv-let (rest-all-quotep instantiated-rest rest-terms-free-vars-flg)
+         (instantiate-hyp-basic-lst (rest terms) alist interpreted-function-alist)
+         (mv (and rest-all-quotep (quotep instantiated-first))
+             (cons instantiated-first instantiated-rest)
+             (or first-term-free-vars-flg rest-terms-free-vars-flg)))))))
 
 (make-flag instantiate-hyp-basic)
 
@@ -126,7 +128,7 @@
     :rule-classes nil
     :flag instantiate-hyp-basic)
   (defthm true-listp-of-mv-nth-1-of-instantiate-hyp-basic-lst
-    (true-listp (mv-nth 1 (instantiate-hyp-basic-lst terms alist free-vars-flg interpreted-function-alist)))
+    (true-listp (mv-nth 1 (instantiate-hyp-basic-lst terms alist interpreted-function-alist)))
     :flag instantiate-hyp-basic-lst)
   :hints (("Goal" :in-theory (enable instantiate-hyp-basic instantiate-hyp-basic-lst))))
 
@@ -136,19 +138,17 @@
     :rule-classes nil
     :flag instantiate-hyp-basic)
   (defthm len-of-mv-nth-1-of-instantiate-hyp-basic-lst
-    (equal (len (mv-nth 1 (instantiate-hyp-basic-lst terms alist free-vars-flg interpreted-function-alist)))
+    (equal (len (mv-nth 1 (instantiate-hyp-basic-lst terms alist interpreted-function-alist)))
            (len terms))
     :flag instantiate-hyp-basic-lst)
   :hints (("Goal" :in-theory (enable instantiate-hyp-basic instantiate-hyp-basic-lst))))
 
 (defthm-flag-instantiate-hyp-basic
   (defthm booleanp-of-mv-nth-1-of-instantiate-hyp-basic
-    (implies (booleanp free-vars-flg)
-             (booleanp (mv-nth 1 (instantiate-hyp-basic term alist free-vars-flg interpreted-function-alist))))
+    (booleanp (mv-nth 1 (instantiate-hyp-basic term alist interpreted-function-alist)))
     :flag instantiate-hyp-basic)
   (defthm booleanp-of-mv-nth-2-of-instantiate-hyp-basic-lst
-    (implies (booleanp free-vars-flg)
-             (booleanp (mv-nth 2 (instantiate-hyp-basic-lst terms alist free-vars-flg interpreted-function-alist))))
+    (booleanp (mv-nth 2 (instantiate-hyp-basic-lst terms alist interpreted-function-alist)))
     :flag instantiate-hyp-basic-lst)
   :hints (("Goal" :in-theory (enable instantiate-hyp-basic instantiate-hyp-basic-lst))))
 
@@ -156,13 +156,12 @@
   (defthm axe-treep-of-mv-nth-0-of-instantiate-hyp-basic
     (implies (and (pseudo-termp term)
                   (all-dargp (strip-cdrs alist)))
-             (axe-treep (mv-nth 0 (instantiate-hyp-basic term alist free-vars-flg interpreted-function-alist))))
+             (axe-treep (mv-nth 0 (instantiate-hyp-basic term alist interpreted-function-alist))))
     :flag instantiate-hyp-basic)
   (defthm all-axe-treep-of-mv-nth-1-of-instantiate-hyp-basic-lst
     (implies (and (pseudo-term-listp terms)
                   (all-dargp (strip-cdrs alist)))
-             (all-axe-treep (mv-nth 1 (instantiate-hyp-basic-lst terms alist free-vars-flg
-                                                                  interpreted-function-alist))))
+             (all-axe-treep (mv-nth 1 (instantiate-hyp-basic-lst terms alist interpreted-function-alist))))
     :flag instantiate-hyp-basic-lst)
   :hints (("Goal" :in-theory (enable instantiate-hyp-basic instantiate-hyp-basic-lst))))
 
@@ -170,14 +169,13 @@
   (defthm bounded-axe-treep-of-mv-nth-0-of-instantiate-hyp-basic
     (implies (and (pseudo-termp term)
                   (all-dargp-less-than (strip-cdrs alist) dag-len))
-             (bounded-axe-treep (mv-nth 0 (instantiate-hyp-basic term alist free-vars-flg interpreted-function-alist))
+             (bounded-axe-treep (mv-nth 0 (instantiate-hyp-basic term alist interpreted-function-alist))
                                 dag-len))
     :flag instantiate-hyp-basic)
   (defthm all-bounded-axe-treep-of-mv-nth-1-of-instantiate-hyp-basic-lst
     (implies (and (pseudo-term-listp terms)
                   (all-dargp-less-than (strip-cdrs alist) dag-len))
-             (all-bounded-axe-treep (mv-nth 1 (instantiate-hyp-basic-lst terms alist free-vars-flg
-                                                                          interpreted-function-alist))
+             (all-bounded-axe-treep (mv-nth 1 (instantiate-hyp-basic-lst terms alist interpreted-function-alist))
                                     dag-len))
     :flag instantiate-hyp-basic-lst)
   :hints (("Goal" :in-theory (enable instantiate-hyp-basic instantiate-hyp-basic-lst))))
@@ -188,10 +186,10 @@
     :rule-classes nil
     :flag instantiate-hyp-basic)
   (defthm all-myquotep-of-mv-nth-1-of-instantiate-hyp-basic-lst
-    (implies (and (mv-nth 0 (instantiate-hyp-basic-lst terms alist free-vars-flg interpreted-function-alist))
+    (implies (and (mv-nth 0 (instantiate-hyp-basic-lst terms alist interpreted-function-alist))
                   (pseudo-term-listp terms)
                   (all-dargp (strip-cdrs alist)))
-             (all-myquotep (mv-nth 1 (instantiate-hyp-basic-lst terms alist free-vars-flg interpreted-function-alist))))
+             (all-myquotep (mv-nth 1 (instantiate-hyp-basic-lst terms alist interpreted-function-alist))))
     :flag instantiate-hyp-basic-lst)
   :hints (("Goal" :in-theory (e/d (instantiate-hyp-basic instantiate-hyp-basic-lst) (myquotep)))))
 
@@ -199,18 +197,22 @@
 
 (defthm consp-of-mv-nth-0-of-instantiate-hyp-basic
   (implies (consp term)
-           (consp (mv-nth 0 (instantiate-hyp-basic term alist free-vars-flg interpreted-function-alist))))
-  :hints (("Goal" :expand ((instantiate-hyp-basic term alist free-vars-flg
-                                                  interpreted-function-alist)))))
+           (consp (mv-nth 0 (instantiate-hyp-basic term alist interpreted-function-alist))))
+  :hints (("Goal" :expand ((instantiate-hyp-basic term alist interpreted-function-alist)))))
 
 (defthm-flag-instantiate-hyp-basic
   (defthm true-listp-of-mv-nth-0-of-instantiate-hyp-basic
     (implies (and (pseudo-termp term)
                   (consp term))
-             (true-listp (mv-nth 0 (instantiate-hyp-basic term alist free-vars-flg interpreted-function-alist))))
+             (true-listp (mv-nth 0 (instantiate-hyp-basic term alist interpreted-function-alist))))
     :flag instantiate-hyp-basic)
   (defthm true-listp-of-mv-nth-1-of-instantiate-hyp-basic-lst-2 ;todo clash
-    (true-listp (mv-nth 1 (instantiate-hyp-basic-lst terms alist free-vars-flg
-                                                     interpreted-function-alist)))
+    (true-listp (mv-nth 1 (instantiate-hyp-basic-lst terms alist interpreted-function-alist)))
     :flag instantiate-hyp-basic-lst)
   :hints (("Goal" :in-theory (enable instantiate-hyp-basic instantiate-hyp-basic-lst))))
+
+(defthm not-equal-of-quote-and-car-of-mv-nth-0-of-instantiate-hyp-basic
+  (implies (and ;; free vars remain in the term:
+                (mv-nth 1 (instantiate-hyp-basic term alist interpreted-function-alist)))
+           (not (equal 'quote (car (mv-nth 0 (instantiate-hyp-basic term alist interpreted-function-alist))))))
+  :hints (("Goal" :expand ((instantiate-hyp-basic term alist interpreted-function-alist)))))

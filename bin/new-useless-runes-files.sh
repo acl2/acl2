@@ -6,9 +6,11 @@
 
 # in the main ACL2 directory (using any ACL2, but perhaps it's best to
 # use the one just built).  That will create a temporary file, tmp, in
-# the directory where this script is invoked, then execute that file
-# in ACL2 to obtain suitable output at the shell, of the following
-# form.  (Note that the temporary file, tmp, will then be deleted.)
+# the directory where this script is invoked; then it will execute
+# that file in ACL2 to obtain suitable output at the shell, of the
+# following form.  (Note that the temporary file, tmp, will then be
+# deleted.)  It is up to the user to run "git add" and "git rm" on the
+# files below (respectively); be sure to "cd books" first.
 
 # @@@ Untracked @useless-runes.lsp files to be added:
 # ("..." ... "...")

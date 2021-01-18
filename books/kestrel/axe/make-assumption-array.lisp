@@ -29,7 +29,7 @@
 ;; is a dargp or :non-nil suitable for storing in the assumption-array for
 ;; ASSUMPTION-NODENUM.  Note that the assertion may not be about
 ;; LITERAL-NODENUM itself but rather about one of its children.
-(defund assumption-array-info-for-literal (literal-nodenum dag-array dag-len known-booleans)
+(defund assumption-array-info-for-literal (literal-nodenum dag-array dag-len known-booleans print)
   (declare (xargs :guard (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                               (natp literal-nodenum)
                               (< literal-nodenum dag-len)
@@ -83,16 +83,17 @@
               ;; We are assuming a boolean thing to be non-nil, so we can replace it with t:
               (mv nodenum-to-assume-non-nil *t*)
             ;; All we know is that the thing is non-nil:
-            (progn$ (if (consp expr-to-assume-non-nil)
-                        (cw "NOTE: Non-known-boolean assumption (call of ~x0) found.~%" (ffn-symb expr-to-assume-non-nil))
-                      (cw "NOTE: Variable assumption, ~x0, found (not a known boolean).~%" expr-to-assume-non-nil))
+            (progn$ (and print
+                         (if (consp expr-to-assume-non-nil)
+                             (cw "NOTE: Non-known-boolean assumption (call of ~x0) found.~%" (ffn-symb expr-to-assume-non-nil))
+                           (cw "NOTE: Variable assumption, ~x0, found (not a known boolean).~%" expr-to-assume-non-nil)))
                     (mv nodenum-to-assume-non-nil :non-nil))))))))
 
 (defthm natp-of-mv-nth-0-of-assumption-array-info-for-literal
   (implies (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (natp literal-nodenum)
                 (< literal-nodenum dag-len))
-           (natp (mv-nth 0 (assumption-array-info-for-literal literal-nodenum dag-array dag-len known-booleans))))
+           (natp (mv-nth 0 (assumption-array-info-for-literal literal-nodenum dag-array dag-len known-booleans print))))
   :rule-classes (:rewrite :type-prescription)
   :hints (("Goal" :in-theory (e/d (assumption-array-info-for-literal
                                    car-becomes-nth-of-0)
@@ -102,7 +103,7 @@
   (implies (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (natp literal-nodenum)
                 (< literal-nodenum dag-len))
-           (<= 0 (mv-nth 0 (assumption-array-info-for-literal literal-nodenum dag-array dag-len known-booleans))))
+           (<= 0 (mv-nth 0 (assumption-array-info-for-literal literal-nodenum dag-array dag-len known-booleans print))))
   :hints (("Goal" :use natp-of-mv-nth-0-of-assumption-array-info-for-literal
            :in-theory (disable natp-of-mv-nth-0-of-assumption-array-info-for-literal))))
 
@@ -110,7 +111,7 @@
   (implies (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (natp literal-nodenum)
                 (< literal-nodenum dag-len))
-           (integerp (mv-nth 0 (assumption-array-info-for-literal literal-nodenum dag-array dag-len known-booleans))))
+           (integerp (mv-nth 0 (assumption-array-info-for-literal literal-nodenum dag-array dag-len known-booleans print))))
   :hints (("Goal" :use natp-of-mv-nth-0-of-assumption-array-info-for-literal
            :in-theory (disable natp-of-mv-nth-0-of-assumption-array-info-for-literal))))
 
@@ -118,7 +119,7 @@
   (implies (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (natp literal-nodenum)
                 (< literal-nodenum dag-len))
-           (<= (mv-nth 0 (assumption-array-info-for-literal literal-nodenum dag-array dag-len known-booleans))
+           (<= (mv-nth 0 (assumption-array-info-for-literal literal-nodenum dag-array dag-len known-booleans print))
                literal-nodenum))
   :rule-classes (:rewrite :linear)
   :hints (("Goal"
@@ -135,7 +136,7 @@
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (natp literal-nodenum)
                 (< literal-nodenum dag-len))
-           (< (mv-nth 0 (assumption-array-info-for-literal literal-nodenum dag-array dag-len known-booleans))
+           (< (mv-nth 0 (assumption-array-info-for-literal literal-nodenum dag-array dag-len known-booleans print))
               bound))
   :hints (("Goal" :use (<=-of-mv-nth-0-of-assumption-array-info-for-literal)
            :in-theory (disable <=-of-mv-nth-0-of-assumption-array-info-for-literal))))
@@ -145,7 +146,7 @@
   (implies (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (natp literal-nodenum)
                 (< literal-nodenum dag-len))
-           (assumption-itemp (mv-nth 1 (assumption-array-info-for-literal literal-nodenum dag-array dag-len known-booleans))))
+           (assumption-itemp (mv-nth 1 (assumption-array-info-for-literal literal-nodenum dag-array dag-len known-booleans print))))
   :hints (("Goal" ; :use (:instance TYPE-OF-AREF1-WHEN-ASSUMPTION-ARRAYP)
            :in-theory (e/d (assumption-array-info-for-literal car-becomes-nth-of-0)
                            (TYPE-OF-AREF1-WHEN-ASSUMPTION-ARRAYP
@@ -191,7 +192,7 @@
 ;; assumption-array.  The reason we don't want reundnant literals is that when
 ;; rewriting a literal we clear its assumption info in the array, which would
 ;; present us from detecting contradictions and redundant info at that point.
-(defund make-assumption-array-aux (literals kept-literals-acc assumption-array redundancy-presentp dag-array dag-len known-booleans)
+(defund make-assumption-array-aux (literals kept-literals-acc assumption-array redundancy-presentp dag-array dag-len known-booleans print)
   (declare (xargs :guard (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                               (nat-listp literals)
                               (all-< literals dag-len)
@@ -217,7 +218,7 @@
                                                                                                            DAG-ARRAY
                                                                                                            (ALEN1 'ASSUMPTION-ARRAY
                                                                                                                   ASSUMPTION-ARRAY)
-                                                                                                           KNOWN-BOOLEANS)))))
+                                                                                                           KNOWN-BOOLEANS print)))))
                                  :in-theory (e/d (car-becomes-nth-of-0
                                                   natp-of-+-of-1
                                                   <-of-+-of-1-strengthen-2
@@ -236,7 +237,7 @@
     (b* ((literal (first literals))
          ;; Get the nodenum and assumption-item which together represent the information in this literal:
          ((mv assumption-nodenum assumption-item)
-          (assumption-array-info-for-literal literal dag-array dag-len known-booleans))
+          (assumption-array-info-for-literal literal dag-array dag-len known-booleans print))
          ;; Get the existing inforation for assumption-nodenum in the assumption-array, if any:
          (existing-assumption-item (aref1 'assumption-array assumption-array assumption-nodenum)))
       (if (not existing-assumption-item)
@@ -246,7 +247,7 @@
                                      ;; Record the information from this literal:
                                      (aset1 'assumption-array assumption-array assumption-nodenum assumption-item)
                                      redundancy-presentp ;no new redundancy
-                                     dag-array dag-len known-booleans)
+                                     dag-array dag-len known-booleans print)
         ;; There is an existing entry for assumption-nodenum, so we have to
         ;; consider some cases.
         (if (eq :non-nil existing-assumption-item)
@@ -258,7 +259,7 @@
                                                    kept-literals-acc ; literal not added
                                                    assumption-array ; no new info to store
                                                    redundancy-presentp ;no new redundancy
-                                                   dag-array dag-len known-booleans))
+                                                   dag-array dag-len known-booleans print))
               (if (and (mbt (myquotep assumption-item)) ;just to check
                        (unquote assumption-item))
                   ;; We already know it is :non-nil, and now we know which
@@ -269,7 +270,7 @@
                                              ;; Replace the :non-nil from before with the constant from this literal:
                                              (aset1 'assumption-array assumption-array assumption-nodenum assumption-item)
                                              t ;; redundancy is present (the earlier literal that told us merely :non-nil)
-                                             dag-array dag-len known-booleans)
+                                             dag-array dag-len known-booleans print)
                 (if (mbt (equal *nil* assumption-item)) ;we know this is true
                     ;; This literal gives us a contradiction
                     (prog2$ (cw "NOTE: Contradiction found among literals.~%") ;todo: print it?
@@ -282,19 +283,19 @@
               ;; We already know the assumption-nodenum is nil:
               (if (equal *nil* assumption-item)
                   ;; This literal tells us something we already know, so drop it:
-                  (progn$ (cw "NOTE: Dropping redundant literal.~%")
+                  (progn$ (and print (cw "NOTE: Dropping redundant literal.~%"))
                           (make-assumption-array-aux (rest literals)
                                                      kept-literals-acc ; literal not added
                                                      assumption-array ; no new info to store
                                                      redundancy-presentp ; no new redundancy
-                                                     dag-array dag-len known-booleans))
+                                                     dag-array dag-len known-booleans print))
                 ;; Otherwise, the assumption-item must be either :non-nil or some
                 ;; non-nil constant, but we check here just to be sure:
                 (if (mbt (or (eq :non-nil assumption-item)
                              (and (myquotep assumption-item)
                                   (bool-fix (unquote assumption-item)))))
                     ;; This literal gives us a contradiction
-                    (prog2$ (cw "NOTE: Contradiction found among literals.~%") ;todo: print it?
+                    (prog2$ (and print (cw "NOTE: Contradiction found among literals.~%")) ;todo: print it?
                             (mv t ;proved the entire clause
                                 nil assumption-array redundancy-presentp))
                   ;; Can never happen:
@@ -305,27 +306,27 @@
                 ;; We already know the assumption-nodenum is some particular non-nil constant:
                 (if (eq :non-nil assumption-item)
                     ;; This literal tells us something we already know, so drop it:
-                    (progn$ (cw "NOTE: Dropping redundant literal.~%")
+                    (progn$ (and print (cw "NOTE: Dropping redundant literal.~%"))
                             (make-assumption-array-aux (rest literals)
                                                        kept-literals-acc ; literal not added
                                                        assumption-array ; no new info to store
                                                        redundancy-presentp ; no new redundancy
-                                                       dag-array dag-len known-booleans))
+                                                       dag-array dag-len known-booleans print))
                   (if (mbt (myquotep assumption-item)) ; just to check
                       ;; They are both quoteps:
                       (if (not (equal (unquote existing-assumption-item)
                                       (unquote assumption-item)))
                           ;; This literal gives us a contradiction (the node can't be two differerent constants):
-                          (prog2$ (cw "NOTE: Contradiction found among literals.~%") ;todo: print it?
+                          (prog2$ (and print (cw "NOTE: Contradiction found among literals.~%")) ;todo: print it?
                                   (mv t ;proved the entire clause
                                       nil assumption-array redundancy-presentp))
                         ;; This literal tells us something we already know, so drop it:
-                        (progn$ (cw "NOTE: Dropping redundant literal.~%")
+                        (progn$ (and print (cw "NOTE: Dropping redundant literal.~%"))
                                 (make-assumption-array-aux (rest literals)
                                                            kept-literals-acc ; literal not added
                                                            assumption-array ; no new info to store
                                                            redundancy-presentp ; no new redundancy
-                                                           dag-array dag-len known-booleans)))
+                                                           dag-array dag-len known-booleans print)))
                     ;; Can never happen:
                     (prog2$ (er hard 'make-assumption-array-aux "Bad assumption-item: ~x0." assumption-item)
                             (mv nil nil nil nil))))
@@ -334,7 +335,7 @@
                       (mv nil nil nil nil)))))))))
 
 (defthm booleanp-of-mv-nth-0-of-make-assumption-array-aux
-  (booleanp (mv-nth 0 (make-assumption-array-aux literals kept-literals-acc assumption-array redundancy-presentp dag-array dag-len known-booleans)))
+  (booleanp (mv-nth 0 (make-assumption-array-aux literals kept-literals-acc assumption-array redundancy-presentp dag-array dag-len known-booleans print)))
   :hints (("Goal"
            :in-theory (e/d (make-assumption-array-aux
                             car-becomes-nth-of-0
@@ -347,7 +348,7 @@
 
 (defthm true-listp-of-mv-nth-1-of-make-assumption-array-aux
   (implies (true-listp kept-literals-acc)
-           (true-listp (mv-nth 1 (make-assumption-array-aux literals kept-literals-acc assumption-array redundancy-presentp dag-array dag-len known-booleans))))
+           (true-listp (mv-nth 1 (make-assumption-array-aux literals kept-literals-acc assumption-array redundancy-presentp dag-array dag-len known-booleans print))))
   :hints (("Goal"
            :in-theory (e/d (make-assumption-array-aux
                             car-becomes-nth-of-0
@@ -367,7 +368,7 @@
                 (equal (alen1 'assumption-array assumption-array)
                        dag-len)
                 (booleanp redundancy-presentp))
-           (assumption-arrayp 'assumption-array (mv-nth 2 (make-assumption-array-aux literals kept-literals-acc assumption-array redundancy-presentp dag-array dag-len known-booleans))))
+           (assumption-arrayp 'assumption-array (mv-nth 2 (make-assumption-array-aux literals kept-literals-acc assumption-array redundancy-presentp dag-array dag-len known-booleans print))))
   :hints (("Goal"
            :in-theory (e/d (make-assumption-array-aux
                             car-becomes-nth-of-0
@@ -387,7 +388,7 @@
                 (equal (alen1 'assumption-array assumption-array)
                        dag-len)
                 (booleanp redundancy-presentp))
-           (equal (alen1 'assumption-array (mv-nth 2 (make-assumption-array-aux literals kept-literals-acc assumption-array redundancy-presentp dag-array dag-len known-booleans)))
+           (equal (alen1 'assumption-array (mv-nth 2 (make-assumption-array-aux literals kept-literals-acc assumption-array redundancy-presentp dag-array dag-len known-booleans print)))
                   (alen1 'assumption-array assumption-array)
                   ))
   :hints (("Goal"
@@ -409,7 +410,7 @@
                 (equal (alen1 'assumption-array assumption-array)
                        dag-len)
                 (booleanp redundancy-presentp))
-           (nat-listp (mv-nth 1 (make-assumption-array-aux literals kept-literals-acc assumption-array redundancy-presentp dag-array dag-len known-booleans))))
+           (nat-listp (mv-nth 1 (make-assumption-array-aux literals kept-literals-acc assumption-array redundancy-presentp dag-array dag-len known-booleans print))))
   :hints (("Goal"
            :in-theory (e/d (make-assumption-array-aux
                             car-becomes-nth-of-0
@@ -430,7 +431,7 @@
                 (equal (alen1 'assumption-array assumption-array)
                        dag-len)
                 (booleanp redundancy-presentp))
-           (all-< (mv-nth 1 (make-assumption-array-aux literals kept-literals-acc assumption-array redundancy-presentp dag-array dag-len known-booleans))
+           (all-< (mv-nth 1 (make-assumption-array-aux literals kept-literals-acc assumption-array redundancy-presentp dag-array dag-len known-booleans print))
                   dag-len))
   :hints (("Goal"
            :in-theory (e/d (make-assumption-array-aux
@@ -443,7 +444,7 @@
                             natp)))))
 
 ;; Drop literals that tell us a node is :non-nil when the array tells us the node is some particular non-nil constant
-(defund drop-redundant-literals (literals kept-literals-acc assumption-array dag-array dag-len known-booleans)
+(defund drop-redundant-literals (literals kept-literals-acc assumption-array dag-array dag-len known-booleans print)
   (declare (xargs :guard (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                               (nat-listp literals)
                               (all-< literals dag-len)
@@ -458,7 +459,7 @@
     (b* ((literal (first literals))
          ;; Get the nodenum and assumption-item which together represent the information in this literal:
          ((mv assumption-nodenum assumption-item)
-          (assumption-array-info-for-literal literal dag-array dag-len known-booleans))
+          (assumption-array-info-for-literal literal dag-array dag-len known-booleans print))
          ;; Get the existing inforation for assumption-nodenum in the assumption-array (probably some such info will always exist):
          (existing-assumption-item (aref1 'assumption-array assumption-array assumption-nodenum)))
       (if (and (eq :non-nil assumption-item)
@@ -468,10 +469,10 @@
           (progn$ (cw "NOTE: Dropping redundant literal.~%")
                   (drop-redundant-literals (rest literals)
                                            kept-literals-acc ; drop the literal
-                                           assumption-array dag-array dag-len known-booleans))
+                                           assumption-array dag-array dag-len known-booleans print))
         (drop-redundant-literals (rest literals)
                                  (cons literal kept-literals-acc) ; keep the literal
-                                 assumption-array dag-array dag-len known-booleans)))))
+                                 assumption-array dag-array dag-len known-booleans print)))))
 
 (defthm drop-redundant-literals-return-type
   (implies (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
@@ -482,20 +483,20 @@
                 (assumption-arrayp 'assumption-array assumption-array)
                 (equal (alen1 'assumption-array assumption-array)
                        dag-len))
-           (and (nat-listp (drop-redundant-literals literals kept-literals-acc assumption-array dag-array dag-len known-booleans))
-                (all-< (drop-redundant-literals literals kept-literals-acc assumption-array dag-array dag-len known-booleans)
+           (and (nat-listp (drop-redundant-literals literals kept-literals-acc assumption-array dag-array dag-len known-booleans print))
+                (all-< (drop-redundant-literals literals kept-literals-acc assumption-array dag-array dag-len known-booleans print)
                        dag-len)))
   :hints (("Goal" :in-theory (enable drop-redundant-literals))))
 
 (defthm true-listp-of-drop-redundant-literals
   (implies (true-listp kept-literals-acc)
-           (true-listp (drop-redundant-literals literals kept-literals-acc assumption-array dag-array dag-len known-booleans)))
+           (true-listp (drop-redundant-literals literals kept-literals-acc assumption-array dag-array dag-len known-booleans print)))
    :hints (("Goal" :in-theory (enable drop-redundant-literals))))
 
 ;; Returns (mv provedp literals assumption-array).
 ;; Creates an assumption-array containing the information from the
 ;; literals.
-(defund make-assumption-array (literals dag-array dag-len known-booleans)
+(defund make-assumption-array (literals dag-array dag-len known-booleans print)
   (declare (xargs :guard (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                               (posp dag-len) ;can't make an empty assumptions array
                               (nat-listp literals)
@@ -503,13 +504,13 @@
                               (symbol-listp known-booleans))))
   (b* ((assumption-array (make-empty-array 'assumption-array dag-len))
        ((mv provedp literals assumption-array redundancy-presentp)
-        (make-assumption-array-aux literals nil assumption-array nil dag-array dag-len known-booleans))
+        (make-assumption-array-aux literals nil assumption-array nil dag-array dag-len known-booleans print))
        ((when provedp)
         (mv provedp nil assumption-array)))
     (if redundancy-presentp
         ;; Need a second pass to drop literals that give us :non-nil for a node which another literal gives of *t* for:
         (mv nil ; did not prove the whole clause
-            (drop-redundant-literals literals nil assumption-array dag-array dag-len known-booleans)
+            (drop-redundant-literals literals nil assumption-array dag-array dag-len known-booleans print)
             assumption-array)
       (mv nil ; did not prove the whole clause
           literals
@@ -521,7 +522,7 @@
                 (nat-listp literals)
                 (all-< literals dag-len))
            (mv-let (provedp literals assumption-array)
-             (make-assumption-array literals dag-array dag-len known-booleans)
+             (make-assumption-array literals dag-array dag-len known-booleans print)
              (and (booleanp provedp)
                   (nat-listp literals)
                   (all-< literals dag-len)
@@ -535,7 +536,7 @@
                 (nat-listp literals)
                 (all-< literals dag-len))
            (mv-let (provedp literals assumption-array)
-             (make-assumption-array literals dag-array dag-len known-booleans)
+             (make-assumption-array literals dag-array dag-len known-booleans print)
              (declare (ignore provedp literals))
              (equal (alen1 'assumption-array assumption-array)
                     dag-len)))
@@ -544,7 +545,7 @@
 
 (defthm make-assumption-array-return-type-3
   (mv-let (provedp literals assumption-array)
-    (make-assumption-array literals dag-array dag-len known-booleans)
+    (make-assumption-array literals dag-array dag-len known-booleans print)
     (declare (ignore provedp assumption-array))
     (true-listp literals))
   :hints (("Goal" :cases ((equal 0 dag-len))

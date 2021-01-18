@@ -1,6 +1,6 @@
 ; Cryptographic Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2019-2021 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -19,6 +19,7 @@
 (include-book "padding/top")
 (include-book "sha-2/top")
 (include-book "kdf/top")
+;; (include-book "r1cs/top") ; brings in skip-proofs
 
 (include-book "attachments/top")
 

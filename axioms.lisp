@@ -7141,6 +7141,19 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defmacro fargs (x) (list 'cdr x))
 
+(defun fargn1 (x n)
+  (declare (xargs :guard (and (integerp n)
+                              (> n 0))))
+  (cond ((mbe :logic (or (zp n) (eql n 1))
+              :exec (eql n 1))
+         (list 'cdr x))
+        (t (list 'cdr (fargn1 x (- n 1))))))
+
+(defmacro fargn (x n)
+  (declare (xargs :guard (and (integerp n)
+                              (> n 0))))
+  (list 'car (fargn1 x n)))
+
 (mutual-recursion
 
 (defun all-vars1 (term ans)

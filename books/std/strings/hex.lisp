@@ -325,12 +325,12 @@ FX-8350.</p>
              (< (len (skip-leading-hex-digits x))
                 (len x)))))
 
-(define take-leading-hex-digits (x)
+(define take-leading-hex-digit-chars (x)
   :short "Collect any leading hex digit characters from the start of a character
           list."
   :returns (head character-listp :hyp (character-listp x))
   (cond ((atom x)             nil)
-        ((hex-digit-char-p (car x)) (cons (car x) (take-leading-hex-digits (cdr x))))
+        ((hex-digit-char-p (car x)) (cons (car x) (take-leading-hex-digit-chars (cdr x))))
         (t                    nil))
   ///
   ;; Unlike decimal/binary/octal versions, here we don't get an EQUAL
@@ -340,25 +340,25 @@ FX-8350.</p>
            (if (or (atom x) (atom y))
                (list x y)
              (ind (cdr x) (cdr y)))))
-  (defcong charlisteqv equal (take-leading-hex-digits x) 1
+  (defcong charlisteqv equal (take-leading-hex-digit-chars x) 1
     :hints(("Goal" :induct (ind x x-equiv)
             :in-theory (enable charlisteqv))))
-  (defcong icharlisteqv icharlisteqv (take-leading-hex-digits x) 1
+  (defcong icharlisteqv icharlisteqv (take-leading-hex-digit-chars x) 1
     :hints(("Goal" :in-theory (enable icharlisteqv))))
-  (defthm hex-digit-char-listp-of-take-leading-hex-digits
-    (hex-digit-char-listp (take-leading-hex-digits x)))
-  (defthm bound-of-len-of-take-leading-hex-digits
-    (<= (len (take-leading-hex-digits x)) (len x))
+  (defthm hex-digit-char-listp-of-take-leading-hex-digit-chars
+    (hex-digit-char-listp (take-leading-hex-digit-chars x)))
+  (defthm bound-of-len-of-take-leading-hex-digit-chars
+    (<= (len (take-leading-hex-digit-chars x)) (len x))
     :rule-classes :linear)
-  (defthm equal-of-take-leading-hex-digits-and-length
-    (equal (equal (len (take-leading-hex-digits x)) (len x))
+  (defthm equal-of-take-leading-hex-digit-chars-and-length
+    (equal (equal (len (take-leading-hex-digit-chars x)) (len x))
            (hex-digit-char-listp x)))
-  (defthm take-leading-hex-digits-when-hex-digit-char-listp
+  (defthm take-leading-hex-digit-chars-when-hex-digit-char-listp
     (implies (hex-digit-char-listp x)
-             (equal (take-leading-hex-digits x)
+             (equal (take-leading-hex-digit-chars x)
                     (list-fix x))))
-  (defthm consp-of-take-leading-hex-digits
-    (equal (consp (take-leading-hex-digits x))
+  (defthm consp-of-take-leading-hex-digit-chars
+    (equal (consp (take-leading-hex-digit-chars x))
            (hex-digit-char-p (car x)))))
 
 (define hex-digit-string-p-aux
@@ -802,14 +802,14 @@ hex-digit-chars-value), and somewhat better performance:</p>
   ///
   (defthm val-of-parse-hex-from-charlist
       (equal (mv-nth 0 (parse-hex-from-charlist x val len))
-             (+ (hex-digit-chars-value (take-leading-hex-digits x))
-                (ash (nfix val) (* 4 (len (take-leading-hex-digits x))))))
-      :hints(("Goal" :in-theory (enable take-leading-hex-digits
+             (+ (hex-digit-chars-value (take-leading-hex-digit-chars x))
+                (ash (nfix val) (* 4 (len (take-leading-hex-digit-chars x))))))
+      :hints(("Goal" :in-theory (enable take-leading-hex-digit-chars
                                         hex-digit-chars-value))))
   (defthm len-of-parse-hex-from-charlist
     (equal (mv-nth 1 (parse-hex-from-charlist x val len))
-           (+ (nfix len) (len (take-leading-hex-digits x))))
-    :hints(("Goal" :in-theory (enable take-leading-hex-digits))))
+           (+ (nfix len) (len (take-leading-hex-digit-chars x))))
+    :hints(("Goal" :in-theory (enable take-leading-hex-digit-chars))))
 
   (defthm rest-of-parse-hex-from-charlist
     (equal (mv-nth 2 (parse-hex-from-charlist x val len))
@@ -874,13 +874,13 @@ of our logical definition.</p>"
          (mv val len)))
   ///
   ;; Minor speed hint
-  (local (in-theory (disable BOUND-OF-LEN-OF-TAKE-LEADING-HEX-DIGITS
+  (local (in-theory (disable BOUND-OF-LEN-OF-TAKE-LEADING-HEX-DIGIT-CHARS
                              ACL2::RIGHT-SHIFT-TO-LOGTAIL
                              HEX-DIGIT-CHAR-LISTP-OF-CDR-WHEN-HEX-DIGIT-CHAR-LISTP)))
 
   (verify-guards parse-hex-from-string
     :hints(("Goal" :in-theory (enable parse-hex-from-charlist
-                                      take-leading-hex-digits
+                                      take-leading-hex-digit-chars
                                       hex-digit-chars-value
                                       )))))
 

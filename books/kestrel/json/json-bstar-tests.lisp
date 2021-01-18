@@ -302,3 +302,43 @@
        ((unless (and (eq one :nomatch!) (eq four :nomatch!))) nil)
        )
     t))
+
+(assert-event (pat-test-4))
+
+;; test new SYMBOL.. pattern that binds a variable to a tail of a list
+
+(defun pat-test-5 ()
+  (b* ((parent-form (cons
+                     :mycar
+                     (make-value-array
+                      :elements (list (make-value-true)
+                                      (make-value-string :get "two")
+                                      (make-value-number :get 3)
+                                      (make-value-false)
+                                      (make-value-null)))))
+       ((pattern (:array one rest..)) (cdr parent-form))
+       ((unless match?) nil)
+       ((unless (jtruep one)) nil)
+       ((pattern (:array "two" cdr-rest..)) (make-value-array :elements rest..))
+       ((unless (and match?
+                     (equal (list* (make-value-true)
+                                   (make-value-string :get "two")
+                                   cdr-rest..)
+                            (value-array->elements (cdr parent-form)))))
+        nil))
+    t))
+
+(assert-event (pat-test-5))
+
+;; Also apply SYMBOL.. to the tail of a member list
+
+(defun pat-test-6 ()
+  (b* ((parent-form (make-value-object :members (list (make-member :name "var" :value (make-value-string :get "x"))
+                                                      (make-member :name "type" :value (make-value-string :get "int"))
+                                                      (make-member :name "val" :value (make-value-number :get 3)))))
+       ((pattern (:object (:member "var" v) type-and-val..)) parent-form)
+       ((unless (and match?
+                     (equal (len type-and-val..) 2))) nil))
+    t))
+
+(assert-event (pat-test-6))

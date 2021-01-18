@@ -735,15 +735,6 @@
 
   (list 'cons fn args))
 
-(defun fargn1 (x n)
-  (declare (xargs :guard (and (integerp n)
-                              (> n 0))))
-  (cond ((eql n 1) (list 'cdr x))
-        (t (list 'cdr (fargn1 x (- n 1))))))
-
-(defmacro fargn (x n)
-  (list 'car (fargn1 x n)))
-
 (defun cdr-nest (n v)
   (cond ((equal n 0) v)
         (t (fargn1 v n))))

@@ -5032,7 +5032,7 @@
  (2413 1400 (:REWRITE SIMPLIFY-SUMS-<))
  (2148 1074 (:REWRITE BUBBLE-DOWN-+-MATCH-1))
  (2140 2140 (:DEFINITION FIX))
- (1921 4 (:DEFINITION RTL::CLZ-LOOP-0))
+ (1921 4 (:DEFINITION RTL::CLZ128-LOOP-0))
  (1074 1074 (:TYPE-PRESCRIPTION BUBBLE-DOWN))
  (1074 1074 (:REWRITE |(+ x (- x))|))
  (961 961 (:REWRITE |(< y (+ (- c) x))|))
@@ -5142,7 +5142,7 @@
  (1 1
     (:REWRITE EXPT-IS-WEAKLY-DECREASING-FOR-POS-BASE-<-1)))
 (RTL::LOOP-1-INDUCT
- (42424 20 (:DEFINITION RTL::CLZ-LOOP-0))
+ (42424 20 (:DEFINITION RTL::CLZ128-LOOP-0))
  (32555 908 (:REWRITE THE-FLOOR-BELOW))
  (23133 18 (:LINEAR LINEAR-FLOOR-BOUNDS-1))
  (15138 153 (:REWRITE |(integerp (expt x n))|))
@@ -5672,7 +5672,7 @@
  (2 2 (:REWRITE INTEGERP-MINUS-X))
  (2 2 (:META META-INTEGERP-CORRECT)))
 (RTL::LOOP-2-LEMMA
- (78 2 (:DEFINITION RTL::CLZ-LOOP-2))
+ (78 2 (:DEFINITION RTL::CLZ128-LOOP-2))
  (40 2 (:DEFINITION RTL::LOGNOT1))
  (20 2 (:REWRITE RTL::NEG-BITN-0))
  (10 10
@@ -5721,10 +5721,10 @@
  (2 2 (:REWRITE |(equal (/ x) (/ y))|))
  (2 2 (:REWRITE |(equal (- x) c)|))
  (2 2 (:REWRITE |(equal (- x) (- y))|)))
-(RTL::CLZ-LZCNT
- (690 5 (:DEFINITION RTL::CLZ-LOOP-1))
- (685 5 (:DEFINITION RTL::CLZ-LOOP-0))
- (468 12 (:DEFINITION RTL::CLZ-LOOP-2))
+(RTL::CLZ128-LZCNT
+ (690 5 (:DEFINITION RTL::CLZ128-LOOP-1))
+ (685 5 (:DEFINITION RTL::CLZ128-LOOP-0))
+ (468 12 (:DEFINITION RTL::CLZ128-LOOP-2))
  (245 31 (:REWRITE RTL::NEG-BITN-0))
  (240 12 (:DEFINITION RTL::LOGNOT1))
  (240 5 (:DEFINITION RTL::SETBITN))
@@ -5842,30 +5842,30 @@
  (2 2 (:REWRITE |(< (/ x) (/ y))|))
  (2 2 (:REWRITE |(< (- x) c)|))
  (2 2 (:REWRITE |(< (- x) (- y))|)))
-(RTL::CLZ-0)
-(RTL::CLZ-EXPO (8 4 (:REWRITE DEFAULT-PLUS-2))
-               (4 4 (:REWRITE DEFAULT-PLUS-1))
-               (4 2 (:REWRITE DEFAULT-MINUS))
-               (3 3
-                  (:REWRITE NORMALIZE-TERMS-SUCH-AS-A/A+B-+-B/A+B))
-               (3 3 (:REWRITE NORMALIZE-ADDENDS))
-               (1 1
-                  (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-=-0))
-               (1 1 (:REWRITE SIMPLIFY-SUMS-EQUAL))
-               (1 1
-                  (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-EQUAL))
-               (1 1
-                  (:REWRITE REDUCE-MULTIPLICATIVE-CONSTANT-EQUAL))
-               (1 1
-                  (:REWRITE REDUCE-ADDITIVE-CONSTANT-EQUAL))
-               (1 1
-                  (:REWRITE PREFER-POSITIVE-ADDENDS-EQUAL))
-               (1 1
-                  (:REWRITE EQUAL-OF-PREDICATES-REWRITE))
-               (1 1 (:REWRITE EQUAL-OF-BOOLEANS-REWRITE))
-               (1 1 (:REWRITE |(equal c (/ x))|))
-               (1 1 (:REWRITE |(equal c (- x))|))
-               (1 1 (:REWRITE |(equal (/ x) c)|))
-               (1 1 (:REWRITE |(equal (/ x) (/ y))|))
-               (1 1 (:REWRITE |(equal (- x) c)|))
-               (1 1 (:REWRITE |(equal (- x) (- y))|)))
+(RTL::CLZ128-0)
+(RTL::CLZ128-EXPO (8 4 (:REWRITE DEFAULT-PLUS-2))
+                  (4 4 (:REWRITE DEFAULT-PLUS-1))
+                  (4 2 (:REWRITE DEFAULT-MINUS))
+                  (3 3
+                     (:REWRITE NORMALIZE-TERMS-SUCH-AS-A/A+B-+-B/A+B))
+                  (3 3 (:REWRITE NORMALIZE-ADDENDS))
+                  (1 1
+                     (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-=-0))
+                  (1 1 (:REWRITE SIMPLIFY-SUMS-EQUAL))
+                  (1 1
+                     (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-EQUAL))
+                  (1 1
+                     (:REWRITE REDUCE-MULTIPLICATIVE-CONSTANT-EQUAL))
+                  (1 1
+                     (:REWRITE REDUCE-ADDITIVE-CONSTANT-EQUAL))
+                  (1 1
+                     (:REWRITE PREFER-POSITIVE-ADDENDS-EQUAL))
+                  (1 1
+                     (:REWRITE EQUAL-OF-PREDICATES-REWRITE))
+                  (1 1 (:REWRITE EQUAL-OF-BOOLEANS-REWRITE))
+                  (1 1 (:REWRITE |(equal c (/ x))|))
+                  (1 1 (:REWRITE |(equal c (- x))|))
+                  (1 1 (:REWRITE |(equal (/ x) c)|))
+                  (1 1 (:REWRITE |(equal (/ x) (/ y))|))
+                  (1 1 (:REWRITE |(equal (- x) c)|))
+                  (1 1 (:REWRITE |(equal (- x) (- y))|)))

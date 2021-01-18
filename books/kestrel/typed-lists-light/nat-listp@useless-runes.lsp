@@ -38,3 +38,12 @@
                    (5 5 (:REWRITE DEFAULT-<-1))
                    (3 3 (:REWRITE DEFAULT-CDR))
                    (3 3 (:REWRITE DEFAULT-CAR)))
+(NAT-LISTP-OF-APPEND (36 18
+                         (:TYPE-PRESCRIPTION TRUE-LISTP-APPEND))
+                     (27 9 (:REWRITE NAT-LISTP-OF-TRUE-LIST-FIX))
+                     (18 18 (:TYPE-PRESCRIPTION TRUE-LISTP))
+                     (18 18 (:TYPE-PRESCRIPTION BINARY-APPEND))
+                     (16 16 (:REWRITE DEFAULT-CAR))
+                     (12 12 (:REWRITE DEFAULT-CDR))
+                     (4 4 (:REWRITE DEFAULT-<-2))
+                     (4 4 (:REWRITE DEFAULT-<-1)))

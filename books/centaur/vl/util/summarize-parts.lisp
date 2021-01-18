@@ -72,16 +72,16 @@
        ((mv val len) (str::parse-nat-from-string x 0 0 (+ 1 idx) xlen)))
     (mv (- val) (+ 1 len)))
   ///
-  (local (defthm len-of-take-leading-digits
-           (<= (len (str::take-leading-digits x)) (len x))
-           :hints(("Goal" :in-theory (enable str::take-leading-digits)))
+  (local (defthm len-of-take-leading-dec-digit-chars
+           (<= (len (str::take-leading-dec-digit-chars x)) (len x))
+           :hints(("Goal" :in-theory (enable str::take-leading-dec-digit-chars)))
            :rule-classes :linear))
 
   (defret parse-int-from-string-len-upper-bound
     (implies (<= (nfix idx) (length (str-fix x)))
              (<= (+ len (nfix idx)) (length (str-fix x))))
     :rule-classes ((:linear :trigger-terms (len)))))
-      
+
 
 ;; (local (defthm listpos-upper-bound
 ;;          (implies (acl2::sublistp x y)
@@ -176,7 +176,7 @@
       nil
     (cons (parse-partsum-elt 0 (car x) (length (string-fix (car x))))
           (parse-partsumlist (cdr x)))))
-          
+
 
 (define join-partsum-ranges ((left-msb integerp)
                              (left-lsb integerp)
@@ -333,7 +333,7 @@
                                    (and (eql x1.msb y1.msb)
                                         (< x1.lsb y1.lsb))))))))
   ///
-  
+
   (local (in-theory (disable (:d partsum-elt<))))
 
   (fty::deffixequiv partsum-elt<)
@@ -429,8 +429,3 @@
   (b* ((parts (partsumlist-sort (parse-partsumlist x)))
        (new-parts (summarize-partsumlist parts)))
     (partsumlist-to-strings new-parts)))
-       
-        
-                  
-       
-       

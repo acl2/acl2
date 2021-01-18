@@ -1137,6 +1137,8 @@
       (:REWRITE INTEGERP-OF-*-OF-/-OF-EXPT2-AND-EXPT2))
   (8 8
      (:TYPE-PRESCRIPTION INTEGERP-OF-*-OF-/-OF-EXPT2-AND-EXPT2-TYPE))
+  (6 6
+     (:REWRITE MOD-OF-+-OF---WHEN-EQUAL-OF-MOD))
   (6 6 (:REWRITE DEFAULT-UNARY-MINUS))
   (6 6 (:REWRITE <-OF-+-COMBINE-CONSTANTS-2))
   (4 4
@@ -2189,3 +2191,26 @@
   (2 2 (:LINEAR EXPT-BOUND-LINEAR-WEAK))
   (2 2 (:LINEAR EXPT-BOUND-LINEAR))
   (1 1 (:REWRITE ZIP-OPEN)))
+(BITP-OF-BVCHOP-OF-1 (9 1 (:LINEAR <=-OF-BVCHOP-SAME-LINEAR))
+                     (5 1 (:DEFINITION NATP))
+                     (4 2 (:REWRITE INTEGERP-WHEN-POWER-OF-2P))
+                     (3 3 (:TYPE-PRESCRIPTION POWER-OF-2P))
+                     (3 1
+                        (:REWRITE BVCHOP-WHEN-I-IS-NOT-AN-INTEGER))
+                     (3 1 (:REWRITE BVCHOP-IDENTITY))
+                     (2 2 (:TYPE-PRESCRIPTION UNSIGNED-BYTE-P))
+                     (2 2 (:LINEAR <=-OF-BVCHOP-SAME-LINEAR-2))
+                     (2 1 (:REWRITE NATP-WHEN-POWER-OF-2P))
+                     (1 1 (:TYPE-PRESCRIPTION NATP))
+                     (1 1 (:REWRITE DEFAULT-<-2))
+                     (1 1 (:REWRITE DEFAULT-<-1))
+                     (1 1
+                        (:REWRITE BVCHOP-WITH-N-NOT-AN-INTEGER))
+                     (1 1 (:REWRITE BVCHOP-WITH-N-NEGATIVE))
+                     (1 1
+                        (:REWRITE BVCHOP-WHEN-SIZE-IS-NOT-POSP))
+                     (1 1
+                        (:REWRITE BVCHOP-WHEN-SIZE-IS-NOT-NATP))
+                     (1 1
+                        (:REWRITE BVCHOP-WHEN-I-IS-NOT-AN-INTEGER-CHEAP))
+                     (1 1 (:REWRITE BVCHOP-SUBST-CONSTANT)))

@@ -40,3 +40,6 @@
            (equal (bool-to-bit (equal 1 bit))
                   bit))
   :hints (("Goal" :in-theory (enable bool-to-bit))))
+
+;; This helps justify some things that Axe does:
+(defcong iff equal (bool-to-bit x) 1 :hints (("Goal" :in-theory (enable bool-to-bit))))

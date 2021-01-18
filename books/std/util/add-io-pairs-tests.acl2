@@ -1,0 +1,3 @@
+; The following allow us to use #. in primep-exec-tests.lisp.
+(include-book "kestrel/crypto/primes/top" :dir :system)
+(include-book "kestrel/crypto/primes/baby-jubjub-subgroup-prime" :dir :system)

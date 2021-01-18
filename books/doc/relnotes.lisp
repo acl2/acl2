@@ -166,6 +166,15 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "isar::isar" "Isar Library"))
+
+   (xdoc::p
+    "This is a library to support proofs in the style of Isabelle's
+     Isar (Intelligent Semi-Automated Reasoning) language.
+     It is just a small step in that direction for now.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "json::json" "JSON Library"))
 
    (xdoc::p
@@ -225,6 +234,14 @@
     "This library can be used to read in sections of ELF/Mach-O files into ACL2.
      An older version of these books used to live in the @(tsee x86isa::x86isa)
      library.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "zcash::zcash" "Zcash Library"))
+
+   (xdoc::p
+    "This is a library about the Zcash blockchain currency,
+     which is based on zero-knowledge proofs.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -498,14 +515,45 @@
 
    (xdoc::h4 (xdoc::seetopic "crypto::cryptography" "Cryptographic Library"))
 
+   ;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h5 (xdoc::seetopic "ecurve::elliptic-curves"
+                             "Elliptic Curve Library"))
+
    (xdoc::p
-    "In the "
-    (xdoc::seetopic "ecurve::elliptic-curves" "sub-library for elliptic curves")
-    ", the files @('[books]/kestrel/crypto/ecurve/bls12-377-domain-parameters.lisp')
-    and @('[books]/kestrel/crypto/ecurve/bls12-377-prime.lisp') have been
-    added.  They introduce some parameters of the BLS12-377 elliptic curve,
-    and introduce a Pratt certificate of primality for the scalar field size @($r$)
-    of that elliptic curve.")
+    "The formalization of "
+    (xdoc::seetopic "ecurve::short-weierstrass-curves"
+                    "short Weierstrass curves")
+    " has been extended and improved.")
+
+   (xdoc::p
+    "A formalization of "
+    (xdoc::seetopic "ecurve::twisted-edwards" "twisted Edwards curves")
+    " has been added.")
+
+   (xdoc::p
+    "A formalization of "
+    (xdoc::seetopic "ecurve::montgomery-curves" "Montgomery curves")
+    " has been added.")
+
+   (xdoc::p
+    "A formalization of the "
+    (xdoc::seetopic "ecurve::jubjub" "Jubjub twisted Edwards elliptic curve")
+    " has been added.")
+
+   (xdoc::p
+    "A formalization of the "
+    (xdoc::seetopic "ecurve::birational-montgomery-twisted-edwards"
+                    "birational equivalence between
+                     Montgomery and twisted Edwards curves")
+    " has been added.")
+
+   (xdoc::p
+    "The files
+     @('[books]/kestrel/crypto/ecurve/bls12-377-domain-parameters.lisp') and
+     @('[books]/kestrel/crypto/ecurve/bls12-377-prime.lisp')
+     have been added.
+     They introduce some parameters of the BLS12-377 elliptic curve.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -992,6 +1040,18 @@
    (xdoc::p
     "The macro @(tsee std::define-sk) has been moved
      from @('[books]/kestrel/utilities/') to @('[books]/std/util/').")
+
+   (xdoc::p
+    "A new event macro @(tsee add-io-pairs) has been added, to speed
+     up a function using verified input-output pairs.  Related
+     utilities include @(tsee add-io-pair), @(tsee remove-io-pairs),
+     @(tsee show-io-pairs), and @(tsee get-io-pairs).")
+
+   (xdoc::p
+    "A new event macro @(tsee defmin-int) has been added,
+     to declarative define the minimum of
+     a (possibly infinite) set of integers.
+     This is similar to @(tsee defmax-nat).")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

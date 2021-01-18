@@ -10,6 +10,8 @@
 
 (in-package "JSON")
 
+(include-book "std/strings/suffixp" :dir :system)
+
 (include-book "abstract-syntax")
 (include-book "light-ast-check")
 
@@ -54,7 +56,7 @@ member = name ":" value
 name = string
 
 string means a literal string that is delimited by double-quotes (").
-We omit the details on whitespace, numbers, and strings.
+We omit the details on whitespace, numbers, strings, and symbols.
 
 Although the JSON Fixtype we are using is implemented as an s-expression,
 it is organized in a similar way as above.  An analogous simplified ABNF
@@ -63,12 +65,15 @@ for our JSON pattern language would be:
 value-pattern = "true" / "false" / "null" / string-pattern / number-pattern /
                 array-pattern / object-pattern /
                 literal-string / literal-number / patvar
-array-pattern = "[" [ element-pattern *( "," element-pattern ) ] [ "*.." ] "]"
+array-pattern = "[" [ element-pattern *( "," element-pattern ) ] [ "*.." / literal-symbol.. ] "]"
 element-pattern = value-pattern
-object-pattern = "{" [ member-pattern *( "," member-pattern ) ] "}"
+object-pattern = "{" [ member-pattern *( "," member-pattern ) ] [ "*.." / literal-symbol.. ] "}"
 member-pattern = name-pattern ":" value-pattern
 name-pattern = literal-string / patvar
 patvar = _ / literal-symbol
+
+literal-symbol.. is a symbol whose symbol-name ends in "..".
+literal-symbol is a symbol whose symbol-name does not end in "..".
 
 The preceding grammar is a short way to show the structure of the patterns.
 The next section describes the actual JSON pattern S-expression structure
@@ -97,6 +102,7 @@ and the details on the pattern variables.
 ;;     See also *JPAT-ANY-VALUE*.
 ;;   * A symbol named "*.." is disallowed (reserved for patvar-multiple).
 ;;     See also *JPAT-ANY-TAIL*.
+;;   * Any symbol ending in ".." is disallowed (used in patvar-multiple).
 ;;   * any other symbol means it names a variable that is bound to the
 ;;     matched JSON structure
 ;; (:ARRAY . array-elements)
@@ -115,8 +121,11 @@ and the details on the pattern variables.
 ;;     form in the same order.  Even though JSON objects are usually
 ;;     used as dictionaries with unordered keys, there does exist an order,
 ;;     and this binder does not attempt to find a matching permutation.
-;; patvar-multiple is a symbol with symbol-name "*..".  It can only
+;; patvar-multiple is a symbol whose symbol-name ends in "..".  It can only
 ;;   occur at the end of array-elements or object-members.
+;;   If the symbol name is "*..", it means match the tail but don't bind
+;;   any value when pattern matching.  Any other symbol ending in ".."
+;;   will be bound to the tail when pattern matching.
 ;;   See also *JPAT-ANY-TAIL*.
 ;; (:MEMBER name/patvar-single value-pattern/patvar-single)
 ;;   * Note, this is a different shape from the JSON AST representation.
@@ -124,6 +133,7 @@ and the details on the pattern variables.
 ;;     (not a value of kind :STRING).
 ;;
 ;; A value pattern is any of the preceding except member or *..
+;; or any symbol whose symbol name ends in "..".
 
 ;; Other notes: in the whole pattern, symbols named "_" or "*.." could
 ;; occur multiple times (in the correct contexts).
@@ -161,6 +171,11 @@ and the details on the pattern variables.
 ;; *jpat-any-tail* is "*.." but it could be "..*" or "0..*"
 ;;   or various other things.  ".." does not work.
 
+;; Any symbol ending in ".." will match a list of things.
+;; Such a symbol may only be in a context that is legal for "*..",
+;; i.e., object members or array elements.
+(defconst *jpat-match-multiple-suffix* "..")
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -181,6 +196,10 @@ and the details on the pattern variables.
        (not (member-equal (symbol-name s) *jpat-disallowed-symbol-names*))
        (not (member-equal (symbol-package-name s) *jpat-disallowed-package-names*))))
 
+;; A list valued pattern variable must also end in "..".
+(define list-valued-jpat-varp ((s symbolp))
+  (and (valid-jpat-varp s)
+       (str::strsuffixp *jpat-match-multiple-suffix* (symbol-name s))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -283,9 +302,9 @@ and the details on the pattern variables.
          ((when (and (symbolp p)
                      (not (valid-jpat-varp p))))
           (mv nil nil))
-         ;; *.. not allowed in this context
+         ;; *.. and SYMBOL.. not allowed in this context
          ((when (and (symbolp p)
-                     (equal (symbol-name p) *jpat-any-tail*)))
+                     (list-valued-jpat-varp p)))
           (mv nil nil))
          ;; *jpat-any-value* is a wildcard
          ((when (and (symbolp p)
@@ -343,6 +362,12 @@ and the details on the pattern variables.
                      (symbolp (car p))
                      (equal (symbol-name (car p)) *jpat-any-tail*)))
           (mv t nil))
+         ;; SYMBOL.. is allowed at the end of a value list
+         ;; Note, the entire symbol including the ".." is the variable name.
+         ((when (and (null (cdr p))
+                     (symbolp (car p))
+                     (list-valued-jpat-varp (car p))))
+          (mv t (list (car p))))
          ;; Now we can use value-patternp-with-vars for the car,
          ;; and join it with a recursive call on the cdr.
          ((mv car-is-pattern? car-vars)
@@ -376,6 +401,12 @@ and the details on the pattern variables.
                      (symbolp (car p))
                      (equal (symbol-name (car p)) *jpat-any-tail*)))
           (mv t nil))
+         ;; SYMBOL.. is allowed at the end of a member list
+         ;; Note, the entire symbol including the ".." is the variable name.
+         ((when (and (null (cdr p))
+                     (symbolp (car p))
+                     (list-valued-jpat-varp (car p))))
+          (mv t (list (car p))))
          ;; Now we can use member-patternp-with-vars for the car,
          ;; and join it with a recursive call on the cdr.
          ((mv car-is-pattern? car-vars)
@@ -695,8 +726,10 @@ and the details on the pattern variables.
               inner-var-bind-forms))))
      (t (mv (er hard? 'top-level "Unforseen case in jpat-collect-match-requirements--value") nil))))
 
-  (define jpat-collect-match-requirements--array-elements ((rest-of-jpat (and (true-listp rest-of-jpat)
-									      (array-elements-patternp-dups-ok rest-of-jpat))) form)
+  (define jpat-collect-match-requirements--array-elements
+            ((rest-of-jpat (and (true-listp rest-of-jpat)
+                                (array-elements-patternp-dups-ok rest-of-jpat)))
+             form)
     :returns (mv (match-reqts true-listp) (var-bindings true-listp))
     :measure (two-nats-measure (acl2-count rest-of-jpat) 0)
     (cond
@@ -710,7 +743,7 @@ and the details on the pattern variables.
       (mv (list `(null ,form))
           nil))
 
-     ;; @@@ extra error check
+     ;; extra error check
      ((atom rest-of-jpat)
       (mv (er hard? 'top-level "unexpected condition") nil))
 
@@ -719,6 +752,14 @@ and the details on the pattern variables.
            (symbolp (car rest-of-jpat))
            (equal *jpat-any-tail* (symbol-name (car rest-of-jpat))))
       (mv nil nil))
+
+     ;; SYMBOL.. (meaning a symbol whose symbol name ends in "..")
+     ((and (consp rest-of-jpat)
+           (symbolp (car rest-of-jpat))
+           (list-valued-jpat-varp (car rest-of-jpat)))
+      (mv nil
+          (list (list (car rest-of-jpat) form))))
+
      ;; now any other pattern cons is a value pattern and requires that form be a cons;
      ;; we combine the results of recurring on the car and the cdr
      (t (b* (((mv car-match-requirements car-var-bind-forms)
@@ -729,8 +770,10 @@ and the details on the pattern variables.
                     (append car-match-requirements cdr-match-requirements))
               (append car-var-bind-forms cdr-var-bind-forms))))))
 
-  (define jpat-collect-match-requirements--object-members ((rest-of-jpat (and (true-listp rest-of-jpat)
-									      (object-members-patternp-dups-ok rest-of-jpat))) form)
+  (define jpat-collect-match-requirements--object-members
+            ((rest-of-jpat (and (true-listp rest-of-jpat)
+                                (object-members-patternp-dups-ok rest-of-jpat)))
+             form)
     :measure (two-nats-measure (acl2-count rest-of-jpat) 0)
     :returns (mv (match-reqts true-listp) (var-bindings true-listp))
     (cond
@@ -744,7 +787,7 @@ and the details on the pattern variables.
       (mv (list `(null ,form))
           nil))
 
-     ;; @@@ extra error check
+     ;; extra error check
      ((atom rest-of-jpat)
       (mv (er hard? 'top-level "unexpected condition") nil))
 
@@ -753,6 +796,13 @@ and the details on the pattern variables.
            (symbolp (car rest-of-jpat))
            (equal *jpat-any-tail* (symbol-name (car rest-of-jpat))))
       (mv nil nil))
+
+     ;; SYMBOL.. (meaning a symbol whose symbol name ends in "..")
+     ((and (consp rest-of-jpat)
+           (symbolp (car rest-of-jpat))
+           (list-valued-jpat-varp (car rest-of-jpat)))
+      (mv nil
+          (list (list (car rest-of-jpat) form))))
 
      ;; (car jpat) will be a member pattern but let's have an extra check
      ((not (member-patternp-dups-ok (car rest-of-jpat)))

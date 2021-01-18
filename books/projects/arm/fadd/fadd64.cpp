@@ -280,7 +280,7 @@ tuple<ui108, bool, bool> add(ui117 opa, ui117 opb, bool far, bool usa, bool mulS
 //   z[i] = 1 <=> L(i) = 2^k;
 //   L(i) < 2^k => c[i] = L(i).
 
-ui7 CLZ(ui128 x) {
+ui7 CLZ128(ui128 x) {
   array<bool, 128> z;
   array<ui7, 128> c;
   for (uint i=0; i<128; i++) {
@@ -327,7 +327,7 @@ ui7 LZA128(ui128 a, ui128 b) {
   // Now the number of leading zeroes of w is either equal to the number of
   // leading zeroes of the sum or 1 less, so we pad it with an extra leading zero:
 
-  return CLZ(w >> 1);
+  return CLZ128(w >> 1);
 }
 
 // Compute leading zero count of the difference in the near case:

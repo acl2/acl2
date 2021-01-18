@@ -467,15 +467,39 @@
                   (equal 0 (add x y p))))
   :hints (("Goal" :in-theory (enable neg sub add acl2::mod-sum-cases))))
 
-(defthm equal-of-0-and-add-of-neg
-  (implies (and (natp x)
-                (< x p)
-                (natp y)
-                (< y p)
+(defthm equal-of-0-and-add-of-neg-arg1
+  (implies (and (fep x p)
+                (fep y p)
                 (posp p))
            (equal (equal 0 (add (neg x p) y p))
                   (equal x y)))
   :hints (("Goal" :in-theory (enable neg sub add acl2::mod-sum-cases))))
+
+(defthm equal-of-0-and-add-of-neg-arg1-gen
+  (implies (and (integerp x)
+                (integerp y)
+                (posp p))
+           (equal (equal 0 (add (neg x p) y p))
+                  ;; Usually the mods will get dropped:
+                  (equal (mod x p) (mod y p))))
+  :hints (("Goal" :in-theory (enable neg sub add acl2::mod-sum-cases))))
+
+(defthm equal-of-0-and-add-of-neg-arg2
+  (implies (and (fep x p)
+                (fep y p)
+                (posp p))
+           (equal (equal 0 (add x (neg y p) p))
+                  (equal x y)))
+  :hints (("Goal" :in-theory (enable add neg sub acl2::mod-sum-cases))))
+
+(defthm equal-of-0-and-add-of-neg-arg2-gen
+  (implies (and (integerp x)
+                (integerp y)
+                (posp p))
+           (equal (equal 0 (add x (neg y p) p))
+                  ;; Usually the mods will get dropped:
+                  (equal (mod x p) (mod y p))))
+  :hints (("Goal" :in-theory (enable add neg sub acl2::mod-sum-cases))))
 
 (defthm add-bound
   (implies (and (integerp x)
@@ -657,13 +681,7 @@
                   (neg x p)))
   :hints (("Goal" :in-theory (enable mul neg sub ACL2::MOD-SUM-CASES))))
 
-(defthm equal-of-add-of-neg-and-0
-  (implies (and (integerp x)
-                (integerp y)
-                (posp p))
-           (equal (equal (add x (neg y p) p) 0)
-                  (equal (mod x p) (mod y p))))
-  :hints (("Goal" :in-theory (enable add neg sub acl2::mod-sum-cases))))
+
 
 ;; x=x*y becomes 1=y.  A cancellation rule.
 (defthm equal-of-mul-same-arg1

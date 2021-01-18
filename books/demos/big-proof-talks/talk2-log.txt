@@ -2420,6 +2420,7 @@ ACL2 !>>>(TABLE
                      (CONS :AOKP 'NIL)
                      (CONS :STATS :DEFAULT)
                      (CONS :TOTAL NIL)
+                     (CONS :INVOKE NIL)
                      (AND (NOT (EQ ':DEFAULT :DEFAULT))
                           (LIST (CONS :IDEAL-OKP ':DEFAULT)))))
 

@@ -470,9 +470,9 @@
 ;; let's also disable all the functions defined by the model and enable them only as needed:
 
 (local-in-theory (disable (computernddir) (gag) (sign) (expnt) (frac) (checkdenorm) (checkspecial)
-                    (isfar) (add) (clz) (lza128) (computelza) (computelshift) (rndinfo) (fadd64)
+                    (isfar) (add) (clz128) (lza128) (computelza) (computelshift) (rndinfo) (fadd64)
                     computernddir gag sign expnt frac checkdenorm checkspecial isfar
-                    add clz lza128 computelza computelshift rndinfo fadd64))
+                    add clz128 lza128 computelza computelshift rndinfo fadd64))
 
 ;;*******************************************************************************
 ;; Operand components

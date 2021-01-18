@@ -45,6 +45,8 @@
      (63 63
          (:REWRITE <-OF-+-ARG1-WHEN-NEGATIVE-CONSTANT))
      (26 26 (:REWRITE FOLD-CONSTS-IN-+))
+     (15 15
+         (:REWRITE MOD-OF-+-OF---WHEN-EQUAL-OF-MOD))
      (2 2
         (:REWRITE EQUAL-OF-+-WHEN-NEGATIVE-CONSTANT))
      (2 2
