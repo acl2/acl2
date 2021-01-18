@@ -134,9 +134,9 @@
     :enable twisted-edwards-primep
     :disable ((:e twisted-edwards-primep)))
 
-  (defrule twisted-edwards-completep-of-jubjub-curve
-    (twisted-edwards-completep (jubjub-curve))
-    :enable twisted-edwards-completep
+  (defrule twisted-edwards-curve-completep-of-jubjub-curve
+    (twisted-edwards-curve-completep (jubjub-curve))
+    :enable twisted-edwards-curve-completep
     :disable (pfield-squarep-of-jubjub-a
               not-pfield-squarep-of-jubjub-d)
     :use (pfield-squarep-of-jubjub-a

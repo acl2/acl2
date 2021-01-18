@@ -145,7 +145,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define twisted-edwards-completep ((curve twisted-edwards-curvep))
+(define twisted-edwards-curve-completep ((curve twisted-edwards-curvep))
   :returns (yes/no booleanp)
   :short "Check if a twisted Edwards curve is complete."
   :long
@@ -289,7 +289,7 @@
                              (point2 pointp)
                              (curve twisted-edwards-curvep))
   :guard (and (twisted-edwards-primep curve)
-              (twisted-edwards-completep curve)
+              (twisted-edwards-curve-completep curve)
               (point-on-twisted-edwards-p point1 curve)
               (point-on-twisted-edwards-p point2 curve))
   :returns (point3 pointp)
@@ -393,7 +393,7 @@
        (equal a.x^2+y^2 1+d.x^2.y^2))))
 
   ;; While twisted-edwards-add uses pfield-squarep and its negation
-  ;; (in the definition of twisted-edwards-completep) for a and d,
+  ;; (in the definition of twisted-edwards-curve-completep) for a and d,
   ;; the gamma theorems above use (not (non-square d))
   ;; and an explicit root sqrt{a} for a (saying that a is a square).
   ;; The following rewrite rule serves to bridge the two predicates.
@@ -590,7 +590,7 @@
   (defruledl d.x1.x2.y1.y2-not-one-on-curve-and-points
     (implies (and (twisted-edwards-curvep curve)
                   (twisted-edwards-primep curve)
-                  (twisted-edwards-completep curve)
+                  (twisted-edwards-curve-completep curve)
                   (point-on-twisted-edwards-p point1 curve)
                   (point-on-twisted-edwards-p point2 curve))
              (b* (((twisted-edwards-curve curve) curve)
@@ -616,14 +616,14 @@
           (x2 (point-finite->x point2))
           (y2 (point-finite->y point2)))
     :enable (twisted-edwards-primep
-             twisted-edwards-completep
+             twisted-edwards-curve-completep
              point-on-twisted-edwards-p
              fep))
 
   (defruledl d.x1.x2.y1.y2-not-minus-one-on-curve-and-points
     (implies (and (twisted-edwards-curvep curve)
                   (twisted-edwards-primep curve)
-                  (twisted-edwards-completep curve)
+                  (twisted-edwards-curve-completep curve)
                   (point-on-twisted-edwards-p point1 curve)
                   (point-on-twisted-edwards-p point2 curve))
              (b* (((twisted-edwards-curve curve) curve)
@@ -649,7 +649,7 @@
           (x2 (point-finite->x point2))
           (y2 (point-finite->y point2)))
     :enable (twisted-edwards-primep
-             twisted-edwards-completep
+             twisted-edwards-curve-completep
              point-on-twisted-edwards-p
              fep))
 
@@ -1073,7 +1073,7 @@
   (defruledl closure-on-curve
     (implies (and (twisted-edwards-curvep curve)
                   (twisted-edwards-primep curve)
-                  (twisted-edwards-completep curve)
+                  (twisted-edwards-curve-completep curve)
                   (pointp pt1)
                   (pointp pt2)
                   (point-on-twisted-edwards-p pt1 curve)
@@ -1098,7 +1098,7 @@
           (:instance point-on-twisted-edwards-p-equivalence (point pt1))
           (:instance point-on-twisted-edwards-p-equivalence (point pt2)))
     :enable (twisted-edwards-primep
-             twisted-edwards-completep)
+             twisted-edwards-curve-completep)
     :disable (point-on-curve-p
               curve-add))
 
@@ -1108,7 +1108,7 @@
   (defruledl point-on-twisted-edwards-p-of-twisted-edward-add
     (implies (and (twisted-edwards-curvep curve)
                   (twisted-edwards-primep curve)
-                  (twisted-edwards-completep curve)
+                  (twisted-edwards-curve-completep curve)
                   (pointp point1)
                   (pointp point2)
                   (point-on-twisted-edwards-p point1 curve)
@@ -1128,7 +1128,7 @@
   (defrule point-on-twisted-edwards-p-of-twisted-edward-add
     (implies (and (twisted-edwards-curvep curve)
                   (twisted-edwards-primep curve)
-                  (twisted-edwards-completep curve)
+                  (twisted-edwards-curve-completep curve)
                   (pointp point1)
                   (pointp point2)
                   (point-on-twisted-edwards-p point1 curve)
@@ -1163,7 +1163,7 @@
 
 (define twisted-edwards-neg ((point pointp) (curve twisted-edwards-curvep))
   :guard (and (twisted-edwards-primep curve)
-              (twisted-edwards-completep curve)
+              (twisted-edwards-curve-completep curve)
               (point-on-twisted-edwards-p point curve))
   :returns (point1 pointp)
   :short "Negation of a point of the twisted Edwards curve group."
@@ -1184,7 +1184,7 @@
   (defrule point-on-twisted-edwards-p-of-twisted-edwards-neg
     (implies (and (twisted-edwards-curvep curve)
                   (twisted-edwards-primep curve)
-                  (twisted-edwards-completep curve)
+                  (twisted-edwards-curve-completep curve)
                   (point-on-twisted-edwards-p point curve))
              (point-on-twisted-edwards-p (twisted-edwards-neg point curve)
                                          curve))
@@ -1202,7 +1202,7 @@
                              (point2 pointp)
                              (curve twisted-edwards-curvep))
   :guard (and (twisted-edwards-primep curve)
-              (twisted-edwards-completep curve)
+              (twisted-edwards-curve-completep curve)
               (point-on-twisted-edwards-p point1 curve)
               (point-on-twisted-edwards-p point2 curve))
   :returns (point pointp)
@@ -1221,7 +1221,7 @@
   (defrule point-on-twisted-edwards-p-of-twisted-edwards-sub
     (implies (and (twisted-edwards-curvep curve)
                   (twisted-edwards-primep curve)
-                  (twisted-edwards-completep curve)
+                  (twisted-edwards-curve-completep curve)
                   (pointp point1)
                   (pointp point2)
                   (point-on-twisted-edwards-p point1 curve)
@@ -1237,7 +1237,7 @@
                              (point pointp)
                              (curve twisted-edwards-curvep))
   :guard (and (twisted-edwards-primep curve)
-              (twisted-edwards-completep curve)
+              (twisted-edwards-curve-completep curve)
               (point-on-twisted-edwards-p point curve))
   :returns (point1 pointp)
   :short "Scalar multiplication in the twisted Edwards group."
@@ -1272,7 +1272,7 @@
                                        (point pointp)
                                        (curve twisted-edwards-curvep))
      :guard (and (twisted-edwards-primep curve)
-                 (twisted-edwards-completep curve)
+                 (twisted-edwards-curve-completep curve)
                  (point-on-twisted-edwards-p point curve))
      :returns (point1 pointp)
      (if (zp scalar)
@@ -1286,7 +1286,7 @@
      (defrule point-on-twisted-edwards-p-of-twisted-edwards-mul-nonneg
        (implies (and (twisted-edwards-curvep curve)
                      (twisted-edwards-primep curve)
-                     (twisted-edwards-completep curve)
+                     (twisted-edwards-curve-completep curve)
                      (pointp point)
                      (point-on-twisted-edwards-p point curve))
                 (point-on-twisted-edwards-p (twisted-edwards-mul-nonneg scalar
@@ -1300,7 +1300,7 @@
   (defrule point-on-twisted-edwards-p-of-twisted-edwards-mul
     (implies (and (twisted-edwards-curvep curve)
                   (twisted-edwards-primep curve)
-                  (twisted-edwards-completep curve)
+                  (twisted-edwards-curve-completep curve)
                   (pointp point)
                   (point-on-twisted-edwards-p point curve))
              (point-on-twisted-edwards-p (twisted-edwards-mul scalar
@@ -1345,7 +1345,7 @@
                                       (order natp)
                                       (curve twisted-edwards-curvep))
   :guard (and (twisted-edwards-primep curve)
-              (twisted-edwards-completep curve)
+              (twisted-edwards-curve-completep curve)
               (point-on-twisted-edwards-p point curve))
   :returns (yes/no booleanp)
   :short "Check if a point on a twisted Edwards curve has a certain order."
@@ -1376,7 +1376,7 @@
       (order natp)
       (curve twisted-edwards-curvep))
      :guard (and (twisted-edwards-primep curve)
-                 (twisted-edwards-completep curve)
+                 (twisted-edwards-curve-completep curve)
                  (point-on-twisted-edwards-p point curve))
      (forall (order1)
              (implies (and (natp order1)
