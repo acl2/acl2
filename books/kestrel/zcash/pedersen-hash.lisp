@@ -71,7 +71,7 @@
        (point (jubjub-abst (leos2bsp hash)))
        ((unless (jubjub-pointp point)) nil)
        (qoint (jubjub-mul (jubjub-h) point))
-       ((when (equal qoint (ecurve::twisted-edwards-neutral))) nil))
+       ((when (equal qoint (ecurve::twisted-edwards-zero))) nil))
     qoint)
   :guard-hints (("Goal" :do-not-induct t)))
 

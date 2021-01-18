@@ -345,7 +345,7 @@
    (xdoc::p
     "These are the points of order @($r_\\mathbb{J}$)
      plus @($\\mathcal{O}_\\mathbb{J}$)."))
-  (or (equal x (ecurve::twisted-edwards-neutral))
+  (or (equal x (ecurve::twisted-edwards-zero))
       (and (jubjub-pointp x)
            (ecurve::twisted-edwards-point-orderp x (jubjub-r) (jubjub-curve))))
   :guard-hints (("Goal" :in-theory (enable jubjub-pointp)))
@@ -354,7 +354,7 @@
   (defrule jubjub-pointp-when-jubjub-r-pointp
     (implies (jubjub-r-pointp x)
              (jubjub-pointp x))
-    :enable ecurve::twisted-edwards-neutral))
+    :enable ecurve::twisted-edwards-zero))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
