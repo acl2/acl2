@@ -26,7 +26,7 @@
     (xdoc::ahref "https://zips.z.cash/protocol/protocol.pdf"
                  "Zcash Protocol Specification (Version 2020.1.15)")
     ". It is a complete twisted Edwards elliptic curve;
-     see @(see twisted-edwards-curves) for
+     see @(see twisted-edwards) for
      general information about twisted Edwards curves.")
    (xdoc::p
     "Here we define the Jubjub curve,

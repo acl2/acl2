@@ -16,7 +16,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ birational-montgomery-twisted-edwards
-  :parents (elliptic-curves montgomery twisted-edwards-curves)
+  :parents (elliptic-curves montgomery twisted-edwards)
   :short "Birational equivalence between
           Montgomery curves and twisted Edwards curves."
   :long
@@ -25,7 +25,7 @@
     "There is a birational equivalence between "
     (xdoc::seetopic "montgomery-curves" "Montgomery curves")
     " and "
-    (xdoc::seetopic "twisted-edwards-curves" "twisted Edwards curves")
+    (xdoc::seetopic "twisted-edwards" "twisted Edwards curves")
     ", described in Section 3 of "
     (xdoc::ahref
      "https://eprint.iacr.org/2008/013.pdf"

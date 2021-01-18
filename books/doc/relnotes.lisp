@@ -528,7 +528,7 @@
 
    (xdoc::p
     "A formalization of "
-    (xdoc::seetopic "ecurve::twisted-edwards-curves" "twisted Edwards curves")
+    (xdoc::seetopic "ecurve::twisted-edwards" "twisted Edwards curves")
     " has been added.")
 
    (xdoc::p

@@ -21,7 +21,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ twisted-edwards-curves
+(defxdoc+ twisted-edwards
   :parents (elliptic-curves)
   :short "Elliptic curves over prime fields in twisted Edwards form."
   :long
@@ -63,7 +63,7 @@
    (xdoc::p
     "This kind of curve is specified by
      the prime @($p$) and the coefficients @($a$) and @($d$);
-     see @(see twisted-edwards-curves).
+     see @(see twisted-edwards).
      Thus, we formalize a curve as a triple of these numbers,
      via a fixtype product.")
    (xdoc::p
@@ -72,7 +72,7 @@
      otherwise, it may take a long time to construct a value of this fixtype
      for a practical curve.
      We just require @($p$) to be greater than 2;
-     see @(see twisted-edwards-curves).
+     see @(see twisted-edwards).
      We express the primality of @($p$) separately.")
    (xdoc::p
     "We require @($a$) and @($d$) to be in the prime field of @($p$).
@@ -152,7 +152,7 @@
   (xdoc::topstring
    (xdoc::p
     "According to the paper on twisted Edwards curves
-     referenced in @(see twisted-edwards-curves),
+     referenced in @(see twisted-edwards),
      this is the case when @($a$) is a square and @($d$) is a non-square.
      Completeness means that the addition formula
      (see @(tsee twisted-edwards-add))
@@ -309,7 +309,7 @@
     "The points on the curve are always finite,
      and the result is also a finite point.
      Its coordinates are calculated as shown
-     in the paper referenced in @(see twisted-edwards-curves).")
+     in the paper referenced in @(see twisted-edwards).")
    (xdoc::p
     "We verify the guards from lemmas from the closure proof,
      which involves proving that the denominators are not 0.
@@ -1147,7 +1147,7 @@
   (xdoc::topstring
    (xdoc::p
     "This is always @($(0,1)$).
-     See the paper referenced in @(see twisted-edwards-curves)."))
+     See the paper referenced in @(see twisted-edwards)."))
   (point-finite 0 1)
   ///
 
@@ -1173,7 +1173,7 @@
     "This is the inverse with respect to the group addition operation.")
    (xdoc::p
     "It is obtained by negating the @($x$) coordinate.
-     See the paper referenced in @(see twisted-edwards-curves)."))
+     See the paper referenced in @(see twisted-edwards)."))
   (point-finite (neg (point-finite->x point)
                      (twisted-edwards-curve->p curve))
                 (point-finite->y point))
