@@ -74,3 +74,47 @@
         (:REWRITE DARGP-LESS-THAN-WHEN-NATP-CHEAP))
      (1 1
         (:REWRITE DARGP-LESS-THAN-WHEN-CONSP-CHEAP)))
+(DARGP-LESS-THAN-MONO (14 9 (:REWRITE DEFAULT-<-2))
+                      (13 9 (:REWRITE DEFAULT-<-1))
+                      (9 9
+                         (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
+                      (6 6 (:REWRITE DEFAULT-CDR))
+                      (5 5
+                         (:REWRITE MYQUOTEP-WHEN-DARGP-LESS-THAN))
+                      (2 2 (:REWRITE DEFAULT-CAR))
+                      (2 1
+                         (:REWRITE DARGP-LESS-THAN-WHEN-NATP-CHEAP))
+                      (1 1
+                         (:REWRITE NONNEG-WHEN-DARGP-LESS-THAN))
+                      (1 1
+                         (:REWRITE INTEGERP-WHEN-DARGP-LESS-THAN))
+                      (1 1
+                         (:REWRITE DARGP-LESS-THAN-WHEN-QUOTEP-CHEAP))
+                      (1 1
+                         (:REWRITE DARGP-LESS-THAN-WHEN-NOT-CONSP-CHEAP))
+                      (1 1
+                         (:REWRITE DARGP-LESS-THAN-WHEN-CONSP-CHEAP)))
+(DARGP-LESS-THAN-WHEN-EQUAL-OF-CAR-AND-QUOTE
+     (6 6 (:REWRITE DEFAULT-CDR))
+     (3 3 (:REWRITE DEFAULT-CAR))
+     (3 2 (:REWRITE DEFAULT-<-2))
+     (2 2
+        (:REWRITE MYQUOTEP-WHEN-DARGP-LESS-THAN))
+     (2 2 (:REWRITE DEFAULT-<-1))
+     (2 1
+        (:REWRITE DARGP-LESS-THAN-WHEN-NATP-CHEAP))
+     (1 1 (:TYPE-PRESCRIPTION NATP))
+     (1 1
+        (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
+     (1 1
+        (:REWRITE NONNEG-WHEN-DARGP-LESS-THAN))
+     (1 1
+        (:REWRITE INTEGERP-WHEN-DARGP-LESS-THAN))
+     (1 1
+        (:REWRITE DARGP-LESS-THAN-WHEN-QUOTEP-CHEAP))
+     (1 1
+        (:REWRITE DARGP-LESS-THAN-WHEN-NOT-CONSP-CHEAP))
+     (1 1
+        (:REWRITE DARGP-LESS-THAN-WHEN-CONSP-CHEAP))
+     (1 1 (:REWRITE DARGP-LESS-THAN-MONO)))
+(DARGP-LESS-THAN-OF-LIST-OF-QUOTE)

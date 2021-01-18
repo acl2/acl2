@@ -170,3 +170,10 @@
      (4 2 (:REWRITE APPEND-TO-NIL))
      (2 2
         (:REWRITE LEN-OF-CDDR-WHEN-EQUAL-OF-LEN)))
+(BITS-TO-BYTES-OF-BYTE-TO-BITS (6 3 (:REWRITE LEN-WHEN-NOT-CONSP-CHEAP))
+                               (4 2
+                                  (:REWRITE NTHCDR-WHEN-NOT-CONSP-CHEAP))
+                               (2 2 (:REWRITE NTHCDR-WHEN-NOT-POSP))
+                               (2 2 (:REWRITE NTHCDR-WHEN-EQUAL-OF-LEN))
+                               (1 1 (:REWRITE USE-ALL-UNSIGNED-BYTE-P-2))
+                               (1 1 (:REWRITE USE-ALL-UNSIGNED-BYTE-P)))

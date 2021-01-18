@@ -479,28 +479,25 @@
      (2 2
         (:REWRITE COMMUTATIVITY-OF-*-WHEN-CONSTANT)))
 (BVMULT-WHEN-SIZE-IS-1)
-(BVMULT-OF-2 (164 7 (:REWRITE BVCHOP-IDENTITY))
-             (83 5
-                 (:REWRITE UNSIGNED-BYTE-P-OF-+-WHEN-<-OF-LOGTAIL-AND-EXPT))
+(BVMULT-OF-2 (81 7 (:REWRITE BVCHOP-IDENTITY))
              (37 3 (:LINEAR <=-OF-BVCHOP-SAME-LINEAR))
-             (24 12 (:REWRITE INTEGERP-WHEN-POWER-OF-2P))
              (23 7
                  (:REWRITE UNSIGNED-BYTE-P-FROM-BOUNDS))
-             (23 5 (:REWRITE LOGTAIL-WHEN-NOT-POSP-ARG1))
-             (22 15 (:REWRITE DEFAULT-<-1))
              (22 2 (:LINEAR <-OF-*-SAME-LINEAR-SPECIAL))
-             (21 15 (:REWRITE DEFAULT-<-2))
-             (17 17 (:REWRITE DROP->-HYPS))
-             (17 17 (:REWRITE DROP-<-HYPS))
-             (15 15 (:TYPE-PRESCRIPTION POWER-OF-2P))
-             (15 15 (:REWRITE <-WHEN-BVLT))
+             (19 12 (:REWRITE DEFAULT-<-1))
+             (18 9 (:REWRITE INTEGERP-WHEN-POWER-OF-2P))
              (15 1 (:REWRITE UNSIGNED-BYTE-P-OF-TIMES-2))
              (14 14 (:TYPE-PRESCRIPTION UNSIGNED-BYTE-P))
+             (14 14 (:REWRITE DROP->-HYPS))
+             (14 14 (:REWRITE DROP-<-HYPS))
+             (14 12 (:REWRITE DEFAULT-<-2))
              (14 2 (:REWRITE COLLECT-CONSTANTS-OVER-<))
              (14 2 (:REWRITE BVCHOP-WITH-N-NEGATIVE))
-             (12 12
-                 (:REWRITE INTEGERP-FROM-UNSIGNED-BYTE-P-SIZE-PARAM))
+             (12 12 (:TYPE-PRESCRIPTION POWER-OF-2P))
+             (12 12 (:REWRITE <-WHEN-BVLT))
              (10 2 (:LINEAR EXPT->-1))
+             (9 9
+                (:REWRITE INTEGERP-FROM-UNSIGNED-BYTE-P-SIZE-PARAM))
              (9 9 (:REWRITE DROP-<=-HYPS))
              (9 9
                 (:REWRITE <-OF-CONSTANT-WHEN-<=-OF-FREE))
@@ -512,9 +509,6 @@
              (6 6 (:LINEAR <=-OF-BVCHOP-SAME-LINEAR-2))
              (6 3 (:REWRITE NATP-WHEN-POWER-OF-2P))
              (5 5 (:TYPE-PRESCRIPTION POSP))
-             (5 5 (:TYPE-PRESCRIPTION LOGTAIL-TYPE))
-             (5 5
-                (:TYPE-PRESCRIPTION LOGTAIL-NON-POSITIVE))
              (5 5
                 (:REWRITE SIZE-NON-NEGATIVE-WHEN-UNSIGNED-BYTE-P-FREE))
              (5 3 (:REWRITE DEFAULT-*-2))
