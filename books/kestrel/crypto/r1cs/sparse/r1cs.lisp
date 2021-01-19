@@ -17,9 +17,9 @@
 
 ;; TODO: Consider not requiring the prime to actually be prime.
 
+(include-book "../valuations")
 (include-book "std/util/defaggregate" :dir :system)
 (include-book "kestrel/prime-fields/prime-fields" :dir :system)
-(include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/lists-light/remove-equal" :dir :system))
@@ -27,12 +27,6 @@
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
-
-;; A true list of variables, with no duplicates
-(defun var-listp (vars)
-  (declare (xargs :guard t))
-  (and (symbol-listp vars)
-       (no-duplicatesp-eq vars)))
 
 ;; ;; A coefficient is an element of the field.  TODO: Consider, for readability,
 ;; ;; allowing large coefficients to be represented by negative numbers.
@@ -176,14 +170,6 @@
   :hints (("Goal" :in-theory (enable good-sparse-vectorp
                                      good-sparse-vectorp-aux))))
 
-;; A true list of field elements.
-(defun fe-listp (elems prime)
-  (declare (xargs :guard (rtl::primep prime)))
-  (if (atom elems)
-      (equal elems nil)
-    (and (fep (first elems) prime)
-         (fe-listp (rest elems) prime))))
-
 ;; A constraint in an R1CS consists of 3 sparse vectors: a, b, and c.
 (std::defaggregate r1cs-constraint
   ((a (sparse-vectorp a))
@@ -243,42 +229,6 @@
 ;; Since checking the guards if very slow when the prime is large:
 (in-theory (disable (:e r1cs)))
 
-;; A valuation is a map (alist) from vars to values that are field elements.
-(defund r1cs-valuationp (valuation prime)
-  (declare (xargs :guard (rtl::primep prime)))
-  (and (alistp valuation)
-       (var-listp (strip-cars valuation))
-       (fe-listp (strip-cdrs valuation) prime)))
-
-(defthm r1cs-valuationp-forward-to-alistp
-  (implies (r1cs-valuationp valuation prime)
-           (alistp valuation))
-  :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable r1cs-valuationp))))
-
-(defthm r1cs-valuationp-forward-to-symbol-listp-of-strip-cars
-  (implies (r1cs-valuationp valuation prime)
-           (symbol-listp (strip-cars valuation)))
-  :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable r1cs-valuationp))))
-
-(defthm r1cs-valuationp-forward-to-no-duplicatesp-of-strip-cars
-  (implies (r1cs-valuationp valuation prime)
-           (no-duplicatesp (strip-cars valuation)))
-  :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable r1cs-valuationp))))
-
-(defthm r1cs-valuationp-when-not-consp
-  (implies (not (consp valuation))
-           (equal (r1cs-valuationp valuation prime)
-                  (not valuation)))
-  :hints (("Goal" :in-theory (enable r1cs-valuationp))))
-
-(defthm r1cs-valuationp-of-cdr
-  (implies (r1cs-valuationp valuation prime)
-           (r1cs-valuationp (cdr valuation) prime))
-  :hints (("Goal" :in-theory (enable r1cs-valuationp))))
-
 ;; Compute the dot product of the vector of coefficients and the vector of
 ;; values, where each value is either obtained by looking up a variable in the
 ;; valuation or is the special constant 1.  Since the representation is sparse,
@@ -303,53 +253,6 @@
                 var-value prime)
            (dot-product (rest vec) valuation prime)
            prime))))
-
-(defund valuation-bindsp (valuation var)
-  (declare (xargs :guard (and (symbolp var)
-                              (alistp valuation))))
-  (member-equal var (strip-cars valuation)))
-
-;; A valuation cannot bind the constant 1, because it is a variable
-(defthm not-valuation-bindsp-of-1
-  (implies (r1cs-valuationp valuation p)
-           (not (valuation-bindsp valuation 1)))
-  :hints (("Goal" :in-theory (enable r1cs-valuationp valuation-bindsp))))
-
-(defthm fep-of-lookup-equal
-  (implies (and (r1cs-valuationp valuation prime)
-                (valuation-bindsp valuation var))
-           (fep (lookup-equal var valuation) prime))
-  :hints (("Goal" :in-theory (enable r1cs-valuationp
-                                     valuation-bindsp))))
-
-;slow?
-(defthmd integerp-of-lookup-equal
-  (implies (and (r1cs-valuationp valuation prime)
-                (valuation-bindsp valuation var))
-           (integerp (lookup-equal var valuation)))
-  :hints (("Goal" :in-theory (enable r1cs-valuationp
-                                     valuation-bindsp))))
-
-(defthmd acl2-numberp-of-lookup-equal
-  (implies (and (r1cs-valuationp valuation prime)
-                (valuation-bindsp valuation var))
-           (acl2-numberp (lookup-equal var valuation)))
-  :hints (("Goal" :use (:instance integerp-of-lookup-equal))))
-
-(defthm <-of-lookup-equal-when-r1cs-valuationp
-  (implies (and (r1cs-valuationp valuation prime)
-                (valuation-bindsp valuation var))
-           (< (lookup-equal var valuation) prime))
-  :hints (("Goal" :use (:instance fep-of-lookup-equal)
-           :in-theory (disable fep-of-lookup-equal))))
-
-(defthm natp-of-lookup-equal-when-r1cs-valuationp-type
-  (implies (and (r1cs-valuationp valuation prime)
-                (valuation-bindsp valuation var))
-           (natp (lookup-equal var valuation)))
-  :rule-classes :type-prescription
-  :hints (("Goal" :use (:instance fep-of-lookup-equal)
-           :in-theory (disable fep-of-lookup-equal))))
 
 (defthm fep-of-dot-product
   (implies (and (sparse-vectorp vec)
