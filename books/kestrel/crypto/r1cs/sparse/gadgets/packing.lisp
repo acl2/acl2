@@ -71,14 +71,6 @@
            (r1cs::r1cs-constraintp (make-packing-constraint a bit-vars p)))
   :hints (("Goal" :in-theory (enable make-packing-constraint))))
 
-;todo: move
-(defund valuation-binds-allp (valuation vars)
-  (declare (xargs :guard (and (symbol-listp vars) (alistp valuation))))
-  (if (endp vars)
-      t
-    (and (valuation-bindsp valuation (first vars))
-         (valuation-binds-allp valuation (rest vars)))))
-
 (defthm mod-of-dot-product-of-make-packing-constraint-aux
   (implies (and (symbol-listp bit-vars)
                 (r1cs-valuationp valuation p)

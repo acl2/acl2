@@ -109,3 +109,10 @@
   :rule-classes :type-prescription
   :hints (("Goal" :use (:instance fep-of-lookup-equal)
            :in-theory (disable fep-of-lookup-equal))))
+
+(defund valuation-binds-allp (valuation vars)
+  (declare (xargs :guard (and (symbol-listp vars) (alistp valuation))))
+  (if (endp vars)
+      t
+    (and (valuation-bindsp valuation (first vars))
+         (valuation-binds-allp valuation (rest vars)))))
