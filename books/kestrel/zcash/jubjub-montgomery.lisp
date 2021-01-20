@@ -10,25 +10,27 @@
 
 (in-package "ZCASH")
 
+(include-book "jubjub")
+
 (include-book "kestrel/crypto/ecurve/birational-montgomery-twisted-edwards" :dir :system)
-(include-book "kestrel/crypto/ecurve/jubjub" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ jubjub-montgomery
   :parents (jubjub)
-  :short "The Montgomery form of the Jubjub curve."
+  :short "The Montgomery form of the Jubjub curve [ZPS:A.2]."
   :long
   (xdoc::topstring
    (xdoc::p
     "The "
-    (xdoc::seetopic "ecurve::jubjub" "Jubjub curve")
-    "is a twisted Edwards curve.
+    (xdoc::seetopic "jubjub" "Jubjub curve")
+    " @($\\mathbb{J}$) [ZPS:5.4.8.3] is a twisted Edwards curve.
      However, because of the "
-    (xdoc::seetopic "birational-montgomery-twisted-edwards"
+    (xdoc::seetopic "ecurve::birational-montgomery-twisted-edwards"
                     "birational equivalence between
                      Montgomery and twisted Edwards curves")
-    ", there is also a Montgomery form of Jubjub.
+    ", there is also a Montgomery form of Jubjub
+     @($\\mathbb{M}$) [ZPS:A.2].
      Here we define it, using our general mapping,
      and show some properties of it."))
   :order-subtopics t
@@ -65,7 +67,7 @@
   (b* ((a (ecurve::montgomery->a (jubjub-montgomery-curve)))
        (a^2-4 (sub (mul a a (jubjub-q)) 4 (jubjub-q))))
     (not (ecurve::pfield-squarep a^2-4 (jubjub-q))))
-  :enable (ecurve::weak-euler-criterion-contrapositive)
+  :enable (ecurve::weak-euler-criterion-contrapositive jubjub-q)
   :use (mod-expt-lemma not-zero-lemma)
   :disable ((:e expt))
 
@@ -80,7 +82,7 @@
                                         (/ (1- (jubjub-q)) 2)
                                         (jubjub-q))
                    1)))
-     :enable ((:e jubjub-montgomery-curve))
+     :enable ((:e jubjub-montgomery-curve) jubjub-q)
      :prep-books ((include-book "arithmetic-3/top" :dir :system)))
 
    (defruled mod-expt-lemma
@@ -105,4 +107,4 @@
      (b* ((a (ecurve::montgomery->a (jubjub-montgomery-curve)))
           (a^2-4 (sub (mul a a (jubjub-q)) 4 (jubjub-q))))
        (not (equal a^2-4 0)))
-     :enable ((:e jubjub-montgomery-curve)))))
+     :enable ((:e jubjub-montgomery-curve) jubjub-q))))
