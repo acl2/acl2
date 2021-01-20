@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2020 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -33,6 +33,12 @@
     See "
    (xdoc::seetopic "atc" "the ATC manual page")
    " for the ATC reference documentation.")
+
+  (xdoc::p
+   "In this tutorial,
+    we refer to the official C standard in the manner explained in "
+   (xdoc::seetopic "c" "the top-level XDOC topic of our C library")
+   ".")
 
   (atc-tutorial-section "Structure of the Tutorial")
 
@@ -184,8 +190,8 @@
    "The correctness properties proved by ATC are the following:")
   (xdoc::ul
    (xdoc::li
-    "The generated C code satisfies the compile-time constraints
-     prescribed by the official definition of C [C].
+    "The generated C code satisfies
+     the compile-time constraints prescribed by [C].
      In other words, the C code is compiled by a compliant compiler.
      This is expressed via a "
     (xdoc::seetopic "atc-static-semantics"
@@ -221,7 +227,8 @@
   (atc-tutorial-section "C @('int') Type and Operations")
 
   (xdoc::p
-   "According to the C18 standard, the ``plain'' @('int') type consists of
+   "According to [C:6.2.5/5] and [C:5.2.4.2.1/1],
+    the ``plain'' @('int') type consists of
     signed integers in a range from -32767 or less to +32767 or more
     (both numbers are inclusive).
     The exact range depends on the C implementation, as detailed below.")
@@ -229,10 +236,12 @@
   (xdoc::p
    "The (C, not ACL2) representation of @('int') values in memory,
     which may be visible to the C code via access as @('unsigned char[]')
-    (as allowed by the C18 standard),
-    consists of a sign bit, some value bits, and optionally some padding bits.
+    (as allowed by the [C]),
+    consists of a sign bit, some value bits, and optionally some padding bits
+    [C:6.2.6.2/2].
     The signed representation may be
-    two's complement, one's complement, or sign and magnitude.
+    two's complement, one's complement, or sign and magnitude
+    [C:6.2.6.2/2].
     All these choices are implementation-dependent,
     and determine the range of @('int') values,
     subject to the minimum range requirement stated above.")
@@ -240,13 +249,13 @@
   (xdoc::p
    "Two's complement representations without padding bits seem the most common,
     along with 8-bit bytes
-    (the exact number of bits in a byte is also implementation-dependent,
-    according to the C18 standard).
+    (the exact number of bits in a byte is also implementation-dependent
+    [C:5.2.4.2.1/1] [C:6.2.6.1/3]).
     Under these assumptions, @('int') values must consist of at least 16 bits,
-    resulting in the range from -32768 to +32767.
-    The C18 standard requires @('int') to take a whole number of bytes,
+    resulting in the range from -32768 to +32767 at a minimum.
+    [C:6.2.6.1/4] requires @('int') to take a whole number of bytes,
     and thus the possible bit sizes are 16, 24, 32, 40, 48, etc.
-    The C18 standard also states that the size is
+    [C:6.2.5/5] states that the size is
     the natural one suggested by the architecture of the execution environment.
     For modern Macs and PCs, experiments suggest this to be 32 bits
     (the experiment consists in printing @('sizeof(int)') in a C program),
@@ -263,13 +272,13 @@
     For instance, the addition operation @('+') does not directly apply
     to @('short') or @('unsigned char') operands:
     these are promoted to @('int') values before applying the operation,
-    according to the integer promotions described in the C18 standard.
+    according to the integer promotions described in [C:6.3.1.1/2].
     Similarly, the addition operation @('+') does not directly apply
     to an @('int') operand and a @('long') operand:
     the first operand is converted to @('long') first,
     so that addition is performed on two @('long') values,
     according to the usual arithmetic conversions
-    described in the C18 standard.")
+    described in [C:6.3.1.8].")
 
   (xdoc::p
    "This means that there are only certain instances of operations like @('+'),
@@ -283,7 +292,7 @@
     this is what we mean by `@('int') operations'.")
 
   (xdoc::p
-   "C provides the following unary and binary @('int') operations:")
+   "C provides the following unary and binary @('int') operations [C:6.5]:")
   (xdoc::ul
    (xdoc::li "@('+') (unary)")
    (xdoc::li "@('-') (unary)")
@@ -309,28 +318,30 @@
    (xdoc::li "@('||') (binary)"))
   (xdoc::p
    "These not only take, but also return, @('int') values.
-    This uniformity is due to the fact that C represents booleans
+    This uniformity is also due to the fact that C represents booleans
     as the @('int') values 0 (for false) and 1 (for true),
     and thus the relational and equality operations,
     as well as the logical conjunction and disjunction operations,
-    all return @('int') results.
+    all return @('int') results [C:6.5.13] [C:6.5.14].
     Note also that the left and right shift operations, in general,
-    may apply to operands of different types (unlike other binary operations);
+    may apply to operands of different types (unlike other binary operations)
+    [C:6.5.7];
     however, here we are interested in the instances of those operations
     where both operands are @('int') values.")
 
   (xdoc::p
    "Some of the above operations yield well-defined results,
-    specified by the C18 standard, only under certain conditions.
+    specified by [C], only under certain conditions.
     For instance, the addition operation @('+') on @('int') operands
-    is well-defined only if the exact result is representable as an @('int').
+    is well-defined only if the exact result is representable as an @('int')
+    [C:6.5/5].
     An implementation may actually add definedness to this operation,
     by relying on the (well-defined) behavior of the underlying hardware,
     e.g. by keeping the low bits of the exact result that fit @('int')
     (which is the same result prescribed by the Java language specification).")
 
   (xdoc::p
-   "We also note that the last two operations
+   "We also note that the last two operations in the list above
     are non-strict at the expression level:
     their second operand expression is not executed
     if the result of the first operand expression
@@ -375,7 +386,7 @@
     that specifies the size of @('int').
     We may also further generalize the representation,
     again via a static parameterization,
-    to cover more of the options allowed by the C18 standard.")
+    to cover more of the options allowed by [C].")
 
   (xdoc::p
    "We also provide ACL2 functions corresponding to the operations listed above,
@@ -420,7 +431,7 @@
   (xdoc::p
    "Some of these functions have additional guard conditions
     that capture the conditions under which
-    the result is well-defined according to the C18 standard.
+    the result is well-defined according to the [C].
     For instance, the guard of @(tsee sint-add) includes the condition that
     the exact integer result fits in the range of the ACL2 integers
     that are wrapped to form @(tsee sint) values.
@@ -442,7 +453,8 @@
 
   (xdoc::p
    "Besides unary and binary @('int') operations,
-    C includes @('int') constants,
+    C includes @('int') constants [C:6.4.4.1]
+    (more precisely, integer constants, some of which have type @('int')),
     which may be regarded as (a large number of) nullary @('int') operations.
     Our ACL2 representation in @('[books]/kestrel/c/atc/integers.lisp')
     provides a function @(tsee sint-const),
@@ -505,7 +517,7 @@
     That is, every C function is represented by an ACL2 function,
     whose name must be supplied to ATC in order to generate
     the corresponding C function definition
-    (the exact use of ATC is described later in this page).")
+    (the exact call of ATC is described later in this page).")
 
   (xdoc::p
    "Thus, for the example program above,
@@ -629,7 +641,7 @@
    "  (declare (xargs :guard (and (and (c::sintp |z|)"
    "                                   (c::sintp |x|))"
    "                              (and ..."
-   "                                   (c::sintp |z|))"
+   "                                   (c::sintp |y|))"
    "                              ...)))"
    "  ...) ; body as above")
 
@@ -650,7 +662,7 @@
     are guard-verified (which implies that they must be in logic mode).
     This ensures that the ACL2 functions that represent C operations
     are always applied to values whose result is well-defined
-    according to the C18 standard.
+    according to [C].
     It also ensures that @(tsee sint-const) is always applied
     to a natural number representable as an @('int').")
 
@@ -658,11 +670,11 @@
    "However, this generally requires guards to have additional conditions,
     besides the @(tsee sintp) conjunts discussed above.
     It should be clear that a C function like @('f')
-    does not yield a well-defined C18 result
+    does not yield a well-defined [C] result
     for every possible value of its arguments.
     For instance, sufficiently large values of @('x') and @('y')
     would make the result of @('x + y') not representable as @('int'),
-    and thus not well-defined according to C18.")
+    and thus not well-defined according to [C].")
 
   (xdoc::p
    "This should not be surprising.
@@ -678,7 +690,7 @@
     functions that receive data from outside the program.
     These functions should not assume any precondition on that data,
     and diligently validate it before operating on it.
-    After validation, these C functions may called other C functions,
+    After validation, these C functions may call other C functions,
     internal to the C program, in the sense that
     they only receive data validated by the calling functions.
     The validation provides preconditions
@@ -689,41 +701,43 @@
     as an internal function in the sense above.
     For simplicity, we assume that every parameter of the function
     is faily small, more precisely not above 10 in absolute value.
-    This is the function @('|f|') with the complete guard
+    The following is the function @('|f|') with the complete guard
     and the hints and book inclusion and command to verify the guards:")
   (xdoc::codeblock
-   "(local (include-book \"arithmetic-5/top\" :dir :system))"
+   "(encapsulate ()"
    ""
-   "(local (set-default-hints '((nonlinearp-default-hint"
-   "                             stable-under-simplificationp"
-   "                             hist"
-   "                             pspv))))"
+   "  (local (include-book \"arithmetic-5/top\" :dir :system))"
    ""
-   "(defun |f| (|x| |y| |z|)"
-   "  (declare (xargs :guard (and (c::sintp |x|)"
-   "                              (c::sintp |y|)"
-   "                              (c::sintp |z|)"
-   "                              ;; -10 <= x <= 10:"
-   "                              (<= -10 (c::sint->get |x|))"
-   "                              (<= (c::sint->get |x|) 10)"
-   "                              ;; -10 <= y <= 10:"
-   "                              (<= -10 (c::sint->get |y|))"
-   "                              (<= (c::sint->get |y|) 10)"
-   "                              ;; -10 <= z <= 10:"
-   "                              (<= -10 (c::sint->get |z|))"
-   "                              (<= (c::sint->get |z|) 10))"
-   "                  :guard-hints ((\"Goal\""
-   "                                 :in-theory (enable sbyte32p"
-   "                                                    sbyte32-fix"
-   "                                                    c::sintp"
-   "                                                    c::sint-add-okp"
-   "                                                    c::sint-sub-okp"
-   "                                                    c::sint-mul-okp"
-   "                                                    c::sint-add"
-   "                                                    c::sint-sub"
-   "                                                    c::sint->get)))))"
-   "  (c::sint-mul (c::sint-add |x| |y|)"
-   "               (c::sint-sub |z| (c::sint-const 3))))")
+   "  (local (set-default-hints '((nonlinearp-default-hint"
+   "                               stable-under-simplificationp"
+   "                               hist"
+   "                               pspv))))"
+   ""
+   "  (defun |f| (|x| |y| |z|)"
+   "    (declare (xargs :guard (and (c::sintp |x|)"
+   "                                (c::sintp |y|)"
+   "                                (c::sintp |z|)"
+   "                                ;; -10 <= x <= 10:"
+   "                                (<= -10 (c::sint->get |x|))"
+   "                                (<= (c::sint->get |x|) 10)"
+   "                                ;; -10 <= y <= 10:"
+   "                                (<= -10 (c::sint->get |y|))"
+   "                                (<= (c::sint->get |y|) 10)"
+   "                                ;; -10 <= z <= 10:"
+   "                                (<= -10 (c::sint->get |z|))"
+   "                                (<= (c::sint->get |z|) 10))"
+   "                    :guard-hints ((\"Goal\""
+   "                                   :in-theory (enable sbyte32p"
+   "                                                      sbyte32-fix"
+   "                                                      c::sintp"
+   "                                                      c::sint-add-okp"
+   "                                                      c::sint-sub-okp"
+   "                                                      c::sint-mul-okp"
+   "                                                      c::sint-add"
+   "                                                      c::sint-sub"
+   "                                                      c::sint->get)))))"
+   "    (c::sint-mul (c::sint-add |x| |y|)"
+   "                 (c::sint-sub |z| (c::sint-const 3)))))")
 
   (xdoc::p
    "The proof is carried out on the ACL2 integers
