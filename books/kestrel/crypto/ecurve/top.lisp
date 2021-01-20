@@ -27,7 +27,6 @@
 (include-book "secp256k1-attachment")
 
 (include-book "jubjub")
-(include-book "jubjub-montgomery")
 
 (include-book "points-fty")
 
