@@ -185,7 +185,7 @@
   (xdoc::ul
    (xdoc::li
     "The generated C code satisfies the compile-time constraints
-     prescribed by the official definition of C [C18].
+     prescribed by the official definition of C [C].
      In other words, the C code is compiled by a compliant compiler.
      This is expressed via a "
     (xdoc::seetopic "atc-static-semantics"

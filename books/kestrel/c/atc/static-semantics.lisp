@@ -70,13 +70,13 @@
    (xdoc::p
     "A variable table is a symbol table for variables.
      The table (see @(tsee var-table)) is organized as
-     a sequence with one element for each nested block scope [C18:6.2.1].
+     a sequence with one element for each nested block scope [C:6.2.1].
      This fixtype contains information about such a block scope.
      The information is organized as a finite map
      from identifiers (variable names) to types.
      Using a map is adequate because
      the variables declared in a block must all have different names
-     [C18:6.2.1/2]."))
+     [C:6.2.1/2]."))
   :key-type ident
   :val-type tyspecseq
   :pred var-table-scopep)
@@ -88,7 +88,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This keeps track of all the variables in scope [C18:6.2.1],
+    "This keeps track of all the variables in scope [C:6.2.1],
      organized according to block scopes.
      The list has one element for each nested block,
      where the first element (the @(tsee car)), if present,
@@ -102,7 +102,7 @@
    (xdoc::p
     "It is possible for two scopes in the list to have overlapping domains,
      when a variable in an inner block hides one in an outer block
-     [C18:6.2.1/4]."))
+     [C:6.2.1/4]."))
   :elt-type var-table-scope
   :true-listp t
   :non-emptyp t
@@ -191,7 +191,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Function types are described in [C18:6.2.5/20].
+    "Function types are described in [C:6.2.5/20].
      Eventually these may be integrated into
      a broader formalized notion of C types,
      but for now we introduce this fixtype here,
