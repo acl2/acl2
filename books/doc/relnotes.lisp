@@ -538,11 +538,6 @@
 
    (xdoc::p
     "A formalization of the "
-    (xdoc::seetopic "ecurve::jubjub" "Jubjub twisted Edwards elliptic curve")
-    " has been added.")
-
-   (xdoc::p
-    "A formalization of the "
     (xdoc::seetopic "ecurve::birational-montgomery-twisted-edwards"
                     "birational equivalence between
                      Montgomery and twisted Edwards curves")
