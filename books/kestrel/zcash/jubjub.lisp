@@ -12,7 +12,8 @@
 
 (include-book "bit-byte-integer-conversions")
 
-(include-book "kestrel/crypto/ecurve/jubjub" :dir :system)
+(include-book "kestrel/crypto/ecurve/twisted-edwards" :dir :system)
+(include-book "kestrel/crypto/primes/bls12-381-prime" :dir :system)
 (include-book "kestrel/crypto/primes/jubjub-subgroup-prime" :dir :system)
 (include-book "std/util/defval" :dir :system)
 
@@ -20,62 +21,160 @@
 
 (defxdoc+ jubjub
   :parents (zcash)
-  :short "A formalization of Zcash's Jubjub elliptic curve."
+  :short "The Jubjub complete twisted Edwards elliptic curve [ZPS:5.4.8.3]."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This curve is defined in our elliptice curve library
-     at @('[books]/kestrel/crypto/ecurve'); @(see ecurve::jubjub).
-     We may move that material here at some point.
-     In any case, we provide some additional material here.
-     We also introduce theorems about the prime and coefficients,
-     and we disable all of them, including executable counterparts:
-     the reason is that we want to treat them
-     as algebraic quantities in the proofs,
-     avoiding their combination in prime field expressions
-     that are carried out by the prime field library's rules."))
+    "We define the Jubjub curve,
+     as a constant value of the fixtype @(tsee ecurve::twisted-edwards-curve)
+     of twisted Edwards elliptic curves.
+     We show that the curve is complete.")
+   (xdoc::p
+    "The prime and coefficient of Jubjub are formalized as nullary functions.
+     We keep disabled also their executable counterparts because
+     we generally want to treat them as algebraic quantities in proofs;
+     in particular, we want to avoid their combination into new constants
+     by the prime field normalizing rules.")
+   (xdoc::p
+    "We also define various notions related to Jubjub,
+     such as recognizers of points in the curve's group and subgroup."))
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection jubjub-a-d-q
-  :short "Theorems about Jubjub's
-          @($a_\\mathbb{J}$), @($d_\\mathbb{J}$), and  @($q_\\mathbb{J}$)."
+(define jubjub-q ()
+  :returns (q rtl::primep)
+  :short "The Jubjub prime @($q_\\mathbb{J}$) [ZPS:5.4.8.3]."
   :long
   (xdoc::topstring
    (xdoc::p
-    "These three constants are defined in [ZPS:5.4.8.3].")
+    "This defines the prime field over which Jubjub is defined.")
    (xdoc::p
-    "These nullary functions are defined in the elliptic curve library.
-     Here we prove some relevant theorems about them
-     and we disable them completely (including executable counterparts)."))
-
-  (defrule primep-of-jubjub-q
-    (rtl::primep (jubjub-q)))
-
-  (defrule fep-of-jubjub-a
-    (fep (jubjub-a) (jubjub-q)))
-
-  (defrule fep-of-jubjub-d
-    (fep (jubjub-d) (jubjub-q)))
-
-  (defrule jubjub-a-d-different
-    (not (equal (jubjub-a) (jubjub-d))))
-
-  (defrule jubjub-a-not-zero
-    (not (equal (jubjub-a) 0)))
-
-  (defrule jubjub-d-not-zero
-    (not (equal (jubjub-d) 0)))
+    "It is the same as @($r_\\mathbb{S}$) [ZPS:5.4.8.2],
+     which is defined in our cryptograhic library."))
+  (primes::bls12-381-scalar-field-prime)
+  ///
 
   (defrule jubjub-q-not-two
     (not (equal (jubjub-q) 2)))
 
-  (in-theory (disable jubjub-q
-                      (:e jubjub-q)
-                      (:e jubjub-a)
-                      (:e jubjub-d))))
+  (in-theory (disable (:e jubjub-q))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define jubjub-a ()
+  :returns (a (fep a (jubjub-q))
+              :hints (("Goal" :in-theory (enable fep jubjub-q))))
+  :short "The Jubjub coefficient @($a_\\mathbb{J}$) [ZPS:5.4.8.3]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We show that this coefficient is a square
+     by exhibiting a square root of it."))
+  (neg 1 (jubjub-q))
+  ///
+
+  (defrule jubjub-a-not-zero
+    (not (equal (jubjub-a) 0)))
+
+  (defrule pfield-squarep-of-jubjub-a
+    (ecurve::pfield-squarep (jubjub-a) (jubjub-q))
+    :use (:instance ecurve::pfield-squarep-suff
+          (x (jubjub-a))
+          (r 3465144826073652318776269530687742778270252468765361963008)
+          (p (jubjub-q)))
+    :enable jubjub-q)
+
+  (in-theory (disable (:e jubjub-a))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define jubjub-d ()
+  :returns (d (fep d (jubjub-q))
+              :hints (("Goal" :in-theory (enable fep jubjub-q))))
+  :short "The Jubjub coefficient @($d_\\mathbb{J}$) [ZPS:5.4.8.3]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We show that this coefficient is not a square
+     using Euler's criterion.
+     We use the fast modular exponentiation operation
+     from the @('arithmetic-3') library
+     to calculate the modular exponentiation of the coefficient,
+     which must be different from 1
+     in order for the criterion to apply."))
+  (neg (div 10240 10241 (jubjub-q)) (jubjub-q))
+  :guard-hints (("Goal" :in-theory (enable fep jubjub-q)))
+  ///
+
+  (defrule jubjub-d-not-zero
+    (not (equal (jubjub-d) 0)))
+
+  (defrule jubjub-d-not-equal-to-a
+    (not (equal (jubjub-d) (jubjub-a)))
+    :enable (jubjub-a jubjub-q))
+
+  (local (include-book "arithmetic-3/top" :dir :system))
+
+  (defruledl mod-expt-fast-lemma
+    (not (equal (acl2::mod-expt-fast (jubjub-d)
+                                     (/ (1- (jubjub-q)) 2)
+                                     (jubjub-q))
+                1))
+    :enable jubjub-q)
+
+  (defruledl mod-expt-lemma
+    (not (equal (mod (expt (jubjub-d)
+                           (/ (1- (jubjub-q)) 2))
+                     (jubjub-q))
+                1))
+    :use (mod-expt-fast-lemma
+          (:instance acl2::mod-expt-fast
+           (a (jubjub-d))
+           (i (/ (1- (jubjub-q)) 2))
+           (n (jubjub-q))))
+    :enable jubjub-q
+    :disable ((:e expt)))
+
+  (local (include-book "kestrel/crypto/ecurve/prime-field-squares-euler-criterion" :dir :system))
+
+  (defrule not-pfield-squarep-of-jubjub-d
+    (not (ecurve::pfield-squarep (jubjub-d) (jubjub-q)))
+    :enable (ecurve::weak-euler-criterion-contrapositive jubjub-q)
+    :use mod-expt-lemma
+    :disable ((:e expt)))
+
+  (in-theory (disable (:e jubjub-d))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define jubjub-curve ()
+  :returns (curve ecurve::twisted-edwards-curvep)
+  :short "The Jubjub curve [ZPS:5.4.8.3]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We show that it is complete."))
+  (ecurve::make-twisted-edwards-curve :p (jubjub-q)
+                                      :a (jubjub-a)
+                                      :d (jubjub-d))
+  ///
+
+  (defrule twisted-edwards-curve-primep-of-jubjub-curve
+    (ecurve::twisted-edwards-curve-primep (jubjub-curve))
+    :enable ecurve::twisted-edwards-curve-primep
+    :disable ((:e ecurve::twisted-edwards-curve-primep)))
+
+  (defrule twisted-edwards-curve-completep-of-jubjub-curve
+    (ecurve::twisted-edwards-curve-completep (jubjub-curve))
+    :enable (ecurve::twisted-edwards-curve-completep jubjub-a jubjub-d jubjub-q)
+    :disable (pfield-squarep-of-jubjub-a
+              not-pfield-squarep-of-jubjub-d)
+    :use (pfield-squarep-of-jubjub-a
+          not-pfield-squarep-of-jubjub-d))
+
+  (in-theory (disable (:e jubjub-curve))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

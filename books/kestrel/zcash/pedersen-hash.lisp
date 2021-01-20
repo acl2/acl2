@@ -58,7 +58,7 @@
               (< (len m) (- blake::*blake2s-max-data-byte-length* 128)))
   :returns (point? maybe-jubjub-pointp)
   :short "The function
-          @($\\mathsf{GroupHash_\\mathsf{URS}^{\\mathbb{J}^(r)*}}$)
+          @($\\mathsf{GroupHash_\\mathsf{URS}^{\\mathbb{J}^{(r)*}}}$)
           [ZPS:5.4.8.5]."
   :long
   (xdoc::topstring
@@ -66,7 +66,7 @@
     "[ZPS] allows the argument @($M$) to have any length,
      but there is a (large) limit (see guard of @(tsee blake2s-256)).
      The limit here must be dimished by 64,
-     which is the length of @($\\mathsf{URS)$)."))
+     which is the length of @($\\mathsf{URS}$)."))
   (b* ((hash (blake2s-256 d (append *urs* m)))
        (point (jubjub-abst (leos2bsp hash)))
        ((unless (jubjub-pointp point)) nil)
@@ -81,7 +81,7 @@
   :guard (and (= (len d) 8)
               (< (len m) (- blake::*blake2s-max-data-byte-length* 129)))
   :returns (point? maybe-jubjub-pointp)
-  :short "The function @($\\mathsf{FindGroupHash^{\\mathbb{J}^(r)*}}$)
+  :short "The function @($\\mathsf{FindGroupHash^{\\mathbb{J}^{(r)*}}}$)
           [ZPS:5.4.8.5]."
   :long
   (xdoc::topstring
@@ -95,6 +95,7 @@
      :guard (and (= (len d) 8)
                  (< (len m) (- blake::*blake2s-max-data-byte-length* 129)))
      :returns (point? maybe-jubjub-pointp)
+     :parents nil
      (if (mbt (natp i))
          (if (< i 256)
              (b* ((point? (group-hash d (append m (list i)))))
@@ -182,7 +183,7 @@
 (define pedersen-segment-scalar ((segment bit-listp))
   :guard (integerp (/ (len segment) 3))
   :returns (i integerp :hyp (bit-listp segment))
-  :short "The function @($\\langle\\bullet\\rangle$) in [ZPS:5.4.1.7]."
+  :short "The function @($\\langle\\bigcdot\\rangle$) in [ZPS:5.4.1.7]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -195,6 +196,7 @@
    (define pedersen-segment-scalar-loop ((j posp) (segment bit-listp))
      :guard (integerp (/ (len segment) 3))
      :returns (i integerp :hyp (and (posp j) (bit-listp segment)))
+     :parents nil
      (if (consp segment)
          (+ (* (pedersen-enc (take 3 segment))
                (expt 2 (* 4 (1- j))))
@@ -265,7 +267,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is @($[\\langle{M_i\\rangle]\\mathcal{I}_i^D$)."))
+    "This is @($[\\langle{M_i}\\rangle]\\mathcal{I}_i^D$)."))
   (b* ((ipoint (pedersen-segment-point d i))
        ((unless (jubjub-pointp ipoint)) nil)
        (scalar (pedersen-segment-scalar segment)))
@@ -285,6 +287,7 @@
      :guard (and (= (len d) 8)
                  (integerp (/ (len m1) 3)))
      :returns (point? maybe-jubjub-pointp)
+     :parents nil
      (b* (((when (<= (len m1) (* 3 *pedersen-c*)))
            (pedersen-segment-addend d m1 i))
           (point1 (pedersen-segment-addend d (take (* 3 *pedersen-c*) m1) i))
