@@ -37,12 +37,13 @@
               (< (len input) (- blake::*blake2s-max-data-byte-length* 64)))
   :returns (output byte-listp
                    :hints (("Goal" :in-theory (enable returns-lemma))))
-  :short "The function @($\\mathsf{BLAKE2s-256}$) [ZPS:5.4.1.2]."
+  :short "The function @($\\mathsf{BLAKE2s\\textsf{-}\\mathsf{256}$)
+          [ZPS:5.4.1.2]."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is the instantiation @($\\ell=\\mathsf{256}$)
-     of the general function @($\\mathsf{BLAKE2s-}\\ell$).
+     of the general function @($\\mathsf{BLAKE2s}\\textsf{-}\\ell$).
      We may generalize this ACL2 function
      to take @($\\ell$) as a parameter,
      at some point.")
