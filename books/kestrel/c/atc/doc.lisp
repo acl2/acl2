@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2020 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -35,7 +35,13 @@
       If you are new to ATC, you should start with the "
      (xdoc::seetopic "atc-tutorial" "tutorial")
      ", which provides user-level pedagogical information
-      on how ATC works and how to use ATC effectively."))
+      on how ATC works and how to use ATC effectively.")
+
+    (xdoc::p
+     "In this manual page,
+      we refer to the official C standard in the manner explained in "
+     (xdoc::seetopic "c" "the top-level XDOC topic of our C library")
+     "."))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -347,14 +353,14 @@
 
      (xdoc::p
       "A portable ASCII C identifier is
-      a non-empty sequence of ASCII characters that:")
+       a non-empty sequence of ASCII characters that:")
      (xdoc::ul
       (xdoc::li
        "Consists of only
-       the 26 uppercase Latin letters,
-       the 26 lowercase Latin letters,
-       the 10 numeric digits,
-       and the underscore.")
+        the 26 uppercase Latin letters,
+        the 26 lowercase Latin letters,
+        the 10 numeric digits,
+        and the underscore.")
       (xdoc::li
        "Starts with a letter or underscore.")
       (xdoc::li
@@ -373,28 +379,28 @@
         "enum       return     volatile   _Thread_local")))
 
      (xdoc::p
-      "The C18 standard allows the following characters in identifiers:")
+      "[C:6.4.2] allows the following characters in identifiers:")
      (xdoc::ol
       (xdoc::li
        "The ten digits (but not in the starting position).
-       Even though C18 does not prescribe the use of (a superset of) ASCII,
-       these have obvious ASCII counterparts.")
+        Even though [C] does not prescribe the use of (a superset of) ASCII,
+        these have obvious ASCII counterparts.")
       (xdoc::li
        "The 26 uppercase Latin letters,
-       the 26 lowercase Latin letter,
-       and the underscore.
-       Even though C18 does not prescribe the use of (a superset of) ASCII,
-       these have obvious ASCII counterparts.")
+        the 26 lowercase Latin letter,
+        and the underscore.
+        Even though [C] does not prescribe the use of (a superset of) ASCII,
+        these have obvious ASCII counterparts.")
       (xdoc::li
        "Some ranges of universal characters
-       (some of which cannot occur in the starting position),
-       none of which are ASCII.")
+        (some of which cannot occur in the starting position),
+        none of which are ASCII.")
       (xdoc::li
        "Other implementation-defined characters.
-       These are not portable."))
+        These are not portable."))
      (xdoc::p
       "Thus, portable ASCII C identifiers consists of only 1 and 2 above,
-      excluding 3 (non-ASCII) and 4 (non-portable).")))
+       excluding 3 (non-ASCII) and 4 (non-portable).")))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -428,7 +434,7 @@
       "where @('...') is a theorem about @('*const*') stating that
        the generated (abstract syntax tree of the) translation unit
        is statically well-formed,
-       i.e. it compiles according to the C18 standard.")
+       i.e. it compiles according to [C].")
 
      (xdoc::p
       "For each target function @('fn'), ATC generates an event")
