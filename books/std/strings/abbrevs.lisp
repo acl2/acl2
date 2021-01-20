@@ -55,17 +55,17 @@
 (add-macro-alias collect-syms-with-isubstr STR::collect-syms-with-isubstr)
 
 
-(defmacro digitp (x) `(STR::digitp ,x))
-(add-macro-alias digitp STR::digitp)
+(defmacro dec-digit-char-p (x) `(STR::dec-digit-char-p ,x))
+(add-macro-alias dec-digit-char-p STR::dec-digit-char-p)
 
-(defmacro digit-val (x) `(STR::digit-val ,x))
-(add-macro-alias digit-val STR::digit-val)
+(defmacro dec-digit-char-value (x) `(STR::dec-digit-char-value ,x))
+(add-macro-alias dec-digit-char-value STR::dec-digit-char-value)
 
-(defmacro digit-listp (x) `(STR::digit-listp ,x))
-(add-macro-alias digit-listp STR::digit-listp)
+(defmacro dec-digit-char-listp (x) `(STR::dec-digit-char-listp ,x))
+(add-macro-alias dec-digit-char-listp STR::dec-digit-char-listp)
 
-(defmacro digit-list-value (x) `(STR::digit-list-value ,x))
-(add-macro-alias digit-list-value STR::digit-list-value)
+(defmacro dec-digit-char-list-value (x) `(STR::dec-digit-char-list-value ,x))
+(add-macro-alias dec-digit-char-list-value STR::dec-digit-char-list-value)
 
 (defmacro charlistnat< (x y) `(STR::charlistnat< ,x ,y))
 (add-macro-alias charlistnat< STR::charlistnat<)
