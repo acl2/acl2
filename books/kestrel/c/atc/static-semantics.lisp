@@ -13,6 +13,7 @@
 
 (include-book "abstract-syntax")
 (include-book "portable-ascii-identifiers")
+(include-book "types")
 
 (include-book "kestrel/fty/defomap" :dir :system)
 (include-book "kestrel/fty/sbyte32" :dir :system)
@@ -78,7 +79,7 @@
      the variables declared in a block must all have different names
      [C:6.2.1/2]."))
   :key-type ident
-  :val-type tyspecseq
+  :val-type type
   :pred var-table-scopep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -120,7 +121,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define var-table-lookup ((var identp) (vartable var-tablep))
-  :returns (type tyspecseq-optionp)
+  :returns (type type-optionp)
   :short "Look up a variable in a variable table."
   :long
   (xdoc::topstring
@@ -165,7 +166,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define var-table-add-var ((var identp) (type tyspecseqp) (vartable var-tablep))
+(define var-table-add-var ((var identp) (type typep) (vartable var-tablep))
   :returns (mv (okp booleanp) (new-vartable var-tablep))
   :short "Add a variable to (the innermost block of) a variable table."
   :long
@@ -176,7 +177,7 @@
      Otherwise, we add the variable and return the variable table,
      along with @('t') as first result."))
   (b* ((var (ident-fix var))
-       (type (tyspecseq-fix type))
+       (type (type-fix type))
        (vartable (var-table-fix vartable))
        (varscope (car vartable))
        ((when (omap::in var varscope)) (mv nil vartable))
@@ -196,11 +197,9 @@
      a broader formalized notion of C types,
      but for now we introduce this fixtype here,
      in order to use in in function tables.
-     A function type consists of zero or more input types and an output type.
-     As types here we use sequences of type specifiers for now,
-     as in other places."))
-  ((inputs tyspecseq-list)
-   (output tyspecseq))
+     A function type consists of zero or more input types and an output type."))
+  ((inputs type-list)
+   (output type))
   :pred fun-typep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -405,7 +404,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We check that the underlying sequence of type specifiers."))
+    "We check the underlying sequence of type specifiers."))
   (tyspecseq-check (tyname->specs tn))
   :hooks (:fix))
 
@@ -531,7 +530,9 @@
                  (mv nil (sym-table-fix symtab)))
                 (vartable (sym-table->variables symtab))
                 ((mv okp new-vartable)
-                 (var-table-add-var decl.name decl.type vartable))
+                 (var-table-add-var decl.name
+                                    (type-name-to-type (tyname decl.type))
+                                    vartable))
                 ((when (not okp)) (mv nil (sym-table-fix symtab)))
                 (new-symtab (change-sym-table symtab :variables new-vartable)))
              (mv t new-symtab))
@@ -573,7 +574,9 @@
        ((unless (ident-check param.name)) (mv nil (irr-sym-table)))
        (vartable (sym-table->variables symtab))
        ((mv okp new-vartable)
-        (var-table-add-var param.name param.type vartable))
+        (var-table-add-var param.name
+                           (type-name-to-type (tyname param.type))
+                           vartable))
        ((when (not okp)) (mv nil (irr-sym-table))))
     (mv t (change-sym-table symtab :variables new-vartable)))
   :hooks (:fix))
@@ -619,8 +622,12 @@
      the function definitions in the translation unit in order,
      we extend the function table."))
   (b* (((fundef fundef) fundef)
-       (ftype (make-fun-type :inputs (param-decl-list->type-list fundef.params)
-                             :output fundef.result))
+       (ftype (make-fun-type :inputs (type-name-list-to-type-list
+                                      (tyname-list
+                                       (param-decl-list->type-list
+                                        fundef.params)))
+                             :output (type-name-to-type
+                                      (tyname fundef.result))))
        ((mv okp funtable) (fun-table-add-fun fundef.name ftype funtable))
        ((when (not okp)) (mv nil funtable))
        ((unless (ident-check fundef.name)) (mv nil funtable))
