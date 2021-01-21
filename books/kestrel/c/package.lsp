@@ -19,7 +19,9 @@
              (set-difference-eq *std-pkg-symbols*
                                 '(byte
                                   error
-                                  pprint-indent))
+                                  pprint-indent
+                                  type
+                                  typep))
              '(any
                bool
                cw-event
