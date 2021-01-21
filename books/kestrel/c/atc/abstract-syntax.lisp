@@ -397,6 +397,24 @@
   :tag :tyname
   :pred tynamep)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist tyname-list
+  :short "Fixtype of lists of type names."
+  :elt-type tyname
+  :true-listp t
+  :elementp-of-nil nil
+  :pred tyname-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection tyname-list ((x tyspecseq-listp))
+  :result-type tyname-listp
+  :short "Lift @(tsee tyname) to lists."
+  (tyname x)
+  ///
+  (fty::deffixequiv tyname-list))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftypes expr-fixtypes
