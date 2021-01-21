@@ -88,9 +88,10 @@
                                 (concatenate 'string "*" (symbol-name name) "*")
                                 name)
                       ',fsm)
-                    (defun ,',name ()
+                    (defund ,',name ()
                       (declare (xargs :guard t))
-                      ',fsm)))
+                      ',fsm)
+                    (in-theory (disable (,',name)))))
           state ,stobj))))
 
 
