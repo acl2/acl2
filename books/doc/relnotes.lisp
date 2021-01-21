@@ -645,6 +645,9 @@
    (xdoc::p
     "A macro @(tsee fty::defsubtype) has been added.")
 
+   (xdoc::p
+    "A macro @(tsee fty::defunit) has been added.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "java::java" "Java Library"))
