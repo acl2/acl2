@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2020 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -524,7 +524,7 @@
      no function specifiers,
      no alignment specifiers,
      and a single declarator consisting of an identifier,
-     with an initializing expression.
+     with an initializer expression.
      This suffices to declare and initialize integer variables.")
    (xdoc::p
     "We will support richer forms of declarations when needed.")
