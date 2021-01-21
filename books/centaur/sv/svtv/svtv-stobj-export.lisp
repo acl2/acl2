@@ -471,7 +471,7 @@
                   (rename-fsm (make-svtv-fsm :base-fsm x.cycle-fsm
                                              :namemap x.namemap))
                   ((pipeline-setup x.pipeline-setup))
-                  (run (svtv-fsm-run-renamed
+                  (run (svtv-fsm-run
                         (svex-alistlist-eval x.pipeline-setup.inputs env)
                         (svex-alistlist-eval x.pipeline-setup.overrides env)
                         (svex-alist-eval x.pipeline-setup.initst env)

@@ -40,7 +40,7 @@
 ;; (svtv-cycle-run-fsm-inputs ins phases) produces a set of inputs for the base
 ;; fsm given the cycle phases and inputs for the cycle fsm.
 
-;; (svtv-fsm-run-renamed-input-envs
+;; (svtv-fsm-run-input-envs
 ;;   (take (len (svtv-probealist-outvars probes)) ins)
 ;;   overrides fsm)
 ;; produces a set of inputs for the cycle fsm given inputs for the pipeline.
@@ -324,7 +324,7 @@
        (len (len outvars))
        (fsm (make-svtv-fsm :base-fsm (svtv-data->cycle-fsm svtv-data)
                            :namemap (svtv-data->namemap svtv-data)))
-       (cycle-ins (svtv-fsm-run-renamed-input-envs
+       (cycle-ins (svtv-fsm-run-input-envs
                    (take len rename-ins)
                    rename-overrides fsm)))
     (svtv-data-debug-cycle-fsm cycle-ins initst :filename filename)))

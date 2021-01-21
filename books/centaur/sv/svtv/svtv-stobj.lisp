@@ -500,7 +500,7 @@ particular times and certain outputs are read at particular times.</li>
                                              ;; :user-names (svtv-data$c->user-names svtv-data$c)
                                              :namemap (svtv-data$c->namemap svtv-data$c)))
                   ((pipeline-setup pipe) (svtv-data$c->pipeline-setup svtv-data$c))
-                  (run (svtv-fsm-run-renamed
+                  (run (svtv-fsm-run
                         (svex-alistlist-eval pipe.inputs env)
                         (svex-alistlist-eval pipe.overrides env)
                         (svex-alist-eval pipe.initst env)
@@ -561,7 +561,7 @@ particular times and certain outputs are read at particular times.</li>
 ;;         (result
 ;;          (svtv-probealist-extract-alist
 ;;           probes
-;;           (svtv-fsm-run-renamed-compile
+;;           (svtv-fsm-run-compile
 ;;            (svtv-data$c->pipeline-inputs svtv-data$c)
 ;;            (svtv-data$c->pipeline-overrides svtv-data$c)
 ;;            (svtv-data$c->pipeline-initst svtv-data$c)
