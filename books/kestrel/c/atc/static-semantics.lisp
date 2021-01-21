@@ -120,7 +120,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define var-table-lookup ((var identp) (vartable var-tablep))
+(define irr-var-table ()
+  :returns (vartab var-tablep)
+  :short "An irrelevant variable table, usable as a dummy return value."
+  (with-guard-checking :none (ec-call (var-table-fix :irrelevant)))
+  ///
+  (in-theory (disable (:e irr-var-table))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define var-table-lookup ((var identp) (vartab var-tablep))
   :returns (type type-optionp)
   :short "Look up a variable in a variable table."
   :long
@@ -130,19 +139,19 @@
      otherwise, we return @('nil').
      We search for the variable in the sequence of scopes in order,
      i.e. from innermost to outermost block."))
-  (b* (((unless (mbt (not (endp vartable)))) nil)
-       (varscope (var-table-scope-fix (car vartable)))
+  (b* (((unless (mbt (not (endp vartab)))) nil)
+       (varscope (var-table-scope-fix (car vartab)))
        (pair (omap::in (ident-fix var) varscope))
        ((when (consp pair)) (cdr pair))
-       (vartable (cdr vartable))
-       ((when (endp vartable)) nil))
-    (var-table-lookup var vartable))
+       (vartab (cdr vartab))
+       ((when (endp vartab)) nil))
+    (var-table-lookup var vartab))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define var-table-init ()
-  :returns (vartable var-tablep)
+  :returns (vartab var-tablep)
   :short "Create an initial variable table."
   :long
   (xdoc::topstring
@@ -152,7 +161,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define var-table-add-block ((vartable var-tablep))
+(define var-table-add-block ((vartab var-tablep))
   :returns (new-table var-tablep)
   :short "Add a block scope to a variable table."
   :long
@@ -161,13 +170,13 @@
     "We add the empty set (of variables)
      to the front of the sequence.
      This is used when a block is entered."))
-  (cons nil (var-table-fix vartable))
+  (cons nil (var-table-fix vartab))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define var-table-add-var ((var identp) (type typep) (vartable var-tablep))
-  :returns (mv (okp booleanp) (new-vartable var-tablep))
+(define var-table-add-var ((var identp) (type typep) (vartab var-tablep))
+  :returns (mv (okp booleanp) (new-vartab var-tablep))
   :short "Add a variable to (the innermost block of) a variable table."
   :long
   (xdoc::topstring
@@ -178,11 +187,11 @@
      along with @('t') as first result."))
   (b* ((var (ident-fix var))
        (type (type-fix type))
-       (vartable (var-table-fix vartable))
-       (varscope (car vartable))
-       ((when (omap::in var varscope)) (mv nil vartable))
+       (vartab (var-table-fix vartab))
+       (varscope (car vartab))
+       ((when (omap::in var varscope)) (mv nil vartab))
        (new-varscope (omap::update var type varscope)))
-    (mv t (cons new-varscope (cdr vartable))))
+    (mv t (cons new-varscope (cdr vartab))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -223,7 +232,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define fun-table-lookup ((fun identp) (funtable fun-tablep))
+(define fun-table-lookup ((fun identp) (funtab fun-tablep))
   :returns (fun-type fun-type-optionp
                      :hints (("Goal" :in-theory (enable fun-type-optionp))))
   :short "Look up a function in a function table."
@@ -232,13 +241,13 @@
    (xdoc::p
     "We return the type of the function, if the function is present.
      Otherwise, we return @('nil')."))
-  (cdr (omap::in (ident-fix fun) (fun-table-fix funtable)))
+  (cdr (omap::in (ident-fix fun) (fun-table-fix funtab)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define fun-table-init ()
-  :returns (funtable fun-tablep)
+  :returns (funtab fun-tablep)
   :short "Create an initial function table."
   :long
   (xdoc::topstring
@@ -248,8 +257,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define fun-table-add-fun ((fun identp) (type fun-typep) (funtable fun-tablep))
-  :returns (mv (okp booleanp) (new-funtable fun-tablep))
+(define fun-table-add-fun ((fun identp) (type fun-typep) (funtab fun-tablep))
+  :returns (mv (okp booleanp) (new-funtab fun-tablep))
   :short "Add a function with a function type to a function table."
   :long
   (xdoc::topstring
@@ -260,35 +269,10 @@
      along with @('t') as first result."))
   (b* ((fun (ident-fix fun))
        (type (fun-type-fix type))
-       (funtable (fun-table-fix funtable))
-       ((when (set::in fun funtable)) (mv nil funtable)))
-    (mv t (omap::update fun type funtable)))
+       (funtab (fun-table-fix funtab))
+       ((when (set::in fun funtab)) (mv nil funtab)))
+    (mv t (omap::update fun type funtab)))
   :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defprod sym-table
-  :short "Fixtype of symbol tables."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "A symbol table consists of
-     a function table
-     and a variable table.")
-   (xdoc::p
-    "In the future, this may be extended with tables for structs etc."))
-  ((functions fun-table)
-   (variables var-table))
-  :pred sym-tablep)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define irr-sym-table ()
-  :returns (symtab sym-tablep)
-  :short "An irrelevant symbol table, usable as a dummy return value."
-  (with-guard-checking :none (ec-call (sym-table-fix :irrelevant)))
-  ///
-  (in-theory (disable (:e irr-sym-table))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -300,7 +284,8 @@
    (xdoc::p
     "We check whether the underlying ACL2 string satisfies the conditions
      described in Section `C identifiers' of @(tsee atc).
-     As noted there, C18 allows a possibly broader range of valid identifiers,
+     As noted there, [C:6.4.2] allows
+     a possibly broader range of valid identifiers,
      but ATC only generates this kind of portable identifiers."))
   (atc-ident-stringp (ident->name id))
   :hooks (:fix))
@@ -422,18 +407,15 @@
      but for now all our expressions have type @('int'),
      so there is no need to return this."))
 
-  (define expr-check ((e exprp) (symtab sym-tablep))
+  (define expr-check ((e exprp) (funtab fun-tablep) (vartab var-tablep))
     :returns (yes/no booleanp)
     (expr-case e
                :ident (and (ident-check e.get)
-                           (var-table-lookup
-                            e.get (sym-table->variables symtab))
+                           (var-table-lookup e.get vartab)
                            t)
                :const (const-check e.get)
-               :call (and (expr-list-check e.args symtab)
-                          (b* ((ftype
-                                (fun-table-lookup
-                                 e.fun (sym-table->functions symtab))))
+               :call (and (expr-list-check e.args funtab vartab)
+                          (b* ((ftype (fun-table-lookup e.fun funtab)))
                             (and ftype
                                  (= (len (fun-type->inputs ftype))
                                     (len e.args)))))
@@ -442,21 +424,23 @@
                :preinc nil
                :predec nil
                :unary (and (unop-check e.op)
-                           (expr-check e.arg symtab))
+                           (expr-check e.arg funtab vartab))
                :cast nil
                :binary (and (binop-check e.op)
-                            (expr-check e.arg1 symtab)
-                            (expr-check e.arg2 symtab))
-               :cond (and (expr-check e.test symtab)
-                          (expr-check e.then symtab)
-                          (expr-check e.else symtab)))
+                            (expr-check e.arg1 funtab vartab)
+                            (expr-check e.arg2 funtab vartab))
+               :cond (and (expr-check e.test funtab vartab)
+                          (expr-check e.then funtab vartab)
+                          (expr-check e.else funtab vartab)))
     :measure (expr-count e))
 
-  (define expr-list-check ((es expr-listp) (symtab sym-tablep))
+  (define expr-list-check ((es expr-listp)
+                           (funtab fun-tablep)
+                           (vartab var-tablep))
     :returns (yes/no booleanp)
     (or (endp es)
-        (and (expr-check (car es) symtab)
-             (expr-list-check (cdr es) symtab)))
+        (and (expr-check (car es) funtab vartab)
+             (expr-list-check (cdr es) funtab vartab)))
     :measure (expr-list-count es))
 
   ///
@@ -491,23 +475,20 @@
      with the variable table prior to the extension.
      In fact, a compound statement does not update the symbol table."))
 
-  (define stmt-check ((s stmtp) (symtab sym-tablep))
+  (define stmt-check ((s stmtp) (funtab fun-tablep) (vartab var-tablep))
     :returns (yes/no booleanp)
     (stmt-case
      s
      :labeled nil
-     :compound (b* ((vartable (sym-table->variables symtab))
-                    (ext-vartable (var-table-add-block vartable))
-                    (ext-symtab (change-sym-table symtab
-                                                  :variables ext-vartable)))
-                 (block-item-list-check s.items ext-symtab))
+     :compound (b* ((ext-vartab (var-table-add-block vartab)))
+                 (block-item-list-check s.items funtab ext-vartab))
      :expr nil
      :null nil
-     :if (and (expr-check s.test symtab)
-              (stmt-check s.then symtab))
-     :ifelse (and (expr-check s.test symtab)
-                  (stmt-check s.then symtab)
-                  (stmt-check s.else symtab))
+     :if (and (expr-check s.test funtab vartab)
+              (stmt-check s.then funtab vartab))
+     :ifelse (and (expr-check s.test funtab vartab)
+                  (stmt-check s.then funtab vartab)
+                  (stmt-check s.else funtab vartab))
      :switch nil
      :while nil
      :dowhile nil
@@ -516,35 +497,37 @@
      :continue nil
      :break nil
      :return (and s.value
-                  (expr-check s.value symtab)))
+                  (expr-check s.value funtab vartab)))
     :measure (stmt-count s))
 
-  (define block-item-check ((item block-itemp) (symtab sym-tablep))
-    :returns (mv (yes/no booleanp) (new-symtab sym-tablep))
+  (define block-item-check ((item block-itemp)
+                            (funtab fun-tablep)
+                            (vartab var-tablep))
+    :returns (mv (yes/no booleanp) (new-vartab var-tablep))
     (block-item-case
      item
      :decl (b* (((decl decl) item.get)
                 ((unless (and (tyspecseq-check decl.type)
                               (ident-check decl.name)
-                              (expr-check decl.init symtab)))
-                 (mv nil (sym-table-fix symtab)))
-                (vartable (sym-table->variables symtab))
-                ((mv okp new-vartable)
+                              (expr-check decl.init funtab vartab)))
+                 (mv nil (var-table-fix vartab)))
+                ((mv okp new-vartab)
                  (var-table-add-var decl.name
                                     (type-name-to-type (tyname decl.type))
-                                    vartable))
-                ((when (not okp)) (mv nil (sym-table-fix symtab)))
-                (new-symtab (change-sym-table symtab :variables new-vartable)))
-             (mv t new-symtab))
-     :stmt (mv (stmt-check item.get symtab) (sym-table-fix symtab)))
+                                    vartab))
+                ((when (not okp)) (mv nil (var-table-fix vartab))))
+             (mv t new-vartab))
+     :stmt (mv (stmt-check item.get funtab vartab) (var-table-fix vartab)))
     :measure (block-item-count item))
 
-  (define block-item-list-check ((items block-item-listp) (symtab sym-tablep))
+  (define block-item-list-check ((items block-item-listp)
+                                 (funtab fun-tablep)
+                                 (vartab var-tablep))
     :returns (yes/no booleanp)
     (or (endp items)
-        (b* (((mv okp symtab) (block-item-check (car items) symtab))
+        (b* (((mv okp vartab) (block-item-check (car items) funtab vartab))
              ((when (not okp)) nil))
-          (block-item-list-check (cdr items) symtab)))
+          (block-item-list-check (cdr items) funtab vartab)))
     :measure (block-item-list-count items))
 
   :verify-guards nil ; done below
@@ -555,9 +538,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define param-decl-check ((param param-declp) (symtab sym-tablep))
+(define param-decl-check ((param param-declp) (vartab var-tablep))
   :returns (mv (yes/no booleanp)
-               (new-symtab sym-tablep))
+               (new-vartab var-tablep))
   :short "Check a parameter declaration."
   :long
   (xdoc::topstring
@@ -570,39 +553,39 @@
      If all checks succeed, we return the static symtabironment
      updated with the parameter."))
   (b* (((param-decl param) param)
-       ((unless (tyspecseq-check param.type)) (mv nil (irr-sym-table)))
-       ((unless (ident-check param.name)) (mv nil (irr-sym-table)))
-       (vartable (sym-table->variables symtab))
-       ((mv okp new-vartable)
+       ((unless (tyspecseq-check param.type)) (mv nil (irr-var-table)))
+       ((unless (ident-check param.name)) (mv nil (irr-var-table)))
+       ((mv okp new-vartab)
         (var-table-add-var param.name
                            (type-name-to-type (tyname param.type))
-                           vartable))
-       ((when (not okp)) (mv nil (irr-sym-table))))
-    (mv t (change-sym-table symtab :variables new-vartable)))
+                           vartab))
+       ((when (not okp)) (mv nil (irr-var-table))))
+    (mv t new-vartab))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define param-decl-list-check ((params param-decl-listp) (symtab sym-tablep))
+(define param-decl-list-check ((params param-decl-listp) (vartab var-tablep))
   :returns (mv (yes/no booleanp)
-               (new-symtab sym-tablep))
+               (new-vartab var-tablep))
   :short "Check a list of parameter declaration."
   :long
   (xdoc::topstring
    (xdoc::p
     "We go through each element of the list,
-     calling @(tsee param-decl-check) and threading the symtabironment through."))
-  (b* (((when (endp params)) (mv t (sym-table-fix symtab)))
-       ((mv okp symtab) (param-decl-check (car params) symtab))
-       ((when (not okp)) (mv nil symtab)))
-    (param-decl-list-check (cdr params) symtab))
+     calling @(tsee param-decl-check)
+     and threading the variable table through."))
+  (b* (((when (endp params)) (mv t (var-table-fix vartab)))
+       ((mv okp vartab) (param-decl-check (car params) vartab))
+       ((when (not okp)) (mv nil vartab)))
+    (param-decl-list-check (cdr params) vartab))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define fundef-check ((fundef fundefp) (funtable fun-tablep))
+(define fundef-check ((fundef fundefp) (funtab fun-tablep))
   :returns (mv (yes/no booleanp)
-               (new-funtable fun-tablep))
+               (new-funtab fun-tablep))
   :short "Check a function definition."
   :long
   (xdoc::topstring
@@ -628,46 +611,46 @@
                                         fundef.params)))
                              :output (type-name-to-type
                                       (tyname fundef.result))))
-       ((mv okp funtable) (fun-table-add-fun fundef.name ftype funtable))
-       ((when (not okp)) (mv nil funtable))
-       ((unless (ident-check fundef.name)) (mv nil funtable))
-       ((unless (tyspecseq-check fundef.result)) (mv nil funtable))
-       (symtab (make-sym-table :functions funtable :variables (var-table-init)))
-       ((mv okp symtab) (param-decl-list-check fundef.params symtab))
-       ((when (not okp)) (mv nil funtable))
-       ((unless (stmt-check fundef.body symtab)) (mv nil funtable)))
-    (mv t funtable))
+       ((mv okp funtab) (fun-table-add-fun fundef.name ftype funtab))
+       ((when (not okp)) (mv nil funtab))
+       ((unless (ident-check fundef.name)) (mv nil funtab))
+       ((unless (tyspecseq-check fundef.result)) (mv nil funtab))
+       (vartab (var-table-init))
+       ((mv okp vartab) (param-decl-list-check fundef.params vartab))
+       ((when (not okp)) (mv nil funtab))
+       ((unless (stmt-check fundef.body funtab vartab)) (mv nil funtab)))
+    (mv t funtab))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ext-decl-check ((ext ext-declp) (funtable fun-tablep))
+(define ext-decl-check ((ext ext-declp) (funtab fun-tablep))
   :returns (mv (yes/no booleanp)
-               (new-funtable fun-tablep))
+               (new-funtab fun-tablep))
   :short "Check an external declaration."
   :long
   (xdoc::topstring
    (xdoc::p
     "For now we only allow function definitions."))
   (ext-decl-case ext
-                 :fundef (fundef-check ext.get funtable)
-                 :decl (mv nil (fun-table-fix funtable)))
+                 :fundef (fundef-check ext.get funtab)
+                 :decl (mv nil (fun-table-fix funtab)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ext-decl-list-check ((exts ext-decl-listp) (funtable fun-tablep))
+(define ext-decl-list-check ((exts ext-decl-listp) (funtab fun-tablep))
   :returns (mv (yes/no booleanp)
-               (new-funtable fun-tablep))
+               (new-funtab fun-tablep))
   :short "Check a list of external declarations."
   :long
   (xdoc::topstring
    (xdoc::p
     "We thread the function table through."))
-  (b* (((when (endp exts)) (mv t (fun-table-fix funtable)))
-       ((mv okp funtable) (ext-decl-check (car exts) funtable))
-       ((unless okp) (mv nil funtable)))
-    (ext-decl-list-check (cdr exts) funtable))
+  (b* (((when (endp exts)) (mv t (fun-table-fix funtab)))
+       ((mv okp funtab) (ext-decl-check (car exts) funtab))
+       ((unless okp) (mv nil funtab)))
+    (ext-decl-list-check (cdr exts) funtab))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -683,7 +666,7 @@
      threading the function table through,
      and discarding the final one (it served its pupose)."))
   (b* (((transunit tunit) tunit)
-       (funtable (fun-table-init))
-       ((mv okp &) (ext-decl-list-check tunit.decls funtable)))
+       (funtab (fun-table-init))
+       ((mv okp &) (ext-decl-list-check tunit.decls funtab)))
     okp)
   :hooks (:fix))
