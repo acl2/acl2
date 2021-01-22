@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2020 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -14,8 +14,10 @@
 (include-book "abstract-syntax")
 (include-book "portable-ascii-identifiers")
 (include-book "types")
+(include-book "errors")
 
 (include-book "kestrel/fty/defomap" :dir :system)
+(include-book "kestrel/fty/defunit" :dir :system)
 (include-book "kestrel/fty/sbyte32" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -120,6 +122,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defresult var-table "variable tables")
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defrule var-tablep-when-var-table-resultp-and-not-errorp
+  (implies (and (var-table-resultp x)
+                (not (errorp x)))
+           (var-tablep x))
+  :rule-classes ((:rewrite :backchain-limit-lst 0))
+  :enable var-table-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define irr-var-table ()
   :returns (vartab var-tablep)
   :short "An irrelevant variable table, usable as a dummy return value."
@@ -176,22 +191,21 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define var-table-add-var ((var identp) (type typep) (vartab var-tablep))
-  :returns (mv (okp booleanp) (new-vartab var-tablep))
+  :returns (new-vartab var-table-resultp
+                       :hints (("Goal" :in-theory (enable var-table-resultp))))
   :short "Add a variable to (the innermost block of) a variable table."
   :long
   (xdoc::topstring
    (xdoc::p
-    "If the block already has a variable with that name,
-     it is an error: we return @('nil') as first result.
-     Otherwise, we add the variable and return the variable table,
-     along with @('t') as first result."))
+    "If the block already has a variable with that name, it is an error.
+     Otherwise, we add the variable and return the variable table."))
   (b* ((var (ident-fix var))
        (type (type-fix type))
        (vartab (var-table-fix vartab))
        (varscope (car vartab))
-       ((when (omap::in var varscope)) (mv nil vartab))
+       ((when (omap::in var varscope)) (error (list :duplicate-var var)))
        (new-varscope (omap::update var type varscope)))
-    (mv t (cons new-varscope (cdr vartab))))
+    (cons new-varscope (cdr vartab)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -232,6 +246,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defresult fun-table "function tables")
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defrule fun-tablep-when-fun-table-resultp-and-not-errorp
+  (implies (and (fun-table-resultp x)
+                (not (errorp x)))
+           (fun-tablep x))
+  :rule-classes ((:rewrite :backchain-limit-lst 0))
+  :enable fun-table-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define fun-table-lookup ((fun identp) (funtab fun-tablep))
   :returns (fun-type fun-type-optionp
                      :hints (("Goal" :in-theory (enable fun-type-optionp))))
@@ -258,26 +285,43 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define fun-table-add-fun ((fun identp) (type fun-typep) (funtab fun-tablep))
-  :returns (mv (okp booleanp) (new-funtab fun-tablep))
+  :returns (new-funtab fun-table-resultp)
   :short "Add a function with a function type to a function table."
   :long
   (xdoc::topstring
    (xdoc::p
-    "If the table already has a function with that name,
-     it is an error: we return @('nil') as first result.
-     Otherwise, we add the function and return the function table,
-     along with @('t') as first result."))
+    "If the table already has a function with that name, it is an error.
+     Otherwise, we add the function and return the function table."))
   (b* ((fun (ident-fix fun))
        (type (fun-type-fix type))
        (funtab (fun-table-fix funtab))
-       ((when (set::in fun funtab)) (mv nil funtab)))
-    (mv t (omap::update fun type funtab)))
+       ((when (set::in fun funtab)) (error (list :duplicate-fun fun))))
+    (omap::update fun type funtab))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defunit wellformed
+  :short "Fixtype of the well-formedness indicator."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is returned by the ACL2 static semantic checking functions
+     when an abstract syntactic entity passes the static semantic checks
+     and there is no additional information to return.
+     When the static semantic checks fail, those functions return error instead;
+     see @(tsee wellformed-result)."))
+  :value :wellformed
+  :pred wellformedp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult wellformed "the @(tsee wellformed) indicator")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define ident-check ((id identp))
-  :returns (yes/no booleanp)
+  :returns (wf? wellformed-resultp)
   :short "Check an identifier."
   :long
   (xdoc::topstring
@@ -287,13 +331,15 @@
      As noted there, [C:6.4.2] allows
      a possibly broader range of valid identifiers,
      but ATC only generates this kind of portable identifiers."))
-  (atc-ident-stringp (ident->name id))
+  (if (atc-ident-stringp (ident->name id))
+      :wellformed
+    (error (list :illegal/unsupported-ident (ident-fix id))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define iconst-check ((ic iconstp))
-  :returns (yes/no booleanp)
+  :returns (wf? wellformed-resultp)
   :short "Check an integer constant."
   :long
   (xdoc::topstring
@@ -306,17 +352,23 @@
      and therefore that its numberic value must in that type's range.
      Given our current definition of @(tsee sintp),
      the value must fit in 32 bits (with the sign bit being 0)."))
-  (b* (((iconst ic) ic))
-    (and (acl2::sbyte32p ic.value)
-         (equal ic.base (iconst-base-dec))
-         (not ic.unsignedp)
-         (equal ic.type (iconst-tysuffix-none))))
+  (b* ((ic (iconst-fix ic))
+       ((iconst ic) ic)
+       ((unless (acl2::sbyte32p ic.value))
+        (error (list :iconst-out-of-range ic)))
+       ((unless (equal ic.base (iconst-base-dec)))
+        (error (list :unsupported-iconst-base ic)))
+       ((unless (not ic.unsignedp))
+        (error (list :unsupported-iconst-suffix ic)))
+       ((unless (equal ic.type (iconst-tysuffix-none)))
+        (error (list :unsupported-iconst-suffix ic))))
+    :wellformed)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define const-check ((c constp))
-  :returns (yes/no booleanp)
+  :returns (wf? wellformed-resultp)
   :short "Check a constant."
   :long
   (xdoc::topstring
@@ -326,71 +378,9 @@
      anyhow."))
   (const-case c
               :int (iconst-check c.get)
-              :float nil
-              :enum nil
-              :char nil)
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define unop-check ((op unopp))
-  :returns (yes/no booleanp)
-  :short "Check a unary operator."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "In C they are all acceptable of course,
-     but having this predicate lets us limit the supported ones if desired.
-     Currently we support all the ones in the abstract syntax."))
-  (and (member-eq (unop-kind op) '(:plus :minus :bitnot :lognot)) t)
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define binop-check ((op binopp))
-  :returns (yes/no booleanp)
-  :short "Check a binary operator."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "In C they are all acceptable of course,
-     but having this predicate lets us limit the supported ones if desired.
-     Currently we support
-     all the non-side-effecting ones in the abstract syntax
-     (i.e. not the assignment operators."))
-  (and (member-eq (binop-kind op) '(:mul :div :rem
-                                    :add :sub
-                                    :shl :shr
-                                    :lt :gt :le :ge
-                                    :eq :ne
-                                    :bitand :bitxor :bitior
-                                    :logand :logor))
-       t)
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define tyspecseq-check ((tss tyspecseqp))
-  :returns (yes/no booleanp)
-  :short "Check a sequence of type specifiers."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "In C they are all acceptable of course,
-     but for now we only allow the one for @('int')."))
-  (tyspecseq-case tss :sint)
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define tyname-check ((tn tynamep))
-  :returns (yes/no booleanp)
-  :short "Check a type name."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We check the underlying sequence of type specifiers."))
-  (tyspecseq-check (tyname->specs tn))
+              :float (error (list :unsupported-float-const (const-fix c)))
+              :enum (error (list :unsupported-enum-const (const-fix c)))
+              :char (error (list :unsupported-char-const (const-fix c))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -403,44 +393,87 @@
     "For now we only allow certain kinds of expressions.
      Note that these are all without side effects (inductively).")
    (xdoc::p
-    "Normally a static semantics would also return a type for each expression,
-     but for now all our expressions have type @('int'),
-     so there is no need to return this."))
+    "We return the type of the expression if all the checks are satisfied.")
+   (xdoc::p
+    "For now we only support the @('int') type,
+     so everything has to be @('int').
+     In particular, the operands of the unary, binary, and ternary operators."))
 
   (define expr-check ((e exprp) (funtab fun-tablep) (vartab var-tablep))
-    :returns (yes/no booleanp)
-    (expr-case e
-               :ident (and (ident-check e.get)
-                           (var-table-lookup e.get vartab)
-                           t)
-               :const (const-check e.get)
-               :call (and (expr-list-check e.args funtab vartab)
-                          (b* ((ftype (fun-table-lookup e.fun funtab)))
-                            (and ftype
-                                 (= (len (fun-type->inputs ftype))
-                                    (len e.args)))))
-               :postinc nil
-               :postdec nil
-               :preinc nil
-               :predec nil
-               :unary (and (unop-check e.op)
-                           (expr-check e.arg funtab vartab))
-               :cast nil
-               :binary (and (binop-check e.op)
-                            (expr-check e.arg1 funtab vartab)
-                            (expr-check e.arg2 funtab vartab))
-               :cond (and (expr-check e.test funtab vartab)
-                          (expr-check e.then funtab vartab)
-                          (expr-check e.else funtab vartab)))
-    :measure (expr-count e))
+    :returns (type type-resultp)
+    (expr-case
+     e
+     :ident (b* ((wf (ident-check e.get))
+                 ((when (errorp wf)) (error (list :var-error wf)))
+                 (type (var-table-lookup e.get vartab))
+                 ((unless type) (error (list :var-not-found e.get))))
+              type)
+     :const (b* ((wf (const-check e.get))
+                 ((when (errorp wf)) (error (list :const-error wf))))
+              (type-sint))
+     :call (b* ((types (expr-list-check e.args funtab vartab))
+                ((when (errorp types))
+                 (error (list :call-args-error e.fun e.args types)))
+                (ftype (fun-table-lookup e.fun funtab))
+                ((unless ftype) (error (list :fun-not-found e.fun)))
+                ((unless (equal (fun-type->inputs ftype) types))
+                 (error (list :call-args-mistype e.fun e.args
+                              :required (fun-type->inputs ftype)
+                              :supplied types))))
+             (fun-type->output ftype))
+     :postinc (error (list :unsupported-postinc e.arg))
+     :postdec (error (list :unsupported-postdec e.arg))
+     :preinc (error (list :unsupported-preinc e.arg))
+     :predec (error (list :unsupported-predec e.arg))
+     :unary (b* ((arg-type (expr-check e.arg funtab vartab))
+                 ((when (errorp arg-type))
+                  (error (list :unary-error arg-type)))
+                 ((unless (equal arg-type (type-sint)))
+                  (error (list :unary-mistype e.op e.arg
+                               :required (type-sint)
+                               :supplied arg-type))))
+              (type-sint))
+     :cast (error (list :unsupported-cast e.type e.arg))
+     :binary (b* ((arg1-type (expr-check e.arg1 funtab vartab))
+                  ((when (errorp arg1-type))
+                   (error (list :binary-left-error arg1-type)))
+                  (arg2-type (expr-check e.arg2 funtab vartab))
+                  ((when (errorp arg2-type))
+                   (error (list :binary-right-error arg2-type)))
+                  ((unless (and (equal arg1-type (type-sint))
+                                (equal arg2-type (type-sint))))
+                   (error (list :binary-mistype e.op e.arg1 e.arg2
+                                :required (type-sint) (type-sint)
+                                :supplied arg1-type arg2-type))))
+               (type-sint))
+     :cond (b* ((test-type (expr-check e.test funtab vartab))
+                ((when (errorp test-type))
+                 (error (list :cond-test-error test-type)))
+                (then-type (expr-check e.then funtab vartab))
+                ((when (errorp then-type))
+                 (error (list :cond-then-error then-type)))
+                (else-type (expr-check e.else funtab vartab))
+                ((when (errorp else-type))
+                 (error (list :cond-else-error else-type)))
+                ((unless (and (equal test-type (type-sint))
+                              (equal then-type (type-sint))
+                              (equal else-type (type-sint))))
+                 (error (list :cond-mistype e.test e.then e.else
+                              :required (type-sint) (type-sint) (type-sint)
+                              :supplied test-type then-type else-type))))
+             (type-sint)))
+     :measure (expr-count e))
 
   (define expr-list-check ((es expr-listp)
                            (funtab fun-tablep)
                            (vartab var-tablep))
-    :returns (yes/no booleanp)
-    (or (endp es)
-        (and (expr-check (car es) funtab vartab)
-             (expr-list-check (cdr es) funtab vartab)))
+    :returns (types type-list-resultp)
+    (b* (((when (endp es)) nil)
+         (type (expr-check (car es) funtab vartab))
+         ((when (errorp type)) type)
+         (types (expr-list-check (cdr es) funtab vartab))
+         ((when (errorp types)) types))
+      (cons type types))
     :measure (expr-list-count es))
 
   ///
@@ -476,58 +509,70 @@
      In fact, a compound statement does not update the symbol table."))
 
   (define stmt-check ((s stmtp) (funtab fun-tablep) (vartab var-tablep))
-    :returns (yes/no booleanp)
+    :returns (wf wellformed-resultp)
     (stmt-case
      s
-     :labeled nil
+     :labeled (error (list :unsupported-labeled s.label s.body))
      :compound (b* ((ext-vartab (var-table-add-block vartab)))
                  (block-item-list-check s.items funtab ext-vartab))
-     :expr nil
-     :null nil
-     :if (and (expr-check s.test funtab vartab)
-              (stmt-check s.then funtab vartab))
-     :ifelse (and (expr-check s.test funtab vartab)
-                  (stmt-check s.then funtab vartab)
-                  (stmt-check s.else funtab vartab))
-     :switch nil
-     :while nil
-     :dowhile nil
-     :for nil
-     :goto nil
-     :continue nil
-     :break nil
-     :return (and s.value
-                  (expr-check s.value funtab vartab)))
+     :expr (error (list :unsupported-expr-stmt s.get))
+     :null (error :unsupported-null-stmt)
+     :if (error (list :unsupported-if-without-else s.test s.then))
+     :ifelse (b* ((type (expr-check s.test funtab vartab))
+                  ((when (errorp type)) (error (list :if-test-error type)))
+                  ((unless (equal type (type-sint)))
+                   (error (list :if-test-mistype s.test s.then s.else
+                                :required (type-sint)
+                                :supplied type)))
+                  (wf (stmt-check s.then funtab vartab))
+                  ((when (errorp wf)) (error (list :if-then-error wf)))
+                  (wf (stmt-check s.else funtab vartab))
+                  ((when (errorp wf)) (error (list :if-else-error wf))))
+               :wellformed)
+     :switch (error (list :unsupported-switch s.ctrl s.body))
+     :while (error (list :unsupported-while s.test s.body))
+     :dowhile (error (list :unsupported-dowhile s.body s.test))
+     :for (error (list :unsupported-for s.init s.test s.next s.body))
+     :goto (error (list :unsupported-goto s.target))
+     :continue (error :unsupported-continue)
+     :break (error :unsupported-break)
+     :return (b* (((unless s.value) (error (list :unsupported-return-void)))
+                  (type (expr-check s.value funtab vartab))
+                  ((when (errorp type)) (error (list :return-error type))))
+               :wellformed))
     :measure (stmt-count s))
 
   (define block-item-check ((item block-itemp)
                             (funtab fun-tablep)
                             (vartab var-tablep))
-    :returns (mv (yes/no booleanp) (new-vartab var-tablep))
+    :returns (new-vartab var-table-resultp)
     (block-item-case
      item
      :decl (b* (((decl decl) item.get)
-                ((unless (and (tyspecseq-check decl.type)
-                              (ident-check decl.name)
-                              (expr-check decl.init funtab vartab)))
-                 (mv nil (var-table-fix vartab)))
-                ((mv okp new-vartab)
-                 (var-table-add-var decl.name
-                                    (type-name-to-type (tyname decl.type))
-                                    vartab))
-                ((when (not okp)) (mv nil (var-table-fix vartab))))
-             (mv t new-vartab))
-     :stmt (mv (stmt-check item.get funtab vartab) (var-table-fix vartab)))
+                (wf (ident-check decl.name))
+                ((when (errorp wf)) (error (list :decl-error-var wf)))
+                (type (type-name-to-type (tyname decl.type)))
+                (init-type (expr-check decl.init funtab vartab))
+                ((when (errorp init-type))
+                 (error (list :decl-error-init init-type)))
+                ((unless (equal init-type type))
+                 (error (list :decl-mistype decl.type decl.name decl.init
+                              :required type
+                              :supplied init-type))))
+             (var-table-add-var decl.name type vartab))
+     :stmt (b* ((wf (stmt-check item.get funtab vartab))
+                ((when (errorp wf)) (error (list :block-item-stmt-error wf))))
+             (var-table-fix vartab)))
     :measure (block-item-count item))
 
   (define block-item-list-check ((items block-item-listp)
                                  (funtab fun-tablep)
                                  (vartab var-tablep))
-    :returns (yes/no booleanp)
-    (or (endp items)
-        (b* (((mv okp vartab) (block-item-check (car items) funtab vartab))
-             ((when (not okp)) nil))
-          (block-item-list-check (cdr items) funtab vartab)))
+    :returns (wf wellformed-resultp)
+    (b* (((when (endp items)) :wellformed)
+         (vartab (block-item-check (car items) funtab vartab))
+         ((when (errorp vartab)) (error (list :block-item-error vartab))))
+      (block-item-list-check (cdr items) funtab vartab))
     :measure (block-item-list-count items))
 
   :verify-guards nil ; done below
@@ -539,35 +584,30 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define param-decl-check ((param param-declp) (vartab var-tablep))
-  :returns (mv (yes/no booleanp)
-               (new-vartab var-tablep))
+  :returns (new-vartab var-table-resultp)
   :short "Check a parameter declaration."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The static symtabironment passed as input is the one
+    "The variable table passed as input is the one
      engendered by the parameter declarations that precede this one.
      We check the components of the parameter declaration
      and that the parameter can be added to the variable table;
      the latter check fails if there is a duplicate parameter.
-     If all checks succeed, we return the static symtabironment
+     If all checks succeed, we return the variable table
      updated with the parameter."))
   (b* (((param-decl param) param)
-       ((unless (tyspecseq-check param.type)) (mv nil (irr-var-table)))
-       ((unless (ident-check param.name)) (mv nil (irr-var-table)))
-       ((mv okp new-vartab)
-        (var-table-add-var param.name
-                           (type-name-to-type (tyname param.type))
-                           vartab))
-       ((when (not okp)) (mv nil (irr-var-table))))
-    (mv t new-vartab))
+       (wf (ident-check param.name))
+       ((when (errorp wf)) (error (list :param-error wf))))
+    (var-table-add-var param.name
+                       (type-name-to-type (tyname param.type))
+                       vartab))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define param-decl-list-check ((params param-decl-listp) (vartab var-tablep))
-  :returns (mv (yes/no booleanp)
-               (new-vartab var-tablep))
+  :returns (new-vartab var-table-resultp)
   :short "Check a list of parameter declaration."
   :long
   (xdoc::topstring
@@ -575,17 +615,16 @@
     "We go through each element of the list,
      calling @(tsee param-decl-check)
      and threading the variable table through."))
-  (b* (((when (endp params)) (mv t (var-table-fix vartab)))
-       ((mv okp vartab) (param-decl-check (car params) vartab))
-       ((when (not okp)) (mv nil vartab)))
+  (b* (((when (endp params)) (var-table-fix vartab))
+       (vartab (param-decl-check (car params) vartab))
+       ((when (errorp vartab)) (error (list :param-error vartab))))
     (param-decl-list-check (cdr params) vartab))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define fundef-check ((fundef fundefp) (funtab fun-tablep))
-  :returns (mv (yes/no booleanp)
-               (new-funtab fun-tablep))
+  :returns (new-funtab fun-table-resultp)
   :short "Check a function definition."
   :long
   (xdoc::topstring
@@ -611,22 +650,22 @@
                                         fundef.params)))
                              :output (type-name-to-type
                                       (tyname fundef.result))))
-       ((mv okp funtab) (fun-table-add-fun fundef.name ftype funtab))
-       ((when (not okp)) (mv nil funtab))
-       ((unless (ident-check fundef.name)) (mv nil funtab))
-       ((unless (tyspecseq-check fundef.result)) (mv nil funtab))
+       (funtab (fun-table-add-fun fundef.name ftype funtab))
+       ((when (errorp funtab)) (error (list :fundef funtab)))
+       (wf (ident-check fundef.name))
+       ((when (errorp wf)) (error (list :fundef-name-error wf)))
        (vartab (var-table-init))
-       ((mv okp vartab) (param-decl-list-check fundef.params vartab))
-       ((when (not okp)) (mv nil funtab))
-       ((unless (stmt-check fundef.body funtab vartab)) (mv nil funtab)))
-    (mv t funtab))
+       (vartab (param-decl-list-check fundef.params vartab))
+       ((when (errorp vartab)) (error (list :fundef-param-error vartab)))
+       (wf (stmt-check fundef.body funtab vartab))
+       ((when (errorp wf)) (error (list :fundef-body-error wf))))
+    funtab)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ext-decl-check ((ext ext-declp) (funtab fun-tablep))
-  :returns (mv (yes/no booleanp)
-               (new-funtab fun-tablep))
+  :returns (new-funtab fun-table-resultp)
   :short "Check an external declaration."
   :long
   (xdoc::topstring
@@ -634,29 +673,28 @@
     "For now we only allow function definitions."))
   (ext-decl-case ext
                  :fundef (fundef-check ext.get funtab)
-                 :decl (mv nil (fun-table-fix funtab)))
+                 :decl (fun-table-fix funtab))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ext-decl-list-check ((exts ext-decl-listp) (funtab fun-tablep))
-  :returns (mv (yes/no booleanp)
-               (new-funtab fun-tablep))
+  :returns (new-funtab fun-table-resultp)
   :short "Check a list of external declarations."
   :long
   (xdoc::topstring
    (xdoc::p
     "We thread the function table through."))
-  (b* (((when (endp exts)) (mv t (fun-table-fix funtab)))
-       ((mv okp funtab) (ext-decl-check (car exts) funtab))
-       ((unless okp) (mv nil funtab)))
+  (b* (((when (endp exts)) (fun-table-fix funtab))
+       (funtab (ext-decl-check (car exts) funtab))
+       ((when (errorp funtab)) (error (list :ext-decl-error funtab))))
     (ext-decl-list-check (cdr exts) funtab))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define transunit-check ((tunit transunitp))
-  :returns (yes/no booleanp)
+  :returns (wf wellformed-resultp)
   :short "Check a translation unit."
   :long
   (xdoc::topstring
@@ -667,6 +705,7 @@
      and discarding the final one (it served its pupose)."))
   (b* (((transunit tunit) tunit)
        (funtab (fun-table-init))
-       ((mv okp &) (ext-decl-list-check tunit.decls funtab)))
-    okp)
+       (funtab (ext-decl-list-check tunit.decls funtab))
+       ((when (errorp funtab)) (error (list :transunit-error funtab))))
+    :wellformed)
   :hooks (:fix))
