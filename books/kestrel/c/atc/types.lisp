@@ -12,6 +12,7 @@
 (in-package "C")
 
 (include-book "abstract-syntax")
+(include-book "errors")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -72,6 +73,32 @@
   type
   :short "Fixtype of optional types."
   :pred type-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult type "types")
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defrule typep-when-type-resultp-and-not-errorp
+  (implies (and (type-resultp x)
+                (not (errorp x)))
+           (typep x))
+  :rule-classes ((:rewrite :backchain-limit-lst 0))
+  :enable type-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult type-list "lists of types")
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defrule type-listp-when-type-list-resultp-and-not-errorp
+  (implies (and (type-list-resultp x)
+                (not (errorp x)))
+           (type-listp x))
+  :rule-classes ((:rewrite :backchain-limit-lst 0))
+  :enable type-list-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
