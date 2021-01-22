@@ -56,11 +56,11 @@
      are rejected by this static semantics.")
    (xdoc::p
     "This static semantics includes functions
-     that checks whether the abstract syntactic entities
+     that check whether the abstract syntactic entities
      satisfy the needed constraints.
-     The checking functions may return booleans,
-     or richer information that is used to check constraints
-     on enclosing abstract syntactic entities."))
+     If the constraints are satisfied,
+     additional information (e.g. types) may be returned,
+     used to check constraints on enclosing abstract syntactic entities."))
   :order-subtopics t
   :default-parent t)
 
