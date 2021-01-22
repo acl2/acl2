@@ -76,29 +76,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defresult type "types")
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defrule typep-when-type-resultp-and-not-errorp
-  (implies (and (type-resultp x)
-                (not (errorp x)))
-           (typep x))
-  :rule-classes ((:rewrite :backchain-limit-lst 0))
-  :enable type-resultp)
+(defresult type "types")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defresult type-list "lists of types")
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defrule type-listp-when-type-list-resultp-and-not-errorp
-  (implies (and (type-list-resultp x)
-                (not (errorp x)))
-           (type-listp x))
-  :rule-classes ((:rewrite :backchain-limit-lst 0))
-  :enable type-list-resultp)
+(defresult type-list "lists of types")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -122,16 +122,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defresult var-table "variable tables")
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defrule var-tablep-when-var-table-resultp-and-not-errorp
-  (implies (and (var-table-resultp x)
-                (not (errorp x)))
-           (var-tablep x))
-  :rule-classes ((:rewrite :backchain-limit-lst 0))
-  :enable var-table-resultp)
+(defresult var-table "variable tables")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -246,16 +237,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defresult fun-table "function tables")
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defrule fun-tablep-when-fun-table-resultp-and-not-errorp
-  (implies (and (fun-table-resultp x)
-                (not (errorp x)))
-           (fun-tablep x))
-  :rule-classes ((:rewrite :backchain-limit-lst 0))
-  :enable fun-table-resultp)
+(defresult fun-table "function tables")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -316,7 +298,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defresult wellformed "the @(tsee wellformed) indicator")
+(defresult wellformed "the @(tsee wellformed) indicator")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

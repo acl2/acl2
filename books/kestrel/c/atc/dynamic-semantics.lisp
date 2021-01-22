@@ -100,7 +100,7 @@
 
 (encapsulate ()
   (local (in-theory (enable sintp)))
-  (fty::defresult value-list "lists of values"))
+  (defresult value-list "lists of values"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -113,7 +113,7 @@
 
 (encapsulate ()
   (local (in-theory (enable sintp)))
-  (fty::defresult value-option "optional values"))
+  (defresult value-option "optional values"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -143,7 +143,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defresult scope "scopes")
+(defresult scope "scopes")
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -209,7 +209,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defresult denv "dynamic environments")
+(defresult denv "dynamic environments")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
