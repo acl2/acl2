@@ -339,7 +339,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define iconst-check ((ic iconstp))
-  :returns (wf? wellformed-resultp)
+  :returns (type type-resultp)
   :short "Check an integer constant."
   :long
   (xdoc::topstring
@@ -351,7 +351,11 @@
      This means that the integer constant must have type @('int'),
      and therefore that its numberic value must in that type's range.
      Given our current definition of @(tsee sintp),
-     the value must fit in 32 bits (with the sign bit being 0)."))
+     the value must fit in 32 bits (with the sign bit being 0).")
+   (xdoc::p
+    "If all the constraints are satisfied, we return the type of the constant.
+     This is always @('int') for now,
+     but eventually this will be generalized."))
   (b* ((ic (iconst-fix ic))
        ((iconst ic) ic)
        ((unless (acl2::sbyte32p ic.value))
@@ -362,13 +366,13 @@
         (error (list :unsupported-iconst-suffix ic)))
        ((unless (equal ic.type (iconst-tysuffix-none)))
         (error (list :unsupported-iconst-suffix ic))))
-    :wellformed)
+    (type-sint))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define const-check ((c constp))
-  :returns (wf? wellformed-resultp)
+  :returns (type type-resultp)
   :short "Check a constant."
   :long
   (xdoc::topstring
@@ -408,9 +412,7 @@
                  (type (var-table-lookup e.get vartab))
                  ((unless type) (error (list :var-not-found e.get))))
               type)
-     :const (b* ((wf (const-check e.get))
-                 ((when (errorp wf)) (error (list :const-error wf))))
-              (type-sint))
+     :const (const-check e.get)
      :call (b* ((types (expr-list-check e.args funtab vartab))
                 ((when (errorp types))
                  (error (list :call-args-error e.fun e.args types)))
