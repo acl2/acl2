@@ -32,6 +32,7 @@
 (include-book "soft/top")
 (include-book "solidity/top")
 (include-book "std/top")
+(include-book "typed-lists-light/doc")
 (include-book "utilities/top")
 (include-book "zcash/top")
 
