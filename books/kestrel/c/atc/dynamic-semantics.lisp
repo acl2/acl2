@@ -34,7 +34,7 @@
      the ACL2 code from which it is generated.
      Here we provide an initial formal dynamic semantics,
      which should support the generation of proofs
-     for an initial version of ATC.")
+     for the initial version of ATC.")
    (xdoc::p
     "This preliminary dynamic semantics may be extended in the future,
      and may be replaced by a more comprehensive model
@@ -189,12 +189,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod denv
-  :short "Fixtype of dynamic environments."
+(fty::defprod compustate
+  :short "Fixtype of computation states."
   :long
   (xdoc::topstring
    (xdoc::p
-    "A dynamic environment consists of
+    "A computation state consists of
      a function environment
      and a stack of frames.")
    (xdoc::p
@@ -205,55 +205,55 @@
      i.e. push is @(tsee cons), pop is @(tsee cdr), and top is @(tsee car)."))
   ((functions fun-env)
    (frames frame-list))
-  :pred denvp)
+  :pred compustatep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defresult denv "dynamic environments")
+(defresult compustate "computation states")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule not-denvp-of-error
-  (not (denvp (error x)))
-  :enable (denvp error))
+(defrule not-compustatep-of-error
+  (not (compustatep (error x)))
+  :enable (compustatep error))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define denv-nonempty-stack-p ((env denvp))
+(define compustate-nonempty-stack-p ((env compustatep))
   :returns (yes/no booleanp)
-  :short "Check if a dynamic environment has a non-empty call stack."
+  :short "Check if a computation state has a non-empty call stack."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is always satisfied when executing statements and expressions,
      because those statements and expressions must be
      in the body of some function that is executing."))
-  (consp (denv->frames env))
+  (consp (compustate->frames env))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define push-frame ((frame framep) (env denvp))
-  :returns (new-env denvp)
-  :short "Push a frame onto a dynamic environment's call stack."
-  (b* ((stack (denv->frames env))
+(define push-frame ((frame framep) (env compustatep))
+  :returns (new-env compustatep)
+  :short "Push a frame onto a computation state's call stack."
+  (b* ((stack (compustate->frames env))
        (new-stack (cons (frame-fix frame) stack)))
-    (change-denv env :frames new-stack))
+    (change-compustate env :frames new-stack))
   :hooks (:fix)
   ///
 
   (more-returns
-   (new-env denv-nonempty-stack-p
-            :hints (("Goal" :in-theory (enable denv-nonempty-stack-p))))))
+   (new-env compustate-nonempty-stack-p
+            :hints (("Goal" :in-theory (enable compustate-nonempty-stack-p))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define top-frame ((env denvp))
-  :guard (denv-nonempty-stack-p env)
+(define top-frame ((env compustatep))
+  :guard (compustate-nonempty-stack-p env)
   :returns (frame framep)
-  :short "Top frame of a dynamic environment's call stack."
-  (frame-fix (car (denv->frames env)))
-  :guard-hints (("Goal" :in-theory (enable denv-nonempty-stack-p)))
+  :short "Top frame of a computation state's call stack."
+  (frame-fix (car (compustate->frames env)))
+  :guard-hints (("Goal" :in-theory (enable compustate-nonempty-stack-p)))
   :hooks (:fix)
   ///
 
@@ -264,27 +264,27 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define pop-frame ((env denvp))
-  :guard (denv-nonempty-stack-p env)
-  :returns (new-env denvp)
-  :short "Pop a frame from a dynamic environment's non-empty call stack."
-  (b* ((stack (denv->frames env))
+(define pop-frame ((env compustatep))
+  :guard (compustate-nonempty-stack-p env)
+  :returns (new-env compustatep)
+  :short "Pop a frame from a computation state's non-empty call stack."
+  (b* ((stack (compustate->frames env))
        (new-stack (cdr stack)))
-    (change-denv env :frames new-stack))
+    (change-compustate env :frames new-stack))
   :hooks (:fix)
   ///
 
   (defrule pop-frame-of-push-frame
     (equal (pop-frame (push-frame frame env))
-           (denv-fix env))
+           (compustate-fix env))
     :enable push-frame))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define denv-inner-scope-p ((env denvp))
-  :guard (denv-nonempty-stack-p env)
+(define compustate-inner-scope-p ((env compustatep))
+  :guard (compustate-nonempty-stack-p env)
   :returns (yes/no booleanp)
-  :short "Check if a dynamic environment with a non-empty call stack
+  :short "Check if a computation state with a non-empty call stack
           has at least two scopes in the top frame."
   :long
   (xdoc::topstring
@@ -302,9 +302,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define enter-scope ((env denvp))
-  :guard (denv-nonempty-stack-p env)
-  :returns (new-env denvp)
+(define enter-scope ((env compustatep))
+  :guard (compustate-nonempty-stack-p env)
+  :returns (new-env compustatep)
   :short "Enter a scope."
   :long
   (xdoc::topstring
@@ -319,18 +319,18 @@
   :hooks (:fix)
   ///
   (more-returns
-   (new-env denv-nonempty-stack-p)
-   (new-env denv-inner-scope-p
-            :hints (("Goal" :in-theory (enable denv-inner-scope-p
+   (new-env compustate-nonempty-stack-p)
+   (new-env compustate-inner-scope-p
+            :hints (("Goal" :in-theory (enable compustate-inner-scope-p
                                                top-frame
                                                push-frame))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exit-scope ((env denvp))
-  :guard (and (denv-nonempty-stack-p env)
-              (denv-inner-scope-p env))
-  :returns (new-env denvp)
+(define exit-scope ((env compustatep))
+  :guard (and (compustate-nonempty-stack-p env)
+              (compustate-inner-scope-p env))
+  :returns (new-env compustatep)
   :short "Exit a scope."
   :long
   (xdoc::topstring
@@ -342,15 +342,15 @@
        (new-frame (change-frame frame :scopes new-scopes))
        (new-env (push-frame new-frame (pop-frame env))))
     new-env)
-  :guard-hints (("Goal" :in-theory (enable denv-inner-scope-p)))
+  :guard-hints (("Goal" :in-theory (enable compustate-inner-scope-p)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define lookup-var ((var identp) (env denvp))
-  :guard (denv-nonempty-stack-p env)
+(define lookup-var ((var identp) (env compustatep))
+  :guard (compustate-nonempty-stack-p env)
   :returns (result value-resultp)
-  :short "Look up a variable in a dynamic environment."
+  :short "Look up a variable in a computation state."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -363,7 +363,7 @@
      because the variables in other frames are not in scope
      for the C function in the top frame.")
    (xdoc::p
-    "Once we extend dynamic environment with global variables,
+    "Once we extend computation state with global variables,
      we will need to extend this ACL2 function
      to look for the variable among them,
      if it is not found in the scopes of the top frame."))
@@ -382,10 +382,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define add-var ((var identp) (val sintp) (env denvp))
-  :guard (denv-nonempty-stack-p env)
-  :returns (result denv-resultp)
-  :short "Add a variable to a dynamic environment."
+(define add-var ((var identp) (val sintp) (env compustatep))
+  :guard (compustate-nonempty-stack-p env)
+  :returns (result compustate-resultp)
+  :short "Add a variable to a computation state."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -408,21 +408,21 @@
   :hooks (:fix)
   ///
 
-  (defret denv-nonempty-stack-p-of-add-var-when-denv-nonempty-stack-p
-    (implies (and (denv-nonempty-stack-p env)
-                  (denv-result-case result :ok))
-             (denv-nonempty-stack-p (denv-result-ok->get result)))
-    :hints (("Goal" :in-theory (enable denv-result-ok->get
-                                       denv-result-kind))))
+  (defret compustate-nonempty-stack-p-of-add-var-when-compustate-nonempty-stack-p
+    (implies (and (compustate-nonempty-stack-p env)
+                  (compustate-result-case result :ok))
+             (compustate-nonempty-stack-p (compustate-result-ok->get result)))
+    :hints (("Goal" :in-theory (enable compustate-result-ok->get
+                                       compustate-result-kind))))
 
-  (defret denv-inner-scope-p-of-add-var-when-denv-inner-scope-p
-    (implies (and (denv-nonempty-stack-p env)
-                  (denv-inner-scope-p env)
-                  (denv-result-case result :ok))
-             (denv-inner-scope-p (denv-result-ok->get result)))
-    :hints (("Goal" :in-theory (enable denv-result-ok->get
-                                       denv-inner-scope-p
-                                       denv-result-kind)))))
+  (defret compustate-inner-scope-p-of-add-var-when-compustate-inner-scope-p
+    (implies (and (compustate-nonempty-stack-p env)
+                  (compustate-inner-scope-p env)
+                  (compustate-result-case result :ok))
+             (compustate-inner-scope-p (compustate-result-ok->get result)))
+    :hints (("Goal" :in-theory (enable compustate-result-ok->get
+                                       compustate-inner-scope-p
+                                       compustate-result-kind)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -466,14 +466,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-ident ((id identp) (env denvp))
-  :guard (denv-nonempty-stack-p env)
+(define exec-ident ((id identp) (env compustatep))
+  :guard (compustate-nonempty-stack-p env)
   :returns (result value-resultp)
   :short "Execute a variable."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We read the variable's value (if any) from the dynamic environment."))
+    "We read the variable's value (if any) from the computation state."))
   (lookup-var id env)
   :hooks (:fix))
 
@@ -686,8 +686,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define exec-expr ((e exprp) (env denvp) (limit natp))
-    :guard (denv-nonempty-stack-p env)
+  (define exec-expr ((e exprp) (env compustatep) (limit natp))
+    :guard (compustate-nonempty-stack-p env)
     :returns (result value-resultp)
     :parents (dynamic-semantics execution-functions)
     :short "Execute an expression."
@@ -730,8 +730,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define exec-expr-list ((es expr-listp) (env denvp) (limit natp))
-    :guard (denv-nonempty-stack-p env)
+  (define exec-expr-list ((es expr-listp) (env compustatep) (limit natp))
+    :guard (compustate-nonempty-stack-p env)
     :returns (result value-list-resultp)
     :parents (dynamic-semantics execution-functions)
     :short "Execute a list of expressions."
@@ -758,7 +758,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define exec-fun ((fun identp) (args value-listp) (env denvp) (limit natp))
+  (define exec-fun ((fun identp) (args value-listp) (env compustatep) (limit natp))
     :returns (result value-resultp)
     :parents (dynamic-semantics execution-functions)
     :short "Execution a function on argument values."
@@ -776,7 +776,7 @@
        There is no need to pop the frame
        because for now we are not threading environments through execution."))
     (b* (((when (zp limit)) (error :limit))
-         (fenv (denv->functions env))
+         (fenv (compustate->functions env))
          (info (fun-env-lookup fun fenv))
          ((when (not info))
           (error (list :function-undefined (ident-fix fun))))
@@ -797,8 +797,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define exec-stmt ((s stmtp) (env denvp) (limit natp))
-    :guard (denv-nonempty-stack-p env)
+  (define exec-stmt ((s stmtp) (env compustatep) (limit natp))
+    :guard (compustate-nonempty-stack-p env)
     :returns (result value-option-resultp)
     :parents (dynamic-semantics execution-functions)
     :short "Execute a statement."
@@ -810,7 +810,7 @@
       "For a compound statement (i.e. a block),
        we enter a new (empty) scope prior to executing the block items.
        There is no need to pop the scope at the end,
-       because for now we are not threading the dynamic environment
+       because for now we are not threading the computation state
        through the execution of statements."))
     (b* (((when (zp limit)) (error :limit))
          (s (stmt-fix s)))
@@ -851,17 +851,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define exec-block-item ((item block-itemp) (env denvp) (limit natp))
-    :guard (denv-nonempty-stack-p env)
+  (define exec-block-item ((item block-itemp) (env compustatep) (limit natp))
+    :guard (compustate-nonempty-stack-p env)
     :returns (mv (result value-option-resultp)
-                 (new-env denvp))
+                 (new-env compustatep))
     :parents (dynamic-semantics execution-functions)
     :short "Execute a block item."
     :long
     (xdoc::topstring
      (xdoc::p
       "Besides an optional value result,
-       we also return a possibly updated dynamic environment.")
+       we also return a possibly updated computation state.")
      (xdoc::p
       "If the block item is a declaration,
        we first execute the expression,
@@ -869,7 +869,7 @@
      (xdoc::p
       "If the block item is a statement,
        we execute it like any other statement."))
-    (b* (((when (zp limit)) (mv (error :limit) (denv-fix env))))
+    (b* (((when (zp limit)) (mv (error :limit) (compustate-fix env))))
       (block-item-case
        item
        :decl (b* (((decl decl) item.get)
@@ -877,33 +877,33 @@
                (value-result-case
                 init
                 :ok (b* ((new-env (add-var decl.name init.get env)))
-                      (denv-result-case
+                      (compustate-result-case
                        new-env
                        :ok (mv (value-option-result-ok nil) new-env.get)
-                       :err (mv new-env.get (denv-fix env))))
-                :err (mv init.get (denv-fix env))))
+                       :err (mv new-env.get (compustate-fix env))))
+                :err (mv init.get (compustate-fix env))))
        :stmt (mv (exec-stmt item.get env (1- limit))
-                 (denv-fix env))))
+                 (compustate-fix env))))
     :measure (nfix limit)
     ///
-    (defret denv-nonempty-stack-p-of-exec-block-item
-      (implies (denv-nonempty-stack-p env)
-               (denv-nonempty-stack-p new-env))
+    (defret compustate-nonempty-stack-p-of-exec-block-item
+      (implies (compustate-nonempty-stack-p env)
+               (compustate-nonempty-stack-p new-env))
       :hints (("Goal" :expand ((exec-block-item item env limit))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define exec-block-item-list ((items block-item-listp)
-                                (env denvp)
+                                (env compustatep)
                                 (limit natp))
-    :guard (denv-nonempty-stack-p env)
+    :guard (compustate-nonempty-stack-p env)
     :returns (result value-option-resultp)
     :parents (dynamic-semantics execution-functions)
     :short "Execute a list of block items."
     :long
     (xdoc::topstring
      (xdoc::p
-      "We thread the dynamic environment through the block items.
+      "We thread the computation state through the block items.
        However, for now we do not need to return it
        after executing the whole list of block items."))
     (b* (((when (zp limit)) (error :limit))
@@ -965,7 +965,7 @@
   (xdoc::topstring
    (xdoc::p
     "We initialize the function environment from the translation unit.
-     We create an initial dynamic environment.
+     We create an initial computation state.
      We call the function.")
    (xdoc::p
     "For now we just pass a large number as the recursive limit,
@@ -976,6 +976,6 @@
     (fun-env-result-case
      fenv
      :err (error fenv.get)
-     :ok (b* ((env (make-denv :functions fenv.get :frames nil)))
+     :ok (b* ((env (make-compustate :functions fenv.get :frames nil)))
            (exec-fun fun args env 1000000000)))) ; 10^9
   :hooks (:fix))

@@ -1499,8 +1499,8 @@
                                      enter-scope
                                      scope-result-kind
                                      scope-result-ok->get
-                                     denv-result-kind
-                                     denv-result-ok->get
+                                     compustate-result-kind
+                                     compustate-result-ok->get
                                      value-result-kind
                                      value-result-ok->get
                                      value-option-result-kind
