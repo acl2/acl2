@@ -371,6 +371,57 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define unary-check ((op unopp) (arg-expr exprp) (arg-type typep))
+  :returns (type type-resultp)
+  :short "Check the application of a unary operator to an expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We check @('arg-type') against @('op');
+     @('arg-expr') is used just for errors.
+     We return the type of the unary expression.")
+   (xdoc::p
+    "For now we only support the @('int') type,
+     so the argument type must be that,
+     and the result type is that too.
+     This will be extended in the future."))
+  (if (type-equiv arg-type (type-sint))
+      (type-sint)
+    (error (list ::unary-mistype (unop-fix op) (expr-fix arg-expr)
+                 :required (type-sint)
+                 :supplied (type-fix arg-type))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define binary-check ((op binopp)
+                      (arg1-expr exprp) (arg1-type typep)
+                      (arg2-expr exprp) (arg2-type typep))
+  :returns (type type-resultp)
+  :short "Check the application of a binary operator to two expressions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We check @('arg1-type') and @('arg2-type') against @('op');
+     @('arg1-expr') and @('arg2-expr') are used just for errors.
+     We return the type of the binary expression.")
+   (xdoc::p
+    "For now we only support the @('int') type,
+     so the argument types must be that,
+     and the result type is that too.
+     This will be extended in the future."))
+  (if (and (type-equiv arg1-type (type-sint))
+           (type-equiv arg2-type (type-sint)))
+      (type-sint)
+    (error (list
+            :binary-mistype
+            (binop-fix op) (expr-fix arg1-expr) (expr-fix arg2-expr)
+            :required (type-sint) (type-sint)
+            :supplied (type-fix arg1-type) (type-fix arg2-type))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines expr-check
   :short "Check an expression."
   :long
@@ -411,25 +462,16 @@
      :predec (error (list :unsupported-predec e.arg))
      :unary (b* ((arg-type (expr-check e.arg funtab vartab))
                  ((when (errorp arg-type))
-                  (error (list :unary-error arg-type)))
-                 ((unless (equal arg-type (type-sint)))
-                  (error (list :unary-mistype e.op e.arg
-                               :required (type-sint)
-                               :supplied arg-type))))
-              (type-sint))
+                  (error (list :unary-error arg-type))))
+              (unary-check e.op e.arg arg-type))
      :cast (error (list :unsupported-cast e.type e.arg))
      :binary (b* ((arg1-type (expr-check e.arg1 funtab vartab))
                   ((when (errorp arg1-type))
                    (error (list :binary-left-error arg1-type)))
                   (arg2-type (expr-check e.arg2 funtab vartab))
                   ((when (errorp arg2-type))
-                   (error (list :binary-right-error arg2-type)))
-                  ((unless (and (equal arg1-type (type-sint))
-                                (equal arg2-type (type-sint))))
-                   (error (list :binary-mistype e.op e.arg1 e.arg2
-                                :required (type-sint) (type-sint)
-                                :supplied arg1-type arg2-type))))
-               (type-sint))
+                   (error (list :binary-right-error arg2-type))))
+               (binary-check e.op e.arg1 arg1-type e.arg2 arg2-type))
      :cond (b* ((test-type (expr-check e.test funtab vartab))
                 ((when (errorp test-type))
                  (error (list :cond-test-error test-type)))
@@ -460,7 +502,9 @@
       (cons type types))
     :measure (expr-list-count es))
 
+  :verify-guards nil ; done below
   ///
+  (verify-guards expr-check)
 
   (fty::deffixequiv-mutual expr-check))
 
