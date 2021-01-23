@@ -466,6 +466,47 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod stmt-type
+  :short "Fixtype of statement types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Here we use the word ``type'' in a broad sense,
+     namely to describe the information inferred by the static semantics
+     about a statement (or block item or block).
+     The information consists of:")
+   (xdoc::ul
+    (xdoc::li
+     "A set of optional types that describe
+      the possible values returned by the statement.
+      These are determined by the @('return') statements;
+      in the presence of conditionals,
+      the possible types in the two branches are merged (i.e. unioned).
+      The non-type @('nil') is used to describe statements
+      that do not return a value,
+      but instead transfer control to the next statement (if any).
+      It may be appropriate to use the C type @('void') instead of @('nil')
+      to describe this situation,
+      but for now our model of @(see types) does not include @('void').")
+    (xdoc::li
+     "A possibly updated variable table.
+      This is updated by block items that are declarations.
+      We actually only need to return possibly updated variable tables
+      from the ACL2 function @(tsee block-item-check);
+      the ACL2 functions @(tsee stmt-check) and @(tsee block-item-list-check)
+      could just return a set of optional types (see above).
+      However, for uniformity we have all three functions
+      return also a possibly updated variable table.")))
+  ((return-types type-option-set)
+   (variables var-table))
+  :pred stmt-typep)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defresult stmt-type "statement types")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines stmt-check
   :short "Check a statement."
   :long
@@ -473,32 +514,67 @@
    (xdoc::p
     "For now we only allow
      @('return') statements with expressions,
-     conditional statements, and
+     conditional statements with both branches, and
      compound statements.")
    (xdoc::p
-    "The ACL2 function that processes a block item returns,
-     besides an indication of success or failure,
-     also a possibly updated symbol table.
-     The update happens when the block item is a declaration:
-     this way, subsequent block items can access the declared variable.")
+    "These functions return a statement type or an error;
+     see @(tsee stmt-type).")
    (xdoc::p
     "For a compound statement,
      we add a block scope to the variable table
      and then we process the list of block items.
-     There is no need to explicitly remove it when exiting the block,
+     There is no need to explicitly remove the scope when exiting the block,
      because we only use the extended variable table
      to check the items of the block.
      Anything that follows the block is checked
      with the variable table prior to the extension.
-     In fact, a compound statement does not update the symbol table."))
+     In fact, a compound statement does not update the variable table:
+     we return the original variable table.")
+   (xdoc::p
+    "For a conditional statement,
+     after ensuring that the test expression has type @('int'),
+     we check the two branches, and take the union of their return types.
+     We return the initial variable table, unchanged;
+     any change in the branches would be local to the branches.")
+   (xdoc::p
+    "For a return statement,
+     we return the singleton set with the type of the expression.")
+   (xdoc::p
+    "For a block item that is a declaration,
+     we ensure that the initializer has the same type as the variable,
+     and we extend and return the variable table with the variable.
+     We also return the singleton set with @('nil'),
+     because a declaration never returns a value
+     and proceeds with the next block item;
+     note that we do not return the empty set of return types.")
+   (xdoc::p
+    "For a block item that is a statement, we check the statement.")
+   (xdoc::p
+    "If a list of block items is empty, we return
+     the singleton set with @('nil')
+     (because execution then continues after the block)
+     and the variable table unchanged.
+     If the list is not empty, we check the first item.
+     If @('nil') is not among the return types,
+     it means that the rest of the block is dead code:
+     execution never proceeds past the first block item;
+     thus, we do not even check the rest of the block
+     and we return the result of checking the first block item
+     as the result of checking the whole block.
+     If @('nil') is among the return types of the first block item,
+     we check the rest of the block,
+     and we combine (i.e. take the union of) all the return types."))
 
   (define stmt-check ((s stmtp) (funtab fun-tablep) (vartab var-tablep))
-    :returns (wf wellformed-resultp)
+    :returns (stype stmt-type-resultp)
     (stmt-case
      s
      :labeled (error (list :unsupported-labeled s.label s.body))
-     :compound (b* ((ext-vartab (var-table-add-block vartab)))
-                 (block-item-list-check s.items funtab ext-vartab))
+     :compound (b* ((ext-vartab (var-table-add-block vartab))
+                    (stype (block-item-list-check s.items funtab ext-vartab))
+                    ((when (errorp stype))
+                     (error (list :stmt-compound-error stype))))
+                 (change-stmt-type stype :variables vartab))
      :expr (error (list :unsupported-expr-stmt s.get))
      :null (error :unsupported-null-stmt)
      :if (error (list :unsupported-if-without-else s.test s.then))
@@ -508,11 +584,16 @@
                    (error (list :if-test-mistype s.test s.then s.else
                                 :required (type-sint)
                                 :supplied type)))
-                  (wf (stmt-check s.then funtab vartab))
-                  ((when (errorp wf)) (error (list :if-then-error wf)))
-                  (wf (stmt-check s.else funtab vartab))
-                  ((when (errorp wf)) (error (list :if-else-error wf))))
-               :wellformed)
+                  (stype-then (stmt-check s.then funtab vartab))
+                  ((when (errorp stype-then))
+                   (error (list :if-then-error stype-then)))
+                  (stype-else (stmt-check s.else funtab vartab))
+                  ((when (errorp stype-else))
+                   (error (list :if-else-error stype-else))))
+               (make-stmt-type
+                :return-types (set::union (stmt-type->return-types stype-then)
+                                          (stmt-type->return-types stype-else))
+                :variables vartab))
      :switch (error (list :unsupported-switch s.ctrl s.body))
      :while (error (list :unsupported-while s.test s.body))
      :dowhile (error (list :unsupported-dowhile s.body s.test))
@@ -523,13 +604,14 @@
      :return (b* (((unless s.value) (error (list :unsupported-return-void)))
                   (type (expr-check s.value funtab vartab))
                   ((when (errorp type)) (error (list :return-error type))))
-               :wellformed))
+               (make-stmt-type :return-types (set::insert type nil)
+                               :variables vartab)))
     :measure (stmt-count s))
 
   (define block-item-check ((item block-itemp)
                             (funtab fun-tablep)
                             (vartab var-tablep))
-    :returns (new-vartab var-table-resultp)
+    :returns (stype stmt-type-resultp)
     (block-item-case
      item
      :decl (b* (((decl decl) item.get)
@@ -542,21 +624,32 @@
                 ((unless (equal init-type type))
                  (error (list :decl-mistype decl.type decl.name decl.init
                               :required type
-                              :supplied init-type))))
-             (var-table-add-var decl.name type vartab))
-     :stmt (b* ((wf (stmt-check item.get funtab vartab))
-                ((when (errorp wf)) (error (list :block-item-stmt-error wf))))
-             (var-table-fix vartab)))
+                              :supplied init-type)))
+                (vartab (var-table-add-var decl.name type vartab))
+                ((when (errorp vartab)) (error (list :decl-error vartab))))
+             (make-stmt-type :return-types (set::insert nil nil)
+                             :variables vartab))
+     :stmt (stmt-check item.get funtab vartab))
     :measure (block-item-count item))
 
   (define block-item-list-check ((items block-item-listp)
                                  (funtab fun-tablep)
                                  (vartab var-tablep))
-    :returns (wf wellformed-resultp)
-    (b* (((when (endp items)) :wellformed)
-         (vartab (block-item-check (car items) funtab vartab))
-         ((when (errorp vartab)) (error (list :block-item-error vartab))))
-      (block-item-list-check (cdr items) funtab vartab))
+    :returns (stype stmt-type-resultp)
+    (b* (((when (endp items))
+          (make-stmt-type :return-types (set::insert nil nil)
+                          :variables vartab))
+         (stype (block-item-check (car items) funtab vartab))
+         ((when (errorp stype)) (error (list :block-item-error stype)))
+         ((unless (set::in nil (stmt-type->return-types stype))) stype)
+         (rtypes1 (stmt-type->return-types stype))
+         (vartab (stmt-type->variables stype))
+         (stype (block-item-list-check (cdr items) funtab vartab))
+         ((when (errorp stype)) (error (list :block-item-list-error stype)))
+         (rtypes2 (stmt-type->return-types stype))
+         (vartab (stmt-type->variables stype)))
+      (make-stmt-type :return-types (set::union rtypes1 rtypes2)
+                      :variables vartab))
     :measure (block-item-list-count items))
 
   :verify-guards nil ; done below
@@ -615,7 +708,12 @@
    (xdoc::p
     "Starting with an initial variable table,
      we process the parameter declarations and obtain the variable table
-     in which the function body must be checked statically.")
+     in which the function body must be checked statically.
+     We ensure that the return types of the body
+     match the return types of the function:
+     currently, this means that the set of return types
+     must be a singleton with the function's return type;
+     this may be relaxed in the future.")
    (xdoc::p
     "We also extend the function table with the new function.
      It is an error if a function with the same name is already in the table.
@@ -628,12 +726,10 @@
      the function definitions in the translation unit in order,
      we extend the function table."))
   (b* (((fundef fundef) fundef)
-       (ftype (make-fun-type :inputs (type-name-list-to-type-list
-                                      (tyname-list
-                                       (param-decl-list->type-list
-                                        fundef.params)))
-                             :output (type-name-to-type
-                                      (tyname fundef.result))))
+       (in-types (type-name-list-to-type-list
+                  (tyname-list (param-decl-list->type-list fundef.params))))
+       (out-type (type-name-to-type (tyname fundef.result)))
+       (ftype (make-fun-type :inputs in-types :output out-type))
        (funtab (fun-table-add-fun fundef.name ftype funtab))
        ((when (errorp funtab)) (error (list :fundef funtab)))
        (wf (ident-check fundef.name))
@@ -641,8 +737,13 @@
        (vartab (var-table-init))
        (vartab (param-decl-list-check fundef.params vartab))
        ((when (errorp vartab)) (error (list :fundef-param-error vartab)))
-       (wf (stmt-check fundef.body funtab vartab))
-       ((when (errorp wf)) (error (list :fundef-body-error wf))))
+       (stype (stmt-check fundef.body funtab vartab))
+       ((when (errorp stype)) (error (list :fundef-body-error stype)))
+       ((unless (equal (stmt-type->return-types stype)
+                       (set::insert out-type nil)))
+        (error (list :fundef-return-mistype fundef.name
+                     :required out-type
+                     :inferred (stmt-type->return-types stype)))))
     funtab)
   :hooks (:fix))
 
