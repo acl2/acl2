@@ -76,6 +76,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defset type-option-set
+  :short "Fixtype of sets of optional types."
+  :elt-type type-option
+  :elementp-of-nil t
+  :pred type-option-setp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defresult type "types")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
