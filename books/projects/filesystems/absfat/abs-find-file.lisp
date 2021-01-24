@@ -54,6 +54,25 @@
     member-equal-of-strip-cars-when-m1-file-alist-p)
    (:rewrite hifat-subsetp-transitive-lemma-1)
    (:rewrite absfat-subsetp-of-put-assoc-1)
+   (:rewrite
+    abs-find-file-correctness-1-lemma-40)
+   (:rewrite
+    absfat-equiv-implies-set-equiv-addrs-at-1-lemma-2)
+   (:rewrite
+    absfat-equiv-implies-set-equiv-names-at-1-lemma-2)
+   (:rewrite
+    abs-separate-of-frame->frame-of-collapse-this-lemma-13)
+   (:rewrite
+    abs-separate-of-frame->frame-of-collapse-this-lemma-5)
+   (:rewrite
+    hifat-equiv-implies-set-equiv-strip-cars-1-lemma-2)
+   (:rewrite
+    hifat-equiv-implies-set-equiv-strip-cars-1-lemma-1)
+   (:rewrite abs-separate-correctness-1-lemma-38)
+   (:rewrite
+    abs-separate-of-frame->frame-of-collapse-this-lemma-14)
+   (:rewrite
+    hifat-place-file-correctness-lemma-3)
    ;; Consider disabling everywhere.
    (:definition hifat-subsetp))))
 
@@ -3799,40 +3818,7 @@
                     (x (1st-complete (frame->frame frame)))
                     (root (frame->root frame))))))
 
-(defthm
-  abs-find-file-correctness-lemma-21
-  (implies
-   (and (frame-p frame)
-        (no-duplicatesp-equal (strip-cars frame))
-        (consp (assoc-equal x frame))
-        (not (equal z *enoent*))
-        (prefixp (frame-val->path (cdr (assoc-equal x frame)))
-                 (fat32-filename-list-fix path))
-        (mv-nth 1
-                (collapse (frame-with-root root frame)))
-        (atom (assoc-equal 0 frame))
-        (dist-names root nil frame)
-        (abs-separate frame))
-   (iff
-    (equal
-     (mv-nth 1
-             (abs-find-file-helper
-              (frame-val->dir (cdr (assoc-equal x frame)))
-              (nthcdr (len (frame-val->path (cdr (assoc-equal x frame))))
-                      path)))
-     z)
-    (and
-     (equal (abs-find-file-helper
-             (frame-val->dir (cdr (assoc-equal x frame)))
-             (nthcdr (len (frame-val->path (cdr (assoc-equal x frame))))
-                     path))
-            (abs-find-file frame path))
-     (equal (mv-nth 1 (abs-find-file frame path))
-            z))))
-  :hints (("goal" :use abs-find-file-correctness-1-lemma-48
-           :do-not-induct t)))
-
-(defthm abs-find-file-correctness-lemma-45
+(defthm abs-find-file-correctness-lemma-9
   (implies
    (and (prefixp (frame-val->path (cdr (assoc-equal x frame)))
                  (fat32-filename-list-fix path))
@@ -3970,8 +3956,7 @@
                                    path))
             z))))
   :hints (("goal" :do-not-induct t
-           :in-theory (enable abs-find-file-correctness-lemma-21)
-           :use (:instance abs-find-file-correctness-lemma-21
+           :use (:instance abs-find-file-correctness-1-lemma-48
                            (frame (frame->frame frame))
                            (root (frame->root frame))))))
 

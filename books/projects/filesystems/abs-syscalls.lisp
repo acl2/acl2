@@ -78,7 +78,6 @@
      abs-find-file-correctness-1-lemma-40)
     (:rewrite consp-of-last)
     (:rewrite abs-find-file-correctness-lemma-14)
-    (:rewrite abs-separate-correctness-1-lemma-29)
     (:rewrite fat32-filename-list-p-of-last)
     (:rewrite
      abs-separate-of-frame->frame-of-collapse-this-lemma-8
