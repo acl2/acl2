@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2020 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -19,21 +19,18 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ atc-function-environments
-  :parents (atc-static-semantics atc-dynamic-semantics)
+  :parents (atc-dynamic-semantics)
   :short "C function environments for ATC."
   :long
   (xdoc::topstring
    (xdoc::p
-    "C code is executed (according to the dynamic semanticss)
-     and checked (according to the static semantics)
-     in the context of function definitions in scope,
+    "C code is executed in the context of function definitions in scope,
      which may be referenced by the code.")
    (xdoc::p
     "Here we formalize a notion of function environment as a finite map
      from function names (i.e. identifiers)
      to information about the function.
-     These function environments are used in
-     both the static and the dynamic semantics."))
+     These function environments are used in the dynamic semantics."))
   :order-subtopics t
   :default-parent t)
 
