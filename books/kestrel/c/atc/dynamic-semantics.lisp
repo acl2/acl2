@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2020 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -14,8 +14,6 @@
 (include-book "abstract-syntax")
 (include-book "integers")
 (include-book "function-environments")
-
-(include-book "kestrel/fty/defomap" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -194,17 +192,13 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "A computation state consists of
-     a function environment
-     and a stack of frames.")
-   (xdoc::p
-    "The function environment consists of
-     information about the functions that may be called by the code.")
+    "A computation state consists of a stack of frames.
+     More components will be added (e.g. a heap)
+     as our modeling coverage of C increases.")
    (xdoc::p
     "The stack grows leftward and shrinks rightward,
      i.e. push is @(tsee cons), pop is @(tsee cdr), and top is @(tsee car)."))
-  ((functions fun-env)
-   (frames frame-list))
+  ((frames frame-list))
   :pred compustatep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -219,7 +213,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define compustate-nonempty-stack-p ((env compustatep))
+(define compustate-nonempty-stack-p ((compst compustatep))
   :returns (yes/no booleanp)
   :short "Check if a computation state has a non-empty call stack."
   :long
@@ -228,61 +222,61 @@
     "This is always satisfied when executing statements and expressions,
      because those statements and expressions must be
      in the body of some function that is executing."))
-  (consp (compustate->frames env))
+  (consp (compustate->frames compst))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define push-frame ((frame framep) (env compustatep))
-  :returns (new-env compustatep)
+(define push-frame ((frame framep) (compst compustatep))
+  :returns (new-compst compustatep)
   :short "Push a frame onto a computation state's call stack."
-  (b* ((stack (compustate->frames env))
+  (b* ((stack (compustate->frames compst))
        (new-stack (cons (frame-fix frame) stack)))
-    (change-compustate env :frames new-stack))
+    (change-compustate compst :frames new-stack))
   :hooks (:fix)
   ///
 
   (more-returns
-   (new-env compustate-nonempty-stack-p
+   (new-compst compustate-nonempty-stack-p
             :hints (("Goal" :in-theory (enable compustate-nonempty-stack-p))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define top-frame ((env compustatep))
-  :guard (compustate-nonempty-stack-p env)
+(define top-frame ((compst compustatep))
+  :guard (compustate-nonempty-stack-p compst)
   :returns (frame framep)
   :short "Top frame of a computation state's call stack."
-  (frame-fix (car (compustate->frames env)))
+  (frame-fix (car (compustate->frames compst)))
   :guard-hints (("Goal" :in-theory (enable compustate-nonempty-stack-p)))
   :hooks (:fix)
   ///
 
   (defrule top-frame-of-push-frame
-    (equal (top-frame (push-frame frame env))
+    (equal (top-frame (push-frame frame compst))
            (frame-fix frame))
     :enable push-frame))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define pop-frame ((env compustatep))
-  :guard (compustate-nonempty-stack-p env)
-  :returns (new-env compustatep)
+(define pop-frame ((compst compustatep))
+  :guard (compustate-nonempty-stack-p compst)
+  :returns (new-compst compustatep)
   :short "Pop a frame from a computation state's non-empty call stack."
-  (b* ((stack (compustate->frames env))
+  (b* ((stack (compustate->frames compst))
        (new-stack (cdr stack)))
-    (change-compustate env :frames new-stack))
+    (change-compustate compst :frames new-stack))
   :hooks (:fix)
   ///
 
   (defrule pop-frame-of-push-frame
-    (equal (pop-frame (push-frame frame env))
-           (compustate-fix env))
+    (equal (pop-frame (push-frame frame compst))
+           (compustate-fix compst))
     :enable push-frame))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define compustate-inner-scope-p ((env compustatep))
-  :guard (compustate-nonempty-stack-p env)
+(define compustate-inner-scope-p ((compst compustatep))
+  :guard (compustate-nonempty-stack-p compst)
   :returns (yes/no booleanp)
   :short "Check if a computation state with a non-empty call stack
           has at least two scopes in the top frame."
@@ -297,58 +291,58 @@
      and still have a valid top frame with a non-empty stack of scopes.
      When we enter (i.e. push) a scope while executing a function's body,
      we establish this predicate."))
-  (consp (cdr (frame->scopes (top-frame env))))
+  (consp (cdr (frame->scopes (top-frame compst))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define enter-scope ((env compustatep))
-  :guard (compustate-nonempty-stack-p env)
-  :returns (new-env compustatep)
+(define enter-scope ((compst compustatep))
+  :guard (compustate-nonempty-stack-p compst)
+  :returns (new-compst compustatep)
   :short "Enter a scope."
   :long
   (xdoc::topstring
    (xdoc::p
     "We push an empty scope onto the scope stack of the top frame."))
-  (b* ((frame (top-frame env))
+  (b* ((frame (top-frame compst))
        (scopes (frame->scopes frame))
        (new-scopes (cons nil scopes))
        (new-frame (change-frame frame :scopes new-scopes))
-       (new-env (push-frame new-frame (pop-frame env))))
-    new-env)
+       (new-compst (push-frame new-frame (pop-frame compst))))
+    new-compst)
   :hooks (:fix)
   ///
   (more-returns
-   (new-env compustate-nonempty-stack-p)
-   (new-env compustate-inner-scope-p
+   (new-compst compustate-nonempty-stack-p)
+   (new-compst compustate-inner-scope-p
             :hints (("Goal" :in-theory (enable compustate-inner-scope-p
                                                top-frame
                                                push-frame))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exit-scope ((env compustatep))
-  :guard (and (compustate-nonempty-stack-p env)
-              (compustate-inner-scope-p env))
-  :returns (new-env compustatep)
+(define exit-scope ((compst compustatep))
+  :guard (and (compustate-nonempty-stack-p compst)
+              (compustate-inner-scope-p compst))
+  :returns (new-compst compustatep)
   :short "Exit a scope."
   :long
   (xdoc::topstring
    (xdoc::p
     "We pop the scope stack of the top frame."))
-  (b* ((frame (top-frame env))
+  (b* ((frame (top-frame compst))
        (scopes (frame->scopes frame))
        (new-scopes (cdr scopes))
        (new-frame (change-frame frame :scopes new-scopes))
-       (new-env (push-frame new-frame (pop-frame env))))
-    new-env)
+       (new-compst (push-frame new-frame (pop-frame compst))))
+    new-compst)
   :guard-hints (("Goal" :in-theory (enable compustate-inner-scope-p)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define lookup-var ((var identp) (env compustatep))
-  :guard (compustate-nonempty-stack-p env)
+(define lookup-var ((var identp) (compst compustatep))
+  :guard (compustate-nonempty-stack-p compst)
   :returns (result value-resultp)
   :short "Look up a variable in a computation state."
   :long
@@ -367,7 +361,7 @@
      we will need to extend this ACL2 function
      to look for the variable among them,
      if it is not found in the scopes of the top frame."))
-  (lookup-var-aux var (frame->scopes (top-frame env)))
+  (lookup-var-aux var (frame->scopes (top-frame compst)))
   :hooks (:fix)
 
   :prepwork
@@ -382,8 +376,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define add-var ((var identp) (val sintp) (env compustatep))
-  :guard (compustate-nonempty-stack-p env)
+(define add-var ((var identp) (val sintp) (compst compustatep))
+  :guard (compustate-nonempty-stack-p compst)
   :returns (result compustate-resultp)
   :short "Add a variable to a computation state."
   :long
@@ -395,7 +389,7 @@
      we return an error: C disallows variable redefinition.
      However, there may well be a variable with the same in a different scope:
      in this case, the new variable hides the other one."))
-  (b* ((frame (top-frame env))
+  (b* ((frame (top-frame compst))
        (scopes (frame->scopes frame))
        (scope (car scopes))
        (pair (omap::in (ident-fix var) scope))
@@ -403,21 +397,21 @@
        (new-scope (omap::update (ident-fix var) (sint-fix val) scope))
        (new-scopes (cons new-scope (cdr scopes)))
        (new-frame (change-frame frame :scopes new-scopes))
-       (new-env (push-frame new-frame (pop-frame env))))
-    new-env)
+       (new-compst (push-frame new-frame (pop-frame compst))))
+    new-compst)
   :hooks (:fix)
   ///
 
   (defret compustate-nonempty-stack-p-of-add-var-when-compustate-nonempty-stack-p
-    (implies (and (compustate-nonempty-stack-p env)
+    (implies (and (compustate-nonempty-stack-p compst)
                   (compustate-result-case result :ok))
              (compustate-nonempty-stack-p (compustate-result-ok->get result)))
     :hints (("Goal" :in-theory (enable compustate-result-ok->get
                                        compustate-result-kind))))
 
   (defret compustate-inner-scope-p-of-add-var-when-compustate-inner-scope-p
-    (implies (and (compustate-nonempty-stack-p env)
-                  (compustate-inner-scope-p env)
+    (implies (and (compustate-nonempty-stack-p compst)
+                  (compustate-inner-scope-p compst)
                   (compustate-result-case result :ok))
              (compustate-inner-scope-p (compustate-result-ok->get result)))
     :hints (("Goal" :in-theory (enable compustate-result-ok->get
@@ -466,15 +460,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-ident ((id identp) (env compustatep))
-  :guard (compustate-nonempty-stack-p env)
+(define exec-ident ((id identp) (compst compustatep))
+  :guard (compustate-nonempty-stack-p compst)
   :returns (result value-resultp)
   :short "Execute a variable."
   :long
   (xdoc::topstring
    (xdoc::p
     "We read the variable's value (if any) from the computation state."))
-  (lookup-var id env)
+  (lookup-var id compst)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -686,8 +680,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define exec-expr ((e exprp) (env compustatep) (limit natp))
-    :guard (compustate-nonempty-stack-p env)
+  (define exec-expr ((e exprp)
+                     (compst compustatep)
+                     (fenv fun-envp)
+                     (limit natp))
+    :guard (compustate-nonempty-stack-p compst)
     :returns (result value-resultp)
     :parents (dynamic-semantics execution-functions)
     :short "Execute an expression."
@@ -703,35 +700,39 @@
          (e (expr-fix e)))
       (expr-case
        e
-       :ident (exec-ident e.get env)
+       :ident (exec-ident e.get compst)
        :const (exec-const e.get)
-       :call (b* ((args (exec-expr-list e.args env (1- limit))))
+       :call (b* ((args (exec-expr-list e.args compst fenv (1- limit))))
                (value-list-result-case
                 args
                 :err args.get
-                :ok (exec-fun e.fun args.get env (1- limit))))
+                :ok (exec-fun e.fun args.get compst fenv (1- limit))))
        :postinc (error (list :exec-expr e))
        :postdec (error (list :exec-expr e))
        :preinc (error (list :exec-expr e))
        :predec (error (list :exec-expr e))
-       :unary (b* ((arg (exec-expr e.arg env (1- limit))))
+       :unary (b* ((arg (exec-expr e.arg compst fenv (1- limit))))
                 (exec-unary e.op arg))
        :cast (error (list :exec-expr e))
-       :binary (b* ((arg1 (exec-expr e.arg1 env (1- limit)))
-                    (arg2 (exec-expr e.arg2 env (1- limit))))
+       :binary (b* ((arg1 (exec-expr e.arg1 compst fenv (1- limit)))
+                    (arg2 (exec-expr e.arg2 compst fenv (1- limit))))
                  (exec-binary e.op arg1 arg2))
-       :cond (b* ((test (exec-expr e.test env (1- limit))))
-               (value-result-case test
-                                  :ok (if (sint-nonzerop test.get)
-                                          (exec-expr e.then env (1- limit))
-                                        (exec-expr e.else env (1- limit)))
-                                  :err test.get))))
+       :cond (b* ((test (exec-expr e.test compst fenv (1- limit))))
+               (value-result-case
+                test
+                :ok (if (sint-nonzerop test.get)
+                        (exec-expr e.then compst fenv (1- limit))
+                      (exec-expr e.else compst fenv (1- limit)))
+                :err test.get))))
     :measure (nfix limit))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define exec-expr-list ((es expr-listp) (env compustatep) (limit natp))
-    :guard (compustate-nonempty-stack-p env)
+  (define exec-expr-list ((es expr-listp)
+                          (compst compustatep)
+                          (fenv fun-envp)
+                          (limit natp))
+    :guard (compustate-nonempty-stack-p compst)
     :returns (result value-list-resultp)
     :parents (dynamic-semantics execution-functions)
     :short "Execute a list of expressions."
@@ -743,12 +744,12 @@
        but any ordering would yield the same results."))
     (b* (((when (zp limit)) (error :limit))
          ((when (endp es)) (value-list-result-ok nil))
-         (result (exec-expr (car es) env (1- limit))))
+         (result (exec-expr (car es) compst fenv (1- limit))))
       (value-result-case
        result
        :err result.get
        :ok (b* ((val result.get)
-                (result (exec-expr-list (cdr es) env (1- limit))))
+                (result (exec-expr-list (cdr es) compst fenv (1- limit))))
              (value-list-result-case
               result
               :err result.get
@@ -758,7 +759,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define exec-fun ((fun identp) (args value-listp) (env compustatep) (limit natp))
+  (define exec-fun ((fun identp)
+                    (args value-listp)
+                    (compst compustatep)
+                    (fenv fun-envp)
+                    (limit natp))
     :returns (result value-resultp)
     :parents (dynamic-semantics execution-functions)
     :short "Execution a function on argument values."
@@ -774,20 +779,19 @@
        (but we do not check this because every value is an @('int') for now).
        We return the value as result.
        There is no need to pop the frame
-       because for now we are not threading environments through execution."))
+       because for now we are not threading computation states
+       through execution."))
     (b* (((when (zp limit)) (error :limit))
-         (fenv (compustate->functions env))
          (info (fun-env-lookup fun fenv))
-         ((when (not info))
-          (error (list :function-undefined (ident-fix fun))))
+         ((when (not info)) (error (list :function-undefined (ident-fix fun))))
          ((fun-info info) info)
          (scope (init-scope info.params args)))
       (scope-result-case
        scope
        :err scope.get
        :ok (b* ((frame (make-frame :function fun :scopes (list scope.get)))
-                (env (push-frame frame env))
-                (val-opt (exec-stmt info.body env (1- limit))))
+                (compst (push-frame frame compst))
+                (val-opt (exec-stmt info.body compst fenv (1- limit))))
              (value-option-result-case
               val-opt
               :err val-opt.get
@@ -797,8 +801,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define exec-stmt ((s stmtp) (env compustatep) (limit natp))
-    :guard (compustate-nonempty-stack-p env)
+  (define exec-stmt ((s stmtp)
+                     (compst compustatep)
+                     (fenv fun-envp)
+                     (limit natp))
+    :guard (compustate-nonempty-stack-p compst)
     :returns (result value-option-resultp)
     :parents (dynamic-semantics execution-functions)
     :short "Execute a statement."
@@ -817,22 +824,24 @@
       (stmt-case
        s
        :labeled (error (list :exec-stmt s))
-       :compound (b* ((env (enter-scope env)))
-                   (exec-block-item-list s.items env (1- limit)))
+       :compound (b* ((compst (enter-scope compst)))
+                   (exec-block-item-list s.items compst fenv (1- limit)))
        :expr (error (list :exec-stmt s))
        :null (error (list :exec-stmt s))
-       :if (b* ((test (exec-expr s.test env (1- limit))))
-             (value-result-case test
-                                :ok (if (sint-nonzerop test.get)
-                                        (exec-stmt s.then env (1- limit))
-                                      nil)
-                                :err test.get))
-       :ifelse (b* ((test (exec-expr s.test env (1- limit))))
-                 (value-result-case test
-                                    :ok (if (sint-nonzerop test.get)
-                                            (exec-stmt s.then env (1- limit))
-                                          (exec-stmt s.else env (1- limit)))
-                                    :err test.get))
+       :if (b* ((test (exec-expr s.test compst fenv (1- limit))))
+             (value-result-case
+              test
+              :ok (if (sint-nonzerop test.get)
+                      (exec-stmt s.then compst fenv (1- limit))
+                    nil)
+              :err test.get))
+       :ifelse (b* ((test (exec-expr s.test compst fenv (1- limit))))
+                 (value-result-case
+                  test
+                  :ok (if (sint-nonzerop test.get)
+                          (exec-stmt s.then compst fenv (1- limit))
+                        (exec-stmt s.else compst fenv (1- limit)))
+                  :err test.get))
        :switch (error (list :exec-stmt s))
        :while (error (list :exec-stmt s))
        :dowhile (error (list :exec-stmt s))
@@ -841,7 +850,7 @@
        :continue (error (list :exec-stmt s))
        :break (error (list :exec-stmt s))
        :return (if (exprp s.value)
-                   (b* ((eres (exec-expr s.value env (1- limit))))
+                   (b* ((eres (exec-expr s.value compst fenv (1- limit))))
                      (value-result-case
                       eres
                       :err eres.get
@@ -851,10 +860,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define exec-block-item ((item block-itemp) (env compustatep) (limit natp))
-    :guard (compustate-nonempty-stack-p env)
+  (define exec-block-item ((item block-itemp)
+                           (compst compustatep)
+                           (fenv fun-envp)
+                           (limit natp))
+    :guard (compustate-nonempty-stack-p compst)
     :returns (mv (result value-option-resultp)
-                 (new-env compustatep))
+                 (new-compst compustatep))
     :parents (dynamic-semantics execution-functions)
     :short "Execute a block item."
     :long
@@ -869,34 +881,35 @@
      (xdoc::p
       "If the block item is a statement,
        we execute it like any other statement."))
-    (b* (((when (zp limit)) (mv (error :limit) (compustate-fix env))))
+    (b* (((when (zp limit)) (mv (error :limit) (compustate-fix compst))))
       (block-item-case
        item
        :decl (b* (((decl decl) item.get)
-                  (init (exec-expr decl.init env (1- limit))))
+                  (init (exec-expr decl.init compst fenv (1- limit))))
                (value-result-case
                 init
-                :ok (b* ((new-env (add-var decl.name init.get env)))
+                :ok (b* ((new-compst (add-var decl.name init.get compst)))
                       (compustate-result-case
-                       new-env
-                       :ok (mv (value-option-result-ok nil) new-env.get)
-                       :err (mv new-env.get (compustate-fix env))))
-                :err (mv init.get (compustate-fix env))))
-       :stmt (mv (exec-stmt item.get env (1- limit))
-                 (compustate-fix env))))
+                       new-compst
+                       :ok (mv (value-option-result-ok nil) new-compst.get)
+                       :err (mv new-compst.get (compustate-fix compst))))
+                :err (mv init.get (compustate-fix compst))))
+       :stmt (mv (exec-stmt item.get compst fenv (1- limit))
+                 (compustate-fix compst))))
     :measure (nfix limit)
     ///
     (defret compustate-nonempty-stack-p-of-exec-block-item
-      (implies (compustate-nonempty-stack-p env)
-               (compustate-nonempty-stack-p new-env))
-      :hints (("Goal" :expand ((exec-block-item item env limit))))))
+      (implies (compustate-nonempty-stack-p compst)
+               (compustate-nonempty-stack-p new-compst))
+      :hints (("Goal" :expand ((exec-block-item item compst fenv limit))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define exec-block-item-list ((items block-item-listp)
-                                (env compustatep)
+                                (compst compustatep)
+                                (fenv fun-envp)
                                 (limit natp))
-    :guard (compustate-nonempty-stack-p env)
+    :guard (compustate-nonempty-stack-p compst)
     :returns (result value-option-resultp)
     :parents (dynamic-semantics execution-functions)
     :short "Execute a list of block items."
@@ -908,10 +921,10 @@
        after executing the whole list of block items."))
     (b* (((when (zp limit)) (error :limit))
          ((when (endp items)) nil)
-         ((mv val? env) (exec-block-item (car items) env (1- limit)))
+         ((mv val? compst) (exec-block-item (car items) compst fenv (1- limit)))
          ((when (value-option-result-case val? :err)) val?)
          ((when val?) val?))
-      (exec-block-item-list (cdr items) env (1- limit)))
+      (exec-block-item-list (cdr items) compst fenv (1- limit)))
     :measure (nfix limit))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -976,6 +989,6 @@
     (fun-env-result-case
      fenv
      :err (error fenv.get)
-     :ok (b* ((env (make-compustate :functions fenv.get :frames nil)))
-           (exec-fun fun args env 1000000000)))) ; 10^9
+     :ok (b* ((compst (make-compustate :frames nil)))
+           (exec-fun fun args compst fenv.get 1000000000)))) ; 10^9
   :hooks (:fix))
