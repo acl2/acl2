@@ -374,6 +374,16 @@
                                1 (acl2::bitxor (acl2::getbit low1 x) (acl2::getbit low2 y)))
                   (acl2::bvxor 2 (acl2::slice high1 low1 x) (acl2::slice high2 low2 y)))))
 
+;; has the first bitxor commuted
+(defthm bvcat-of-bitxor-and-bitxor-adjacent-bits-alt
+  (implies (and (natp low1)
+                (equal high1 (+ 1 low1))
+                (natp low2)
+                (equal high2 (+ 1 low2)))
+           (equal (acl2::bvcat 1 (acl2::bitxor (acl2::getbit high2 y) (acl2::getbit high1 x))
+                               1 (acl2::bitxor (acl2::getbit low1 x) (acl2::getbit low2 y)))
+                  (acl2::bvxor 2 (acl2::slice high1 low1 x) (acl2::slice high2 low2 y)))))
+
 (defthm bvxor-of-slice-trim
   (implies (and (< n (+ 1 (- high low)))
                 (natp n)
@@ -424,28 +434,6 @@
                                (acl2::slice high1 low1 x) (acl2::slice high2 low2 y))))
   :hints (("Goal" :in-theory (enable))))
 
-;; This version commutes the args to the bitxor
-(defthm bvcat-of-bitxor-and-bvxor-adjacent-bits-alt
-  (implies (and (equal high1minus1 (+ -1 high1))
-                (equal high2minus1 (+ -1 high2))
-                (equal n (+ 1 (- high1minus1 low1)))
-                (equal n (+ 1 (- high2minus1 low2)))
-                (<= low1 high1minus1)
-                ;(<= low2 high2minus1)
-                (natp low1)
-                (natp low2)
-                (natp high1)
-                (natp high2)
-                (posp high1) ;why?
-                (posp high2) ;why?
-                )
-           (equal (acl2::bvcat 1 (acl2::bitxor (acl2::getbit high2 y) (acl2::getbit high1 x))
-                               n (acl2::bvxor n (acl2::slice high1minus1 low1 x) (acl2::slice high2minus1 low2 y)))
-                  (acl2::bvxor (+ 1 n)
-                               (acl2::slice high1 low1 x) (acl2::slice high2 low2 y))))
-  :hints (("Goal" :in-theory (enable))))
-
-;todo: make an alt version
 (defthm bvcat-of-bvxor-and-bvxor-adjacent-bits
   (implies (and (equal high1minus1 (+ -1 mid1))
                 (equal high2minus1 (+ -1 mid2))
@@ -484,7 +472,7 @@
                 (< low1 high1minus1)
                 (< low2 high2minus1)
                 (<= mid1 high1)
-                (<= mid1 high2)
+                ;(<= mid2 high2)
                 ;(<= low2 high2minus1)
                 (natp low1)
                 (natp low2)
@@ -499,6 +487,67 @@
                                n2 (acl2::bvxor n2 (acl2::slice high1minus1 low1 x) (acl2::slice high2minus1 low2 y)))
                   (acl2::bvxor (+ n1 n2)
                                (acl2::slice high1 low1 x) (acl2::slice high2 low2 y))))
+  :hints (("Goal" :in-theory (enable))))
+
+(defthm bvcat-of-bvxor-and-bitxor-adjacent-bits
+  (implies (and (equal mid1minus1 (+ -1 mid1))
+                (equal mid2minus1 (+ -1 mid2))
+                ;;(equal n2 (+ 1 (- high1minus1 low1)))
+                ;;(equal n2 (+ 1 (- high2minus1 low2)))
+                (equal n1 (+ 1 (- high1 mid1)))
+                (equal n1 (+ 1 (- high2 mid2)))
+                ;;(< low1 high1minus1)
+                ;;(< low2 high2minus1)
+                (<= mid1 high1)
+                ;(<= mid2 high2)
+                ;;(<= low2 high2minus1)
+                ;;(natp low1)
+                ;;(natp low2)
+                (natp mid1)
+                (natp mid2)
+                (natp high1)
+                (natp high2)
+                (posp mid1) ;why?
+                (posp mid2) ;why?
+                (posp high1) ;why?
+                (posp high2) ;why?
+                )
+           (equal (acl2::bvcat n1 (acl2::bvxor n1 (acl2::slice high1 mid1 x) (acl2::slice high2 mid2 y))
+                               1 (acl2::bitxor (acl2::getbit mid1minus1 x) (acl2::getbit mid2minus1 y)))
+                  (acl2::bvxor (+ 1 n1)
+                               (acl2::slice high1 mid1minus1 x)
+                               (acl2::slice high2 mid2minus1 y))))
+  :hints (("Goal" :in-theory (enable))))
+
+;;this one commutes the args of the first bvxor
+(defthm bvcat-of-bvxor-and-bitxor-adjacent-bits-alt
+  (implies (and (equal mid1minus1 (+ -1 mid1))
+                (equal mid2minus1 (+ -1 mid2))
+                ;;(equal n2 (+ 1 (- high1minus1 low1)))
+                ;;(equal n2 (+ 1 (- high2minus1 low2)))
+                (equal n1 (+ 1 (- high1 mid1)))
+                (equal n1 (+ 1 (- high2 mid2)))
+                ;;(< low1 high1minus1)
+                ;;(< low2 high2minus1)
+                (<= mid1 high1)
+                (<= mid2 high2)
+                ;;(<= low2 high2minus1)
+                ;;(natp low1)
+                ;;(natp low2)
+                (natp mid1)
+                (natp mid2)
+                (natp high1)
+                (natp high2)
+                (posp mid1) ;why?
+                (posp mid2) ;why?
+                (posp high1) ;why?
+                (posp high2) ;why?
+                )
+           (equal (acl2::bvcat n1 (acl2::bvxor n1 (acl2::slice high2 mid2 y) (acl2::slice high1 mid1 x))
+                               1 (acl2::bitxor (acl2::getbit mid1minus1 x) (acl2::getbit mid2minus1 y)))
+                  (acl2::bvxor (+ 1 n1)
+                               (acl2::slice high1 mid1minus1 x)
+                               (acl2::slice high2 mid2minus1 y))))
   :hints (("Goal" :in-theory (enable))))
 
 (include-book "kestrel/bv-lists/bits-to-bytes-little" :dir :system)
@@ -614,3 +663,225 @@
                   (acl2::getbit acl2::n
                                 (acl2::trim (+ 1 acl2::n) acl2::x))))
   :hints (("Goal" :in-theory (enable acl2::trim))))
+
+(defthm bvcat-of-bvxor-and-bvxor-adjacent-bits-extra-left-assoc
+  (implies (and (equal high1minus1 (+ -1 mid1))
+                (equal high2minus1 (+ -1 mid2))
+                (equal n2 (+ 1 (- high1minus1 low1)))
+                (equal n2 (+ 1 (- high2minus1 low2)))
+                (equal n1 (+ 1 (- high1 mid1)))
+                (equal n1 (+ 1 (- high2 mid2)))
+                (equal n1+zsize (+ n1 zsize))
+                (< low1 high1minus1)
+                (< low2 high2minus1)
+                (<= mid1 high1)
+                (<= mid1 high2)
+                ;;(<= low2 high2minus1)
+                (natp low1)
+                (natp low2)
+                (natp mid1)
+                (natp mid2)
+                (natp high1)
+                (natp high2)
+                (posp high1) ;why?
+                (posp high2) ;why?
+                (natp zsize)
+                )
+           (equal (acl2::bvcat n1+zsize (acl2::bvcat zsize z n1 (acl2::bvxor n1 (acl2::slice high1 mid1 x) (acl2::slice high2 mid2 y)))
+                               n2 (acl2::bvxor n2 (acl2::slice high1minus1 low1 x) (acl2::slice high2minus1 low2 y)))
+                  (acl2::bvcat zsize z
+                               (+ n1 n2)
+                               (acl2::bvxor (+ n1 n2)
+                                            (acl2::slice high1 low1 x) (acl2::slice high2 low2 y)))))
+  :hints (("Goal" :in-theory (enable))))
+
+;commutes the first bvxor
+(defthm bvcat-of-bvxor-and-bvxor-adjacent-bits-extra-left-assoc-alt
+  (implies (and (equal high1minus1 (+ -1 mid1))
+                (equal high2minus1 (+ -1 mid2))
+                (equal n2 (+ 1 (- high1minus1 low1)))
+                (equal n2 (+ 1 (- high2minus1 low2)))
+                (equal n1 (+ 1 (- high1 mid1)))
+                (equal n1 (+ 1 (- high2 mid2)))
+                (equal n1+zsize (+ n1 zsize))
+                (< low1 high1minus1)
+                (< low2 high2minus1)
+                (<= mid1 high1)
+                (<= mid1 high2)
+                ;;(<= low2 high2minus1)
+                (natp low1)
+                (natp low2)
+                (natp mid1)
+                (natp mid2)
+                (natp high1)
+                (natp high2)
+                (posp high1) ;why?
+                (posp high2) ;why?
+                (natp zsize)
+                )
+           (equal (acl2::bvcat n1+zsize (acl2::bvcat zsize z n1 (acl2::bvxor n1 (acl2::slice high2 mid2 y) (acl2::slice high1 mid1 x)))
+                               n2 (acl2::bvxor n2 (acl2::slice high1minus1 low1 x) (acl2::slice high2minus1 low2 y)))
+                  (acl2::bvcat zsize z
+                               (+ n1 n2)
+                               (acl2::bvxor (+ n1 n2)
+                                            (acl2::slice high1 low1 x) (acl2::slice high2 low2 y)))))
+  :hints (("Goal" :in-theory (enable))))
+
+(defthm bvcat-of-bitxor-and-bitxor-adjacent-bits-extra-left-assoc
+  (implies (and (equal zsize+1 (+ 1 zsize))
+                (equal high1 (+ 1 low1))
+                (equal high2 (+ 1 low2))
+                (natp zsize)
+                (natp low1)
+                (natp low2))
+           (equal (acl2::bvcat zsize+1
+                               (acl2::bvcat zsize z 1 (acl2::bitxor (acl2::getbit high1 x) (acl2::getbit high2 y)))
+                               1
+                               (acl2::bitxor (acl2::getbit low1 x) (acl2::getbit low2 y)))
+                  (acl2::bvcat zsize
+                               z
+                               2
+                               (acl2::bvxor 2 (acl2::slice high1 low1 x) (acl2::slice high2 low2 y))))))
+
+;commutes the first xor
+(defthm bvcat-of-bitxor-and-bitxor-adjacent-bits-extra-left-assoc-alt
+  (implies (and (equal zsize+1 (+ 1 zsize))
+                (equal high1 (+ 1 low1))
+                (equal high2 (+ 1 low2))
+                (natp zsize)
+                (natp low1)
+                (natp low2))
+           (equal (acl2::bvcat zsize+1
+                               (acl2::bvcat zsize z 1 (acl2::bitxor (acl2::getbit high2 y) (acl2::getbit high1 x)))
+                               1
+                               (acl2::bitxor (acl2::getbit low1 x) (acl2::getbit low2 y)))
+                  (acl2::bvcat zsize
+                               z
+                               2
+                               (acl2::bvxor 2 (acl2::slice high1 low1 x) (acl2::slice high2 low2 y))))))
+
+(defthm bvcat-of-bitxor-and-bvxor-adjacent-bits-extra-left-assoc
+  (implies (and (equal high1minus1 (+ -1 high1))
+                (equal high2minus1 (+ -1 high2))
+                (equal zsize+1 (+ 1 zsize))
+                (equal n (+ 1 (- high1minus1 low1)))
+                (equal n (+ 1 (- high2minus1 low2)))
+                (<= low1 high1minus1)
+                ;(<= low2 high2minus1)
+                (natp low1)
+                (natp low2)
+                (natp high1)
+                (natp high2)
+                (posp high1) ;why?
+                (posp high2) ;why?
+                (natp zsize)
+                )
+           (equal (acl2::bvcat zsize+1
+                               (acl2::bvcat zsize z 1 (acl2::bitxor (acl2::getbit high1 x) (acl2::getbit high2 y)))
+                               n
+                               (acl2::bvxor n (acl2::slice high1minus1 low1 x) (acl2::slice high2minus1 low2 y)))
+                  (acl2::bvcat zsize
+                               z
+                               (+ 1 n)
+                               (acl2::bvxor (+ 1 n)
+                                            (acl2::slice high1 low1 x) (acl2::slice high2 low2 y)))))
+  :hints (("Goal" :in-theory (enable))))
+
+;commutes the first xor
+(defthm bvcat-of-bitxor-and-bvxor-adjacent-bits-extra-left-assoc-alt
+  (implies (and (equal high1minus1 (+ -1 high1))
+                (equal high2minus1 (+ -1 high2))
+                (equal zsize+1 (+ 1 zsize))
+                (equal n (+ 1 (- high1minus1 low1)))
+                (equal n (+ 1 (- high2minus1 low2)))
+                (<= low1 high1minus1)
+                ;(<= low2 high2minus1)
+                (natp low1)
+                (natp low2)
+                (natp high1)
+                (natp high2)
+                (posp high1) ;why?
+                (posp high2) ;why?
+                (natp zsize)
+                )
+           (equal (acl2::bvcat zsize+1
+                               (acl2::bvcat zsize z 1 (acl2::bitxor (acl2::getbit high2 y) (acl2::getbit high1 x)))
+                               n
+                               (acl2::bvxor n (acl2::slice high1minus1 low1 x) (acl2::slice high2minus1 low2 y)))
+                  (acl2::bvcat zsize
+                               z
+                               (+ 1 n)
+                               (acl2::bvxor (+ 1 n)
+                                            (acl2::slice high1 low1 x) (acl2::slice high2 low2 y)))))
+  :hints (("Goal" :in-theory (enable))))
+
+(defthm bvcat-of-bvxor-and-bitxor-adjacent-bits-extra-left-assoc
+  (implies (and (equal mid1minus1 (+ -1 mid1))
+                (equal mid2minus1 (+ -1 mid2))
+                ;;(equal n2 (+ 1 (- high1minus1 low1)))
+                ;;(equal n2 (+ 1 (- high2minus1 low2)))
+                (equal n1 (+ 1 (- high1 mid1)))
+                (equal n1 (+ 1 (- high2 mid2)))
+                (equal zsize+n1 (+ n1 zsize))
+                ;;(< low1 high1minus1)
+                ;;(< low2 high2minus1)
+                (<= mid1 high1)
+                ;;(<= mid2 high2)
+                ;;(<= low2 high2minus1)
+                ;;(natp low1)
+                ;;(natp low2)
+                (natp mid1)
+                (natp mid2)
+                (natp high1)
+                (natp high2)
+                (posp mid1)  ;why?
+                (posp mid2)  ;why?
+                (posp high1) ;why?
+                (posp high2) ;why?
+                (natp zsize)
+                )
+           (equal (acl2::bvcat zsize+n1
+                               (acl2::bvcat zsize z n1 (acl2::bvxor n1 (acl2::slice high1 mid1 x) (acl2::slice high2 mid2 y)))
+                               1 (acl2::bitxor (acl2::getbit mid1minus1 x) (acl2::getbit mid2minus1 y)))
+                  (acl2::bvcat zsize z
+                               (+ 1 n1)
+                               (acl2::bvxor (+ 1 n1)
+                                            (acl2::slice high1 mid1minus1 x)
+                                            (acl2::slice high2 mid2minus1 y)))))
+  :hints (("Goal" :in-theory (enable))))
+
+;has the first xor commuted
+(defthm bvcat-of-bvxor-and-bitxor-adjacent-bits-extra-left-assoc-alt
+  (implies (and (equal mid1minus1 (+ -1 mid1))
+                (equal mid2minus1 (+ -1 mid2))
+                ;;(equal n2 (+ 1 (- high1minus1 low1)))
+                ;;(equal n2 (+ 1 (- high2minus1 low2)))
+                (equal n1 (+ 1 (- high1 mid1)))
+                (equal n1 (+ 1 (- high2 mid2)))
+                (equal zsize+n1 (+ n1 zsize))
+                ;;(< low1 high1minus1)
+                ;;(< low2 high2minus1)
+                (<= mid1 high1)
+                ;;(<= mid2 high2)
+                ;;(<= low2 high2minus1)
+                ;;(natp low1)
+                ;;(natp low2)
+                (natp mid1)
+                (natp mid2)
+                (natp high1)
+                (natp high2)
+                (posp mid1)  ;why?
+                (posp mid2)  ;why?
+                (posp high1) ;why?
+                (posp high2) ;why?
+                (natp zsize)
+                )
+           (equal (acl2::bvcat zsize+n1
+                               (acl2::bvcat zsize z n1 (acl2::bvxor n1 (acl2::slice high2 mid2 y) (acl2::slice high1 mid1 x)))
+                               1 (acl2::bitxor (acl2::getbit mid1minus1 x) (acl2::getbit mid2minus1 y)))
+                  (acl2::bvcat zsize z
+                               (+ 1 n1)
+                               (acl2::bvxor (+ 1 n1)
+                                            (acl2::slice high1 mid1minus1 x)
+                                            (acl2::slice high2 mid2minus1 y)))))
+  :hints (("Goal" :in-theory (enable))))
