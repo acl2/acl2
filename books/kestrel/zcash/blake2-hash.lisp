@@ -37,7 +37,7 @@
               (< (len input) (- blake::*blake2s-max-data-byte-length* 64)))
   :returns (output byte-listp
                    :hints (("Goal" :in-theory (enable returns-lemma))))
-  :short "The function @($\\mathsf{BLAKE2s\\textsf{-}\\mathsf{256}$)
+  :short "The function @($\\mathsf{BLAKE2s}\\textsf{-}\\mathsf{256}$)
           [ZPS:5.4.1.2]."
   :long
   (xdoc::topstring
