@@ -1,6 +1,6 @@
 ; JSON Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -48,7 +48,7 @@
      where a member consists of a name and a value.
      For now we use ACL2 strings for the names, which are ISO-8859-1;
      JSON allows Unicode here,
-     we may generalize this aspect of our JSON abstract syntax in the future.
+     so we may generalize this aspect of our JSON abstract syntax in the future.
      Despite the recommendation of avoiding members with the same name,
      such duplications are not strictly illegal in JSON:
      this is why we use a list of members,
