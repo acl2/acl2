@@ -28,9 +28,36 @@
 
 (acl2::ensure-rules-known (lift-r1cs-rules))
 
+(defun fep-assumptions-for-vars-aux (vars prime acc)
+  (declare (xargs :guard (and (symbol-listp vars)
+                              (true-listp acc))))
+  (if (endp vars)
+      (acl2::reverse-list acc)
+    (fep-assumptions-for-vars-aux (rest vars)
+                                  prime
+                                  (cons `(fep ,(first vars) ,prime)
+                                        acc))))
+
+;; Make a list of assertions stating that each of the VARS satisfies fep.
+(defun fep-assumptions-for-vars (vars prime)
+  (declare (xargs :guard (symbol-listp vars)))
+  (fep-assumptions-for-vars-aux vars prime nil))
+
+;; TODO: generalize to take a package argument?
+(defun r1cs-var-to-acl2-var-alist (vars acc)
+  (declare (xargs :guard (and (symbol-listp vars)
+                              (alistp acc))))
+  (if (endp vars)
+      (acl2::reverse-list acc)
+    (let* ((var (first vars))
+           (new-var (if (equal "KEYWORD" (symbol-package-name var))
+                        (intern-in-package-of-symbol (symbol-name var) 'defthm) ; puts it in the acl2 package
+                      var)))
+      (r1cs-var-to-acl2-var-alist (rest vars) (acons var new-var acc)))))
+
 ;; Returns (mv erp event state).
 (defun lift-r1cs-new-fn (name-of-defconst
-                         vars
+                         vars ; may be in the keyword package, in which case we switch to the acl2 package...
                          constraints
                          prime
                          extra-rules remove-rules rules
@@ -51,43 +78,52 @@
                               (booleanp count-hitsp))
                   :mode :program
                   :stobjs state))
-  (let* (;(vars (r1cs->vars r1cs))
-         ;(constraints (r1cs->constraints r1cs))
-         (term-to-simplify `(r1cs::r1cs-constraints-holdp ',constraints
-                                                          ,(make-valuation-from-keyword-vars2 vars)
-                                                          ',prime)))
-    (acl2::def-simplified-fn name-of-defconst
-                             term-to-simplify
-                             ;; The extra rules:
-                             (if rules
-                                 nil ;rules are given below, so extra-rules are not allowed
-                               (append (lift-r1cs-rules)
-                                       extra-rules))
-                             remove-rules
-                             rules ;to override the default
-                             ;; nil ;rule-alists
-                             ;; drop? but we need to know that all lookups of vars give integers:
-                             ;; TODO: Use the more compact machinery for this:
-                             (make-fep-assumptions-from-keyword-vars vars prime)
-                             ;; TODO: Add more functions to this?
-                             ;; TODO: Make this once and store it?
-                             (acl2::make-interpreted-function-alist '(r1cs::r1cs-constraint->a$inline
-                                                                      r1cs::r1cs-constraint->b$inline
-                                                                      r1cs::r1cs-constraint->c$inline
-                                                                      assoc-equal ; called by r1cs::r1cs-constraint->a$inline, etc
-                                                                      ;; todo: i had assoc here; should that be an error?
-                                                                      mul
-                                                                      neg
-                                                                      add
-                                                                      pfield::pos-fix)
-                                                                    (w state))
-                             monitor
-                             memoizep
-                             count-hitsp
-                             ;; nil                             ;simplify-xorsp
-                             print
-                             whole-form
-                             state)))
+  (b* ( ;; (vars (r1cs->vars r1cs))
+       ;; (constraints (r1cs->constraints r1cs))
+       ;; Maps the vars in the R1CS (which are just symbols in that piece of
+       ;; data) to ACL2 variables for the proof:
+       (r1cs-var-to-acl2-var-alist (r1cs-var-to-acl2-var-alist vars nil))
+       (acl2-vars (strip-cdrs r1cs-var-to-acl2-var-alist))
+       ((acl2::when (not (no-duplicatesp acl2-vars))) ;todo: optimize by sorting
+        (er hard? 'lift-r1cs-new-fn "Duplicate var(s) detected in ~X01." acl2-vars nil)
+        (mv t ;erp
+            nil
+            state))
+       (term-to-simplify `(r1cs::r1cs-constraints-holdp ',constraints
+                                                        ,(make-efficient-symbolic-valuation-for-alist r1cs-var-to-acl2-var-alist)
+                                                        ',prime)))
+  (acl2::def-simplified-fn name-of-defconst
+                           term-to-simplify
+                           ;; The extra rules:
+                           (if rules
+                               nil ;rules are given below, so extra-rules are not allowed
+                             (append (lift-r1cs-rules)
+                                     extra-rules))
+                           remove-rules
+                           rules ;to override the default
+                           ;; nil ;rule-alists
+                           ;; drop? but we need to know that all lookups of vars give integers:
+                           ;; TODO: Use the more compact machinery for this?:
+                           (fep-assumptions-for-vars acl2-vars prime)
+                           ;; TODO: Add more functions to this?
+                           ;; TODO: Make this once and store it?
+                           (acl2::make-interpreted-function-alist '(r1cs::r1cs-constraint->a$inline
+                                                                    r1cs::r1cs-constraint->b$inline
+                                                                    r1cs::r1cs-constraint->c$inline
+                                                                    assoc-equal ; called by r1cs::r1cs-constraint->a$inline, etc
+                                                                    ;; todo: i had assoc here; should that be an error?
+                                                                    mul
+                                                                    neg
+                                                                    add
+                                                                    pfield::pos-fix)
+                                                                  (w state))
+                           monitor
+                           memoizep
+                           count-hitsp
+                           ;; nil                             ;simplify-xorsp
+                           print
+                           whole-form
+                           state)))
 
 ;; Expects the functions <BASE-NAME>-constraints and <BASE-NAME>-vars to
 ;; exist.  Creates a constant DAG named *<BASE-NAME>-holdsp*.
