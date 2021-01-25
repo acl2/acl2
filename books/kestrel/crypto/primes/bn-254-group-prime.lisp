@@ -11,7 +11,7 @@
 
 (in-package "PRIMES")
 
-(include-book "defprime")
+(include-book "kestrel/number-theory/defprime" :dir :system)
 
 ;; This is the order of the BN254 curve, and also the order of the field in
 ;; which the BabyJubjub curve is defined.

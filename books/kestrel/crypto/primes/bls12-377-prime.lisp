@@ -26,7 +26,7 @@
 
 (in-package "PRIMES")
 
-(include-book "defprime")
+(include-book "kestrel/number-theory/defprime" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
