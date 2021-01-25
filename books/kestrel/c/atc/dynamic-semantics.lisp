@@ -791,7 +791,7 @@
        :err scope.get
        :ok (b* ((frame (make-frame :function fun :scopes (list scope.get)))
                 (compst (push-frame frame compst))
-                (val-opt (exec-stmt info.body compst fenv (1- limit))))
+                ((mv val-opt &) (exec-stmt info.body compst fenv (1- limit))))
              (value-option-result-case
               val-opt
               :err val-opt.get
@@ -806,7 +806,8 @@
                      (fenv fun-envp)
                      (limit natp))
     :guard (compustate-nonempty-stack-p compst)
-    :returns (result value-option-resultp)
+    :returns (mv (result value-option-resultp)
+                 (new-compst compustatep))
     :parents (dynamic-semantics execution-functions)
     :short "Execute a statement."
     :long
@@ -819,43 +820,44 @@
        There is no need to pop the scope at the end,
        because for now we are not threading the computation state
        through the execution of statements."))
-    (b* (((when (zp limit)) (error :limit))
+    (b* (((when (zp limit)) (mv (error :limit) (compustate-fix compst)))
          (s (stmt-fix s)))
       (stmt-case
        s
-       :labeled (error (list :exec-stmt s))
+       :labeled (mv (error (list :exec-stmt s)) (compustate-fix compst))
        :compound (b* ((compst (enter-scope compst)))
-                   (exec-block-item-list s.items compst fenv (1- limit)))
-       :expr (error (list :exec-stmt s))
-       :null (error (list :exec-stmt s))
+                   (mv (exec-block-item-list s.items compst fenv (1- limit))
+                       (compustate-fix compst)))
+       :expr (mv (error (list :exec-stmt s)) (compustate-fix compst))
+       :null (mv (error (list :exec-stmt s)) (compustate-fix compst))
        :if (b* ((test (exec-expr s.test compst fenv (1- limit))))
              (value-result-case
               test
               :ok (if (sint-nonzerop test.get)
                       (exec-stmt s.then compst fenv (1- limit))
-                    nil)
-              :err test.get))
+                    (mv nil (compustate-fix compst)))
+              :err (mv test.get (compustate-fix compst))))
        :ifelse (b* ((test (exec-expr s.test compst fenv (1- limit))))
                  (value-result-case
                   test
                   :ok (if (sint-nonzerop test.get)
                           (exec-stmt s.then compst fenv (1- limit))
                         (exec-stmt s.else compst fenv (1- limit)))
-                  :err test.get))
-       :switch (error (list :exec-stmt s))
-       :while (error (list :exec-stmt s))
-       :dowhile (error (list :exec-stmt s))
-       :for (error (list :exec-stmt s))
-       :goto (error (list :exec-stmt s))
-       :continue (error (list :exec-stmt s))
-       :break (error (list :exec-stmt s))
+                  :err (mv test.get (compustate-fix compst))))
+       :switch (mv (error (list :exec-stmt s)) (compustate-fix compst))
+       :while (mv (error (list :exec-stmt s)) (compustate-fix compst))
+       :dowhile (mv (error (list :exec-stmt s)) (compustate-fix compst))
+       :for (mv (error (list :exec-stmt s)) (compustate-fix compst))
+       :goto (mv (error (list :exec-stmt s)) (compustate-fix compst))
+       :continue (mv (error (list :exec-stmt s)) (compustate-fix compst))
+       :break (mv (error (list :exec-stmt s)) (compustate-fix compst))
        :return (if (exprp s.value)
                    (b* ((eres (exec-expr s.value compst fenv (1- limit))))
                      (value-result-case
                       eres
-                      :err eres.get
-                      :ok eres.get))
-                 nil)))
+                      :err (mv eres.get (compustate-fix compst))
+                      :ok (mv eres.get (compustate-fix compst))))
+                 (mv nil (compustate-fix compst)))))
     :measure (nfix limit))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -894,14 +896,8 @@
                        :ok (mv (value-option-result-ok nil) new-compst.get)
                        :err (mv new-compst.get (compustate-fix compst))))
                 :err (mv init.get (compustate-fix compst))))
-       :stmt (mv (exec-stmt item.get compst fenv (1- limit))
-                 (compustate-fix compst))))
-    :measure (nfix limit)
-    ///
-    (defret compustate-nonempty-stack-p-of-exec-block-item
-      (implies (compustate-nonempty-stack-p compst)
-               (compustate-nonempty-stack-p new-compst))
-      :hints (("Goal" :expand ((exec-block-item item compst fenv limit))))))
+       :stmt (exec-stmt item.get compst fenv (1- limit))))
+    :measure (nfix limit))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -931,6 +927,39 @@
 
   :verify-guards nil ; done below
   ///
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (defret-mutual compustate-nonempty-stack-p-of-exec
+    (defret compustate-nonempty-stack-p-of-exec-expr
+      t
+      :rule-classes nil
+      :fn exec-expr)
+    (defret compustate-nonempty-stack-p-of-exec-expr-list
+      t
+      :rule-classes nil
+      :fn exec-expr-list)
+    (defret compustate-nonempty-stack-p-of-exec-fun
+      t
+      :rule-classes nil
+      :fn exec-fun)
+    (defret compustate-nonempty-stack-p-of-exec-stmt
+      (implies (compustate-nonempty-stack-p compst)
+               (compustate-nonempty-stack-p new-compst))
+      :fn exec-stmt)
+    (defret compustate-nonempty-stack-p-of-exec-block-item
+      (implies (compustate-nonempty-stack-p compst)
+               (compustate-nonempty-stack-p new-compst))
+      :fn exec-block-item)
+    (defret compustate-nonempty-stack-p-of-exec-block-item-list
+      t
+      :rule-classes nil
+      :fn exec-block-item-list)
+    :hints (("Goal" :expand ((exec-stmt s compst fenv limit)
+                             (exec-block-item item compst fenv limit)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (verify-guards exec-expr)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
