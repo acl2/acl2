@@ -607,7 +607,8 @@
      as the result of checking the whole block.
      If @('nil') is among the return types of the first block item,
      we check the rest of the block,
-     and we combine (i.e. take the union of) all the return types."))
+     and we combine (i.e. take the union of) all the return types,
+     after removing @('nil') from the types of the first block item."))
 
   (define stmt-check ((s stmtp) (funtab fun-tablep) (vartab var-tablep))
     :returns (stype stmt-type-resultp)
@@ -686,7 +687,7 @@
          (stype (block-item-check (car items) funtab vartab))
          ((when (errorp stype)) (error (list :block-item-error stype)))
          ((unless (set::in nil (stmt-type->return-types stype))) stype)
-         (rtypes1 (stmt-type->return-types stype))
+         (rtypes1 (set::delete nil (stmt-type->return-types stype)))
          (vartab (stmt-type->variables stype))
          (stype (block-item-list-check (cdr items) funtab vartab))
          ((when (errorp stype)) (error (list :block-item-list-error stype)))
