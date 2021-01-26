@@ -24,7 +24,10 @@
    '(binary-+ binary-* unary-/ unary--
               equal <
               implies if not
-              lambda)))
+              ;; lambda
+              )))
+
+(in-theory (disable (:executable-counterpart smt-basics)))
 
 (defval *SMT-functions*
   :parents (SMT-functions)

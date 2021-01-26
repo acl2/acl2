@@ -31,9 +31,28 @@
                       (equal (len new-vars) n))
              :name len-of-new-fresh-vars)))
 
+(defthm consp-of-make-n-vars
+  (implies (and (natp n) (not (zp n)))
+           (consp (acl2::make-n-vars n base m avoid)))
+  :hints (("Goal"
+           :in-theory (enable acl2::make-n-vars))))
+
+(defthm notnull-of-make-n-vars
+  (implies (consp (acl2::make-n-vars n base m avoid))
+           (car (acl2::make-n-vars n base m avoid)))
+  :hints (("Goal"
+           :in-theory (enable acl2::make-n-vars))))
+
 (define new-fresh-var ((current symbol-listp))
   :returns (new-var symbolp)
-  (car (new-fresh-vars 1 current)))
+  (car (new-fresh-vars 1 current))
+  ///
+  (more-returns
+   (new-var (not (null new-var))
+            :name notnull-of-new-fresh-var
+            :hints (("Goal"
+                     :in-theory (enable new-fresh-vars
+                                        acl2::new-symbols-from-base))))))
 
 (acl2::make-flag flag-all-vars1
                  all-vars1
