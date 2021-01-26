@@ -275,23 +275,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define compustate-inner-scope-p ((compst compustatep))
+(define compustate-top-frame-scopes-number ((compst compustatep))
   :guard (compustate-nonempty-stack-p compst)
-  :returns (yes/no booleanp)
-  :short "Check if a computation state with a non-empty call stack
-          has at least two scopes in the top frame."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The name of this predicate is motivated by the fact that
-     having at least two scopes means that we are in an inner scope,
-     i.e. one that is inside the always-present function body scope.")
-   (xdoc::p
-    "When this predicate holds, we may exit (i.e. pop) a scope,
-     and still have a valid top frame with a non-empty stack of scopes.
-     When we enter (i.e. push) a scope while executing a function's body,
-     we establish this predicate."))
-  (consp (cdr (frame->scopes (top-frame compst))))
+  :returns (n natp)
+  :short "Number of scopes in the top frame of
+          a computation state with a non-empty call stack."
+  (len (frame->scopes (top-frame compst)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -313,17 +302,17 @@
   :hooks (:fix)
   ///
   (more-returns
-   (new-compst compustate-nonempty-stack-p)
-   (new-compst compustate-inner-scope-p
-            :hints (("Goal" :in-theory (enable compustate-inner-scope-p
-                                               top-frame
-                                               push-frame))))))
+   (new-compst compustate-nonempty-stack-p))
+  (defret compustate-top-frame-scopes-number-of-enter-scope
+    (equal (compustate-top-frame-scopes-number new-compst)
+           (1+ (compustate-top-frame-scopes-number compst)))
+    :hints (("Goal" :in-theory (enable compustate-top-frame-scopes-number)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define exit-scope ((compst compustatep))
   :guard (and (compustate-nonempty-stack-p compst)
-              (compustate-inner-scope-p compst))
+              (> (compustate-top-frame-scopes-number compst) 1))
   :returns (new-compst compustatep)
   :short "Exit a scope."
   :long
@@ -336,8 +325,16 @@
        (new-frame (change-frame frame :scopes new-scopes))
        (new-compst (push-frame new-frame (pop-frame compst))))
     new-compst)
-  :guard-hints (("Goal" :in-theory (enable compustate-inner-scope-p)))
-  :hooks (:fix))
+  :guard-hints (("Goal" :in-theory (enable compustate-top-frame-scopes-number)))
+  :hooks (:fix)
+  ///
+  (more-returns
+   (new-compst compustate-nonempty-stack-p))
+  (defret compustate-top-frame-scopes-number-of-exit-scope
+    (equal (compustate-top-frame-scopes-number new-compst)
+           (1- (compustate-top-frame-scopes-number compst)))
+    :hyp (> (compustate-top-frame-scopes-number compst) 1)
+    :hints (("Goal" :in-theory (enable compustate-top-frame-scopes-number)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -409,13 +406,13 @@
     :hints (("Goal" :in-theory (enable compustate-result-ok->get
                                        compustate-result-kind))))
 
-  (defret compustate-inner-scope-p-of-add-var-when-compustate-inner-scope-p
-    (implies (and (compustate-nonempty-stack-p compst)
-                  (compustate-inner-scope-p compst)
-                  (compustate-result-case result :ok))
-             (compustate-inner-scope-p (compustate-result-ok->get result)))
+  (defret compustate-top-frame-scopes-number-of-add-var
+    (implies (compustate-result-case result :ok)
+             (equal (compustate-top-frame-scopes-number
+                     (compustate-result-ok->get result))
+                    (compustate-top-frame-scopes-number compst)))
     :hints (("Goal" :in-theory (enable compustate-result-ok->get
-                                       compustate-inner-scope-p
+                                       compustate-top-frame-scopes-number
                                        compustate-result-kind)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
