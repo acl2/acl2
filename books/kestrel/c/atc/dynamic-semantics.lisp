@@ -283,6 +283,16 @@
   (len (frame->scopes (top-frame compst)))
   :hooks (:fix))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection push-frame-xdoc-extension
+  :extension push-frame
+
+  (defrule compustate-top-frame-scopes-number-of-push-frame
+    (equal (compustate-top-frame-scopes-number (push-frame frame compst))
+           (len (frame->scopes frame)))
+    :enable compustate-top-frame-scopes-number))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define enter-scope ((compst compustatep))
@@ -991,11 +1001,6 @@
                              (exec-block-item item compst fenv limit)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (defrulel compustate-top-frame-scopes-number-of-push-frame ; TODO: move
-    (equal (compustate-top-frame-scopes-number (push-frame frame compst))
-           (len (frame->scopes frame)))
-    :enable compustate-top-frame-scopes-number)
 
   (verify-guards exec-expr)
 
