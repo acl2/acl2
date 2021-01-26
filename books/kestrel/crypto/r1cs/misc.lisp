@@ -1083,3 +1083,18 @@
   (equal (acl2::bvxor 8 (acl2::leftrotate32 amt y) x)
          (acl2::bvxor 8 (acl2::trim 8 (acl2::leftrotate32 amt y)) x))
   :hints (("Goal" :in-theory (enable acl2::trim))))
+
+(defthm acl2::consp-when-len-equal-alt
+  (implies (and (equal acl2::free (len acl2::x))
+                (syntaxp (quotep acl2::free)))
+           (equal (consp acl2::x)
+                  (< 0 acl2::free)))
+  :hints (("Goal" :in-theory (e/d (len) (acl2::len-of-cdr)))))
+
+;; Introduce BVPLUS
+(defthm mod-of-+-of-4294967296
+  (implies (and (integerp x)
+                (integerp y))
+           (equal (mod (+ x y) 4294967296)
+                  (acl2::bvplus 32 x y)))
+  :hints (("Goal" :in-theory (enable acl2::bvplus acl2::bvchop))))
