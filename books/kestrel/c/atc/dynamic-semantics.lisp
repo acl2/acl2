@@ -493,7 +493,10 @@
    (xdoc::p
     "The argument is the result of
      recursively executing the operand expression.
-     For now we only support some unary operators."))
+     For now we only support some unary operators.")
+   (xdoc::p
+    "These unary operators are all side-effect-free.
+     Thus, it suffices to take and return values."))
   (b* ((op (unop-fix op))
        (arg (value-result-fix arg)))
     (value-result-case
@@ -587,7 +590,9 @@
      if the result of the first operand is 0,
      and return 0 in this case.
      Otherwise, we look at the result of the second operand,
-     and return 0 or 1 depending on whether it is 0 or non-0."))
+     and return 0 or 1 depending on whether it is 0 or non-0.")
+   (xdoc::p
+    "Note that this binary operator is not side-effecting."))
   (value-result-case
    arg1
    :err arg1.get
@@ -614,7 +619,9 @@
      if the result of the first operand is non-0,
      and return 1 in this case.
      Otherwise, we look at the result of the second operand,
-     and return 0 or 1 depending on whether it is 0 or non-0."))
+     and return 0 or 1 depending on whether it is 0 or non-0.")
+   (xdoc::p
+    "Note that this binary operator is not side-effecting."))
   (value-result-case
    arg1
    :err arg1.get
@@ -634,7 +641,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The assignment operators are not supported yet."))
+    "Here we only define the execution of non-side-effecting binary operators.
+     Assignments will be handled as part of statement execution;
+     see the discussion in @(tsee exec-expr-nse)."))
   (case (binop-kind op)
     ((:mul :div :rem :add :sub :shl :shr
       :lt :gt :le :ge :eq :ne
@@ -646,6 +655,101 @@
                 (binop-fix op)
                 (value-result-fix arg1)
                 (value-result-fix arg2)))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec-expr-nse ((e exprp) (compst compustatep))
+  :guard (compustate-nonempty-stack-p compst)
+  :returns (result value-resultp)
+  :short "Execute a non-side-effecting expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We restrict the C subset that we support so that
+     we allow side-effecting expressions only at certain places in statements,
+     while all their sub-expressions are non-side-effecting.
+     Here we define the execution of non-side-effecting expressions only;
+     the execution of side-effecting expressions will be defined
+     as part of statement execution.")
+   (xdoc::p
+    "We return an error if we encounter a side-effecting expression.
+     While function calls are not necessarily side-effecting,
+     establishing that requires looking at the function.
+     Thus, for simplicity, we regard function calls to be side-effecting,
+     i.e. we return an error if we encounter them here.")
+   (xdoc::p
+    "We also reject pre/post-increment/decrement expressions,
+     which are obviously side-effecting.")
+   (xdoc::p
+    "For now we reject cast expressions just for lack of support,
+     but eventually we will support them, since they are non-side-effecting.")
+   (xdoc::p
+    "Recall that our C abstract syntax does not cover
+     all possible C expression yet.
+     Thus, we may extend this ACL2 function
+     with support for more non-side-effecting expressions.")
+   (xdoc::p
+    "If no error occurs, none of the expressions is side-effecting.
+     Thus, the order in which the sub-expressions are evaluated does not matter:
+     we just proceed left to right.")
+   (xdoc::p
+    "This ACL2 function will replace @(tsee exec-expr)
+     and will be renamed to `@('exec-expr')' eventually.
+     We are evolving our formalization of the C dynamic semantics in stages."))
+  (b* ((e (expr-fix e)))
+    (expr-case
+     e
+     :ident (exec-ident e.get compst)
+     :const (exec-const e.get)
+     :call (error (list :side-effecting-expression e))
+     :postinc (error (list :side-effecting-expression e))
+     :postdec (error (list :side-effecting-expression e))
+     :preinc (error (list :side-effecting-expression e))
+     :predec (error (list :side-effecting-expression e))
+     :unary (b* ((arg (exec-expr-nse e.arg compst)))
+              (exec-unary e.op arg))
+     :cast (error (list :unsupported-expression e))
+     :binary (b* ((arg1 (exec-expr-nse e.arg1 compst))
+                  (arg2 (exec-expr-nse e.arg2 compst)))
+               (exec-binary e.op arg1 arg2))
+     :cond (b* ((test (exec-expr-nse e.test compst)))
+             (value-result-case
+              test
+              :ok (if (sint-nonzerop test.get)
+                      (exec-expr-nse e.then compst)
+                    (exec-expr-nse e.else compst))
+              :err test.get))))
+  :measure (expr-count e)
+  :verify-guards :after-returns
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec-expr-list-nse ((es expr-listp) (compst compustatep))
+  :guard (compustate-nonempty-stack-p compst)
+  :returns (result value-list-resultp)
+  :short "Execute a list of non-side-effecting expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used, in particular,
+     for the argument expressions a function call.")
+   (xdoc::p
+    "Given that the expression are non-side-effecting (if there is no error),
+     the order of evaluation does not matter.
+     We proceed left to right.")
+   (xdoc::p
+    "This ACL2 function will replace @(tsee exec-expr-list)
+     and will be renamed to `@('exec-expr-list')' eventually.
+     We are evolving our formalization of the C dynamic semantics in stages."))
+  (b* (((when (endp es)) nil)
+       (val/err (exec-expr-nse (car es) compst))
+       ((when (value-result-case val/err :err)) (value-result-err->get val/err))
+       (val (value-result-ok->get val/err))
+       (vals (exec-expr-list-nse (cdr es) compst))
+       ((when (errorp vals)) vals))
+    (cons val vals))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -707,7 +811,11 @@
      (xdoc::p
       "Since we currently do not model side effects,
        we just evaluate expressions left-to-right,
-       but any ordering would yield the same results."))
+       but any ordering would yield the same results.")
+     (xdoc::p
+      "This ACL2 function will be replaced by @(tsee exec-expr-nse) eventually.
+       The execution of function calls will be moved to @(tsee exec-stmt).
+       We are evolving our formalization of the C dynamic semantics in stages."))
     (b* (((when (zp limit)) (error :limit))
          (e (expr-fix e)))
       (expr-case
@@ -753,7 +861,10 @@
      (xdoc::p
       "Since we currently do not model side effects,
        we just evaluate the expressions left-to-right,
-       but any ordering would yield the same results."))
+       but any ordering would yield the same results.")
+     (xdoc::p
+      "This ACL2 function will be replaced by @(tsee exec-expr-list-nse) eventually.
+       We are evolving our formalization of the C dynamic semantics in stages."))
     (b* (((when (zp limit)) (error :limit))
          ((when (endp es)) (value-list-result-ok nil))
          (result (exec-expr (car es) compst fenv (1- limit))))
