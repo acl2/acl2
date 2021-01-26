@@ -706,7 +706,7 @@
       "For now we only support the execution of certain expressions.")
      (xdoc::p
       "Since we currently do not model side effects,
-       we just evaluate them left-to-right,
+       we just evaluate expressions left-to-right,
        but any ordering would yield the same results."))
     (b* (((when (zp limit)) (error :limit))
          (e (expr-fix e)))
@@ -752,7 +752,7 @@
     (xdoc::topstring
      (xdoc::p
       "Since we currently do not model side effects,
-       we just evaluate them left-to-right,
+       we just evaluate the expressions left-to-right,
        but any ordering would yield the same results."))
     (b* (((when (zp limit)) (error :limit))
          ((when (endp es)) (value-list-result-ok nil))
@@ -792,7 +792,8 @@
        We return the value as result.
        There is no need to pop the frame
        because for now we are not threading computation states
-       through execution."))
+       through the execution of functions
+       (because currently function calls have no side effects)."))
     (b* (((when (zp limit)) (error :limit))
          (info (fun-env-lookup fun fenv))
          ((when (not info)) (error (list :function-undefined (ident-fix fun))))
@@ -828,10 +829,8 @@
       "For now we only support the execution of certain statements.")
      (xdoc::p
       "For a compound statement (i.e. a block),
-       we enter a new (empty) scope prior to executing the block items.
-       There is no need to pop the scope at the end,
-       because for now we are not threading the computation state
-       through the execution of statements."))
+       we enter a new (empty) scope prior to executing the block items,
+       and we exit that scope after executing the block items."))
     (b* (((when (zp limit)) (mv (error :limit) (compustate-fix compst)))
          (s (stmt-fix s)))
       (stmt-case
@@ -928,9 +927,7 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "We thread the computation state through the block items.
-       However, for now we do not need to return it
-       after executing the whole list of block items."))
+      "We thread the computation state through the block items."))
     (b* (((when (zp limit)) (mv (error :limit) (compustate-fix compst)))
          ((when (endp items)) (mv nil (compustate-fix compst)))
          ((mv val? compst) (exec-block-item (car items) compst fenv (1- limit)))
