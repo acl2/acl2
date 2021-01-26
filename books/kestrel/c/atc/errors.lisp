@@ -88,8 +88,8 @@
          (type-result (add-suffix type "-RESULT"))
          (type-resultp (add-suffix type "-RESULTP"))
          (short (str::cat "Fixtype of " desc " and errors."))
-         (type-when-type-resultp-and-not-errorp
-          (acl2::packn-pos (list type '-when- type-resultp '-and-not-errorp)
+         (typep-when-type-resultp-and-not-errorp
+          (acl2::packn-pos (list typep '-when- type-resultp '-and-not-errorp)
                            type)))
       `(encapsulate ()
          (fty::defflatsum ,type-result
@@ -97,7 +97,7 @@
            (:ok ,type)
            (:err error)
            :pred ,type-resultp)
-         (defrule ,type-when-type-resultp-and-not-errorp
+         (defrule ,typep-when-type-resultp-and-not-errorp
            (implies (and (,type-resultp x)
                          (not (errorp x)))
                     (,typep x))
