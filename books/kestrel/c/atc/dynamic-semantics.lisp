@@ -681,7 +681,8 @@
                      (compst compustatep)
                      (fenv fun-envp)
                      (limit natp))
-    :guard (compustate-nonempty-stack-p compst)
+    :guard (and (compustate-nonempty-stack-p compst)
+                (> (compustate-top-frame-scopes-number compst) 0))
     :returns (result value-resultp)
     :parents (dynamic-semantics execution-functions)
     :short "Execute an expression."
@@ -729,7 +730,8 @@
                           (compst compustatep)
                           (fenv fun-envp)
                           (limit natp))
-    :guard (compustate-nonempty-stack-p compst)
+    :guard (and (compustate-nonempty-stack-p compst)
+                (> (compustate-top-frame-scopes-number compst) 0))
     :returns (result value-list-resultp)
     :parents (dynamic-semantics execution-functions)
     :short "Execute a list of expressions."
@@ -802,7 +804,8 @@
                      (compst compustatep)
                      (fenv fun-envp)
                      (limit natp))
-    :guard (compustate-nonempty-stack-p compst)
+    :guard (and (compustate-nonempty-stack-p compst)
+                (> (compustate-top-frame-scopes-number compst) 0))
     :returns (mv (result value-option-resultp)
                  (new-compst compustatep))
     :parents (dynamic-semantics execution-functions)
@@ -822,8 +825,8 @@
       (stmt-case
        s
        :labeled (mv (error (list :exec-stmt s)) (compustate-fix compst))
-       :compound (b* ((compst (enter-scope compst)))
-                   (mv (exec-block-item-list s.items compst fenv (1- limit))
+       :compound (b* ((block-compst (enter-scope compst)))
+                   (mv (exec-block-item-list s.items block-compst fenv (1- limit))
                        (compustate-fix compst)))
        :expr (mv (error (list :exec-stmt s)) (compustate-fix compst))
        :null (mv (error (list :exec-stmt s)) (compustate-fix compst))
@@ -863,7 +866,8 @@
                            (compst compustatep)
                            (fenv fun-envp)
                            (limit natp))
-    :guard (compustate-nonempty-stack-p compst)
+    :guard (and (compustate-nonempty-stack-p compst)
+                (> (compustate-top-frame-scopes-number compst) 1))
     :returns (mv (result value-option-resultp)
                  (new-compst compustatep))
     :parents (dynamic-semantics execution-functions)
@@ -902,7 +906,8 @@
                                 (compst compustatep)
                                 (fenv fun-envp)
                                 (limit natp))
-    :guard (compustate-nonempty-stack-p compst)
+    :guard (and (compustate-nonempty-stack-p compst)
+                (> (compustate-top-frame-scopes-number compst) 1))
     :returns (result value-option-resultp)
     :parents (dynamic-semantics execution-functions)
     :short "Execute a list of block items."
@@ -956,6 +961,41 @@
                              (exec-block-item item compst fenv limit)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (defret-mutual compustate-top-frame-scopes-number-of-exec
+    (defret compustate-top-frame-scopes-number-of-exec-expr
+      t
+      :rule-classes nil
+      :fn exec-expr)
+    (defret compustate-top-frame-scopes-number-of-exec-expr-list
+      t
+      :rule-classes nil
+      :fn exec-expr-list)
+    (defret compustate-top-frame-scopes-number-of-exec-fun
+      t
+      :rule-classes nil
+      :fn exec-fun)
+    (defret compustate-top-frame-scopes-number-of-exec-stmt
+      (equal (compustate-top-frame-scopes-number new-compst)
+             (compustate-top-frame-scopes-number compst))
+      :fn exec-stmt)
+    (defret compustate-top-frame-scopes-number-of-exec-block-item
+      (equal (compustate-top-frame-scopes-number new-compst)
+             (compustate-top-frame-scopes-number compst))
+      :fn exec-block-item)
+    (defret compustate-top-frame-scopes-number-of-exec-block-item-list
+      t
+      :rule-classes nil
+      :fn exec-block-item-list)
+    :hints (("Goal" :expand ((exec-stmt s compst fenv limit)
+                             (exec-block-item item compst fenv limit)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (defrulel compustate-top-frame-scopes-number-of-push-frame ; TODO: move
+    (equal (compustate-top-frame-scopes-number (push-frame frame compst))
+           (len (frame->scopes frame)))
+    :enable compustate-top-frame-scopes-number)
 
   (verify-guards exec-expr)
 
