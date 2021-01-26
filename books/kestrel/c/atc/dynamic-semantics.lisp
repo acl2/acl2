@@ -281,7 +281,12 @@
   :short "Number of scopes in the top frame of
           a computation state with a non-empty call stack."
   (len (frame->scopes (top-frame compst)))
-  :hooks (:fix))
+  :hooks (:fix)
+  ///
+  (local (include-book "std/lists/len" :dir :system))
+  (defret compustate-top-frame-scopes-number-lower-bound
+    (> n 0)
+    :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -835,9 +840,10 @@
       (stmt-case
        s
        :labeled (mv (error (list :exec-stmt s)) (compustate-fix compst))
-       :compound (b* ((block-compst (enter-scope compst)))
-                   (mv (exec-block-item-list s.items block-compst fenv (1- limit))
-                       (compustate-fix compst)))
+       :compound (b* ((compst (enter-scope compst))
+                      ((mv value? compst)
+                       (exec-block-item-list s.items compst fenv (1- limit))))
+                   (mv value? (exit-scope compst)))
        :expr (mv (error (list :exec-stmt s)) (compustate-fix compst))
        :null (mv (error (list :exec-stmt s)) (compustate-fix compst))
        :if (b* ((test (exec-expr s.test compst fenv (1- limit))))
@@ -918,7 +924,8 @@
                                 (limit natp))
     :guard (and (compustate-nonempty-stack-p compst)
                 (> (compustate-top-frame-scopes-number compst) 1))
-    :returns (result value-option-resultp)
+    :returns (mv (result value-option-resultp)
+                 (new-compst compustatep))
     :parents (dynamic-semantics execution-functions)
     :short "Execute a list of block items."
     :long
@@ -927,11 +934,11 @@
       "We thread the computation state through the block items.
        However, for now we do not need to return it
        after executing the whole list of block items."))
-    (b* (((when (zp limit)) (error :limit))
-         ((when (endp items)) nil)
+    (b* (((when (zp limit)) (mv (error :limit) (compustate-fix compst)))
+         ((when (endp items)) (mv nil (compustate-fix compst)))
          ((mv val? compst) (exec-block-item (car items) compst fenv (1- limit)))
-         ((when (value-option-result-case val? :err)) val?)
-         ((when val?) val?))
+         ((when (value-option-result-case val? :err)) (mv val? compst))
+         ((when val?) (mv val? compst)))
       (exec-block-item-list (cdr items) compst fenv (1- limit)))
     :measure (nfix limit))
 
@@ -964,8 +971,8 @@
                (compustate-nonempty-stack-p new-compst))
       :fn exec-block-item)
     (defret compustate-nonempty-stack-p-of-exec-block-item-list
-      t
-      :rule-classes nil
+      (implies (compustate-nonempty-stack-p compst)
+               (compustate-nonempty-stack-p new-compst))
       :fn exec-block-item-list)
     :hints (("Goal" :expand ((exec-stmt s compst fenv limit)
                              (exec-block-item item compst fenv limit)))))
@@ -994,8 +1001,8 @@
              (compustate-top-frame-scopes-number compst))
       :fn exec-block-item)
     (defret compustate-top-frame-scopes-number-of-exec-block-item-list
-      t
-      :rule-classes nil
+      (equal (compustate-top-frame-scopes-number new-compst)
+             (compustate-top-frame-scopes-number compst))
       :fn exec-block-item-list)
     :hints (("Goal" :expand ((exec-stmt s compst fenv limit)
                              (exec-block-item item compst fenv limit)))))
