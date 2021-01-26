@@ -141,3 +141,5 @@
 (include-book "rules4")
 (include-book "rules5")
 (include-book "rules6")
+
+(include-book "doc")

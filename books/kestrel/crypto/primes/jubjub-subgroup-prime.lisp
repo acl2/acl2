@@ -23,7 +23,7 @@
 
 (in-package "PRIMES")
 
-(include-book "defprime")
+(include-book "kestrel/number-theory/defprime" :dir :system)
 
 (defprime jubjub-subgroup-prime
   6554484396890773809930967563523245729705921265872317281365359162392183254199

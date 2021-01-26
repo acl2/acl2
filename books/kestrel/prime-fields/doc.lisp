@@ -13,7 +13,7 @@
 (include-book "xdoc/constructors" :dir :system)
 
 (xdoc::defxdoc prime-fields
-  :parents (acl2::kestrel-books)
+  :parents (acl2::kestrel-books acl2::algebra)
   :short "A library about prime fields."
   :long
   (xdoc::topstring
