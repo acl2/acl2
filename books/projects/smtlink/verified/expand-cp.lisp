@@ -81,14 +81,22 @@
            (and (consp (assoc-equal x y))
                 (symbolp (cdr (assoc-equal x y))))))
 
-(defthm crock
+(local
+(defthm crock1
   (implies (symbolp x) (pseudo-termp x)))
+)
 
-;; (define dont-generate-freshvar ((term pseudo-termp))
-;;   ;;1. already exist
-;;   ;; 2. variable
-;;   ;; 3. constant
-;;   )
+(define dont-generate-freshvar ((term pseudo-termp))
+  :returns (ok booleanp)
+  (b* ((term (pseudo-term-fix term)))
+    (or (acl2::variablep term)
+        (acl2::fquotep term)))
+  ///
+  (more-returns
+   (ok (implies (and ok (pseudo-termp term))
+                (or (acl2::variablep term)
+                    (acl2::fquotep term)))
+       :name implies-of-dont-generate-freshvar)))
 
 (define new-vars-for-actuals ((actuals pseudo-term-listp)
                               (alst pseudo-term-sym-alistp)
@@ -105,8 +113,7 @@
        ((cons ac-hd ac-tl) actuals)
        ((mv new-ac-tl alst-1 names-1)
         (new-vars-for-actuals ac-tl alst names))
-       ((if (or (acl2::variablep ac-hd)
-                (acl2::fquotep ac-hd)))
+       ((if (dont-generate-freshvar ac-hd))
         (mv (cons ac-hd new-ac-tl) alst-1 names-1))
        (new-var (new-fresh-var names)))
     (mv (cons new-var new-ac-tl)
@@ -125,7 +132,7 @@
                                 symbol-listp))))
 
   (local
-   (defthm crock4
+   (defthm crock
      (alistp (pairlis$ x y))))
 
   (define function-substitution ((term pseudo-termp)
@@ -305,7 +312,7 @@
          ((mv new-body alst-3 names-3)
           (expand-term substed-body hints new-lvls alst-2
                        names-2 (1- clock) state))
-         ((if (acl2::variablep new-body)) (mv new-body alst-3 names-3))
+         ((if (dont-generate-freshvar new-body)) (mv new-body alst-3 names-3))
          (body-var (new-fresh-var names-3)))
       (mv body-var
           (acons new-body body-var alst-3)
@@ -331,8 +338,7 @@
          ((if (zp clock)) (mv term alst names))
          (exist? (assoc-equal term alst))
          ((if exist?) (mv (cdr exist?) alst names))
-         ((if (acl2::variablep term)) (mv term alst names))
-         ((if (acl2::quotep term)) (mv term alst names)))
+         ((if (dont-generate-freshvar term)) (mv term alst names)))
       (expand-fncall/lambda term hints fn-lvls alst names clock state)))
 
   (define expand-term-list ((term-lst pseudo-term-listp)
@@ -394,7 +400,8 @@
                                                 names clock state))))
 
 (verify-guards expand-term
-  :hints (("Goal" :in-theory (e/d (pseudo-lambda/fnp) ()))))
+  :hints (("Goal" :in-theory (e/d (pseudo-lambda/fnp dont-generate-freshvar)
+                                  ()))))
 
 (define generate-equalities ((alst pseudo-term-sym-alistp))
   :returns (res pseudo-termp)
@@ -423,14 +430,13 @@
                            (pseudo-termp)))))
 
 (defthm genequalities-of-new-vars-for-actuals
-  (implies (and (pseudo-term-listp actuals)
-                (pseudo-term-sym-alistp alst)
-                (symbol-listp names)
-                (alistp a))
-           (b* (((mv & new-alst &)
-                 (new-vars-for-actuals actuals alst names)))
-             (implies (ev-smtcp (generate-equalities new-alst) a)
-                      (ev-smtcp (generate-equalities alst) a))))
+  (implies (and (pseudo-term-sym-alistp alst)
+                (alistp a)
+                (ev-smtcp
+                 (generate-equalities
+                  (mv-nth 1 (new-vars-for-actuals actuals alst names)))
+                 a))
+           (ev-smtcp (generate-equalities alst) a))
   :hints (("Goal"
            :in-theory (enable new-vars-for-actuals
                               generate-equalities))))
@@ -438,36 +444,30 @@
 (defthm genequalities-of-new-vars-for-actuals-2
   (implies (and (pseudo-term-listp actuals)
                 (pseudo-term-sym-alistp alst)
-                (symbol-listp names)
-                (alistp a))
-           (b* (((mv new-actuals new-alst &)
-                 (new-vars-for-actuals actuals alst names)))
-             (implies (ev-smtcp (generate-equalities new-alst) a)
-                      (equal (ev-smtcp-lst new-actuals a)
-                             (ev-smtcp-lst actuals a)))))
+                (alistp a)
+                (ev-smtcp
+                 (generate-equalities
+                  (mv-nth 1 (new-vars-for-actuals actuals alst names)))
+                 a))
+           (equal (ev-smtcp-lst
+                   (mv-nth 0 (new-vars-for-actuals actuals alst names))
+                   a)
+                  (ev-smtcp-lst actuals a)))
   :hints (("Goal"
            :in-theory (enable new-vars-for-actuals
                               generate-equalities))))
 
 (defthm genequalities-of-acons
   (implies (and (pseudo-term-sym-alistp alst)
-                (pseudo-termp term)
-                (symbolp var)
                 (alistp a)
-                (ev-smtcp (generate-equalities (acons term var alst)) a))
+                (ev-smtcp (generate-equalities (cons (cons term var) alst)) a))
            (ev-smtcp (generate-equalities alst) a))
   :hints (("Goal"
            :in-theory (enable generate-equalities))))
 
 (defthm-expand-term-flag
   (defthm genequalities-of-expand-fncall/lambda
-    (implies (and (ev-smtcp-meta-extract-global-facts)
-                  (pseudo-termp term)
-                  (smtlink-hint-p hints)
-                  (sym-int-alistp fn-lvls)
-                  (pseudo-term-sym-alistp alst)
-                  (symbol-listp names)
-                  (natp clock)
+    (implies (and (pseudo-term-sym-alistp alst)
                   (alistp a))
              (b* (((mv & new-alst &)
                    (expand-fncall/lambda term hints fn-lvls alst names
@@ -476,181 +476,7 @@
                         (ev-smtcp (generate-equalities alst) a))))
     :flag expand-fncall/lambda
     :hints ((and stable-under-simplificationp
-                 '(:in-theory (e/d () (genequalities-of-new-vars-for-actuals
-                                       genequalities-of-acons))
-                              :use ((:instance
-                                     genequalities-of-new-vars-for-actuals
-                                     (actuals (mv-nth 0
-                                                      (expand-term-list (cdr term)
-                                                                        hints
-                                                                        fn-lvls alst names
-                                                                        clock state)))
-                                     (alst (mv-nth 1
-                                                   (expand-term-list (cdr term)
-                                                                     hints fn-lvls alst
-                                                                     names clock state)))
-                                     (names (mv-nth 2
-                                                    (expand-term-list (cdr term)
-                                                                      hints
-                                                                      fn-lvls alst names
-                                                                      clock state))))
-                                    (:instance genequalities-of-acons
-                                               (alst (mv-nth
-                                                      1
-                                                      (expand-term
-                                                       (MV-NTH
-                                                        1
-                                                        (FUNCTION-SUBSTITUTION
-                                                         (CONS
-                                                          (CAR TERM)
-                                                          (MV-NTH
-                                                           0
-                                                           (NEW-VARS-FOR-ACTUALS
-                                                            (MV-NTH 0
-                                                                    (EXPAND-TERM-LIST (CDR TERM)
-                                                                                      HINTS FN-LVLS ALST NAMES CLOCK STATE))
-                                                            (MV-NTH 1
-                                                                    (EXPAND-TERM-LIST (CDR TERM)
-                                                                                      HINTS FN-LVLS ALST NAMES CLOCK STATE))
-                                                            (MV-NTH 2
-                                                                    (EXPAND-TERM-LIST (CDR TERM)
-                                                                                      HINTS
-                                                                                      FN-LVLS ALST NAMES CLOCK STATE)))))
-                                                         STATE))
-                                                       hints
-                                                       (update-fn-lvls (car term)
-                                                                       hints fn-lvls)
-                                                       (mv-nth
-                                                        1
-                                                        (new-vars-for-actuals
-                                                         (mv-nth 0
-                                                                 (expand-term-list (cdr term)
-                                                                                   hints fn-lvls alst names clock state))
-                                                         (mv-nth 1
-                                                                 (expand-term-list (cdr term)
-                                                                                   hints fn-lvls alst names clock state))
-                                                         (mv-nth 2
-                                                                 (expand-term-list (cdr term)
-                                                                                   hints fn-lvls alst names clock state))))
-                                                       (mv-nth
-                                                        2
-                                                        (new-vars-for-actuals
-                                                         (mv-nth 0
-                                                                 (expand-term-list (cdr term)
-                                                                                   hints fn-lvls alst names clock state))
-                                                         (mv-nth 1
-                                                                 (expand-term-list (cdr term)
-                                                                                   hints fn-lvls alst names clock state))
-                                                         (mv-nth 2
-                                                                 (expand-term-list (cdr term)
-                                                                                   hints fn-lvls alst names clock state))))
-                                                       (+ -1 clock)
-                                                       state)))
-                                               (term (mv-nth
-                                                      0
-                                                      (expand-term
-                                                       (MV-NTH
-                                                        1
-                                                        (FUNCTION-SUBSTITUTION
-                                                         (CONS
-                                                          (CAR TERM)
-                                                          (MV-NTH
-                                                           0
-                                                           (NEW-VARS-FOR-ACTUALS
-                                                            (MV-NTH 0
-                                                                    (EXPAND-TERM-LIST (CDR TERM)
-                                                                                      HINTS FN-LVLS ALST NAMES CLOCK STATE))
-                                                            (MV-NTH 1
-                                                                    (EXPAND-TERM-LIST (CDR TERM)
-                                                                                      HINTS FN-LVLS ALST NAMES CLOCK STATE))
-                                                            (MV-NTH 2
-                                                                    (EXPAND-TERM-LIST (CDR TERM)
-                                                                                      HINTS
-                                                                                      FN-LVLS ALST NAMES CLOCK STATE)))))
-                                                         STATE))
-                                                       hints
-                                                       (update-fn-lvls (car term)
-                                                                       hints fn-lvls)
-                                                       (mv-nth
-                                                        1
-                                                        (new-vars-for-actuals
-                                                         (mv-nth 0
-                                                                 (expand-term-list (cdr term)
-                                                                                   hints fn-lvls alst names clock state))
-                                                         (mv-nth 1
-                                                                 (expand-term-list (cdr term)
-                                                                                   hints fn-lvls alst names clock state))
-                                                         (mv-nth 2
-                                                                 (expand-term-list (cdr term)
-                                                                                   hints fn-lvls alst names clock state))))
-                                                       (mv-nth
-                                                        2
-                                                        (new-vars-for-actuals
-                                                         (mv-nth 0
-                                                                 (expand-term-list (cdr term)
-                                                                                   hints fn-lvls alst names clock state))
-                                                         (mv-nth 1
-                                                                 (expand-term-list (cdr term)
-                                                                                   hints fn-lvls alst names clock state))
-                                                         (mv-nth 2
-                                                                 (expand-term-list (cdr term)
-                                                                                   hints fn-lvls alst names clock state))))
-                                                       (+ -1 clock)
-                                                       state)))
-                                               (var
-                                                (new-fresh-var
-                                                 (mv-nth
-                                                  2
-                                                  (expand-term
-                                                   (MV-NTH
-                                                    1
-                                                    (FUNCTION-SUBSTITUTION
-                                                     (CONS
-                                                      (CAR TERM)
-                                                      (MV-NTH
-                                                       0
-                                                       (NEW-VARS-FOR-ACTUALS
-                                                        (MV-NTH 0
-                                                                (EXPAND-TERM-LIST (CDR TERM)
-                                                                                  HINTS FN-LVLS ALST NAMES CLOCK STATE))
-                                                        (MV-NTH 1
-                                                                (EXPAND-TERM-LIST (CDR TERM)
-                                                                                  HINTS FN-LVLS ALST NAMES CLOCK STATE))
-                                                        (MV-NTH 2
-                                                                (EXPAND-TERM-LIST (CDR TERM)
-                                                                                  HINTS
-                                                                                  FN-LVLS ALST NAMES CLOCK STATE)))))
-                                                     STATE))
-                                                   hints
-                                                   (update-fn-lvls (car term)
-                                                                   hints fn-lvls)
-                                                   (mv-nth
-                                                    1
-                                                    (new-vars-for-actuals
-                                                     (mv-nth 0
-                                                             (expand-term-list (cdr term)
-                                                                               hints fn-lvls alst names clock state))
-                                                     (mv-nth 1
-                                                             (expand-term-list (cdr term)
-                                                                               hints fn-lvls alst names clock state))
-                                                     (mv-nth 2
-                                                             (expand-term-list (cdr term)
-                                                                               hints fn-lvls alst names clock state))))
-                                                   (mv-nth
-                                                    2
-                                                    (new-vars-for-actuals
-                                                     (mv-nth 0
-                                                             (expand-term-list (cdr term)
-                                                                               hints fn-lvls alst names clock state))
-                                                     (mv-nth 1
-                                                             (expand-term-list (cdr term)
-                                                                               hints fn-lvls alst names clock state))
-                                                     (mv-nth 2
-                                                             (expand-term-list (cdr term)
-                                                                               hints fn-lvls alst names clock state))))
-                                                   (+ -1 clock)
-                                                   state)))))
-                                    )
+                 '(:in-theory (e/d () ())
                               :expand ((expand-fncall/lambda term hints fn-lvls
                                                              alst names clock state)
                                        (expand-fncall/lambda nil hints fn-lvls
@@ -658,13 +484,7 @@
                                        (expand-fncall/lambda term hints fn-lvls alst names
                                                              0 state))))))
   (defthm genequalities-of-expand-term
-    (implies (and (ev-smtcp-meta-extract-global-facts)
-                  (pseudo-termp term)
-                  (smtlink-hint-p hints)
-                  (sym-int-alistp fn-lvls)
-                  (pseudo-term-sym-alistp alst)
-                  (symbol-listp names)
-                  (natp clock)
+    (implies (and (pseudo-term-sym-alistp alst)
                   (alistp a))
              (b* (((mv & new-alst &)
                    (expand-term term hints fn-lvls alst names clock state)))
@@ -680,13 +500,7 @@
                                        (expand-term nil hints fn-lvls alst names
                                                     clock state))))))
   (defthm genequalities-of-expand-term-list
-    (implies (and (ev-smtcp-meta-extract-global-facts)
-                  (pseudo-term-listp term-lst)
-                  (smtlink-hint-p hints)
-                  (sym-int-alistp fn-lvls)
-                  (pseudo-term-sym-alistp alst)
-                  (symbol-listp names)
-                  (natp clock)
+    (implies (and (pseudo-term-sym-alistp alst)
                   (alistp a))
              (b* (((mv & new-alst &)
                    (expand-term-list term-lst hints fn-lvls alst names
@@ -767,33 +581,26 @@
            :do-not-induct t
            :in-theory (e/d () (genequalities-of-acons
                                pseudo-term-sym-alistp-of-cons
-                               pseudo-term-listp-of-symbol-listp
-                               genequalities-of-expand-term-list))
-           :use ((:instance genequalities-of-expand-term-list
-                            (term-lst (cdr term-lst))
-                            (alst (mv-nth 1
-                                          (expand-term (car term-lst)
-                                                       hints fn-lvls alst names clock state)))
-                            (names (mv-nth 2
-                                           (expand-term (car term-lst)
-                                                        hints fn-lvls alst names clock state)))))
+                               pseudo-term-listp-of-symbol-listp))
            :expand ((expand-term-list term-lst hints fn-lvls alst
                                       names clock state)
                     (expand-term-list nil hints fn-lvls alst
                                       names clock state)
                     ))))
 
-(defthm crock3
-  (implies (and (pseudo-term-listp new-actuals)
-                (pseudo-termp term)
-                (not (equal (car term) 'quote))
-                (consp term)
-                (equal (ev-smtcp-lst new-actuals a)
-                       (ev-smtcp-lst (cdr term) a)))
-           (equal (ev-smtcp (cons (car term) new-actuals) a)
-                  (ev-smtcp term a)))
-  :hints (("Goal"
-           :in-theory (e/d (ev-smtcp-of-fncall-args) ()))))
+(local
+ (defthm crock2
+   (implies (and (pseudo-term-listp new-actuals)
+                 (pseudo-termp term)
+                 (not (equal (car term) 'quote))
+                 (consp term)
+                 (equal (ev-smtcp-lst new-actuals a)
+                        (ev-smtcp-lst (cdr term) a)))
+            (equal (ev-smtcp (cons (car term) new-actuals) a)
+                   (ev-smtcp term a)))
+   :hints (("Goal"
+            :in-theory (e/d (ev-smtcp-of-fncall-args) ()))))
+ )
 
 (defthm correctness-of-expand-fncall/lambda-inductive-1
     (implies (and (ev-smtcp-meta-extract-global-facts)
@@ -822,41 +629,11 @@
     :hints (("Goal"
              :do-not-induct t
              :in-theory (e/d (pseudo-lambda/fnp)
-                             (pseudo-termp
-                              genequalities-of-acons
-                              genequalities-of-new-vars-for-actuals
-                              genequalities-of-new-vars-for-actuals-2))
-             :use ((:instance genequalities-of-new-vars-for-actuals
-                              (actuals (mv-nth 0
-                                               (expand-term-list (cdr term)
-                                                                 hints fn-lvls alst names clock state)))
-                              (alst (mv-nth 1
-                                            (expand-term-list (cdr term)
-                                                              hints fn-lvls alst names clock state)))
-                              (names (mv-nth 2
-                                             (expand-term-list (cdr term)
-                                                               hints
-                                                               fn-lvls alst
-                                                               names clock
-                                                               state))))
-                   (:instance genequalities-of-new-vars-for-actuals-2
-                              (actuals (mv-nth 0
-                                               (expand-term-list (cdr term)
-                                                                 hints fn-lvls alst names clock state)))
-                              (alst (mv-nth 1
-                                            (expand-term-list (cdr term)
-                                                              hints fn-lvls alst names clock state)))
-                              (names (mv-nth 2
-                                             (expand-term-list (cdr term)
-                                                               hints
-                                                               fn-lvls alst
-                                                               names clock
-                                                               state)))))
+                             (pseudo-termp))
              :expand ((expand-fncall/lambda term hints fn-lvls
                                             alst names clock state)
                       (expand-fncall/lambda nil hints fn-lvls
-                                            alst names clock state)
-                      ))))
+                                            alst names clock state)))))
 
 (defthm correctness-of-expand-fncall/lambda-inductive-2
   (implies (and (ev-smtcp-meta-extract-global-facts)
@@ -899,21 +676,8 @@
            :do-not-induct t
            :in-theory (e/d (pseudo-lambda/fnp)
                            (pseudo-termp
-                            symbol-listp
-                            ACL2::PSEUDO-TERMP-OPENER
-                            GENEQUALITIES-OF-EXPAND-TERM
-                            GENEQUALITIES-OF-EXPAND-FNCALL/LAMBDA
-                            crock
-                            member-equal
-                            PSEUDO-TERM-LISTP-OF-CDR-OF-PSEUDO-TERMP
-                            ACL2::SYMBOLP-OF-CAR-WHEN-SYMBOL-LISTP
-                            genequalities-of-acons
                             genequalities-of-expand-term
-                            genequalities-of-new-vars-for-actuals
-                            genequalities-of-new-vars-for-actuals-2
                             correctness-of-generate-equalities
-                            ev-smtcp-of-fncall-args
-                            ev-smtcp-of-lambda
                             ))
            :use ((:instance correctness-of-generate-equalities
                             (term (MV-NTH
@@ -1123,16 +887,6 @@
                                                                  hints fn-lvls alst names clock state))))
                                      (+ -1 clock)
                                      state)))))
-                 (:instance genequalities-of-new-vars-for-actuals
-                            (actuals (MV-NTH 0
-                                             (EXPAND-TERM-LIST (CDR TERM)
-                                                               HINTS FN-LVLS ALST NAMES CLOCK STATE)))
-                            (alst (MV-NTH 1
-                                          (EXPAND-TERM-LIST (CDR TERM)
-                                                            HINTS FN-LVLS ALST NAMES CLOCK STATE)))
-                            (names (MV-NTH 2
-                                           (EXPAND-TERM-LIST (CDR TERM)
-                                                             HINTS FN-LVLS ALST NAMES CLOCK STATE))))
                  (:instance genequalities-of-expand-term
                             (term (MV-NTH
                                    1
@@ -1180,176 +934,12 @@
                                              (EXPAND-TERM-LIST (CDR TERM)
                                                                HINTS FN-LVLS ALST NAMES CLOCK STATE)))))
                             (clock (+ -1 CLOCK)))
-                 (:instance genequalities-of-new-vars-for-actuals-2
-                            (actuals (MV-NTH 0
-                                             (EXPAND-TERM-LIST (CDR TERM)
-                                                               HINTS FN-LVLS ALST NAMES CLOCK STATE)))
-                            (alst (MV-NTH 1
-                                          (EXPAND-TERM-LIST (CDR TERM)
-                                                            HINTS FN-LVLS ALST NAMES CLOCK STATE)))
-                            (names (MV-NTH 2
-                                           (EXPAND-TERM-LIST (CDR TERM)
-                                                             HINTS FN-LVLS ALST NAMES CLOCK STATE))))
-                 (:instance genequalities-of-acons
-                            (term (MV-NTH
-                                   0
-                                   (expand-term
-                                    (MV-NTH
-                                     1
-                                     (FUNCTION-SUBSTITUTION
-                                      (CONS
-                                       (CAR TERM)
-                                       (MV-NTH
-                                        0
-                                        (NEW-VARS-FOR-ACTUALS
-                                         (MV-NTH 0
-                                                 (EXPAND-TERM-LIST (CDR TERM)
-                                                                   HINTS FN-LVLS ALST NAMES CLOCK STATE))
-                                         (MV-NTH 1
-                                                 (EXPAND-TERM-LIST (CDR TERM)
-                                                                   HINTS FN-LVLS ALST NAMES CLOCK STATE))
-                                         (MV-NTH 2
-                                                 (EXPAND-TERM-LIST (CDR TERM)
-                                                                   HINTS
-                                                                   FN-LVLS ALST NAMES CLOCK STATE)))))
-                                      STATE))
-                                    hints
-                                    (update-fn-lvls (car term)
-                                                    hints fn-lvls)
-                                    (mv-nth
-                                     1
-                                     (new-vars-for-actuals
-                                      (mv-nth 0
-                                              (expand-term-list (cdr term)
-                                                                hints fn-lvls alst names clock state))
-                                      (mv-nth 1
-                                              (expand-term-list (cdr term)
-                                                                hints fn-lvls alst names clock state))
-                                      (mv-nth 2
-                                              (expand-term-list (cdr term)
-                                                                hints fn-lvls alst names clock state))))
-                                    (mv-nth
-                                     2
-                                     (new-vars-for-actuals
-                                      (mv-nth 0
-                                              (expand-term-list (cdr term)
-                                                                hints fn-lvls alst names clock state))
-                                      (mv-nth 1
-                                              (expand-term-list (cdr term)
-                                                                hints fn-lvls alst names clock state))
-                                      (mv-nth 2
-                                              (expand-term-list (cdr term)
-                                                                hints fn-lvls alst names clock state))))
-                                    (+ -1 clock)
-                                    state)))
-                            (var (NEW-FRESH-VAR
-                                  (MV-NTH
-                                   2
-                                   (expand-term
-                                    (MV-NTH
-                                     1
-                                     (FUNCTION-SUBSTITUTION
-                                      (CONS
-                                       (CAR TERM)
-                                       (MV-NTH
-                                        0
-                                        (NEW-VARS-FOR-ACTUALS
-                                         (MV-NTH 0
-                                                 (EXPAND-TERM-LIST (CDR TERM)
-                                                                   HINTS FN-LVLS ALST NAMES CLOCK STATE))
-                                         (MV-NTH 1
-                                                 (EXPAND-TERM-LIST (CDR TERM)
-                                                                   HINTS FN-LVLS ALST NAMES CLOCK STATE))
-                                         (MV-NTH 2
-                                                 (EXPAND-TERM-LIST (CDR TERM)
-                                                                   HINTS
-                                                                   FN-LVLS ALST NAMES CLOCK STATE)))))
-                                      STATE))
-                                    hints
-                                    (update-fn-lvls (car term)
-                                                    hints fn-lvls)
-                                    (mv-nth
-                                     1
-                                     (new-vars-for-actuals
-                                      (mv-nth 0
-                                              (expand-term-list (cdr term)
-                                                                hints fn-lvls alst names clock state))
-                                      (mv-nth 1
-                                              (expand-term-list (cdr term)
-                                                                hints fn-lvls alst names clock state))
-                                      (mv-nth 2
-                                              (expand-term-list (cdr term)
-                                                                hints fn-lvls alst names clock state))))
-                                    (mv-nth
-                                     2
-                                     (new-vars-for-actuals
-                                      (mv-nth 0
-                                              (expand-term-list (cdr term)
-                                                                hints fn-lvls alst names clock state))
-                                      (mv-nth 1
-                                              (expand-term-list (cdr term)
-                                                                hints fn-lvls alst names clock state))
-                                      (mv-nth 2
-                                              (expand-term-list (cdr term)
-                                                                hints fn-lvls alst names clock state))))
-                                    (+ -1 clock)
-                                    state))))
-                            (alst (MV-NTH
-                                   1
-                                   (expand-term
-                                    (MV-NTH
-                                     1
-                                     (FUNCTION-SUBSTITUTION
-                                      (CONS
-                                       (CAR TERM)
-                                       (MV-NTH
-                                        0
-                                        (NEW-VARS-FOR-ACTUALS
-                                         (MV-NTH 0
-                                                 (EXPAND-TERM-LIST (CDR TERM)
-                                                                   HINTS FN-LVLS ALST NAMES CLOCK STATE))
-                                         (MV-NTH 1
-                                                 (EXPAND-TERM-LIST (CDR TERM)
-                                                                   HINTS FN-LVLS ALST NAMES CLOCK STATE))
-                                         (MV-NTH 2
-                                                 (EXPAND-TERM-LIST (CDR TERM)
-                                                                   HINTS
-                                                                   FN-LVLS ALST NAMES CLOCK STATE)))))
-                                      STATE))
-                                    hints
-                                    (update-fn-lvls (car term)
-                                                    hints fn-lvls)
-                                    (mv-nth
-                                     1
-                                     (new-vars-for-actuals
-                                      (mv-nth 0
-                                              (expand-term-list (cdr term)
-                                                                hints fn-lvls alst names clock state))
-                                      (mv-nth 1
-                                              (expand-term-list (cdr term)
-                                                                hints fn-lvls alst names clock state))
-                                      (mv-nth 2
-                                              (expand-term-list (cdr term)
-                                                                hints fn-lvls alst names clock state))))
-                                    (mv-nth
-                                     2
-                                     (new-vars-for-actuals
-                                      (mv-nth 0
-                                              (expand-term-list (cdr term)
-                                                                hints fn-lvls alst names clock state))
-                                      (mv-nth 1
-                                              (expand-term-list (cdr term)
-                                                                hints fn-lvls alst names clock state))
-                                      (mv-nth 2
-                                              (expand-term-list (cdr term)
-                                                                hints fn-lvls alst names clock state))))
-                                    (+ -1 clock)
-                                    state)))))
+                 )
            :expand ((expand-fncall/lambda term hints fn-lvls
                                           alst names clock state)
                     (expand-fncall/lambda nil hints fn-lvls
                                           alst names clock state)
-                    (EXPAND-FNCALL/LAMBDA TERM HINTS FN-LVLS ALST NAMES 0 STATE)))))
+                    (expand-fncall/lambda term hints fn-lvls alst names 0 state)))))
 
 (defthm-expand-term-flag
   (defthm correctness-of-expand-fncall/lambda
@@ -1369,35 +959,15 @@
                                (ev-smtcp term a)))))
     :flag expand-fncall/lambda
     :hints ((and stable-under-simplificationp
-                 '(:in-theory (e/d () (GENEQUALITIES-OF-ACONS
-                                       PSEUDO-TERM-SYM-ALISTP-OF-CONS
-                                       PSEUDO-TERM-LISTP-OF-SYMBOL-LISTP
-                                       genequalities-of-expand-term-list
-                                       correctness-of-expand-fncall/lambda-inductive-1
-                                       correctness-of-expand-fncall/lambda-inductive-2
-                                       genequalities-of-new-vars-for-actuals-2))
-                              :use ((:instance
-                                     correctness-of-expand-fncall/lambda-inductive-1)
-                                    (:instance
-                                     correctness-of-expand-fncall/lambda-inductive-2)
-                                    (:instance
-                                     genequalities-of-new-vars-for-actuals-2
-                                     (actuals (MV-NTH 0
-                                                      (EXPAND-TERM-LIST (CDR TERM)
-                                                                        HINTS FN-LVLS ALST NAMES CLOCK STATE)))
-                                     (alst (MV-NTH 1
-                                                   (EXPAND-TERM-LIST (CDR TERM)
-                                                                     HINTS FN-LVLS ALST NAMES CLOCK STATE)))
-                                     (names (MV-NTH 2
-                                                    (EXPAND-TERM-LIST (CDR TERM)
-                                                                      HINTS
-                                                                      FN-LVLS ALST NAMES CLOCK STATE)))))
+                 '(:in-theory (e/d () (genequalities-of-acons
+                                       pseudo-term-sym-alistp-of-cons
+                                       pseudo-term-listp-of-symbol-listp))
                    :expand ((expand-fncall/lambda term hints fn-lvls
                                                   alst names clock state)
                             (expand-fncall/lambda nil hints fn-lvls
                                                   alst names clock state)
-                            (EXPAND-FNCALL/LAMBDA TERM HINTS FN-LVLS ALST NAMES
-                                                  0 STATE))))))
+                            (expand-fncall/lambda term hints fn-lvls alst names
+                                                  0 state))))))
   (defthm correctness-of-expand-term
     (implies (and (ev-smtcp-meta-extract-global-facts)
                   (pseudo-termp term)
@@ -1445,4 +1015,4 @@
                                               names clock state)
                             )))))
   :hints(("Goal"
-          :in-theory (disable MEMBER-EQUAL))))
+          :in-theory (disable member-equal))))
