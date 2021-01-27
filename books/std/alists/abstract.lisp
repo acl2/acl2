@@ -317,8 +317,9 @@ about keyval-alistp."
     (implies (and (keyval-alist-p x)
                   (not (keyval-alist-final-cdr-p t)))
              (alistp x))
-    :name alistp-when-keyval-alist-p
-    :requirement (and true-listp (not single-var))
+    :name alistp-when-keyval-alist-p-rewrite
+    :disable t
+    :requirement true-listp
     :body (implies (keyval-alist-p x)
                    (alistp x))
     :tags (:alistp :alistp-rewrite))
