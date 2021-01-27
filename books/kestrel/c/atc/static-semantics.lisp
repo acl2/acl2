@@ -394,11 +394,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define binary-check ((op binopp)
-                      (arg1-expr exprp) (arg1-type typep)
-                      (arg2-expr exprp) (arg2-type typep))
+(define binary-pure-check ((op binopp)
+                           (arg1-expr exprp) (arg1-type typep)
+                           (arg2-expr exprp) (arg2-type typep))
   :returns (type type-resultp)
-  :short "Check the application of a binary operator to two expressions."
+  :short "Check the application of a pure binary operator to two expressions."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -471,7 +471,7 @@
                   (arg2-type (expr-check e.arg2 funtab vartab))
                   ((when (errorp arg2-type))
                    (error (list :binary-right-error arg2-type))))
-               (binary-check e.op e.arg1 arg1-type e.arg2 arg2-type))
+               (binary-pure-check e.op e.arg1 arg1-type e.arg2 arg2-type))
      :cond (b* ((test-type (expr-check e.test funtab vartab))
                 ((when (errorp test-type))
                  (error (list :cond-test-error test-type)))
