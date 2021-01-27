@@ -45,7 +45,7 @@
     ".")
    (xdoc::p
     "The static semantics is defined over the C abstract syntax,
-     but for now it rejects many valid constructs
+     but for now it rejects some valid constructs
      just because ATC does not generate those constructs for now.
      This way, we keep the static semantics simpler.
      Being more restrictive is adequate here:
