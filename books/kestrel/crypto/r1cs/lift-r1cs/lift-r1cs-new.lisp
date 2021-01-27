@@ -43,6 +43,7 @@
   (declare (xargs :guard (symbol-listp vars)))
   (fep-assumptions-for-vars-aux vars prime nil))
 
+;; Bind vars to themselves, except any var that is a keyword gets bound to its counterpart in the ACL2 package.
 ;; TODO: generalize to take a package argument?
 (defun r1cs-var-to-acl2-var-alist (vars acc)
   (declare (xargs :guard (and (symbol-listp vars)
@@ -51,7 +52,7 @@
       (acl2::reverse-list acc)
     (let* ((var (first vars))
            (new-var (if (equal "KEYWORD" (symbol-package-name var))
-                        (intern-in-package-of-symbol (symbol-name var) 'defthm) ; puts it in the acl2 package
+                        (intern (symbol-name var) "ACL2")
                       var)))
       (r1cs-var-to-acl2-var-alist (rest vars) (acons var new-var acc)))))
 
@@ -125,14 +126,15 @@
                            whole-form
                            state)))
 
-;; Expects the functions <BASE-NAME>-constraints and <BASE-NAME>-vars to
-;; exist.  Creates a constant DAG named *<BASE-NAME>-holdsp*.
+;; Lifts an R1CS into a logical term, represented as an Axe DAG.  Takes an
+;; R1CS, given as a list of variables, a list of constraints, and a prime.
+;; Creates a constant DAG named <name-of-defconst>.
 (defmacro lift-r1cs-new (&whole whole-form
-                                name-of-defconst
+                                name-of-defconst ; name of the defconst to create, will hold the lifted R1CS
                                 ;; r1cs ;todo: currentlty can't make the r1cs (due to prime tests?)
-                                vars
-                                constraints
-                                prime
+                                vars ;; the variables of the R1CS to lift
+                                constraints ;; the constraints of the R1CS to lift
+                                prime       ;; the prime of the R1CS to lift
                                 &key
                                 (extra-rules 'nil)
                                 (remove-rules 'nil)
