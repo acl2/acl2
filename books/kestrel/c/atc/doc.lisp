@@ -160,10 +160,14 @@
      "Each function @('fni') must be in logic mode and guard-verified.
       Its "
      (xdoc::seetopic "acl2::function-definedness" "unnormalized body")
-     " must be an <i>allowed outer term</i>,
-      inductively defined as one of the following
-      (where allowed non-boolean and boolean terms are defined
-      after the allowed outer terms):")
+     " must be an allowed outer term;
+      this notion is defined in the sequel, along with the notions of
+      allowed non-boolean terms,
+      allowed pure non-boolean terms,
+      and allowed boolean terms.")
+    (xdoc::p
+     "An <i>allowed outer term</i> is
+      inductively defined as one of the following:")
     (xdoc::ul
      (xdoc::li
       "An allowed non-boolean term.
@@ -215,6 +219,20 @@
       inductively defined as one of the following:")
     (xdoc::ul
      (xdoc::li
+      "An allowed pure non-boolean term.")
+     (xdoc::li
+      "A call of a target function @('fnj'), with @('j < i'),
+       on allowed pure non-boolean terms.
+       The restriction @('j < i') means that
+       no (direct or indirect) recursion is allowed
+       and the target functions must be specified
+       in a topological order of their call graph.
+       This represents a call of the corresponding C function."))
+    (xdoc::p
+     "An <i>allowed pure non-boolean term</i> is
+      inductively defined as one of the following:")
+    (xdoc::ul
+     (xdoc::li
       "A formal parameter of the function.
        This represents the corresponding C formal parameter,
        as an expression.")
@@ -228,7 +246,8 @@
        The guard verification requirement ensures that
        the quoted integer is within the range of type @('int').")
      (xdoc::li
-      "A call of one of the following functions on allowed non-boolean terms:"
+      "A call of one of the following functions
+       on allowed pure non-boolean terms:"
       (xdoc::ul
        (xdoc::li "@(tsee sint-plus)")
        (xdoc::li "@(tsee sint-minus)")
@@ -264,18 +283,18 @@
      (xdoc::li
       "A call of @(tsee sint01) on an allowed boolean term.
        This converts an allowed boolean term
-       to an allowed non-boolean term.")
+       to an allowed pure non-boolean term.")
      (xdoc::li
       "A call of @(tsee if) on
        (i) a test that is an allowed boolean term and
-       (ii) branches that are allowed non-boolean terms.
+       (ii) branches that are allowed pure non-boolean terms.
        This represents a C @('?:') conditional expression
        whose test expression is represented by the test term
        and whose branch expressions are represented by the branch terms.")
      (xdoc::li
       "A call of @(tsee if) on
        (i) a test of the form @('(mbt ...)') or @('(mbt$ ...)'),
-       (ii) a `then' branch that is an allowed non-boolean term, and
+       (ii) a `then' branch that is an allowed pure non-boolean term, and
        (iii) an `else' branch that may be any ACL2 term.
        This represents the same C code represented by the `then' branch.
        Both the test and the `else' branch are ignored;
@@ -285,26 +304,18 @@
        @('(return-last \'acl2::mbe1-raw \'t x)'), and
        @('(mbt$ x)') is
        @('(return-last \'acl2::mbe1-raw \'t (if x \'nil \'t))');
-       these are the patterns that ATC looks for.")
-     (xdoc::li
-      "A call of a target function @('fnj'), with @('j < i'),
-       on allowed non-boolean terms.
-       The restriction @('j < i') means that
-       no (direct or indirect) recursion is allowed
-       and the target functions must be specified
-       in a topological order of their call graph.
-       This represents a call of the corresponding C function."))
+       these are the patterns that ATC looks for."))
     (xdoc::p
      "An <i>allowed boolean term</i> is
       inductively defined as one of the following:")
     (xdoc::ul
      (xdoc::li
-      "A call of @(tsee sint-nonzerop) on an allowed non-boolean term.
-       This converts an allowed non-boolean term
+      "A call of @(tsee sint-nonzerop) on an allowed pure non-boolean term.
+       This converts an allowed pure non-boolean term
        to an allowed boolean term.")
      (xdoc::li
       "A call of one of the following functions and macros
-       on an allowed boolean term:"
+       on allowed boolean terms:"
       (xdoc::ul
        (xdoc::li "@(tsee not)")
        (xdoc::li "@(tsee and)")
@@ -332,7 +343,16 @@
       @('&&') expressions, and
       @('||') expressions;
       C's only non-strict construct is @(tsee if)
-      (which the macros @(tsee and) and @(tsee or) expand to, see above).")
+      (which the macros @(tsee and) and @(tsee or) expand to, see above).
+      Allowed pure non-boolean terms
+      represent C expressions without side effects;
+      C function calls may be side-effect-free,
+      but in general we do not consider them pure,
+      so they are represented by allowed non-boolean terms
+      that are not allowed pure non-boolean terms.
+      Allowed boolean terms are always pure;
+      so they do not need the explicit designation `pure'
+      because they are the only allowed boolean terms.")
 
     (xdoc::p
      "The above restrictions imply that @('fni') returns a single result,

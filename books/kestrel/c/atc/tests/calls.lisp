@@ -25,12 +25,12 @@
 
 (defun |g| (|z|)
   (declare (xargs :guard (c::sintp |z|)))
-  (c::sint-bitnot |z|))
+  (|f| |z| (c::sint-bitnot |z|)))
 
 (defun |h| (|a| |b|)
   (declare (xargs :guard (and (c::sintp |a|)
                               (c::sintp |b|))))
-  (|g| (|f| |a| |b|)))
+  (|f| |b| |a|))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

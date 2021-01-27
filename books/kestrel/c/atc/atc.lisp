@@ -609,28 +609,33 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines atc-gen-expr-fns
-  :short "Mutually recursive functions to
-          generate C expressions from ACL2 terms."
+(defines atc-gen-expr-pure
+  :short "Mutually recursive ACL2 functions to
+          generate pure C expressions from ACL2 terms."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are for allowed pure non-boolean terms
+     and for allowed boolean terms (which are always pure)."))
 
-  (define atc-gen-expr-nonbool ((term pseudo-termp)
-                                (vars atc-symbol-type-alistp)
-                                (fn symbolp)
-                                (prec-fns atc-symbol-type-alistp)
-                                ctx
-                                state)
+  (define atc-gen-expr-pure-nonbool ((term pseudo-termp)
+                                     (vars atc-symbol-type-alistp)
+                                     (fn symbolp)
+                                     ctx
+                                     state)
     :returns (mv erp
                  (val (tuple (expr exprp)
                              (type typep)
                              val))
                  state)
-    :parents (atc-event-and-code-generation atc-gen-expr-fns)
+    :parents (atc-event-and-code-generation atc-gen-expr-pure)
     :short "Generate a C expression from an ACL2 term
-            that must be an allowed non-boolean term."
+            that must be an allowed pure non-boolean term."
     :long
     (xdoc::topstring
      (xdoc::p
-      "At the same time, we check that the term is an allowed non-boolean term,
+      "At the same time,
+       we check that the term is an allowed pure non-boolean term,
        as described in the user documentation.")
      (xdoc::p
       "We also return the C type of the expression.")
@@ -645,12 +650,6 @@
        we translate it to the application of the operator
        to the recursively generated expressions.
        The type is the result type of the operator.")
-     (xdoc::p
-      "If the term is a call of a function that precedes @('fn')
-       in the list of target functions @('fn1'), ..., @('fnp'),
-       we translate it to a C function call on the translated arguments.
-       The type of the expression is the result type of the function,
-       which is looked up in the function alist passed as input.")
      (xdoc::p
       "If the term is a call of @(tsee c::sint01),
        we call the mutually recursive ACL2 function
@@ -669,7 +668,7 @@
        We ensure that the two branches have the same type.")
      (xdoc::p
       "In all other cases, we fail with an error.
-       The term is not an allowed non-boolean term.
+       The term is not an allowed pure non-boolean term.
        We could extend this code to provide
        more information to the user at some point."))
     (b* (((when (acl2::variablep term))
@@ -692,85 +691,66 @@
             (type-sint))))
          ((mv okp op arg type) (atc-check-unop term))
          ((when okp)
-          (b* (((er (list arg-expr &)) (atc-gen-expr-nonbool arg
-                                                             vars
-                                                             fn
-                                                             prec-fns
-                                                             ctx
-                                                             state)))
+          (b* (((er (list arg-expr &)) (atc-gen-expr-pure-nonbool arg
+                                                                  vars
+                                                                  fn
+                                                                  ctx
+                                                                  state)))
             (value (list (make-expr-unary :op op :arg arg-expr)
                          type))))
          ((mv okp op arg1 arg2 type) (atc-check-binop term))
          ((when okp)
-          (b* (((er (list arg1-expr &)) (atc-gen-expr-nonbool arg1
-                                                              vars
-                                                              fn
-                                                              prec-fns
-                                                              ctx
-                                                              state))
-               ((er (list arg2-expr &)) (atc-gen-expr-nonbool arg2
-                                                              vars
-                                                              fn
-                                                              prec-fns
-                                                              ctx
-                                                              state)))
+          (b* (((er (list arg1-expr &)) (atc-gen-expr-pure-nonbool arg1
+                                                                   vars
+                                                                   fn
+                                                                   ctx
+                                                                   state))
+               ((er (list arg2-expr &)) (atc-gen-expr-pure-nonbool arg2
+                                                                   vars
+                                                                   fn
+                                                                   ctx
+                                                                   state)))
             (value (list (make-expr-binary :op op
                                            :arg1 arg1-expr
                                            :arg2 arg2-expr)
-                         type))))
-         ((mv okp fn args type) (atc-check-callable-fn term prec-fns))
-         ((when okp)
-          (b* (((mv erp arg-exprs state) (atc-gen-expr-nonbool-list args
-                                                                    vars
-                                                                    fn
-                                                                    prec-fns
-                                                                    ctx
-                                                                    state))
-               ((when erp) (mv erp (list (irr-expr) (irr-type)) state)))
-            (value (list
-                    (make-expr-call :fun (make-ident :name (symbol-name fn))
-                                    :args arg-exprs)
-                    type)))))
+                         type)))))
       (case-match term
         (('c::sint01 arg)
          (b* (((mv erp expr state)
-               (atc-gen-expr-bool arg vars fn prec-fns ctx state))
+               (atc-gen-expr-bool arg vars fn ctx state))
               ((when erp) (mv erp (list (irr-expr) (irr-type)) state)))
            (mv nil (list expr (type-sint)) state)))
         (('if test then else)
          (b* (((mv mbtp &) (acl2::check-mbt-call test))
-              ((when mbtp) (atc-gen-expr-nonbool then
-                                                 vars
-                                                 fn
-                                                 prec-fns
-                                                 ctx
-                                                 state))
+              ((when mbtp) (atc-gen-expr-pure-nonbool then
+                                                      vars
+                                                      fn
+                                                      ctx
+                                                      state))
               ((mv mbt$p &) (acl2::check-mbt$-call test))
-              ((when mbt$p) (atc-gen-expr-nonbool then
-                                                  vars
-                                                  fn
-                                                  prec-fns
-                                                  ctx
-                                                  state))
+              ((when mbt$p) (atc-gen-expr-pure-nonbool then
+                                                       vars
+                                                       fn
+                                                       ctx
+                                                       state))
               ((mv erp test-expr state) (atc-gen-expr-bool test
                                                            vars
                                                            fn
-                                                           prec-fns
                                                            ctx
                                                            state))
               ((when erp) (mv erp (list (irr-expr) (irr-type)) state))
-              ((er (list then-expr then-type)) (atc-gen-expr-nonbool then
-                                                                     vars
-                                                                     fn
-                                                                     prec-fns
-                                                                     ctx
-                                                                     state))
-              ((er (list else-expr else-type)) (atc-gen-expr-nonbool else
-                                                                     vars
-                                                                     fn
-                                                                     prec-fns
-                                                                     ctx
-                                                                     state))
+              ((er (list then-expr then-type)) (atc-gen-expr-pure-nonbool
+                                                then
+                                                vars
+                                                fn
+                                                ctx
+                                                state))
+              ((er (list else-expr else-type)) (atc-gen-expr-pure-nonbool
+                                                else
+                                                vars
+                                                fn
+                                                ctx
+                                                state))
               ((unless (equal then-type else-type))
                (er-soft+ ctx t (list (irr-expr) (irr-type))
                          "When generating C code for the function ~x0, ~
@@ -785,49 +765,18 @@
              then-type))))
         (& (er-soft+ ctx t (list (irr-expr) (irr-type))
                      "When generating C code for the function ~x0, ~
-                      at a point where
+                      at a point where ~
                       an allowed non-boolean ACL2 term is expected, ~
                       the term ~x1 is encountered instead."
                      fn term)))))
 
-  (define atc-gen-expr-nonbool-list ((terms pseudo-term-listp)
-                                     (vars atc-symbol-type-alistp)
-                                     (fn symbolp)
-                                     (prec-fns atc-symbol-type-alistp)
-                                     ctx
-                                     state)
-    :returns (mv erp (exprs expr-listp) state)
-    :parents (atc-event-and-code-generation atc-gen-expr-fns)
-    :short "Generate a list of C expressions from a list of ACL2 terms
-            that must be allowed non-boolean terms."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "We do not return the C types of the expressions."))
-    (b* (((when (endp terms)) (value nil))
-         ((mv erp (list expr &) state) (atc-gen-expr-nonbool (car terms)
-                                                             vars
-                                                             fn
-                                                             prec-fns
-                                                             ctx
-                                                             state))
-         ((when erp) (mv erp nil state))
-         ((er exprs) (atc-gen-expr-nonbool-list (cdr terms)
-                                                vars
-                                                fn
-                                                prec-fns
-                                                ctx
-                                                state)))
-      (value (cons expr exprs))))
-
   (define atc-gen-expr-bool ((term pseudo-termp)
                              (vars atc-symbol-type-alistp)
                              (fn symbolp)
-                             (prec-fns atc-symbol-type-alistp)
                              ctx
                              state)
     :returns (mv erp (expr exprp) state)
-    :parents (atc-event-and-code-generation atc-gen-expr-fns)
+    :parents (atc-event-and-code-generation atc-gen-expr-pure)
     :short "Generate a C expression from an ACL2 term
             that must be an allowed boolean term."
     :long
@@ -856,7 +805,6 @@
        (b* (((er arg-expr) (atc-gen-expr-bool arg
                                               vars
                                               fn
-                                              prec-fns
                                               ctx
                                               state)))
          (value (make-expr-unary :op (unop-lognot) :arg arg-expr))))
@@ -864,13 +812,11 @@
        (b* (((er arg1-expr) (atc-gen-expr-bool arg1
                                                vars
                                                fn
-                                               prec-fns
                                                ctx
                                                state))
             ((er arg2-expr) (atc-gen-expr-bool arg2
                                                vars
                                                fn
-                                               prec-fns
                                                ctx
                                                state)))
          (value (make-expr-binary :op (binop-logand)
@@ -880,13 +826,11 @@
        (b* (((er arg1-expr) (atc-gen-expr-bool arg1
                                                vars
                                                fn
-                                               prec-fns
                                                ctx
                                                state))
             ((er arg2-expr) (atc-gen-expr-bool arg2
                                                vars
                                                fn
-                                               prec-fns
                                                ctx
                                                state)))
          (value (make-expr-binary :op (binop-logor)
@@ -894,7 +838,7 @@
                                   :arg2 arg2-expr))))
       (('c::sint-nonzerop arg)
        (b* (((mv erp (list expr &) state)
-             (atc-gen-expr-nonbool arg vars fn prec-fns ctx state)))
+             (atc-gen-expr-pure-nonbool arg vars fn ctx state)))
          (mv erp expr state)))
       (& (er-soft+ ctx t (irr-expr)
                    "When generating C code for the function ~x0, ~
@@ -909,22 +853,100 @@
 
   ///
 
-  (defret-mutual consp-of-atc-gen-expr-nonbool/bool
-    (defret consp-of-atc-gen-expr-nonbool
+  (defret-mutual consp-of-atc-gen-expr-pure
+    (defret typeset-of-atc-gen-expr-pure-nonbool
       (and (consp val)
            (true-listp val))
       :rule-classes :type-prescription
-      :fn atc-gen-expr-nonbool)
-    (defret true-of-atc-gen-expr-nonbool-list
-      t
-      :rule-classes nil
-      :fn atc-gen-expr-nonbool-list)
+      :fn atc-gen-expr-pure-nonbool)
     (defret true-of-atc-gen-expr-bool
       t
       :rule-classes nil
       :fn atc-gen-expr-bool))
 
-  (verify-guards atc-gen-expr-nonbool))
+  (verify-guards atc-gen-expr-pure-nonbool))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-gen-expr-pure-nonbool-list ((terms pseudo-term-listp)
+                                        (vars atc-symbol-type-alistp)
+                                        (fn symbolp)
+                                        ctx
+                                        state)
+  :returns (mv erp (exprs expr-listp) state)
+  :short "Generate a list of C expressions from a list of ACL2 terms
+          that must be allowed pure non-boolean terms."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This lifts @(tsee atc-gen-expr-pure-nonbool) to lists.
+     However, we do not return the C types of the expressions."))
+  (b* (((when (endp terms)) (value nil))
+       ((mv erp (list expr &) state) (atc-gen-expr-pure-nonbool (car terms)
+                                                                vars
+                                                                fn
+                                                                ctx
+                                                                state))
+       ((when erp) (mv erp nil state))
+       ((er exprs) (atc-gen-expr-pure-nonbool-list (cdr terms)
+                                                   vars
+                                                   fn
+                                                   ctx
+                                                   state)))
+    (value (cons expr exprs))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-gen-expr-nonbool ((term pseudo-termp)
+                              (vars atc-symbol-type-alistp)
+                              (fn symbolp)
+                              (prec-fns atc-symbol-type-alistp)
+                              ctx
+                              state)
+  :returns (mv erp
+               (val (tuple (expr exprp)
+                           (type typep)
+                           val))
+               state)
+  :short "Generate a C expression from an ACL2 term
+          that must be an allowed non-boolean term."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "At the same time,
+     we check that the term is an allowed non-boolean term,
+     as described in the user documentation.")
+   (xdoc::p
+    "We also return the C type of the expression.")
+   (xdoc::p
+    "If the term is a call of a function that precedes @('fn')
+     in the list of target functions @('fn1'), ..., @('fnp'),
+     we translate it to a C function call on the translated arguments.
+     The type of the expression is the result type of the function,
+     which is looked up in the function alist passed as input.")
+   (xdoc::p
+    "Otherwise, we attempt to translate the term
+     as an allowed pure non-boolean terms."))
+  (b* (((mv okp called-fn args type) (atc-check-callable-fn term prec-fns))
+       ((when okp)
+        (b* (((mv erp arg-exprs state) (atc-gen-expr-pure-nonbool-list args
+                                                                       vars
+                                                                       fn
+                                                                       ctx
+                                                                       state))
+             ((when erp) (mv erp (list (irr-expr) (irr-type)) state)))
+          (value (list
+                  (make-expr-call :fun (make-ident
+                                        :name (symbol-name called-fn))
+                                  :args arg-exprs)
+                  type)))))
+    (atc-gen-expr-pure-nonbool term vars fn ctx state))
+  ///
+  (more-returns
+   (val (and (consp val)
+             (true-listp val))
+        :name typeset-of-atc-gen-expr-nonbool
+        :rule-classes :type-prescription)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1027,7 +1049,6 @@
              ((mv erp test-expr state) (atc-gen-expr-bool test
                                                           vars
                                                           fn
-                                                          prec-fns
                                                           ctx
                                                           state))
              ((when erp) (mv erp (list nil (irr-type)) state))
