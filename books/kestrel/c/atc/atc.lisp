@@ -401,11 +401,7 @@
   (defrule typep-of-cdr-of-assoc-equal
     (implies (and (atc-symbol-type-alistp x)
                   (assoc-equal k x))
-             (typep (cdr (assoc-equal k x)))))
-
-  (defruled alistp-when-atc-symbol-type-alistp-rewrite
-    (implies (atc-symbol-type-alistp x)
-             (alistp x))))
+             (typep (cdr (assoc-equal k x))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

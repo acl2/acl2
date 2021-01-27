@@ -229,11 +229,7 @@
   (defrule expdata-surjmapp-of-val-of-symbol-surjmap-alist
     (implies (and (expdata-symbol-surjmap-alistp x)
                   (consp (assoc-equal k x)))
-             (expdata-surjmapp (cdr (assoc-equal k x)))))
-
-  (defruled alistp-when-expdata-symbol-surjmap-alistp-rewrite
-    (implies (expdata-symbol-surjmap-alistp x)
-             (alistp x))))
+             (expdata-surjmapp (cdr (assoc-equal k x))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -255,11 +251,7 @@
   (defrule expdata-surjmapp-of-val-of-pos-surjmap-alist
     (implies (and (expdata-pos-surjmap-alistp x)
                   (consp (assoc-equal k x)))
-             (expdata-surjmapp (cdr (assoc-equal k x)))))
-
-  (defruled alistp-when-expdata-pos-surjmap-alistp-rewrite
-    (implies (expdata-pos-surjmap-alistp x)
-             (alistp x))))
+             (expdata-surjmapp (cdr (assoc-equal k x))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
