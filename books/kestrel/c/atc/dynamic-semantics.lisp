@@ -641,9 +641,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-binary ((op binopp) (arg1 value-resultp) (arg2 value-resultp))
+(define exec-binary-pure ((op binopp) (arg1 value-resultp) (arg2 value-resultp))
   :returns (result value-resultp)
-  :short "Execute a binary expression."
+  :short "Execute a pure binary expression."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -707,7 +707,7 @@
      :cast (error (list :unsupported-expr e))
      :binary (b* ((arg1 (exec-expr-pure e.arg1 compst))
                   (arg2 (exec-expr-pure e.arg2 compst)))
-               (exec-binary e.op arg1 arg2))
+               (exec-binary-pure e.op arg1 arg2))
      :cond (b* ((test (exec-expr-pure e.test compst)))
              (value-result-case
               test
@@ -826,7 +826,7 @@
        :cast (error (list :exec-expr e))
        :binary (b* ((arg1 (exec-expr e.arg1 compst fenv (1- limit)))
                     (arg2 (exec-expr e.arg2 compst fenv (1- limit))))
-                 (exec-binary e.op arg1 arg2))
+                 (exec-binary-pure e.op arg1 arg2))
        :cond (b* ((test (exec-expr e.test compst fenv (1- limit))))
                (value-result-case
                 test

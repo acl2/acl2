@@ -1503,7 +1503,7 @@
                                      exec-block-item
                                      exec-block-item-list
                                      exec-expr
-                                     exec-binary
+                                     exec-binary-pure
                                      exec-binary-strict
                                      exec-binary-logand
                                      exec-binary-logor
