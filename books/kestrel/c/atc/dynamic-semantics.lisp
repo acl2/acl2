@@ -804,7 +804,7 @@
        we just evaluate expressions left-to-right,
        but any ordering would yield the same results.")
      (xdoc::p
-      "This ACL2 function will make use of by @(tsee exec-expr-nse) eventually.
+      "This ACL2 function will make use of by @(tsee exec-expr-pure) eventually.
        We are evolving our formalization of the C dynamic semantics in stages."))
     (b* (((when (zp limit)) (error :limit))
          (e (expr-fix e)))
@@ -850,7 +850,7 @@
     (xdoc::topstring
      (xdoc::p
       "This ACL2 function will be replaced
-       by @(tsee exec-expr-list-nse) eventually.
+       by @(tsee exec-expr-pure-list) eventually.
        We are evolving our formalization of the C dynamic semantics
        in stages."))
     (b* (((when (zp limit)) (error :limit))
