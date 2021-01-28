@@ -82,8 +82,8 @@
                 (symbolp (cdr (assoc-equal x y))))))
 
 (local
-(defthm crock1
-  (implies (symbolp x) (pseudo-termp x)))
+ (defthm crock1
+   (implies (symbolp x) (pseudo-termp x)))
 )
 
 (define dont-generate-freshvar ((term pseudo-termp))
@@ -185,7 +185,6 @@
            (equal (ev-smtcp (mv-nth 1 (function-substitution term state)) a)
                   (ev-smtcp term a)))
   :hints (("Goal"
-           :do-not-induct t
            :in-theory (e/d (function-substitution)
                            (w pseudo-termp
                               ev-smtcp-meta-extract-formula))
@@ -364,17 +363,10 @@
           (expand-term term-hd hints fn-lvls alst names clock state))
          ((mv new-tl alst-2 names-2)
           (expand-term-list term-tl hints fn-lvls alst-1 names-1 clock state)))
-      (mv (cons new-hd new-tl) alst-2 names-2)))
-  )
+      (mv (cons new-hd new-tl) alst-2 names-2))))
 )
 
-(define cdr-induct-expand-term-list ((term-lst)
-                                     (hints)
-                                     (fn-lvls)
-                                     (alst)
-                                     (names)
-                                     (clock)
-                                     state)
+(define cdr-induct-expand-term-list (term-lst hints fn-lvls alst names clock state)
   :irrelevant-formals-ok t
   :verify-guards nil
   (b* (((if (atom term-lst)) nil)
@@ -476,13 +468,12 @@
                         (ev-smtcp (generate-equalities alst) a))))
     :flag expand-fncall/lambda
     :hints ((and stable-under-simplificationp
-                 '(:in-theory (e/d () ())
-                              :expand ((expand-fncall/lambda term hints fn-lvls
-                                                             alst names clock state)
-                                       (expand-fncall/lambda nil hints fn-lvls
-                                                             alst names clock state)
-                                       (expand-fncall/lambda term hints fn-lvls alst names
-                                                             0 state))))))
+                 '(:expand ((expand-fncall/lambda term hints fn-lvls
+                                                  alst names clock state)
+                            (expand-fncall/lambda nil hints fn-lvls
+                                                  alst names clock state)
+                            (expand-fncall/lambda term hints fn-lvls alst names
+                                                  0 state))))))
   (defthm genequalities-of-expand-term
     (implies (and (pseudo-term-sym-alistp alst)
                   (alistp a))
@@ -492,13 +483,12 @@
                         (ev-smtcp (generate-equalities alst) a))))
     :flag expand-term
     :hints ((and stable-under-simplificationp
-                 '(:in-theory (e/d () ())
-                              :expand ((expand-term term hints fn-lvls alst names
-                                                    clock state)
-                                       (expand-term term hints fn-lvls alst names
-                                                    0 state)
-                                       (expand-term nil hints fn-lvls alst names
-                                                    clock state))))))
+                 '(:expand ((expand-term term hints fn-lvls alst names
+                                         clock state)
+                            (expand-term term hints fn-lvls alst names
+                                         0 state)
+                            (expand-term nil hints fn-lvls alst names
+                                         clock state))))))
   (defthm genequalities-of-expand-term-list
     (implies (and (pseudo-term-sym-alistp alst)
                   (alistp a))
@@ -509,14 +499,11 @@
                         (ev-smtcp (generate-equalities alst) a))))
     :flag expand-term-list
     :hints ((and stable-under-simplificationp
-                 '(:in-theory (e/d () ())
-                              :expand ((expand-term-list term-lst hints fn-lvls alst
-                                                         names clock state)
-                                       (expand-term-list nil hints fn-lvls alst
-                                                         names clock state)
-                                       )))))
-  :hints(("Goal"
-          :in-theory (disable ))))
+                 '(:expand ((expand-term-list term-lst hints fn-lvls alst
+                                              names clock state)
+                            (expand-term-list nil hints fn-lvls alst
+                                              names clock state)
+                            ))))))
 
 (defthm correctness-of-expand-term-inductive
     (implies (and (ev-smtcp-meta-extract-global-facts)
@@ -533,15 +520,13 @@
                         (expand-fncall/lambda term hints fn-lvls alst names clock state)))
                     (implies (ev-smtcp (generate-equalities new-alst) a)
                              (equal (ev-smtcp new a)
-                                    (ev-smtcp term a))))
-                  )
+                                    (ev-smtcp term a)))))
              (b* (((mv new new-alst &)
                    (expand-term term hints fn-lvls alst names clock state)))
                (implies (ev-smtcp (generate-equalities new-alst) a)
                         (equal (ev-smtcp new a)
                                (ev-smtcp term a)))))
     :hints (("Goal"
-             :in-theory (e/d () ())
              :expand ((expand-term term hints fn-lvls alst names
                                    clock state)
                       (expand-term term hints fn-lvls alst names
@@ -578,15 +563,13 @@
                       (equal (ev-smtcp-lst new a)
                              (ev-smtcp-lst term-lst a)))))
   :hints (("Goal"
-           :do-not-induct t
            :in-theory (e/d () (genequalities-of-acons
                                pseudo-term-sym-alistp-of-cons
                                pseudo-term-listp-of-symbol-listp))
            :expand ((expand-term-list term-lst hints fn-lvls alst
                                       names clock state)
                     (expand-term-list nil hints fn-lvls alst
-                                      names clock state)
-                    ))))
+                                      names clock state)))))
 
 (local
  (defthm crock2
@@ -627,7 +610,6 @@
                         (equal (ev-smtcp new a)
                                (ev-smtcp term a)))))
     :hints (("Goal"
-             :do-not-induct t
              :in-theory (e/d (pseudo-lambda/fnp)
                              (pseudo-termp))
              :expand ((expand-fncall/lambda term hints fn-lvls
@@ -673,7 +655,6 @@
                       (equal (ev-smtcp new a)
                              (ev-smtcp term a)))))
   :hints (("Goal"
-           :do-not-induct t
            :in-theory (e/d (pseudo-lambda/fnp)
                            (pseudo-termp
                             genequalities-of-expand-term
@@ -984,8 +965,7 @@
                                (ev-smtcp term a)))))
     :flag expand-term
     :hints ((and stable-under-simplificationp
-                 '(:in-theory (e/d () ())
-                   :expand ((expand-term term hints fn-lvls alst names
+                 '(:expand ((expand-term term hints fn-lvls alst names
                                          clock state)
                             (expand-term term hints fn-lvls alst names
                                          0 state)
@@ -1008,11 +988,41 @@
                                (ev-smtcp-lst term-lst a)))))
     :flag expand-term-list
     :hints ((and stable-under-simplificationp
-                 '(:in-theory (e/d () ())
-                   :expand ((expand-term-list term-lst hints fn-lvls alst
+                 '(:expand ((expand-term-list term-lst hints fn-lvls alst
                                               names clock state)
                             (expand-term-list nil hints fn-lvls alst
                                               names clock state)
                             )))))
   :hints(("Goal"
           :in-theory (disable member-equal))))
+
+;; -----------------------------------------------------
+
+(define expand-cp ((cl pseudo-term-listp)
+                   (hints t)
+                   state)
+  (b* (((unless (smtlink-hint-p hints))
+        (value (list cl)))
+       ((smtlink-hint h) hints)
+       (goal (disjoin cl))
+       ((mv new-term alst &)
+        (expand-term goal hints nil nil (acl2::all-vars goal)
+                     h.wrld-fn-len state)))
+    (value (list (list `(implies ,(generate-equalities alst) ,new-term))))))
+
+(local (in-theory (enable expand-cp)))
+
+(defthm correctness-of-expand-cp
+  (implies (and (ev-smtcp-meta-extract-global-facts)
+                (pseudo-term-listp cl)
+                (alistp a)
+                (ev-smtcp
+                 (conjoin-clauses
+                  (acl2::clauses-result
+                   (expand-cp cl hints state)))
+                 a))
+           (ev-smtcp (disjoin cl) a))
+  :hints (("Goal"
+           :do-not-induct t
+           :in-theory (e/d () ())))
+  :rule-classes :clause-processor)
