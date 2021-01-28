@@ -1500,7 +1500,7 @@
                                      exec-block-item-list
                                      exec-expr
                                      exec-binary-pure
-                                     exec-binary-strict
+                                     exec-binary-strict-pure
                                      exec-binary-logand
                                      exec-binary-logor
                                      exec-unary

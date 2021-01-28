@@ -11,7 +11,7 @@
 
 (in-package "C")
 
-(include-book "abstract-syntax")
+(include-book "abstract-syntax-operations")
 (include-book "integers")
 (include-book "function-environments")
 
@@ -521,12 +521,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-binary-strict ((op binopp)
-                            (arg1 value-resultp)
-                            (arg2 value-resultp))
-  :guard (member-eq (binop-kind op) (list :mul :div :rem :add :sub :shl :shr
-                                          :lt :gt :le :ge :eq :ne
-                                          :bitand :bitior :bitxor))
+(define exec-binary-strict-pure ((op binopp)
+                                 (arg1 value-resultp)
+                                 (arg2 value-resultp))
+  :guard (and (binop-strictp op)
+              (binop-purep op))
   :returns (result value-resultp)
   :short "Execute a binary expression with a strict pure operator."
   :long
@@ -578,7 +577,9 @@
       (if (value-result-case arg2 :ok)
           arg1
         (error (list :exec-binary op arg1 arg2)))))
-  :guard-hints (("Goal" :in-theory (enable value-result-kind)))
+  :guard-hints (("Goal" :in-theory (enable value-result-kind
+                                           binop-strictp
+                                           binop-purep)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -642,6 +643,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define exec-binary-pure ((op binopp) (arg1 value-resultp) (arg2 value-resultp))
+  :guard (binop-purep op)
   :returns (result value-resultp)
   :short "Execute a pure binary expression."
   :long
@@ -650,17 +652,13 @@
     "Here we only define the execution of pure binary operators.
      Assignments will be handled as part of statement execution;
      see the discussion in @(tsee exec-expr-pure)."))
-  (case (binop-kind op)
-    ((:mul :div :rem :add :sub :shl :shr
-      :lt :gt :le :ge :eq :ne
-      :bitand :bitior :bitxor)
-     (exec-binary-strict op arg1 arg2))
-    (:logand (exec-binary-logand arg1 arg2))
-    (:logor (exec-binary-logor arg1 arg2))
-    (t (error (list :exec-binary
-                (binop-fix op)
-                (value-result-fix arg1)
-                (value-result-fix arg2)))))
+  (if (binop-strictp op)
+      (exec-binary-strict-pure op arg1 arg2)
+    (case (binop-kind op)
+      (:logand (exec-binary-logand arg1 arg2))
+      (:logor (exec-binary-logor arg1 arg2))
+      (t (error (impossible)))))
+  :guard-hints (("Goal" :in-theory (enable binop-purep binop-strictp)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -705,7 +703,9 @@
      :unary (b* ((arg (exec-expr-pure e.arg compst)))
               (exec-unary e.op arg))
      :cast (error (list :unsupported-expr e))
-     :binary (b* ((arg1 (exec-expr-pure e.arg1 compst))
+     :binary (b* (((unless (binop-purep e.op))
+                   (error (list :non-pure-expr e)))
+                  (arg1 (exec-expr-pure e.arg1 compst))
                   (arg2 (exec-expr-pure e.arg2 compst)))
                (exec-binary-pure e.op arg1 arg2))
      :cond (b* ((test (exec-expr-pure e.test compst)))
@@ -824,7 +824,9 @@
        :unary (b* ((arg (exec-expr e.arg compst fenv (1- limit))))
                 (exec-unary e.op arg))
        :cast (error (list :exec-expr e))
-       :binary (b* ((arg1 (exec-expr e.arg1 compst fenv (1- limit)))
+       :binary (b* (((unless (binop-purep e.op))
+                     (error (list :non-pure-expr e)))
+                    (arg1 (exec-expr e.arg1 compst fenv (1- limit)))
                     (arg2 (exec-expr e.arg2 compst fenv (1- limit))))
                  (exec-binary-pure e.op arg1 arg2))
        :cond (b* ((test (exec-expr e.test compst fenv (1- limit))))

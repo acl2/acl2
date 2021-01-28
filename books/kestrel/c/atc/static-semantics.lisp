@@ -11,7 +11,7 @@
 
 (in-package "C")
 
-(include-book "abstract-syntax")
+(include-book "abstract-syntax-operations")
 (include-book "portable-ascii-identifiers")
 (include-book "types")
 (include-book "errors")
@@ -397,6 +397,7 @@
 (define binary-pure-check ((op binopp)
                            (arg1-expr exprp) (arg1-type typep)
                            (arg2-expr exprp) (arg2-type typep))
+  :guard (binop-purep op)
   :returns (type type-resultp)
   :short "Check the application of a pure binary operator to two expressions."
   :long
@@ -453,11 +454,7 @@
                   (error (list :unary-error arg-type))))
               (unary-check e.op e.arg arg-type))
      :cast (error (list :unsupported-cast e.type e.arg))
-     :binary (b* (((unless (member-eq (binop-kind e.op)
-                                      (list :mul :div :rem :add :sub :shl :shr
-                                            :lt :gt :le :ge :eq :ne
-                                            :bitand :bitior :bitxor
-                                            :logand :logor)))
+     :binary (b* (((unless (binop-purep e.op))
                    (error (list :binop-non-pure e)))
                   (arg1-type (expr-pure-check e.arg1 vartab))
                   ((when (errorp arg1-type))
