@@ -31,8 +31,14 @@
  ;; the 0-ary function:
  (defund my97-prime () (declare (xargs :guard t)) *my97-prime*)
 
+ (defmacro eviscerate-my97-prime ()
+   `(table acl2::evisc-table 97 "#.*MY97-PRIME*"))
+
+ (defmacro uneviscerate-my97-prime ()
+   `(table acl2::evisc-table 97 nil))
+
  ;; causes 97 to be printed as #.*my97-prime*:
- (table acl2::evisc-table 97 "#.*MY97-PRIME*")
+ (eviscerate-my97-prime)
 
  ;; the pratt certificate:
  (defconst *my97-prime-pratt-cert*
