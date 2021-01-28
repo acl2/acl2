@@ -14,6 +14,7 @@
 (include-book "abnf/examples") ; they have XDOC topics for the manual
 (include-book "acl2pl/top")
 (include-book "apt/top")
+(include-book "axe/doc")
 (include-book "arithmetic-light/top")
 (include-book "bv/doc")
 (include-book "auto-termination/top") ; omits some books (see file for why)
