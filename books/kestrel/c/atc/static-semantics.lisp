@@ -656,7 +656,7 @@
      :expr (error (list :unsupported-expr-stmt s.get))
      :null (error :unsupported-null-stmt)
      :if (error (list :unsupported-if-without-else s.test s.then))
-     :ifelse (b* ((type (expr-check s.test funtab vartab))
+     :ifelse (b* ((type (expr-pure-check s.test vartab))
                   ((when (errorp type)) (error (list :if-test-error type)))
                   ((unless (equal type (type-sint)))
                    (error (list :if-test-mistype s.test s.then s.else
