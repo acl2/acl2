@@ -20,12 +20,13 @@
 
 (include-book "projects/quadratic-reciprocity/euclid" :dir :system) ;for rtl::primep
 (include-book "kestrel/utilities/pack" :dir :system)
+;;(include-book "std/util/add-io-pairs" :dir :system)
 
-(defund defprime-fn (name number pratt-cert)
+(defund defprime-fn (name number pratt-cert evisc)
   (declare (xargs :guard (and (symbolp name)
                               (posp number)
                               (true-listp pratt-cert) ;; todo: strengthen?
-                              )))
+                              (booleanp evisc))))
   (let ((defconst-name (acl2::pack-in-package-of-symbol 'defprime '* name '*))
         (pratt-cert-defconst-name (acl2::pack-in-package-of-symbol 'defprime '* name '-pratt-cert*)))
     `(encapsulate ()
@@ -49,7 +50,17 @@
 
        ;; (in-theory (disable (:e ,name)))
 
-       (table acl2::evisc-table ,number ,(concatenate 'string "#.*" (symbol-name name) "*"))
+       ;; Macro to turn on evisceration (printing of the prime using its symbolic name):
+       (defmacro ,(acl2::pack-in-package-of-symbol name 'eviscerate- name) ()
+         `(table acl2::evisc-table ,,number ,,(concatenate 'string "#.*" (symbol-name name) "*")))
+
+       ;; Macro to turn off evisceration (printing of the prime using its symbolic name):
+       (defmacro ,(acl2::pack-in-package-of-symbol name 'uneviscerate- name) ()
+         `(table acl2::evisc-table ,,number nil))
+
+       ,@(and evisc
+              ;; Actually turn on the evisceration:
+              `((,(acl2::pack-in-package-of-symbol name 'eviscerate- name))))
 
        ;; We use Russinoff's algorithm from "Pratt certification and the primality of 2^255 - 19"
        ;; where a Pratt certificate of n is a tree
@@ -85,7 +96,13 @@
        (defthm ,(acl2::pack-in-package-of-symbol 'defprime name '-linear)
          (= (,name) ,defconst-name)
          :rule-classes :linear
-         :hints (("Goal" :in-theory (enable (:e ,name))))))))
+         :hints (("Goal" :in-theory (enable (:e ,name)))))
 
-(defmacro defprime (name number pratt-cert)
-  `(make-event (defprime-fn ',name ',number ',pratt-cert)))
+       ;; Avoid expensive calls of primep by building in the fact that it is
+       ;; true for this prime:
+       ;; TODO: Uncomment once this works:
+       ;; (acl2::add-io-pairs (((rtl::primep (,name)) t)))
+       )))
+
+(defmacro defprime (name number pratt-cert &key (evisc 't))
+  `(make-event (defprime-fn ',name ',number ',pratt-cert ',evisc)))
