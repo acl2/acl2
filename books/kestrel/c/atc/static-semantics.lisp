@@ -422,22 +422,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines expr-check
-  :short "Check an expression."
+(define expr-pure-check ((e exprp) (vartab var-tablep))
+  :returns (type type-resultp)
+  :short "Check a pure expression."
   :long
   (xdoc::topstring
    (xdoc::p
-    "For now we only allow certain kinds of expressions.
-     Note that these are all without side effects (inductively).")
-   (xdoc::p
-    "We return the type of the expression if all the checks are satisfied.")
+    "More precisely, we check whether an expression is pure and well-formed.
+     If all the checks are satisfied, we return the type of the expression.")
    (xdoc::p
     "For now we only support the @('int') type,
      so everything has to be @('int').
      In particular, the operands of the unary, binary, and ternary operators."))
-
-  (define expr-check ((e exprp) (funtab fun-tablep) (vartab var-tablep))
-    :returns (type type-resultp)
+  (b* ((e (expr-fix e)))
     (expr-case
      e
      :ident (b* ((wf (ident-check e.get))
@@ -446,39 +443,36 @@
                  ((unless type) (error (list :var-not-found e.get))))
               type)
      :const (const-check e.get)
-     :call (b* ((types (expr-list-check e.args funtab vartab))
-                ((when (errorp types))
-                 (error (list :call-args-error e.fun e.args types)))
-                (ftype (fun-table-lookup e.fun funtab))
-                ((unless ftype) (error (list :fun-not-found e.fun)))
-                ((unless (equal (fun-type->inputs ftype) types))
-                 (error (list :call-args-mistype e.fun e.args
-                              :required (fun-type->inputs ftype)
-                              :supplied types))))
-             (fun-type->output ftype))
-     :postinc (error (list :unsupported-postinc e.arg))
-     :postdec (error (list :unsupported-postdec e.arg))
-     :preinc (error (list :unsupported-preinc e.arg))
-     :predec (error (list :unsupported-predec e.arg))
-     :unary (b* ((arg-type (expr-check e.arg funtab vartab))
+     :call (error (list :expr-non-pure e))
+     :postinc (error (list :expr-non-pure e))
+     :postdec (error (list :expr-non-pure e))
+     :preinc (error (list :expr-non-pure e))
+     :predec (error (list :expr-non-pure e))
+     :unary (b* ((arg-type (expr-pure-check e.arg vartab))
                  ((when (errorp arg-type))
                   (error (list :unary-error arg-type))))
               (unary-check e.op e.arg arg-type))
      :cast (error (list :unsupported-cast e.type e.arg))
-     :binary (b* ((arg1-type (expr-check e.arg1 funtab vartab))
+     :binary (b* (((unless (member-eq (binop-kind e.op)
+                                      (list :mul :div :rem :add :sub :shl :shr
+                                            :lt :gt :le :ge :eq :ne
+                                            :bitand :bitior :bitxor
+                                            :logand :logor)))
+                   (error (list :binop-non-pure e)))
+                  (arg1-type (expr-pure-check e.arg1 vartab))
                   ((when (errorp arg1-type))
                    (error (list :binary-left-error arg1-type)))
-                  (arg2-type (expr-check e.arg2 funtab vartab))
+                  (arg2-type (expr-pure-check e.arg2 vartab))
                   ((when (errorp arg2-type))
                    (error (list :binary-right-error arg2-type))))
                (binary-pure-check e.op e.arg1 arg1-type e.arg2 arg2-type))
-     :cond (b* ((test-type (expr-check e.test funtab vartab))
+     :cond (b* ((test-type (expr-pure-check e.test vartab))
                 ((when (errorp test-type))
                  (error (list :cond-test-error test-type)))
-                (then-type (expr-check e.then funtab vartab))
+                (then-type (expr-pure-check e.then vartab))
                 ((when (errorp then-type))
                  (error (list :cond-then-error then-type)))
-                (else-type (expr-check e.else funtab vartab))
+                (else-type (expr-pure-check e.else vartab))
                 ((when (errorp else-type))
                  (error (list :cond-else-error else-type)))
                 ((unless (and (equal test-type (type-sint))
@@ -487,26 +481,65 @@
                  (error (list :cond-mistype e.test e.then e.else
                               :required (type-sint) (type-sint) (type-sint)
                               :supplied test-type then-type else-type))))
-             (type-sint)))
-     :measure (expr-count e))
+             (type-sint))))
+  :measure (expr-count e)
+  :verify-guards :after-returns
+  :hooks (:fix))
 
-  (define expr-list-check ((es expr-listp)
-                           (funtab fun-tablep)
-                           (vartab var-tablep))
-    :returns (types type-list-resultp)
-    (b* (((when (endp es)) nil)
-         (type (expr-check (car es) funtab vartab))
-         ((when (errorp type)) type)
-         (types (expr-list-check (cdr es) funtab vartab))
-         ((when (errorp types)) types))
-      (cons type types))
-    :measure (expr-list-count es))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  :verify-guards nil ; done below
-  ///
-  (verify-guards expr-check)
+(define expr-pure-list-check ((es expr-listp) (vartab var-tablep))
+  :returns (types type-list-resultp
+                  :hints ('(:cases ((type-listp
+                                     (expr-pure-list-check (cdr es) vartab))))))
+  :short "Check a list of pure expressions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This lifts @(tsee expr-pure-check) to lists."))
+  (b* (((when (endp es)) nil)
+       (type (expr-pure-check (car es) vartab))
+       ((when (errorp type)) type)
+       ((unless (mbt (typep type))) (error :impossible))
+       (types (expr-pure-list-check (cdr es) vartab))
+       ((when (errorp types)) types)
+       ((unless (mbt (type-listp types))) (error :impossible)))
+    (cons type types))
+  :hooks (:fix))
 
-  (fty::deffixequiv-mutual expr-check))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define expr-check ((e exprp) (funtab fun-tablep) (vartab var-tablep))
+  :returns (type type-resultp)
+  :short "Check an expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the expression is a function call,
+     we check the argument expressions,
+     which must be pure (beacuse we restrict them to be so).
+     We retrieve the function types from the function table
+     and we compare the input types with the argument types.
+     We return the output type.")
+   (xdoc::p
+    "If the expression is not a function call,
+     it must be a pure expression,
+     which we resort to check it as such."))
+  (if (expr-case e :call)
+      (b* ((e.args (expr-call->args e))
+           (e.fun (expr-call->fun e))
+           (types (expr-pure-list-check e.args vartab))
+           ((when (errorp types))
+            (error (list :call-args-error e.fun e.args types)))
+           (ftype (fun-table-lookup e.fun funtab))
+           ((unless ftype) (error (list :fun-not-found e.fun)))
+           ((unless (equal (fun-type->inputs ftype) types))
+            (error (list :call-args-mistype e.fun e.args
+                         :required (fun-type->inputs ftype)
+                         :supplied types))))
+        (fun-type->output ftype))
+    (expr-pure-check e vartab))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
