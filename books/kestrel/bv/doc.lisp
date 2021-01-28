@@ -15,6 +15,7 @@
 
 (defxdoc bv
   :short "The BV library for reasoning about bit-vectors"
+  :parents (bit-vectors)
   :long
   (xdoc::topparas
    "See books/kestrel/bv/.
@@ -55,6 +56,4 @@ unsigned-byte-p.
 Bit vectors can also be interpreted as signed numbers using a standard
 twos-complement representation.  A bit vector of size M is taken to
 represent numbers in the range [-2^(M-1), 2^(M-1)-1].  This matches
-the behavior of the ACL2 predicate signed-byte-p.)")
-
-  :parents (bit-vectors))
+the behavior of the ACL2 predicate signed-byte-p.)"))
