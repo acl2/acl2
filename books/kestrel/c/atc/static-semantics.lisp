@@ -588,7 +588,7 @@
    (xdoc::p
     "For now we only allow
      @('return') statements with expressions,
-     conditional statements with both branches, and
+     conditional statements, and
      compound statements.")
    (xdoc::p
     "These functions return a statement type or an error;
@@ -605,11 +605,14 @@
      In fact, a compound statement does not update the variable table:
      we return the original variable table.")
    (xdoc::p
-    "For a conditional statement,
+    "For a conditional statement with both branches,
      after ensuring that the test expression has type @('int'),
      we check the two branches, and take the union of their return types.
      We return the initial variable table, unchanged;
      any change in the branches would be local to the branches.")
+   (xdoc::p
+    "We treat a conditional statement with just one branch
+     as one whose @('else') branch returns nothing.")
    (xdoc::p
     "For a return statement,
      we return the singleton set with the type of the expression.")
@@ -652,7 +655,19 @@
                  (change-stmt-type stype :variables vartab))
      :expr (error (list :unsupported-expr-stmt s.get))
      :null (error :unsupported-null-stmt)
-     :if (error (list :unsupported-if-without-else s.test s.then))
+     :if (b* ((type (expr-pure-check s.test vartab))
+              ((when (errorp type)) (error (list :if-test-error type)))
+              ((unless (equal type (type-sint)))
+               (error (list :if-test-mistype s.test s.then :noelse
+                            :required (type-sint)
+                            :supplied type)))
+              (stype-then (stmt-check s.then funtab vartab))
+              ((when (errorp stype-then))
+               (error (list :if-then-error stype-then))))
+           (make-stmt-type
+            :return-types (set::union (stmt-type->return-types stype-then)
+                                      (set::insert nil nil))
+            :variables vartab))
      :ifelse (b* ((type (expr-pure-check s.test vartab))
                   ((when (errorp type)) (error (list :if-test-error type)))
                   ((unless (equal type (type-sint)))
