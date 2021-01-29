@@ -330,7 +330,7 @@
            (1+ (compustate-top-frame-scopes-number compst)))
     :hints (("Goal" :in-theory (enable compustate-top-frame-scopes-number)))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define exit-scope ((compst compustatep))
   :guard (and (compustate-nonempty-stack-p compst)
