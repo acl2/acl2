@@ -641,7 +641,8 @@
                                    bvchop-identity
                                    <-of-logext-and-0
                                    truncate-becomes-floor-other
-                                   truncate-becomes-floor)
+                                   truncate-becomes-floor
+                                   mod-by-4-becomes-bvchop)
                            (
                             LOGEXT-MIN-VALUE
                             anti-bvplus

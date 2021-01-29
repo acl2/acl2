@@ -424,7 +424,7 @@
 
 ;gen
 ;strength reduction
-(defthm mod-by-4-becomes-bvchop
+(defthmd mod-by-4-becomes-bvchop
   (implies (integerp i)
            (equal (mod i 4)
                   (bvchop 2 i)))
