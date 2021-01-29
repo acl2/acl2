@@ -2834,14 +2834,6 @@
            (unsigned-byte-p n (bvmult m x y)))
   :hints (("Goal" :in-theory (enable bvmult))))
 
-(defthm unsigned-byte-p-of-bvminus-gen-better
-  (implies (and (>= size1 size)
-                (integerp size)
-                (>= size 0)
-                (integerp size1))
-           (unsigned-byte-p size1 (bvminus size i j)))
-  :hints (("Goal" :in-theory (enable bvminus))))
-
 (defthm bvplus-of-bvminus-same
   (implies (and (natp n)
                 (integerp x)
@@ -3372,7 +3364,7 @@
                   ;)
                   )
   :hints (("Goal" :cases ((natp size))
-           :in-theory (e/d (natp bvminus bvplus) (bvchop-of-minus  BVCHOP-WHEN-I-IS-NOT-AN-INTEGER)))))
+           :in-theory (e/d (natp bvminus bvplus bvuminus) (bvchop-of-minus  BVCHOP-WHEN-I-IS-NOT-AN-INTEGER)))))
 
 (in-theory (disable bvuminus)) ;move up
 (theory-invariant (incompatible (:rewrite bvminus-becomes-bvplus-of-bvuminus) (:definition bvuminus)))
@@ -6415,14 +6407,6 @@
            (equal (bvuminus size1 (logext size2 x))
                   (bvuminus size1 x)))
   :hints (("Goal" :in-theory (e/d (bvuminus) (bvminus-becomes-bvplus-of-bvuminus)))))
-
-(defthm unsigned-byte-p-of-bvuminus
-  (implies (and (>= size1 size)
-                (integerp size)
-                (>= size 0)
-                (integerp size1))
-           (unsigned-byte-p size1 (bvuminus size i)))
-  :hints (("Goal" :in-theory (e/d (bvuminus) (BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS)))))
 
 (defthm bvmult-of-logext-gen-arg2
   (implies (and (<= size size2)
