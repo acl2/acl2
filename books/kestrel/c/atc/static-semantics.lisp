@@ -455,7 +455,7 @@
               (unary-check e.op e.arg arg-type))
      :cast (error (list :unsupported-cast e.type e.arg))
      :binary (b* (((unless (binop-purep e.op))
-                   (error (list :binop-non-pure e)))
+                   (error (list :binary-non-pure e)))
                   (arg1-type (expr-pure-check e.arg1 vartab))
                   ((when (errorp arg1-type))
                    (error (list :binary-left-error arg1-type)))
