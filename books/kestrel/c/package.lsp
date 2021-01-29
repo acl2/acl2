@@ -32,6 +32,7 @@
                defopeners-names
                deftutorial
                defxdoc+
+               e/d*
                enable*
                er-soft+
                evmac-input-print-p

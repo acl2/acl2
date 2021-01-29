@@ -43,6 +43,7 @@
 (include-book "kestrel/std/util/tuple" :dir :system)
 (include-book "oslib/dirname" :dir :system)
 (include-book "oslib/file-types" :dir :system)
+(include-book "tools/trivial-ancestors-check" :dir :system)
 
 (local (include-book "kestrel/std/system/flatten-ands-in-lit" :dir :system))
 
@@ -1471,7 +1472,17 @@
      ensures that @(tsee sint-add) and similar functions are always called
      on values such that the exact result fit into the type,
      which is the same condition under which the dynamic semantics
-     does not error on the corresponding operators."))
+     does not error on the corresponding operators.")
+   (xdoc::p
+    "We found at least a case in which ACL2's ancestor check
+     prevents a valid theorem of this kind from being proved.
+     This is solved by locally installing a simpler ancestor check
+     (see @(tsee atc-gen-everything));
+     however, the simpler ancestor check fails to prevent a loop
+     with the rule @('omap::in-when-in-tail'),
+     which we therefore disable in the generated hints.
+     Clearly, the current proofs are brittle;
+     we plan to generate much more robust and compositional proofs soon."))
   (b* ((name (acl2::packn (list const "-" (symbol-name fn) "-CORRECT")))
        ((er &) (acl2::ensure-symbol-is-fresh-event-name$
                 name
@@ -1492,38 +1503,44 @@
                       ,const))
        (rhs `(value-result-ok (,fn ,@formals)))
        (hints `(("Goal"
-                 :in-theory (enable* run-fun
-                                     init-scope
-                                     exec-fun
-                                     exec-stmt
-                                     exec-block-item
-                                     exec-block-item-list
-                                     exec-expr
-                                     exec-binary-pure
-                                     exec-binary-strict-pure
-                                     exec-binary-logand
-                                     exec-binary-logor
-                                     exec-unary
-                                     exec-ident
-                                     exec-const
-                                     exec-iconst
-                                     top-frame
-                                     push-frame
-                                     pop-frame
-                                     lookup-var
-                                     lookup-var-aux
-                                     add-var
-                                     enter-scope
-                                     scope-result-kind
-                                     scope-result-ok->get
-                                     compustate-result-kind
-                                     compustate-result-ok->get
-                                     value-result-kind
-                                     value-result-ok->get
-                                     value-option-result-kind
-                                     value-option-result-ok->get
-                                     exec-unfold-rules
-                                     ,@prec-fns)
+                 :in-theory (e/d* (run-fun
+                                   init-scope
+                                   exec-fun
+                                   exec-stmt
+                                   exec-block-item
+                                   exec-block-item-list
+                                   exec-expr
+                                   exec-expr-pure
+                                   exec-expr-pure-list
+                                   exec-binary-pure
+                                   exec-binary-strict-pure
+                                   exec-binary-logand
+                                   exec-binary-logor
+                                   exec-unary
+                                   exec-ident
+                                   exec-const
+                                   exec-iconst
+                                   top-frame
+                                   push-frame
+                                   pop-frame
+                                   lookup-var
+                                   lookup-var-aux
+                                   add-var
+                                   enter-scope
+                                   scope-result-kind
+                                   scope-result-ok->get
+                                   compustate-result-kind
+                                   compustate-result-ok->get
+                                   value-result-kind
+                                   value-result-ok->get
+                                   value-list-result-kind
+                                   value-list-result-ok->get
+                                   value-option-result-kind
+                                   value-option-result-ok->get
+                                   errorp
+                                   exec-unfold-rules
+                                   ,@prec-fns)
+                                  (omap::in-when-in-tail))
                  :use (:guard-theorem ,fn))))
        ((mv local-event exported-event)
         (acl2::evmac-generate-defthm
@@ -1620,6 +1637,12 @@
   :returns (mv erp (event "A @(tsee pseudo-event-formp).") state)
   :mode :program
   :short "Generate the file and the events."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Just before generating the theorems of functional correctness,
+     we locally install the ``trivial ancestor check'' from the library.
+     See @(tsee atc-gen-fn-thm) for the motivation."))
   (b* (((er tunit) (atc-gen-transunit fn1...fnp ctx state))
        ((mv local-const-event exported-const-event)
         (atc-gen-const const tunit print-info/all))
@@ -1643,6 +1666,7 @@
             ,exported-const-event
             ,wf-thm-local-event
             ,wf-thm-exported-event
+            (local (acl2::use-trivial-ancestors-check))
             ,@fn-thm-local-events
             ,@fn-thm-exported-events))
        (encapsulate+ (acl2::restore-output? (eq print :all) encapsulate))

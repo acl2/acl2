@@ -798,76 +798,21 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "For now we only support the execution of certain expressions.")
-     (xdoc::p
-      "Since we currently do not model side effects,
-       we just evaluate expressions left-to-right,
-       but any ordering would yield the same results.")
-     (xdoc::p
-      "This ACL2 function will make use of by @(tsee exec-expr-pure) eventually.
-       We are evolving our formalization of the C dynamic semantics in stages."))
+      "For now we only support function calls with pure expression arguments,
+       and pure expressions.
+       If the expression is a call, we handle it here.
+       Otherwise, we resort to @(tsee exec-expr-pure)."))
     (b* (((when (zp limit)) (error :limit))
          (e (expr-fix e)))
-      (expr-case
-       e
-       :ident (exec-ident e.get compst)
-       :const (exec-const e.get)
-       :call (b* ((args (exec-expr-list e.args compst fenv (1- limit))))
-               (value-list-result-case
-                args
-                :err args.get
-                :ok (exec-fun e.fun args.get compst fenv (1- limit))))
-       :postinc (error (list :exec-expr e))
-       :postdec (error (list :exec-expr e))
-       :preinc (error (list :exec-expr e))
-       :predec (error (list :exec-expr e))
-       :unary (b* ((arg (exec-expr e.arg compst fenv (1- limit))))
-                (exec-unary e.op arg))
-       :cast (error (list :exec-expr e))
-       :binary (b* (((unless (binop-purep e.op))
-                     (error (list :non-pure-expr e)))
-                    (arg1 (exec-expr e.arg1 compst fenv (1- limit)))
-                    (arg2 (exec-expr e.arg2 compst fenv (1- limit))))
-                 (exec-binary-pure e.op arg1 arg2))
-       :cond (b* ((test (exec-expr e.test compst fenv (1- limit))))
-               (value-result-case
-                test
-                :ok (if (sint-nonzerop test.get)
-                        (exec-expr e.then compst fenv (1- limit))
-                      (exec-expr e.else compst fenv (1- limit)))
-                :err test.get))))
-    :measure (nfix limit))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (define exec-expr-list ((es expr-listp)
-                          (compst compustatep)
-                          (fenv fun-envp)
-                          (limit natp))
-    :guard (compustate-nonempty-stack-p compst)
-    :returns (result value-list-resultp)
-    :parents (dynamic-semantics execution-functions)
-    :short "Execute a list of expressions."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "This ACL2 function will be replaced
-       by @(tsee exec-expr-pure-list) eventually.
-       We are evolving our formalization of the C dynamic semantics
-       in stages."))
-    (b* (((when (zp limit)) (error :limit))
-         ((when (endp es)) (value-list-result-ok nil))
-         (result (exec-expr (car es) compst fenv (1- limit))))
-      (value-result-case
-       result
-       :err result.get
-       :ok (b* ((val result.get)
-                (result (exec-expr-list (cdr es) compst fenv (1- limit))))
-             (value-list-result-case
-              result
-              :err result.get
-              :ok (b* ((vals result.get))
-                    (value-list-result-ok (cons val vals)))))))
+      (if (expr-case e :call)
+          (b* ((e.args (expr-call->args e))
+               (e.fun (expr-call->fun e))
+               (args (exec-expr-pure-list e.args compst)))
+            (value-list-result-case
+             args
+             :err args.get
+             :ok (exec-fun e.fun args.get compst fenv (1- limit))))
+        (exec-expr-pure e compst)))
     :measure (nfix limit))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1049,10 +994,6 @@
       t
       :rule-classes nil
       :fn exec-expr)
-    (defret compustate-nonempty-stack-p-of-exec-expr-list
-      t
-      :rule-classes nil
-      :fn exec-expr-list)
     (defret compustate-nonempty-stack-p-of-exec-fun
       t
       :rule-classes nil
@@ -1079,10 +1020,6 @@
       t
       :rule-classes nil
       :fn exec-expr)
-    (defret compustate-top-frame-scopes-number-of-exec-expr-list
-      t
-      :rule-classes nil
-      :fn exec-expr-list)
     (defret compustate-top-frame-scopes-number-of-exec-fun
       t
       :rule-classes nil
