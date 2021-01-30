@@ -220,6 +220,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define compustate-frames-number ((compst compustatep))
+  :returns (n natp)
+  :short "Number of frames in the call stack of a computation state."
+  (len (compustate->frames compst))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define compustate-nonempty-stack-p ((compst compustatep))
   :returns (yes/no booleanp)
   :short "Check if a computation state has a non-empty call stack."
@@ -245,7 +253,13 @@
 
   (more-returns
    (new-compst compustate-nonempty-stack-p
-            :hints (("Goal" :in-theory (enable compustate-nonempty-stack-p))))))
+               :hints (("Goal"
+                        :in-theory (enable compustate-nonempty-stack-p)))))
+
+  (defret compustate-frames-number-of-push-frame
+    (equal (compustate-frames-number new-compst)
+           (1+ (compustate-frames-number compst)))
+    :hints (("Goal" :in-theory (enable compustate-frames-number)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -274,6 +288,12 @@
     (change-compustate compst :frames new-stack))
   :hooks (:fix)
   ///
+
+  (defret compustate-frames-number-of-pop-frame
+    (equal (compustate-frames-number new-compst)
+           (1- (compustate-frames-number compst)))
+    :hyp (> (compustate-frames-number compst) 0)
+    :hints (("Goal" :in-theory (enable compustate-frames-number))))
 
   (defrule pop-frame-of-push-frame
     (equal (pop-frame (push-frame frame compst))
