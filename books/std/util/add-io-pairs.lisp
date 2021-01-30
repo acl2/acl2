@@ -60,11 +60,9 @@
 (defxdoc add-io-pair
   :parents (add-io-pairs)
   :short "Speed up a function using a verified input-output pair"
-  :long "<p>WARNING: This utility may undergo significant changes until the end
- of January 2021.</p>
-
- <p>@('Add-io-pair') is just a convenient abbreviation for @(tsee add-io-pairs)
- in the case of a single input-output pair.  See @(see add-io-pairs).</p>
+  :long "<p>@('Add-io-pair') is just a convenient abbreviation for @(tsee
+ add-io-pairs) in the case of a single input-output pair.  See @(see
+ add-io-pairs).</p>
 
  @({
  Examples:
@@ -95,12 +93,9 @@
 (defxdoc add-io-pairs
   :parents (std/util)
   :short "Speed up a function using verified input-output pairs"
-  :long "<p>WARNING: This utility may undergo significant changes until the end
- of January 2021.</p>
-
- <p>For examples, see the book @('std/util/add-io-pairs-tests.lisp') in @(see
- community-books).  Also see @(see add-io-pair) for an equivalent utility that
- handles a single input-output pair.</p>
+  :long "<p>For examples, see the book @('std/util/add-io-pairs-tests.lisp') in
+ @(see community-books).  Also see @(see add-io-pair) for an equivalent utility
+ with slightly simpler syntax that can add a single input-output pair.</p>
 
  <p><b>Summary</b>.  This utility provides a way to redefine a function so that
  it can quickly look up a function call @('(fn i1 ... ik)') to produce its
@@ -112,6 +107,10 @@
  print the current I/O pairs.  The present utility, @('add-io-pairs'), extends
  the table by adding the specified I/O pairs and also redefines the specified
  function to take advantage of the updated table.</p>
+
+ <p><b>IMPORTANT:</b> If you put calls of @('add-io-pairs') (or @(tsee
+ add-io-pair)) into a book, complications may arise.  See the last
+ remark (Remark 5) below.</p>
 
  @({
  Examples (see std/util/add-io-pairs-tests.lisp):
@@ -238,18 +237,18 @@
 
  <p>We conclude with a few remarks.</p>
 
- <p>When the value @(':test') is a non-@('nil') list, its length should be the
- number of inputs of @('fn') and each member should be @('eq'), @('eql'), or
- @('equal'), indicating the test used when comparing an input at that position
- to an input specified in an evaluated I/O pairs for @('fn').</p>
+ <p>Remark 1.  When the value @(':test') is a non-@('nil') list, its length
+ should be the number of inputs of @('fn') and each member should be @('eq'),
+ @('eql'), or @('equal'), indicating the test used when comparing an input at
+ that position to an input specified in an evaluated I/O pairs for @('fn').</p>
 
- <p>Note that evaluation of input and output terms in an I/O pair is performed
+ <p>Remark 2.  Evaluation of input and output terms in an I/O pair is performed
  with guard-checking set to @('nil') (see @(see set-guard-checking)) and
  attachments allowed (see @(see defattach)).</p>
 
- <p>Although @('fn') is required to be @(see guard)-verified, one may be able
- to avoid most of the effort of guard verification by using @(tsee ec-call).
- Here is a trivial example that illustrates the technique.</p>
+ <p>Remark 3.  Although @('fn') is required to be @(see guard)-verified, one
+ may be able to avoid most of the effort of guard verification by using @(tsee
+ ec-call).  Here is a trivial example that illustrates the technique.</p>
 
  @({
  ACL2 !>(defun h (x)
@@ -307,22 +306,223 @@
  based on the updated table of evaluated I/O pairs and the @(':debug') option
  provided to the new invocation.</p>
 
- <p>A more general utility, which allows the substitution of one function for
- another during execution, is available with the @(':invoke') argument of
- @(tsee memoize).  Indeed, @('add-io-pairs') actually works by invoking
- @('(memoize 'fn :invoke 'new-fn)'), where @('new-fn') is as above.  Note that
- this memoization does not perform @('memoize')'s usual function of saving
- computational results.</p>")
+ <p>Remark 4.  A more general utility, which allows the substitution of one
+ function for another during execution, is available with the @(':invoke')
+ argument of @(tsee memoize).  Indeed, @('add-io-pairs') actually works by
+ invoking @('(memoize 'fn :invoke 'new-fn)'), where @('new-fn') is as above.
+ Note that this memoization does not perform @('memoize')'s usual function of
+ saving computational results.</p>
+
+ <p>Remark 5.  If you include a book with an @('add-io-pairs') form for a
+ function symbol, @('fn'), to which you have already added I/O pairs in the
+ current session, then by default an error will occur.  The key relevant
+ observation is that during book certification, when @('add-io-pairs') defines
+ @('new-fn') as discussed above, that definition is saved in the book's @(see
+ certificate).  (Technical note: This is a consequence of the use of @(tsee
+ make-event) in the implementation of @('add-io-pairs').)  Without an error,
+ ACL2 would simply use that saved definition of @('new-fn'), discarding the I/O
+ pairs previously added in the current session.</p>
+
+ <p>The error message explains how to allow the @(tsee include-book) to
+ complete without error, merging in all I/O pairs from the current session and
+ included books: invoke @('(add-io-pairs-lenience fn t)') and then, after
+ including books, invoke @('(install-io-pairs fn)') to merge in the I/O pairs
+ from earlier in the current session.  So a typical sequence of events might
+ look like this.</p>
+
+ @({
+ (defun f (x)
+   (declare (xargs :guard t))
+   (cons x x))
+ (add-io-pair (f 3) '(3 . 3))
+ (add-io-pairs-lenience f t) ; avoid error for include-book forms below
+ (include-book \"foo\") ; has calls of add-io-pair(s) for f
+ (include-book \"bar\") ; has calls of add-io-pair(s) for f
+ (install-io-pairs f) ; merge in all I/O pairs for f
+ (add-io-pairs-lenience f nil) ; restore default behavior (for an error)
+ })
+
+ <p><b>IMPORTANT</b>: Do not forget the last form above!  Otherwise, subsequent
+ @('include-book') forms may discard I/O pairs when evaluating calls of
+ @('fn').</p>
+
+ <p>An analogous problem occurs with @(tsee encapsulate), when there are @(see
+ local) calls of @('add-io-pairs') followed by non-local calls.  Much as
+ @('certify-book') saves the definition of @('new-fn') in the book's
+ certificate, ACL2 saves such a definition from the first pass of the
+ @('encapsulate') and detects missing I/O pairs (the local ones) in the second
+ pass.  We expect local calls of @('add-io-pairs') inside @('encapsulate') to
+ be rare, so we do not discuss them further.</p>
+
+ <p>Although the discussion above and the error message should suffice, you can
+ get more understanding by looking at examples in the section ``Including a
+ book'' in @(see community-book) @('std/util/add-io-pairs-tests.lisp').  For
+ technical details (probably not necessary), you are also welcome to see @(see
+ add-io-pairs-details).</p>")
+
+(defxdoc add-io-pairs-details
+  :parents (add-io-pairs)
+  :short "Details about @(tsee add-io-pairs)"
+  :long "<p>This rather technical topic is intended for those who have read the
+ documentation on @(tsee add-io-pairs) and related topics but would like a more
+ complete understanding of how @(tsee add-io-pairs) works.  Our hope is that
+ very few will see any need to read the present topic!</p>
+
+ <p>A key aspect of the implementation of @('add-io-pairs') is the use of a
+ @(see table), @('io-pairs-table'), to store all I/O pairs.  Indeed, the
+ utilities @(tsee show-io-pairs) and @(tsee get-io-pairs) retrieve I/O pairs
+ from this table.  When @('add-io-pairs') is invoked on I/O pairs for a
+ function symbol, @('fn'), it extends that table with those I/O pairs and then
+ generates a @(tsee defun) event for a new function.  The documentation topic
+ @(see add-io-pairs) explains that this new function, @('new-fn'), computes by
+ looking up the inputs in the available I/O pairs to get the result immediately
+ if possible, otherwise calling @('fn').  Finally, it uses a special form of
+ @(see memoization) to compute calls of @('fn') by calling @('new-fn').</p>
+
+ <p>The following log fleshes out the explanation above.  IIt shows that
+ @('add-io-pairs') generates a call of @(tsee make-event), which we expand
+ below to see the events created by that @('make-event') invocation.  Comments
+ have been inserted in lower case into the final output below.</p>
+
+ @({
+ ACL2 !>(defun f (x)
+          (declare (xargs :guard t))
+          (cons x x))
+ [[.. output elided ..]]
+  F
+ ACL2 !>:trans1 (add-io-pair (f 3) (cons 3 (/ 6 2)))
+  (ADD-IO-PAIRS (((F 3) (CONS 3 (/ 6 2)))))
+ ACL2 !>:trans1 (add-io-pairs (((f 3) (cons 3 (/ 6 2)))))
+  (WITH-OUTPUT
+   :OFF :ALL :ON ERROR :GAG-MODE NIL
+   (MAKE-EVENT
+     (B* ((TUPLES '(((F 3) (CONS 3 (/ 6 2)))))
+          (HINTS 'NIL)
+          (DEBUG 'NIL)
+          (TEST 'EQUAL)
+          (WRLD (W STATE))
+          ((WHEN (NULL TUPLES))
+           (VALUE '(VALUE-TRIPLE :EMPTY-IO-PAIRS)))
+          (CTX 'ADD-IO-PAIRS)
+          ((ER IO-DOUBLET-LST)
+           (ADD-IO-PAIRS-TRANSLATE-TUPLES TUPLES CTX WRLD STATE))
+          (FN (CAAR (CAR TUPLES)))
+          (EVENTS (ADD-IO-PAIRS-EVENTS FN
+                                       IO-DOUBLET-LST HINTS DEBUG TEST WRLD)))
+         (VALUE (CONS 'PROGN EVENTS)))
+     :ON-BEHALF-OF :QUIET!))
+ ACL2 !>(b* ((tuples '(((f 3) (cons 3 (/ 6 2)))))
+             (hints 'nil)
+             (debug 'nil)
+             (test 'equal)
+             (wrld (w state))
+             ((when (null tuples))
+              (value '(value-triple :empty-io-pairs)))
+             (ctx 'add-io-pairs)
+             ((er io-doublet-lst)
+              (add-io-pairs-translate-tuples tuples ctx wrld state))
+             (fn (caar (car tuples)))
+             (events (add-io-pairs-events fn io-doublet-lst hints debug
+                                          test wrld)))
+          (value (cons 'progn events)))
+  (PROGN
+
+  ; Cause an error when including a book or running the second pass of an
+  ; encapsulate, if the I/O pairs for F in the io-pairs table do not match
+  ; those in the table from a previous invocation -- unless
+  ; add-io-pairs-lenience was previously called with a non-nil value, v (in
+  ; which case the error is converted to a warning if v is :warn).
+   (CHECK-IO-PAIRS-LENIENCE F NIL ADD-IO-PAIRS)
+
+  ; Update the I/O pairs for F in the io-pairs-table.
+   (TABLE
+       IO-PAIRS-TABLE 'F
+       (LET ((OLD-ENTRY (CDR (ASSOC-EQ 'F
+                                       (TABLE-ALIST 'IO-PAIRS-TABLE WORLD)))))
+            (UPDATE-IO-LOOKUP-LST '(((3) (3 . 3)))
+                                  OLD-ENTRY)))
+
+  ; Define the new-fn for F.
+   (DEFUN F29623679 (X)
+          (DECLARE (XARGS :VERIFY-GUARDS T))
+          (DECLARE (XARGS :GUARD T))
+          (LET* ((IO-LOOKUP-VAR0 '((3 (3 . 3))))
+                 (IO-LOOKUP-VAR0 (IO-LOOKUP IO-LOOKUP-VAR0 EQUAL X)))
+                (IF IO-LOOKUP-VAR0 (CAR IO-LOOKUP-VAR0)
+                    (F X))))
+
+  ; Prove that F equals its new-fn, as required by the memoize call below.
+   (DEFTHM F52318143 (EQUAL (F X) (F29623679 X))
+           :RULE-CLASSES NIL)
+
+  ; Remove any existing memoization of F (redundant if F is not memoized).
+   (UNMEMOIZE 'F)
+
+  ; Arrange for F to call its new-fn.
+   (MEMOIZE 'F :INVOKE 'F29623679))
+ ACL2 !>
+ })
+
+ <p>It is also instructive to look at the implementation of @(tsee
+ install-io-pairs), again using a log (below).  Notice that the events are
+ essentially the same as for @('add-io-pairs'), except that the table is not
+ changed.  In particular, there is still a call of
+ @('check-io-pairs-lenience'), for essentially the same reason: imagine if
+ @('(install-io-pairs f)') is in a certified book that is included after having
+ added I/O pairs for @('f') in the current session.</p>
+
+ @({
+ ACL2 !>:trans1 (install-io-pairs f)
+  (WITH-OUTPUT
+   :OFF :ALL :ON ERROR :GAG-MODE NIL
+   (MAKE-EVENT
+     (B* ((FN 'F)
+          (HINTS 'NIL)
+          (DEBUG 'NIL)
+          (TEST 'EQUAL)
+          (WRLD (W STATE))
+          (IO-DOUBLET-LST :SKIP)
+          (EVENTS (ADD-IO-PAIRS-EVENTS FN
+                                       IO-DOUBLET-LST HINTS DEBUG TEST WRLD)))
+         (VALUE (CONS 'PROGN EVENTS)))
+     :ON-BEHALF-OF :QUIET!))
+ ACL2 !>(b* ((fn 'f)
+             (hints 'nil)
+             (debug 'nil)
+             (test 'equal)
+             (wrld (w state))
+             (io-doublet-lst :skip)
+             (events (add-io-pairs-events fn io-doublet-lst hints debug
+                                          test wrld)))
+          (value (cons 'progn events)))
+  (PROGN (CHECK-IO-PAIRS-LENIENCE F NIL INSTALL-IO-PAIRS)
+         (DEFUN F1824557376 (X)
+                (DECLARE (XARGS :VERIFY-GUARDS T))
+                (DECLARE (XARGS :GUARD T))
+                (LET* ((IO-LOOKUP-VAR0 'NIL)
+                       (IO-LOOKUP-VAR0 (IO-LOOKUP IO-LOOKUP-VAR0 EQUAL X)))
+                      (IF IO-LOOKUP-VAR0 (CAR IO-LOOKUP-VAR0)
+                          (F X))))
+         (DEFTHM F1847247744
+                 (EQUAL (F X) (F1824557376 X))
+                 :RULE-CLASSES NIL)
+         (UNMEMOIZE 'F)
+         (MEMOIZE 'F :INVOKE 'F1824557376))
+ ACL2 !>
+ })
+
+ <p>We conclude by noting that @(tsee remove-io-pairs) not only removes all I/O
+ pairs for the indicated function symbols from the @('io-pairs-table'), but
+ also unmemoizes those function symbols.  By contrast, @(tsee
+ deinstall-io-pairs) leaves the @('io-pairs-table') unchanged, merely
+ unmemoizing the indicated function.</p>")
 
 (defxdoc remove-io-pairs
   :parents (add-io-pairs)
   :short "Remove input-output pairs"
-  :long "<p>WARNING: This utility may undergo significant changes until the end
- of January 2021.</p>
-
- <p>For relevant background, see @(see add-io-pairs), which modifies a function
- by looking up the result for specified input-output pairs.  The utility
- @('remove-io-pairs') removes all such pairs for the specified function
+  :long "<p>For relevant background, see @(see add-io-pairs), which modifies a
+ function by looking up the result for specified input-output pairs.  The
+ utility @('remove-io-pairs') removes all such pairs for the specified function
  symbols.</p>
 
  @({
@@ -338,16 +538,15 @@
  pairs.</p>
 
  <p>Remark.  As @(tsee add-io-pairs) actually memoizes functions,
- @('remove-io-pairs') unmemoizes the specified functions.</p>")
+ @('remove-io-pairs') unmemoizes the specified functions.  For a utility that
+ unmemoizes while preserving I/O pairs for possible re-installation later, see
+ @(see deinstall-io-pairs).</p>")
 
 (defxdoc get-io-pairs
   :parents (add-io-pairs)
   :short "Return a list of verified input-output pairs"
-  :long "<p>WARNING: This utility may undergo significant changes until the end
- of January 2021.</p>
-
- <p>See @(see show-io-pairs) for a more user-friendly display of the current
- I/O pairs.  See @(see add-io-pairs) for relevant background.</p>
+  :long "<p>See @(see show-io-pairs) for a more user-friendly display of the
+ current I/O pairs.  See @(see add-io-pairs) for relevant background.</p>
 
  <p>@('Get-io-pairs') returns all evaluated I/O pairs for the specified
  function symbols.</p>
@@ -382,13 +581,11 @@
 (defxdoc show-io-pairs
   :parents (add-io-pairs)
   :short "Display verified input-output pairs"
-  :long "<p>WARNING: This utility may undergo significant changes until the end
- of January 2021.</p>
-
- <p>See @(see add-io-pairs) for relevant background.  @('Show-io-pairs') prints
- I/O pairs in a pleasant format, each starting on a new line.  It is evaluated
- only for its side effect of printing.  See @(see get-io-pairs) for a related
- utility, which returns a list of evaluated I/O pairs.</p>
+  :long "<p>See @(see add-io-pairs) for relevant background.
+ @('Show-io-pairs') prints I/O pairs in a pleasant format, each starting on a
+ new line.  It is evaluated only for its side effect of printing.  See @(see
+ get-io-pairs) for a related utility, which returns a list of evaluated I/O
+ pairs.</p>
 
  <p>@('Show-io-pairs') displays all (verified) I/O pairs for the specified
  function symbols.  Normally printing goes to the terminal, but more generally
@@ -416,6 +613,58 @@
 
  <p>A warning is printed for each @('fni') that has no associated I/O
  pairs.</p>")
+
+(defxdoc install-io-pairs
+  :parents (add-io-pairs)
+  :short "Install input-output pairs"
+  :long "@({
+ General Form:
+ (install-io-pairs fn)
+ })
+
+ <p>For relevant background, see @(see add-io-pairs).  One might never have
+ reason to use @('install-io-pairs').  You will evaluate @('(install-io-pairs
+ fn)') after including a book that adds I/O pairs for the function symbol,
+ @('fn'), in a session that has already added I/O pairs for @('fn').  This is
+ explained in Remark 5 of the documentation for @(see add-io-pairs).</p>")
+
+(defxdoc deinstall-io-pairs
+  :parents (add-io-pairs)
+  :short "Deinstall input-output pairs"
+  :long " @({
+ General Form:
+ (deinstall-io-pairs fn)
+ })
+
+ <p>For relevant background, see @(see add-io-pairs).  This is just an alias
+ for @(tsee unmemoize), thus causing evaluation to use the original definition
+ of the given function symbol, @('fn').  The I/O pairs for @('fn') are still
+ stored, unlike @(tsee remove-io-pairs); thus, you can later evaluate
+ @('(install-io-pairs fn)') to restore the use of I/O pairs in the evaluation
+ of @('fn').</p>")
+
+(defxdoc add-io-pairs-lenience
+  :parents (add-io-pairs)
+  :short "Avoid error when including a book that discards I/O pairs"
+  :long "@({
+ General Forms:
+ (add-io-pairs-lenience fn nil) ; default
+ (add-io-pairs-lenience fn t)
+ (add-io-pairs-lenience fn :warn)
+ })
+
+ <p>For relevant background, see @(see add-io-pairs).  One typically evaluates
+ @('(add-io-pairs-lenience fn t')) before including a book that adds I/O pairs
+ for the function symbol, @('fn'), when in a session that has already added I/O
+ pairs for @('fn').  This is explained in Remark 5 of the documentation for
+ @(see add-io-pairs).</p>
+
+ <p><b>IMPORTANT</b>.  After evaluating @('(add-io-pairs-lenience fn t')) or
+ @('(add-io-pairs-lenience fn :warn')) and then including books, be sure to
+ evaluate @('(add-io-pairs-lenience fn nil')) to restore the default behavior.
+ Otherwise, subsequent @('include-book') forms may discard I/O pairs when
+ evaluating calls of @('fn').  Again, see the aforementioned Remark 5 for
+ explanation.</p>")
 
 (defmacro add-io-pair (fn/input output &key hints debug test verbose)
   `(add-io-pairs ((,fn/input ,output))
@@ -453,6 +702,10 @@
 ; get-io-pairs, which relies on the keys being function symbols.
 
        :guard (function-symbolp key world))
+
+(table io-pairs-lenience-table nil nil
+       :guard (and (function-symbolp key world)
+                   (member-eq val '(t nil :warn))))
 
 (defun update-io-lookup-init (args val)
 
@@ -600,6 +853,12 @@
            '(get-io-pairs :all))
     `(get-io-pairs-fn ',fns (w state) t)))
 
+(defun maybe-kwote-lst (x)
+  (declare (xargs :guard (true-listp x) :mode :logic))
+  (cond ((endp x) nil)
+        (t (cons (maybe-kwote (car x))
+                 (maybe-kwote-lst (cdr x))))))
+
 (defun show-io-pairs-lst (pairs chan wrld state)
   (cond ((endp pairs) (newline chan state))
         (t (pprogn (b* ((pair (car pairs))
@@ -607,13 +866,14 @@
                         (fn (car fn/inputs))
                         (inputs (cdr fn/inputs))
                         (result (cadr pair))
-                        (mvp (cdr (formals fn wrld)))
-                        (qinputs (kwote-lst inputs))
-                        (qresult (if mvp
-                                     (assert$
-                                      (eq (car result) 'mv)
-                                      (cons 'mv (kwote-lst (cdr result))))
-                                   (kwote result)))
+                        (mvp (cdr (stobjs-out fn wrld)))
+                        (qinputs (maybe-kwote-lst inputs))
+                        (qresult
+                         (if mvp
+                             (assert$
+                              (eq (car result) 'mv)
+                              (cons 'mv (maybe-kwote-lst (cdr result))))
+                           (maybe-kwote result)))
                         (io-pair `((,fn ,@qinputs) ,qresult)))
                      (fms "~x0" (list (cons #\0 io-pair)) chan state nil))
                    (show-io-pairs-lst (cdr pairs) chan wrld state)))))
@@ -769,14 +1029,6 @@
                 "Implementation error: Impossible case!")
             (value nil)))))
 
-(defmacro unmemoize? (fn)
-
-; Note that fn is evaluated.  A typical call thus might be (unmemoize? 'foo).
-
-  `(make-event (if (memoizedp ,fn)
-                   '(unmemoize ,fn)
-                 '(value-triple nil))))
-
 (defun add-io-pairs-dcls (fn wrld)
 
 ; Much of this code is based on that of ACL2 source function
@@ -822,10 +1074,70 @@
                         (cons ai vars)
                         (list* ai-binding xi-binding bindings))))))
 
-(defun add-io-pairs-events (fn formals io-doublet-lst hints debug test wrld)
+(defmacro add-io-pairs-lenience (fn val)
+  `(table io-pairs-lenience-table ',fn ',val))
+
+(defmacro check-io-pairs-lenience (fn old-entry caller)
+  `(make-event
+    (b* ((fn ',fn)
+         (old-entry ',old-entry)
+         (caller ',caller)
+         (wrld (w state))
+         (str1 "ACL2 has encountered a call of ~x0 on function symbol ~x1~@2, ~
+                in an environment where the existing value of ~x1 in the ~
+                io-pairs-table differs from what it was at the time of the ~
+                original call of ~x0 on ~x1.  ~@3  See :DOC ~
+                add-io-pairs.")
+         (str2 "The next step (perhaps after ~@0) is to evaluate ~x1.")
+         (str3 "To suppress this error, first evaluate ~x0; then after ~@1, ~
+                evaluate ~x2, perhaps followed by ~x3.")
+         (lenience (cdr (assoc-eq fn (table-alist 'io-pairs-lenience-table
+                                                  wrld))))
+         ((when (eq lenience t))
+          (value '(value-triple :invisible)))
+         (current-entry
+          (cdr (assoc-eq fn (table-alist 'io-pairs-table wrld))))
+         (ctx caller)
+         ((when (not (equal old-entry current-entry)))
+          (b* ((book (car (global-val 'include-book-path wrld)))
+               (book-msg (if book
+                             (msg " while including the book ~x0"
+                                  book)
+                           "")))
+            (with-output
+              :on (error warning)
+              (case lenience
+                (:warn (pprogn
+                        (warning$ ctx "Add-io-pairs" str1
+                                  caller
+                                  fn
+                                  book-msg
+                                  (msg str2
+                                       (if book
+                                           "including other books"
+                                         "evaluating other forms")
+                                       (list 'install-io-pairs fn)))
+                        (value '(value-triple :invisible))))
+                (otherwise ; val=nil by table guard on 'io-pairs-lenience-table
+                 (er soft ctx str1
+                     caller
+                     fn
+                     book-msg
+                     (msg str3
+                          (list 'add-io-pairs-lenience fn t)
+                          (if book
+                              "including that book (and perhaps others)"
+                            "proceeding")
+                          (list 'install-io-pairs fn)
+                          (list 'add-io-pairs-lenience fn nil)))))))))
+      (value '(value-triple :invisible)))
+    :check-expansion t
+    :on-behalf-of :quiet!))
+
+(defun add-io-pairs-events (fn io-doublet-lst hints debug test wrld)
 
 ; Fn is a guard-verified function symbol in wrld that does not traffic in state
-; or stobjs.  io-doublet-lst is a list of pairs (inputs . output) as returned by
+; or stobjs.  Io-doublet-lst is a list of pairs (inputs . output) as returned by
 ; add-io-pairs-translate-tuples, and hence respects the signature of fn: inputs
 ; has the same length as the stobjs-in of fn, and if the stobjs-out of fn is
 ; other than (nil) then it has the same length as output.
@@ -836,14 +1148,20 @@
 ; community book books/std/util/add-io-pairs-tests.lisp that includes a comment
 ; about "absolute-event-number".
 
+; We allow io-doublet-lst to be :skip, in which case the table event is skipped
+; and we use the existing table entry -- thus supporting install-io-pairs.
+
   (b* ((old-entry (cdr (assoc-eq fn (table-alist 'io-pairs-table wrld))))
-       (new-entry (update-io-lookup-lst io-doublet-lst old-entry))
+       (new-entry (if (eq io-doublet-lst :skip) ; for install-io-pairs
+                      old-entry
+                    (update-io-lookup-lst io-doublet-lst old-entry)))
        (sum (check-sum-obj new-entry))
        (max (max-absolute-event-number wrld))
        (suffix1 (check-sum-obj (list* 'defthm fn sum max)))
        (thm-name (add-suffix fn (coerce (explode-atom suffix1 10) 'string)))
        (suffix2 (check-sum-obj (list* 'defun fn sum max)))
        (new-fn (add-suffix fn (coerce (explode-atom suffix2 10) 'string)))
+       (formals (formals fn wrld))
        (io-lookup-var (genvar fn "IO-LOOKUP-VAR" 0 formals))
        (lookup-result0 `(car ,io-lookup-var))
        (stobjs-out (stobjs-out fn wrld))
@@ -852,7 +1170,17 @@
                                      lookup-result0
                                      0 nil nil)
                         lookup-result0)))
-    `((table io-pairs-table ',fn ',new-entry)
+    `((check-io-pairs-lenience ,fn
+                               ,old-entry
+                               ,(if (eq io-doublet-lst :skip)
+                                    'install-io-pairs
+                                  'add-io-pairs))
+      ,@(and (not (eq io-doublet-lst :skip))
+             `((table io-pairs-table ',fn
+                      (let ((old-entry
+                             (cdr (assoc-eq ',fn (table-alist 'io-pairs-table
+                                                              world)))))
+                        (update-io-lookup-lst ',io-doublet-lst old-entry)))))
       (defun ,new-fn ,formals
         ,@(add-io-pairs-dcls fn wrld)
         (let* ((,io-lookup-var ',new-entry)
@@ -870,25 +1198,27 @@
                (,new-fn ,@formals))
         ,@(and hints `(:hints ,hints))
         :rule-classes nil)
-      (unmemoize? ',fn)
+      (unmemoize ',fn)
       (memoize ',fn :invoke ',new-fn))))
 
 (defmacro add-io-pairs (tuples &key hints debug (test 'equal) verbose)
-  (let ((form `(let ((tuples ',tuples)
-                     (hints ',hints)
-                     (debug ',debug)
-                     (test ',test)
-                     (wrld (w state)))
-                 (b* (((when (null tuples))
-                       (value '(value-triple :empty-io-pairs)))
-                      (ctx 'add-io-pairs)
-                      ((er io-doublet-lst)
-                       (add-io-pairs-translate-tuples tuples ctx wrld state))
-                      (fn (caar (car tuples)))
-                      (formals (formals fn wrld))
-                      (events (add-io-pairs-events fn formals io-doublet-lst
-                                                   hints debug test wrld)))
-                   (value (cons 'progn events))))))
+
+; Keep this in sync with install-io-pairs.
+
+  (let ((form `(b* ((tuples ',tuples)
+                    (hints ',hints)
+                    (debug ',debug)
+                    (test ',test)
+                    (wrld (w state))
+                    ((when (null tuples))
+                     (value '(value-triple :empty-io-pairs)))
+                    (ctx 'add-io-pairs)
+                    ((er io-doublet-lst)
+                     (add-io-pairs-translate-tuples tuples ctx wrld state))
+                    (fn (caar (car tuples)))
+                    (events (add-io-pairs-events fn io-doublet-lst
+                                                 hints debug test wrld)))
+                 (value (cons 'progn events)))))
     (cond (verbose `(make-event ,form))
           (t `(with-output :off :all :on error :gag-mode nil
                 (make-event ,form
@@ -928,14 +1258,14 @@
                    (with-output!
                      :stack :pop
                      (pprogn
-                      (warning$ ctx nil
+                      (warning$ ctx "Add-io-pairs"
                                 "There ~#0~[is no I/O pair for the ~
                                  symbol~/are no I/O pairs for the symbols~] ~
                                  ~&0."
                                 bad)
                       (value nil)))
                  (value nil))))
-    (value `(progn ,@(pairlis-x1 'unmemoize? (pairlis$ (kwote-lst fns) nil))
+    (value `(progn ,@(pairlis-x1 'unmemoize (pairlis$ (kwote-lst fns) nil))
                    (table io-pairs-table nil
                           (remove-assoc-eq-lst ',fns
                                                (table-alist 'io-pairs-table
@@ -949,3 +1279,24 @@
      :off :all :on error :gag-mode nil
      (make-event (remove-io-pairs-event ',fns 'remove-io-pairs state)
                  :on-behalf-of :quiet!)))
+
+(defmacro install-io-pairs (fn &key hints debug (test 'equal) verbose)
+
+; Keep this in sync with add-io-pairs.
+
+  (let ((form `(b* ((fn ',fn)
+                    (hints ',hints)
+                    (debug ',debug)
+                    (test ',test)
+                    (wrld (w state))
+                    (io-doublet-lst :skip)
+                    (events (add-io-pairs-events fn io-doublet-lst
+                                                 hints debug test wrld)))
+                 (value (cons 'progn events)))))
+    (cond (verbose `(make-event ,form))
+          (t `(with-output :off :all :on error :gag-mode nil
+                (make-event ,form
+                            :on-behalf-of :quiet!))))))
+
+(defmacro deinstall-io-pairs (fn)
+  `(unmemoize ',fn))

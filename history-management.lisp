@@ -18282,7 +18282,9 @@
             (er-progn
              (chk-table-nil-args :put term '(5) ctx state)
              (cond
-              ((and old-pair (equal val (cdr old-pair)))
+              ((and (or old-pair
+                        (eq name 'memoize-table)) ; see :doc redundant-events
+                    (equal val (cdr old-pair)))
                (stop-redundant-event ctx state))
               (t (er-let*
                      ((pair (chk-table-guard name key val ctx wrld ens state))
