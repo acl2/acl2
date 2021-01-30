@@ -46,6 +46,7 @@
                mbt$
                msg-listp
                nat
+               pos-listp
                pseudo-event-form-listp
                pseudo-event-formp
                tuple

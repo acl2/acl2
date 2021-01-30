@@ -181,7 +181,12 @@
   ((function ident)
    (scopes scope-list :reqfix (if (consp scopes) scopes (list nil))))
   :require (consp scopes)
-  :pred framep)
+  :pred framep
+  ///
+
+  (defrule len-of-frame->scopes-lower-bound
+    (> (len (frame->scopes frame)) 0)
+    :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -283,29 +288,96 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define compustate-top-frame-scopes-number ((compst compustatep))
-  :guard (> (compustate-frames-number compst) 0)
-  :returns (n natp)
-  :short "Number of scopes in the top frame of
-          a computation state with a non-empty call stack."
-  (len (frame->scopes (top-frame compst)))
+(define compustate-scopes-numbers ((compst compustatep))
+  :returns (ns pos-listp)
+  :short "Ordered list of the numbers of scopes in the call stack frames."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Each frame in the call stack has a number of scopes.
+     This function returns these numbers,
+     in the same order as the frames in the stack."))
+  (compustate-scopes-numbers-aux (compustate->frames compst))
+
+  :prepwork
+  ((define compustate-scopes-numbers-aux ((frames frame-listp))
+     :returns (ns pos-listp)
+     (cond ((endp frames) nil)
+           (t (cons (len (frame->scopes (car frames)))
+                    (compustate-scopes-numbers-aux (cdr frames)))))
+     :hooks (:fix)
+     ///
+     (defret len-of-compustate-scopes-numbers-aux
+       (equal (len ns)
+              (len frames)))
+     (defret consp-of-compustate-scopes-numbers-aux
+       (equal (consp ns)
+              (consp frames)))
+     (defret car-of-compustate-scopes-numbers-aux
+       (implies (> (len frames) 0)
+                (equal (car ns)
+                       (len (frame->scopes (car frames))))))))
+
   :hooks (:fix)
+
   ///
 
-  (local (include-book "std/lists/len" :dir :system))
-  (defret compustate-top-frame-scopes-number-lower-bound
-    (> n 0)
-    :rule-classes :linear))
+  (defret len-of-compustate-scopes-numbers
+    (equal (len ns)
+           (len (compustate->frames compst))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  (defret consp-of-compustate-scopes-numbers
+    (consp ns)
+    :hyp (> (compustate-frames-number compst) 0)
+    :rule-classes :type-prescription
+    :hints (("Goal" :in-theory (enable compustate-frames-number))))
 
-(defsection push-frame-xdoc-extension
-  :extension push-frame
+  (defret posp-of-car-of-compustate-scopes-numbers
+    (posp (car ns))
+    :hyp (> (compustate-frames-number compst) 0)
+    :rule-classes :type-prescription
+    :hints (("Goal" :in-theory (enable compustate-frames-number))))
 
-  (defrule compustate-top-frame-scopes-number-of-push-frame
-    (equal (compustate-top-frame-scopes-number (push-frame frame compst))
-           (len (frame->scopes frame)))
-    :enable compustate-top-frame-scopes-number))
+  (defret car-of-compustate-scopes-numbers-lower-bound
+    (> (car ns) 0)
+    :hyp (> (compustate-frames-number compst) 0)
+    :rule-classes :linear
+    :hints (("Goal" :in-theory (enable compustate-frames-number))))
+
+  (defret car-of-compustate-scopes-numbers
+    (implies (> (compustate-frames-number compst) 0)
+             (equal (car ns)
+                    (len (frame->scopes (car (compustate->frames compst))))))
+    :hints (("Goal" :in-theory (enable compustate-frames-number))))
+  (in-theory (disable car-of-compustate-scopes-numbers))
+
+  (defrule compustate-scopes-numbers-of-push-frame
+    (equal (compustate-scopes-numbers (push-frame frame compst))
+           (cons (len (frame->scopes frame))
+                 (compustate-scopes-numbers compst)))
+    :enable (push-frame compustate-scopes-numbers-aux))
+
+  (defrule compustate-scopes-numbers-of-pop-frame
+    (equal (compustate-scopes-numbers (pop-frame compst))
+           (cdr (compustate-scopes-numbers compst)))
+    :enable (pop-frame compustate-scopes-numbers-aux)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define compustate-top-frame-scopes-number ((compst compustatep))
+  :guard (> (compustate-frames-number compst) 0)
+  :returns (n posp
+              :hyp (> (compustate-frames-number compst) 0)
+              :rule-classes :type-prescription)
+  :short "Number of scopes in the top frame of
+          a computation state with a non-empty call stack."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We use this as an enabled abbreviation."))
+  (car (compustate-scopes-numbers compst))
+  :enabled t
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -329,15 +401,15 @@
   (defret compustate-frames-number-of-enter-scope
     (equal (compustate-frames-number new-compst)
            (compustate-frames-number compst))
-    :hyp (> (compustate-frames-number compst) 0)
-    :hints (("Goal" :in-theory (enable compustate-frames-number
-                                       push-frame
-                                       pop-frame))))
+    :hyp (> (compustate-frames-number compst) 0))
 
-  (defret compustate-top-frame-scopes-number-of-enter-scope
-    (equal (compustate-top-frame-scopes-number new-compst)
-           (1+ (compustate-top-frame-scopes-number compst)))
-    :hints (("Goal" :in-theory (enable compustate-top-frame-scopes-number)))))
+  (defret compustate-scopes-numbers-of-enter-scope
+    (equal (compustate-scopes-numbers new-compst)
+           (cons (1+ (car (compustate-scopes-numbers compst)))
+                 (cdr (compustate-scopes-numbers compst))))
+    :hyp (> (compustate-frames-number compst) 0)
+    :hints (("Goal" :in-theory (enable top-frame
+                                       car-of-compustate-scopes-numbers)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -356,23 +428,25 @@
        (new-frame (change-frame frame :scopes new-scopes))
        (new-compst (push-frame new-frame (pop-frame compst))))
     new-compst)
-  :guard-hints (("Goal" :in-theory (enable compustate-top-frame-scopes-number)))
+  ;; :guard-hints (("Goal" :in-theory (enable compustate-top-frame-scopes-number)))
+  :guard-hints (("Goal" :in-theory (enable car-of-compustate-scopes-numbers
+                                           top-frame)))
   :hooks (:fix)
   ///
 
   (defret compustate-frames-number-of-exit-scope
     (equal (compustate-frames-number (exit-scope compst))
            (compustate-frames-number compst))
-    :hyp (> (compustate-frames-number compst) 0)
-    :hints (("Goal" :in-theory (enable compustate-frames-number
-                                       push-frame
-                                       pop-frame))))
+    :hyp (> (compustate-frames-number compst) 0))
 
-  (defret compustate-top-frame-scopes-number-of-exit-scope
-    (equal (compustate-top-frame-scopes-number new-compst)
-           (1- (compustate-top-frame-scopes-number compst)))
-    :hyp (> (compustate-top-frame-scopes-number compst) 1)
-    :hints (("Goal" :in-theory (enable compustate-top-frame-scopes-number)))))
+  (defret compustate-scopes-numbers-of-exit-scope
+    (equal (compustate-scopes-numbers new-compst)
+           (cons (1- (car (compustate-scopes-numbers compst)))
+                 (cdr (compustate-scopes-numbers compst))))
+    :hyp (and (> (compustate-frames-number compst) 0)
+              (> (compustate-top-frame-scopes-number compst) 1))
+    :hints (("Goal" :in-theory (enable car-of-compustate-scopes-numbers
+                                       top-frame)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -460,19 +534,22 @@
                     (compustate-frames-number compst)))
     :hyp (> (compustate-frames-number compst) 0)
     :hints (("Goal" :in-theory (enable compustate-result-kind
-                                       compustate-result-ok->get
-                                       compustate-frames-number
-                                       push-frame
-                                       pop-frame))))
+                                       compustate-result-ok->get))))
 
-  (defret compustate-top-frame-scopes-number-of-add-var
+  (defret compustate-scopes-numbers-of-add-var
     (implies (compustate-result-case result :ok)
-             (equal (compustate-top-frame-scopes-number
+             (equal (compustate-scopes-numbers
                      (compustate-result-ok->get result))
-                    (compustate-top-frame-scopes-number compst)))
+                    (compustate-scopes-numbers compst)))
+    :hyp (> (compustate-frames-number compst) 0)
     :hints (("Goal" :in-theory (enable compustate-result-kind
                                        compustate-result-ok->get
-                                       compustate-top-frame-scopes-number)))))
+                                       top-frame
+                                       push-frame
+                                       pop-frame
+                                       compustate-scopes-numbers
+                                       compustate-scopes-numbers-aux
+                                       compustate-frames-number)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1032,7 +1109,6 @@
     (defret compustate-frames-number-of-exec-expr
       (equal (compustate-frames-number new-compst)
              (compustate-frames-number compst))
-      :hyp (> (compustate-frames-number compst) 0)
       :fn exec-expr)
     (defret compustate-frames-number-of-exec-fun
       t
@@ -1060,26 +1136,31 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defret-mutual compustate-top-frame-scopes-number-of-exec
-    (defret compustate-top-frame-scopes-number-of-exec-expr
-      (equal (compustate-top-frame-scopes-number new-compst)
-             (compustate-top-frame-scopes-number compst))
+  (defret-mutual compustate-scopes-numbers-of-exec
+    (defret compustate-scopes-numbers-of-exec-expr
+      (equal (compustate-scopes-numbers new-compst)
+             (compustate-scopes-numbers compst))
       :fn exec-expr)
-    (defret compustate-top-frame-scopes-number-of-exec-fun
+    (defret compustate-scopes-numbers-of-exec-fun
       t
       :rule-classes nil
       :fn exec-fun)
-    (defret compustate-top-frame-scopes-number-of-exec-stmt
-      (equal (compustate-top-frame-scopes-number new-compst)
-             (compustate-top-frame-scopes-number compst))
-      :fn exec-stmt)
-    (defret compustate-top-frame-scopes-number-of-exec-block-item
-      (equal (compustate-top-frame-scopes-number new-compst)
-             (compustate-top-frame-scopes-number compst))
+    (defret compustate-scopes-numbers-of-exec-stmt
+      (equal (compustate-scopes-numbers new-compst)
+             (compustate-scopes-numbers compst))
+      :hyp (> (compustate-frames-number compst) 0)
+     :fn exec-stmt)
+    (defret compustate-scopes-numbers-of-exec-block-item
+      (equal (compustate-scopes-numbers new-compst)
+             (compustate-scopes-numbers compst))
+      :hyp (and (> (compustate-frames-number compst) 0)
+                (> (compustate-top-frame-scopes-number compst) 1))
       :fn exec-block-item)
-    (defret compustate-top-frame-scopes-number-of-exec-block-item-list
-      (equal (compustate-top-frame-scopes-number new-compst)
-             (compustate-top-frame-scopes-number compst))
+    (defret compustate-scopes-numbers-of-exec-block-item-list
+      (equal (compustate-scopes-numbers new-compst)
+             (compustate-scopes-numbers compst))
+      :hyp (and (> (compustate-frames-number compst) 0)
+                (> (compustate-top-frame-scopes-number compst) 1))
       :fn exec-block-item-list)
     :hints (("Goal" :expand ((exec-expr e compst fenv limit)
                              (exec-stmt s compst fenv limit)
