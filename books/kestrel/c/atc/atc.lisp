@@ -1531,6 +1531,7 @@
                                    scope-result-ok->get
                                    compustate-result-kind
                                    compustate-result-ok->get
+                                   compustate-frames-number
                                    value-result-kind
                                    value-result-ok->get
                                    value-list-result-kind
