@@ -228,20 +228,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define compustate-nonempty-stack-p ((compst compustatep))
-  :returns (yes/no booleanp)
-  :short "Check if a computation state has a non-empty call stack."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is always satisfied when executing statements and expressions,
-     because those statements and expressions must be
-     in the body of some function that is executing."))
-  (consp (compustate->frames compst))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define push-frame ((frame framep) (compst compustatep))
   :returns (new-compst compustatep)
   :short "Push a frame onto a computation state's call stack."
@@ -251,11 +237,6 @@
   :hooks (:fix)
   ///
 
-  (more-returns
-   (new-compst compustate-nonempty-stack-p
-               :hints (("Goal"
-                        :in-theory (enable compustate-nonempty-stack-p)))))
-
   (defret compustate-frames-number-of-push-frame
     (equal (compustate-frames-number new-compst)
            (1+ (compustate-frames-number compst)))
@@ -264,11 +245,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define top-frame ((compst compustatep))
-  :guard (compustate-nonempty-stack-p compst)
+  :guard (> (compustate-frames-number compst) 0)
   :returns (frame framep)
   :short "Top frame of a computation state's call stack."
   (frame-fix (car (compustate->frames compst)))
-  :guard-hints (("Goal" :in-theory (enable compustate-nonempty-stack-p)))
+  :guard-hints (("Goal" :in-theory (enable compustate-frames-number)))
   :hooks (:fix)
   ///
 
@@ -280,7 +261,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define pop-frame ((compst compustatep))
-  :guard (compustate-nonempty-stack-p compst)
+  :guard (> (compustate-frames-number compst) 0)
   :returns (new-compst compustatep)
   :short "Pop a frame from a computation state's non-empty call stack."
   (b* ((stack (compustate->frames compst))
@@ -303,13 +284,14 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define compustate-top-frame-scopes-number ((compst compustatep))
-  :guard (compustate-nonempty-stack-p compst)
+  :guard (> (compustate-frames-number compst) 0)
   :returns (n natp)
   :short "Number of scopes in the top frame of
           a computation state with a non-empty call stack."
   (len (frame->scopes (top-frame compst)))
   :hooks (:fix)
   ///
+
   (local (include-book "std/lists/len" :dir :system))
   (defret compustate-top-frame-scopes-number-lower-bound
     (> n 0)
@@ -328,7 +310,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define enter-scope ((compst compustatep))
-  :guard (compustate-nonempty-stack-p compst)
+  :guard (> (compustate-frames-number compst) 0)
   :returns (new-compst compustatep)
   :short "Enter a scope."
   :long
@@ -343,8 +325,15 @@
     new-compst)
   :hooks (:fix)
   ///
-  (more-returns
-   (new-compst compustate-nonempty-stack-p))
+
+  (defret compustate-frames-number-of-enter-scope
+    (equal (compustate-frames-number new-compst)
+           (compustate-frames-number compst))
+    :hyp (> (compustate-frames-number compst) 0)
+    :hints (("Goal" :in-theory (enable compustate-frames-number
+                                       push-frame
+                                       pop-frame))))
+
   (defret compustate-top-frame-scopes-number-of-enter-scope
     (equal (compustate-top-frame-scopes-number new-compst)
            (1+ (compustate-top-frame-scopes-number compst)))
@@ -353,7 +342,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define exit-scope ((compst compustatep))
-  :guard (and (compustate-nonempty-stack-p compst)
+  :guard (and (> (compustate-frames-number compst) 0)
               (> (compustate-top-frame-scopes-number compst) 1))
   :returns (new-compst compustatep)
   :short "Exit a scope."
@@ -370,8 +359,15 @@
   :guard-hints (("Goal" :in-theory (enable compustate-top-frame-scopes-number)))
   :hooks (:fix)
   ///
-  (more-returns
-   (new-compst compustate-nonempty-stack-p))
+
+  (defret compustate-frames-number-of-exit-scope
+    (equal (compustate-frames-number (exit-scope compst))
+           (compustate-frames-number compst))
+    :hyp (> (compustate-frames-number compst) 0)
+    :hints (("Goal" :in-theory (enable compustate-frames-number
+                                       push-frame
+                                       pop-frame))))
+
   (defret compustate-top-frame-scopes-number-of-exit-scope
     (equal (compustate-top-frame-scopes-number new-compst)
            (1- (compustate-top-frame-scopes-number compst)))
@@ -381,7 +377,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define lookup-var ((var identp) (compst compustatep))
-  :guard (compustate-nonempty-stack-p compst)
+  :guard (> (compustate-frames-number compst) 0)
   :returns (result value-resultp)
   :short "Look up a variable in a computation state."
   :long
@@ -416,7 +412,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define add-var ((var identp) (val sintp) (compst compustatep))
-  :guard (compustate-nonempty-stack-p compst)
+  :guard (> (compustate-frames-number compst) 0)
   :returns (result compustate-resultp)
   :short "Add a variable to a computation state."
   :long
@@ -441,21 +437,26 @@
   :hooks (:fix)
   ///
 
-  (defret compustate-nonempty-stack-p-of-add-var-when-compustate-nonempty-stack-p
-    (implies (and (compustate-nonempty-stack-p compst)
-                  (compustate-result-case result :ok))
-             (compustate-nonempty-stack-p (compustate-result-ok->get result)))
-    :hints (("Goal" :in-theory (enable compustate-result-ok->get
-                                       compustate-result-kind))))
+  (defret compustate-frames-number-of-add-var
+    (implies (compustate-result-case result :ok)
+             (equal (compustate-frames-number
+                     (compustate-result-ok->get result))
+                    (compustate-frames-number compst)))
+    :hyp (> (compustate-frames-number compst) 0)
+    :hints (("Goal" :in-theory (enable compustate-result-kind
+                                       compustate-result-ok->get
+                                       compustate-frames-number
+                                       push-frame
+                                       pop-frame))))
 
   (defret compustate-top-frame-scopes-number-of-add-var
     (implies (compustate-result-case result :ok)
              (equal (compustate-top-frame-scopes-number
                      (compustate-result-ok->get result))
                     (compustate-top-frame-scopes-number compst)))
-    :hints (("Goal" :in-theory (enable compustate-result-ok->get
-                                       compustate-top-frame-scopes-number
-                                       compustate-result-kind)))))
+    :hints (("Goal" :in-theory (enable compustate-result-kind
+                                       compustate-result-ok->get
+                                       compustate-top-frame-scopes-number)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -500,7 +501,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define exec-ident ((id identp) (compst compustatep))
-  :guard (compustate-nonempty-stack-p compst)
+  :guard (> (compustate-frames-number compst) 0)
   :returns (result value-resultp)
   :short "Execute a variable."
   :long
@@ -684,7 +685,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define exec-expr-pure ((e exprp) (compst compustatep))
-  :guard (compustate-nonempty-stack-p compst)
+  :guard (> (compustate-frames-number compst) 0)
   :returns (result value-resultp)
   :short "Execute a pure expression."
   :long
@@ -742,7 +743,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define exec-expr-pure-list ((es expr-listp) (compst compustatep))
-  :guard (compustate-nonempty-stack-p compst)
+  :guard (> (compustate-frames-number compst) 0)
   :returns (result value-list-resultp)
   :short "Execute a list of pure expression."
   :long
@@ -811,7 +812,7 @@
                      (compst compustatep)
                      (fenv fun-envp)
                      (limit natp))
-    :guard (compustate-nonempty-stack-p compst)
+    :guard (> (compustate-frames-number compst) 0)
     :returns (mv (result value-resultp)
                  (new-compst compustatep))
     :parents (dynamic-semantics execution-functions)
@@ -887,7 +888,7 @@
                      (compst compustatep)
                      (fenv fun-envp)
                      (limit natp))
-    :guard (compustate-nonempty-stack-p compst)
+    :guard (> (compustate-frames-number compst) 0)
     :returns (mv (result value-option-resultp)
                  (new-compst compustatep))
     :parents (dynamic-semantics execution-functions)
@@ -949,7 +950,7 @@
                            (compst compustatep)
                            (fenv fun-envp)
                            (limit natp))
-    :guard (and (compustate-nonempty-stack-p compst)
+    :guard (and (> (compustate-frames-number compst) 0)
                 (> (compustate-top-frame-scopes-number compst) 1))
     :returns (mv (result value-option-resultp)
                  (new-compst compustatep))
@@ -990,7 +991,7 @@
                                 (compst compustatep)
                                 (fenv fun-envp)
                                 (limit natp))
-    :guard (and (compustate-nonempty-stack-p compst)
+    :guard (and (> (compustate-frames-number compst) 0)
                 (> (compustate-top-frame-scopes-number compst) 1))
     :returns (mv (result value-option-resultp)
                  (new-compst compustatep))
@@ -1015,26 +1016,30 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defret-mutual compustate-nonempty-stack-p-of-exec
-    (defret compustate-nonempty-stack-p-of-exec-expr
-      (implies (compustate-nonempty-stack-p compst)
-               (compustate-nonempty-stack-p new-compst))
+  (defret-mutual compustate-frames-number-of-exec
+    (defret compustate-frames-number-of-exec-expr
+      (equal (compustate-frames-number new-compst)
+             (compustate-frames-number compst))
+      :hyp (> (compustate-frames-number compst) 0)
       :fn exec-expr)
-    (defret compustate-nonempty-stack-p-of-exec-fun
+    (defret compustate-frames-number-of-exec-fun
       t
       :rule-classes nil
       :fn exec-fun)
-    (defret compustate-nonempty-stack-p-of-exec-stmt
-      (implies (compustate-nonempty-stack-p compst)
-               (compustate-nonempty-stack-p new-compst))
+    (defret compustate-frames-number-of-exec-stmt
+      (equal (compustate-frames-number new-compst)
+             (compustate-frames-number compst))
+      :hyp (> (compustate-frames-number compst) 0)
       :fn exec-stmt)
-    (defret compustate-nonempty-stack-p-of-exec-block-item
-      (implies (compustate-nonempty-stack-p compst)
-               (compustate-nonempty-stack-p new-compst))
+    (defret compustate-frames-number-of-exec-block-item
+      (equal (compustate-frames-number new-compst)
+             (compustate-frames-number compst))
+      :hyp (> (compustate-frames-number compst) 0)
       :fn exec-block-item)
-    (defret compustate-nonempty-stack-p-of-exec-block-item-list
-      (implies (compustate-nonempty-stack-p compst)
-               (compustate-nonempty-stack-p new-compst))
+    (defret compustate-frames-number-of-exec-block-item-list
+      (equal (compustate-frames-number new-compst)
+             (compustate-frames-number compst))
+      :hyp (> (compustate-frames-number compst) 0)
       :fn exec-block-item-list)
     :hints (("Goal" :expand ((exec-expr e compst fenv limit)
                              (exec-stmt s compst fenv limit)
