@@ -18,7 +18,7 @@
 
 (defxdoc+ prime-field-constraint-systems
   :parents (acl2::kestrel-books acl2::projects)
-  :short "An library for PFCS (Prime Field Constraint Systems)."
+  :short "A library for PFCS (Prime Field Constraint Systems)."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -27,8 +27,8 @@
      We use the acronym `PFCS' for
      both singular (`System') and plural (`Systems').")
    (xdoc::p
-    "A PFCS is a system of constraints over prime fields;
-     the constraints include variables that range over prime fields.
+    "A PFCS is a system of constraints over a prime field;
+     the constraints include variables that range over a prime field.
      The motivation for PFCS stems from zero-knowledge proofs,
      but there may be more general applications.
      PFCS generalize R1CS (Rank-1 Constraint Systems),
@@ -53,8 +53,8 @@
       which may be referenced (i.e. ``called'')
       in the definition of other relations.
       This explicates the natural hierarchical structure
-      of zero-knowledge gadgets (R1CS or other),
-      and support more modular
+      of zero-knowledge gadgets (R1CS or others),
+      and supports more modular
       verification, analysis, transformation, and synthesis."))
    (xdoc::p
     "Currently this library contains an abstract syntax of PFCS,

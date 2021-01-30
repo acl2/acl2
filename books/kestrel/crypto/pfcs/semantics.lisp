@@ -30,7 +30,7 @@
      is the arity of the relation.
      The predicate holds exactly on the tuples of prime field elements
      that, when assigned to the parameters of the relation,
-     satisfy all the consraints that defines the relation.
+     satisfy all the constraints that define the relation.
      An equality constraint is satisfied
      when its evaluated left and right sides are equal.
      A relation application in the body of another one is satisfied
