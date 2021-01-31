@@ -72,9 +72,7 @@
    (:rewrite
     abs-separate-of-frame->frame-of-collapse-this-lemma-14)
    (:rewrite
-    hifat-place-file-correctness-lemma-3)
-   ;; Consider disabling everywhere.
-   (:definition hifat-subsetp))))
+    hifat-place-file-correctness-lemma-3))))
 
 (defund abs-find-file-helper (fs path)
   (declare (xargs :guard (and (abs-file-alist-p fs)
@@ -1331,22 +1329,12 @@
      (nthcdr (len (frame-val->path (cdr (assoc-equal (1st-complete frame)
                                                      frame))))
              path)))
-   ("subgoal 2.2"
-    :expand (names-at (frame-val->dir (cdr (assoc-equal (1st-complete frame)
-                                                        frame)))
-                      nil))
-   ("subgoal 2.1"
-    :expand (names-at (frame-val->dir (cdr (assoc-equal (1st-complete frame)
-                                                        frame)))
-                      nil))
-   ("subgoal 1.2"
-    :expand (names-at (frame-val->dir (cdr (assoc-equal (1st-complete frame)
-                                                        frame)))
-                      nil))
-   ("subgoal 1.1"
-    :expand (names-at (frame-val->dir (cdr (assoc-equal (1st-complete frame)
-                                                        frame)))
-                      nil))))
+   (if
+       (not stable-under-simplificationp)
+       nil
+     '(:expand (names-at (frame-val->dir (cdr (assoc-equal (1st-complete frame)
+                                                           frame)))
+                         nil)))))
 
 (local
  (defthm
