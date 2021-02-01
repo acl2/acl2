@@ -922,8 +922,7 @@
             (value-list-result-case
              args
              :err (mv args.get (compustate-fix compst))
-             :ok (mv (exec-fun e.fun args.get compst fenv (1- limit))
-                     (compustate-fix compst))))
+             :ok (exec-fun e.fun args.get compst fenv (1- limit))))
         (mv (exec-expr-pure e compst)
             (compustate-fix compst))))
     :measure (nfix limit))
@@ -935,7 +934,8 @@
                     (compst compustatep)
                     (fenv fun-envp)
                     (limit natp))
-    :returns (result value-resultp)
+    :returns (mv (result value-resultp)
+                 (new-compst compustatep))
     :parents (dynamic-semantics execution-functions)
     :short "Execution a function on argument values."
     :long
@@ -948,27 +948,28 @@
        which must return a result,
        which must match the function's result type
        (but we do not check this because every value is an @('int') for now).
-       We return the value as result.
-       There is no need to pop the frame
-       because for now we are not threading computation states
-       through the execution of functions
-       (because currently function calls have no side effects)."))
-    (b* (((when (zp limit)) (error :limit))
+       We pop the frame and return the value of the function call as result."))
+    (b* (((when (zp limit)) (mv (error :limit) (compustate-fix compst)))
          (info (fun-env-lookup fun fenv))
-         ((when (not info)) (error (list :function-undefined (ident-fix fun))))
+         ((when (not info))
+          (mv (error (list :function-undefined (ident-fix fun)))
+              (compustate-fix compst)))
          ((fun-info info) info)
          (scope (init-scope info.params args)))
       (scope-result-case
        scope
-       :err scope.get
+       :err (mv scope.get (compustate-fix compst))
        :ok (b* ((frame (make-frame :function fun :scopes (list scope.get)))
                 (compst (push-frame frame compst))
-                ((mv val-opt &) (exec-stmt info.body compst fenv (1- limit))))
+                ((mv val-opt compst)
+                 (exec-stmt info.body compst fenv (1- limit)))
+                (compst (pop-frame compst)))
              (value-option-result-case
               val-opt
-              :err val-opt.get
-              :ok (or val-opt.get
-                      (error (list :no-return-value (ident-fix fun))))))))
+              :err (mv val-opt.get compst)
+              :ok (mv (or val-opt.get
+                          (error (list :no-return-value (ident-fix fun))))
+                      compst)))))
     :measure (nfix limit))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1111,8 +1112,8 @@
              (compustate-frames-number compst))
       :fn exec-expr)
     (defret compustate-frames-number-of-exec-fun
-      t
-      :rule-classes nil
+      (equal (compustate-frames-number new-compst)
+             (compustate-frames-number compst))
       :fn exec-fun)
     (defret compustate-frames-number-of-exec-stmt
       (equal (compustate-frames-number new-compst)
@@ -1142,7 +1143,8 @@
              (compustate-scopes-numbers compst))
       :fn exec-expr)
     (defret compustate-scopes-numbers-of-exec-fun
-      t
+      (equal (compustate-scopes-numbers new-compst)
+             (compustate-scopes-numbers compst))
       :rule-classes nil
       :fn exec-fun)
     (defret compustate-scopes-numbers-of-exec-stmt
@@ -1227,6 +1229,8 @@
     (fun-env-result-case
      fenv
      :err (error fenv.get)
-     :ok (b* ((compst (make-compustate :frames nil)))
-           (exec-fun fun args compst fenv.get 1000000000)))) ; 10^9
+     :ok (b* ((compst (make-compustate :frames nil))
+              ((mv result  &)
+               (exec-fun fun args compst fenv.get 1000000000))) ; 10^9
+           result)))
   :hooks (:fix))
