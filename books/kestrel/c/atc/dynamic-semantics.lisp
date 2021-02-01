@@ -893,7 +893,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines execution-functions
+(defines exec
   :short "Mutually recursive functions for execution."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -904,7 +904,7 @@
                      (limit natp))
     :returns (mv (result value-resultp)
                  (new-compst compustatep))
-    :parents (dynamic-semantics execution-functions)
+    :parents (dynamic-semantics exec)
     :short "Execute an expression."
     :long
     (xdoc::topstring
@@ -936,7 +936,7 @@
                     (limit natp))
     :returns (mv (result value-resultp)
                  (new-compst compustatep))
-    :parents (dynamic-semantics execution-functions)
+    :parents (dynamic-semantics exec)
     :short "Execution a function on argument values."
     :long
     (xdoc::topstring
@@ -981,7 +981,7 @@
     :guard (> (compustate-frames-number compst) 0)
     :returns (mv (result value-option-resultp)
                  (new-compst compustatep))
-    :parents (dynamic-semantics execution-functions)
+    :parents (dynamic-semantics exec)
     :short "Execute a statement."
     :long
     (xdoc::topstring
@@ -1044,7 +1044,7 @@
                 (> (compustate-top-frame-scopes-number compst) 1))
     :returns (mv (result value-option-resultp)
                  (new-compst compustatep))
-    :parents (dynamic-semantics execution-functions)
+    :parents (dynamic-semantics exec)
     :short "Execute a block item."
     :long
     (xdoc::topstring
@@ -1085,7 +1085,7 @@
                 (> (compustate-top-frame-scopes-number compst) 1))
     :returns (mv (result value-option-resultp)
                  (new-compst compustatep))
-    :parents (dynamic-semantics execution-functions)
+    :parents (dynamic-semantics exec)
     :short "Execute a list of block items."
     :long
     (xdoc::topstring
@@ -1175,7 +1175,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (fty::deffixequiv-mutual execution-functions))
+  (fty::deffixequiv-mutual exec))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
