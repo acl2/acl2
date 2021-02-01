@@ -325,6 +325,7 @@
   (defret len-of-compustate-scopes-numbers
     (equal (len ns)
            (len (compustate->frames compst))))
+  (in-theory (disable len-of-compustate-scopes-numbers))
 
   (defret consp-of-compustate-scopes-numbers
     (consp ns)
@@ -428,7 +429,6 @@
        (new-frame (change-frame frame :scopes new-scopes))
        (new-compst (push-frame new-frame (pop-frame compst))))
     new-compst)
-  ;; :guard-hints (("Goal" :in-theory (enable compustate-top-frame-scopes-number)))
   :guard-hints (("Goal" :in-theory (enable car-of-compustate-scopes-numbers
                                            top-frame)))
   :hooks (:fix)
