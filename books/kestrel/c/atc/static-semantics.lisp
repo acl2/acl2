@@ -438,9 +438,7 @@
   (b* ((e (expr-fix e)))
     (expr-case
      e
-     :ident (b* ((wf (ident-check e.get))
-                 ((when (errorp wf)) (error (list :var-error wf)))
-                 (type (var-table-lookup e.get vartab))
+     :ident (b* ((type (var-table-lookup e.get vartab))
                  ((unless type) (error (list :var-not-found e.get))))
               type)
      :const (const-check e.get)
