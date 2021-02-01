@@ -543,6 +543,46 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define expr-asg-check ((e exprp)
+                        (funtab fun-tablep)
+                        (vartab var-tablep))
+  :returns (wf? wellformed-resultp)
+  :short "Check an expression that must be an assignment exrpression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used for the expression of an expression statement.
+     For now, we only allow simple assignment expressions
+     as expressions of expression statements,
+     with a left-hand side consisting of a variable in scope
+     and a right-hand side consisting of a function call or pure expression.
+     The two sides must have the same type.
+     We do not return any type information because
+     an expression statement throws away the expression's value;
+     indeed, we are only interested in the side effects of assignment here."))
+  (b* (((unless (expr-case e :binary))
+        (error (list :expr-stmt-not-binary (expr-fix e))))
+       (op (expr-binary->op e))
+       (left (expr-binary->arg1 e))
+       (right (expr-binary->arg2 e))
+       ((unless (binop-case op :asg))
+        (error (list :expr-stmt-not-asg op)))
+       ((unless (expr-case left :ident))
+        (error (list :expr-stmt-left-not-var left)))
+       (var (expr-ident->get left))
+       (ltype (var-table-lookup var vartab))
+       ((when (not ltype)) (error (list :expr-stmt-var-not-found var)))
+       (rtype (expr-call-or-pure-check right funtab vartab))
+       ((when (errorp rtype)) rtype)
+       ((unless (equal ltype rtype))
+        (error (list :asg-mistype left right
+                     :required ltype
+                     :supplied rtype))))
+    :wellformed)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod stmt-type
   :short "Fixtype of statement types."
   :long
@@ -591,11 +631,14 @@
    (xdoc::p
     "For now we only allow
      @('return') statements with expressions,
-     conditional statements, and
-     compound statements.")
+     conditional statements,
+     compound statements,
+     and expression statements.")
    (xdoc::p
     "These functions return a statement type or an error;
      see @(tsee stmt-type).")
+   (xdoc::p
+    "We only allow simple assignments to variables as expression statements.")
    (xdoc::p
     "For a compound statement,
      we add a block scope to the variable table
@@ -656,7 +699,10 @@
                     ((when (errorp stype))
                      (error (list :stmt-compound-error stype))))
                  (change-stmt-type stype :variables vartab))
-     :expr (error (list :unsupported-expr-stmt s.get))
+     :expr (b* ((wf (expr-asg-check s.get funtab vartab))
+                ((when (not wf)) wf))
+             (make-stmt-type :return-types (set::insert nil nil)
+                             :variables (var-table-fix vartab)))
      :null (error :unsupported-null-stmt)
      :if (b* ((type (expr-pure-check s.test vartab))
               ((when (errorp type)) (error (list :if-test-error type)))
