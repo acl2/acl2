@@ -11,6 +11,7 @@
 ; (include-book "kestrel/crypto/primes/baby-jubjub-subgroup-prime" :dir :system)
 
 (include-book "add-io-pairs")
+(include-book "std/testing/must-fail" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Simple examples from :doc add-io-pair
@@ -42,7 +43,8 @@
                      '(30 40)))
 
 ; Fails due to non-executability (no bypass for these args):
-; (g 5 4)
+(must-fail (g 5 4)
+           :expected :hard)
 
 ; Now let's add some more pairs, this time using terms that need to be
 ; evaluated rather than just constants.
@@ -220,7 +222,8 @@ ACL2 !>
 (assert-event (equal (h 3) nil))
 
 ; Fails, as it should:
-; (assert-event (equal (h 7) nil))
+(must-fail (equal (h 7) nil)
+           :expected :hard)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Check use of a list of tests
@@ -241,3 +244,71 @@ ACL2 !>
 ; (add-io-pairs (((g 2 8) (mv (* 2 10) (* 8 10))))
 ;               :test (eql eq)
 ;               :verbose t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Including a book
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-fail (include-book "add-io-pairs-tests-sub"))
+
+(add-io-pairs-lenience g :warn)
+
+(include-book "add-io-pairs-tests-sub")
+
+; Succeeds because original g is bypassed:
+(assert-event (equal (mv-let (a b) (g 100 200) (list a b))
+                     '(1000 2000)))
+
+; Earlier success was defeated by new call of add-io-pair(s) in sub-book.
+(must-fail (equal (mv-let (a b) (g 3 4) (list a b))
+                  '(30 40))
+           :expected :hard)
+
+(install-io-pairs g)
+
+; Succeeds because of add-io-pair in sub-book:
+(assert-event (equal (mv-let (a b) (g 100 200) (list a b))
+                     '(1000 2000)))
+
+; Still succeeds (original g is still bypassed) because of the "merge" done by
+; the call of install-io-pairs, above:
+(assert-event (equal (mv-let (a b) (g 3 4) (list a b))
+                     '(30 40)))
+
+; Restore default behavior:
+(add-io-pairs-lenience g nil)
+
+(add-io-pair (g 100 300) (mv 1000 3000))
+
+; Still succeeds:
+(assert-event (equal (mv-let (a b) (g 100 200) (list a b))
+                     '(1000 2000)))
+; Still succeeds:
+(assert-event (equal (mv-let (a b) (g 3 4) (list a b))
+                     '(30 40)))
+
+(assert-event (equal (mv-let (a b) (g 100 300) (list a b))
+                     '(1000 3000)))
+
+(deinstall-io-pairs g)
+
+(must-fail (equal (mv-let (a b) (g 3 4) (list a b))
+                  '(30 40))
+           :expected :hard)
+
+(install-io-pairs g)
+
+; These succeed again:
+(assert-event (and (equal (mv-let (a b) (g 100 200) (list a b))
+                          '(1000 2000))
+                   (equal (mv-let (a b) (g 3 4) (list a b))
+                          '(30 40))
+                   (equal (mv-let (a b) (g 100 300) (list a b))
+                          '(1000 3000))))
+
+; The second pass of the encapsulate below causes a failure.
+(must-fail
+ (encapsulate
+   ()
+   (local (add-io-pair (g 100 400) (mv 1000 4000)))
+   (add-io-pair (g 100 500) (mv 1000 5000))))

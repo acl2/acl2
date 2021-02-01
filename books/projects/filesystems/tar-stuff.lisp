@@ -2853,7 +2853,6 @@
           (:linear
            hifat-tar-name-list-alist-correctness-lemma-27)
           (:linear hifat-entry-count-when-hifat-subsetp)
-          (:definition hifat-subsetp)
           ;; it's dubious how much labour is saved by disabling these,
           ;; but it's worth a shot.
           (:definition atom)
