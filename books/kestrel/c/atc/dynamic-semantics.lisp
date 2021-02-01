@@ -450,57 +450,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define lookup-var ((var identp) (compst compustatep))
-  :returns (result value-resultp)
-  :short "Look up a variable in a computation state."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "If there are no frames, we return an error:
-     the variable is not found.
-     In the future, the computation state may be extended
-     with file-scope (i.e. global) variables, which are not in frames;
-     when that happens, variables will be looked up there,
-     if they are not found in the top frame.")
-   (xdoc::p
-    "It should be the case that variables are looked up
-     only when executing code in function bodies,
-     and therefore when the frame stack is not empty.
-     Thus, it could make sense for this ACL2 function
-     to require the non-emptiness of the frame stack in the guard.
-     However, that would require @(tsee exec-expr-pure) to have that guard,
-     but in the future we may want to use @(tsee exec-expr-pure)
-     to evaluate constant expressions used as initializers
-     in external object definitions,
-     which happens with an empty frame stack.
-     So we avoid that guard here.")
-   (xdoc::p
-    "If the frame stack is not empty,
-     we look in the scopes of the top frame from left to right,
-     i.e. from innermost to outermost.
-     If we find a variable with that name, we return its value.
-     Otherwise we return an error.")
-   (xdoc::p
-    "We do not look at other frames,
-     because the variables in other frames are not in scope
-     for the C function in the top frame."))
-  (if (> (compustate-frames-number compst) 0)
-      (lookup-var-aux var (frame->scopes (top-frame compst)))
-    (error (list :no-var-found-empty-frame-stack (ident-fix var))))
-  :hooks (:fix)
-
-  :prepwork
-  ((define lookup-var-aux ((var identp) (scopes scope-listp))
-     :returns (result value-resultp)
-     (b* (((when (endp scopes)) (error (list :no-var-found (ident-fix var))))
-          (scope (car scopes))
-          (pair (omap::in (ident-fix var) (scope-fix scope)))
-          ((when (not pair)) (lookup-var-aux var (cdr scopes))))
-       (cdr pair))
-     :hooks (:fix))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define add-var ((var identp) (val sintp) (compst compustatep))
   :guard (> (compustate-frames-number compst) 0)
   :returns (result compustate-resultp)
@@ -550,6 +499,57 @@
                                        compustate-scopes-numbers
                                        compustate-scopes-numbers-aux
                                        compustate-frames-number)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define lookup-var ((var identp) (compst compustatep))
+  :returns (result value-resultp)
+  :short "Look up a variable in a computation state."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If there are no frames, we return an error:
+     the variable is not found.
+     In the future, the computation state may be extended
+     with file-scope (i.e. global) variables, which are not in frames;
+     when that happens, variables will be looked up there,
+     if they are not found in the top frame.")
+   (xdoc::p
+    "It should be the case that variables are looked up
+     only when executing code in function bodies,
+     and therefore when the frame stack is not empty.
+     Thus, it could make sense for this ACL2 function
+     to require the non-emptiness of the frame stack in the guard.
+     However, that would require @(tsee exec-expr-pure) to have that guard,
+     but in the future we may want to use @(tsee exec-expr-pure)
+     to evaluate constant expressions used as initializers
+     in external object definitions,
+     which happens with an empty frame stack.
+     So we avoid that guard here.")
+   (xdoc::p
+    "If the frame stack is not empty,
+     we look in the scopes of the top frame from left to right,
+     i.e. from innermost to outermost.
+     If we find a variable with that name, we return its value.
+     Otherwise we return an error.")
+   (xdoc::p
+    "We do not look at other frames,
+     because the variables in other frames are not in scope
+     for the C function in the top frame."))
+  (if (> (compustate-frames-number compst) 0)
+      (lookup-var-aux var (frame->scopes (top-frame compst)))
+    (error (list :no-var-found-empty-frame-stack (ident-fix var))))
+  :hooks (:fix)
+
+  :prepwork
+  ((define lookup-var-aux ((var identp) (scopes scope-listp))
+     :returns (result value-resultp)
+     (b* (((when (endp scopes)) (error (list :no-var-found (ident-fix var))))
+          (scope (car scopes))
+          (pair (omap::in (ident-fix var) (scope-fix scope)))
+          ((when (not pair)) (lookup-var-aux var (cdr scopes))))
+       (cdr pair))
+     :hooks (:fix))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
