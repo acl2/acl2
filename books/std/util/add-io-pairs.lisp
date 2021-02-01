@@ -108,10 +108,6 @@
  the table by adding the specified I/O pairs and also redefines the specified
  function to take advantage of the updated table.</p>
 
- <p><b>IMPORTANT:</b> If you put calls of @('add-io-pairs') (or @(tsee
- add-io-pair)) into a book, complications may arise.  See the last
- remark (Remark 5) below.</p>
-
  @({
  Examples (see std/util/add-io-pairs-tests.lisp):
 
@@ -325,26 +321,21 @@
 
  <p>The error message explains how to allow the @(tsee include-book) to
  complete without error, merging in all I/O pairs from the current session and
- included books: invoke @('(add-io-pairs-lenience fn t)') and then, after
- including books, invoke @('(install-io-pairs fn)') to merge in the I/O pairs
- from earlier in the current session.  So a typical sequence of events might
- look like this.</p>
+ included books by wrapping it in a call of the macro, @(tsee merge-io-pairs),
+ whose first argument is @('fn').  So a typical sequence of events might look
+ like this.</p>
 
  @({
  (defun f (x)
    (declare (xargs :guard t))
    (cons x x))
  (add-io-pair (f 3) '(3 . 3))
- (add-io-pairs-lenience f t) ; avoid error for include-book forms below
- (include-book \"foo\") ; has calls of add-io-pair(s) for f
- (include-book \"bar\") ; has calls of add-io-pair(s) for f
- (install-io-pairs f) ; merge in all I/O pairs for f
- (add-io-pairs-lenience f nil) ; restore default behavior (for an error)
+ (merge-io-pairs
+   f
+   (include-book \"foo\") ; has calls of add-io-pair(s) for f
+   (include-book \"bar\") ; has calls of add-io-pair(s) for f
+   )
  })
-
- <p><b>IMPORTANT</b>: Do not forget the last form above!  Otherwise, subsequent
- @('include-book') forms may discard I/O pairs when evaluating calls of
- @('fn').</p>
 
  <p>An analogous problem occurs with @(tsee encapsulate), when there are @(see
  local) calls of @('add-io-pairs') followed by non-local calls.  Much as
@@ -364,9 +355,9 @@
   :parents (add-io-pairs)
   :short "Details about @(tsee add-io-pairs)"
   :long "<p>This rather technical topic is intended for those who have read the
- documentation on @(tsee add-io-pairs) and related topics but would like a more
- complete understanding of how @(tsee add-io-pairs) works.  Our hope is that
- very few will see any need to read the present topic!</p>
+ documentation for @(tsee add-io-pairs) and related topics but would like a
+ more complete understanding of how @(tsee add-io-pairs) works.  Our hope is
+ that very few will have any reason to read the present topic!</p>
 
  <p>A key aspect of the implementation of @('add-io-pairs') is the use of a
  @(see table), @('io-pairs-table'), to store all I/O pairs.  Indeed, the
@@ -379,7 +370,7 @@
  if possible, otherwise calling @('fn').  Finally, it uses a special form of
  @(see memoization) to compute calls of @('fn') by calling @('new-fn').</p>
 
- <p>The following log fleshes out the explanation above.  IIt shows that
+ <p>The following log fleshes out the explanation above.  It shows that
  @('add-io-pairs') generates a call of @(tsee make-event), which we expand
  below to see the events created by that @('make-event') invocation.  Comments
  have been inserted in lower case into the final output below.</p>
@@ -429,9 +420,8 @@
 
   ; Cause an error when including a book or running the second pass of an
   ; encapsulate, if the I/O pairs for F in the io-pairs table do not match
-  ; those in the table from a previous invocation -- unless
-  ; add-io-pairs-lenience was previously called with a non-nil value, v (in
-  ; which case the error is converted to a warning if v is :warn).
+  ; those in the table from a previous invocation -- unless we are in the
+  ; scope of merge-io-pairs for F.
    (CHECK-IO-PAIRS-LENIENCE F NIL ADD-IO-PAIRS)
 
   ; Update the I/O pairs for F in the io-pairs-table.
@@ -464,6 +454,32 @@
  })
 
  <p>It is also instructive to look at the implementation of @(tsee
+ merge-io-pairs).  We can see what is going on by using single-step
+ macroexpansion, below: first, @('add-io-pairs-lenience') removes the usual
+ @('check-io-pairs-lenience') check discussed above; next, the books are included;
+ then, @(tsee install-io-pairs) merges all I/O pairs for each function
+ (as discussed below); and finally, the @('check-io-pairs-lenience') checks are
+ restored.</p>
+
+ @({
+ ACL2 !>:trans1 (merge-io-pairs (f g h)
+                                (include-book \"book1\")
+                                (include-book \"book2\"))
+  (PROGN (ADD-IO-PAIRS-LENIENCE F T)
+         (ADD-IO-PAIRS-LENIENCE G T)
+         (ADD-IO-PAIRS-LENIENCE H T)
+         (INCLUDE-BOOK \"book1\")
+         (INCLUDE-BOOK \"book2\")
+         (INSTALL-IO-PAIRS F)
+         (INSTALL-IO-PAIRS G)
+         (INSTALL-IO-PAIRS H)
+         (ADD-IO-PAIRS-LENIENCE F NIL)
+         (ADD-IO-PAIRS-LENIENCE G NIL)
+         (ADD-IO-PAIRS-LENIENCE H NIL))
+ ACL2 !>
+ })
+
+ <p>The discussion above leads us to look at the implementation of @(tsee
  install-io-pairs), again using a log (below).  Notice that the events are
  essentially the same as for @('add-io-pairs'), except that the table is not
  changed.  In particular, there is still a call of
@@ -516,6 +532,46 @@
  also unmemoizes those function symbols.  By contrast, @(tsee
  deinstall-io-pairs) leaves the @('io-pairs-table') unchanged, merely
  unmemoizing the indicated function.</p>")
+
+(defxdoc merge-io-pairs
+  :parents (add-io-pairs)
+  :short "Incorporate I/O pairs from different sources"
+  :long "@({
+ General Forms:
+ (merge-io-pairs fn event_1 ... event_n)
+ (merge-io-pairs (fn_1 ... fn_k) event_1 ... event_n)
+ })
+
+ <p>where @('fn') and each @('fn_i') are symbols and each @('event_i') is an
+ @(see event) form.</p>
+
+ @({
+ Example Forms:
+ (merge-io-pairs f (include-book \"my-book\"))
+ (merge-io-pairs (f g h) (include-book \"book1\") (include-book \"book2\"))
+ })
+
+ <p>The second General Form above, @('(merge-io-pairs (fn_1 ... fn_k) event_1
+ ... event_n)'), has an effect equivalent to iterating the first general form
+ as follows.</p>
+
+ @({
+ (merge-io-pairs fn_1
+  (merge-io-pairs fn_2
+   ...
+   (merge-io-pairs fn_{k-1}
+    (merge-io-pairs fn_k event_1 ... event_n))))
+ })
+
+ <p>So we focus below on the first General Form.</p>
+
+ <p>Normally you will use @('merge-io-pairs') when an error occurs in
+ @('add-io-pairs') while including a book; see Remark 5 of the documentation
+ for @(see add-io-pairs) for explanation.  In short: by wrapping
+ @('(merge-io-pairs fn ...)') around one or more @(tsee include-book) events,
+ as illustrated in the Example Forms above, you allow all @('add-io-pairs')
+ forms in the books to complete in a manner that merges together all the I/O
+ pairs for @('fn').</p>")
 
 (defxdoc remove-io-pairs
   :parents (add-io-pairs)
@@ -619,14 +675,14 @@
   :short "Install input-output pairs"
   :long "@({
  General Form:
- (install-io-pairs fn)
+ (install-io-pairs fn &key hints debug (test 'equal) verbose)
  })
 
- <p>For relevant background, see @(see add-io-pairs).  One might never have
- reason to use @('install-io-pairs').  You will evaluate @('(install-io-pairs
- fn)') after including a book that adds I/O pairs for the function symbol,
- @('fn'), in a session that has already added I/O pairs for @('fn').  This is
- explained in Remark 5 of the documentation for @(see add-io-pairs).</p>")
+ <p>where the keywords have the same function as for @(tsee add-io-pairs).</p>
+
+ <p>For relevant background, see @(see add-io-pairs).  Evaluate
+ @('(install-io-pairs fn)') to undo the effect of @(tsee
+ deinstall-io-pairs).</p>")
 
 (defxdoc deinstall-io-pairs
   :parents (add-io-pairs)
@@ -642,29 +698,6 @@
  stored, unlike @(tsee remove-io-pairs); thus, you can later evaluate
  @('(install-io-pairs fn)') to restore the use of I/O pairs in the evaluation
  of @('fn').</p>")
-
-(defxdoc add-io-pairs-lenience
-  :parents (add-io-pairs)
-  :short "Avoid error when including a book that discards I/O pairs"
-  :long "@({
- General Forms:
- (add-io-pairs-lenience fn nil) ; default
- (add-io-pairs-lenience fn t)
- (add-io-pairs-lenience fn :warn)
- })
-
- <p>For relevant background, see @(see add-io-pairs).  One typically evaluates
- @('(add-io-pairs-lenience fn t')) before including a book that adds I/O pairs
- for the function symbol, @('fn'), when in a session that has already added I/O
- pairs for @('fn').  This is explained in Remark 5 of the documentation for
- @(see add-io-pairs).</p>
-
- <p><b>IMPORTANT</b>.  After evaluating @('(add-io-pairs-lenience fn t')) or
- @('(add-io-pairs-lenience fn :warn')) and then including books, be sure to
- evaluate @('(add-io-pairs-lenience fn nil')) to restore the default behavior.
- Otherwise, subsequent @('include-book') forms may discard I/O pairs when
- evaluating calls of @('fn').  Again, see the aforementioned Remark 5 for
- explanation.</p>")
 
 (defmacro add-io-pair (fn/input output &key hints debug test verbose)
   `(add-io-pairs ((,fn/input ,output))
@@ -704,7 +737,13 @@
        :guard (function-symbolp key world))
 
 (table io-pairs-lenience-table nil nil
-       :guard (and (function-symbolp key world)
+
+; Note that we do not require the key to be a function symbol.  We want to be
+; able to sest the lenience (typically by way of merge-io-pairs) before we have
+; introduced the function of interest (which may be defined in a book we want
+; to include).
+
+       :guard (and (symbolp key)
                    (member-eq val '(t nil :warn))))
 
 (defun update-io-lookup-init (args val)
@@ -1077,60 +1116,54 @@
 (defmacro add-io-pairs-lenience (fn val)
   `(table io-pairs-lenience-table ',fn ',val))
 
+(defun check-io-pairs-lenience-fn (fn old-entry caller state)
+  (b* ((wrld (w state))
+       (lenience (cdr (assoc-eq fn (table-alist 'io-pairs-lenience-table
+                                                wrld))))
+       ((when (eq lenience t))
+        (value '(value-triple :invisible)))
+       (current-entry
+        (cdr (assoc-eq fn (table-alist 'io-pairs-table wrld))))
+       (ctx caller)
+       ((when (not (equal old-entry current-entry)))
+        (b* ((book (car (global-val 'include-book-path wrld)))
+             (str  "ACL2 has encountered a call of ~x0 on function symbol ~
+                    ~#2~[~x1 while attempting to include the book ~
+                    ~x3.~|~/~x1.  ~]But the existing list of I/O pairs for ~
+                    ~x1 was different ~@4.  See :DOC merge-io-pairs for how ~
+                    to avoid this ~@5.")
+             (num2 (if book 0 1))
+             (str4 (if book
+                       "at include-book time from what it had been at ~
+                        certify-book time"
+                     "at that point from what it had been previously at that ~
+                      point (perhaps during the first pass of an encapsulate ~
+                      event)")))
+          (with-output!
+            :on (error warning)
+            (case lenience
+              (:warn ; not advertised
+               (pprogn (warning$ ctx "Add-io-pairs" str
+                                 caller
+                                 fn
+                                 num2
+                                 book
+                                 str4
+                                 "warning")
+                       (value '(value-triple :invisible))))
+              (otherwise ; val=nil by table guard on 'io-pairs-lenience-table
+               (er soft ctx str
+                   caller
+                   fn
+                   num2
+                   book
+                   str4
+                   "error")))))))
+    (value '(value-triple :invisible))))
+
 (defmacro check-io-pairs-lenience (fn old-entry caller)
   `(make-event
-    (b* ((fn ',fn)
-         (old-entry ',old-entry)
-         (caller ',caller)
-         (wrld (w state))
-         (str1 "ACL2 has encountered a call of ~x0 on function symbol ~x1~@2, ~
-                in an environment where the existing value of ~x1 in the ~
-                io-pairs-table differs from what it was at the time of the ~
-                original call of ~x0 on ~x1.  ~@3  See :DOC ~
-                add-io-pairs.")
-         (str2 "The next step (perhaps after ~@0) is to evaluate ~x1.")
-         (str3 "To suppress this error, first evaluate ~x0; then after ~@1, ~
-                evaluate ~x2, perhaps followed by ~x3.")
-         (lenience (cdr (assoc-eq fn (table-alist 'io-pairs-lenience-table
-                                                  wrld))))
-         ((when (eq lenience t))
-          (value '(value-triple :invisible)))
-         (current-entry
-          (cdr (assoc-eq fn (table-alist 'io-pairs-table wrld))))
-         (ctx caller)
-         ((when (not (equal old-entry current-entry)))
-          (b* ((book (car (global-val 'include-book-path wrld)))
-               (book-msg (if book
-                             (msg " while including the book ~x0"
-                                  book)
-                           "")))
-            (with-output
-              :on (error warning)
-              (case lenience
-                (:warn (pprogn
-                        (warning$ ctx "Add-io-pairs" str1
-                                  caller
-                                  fn
-                                  book-msg
-                                  (msg str2
-                                       (if book
-                                           "including other books"
-                                         "evaluating other forms")
-                                       (list 'install-io-pairs fn)))
-                        (value '(value-triple :invisible))))
-                (otherwise ; val=nil by table guard on 'io-pairs-lenience-table
-                 (er soft ctx str1
-                     caller
-                     fn
-                     book-msg
-                     (msg str3
-                          (list 'add-io-pairs-lenience fn t)
-                          (if book
-                              "including that book (and perhaps others)"
-                            "proceeding")
-                          (list 'install-io-pairs fn)
-                          (list 'add-io-pairs-lenience fn nil)))))))))
-      (value '(value-triple :invisible)))
+    (check-io-pairs-lenience-fn ',fn ',old-entry ',caller state)
     :check-expansion t
     :on-behalf-of :quiet!))
 
@@ -1300,3 +1333,20 @@
 
 (defmacro deinstall-io-pairs (fn)
   `(unmemoize ',fn))
+
+(defun merge-io-pairs-fn (fns events)
+  (declare (xargs :guard (and (symbol-listp fns)
+                              (true-listp events))))
+  `(progn ,@(pairlis-x1 'add-io-pairs-lenience
+                        (pairlis-x2 fns '(t)))
+          ,@events
+          ,@(pairlis-x1 'install-io-pairs
+                        (pairlis-x2 fns nil))
+          ,@(pairlis-x1 'add-io-pairs-lenience
+                        (pairlis-x2 fns '(nil)))))
+
+(defmacro merge-io-pairs (x &rest events)
+  (declare (xargs :guard (or (symbolp x)
+                             (and (symbol-listp x)
+                                  (no-duplicatesp-eq x)))))
+  (merge-io-pairs-fn (if (symbolp x) (list x) x) events))
