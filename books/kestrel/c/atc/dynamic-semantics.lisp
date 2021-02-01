@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2020 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -11,11 +11,9 @@
 
 (in-package "C")
 
-(include-book "abstract-syntax")
+(include-book "abstract-syntax-operations")
 (include-book "integers")
 (include-book "function-environments")
-
-(include-book "kestrel/fty/defomap" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -34,7 +32,7 @@
      the ACL2 code from which it is generated.
      Here we provide an initial formal dynamic semantics,
      which should support the generation of proofs
-     for an initial version of ATC.")
+     for the initial version of ATC.")
    (xdoc::p
     "This preliminary dynamic semantics may be extended in the future,
      and may be replaced by a more comprehensive model
@@ -43,7 +41,7 @@
     ".")
    (xdoc::p
     "The dynamic semantics is defined over the C abstract syntax,
-     but for now it does not support the execution of many constructs,
+     but for now it does not support the execution of some constructs,
      just because ATC does not generate those constructs for now.
      This way, we keep the dynamic semantics simpler.
      Being more restrictive is adequate here:
@@ -52,10 +50,17 @@
      it means that the C code only uses the constructs that we cover,
      which is a subset of valid C.")
    (xdoc::p
+    "We distinguish between pure (i.e. side-effect-free) expressions
+     and expressions that may have side effects.
+     We allow the latter to appear only in certain parts of statements,
+     and we push restrictions to ensure a predictable order of evaluation.
+     Pure expressions may be evaluated in any order;
+     we evaluate them left to write.")
+   (xdoc::p
     "We formalize a big-step operational interpretive semantics.
      To ensure the termination of the ACL2 mutually recursive functions
-     that formalize the execution of expressions, statements, etc.,
-     these functions take a limit on the depth of the recursive calls,
+     that formalize the execution of statements, function calls, etc.,
+     these ACL2 functions take a limit on the depth of the recursive calls,
      which ends the recursion with an error when it reaches 0,
      which is decremented at each recursive call,
      and which is used as termination measure.
@@ -100,7 +105,7 @@
 
 (encapsulate ()
   (local (in-theory (enable sintp)))
-  (fty::defresult value-list "lists of values"))
+  (defresult value-list "lists of values"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -113,7 +118,7 @@
 
 (encapsulate ()
   (local (in-theory (enable sintp)))
-  (fty::defresult value-option "optional values"))
+  (defresult value-option "optional values"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -143,7 +148,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defresult scope "scopes")
+(defresult scope "scopes")
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -189,168 +194,176 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod denv
-  :short "Fixtype of dynamic environments."
+(fty::defprod compustate
+  :short "Fixtype of computation states."
   :long
   (xdoc::topstring
    (xdoc::p
-    "A dynamic environment consists of
-     a function environment
-     and a stack of frames.")
-   (xdoc::p
-    "The function environment consists of
-     information about the functions that may be called by the code.")
+    "A computation state consists of a stack of frames.
+     More components will be added (e.g. a heap)
+     as our modeling coverage of C increases.")
    (xdoc::p
     "The stack grows leftward and shrinks rightward,
      i.e. push is @(tsee cons), pop is @(tsee cdr), and top is @(tsee car)."))
-  ((functions fun-env)
-   (frames frame-list))
-  :pred denvp)
+  ((frames frame-list))
+  :pred compustatep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defresult denv "dynamic environments")
+(defresult compustate "computation states")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule not-denvp-of-error
-  (not (denvp (error x)))
-  :enable (denvp error))
+(defrule not-compustatep-of-error
+  (not (compustatep (error x)))
+  :enable (compustatep error))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define denv-nonempty-stack-p ((env denvp))
+(define compustate-nonempty-stack-p ((compst compustatep))
   :returns (yes/no booleanp)
-  :short "Check if a dynamic environment has a non-empty call stack."
+  :short "Check if a computation state has a non-empty call stack."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is always satisfied when executing statements and expressions,
      because those statements and expressions must be
      in the body of some function that is executing."))
-  (consp (denv->frames env))
+  (consp (compustate->frames compst))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define push-frame ((frame framep) (env denvp))
-  :returns (new-env denvp)
-  :short "Push a frame onto a dynamic environment's call stack."
-  (b* ((stack (denv->frames env))
+(define push-frame ((frame framep) (compst compustatep))
+  :returns (new-compst compustatep)
+  :short "Push a frame onto a computation state's call stack."
+  (b* ((stack (compustate->frames compst))
        (new-stack (cons (frame-fix frame) stack)))
-    (change-denv env :frames new-stack))
+    (change-compustate compst :frames new-stack))
   :hooks (:fix)
   ///
 
   (more-returns
-   (new-env denv-nonempty-stack-p
-            :hints (("Goal" :in-theory (enable denv-nonempty-stack-p))))))
+   (new-compst compustate-nonempty-stack-p
+            :hints (("Goal" :in-theory (enable compustate-nonempty-stack-p))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define top-frame ((env denvp))
-  :guard (denv-nonempty-stack-p env)
+(define top-frame ((compst compustatep))
+  :guard (compustate-nonempty-stack-p compst)
   :returns (frame framep)
-  :short "Top frame of a dynamic environment's call stack."
-  (frame-fix (car (denv->frames env)))
-  :guard-hints (("Goal" :in-theory (enable denv-nonempty-stack-p)))
+  :short "Top frame of a computation state's call stack."
+  (frame-fix (car (compustate->frames compst)))
+  :guard-hints (("Goal" :in-theory (enable compustate-nonempty-stack-p)))
   :hooks (:fix)
   ///
 
   (defrule top-frame-of-push-frame
-    (equal (top-frame (push-frame frame env))
+    (equal (top-frame (push-frame frame compst))
            (frame-fix frame))
     :enable push-frame))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define pop-frame ((env denvp))
-  :guard (denv-nonempty-stack-p env)
-  :returns (new-env denvp)
-  :short "Pop a frame from a dynamic environment's non-empty call stack."
-  (b* ((stack (denv->frames env))
+(define pop-frame ((compst compustatep))
+  :guard (compustate-nonempty-stack-p compst)
+  :returns (new-compst compustatep)
+  :short "Pop a frame from a computation state's non-empty call stack."
+  (b* ((stack (compustate->frames compst))
        (new-stack (cdr stack)))
-    (change-denv env :frames new-stack))
+    (change-compustate compst :frames new-stack))
   :hooks (:fix)
   ///
 
   (defrule pop-frame-of-push-frame
-    (equal (pop-frame (push-frame frame env))
-           (denv-fix env))
+    (equal (pop-frame (push-frame frame compst))
+           (compustate-fix compst))
     :enable push-frame))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define denv-inner-scope-p ((env denvp))
-  :guard (denv-nonempty-stack-p env)
-  :returns (yes/no booleanp)
-  :short "Check if a dynamic environment with a non-empty call stack
-          has at least two scopes in the top frame."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The name of this predicate is motivated by the fact that
-     having at least two scopes means that we are in an inner scope,
-     i.e. one that is inside the always-present function body scope.")
-   (xdoc::p
-    "When this predicate holds, we may exit (i.e. pop) a scope,
-     and still have a valid top frame with a non-empty stack of scopes.
-     When we enter (i.e. push) a scope while executing a function's body,
-     we establish this predicate."))
-  (consp (cdr (frame->scopes (top-frame env))))
-  :hooks (:fix))
+(define compustate-top-frame-scopes-number ((compst compustatep))
+  :guard (compustate-nonempty-stack-p compst)
+  :returns (n natp)
+  :short "Number of scopes in the top frame of
+          a computation state with a non-empty call stack."
+  (len (frame->scopes (top-frame compst)))
+  :hooks (:fix)
+  ///
+  (local (include-book "std/lists/len" :dir :system))
+  (defret compustate-top-frame-scopes-number-lower-bound
+    (> n 0)
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection push-frame-xdoc-extension
+  :extension push-frame
+
+  (defrule compustate-top-frame-scopes-number-of-push-frame
+    (equal (compustate-top-frame-scopes-number (push-frame frame compst))
+           (len (frame->scopes frame)))
+    :enable compustate-top-frame-scopes-number))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define enter-scope ((env denvp))
-  :guard (denv-nonempty-stack-p env)
-  :returns (new-env denvp)
+(define enter-scope ((compst compustatep))
+  :guard (compustate-nonempty-stack-p compst)
+  :returns (new-compst compustatep)
   :short "Enter a scope."
   :long
   (xdoc::topstring
    (xdoc::p
     "We push an empty scope onto the scope stack of the top frame."))
-  (b* ((frame (top-frame env))
+  (b* ((frame (top-frame compst))
        (scopes (frame->scopes frame))
        (new-scopes (cons nil scopes))
        (new-frame (change-frame frame :scopes new-scopes))
-       (new-env (push-frame new-frame (pop-frame env))))
-    new-env)
+       (new-compst (push-frame new-frame (pop-frame compst))))
+    new-compst)
   :hooks (:fix)
   ///
   (more-returns
-   (new-env denv-nonempty-stack-p)
-   (new-env denv-inner-scope-p
-            :hints (("Goal" :in-theory (enable denv-inner-scope-p
-                                               top-frame
-                                               push-frame))))))
+   (new-compst compustate-nonempty-stack-p))
+  (defret compustate-top-frame-scopes-number-of-enter-scope
+    (equal (compustate-top-frame-scopes-number new-compst)
+           (1+ (compustate-top-frame-scopes-number compst)))
+    :hints (("Goal" :in-theory (enable compustate-top-frame-scopes-number)))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exit-scope ((env denvp))
-  :guard (and (denv-nonempty-stack-p env)
-              (denv-inner-scope-p env))
-  :returns (new-env denvp)
+(define exit-scope ((compst compustatep))
+  :guard (and (compustate-nonempty-stack-p compst)
+              (> (compustate-top-frame-scopes-number compst) 1))
+  :returns (new-compst compustatep)
   :short "Exit a scope."
   :long
   (xdoc::topstring
    (xdoc::p
     "We pop the scope stack of the top frame."))
-  (b* ((frame (top-frame env))
+  (b* ((frame (top-frame compst))
        (scopes (frame->scopes frame))
        (new-scopes (cdr scopes))
        (new-frame (change-frame frame :scopes new-scopes))
-       (new-env (push-frame new-frame (pop-frame env))))
-    new-env)
-  :guard-hints (("Goal" :in-theory (enable denv-inner-scope-p)))
-  :hooks (:fix))
+       (new-compst (push-frame new-frame (pop-frame compst))))
+    new-compst)
+  :guard-hints (("Goal" :in-theory (enable compustate-top-frame-scopes-number)))
+  :hooks (:fix)
+  ///
+  (more-returns
+   (new-compst compustate-nonempty-stack-p))
+  (defret compustate-top-frame-scopes-number-of-exit-scope
+    (equal (compustate-top-frame-scopes-number new-compst)
+           (1- (compustate-top-frame-scopes-number compst)))
+    :hyp (> (compustate-top-frame-scopes-number compst) 1)
+    :hints (("Goal" :in-theory (enable compustate-top-frame-scopes-number)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define lookup-var ((var identp) (env denvp))
-  :guard (denv-nonempty-stack-p env)
+(define lookup-var ((var identp) (compst compustatep))
+  :guard (compustate-nonempty-stack-p compst)
   :returns (result value-resultp)
-  :short "Look up a variable in a dynamic environment."
+  :short "Look up a variable in a computation state."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -363,11 +376,11 @@
      because the variables in other frames are not in scope
      for the C function in the top frame.")
    (xdoc::p
-    "Once we extend dynamic environment with global variables,
+    "Once we extend computation state with global variables,
      we will need to extend this ACL2 function
      to look for the variable among them,
      if it is not found in the scopes of the top frame."))
-  (lookup-var-aux var (frame->scopes (top-frame env)))
+  (lookup-var-aux var (frame->scopes (top-frame compst)))
   :hooks (:fix)
 
   :prepwork
@@ -382,10 +395,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define add-var ((var identp) (val sintp) (env denvp))
-  :guard (denv-nonempty-stack-p env)
-  :returns (result denv-resultp)
-  :short "Add a variable to a dynamic environment."
+(define add-var ((var identp) (val sintp) (compst compustatep))
+  :guard (compustate-nonempty-stack-p compst)
+  :returns (result compustate-resultp)
+  :short "Add a variable to a computation state."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -395,7 +408,7 @@
      we return an error: C disallows variable redefinition.
      However, there may well be a variable with the same in a different scope:
      in this case, the new variable hides the other one."))
-  (b* ((frame (top-frame env))
+  (b* ((frame (top-frame compst))
        (scopes (frame->scopes frame))
        (scope (car scopes))
        (pair (omap::in (ident-fix var) scope))
@@ -403,26 +416,26 @@
        (new-scope (omap::update (ident-fix var) (sint-fix val) scope))
        (new-scopes (cons new-scope (cdr scopes)))
        (new-frame (change-frame frame :scopes new-scopes))
-       (new-env (push-frame new-frame (pop-frame env))))
-    new-env)
+       (new-compst (push-frame new-frame (pop-frame compst))))
+    new-compst)
   :hooks (:fix)
   ///
 
-  (defret denv-nonempty-stack-p-of-add-var-when-denv-nonempty-stack-p
-    (implies (and (denv-nonempty-stack-p env)
-                  (denv-result-case result :ok))
-             (denv-nonempty-stack-p (denv-result-ok->get result)))
-    :hints (("Goal" :in-theory (enable denv-result-ok->get
-                                       denv-result-kind))))
+  (defret compustate-nonempty-stack-p-of-add-var-when-compustate-nonempty-stack-p
+    (implies (and (compustate-nonempty-stack-p compst)
+                  (compustate-result-case result :ok))
+             (compustate-nonempty-stack-p (compustate-result-ok->get result)))
+    :hints (("Goal" :in-theory (enable compustate-result-ok->get
+                                       compustate-result-kind))))
 
-  (defret denv-inner-scope-p-of-add-var-when-denv-inner-scope-p
-    (implies (and (denv-nonempty-stack-p env)
-                  (denv-inner-scope-p env)
-                  (denv-result-case result :ok))
-             (denv-inner-scope-p (denv-result-ok->get result)))
-    :hints (("Goal" :in-theory (enable denv-result-ok->get
-                                       denv-inner-scope-p
-                                       denv-result-kind)))))
+  (defret compustate-top-frame-scopes-number-of-add-var
+    (implies (compustate-result-case result :ok)
+             (equal (compustate-top-frame-scopes-number
+                     (compustate-result-ok->get result))
+                    (compustate-top-frame-scopes-number compst)))
+    :hints (("Goal" :in-theory (enable compustate-result-ok->get
+                                       compustate-top-frame-scopes-number
+                                       compustate-result-kind)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -466,15 +479,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-ident ((id identp) (env denvp))
-  :guard (denv-nonempty-stack-p env)
+(define exec-ident ((id identp) (compst compustatep))
+  :guard (compustate-nonempty-stack-p compst)
   :returns (result value-resultp)
   :short "Execute a variable."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We read the variable's value (if any) from the dynamic environment."))
-  (lookup-var id env)
+    "We read the variable's value (if any) from the computation state."))
+  (lookup-var id compst)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -487,7 +500,10 @@
    (xdoc::p
     "The argument is the result of
      recursively executing the operand expression.
-     For now we only support some unary operators."))
+     For now we only support some unary operators.")
+   (xdoc::p
+    "These unary operators are all pure,
+     so we just return a value as result (if there is no error)."))
   (b* ((op (unop-fix op))
        (arg (value-result-fix arg)))
     (value-result-case
@@ -505,22 +521,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-binary-strict ((op binopp)
-                            (arg1 value-resultp)
-                            (arg2 value-resultp))
-  :guard (member-eq (binop-kind op) (list :mul :div :rem :add :sub :shl :shr
-                                          :lt :gt :le :ge :eq :ne
-                                          :bitand :bitior :bitxor))
+(define exec-binary-strict-pure ((op binopp)
+                                 (arg1 value-resultp)
+                                 (arg2 value-resultp))
+  :guard (and (binop-strictp op)
+              (binop-purep op))
   :returns (result value-resultp)
-  :short "Execute a binary expression with
-          a strict non-side-effecting operator."
+  :short "Execute a binary expression with a strict pure operator."
   :long
   (xdoc::topstring
    (xdoc::p
     "The arguments are the results of
      recursively executing the operand expressions,
      both of which must be considered because the operator is non-strict.
-     These operators are non-side-effecting,
+     These operators are pure,
      so we just return a value as result (if there is no error)."))
   (b* ((op (binop-fix op))
        (arg1 (value-result-fix arg1))
@@ -563,7 +577,9 @@
       (if (value-result-case arg2 :ok)
           arg1
         (error (list :exec-binary op arg1 arg2)))))
-  :guard-hints (("Goal" :in-theory (enable value-result-kind)))
+  :guard-hints (("Goal" :in-theory (enable value-result-kind
+                                           binop-strictp
+                                           binop-purep)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -581,7 +597,9 @@
      if the result of the first operand is 0,
      and return 0 in this case.
      Otherwise, we look at the result of the second operand,
-     and return 0 or 1 depending on whether it is 0 or non-0."))
+     and return 0 or 1 depending on whether it is 0 or non-0.")
+   (xdoc::p
+    "Note that this binary operator is non-strict but pure."))
   (value-result-case
    arg1
    :err arg1.get
@@ -608,7 +626,9 @@
      if the result of the first operand is non-0,
      and return 1 in this case.
      Otherwise, we look at the result of the second operand,
-     and return 0 or 1 depending on whether it is 0 or non-0."))
+     and return 0 or 1 depending on whether it is 0 or non-0.")
+   (xdoc::p
+    "Note that this binary operator is non-strict but pure."))
   (value-result-case
    arg1
    :err arg1.get
@@ -622,24 +642,105 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define exec-binary ((op binopp) (arg1 value-resultp) (arg2 value-resultp))
+(define exec-binary-pure ((op binopp) (arg1 value-resultp) (arg2 value-resultp))
+  :guard (binop-purep op)
   :returns (result value-resultp)
-  :short "Execute a binary expression."
+  :short "Execute a pure binary expression."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The assignment operators are not supported yet."))
-  (case (binop-kind op)
-    ((:mul :div :rem :add :sub :shl :shr
-      :lt :gt :le :ge :eq :ne
-      :bitand :bitior :bitxor)
-     (exec-binary-strict op arg1 arg2))
-    (:logand (exec-binary-logand arg1 arg2))
-    (:logor (exec-binary-logor arg1 arg2))
-    (t (error (list :exec-binary
-                (binop-fix op)
-                (value-result-fix arg1)
-                (value-result-fix arg2)))))
+    "Here we only define the execution of pure binary operators.
+     Assignments will be handled as part of statement execution;
+     see the discussion in @(tsee exec-expr-pure)."))
+  (if (binop-strictp op)
+      (exec-binary-strict-pure op arg1 arg2)
+    (case (binop-kind op)
+      (:logand (exec-binary-logand arg1 arg2))
+      (:logor (exec-binary-logor arg1 arg2))
+      (t (error (impossible)))))
+  :guard-hints (("Goal" :in-theory (enable binop-purep binop-strictp)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec-expr-pure ((e exprp) (compst compustatep))
+  :guard (compustate-nonempty-stack-p compst)
+  :returns (result value-resultp)
+  :short "Execute a pure expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We return an error if we encounter a non-pure expression.
+     While function calls do not necessarily have side effects,
+     establishing that requires looking at the function.
+     Thus, for simplicity, we regard function calls to be non-pure,
+     i.e. we return an error if we encounter them here.")
+   (xdoc::p
+    "We also reject pre/post-increment/decrement expressions,
+     which are obviously non-pure.")
+   (xdoc::p
+    "For now we reject cast expressions just for lack of support,
+     but eventually we will support them, since they are pure.")
+   (xdoc::p
+    "Recall that our C abstract syntax does not cover
+     all the possible C expressions yet.
+     Thus, we may extend this ACL2 function
+     with support for more kinds of pure expressions in the future.")
+   (xdoc::p
+    "If no error occurs, none of the expressions has side effects.
+     Thus, the order in which the sub-expressions are evaluated does not matter:
+     we just proceed left to right."))
+  (b* ((e (expr-fix e)))
+    (expr-case
+     e
+     :ident (exec-ident e.get compst)
+     :const (exec-const e.get)
+     :call (error (list :non-pure-expr e))
+     :postinc (error (list :non-pure-expr e))
+     :postdec (error (list :non-pure-expr e))
+     :preinc (error (list :non-pure-expr e))
+     :predec (error (list :non-pure-expr e))
+     :unary (b* ((arg (exec-expr-pure e.arg compst)))
+              (exec-unary e.op arg))
+     :cast (error (list :unsupported-expr e))
+     :binary (b* (((unless (binop-purep e.op))
+                   (error (list :non-pure-expr e)))
+                  (arg1 (exec-expr-pure e.arg1 compst))
+                  (arg2 (exec-expr-pure e.arg2 compst)))
+               (exec-binary-pure e.op arg1 arg2))
+     :cond (b* ((test (exec-expr-pure e.test compst)))
+             (value-result-case
+              test
+              :ok (if (sint-nonzerop test.get)
+                      (exec-expr-pure e.then compst)
+                    (exec-expr-pure e.else compst))
+              :err test.get))))
+  :measure (expr-count e)
+  :verify-guards :after-returns
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec-expr-pure-list ((es expr-listp) (compst compustatep))
+  :guard (compustate-nonempty-stack-p compst)
+  :returns (result value-list-resultp)
+  :short "Execute a list of pure expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used, in particular,
+     for the argument expressions a function call.")
+   (xdoc::p
+    "Given that the expression have no side effects (if there is no error),
+     the order of evaluation does not matter.
+     Thus, we proceed left to right."))
+  (b* (((when (endp es)) nil)
+       (val/err (exec-expr-pure (car es) compst))
+       ((when (value-result-case val/err :err)) (value-result-err->get val/err))
+       (val (value-result-ok->get val/err))
+       (vals (exec-expr-pure-list (cdr es) compst))
+       ((when (errorp vals)) vals))
+    (cons val vals))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -686,79 +787,41 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define exec-expr ((e exprp) (env denvp) (limit natp))
-    :guard (denv-nonempty-stack-p env)
+  (define exec-expr ((e exprp)
+                     (compst compustatep)
+                     (fenv fun-envp)
+                     (limit natp))
+    :guard (compustate-nonempty-stack-p compst)
     :returns (result value-resultp)
     :parents (dynamic-semantics execution-functions)
     :short "Execute an expression."
     :long
     (xdoc::topstring
      (xdoc::p
-      "For now we only support the execution of certain expressions.")
-     (xdoc::p
-      "Since we currently do not model side effects,
-       we just evaluate them left-to-right,
-       but any ordering would yield the same results."))
+      "For now we only support function calls with pure expression arguments,
+       and pure expressions.
+       If the expression is a call, we handle it here.
+       Otherwise, we resort to @(tsee exec-expr-pure)."))
     (b* (((when (zp limit)) (error :limit))
          (e (expr-fix e)))
-      (expr-case
-       e
-       :ident (exec-ident e.get env)
-       :const (exec-const e.get)
-       :call (b* ((args (exec-expr-list e.args env (1- limit))))
-               (value-list-result-case
-                args
-                :err args.get
-                :ok (exec-fun e.fun args.get env (1- limit))))
-       :postinc (error (list :exec-expr e))
-       :postdec (error (list :exec-expr e))
-       :preinc (error (list :exec-expr e))
-       :predec (error (list :exec-expr e))
-       :unary (b* ((arg (exec-expr e.arg env (1- limit))))
-                (exec-unary e.op arg))
-       :cast (error (list :exec-expr e))
-       :binary (b* ((arg1 (exec-expr e.arg1 env (1- limit)))
-                    (arg2 (exec-expr e.arg2 env (1- limit))))
-                 (exec-binary e.op arg1 arg2))
-       :cond (b* ((test (exec-expr e.test env (1- limit))))
-               (value-result-case test
-                                  :ok (if (sint-nonzerop test.get)
-                                          (exec-expr e.then env (1- limit))
-                                        (exec-expr e.else env (1- limit)))
-                                  :err test.get))))
+      (if (expr-case e :call)
+          (b* ((e.args (expr-call->args e))
+               (e.fun (expr-call->fun e))
+               (args (exec-expr-pure-list e.args compst)))
+            (value-list-result-case
+             args
+             :err args.get
+             :ok (exec-fun e.fun args.get compst fenv (1- limit))))
+        (exec-expr-pure e compst)))
     :measure (nfix limit))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define exec-expr-list ((es expr-listp) (env denvp) (limit natp))
-    :guard (denv-nonempty-stack-p env)
-    :returns (result value-list-resultp)
-    :parents (dynamic-semantics execution-functions)
-    :short "Execute a list of expressions."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "Since we currently do not model side effects,
-       we just evaluate them left-to-right,
-       but any ordering would yield the same results."))
-    (b* (((when (zp limit)) (error :limit))
-         ((when (endp es)) (value-list-result-ok nil))
-         (result (exec-expr (car es) env (1- limit))))
-      (value-result-case
-       result
-       :err result.get
-       :ok (b* ((val result.get)
-                (result (exec-expr-list (cdr es) env (1- limit))))
-             (value-list-result-case
-              result
-              :err result.get
-              :ok (b* ((vals result.get))
-                    (value-list-result-ok (cons val vals)))))))
-    :measure (nfix limit))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (define exec-fun ((fun identp) (args value-listp) (env denvp) (limit natp))
+  (define exec-fun ((fun identp)
+                    (args value-listp)
+                    (compst compustatep)
+                    (fenv fun-envp)
+                    (limit natp))
     :returns (result value-resultp)
     :parents (dynamic-semantics execution-functions)
     :short "Execution a function on argument values."
@@ -774,20 +837,20 @@
        (but we do not check this because every value is an @('int') for now).
        We return the value as result.
        There is no need to pop the frame
-       because for now we are not threading environments through execution."))
+       because for now we are not threading computation states
+       through the execution of functions
+       (because currently function calls have no side effects)."))
     (b* (((when (zp limit)) (error :limit))
-         (fenv (denv->functions env))
          (info (fun-env-lookup fun fenv))
-         ((when (not info))
-          (error (list :function-undefined (ident-fix fun))))
+         ((when (not info)) (error (list :function-undefined (ident-fix fun))))
          ((fun-info info) info)
          (scope (init-scope info.params args)))
       (scope-result-case
        scope
        :err scope.get
        :ok (b* ((frame (make-frame :function fun :scopes (list scope.get)))
-                (env (push-frame frame env))
-                (val-opt (exec-stmt info.body env (1- limit))))
+                (compst (push-frame frame compst))
+                ((mv val-opt &) (exec-stmt info.body compst fenv (1- limit))))
              (value-option-result-case
               val-opt
               :err val-opt.get
@@ -797,9 +860,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define exec-stmt ((s stmtp) (env denvp) (limit natp))
-    :guard (denv-nonempty-stack-p env)
-    :returns (result value-option-resultp)
+  (define exec-stmt ((s stmtp)
+                     (compst compustatep)
+                     (fenv fun-envp)
+                     (limit natp))
+    :guard (compustate-nonempty-stack-p compst)
+    :returns (mv (result value-option-resultp)
+                 (new-compst compustatep))
     :parents (dynamic-semantics execution-functions)
     :short "Execute a statement."
     :long
@@ -808,60 +875,66 @@
       "For now we only support the execution of certain statements.")
      (xdoc::p
       "For a compound statement (i.e. a block),
-       we enter a new (empty) scope prior to executing the block items.
-       There is no need to pop the scope at the end,
-       because for now we are not threading the dynamic environment
-       through the execution of statements."))
-    (b* (((when (zp limit)) (error :limit))
+       we enter a new (empty) scope prior to executing the block items,
+       and we exit that scope after executing the block items."))
+    (b* (((when (zp limit)) (mv (error :limit) (compustate-fix compst)))
          (s (stmt-fix s)))
       (stmt-case
        s
-       :labeled (error (list :exec-stmt s))
-       :compound (b* ((env (enter-scope env)))
-                   (exec-block-item-list s.items env (1- limit)))
-       :expr (error (list :exec-stmt s))
-       :null (error (list :exec-stmt s))
-       :if (b* ((test (exec-expr s.test env (1- limit))))
-             (value-result-case test
-                                :ok (if (sint-nonzerop test.get)
-                                        (exec-stmt s.then env (1- limit))
-                                      nil)
-                                :err test.get))
-       :ifelse (b* ((test (exec-expr s.test env (1- limit))))
-                 (value-result-case test
-                                    :ok (if (sint-nonzerop test.get)
-                                            (exec-stmt s.then env (1- limit))
-                                          (exec-stmt s.else env (1- limit)))
-                                    :err test.get))
-       :switch (error (list :exec-stmt s))
-       :while (error (list :exec-stmt s))
-       :dowhile (error (list :exec-stmt s))
-       :for (error (list :exec-stmt s))
-       :goto (error (list :exec-stmt s))
-       :continue (error (list :exec-stmt s))
-       :break (error (list :exec-stmt s))
+       :labeled (mv (error (list :exec-stmt s)) (compustate-fix compst))
+       :compound (b* ((compst (enter-scope compst))
+                      ((mv value? compst)
+                       (exec-block-item-list s.items compst fenv (1- limit))))
+                   (mv value? (exit-scope compst)))
+       :expr (mv (error (list :exec-stmt s)) (compustate-fix compst))
+       :null (mv (error (list :exec-stmt s)) (compustate-fix compst))
+       :if (b* ((test (exec-expr s.test compst fenv (1- limit))))
+             (value-result-case
+              test
+              :ok (if (sint-nonzerop test.get)
+                      (exec-stmt s.then compst fenv (1- limit))
+                    (mv nil (compustate-fix compst)))
+              :err (mv test.get (compustate-fix compst))))
+       :ifelse (b* ((test (exec-expr s.test compst fenv (1- limit))))
+                 (value-result-case
+                  test
+                  :ok (if (sint-nonzerop test.get)
+                          (exec-stmt s.then compst fenv (1- limit))
+                        (exec-stmt s.else compst fenv (1- limit)))
+                  :err (mv test.get (compustate-fix compst))))
+       :switch (mv (error (list :exec-stmt s)) (compustate-fix compst))
+       :while (mv (error (list :exec-stmt s)) (compustate-fix compst))
+       :dowhile (mv (error (list :exec-stmt s)) (compustate-fix compst))
+       :for (mv (error (list :exec-stmt s)) (compustate-fix compst))
+       :goto (mv (error (list :exec-stmt s)) (compustate-fix compst))
+       :continue (mv (error (list :exec-stmt s)) (compustate-fix compst))
+       :break (mv (error (list :exec-stmt s)) (compustate-fix compst))
        :return (if (exprp s.value)
-                   (b* ((eres (exec-expr s.value env (1- limit))))
+                   (b* ((eres (exec-expr s.value compst fenv (1- limit))))
                      (value-result-case
                       eres
-                      :err eres.get
-                      :ok eres.get))
-                 nil)))
+                      :err (mv eres.get (compustate-fix compst))
+                      :ok (mv eres.get (compustate-fix compst))))
+                 (mv nil (compustate-fix compst)))))
     :measure (nfix limit))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define exec-block-item ((item block-itemp) (env denvp) (limit natp))
-    :guard (denv-nonempty-stack-p env)
+  (define exec-block-item ((item block-itemp)
+                           (compst compustatep)
+                           (fenv fun-envp)
+                           (limit natp))
+    :guard (and (compustate-nonempty-stack-p compst)
+                (> (compustate-top-frame-scopes-number compst) 1))
     :returns (mv (result value-option-resultp)
-                 (new-env denvp))
+                 (new-compst compustatep))
     :parents (dynamic-semantics execution-functions)
     :short "Execute a block item."
     :long
     (xdoc::topstring
      (xdoc::p
       "Besides an optional value result,
-       we also return a possibly updated dynamic environment.")
+       we also return a possibly updated computation state.")
      (xdoc::p
       "If the block item is a declaration,
        we first execute the expression,
@@ -869,55 +942,105 @@
      (xdoc::p
       "If the block item is a statement,
        we execute it like any other statement."))
-    (b* (((when (zp limit)) (mv (error :limit) (denv-fix env))))
+    (b* (((when (zp limit)) (mv (error :limit) (compustate-fix compst))))
       (block-item-case
        item
        :decl (b* (((decl decl) item.get)
-                  (init (exec-expr decl.init env (1- limit))))
+                  (init (exec-expr decl.init compst fenv (1- limit))))
                (value-result-case
                 init
-                :ok (b* ((new-env (add-var decl.name init.get env)))
-                      (denv-result-case
-                       new-env
-                       :ok (mv (value-option-result-ok nil) new-env.get)
-                       :err (mv new-env.get (denv-fix env))))
-                :err (mv init.get (denv-fix env))))
-       :stmt (mv (exec-stmt item.get env (1- limit))
-                 (denv-fix env))))
-    :measure (nfix limit)
-    ///
-    (defret denv-nonempty-stack-p-of-exec-block-item
-      (implies (denv-nonempty-stack-p env)
-               (denv-nonempty-stack-p new-env))
-      :hints (("Goal" :expand ((exec-block-item item env limit))))))
+                :ok (b* ((new-compst (add-var decl.name init.get compst)))
+                      (compustate-result-case
+                       new-compst
+                       :ok (mv (value-option-result-ok nil) new-compst.get)
+                       :err (mv new-compst.get (compustate-fix compst))))
+                :err (mv init.get (compustate-fix compst))))
+       :stmt (exec-stmt item.get compst fenv (1- limit))))
+    :measure (nfix limit))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define exec-block-item-list ((items block-item-listp)
-                                (env denvp)
+                                (compst compustatep)
+                                (fenv fun-envp)
                                 (limit natp))
-    :guard (denv-nonempty-stack-p env)
-    :returns (result value-option-resultp)
+    :guard (and (compustate-nonempty-stack-p compst)
+                (> (compustate-top-frame-scopes-number compst) 1))
+    :returns (mv (result value-option-resultp)
+                 (new-compst compustatep))
     :parents (dynamic-semantics execution-functions)
     :short "Execute a list of block items."
     :long
     (xdoc::topstring
      (xdoc::p
-      "We thread the dynamic environment through the block items.
-       However, for now we do not need to return it
-       after executing the whole list of block items."))
-    (b* (((when (zp limit)) (error :limit))
-         ((when (endp items)) nil)
-         ((mv val? env) (exec-block-item (car items) env (1- limit)))
-         ((when (value-option-result-case val? :err)) val?)
-         ((when val?) val?))
-      (exec-block-item-list (cdr items) env (1- limit)))
+      "We thread the computation state through the block items."))
+    (b* (((when (zp limit)) (mv (error :limit) (compustate-fix compst)))
+         ((when (endp items)) (mv nil (compustate-fix compst)))
+         ((mv val? compst) (exec-block-item (car items) compst fenv (1- limit)))
+         ((when (value-option-result-case val? :err)) (mv val? compst))
+         ((when val?) (mv val? compst)))
+      (exec-block-item-list (cdr items) compst fenv (1- limit)))
     :measure (nfix limit))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   :verify-guards nil ; done below
   ///
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (defret-mutual compustate-nonempty-stack-p-of-exec
+    (defret compustate-nonempty-stack-p-of-exec-expr
+      t
+      :rule-classes nil
+      :fn exec-expr)
+    (defret compustate-nonempty-stack-p-of-exec-fun
+      t
+      :rule-classes nil
+      :fn exec-fun)
+    (defret compustate-nonempty-stack-p-of-exec-stmt
+      (implies (compustate-nonempty-stack-p compst)
+               (compustate-nonempty-stack-p new-compst))
+      :fn exec-stmt)
+    (defret compustate-nonempty-stack-p-of-exec-block-item
+      (implies (compustate-nonempty-stack-p compst)
+               (compustate-nonempty-stack-p new-compst))
+      :fn exec-block-item)
+    (defret compustate-nonempty-stack-p-of-exec-block-item-list
+      (implies (compustate-nonempty-stack-p compst)
+               (compustate-nonempty-stack-p new-compst))
+      :fn exec-block-item-list)
+    :hints (("Goal" :expand ((exec-stmt s compst fenv limit)
+                             (exec-block-item item compst fenv limit)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (defret-mutual compustate-top-frame-scopes-number-of-exec
+    (defret compustate-top-frame-scopes-number-of-exec-expr
+      t
+      :rule-classes nil
+      :fn exec-expr)
+    (defret compustate-top-frame-scopes-number-of-exec-fun
+      t
+      :rule-classes nil
+      :fn exec-fun)
+    (defret compustate-top-frame-scopes-number-of-exec-stmt
+      (equal (compustate-top-frame-scopes-number new-compst)
+             (compustate-top-frame-scopes-number compst))
+      :fn exec-stmt)
+    (defret compustate-top-frame-scopes-number-of-exec-block-item
+      (equal (compustate-top-frame-scopes-number new-compst)
+             (compustate-top-frame-scopes-number compst))
+      :fn exec-block-item)
+    (defret compustate-top-frame-scopes-number-of-exec-block-item-list
+      (equal (compustate-top-frame-scopes-number new-compst)
+             (compustate-top-frame-scopes-number compst))
+      :fn exec-block-item-list)
+    :hints (("Goal" :expand ((exec-stmt s compst fenv limit)
+                             (exec-block-item item compst fenv limit)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (verify-guards exec-expr)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -965,7 +1088,7 @@
   (xdoc::topstring
    (xdoc::p
     "We initialize the function environment from the translation unit.
-     We create an initial dynamic environment.
+     We create an initial computation state.
      We call the function.")
    (xdoc::p
     "For now we just pass a large number as the recursive limit,
@@ -976,6 +1099,6 @@
     (fun-env-result-case
      fenv
      :err (error fenv.get)
-     :ok (b* ((env (make-denv :functions fenv.get :frames nil)))
-           (exec-fun fun args env 1000000000)))) ; 10^9
+     :ok (b* ((compst (make-compustate :frames nil)))
+           (exec-fun fun args compst fenv.get 1000000000)))) ; 10^9
   :hooks (:fix))

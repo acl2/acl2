@@ -40,3 +40,9 @@
                 (true-listp x)))
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable unsigned-byte-listp))))
+
+;; Tweaked param names to match std
+(defthm unsigned-byte-listp-of-nthcdr
+  (implies (unsigned-byte-listp width x)
+           (unsigned-byte-listp width (nthcdr n x)))
+  :hints (("Goal" :in-theory (enable unsigned-byte-listp nthcdr))))

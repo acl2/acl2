@@ -336,6 +336,19 @@
   :rule-classes ((:rewrite :loop-stopper nil))
   :hints (("Goal" :in-theory (enable neg))))
 
+;; only needed for axe
+(defthmd equal-of-neg-solve-alt
+  (implies (and (syntaxp (and (quotep k1)
+                              ;; prevent loops when both are constants:
+                              (not (quotep x))))
+                (fep x p)
+                (fep k1 p)
+                (integerp p))
+           (equal (equal (neg x p) k1)
+                  (equal x (neg k1 p))))
+  :rule-classes ((:rewrite :loop-stopper nil))
+  :hints (("Goal" :in-theory (enable neg))))
+
 (defthm equal-of-neg-and-one-less-than-prime
   (implies (and (fep x p)
                 (< 1 p)

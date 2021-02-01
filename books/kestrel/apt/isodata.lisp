@@ -223,11 +223,7 @@
   (defrule isodata-isomapp-of-val-of-symbol-isomap-alist
     (implies (and (isodata-symbol-isomap-alistp x)
                   (consp (assoc-equal k x)))
-             (isodata-isomapp (cdr (assoc-equal k x)))))
-
-  (defruled alistp-when-isodata-symbol-isomap-alistp-rewrite
-    (implies (isodata-symbol-isomap-alistp x)
-             (alistp x))))
+             (isodata-isomapp (cdr (assoc-equal k x))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -249,11 +245,7 @@
   (defrule isodata-isomapp-of-val-of-pos-isomap-alist
     (implies (and (isodata-pos-isomap-alistp x)
                   (consp (assoc-equal k x)))
-             (isodata-isomapp (cdr (assoc-equal k x)))))
-
-  (defruled alistp-when-isodata-pos-isomap-alistp-rewrite
-    (implies (isodata-pos-isomap-alistp x)
-             (alistp x))))
+             (isodata-isomapp (cdr (assoc-equal k x))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

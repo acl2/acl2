@@ -11,6 +11,7 @@
 ; (include-book "kestrel/crypto/primes/baby-jubjub-subgroup-prime" :dir :system)
 
 (include-book "add-io-pairs")
+(include-book "std/testing/must-fail" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Simple examples from :doc add-io-pair
@@ -42,7 +43,8 @@
                      '(30 40)))
 
 ; Fails due to non-executability (no bypass for these args):
-; (g 5 4)
+(must-fail (g 5 4)
+           :expected :hard)
 
 ; Now let's add some more pairs, this time using terms that need to be
 ; evaluated rather than just constants.
@@ -220,7 +222,8 @@ ACL2 !>
 (assert-event (equal (h 3) nil))
 
 ; Fails, as it should:
-; (assert-event (equal (h 7) nil))
+(must-fail (equal (h 7) nil)
+           :expected :hard)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Check use of a list of tests
@@ -241,3 +244,108 @@ ACL2 !>
 ; (add-io-pairs (((g 2 8) (mv (* 2 10) (* 8 10))))
 ;               :test (eql eq)
 ;               :verbose t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Including a book
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The following include-book fails, as noted in the error message, because the
+; existing I/O pairs for g at the point of failure are different at
+; include-book time than they were at certify-book time.
+(must-fail (include-book "add-io-pairs-tests-sub"))
+
+; Readers should probably ignore this encapsulate.  The point of it is to
+; illustrate the workings of merge-io-pairs in terms of lower-level macros
+; add-io-pairs-lenience and install-io-pairs.  Most users should never have
+; reason to think about those lower-level macros.
+(encapsulate
+  ()
+
+; The :warn argument below acts like argument t, except it produces a warning.
+; Merge-io-pairs actually lays down the argument t for add-io-pairs-lenience.
+  (local (add-io-pairs-lenience g :warn))
+
+  (local (include-book "add-io-pairs-tests-sub"))
+
+; Succeeds because original g is bypassed:
+  (local (assert-event (equal (mv-let (a b) (g 100 200) (list a b))
+                              '(1000 2000))))
+
+; Earlier success was defeated by new call of add-io-pair(s) in sub-book.
+  (local (must-fail (equal (mv-let (a b) (g 3 4) (list a b))
+                           '(30 40))
+                    :expected :hard))
+
+  (local (install-io-pairs g))
+
+; Succeeds because of add-io-pair in sub-book:
+  (local (assert-event (equal (mv-let (a b) (g 100 200) (list a b))
+                              '(1000 2000))))
+
+; Still succeeds (original g is still bypassed) because of the "merge" done by
+; the call of install-io-pairs, above:
+  (local (assert-event (equal (mv-let (a b) (g 3 4) (list a b))
+                              '(30 40))))
+
+; Normally would restore default behavior, but that's not necessary here since
+; the earlier add-io-pairs-lenience in this encapsulate is local.
+; (local (add-io-pairs-lenience g nil))
+  )
+
+; Still fails outside the encapsulate above just as it did before that
+; encapsulate:
+(must-fail (include-book "add-io-pairs-tests-sub"))
+
+(merge-io-pairs g (include-book "add-io-pairs-tests-sub"))
+
+; Succeeds because of add-io-pair in sub-book:
+(assert-event (equal (mv-let (a b) (g 100 200) (list a b))
+                     '(1000 2000)))
+
+; Still succeeds (original g is still bypassed) because of the "merge" done
+; above.
+(assert-event (equal (mv-let (a b) (g 3 4) (list a b))
+                     '(30 40)))
+
+(add-io-pair (g 100 300) (mv 1000 3000))
+
+; Still succeeds:
+(assert-event (equal (mv-let (a b) (g 100 200) (list a b))
+                     '(1000 2000)))
+; Still succeeds:
+(assert-event (equal (mv-let (a b) (g 3 4) (list a b))
+                     '(30 40)))
+
+(assert-event (equal (mv-let (a b) (g 100 300) (list a b))
+                     '(1000 3000)))
+
+(deinstall-io-pairs g)
+
+(must-fail (equal (mv-let (a b) (g 3 4) (list a b))
+                  '(30 40))
+           :expected :hard)
+
+(install-io-pairs g)
+
+; These succeed again:
+(assert-event (and (equal (mv-let (a b) (g 100 200) (list a b))
+                          '(1000 2000))
+                   (equal (mv-let (a b) (g 3 4) (list a b))
+                          '(30 40))
+                   (equal (mv-let (a b) (g 100 300) (list a b))
+                          '(1000 3000))))
+
+; The second pass of the encapsulate below causes a failure.
+(must-fail
+ (encapsulate
+   ()
+   (local (add-io-pair (g 100 400) (mv 1000 4000)))
+   (add-io-pair (g 100 500) (mv 1000 5000))))
+
+(must-fail (include-book "add-io-pairs-tests-sub-1"))
+(must-fail (include-book "add-io-pairs-tests-sub-2"))
+
+(merge-io-pairs
+ (g g2) ; Note that g2 isn't yet defined, but that's OK.
+ (include-book "add-io-pairs-tests-sub-1")
+ (include-book "add-io-pairs-tests-sub-2"))

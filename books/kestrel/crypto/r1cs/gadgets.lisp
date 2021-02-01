@@ -15,6 +15,8 @@
 ;; subtraction, and multiplication).  This version of the file passes the prime
 ;; explicitly to the operations, but see also gadgets-alt.lisp.
 
+;; NOTE: The main gadgets library is now in books/kestrel/crypto/r1cs/sparse/gadgets/.
+
 (include-book "kestrel/prime-fields/prime-fields" :dir :system)
 (include-book "kestrel/bv/bitxor" :dir :system)
 (local (include-book "kestrel/prime-fields/prime-fields-rules" :dir :system))

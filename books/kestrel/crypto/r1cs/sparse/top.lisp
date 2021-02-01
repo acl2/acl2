@@ -11,6 +11,7 @@
 (in-package "R1CS")
 
 (include-book "r1cs")
+(include-book "doc")
 (include-book "rules")
 (include-book "rules-axe")
 (include-book "rule-lists")

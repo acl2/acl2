@@ -19,7 +19,9 @@
              (set-difference-eq *std-pkg-symbols*
                                 '(byte
                                   error
-                                  pprint-indent))
+                                  pprint-indent
+                                  type
+                                  typep))
              '(any
                bool
                cw-event
@@ -30,6 +32,7 @@
                defopeners-names
                deftutorial
                defxdoc+
+               e/d*
                enable*
                er-soft+
                evmac-input-print-p

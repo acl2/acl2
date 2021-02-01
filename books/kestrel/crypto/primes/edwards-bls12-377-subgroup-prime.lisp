@@ -26,7 +26,7 @@
 
 (in-package "PRIMES")
 
-(include-book "defprime")
+(include-book "kestrel/number-theory/defprime" :dir :system)
 
 (defprime edwards-bls12-subgroup-prime
   2111115437357092606062206234695386632838870926408408195193685246394721360383
