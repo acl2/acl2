@@ -506,9 +506,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define expr-check ((e exprp) (funtab fun-tablep) (vartab var-tablep))
+(define expr-call-or-pure-check ((e exprp)
+                                 (funtab fun-tablep)
+                                 (vartab var-tablep))
   :returns (type type-resultp)
-  :short "Check an expression."
+  :short "Check an expression that must be
+          a function call or a pure expression."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -692,7 +695,7 @@
      :continue (error :unsupported-continue)
      :break (error :unsupported-break)
      :return (b* (((unless s.value) (error (list :unsupported-return-void)))
-                  (type (expr-check s.value funtab vartab))
+                  (type (expr-call-or-pure-check s.value funtab vartab))
                   ((when (errorp type)) (error (list :return-error type))))
                (make-stmt-type :return-types (set::insert type nil)
                                :variables vartab)))
@@ -708,7 +711,7 @@
                 (wf (ident-check decl.name))
                 ((when (errorp wf)) (error (list :decl-error-var wf)))
                 (type (type-name-to-type (tyname decl.type)))
-                (init-type (expr-check decl.init funtab vartab))
+                (init-type (expr-call-or-pure-check decl.init funtab vartab))
                 ((when (errorp init-type))
                  (error (list :decl-error-init init-type)))
                 ((unless (equal init-type type))
