@@ -48,3 +48,5 @@
 (include-book "ash")
 
 (include-book "limit-expt")
+
+(include-book "doc")

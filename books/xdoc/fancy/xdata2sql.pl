@@ -34,6 +34,9 @@ use warnings;
 use strict;
 use DBI;
 use JSON::XS;
+use File::Temp qw/ tempdir /;
+use Cwd;
+use File::Copy;
 
 print <<END;
 
@@ -114,6 +117,13 @@ if (-f "xdata.db") {
 
 
 print "; Creating new xdata.db.\n";
+
+my $curdir = cwd;
+my $dir = tempdir( "xdata2sql_tmpXXXXXX", CLEANUP => 1, TMPDIR => 1);
+print "; Using temporary dir $dir\n";
+
+chdir($dir) or die("can't change to temp directory $dir\n");
+
 my $dbh = DBI->connect("dbi:SQLite:dbname=xdata.db", "", "",
 		       {RaiseError=>1, AutoCommit=>0})
     or die $DBI::errstr;
@@ -138,6 +148,10 @@ while(my ($key,$val) = each %$xdata)
 
 $dbh->commit();
 $dbh->disconnect();
+
+print "; Moving xdata.db back to $curdir\n";
+move("xdata.db", "${curdir}/xdata.db");
+
 
 print "; All done.\n\n";
 

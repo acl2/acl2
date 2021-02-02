@@ -109,6 +109,10 @@ ACL2 !>
 ; execute a function efficiently by using results from previously-proved
 ; theorems.
 
+;;; Commenting out to avoid possible issues with including these books;
+;;; may restore in the future.
+#||
+
 (defun primep-exec-1 (n)
   (declare (xargs :guard t))
   (if (member n '(#.primes::*secp256k1-field-prime*
@@ -180,6 +184,8 @@ ACL2 !>
 ; Trivial, without debug printing since the original rtl::primep is run:
 (thm (rtl::primep 7)
      :hints (("Goal" :in-theory '((:e rtl::primep)))))
+
+||#
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Using ec-call to sidestep guard verification

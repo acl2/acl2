@@ -37,6 +37,8 @@
 ;; documented in comments.  One must only supply the names to be documented and
 ;; their :short descriptions.
 
+;; TODO: Consider deleting :hints and :guard-hints when generating xdoc.
+
 (include-book "std/io/read-file-lines-no-newlines" :dir :system)
 (include-book "std/strings/case-conversion" :dir :system)
 (include-book "kestrel/utilities/strings" :dir :system)
@@ -79,7 +81,6 @@
   (declare (xargs :guard (and (stringp name-string)
                               (string-listp lines)
                               (string-listp current-block-lines-rev))))
-
   (if (endp lines)
       (er hard? 'get-block-for-name "No block of lines found for ~s0." name-string)
     (let ((line (first lines)))
@@ -88,6 +89,9 @@
         (let* ((downcase-line (str::downcase-string line)) ;todo: try case-insensitive searches below, but adding :test 'char-equal there required standard chars
                )
           (if (and (search name-string downcase-line) ;; ensure the line contains the name (fail fast if not)
+                   ;; TODO: Make these things into a list that can be easily extended:
+                   ;; TODO: Consider allowing anything of the form (xxxxx name-string ...), or
+                   ;; perhaps anything of the form (defxxxxx name-string ...)
                    (or (search (concatenate 'string "(defun " name-string " ") downcase-line)
                        (search (concatenate 'string "(defund " name-string " ") downcase-line)
                        (search (concatenate 'string "(defmacro " name-string " ") downcase-line)
@@ -170,9 +174,9 @@
 
 ;; Generate xdoc topics for the given ITEMS, each of which is a doublet of a
 ;; name and its :short xdoc string.  The body of each generated xdoc topic will
-;; contain the block of lines (surrounded by whitespace lines) from the given
+;; contain the block of lines (demarcated by empty lines) from the given
 ;; FILENAME that defines the given name.  Each name must be defined in a defun,
-;; defund, defmacro, defthm, or defthmd.
+;; defund, defmacro, defthm, defthmd, or define.
 (defmacro gen-xdoc-for-file (filename
                              items
                              parents)
