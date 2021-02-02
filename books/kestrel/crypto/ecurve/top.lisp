@@ -28,7 +28,9 @@
 
 (include-book "points-fty")
 
-(include-book "bls12-377-domain-parameters")
+(acl2::merge-io-pairs
+ rtl::primep
+ (include-book "bls12-377-domain-parameters"))
 
 (include-book "prime-field-squares")
 (include-book "prime-field-squares-euler-criterion")

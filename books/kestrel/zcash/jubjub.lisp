@@ -14,7 +14,9 @@
 
 (include-book "kestrel/crypto/ecurve/twisted-edwards" :dir :system)
 (include-book "kestrel/crypto/primes/bls12-381-prime" :dir :system)
-(include-book "kestrel/crypto/primes/jubjub-subgroup-prime" :dir :system)
+(acl2::merge-io-pairs
+ rtl::primep
+ (include-book "kestrel/crypto/primes/jubjub-subgroup-prime" :dir :system))
 (include-book "std/util/defval" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

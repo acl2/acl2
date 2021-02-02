@@ -20,7 +20,7 @@
 
 (include-book "projects/quadratic-reciprocity/euclid" :dir :system) ;for rtl::primep
 (include-book "kestrel/utilities/pack" :dir :system)
-;;(include-book "std/util/add-io-pairs" :dir :system)
+(include-book "std/util/add-io-pairs" :dir :system)
 
 (defund defprime-fn (name number pratt-cert evisc)
   (declare (xargs :guard (and (symbolp name)
@@ -100,8 +100,7 @@
 
        ;; Avoid expensive calls of primep by building in the fact that it is
        ;; true for this prime:
-       ;; TODO: Uncomment once this works:
-       ;; (acl2::add-io-pairs (((rtl::primep (,name)) t)))
+       (acl2::add-io-pairs (((rtl::primep (,name)) t)))
        )))
 
 (defmacro defprime (name number pratt-cert &key (evisc 't))

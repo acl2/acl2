@@ -21,7 +21,9 @@
 (include-book "bitcoin/top")
 (include-book "built-in-theorems-doc")
 (include-book "c/top")
-(include-book "crypto/top")
+(merge-io-pairs
+ rtl::primep
+ (include-book "crypto/top"))
 (include-book "error-checking/top")
 (include-book "event-macros/top")
 (include-book "hdwallet/top")
