@@ -34,11 +34,40 @@
               (true-listp x)))
   :hints (("Goal" :in-theory (enable unsigned-byte-listp))))
 
-(defthmd unsigned-byte-listp-forward
+(defthmd unsigned-byte-listp-forward-to-all-unsigned-byte-p
   (implies (unsigned-byte-listp n x)
-           (and (all-unsigned-byte-p n x)
-                (true-listp x)))
+           (all-unsigned-byte-p n x))
   :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable unsigned-byte-listp))))
+
+(defthm unsigned-byte-listp-forward-to-true-listp
+  (implies (unsigned-byte-listp n x)
+           (true-listp x))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable unsigned-byte-listp))))
+
+(defthm unsigned-byte-listp-of-cdr
+  (implies (unsigned-byte-listp width x)
+           (unsigned-byte-listp width (cdr x)))
+  :hints (("Goal" :in-theory (enable unsigned-byte-listp))))
+
+(defthm unsigned-byte-listp-of-cons
+  (equal (unsigned-byte-listp n (cons a x))
+         (and (unsigned-byte-p n a)
+              (unsigned-byte-listp n x)))
+  :hints (("Goal" :in-theory (enable unsigned-byte-listp))))
+
+(defthm unsigned-byte-listp-of-append
+  (equal (unsigned-byte-listp width (append x y))
+         (and (unsigned-byte-listp width (true-list-fix x))
+              (unsigned-byte-listp width y)))
+  :hints (("Goal" :in-theory (enable unsigned-byte-listp append))))
+
+;; The version of this in std is a :forward-chaining rule for some reason
+(defthm unsigned-byte-p-of-car-when-unsigned-byte-listp-2
+  (implies (unsigned-byte-listp width x)
+           (equal (unsigned-byte-p width (car x))
+                  (consp x)))
   :hints (("Goal" :in-theory (enable unsigned-byte-listp))))
 
 ;; Tweaked param names to match std
