@@ -69,7 +69,8 @@
     (xdoc::p
      "The formal parameter to use for the fixer.")
     (xdoc::p
-     "If not supplied, it defaults to @('x')."))
+     "If not supplied, it defaults to @('x'),
+      in the same package as @('name')."))
 
    (xdoc::desc
     "@(':body-fix')"

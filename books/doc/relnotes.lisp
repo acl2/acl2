@@ -204,6 +204,20 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "pfcs::prime-field-constraint-systems"
+                             "PFCS (Prime Field Constraint System) Library"))
+
+   (xdoc::p
+    "This is a library that introduces and formalizes
+     the notion of PFCS (Prime Field Consttaint Systems),
+     which generalize R1CS and possibly other constraint systems
+     for zero-knowledge proofs.
+     This is currently under the "
+    (xdoc::seetopic "crypto::cryptography" "cryptographic library")
+    ".")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "simpl-imp::imp-language"
                              "Simple Programming Language Imp"))
 
@@ -538,11 +552,6 @@
 
    (xdoc::p
     "A formalization of the "
-    (xdoc::seetopic "ecurve::jubjub" "Jubjub twisted Edwards elliptic curve")
-    " has been added.")
-
-   (xdoc::p
-    "A formalization of the "
     (xdoc::seetopic "ecurve::birational-montgomery-twisted-edwards"
                     "birational equivalence between
                      Montgomery and twisted Edwards curves")
@@ -649,6 +658,9 @@
 
    (xdoc::p
     "A macro @(tsee fty::defsubtype) has been added.")
+
+   (xdoc::p
+    "A macro @(tsee fty::defunit) has been added.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

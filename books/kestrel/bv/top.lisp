@@ -133,6 +133,9 @@
 ;; Proof of a ripple-carry adder:
 (include-book "adder")
 
+;; One's complement arithmetic:
+(include-book "ones-complement")
+
 ;; Mixed rules:
 (include-book "rules0")
 (include-book "rules")
@@ -141,3 +144,5 @@
 (include-book "rules4")
 (include-book "rules5")
 (include-book "rules6")
+
+(include-book "doc")

@@ -1,6 +1,7 @@
 (in-package "ACL2")
 
 (include-book "../eqfat")
+(local (include-book "std/lists/intersectp" :dir :system))
 
 ;  lofat-place-file.lisp                                Mihir Mehta
 
@@ -88,6 +89,47 @@
                    get-cc-contents-of-place-contents-coincident-lemma-3)
                   (:rewrite
                    lofat-to-hifat-helper-of-lofat-remove-file-disjoint-lemma-4)))))
+
+(defthm
+  lofat-place-file-correctness-lemma-106
+  (implies
+   (and
+    (not (equal (mv-nth 1
+                        (find-d-e d-e-list
+                                  (d-e-filename d-e)))
+                0))
+    (equal (mv-nth 3
+                   (lofat-to-hifat-helper fat32$c
+                                          d-e-list entry-limit))
+           0)
+    (equal
+     (strip-cars fs)
+     (strip-cars (mv-nth 0
+                         (lofat-to-hifat-helper fat32$c
+                                                d-e-list entry-limit))))
+    (useful-d-e-list-p d-e-list))
+   (not (consp (assoc-equal (d-e-filename d-e)
+                            fs))))
+  :hints
+  (("goal"
+    :in-theory (disable (:rewrite member-of-strip-cars))
+    :use
+    ((:instance (:rewrite member-of-strip-cars)
+                (alist fs)
+                (x (d-e-filename d-e)))
+     (:instance
+      (:rewrite member-of-strip-cars)
+      (alist (mv-nth 0
+                     (lofat-to-hifat-helper fat32$c
+                                            d-e-list entry-limit)))
+      (x (d-e-filename d-e)))))))
+
+(defthm
+  d-e-cc-contents-of-lofat-place-file-coincident-lemma-2
+  (implies (equal (mv-nth 1 (find-d-e d-e-list filename))
+                  0)
+           (< 0 (len d-e-list)))
+  :rule-classes :linear)
 
 ;; Consider changing to remove free variables...
 (defthm
@@ -3891,8 +3933,6 @@
 (encapsulate
   ()
 
-  (local (include-book "std/lists/intersectp" :dir :system))
-
   (local
    (in-theory (e/d (lofat-place-file)
                    ((:rewrite intersectp-when-subsetp)
@@ -7675,9 +7715,7 @@
       (t
        (mv d-e-list entry-limit fat32$c x)))))
 
-  (local (include-book "std/lists/intersectp" :dir :system))
-
-  (defthm lofat-place-file-correctness-lemma-205
+  (defthm lofat-place-file-correctness-lemma-114
     (implies
      (and
       (stobj-disjoins-list
@@ -15053,8 +15091,6 @@
                      (:DEFINITION NFIX)
                      (:DEFINITION LENGTH)
                      (:DEFINITION MIN))))
-
-  (local (include-book "std/lists/intersectp" :dir :system))
 
   ;; This was a counterexample, but now it's fixed. Both hifat-place-file and
   ;; lofat-place-file needed to return *enoent*, while they were respectively

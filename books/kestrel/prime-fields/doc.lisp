@@ -13,7 +13,7 @@
 (include-book "xdoc/constructors" :dir :system)
 
 (xdoc::defxdoc prime-fields
-  :parents (acl2::kestrel-books)
+  :parents (acl2::kestrel-books acl2::algebra)
   :short "A library about prime fields."
   :long
   (xdoc::topstring
@@ -42,4 +42,4 @@
     (xdoc::li (xdoc::tt "(pow x n p)") ": Exponentiation in the field: Compute " (xdoc::tt "x") " to the nth power " (xdoc::tt "(x^n)") " modulo the prime " (xdoc::tt "p") ". Note that " (xdoc::tt "n") " can be any natural.")
     (xdoc::li (xdoc::tt "(inv x p)") ": Multiplicative inverse in the field.  Requires " (xdoc::tt "x") " to be non-zero.")
     (xdoc::li (xdoc::tt "(div x y p)") ": Division in the field:  Requires " (xdoc::tt "y") " to be non-zero.")
-    (xdoc::li (xdoc::tt "(minus1 p)") ": Return " (xdoc::tt "p-1") ". It can help to think this value as " (xdoc::tt "-1") "."))))
+    (xdoc::li (xdoc::tt "(minus1 p)") ": Return " (xdoc::tt "p-1") ". It can help to think of this value as " (xdoc::tt "-1") "."))))

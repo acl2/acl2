@@ -73,3 +73,11 @@
          (equal (bvchop 32 x)
                 (bvchop 32 y)))
   :hints (("Goal" :in-theory (enable bvminus bvchop-of-sum-cases))))
+
+(defthm unsigned-byte-p-of-bvminus-gen-better
+  (implies (and (>= size1 size)
+                (integerp size)
+                (>= size 0)
+                (integerp size1))
+           (unsigned-byte-p size1 (bvminus size i j)))
+  :hints (("Goal" :in-theory (enable bvminus))))

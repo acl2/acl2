@@ -70,7 +70,8 @@
               (nat-listp x)))
   :hints (("Goal" :in-theory (enable nat-listp))))
 
+;; The non-standard variable names here are to match STD
 (defthm nat-listp-of-append
-  (equal (nat-listp (append x y))
-         (and (nat-listp (true-list-fix x))
-              (nat-listp y))))
+  (equal (nat-listp (append a b))
+         (and (nat-listp (true-list-fix a))
+              (nat-listp b))))

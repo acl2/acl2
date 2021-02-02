@@ -43,6 +43,7 @@
 (include-book "kestrel/std/util/tuple" :dir :system)
 (include-book "oslib/dirname" :dir :system)
 (include-book "oslib/file-types" :dir :system)
+(include-book "tools/trivial-ancestors-check" :dir :system)
 
 (local (include-book "kestrel/std/system/flatten-ands-in-lit" :dir :system))
 
@@ -389,23 +390,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::defalist atc-symbol-tyspecseq-alistp (x)
-  :short "Recognize alists from symbols to type specifier sequences."
+(std::defalist atc-symbol-type-alistp (x)
+  :short "Recognize alists from symbols to types."
   :key (symbolp x)
-  :val (tyspecseqp x)
+  :val (typep x)
   :true-listp t
   :keyp-of-nil t
   :valp-of-nil nil
   ///
 
-  (defrule tyspecseqp-of-cdr-of-assoc-equal
-    (implies (and (atc-symbol-tyspecseq-alistp x)
+  (defrule typep-of-cdr-of-assoc-equal
+    (implies (and (atc-symbol-type-alistp x)
                   (assoc-equal k x))
-             (tyspecseqp (cdr (assoc-equal k x)))))
-
-  (defruled alistp-when-atc-symbol-tyspecseq-alistp-rewrite
-    (implies (atc-symbol-tyspecseq-alistp x)
-             (alistp x))))
+             (typep (cdr (assoc-equal k x))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -438,7 +435,7 @@
   :returns (mv (yes/no booleanp)
                (op unopp)
                (arg pseudo-termp :hyp :guard)
-               (type tyspecseqp))
+               (type typep))
   :short "Check if a term represents a unary expression."
   :long
   (xdoc::topstring
@@ -456,12 +453,12 @@
   (case-match term
     ((fn arg)
      (case fn
-       (sint-plus (mv t (unop-plus) arg (tyspecseq-sint)))
-       (sint-minus (mv t (unop-minus) arg (tyspecseq-sint)))
-       (sint-bitnot (mv t (unop-bitnot) arg (tyspecseq-sint)))
-       (sint-lognot (mv t (unop-lognot) arg (tyspecseq-sint)))
-       (t (mv nil (irr-unop) nil (irr-tyspecseq)))))
-    (& (mv nil (irr-unop) nil (irr-tyspecseq))))
+       (sint-plus (mv t (unop-plus) arg (type-sint)))
+       (sint-minus (mv t (unop-minus) arg (type-sint)))
+       (sint-bitnot (mv t (unop-bitnot) arg (type-sint)))
+       (sint-lognot (mv t (unop-lognot) arg (type-sint)))
+       (t (mv nil (irr-unop) nil (irr-type)))))
+    (& (mv nil (irr-unop) nil (irr-type))))
   ///
 
   (defret acl2-count-of-atc-check-unop-arg
@@ -477,7 +474,7 @@
                (op binopp)
                (arg1 pseudo-termp :hyp :guard)
                (arg2 pseudo-termp :hyp :guard)
-               (type tyspecseqp))
+               (type typep))
   :short "Check if a term represents a non-side-effecting binary expression."
   :long
   (xdoc::topstring
@@ -499,26 +496,26 @@
   (case-match term
     ((fn arg1 arg2)
      (case fn
-       (sint-add (mv t (binop-add) arg1 arg2 (tyspecseq-sint)))
-       (sint-sub (mv t (binop-sub) arg1 arg2 (tyspecseq-sint)))
-       (sint-mul (mv t (binop-mul) arg1 arg2 (tyspecseq-sint)))
-       (sint-div (mv t (binop-div) arg1 arg2 (tyspecseq-sint)))
-       (sint-rem (mv t (binop-rem) arg1 arg2 (tyspecseq-sint)))
-       (sint-shl-sint (mv t (binop-shl) arg1 arg2 (tyspecseq-sint)))
-       (sint-shr-sint (mv t (binop-shr) arg1 arg2 (tyspecseq-sint)))
-       (sint-lt (mv t (binop-lt) arg1 arg2 (tyspecseq-sint)))
-       (sint-le (mv t (binop-le) arg1 arg2 (tyspecseq-sint)))
-       (sint-gt (mv t (binop-gt) arg1 arg2 (tyspecseq-sint)))
-       (sint-ge (mv t (binop-ge) arg1 arg2 (tyspecseq-sint)))
-       (sint-eq (mv t (binop-eq) arg1 arg2 (tyspecseq-sint)))
-       (sint-ne (mv t (binop-ne) arg1 arg2 (tyspecseq-sint)))
-       (sint-bitand (mv t (binop-bitand) arg1 arg2 (tyspecseq-sint)))
-       (sint-bitxor (mv t (binop-bitxor) arg1 arg2 (tyspecseq-sint)))
-       (sint-bitior (mv t (binop-bitior) arg1 arg2 (tyspecseq-sint)))
-       (sint-logand (mv t (binop-logand) arg1 arg2 (tyspecseq-sint)))
-       (sint-logor (mv t (binop-logor) arg1 arg2 (tyspecseq-sint)))
-       (t (mv nil (irr-binop) nil nil (irr-tyspecseq)))))
-    (& (mv nil (irr-binop) nil nil (irr-tyspecseq))))
+       (sint-add (mv t (binop-add) arg1 arg2 (type-sint)))
+       (sint-sub (mv t (binop-sub) arg1 arg2 (type-sint)))
+       (sint-mul (mv t (binop-mul) arg1 arg2 (type-sint)))
+       (sint-div (mv t (binop-div) arg1 arg2 (type-sint)))
+       (sint-rem (mv t (binop-rem) arg1 arg2 (type-sint)))
+       (sint-shl-sint (mv t (binop-shl) arg1 arg2 (type-sint)))
+       (sint-shr-sint (mv t (binop-shr) arg1 arg2 (type-sint)))
+       (sint-lt (mv t (binop-lt) arg1 arg2 (type-sint)))
+       (sint-le (mv t (binop-le) arg1 arg2 (type-sint)))
+       (sint-gt (mv t (binop-gt) arg1 arg2 (type-sint)))
+       (sint-ge (mv t (binop-ge) arg1 arg2 (type-sint)))
+       (sint-eq (mv t (binop-eq) arg1 arg2 (type-sint)))
+       (sint-ne (mv t (binop-ne) arg1 arg2 (type-sint)))
+       (sint-bitand (mv t (binop-bitand) arg1 arg2 (type-sint)))
+       (sint-bitxor (mv t (binop-bitxor) arg1 arg2 (type-sint)))
+       (sint-bitior (mv t (binop-bitior) arg1 arg2 (type-sint)))
+       (sint-logand (mv t (binop-logand) arg1 arg2 (type-sint)))
+       (sint-logor (mv t (binop-logor) arg1 arg2 (type-sint)))
+       (t (mv nil (irr-binop) nil nil (irr-type)))))
+    (& (mv nil (irr-binop) nil nil (irr-type))))
   ///
 
   (defret acl2-count-of-atc-check-binop-arg1
@@ -536,11 +533,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-check-callable-fn ((term pseudo-termp)
-                               (prec-fns atc-symbol-tyspecseq-alistp))
+                               (prec-fns atc-symbol-type-alistp))
   :returns (mv (yes/no booleanp)
-               (fn symbolp :hyp (atc-symbol-tyspecseq-alistp prec-fns))
+               (fn symbolp :hyp (atc-symbol-type-alistp prec-fns))
                (args pseudo-term-listp :hyp (pseudo-termp term))
-               (type tyspecseqp))
+               (type typep))
   :short "Check if a term represents a call to a callable target function."
   :long
   (xdoc::topstring
@@ -550,16 +547,16 @@
      We also return the result type of the function."))
   (case-match term
     ((fn . args) (b* (((unless (symbolp fn))
-                       (mv nil nil nil (irr-tyspecseq)))
+                       (mv nil nil nil (irr-type)))
                       ((when (eq fn 'quote))
-                       (mv nil nil nil (irr-tyspecseq)))
+                       (mv nil nil nil (irr-type)))
                       (fn+type (assoc-eq fn prec-fns))
                       ((unless (consp fn+type))
-                       (mv nil nil nil (irr-tyspecseq)))
-                      (type (mbe :logic (tyspecseq-fix (cdr fn+type))
+                       (mv nil nil nil (irr-type)))
+                      (type (mbe :logic (type-fix (cdr fn+type))
                                  :exec (cdr fn+type))))
                    (mv t fn args type)))
-    (& (mv nil nil nil (irr-tyspecseq))))
+    (& (mv nil nil nil (irr-type))))
   ///
 
   (defret acl2-count-of-atc-check-callable-fn-args
@@ -609,28 +606,33 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines atc-gen-expr-fns
-  :short "Mutually recursive functions to
-          generate C expressions from ACL2 terms."
+(defines atc-gen-expr-pure
+  :short "Mutually recursive ACL2 functions to
+          generate pure C expressions from ACL2 terms."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are for allowed pure non-boolean terms
+     and for allowed boolean terms (which are always pure)."))
 
-  (define atc-gen-expr-nonbool ((term pseudo-termp)
-                                (vars atc-symbol-tyspecseq-alistp)
-                                (fn symbolp)
-                                (prec-fns atc-symbol-tyspecseq-alistp)
-                                ctx
-                                state)
+  (define atc-gen-expr-pure-nonbool ((term pseudo-termp)
+                                     (vars atc-symbol-type-alistp)
+                                     (fn symbolp)
+                                     ctx
+                                     state)
     :returns (mv erp
                  (val (tuple (expr exprp)
-                             (type tyspecseqp)
+                             (type typep)
                              val))
                  state)
-    :parents (atc-event-and-code-generation atc-gen-expr-fns)
+    :parents (atc-event-and-code-generation atc-gen-expr-pure)
     :short "Generate a C expression from an ACL2 term
-            that must be an allowed non-boolean term."
+            that must be an allowed pure non-boolean term."
     :long
     (xdoc::topstring
      (xdoc::p
-      "At the same time, we check that the term is an allowed non-boolean term,
+      "At the same time,
+       we check that the term is an allowed pure non-boolean term,
        as described in the user documentation.")
      (xdoc::p
       "We also return the C type of the expression.")
@@ -645,12 +647,6 @@
        we translate it to the application of the operator
        to the recursively generated expressions.
        The type is the result type of the operator.")
-     (xdoc::p
-      "If the term is a call of a function that precedes @('fn')
-       in the list of target functions @('fn1'), ..., @('fnp'),
-       we translate it to a C function call on the translated arguments.
-       The type of the expression is the result type of the function,
-       which is looked up in the function alist passed as input.")
      (xdoc::p
       "If the term is a call of @(tsee c::sint01),
        we call the mutually recursive ACL2 function
@@ -669,7 +665,7 @@
        We ensure that the two branches have the same type.")
      (xdoc::p
       "In all other cases, we fail with an error.
-       The term is not an allowed non-boolean term.
+       The term is not an allowed pure non-boolean term.
        We could extend this code to provide
        more information to the user at some point."))
     (b* (((when (acl2::variablep term))
@@ -677,8 +673,8 @@
                ((when (not var+type))
                 (raise "Internal error: the variable ~x0 in function ~x1 ~
                         has no associated type." term fn)
-                (value (list (irr-expr) (irr-tyspecseq))))
-               (type (tyspecseq-fix (cdr var+type))))
+                (value (list (irr-expr) (irr-type))))
+               (type (type-fix (cdr var+type))))
             (value (list (expr-ident (make-ident :name (symbol-name term)))
                          type))))
          ((mv okp val) (atc-check-sint-const term))
@@ -689,90 +685,71 @@
                                                 :base (iconst-base-dec)
                                                 :unsignedp nil
                                                 :type (iconst-tysuffix-none))))
-            (tyspecseq-sint))))
+            (type-sint))))
          ((mv okp op arg type) (atc-check-unop term))
          ((when okp)
-          (b* (((er (list arg-expr &)) (atc-gen-expr-nonbool arg
-                                                             vars
-                                                             fn
-                                                             prec-fns
-                                                             ctx
-                                                             state)))
+          (b* (((er (list arg-expr &)) (atc-gen-expr-pure-nonbool arg
+                                                                  vars
+                                                                  fn
+                                                                  ctx
+                                                                  state)))
             (value (list (make-expr-unary :op op :arg arg-expr)
                          type))))
          ((mv okp op arg1 arg2 type) (atc-check-binop term))
          ((when okp)
-          (b* (((er (list arg1-expr &)) (atc-gen-expr-nonbool arg1
-                                                              vars
-                                                              fn
-                                                              prec-fns
-                                                              ctx
-                                                              state))
-               ((er (list arg2-expr &)) (atc-gen-expr-nonbool arg2
-                                                              vars
-                                                              fn
-                                                              prec-fns
-                                                              ctx
-                                                              state)))
+          (b* (((er (list arg1-expr &)) (atc-gen-expr-pure-nonbool arg1
+                                                                   vars
+                                                                   fn
+                                                                   ctx
+                                                                   state))
+               ((er (list arg2-expr &)) (atc-gen-expr-pure-nonbool arg2
+                                                                   vars
+                                                                   fn
+                                                                   ctx
+                                                                   state)))
             (value (list (make-expr-binary :op op
                                            :arg1 arg1-expr
                                            :arg2 arg2-expr)
-                         type))))
-         ((mv okp fn args type) (atc-check-callable-fn term prec-fns))
-         ((when okp)
-          (b* (((mv erp arg-exprs state) (atc-gen-expr-nonbool-list args
-                                                                    vars
-                                                                    fn
-                                                                    prec-fns
-                                                                    ctx
-                                                                    state))
-               ((when erp) (mv erp (list (irr-expr) (irr-tyspecseq)) state)))
-            (value (list
-                    (make-expr-call :fun (make-ident :name (symbol-name fn))
-                                    :args arg-exprs)
-                    type)))))
+                         type)))))
       (case-match term
         (('c::sint01 arg)
          (b* (((mv erp expr state)
-               (atc-gen-expr-bool arg vars fn prec-fns ctx state))
-              ((when erp) (mv erp (list (irr-expr) (irr-tyspecseq)) state)))
-           (mv nil (list expr (tyspecseq-sint)) state)))
+               (atc-gen-expr-bool arg vars fn ctx state))
+              ((when erp) (mv erp (list (irr-expr) (irr-type)) state)))
+           (mv nil (list expr (type-sint)) state)))
         (('if test then else)
          (b* (((mv mbtp &) (acl2::check-mbt-call test))
-              ((when mbtp) (atc-gen-expr-nonbool then
-                                                 vars
-                                                 fn
-                                                 prec-fns
-                                                 ctx
-                                                 state))
+              ((when mbtp) (atc-gen-expr-pure-nonbool then
+                                                      vars
+                                                      fn
+                                                      ctx
+                                                      state))
               ((mv mbt$p &) (acl2::check-mbt$-call test))
-              ((when mbt$p) (atc-gen-expr-nonbool then
-                                                  vars
-                                                  fn
-                                                  prec-fns
-                                                  ctx
-                                                  state))
+              ((when mbt$p) (atc-gen-expr-pure-nonbool then
+                                                       vars
+                                                       fn
+                                                       ctx
+                                                       state))
               ((mv erp test-expr state) (atc-gen-expr-bool test
                                                            vars
                                                            fn
-                                                           prec-fns
                                                            ctx
                                                            state))
-              ((when erp) (mv erp (list (irr-expr) (irr-tyspecseq)) state))
-              ((er (list then-expr then-type)) (atc-gen-expr-nonbool then
-                                                                     vars
-                                                                     fn
-                                                                     prec-fns
-                                                                     ctx
-                                                                     state))
-              ((er (list else-expr else-type)) (atc-gen-expr-nonbool else
-                                                                     vars
-                                                                     fn
-                                                                     prec-fns
-                                                                     ctx
-                                                                     state))
+              ((when erp) (mv erp (list (irr-expr) (irr-type)) state))
+              ((er (list then-expr then-type)) (atc-gen-expr-pure-nonbool
+                                                then
+                                                vars
+                                                fn
+                                                ctx
+                                                state))
+              ((er (list else-expr else-type)) (atc-gen-expr-pure-nonbool
+                                                else
+                                                vars
+                                                fn
+                                                ctx
+                                                state))
               ((unless (equal then-type else-type))
-               (er-soft+ ctx t (list (irr-expr) (irr-tyspecseq))
+               (er-soft+ ctx t (list (irr-expr) (irr-type))
                          "When generating C code for the function ~x0, ~
                           two branches ~x1 and ~x2 of a conditional term ~
                           have different types ~x3 and ~x4;
@@ -783,51 +760,20 @@
             (list
              (make-expr-cond :test test-expr :then then-expr :else else-expr)
              then-type))))
-        (& (er-soft+ ctx t (list (irr-expr) (irr-tyspecseq))
+        (& (er-soft+ ctx t (list (irr-expr) (irr-type))
                      "When generating C code for the function ~x0, ~
-                      at a point where
+                      at a point where ~
                       an allowed non-boolean ACL2 term is expected, ~
                       the term ~x1 is encountered instead."
                      fn term)))))
 
-  (define atc-gen-expr-nonbool-list ((terms pseudo-term-listp)
-                                     (vars atc-symbol-tyspecseq-alistp)
-                                     (fn symbolp)
-                                     (prec-fns atc-symbol-tyspecseq-alistp)
-                                     ctx
-                                     state)
-    :returns (mv erp (exprs expr-listp) state)
-    :parents (atc-event-and-code-generation atc-gen-expr-fns)
-    :short "Generate a list of C expressions from a list of ACL2 terms
-            that must be allowed non-boolean terms."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "We do not return the C types of the expressions."))
-    (b* (((when (endp terms)) (value nil))
-         ((mv erp (list expr &) state) (atc-gen-expr-nonbool (car terms)
-                                                             vars
-                                                             fn
-                                                             prec-fns
-                                                             ctx
-                                                             state))
-         ((when erp) (mv erp nil state))
-         ((er exprs) (atc-gen-expr-nonbool-list (cdr terms)
-                                                vars
-                                                fn
-                                                prec-fns
-                                                ctx
-                                                state)))
-      (value (cons expr exprs))))
-
   (define atc-gen-expr-bool ((term pseudo-termp)
-                             (vars atc-symbol-tyspecseq-alistp)
+                             (vars atc-symbol-type-alistp)
                              (fn symbolp)
-                             (prec-fns atc-symbol-tyspecseq-alistp)
                              ctx
                              state)
     :returns (mv erp (expr exprp) state)
-    :parents (atc-event-and-code-generation atc-gen-expr-fns)
+    :parents (atc-event-and-code-generation atc-gen-expr-pure)
     :short "Generate a C expression from an ACL2 term
             that must be an allowed boolean term."
     :long
@@ -856,7 +802,6 @@
        (b* (((er arg-expr) (atc-gen-expr-bool arg
                                               vars
                                               fn
-                                              prec-fns
                                               ctx
                                               state)))
          (value (make-expr-unary :op (unop-lognot) :arg arg-expr))))
@@ -864,13 +809,11 @@
        (b* (((er arg1-expr) (atc-gen-expr-bool arg1
                                                vars
                                                fn
-                                               prec-fns
                                                ctx
                                                state))
             ((er arg2-expr) (atc-gen-expr-bool arg2
                                                vars
                                                fn
-                                               prec-fns
                                                ctx
                                                state)))
          (value (make-expr-binary :op (binop-logand)
@@ -880,13 +823,11 @@
        (b* (((er arg1-expr) (atc-gen-expr-bool arg1
                                                vars
                                                fn
-                                               prec-fns
                                                ctx
                                                state))
             ((er arg2-expr) (atc-gen-expr-bool arg2
                                                vars
                                                fn
-                                               prec-fns
                                                ctx
                                                state)))
          (value (make-expr-binary :op (binop-logor)
@@ -894,7 +835,7 @@
                                   :arg2 arg2-expr))))
       (('c::sint-nonzerop arg)
        (b* (((mv erp (list expr &) state)
-             (atc-gen-expr-nonbool arg vars fn prec-fns ctx state)))
+             (atc-gen-expr-pure-nonbool arg vars fn ctx state)))
          (mv erp expr state)))
       (& (er-soft+ ctx t (irr-expr)
                    "When generating C code for the function ~x0, ~
@@ -909,34 +850,147 @@
 
   ///
 
-  (defret-mutual consp-of-atc-gen-expr-nonbool/bool
-    (defret consp-of-atc-gen-expr-nonbool
+  (defret-mutual consp-of-atc-gen-expr-pure
+    (defret typeset-of-atc-gen-expr-pure-nonbool
       (and (consp val)
            (true-listp val))
       :rule-classes :type-prescription
-      :fn atc-gen-expr-nonbool)
-    (defret true-of-atc-gen-expr-nonbool-list
-      t
-      :rule-classes nil
-      :fn atc-gen-expr-nonbool-list)
+      :fn atc-gen-expr-pure-nonbool)
     (defret true-of-atc-gen-expr-bool
       t
       :rule-classes nil
       :fn atc-gen-expr-bool))
 
-  (verify-guards atc-gen-expr-nonbool))
+  (verify-guards atc-gen-expr-pure-nonbool))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-gen-expr-pure-nonbool-list ((terms pseudo-term-listp)
+                                        (vars atc-symbol-type-alistp)
+                                        (fn symbolp)
+                                        ctx
+                                        state)
+  :returns (mv erp (exprs expr-listp) state)
+  :short "Generate a list of C expressions from a list of ACL2 terms
+          that must be allowed pure non-boolean terms."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This lifts @(tsee atc-gen-expr-pure-nonbool) to lists.
+     However, we do not return the C types of the expressions."))
+  (b* (((when (endp terms)) (value nil))
+       ((mv erp (list expr &) state) (atc-gen-expr-pure-nonbool (car terms)
+                                                                vars
+                                                                fn
+                                                                ctx
+                                                                state))
+       ((when erp) (mv erp nil state))
+       ((er exprs) (atc-gen-expr-pure-nonbool-list (cdr terms)
+                                                   vars
+                                                   fn
+                                                   ctx
+                                                   state)))
+    (value (cons expr exprs))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-gen-expr-nonbool ((term pseudo-termp)
+                              (vars atc-symbol-type-alistp)
+                              (fn symbolp)
+                              (prec-fns atc-symbol-type-alistp)
+                              ctx
+                              state)
+  :returns (mv erp
+               (val (tuple (expr exprp)
+                           (type typep)
+                           val))
+               state)
+  :short "Generate a C expression from an ACL2 term
+          that must be an allowed non-boolean term."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "At the same time,
+     we check that the term is an allowed non-boolean term,
+     as described in the user documentation.")
+   (xdoc::p
+    "We also return the C type of the expression.")
+   (xdoc::p
+    "If the term is a call of a function that precedes @('fn')
+     in the list of target functions @('fn1'), ..., @('fnp'),
+     we translate it to a C function call on the translated arguments.
+     The type of the expression is the result type of the function,
+     which is looked up in the function alist passed as input.")
+   (xdoc::p
+    "Otherwise, we attempt to translate the term
+     as an allowed pure non-boolean terms."))
+  (b* (((mv okp called-fn args type) (atc-check-callable-fn term prec-fns))
+       ((when okp)
+        (b* (((mv erp arg-exprs state) (atc-gen-expr-pure-nonbool-list args
+                                                                       vars
+                                                                       fn
+                                                                       ctx
+                                                                       state))
+             ((when erp) (mv erp (list (irr-expr) (irr-type)) state)))
+          (value (list
+                  (make-expr-call :fun (make-ident
+                                        :name (symbol-name called-fn))
+                                  :args arg-exprs)
+                  type)))))
+    (atc-gen-expr-pure-nonbool term vars fn ctx state))
+  ///
+  (more-returns
+   (val (and (consp val)
+             (true-listp val))
+        :name typeset-of-atc-gen-expr-nonbool
+        :rule-classes :type-prescription)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-gen-tyspecseq ((type typep))
+  :returns (tyspecseq tyspecseqp)
+  :short "Generate a type specifier sequence for a type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "As discussed in @(see types),
+     now types and type specifier sequences are isomorphic in our model,
+     but they are not in C.
+     When generating C code,
+     in some cases it is necessary to generate
+     type specifier sequences for types.
+     This ACL2 function does that."))
+  (type-case type
+             :char (tyspecseq-char)
+             :schar (tyspecseq-schar)
+             :sshort (tyspecseq-sshort)
+             :sint (tyspecseq-sint)
+             :slong (tyspecseq-slong)
+             :sllong (tyspecseq-sllong)
+             :uchar (tyspecseq-uchar)
+             :ushort (tyspecseq-ushort)
+             :uint (tyspecseq-uint)
+             :ulong (tyspecseq-ulong)
+             :ullong (tyspecseq-ullong))
+  :hooks (:fix)
+  ///
+
+  (defrule type-name-to-type-of-tyname-of-atc-gen-tyspecseq
+    (equal (type-name-to-type (tyname (atc-gen-tyspecseq type)))
+           (type-fix type))
+    :enable type-name-to-type))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-stmt ((term pseudo-termp)
-                      (vars atc-symbol-tyspecseq-alistp)
+                      (vars atc-symbol-type-alistp)
                       (fn symbolp)
-                      (prec-fns atc-symbol-tyspecseq-alistp)
+                      (prec-fns atc-symbol-type-alistp)
                       ctx
                       state)
   :returns (mv erp
                (val (tuple (items block-item-listp)
-                           (type tyspecseqp)
+                           (type typep)
                            val))
                state)
   :short "Generate a C statement from an ACL2 term."
@@ -992,10 +1046,9 @@
              ((mv erp test-expr state) (atc-gen-expr-bool test
                                                           vars
                                                           fn
-                                                          prec-fns
                                                           ctx
                                                           state))
-             ((when erp) (mv erp (list nil (irr-tyspecseq)) state))
+             ((when erp) (mv erp (list nil (irr-type)) state))
              ((er (list then-items then-type)) (atc-gen-stmt then
                                                              vars
                                                              fn
@@ -1009,7 +1062,7 @@
                                                              ctx
                                                              state))
              ((unless (equal then-type else-type))
-              (er-soft+ ctx t (list nil (irr-tyspecseq))
+              (er-soft+ ctx t (list nil (irr-type))
                         "When generating C code for the function ~x0, ~
                          two branches ~x1 and ~x2 of a conditional term ~
                          have different types ~x3 and ~x4;
@@ -1028,13 +1081,13 @@
        ((when okp)
         (b* ((var-name (symbol-name var))
              ((unless (atc-ident-stringp var-name))
-              (er-soft+ ctx t (list nil (irr-tyspecseq))
+              (er-soft+ ctx t (list nil (irr-type))
                         "The symbol name ~s0 of ~
                          the LET variable ~x1 of the function ~x2 ~
                          must be a portable ASCII C identifier, but it is not."
                         var-name var fn))
              ((when (member-equal var-name (symbol-name-lst (strip-cars vars))))
-              (er-soft+ ctx t (list nil (irr-tyspecseq))
+              (er-soft+ ctx t (list nil (irr-type))
                         "When generating C code for the function ~x0, ~
                          the LET variable ~x1 has the same symbol name as ~
                          another variable (formal parameter or LET variable) ~
@@ -1043,8 +1096,8 @@
                         fn var))
              ((mv erp (list init-expr init-type) state)
               (atc-gen-expr-nonbool init vars fn prec-fns ctx state))
-             ((when erp) (mv erp (list nil (irr-tyspecseq)) state))
-             (decl (make-decl :type init-type
+             ((when erp) (mv erp (list nil (irr-type)) state))
+             (decl (make-decl :type (atc-gen-tyspecseq init-type)
                               :name (make-ident :name (symbol-name var))
                               :init init-expr))
              (item (block-item-decl decl))
@@ -1060,7 +1113,7 @@
                                                               prec-fns
                                                               ctx
                                                               state))
-       ((when erp) (mv erp (list nil (irr-tyspecseq)) state)))
+       ((when erp) (mv erp (list nil (irr-type)) state)))
     (value (list (list (block-item-stmt (make-stmt-return :value expr)))
                  type)))
 
@@ -1084,7 +1137,7 @@
                              (guard pseudo-termp)
                              ctx
                              state)
-  :returns (mv erp (type tyspecseqp) state)
+  :returns (mv erp (type typep) state)
   :short "Find the C type of a function's parameter from the guard."
   :long
   (xdoc::topstring
@@ -1096,7 +1149,7 @@
      For now we only accept @(tsee sintp) as @('<type>'),
      but this will be extended to more C types in the future."))
   (b* (((when (endp guard-conjuncts))
-        (er-soft+ ctx t (irr-tyspecseq)
+        (er-soft+ ctx t (irr-type)
                   "The guard ~x0 of the ~x1 function does not have ~
                    a recognizable conjunct that requires ~
                    the formal parameter ~x2 to be a C value ~
@@ -1109,7 +1162,7 @@
         (atc-find-param-type formal fn (cdr guard-conjuncts) guard ctx state))
        (type-fn (acl2::ffn-symb conjunct))
        (type (case type-fn
-               ('sintp (tyspecseq-sint))
+               ('sintp (type-sint))
                (t nil)))
        ((when (not type))
         (atc-find-param-type formal fn (cdr guard-conjuncts) guard ctx state)))
@@ -1125,7 +1178,7 @@
                             state)
   :returns (mv erp
                (val (tuple (param param-declp)
-                           (type tyspecseqp)
+                           (type typep)
                            val))
                state)
   :short "Generate a C parameter declaration from an ACL2 formal parameter."
@@ -1136,16 +1189,16 @@
      we also (try and) retrieve its C type from the guard."))
   (b* ((name (symbol-name formal))
        ((unless (atc-ident-stringp name))
-        (er-soft+ ctx t (list (irr-param-decl) (irr-tyspecseq))
+        (er-soft+ ctx t (list (irr-param-decl) (irr-type))
                   "The symbol name ~s0 of ~
                    the formal parameter ~x1 of the function ~x2 ~
                    must be a portable ASCII C identifier, but it is not."
                   name formal fn))
        ((mv erp type state)
         (atc-find-param-type formal fn guard-conjuncts guard ctx state))
-       ((when erp) (mv erp (list (irr-param-decl) (irr-tyspecseq)) state)))
+       ((when erp) (mv erp (list (irr-param-decl) (irr-type)) state)))
     (value (list (make-param-decl :name (make-ident :name name)
-                                  :type type)
+                                  :type (atc-gen-tyspecseq type))
                  type)))
   ///
   (more-returns
@@ -1161,7 +1214,7 @@
                                  state)
   :returns (mv erp
                (val (tuple (params param-decl-listp)
-                           (vars atc-symbol-tyspecseq-alistp)
+                           (vars atc-symbol-type-alistp)
                            val))
                state)
   :short "Generate a list of C parameter declarations
@@ -1202,7 +1255,7 @@
   (verify-guards atc-gen-param-decl-list
     :hints
     (("Goal"
-      :in-theory (enable alistp-when-atc-symbol-tyspecseq-alistp-rewrite))))
+      :in-theory (enable alistp-when-atc-symbol-type-alistp-rewrite))))
 
   (more-returns
    (val true-listp :rule-classes :type-prescription)))
@@ -1210,14 +1263,14 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-ext-decl ((fn symbolp)
-                          (prec-fns atc-symbol-tyspecseq-alistp)
+                          (prec-fns atc-symbol-type-alistp)
                           ctx
                           state)
   :returns (mv erp
                (val (tuple (ext ext-declp)
-                           (updated-prec-fns atc-symbol-tyspecseq-alistp)
+                           (updated-prec-fns atc-symbol-type-alistp)
                            val)
-                    :hyp (atc-symbol-tyspecseq-alistp prec-fns))
+                    :hyp (atc-symbol-type-alistp prec-fns))
                state)
   :short "Generate a C external declaration (a function definition)
           from an ACL2 function."
@@ -1256,7 +1309,7 @@
     (value
      (list
       (ext-decl-fundef
-       (make-fundef :result type
+       (make-fundef :result (atc-gen-tyspecseq type)
                     :name (make-ident :name name)
                     :params params
                     :body (stmt-compound items)))
@@ -1269,11 +1322,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-ext-decl-list ((fns symbol-listp)
-                               (prec-fns atc-symbol-tyspecseq-alistp)
+                               (prec-fns atc-symbol-type-alistp)
                                ctx
                                state)
   :returns (mv erp
-               (exts ext-decl-listp :hyp (atc-symbol-tyspecseq-alistp prec-fns))
+               (exts ext-decl-listp :hyp (atc-symbol-type-alistp prec-fns))
                state)
   :short "Lift @(tsee atc-gen-ext-decl) to lists."
   :long
@@ -1419,7 +1472,17 @@
      ensures that @(tsee sint-add) and similar functions are always called
      on values such that the exact result fit into the type,
      which is the same condition under which the dynamic semantics
-     does not error on the corresponding operators."))
+     does not error on the corresponding operators.")
+   (xdoc::p
+    "We found at least a case in which ACL2's ancestor check
+     prevents a valid theorem of this kind from being proved.
+     This is solved by locally installing a simpler ancestor check
+     (see @(tsee atc-gen-everything));
+     however, the simpler ancestor check fails to prevent a loop
+     with the rule @('omap::in-when-in-tail'),
+     which we therefore disable in the generated hints.
+     Clearly, the current proofs are brittle;
+     we plan to generate much more robust and compositional proofs soon."))
   (b* ((name (acl2::packn (list const "-" (symbol-name fn) "-CORRECT")))
        ((er &) (acl2::ensure-symbol-is-fresh-event-name$
                 name
@@ -1440,38 +1503,45 @@
                       ,const))
        (rhs `(value-result-ok (,fn ,@formals)))
        (hints `(("Goal"
-                 :in-theory (enable* run-fun
-                                     init-scope
-                                     exec-fun
-                                     exec-stmt
-                                     exec-block-item
-                                     exec-block-item-list
-                                     exec-expr
-                                     exec-binary
-                                     exec-binary-strict
-                                     exec-binary-logand
-                                     exec-binary-logor
-                                     exec-unary
-                                     exec-ident
-                                     exec-const
-                                     exec-iconst
-                                     top-frame
-                                     push-frame
-                                     pop-frame
-                                     lookup-var
-                                     lookup-var-aux
-                                     add-var
-                                     enter-scope
-                                     scope-result-kind
-                                     scope-result-ok->get
-                                     denv-result-kind
-                                     denv-result-ok->get
-                                     value-result-kind
-                                     value-result-ok->get
-                                     value-option-result-kind
-                                     value-option-result-ok->get
-                                     exec-unfold-rules
-                                     ,@prec-fns)
+                 :in-theory (e/d* (run-fun
+                                   init-scope
+                                   exec-fun
+                                   exec-stmt
+                                   exec-block-item
+                                   exec-block-item-list
+                                   exec-expr
+                                   exec-expr-pure
+                                   exec-expr-pure-list
+                                   exec-binary-pure
+                                   exec-binary-strict-pure
+                                   exec-binary-logand
+                                   exec-binary-logor
+                                   exec-unary
+                                   exec-ident
+                                   exec-const
+                                   exec-iconst
+                                   top-frame
+                                   push-frame
+                                   pop-frame
+                                   lookup-var
+                                   lookup-var-aux
+                                   add-var
+                                   enter-scope
+                                   scope-result-kind
+                                   scope-result-ok->get
+                                   compustate-result-kind
+                                   compustate-result-ok->get
+                                   compustate-frames-number
+                                   value-result-kind
+                                   value-result-ok->get
+                                   value-list-result-kind
+                                   value-list-result-ok->get
+                                   value-option-result-kind
+                                   value-option-result-ok->get
+                                   errorp
+                                   exec-unfold-rules
+                                   ,@prec-fns)
+                                  (omap::in-when-in-tail))
                  :use (:guard-theorem ,fn))))
        ((mv local-event exported-event)
         (acl2::evmac-generate-defthm
@@ -1568,6 +1638,12 @@
   :returns (mv erp (event "A @(tsee pseudo-event-formp).") state)
   :mode :program
   :short "Generate the file and the events."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Just before generating the theorems of functional correctness,
+     we locally install the ``trivial ancestor check'' from the library.
+     See @(tsee atc-gen-fn-thm) for the motivation."))
   (b* (((er tunit) (atc-gen-transunit fn1...fnp ctx state))
        ((mv local-const-event exported-const-event)
         (atc-gen-const const tunit print-info/all))
@@ -1591,6 +1667,7 @@
             ,exported-const-event
             ,wf-thm-local-event
             ,wf-thm-exported-event
+            (local (acl2::use-trivial-ancestors-check))
             ,@fn-thm-local-events
             ,@fn-thm-exported-events))
        (encapsulate+ (acl2::restore-output? (eq print :all) encapsulate))

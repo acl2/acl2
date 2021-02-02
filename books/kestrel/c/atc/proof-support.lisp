@@ -86,14 +86,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defopeners exec-expr-list
-  :hyps ((syntaxp (quotep es)))
-  :disable t)
-
-(add-to-ruleset exec-unfold-rules (defopeners-names exec-expr-list))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defopeners exec-fun
   :hyps ((syntaxp (quotep fun)))
   :disable t)

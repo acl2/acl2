@@ -14,11 +14,16 @@
 (include-book "abnf/examples") ; they have XDOC topics for the manual
 (include-book "acl2pl/top")
 (include-book "apt/top")
+(include-book "axe/doc")
+(include-book "arithmetic-light/top")
+(include-book "bv/doc")
 (include-book "auto-termination/top") ; omits some books (see file for why)
 (include-book "bitcoin/top")
 (include-book "built-in-theorems-doc")
 (include-book "c/top")
-(include-book "crypto/top")
+(merge-io-pairs
+ rtl::primep
+ (include-book "crypto/top"))
 (include-book "error-checking/top")
 (include-book "event-macros/top")
 (include-book "hdwallet/top")
@@ -27,11 +32,13 @@
 (include-book "isar/top")
 (include-book "java/top")
 (include-book "json/top")
+(include-book "number-theory/top")
 (include-book "prime-fields/top")
 (include-book "simpl-imp/top")
 (include-book "soft/top")
 (include-book "solidity/top")
 (include-book "std/top")
+(include-book "typed-lists-light/doc")
 (include-book "utilities/top")
 (include-book "zcash/top")
 

@@ -16,15 +16,25 @@
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 
 ;fixme define bvminus in terms of this?
-(defun bvuminus (size x)
+(defund bvuminus (size x)
   (declare (type (integer 0 *) size))
   (bvminus size 0 x))
 
 (defthm integerp-of-bvuminus
-  (integerp (bvuminus size x)))
+  (integerp (bvuminus size x))
+  :hints (("Goal" :in-theory (enable bvuminus))))
 
 (defthm natp-of-bvuminus
-  (natp (bvuminus size x)))
+  (natp (bvuminus size x))
+  :hints (("Goal" :in-theory (enable bvuminus))))
+
+(defthm unsigned-byte-p-of-bvuminus
+  (implies (and (>= size1 size)
+                (integerp size)
+                (>= size 0)
+                (integerp size1))
+           (unsigned-byte-p size1 (bvuminus size i)))
+  :hints (("Goal" :in-theory (e/d (bvuminus) ()))))
 
 (defthm bvuminus-when-arg-is-not-an-integer
   (implies (not (integerp x))
@@ -45,7 +55,8 @@
 (defthm equal-of-0-and-bvuminus
   (equal (equal 0 (bvuminus size x))
          (equal 0 (bvchop size x)))
-  :hints (("Goal" :use (:instance bvuminus-equal-constant (k 0)))))
+  :hints (("Goal" :in-theory (enable bvuminus)
+           :use (:instance bvuminus-equal-constant (k 0)))))
 
 (defthm bvuminus-of-bvuminus
   (equal (bvuminus size (bvuminus size x))

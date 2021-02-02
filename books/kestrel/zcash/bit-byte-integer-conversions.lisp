@@ -48,7 +48,7 @@
 
 (define lebs2ip ((s bit-listp))
   :returns (x natp :rule-classes :type-prescription)
-  :short "The function @('$\\mathsf{LEBS2IP}$') in [ZPS:5.2]."
+  :short "The function @($\\mathsf{LEBS2IP}$) in [ZPS:5.2]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -66,7 +66,7 @@
 
 (define leos2ip ((s byte-listp))
   :returns (x natp :rule-classes :type-prescription)
-  :short "The function @('$\\mathsf{LEOS2IP}$') in [ZPS:5.2]."
+  :short "The function @($\\mathsf{LEOS2IP}$) in [ZPS:5.2]."
   :long
   (xdoc::topstring
    (xdoc::p

@@ -16,3 +16,4 @@
 (include-book "selection")
 (include-book "nonzero")
 (include-book "xor")
+(include-book "packing")

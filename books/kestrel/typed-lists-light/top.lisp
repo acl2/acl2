@@ -34,3 +34,5 @@
 (include-book "minelem2")
 
 (include-book "all-less")
+
+(include-book "doc")
