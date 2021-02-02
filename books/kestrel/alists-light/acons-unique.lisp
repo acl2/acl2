@@ -12,7 +12,8 @@
 (in-package "ACL2")
 
 ;; Like ACONS but this one won't introduce a duplicate key.  This is slower
-;; than ACONS but can keep the alist from growing very large.
+;; than ACONS but can keep the alist from growing very large.  Preserves the
+;; order of the keys in the alist when KEY already exists among them.
 (defund acons-unique (key val alist)
   (declare (xargs :guard (alistp alist)))
   (if (endp alist)
