@@ -1523,8 +1523,8 @@
                                    top-frame
                                    push-frame
                                    pop-frame
-                                   lookup-var
-                                   lookup-var-aux
+                                   read-var
+                                   read-var-aux
                                    create-var
                                    enter-scope
                                    scope-result-kind

@@ -502,9 +502,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define lookup-var ((var identp) (compst compustatep))
+(define read-var ((var identp) (compst compustatep))
   :returns (result value-resultp)
-  :short "Look up a variable in a computation state."
+  :short "Read a variable from a computation state."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -537,17 +537,17 @@
      because the variables in other frames are not in scope
      for the C function in the top frame."))
   (if (> (compustate-frames-number compst) 0)
-      (lookup-var-aux var (frame->scopes (top-frame compst)))
+      (read-var-aux var (frame->scopes (top-frame compst)))
     (error (list :no-var-found-empty-frame-stack (ident-fix var))))
   :hooks (:fix)
 
   :prepwork
-  ((define lookup-var-aux ((var identp) (scopes scope-listp))
+  ((define read-var-aux ((var identp) (scopes scope-listp))
      :returns (result value-resultp)
      (b* (((when (endp scopes)) (error (list :no-var-found (ident-fix var))))
           (scope (car scopes))
           (pair (omap::in (ident-fix var) (scope-fix scope)))
-          ((when (not pair)) (lookup-var-aux var (cdr scopes))))
+          ((when (not pair)) (read-var-aux var (cdr scopes))))
        (cdr pair))
      :hooks (:fix))))
 
@@ -600,7 +600,7 @@
   (xdoc::topstring
    (xdoc::p
     "We read the variable's value (if any) from the computation state."))
-  (lookup-var id compst)
+  (read-var id compst)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
