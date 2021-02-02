@@ -30,6 +30,7 @@
 (include-book "isar/top")
 (include-book "java/top")
 (include-book "json/top")
+(include-book "number-theory/top")
 (include-book "prime-fields/top")
 (include-book "simpl-imp/top")
 (include-book "soft/top")

@@ -104,6 +104,11 @@
                               (unsigned-byte-p size x))))
   (bvnot size x))
 
+(defthm unsigned-byte-p-of-ones-complement
+  (equal (unsigned-byte-p size (ones-complement size x))
+         (natp size))
+  :hints (("Goal" :in-theory (enable ones-complement))))
+
 ;; Converts X, interpreted as a one's complement number, into the integer it
 ;; represents.
 (defund from-ones-complement (size x)
