@@ -2016,3 +2016,76 @@
        (abs-find-file-src (partial-collapse frame path)
                           path)
        (strip-cars (frame->frame (partial-collapse frame path)))))))))
+
+(defthm
+  path-clear-when-prefixp-lemma-1
+  (implies
+   (and
+    (prefixp (frame-val->path (cdr (car frame)))
+             (fat32-filename-list-fix y))
+    (prefixp (fat32-filename-list-fix x)
+             (fat32-filename-list-fix y))
+    (not (prefixp (fat32-filename-list-fix x)
+                  (frame-val->path (cdr (car frame)))))
+    (not (consp (names-at (frame-val->dir (cdr (car frame)))
+                          (nthcdr (len (frame-val->path (cdr (car frame))))
+                                  x)))))
+   (not (consp (names-at (frame-val->dir (cdr (car frame)))
+                         (nthcdr (len (frame-val->path (cdr (car frame))))
+                                 y)))))
+  :hints
+  (("goal"
+    :in-theory (e/d nil
+                    ((:rewrite prefixp-nthcdr-nthcdr)
+                     (:rewrite names-at-when-prefixp)
+                     len-when-prefixp))
+    :use ((:instance (:rewrite names-at-when-prefixp)
+                     (y (nthcdr (len (frame-val->path (cdr (car frame))))
+                                y))
+                     (fs (frame-val->dir (cdr (car frame))))
+                     (x (nthcdr (len (frame-val->path (cdr (car frame))))
+                                x)))
+          (:instance (:rewrite prefixp-nthcdr-nthcdr)
+                     (l2 (fat32-filename-list-fix y))
+                     (l1 (fat32-filename-list-fix x))
+                     (n (len (frame-val->path (cdr (car frame))))))
+          (:instance len-when-prefixp
+                     (x (frame-val->path (cdr (car frame))))
+                     (y (fat32-filename-list-fix y)))))))
+
+(defthm
+  path-clear-when-prefixp-lemma-2
+  (implies (not (consp (names-at (frame-val->dir (cdr (car frame)))
+                                 nil)))
+           (not (consp (names-at (frame-val->dir (cdr (car frame)))
+                                 (nthcdr (len x) y)))))
+  :hints
+  (("goal" :in-theory (e/d (names-at)
+                           ((:rewrite member-of-remove)))
+    :do-not-induct t
+    :expand (names-at (frame-val->dir (cdr (car frame)))
+                      (nthcdr (len x) y))
+    :use (:instance (:rewrite member-of-remove)
+                    (x (strip-cars (frame-val->dir (cdr (car frame)))))
+                    (b nil)
+                    (a (fat32-filename-fix (nth (len x) y)))))))
+
+(defthm
+  path-clear-when-prefixp
+  (implies (and (prefixp (fat32-filename-list-fix x)
+                         (fat32-filename-list-fix y))
+                (path-clear x frame))
+           (path-clear y frame))
+  :hints
+  (("goal"
+    :in-theory (e/d (path-clear)
+                    (len-when-prefixp (:rewrite prefixp-when-equal-lengths))))
+   ("subgoal *1/4'''" :use ((:instance (:rewrite prefixp-when-equal-lengths)
+                                       (y (fat32-filename-list-fix y))
+                                       (x (fat32-filename-list-fix x)))
+                            (:instance len-when-prefixp
+                                       (x (fat32-filename-list-fix x))
+                                       (y (fat32-filename-list-fix y)))
+                            (:instance len-when-prefixp
+                                       (x (fat32-filename-list-fix y))
+                                       (y (fat32-filename-list-fix x)))))))
