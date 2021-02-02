@@ -335,20 +335,23 @@
 (defun def-svtv-data-export-fn (name stobj)
   (Declare (xargs :mode :program))
   (acl2::template-subst
-   '(make-event
-     (b* ((obj (svtv-data-to-obj <stobj>))
-          (events
-           `(progn (define <name> ()
-                     :no-function t
-                     :returns (obj svtv-data-obj-p)
-                     ',obj)
-                   (defthm flatten-validp-of-<name>
-                     (svtv-data-obj->flatten-validp (<name>)))
-                   (in-theory (disable (<name>)))
-                   (defthm <name>-correct
-                     (svtv-data$ap (svtv-data-obj-to-stobj-logic (<name>)))
-                     :hints (("goal" :clause-processor (svtv-data-to-obj-cp clause nil state <stobj>)))))))
-       (mv nil events state <stobj>)))
+   '(with-output :off (event) :stack :push
+      (make-event
+       (b* ((obj (svtv-data-to-obj <stobj>))
+            (events
+             `(progn (define <name> ()
+                       :no-function t
+                       :returns (obj svtv-data-obj-p)
+                       ',obj)
+                     (with-output :stack :pop
+                       (progn
+                         (defthm flatten-validp-of-<name>
+                           (svtv-data-obj->flatten-validp (<name>)))
+                         (in-theory (disable (<name>)))
+                         (defthm <name>-correct
+                           (svtv-data$ap (svtv-data-obj-to-stobj-logic (<name>)))
+                           :hints (("goal" :clause-processor (svtv-data-to-obj-cp clause nil state <stobj>)))))))))
+         (mv nil events state <stobj>))))
    :atom-alist `((<name> . ,name)
                  (<stobj> . ,stobj))
    :str-alist `(("<NAME>" . ,(symbol-name name)))
@@ -521,15 +524,15 @@
 
 (defmacro def-svtv-data-import (name &key hints)
   (b* ((hints (or hints
-                  `(("goal" :use ((:functional-instance (:guard-theorem svtv-data-import-test-svtv-data-obj)
-                                   (test-svtv-data-obj ,name))))))))
+                  `(("goal" :by (:functional-instance (:guard-theorem svtv-data-import-test-svtv-data-obj)
+                                 (test-svtv-data-obj ,name)))))))
     `(make-event
       (acl2::template-subst
        *svtv-data-import-template*
        :atom-alist '((<obj-fn> . ,name)
                      (<hints> . ,hints))
        :str-alist '(("<OBJ-FN>" . ,(symbol-name name)))
-       :pkg-sym 'sv-package))))
+       :pkg-sym ',name))))
 
 (def-svtv-data-import test-svtv-data-obj
   :hints (("goal" :in-theory (enable svtv-data$c-compute-flatten

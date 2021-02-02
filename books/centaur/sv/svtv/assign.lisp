@@ -973,8 +973,8 @@
            (4vec-assigns->netassigns
             (4vec-assigns-to-overrideval-assigns
              (svtv-env-to-4vec-assigns
-              env map)
-             updates)))) 
+              env (make-fast-alist map))
+             (make-fast-alist updates)))))
   ;; (svex-alist-eval-likely-all-quotes
   ;;  (svtv-subst-to-values (svex-env-to-alist env) map updates)
   ;;  nil)
@@ -1365,8 +1365,9 @@
   (b* (((svtv-fsm x)))
     (with-fast-alist x.namemap
       (with-fast-alist x.values
-        (svtv-assignment-to-phase-inputs inputs override-tests
-                                         x.namemap x.values))))
+        (make-fast-alist
+         (svtv-assignment-to-phase-inputs inputs override-tests
+                                          x.namemap x.values)))))
   ///
   (defcong svtv-fsm-eval/namemap-equiv equal (svtv-fsm-env tests map updates) 3))
 
