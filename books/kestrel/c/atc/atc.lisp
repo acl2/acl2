@@ -1525,7 +1525,7 @@
                                    pop-frame
                                    lookup-var
                                    lookup-var-aux
-                                   add-var
+                                   create-var
                                    enter-scope
                                    scope-result-kind
                                    scope-result-ok->get

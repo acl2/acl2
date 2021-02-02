@@ -450,7 +450,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define add-var ((var identp) (val sintp) (compst compustatep))
+(define create-var ((var identp) (val sintp) (compst compustatep))
   :guard (> (compustate-frames-number compst) 0)
   :returns (result compustate-resultp)
   :short "Add a variable to a computation state."
@@ -476,7 +476,7 @@
   :hooks (:fix)
   ///
 
-  (defret compustate-frames-number-of-add-var
+  (defret compustate-frames-number-of-create-var
     (implies (compustate-result-case result :ok)
              (equal (compustate-frames-number
                      (compustate-result-ok->get result))
@@ -485,7 +485,7 @@
     :hints (("Goal" :in-theory (enable compustate-result-kind
                                        compustate-result-ok->get))))
 
-  (defret compustate-scopes-numbers-of-add-var
+  (defret compustate-scopes-numbers-of-create-var
     (implies (compustate-result-case result :ok)
              (equal (compustate-scopes-numbers
                      (compustate-result-ok->get result))
@@ -1066,7 +1066,7 @@
                    (exec-expr decl.init compst fenv (1- limit))))
                (value-result-case
                 init
-                :ok (b* ((new-compst (add-var decl.name init.get compst)))
+                :ok (b* ((new-compst (create-var decl.name init.get compst)))
                       (compustate-result-case
                        new-compst
                        :ok (mv (value-option-result-ok nil) new-compst.get)
