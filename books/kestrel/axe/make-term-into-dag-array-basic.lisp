@@ -114,6 +114,21 @@
   :hints (("Goal" :use (:instance wf-dagp-of-make-term-into-dag-array-basic)
            :in-theory (disable wf-dagp-of-make-term-into-dag-array-basic))))
 
+;; todo
+;; (defthm posp-of-mv-nth-3-of-make-term-into-dag-array-basic
+;;   (implies (and (pseudo-termp term)
+;;                 (symbolp dag-array-name)
+;;                 (symbolp dag-parent-array-name)
+;;                 (interpreted-function-alistp interpreted-function-alist)
+;;                 ;; returns a nodenum, not a quotep:
+;;                 (not (consp (mv-nth 1 (make-term-into-dag-array-basic term dag-array-name dag-parent-array-name interpreted-function-alist))))
+;;                 (not (mv-nth 0 (make-term-into-dag-array-basic term dag-array-name dag-parent-array-name interpreted-function-alist))))
+;;            (posp (mv-nth 3 (make-term-into-dag-array-basic term dag-array-name dag-parent-array-name interpreted-function-alist))))
+;;   :rule-classes (:rewrite :type-prescription)
+;;   :hints (("Goal" :in-theory (enable make-term-into-dag-array-basic
+;;                                      merge-terms-into-dag-array-basic)))
+;; )
+
 ;;;
 ;;; make-term-into-dag-basic
 ;;;
@@ -136,10 +151,14 @@
           (mv (erp-nil) nodenum-or-quotep)
         (mv (erp-nil) (array-to-alist dag-len 'make-term-into-dag-basic-array dag-array))))))
 
+;; todo
 ;; (defthm pseudo-dagp-of-mv-nth-1-of-make-term-into-dag-basic
 ;;   (implies (and (pseudo-termp term)
 ;;                 (interpreted-function-alistp interpreted-function-alist)
-;;                 (not (mv-nth 0 (make-term-into-dag-basic term interpreted-function-alist))))
+;;                 ;; no error:
+;;                 (not (mv-nth 0 (make-term-into-dag-basic term interpreted-function-alist)))
+;;                 ;; returns a dag, not a quotep:
+;;                 (not (quotep (mv-nth 1 (make-term-into-dag-basic term interpreted-function-alist)))))
 ;;            (pseudo-dagp (mv-nth 1 (make-term-into-dag-basic term interpreted-function-alist))))
 ;;   :hints (("Goal" :in-theory (e/d (make-term-into-dag-basic) (natp)))))
 

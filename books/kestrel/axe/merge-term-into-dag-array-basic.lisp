@@ -588,3 +588,57 @@
     :rule-classes :type-prescription
     :flag merge-terms-into-dag-array-basic)
   :hints (("Goal" :in-theory (e/d (merge-term-into-dag-array-basic merge-terms-into-dag-array-basic) (natp)))))
+
+;; zz
+
+;; (local
+;;  (defthm integerp-when-natp
+;;    (implies (natp x)
+;;             (integerp x))))
+
+;; ;; handle the case of a lambda whose body is a var
+;; (defthm-flag-merge-term-into-dag-array-basic
+;;   (defthm mv-nth-3-of-merge-term-into-dag-array-basic-linear-strong
+;;     (implies (and (natp dag-len)
+;;                   (pseudo-termp term)
+;;                   (not (variablep term)) ;note this
+;;                   (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
+;;                   (symbol-alistp var-replacement-alist)
+;;                   (all-dargp-less-than (strip-cdrs var-replacement-alist) dag-len)
+;;                   (interpreted-function-alistp interpreted-function-alist)
+;;                   ;; no error:
+;;                   (not (mv-nth 0 (merge-term-into-dag-array-basic
+;;                                   term
+;;                                   var-replacement-alist
+;;                                   dag-array dag-len dag-parent-array
+;;                                   dag-constant-alist dag-variable-alist
+;;                                   dag-array-name dag-parent-array-name
+;;                                   interpreted-function-alist)))
+;;                   ;; returns a nodenum, not a quotep:
+;;                   (not (consp (mv-nth 1 (merge-term-into-dag-array-basic
+;;                                          term
+;;                                          var-replacement-alist
+;;                                          dag-array dag-len dag-parent-array
+;;                                          dag-constant-alist dag-variable-alist
+;;                                          dag-array-name dag-parent-array-name
+;;                                          interpreted-function-alist)))))
+;;              ;; the length can't be 0 after merging in the term
+;;              (posp (mv-nth 3 (merge-term-into-dag-array-basic
+;;                               term
+;;                               var-replacement-alist
+;;                               dag-array dag-len dag-parent-array
+;;                               dag-constant-alist dag-variable-alist
+;;                               dag-array-name dag-parent-array-name
+;;                               interpreted-function-alist))))
+;;     :flag merge-term-into-dag-array-basic)
+;;   (defthm natp-of-mv-nth-3-of-merge-terms-into-dag-array-basic-linear-strong
+;;     t
+;;     :rule-classes nil
+;;     :flag merge-terms-into-dag-array-basic)
+;;   :hints (("Goal" :in-theory (e/d (;merge-term-into-dag-array-basic
+;;                                    merge-terms-into-dag-array-basic) (natp))
+;;            :expand (MERGE-TERM-INTO-DAG-ARRAY-BASIC TERM var-replacement-alist DAG-ARRAY 0 DAG-PARENT-ARRAY
+;;                                                     DAG-CONSTANT-ALIST DAG-VARIABLE-ALIST
+;;                                                     DAG-ARRAY-NAME DAG-PARENT-ARRAY-NAME
+;;                                                     INTERPRETED-FUNCTION-ALIST)
+;;            )))
