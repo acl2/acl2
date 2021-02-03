@@ -252,7 +252,7 @@
     (the exact number of bits in a byte is also implementation-dependent
     [C:5.2.4.2.1/1] [C:6.2.6.1/3]).
     Under these assumptions, @('int') values must consist of at least 16 bits,
-    resulting in the range from -32768 to +32767 at a minimum.
+    resulting in at least the range from -32768 to +32767.
     [C:6.2.6.1/4] requires @('int') to take a whole number of bytes,
     and thus the possible bit sizes are 16, 24, 32, 40, 48, etc.
     [C:6.2.5/5] states that the size is
