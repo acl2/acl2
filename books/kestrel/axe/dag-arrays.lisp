@@ -2376,3 +2376,29 @@
                 (pseudo-dag-arrayp-list acc dag-array-name dag-array))
            (pseudo-dag-arrayp-list (append-atoms args acc) dag-array-name dag-array))
   :hints (("Goal" :in-theory (enable pseudo-dag-arrayp-list append-atoms all-<))))
+
+(defthm pseudo-dagp-aux-of-array-to-alist-aux
+  (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                (natp n)
+                (<= n dag-len)
+                (pseudo-dagp-aux acc (+ -1 n)))
+           (pseudo-dagp-aux (array-to-alist-aux n dag-len dag-array-name dag-array acc) (+ -1 dag-len)))
+  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+           :in-theory (e/d (array-to-alist-aux
+                            pseudo-dagp-aux)
+                           (bounded-dag-exprp
+                            car-of-car-when-pseudo-dagp-aux)))))
+
+(defthm pseudo-dagp-of-array-to-alist
+  (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                (posp dag-len) ;a pseudo-dag can't be empty
+                )
+           (pseudo-dagp (array-to-alist dag-len dag-array-name dag-array)))
+  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+           :use (:instance pseudo-dagp-aux-of-array-to-alist-aux
+                           (n 0)
+                           (acc nil))
+           :in-theory (e/d (array-to-alist pseudo-dagp)
+                           (car-of-car-when-pseudo-dagp-aux
+                            natp
+                            pseudo-dagp-aux-of-array-to-alist-aux)))))
