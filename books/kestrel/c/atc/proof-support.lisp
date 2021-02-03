@@ -78,11 +78,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defopeners exec-expr
+(defopeners exec-expr-call-or-pure
   :hyps ((syntaxp (quotep e)))
   :disable t)
 
-(add-to-ruleset exec-unfold-rules (defopeners-names exec-expr))
+(add-to-ruleset exec-unfold-rules (defopeners-names exec-expr-call-or-pure))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

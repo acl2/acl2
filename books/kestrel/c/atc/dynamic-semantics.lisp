@@ -994,19 +994,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define exec-expr ((e exprp)
-                     (compst compustatep)
-                     (fenv fun-envp)
-                     (limit natp))
+  (define exec-expr-call-or-pure ((e exprp)
+                                  (compst compustatep)
+                                  (fenv fun-envp)
+                                  (limit natp))
     :returns (mv (result value-resultp)
                  (new-compst compustatep))
     :parents (dynamic-semantics exec)
-    :short "Execute an expression."
+    :short "Execute a function call or a pure expression."
     :long
     (xdoc::topstring
      (xdoc::p
-      "For now we only support function calls with pure expression arguments,
-       and pure expressions.
+      "This is only used for expressions that must be
+       either function calls or pure.
        If the expression is a call, we handle it here.
        Otherwise, we resort to @(tsee exec-expr-pure)."))
     (b* (((when (zp limit)) (mv (error :limit) (compustate-fix compst)))
@@ -1098,21 +1098,20 @@
                    (mv value? (exit-scope compst)))
        :expr (mv (error (list :exec-stmt s)) (compustate-fix compst))
        :null (mv (error (list :exec-stmt s)) (compustate-fix compst))
-       :if (b* (((mv test compst) (exec-expr s.test compst fenv (1- limit))))
+       :if (b* ((test (exec-expr-pure s.test compst)))
              (value-result-case
               test
               :ok (if (sint-nonzerop test.get)
                       (exec-stmt s.then compst fenv (1- limit))
-                    (mv nil compst))
-              :err (mv test.get compst)))
-       :ifelse (b* (((mv test compst)
-                     (exec-expr s.test compst fenv (1- limit))))
+                    (mv nil (compustate-fix compst)))
+              :err (mv test.get (compustate-fix compst))))
+       :ifelse (b* ((test (exec-expr-pure s.test compst)))
                  (value-result-case
                   test
                   :ok (if (sint-nonzerop test.get)
                           (exec-stmt s.then compst fenv (1- limit))
                         (exec-stmt s.else compst fenv (1- limit)))
-                  :err (mv test.get compst)))
+                  :err (mv test.get (compustate-fix compst))))
        :switch (mv (error (list :exec-stmt s)) (compustate-fix compst))
        :while (mv (error (list :exec-stmt s)) (compustate-fix compst))
        :dowhile (mv (error (list :exec-stmt s)) (compustate-fix compst))
@@ -1122,7 +1121,10 @@
        :break (mv (error (list :exec-stmt s)) (compustate-fix compst))
        :return (if (exprp s.value)
                    (b* (((mv retval compst)
-                         (exec-expr s.value compst fenv (1- limit))))
+                         (exec-expr-call-or-pure s.value
+                                                 compst
+                                                 fenv
+                                                 (1- limit))))
                      (value-result-case
                       retval
                       :err (mv retval.get compst)
@@ -1159,7 +1161,7 @@
        item
        :decl (b* (((decl decl) item.get)
                   ((mv init compst)
-                   (exec-expr decl.init compst fenv (1- limit))))
+                   (exec-expr-call-or-pure decl.init compst fenv (1- limit))))
                (value-result-case
                 init
                 :ok (b* ((new-compst (create-var decl.name init.get compst)))
@@ -1203,10 +1205,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (defret-mutual compustate-frames-number-of-exec
-    (defret compustate-frames-number-of-exec-expr
+    (defret compustate-frames-number-of-exec-expr-call-or-pure
       (equal (compustate-frames-number new-compst)
              (compustate-frames-number compst))
-      :fn exec-expr)
+      :fn exec-expr-call-or-pure)
     (defret compustate-frames-number-of-exec-fun
       (equal (compustate-frames-number new-compst)
              (compustate-frames-number compst))
@@ -1226,7 +1228,7 @@
              (compustate-frames-number compst))
       :hyp (> (compustate-frames-number compst) 0)
       :fn exec-block-item-list)
-    :hints (("Goal" :expand ((exec-expr e compst fenv limit)
+    :hints (("Goal" :expand ((exec-expr-call-or-pure e compst fenv limit)
                              (exec-stmt s compst fenv limit)
                              (exec-block-item item compst fenv limit)
                              (exec-block-item-list items compst fenv limit)))))
@@ -1234,10 +1236,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (defret-mutual compustate-scopes-numbers-of-exec
-    (defret compustate-scopes-numbers-of-exec-expr
+    (defret compustate-scopes-numbers-of-exec-expr-call-or-pure
       (equal (compustate-scopes-numbers new-compst)
              (compustate-scopes-numbers compst))
-      :fn exec-expr)
+      :fn exec-expr-call-or-pure)
     (defret compustate-scopes-numbers-of-exec-fun
       (equal (compustate-scopes-numbers new-compst)
              (compustate-scopes-numbers compst))
@@ -1260,14 +1262,14 @@
       :hyp (and (> (compustate-frames-number compst) 0)
                 (> (compustate-top-frame-scopes-number compst) 1))
       :fn exec-block-item-list)
-    :hints (("Goal" :expand ((exec-expr e compst fenv limit)
+    :hints (("Goal" :expand ((exec-expr-call-or-pure e compst fenv limit)
                              (exec-stmt s compst fenv limit)
                              (exec-block-item item compst fenv limit)
                              (exec-block-item-list items compst fenv limit)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (verify-guards exec-expr)
+  (verify-guards exec-stmt)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
