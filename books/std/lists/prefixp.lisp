@@ -148,7 +148,7 @@ the list @('y')."
                     (list-equiv x y)))
     :hints(("Goal" :in-theory (enable prefixp list-equiv))))
 
-  ;; Mihir M. mod: Eight lemmas are added below. prefixp-transitive generates
+  ;; Mihir M. mod: Nine lemmas are added below. prefixp-transitive generates
   ;; two rewrite rules which are identical except in how they bind the free
   ;; variable y; it is similar with prefixp-one-way-or-another and the free
   ;; variable z. In nth-when-prefixp, the rewrite rule is a little less general
@@ -216,4 +216,9 @@ the list @('y')."
                        (take (len x) z))
                 (prefixp y (nthcdr (len x) z))))
     :hints (("goal" :in-theory (enable prefixp)
-             :induct (prefixp x z)))))
+             :induct (prefixp x z))))
+
+  (defthm prefixp-when-prefixp
+    (implies (prefixp y x)
+             (equal (prefixp x y) (list-equiv x y)))
+    :hints (("goal" :in-theory (enable prefixp)))))
