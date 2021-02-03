@@ -198,22 +198,44 @@
        @('(return-last \'acl2::mbe1-raw \'t (if x \'nil \'t))');
        these are the patterns that ATC looks for.")
      (xdoc::li
-      "A term of the form @('(let ((var init)) body)'),
+      "A term of the form @('(let ((var term)) body)'),
        where @('var') is a portable ASCII C identifier
        as defined in Section `Portable ASCII C Identifiers' below,
-       @('init') is an allowed non-boolean term,
+       @('term') is an allowed non-boolean term,
        and @('body') is an allowed outer term.
-       This represents
-       a declaration of a C local variable represented  by @('var'),
-       initialized with the C expression represented by @('init'),
-       and followed by the C code represented by @('body');
-       the C type of the variable is determined from the initializer.
-       The @(tsee let) must have exactly one variable,
-       and its symbol name must be distinct from
-       the symbol names of all the other variables in scope
-       (both function parameters and variables bound in enclosing @(tsee let)s).
+       This represents one of the following:"
+      (xdoc::ul
+       (xdoc::li
+        "A declaration of a C local variable represented by @('var'),
+         initialized with the C expression represented by @('term'),
+         and followed by the C code represented by @('body').
+         The C type of the variable is determined from the initializer.
+         The symbol name of @('var') must be distinct from
+         the symbol names of all the other ACL2 variables in scope
+         (function parameters and variables bound in enclosing @(tsee let)s).")
+       (xdoc::li
+        "An assignment to the C local variable represented by @('var'),
+         with the C expression represented by @('term'),
+         and followed by the C code represented by @('body').
+         This @(tsee let) must be in the scope of
+         an ACL2 variable with the same symbol @('var');
+         while the @('var') in this @(tsee let)
+         is distinct from and shadows the one in scope in ACL2,
+         it represents the same variable in C.
+         In this case, the value bound to the outer @('var') must have
+         the same C type as the value bound to the inner @('var').
+         However, there must be no @(tsee if) ``between''
+         this @(tsee let) and the one of the outer @('var'),
+         i.e. the two variables must be in the same C scope
+         (as represented in ACL2)."))
+      "The two situations are distinguished by whether
+       there is no outer @('var') in scope,
+       in which case the @(tsee let) represents a declaration,
+       or there is one (subject to the scope restriction above),
+       in which case the @(tsee let) represents an assignment.
+       In any case, the @(tsee let) must have exactly one variable.
        In translated terms,
-       @('(let ((var init)) body)') is @('((lambda (var) body) init)');
+       @('(let ((var term)) body)') is @('((lambda (var) body) term)');
        this is the pattern that ATC looks for."))
 
     (xdoc::p
