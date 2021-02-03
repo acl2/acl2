@@ -91,6 +91,33 @@
              (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)))
   :hints (("Goal" :in-theory (enable make-term-into-dag-array-basic))))
 
+(defthm pseudo-dag-arrayp-after-make-term-into-dag-array-basic
+  (implies (and (pseudo-termp term)
+                (symbolp dag-array-name)
+                (symbolp dag-parent-array-name)
+                (interpreted-function-alistp interpreted-function-alist)
+                (not (mv-nth 0 (make-term-into-dag-array-basic term dag-array-name dag-parent-array-name interpreted-function-alist))))
+           (pseudo-dag-arrayp dag-array-name
+                              (mv-nth 2 (make-term-into-dag-array-basic term dag-array-name dag-parent-array-name interpreted-function-alist))
+                              (mv-nth 3 (make-term-into-dag-array-basic term dag-array-name dag-parent-array-name interpreted-function-alist))))
+  :hints (("Goal" :use (:instance wf-dagp-of-make-term-into-dag-array-basic)
+           :in-theory (disable wf-dagp-of-make-term-into-dag-array-basic))))
+
+(defthm natp-of-mv-nth-3-of-make-term-into-dag-array-basic
+  (implies (and (pseudo-termp term)
+                (symbolp dag-array-name)
+                (symbolp dag-parent-array-name)
+                (interpreted-function-alistp interpreted-function-alist)
+                (not (mv-nth 0 (make-term-into-dag-array-basic term dag-array-name dag-parent-array-name interpreted-function-alist))))
+           (natp (mv-nth 3 (make-term-into-dag-array-basic term dag-array-name dag-parent-array-name interpreted-function-alist))))
+  :rule-classes (:rewrite :type-prescription)
+  :hints (("Goal" :use (:instance wf-dagp-of-make-term-into-dag-array-basic)
+           :in-theory (disable wf-dagp-of-make-term-into-dag-array-basic))))
+
+;;;
+;;; make-term-into-dag-basic
+;;;
+
 ;; Returns (mv erp dag-or-quotep).  Returns the DAG as a list but uses arrays to do the work.
 (defund make-term-into-dag-basic (term interpreted-function-alist)
   (declare (xargs :guard (and (pseudo-termp term)
@@ -108,6 +135,13 @@
       (if (consp nodenum-or-quotep)
           (mv (erp-nil) nodenum-or-quotep)
         (mv (erp-nil) (array-to-alist dag-len 'make-term-into-dag-basic-array dag-array))))))
+
+;; (defthm pseudo-dagp-of-mv-nth-1-of-make-term-into-dag-basic
+;;   (implies (and (pseudo-termp term)
+;;                 (interpreted-function-alistp interpreted-function-alist)
+;;                 (not (mv-nth 0 (make-term-into-dag-basic term interpreted-function-alist))))
+;;            (pseudo-dagp (mv-nth 1 (make-term-into-dag-basic term interpreted-function-alist))))
+;;   :hints (("Goal" :in-theory (e/d (make-term-into-dag-basic) (natp)))))
 
 ;; Returns (mv erp dag-or-quotep).  Returns the DAG as a list but uses arrays to do the work.
 ;; This wrapper has no invariant risk because it has a guard of t.
