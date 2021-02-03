@@ -67,9 +67,10 @@
 
   "@('fns') is @('fn1...fnp') or a suffix of it."
 
-  "@('vars') is an alist from ACL2 variable symbols to C types.
+  "@('vars') is a list of alists from ACL2 variable symbols to C types.
    These are the variables in scope
-   for the ACL2 term whose code is being generated.
+   for the ACL2 term whose code is being generated,
+   organized in nested scopes from innermost to outermost.
    This is like a symbol table for ACL2's representation of the C code."
 
   "@('prec-fns') is an alist from ACL2 function symbols to C types.
@@ -396,8 +397,10 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "These are essentially symbol tables
-     for ACL2's representation of the C code."))
+    "These represent scopes in the symbol tables for variables.")
+   (xdoc::p
+    "These also represent symbol tables for functions:
+     they associate output types to function symbols."))
   :key (symbolp x)
   :val (typep x)
   :true-listp t
@@ -412,37 +415,68 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-get-var ((var symbolp) (vars atc-symbol-type-alistp))
-  :returns (type? type-optionp :hyp (atc-symbol-type-alistp vars))
-  :short "Obtain the type of a variable from the symbol table."
-  :long
-  (xdoc::topstring-p
-   "Return @('nil') if the variable is not in scope.")
-  (cdr (assoc-eq var vars)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-add-var ((var symbolp) (type typep) (vars atc-symbol-type-alistp))
-  :returns (new-vars atc-symbol-type-alistp :hyp :guard)
-  :short "Add a variable with a type to the symbol table."
-  (acons var type vars))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-var-newp ((var symbolp) (vars atc-symbol-type-alistp))
-  :returns (yes/no booleanp)
-  :short "Check if a variable is not already in the symbol table."
+(std::deflist atc-symbol-type-alist-listp (x)
+  :short "Recognize lists of alists from symbols to types."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We do not just check that the symbol is not in the table:
-     we check that the table has no variable
-     whose @(tsee symbol-name) is the same as the one of @('var').
+    "These represent symbol tables.
+     The @(tsee car) is the innermost scope."))
+  (atc-symbol-type-alistp x)
+  :true-listp t
+  :elementp-of-nil t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-get-var ((var symbolp) (vars atc-symbol-type-alist-listp))
+  :returns (type? type-optionp :hyp (atc-symbol-type-alist-listp vars))
+  :short "Obtain the type of a variable from the symbol table."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We look through the scopes, from innermost to outermost.
+     Actually, currently it is an invariant that the scopes are disjoint,
+     so any lookup order would give the same result.")
+   (xdoc::p
+    "Return @('nil') if the variable is not in scope."))
+  (if (endp vars)
+      nil
+    (or (cdr (assoc-eq var (car vars)))
+        (atc-get-var var (cdr vars)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-add-var ((var symbolp)
+                     (type typep)
+                     (vars atc-symbol-type-alist-listp))
+  :returns (new-vars atc-symbol-type-alist-listp :hyp :guard)
+  :short "Add a variable with a type to the symbol table."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is added to the innermost scope.
+     The symbol table has always at least one scope."))
+  (cons (acons var type (car vars))
+        (cdr vars)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-var-newp ((var-name stringp) (vars atc-symbol-type-alist-listp))
+  :returns (yes/no booleanp)
+  :short "Check if a variable name is not already in the symbol table."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We check that no variable in the table
+     has the given string as @(tsee symbol-name).
      This is because the package name of ACL2 symbols
      is ignored for the purpose of representing C variables:
      only the symbol name is used,
      and thus all the symbol names must be distinct."))
-  (not (member-equal (symbol-name var) (symbol-name-lst (strip-cars vars)))))
+  (or (endp vars)
+      (and (not (member-equal var-name
+                              (symbol-name-lst (strip-cars (car vars)))))
+           (atc-var-newp var-name (cdr vars)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -656,7 +690,7 @@
      and for allowed boolean terms (which are always pure)."))
 
   (define atc-gen-expr-pure-nonbool ((term pseudo-termp)
-                                     (vars atc-symbol-type-alistp)
+                                     (vars atc-symbol-type-alist-listp)
                                      (fn symbolp)
                                      ctx
                                      state)
@@ -807,7 +841,7 @@
                      fn term)))))
 
   (define atc-gen-expr-bool ((term pseudo-termp)
-                             (vars atc-symbol-type-alistp)
+                             (vars atc-symbol-type-alist-listp)
                              (fn symbolp)
                              ctx
                              state)
@@ -905,7 +939,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-expr-pure-nonbool-list ((terms pseudo-term-listp)
-                                        (vars atc-symbol-type-alistp)
+                                        (vars atc-symbol-type-alist-listp)
                                         (fn symbolp)
                                         ctx
                                         state)
@@ -934,7 +968,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-expr-nonbool ((term pseudo-termp)
-                              (vars atc-symbol-type-alistp)
+                              (vars atc-symbol-type-alist-listp)
                               (fn symbolp)
                               (prec-fns atc-symbol-type-alistp)
                               ctx
@@ -1022,7 +1056,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-stmt ((term pseudo-termp)
-                      (vars atc-symbol-type-alistp)
+                      (vars atc-symbol-type-alist-listp)
                       (fn symbolp)
                       (prec-fns atc-symbol-type-alistp)
                       ctx
@@ -1125,7 +1159,7 @@
                          the LET variable ~x1 of the function ~x2 ~
                          must be a portable ASCII C identifier, but it is not."
                         var-name var fn))
-             ((unless (atc-var-newp var vars))
+             ((unless (atc-var-newp var-name vars))
               (er-soft+ ctx t (list nil (irr-type))
                         "When generating C code for the function ~x0, ~
                          the LET variable ~x1 has the same symbol name as ~
@@ -1253,7 +1287,7 @@
                                  state)
   :returns (mv erp
                (val (tuple (params param-decl-listp)
-                           (vars atc-symbol-type-alistp)
+                           (vars atc-symbol-type-alist-listp)
                            val))
                state)
   :short "Generate a list of C parameter declarations
@@ -1261,17 +1295,19 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Also generate an alist from the formal parameters to their C types."))
-  (b* (((when (endp formals)) (value (list nil nil)))
+    "Also generate an initial symbol table,
+     consisting of a single scope
+     that maps the formal parameters to their C types."))
+  (b* (((when (endp formals)) (value (list nil (list nil))))
        (formal (mbe :logic (acl2::symbol-fix (car formals))
                     :exec (car formals)))
        ((when (member-equal (symbol-name formal)
                             (symbol-name-lst (cdr formals))))
         (er-soft+ ctx t (list nil nil)
                   "The formal parameter ~x0 of the function ~x1 ~
-                   has the same symbol name as ~
-                   another formal parameter among ~x2; ~
-                   this is disallowed, even if the package names differ."
+                      has the same symbol name as ~
+                      another formal parameter among ~x2; ~
+                      this is disallowed, even if the package names differ."
                   formal fn (cdr formals)))
        ((mv erp (list param type) state) (atc-gen-param-decl formal
                                                              fn
@@ -1287,14 +1323,11 @@
                                                          ctx
                                                          state)))
     (value (list (cons param params)
-                 (acons formal type vars))))
+                 (atc-add-var formal type vars))))
 
   :verify-guards nil ; done below
   ///
-  (verify-guards atc-gen-param-decl-list
-    :hints
-    (("Goal"
-      :in-theory (enable alistp-when-atc-symbol-type-alistp-rewrite))))
+  (verify-guards atc-gen-param-decl-list)
 
   (more-returns
    (val true-listp :rule-classes :type-prescription)))
