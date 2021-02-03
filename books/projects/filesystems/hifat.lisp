@@ -466,12 +466,6 @@
                                             (set-equiv (intersection-equal y x)
                                                        x))))))
 
-;; Move to community books later.
-(defthm prefixp-when-prefixp
-  (implies (prefixp y x)
-           (equal (prefixp x y) (list-equiv x y)))
-  :hints (("goal" :in-theory (enable prefixp))))
-
 (defthmd
   painful-debugging-lemma-14
   (implies (not (zp cluster-size))
