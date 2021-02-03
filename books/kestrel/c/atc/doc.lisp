@@ -165,6 +165,7 @@
       allowed non-boolean terms,
       allowed pure non-boolean terms,
       and allowed boolean terms.")
+
     (xdoc::p
      "An <i>allowed outer term</i> is
       inductively defined as one of the following:")
@@ -214,6 +215,7 @@
        In translated terms,
        @('(let ((var init)) body)') is @('((lambda (var) body) init)');
        this is the pattern that ATC looks for."))
+
     (xdoc::p
      "An <i>allowed non-boolean term</i> is
       inductively defined as one of the following:")
@@ -228,6 +230,7 @@
        and the target functions must be specified
        in a topological order of their call graph.
        This represents a call of the corresponding C function."))
+
     (xdoc::p
      "An <i>allowed pure non-boolean term</i> is
       inductively defined as one of the following:")
@@ -305,6 +308,7 @@
        @('(mbt$ x)') is
        @('(return-last \'acl2::mbe1-raw \'t (if x \'nil \'t))');
        these are the patterns that ATC looks for."))
+
     (xdoc::p
      "An <i>allowed boolean term</i> is
       inductively defined as one of the following:")
@@ -327,6 +331,7 @@
        In translated terms, @('(and x y)') and @('(or x y)') are
        @('(if x y \'nil)') and @('(or x x y)'):
        these are the patterns that ATC looks for."))
+
     (xdoc::p
      "Allowed outer terms represent C statements,
       while allowed non-boolean and boolean terms represent C expressions;
