@@ -69,7 +69,8 @@
 
   "@('vars') is an alist from ACL2 variable symbols to C types.
    These are the variables in scope
-   for the ACL2 term whose code is being generated."
+   for the ACL2 term whose code is being generated.
+   This is like a symbol table for ACL2's representation of the C code."
 
   "@('prec-fns') is an alist from ACL2 function symbols to C types.
    The function symbols are the ones in @('fn1...fnp') that precede,
@@ -392,6 +393,11 @@
 
 (std::defalist atc-symbol-type-alistp (x)
   :short "Recognize alists from symbols to types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are essentially symbol tables
+     for ACL2's representation of the C code."))
   :key (symbolp x)
   :val (typep x)
   :true-listp t
@@ -403,6 +409,23 @@
     (implies (and (atc-symbol-type-alistp x)
                   (assoc-equal k x))
              (typep (cdr (assoc-equal k x))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-get-var ((var symbolp) (vars atc-symbol-type-alistp))
+  :returns (type? type-optionp :hyp (atc-symbol-type-alistp vars))
+  :short "Obtain the type of a variable from the symbol table."
+  :long
+  (xdoc::topstring-p
+   "Return @('nil') if the variable is not in scope.")
+  (cdr (assoc-eq var vars)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-add-var ((var symbolp) (type typep) (vars atc-symbol-type-alistp))
+  :returns (new-vars atc-symbol-type-alistp :hyp :guard)
+  :short "Add a variable with a type to the symbol table."
+  (acons var type vars))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -669,14 +692,13 @@
        We could extend this code to provide
        more information to the user at some point."))
     (b* (((when (acl2::variablep term))
-          (b* ((var+type (assoc-eq term vars))
-               ((when (not var+type))
+          (b* ((type (atc-get-var term vars))
+               ((when (not type))
                 (raise "Internal error: the variable ~x0 in function ~x1 ~
                         has no associated type." term fn)
-                (value (list (irr-expr) (irr-type))))
-               (type (type-fix (cdr var+type))))
+                (value (list (irr-expr) (irr-type)))))
             (value (list (expr-ident (make-ident :name (symbol-name term)))
-                         type))))
+                         (type-fix type)))))
          ((mv okp val) (atc-check-sint-const term))
          ((when okp)
           (value
@@ -1101,7 +1123,7 @@
                               :name (make-ident :name (symbol-name var))
                               :init init-expr))
              (item (block-item-decl decl))
-             (vars (acons var init-type vars))
+             (vars (atc-add-var var init-type vars))
              ((er (list body-items body-type))
               (atc-gen-stmt body vars fn prec-fns ctx state)))
           (value
