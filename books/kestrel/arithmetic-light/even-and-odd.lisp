@@ -142,3 +142,21 @@
 ;;                  (LOGBITP 31 (* X Y))))
 ;;  :hints (("Goal" :do-not '(generalize eliminate-destructors)
 ;;           :in-theory (enable logbitp bvchop mod))))
+
+(defthmd integerp-of-*-of-1/2-when-evenp
+  (implies (evenp i)
+           (integerp (* 1/2 i)))
+  :hints (("Goal" :in-theory (enable evenp))))
+
+(defthm integerp-of-*-of-1/2-when-evenp-cheap
+  (implies (evenp i)
+           (integerp (* 1/2 i)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable evenp))))
+
+(defthmd integerp-of-*-of-1/2-becomes-evenp
+  (equal (integerp (* 1/2 x))
+         (evenp x))
+  :hints (("Goal" :in-theory (enable evenp))))
+
+(theory-invariant (incompatible (:rewrite integerp-of-*-of-1/2-becomes-evenp) (:definition evenp)))

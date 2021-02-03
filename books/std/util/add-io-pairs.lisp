@@ -322,18 +322,17 @@
  <p>The error message explains how to allow the @(tsee include-book) to
  complete without error, merging in all I/O pairs from the current session and
  included books by wrapping it in a call of the macro, @(tsee merge-io-pairs),
- whose first argument is @('fn').  So a typical sequence of events might look
- like this.</p>
+ whose first argument is @('fn').  So a sequence of events might look like
+ this.</p>
 
  @({
  (defun f (x)
    (declare (xargs :guard t))
    (cons x x))
- (add-io-pair (f 3) '(3 . 3))
+ (include-book \"book1\") ; has calls of add-io-pair(s) for f
  (merge-io-pairs
    f
-   (include-book \"foo\") ; has calls of add-io-pair(s) for f
-   (include-book \"bar\") ; has calls of add-io-pair(s) for f
+   (include-book \"book2\") ; has calls of add-io-pair(s) for f
    )
  })
 
@@ -1127,18 +1126,16 @@
        (ctx caller)
        ((when (not (equal old-entry current-entry)))
         (b* ((book (car (global-val 'include-book-path wrld)))
-             (str  "ACL2 has encountered a call of ~x0 on function symbol ~
+             (str  "ACL2 is encountering a call of ~x0 on function symbol ~
                     ~#2~[~x1 while attempting to include the book ~
                     ~x3.~|~/~x1.  ~]But the existing list of I/O pairs for ~
-                    ~x1 was different ~@4.  See :DOC merge-io-pairs for how ~
-                    to avoid this ~@5.")
+                    ~x1 is different from ~@4.  See :DOC merge-io-pairs for ~
+                    how to avoid this ~@5.")
              (num2 (if book 0 1))
              (str4 (if book
-                       "at include-book time from what it had been at ~
-                        certify-book time"
-                     "at that point from what it had been previously at that ~
-                      point (perhaps during the first pass of an encapsulate ~
-                      event)")))
+                       "when that book was being certified"
+                     "what it was previously at that point (perhaps during ~
+                      the first pass of an encapsulate event)")))
           (with-output!
             :on (error warning)
             (case lenience
