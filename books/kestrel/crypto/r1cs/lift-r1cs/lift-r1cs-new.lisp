@@ -116,7 +116,8 @@
                                                                     mul
                                                                     neg
                                                                     add
-                                                                    pfield::pos-fix)
+                                                                    pfield::pos-fix
+                                                                    pfield::fep)
                                                                   (w state))
                            monitor
                            memoizep
