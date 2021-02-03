@@ -75,6 +75,7 @@
                             ;; it is a boolor, so get disjuncts from the arguments:
                             (b* (((mv erp provedp acc dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
                                   ;;todo: why do we handle arg2 first?
+                                  ;; TODO: Should this call be the tail call?
                                   (get-disjuncts (darg2 expr) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                  acc
                                                  nil ;negated-flg
