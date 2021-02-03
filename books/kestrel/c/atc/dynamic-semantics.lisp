@@ -1025,6 +1025,47 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+  (define exec-expr-asg ((e exprp)
+                         (compst compustatep)
+                         (fenv fun-envp)
+                         (limit natp))
+    :returns (new-compst compustate-resultp)
+    :parents (dynamic-semantics exec)
+    :short "Execute an assignment expression."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This is only used for expressions that must be assgnments,
+       whose left subexpression is a variable
+       and whose right subexpression is a function call or pure;
+       this is what we support for now.")
+     (xdoc::p
+      "We allow these assignment expressions
+       as the expressions of expression statements.
+       Thus, we discard the value of the assignment
+       (which is the value written to the variable);
+       this ACL2 function just returns an updated computation state."))
+    (b* (((when (zp limit)) (error :limit))
+         ((unless (expr-case e :binary))
+          (error (list :expr-asg-not-binary (expr-fix e))))
+         (op (expr-binary->op e))
+         (left (expr-binary->arg1 e))
+         (right (expr-binary->arg2 e))
+         ((unless (binop-case op :asg))
+          (error (list :expr-asg-not-asg op)))
+         ((unless (expr-case left :ident))
+          (error (list :expr-asg-left-not-var left)))
+         (var (expr-ident->get left))
+         ((mv val compst)
+          (exec-expr-call-or-pure right compst fenv (1- limit))))
+      (value-result-case
+       val
+       :err val.get
+       :ok (write-var var val.get compst)))
+    :measure (nfix limit))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (define exec-fun ((fun identp)
                     (args value-listp)
                     (compst compustatep)
@@ -1084,6 +1125,9 @@
      (xdoc::p
       "For now we only support the execution of certain statements.")
      (xdoc::p
+      "We only allow, and in fact require,
+       assignment expressions in expression statements.")
+     (xdoc::p
       "For a compound statement (i.e. a block),
        we enter a new (empty) scope prior to executing the block items,
        and we exit that scope after executing the block items."))
@@ -1096,7 +1140,10 @@
                       ((mv value? compst)
                        (exec-block-item-list s.items compst fenv (1- limit))))
                    (mv value? (exit-scope compst)))
-       :expr (mv (error (list :exec-stmt s)) (compustate-fix compst))
+       :expr (b* ((compst/error (exec-expr-asg s.get compst fenv (1- limit)))
+                  ((when (errorp compst/error))
+                   (mv compst/error (compustate-fix compst))))
+               (mv nil compst/error))
        :null (mv (error (list :exec-stmt s)) (compustate-fix compst))
        :if (b* ((test (exec-expr-pure s.test compst)))
              (value-result-case
@@ -1209,6 +1256,11 @@
       (equal (compustate-frames-number new-compst)
              (compustate-frames-number compst))
       :fn exec-expr-call-or-pure)
+    (defret compustate-frames-number-of-exec-expr-asg
+      (implies (compustatep new-compst)
+               (equal (compustate-frames-number new-compst)
+                      (compustate-frames-number compst)))
+      :fn exec-expr-asg)
     (defret compustate-frames-number-of-exec-fun
       (equal (compustate-frames-number new-compst)
              (compustate-frames-number compst))
@@ -1240,6 +1292,11 @@
       (equal (compustate-scopes-numbers new-compst)
              (compustate-scopes-numbers compst))
       :fn exec-expr-call-or-pure)
+    (defret compustate-scopes-numbers-of-exec-expr-asg
+      (implies (compustatep new-compst)
+               (equal (compustate-scopes-numbers new-compst)
+                      (compustate-scopes-numbers compst)))
+      :fn exec-expr-asg)
     (defret compustate-scopes-numbers-of-exec-fun
       (equal (compustate-scopes-numbers new-compst)
              (compustate-scopes-numbers compst))

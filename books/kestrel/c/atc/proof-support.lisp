@@ -86,6 +86,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defopeners exec-expr-asg
+  :hyps ((syntaxp (quotep e)))
+  :disable t)
+
+(add-to-ruleset exec-unfold-rules (defopeners-names exec-expr-asg))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defopeners exec-fun
   :hyps ((syntaxp (quotep fun)))
   :disable t)

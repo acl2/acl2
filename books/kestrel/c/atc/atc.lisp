@@ -1509,6 +1509,7 @@
                                    exec-stmt
                                    exec-block-item
                                    exec-block-item-list
+                                   exec-expr-asg
                                    exec-expr-call-or-pure
                                    exec-expr-pure
                                    exec-expr-pure-list
