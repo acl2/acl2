@@ -1092,7 +1092,9 @@
      (as a singleton block item list),
      with recursively generated compound statements as branches;
      the test expression is generated from the test term;
-     we ensure that the two branches have the same type.")
+     we ensure that the two branches have the same type.
+     When we process the branches,
+     we extend the symbol table with a new empty scope for each branch.")
    (xdoc::p
     "If the term is a @(tsee let),
      we first check that a variable with the same symbol name
@@ -1123,13 +1125,13 @@
                                                           state))
              ((when erp) (mv erp (list nil (irr-type)) state))
              ((er (list then-items then-type)) (atc-gen-stmt then
-                                                             vars
+                                                             (cons nil vars)
                                                              fn
                                                              prec-fns
                                                              ctx
                                                              state))
              ((er (list else-items else-type)) (atc-gen-stmt else
-                                                             vars
+                                                             (cons nil vars)
                                                              fn
                                                              prec-fns
                                                              ctx
