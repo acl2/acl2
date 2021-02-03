@@ -23,7 +23,7 @@
 ;;; wf-dagp ("well-formed DAG")
 ;;;
 
-;; TODO: Strengthen to say that the dag-parent-array, dag-constant-alist, and dag-variable-alist are actually correct.
+;; TODO: Strengthen to say that the dag-parent-array is actually correct.
 (defund wf-dagp (dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
   (declare (xargs :guard t))
   (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
