@@ -58,8 +58,7 @@
      since we use the rules in a symbolic execution,
      we expect that the simplification will take place there.")
    (xdoc::p
-    "We generate openers for the mutually recursive execution functions
-     @(tsee exec-expr) and companions.")
+    "We generate openers for the mutually recursive execution functions.")
    (xdoc::p
     "It seems to be a general heuristic that opener rules are needed
      for symbolic execution when there are mutually recursive calls.
