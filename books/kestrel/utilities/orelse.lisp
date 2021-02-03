@@ -5,7 +5,7 @@
 (in-package "ACL2")
 
 (include-book "xdoc/top" :dir :system)
-(include-book "kestrel/utilities/user-interface" :dir :system)
+(include-book "kestrel/event-macros/fail-event" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
 
 (defxdoc orelse
@@ -241,12 +241,9 @@
 ; Below is alternate code that takes advantage of the existing implementation
 ; of try-event.  It seems to me that the code above is a bit simpler; plus, it
 ; avoids some potential circularity in books, since as things are now, this
-; "orelse" book includes the "user-interface" book, which in turn might include
-; "orelse" some day since it defines try-event, which generates a call of
-; orelse.
+; "orelse" book is included by the "try-event" book.
 
 #||
-(include-book "kestrel/utilities/user-interface" :dir :system)
 
 (defmacro on-failure (event &optional (erp 't) val str &rest fmt-args)
 

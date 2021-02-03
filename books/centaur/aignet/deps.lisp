@@ -101,8 +101,8 @@
   (defthm depends-on-of-fanin
     (implies (and (not (depends-on id ci-id aignet))
                   (equal (ctype (stype (car (lookup-id id aignet)))) (gate-ctype)))
-             (and (not (depends-on (lit->var (fanin :gate0 (lookup-id id aignet))) ci-id aignet))
-                  (not (depends-on (lit->var (fanin :gate1 (lookup-id id aignet))) ci-id aignet)))))
+             (and (not (depends-on (lit->var (fanin 0 (lookup-id id aignet))) ci-id aignet))
+                  (not (depends-on (lit->var (fanin 1 (lookup-id id aignet))) ci-id aignet)))))
 
   (defthm depends-on-of-id-fix
     (equal (depends-on (aignet-id-fix id aignet) ci-id aignet)

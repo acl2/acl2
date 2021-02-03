@@ -15,7 +15,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defpkg "JAVA" (append (set-difference-eq *std-pkg-symbols*
-                                          '(pointers
+                                          '(package-name
+                                            pointers
                                             values))
                        '(*nil*
                          *pkg-witness-name*
@@ -41,6 +42,7 @@
                          char-downcase
                          char-upcase
                          chars=>nats
+                         check-if-call
                          check-lambda-call
                          check-list-call
                          check-mv-let-call
@@ -49,21 +51,24 @@
                          cons-listp
                          cons-pos-alistp
                          define-sk
+                         defmacro+
+                         defthm-commutative
+                         deftutorial
                          defxdoc+
                          doublets-to-alist
                          dumb-occur-var-open
                          dumb-occur-var-open-lst
-                         ensure-boolean$
                          ensure-doublet-list$
-                         ensure-function-name$
                          ensure-function-name-list$
                          ensure-list-functions$
-                         ensure-list-no-duplicates$
-                         ensure-member-of-list$
-                         ensure-string$
+                         ensure-list-has-no-duplicates$
                          ensure-string-or-nil$
-                         ensure-term$
                          ensure-term-ground$
+                         ensure-value-is-boolean$
+                         ensure-value-is-function-name$
+                         ensure-value-is-in-list$
+                         ensure-value-is-string$
+                         ensure-value-is-untranslated-term$
                          er-soft+
                          explode
                          fargn
@@ -103,6 +108,7 @@
                          maybe-stringp
                          msg-listp
                          mvify
+                         nat
                          nats=>string
                          no-stobjs-p
                          number-of-results+
@@ -114,11 +120,13 @@
                          patbind-fun
                          patbind-run-unless
                          patbind-run-when
+                         pos
                          pos-listp
                          primitivep
                          printable-charlist-p
                          program-fns-with-raw-code
                          pseudo-fn-args-p
+                         pseudo-fn-p
                          pseudo-lambda
                          pseudo-lambda->body
                          pseudo-lambda->formals
@@ -129,10 +137,16 @@
                          pseudo-term-call->fn
                          pseudo-term-case
                          pseudo-term-count
+                         pseudo-term-equiv
                          pseudo-term-fix
+                         pseudo-term-fncall
+                         pseudo-term-fncall->args
+                         pseudo-term-fncall->fn
                          pseudo-term-kind
-                         pseudo-term-lambda->formals
+                         pseudo-term-lambda
+                         pseudo-term-lambda->args
                          pseudo-term-lambda->body
+                         pseudo-term-lambda->formals
                          pseudo-term-list-count
                          pseudo-term-null
                          pseudo-term-quote
@@ -152,14 +166,18 @@
                          remove-progn
                          remove-trivial-vars
                          remove-unused-vars
-                         sbyte16
-                         sbyte16p
-                         sbyte32
-                         sbyte32p
-                         sbyte64
-                         sbyte64p
                          sbyte8
                          sbyte8p
+                         sbyte8-listp
+                         sbyte16
+                         sbyte16p
+                         sbyte16-listp
+                         sbyte32
+                         sbyte32p
+                         sbyte32-listp
+                         sbyte64
+                         sbyte64p
+                         sbyte64-listp
                          sort-symbol-listp
                          str-fix
                          string-downcase
@@ -173,6 +191,7 @@
                          symbol-pos-alistp
                          symbol-string-alistp
                          symbol-symbol-alistp
+                         symbol-symbollist-alistp
                          symbol-package-name-lst
                          table-alist+
                          tail-recursive-p
@@ -185,6 +204,7 @@
                          ubyte8
                          ubyte16
                          ubyte16p
+                         ubyte16-listp
                          ubyte8=>hexchars
                          ubyte8s=>hexstring
                          uguard

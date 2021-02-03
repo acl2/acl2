@@ -1,5 +1,5 @@
-; ACL2 Version 8.2 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2019, Regents of the University of Texas
+; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2020, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -547,8 +547,7 @@
                 state
               (mv-let (col state)
                       (fmt1 "++++++++++++++++++++++++++++++~%"
-                            (list (cons #\0 increment))
-                            0 channel state nil)
+                            nil 0 channel state nil)
                       (declare (ignore col))
                       state))
             (format-proof-tree
@@ -1898,6 +1897,21 @@
              (push-timer 'print-time 0 state)
              (push-timer 'proof-tree-time 0 state)
              (push-warning-frame state))))))
+
+(defun clear-warning-summaries-alist (alist)
+
+; Delete every entry in alist whose key is string-equal to a member of
+; *tracked-warning-summaries*.
+
+  (cond
+   ((endp alist) nil)
+   ((and (stringp (car (car alist)))
+         (standard-string-p (car (car alist)))
+         (member-string-equal (car (car alist))
+                              *tracked-warning-summaries*))
+    (clear-warning-summaries-alist (cdr alist)))
+   (t (cons (car alist)
+            (clear-warning-summaries-alist (cdr alist))))))
 
 (defun print-warnings-summary (state)
   (mv-let
@@ -3568,6 +3582,8 @@
   (cond
    ((null wrld) ; see initial call of set-w in enter-boot-strap-mode
     state)
+   ((active-useless-runes state) ; then we already updated
+    state)
    (t
     (let* ((augmented-theory (global-val 'current-theory-augmented wrld))
            (ens (f-get-global 'global-enabled-structure state))
@@ -3857,12 +3873,12 @@
             iprint-fal            ;;; see just above
             iprint-soft-bound     ;;; see just above
             iprint-hard-bound     ;;; see just above
+            trace-co              ;;; see just above
+            trace-specs           ;;; see just above
             show-custom-keyword-hint-expansion
-            trace-specs                ;;; keep in sync with functions that are
-;;;   actually traced, e.g. trace! macro
             timer-alist                ;;; preserve accumulated summary info
             main-timer                 ;;; preserve accumulated summary info
-            verbose-theory-warning     ;;; for warning on disabled mv-nth etc.
+            verbose-theory-warning     ;;; warn if disabling a *bbody-alist* key
             pc-ss-alist                ;;; for saves under :instructions hints
             last-step-limit            ;;; propagate step-limit past expansion
             illegal-to-certify-message ;;; needs to persist past expansion
@@ -3884,6 +3900,8 @@
 
             deferred-ttag-notes       ;;; see comment immediately above
             deferred-ttag-notes-saved ;;; see comment immediately above
+
+            certify-book-info         ;;; need effect from with-useless-runes
 
 ; The following two are protected a different way; see
 ; protect-system-state-globals.
@@ -4029,8 +4047,16 @@
 ; Uterm is an untranslated term with an output signature of * or (mv * *
 ; state).  We translate it and eval it under alist (after extending alist with
 ; state bound to the current state) and return the resulting error triple or
-; signal a translate or evaluation error.  We restore the world and certain
-; state globals (*protected-system-state-globals*) after the evaluation.
+; signal a translate or evaluation error.
+
+; We restore the world and certain state globals
+; (*protected-system-state-globals*) after the evaluation, by using
+; protect-system-state-globals below.  Be sure not to change that protection
+; without considering the consequences; in particular, make-event expansion
+; relies on this restoration (via protected-eval, which calls
+; protect-system-state-globals), as do proof-builder macro commands.  Without
+; that protection we expect that unsoundness or bad errors could arise during
+; book certification.
 
 ; If trans-flg is nil, we do not translate.  We *assume* uterm is a
 ; single-threaded translated term with output signature (mv * * state)!
@@ -4743,6 +4769,17 @@
           (,condition ,form)
           (t (value wrld))))))))
 
+(defun skip-proofs-due-to-system (state)
+
+; This utility returns true when we are skipping proofs because the system
+; insists on that, but not because of any user action that is taken to skip
+; proofs.  Normally we can just check state global 'skip-proofs-by-system.
+; However, without the first disjunct below, we fail to pick up a skip-proofs
+; during the Pcertify step of provisional certification.
+
+  (and (not (f-get-global 'inside-skip-proofs state))
+       (f-get-global 'skip-proofs-by-system state)))
+
 (defun install-event (val form ev-type namex ttree cltl-cmd
                           chk-theory-inv-p ctx wrld state)
 
@@ -4864,13 +4901,14 @@
 
 ; Comment on irrelevance of skip-proofs:
 
-; The following event types do not generate any proof obligations, so for these
-; it is irrelevant whether or not proofs are skipped.  Do not include defaxiom,
-; or any other event that can have a :corollary rule class, since that can
-; generate a proof obligation.  Also do not include encapsulate; even though it
-; takes responsibility for setting skip-proofs-seen based on its first pass,
-; nevertheless it does not account for a skip-proofs surrounding the
-; encapsulate.  Finally, do not include defattach; the use of (skip-proofs
+; The following event types do not generate any proof obligations that can be
+; skipped, so for these, there is no point in storing whether proofs have been
+; skipped (either in the event tuple or in skip-proofs-seen).  Do not include
+; defaxiom, or any other event that can have a :corollary rule class, since
+; that can generate a proof obligation.  Also do not include encapsulate; even
+; though it takes responsibility for setting skip-proofs-seen based on its
+; first pass, nevertheless it does not account for a skip-proofs surrounding
+; the encapsulate.  Finally, do not include defattach; the use of (skip-proofs
 ; (defattach f g)) can generate bogus data in world global
 ; 'proved-functional-instances-alist that can be used to prove nil later.
 
@@ -4890,22 +4928,7 @@
                                     reset-prehistory
                                     set-body
                                     table)))
-
-; We include the following test so that we can distinguish between the
-; user-specified skipping of proofs and legitimate skipping of proofs by the
-; system, such as including a book.  Without the disjunct below, we fail to
-; pick up a skip-proofs during the Pcertify step of provisional certification.
-; Perhaps someday there will be other times a user-supplied skip-proofs form
-; triggers setting of 'skip-proofs-seen even when 'skip-proofs-by-system is
-; true; if that turns out to be too aggressive, we'll think about this then,
-; but for now, we are happy to be conservative, making sure that
-; skip-proofs-seen is set whenever we are inside a call of skip-proofs.
-
-
-                  (or (f-get-global 'inside-skip-proofs state)
-                      (not (f-get-global 'skip-proofs-by-system
-                                         state)))))
-
+                  (not (skip-proofs-due-to-system state))))
             (wrld2 (cond
                     ((and skipped-proofs-p
                           (let ((old (global-val 'skip-proofs-seen wrld)))
@@ -13059,15 +13082,19 @@
 ; The speci-expr is the term expressing the type spec, not the type spec
 ; itself, e.g., (INTEGERP v1) not INTEGER.
 
-; This is harder than you might think because we have to dig the vars and
-; type-specs out of the LAMBDA objects!
+; Note that the vi and speci we return are phrased in terms of the actual
+; symbols used in the loop$ statement, not the formal(s) of the lambda object
+; in the first argument of the scion-term, i.e., the v in (loop$ for v of-type
+; (satisfies foop) on (tails lst) collect ...)  not the loop$-ivar in '(lambda
+; (loop$-ivar) (let ((v loop$-ivar)) ...)).  So we have to dig into the
+; translated lambda object.
 
-; Note that to recover the targets we have to dig down through UNTIL and WHEN
-; terms.  I.e., the :plain scion-term corresponding to a loop$ might be: (sum$
-; ... (when$ ... (until$ ... target))).  Since every LAMBDA object in the nest
-; of loop$ scions includes the same type specs, we could get these triplets
-; from the innermost term rather than the outermost but it seems slightly
-; simpler to do it this way.
+; In addition, to recover the targets we have to dig down through UNTIL and
+; WHEN terms.  I.e., the :plain scion-term corresponding to a loop$ might be:
+; (sum$ ... (when$ ... (until$ ... target))).  Since every LAMBDA object in the
+; nest of loop$ scions includes the same type specs, we could get these
+; triplets from the innermost term rather than the outermost but it seems
+; slightly simpler to do it this way.
 
 ; Keep this function in sync with both make-plain-loop$-lambda-object and
 ; make-fancy-loop$-lambda-object!
@@ -13123,16 +13150,33 @@
            (fn (unquote (fargn scion-term 1))))
       (mv-let (style vars type-spec-exprs)
         (case-match fn
-          (('LAMBDA (var) ('DECLARE . edcls) &)
-           (let ((type-spec (assoc-eq 'type edcls)))
+          (('LAMBDA ('LOOP$-IVAR)
+                    ('DECLARE . edcls)
+                    ('RETURN-LAST ''PROGN
+                                  ('QUOTE ('LAMBDA$ ('LOOP$-IVAR) . &))
+                                  (('LAMBDA (var) &) 'LOOP$-IVAR)))
+
+; All :plain loop$s translate a scion call on a lambda object matching the
+; pattern above, where the original iteration variable is var.  The edcls
+; either contains a (TYPE spec LOOP$-IVAR) entry or it doesn't.  If it does,
+; the recovered type expression, produced by get-guards2, is expressed in terms
+; of LOOP$-IVAR and we need it to be in terms of var.  Recall that get-guards2
+; returns a list of pseudo-terms which are not necessarily fully translated,
+; but it is legal to perform a subst-var-lst on these pseudo-terms, as per the
+; comment in translate-declaration-to-guard1-gen.
+
+           (let ((type-spec (assoc-eq 'TYPE edcls)))
              (cond (type-spec
                     (mv :plain
                         (list var)
-                        (list (conjoin (get-guards2 `(,type-spec) '(types)
-                                                    t wrld nil nil)))))
+                        (list (conjoin
+                               (subst-var-lst
+                                var
+                                'loop$-ivar
+                                (get-guards2 `(,type-spec)
+                                             '(types)
+                                             t wrld nil nil))))))
                    (t (mv :plain (list var) (list *t*))))))
-          (('LAMBDA (var) . &)
-           (mv :plain (list var) (list *t*)))
           (('LAMBDA '(LOOP$-GVARS LOOP$-IVARS)
                     ('DECLARE ('XARGS ':GUARD & ':SPLIT-TYPES 'T) . &)
                     ('RETURN-LAST
@@ -13141,15 +13185,18 @@
                      (('LAMBDA loop$-gvars-and-loop$-ivars
                                optionally-marked-body)
                       . &)))
-; Note: The type specs in a translated fancy LAMBDA object do not appear in
-; DECLARE forms!  Instead, they are coded as CHECK-DCL-GUARDIAN expressions
-; because they appear in a translated LET.  So we need a different way to
-; collect them.  See recover-type-spec-exprs.
+
+; All :fancy loop$s translate to a scion call on a lambda object matching the
+; pattern above. The type specs in a translated fancy LAMBDA object do not
+; appear in DECLARE forms!  Instead, they are coded as CHECK-DCL-GUARDIAN
+; expressions because they appear in a translated LET.  So we need a different
+; way to collect them.  See recover-type-spec-exprs.
 
 ; Loop$-gvars-and-loop$-ivars is a list of symbols like (G1 G2 G3 L1 L2) where
 ; the Gi are the (three, in this case) global variables involved in this lambda
-; and the Li are the (two) local variables.  We need to recover the names (L1
-; L2) and we don't know how many globals there are, but we can figure it out!
+; and the Li are the (two) local variables.  We need to recover the names local
+; variables, (L1 L2), because they are the original iteration variables.  We
+; don't know how many globals there are, but we can figure it out!
 
            (cond
             ((<= n (length loop$-gvars-and-loop$-ivars))
@@ -13198,11 +13245,15 @@
 ;        (loop$ for x of-type (and integer (satisfies evenp)) in lst collect x)))
 ;      (test4
 ;       (tester
-;        (loop$ for x of-type integer in xlst as y in ylst collect (list x y))))
+;        (loop$ for x of-type (and integer (satisfies evenp)) in lst
+;               collect :guard (< x 45) x)))
 ;      (test5
 ;       (tester
-;        (loop$ for x in xlst as y of-type integer in ylst collect (list x y))))
+;        (loop$ for x of-type integer in xlst as y in ylst collect (list x y))))
 ;      (test6
+;       (tester
+;        (loop$ for x in xlst as y of-type integer in ylst collect (list x y))))
+;      (test7
 ;       (tester
 ;        (loop$ for x of-type symbol in xlst
 ;               as y of-type integer in ylst
@@ -13210,7 +13261,7 @@
 ;               as z of-type rational in zlst
 ;               when (> y z)
 ;               collect :guard (> u (+ y z)) (list x y u z a b c))))
-;      (test7
+;      (test8
 ;       (tester
 ;        (loop$ for x of-type (and symbol (not (satisfies null))) in xlst
 ;               as y of-type (and integer (satisfies evenp)) in ylst
@@ -13218,28 +13269,31 @@
 ;               as z of-type (and rational (satisfies posp)) in zlst
 ;               when (> y z)
 ;               collect :guard (> u (+ y z)) (list x y u z a b c)))))
-;   (value (and (equal test1 '((X 'T LST)))
-;               (equal test2 '((X (INTEGERP X) LST)))
-;               (equal test3
-;                      '((X (IF (INTEGERP X) (EVENP X) 'NIL)
-;                           LST)))
-;               (equal test4
-;                      '((X (INTEGERP X) XLST) (Y 'T YLST)))
-;               (equal test5
-;                      '((X 'T XLST) (Y (INTEGERP Y) YLST)))
-;               (equal test6
-;                      '((X (SYMBOLP X) XLST)
-;                        (Y (INTEGERP Y) YLST)
-;                        (U 'T ULST)
-;                        (Z (RATIONALP Z) ZLST)))
-;               (equal test7
-;                      '((X (IF (SYMBOLP X) (NOT (NULL X)) 'NIL)
-;                           XLST)
-;                        (Y (IF (INTEGERP Y) (EVENP Y) 'NIL)
-;                           YLST)
-;                        (U 'T ULST)
-;                        (Z (IF (RATIONALP Z) (POSP Z) 'NIL)
-;                           ZLST))))))
+;   (value (list (equal test1 '((X 'T LST)))
+;                (equal test2 '((X (INTEGERP X) LST)))
+;                (equal test3
+;                       '((X (IF (INTEGERP X) (EVENP X) 'NIL)
+;                            LST)))
+;                (equal test4
+;                       '((X (IF (INTEGERP X) (EVENP X) 'NIL)
+;                            LST)))
+;                (equal test5
+;                       '((X (INTEGERP X) XLST) (Y 'T YLST)))
+;                (equal test6
+;                       '((X 'T XLST) (Y (INTEGERP Y) YLST)))
+;                (equal test7
+;                       '((X (SYMBOLP X) XLST)
+;                         (Y (INTEGERP Y) YLST)
+;                         (U 'T ULST)
+;                         (Z (RATIONALP Z) ZLST)))
+;                (equal test8
+;                       '((X (IF (SYMBOLP X) (NOT (NULL X)) 'NIL)
+;                            XLST)
+;                         (Y (IF (INTEGERP Y) (EVENP Y) 'NIL)
+;                            YLST)
+;                         (U 'T ULST)
+;                         (Z (IF (RATIONALP Z) (POSP Z) 'NIL)
+;                            ZLST))))))
 
 (defun special-loop$-guard-clauses-c2 (clause var type-expr target)
 ; See special-loop$-guard-clauses-c.
@@ -14945,18 +14999,25 @@
   (cons 'iff ; expanded in tautologyp
         *expandable-boot-strap-non-rec-fns*))
 
-(defun new-disables (theory-tail runic-theory ens wrld)
+(defun new-disables (theory-tail runic-theory exception ens wrld)
 
-; This function returns a subset of theory-tail in the same order.  Do not
-; change the order without consulting the case in
-; translate-in-theory-hint(@par) for "disable all primitive functions".
+; This function returns the base-symbols of runes in theory-tail that are
+; enabled with respect to ens, other than the given exception.  Exception may
+; be nil, in which case of course there will be no such exception, as noted in
+; the comment below.
 
   (cond ((endp theory-tail) nil)
         ((and (enabled-runep (car theory-tail) ens wrld)
               (not (member-equal (car theory-tail) runic-theory)))
-         (cons (car theory-tail)
-               (new-disables (cdr theory-tail) runic-theory ens wrld)))
-        (t (new-disables (cdr theory-tail) runic-theory ens wrld))))
+         (let ((sym (base-symbol (car theory-tail))))
+           (if (eq sym exception) ; fails if exception is nil
+               (new-disables (cdr theory-tail) runic-theory
+                             exception ens wrld)
+             (cons sym
+                   (new-disables (cdr theory-tail) runic-theory
+                                 exception ens wrld)))))
+        (t (new-disables (cdr theory-tail) runic-theory
+                         exception ens wrld))))
 
 (defun some-new-disables-1 (theory-tail runic-theory ens wrld)
 
@@ -15033,9 +15094,10 @@
                    (getpropc 'definition-minimal-theory 'theory
                              nil ; so, returns nil early in boot-strap
                              wrld))
+                 (exception (and (not (simplifiable-mv-nth-p)) 'mv-nth))
                  (new-disables
-                  (new-disables definition-minimal-theory runic-value ens
-                                wrld)))
+                  (new-disables definition-minimal-theory runic-value
+                                exception ens wrld)))
             (cond
              (new-disables
               (warning$ ctx ("Theory")
@@ -15045,10 +15107,10 @@
                            some expansions of ~#0~[its~/their~] calls may ~
                            still occur.  See :DOC theories-and-primitives."
                           (:doc theories-and-primitives)
-                          (:new-disables ,(strip-base-symbols new-disables))
+                          (:new-disables ,new-disables)
                           (:rule-class :definition)
                           (:theory-expression ,expr))
-                        (strip-base-symbols new-disables)
+                        new-disables
                         expr))
              (t state)))
           (let* ((executable-counterpart-minimal-theory
@@ -15058,7 +15120,7 @@
                             wrld))
                  (new-disables
                   (new-disables executable-counterpart-minimal-theory
-                                runic-value ens wrld)))
+                                runic-value nil ens wrld)))
             (cond
              (new-disables
               (warning$ ctx ("Theory")
@@ -15069,10 +15131,10 @@
                            ~#0~[its~/their~] calls may still occur.  See :DOC ~
                            theories-and-primitives."
                           (:doc theories-and-primitives)
-                          (:new-disables ,(strip-base-symbols new-disables))
+                          (:new-disables ,new-disables)
                           (:rule-class :executable-counterpart)
                           (:theory-expression ,expr))
-                        (strip-base-symbols new-disables)
+                        new-disables
                         expr))
              (t state)))
 
@@ -15175,9 +15237,10 @@
                   (getpropc 'definition-minimal-theory 'theory
                             nil ; so, returns nil early in boot-strap
                             wrld))
+                (exception (and (not (simplifiable-mv-nth-p)) 'mv-nth))
                 (new-disables
-                 (new-disables definition-minimal-theory runic-value ens
-                               wrld)))
+                 (new-disables definition-minimal-theory runic-value
+                               exception ens wrld)))
            (cond
             (new-disables
              (warning$@par ctx ("Theory")
@@ -15187,10 +15250,10 @@
                   ~#0~[its~/their~] calls may still occur.  See :DOC ~
                   theories-and-primitives."
                  (:doc theories-and-primitives)
-                 (:new-disables ,(strip-base-symbols new-disables))
+                 (:new-disables ,new-disables)
                  (:rule-class :definition)
                  (:theory-expression ,expr))
-               (strip-base-symbols new-disables)
+               new-disables
                expr))
             (t nil)))
          (let* ((executable-counterpart-minimal-theory
@@ -15200,7 +15263,7 @@
                            wrld))
                 (new-disables
                  (new-disables executable-counterpart-minimal-theory
-                               runic-value ens wrld)))
+                               runic-value nil ens wrld)))
            (cond
             (new-disables
              (warning$@par ctx ("Theory")
@@ -15210,10 +15273,10 @@
                   of ~#0~[its~/their~] calls may still occur.  See :DOC ~
                   theories-and-primitives."
                  (:doc theories-and-primitives)
-                 (:new-disables ,(strip-base-symbols new-disables))
+                 (:new-disables ,new-disables)
                  (:rule-class :executable-counterpart)
                  (:theory-expression ,expr))
-               (strip-base-symbols new-disables)
+               new-disables
                expr))
             (t nil)))
 
@@ -16823,25 +16886,28 @@
                               ctx wrld state)))
                            (cond
 
-; Hint-settings is of the form ((:key1 . val1) ...(:keyn . valn)).
-; If :key1 is :OR, we know n=1; translated :ORs always occur as
-; singletons.  But in ((:OR . val1)), val1 is always
-; (((key . val) ...) ... ), i.e., is a list of alists.
-; If there is only one alist in that list, then we're dealing
-; with an :OR with only one disjunct.
+; Hint-settings is of the form ((:key1 . val1) ...(:keyn . valn)).  If :key1 is
+; :OR, we know n=1; translated :ORs always occur as singletons.  But in ((:OR
+; . val1)), val1 is always a list of pairs.  If there is only one pair in that
+; list, then we're dealing with an :OR with only one disjunct: hint-settings is
+; of the form ((:OR (orig . hint-settings2))), where orig is what the user
+; typed (see translate-or-hint).
 
                             ((and (consp hint-settings)
                                   (eq (caar hint-settings) :OR)
                                   (consp (cdr (car hint-settings)))
                                   (null (cddr (car hint-settings))))
 
-; This is a singleton :OR.  We just drop the :OR.
+; This is a singleton :OR, as above.  We just drop the :OR and the "orig" shown
+; above to obtain the "hint-settings2" shown above.
 
                              (assert$
                               (null (cdr hint-settings))
                               (value@par
-                               (cons cl-id
-                                     (car (cdr (car hint-settings)))))))
+                               (let* ((pair ; (orig . hint-settings2)
+                                       (cadr (car hint-settings)))
+                                      (hint-settings2 (cdr pair)))
+                                 (cons cl-id hint-settings2)))))
                             (t (value@par
                                 (cons cl-id hint-settings))))))))))))))))))))
 )
@@ -17551,10 +17617,6 @@
            (declare (ignore col))
            (value ':invisible)))
 
-(defrec certify-book-info
-  (full-book-name cert-op . include-book-phase)
-  nil) ; could replace with t sometime
-
 (defun active-book-name (wrld state)
 
 ; This returns the full book name (an absolute pathname ending in .lisp) of the
@@ -17939,18 +18001,6 @@
                                                    include-bookp ctx
                                                    state))))))
 
-(defun chk-acceptable-ttags (vals include-bookp ctx wrld state)
-
-; See chk-acceptable-ttag1 for a description of the value returned based on the
-; current book being included (if any), the value of state global
-; 'tags-allowed, and the value of world global 'ttags-seen.
-
-  (chk-acceptable-ttags1 vals
-                         (active-book-name wrld state)
-                         (f-get-global 'ttags-allowed state)
-                         (global-val 'ttags-seen wrld)
-                         include-bookp ctx state))
-
 ; Next we handle the table event.  We formerly did this in other-events.lisp,
 ; but in v2-9 we moved it here, in order to avoid a warning in admitting
 ; add-pc-command-1 that the *1* function for table-fn is undefined.
@@ -17988,6 +18038,19 @@
         "Illegal attempt to set the include-book-dir!-table.  This can only ~
          be done by calling ~v0."
         '(add-include-book-dir! delete-include-book-dir!)))
+   ((and (eq name 'puff-included-books)
+         (not (f-get-global 'modifying-include-book-dir-alist state)))
+
+; It's a bit of a hack (maybe a major hack) to use
+; modifying-include-book-dir-alist as a way of supporting the use of the
+; puff-included-books table when checking redundancy of include-book events.
+; But that works well; it's not used for very much else, it's set to t while
+; using :puff, and anyhow :puff is really a hack too.  This way we avoid adding
+; yet another state global.
+
+    (er soft ctx
+        "Illegal attempt to set the puff-included-books table.  This can only ~
+         be done by calling :puff or :puff*."))
    (t (let ((term (getpropc name 'table-guard *t* wrld)))
         (er-progn
          (mv-let
@@ -17996,8 +18059,11 @@
               (list (cons 'key key)
                     (cons 'val val)
                     (cons 'world wrld)
-                    (cons 'ens ens))
-              state nil nil
+                    (cons 'ens ens)
+		    (cons 'state (coerce-state-to-object state)))
+              state
+              (list (cons 'state (coerce-state-to-object state)))
+              nil
 
 ; We need aokp to be true; otherwise defwarrant can run into the following
 ; problem.  The function badge-table-guard calls badger, which can call
@@ -18071,6 +18137,24 @@
   (st$c . logic-exec-pairs)
   t)
 
+(defun cltl-def-memoize-partial (fn total wrld)
+
+; Fn and total are function symbols, where we expect that with respect to the
+; Essay on Memoization with Partial Functions (Memoize-partial), fn plays the
+; role of the Common Lisp function fn1 to be used for computing the limiting
+; value of the ACL2 function (with a "limit" or "clock" argument), fn0-limit.
+; Thus, we are supporting an event (memoize fn :total total) or
+; (memoize-partial (... (fn total ...) ...) ...).  This function returns the
+; definition of total associated with fn in the table, partial-functions-table,
+; or nil if there is no associated definition.
+
+  (let* ((recp (getpropc total 'recursivep nil wrld))
+         (table-key (car recp))
+         (tuples (cdr (assoc-eq table-key
+                                (table-alist 'partial-functions-table wrld))))
+         (tuple (assoc-eq fn tuples)))
+    (car (last tuple))))
+
 (defun table-cltl-cmd (name key val op ctx wrld)
 
 ; WARNING: For the case that name is 'memoize-table, keep this in sync with
@@ -18130,12 +18214,15 @@
                                          (not (eq condition-fn t))
                                          (cltl-def-from-name condition-fn
                                                              wrld)))
-                     (condition (or (eq condition-fn t) ; hence t
-                                    (car (last condition-def))))) ; maybe nil
+                     (condition (or (eq condition-fn t)          ; hence t
+                                    (car (last condition-def)))) ; maybe nil
+                     (total (cdr (assoc-eq :total val))))
                 `(memoize ,key ; fn
                           ,condition
                           ,(cdr (assoc-eq :inline val))
-                          ,(cltl-def-from-name key wrld) ; cl-defun
+                          ,(if total
+                               (cltl-def-memoize-partial key total wrld)
+                             (cltl-def-from-name key wrld)) ; cl-defun
                           ,(getpropc key 'formals t wrld) ; formals
                           ,(getpropc key 'stobjs-in t wrld) ; stobjs-in
                           ,(getpropc key 'stobjs-out t
@@ -18153,7 +18240,8 @@
                           ,(cdr (assoc-eq :forget val))
                           ,(cdr (assoc-eq :memo-table-init-size val))
                           ,(cdr (assoc-eq :aokp val))
-                          ,(cdr (assoc-eq :stats val)))))
+                          ,(cdr (assoc-eq :stats val))
+                          ,(cdr (assoc-eq :invoke val)))))
              (t `(unmemoize ,key))))
       #+hons
       (badge-table *special-cltl-cmd-attachment-mark*)
@@ -18194,13 +18282,33 @@
             (er-progn
              (chk-table-nil-args :put term '(5) ctx state)
              (cond
-              ((and old-pair (equal val (cdr old-pair)))
+              ((and (or old-pair
+                        (eq name 'memoize-table)) ; see :doc redundant-events
+                    (equal val (cdr old-pair)))
                (stop-redundant-event ctx state))
               (t (er-let*
                      ((pair (chk-table-guard name key val ctx wrld ens state))
+                      (wrld0 (value
+                              (cond
+                               ((eq name 'puff-included-books)
+                                (global-set
+                                 'include-book-alist
+
+; This setting is for use in the implementation of :puff, where the
+; puff-included-books table records books that have been puffed.  We could
+; consider setting 'include-book-alist-all as well, but since that is only used
+; for certification and one can't certify on a puffled world, we don't bother.
+; (If that changes, then be careful that val is also the right tuple to push
+; onto the global value of 'include-book-alist-all.)
+
+                                 (cons val
+                                       (global-val 'include-book-alist
+                                                   wrld))
+                                 wrld))
+                               (t wrld))))
                       (wrld1 (cond
                               ((null pair)
-                               (value wrld))
+                               (value wrld0))
                               (t (let ((ttags-allowed1 (car pair))
                                        (ttags-seen1 (cdr pair)))
                                    (pprogn (f-put-global 'ttags-allowed
@@ -18209,7 +18317,7 @@
                                            (value (global-set?
                                                    'ttags-seen
                                                    ttags-seen1
-                                                   wrld
+                                                   wrld0
                                                    (global-val 'ttags-seen
                                                                wrld)))))))))
                    (install-event
@@ -18285,15 +18393,16 @@
                                  (or key val)
                                  (cond (key '(2)) (t '(3)))
                                  ctx state)
-             (er-let* ((tterm (translate term '(nil) nil nil ctx wrld state)))
+             (er-let* ((tterm (translate term '(nil) nil '(state) ctx wrld
+                                         state)))
 
-; known-stobjs = nil.  No variable is treated as a stobj in tterm.  But below
-; we check that the only vars mentioned are KEY, VAL, WORLD, and ENS.  These
-; could, in principle, be declared stobjs by the user.  But when we ev tterm in
-; the future, we will always bind them to non-stobjs.
+; Known-stobjs includes only STATE.  No variable other than STATE is treated
+; as a stobj in tterm.  Below we check that the only vars mentioned besides
+; STATE are KEY, VAL, WORLD, and ENS.  These could, in principle, be declared
+; stobjs by the user.  But when we ev tterm in the future, we will always bind
+; them to non-stobjs.
 
-                      (let ((old-guard
-                             (getpropc name 'table-guard nil wrld)))
+                      (let ((old-guard (getpropc name 'table-guard nil wrld)))
                         (cond
                          ((equal old-guard tterm)
                           (stop-redundant-event ctx state))
@@ -18319,7 +18428,7 @@
                                non-empty table ~x0.  See :DOC table."
                               name))
                          (t
-                          (let ((legal-vars '(key val world ens))
+                          (let ((legal-vars '(key val world ens state))
                                 (vars (all-vars tterm)))
                             (cond ((not (subsetp-eq vars legal-vars))
                                    (er soft ctx
@@ -18464,4 +18573,3 @@
    (er-progn
     (table-fn 'default-hints-table (list :override (kwote new)) state nil)
     (table-fn 'default-hints-table (list :override) state nil))))
-

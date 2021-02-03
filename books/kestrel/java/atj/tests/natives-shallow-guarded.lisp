@@ -12,7 +12,7 @@
 
 (include-book "natives")
 
-(include-book "../types-for-natives")
+(include-book "../atj" :ttags (:open-output-channel! :oslib :quicklisp :quicklisp.osicat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -52,6 +52,7 @@
            nonnegative-integer-quotient
            string-append
            len
+           char
            :deep nil
            :guards t
            :java-class "NativesShallowGuarded"

@@ -32,7 +32,7 @@
 (in-package "OSLIB")
 (include-book "std/util/define" :dir :system)
 (include-book "std/strings/cat" :dir :system)
-(local (include-book "misc/assert" :dir :system))
+(local (include-book "std/testing/assert-bang" :dir :system))
 
 (define catpath ((basedir stringp
                           "Directory whose name should be extended, which may

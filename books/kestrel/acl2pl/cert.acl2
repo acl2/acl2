@@ -1,0 +1,15 @@
+; ACL2 Programming Language Library
+;
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Alessandro Coglio (coglio@kestrel.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(include-book "portcullis")
+
+; Added by Matt K. 6/28/2020 to avoid ACL2(r) failure for proof of guard
+; conjecture for eval-complex, file primitive-functions.lisp.
+; cert_param: (non-acl2r)

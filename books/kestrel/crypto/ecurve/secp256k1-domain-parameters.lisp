@@ -12,6 +12,10 @@
 
 (in-package "ECURVE")
 
+(include-book "kestrel/crypto/primes/secp256k1-field-prime" :dir :system)
+(acl2::merge-io-pairs
+ rtl::primep
+ (include-book "kestrel/crypto/primes/secp256k1-group-prime" :dir :system))
 (include-book "std/util/define" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
@@ -42,37 +46,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define secp256k1-prime ()
-  :short "The prime @($p$) of the field of the curve."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is @($2^{256} - 2^{32} - 2^9 - 2^8 - 2^7 - 2^6 - 2^4 - 1$).")
-   (xdoc::p
-    "SEC 2 lists it as ")
-   (xdoc::codeblock
-    "FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFE FFFFFC2F"))
-  #xfffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f
-  :no-function t
-  ///
-
-  (assert-event (posp (secp256k1-prime)))
-
-  (assert-event (equal (integer-length (secp256k1-prime)) 256))
-
-  (assert-event (equal (secp256k1-prime)
-                       (- (- (- (- (- (- (- (expt 2 256) (expt 2 32))
-                                         (expt 2 9))
-                                      (expt 2 8))
-                                   (expt 2 7))
-                                (expt 2 6))
-                             (expt 2 4))
-                          1)))
-
-  (in-theory (disable (:e secp256k1-prime))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define secp256k1-a ()
   :short "The coefficient @($a$) of the curve."
   :long
@@ -89,7 +62,7 @@
 
   (assert-event (natp (secp256k1-a)))
 
-  (assert-event (< (secp256k1-a) (secp256k1-prime)))
+  (assert-event (< (secp256k1-a) (secp256k1-field-prime)))
 
   (in-theory (disable (:e secp256k1-a))))
 
@@ -111,7 +84,7 @@
 
   (assert-event (natp (secp256k1-b)))
 
-  (assert-event (< (secp256k1-b) (secp256k1-prime)))
+  (assert-event (< (secp256k1-b) (secp256k1-field-prime)))
 
   (in-theory (disable (:e secp256k1-b))))
 
@@ -134,7 +107,7 @@
 
   (assert-event (natp (secp256k1-generator-x)))
 
-  (assert-event (< (secp256k1-generator-x) (secp256k1-prime)))
+  (assert-event (< (secp256k1-generator-x) (secp256k1-field-prime)))
 
   (in-theory (disable (:e secp256k1-generator-x))))
 
@@ -157,29 +130,9 @@
 
   (assert-event (natp (secp256k1-generator-y)))
 
-  (assert-event (< (secp256k1-generator-y) (secp256k1-prime)))
+  (assert-event (< (secp256k1-generator-y) (secp256k1-field-prime)))
 
   (in-theory (disable (:e secp256k1-generator-y))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define secp256k1-order ()
-  :short "The order @($n$) of the group of the curve."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "SEC 2 lists it as")
-   (xdoc::codeblock
-    "FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFE BAAEDCE6 AF48A03B BFD25E8C D0364141"))
-  #xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141
-  :no-function t
-  ///
-
-  (assert-event (posp (secp256k1-order)))
-
-  (assert-event (equal (integer-length (secp256k1-order)) 256))
-
-  (in-theory (disable (:e secp256k1-order))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

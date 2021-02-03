@@ -1,6 +1,6 @@
 ; APT (Automated Program Transformations) Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -10,7 +10,8 @@
 
 (in-package "APT")
 
-(include-book "kestrel/utilities/error-checking/top" :dir :system)
+(include-book "kestrel/error-checking/def-error-checker" :dir :system)
+(include-book "std/util/defenum" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -30,7 +31,8 @@
 
 (def-error-checker ensure-is-print-specifier
   ((x "Value to check."))
-  "Cause an error if a value is not a print specifier."
+  :short "Cause an error if a value is not a print specifier."
+  :body
   (((print-specifier-p x)
     "~@0 must be a print specifier.  See :DOC APT::PRINT-SPECIFIER."
     description)))

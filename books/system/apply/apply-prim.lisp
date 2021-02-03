@@ -25,13 +25,14 @@
 
 ; The books on books/system/ are critical to the construction of the released
 ; version of ACL2 because they address certain bootstrapping problems.  See the
-; discussion of *system-verify-guards-alist* in boot-strap-pass-2-b.lisp.  But,
-; roughly put, during bootstrapping some functions cannot be admitted in logic
-; mode or cannot have their guards verified because the requisite logical
-; machinery (e.g., lexicographic relations) does not exist yet.  Such functions
-; are therefore admitted initially in :PROGRAM mode and then magically upgraded
-; to guard-verified :LOGIC mode at the very end of the bootstrapping process.
-; The books on books/system/ address the question ``Is the magic right?''
+; comment in ACL2 sources constant *system-verify-guards-alist* or see :DOC
+; verify-guards-for-system-functions.  But, roughly put, during bootstrapping
+; some functions cannot be admitted in logic mode or cannot have their guards
+; verified because the requisite logical machinery (e.g., lexicographic
+; relations) does not exist yet.  Such functions are therefore admitted
+; initially in :PROGRAM mode and then magically upgraded to guard-verified
+; :LOGIC mode at the very end of the bootstrapping process.  The books on
+; books/system/ address the question ``Is the magic right?''
 
 ; The books address that question by introducing the definitions of the
 ; relevant functions, identical to the definitions in the source code but in
@@ -79,6 +80,8 @@
 ; that these files exactly match the foundational work on apply$.
 
 (in-package "ACL2")
+
+(include-book "apply-prim-support")
 
 ; We locally re-enable runes that were disabled during the build.
 (local (in-theory (enable apply$-primp badge-prim)))
@@ -145,7 +148,9 @@
               (implies (hons-get fn alist)
                        (and (consp (hons-get fn alist))
                             (apply$-badgep (cdr (hons-get fn alist)))
-                            (eq (access apply$-badge (cdr (hons-get fn alist)) :ilks) t))))
+                            (eq (access apply$-badge (cdr (hons-get fn alist))
+                                        :ilks)
+                                t))))
      :rule-classes nil))
 
   (defthm badge-prim-type
@@ -276,6 +281,11 @@
 ;              (apply$-prim-meta-fn-ev (meta-apply$-prim term) alist))
 ;       :hints (("Goal" :in-theory (disable (:executable-counterpart break$))))
 ;       :rule-classes ((:meta :trigger-fns (apply$-prim)))))
+
+    (local
+     (defthm hide-is-identity
+       (equal (hide x) x)
+       :hints (("Goal" :expand ((hide x))))))
 
     (defthm apply$-prim-meta-fn-correct
       (equal (apply$-prim-meta-fn-ev term alist)

@@ -189,7 +189,7 @@
 ; badge for russell and the fact:
 
 ;   (tamep-functionp (car args))
-;  --> 
+;  -->
 ;   (apply$-userfn 'russell args) = (russell (car args) (cadr args))
 
 ; So to use the warrant we must prove (tamep-functionp (car '(russell
@@ -352,7 +352,7 @@
   (implies (and (force (ok-fnp fn))
                 (all (collect lst fn) 'ACL2-NUMBERP))
            (equal (foldr lst `(LAMBDA (X Y)
-                                (IF (EQUAL Y 'NIL) 
+                                (IF (EQUAL Y 'NIL)
                                     (,fn X)
                                     (MAX (,fn X) Y)))
                          nil)
@@ -467,7 +467,7 @@
 
 ; Now we illustrate some G2 functions we cannot warrant.
 
-(include-book "misc/eval" :dir :system)
+(include-book "std/testing/must-fail" :dir :system)
 
 ; We insist that if the function is justified with a natural number measure
 ; then the relation must be O<.
@@ -545,6 +545,3 @@
 ; we can warrant that function.
 
 (defwarrant bad-g2-fn3)
-
-
-

@@ -1,0 +1,5 @@
+(ENSURE-VALUE-IS-TRUE-LIST)
+(RETURN-TYPE-OF-ENSURE-VALUE-IS-TRUE-LIST.ERP (2 1 (:DEFINITION TRUE-LISTP))
+                                              (1 1 (:REWRITE DEFAULT-CDR)))
+(RETURN-TYPE-OF-ENSURE-VALUE-IS-TRUE-LIST.VAL (2 1 (:DEFINITION TRUE-LISTP))
+                                              (1 1 (:REWRITE DEFAULT-CDR)))

@@ -319,14 +319,20 @@ about set intersection.</p>"
   (defthm subsetp-of-cdr
     (subsetp (cdr x) x)))
 
-
-
-(defthmd intersectp-member
-  ;; BOZO what is this doing here?
-  (implies (and (member a x)
-                (member a y))
-           (equal (intersectp x y) t)))
-
+;; Mihir M. mod 14 Oct 2020: There wasn't much reason for this to be left
+;; disabled, and additional corollaries can help this match in more
+;; circumstances. One of these corollaries becomes redundant if intersectp is
+;; proved to be commutative - I'm not sure if this book has such a proof.
+(defthm intersectp-member
+  (implies (and (member a x) (member a y))
+           (equal (intersectp x y) t))
+  :rule-classes
+  (:rewrite (:rewrite :corollary (implies (and (not (intersectp x y))
+                                               (member a y))
+                                          (not (member a x))))
+            (:rewrite :corollary (implies (and (not (intersectp x y))
+                                               (member a x))
+                                          (not (member a y))))))
 
 (local (in-theory (enable subsetp-member)))
 
@@ -351,12 +357,6 @@ heavier-weight (but not necessarily recommended) alternative is to use the
                                 (true-listp y))))
     (and (subsetp-equal x y)
          (subsetp-equal y x)))
-
-  (defthm set-equiv-implies-iff
-    (implies (set-equiv x y)
-             (equal (iff (member a x)
-                         (member a y))
-                    t)))
 
   (encapsulate
     ()
@@ -555,15 +555,14 @@ about set equivalence.</p>"
              (append a b))
   :hints(("Goal" :in-theory (enable set-equiv))))
 
-(defcong set-equiv set-equiv (append x y) 2
-  :hints(("Goal" :in-theory (enable set-equiv))))
+(defsection more-set-equiv-congruences
+  :extension set-equiv-congruences
 
-(defcong set-equiv set-equiv (append x y) 1
-  :hints(("Goal" :in-theory (enable set-equiv))))
+  (defcong set-equiv set-equiv (append x y) 2
+    :hints(("Goal" :in-theory (enable set-equiv))))
 
-
-
-
+  (defcong set-equiv set-equiv (append x y) 1
+    :hints(("Goal" :in-theory (enable set-equiv)))))
 
 ; Some additional rules that are useful for canoncializing APPEND nests under SET-EQUIV
 
@@ -614,7 +613,14 @@ about set equivalence.</p>"
              (cons a x))
   :hints(("Goal" :in-theory (enable set-equiv))))
 
-
+(defthm
+  append-of-cons-under-set-equiv
+  (set-equiv (append x (cons y z))
+             (cons y (append x z)))
+  :hints
+  (("goal" :in-theory (disable commutativity-2-of-append-under-set-equiv)
+    :use (:instance commutativity-2-of-append-under-set-equiv
+                    (y (list y))))))
 
 (encapsulate
   ()
@@ -678,6 +684,29 @@ about set equivalence.</p>"
 
 (defcong set-equiv set-equiv (cons a x) 2
   :hints(("Goal" :in-theory (enable set-equiv))))
+
+(encapsulate
+  ()
+
+  (local
+   (defthm remove-when-absent
+     (implies (not (member-equal x l))
+              (equal (remove-equal x l)
+                     (true-list-fix l)))))
+
+  (defthm
+    cons-of-remove-under-set-equiv-1
+    (set-equiv (cons x (remove-equal x l))
+               (if (member-equal x l) l (cons x l)))
+    :hints
+    (("goal"
+      :induct (remove-equal x l)
+      :in-theory (disable (:rewrite commutativity-2-of-append-under-set-equiv)))
+     ("subgoal *1/3"
+      :use (:instance (:rewrite commutativity-2-of-append-under-set-equiv)
+                      (z (remove-equal x (cdr l)))
+                      (y (list (car l)))
+                      (x (list x)))))))
 
 (defthm subsetp-of-remove1
   (equal (subsetp x (remove a y))
@@ -753,3 +782,65 @@ about set equivalence.</p>"
     (equal (element-list-p (union-equal x y))
            (and (element-list-p (list-fix x))
                 (element-list-p (double-rewrite y))))))
+
+(defsection more-set-equiv-congruences
+  :extension set-equiv-congruences
+
+  ;; Some of these lemmas may well deserve to be added someplace in
+  ;; STD, but their backchaining can be expensive (particularly
+  ;; remove-when-absent and remove-duplicates-when-no-duplicatesp) and so they
+  ;; are left local for now.
+
+  (local
+   (defun induction-scheme (x y)
+     (cond
+      ((atom x) (mv x y))
+      ((member-equal (car x) (cdr x)) (induction-scheme (cdr x) y))
+      (t (induction-scheme (cdr x) (remove (car x) y))))))
+
+  (local
+   (defthm remove-when-absent
+     (implies (not (member-equal x l))
+              (equal (remove-equal x l)
+                     (true-list-fix l)))))
+
+  (local
+   (defthm remove-duplicates-equal-of-true-list-fix
+     (equal (remove-duplicates-equal (true-list-fix x))
+            (true-list-fix (remove-duplicates-equal x)))))
+
+  (local (defthm lemma
+           (implies (member-equal x (remove-duplicates-equal y))
+                    (equal (len (remove-duplicates-equal (remove-equal x y)))
+                           (- (len (remove-duplicates-equal y)) 1)))))
+
+  (defthm
+    set-equiv-implies-equal-len-remove-duplicates-equal
+    (implies (set-equiv x y)
+             (equal (len (remove-duplicates-equal x))
+                    (len (remove-duplicates-equal y))))
+    :hints
+    (("Goal" :induct (induction-scheme x y) :expand (set-equiv x (cdr x))
+      :in-theory (enable subsetp-equal)))
+    :rule-classes :congruence))
+
+(encapsulate
+  ()
+
+  (local
+   (defthm remove-duplicates-equal-when-no-duplicatesp
+     (implies (no-duplicatesp x)
+              (equal (remove-duplicates-equal x) (true-list-fix x)))))
+
+  (defthmd
+    set-equiv-implies-equal-len-1-when-no-duplicatesp
+    (implies (and (set-equiv x y)
+                  (no-duplicatesp x)
+                  (no-duplicatesp y))
+             (equal (len x) (len y)))
+    :hints (("Goal" :in-theory (disable
+                                set-equiv-implies-equal-len-remove-duplicates-equal)
+             :use set-equiv-implies-equal-len-remove-duplicates-equal))))
+
+(defthm cons-under-set-equiv-1
+  (set-equiv (list* x x y) (cons x y)))

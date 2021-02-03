@@ -5,7 +5,7 @@
 (include-book "arithmetic-5/top" :dir :system)
 
 (in-theory #!acl2(disable |(mod (+ x y) z) where (<= 0 z)| |(mod (+ x (- (mod a b))) y)| |(mod (mod x y) z)| |(mod (+ x (mod a b)) y)|
-                    simplify-products-gather-exponents-equal mod-cancel-*-const cancel-mod-+ reduce-additive-constant-< 
+                    simplify-products-gather-exponents-equal mod-cancel-*-const cancel-mod-+ reduce-additive-constant-<
                     ash-to-floor |(floor x 2)| |(equal x (if a b c))| |(equal (if a b c) x)| MOD-THEOREM-ONE-B))
 
 (include-book "fsqrt64")
@@ -29,11 +29,10 @@
 ;;                   (fzp (bitn rin 24))
 ;;                   (rmode (bits rin 23 22)))
 ;;              (mv-let (data flags) (fsqrt64 opa fnum fzp dnp rmode)
-;;                (let ((r (logior rin flags)))         
+;;                (let ((r (logior rin flags)))
 ;;                  (mv-let (data-spec r-spec)
 ;;                          (arm-fsqrt-spec (bits opa (1- fmtw) 0) rin f)
 ;;                    (and (equal data data-spec)
-;;                         (equal r r-spec))))))))
 ;;                         (equal r r-spec))))))))
 
 ;; In order to address the lack of modularity of the ACL2 code, we
@@ -54,11 +53,11 @@
 (defund rmode () (bits (rin) 23 22))
 (defund f () (case (fnum) (0 (hp)) (1 (sp)) (2 (dp))))
 
-;; In terms of these constants, we shall define constants corresponding to the local 
+;; In terms of these constants, we shall define constants corresponding to the local
 ;; variables of fdiv64, culminating in the constants (d) and (flags), corresponding to
 ;; the outputs.
 
-;; The constant definitions will be derived from that of fsqrt64 in such a way that 
+;; The constant definitions will be derived from that of fsqrt64 in such a way that
 ;; the proof of the following will be trivial:
 
 ;; (defthm fsqrt64-lemma
@@ -185,7 +184,7 @@
        (if1 (logand1 (log= (classa) 4) (log= (mana) 0))
             (flags-sqrtpow2)
             (flags-final))))
-                                          
+
 (defthmd fsqrt64-lemma
   (mv-let (data flags) (fsqrt64 (opa) (fnum) (fzp) (dnp) (rmode))
     (and (equal (data) data)
@@ -216,11 +215,11 @@
 ;;*******************************************************************************
 
 ;; We define the sequences of values (q j), (i j), (rp j), (rn j), (qp j), (qn j),
-;; and (expinc j) as a set of mutually recursive functions, as they are computed by 
-;; fsqrt64-loop-0, and prove that the constants (rp-n), etc., defined above are 
+;; and (expinc j) as a set of mutually recursive functions, as they are computed by
+;; fsqrt64-loop-0, and prove that the constants (rp-n), etc., defined above are
 ;; related to these functions as follows:
 ;;   (equal (rp-n) (rp (n)))
-;;   (equal (rn-n) (rn (n))) 
+;;   (equal (rn-n) (rn (n)))
 ;;   (equal (qp-n) (qp (n)))
 ;;   (equal (qn-n) (qn (n)))
 ;;   (equal (expinc-n) (expinc (n)))

@@ -97,6 +97,8 @@
 
 (make-event
  `(defprod fgl-config
+    :parents (def-fgl-thm)
+    :short "Config object for the FGL clause processor"
     ,(fgl-config-process-fields *fgl-config-fields*)
     :layout :tree))
 

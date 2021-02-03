@@ -510,7 +510,7 @@
 
 ; The following will fail.
 
-(include-book "misc/eval" :dir :system)
+(include-book "std/testing/must-fail" :dir :system)
 
 (must-fail
 (defun boohoo (n)

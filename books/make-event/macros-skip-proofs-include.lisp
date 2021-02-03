@@ -76,7 +76,7 @@
 
 (include-book "macros-skip-proofs")
 
-(include-book "misc/eval" :dir :system)
+(include-book "std/testing/must-succeed" :dir :system)
 
 (include-book "misc/file-io" :dir :system)
 

@@ -12,7 +12,6 @@
 
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
 (include-book "utilities/xdoc-constructors")
-(include-book "restrict")
 
 ; (depends-on "design-notes/restrict.pdf")
 ; (depends-on "kestrel/design-notes/notation.pdf" :dir :system)
@@ -20,7 +19,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defconst *restrict-design-notes*
-  (xdoc::ahref "res/kestrel-apt-design-notes/restrict.pdf" "design notes"))
+  (xdoc::&& "@('restrict') "
+            (xdoc::ahref "res/kestrel-apt-design-notes/restrict.pdf"
+                         "design notes")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -49,17 +50,26 @@
       which may enable further optimizations
       by taking advantage of the added restrictions.")
 
-    (xdoc::p
-     "These " *restrict-design-notes* ", which use "
-     (xdoc::a :href "res/kestrel-design-notes/notation.pdf" "this notation")
-     ", provide the mathematical concepts and template proofs
-      upon which this transformation is based.
-      These notes should be read alongside this reference documentation,
-      which refers to them in some places."))
+    (xdoc::apt-design-notes-ref restrict))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::evmac-section-form-auto restrict)
+   (xdoc::evmac-section-form
+    (xdoc::codeblock
+     "(restrict old"
+     "          restriction"
+     "          :undefined          ; default :undefined"
+     "          :new-name           ; default :auto"
+     "          :new-enable         ; default :auto"
+     "          :old-to-new-name    ; default from table"
+     "          :old-to-new-enable  ; default from table"
+     "          :new-to-old-name    ; default from table"
+     "          :new-to-old-enable  ; default from table"
+     "          :verify-guards      ; default :auto"
+     "          :hints              ; default nil"
+     "          :print              ; default :result"
+     "          :show-only          ; default nil"
+     "  )"))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -69,7 +79,7 @@
      (xdoc::p
       "@('old') must
        be in logic mode,
-       be defined,
+       be " (xdoc::seetopic "acl2::function-definedness" "defined") ",
        have at least one formal argument,
        return a non-" (xdoc::seetopic "mv" "multiple") " value, and
        have no input or output " (xdoc::seetopic "acl2::stobj" "stobjs") "."
@@ -183,13 +193,15 @@
 
     (xdoc::desc-apt-input-new-enable)
 
-    (xdoc::desc-apt-input-thm-name :never)
+    (xdoc::desc-apt-input-old-to-new-name)
 
-    (xdoc::desc-apt-input-thm-enable :never)
+    (xdoc::desc-apt-input-old-to-new-enable)
 
-    (xdoc::desc-apt-input-non-executable :never)
+    (xdoc::desc-apt-input-new-to-old-name)
 
-    (xdoc::desc-apt-input-verify-guards :never)
+    (xdoc::desc-apt-input-new-to-old-enable)
+
+    (xdoc::desc-apt-input-verify-guards :plural-functions nil)
 
     (xdoc::evmac-input-hints)
 
@@ -243,18 +255,7 @@
      :design-notes-appcond "@($\\mathit{GR}$)"
      :presence "the generated function is guard-verified
                 (which is determined by the @(':verify-guards') input;
-                see above)")
-
-    (xdoc::evmac-appcond
-     ":restriction-boolean"
-     (xdoc::&&
-      (xdoc::p
-       "The restricting predicate is boolean-valued:")
-      (xdoc::codeblock
-       "(booleanp restriction<x1,...,xn>)")
-      (xdoc::p
-       "This is not explicitly present in the " *restrict-design-notes*
-       ", which implicitly assume @($R$) to be boolean-valued."))))
+                see above)"))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -267,13 +268,13 @@
      (xdoc::codeblock
       ";; when old is not recursive:"
       "(defun new (x1 ... xn)"
-      "  (if (mbt restriction<x1,...,xn>)"
+      "  (if (mbt$ restriction<x1,...,xn>)"
       "      old-body<x1,...,xn>"
       "    undefined))"
       ""
       ";; when old is recursive:"
       "(defun new (x1 ... xn)"
-      "  (if (mbt restriction<x1,...,xn>)"
+      "  (if (mbt$ restriction<x1,...,xn>)"
       "      old-body<x1,...,xn,"
       "               (new update1-x1<x1,...,xn,new>"
       "                    ..."
@@ -291,11 +292,9 @@
       "The guard is @('(and old-guard<x1,...,xn> restriction<x1,...,xn>)').")
      (xdoc::p
       "Since the restriction test follows from the guard,
-       the test is wrapped by @(tsee mbt).
-       Since @(tsee mbt) requires its argument to be @('t')
-       (not just non-@('nil')),
-       the applicability condition @(':restriction-boolean') ensures that
-       the restriction test is @('t') when it is non-@('nil').")
+       the test is wrapped by @(tsee mbt$).
+       The use of @(tsee mbt$), as opposed to @(tsee mbt),
+       avoids requiring @('restriction') to be boolean-valued.")
      (xdoc::p
       "In the " *restrict-design-notes* ",
        @('new') is denoted by @($f'$)."))
@@ -311,7 +310,25 @@
       "                  (new x1 ... xn))))")
      (xdoc::p
       "In the " *restrict-design-notes* ",
-       @('old-to-new') is denoted by @($\\mathit{ff}'$).")))
+       @('old-to-new') is denoted by @($\\mathit{ff}'$)."))
+
+    (xdoc::desc
+     "@('new-to-old')"
+     (xdoc::p
+      "Theorem that relates @('new') to @('old'):")
+     (xdoc::codeblock
+      "(defthm new-to-old"
+      "  (implies restriction<x1,...,xn>"
+      "           (equal (new x1 ... xn)"
+      "                  (old x1 ... xn))))")
+     (xdoc::p
+      "In the " *restrict-design-notes* ",
+       @('new-to-old') is denoted by @($f'f$)."))
+
+    (xdoc::p
+     "A theory invariant is also generated to prevent
+      both @('new-to-old') and @('old-to-new')
+      from being enabled at the same time."))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

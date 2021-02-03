@@ -336,10 +336,10 @@
         binary-not binary-and bitp binary-or binary-? bit-of binary-xor
         f2 m2
         d2 --
-        resolve-pp-sum-order-rec
+        ;;resolve-pp-sum-order-rec
         #|resolve-pp-sum-order-rec-2||#
-        resolve-pp-sum-order
-        resolve-pp-sum-order-main
+        ;;resolve-pp-sum-order
+        ;;resolve-pp-sum-order-main
         #|resolve-pp-sum-order-dont-rw||#)))
 
 (local
@@ -1879,35 +1879,44 @@
                                resolve-pp-sum-order
                                resolve-pp-sum-order-rec)))))))
 
-(defthm resolve-pp-sum-order-valid-rp-meta-rulep
-  (implies (and (pp-sum-meta-formal-checks state)
-                (rp-evl-meta-extract-global-facts :state state))
-           (let ((rule (make rp-meta-rule-rec
-                             :fnc 'resolve-pp-sum-order-main
-                             :trig-fnc 'merge-pp+
-                             :dont-rw t
-                             :valid-syntax t)))
-             (and (valid-rp-meta-rulep rule state)
-                  (rp-meta-valid-syntaxp-sk rule state))))
-  :otf-flg t
-  :hints (("Goal"
-           :in-theory (e/d (RP-META-VALID-SYNTAXP)
-                           (RP-TERMP
-                            RP-TERM-LISTP
+;; (defthm resolve-pp-sum-order-valid-rp-meta-rulep
+;;   (implies (and (pp-sum-meta-formal-checks state)
+;;                 (rp-evl-meta-extract-global-facts :state state))
+;;            (let ((rule (make rp-meta-rule-rec
+;;                              :fnc 'resolve-pp-sum-order-main
+;;                              :trig-fnc 'merge-pp+
+;;                              :dont-rw t
+;;                              :valid-syntax t)))
+;;              (and (valid-rp-meta-rulep rule state)
+;;                   (rp-meta-valid-syntaxp-sk rule state))))
+;;   :otf-flg t
+;;   :hints (("Goal"
+;;            :in-theory (e/d (RP-META-VALID-SYNTAXP)
+;;                            (RP-TERMP
+;;                             RP-TERM-LISTP
                             
-                            resolve-pp-sum-order-main
-                            VALID-SC
-                            resolve-assoc-eq-vals-rec
-                            resolve-pp-sum-order)))))
+;;                             resolve-pp-sum-order-main
+;;                             VALID-SC
+;;                             resolve-assoc-eq-vals-rec
+;;                             resolve-pp-sum-order)))))
 
-(rp::add-meta-rules
+#|(rp::add-meta-rules
  pp-sum-meta-formal-checks
  (list
   (make rp-meta-rule-rec
         :fnc 'resolve-pp-sum-order-main
         :trig-fnc 'merge-pp+
         :dont-rw t
-        :valid-syntax t)))
+        :valid-syntax t)))||#
+
+(rp::add-meta-rule
+ :meta-fnc resolve-pp-sum-order-main
+ :trig-fnc merge-pp+
+ :valid-syntaxp t
+ :formula-checks pp-sum-meta-formal-checks
+ :returns (mv term dont-rw)
+ :hints (("Goal"
+          :in-theory (e/d () (resolve-pp-sum-order-main)))))
 
 (in-theory (disable (:e rp::merge-pp+)
                     (:e rp::p+)))

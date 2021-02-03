@@ -252,6 +252,11 @@ VL to correctly handle any interesting fragment of SystemVerilog.</p>")
                   (vl-is-token? :vl-kwd-class))
           (class := (vl-parse-class-declaration atts))
           (return (list class)))
+        (when (vl-is-token? :vl-semi)
+          ;; seems to be allowed by commercial implementations
+          (:= (vl-parse-warning :vl-warn-unexpected-semicolon "Ignored unexpected semicolon"))
+          (:= (vl-match))
+          (return nil))
         (return-raw
          (b* ((backup (vl-tokstream-save))
               ((mv err vardecls tokstream)

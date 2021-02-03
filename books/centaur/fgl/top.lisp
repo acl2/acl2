@@ -37,6 +37,7 @@
 (include-book "member-equal")
 (include-book "enums")
 (include-book "transform")
+(include-book "simplify")
 (include-book "gatecount")
 (include-book "sat-binder")
 (include-book "equivcheck")

@@ -635,6 +635,21 @@
            (equal (logior x (logand y z))
                   (logand (logior x y) (logior x z)))))
 
+(defthmd logior-logand-1
+  (implies (and (integerp x)
+                (integerp y))
+           (equal (logior x (logand x y))
+                  x))
+  :hints (("Goal"
+           :in-theory (enable bitn-logior bitn-logand)
+           :use ((:instance bit-diff-diff
+                            (y (logior x (logand x y))))
+                 (:instance bitn-0-1
+                            (n (bit-diff x (logior x (logand x y)))))
+                 (:instance bitn-0-1
+                            (x (logior x (logand x y)))
+                            (n (bit-diff x (logior x (logand x y)))))))))
+
 (defthmd logand-logior
   (implies (and (integerp x)
                 (integerp y)
@@ -646,7 +661,7 @@
   (implies (and (integerp x)
                 (integerp y)
                 (integerp z))
-    (equal (logand  (logior y z) x)
+    (equal (logand (logior y z) x)
 	   (logior (logand y x) (logand z x)))))
 
 (defthmd log3
@@ -1172,6 +1187,21 @@
                 (integerp z))
            (equal (logior x (logand y z))
                   (logand (logior x y) (logior x z)))))
+
+(defthmd logior-logand-1
+  (implies (and (integerp x)
+                (integerp y))
+           (equal (logior x (logand x y))
+                  x))
+  :hints (("Goal"
+           :in-theory (enable bitn-logior bitn-logand)
+           :use ((:instance bit-diff-diff
+                            (y (logior x (logand x y))))
+                 (:instance bitn-0-1
+                            (n (bit-diff x (logior x (logand x y)))))
+                 (:instance bitn-0-1
+                            (x (logior x (logand x y)))
+                            (n (bit-diff x (logior x (logand x y)))))))))
 
 (defthmd logand-logior
   (implies (and (integerp x)

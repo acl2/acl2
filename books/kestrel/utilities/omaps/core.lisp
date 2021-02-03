@@ -1,6 +1,6 @@
-; Ordered Maps (Omaps)
+; Ordered Maps (Omaps) Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -10,31 +10,32 @@
 
 (in-package "OMAP")
 
-(include-book "xdoc/constructors" :dir :system)
 (include-book "std/osets/top" :dir :system)
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
+(include-book "xdoc/defxdoc-plus" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc omaps
+(defxdoc+ omaps
   :parents (acl2::kestrel-utilities set::std/osets acl2::alists)
   :short "A library of omaps (ordered maps),
           i.e. finite maps represented as strictly ordered alists."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is related to the library of
-     <see topic='@(url set::std/osets)'>osets (ordered sets)</see>,
-     i.e. finite sets represented as strictly ordered lists.
+    "This is related to the library of "
+    (xdoc::seetopic "set::std/osets" "osets (ordered sets)")
+    ", i.e. finite sets represented as strictly ordered lists.
      Like osets capture (up to isomorphism)
      the mathematical notion of finite sets (over ACL2 objects),
      omaps capture (up to isomorphism)
      the mathematical notion of finite maps (over ACL2 objects).
      In particular, omap equality is @(tsee equal).")
    (xdoc::p
-    "Since the <see topic='@(url <<)'>total order on ACL2 values</see>
-     is lexicographic on @(tsee cons) pairs,
+    "Since the "
+    (xdoc::seetopic "<<" "total order on ACL2 values")
+    " is lexicographic on @(tsee cons) pairs,
      an omap is an oset of @(tsee cons) pairs;
      furthermore, an omap is an alist.
      While then, in principle,
@@ -44,9 +45,9 @@
      (i.e. requiring omaps instead of just osets or alists)
      and that treat non-omaps as the empty omap.
      That is, the omap operations respect a `non-map convention'
-     analogous to the
-     <see topic='@(url set::primitives)'>non-set convention</see>
-     respected by the oset operations;
+     analogous to the "
+    (xdoc::seetopic "set::primitives" "non-set convention")
+    " respected by the oset operations;
      some of the latter are, analogously,
      versions of list operations (e.g. @(tsee set::head) for @(tsee car)),
      motivated by the fact that the list operations
@@ -59,9 +60,9 @@
      @(tsee head),
      @(tsee tail), and
      @(tsee update)
-     are ``primitive'' in the same sense as the
-     <see topic='@(url set::primitives)'>oset primitives</see>:
-     their logical definitions depend on
+     are ``primitive'' in the same sense as the "
+    (xdoc::seetopic "set::primitives" "oset primitives")
+    ": their logical definitions depend on
      the underlying representation as alists,
      and provide replacements of alist operations
      that respect the `non-map convention'.
@@ -96,13 +97,12 @@
      Perhaps the @('\"SET\"') package for osets
      could be renamed to @('\"OSET\"') at some point,
      for consistency.
-     (A similar issue will arise for a library of obags, i.e. ordered bags,
+     (A similar issue applies to the library of obags, i.e. ordered bags,
      and the @('[books]/coi/bags') library,
      which defines a @('\"BAG\"') package.)")
    (xdoc::p
     "This omap library could become a new @('std/omaps') library,
-     part of <see topic='@(url std)'>STD</see>,
-     parallel to @(tsee set::std/osets).")
+     part of @(csee std), parallel to @(tsee set::std/osets).")
    (xdoc::p
     "Compared to using the built-in @(see acl2::alists) to represent maps,
      omaps are closer to the mathematical notion of maps,
@@ -112,22 +112,22 @@
      The map library in @('[books]/coi/maps/')
      operates on possibly unordered alists.")
    (xdoc::p
-    "Compared to the records in
-     <see topic='@(url acl2::misc/records)'>@('[books]/misc/records.lisp')</see>
-     and @('[books]/coi/records/'),
+    "Compared to the records in "
+    (xdoc::seetopic "acl2::misc/records" "@('[books]/misc/records.lisp')")
+    " and @('[books]/coi/records/'),
      omaps allow any value to be associated to keys,
      without having to exclude @('nil') or some other fixed value.
      Furthermore, as noted in the comments in @('[books]/coi/maps/maps.lisp'),
      the `get' operation on those records
      does not always yield a value smaller than the map.
      On the other hand, theorems about omaps have generally more hypotheses
-     than the theorems about records.")))
+     than the theorems about records."))
+  :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define mapp (x)
   :returns (yes/no booleanp)
-  :parents (omaps)
   :short "Recognize omaps."
   :long
   (xdoc::topstring-p
@@ -159,7 +159,6 @@
 
 (define mfix ((x mapp))
   :returns (fixed-x mapp)
-  :parents (omaps)
   :short "Fixing function for omaps."
   :long
   (xdoc::topstring-p
@@ -176,7 +175,6 @@
 
 (define empty ((map mapp))
   :returns (yes/no booleanp)
-  :parents (omaps)
   :short "Check if an omap is empty."
   :long
   (xdoc::topstring-p
@@ -198,7 +196,6 @@
 (define head ((map mapp))
   :guard (not (empty map))
   :returns (mv key val)
-  :parents (omaps)
   :short "Smallest key, and associated value, of a non-empty omap."
   :long
   (xdoc::topstring-p
@@ -253,7 +250,6 @@
 (define tail ((map mapp))
   :guard (not (empty map))
   :returns (map1 mapp :hints (("Goal" :in-theory (enable mfix mapp))))
-  :parents (omaps)
   :short "Rest of a non-empty omap after removing its smallest pair."
   :long
   (xdoc::topstring-p
@@ -288,7 +284,6 @@
   :returns (map1 mapp
                  :hints (("Goal"
                           :in-theory (enable mapp mfix empty head tail))))
-  :parents (omaps)
   :short "Set a key to a value in an omap."
   :long
   (xdoc::topstring
@@ -380,7 +375,6 @@
 
 (define update* ((new mapp) (old mapp))
   :returns (map mapp)
-  :parents (omaps)
   :short "Update a map with another map."
   :long
   (xdoc::topstring-p
@@ -417,7 +411,6 @@
 
 (define delete (key (map mapp))
   :returns (map1 mapp)
-  :parents (omaps)
   :short "Remove a key, and associated value, from an omap."
   :long
   (xdoc::topstring-p
@@ -441,7 +434,6 @@
 
 (define delete* ((keys set::setp) (map mapp))
   :returns (map1 mapp)
-  :parents (omaps)
   :short "Remove keys, and associated values, from an omap."
   :long
   (xdoc::topstring-p
@@ -466,7 +458,6 @@
 
 (define in (key (map mapp))
   :returns (pair? listp)
-  :parents (omaps)
   :short "Check if a key is in an omap."
   :long
   (xdoc::topstring
@@ -506,7 +497,6 @@
 
 (define in* ((keys set::setp) (map mapp))
   :returns (yes/no booleanp)
-  :parents (omaps)
   :short "Check if every key in a non-empty set is in an omap."
   :long
   (xdoc::topstring-p
@@ -536,7 +526,6 @@
 (define lookup (key (map mapp))
   :guard (in key map)
   :returns (val)
-  :parents (omaps)
   :short "Value associated to a key in an omap."
   (cdr (in key map))
   ///
@@ -551,7 +540,6 @@
 (define lookup* ((keys set::setp) (map mapp))
   :guard (in* keys map)
   :returns (vals set::setp)
-  :parents (omaps)
   :short "Set of values associated to a set of keys in an omap."
   :long
   (xdoc::topstring-p
@@ -580,7 +568,6 @@
 
 (define rlookup (val (map mapp))
   :returns (keys set::setp)
-  :parents (omaps)
   :short "Set of keys to which a value is associated."
   :long
   (xdoc::topstring
@@ -611,7 +598,6 @@
 
 (define rlookup* ((vals set::setp) (map mapp))
   :returns (keys set::setp)
-  :parents (omaps)
   :short "Set of keys to which any value in a set is associated."
   :long
   (xdoc::topstring-p
@@ -637,7 +623,6 @@
 
 (define restrict ((keys set::setp) (map mapp))
   :returns (map1 mapp)
-  :parents (omaps)
   :short "Restrict an omap to a set of keys."
   :long
   (xdoc::topstring-p
@@ -668,7 +653,6 @@
 (define keys ((map mapp))
   :returns (keys set::setp
                  :hints (("Goal" :in-theory (enable mfix mapp set::setp))))
-  :parents (omaps)
   :short "Oset of the keys of an omap."
   (cond ((empty map) nil)
         (t (mv-let (key val)
@@ -687,7 +671,6 @@
 
 (define values ((map mapp))
   :returns (vals set::setp)
-  :parents (omaps)
   :short "Oset of the values of an omap."
   (cond ((empty map) nil)
         (t (mv-let (key val)
@@ -707,7 +690,6 @@
 
 (define compatiblep ((map1 mapp) (map2 mapp))
   :returns (yes/no booleanp)
-  :parents (omaps)
   :short "Check if two omaps are compatible, in the sense that
           they map their common keys to the same values."
   :long
@@ -739,7 +721,6 @@
 
 (define submap ((sub mapp) (sup mapp))
   :returns (yes/no booleanp)
-  :parents (omaps)
   :short "Check if an omap is a submap of another omap."
   :long
   (xdoc::topstring
@@ -769,7 +750,6 @@
 
 (define size ((map mapp))
   :returns (size natp)
-  :parents (omaps)
   :short "Size of an omap."
   :long
   (xdoc::topstring
@@ -781,9 +761,9 @@
      into assertions about @(tsee empty) and @(tsee tail);
      the expansion terminates because of the @(tsee syntaxp) restriction.
      These theorems are disabled by default.
-     These are the omap analogous of
-     <see topic='@(url acl2::list-len-const-theorems)'>these theorems</see>
-     for lists."))
+     These are the omap analogous of "
+    (xdoc::seetopic "acl2::list-len-const-theorems" "these theorems")
+    " for lists."))
   (cond ((empty map) 0)
         (t (1+ (size (tail map)))))
   ///
@@ -823,3 +803,19 @@
                             (1- c))))
                 (> (size map) c))
        :rule-classes nil))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define from-lists ((keys true-listp) (vals true-listp))
+  :guard (= (len keys) (len vals))
+  :returns (map mapp)
+  :short "Build an omap from
+          a list of keys and a list of corresponding values."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If there are duplicate keys in the first list,
+     the leftmost key, and the corresponding value,
+     will be in the resulting omap."))
+  (cond ((endp keys) nil)
+        (t (update (car keys) (car vals) (from-lists (cdr keys) (cdr vals))))))

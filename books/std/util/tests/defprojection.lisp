@@ -30,7 +30,7 @@
 
 (in-package "STD")
 (include-book "../defprojection")
-(include-book "std/testing/assert" :dir :system)
+(include-book "std/testing/assert-bang" :dir :system)
 
 (make-event
  (prog2$

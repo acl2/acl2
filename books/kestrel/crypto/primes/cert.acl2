@@ -1,0 +1,11 @@
+; Primes Library
+;
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Eric McCarthy (mccarthy@kestrel.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(include-book "../../number-theory/portcullis") ; for PRIMES package

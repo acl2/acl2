@@ -50,18 +50,19 @@
 #                 and other miscellaneous tools and macros.  Many users may
 #                 find "basic" to be a convenient starting place.
 #
-#   all           Certifies most books that are not horribly slow, including,
+#   regression    Certifies most books that are not horribly slow, including,
 #                 for instance, most of workshops, projects, the centaur
 #                 books, the jvm models, etc.  Usually, committers to
-#                 acl2-books should run "make all" first.
+#                 acl2-books should run "make regression" first.
 #
-#   almost-everything
-#                 An alias for "all"
-#
-#   everything    A very full build, including very slow books.  Most users
+#   regression-everything
+#                 A very full build, including very slow books.  Most users
 #                 will not want to use this target.  It is useful for, e.g.,
 #                 regression testing before releases.  Note that
-#                 EXCLUDED_PREFIXES may not work with the `everything' target.
+#                 EXCLUDED_PREFIXES may not work with the
+#                 `regression-everything' target.
+#
+#   all           alias for regression-everything
 #
 #   <dirname>     There are targets for many top-level directories, e.g., you
 #                 may run "make coi" to build everything in coi/ directory,
@@ -185,7 +186,7 @@ export ACL2
 .SUFFIXES:
 .SUFFIXES: .cert .lisp
 
-.PHONY: default basic all
+.PHONY: default basic regression
 
 # Keep this before any other target so that default will be the default target
 default: basic
@@ -215,17 +216,18 @@ RUN_ACL2_FEATURES := $(shell cd $(BUILD_DIR); ACL2=$(ACL2) STARTJOB=$(STARTJOB) 
 # if ACL2 isn't built.
 -include $(BUILD_DIR)/Makefile-features
 
-$(info ACL2_HAS_HONS     := $(ACL2_HAS_HONS))
-$(info ACL2_HAS_ANSI     := $(ACL2_HAS_ANSI))
-$(info ACL2_HAS_PARALLEL := $(ACL2_HAS_PARALLEL))
-$(info ACL2_HAS_REALS    := $(ACL2_HAS_REALS))
-$(info ACL2_COMP_EXT     := $(ACL2_COMP_EXT))
-$(info ACL2_HOST_LISP    := $(ACL2_HOST_LISP))
-$(info OS_HAS_ABC        := $(OS_HAS_ABC))
-$(info OS_HAS_GLUCOSE    := $(OS_HAS_GLUCOSE))
-$(info OS_HAS_IPASIR     := $(OS_HAS_IPASIR))
-$(info OS_HAS_SMTLINK    := $(OS_HAS_SMTLINK))
-$(info USE_QUICKLISP     := $(USE_QUICKLISP))
+$(info ACL2_HAS_HONS      := $(ACL2_HAS_HONS))
+$(info ACL2_HAS_ANSI      := $(ACL2_HAS_ANSI))
+$(info ACL2_HAS_PARALLEL  := $(ACL2_HAS_PARALLEL))
+$(info ACL2_HAS_REALS     := $(ACL2_HAS_REALS))
+$(info ACL2_COMP_EXT      := $(ACL2_COMP_EXT))
+$(info ACL2_HOST_LISP     := $(ACL2_HOST_LISP))
+$(info OS_HAS_ABC         := $(OS_HAS_ABC))
+$(info OS_HAS_GLUCOSE     := $(OS_HAS_GLUCOSE))
+$(info OS_HAS_IPASIR      := $(OS_HAS_IPASIR))
+$(info OS_HAS_SMTLINK     := $(OS_HAS_SMTLINK))
+$(info USE_QUICKLISP      := $(USE_QUICKLISP))
+$(info ACL2_USELESS_RUNES := $(ACL2_USELESS_RUNES))
 $(info Done with features.)
 
 ifdef ACL2_FEATURES_DETECTED
@@ -259,25 +261,25 @@ space =  # just a space
 EGREP_EXTRA_EXCLUDE_STRING = |$(subst $(space) $(space),|,$(strip $(EXCLUDED_PREFIXES)))
 endif # ifneq ($(EXCLUDED_PREFIXES), )
 
-# We exclude some directories because there are subdirectories and it's just
-# easiest to stop at the root.
-
-# We also exclude centaur/satlink/solvers because it depends on all kinds of
-# extra SAT solvers.
+# We exclude some directories because there are subdirectories and
+# it's just easiest to stop at the root.  We also exclude
+# centaur/satlink/solvers because it depends on all kinds of extra SAT
+# solvers.  We exclude projects/milawa/ACL2 because of the large
+# amount of disk space otherwise consumed.
 $(info Scanning for books...)
 REBUILD_MAKEFILE_BOOKS := $(shell \
   rm -f $(BUILD_DIR)/Makefile-books; \
   time find . -name "*.lisp" \
-    | egrep -v '^(\./)?(interface|centaur/satlink/solvers|projects/milawa/ACL2|clause-processors/SULFA|workshops/2003/kaufmann/support|build/test-ifdef-define$(EGREP_EXTRA_EXCLUDE_STRING))' \
+    | egrep -v '^(\./)?(interface|centaur/satlink/solvers|projects/milawa/ACL2|clause-processors/SULFA|workshops/2003/kaufmann/support/input|workshops/2003/kaufmann/support/rtl|build/test-ifdef-define$(EGREP_EXTRA_EXCLUDE_STRING))' \
     | fgrep -v '.\#' \
   > $(BUILD_DIR)/Makefile-books; \
   ls -l $(BUILD_DIR)/Makefile-books)
 #$(info $(REBUILD_MAKEFILE_BOOKS))
 
 ifdef ACL2_PCERT
-	PCERT_OPT := "--pcert-all"	
+	PCERT_OPT := "--pcert-all"
 else
-	PCERT_OPT := 
+	PCERT_OPT :=
 endif
 
 $(info Scanning for dependencies...)
@@ -421,9 +423,9 @@ ifneq ($(ACL2_HAS_REALS), )
 $(info Excluding non-ACL2(r) books: [$(CERT_PL_NON_ACL2R)])
 OK_CERTS := $(filter-out $(CERT_PL_NON_ACL2R), $(OK_CERTS))
 
-all: nonstd/workshops/1999/calculus/book/proof-outline.cert
-all: nonstd/workshops/1999/calculus/book/tree.cert
-all: nonstd/workshops/1999/calculus/book/tree/proof-outline
+regression: nonstd/workshops/1999/calculus/book/proof-outline.cert
+regression: nonstd/workshops/1999/calculus/book/tree.cert
+regression: nonstd/workshops/1999/calculus/book/tree/proof-outline
 
 # Some additional special instructions for generated ACL2(r)-only books.
 nonstd/workshops/1999/calculus/book/proof-outline.cert: nonstd/workshops/1999/calculus/book/tree.cert
@@ -527,6 +529,42 @@ OK_CERTS := $(filter-out $(CERT_PL_USES_QUICKLISP), $(OK_CERTS))
 endif
 
 
+# Books that currently don't certify (or don't certify on some
+# systems), and that we want to work around for the moment:
+BROKEN_BOOKS :=
+
+# The models/y86 books are a special case.  We prefer to include them
+# only with the "all" target, not the "regression" target, since they
+# have large memory requirements -- and then, only for certain host
+# Lisps.  Originally we handled them in a custom way, using old-style
+# Makefiles based on Makefile-generic rather than cert.pl, but then we
+# did not get the benefit of the cert.pl dependency analysis; for
+# example, if arithmetic-5/top.cert was out of date then "make" would
+# not rebuild the models/y86/ books as it should.  So we no longer
+# exclude them in the "egrep -v" command above, instead allowing
+# cert.pl to do its thing.
+
+ifneq ($(ACL2_HAS_HONS), )
+ifeq ($(filter CCL ALLEGRO SBCL, $(ACL2_HOST_LISP)), )
+
+# When the Lisp is not one of those mentioned on the line above, we
+# skip the models/y86/ books, even for the "all" target.  In
+# particular, we exclude GCL: in one ANSI GCL ACL2(h) regression,
+# certification runs were still proceeding after more than 10 hours
+# for each of four books under models/y86/
+# (y86-basic/common/x86-state, y86-two-level/common/x86-state,
+# y86-two-level-abs/common/x86-state-concrete, and
+# y86-basic/py86/popcount), probably because of the demands of
+# def-gl-thm.  Moreover, LispWorks has too small a value for
+# array-dimension-limit to support these certifications.
+
+BROKEN_BOOKS += $(filter models/y86/%, $(OK_CERTS))
+endif # ifneq ($(filter CCL ALLEGRO SBCL, $(ACL2_HOST_LISP)), )
+endif # ifneq ($(ACL2_HAS_HONS), )
+
+OK_CERTS := $(filter-out $(BROKEN_BOOKS), $(OK_CERTS))
+
+
 # SLOW_BOOKS is a list of books that are too slow (or in any way
 # undesirable) to include as part of an ordinary regression.  There
 # are currently comments in some of the corresponding Makefiles that
@@ -535,11 +573,7 @@ endif
 # SLOW_BOOKS is removed from OK_CERTS just below, but later,
 # ACL2_CUSTOM_TARGETS adds its targets to OK_CERTS.
 
-# Before defining SLOW_BOOKS, we define ADDED_BOOKS to be the books
-# that we want to add back in when using target "everything" instead
-# of the default target, "all".
-
-ADDED_BOOKS := \
+SLOW_BOOKS := \
   books/misc/check-acl2-exports.cert \
   coi/defung/defung-stress-long.cert \
   models/jvm/m5/apprentice.cert \
@@ -560,63 +594,21 @@ ADDED_BOOKS := \
 # AND   directory projects/arm/
 # could be added as x86isa is below.
 
-ADDED_BOOKS += $(filter projects/x86isa/%, $(OK_CERTS))
-ADDED_BOOKS += $(filter projects/filesystems/%, $(OK_CERTS))
+SLOW_BOOKS += $(filter projects/x86isa/%, $(OK_CERTS))
 
-ADDED_BOOK_TARGETS :=
+SLOW_BOOK_TARGETS :=
 
 ifneq ($(ACL2_HAS_HONS), )
-ADDED_BOOK_TARGETS += milawa-test-basic
+SLOW_BOOK_TARGETS += milawa-test-basic
 endif
 
-# Now SLOW_BOOKS is defined as the list above, except that below, we
-# also include in SLOW_BOOKS some books that are too slow for both an
-# ordinary regression (target "all") and an "everything" regression.
-# Then we remove SLOW_BOOKS from regressions, restoring its subset,
-# ADDED_BOOKS, for the "everything" target.
+# Now SLOW_BOOKS is defined as the list above.
+SLOW_BOOKS += $(SLOW_BOOK_TARGETS)
 
-SLOW_BOOKS := $(ADDED_BOOKS) $(ADDED_BOOK_TARGETS)
+# We used to filter out the slow books here. As of mid-2020, we do it later, as
+# part of the `regression` target
+# OK_CERTS := $(filter-out $(SLOW_BOOKS), $(OK_CERTS))
 
-# The models/y86 books are a special case.  We prefer to include them
-# only with the "everything" target, not the "all" target, since they
-# have large memory requirements -- and then, only for certain host
-# Lisps.  Originally we handled them in a custom way, using old-style
-# Makefiles based on Makefile-generic rather than cert.pl, but then we
-# did not get the benefit of the cert.pl dependency analysis; for
-# example, if arithmetic-5/top.cert was out of date then "make" would
-# not rebuild the models/y86/ books as it should.  So we no longer
-# exclude them in the "egrep -v" command above, instead allowing
-# cert.pl to do its thing.
-
-ifneq ($(ACL2_HAS_HONS), )
-ifneq ($(filter CCL ALLEGRO SBCL, $(ACL2_HOST_LISP)), )
-
-# When the Lisp is not one of those mentioned on the line above, we
-# skip the models/y86/ books, even for the "everything" target.  In
-# particular, we exclude GCL: in one ANSI GCL ACL2(h) regression,
-# certification runs were still proceeding after more than 10 hours
-# for each of four books under models/y86/
-# (y86-basic/common/x86-state, y86-two-level/common/x86-state,
-# y86-two-level-abs/common/x86-state-concrete, and
-# y86-basic/py86/popcount), probably because of the demands of
-# def-gl-thm.  Moreover, LispWorks has too small a value for
-# array-dimension-limit to support these certifications.
-
-  ADDED_BOOKS += $(filter models/y86/%, $(OK_CERTS))
-endif # ifneq ($(filter CCL ALLEGRO SBCL, $(ACL2_HOST_LISP)), )
-endif # ifneq ($(ACL2_HAS_HONS), )
-
-# Remove ADDED_BOOKS as necessary because of dependence on Quicklisp,
-# HONS, CCL, etc.:
-ADDED_BOOKS := $(filter $(ADDED_BOOKS), $(OK_CERTS))
-
-OK_CERTS := $(filter-out $(SLOW_BOOKS) models/y86/%, $(OK_CERTS))
-
-
-# Books that currently don't certify (or don't certify on some
-# systems), and that we want to work around for the moment:
-BROKEN_BOOKS :=
-OK_CERTS := $(filter-out $(BROKEN_BOOKS), $(OK_CERTS))
 
 ##############################
 ### Section: Cleaning
@@ -680,8 +672,7 @@ clean_books:
 clean: clean_books
 	@echo "Removing extra, explicitly temporary files."
 	rm -rf $(CLEAN_FILES_EXPLICIT)
-	for dir in $(dir $(ACL2_CUSTOM_TARGETS)) \
-	  workshops/2003/kaufmann/support/rtl ; \
+	for dir in $(dir $(ACL2_CUSTOM_TARGETS)) ; \
 	do \
 	if [ -f $$dir/Makefile ] ; then \
 	(cd $$dir ; $(MAKE) clean) ; \
@@ -759,7 +750,7 @@ ifeq ($(ACL2_HAS_REALS), )
 # command that is used to define REBUILD_MAKEFILE_BOOKS, above.
 # Otherwise we might make the same file twice, would could cause
 # conflicts if -j is other than 1.  Also: Do not include any targets
-# that we don't always want built with "all".
+# that we don't always want built with "regression".
 
 ACL2_CUSTOM_TARGETS := \
   system/toothbrush/success.txt \
@@ -768,6 +759,7 @@ ACL2_CUSTOM_TARGETS := \
   workshops/1999/multiplier/proof.cert \
   workshops/2003/greve-wilding-vanfleet/support/firewallworks.cert \
   workshops/2003/kaufmann/support/input/defs-in.cert \
+  workshops/2003/kaufmann/support/rtl/package-defs.cert \
   workshops/2004/sumners-ray/support/success.txt
 
 # Currently, apply-model and (probably) apply-model-2 don't work for
@@ -825,11 +817,15 @@ workshops/2003/greve-wilding-vanfleet/support/firewallworks.cert: \
   workshops/2003/greve-wilding-vanfleet/deps.cert
 	cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
 
-# Note that we change to the parent directory in order to pick up all
-# of support/.
 workshops/2003/kaufmann/support/input/defs-in.cert: \
   workshops/2003/kaufmann/deps.cert
-	cd $(@D)/.. ; $(STARTJOB) -c "$(MAKE)"
+	cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
+
+workshops/2003/kaufmann/support/rtl/package-defs.cert: \
+  workshops/2003/kaufmann/deps.cert \
+  workshops/2003/kaufmann/support/tool/simplify-defuns.cert \
+  workshops/2003/kaufmann/support/tool/wrapper.cert
+	cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
 
 # The following has no dependencies, so doesn't need a "deps" file.
 workshops/2004/sumners-ray/support/success.txt:
@@ -1086,6 +1082,14 @@ BOOKS_SKIP_COMP += system/tests/apply-timings.$(ACL2_COMP_EXT)
 BOOKS_SKIP_COMP += oslib/tests/ls.$(ACL2_COMP_EXT)
 BOOKS_SKIP_COMP += oslib/tests/mkdir.$(ACL2_COMP_EXT)
 
+# Has readtime conditionals for different Lisps:
+BOOKS_SKIP_COMP += system/tests/stobj-issues.$(ACL2_COMP_EXT)
+
+# GCL couldn't handle this one (tested 4/10/2020), saying "[GC Hole
+# overrun]" and then "Unrecoverable error: Segmentation violation.."
+# It's not clear why, but it doesn't seem important to figure it out.
+BOOKS_SKIP_COMP += workshops/2011/verbeek-schmaltz/sources/invariants2.$(ACL2_COMP_EXT)
+
 OK_CERTS := $(filter-out $(BOOKS_SKIP_COMP), $(OK_CERTS))
 
 # Avoid trying to make compiled files; target %.$(ACL2_COMP_EXT) still
@@ -1126,9 +1130,9 @@ OK_CERTS := $(filter-out $(addsuffix %, $(EXCLUDED_PREFIXES)), $(OK_CERTS))
 # Keep this section at the end, so that all variable definitions have
 # been completed (in particular, for OK_CERTS).
 
-# Warning: ACL2's GNUmakefile uses the "all" target of this Makefile
-# to implement its target, "regression".  So please be careful about
-# making major changes to "all" in this Makefile.
+# Warning: ACL2's GNUmakefile uses the "regression" target of this
+# Makefile to implement its target, "regression".  So please be
+# careful about making major changes to "regression" in this Makefile.
 
 # First, we let the user filter the books by specifying the roots of
 # the forest of books to be certified.  Our implementation reduces
@@ -1168,23 +1172,21 @@ ifeq ($(shell ls workshops 2> /dev/null), )
 OK_CERTS := $(filter-out workshops/%, $(OK_CERTS))
 endif # ifeq ($(realpath workshops), )
 
-all: $(OK_CERTS)
+regression: $(filter-out $(SLOW_BOOKS), $(OK_CERTS))
 
-.PHONY: almost-everything
-almost-everything: all
+# Starting 8/15/2014, regression-everything does not automatically set
+# USE_QUICKLISP=1, even in the HONS case.  In particular, "make
+# regression-everything" no longer makes doc/manual/; for that, specify
+# USE_QUICKLISP=1.  Update as of 7/30/2020: I think USE_QUICKLISP=1 is now the
+# default, so we should probably remove this comment and the couple sentences
+# before it.
+.PHONY: regression-everything
 
-# Starting 8/15/2014, everything does not automatically set USE_QUICKLISP=1,
-# even in the HONS case.  In particular, "make everything" no longer makes
-# doc/manual/; for that, specify USE_QUICKLISP=1.
-.PHONY: everything
+regression-everything: $(OK_CERTS)
 
-#everything:
-#	$(MAKE) all $(ADDED_BOOKS) $(ADDED_BOOK_TARGETS)
+.PHONY: all
 
-# [Jared] I think this is how everything should work.  All of this
-# ADDED_BOOKS stuff seems really complicated. :(
-
-everything: all $(ADDED_BOOKS) $(ADDED_BOOK_TARGETS)
+all: regression-everything
 
 # The critical path report will work only if you have set up certificate timing
 # BEFORE you build the books.  See ./critpath.pl --help for details.
@@ -1445,12 +1447,21 @@ dummy:
 # so it's not worth figuring out the problem.
 
 BOOKS_BKCHK_OUT := $(patsubst %.cert,%.bkchk.out,$(OK_CERTS))
+BOOKS_BKCHK_OUT := $(filter-out $(SLOW_BOOKS), $(BOOKS_BKCHK_OUT))
 BOOKS_BKCHK_OUT := $(filter-out hacking/%, $(BOOKS_BKCHK_OUT))
 BOOKS_BKCHK_OUT := $(filter-out workshops/2007/dillinger-et-al/code/%, $(BOOKS_BKCHK_OUT))
 BOOKS_BKCHK_OUT := $(filter-out acl2s/%, $(BOOKS_BKCHK_OUT))
 BOOKS_BKCHK_OUT := $(filter-out doc/top.bkchk.out, $(BOOKS_BKCHK_OUT))
 BOOKS_BKCHK_OUT := $(filter-out doc/top-fast.bkchk.out, $(BOOKS_BKCHK_OUT))
 BOOKS_BKCHK_OUT := $(filter-out build/test/%, $(BOOKS_BKCHK_OUT))
+# Uses redefinition:
+BOOKS_BKCHK_OUT := $(filter-out system/tests/cert-data/redef.bkchk.out, $(BOOKS_BKCHK_OUT))
+# Includes the redef book just above:
+BOOKS_BKCHK_OUT := $(filter-out system/tests/cert-data/top.bkchk.out, $(BOOKS_BKCHK_OUT))
+# Name conflict for "INSTANCE" package between instance.lisp and
+# (included in system/pseudo-good-worldp.lisp) system book
+# std/portcullis.lisp:
+BOOKS_BKCHK_OUT := $(filter-out workshops/2004/davis/support/%, $(BOOKS_BKCHK_OUT))
 
 .PHONY: chk-include-book-worlds
 chk-include-book-worlds: $(BOOKS_BKCHK_OUT)
@@ -1612,7 +1623,7 @@ centaur/getopt/demo2-test.ok: centaur/getopt/demo2 \
 	@cd centaur/getopt; cp demo2-test.out demo2-test.ok
 	@ls -l centaur/getopt/demo2-test.ok
 
-all: centaur/getopt/demo2-test.ok
+regression: centaur/getopt/demo2-test.ok
 
 
 
@@ -1623,15 +1634,16 @@ all: centaur/getopt/demo2-test.ok
 # These regular expressions may include things more appropriate for
 # raw Lisp.  May want to remove some of these or extend them to
 # support new types of definitions.
-ETAGS = etags --language=none \
- --ignore-case-regex='/ *set[ \t]?\([^ =]*\)[ \n]*=/\1/' \
- --ignore-case-regex='/(set[^ \t]*[ \t]?\([^ ]*\)[ \t]*/\2/' \
- --ignore-case-regex='/ *(\(memoize\|def[^tc]\|defttag\|deftheory\)[^ \t]*[ \t]?\([^ ]*\)[ \t]*/\2/'
+ETAGS=etags --language=none \
+  --regex='/ *set[ \t]?\([^ =]*\)[ \n]*=/\1/i' \
+  --regex='/(set[^ \t]*[ \t]?\([^ ]*\)[ \t]*/\2/i' \
+  --regex='/ *(memoize[ \t]+\([^ \t\)]*\)[ \t\)]/\1/i' \
+  --regex='/ *(\(def[^t]\|deft[^h]\|defth[^m]\)[^ \t]*[ \t]?\([^ ]*\)[ \t]*/\2/i'
 
 TAGS : $(CERT_PL_SOURCES)
 	@echo "Making TAGS"
 	@rm -f TAGS
-	cat $(BUILD_DIR)/Makefile-sources | xargs -n 100 --delimiter='\n' $(ETAGS) -a
+	cat $(BUILD_DIR)/Makefile-sources | tr '\n' '\0' | xargs -0 -n 100 $(ETAGS) -a
 
 
 ##############################
@@ -1648,7 +1660,7 @@ git_status:
                       --write-sources $(BUILD_DIR)/git_source_deps \
                       --write-otherdeps $(BUILD_DIR)/git_other_deps \
                       --targets $(BUILD_DIR)/git_lisp_sources
-	cat $(BUILD_DIR)/git_source_deps $(BUILD_DIR)/git_other_deps | xargs --delimiter='\n' git status -u --
+	cat $(BUILD_DIR)/git_source_deps $(BUILD_DIR)/git_other_deps | tr '\n' '\0' | xargs -0 git status -u --
 
 
 ##############################
@@ -1715,7 +1727,12 @@ git_status:
 #    find Lisp files instead of maintaining (by hand) lists of directories.  We
 #    also do not need to manually keep track of dependencies between
 #    directories, etc.
-
+#
+# In 2019/2020, David Rager <ragerdl@defthm.com>, with support from the
+# community, changed the "all" target so that it really builds all of the
+# (non-broken) books.  He also reworked the logic for the "slow book" mechanism,
+# and created a target for contibutors to use when making pull requests/pushes
+# to the ACL2 community github.
 
 
 

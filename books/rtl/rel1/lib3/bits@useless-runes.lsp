@@ -1,0 +1,4 @@
+(NATP-BVECP)
+(BITN-REC-POS-DEF (2 1 (:TYPE-PRESCRIPTION NATP*))
+                  (1 1 (:TYPE-PRESCRIPTION NATP+))
+                  (1 1 (:TYPE-PRESCRIPTION NATP)))

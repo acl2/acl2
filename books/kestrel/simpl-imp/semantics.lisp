@@ -17,7 +17,7 @@
 
 (include-book "kestrel/fty/deffixequiv-sk" :dir :system)
 (include-book "kestrel/fty/defomap" :dir :system)
-(include-book "kestrel/utilities/define-sk" :dir :system)
+(include-book "std/util/define-sk" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -61,9 +61,9 @@
      that maps old configurations to new configurations.
      This function performs one step of computation,
      according to a reasonable level of granularity,
-     but it is possible to define finer- or coarser-grained steps,
-     e.g. if expression evaluation were a multi-step process
-     as mentioned above,
+     but it is possible to define finer- or coarser-grained steps;
+     for instance,
+     if expression evaluation were a multi-step process as mentioned above,
      then we would have a finer-grained execution model.
      We cannot have an always-terminating interpreter of Imp commands,
      because its loops may not terminate.

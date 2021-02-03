@@ -79,7 +79,6 @@
 
 (in-package "ACL2")
 
-(include-book "misc/eval" :dir :system)
 (include-book "std/util/defaggregate" :dir :system)
 (include-book "std/util/deflist" :dir :system)
 (include-book "misc/defun-plus" :dir :system)

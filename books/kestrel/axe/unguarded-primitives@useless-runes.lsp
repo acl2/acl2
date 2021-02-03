@@ -1,0 +1,28 @@
+(CAR-UNGUARDED)
+(CAR-UNGUARDED-CORRECT (2 2 (:REWRITE DEFAULT-CAR)))
+(CDR-UNGUARDED)
+(CDR-UNGUARDED-CORRECT (2 2 (:REWRITE DEFAULT-CDR)))
+(BINARY-+-UNGUARDED)
+(BINARY-+-UNGUARDED-CORRECT (8 8
+                               (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP)))
+(BINARY-*-UNGUARDED)
+(BINARY-*-UNGUARDED-CORRECT (4 4
+                               (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
+                            (3 2 (:REWRITE DEFAULT-*-2))
+                            (3 2 (:REWRITE DEFAULT-*-1)))
+(<-UNGUARDED)
+(<-UNGUARDED-CORRECT (76 76 (:REWRITE DEFAULT-REALPART))
+                     (24 24
+                         (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
+                     (22 22 (:REWRITE DEFAULT-IMAGPART))
+                     (6 6 (:REWRITE DEFAULT-COMPLEX-2))
+                     (6 6 (:REWRITE DEFAULT-COMPLEX-1)))
+(UNARY---UNGUARDED)
+(UNARY---UNGUARDED-CORRECT (3 2 (:REWRITE DEFAULT-UNARY-MINUS))
+                           (2 2
+                              (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP)))
+(UNARY-/-UNGUARDED)
+(UNARY-/-UNGUARDED-CORRECT (8 2 (:REWRITE DEFAULT-UNARY-/))
+                           (5 5
+                              (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
+                           (4 2 (:DEFINITION NOT)))

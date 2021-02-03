@@ -10,7 +10,6 @@
 (include-book "complex-lemmas")
 (include-book "norm2")
 
-
 (defun region-p (region)
   (and (consp region)
        (interval-p (car region))

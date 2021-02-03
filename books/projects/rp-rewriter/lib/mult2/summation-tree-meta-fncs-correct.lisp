@@ -136,17 +136,17 @@
 
   (local
    (defthm RP-EVL-OF-TRANS-LIST-opener
-     (equal (RP-EVL-OF-TRANS-LIST (cons x y) a)
+     (equal (rp-evl-lst (cons x y) a)
             (cons (rp-evl x a)
-                  (RP-EVL-OF-TRANS-LIST y a)))
+                  (rp-evl-lst y a)))
      :hints (("Goal"
-              :in-theory (e/d (RP-EVL-OF-TRANS-LIST) ())))))
+              :in-theory (e/d () ())))))
   (local
    (defthm RP-EVL-OF-TRANS-LIST-opener-when-nil
-     (equal (RP-EVL-OF-TRANS-LIST nil a)
+     (equal (RP-EVL-lst nil a)
             nil)
      :hints (("Goal"
-              :in-theory (e/d (RP-EVL-OF-TRANS-LIST) ())))))
+              :in-theory (e/d () ())))))
 
   (in-theory (disable rp-trans)))
 
@@ -167,15 +167,12 @@
                  (mult-formula-checks state))
             (and (equal (sum-list (rp-evl (trans-list (rp-trans-lst lst)) A))
                         (sum-list-eval lst a))
-                 (equal (SUM-LIST (RP-EVL-OF-TRANS-LIST (RP-TRANS-LST LST)
-                                                        A))
+                 (equal (SUM-LIST (RP-EVL-lst (RP-TRANS-LST LST)
+                                              A))
                         (sum-list-eval lst a))))
    :hints (("Goal"
             :do-not-induct t
             :induct (sum-list-eval lst a)
-            :expand ((RP-EVL-OF-TRANS-LIST NIL A)
-                     (:free (x y)
-                            (RP-EVL-OF-TRANS-LIST (cons x y) a)))
             :in-theory (e/d (sum-list
                              trans-list) ())))))
 
@@ -204,15 +201,16 @@
                  (equal (sum (rp-evlt x a) (rp-evlt y a) z)
                         (ifix z))))
    :hints (("Goal"
-            :in-theory (e/d (negated-termsp
-                             sum
-                             --)
-                            (rp-equal-cnt
-                             ex-from-rp
-                             rp-equal
-                             UNICITY-OF-0
-                             rp-evl-of-rp-equal
-                             +-is-SUM))
+            :in-theory (e/d* (negated-termsp
+                              (:REWRITE REGULAR-RP-EVL-OF_--_WHEN_MULT-FORMULA-CHECKS)
+                              sum
+                              --)
+                             (rp-equal-cnt
+                              ex-from-rp
+                              rp-equal
+                              UNICITY-OF-0
+                              rp-evl-of-rp-equal
+                              +-is-SUM))
             :use ((:instance rp-evlt-of-rp-equal
                              (term1 x)
                              (term2 (cadr y)))
@@ -267,8 +265,7 @@
                    (rp-evlt y a)))
    :hints (("Goal"
             :do-not-induct t
-            :expand ((:free (x y) (RP-EVL-OF-TRANS-LIST (cons x y) a))
-                     (:free (x) (nth 1 x))
+            :expand ((:free (x) (nth 1 x))
                      (:free (x) (nth 0 x))
                      (:free (x) (nth 2 x))
                      (:free (x) (nth 3 x)))
@@ -343,7 +340,6 @@
     :hints (("Goal"
              :do-not-induct t
              :expand ((RP-TRANS (CONS 'LIST* TERM2))
-                      (RP-EVL-OF-TRANS-LIST NIL A)
                       (:free (x y)
                              (sum-list (cons x y)))
                       (RP-TRANS (CONS 'LIST* TERM1)))
@@ -359,8 +355,6 @@
                          (sum-list (rp-evlt term2 a)))))
     :hints (("Goal"
              :do-not-induct t
-             :expand ((RP-EVL-OF-TRANS-LIST '('0) A)
-                      (RP-EVL-OF-TRANS-LIST NIL A))
              :use ((:instance pp-sum-merge-aux-correct
                               (term1 (cdr term1))
                               (term2 (cdr term2))
@@ -390,7 +384,6 @@
     :hints (("Goal"
              :do-not-induct t
              :expand ((RP-TRANS (CONS 'LIST* TERM2))
-                      (RP-EVL-OF-TRANS-LIST NIL A)
                       (:free (x y)
                              (sum-list (cons x y)))
                       (RP-TRANS (CONS 'LIST* TERM1)))
@@ -407,8 +400,6 @@
                          (sum-list (rp-evlt term2 a)))))
     :hints (("Goal"
              :do-not-induct t
-             :expand ((RP-EVL-OF-TRANS-LIST NIL A)
-                      (RP-EVL-OF-TRANS-LIST '('0) A))
              :use ((:instance s-sum-merge-aux-correct
                               (term1 (cdr term1))
                               (term2 (cdr term2))))
@@ -482,10 +473,10 @@
                   (RP-EVL (RP-TRANS (EX-FROM-RP TERM)) A))))
 (local
  (defthm RP-EVL-OF-TRANS-LIST-of-nil
-   (equal (RP-EVL-OF-TRANS-LIST NIL A)
+   (equal (RP-EVL-lst NIL A)
           nil)
    :hints (("Goal"
-            :in-theory (e/d (RP-EVL-OF-TRANS-LIST) ())))))
+            :in-theory (e/d () ())))))
 
 (defthm s-fix-pp-args-aux-correct-dummy-lemma1
   (and (equal (equal (m2 (sum rest1 a))
@@ -543,12 +534,13 @@
              :do-not-induct t
              :expand ((:free (x y)
                              (sum-list (cons x y)))
-                      (:free (x y)
-                             (RP-EVL-OF-TRANS-LIST (cons x y) a)))
+                      )
              :induct (s-fix-pp-args-aux pp-lst)
-             :in-theory (e/d (s-fix-pp-args-aux
-                              rp-evlt-of-ex-from-rp-reverse)
-                             (rp-evlt-of-ex-from-rp)))))
+             :in-theory (e/d* (s-fix-pp-args-aux
+                               (:REWRITE
+                                REGULAR-RP-EVL-OF_--_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP)
+                               rp-evlt-of-ex-from-rp-reverse)
+                              (rp-evlt-of-ex-from-rp)))))
 
   (defthmd s-fix-args-correct-lemma1
     (Implies (and (rp-evl-meta-extract-global-facts :state state)
@@ -648,27 +640,28 @@
            :do-not-induct t
            :expand ((:free (x y)
                            (sum-list (cons x y)))
-                    (:free (x y)
-                           (RP-EVL-OF-TRANS-LIST (cons x y) a)))
+                    )
            :induct (c/d-fix-arg-aux pp-lst neg-flag limit)
-           :in-theory (e/d (c/d-fix-arg-aux
-                            times2
-                            rp-evlt-of-ex-from-rp-reverse
-                            sum-comm-1-loop-stopper
-                            sum-comm-2-loop-stopper
-                            )
-                           (rp-evlt-of-ex-from-rp
-                            sum-comm-1
-                            sum-comm-2
-                            rp-evlt-of-rp-equal
-                            (:DEFINITION RP-TERMP)
-                            (:DEFINITION FALIST-CONSISTENT)
-                            (:REWRITE DEFAULT-CDR)
-                            (:DEFINITION EX-FROM-RP)
-                            (:REWRITE DEFAULT-CAR)
-                            (:REWRITE RP-TERMP-IMPLIES-SUBTERMS)
-                            F2-OF-TIMES2
-                            rp-trans)))
+           :in-theory (e/d* (c/d-fix-arg-aux
+                             times2
+                             (:REWRITE
+                              REGULAR-RP-EVL-OF_--_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP)
+                             rp-evlt-of-ex-from-rp-reverse
+                             sum-comm-1-loop-stopper
+                             sum-comm-2-loop-stopper
+                             )
+                            (rp-evlt-of-ex-from-rp
+                             sum-comm-1
+                             sum-comm-2
+                             rp-evlt-of-rp-equal
+                             (:DEFINITION RP-TERMP)
+                             (:DEFINITION FALIST-CONSISTENT)
+                             (:REWRITE DEFAULT-CDR)
+                             (:DEFINITION EX-FROM-RP)
+                             (:REWRITE DEFAULT-CAR)
+                             (:REWRITE RP-TERMP-IMPLIES-SUBTERMS)
+                             F2-OF-TIMES2
+                             rp-trans)))
           ("Subgoal *1/3"
            :use ((:instance rp-evlt-of-rp-equal
                             (term1 (EX-FROM-RP (CAR PP-LST)))
@@ -1422,6 +1415,14 @@
 ;;                             S-OF-MINUS
 ;;                             S-FIX-PP-ARGS-AUX-CORRECT-DUMMY-LEMMA1)))))
 
+(local
+ (defthm cdr-of-rp-trans-lst
+   (equal (cdr (rp-trans-lst x))
+          (rp-trans-lst (cdr x)))
+   :hints (("Goal"
+            :expand (rp-trans-lst x)
+            :in-theory (e/d () ())))))
+
 (encapsulate
   nil
 
@@ -1431,6 +1432,14 @@
                                 (equal x '(CAr (cDR (CAr (cDR C/D2))))))))
               (equal (rp-evlt x a)
                      (rp-evlt (ex-from-rp x) a)))))
+
+  ;; (defthmd can-c-merge-fast-aux-correct-lemma
+  ;;   (implies (and (can-c-merge-fast-aux s-lst pp c/d)
+  ;;                 (rp-evl-meta-extract-global-facts :state state)
+  ;;                 (mult-formula-checks state))
+  ;;            (equal (sum (rp-evlt `(c nil ,pp ,c/d) a)
+  ;;                                 (rp-evlt `(c (list . ,s-lst) ,pp2 ,c/d2)))
+  ;;                   (f2 (sum
 
   (defthmd can-c-merge-fast-correct-lemma
     (implies (and (rp-evl-meta-extract-global-facts :state state)
@@ -1460,19 +1469,23 @@
 ;:otf-flg t
     :hints (("Goal"
              :expand ((:free (x) (nth 3 x)))
-             :in-theory (e/d (get-c/d-args
-                              can-c-merge-fast-correct-lemma-1
-                              can-c-merge-fast
-                              can-c-merge-fast-aux
-                              f2-to-d2)
-                             (d2-to-f2
-                              rp-termp
-                              D2-OF-MINUS
-                              (:DEFINITION EX-FROM-RP)
-                              (:REWRITE DEFAULT-CDR)
-                              (:DEFINITION INCLUDE-FNC)
-                              rp-trans
-                              RP-EVLT-OF-EX-FROM-RP))))))
+             :in-theory (e/d* (get-c/d-args
+                               can-c-merge-fast-correct-lemma-1
+                               (:REWRITE REGULAR-RP-EVL-OF_C_WHEN_MULT-FORMULA-CHECKS)
+                               (:REWRITE
+                                REGULAR-RP-EVL-OF_S_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP)
+                               can-c-merge-fast
+                               ;;regular-eval-lemmas
+                               can-c-merge-fast-aux
+                               f2-to-d2)
+                              (d2-to-f2
+                               rp-termp
+                               D2-OF-MINUS
+                               (:DEFINITION EX-FROM-RP)
+                               (:REWRITE DEFAULT-CDR)
+                               (:DEFINITION INCLUDE-FNC)
+                               rp-trans
+                               RP-EVLT-OF-EX-FROM-RP))))))
 
 (defthm sum-of-swap-c/ds
   (b* (((mv c/d1-new c/d2-new) (swap-c/ds c/d1 c/d2 cond)))
@@ -1513,7 +1526,6 @@
            :in-theory (e/d (swap-c/ds)
                            (rp-termp
                             rp-trans)))))
-
 
 (defthm can-c-merge-fast-correct-with-sk
   (implies (and (rp-evl-meta-extract-global-facts :state state)
@@ -2296,7 +2308,6 @@
            :in-theory (e/d (pp-sum-merge)
                            ()))))
 
-
 (local
  (defthm rp-termp-of-d
    (iff (rp-termp `(d ,x))
@@ -2311,7 +2322,6 @@
  (defthm rp-termp-of-list
    (iff (rp-termp `(list . ,x))
         (rp-term-listp x))))
-
 
 (local
  (defthm rp-termp-of-d-sum
@@ -2580,9 +2590,9 @@
            :use ((:instance m2-of-ex-from-rp/--)
                  (:instance m2-of-ex-from-rp/--
                             (rest 0)))
-           :in-theory (e/d () (m2-of-ex-from-rp/--
-;m2-of-m2
-                               s-fix-pp-args-aux-correct-dummy-lemma1)))))
+           :in-theory (e/d* (regular-eval-lemmas)
+                            (m2-of-ex-from-rp/--
+                             s-fix-pp-args-aux-correct-dummy-lemma1)))))
 
 (defthm m2-equals-dummy-lemma
   (implies (equal (m2 (sum x y)) (m2 (sum a b c)))
@@ -2722,23 +2732,33 @@
   ;;            nil))))
 
   (local
-   (in-theory (e/d (get-c/d-args
-                    clean-c/d-args
-                    remove-s-from-for-fast-merge
-                    sum-of-swap-c/ds-reverse
-                    f2-to-d2
-                    d2-of-times2-reverse)
-                   (RP-EVL-OF-VARIABLE
-                    rp-termp
-                    is-falist
-                    d2-to-f2
-                    d2-of-times2
-                    D2-OF-MINUS
-                    f2-of-minus
-                    valid-sc
-                    sum-of-swap-c/ds
-                    sum-of-swap-c/ds-for-swapped-fncs
-                    rp-trans-is-term-when-list-is-absent))))
+   (in-theory (e/d* (get-c/d-args
+                     (:REWRITE REGULAR-RP-EVL-OF_--_WHEN_MULT-FORMULA-CHECKS)
+                     (:REWRITE REGULAR-RP-EVL-OF_BINARY-AND_WHEN_MULT-FORMULA-CHECKS)
+                     (:REWRITE REGULAR-RP-EVL-OF_BINARY-APPEND_WHEN_MULT-FORMULA-CHECKS)
+                     (:REWRITE REGULAR-RP-EVL-OF_BINARY-SUM_WHEN_MULT-FORMULA-CHECKS)
+                     (:REWRITE REGULAR-RP-EVL-OF_C_WHEN_MULT-FORMULA-CHECKS)
+                     (:REWRITE REGULAR-RP-EVL-OF_D-SUM_WHEN_MULT-FORMULA-CHECKS)
+                     (:REWRITE REGULAR-RP-EVL-OF_D_WHEN_MULT-FORMULA-CHECKS)
+                     (:REWRITE REGULAR-RP-EVL-OF_S_WHEN_MULT-FORMULA-CHECKS)
+
+                     clean-c/d-args
+                     remove-s-from-for-fast-merge
+                     sum-of-swap-c/ds-reverse
+                     f2-to-d2
+                     d2-of-times2-reverse)
+                    (RP-EVL-OF-VARIABLE
+
+                     rp-termp
+                     is-falist
+                     d2-to-f2
+                     d2-of-times2
+                     D2-OF-MINUS
+                     f2-of-minus
+                     valid-sc
+                     sum-of-swap-c/ds
+                     sum-of-swap-c/ds-for-swapped-fncs
+                     rp-trans-is-term-when-list-is-absent))))
 
   (defthm-c/d-merge
     (defthm s-of-s-fix-aux-correct
@@ -2948,7 +2968,6 @@
                   (rp-evl (rp-trans (ex-from-rp term))
                           a))))
 
-
 (progn
   (defthm is-rp-of-bitp
     (is-rp `(rp 'bitp ,x))
@@ -2977,10 +2996,11 @@
                    (BITP (RP-EVLt (EX-FROM-RP TERM) A))))
      :hints (("Goal"
               :induct (PP-HAS-BITP-RP TERM)
-              :in-theory (e/d (is-if is-rp
-                                     PP-HAS-BITP-RP)
-                              (bitp
-                               NOT-INCLUDE-RP-MEANS-VALID-SC))))))
+              :in-theory (e/d* (is-if is-rp
+                                      PP-HAS-BITP-RP)
+                               (bitp
+                                NOT-INCLUDE-RP-MEANS-VALID-SC
+                                ))))))
 
   (local
    (defthm pp-termp-is-bitp
@@ -2992,17 +3012,28 @@
      :hints (("Goal"
               :do-not-induct t
               :expand ((PP-TERM-P TERM))
-              :in-theory (e/d (pp-term-p
-
-                               is-rp
-                               rp-evlt-of-ex-from-rp-reverse-2
-                               is-if)
-                              (bitp
-                               pp-term-p
-                               RP-TRANS-IS-TERM-WHEN-LIST-IS-ABSENT
-                               rp-evlt-of-ex-from-rp
-                               EX-FROM-RP-LEMMA1
-                               rp-evlt-of-ex-from-rp))))))
+              :in-theory (e/d* (pp-term-p
+                                (:REWRITE
+                                 REGULAR-RP-EVL-OF_BINARY-?_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP)
+                                (:REWRITE
+                                 REGULAR-RP-EVL-OF_BINARY-AND_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP)
+                                (:REWRITE
+                                 REGULAR-RP-EVL-OF_BINARY-NOT_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP)
+                                (:REWRITE
+                                 REGULAR-RP-EVL-OF_BINARY-OR_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP)
+                                (:REWRITE
+                                 REGULAR-RP-EVL-OF_BINARY-XOR_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP)
+                                (:REWRITE
+                                 REGULAR-RP-EVL-OF_BIT-OF_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP)
+                                is-rp
+                                rp-evlt-of-ex-from-rp-reverse-2
+                                is-if)
+                               (bitp
+                                pp-term-p
+                                RP-TRANS-IS-TERM-WHEN-LIST-IS-ABSENT
+                                rp-evlt-of-ex-from-rp
+                                EX-FROM-RP-LEMMA1
+                                rp-evlt-of-ex-from-rp))))))
 
   (local
    (defthm light-pp-termp-is-bitp
@@ -3014,16 +3045,28 @@
      :hints (("Goal"
               :do-not-induct t
               :expand ((LIGHT-PP-TERM-P TERM))
-              :in-theory (e/d (LIGHT-PP-TERM-p
-                               is-rp
-                               rp-evlt-of-ex-from-rp-reverse-2
-                               is-if)
-                              (bitp
-                               pp-term-p
-                               RP-TRANS-IS-TERM-WHEN-LIST-IS-ABSENT
-                               rp-evlt-of-ex-from-rp
-                               EX-FROM-RP-LEMMA1
-                               rp-evlt-of-ex-from-rp))))))
+              :in-theory (e/d* (LIGHT-PP-TERM-p
+                                is-rp
+                                (:REWRITE
+                                 REGULAR-RP-EVL-OF_BINARY-?_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP)
+                                (:REWRITE
+                                 REGULAR-RP-EVL-OF_BINARY-AND_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP)
+                                (:REWRITE
+                                 REGULAR-RP-EVL-OF_BINARY-NOT_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP)
+                                (:REWRITE
+                                 REGULAR-RP-EVL-OF_BINARY-OR_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP)
+                                (:REWRITE
+                                 REGULAR-RP-EVL-OF_BINARY-XOR_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP)
+                                (:REWRITE
+                                 REGULAR-RP-EVL-OF_BIT-OF_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP)
+                                rp-evlt-of-ex-from-rp-reverse-2
+                                is-if)
+                               (bitp
+                                pp-term-p
+                                RP-TRANS-IS-TERM-WHEN-LIST-IS-ABSENT
+                                rp-evlt-of-ex-from-rp
+                                EX-FROM-RP-LEMMA1
+                                rp-evlt-of-ex-from-rp))))))
 
   (local
    (defthm PP-HAS-BITP-RP-EX-FROM-RP
@@ -3088,8 +3131,6 @@
                             rp-termp
                             include-fnc)))))
 
-
-
 (encapsulate
   nil
   (local
@@ -3110,11 +3151,10 @@
   (local
    (encapsulate
      nil
-    
+
      (local
       (include-book "centaur/bitops/ihsext-basics" :dir :system))
-  
-  
+
      (defthmd bits-is-bit-of
        (implies (and (natp start)
                      (integerp num)
@@ -3184,8 +3224,6 @@
                      (equal (svl::4vec-?* num num2 num3)
                             (binary-? num num2 num3)))))))
 
-
-
   (local
    (defthm 4vec->pp-term-correct-bitp-lemma
      (implies (and (valid-sc term a)
@@ -3199,8 +3237,6 @@
               :do-not-induct t
               :in-theory (e/d () (bitp
                                   pp-term-p))))))
-
-
 
   (local
    (encapsulate
@@ -3250,39 +3286,40 @@
              :expand ((:free (x) (nth 3 x))
                       (:free (x) (nth 2 x))
                       (:free (x) (nth 1 x)))
-             :in-theory (e/d (4vec->pp-term
-                              rp-evlt-of-ex-from-rp-reverse-2
-                              bits-is-bit-of
-                              good-4vec-term-p
-                              )
-                             (pp-term-p
-                              rp-termp
-                              (:DEFINITION VALID-SC)
-                              (:DEFINITION INCLUDE-FNC)
-                              (:REWRITE VALID-SC-LEMMA1)
-                              (:REWRITE NOT-INCLUDE-RP-MEANS-VALID-SC)
-                              (:DEFINITION ACL2::APPLY$-BADGEP)
-                              (:LINEAR ACL2::APPLY$-BADGEP-PROPERTIES . 1)
-                              (:DEFINITION EX-FROM-RP)
-                              (:REWRITE DEFAULT-CDR)
-                              (:DEFINITION SUBSETP-EQUAL)
-                              (:DEFINITION MEMBER-EQUAL)
-                              (:REWRITE PP-TERMP-OF-EX-FROM-RP)
-                              (:LINEAR ACL2::APPLY$-BADGEP-PROPERTIES . 2)
-                              (:REWRITE RP-TERM-LISTP-IS-TRUE-LISTP)
-                              (:REWRITE NOT-INCLUDE-RP)
-                              (:REWRITE
-                               ACL2::MEMBER-EQUAL-NEWVAR-COMPONENTS-1)
-                              (:REWRITE DEFAULT-CAR)
-                              (:DEFINITION EVAL-AND-ALL)
-                              (:DEFINITION RP-TERM-LISTP)
-                              (:DEFINITION TRUE-LISTP)
-                              (:REWRITE ACL2::O-P-O-INFP-CAR)
-                              (:DEFINITION QUOTEP)
-                              natp
-                              bitp
-                              rp-evlt-of-ex-from-rp))))))
-
+             :in-theory (e/d* (4vec->pp-term
+                               rp-evlt-of-ex-from-rp-reverse-2
+                               regular-eval-lemmas
+                               bits-is-bit-of
+                               good-4vec-term-p
+                               )
+                              (pp-term-p
+                               regular-eval-lemmas-with-ex-from-rp
+                               rp-termp
+                               (:DEFINITION VALID-SC)
+                               (:DEFINITION INCLUDE-FNC)
+                               (:REWRITE VALID-SC-LEMMA1)
+                               (:REWRITE NOT-INCLUDE-RP-MEANS-VALID-SC)
+                               (:DEFINITION ACL2::APPLY$-BADGEP)
+                               (:LINEAR ACL2::APPLY$-BADGEP-PROPERTIES . 1)
+                               (:DEFINITION EX-FROM-RP)
+                               (:REWRITE DEFAULT-CDR)
+                               (:DEFINITION SUBSETP-EQUAL)
+                               (:DEFINITION MEMBER-EQUAL)
+                               (:REWRITE PP-TERMP-OF-EX-FROM-RP)
+                               (:LINEAR ACL2::APPLY$-BADGEP-PROPERTIES . 2)
+                               (:REWRITE RP-TERM-LISTP-IS-TRUE-LISTP)
+                               (:REWRITE NOT-INCLUDE-RP)
+                               (:REWRITE
+                                ACL2::MEMBER-EQUAL-NEWVAR-COMPONENTS-1)
+                               (:REWRITE DEFAULT-CAR)
+                               (:DEFINITION EVAL-AND-ALL)
+                               (:DEFINITION RP-TERM-LISTP)
+                               (:DEFINITION TRUE-LISTP)
+                               (:REWRITE ACL2::O-P-O-INFP-CAR)
+                               (:DEFINITION QUOTEP)
+                               natp
+                               bitp
+                               rp-evlt-of-ex-from-rp))))))
 
 (defthm new-sum-merge-aux-correct
   (implies (and (rp-evl-meta-extract-global-facts :state state)
@@ -3307,37 +3344,64 @@
                     (valid-SC ''NIL A)
                     (VALID-SC ''0 A)
                     (:free (x) (rp-termp (cons 'list x))))
-           :in-theory (e/d (new-sum-merge-aux
-                            c-res
-                            RP-EVLT-OF-EX-FROM-RP-REVERSE-2
-                            new-sum-merge-aux-correct-lemma1
-                            new-sum-merge-aux-correct-lemma2
-;WELL-FORMED-NEW-SUM
-                            )
-                           (valid-sc
-                            (:REWRITE IS-IF-RP-TERMP)
-                            (:TYPE-PRESCRIPTION O<)
-                            (:REWRITE EX-FROM-SYNP-LEMMA1)
-                            (:TYPE-PRESCRIPTION BINARY-SUM)
-                            (:DEFINITION INCLUDE-FNC)
-                            (:REWRITE NOT-INCLUDE-RP-MEANS-VALID-SC)
-                            (:REWRITE ACL2::O-P-O-INFP-CAR)
-                            (:DEFINITION INCLUDE-FNC-SUBTERMS)
-                            (:TYPE-PRESCRIPTION EX-FROM-SYNP)
-                            (:TYPE-PRESCRIPTION INCLUDE-FNC)
-                            ;;(:DEFINITION WELL-FORMED-NEW-SUM)
-                            rp-evlt-of-ex-from-rp
-                            rp-termp
-                            (:TYPE-PRESCRIPTION VALID-SC)
-                            (:TYPE-PRESCRIPTION WELL-FORMED-NEW-SUM)
-                            (:REWRITE DEFAULT-CAR)
-                            (:TYPE-PRESCRIPTION RP-TERM-LISTP)
-                            (:DEFINITION PP-TERM-P)
-                            (:TYPE-PRESCRIPTION SUM-LIST)
-                            (:TYPE-PRESCRIPTION RP-TERMP)
-                            (:DEFINITION EX-FROM-RP)
-                            (:REWRITE DEFAULT-CDR)
-                            (:DEFINITION IS-RP$INLINE))))))
+           :in-theory (e/d* (new-sum-merge-aux
+                             c-res
+                             ;;regular-eval-lemmas-with-ex-from-rp
+                             RP-EVLT-OF-EX-FROM-RP-REVERSE-2
+                             new-sum-merge-aux-correct-lemma1
+                             new-sum-merge-aux-correct-lemma2
+                             (:REWRITE
+                              REGULAR-RP-EVL-OF_C-RES_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP)
+                             (:REWRITE
+                              REGULAR-RP-EVL-OF_CONS_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP)
+                             (:REWRITE
+                              REGULAR-RP-EVL-OF_C_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP)
+                             (:REWRITE
+                              REGULAR-RP-EVL-OF_D_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP)
+                             (:REWRITE
+                              REGULAR-RP-EVL-OF_SUM-LIST_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP)
+                             (:REWRITE
+                              REGULAR-RP-EVL-OF_S_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP)
+                             )
+                            (valid-sc
+                             (:REWRITE RP-EVL-OF-VARIABLE)
+                             (:REWRITE EVL-OF-EXTRACT-FROM-RP-2)
+                             (:REWRITE RP-TERMP-SHOULD-TERM-BE-IN-CONS-LHS)
+                             include-fnc
+
+                             (:TYPE-PRESCRIPTION NEW-SUM-MERGE-AUX)
+                             (:TYPE-PRESCRIPTION MULT-FORMULA-CHECKS)
+                             (:TYPE-PRESCRIPTION GOOD-4VEC-TERM-P)
+                             (:TYPE-PRESCRIPTION IS-RP$INLINE)
+                             (:DEFINITION WELL-FORMED-NEW-SUM)
+                             (:TYPE-PRESCRIPTION IS-RP-LOOSE$INLINE)
+                             (:REWRITE IS-IF-RP-TERMP)
+                             (:TYPE-PRESCRIPTION O<)
+                             (:REWRITE RP-EVL-OF-RP-EQUAL-SUBTERMS-CALL)
+                             (:REWRITE EX-FROM-SYNP-LEMMA1)
+                             (:TYPE-PRESCRIPTION BINARY-SUM)
+                             (:REWRITE RP-EVL-OF-STRINGP-CALL)
+                             (:REWRITE RP-EVL-OF-ZP-CALL)
+                             (:REWRITE RP-EVL-OF-UNARY---CALL)
+                             (:DEFINITION INCLUDE-FNC)
+                             (:REWRITE NOT-INCLUDE-RP-MEANS-VALID-SC)
+                             (:REWRITE ACL2::O-P-O-INFP-CAR)
+                             (:DEFINITION INCLUDE-FNC-SUBTERMS)
+                             (:TYPE-PRESCRIPTION EX-FROM-SYNP)
+                             (:TYPE-PRESCRIPTION INCLUDE-FNC)
+                             ;;(:DEFINITION WELL-FORMED-NEW-SUM)
+                             rp-evlt-of-ex-from-rp
+                             rp-termp
+                             (:TYPE-PRESCRIPTION VALID-SC)
+                             (:TYPE-PRESCRIPTION WELL-FORMED-NEW-SUM)
+                             (:REWRITE DEFAULT-CAR)
+                             (:TYPE-PRESCRIPTION RP-TERM-LISTP)
+                             (:DEFINITION PP-TERM-P)
+                             (:TYPE-PRESCRIPTION SUM-LIST)
+                             (:TYPE-PRESCRIPTION RP-TERMP)
+                             (:DEFINITION EX-FROM-RP)
+                             (:REWRITE DEFAULT-CDR)
+                             (:DEFINITION IS-RP$INLINE))))))
 
 #|(defthm new-sum-merge-correct
   (implies (and (rp-evl-meta-extract-global-facts :state state)
@@ -3362,10 +3426,6 @@
            (bitp (f2 sum)))
   :hints (("Goal"
            :in-theory (e/d (quarternaryp) ()))))
-
-
-
-
 
 (encapsulate
   nil
@@ -3427,7 +3487,6 @@
                                LIMIT-1-TO-SUM
                                natp))))))
 
-
   (local
    (defthm maxp-of-bitp
      (implies (and (bitp x)
@@ -3476,7 +3535,6 @@
                               (+-is-sum))))
      :rule-classes (:type-prescription :rewrite)))
 
-
   (local
    (defthm quarternaryp-sum-aux-correct
      (implies (and (rp-evl-meta-extract-global-facts :state state)
@@ -3491,21 +3549,24 @@
      :hints (("Goal"
               :do-not-induct t
               :induct (quarternaryp-sum-aux term)
-              :in-theory (e/d (quarternaryp-sum-aux
-                               SUM-LIST
-                               rp-evlt-of-ex-from-rp-reverse-3)
-                              (natp
-                               REGULAR-RP-EVL-OF_C_WHEN_MULT-FORMULA-CHECKS
-                               zp
-                               REGULAR-RP-EVL-OF_C-RES_WHEN_MULT-FORMULA-CHECKS
-                               rp-evlt-of-ex-from-rp
-                               ex-from-rp-lemma1
-                               RP-EVL-OF-VARIABLE
-                               RP-TRANS-IS-TERM-WHEN-LIST-IS-ABSENT
-                               ex-from-rp
-                               ex-from-rp-loose
-                               valid-sc
-                               rp-termp))))))
+              :in-theory (e/d* (quarternaryp-sum-aux
+                                SUM-LIST
+                                (:REWRITE REGULAR-RP-EVL-OF_CONS_WHEN_MULT-FORMULA-CHECKS)
+                                (:REWRITE
+                                 REGULAR-RP-EVL-OF_S_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP)
+                                rp-evlt-of-ex-from-rp-reverse-3)
+                               (natp
+                                REGULAR-RP-EVL-OF_C_WHEN_MULT-FORMULA-CHECKS
+                                zp
+                                REGULAR-RP-EVL-OF_C-RES_WHEN_MULT-FORMULA-CHECKS
+                                rp-evlt-of-ex-from-rp
+                                ex-from-rp-lemma1
+                                RP-EVL-OF-VARIABLE
+                                RP-TRANS-IS-TERM-WHEN-LIST-IS-ABSENT
+                                ex-from-rp
+                                ex-from-rp-loose
+                                valid-sc
+                                rp-termp))))))
 
   (local
    (defthm quarternaryp-is-maxp
@@ -3550,9 +3611,6 @@
                               ex-from-rp-loose
                               valid-sc
                               rp-termp))))))
-
-
-
 
 (defthm contet-from-create-c-instance
   (equal (CONTEXT-FROM-RP (CREATE-C-INSTANCE a b c) context)
@@ -3749,88 +3807,88 @@
                             new-sum-MERGE)
                            (bitp)))))
 
-(defthm c-spec-valid-rp-meta-rulep
-  (implies (and (rp-evl-meta-extract-global-facts :state state)
-                (mult-formula-checks state))
-           (let ((rule (make rp-meta-rule-rec
-                             :fnc 's-c-spec-meta
-                             :trig-fnc 'c-spec
-                             :dont-rw t
-                             :valid-syntax t)))
-             (and (valid-rp-meta-rulep rule state)
-                  (rp-meta-valid-syntaxp-sk rule state))))
-  :otf-flg t
-  :hints (("Goal"
-           :in-theory (e/d (rp-meta-valid-syntaxp)
-                           (rp-termp
-                            rp-term-listp
-                            valid-sc
-                            )))))
+;; (defthm c-spec-valid-rp-meta-rulep
+;;   (implies (and (rp-evl-meta-extract-global-facts :state state)
+;;                 (mult-formula-checks state))
+;;            (let ((rule (make rp-meta-rule-rec
+;;                              :fnc 's-c-spec-meta
+;;                              :trig-fnc 'c-spec
+;;                              :dont-rw t
+;;                              :valid-syntax t)))
+;;              (and (valid-rp-meta-rulep rule state)
+;;                   (rp-meta-valid-syntaxp-sk rule state))))
+;;   :otf-flg t
+;;   :hints (("Goal"
+;;            :in-theory (e/d (rp-meta-valid-syntaxp)
+;;                            (rp-termp
+;;                             rp-term-listp
+;;                             valid-sc
+;;                             )))))
 
-(defthm s-spec-valid-rp-meta-rulep
-  (implies (and (rp-evl-meta-extract-global-facts :state state)
-                (mult-formula-checks state))
-           (let ((rule (make rp-meta-rule-rec
-                             :fnc 's-c-spec-meta
-                             :trig-fnc 's-spec
-                             :dont-rw t
-                             :valid-syntax t)))
-             (and (valid-rp-meta-rulep rule state)
-                  (rp-meta-valid-syntaxp-sk rule state))))
-  :otf-flg t
-  :hints (("Goal"
-           :in-theory (e/d (rp-meta-valid-syntaxp)
-                           (rp-termp
-                            rp-term-listp
-                            valid-sc)))))
+;; (defthm s-spec-valid-rp-meta-rulep
+;;   (implies (and (rp-evl-meta-extract-global-facts :state state)
+;;                 (mult-formula-checks state))
+;;            (let ((rule (make rp-meta-rule-rec
+;;                              :fnc 's-c-spec-meta
+;;                              :trig-fnc 's-spec
+;;                              :dont-rw t
+;;                              :valid-syntax t)))
+;;              (and (valid-rp-meta-rulep rule state)
+;;                   (rp-meta-valid-syntaxp-sk rule state))))
+;;   :otf-flg t
+;;   :hints (("Goal"
+;;            :in-theory (e/d (rp-meta-valid-syntaxp)
+;;                            (rp-termp
+;;                             rp-term-listp
+;;                             valid-sc)))))
 
-(defthm s-c-spec-valid-rp-meta-rulep
-  (implies (and (rp-evl-meta-extract-global-facts :state state)
-                (mult-formula-checks state))
-           (let ((rule (make rp-meta-rule-rec
-                             :fnc 's-c-spec-meta
-                             :trig-fnc 's-c-spec
-                             :dont-rw t
-                             :valid-syntax t)))
-             (and (valid-rp-meta-rulep rule state)
-                  (rp-meta-valid-syntaxp-sk rule state))))
-  :otf-flg t
-  :hints (("Goal"
-           :in-theory (e/d (rp-meta-valid-syntaxp)
-                           (rp-termp
-                            rp-term-listp
-                            valid-sc)))))
+;; (defthm s-c-spec-valid-rp-meta-rulep
+;;   (implies (and (rp-evl-meta-extract-global-facts :state state)
+;;                 (mult-formula-checks state))
+;;            (let ((rule (make rp-meta-rule-rec
+;;                              :fnc 's-c-spec-meta
+;;                              :trig-fnc 's-c-spec
+;;                              :dont-rw t
+;;                              :valid-syntax t)))
+;;              (and (valid-rp-meta-rulep rule state)
+;;                   (rp-meta-valid-syntaxp-sk rule state))))
+;;   :otf-flg t
+;;   :hints (("Goal"
+;;            :in-theory (e/d (rp-meta-valid-syntaxp)
+;;                            (rp-termp
+;;                             rp-term-listp
+;;                             valid-sc)))))
 
-(defthm c-s-spec-valid-rp-meta-rulep
-  (implies (and (rp-evl-meta-extract-global-facts :state state)
-                (mult-formula-checks state))
-           (let ((rule (make rp-meta-rule-rec
-                             :fnc 's-c-spec-meta
-                             :trig-fnc 'c-s-spec
-                             :dont-rw t
-                             :valid-syntax t)))
-             (and (valid-rp-meta-rulep rule state)
-                  (rp-meta-valid-syntaxp-sk rule state))))
-  :otf-flg t
-  :hints (("Goal"
-           :in-theory (e/d (rp-meta-valid-syntaxp)
-                           (rp-termp
-                            rp-term-listp
-                            valid-sc)))))
+;; (defthm c-s-spec-valid-rp-meta-rulep
+;;   (implies (and (rp-evl-meta-extract-global-facts :state state)
+;;                 (mult-formula-checks state))
+;;            (let ((rule (make rp-meta-rule-rec
+;;                              :fnc 's-c-spec-meta
+;;                              :trig-fnc 'c-s-spec
+;;                              :dont-rw t
+;;                              :valid-syntax t)))
+;;              (and (valid-rp-meta-rulep rule state)
+;;                   (rp-meta-valid-syntaxp-sk rule state))))
+;;   :otf-flg t
+;;   :hints (("Goal"
+;;            :in-theory (e/d (rp-meta-valid-syntaxp)
+;;                            (rp-termp
+;;                             rp-term-listp
+;;                             valid-sc)))))
 
-(defthm sort-sum-meta-valid-rp-meta-rulep
-  (implies (and (rp-evl-meta-extract-global-facts :state state)
-                (mult-formula-checks state))
-           (let ((rule (make rp-meta-rule-rec
-                             :fnc 'sort-sum-meta
-                             :trig-fnc 'sort-sum
-                             :dont-rw t
-                             :valid-syntax t)))
-             (and (valid-rp-meta-rulep rule state)
-                  (rp-meta-valid-syntaxp-sk rule state))))
-  :otf-flg t
-  :hints (("Goal"
-           :in-theory (e/d (rp-meta-valid-syntaxp)
-                           (rp-termp
-                            rp-term-listp
-                            valid-sc)))))
+;; (defthm sort-sum-meta-valid-rp-meta-rulep
+;;   (implies (and (rp-evl-meta-extract-global-facts :state state)
+;;                 (mult-formula-checks state))
+;;            (let ((rule (make rp-meta-rule-rec
+;;                              :fnc 'sort-sum-meta
+;;                              :trig-fnc 'sort-sum
+;;                              :dont-rw t
+;;                              :valid-syntax t)))
+;;              (and (valid-rp-meta-rulep rule state)
+;;                   (rp-meta-valid-syntaxp-sk rule state))))
+;;   :otf-flg t
+;;   :hints (("Goal"
+;;            :in-theory (e/d (rp-meta-valid-syntaxp)
+;;                            (rp-termp
+;;                             rp-term-listp
+;;                             valid-sc)))))

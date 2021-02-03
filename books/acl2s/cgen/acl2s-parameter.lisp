@@ -17,25 +17,27 @@
 
 
 ;;; Keep the following defconst synced with all the acl2s parameters
-(defconst *acl2s-parameters* '(:testing-enabled
-                               :num-trials
-                               :verbosity-level
-                               :num-counterexamples
-                               :num-print-counterexamples
-                               :num-witnesses
-                               :num-print-witnesses
-                               ;show-top-level-counterexample
-                               :search-strategy
-                               :sampling-method
-                               :backtrack-limit
-                               :cgen-timeout
-                               :cgen-local-timeout
-                               :cgen-single-test-timeout
-                               :print-cgen-summary
-                               :backtrack-bad-generalizations
-                               :use-fixers
-                               :recursively-fix
-                               ))
+(def-const *acl2s-parameters*
+  '(:testing-enabled
+    :num-trials
+    :verbosity-level
+    :num-counterexamples
+    :num-print-counterexamples
+    :num-witnesses
+    :num-print-witnesses
+    ;;show-top-level-counterexample
+    :search-strategy
+    :sampling-method
+    :backtrack-limit
+    :cgen-timeout
+    :cgen-local-timeout
+    :cgen-single-test-timeout
+    :print-cgen-summary
+    :backtrack-bad-generalizations
+    :use-fixers
+    :recursively-fix
+    :defdata-aliasing-enabled
+    ))
 
 ;All user-defined parameters are stored here
 (table acl2s-defaults-table)
@@ -123,7 +125,7 @@ These are stored in the constant @('*acl2s-parameters*') and are package-agnosti
 </p>
 ")
 
-(defconst *testing-enabled-values* '(T NIL :naive))
+(def-const *testing-enabled-values* '(T NIL :naive))
 
 (add-acl2s-parameter 
  testing-enabled :naive
@@ -260,7 +262,7 @@ These are stored in the constant @('*acl2s-parameters*') and are package-agnosti
   </code>"
    :guard (natp value))
 
-(defconst *search-strategy-values* '(:simple :incremental :hybrid))
+(def-const *search-strategy-values* '(:simple :incremental :hybrid))
 (add-acl2s-parameter 
  search-strategy :simple
  :short "Specify the search strategy to be used."
@@ -282,7 +284,7 @@ These are stored in the constant @('*acl2s-parameters*') and are package-agnosti
 
 ;; Use natural seeds or random tree of natural numbers 
 
-(defconst *sampling-method-values* '(:random :uniform-random :be :mixed))
+(def-const *sampling-method-values* '(:random :uniform-random :be :mixed))
 
 (add-acl2s-parameter 
  sampling-method :random
@@ -431,8 +433,25 @@ These are stored in the constant @('*acl2s-parameters*') and are package-agnosti
    "
  :guard (booleanp value))
 
-
-
+(add-acl2s-parameter 
+ defdata-aliasing-enabled t
+ :short "Enable Defdata aliasing"
+ :long
+" <p>Defdata will try and determine if proposed data definitions are
+  equivalent to existing data definitions and if so, Defdata will
+  create alias types. The advantage is that any existing theorems can
+  be used to reason about the new type. Defdata will generate macros
+  for the recognizers and enumerators, which means that during proofs,
+  you will see the recognizer for the base type. If you turn this off,
+  then you can still use defdata-alias to explicitly tell ACL2s to
+  alias types.</p>
+ <code> Usage:
+   (acl2s-defaults :get defdata-aliasing-enabled)
+   (acl2s-defaults :set defdata-aliasing-enabled t)
+   :doc defdata-aliasing-enabled
+  </code>
+   "
+ :guard (booleanp value))
 
 (defun mem-tree (x tree)
   (declare (xargs :guard (symbolp x)))
@@ -601,13 +620,10 @@ overridden by entries in override-alist"
   `(acl2s-defaults-value-alist. (table-alist 'ACL2S-DEFAULTS-TABLE (w state))
                                 ,override-alist '()))
 
-
-
-
 (defun acl2s-parameter-p (key)
   (declare (xargs :guard t))
   (and (symbolp key)
        (member-eq (keywordify key) *acl2s-parameters*)))
 
-#|ACL2s-ToDo-Line|#
+
 

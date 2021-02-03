@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
+ * Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
  * License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
  * Author: Alessandro Coglio (coglio@kestrel.edu)
  */
@@ -68,6 +68,19 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
     }
 
     /**
+     * Checks if this value is a character,
+     * consistently with the {@code characterp} ACL2 function,
+     * returning a Java boolean instead of an ACL2 symbol.
+     * It returns {@code false} by default;
+     * it is overridden in {@link Acl2Character}.
+     *
+     * @return {@code true} or {@code false}.
+     */
+    boolean characterpBoolean() {
+        return false;
+    }
+
+    /**
      * Checks if this value is a string,
      * consistently with the {@code stringp} ACL2 function.
      * It returns {@code nil} by default;
@@ -77,6 +90,19 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
      */
     Acl2Symbol stringp() {
         return Acl2Symbol.NIL;
+    }
+
+    /**
+     * Checks if this value is a string,
+     * consistently with the {@code stringp} ACL2 function,
+     * returning a Java boolean instead of an ACL2 symbol.
+     * It returns {@code false} by default;
+     * it is overridden in {@link Acl2String}.
+     *
+     * @return {@code true} or {@code false}.
+     */
+    boolean stringpBoolean() {
+        return false;
     }
 
     /**
@@ -92,7 +118,20 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
     }
 
     /**
-     * Checks if this value is a integer,
+     * Checks if this value is a symbol,
+     * consistently with the {@code symbolp} ACL2 function,
+     * returning a Java boolean instead of an ACL2 symbol.
+     * It returns {@code false} by default;
+     * it is overridden in {@link Acl2Symbol}.
+     *
+     * @return {@code true} or {@code false}.
+     */
+    boolean symbolpBoolean() {
+        return false;
+    }
+
+    /**
+     * Checks if this value is an integer,
      * consistently with the {@code integerp} ACL2 function.
      * It returns {@code nil} by default;
      * it is overridden in {@link Acl2Integer}.
@@ -101,6 +140,19 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
      */
     Acl2Symbol integerp() {
         return Acl2Symbol.NIL;
+    }
+
+    /**
+     * Checks if this value is an integer,
+     * consistently with the {@code integerp} ACL2 function,
+     * returning a Java boolean instead of an ACL2 symbol.
+     * It returns {@code false} by default;
+     * it is overridden in {@link Acl2Integer}.
+     *
+     * @return {@code true} or {@code false}.
+     */
+    boolean integerpBoolean() {
+        return false;
     }
 
     /**
@@ -116,6 +168,19 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
     }
 
     /**
+     * Checks if this value is a rational,
+     * consistently with the {@code rationalp} ACL2 function,
+     * returning a Java boolean instead of an ACL2 symbol.
+     * It returns {@code false} by default;
+     * it is overridden in {@link Acl2Rational}.
+     *
+     * @return {@code true} or {@code false}.
+     */
+    boolean rationalpBoolean() {
+        return false;
+    }
+
+    /**
      * Checks if this value is a complex rational,
      * consistently with the {@code complex-rationalp} ACL2 function.
      * It returns {@code nil} by default;
@@ -125,6 +190,19 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
      */
     Acl2Symbol complexRationalp() {
         return Acl2Symbol.NIL;
+    }
+
+    /**
+     * Checks if this value is a complex rational,
+     * consistently with the {@code complex-rationalp} ACL2 function,
+     * returning a Java boolean instead of an ACL2 symbol.
+     * It returns {@code false} by default;
+     * it is overridden in {@link Acl2ComplexRational}.
+     *
+     * @return {@code true} or {@code false}.
+     */
+    boolean complexRationalpBoolean() {
+        return false;
     }
 
     /**
@@ -140,6 +218,19 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
     }
 
     /**
+     * Checks if this value is a number,
+     * consistently with the {@code acl2-numberp} ACL2 function,
+     * returning a Java boolean instead of an ACL2 symbol.
+     * It returns {@code false} by default;
+     * it is overridden in {@link Acl2Number}.
+     *
+     * @return {@code true} or {@code false}.
+     */
+    boolean acl2NumberpBoolean() {
+        return false;
+    }
+
+    /**
      * Checks if this value is a {@code cons} pair,
      * consistently with the {@code consp} ACL2 function.
      * It returns {@code nil} by default;
@@ -149,6 +240,19 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
      */
     Acl2Symbol consp() {
         return Acl2Symbol.NIL;
+    }
+
+    /**
+     * Checks if this value is a {@code cons} pair,
+     * consistently with the {@code consp} ACL2 function,
+     * returning a Java boolean instead of an ACL2 symbol.
+     * It returns {@code false} by default;
+     * it is overridden in {@link Acl2ConsPair}.
+     *
+     * @return {@code true} or {@code false}.
+     */
+    boolean conspBoolean() {
+        return false;
     }
 
     /**
@@ -245,6 +349,19 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
     }
 
     /**
+     * Returns the symbol package name of this value,
+     * consistently with the {@code symbol-package-name} ACL2 function,
+     * returning a Java string instead of an ACL2 string.
+     * It returns the empty string by default;
+     * it is overridden in {@link Acl2Symbol}.
+     *
+     * @return The symbol package name.
+     */
+    String symbolPackageNameString() {
+        return "";
+    }
+
+    /**
      * Returns the symbol name of this value,
      * consistently with the {@code symbol-name} ACL2 function.
      * It returns the empty string by default;
@@ -254,6 +371,19 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
      */
     Acl2String symbolName() {
         return Acl2String.EMPTY;
+    }
+
+    /**
+     * Returns the symbol name of this value,
+     * consistently with the {@code symbol-name} ACL2 function,
+     * returning a Java string instead of an ACL2 string.
+     * It returns the empty string by default;
+     * it is overridden in {@link Acl2Symbol}.
+     *
+     * @return The symbol name.
+     */
+    String symbolNameString() {
+        return "";
     }
 
     /**
@@ -563,7 +693,7 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
      *
      * @param other The value to string-append to the right of this value.
      *              Invariant: not null.
-     * @return The resulting of string-appending
+     * @return The result of string-appending
      * the argument value to the right of this value.
      */
     Acl2String stringAppendValueRight(Acl2Value other) {
@@ -583,6 +713,52 @@ public abstract class Acl2Value implements Comparable<Acl2Value> {
      */
     Acl2String stringAppendStringLeft(Acl2String other) {
         return other;
+    }
+
+    /**
+     * Returns the character at the specified index of this value,
+     * consistently with the {@code char} ACL2 function.
+     * It returns {@code nil} by default,
+     * it is overridden in {@link Acl2String}.
+     * The result is {@code nil} for non-string values
+     * because {@code char} is defined in ACL2
+     * to coerce the argument to a list (of characters)
+     * and then to apply {@code nth} to the list:
+     * coercing a non-string value to a list yields {@code nil}
+     * (see {@link #coerceToList()}),
+     * and applying {@code nth} to {@code nil} yields {@code nil}.
+     * We use the name {@code charAt} because {@code char} is a keyword;
+     * that is the same name as the analogous function on {@link String}.
+     *
+     * @param index The value of the index of the character in this value.
+     * @return The resulting character, or {@code nil}.
+     */
+    Acl2Value charAt(Acl2Value index) {
+        return Acl2Symbol.NIL;
+    }
+
+    /**
+     * Returns the character in the argument string
+     * at the index specified by this value,
+     * consistently with the {@code char} ACL2 function.
+     * According to the definition of {@code char},
+     * a non-integer index value is treated like 0.
+     * Thus, by default
+     * we return the first character of the string if the string is not empty,
+     * otherwise we return {@code nil} because this is what {@code nth} returns
+     * (see the definition of {@code char}).
+     * This method is overridden in {@link Acl2Integer}.
+     *
+     * @param jstring The string from where the character is taken.
+     *                Invariant: not null.
+     * @return The character at index 0 in the string,
+     * or {@code nil} if the string is empty (i.e. the index is out of range).
+     */
+    Acl2Value charAtThisIndex(String jstring) {
+        if (jstring.length() > 0)
+            return Acl2Character.imake(jstring.charAt(0));
+        else
+            return Acl2Symbol.NIL;
     }
 
     /**

@@ -55,7 +55,7 @@
 (local
  (include-book "lemmas"))
 
-(update-rp-clause-proc svl-mult-rules)
+(attach-meta-fncs svl-mult-rules)
 
 (local
  (rp::fetch-new-events
@@ -744,3 +744,6 @@
            :in-theory (e/d (bitp)
                            ((:TYPE-PRESCRIPTION BIT-OF)
                             (:REWRITE BITP-OF-BIT-OF))))))
+
+
+(bump-all-meta-rules)

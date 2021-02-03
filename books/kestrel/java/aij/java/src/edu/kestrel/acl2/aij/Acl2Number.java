@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
+ * Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
  * License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
  * Author: Alessandro Coglio (coglio@kestrel.edu)
  */
@@ -39,6 +39,18 @@ public abstract class Acl2Number extends Acl2Value {
     @Override
     Acl2Symbol acl2Numberp() {
         return Acl2Symbol.T;
+    }
+
+    /**
+     * Checks if this number is a number, which is always true,
+     * returning a Java boolean instead of an ACL2 symbol.
+     * This is consistent with the {@code acl2-numberp} ACL2 function.
+     *
+     * @return {@code true}.
+     */
+    @Override
+    boolean acl2NumberpBoolean() {
+        return true;
     }
 
     /**

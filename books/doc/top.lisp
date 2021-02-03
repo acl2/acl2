@@ -125,6 +125,8 @@
 (include-book "centaur/misc/spacewalk" :dir :system)
 (include-book "centaur/misc/dag-measure" :dir :system)
 
+(include-book "centaur/svl/top" :dir :system)
+
 ;; BOZO conflicts with something in 4v-sexpr?
 
 ;; (include-book "misc/remove-assoc")
@@ -138,6 +140,7 @@
 (include-book "std/basic/inductions" :dir :system)
 (include-book "std/io/unsound-read" :dir :system)
 (include-book "std/bitsets/top" :dir :system)
+(include-book "std/util/defretgen" :dir :system)
 
 (include-book "std/strings/top" :dir :system)
 (include-book "std/strings/base64" :dir :system)
@@ -170,6 +173,8 @@
 (include-book "tools/defthmg" :dir :system)
 (include-book "tools/trivial-ancestors-check" :dir :system)
 (include-book "tools/without-subsumption" :dir :system)
+(include-book "tools/rewrite-dollar" :dir :system)
+(include-book "tools/open-trace-file-bang" :dir :system)
 (include-book "coi/util/rewrite-equiv" :dir :system)
 
 ;; This book memoizes several functions including translate11, translate11-lst,
@@ -207,7 +212,7 @@
 (include-book "centaur/fty/top" :dir :system)
 (include-book "centaur/fty/bitstruct" :dir :system)
 
-(include-book "misc/assert" :dir :system)
+(include-book "std/testing/assert" :dir :system)
 (include-book "misc/bash" :dir :system)
 (include-book "misc/defmac" :dir :system)
 (include-book "misc/defopener" :dir :system)
@@ -215,7 +220,7 @@
 (include-book "misc/defpun" :dir :system)
 (include-book "misc/dft" :dir :system)
 (include-book "misc/dump-events" :dir :system)
-(include-book "misc/eval" :dir :system)
+(include-book "std/testing/eval" :dir :system)
 (include-book "misc/expander" :dir :system)
 (include-book "misc/file-io" :dir :system)
 (include-book "misc/find-lemmas" :dir :system)
@@ -280,7 +285,7 @@
 
 ;; omitted from aig
 (include-book "system/random" :dir :system)
-(include-book "std/util/defret-mutual-generate" :dir :system)
+(include-book "std/util/defretgen" :dir :system)
 
 ) ;; end progn so we can see total include-book time
 
@@ -515,6 +520,7 @@
  '*acl2+books-documentation*
  t ; error if there is any xdoc-error
  :timep t
+ :write-acl2-doc-search-file t
 
 ; The following assumes that the community books are in the books/ subdirectory
 ; of the local ACL2 distribution.  We use the same environment variable,
@@ -613,3 +619,4 @@
 
 (collect-topics-with-name 'acl2::add-listfix-rule (get-xdoc-table (w state)))
 ||#
+

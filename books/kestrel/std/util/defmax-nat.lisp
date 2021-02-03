@@ -10,7 +10,10 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/utilities/error-checking/top" :dir :system)
+(include-book "kestrel/error-checking/ensure-value-is-boolean" :dir :system)
+(include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
+(include-book "kestrel/error-checking/ensure-value-is-symbol-list" :dir :system)
+(include-book "std/lists/rcons" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -53,6 +56,8 @@
   :order-subtopics t
   :default-parent t)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define defmax-nat-process-inputs
   (f y x1...xn body guard verify-guards ctx state)
   :returns (mv erp (nothing null) state)
@@ -64,11 +69,11 @@
     since those are untranslated term,
     for which we do not quite have a ``type'' readily available.")
   (declare (ignore body guard))
-  (b* (((er &) (ensure-symbol$ f "The first input" t nil))
-       ((er &) (ensure-symbol$ y "The second input" t nil))
-       ((er &) (ensure-symbol-list$ x1...xn "The third input" t nil))
-       ((er &) (ensure-boolean$ verify-guards
-                                "The :VERIFY-GUARDS input" t nil)))
+  (b* (((er &) (ensure-value-is-symbol$ f "The first input" t nil))
+       ((er &) (ensure-value-is-symbol$ y "The second input" t nil))
+       ((er &) (ensure-value-is-symbol-list$ x1...xn "The third input" t nil))
+       ((er &) (ensure-value-is-boolean$ verify-guards
+                                         "The :VERIFY-GUARDS input" t nil)))
     (value nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -78,6 +83,8 @@
   :short "Event generation performed by @(tsee defmax-nat)."
   :order-subtopics t
   :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define defmax-nat-gen-everything ((f symbolp)
                                    (y symbolp)
@@ -417,6 +424,8 @@
        (event (defmax-nat-gen-everything
                 f y x1...xn body guard verify-guards)))
     (value event)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection defmax-nat-macro-definition
   :parents (defmax-nat-implementation)

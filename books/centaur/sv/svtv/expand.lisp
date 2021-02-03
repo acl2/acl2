@@ -125,7 +125,7 @@
 
   (local (in-theory (disable len nthcdr (:d svtv-parse-path-indices) cons-equal
                              string-listp member-equal default-car default-cdr
-                             str::take-leading-digits-when-digit-listp
+                             str::take-leading-dec-digit-chars-when-dec-digit-char-listp
                              str::explode-when-not-stringp
                              ;; acl2::member-when-atom
                              )))
@@ -205,7 +205,7 @@
     :otf-flg t)
   (local (in-theory (disable len nthcdr (:d svtv-parse-path/select-aux) cons-equal
                              string-listp member-equal default-car default-cdr
-                             str::take-leading-digits-when-digit-listp
+                             str::take-leading-dec-digit-chars-when-dec-digit-char-listp
                              str::explode-when-not-stringp
                              acl2::lower-bound-of-len-when-sublistp
                              ;; acl2::member-when-atom
@@ -308,15 +308,24 @@
         (mv (cons err1 errs) nil)
       (mv nil (append first rest)))))
 
+(define svtv-wire->lhs! ((x stringp)
+                         (modidx natp)
+                         (moddb moddb-ok)
+                         aliases)
+  :guard (svtv-mod-alias-guard modidx moddb aliases)
+  :returns (mv errs
+               (lhs lhs-p))
+  (b* ((toks (str::strtok x '(#\, #\Newline #\Tab #\Space #\{ #\})))
+       ((mv errs lhs) (svtv-concat->lhs toks modidx moddb aliases)))
+    (mv errs (lhs-norm lhs))))
+
 (define svtv-wire->lhs (x (modidx natp) (moddb moddb-ok) aliases)
   :guard (svtv-mod-alias-guard modidx moddb aliases)
   :returns (mv errs
                (lhs lhs-p))
   (b* (((unless (stringp x))
-        (mv (list (msg "SVTV wirenames must be strings; ~x0 is not" x)) nil))
-       (toks (str::strtok x '(#\, #\Newline #\Tab #\Space #\{ #\})))
-       ((mv errs lhs) (svtv-concat->lhs toks modidx moddb aliases)))
-    (mv errs (lhs-norm lhs))))
+        (mv (list (msg "SVTV wirenames must be strings; ~x0 is not" x)) nil)))
+    (svtv-wire->lhs! x modidx moddb aliases)))
 
 
 (define msg-list ((x "list of msg objects"))

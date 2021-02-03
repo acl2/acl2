@@ -1,4 +1,4 @@
-; FTY -- Kestrel Extensions
+; FTY Library
 ;
 ; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -10,6 +10,7 @@
 
 (in-package "FTY")
 
+(include-book "bag")
 (include-book "bit-list")
 (include-book "byte")
 (include-book "byte-list")
@@ -17,7 +18,9 @@
 (include-book "byte-list32")
 (include-book "byte-list64")
 (include-book "defbyte")
+(include-book "defbyte-ihs-theorems")
 (include-book "defbyte-standard-instances")
+(include-book "defbyte-standard-instances-ihs-theorems")
 (include-book "defbytelist")
 (include-book "defbytelist-standard-instances")
 (include-book "deffixequiv-sk")
@@ -28,10 +31,14 @@
 (include-book "deflist-of-len")
 (include-book "defomap")
 (include-book "defset")
+(include-book "defsubtype")
+(include-book "defunit")
+(include-book "defunit-doc")
 (include-book "map")
+(include-book "nat-set")
+(include-book "nati")
 (include-book "nibble")
 (include-book "nibble-list")
-(include-book "nati")
 (include-book "set")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -1,6 +1,6 @@
 ; SOFT (Second-Order Functions and Theorems) Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -15,7 +15,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defpkg "SOFT" (append *std-pkg-symbols*
-                       '(body
+                       '(*t*
+                         arity+
+                         body
                          control-screen-output
                          cw-event
                          defchoose-body
@@ -23,6 +25,7 @@
                          defchoose-strengthen
                          defchoosep
                          definedp
+                         defmacro+
                          defpun
                          defun-sk-bound-vars
                          defun-sk-definition-name
@@ -35,24 +38,39 @@
                          defun-sk-strengthen
                          defun-sk-witness
                          defxdoc+
+                         ensure-list-has-no-duplicates$
+                         ensure-symbol-is-fresh-event-name$
+                         ensure-value-is-boolean$
+                         ensure-value-is-function-name$
+                         ensure-value-is-symbol$
+                         ensure-value-is-symbol-list$
                          er-soft+
+                         evmac-input-print-p
+                         evmac-prepare-proofs
+                         evmac-process-input-print
+                         evmac-process-input-show-only
                          fail-event
                          fargs
                          flambdap
                          fn-symb
                          formals
                          function-symbol-listp
+                         fundef-enabledp
                          guard-verified-p
+                         guard-verified-p+
                          impossible
+                         irecursivep
                          keywords-of-keyword-value-list
                          lambda-body
                          lambda-formals
+                         logicp
                          make-event-terse
                          make-lambda
                          maybe-msgp
                          maybe-pseudo-event-formp
                          measure
                          o<
+                         packn-pos
                          pseudo-event-form-listp
                          pseudo-event-formp
                          recursivep
@@ -60,9 +78,12 @@
                          restore-output
                          restore-output?
                          restrict-alist
+                         run-when
                          strip-keyword-list
                          symbol-symbol-alistp
+                         table-alist+
                          ubody
                          uguard
                          variablep
-                         well-founded-relation)))
+                         well-founded-relation
+                         well-founded-relation+)))

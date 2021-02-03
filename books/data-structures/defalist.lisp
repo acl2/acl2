@@ -531,15 +531,21 @@
 ; ------------------------------------------------------------
 
 (defconst *defalist-true-fn* '(lambda (x) (declare (ignore x)) t)
-  "The single-argument predicate that is always true.")
+; Matt K. mod: Comment out doc string (disallowed after ACL2 8.3).
+#|
+  "The single-argument predicate that is always true."
+|#)
 
 (defconst *defalist-theory-options*
   '(acons alistp all-bindings-equal all-bound?-equal append assoc-equal
 	  bind-all-equal bind-equal bind-pairs-equal binding-equal
 	  bound?-equal collect-bound-equal domain domain-restrict-equal
 	  pairlis$ range rembind-all-equal rembind-equal)
+; Matt K. mod: Comment out doc string (disallowed after ACL2 8.3).
+#|
   "This list contains all of the symbols recognized as valid options for
-   the DEFALIST :THEORY option.")
+   the DEFALIST :THEORY option."
+|#)
 
 (defun pack-intern-names (name1 name2)
   (u::pack-intern name1 name1 "-" name2))
@@ -625,15 +631,21 @@
 
 
 (defconst *defalist-options* '(:BINDING-EQUAL-RULE-CLASSES :THEORY :OMIT-DEFUN :DOMAIN-TYPE :RANGE-TYPE :THEORY-NAME)
-  "This list contains all of the  valid keyword options for DEFALIST.")
+; Matt K. mod: Comment out doc string (disallowed after ACL2 8.3).
+#|
+  "This list contains all of the  valid keyword options for DEFALIST."
+|#)
 
 (defconst *forward-chaining-elem-types*
   '(integerp rationalp complex-rationalp symbolp true-listp stringp characterp
 	     alistp acl2-numberp
              #+:non-standard-analysis realp
              #+:non-standard-analysis complexp)
+; Matt K. mod: Comment out doc string (disallowed after ACL2 8.3).
+#|
   "When a range element type recognizer is one of these, then BINDING-EQUAL-RULE-CLASSES
-defaults to :forward-chaining, otherwise :rewrite.")
+defaults to :forward-chaining, otherwise :rewrite."
+|#)
 
 (defun defalist-check-syntax (name formals body)
   "Return NIL if no errors, otherwise crash."

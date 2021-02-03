@@ -1,5 +1,5 @@
-; ACL2 Version 8.2 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2019, Regents of the University of Texas
+; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2020, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -1449,6 +1449,64 @@
      (theory-invariant-msg-implication active-runeps1 active-runeps2))
     (& nil)))
 
+(defrec certify-book-info
+
+; The useless-runes-info field is first here because that is the field that
+; changes the most often, in the case that we are using data from the
+; @useless-runes.lsp file.  It can have any of the following forms; a
+; capitalized symbol indicates that exact symbol in the "ACL2" package.
+
+; NIL
+;   We are not doing anything with useless-runes.
+
+; (CHANNEL chan . pkg-names)
+;   Chan is an output channel for writing to the @useless-runes.lsp file.
+;   Pkg-names lists the known package names in the certification world,
+;   including those that are hidden.
+
+; (FAST-ALIST . fal)
+;   Fal is a fast-alist, each of whose pairs associates an event name (a
+;   symbol) with a list of "useless" runes for that event.
+
+; (THEORY . augmented-theory)
+;   Augmented-theory is associated with the current event in the global
+;   fast-alist.
+
+  (useless-runes-info include-book-phase cert-op . full-book-name)
+  nil) ; could replace with t sometime
+
+(defun active-useless-runes (state)
+  (let ((certify-book-info (f-get-global 'certify-book-info state)))
+    (and certify-book-info
+         (let ((useless-runes-info (and certify-book-info
+                                        (access certify-book-info
+                                                certify-book-info
+                                                :useless-runes-info))))
+           (and (eq (car useless-runes-info) 'THEORY)
+                (cdr useless-runes-info))))))
+
+(defun useless-runes-filename (full-book-name)
+
+; This is analogous to expansion-filename, but for the file containing useless
+; rune information.  See expansion-filename.
+
+  (let ((len (length full-book-name)))
+    (assert$ (equal (subseq full-book-name (- len 5) len) ".lisp")
+             (concatenate 'string
+                          (subseq full-book-name 0 (- len 5))
+                          "@useless-runes.lsp"))))
+
+(defun active-useless-runes-filename (state)
+
+; This is analogous to expansion-filename, but for the file containing useless
+; rune information.  See expansion-filename.  NOTE: This function does not
+; check that the resulting file actually exists!
+
+  (let* ((info (f-get-global 'certify-book-info state)))
+    (and info
+         (useless-runes-filename
+          (access certify-book-info info :full-book-name)))))
+
 (defun@par chk-theory-invariant1 (theory-expr ens invariant-alist errp-acc ctx
                                               state)
 
@@ -1486,11 +1544,17 @@
                                 :untrans-term))
                        (msg (msg
                              "Theory invariant ~x0 could not be evaluated on ~
-                              the theory produced by ~@1.  Theory invariant ~
-                              ~P32 produced the error message:~%~@4~@5  See ~
+                              the theory produced by ~@1~@2.  Theory invariant ~
+                              ~P43 produced the error message:~%~@5~@6  See ~
                               :DOC theory-invariant."
                              inv-name
                              produced-by-msg
+                             (if (active-useless-runes state)
+                                 (msg ", modified by subtracting the theory ~
+                                       for the current event stored in file ~
+                                       ~s0"
+                                      (active-useless-runes-filename state))
+                               "")
                              (term-evisc-tuple nil state)
                              theory-invariant-term
                              okp ; error message
@@ -1536,13 +1600,18 @@
                       (theory-invariant-msg theory-invariant-term))
                      (msg (msg
                            "Theory invariant ~x0, defined ~@1, failed on the ~
-                            theory produced by ~@2.  Theory invariant ~x0 is ~
-                            ~@3~@4  See :DOC theory-invariant."
+                            theory produced by ~@2~@3.  Theory invariant ~x0 is ~
+                            ~@4~@5  See :DOC theory-invariant."
                            inv-name
                            (if (null theory-invariant-book)
                                "at the top-level"
                              (msg "in book ~x0" theory-invariant-book))
                            produced-by-msg
+                           (if (active-useless-runes state)
+                               (msg ", modified by subtracting the theory for ~
+                                     the current event stored in file ~s0"
+                                    (active-useless-runes-filename state))
+                             "")
                            (if thy-inv-msg
                                (msg "~P10~@2."
                                     (term-evisc-tuple nil state)
@@ -1801,52 +1870,7 @@
 
     (setf (car old) (cons header alist))))
 
-(defun update-enabled-structure (ens n d new-d alist augmented-p
-                                     incrmt-array-name-info)
-  #+acl2-loop-only (declare (ignore d augmented-p))
-  #-acl2-loop-only
-  (let* ((k 0)
-         (name (access enabled-structure ens :array-name))
-         (old (get-acl2-array-property name))
-         (header (cadddr old))
-         (old-n (access enabled-structure ens :index-of-last-enabling)))
-    (when (and header ; hence old is associated with name
-               (consp (car old))
-               (eq header (caar old))
-               (null incrmt-array-name-info)
-               augmented-p
-               (int= d new-d)
-               (or (eq (loop for tail on alist
-                             do (cond ((<= (caar tail) old-n)
-                                       (return tail))
-                                      (t (incf k))))
-                       (cdr (access enabled-structure ens :theory-array)))
-
-; The disjunct just above computes the tail of alist consisting of entries
-; not exceeding the old index-of-last-enabling, and checks that this tail is
-; the alist stored in the existing enabled structure.  In that case, k is the
-; number of entries of alist outside that tail, and the call of
-; update-enabled-structure-array below can take advantage of the fact that only
-; the first k elements of alist need to be updated in the corresponding raw
-; Lisp array.
-
-; By including the following disjunct and also tweaking
-; load-theory-into-enabled-structure, we have reduced the time spent in
-; load-theory-into-enabled-structure from about 3.1 to 3.2s to about 2.7s to
-; 2.8s in runs (of (include-book "centaur/sv/top" :dir :system)) that take
-; about 58s.  Notice that by setting k = nil, we are indicating to the call
-; below of update-enabled-structure-array that the eq test above has failed.
-
-                   (and (<= old-n n)
-                        (progn (setq k nil) t))))
-      (assert (eq (access enabled-structure ens :theory-array)
-                  (car old))) ; checking this invariant before updating
-      (return-from
-       update-enabled-structure
-       (change enabled-structure ens
-               :index-of-last-enabling n
-               :theory-array (update-enabled-structure-array
-                              name header alist k old d n)))))
+(defun increment-array-name (ens incrmt-array-name-info)
   (let* ((root (access enabled-structure ens :array-name-root))
          (suffix (cond ((eq incrmt-array-name-info t)
                         (1+ (access enabled-structure ens
@@ -1871,6 +1895,56 @@
                                'string)
                               "ACL2"))
                      (t (access enabled-structure ens :array-name)))))
+    (mv root suffix name)))
+
+(defun update-enabled-structure (ens n d new-d alist augmented-p
+                                     incrmt-array-name-info)
+  #+acl2-loop-only (declare (ignore d augmented-p))
+  #-acl2-loop-only
+  (when (and (null incrmt-array-name-info)
+             augmented-p
+             (int= d new-d))
+    (let* ((k 0)
+           (name (access enabled-structure ens :array-name))
+           (old (get-acl2-array-property name))
+           (header (cadddr old))
+           (old-n (access enabled-structure ens :index-of-last-enabling)))
+      (when (and header ; hence old is associated with name
+                 (consp (car old))
+                 (eq header (caar old))
+                 (or (eq (loop for tail on alist
+                               do (cond ((<= (caar tail) old-n)
+                                         (return tail))
+                                        (t (incf k))))
+                         (cdr (access enabled-structure ens :theory-array)))
+
+; The disjunct just above computes the tail of alist consisting of entries
+; not exceeding the old index-of-last-enabling, and checks that this tail is
+; the alist stored in the existing enabled structure.  In that case, k is the
+; number of entries of alist outside that tail, and the call of
+; update-enabled-structure-array below can take advantage of the fact that only
+; the first k elements of alist need to be updated in the corresponding raw
+; Lisp array.
+
+; By including the following disjunct and also tweaking
+; load-theory-into-enabled-structure, we have reduced the time spent in
+; load-theory-into-enabled-structure from about 3.1 to 3.2s to about 2.7s to
+; 2.8s in runs (of (include-book "centaur/sv/top" :dir :system)) that take
+; about 58s.  Notice that by setting k = nil, we are indicating to the call
+; below of update-enabled-structure-array that the eq test above has failed.
+
+                     (and (<= old-n n)
+                          (progn (setq k nil) t))))
+        (assert (eq (access enabled-structure ens :theory-array)
+                    (car old))) ; checking this invariant before updating
+        (return-from
+         update-enabled-structure
+         (change enabled-structure ens
+                 :index-of-last-enabling n
+                 :theory-array (update-enabled-structure-array
+                                name header alist k old d n))))))
+  (mv-let (root suffix name)
+    (increment-array-name ens incrmt-array-name-info)
     (make enabled-structure
           :index-of-last-enabling n
           :theory-array
@@ -1886,6 +1960,26 @@
           :array-length new-d
           :array-name-root root
           :array-name-suffix suffix)))
+
+(defun load-theory-into-enabled-structure-1 (theory augmented-p ens
+                                                    incrmt-array-name-info
+                                                    index-of-last-enabling
+                                                    wrld)
+
+; See load-theory-into-enabled-structure, which is a wrapper for this function
+; that may perform an extra check.
+
+  (let* ((n (or index-of-last-enabling (1- (get-next-nume wrld))))
+         (d (access enabled-structure ens :array-length))
+         (new-d (cond ((< n d) d)
+                      (t (max (* 2 d)
+                              (+ d (* 500 (1+ (floor (- n d) 500))))))))
+         (alist (if augmented-p
+                    theory
+                  (augment-runic-theory theory wrld))))
+    (update-enabled-structure ens n d new-d alist
+                              augmented-p
+                              incrmt-array-name-info)))
 
 (defun@par load-theory-into-enabled-structure
   (theory-expr theory augmented-p ens incrmt-array-name-info
@@ -1922,17 +2016,9 @@
 ; maybe-warn-about-theory on the enabled structure passed in and the one
 ; returned.
 
-  (let* ((n (or index-of-last-enabling (1- (get-next-nume wrld))))
-         (d (access enabled-structure ens :array-length))
-         (new-d (cond ((< n d) d)
-                      (t (max (* 2 d)
-                              (+ d (* 500 (1+ (floor (- n d) 500))))))))
-         (alist (if augmented-p
-                    theory
-                  (augment-runic-theory theory wrld)))
-         (ens (update-enabled-structure ens n d new-d alist
-                                        augmented-p
-                                        incrmt-array-name-info)))
+  (let ((ens (load-theory-into-enabled-structure-1
+              theory augmented-p ens incrmt-array-name-info
+              index-of-last-enabling wrld)))
     (er-progn@par (if (or (eq theory-expr :no-check)
                           (eq (ld-skip-proofsp state)
                               'include-book)
@@ -6147,12 +6233,12 @@
 ; follows.
 
 ;    Consider the following example.
-;  
+;
 ;      (defun mem (a x)
 ;        (if (atom x)
 ;            nil
 ;          (or (equal a (car x)) (mem a (cdr x)))))
-;  
+;
 ;    Now suppose we consider the sequence of theorems (mem a (list a)),
 ;    (mem a (list 1 a)), (mem a (list 1 2 a)), (mem a (list 1 2 3 a)),
 ;    and so on.  We will see that the :frames reported for each
@@ -8768,7 +8854,12 @@
        (with-accumulated-persistence
         (access type-prescription tp :rune)
         (ts type-alist-out ttree-out extended-p-out)
-        (not (ts= *ts-unknown* ts))
+        (or (not (ts= *ts-unknown* ts))
+
+; The following mis-guarded use of eq instead of equal implies that we could be
+; over-counting successes at the expense of failures.
+
+            (not (eq type-alist type-alist-out)))
         (let ((hyps (access type-prescription tp :hyps)))
           (mv-let
             (type-alist extended-p)
@@ -8819,8 +8910,13 @@
                   (ts type-alist ttree)
                   (with-accumulated-persistence
                    (access type-prescription tp :rune)
-                   (ts type-alist ttree)
-                   (ts= ts *ts-unknown*)
+                   (ts type-alist-out ttree)
+                   (or (not (ts= *ts-unknown* ts))
+
+; The following mis-guarded use of eq instead of equal implies that we could be
+; over-counting successes at the expense of failures.
+
+                       (not (eq type-alist type-alist-out)))
                    (type-set-with-rule1
                     unify-subst
                     (access type-prescription tp :vars)
@@ -12091,35 +12187,25 @@
 
 (defun known-whether-nil (x type-alist ens force-flg dwp wrld ttree)
 
-; This function determines whether we know, from type-set reasoning,
-; whether x is nil or not.  It returns three values.  The first is the
-; answer to the question "Do we know whether x is nil or not?"  If the
-; answer to that question is yes, the second value is the answer to
-; the question "Is x nil?" and the third value is a ttree that extends
-; the input ttree and records the 'assumptions and dependencies of our
-; derivation.  If the answer to the first question is no, the second
-; and third values are nil.  Note that this function may generate
-; 'assumptions and so splitting has to be considered.
-
-; Note: This note ought to be plastered all over this code.  Beware
-; the handling of ttree.  A bug was found in this function (11/9/92)
-; because in the case that x was a quoted constant it ignored the
-; incoming ttree and reported ``I know whether x is nil and I don't
-; need any help!''  But we must always keep in mind that the ttree
-; argument to many functions is an accumulator; the incoming ttree is
-; responsible for the derivation of x itself and must be preserved.
-; The original comment, above, is accurate: the outgoing ttree must be
-; an extension of the incoming one when successful.
+; This function determines whether we know, from type-set reasoning, whether x
+; is nil or not.  It returns three values.  The first is the answer to the
+; question "Do we know whether x is nil or not?"  If the answer to that
+; question is yes, the second value is the answer to the question "Is x nil?"
+; and the third value is a ttree that extends the input ttree and records the
+; 'assumptions and dependencies of our derivation.  If the answer to the first
+; question is no, the second value is nil, and the third is the input ttree
+; (thus, this function is a No-Change Loser).  Note that this function may
+; generate 'assumptions and so splitting has to be considered.
 
   (cond ((quotep x)
          (mv t (equal x *nil*) ttree))
-        (t (mv-let (ts ttree)
-                   (type-set x force-flg dwp type-alist ens wrld ttree nil nil)
-                   (cond ((ts= ts *ts-nil*)
-                          (mv t t ttree))
-                         ((ts-intersectp ts *ts-nil*)
-                          (mv nil nil nil))
-                         (t (mv t nil ttree)))))))
+        (t (mv-let (ts ttree1)
+             (type-set x force-flg dwp type-alist ens wrld ttree nil nil)
+             (cond ((ts= ts *ts-nil*)
+                    (mv t t ttree1))
+                   ((ts-intersectp ts *ts-nil*)
+                    (mv nil nil ttree))
+                   (t (mv t nil ttree1)))))))
 
 (defun ts-booleanp (term ens wrld)
   (mv-let (ts ttree)
@@ -12338,80 +12424,80 @@
         ttree))
    ((flambda-applicationp term)
     (mv-let (normal-args ttree)
-            (normalize-lst (fargs term) nil
-                           type-alist ens wrld ttree
-                           ts-backchain-limit)
+      (normalize-lst (fargs term) nil
+                     type-alist ens wrld ttree
+                     ts-backchain-limit)
 
 ; We normalize the body of the lambda (under a type-alist determined
 ; from the normalized arguments).  But we leave a lambda application
 ; in place.
 
-            (mv-let (normal-body ttree)
-                    (normalize (lambda-body (ffn-symb term))
-                               iff-flg
-                               (zip-variable-type-alist
-                                (lambda-formals (ffn-symb term))
-                                (type-set-lst
-                                 normal-args
-                                 nil ; see note above on force-flg
-                                 nil
-                                 type-alist
-                                 nil
-                                 ens
-                                 wrld
-                                 nil nil
-                                 ts-backchain-limit))
-                               ens wrld ttree ts-backchain-limit)
-                    (mv (mcons-term
-                         (list 'lambda
-                               (lambda-formals (ffn-symb term))
-                               normal-body)
-                         normal-args)
-                        ttree))))
+      (mv-let (normal-body ttree)
+        (normalize (lambda-body (ffn-symb term))
+                   iff-flg
+                   (zip-variable-type-alist
+                    (lambda-formals (ffn-symb term))
+                    (type-set-lst
+                     normal-args
+                     nil ; see note above on force-flg
+                     nil
+                     type-alist
+                     nil
+                     ens
+                     wrld
+                     nil nil
+                     ts-backchain-limit))
+                   ens wrld ttree ts-backchain-limit)
+        (mv (mcons-term
+             (list 'lambda
+                   (lambda-formals (ffn-symb term))
+                   normal-body)
+             normal-args)
+            ttree))))
    ((eq (ffn-symb term) 'if)
     (mv-let
-     (t1 ttree)
-     (normalize (fargn term 1) t type-alist ens wrld ttree ts-backchain-limit)
-     (let ((t2 (fargn term 2))
-           (t3 (fargn term 3)))
-       (mv-let
-        (mbt mbf tta fta ttree1)
-        (assume-true-false-bc t1 nil
-                              nil ; see note above on force-flg
-                              nil type-alist ens wrld nil nil nil
-                              ts-backchain-limit)
-        (cond
-         (mbt (normalize t2 iff-flg type-alist ens wrld
-                         (cons-tag-trees ttree1 ttree)
-                         ts-backchain-limit))
-         (mbf (normalize t3 iff-flg type-alist ens wrld
-                         (cons-tag-trees ttree1 ttree)
-                         ts-backchain-limit))
+      (t1 ttree)
+      (normalize (fargn term 1) t type-alist ens wrld ttree ts-backchain-limit)
+      (let ((t2 (fargn term 2))
+            (t3 (fargn term 3)))
+        (mv-let
+          (mbt mbf tta fta ttree1)
+          (assume-true-false-bc t1 nil
+                                nil ; see note above on force-flg
+                                nil type-alist ens wrld nil nil nil
+                                ts-backchain-limit)
+          (cond
+           (mbt (normalize t2 iff-flg type-alist ens wrld
+                           (cons-tag-trees ttree1 ttree)
+                           ts-backchain-limit))
+           (mbf (normalize t3 iff-flg type-alist ens wrld
+                           (cons-tag-trees ttree1 ttree)
+                           ts-backchain-limit))
 
 ; If mbt and mbf are both nil, then ttree1 is nil and we ignore it
 ; below.  (Actually, we use the same variable name to hold a different
 ; ttree.)
 
-         ((ffn-symb-p t1 'if)
-          (let ((t11 (fargn t1 1))
-                (t12 (fargn t1 2))
-                (t13 (fargn t1 3)))
-            (normalize (mcons-term* 'if t11
-                                    (mcons-term* 'if t12 t2 t3)
-                                    (mcons-term* 'if t13 t2 t3))
-                       iff-flg type-alist ens wrld ttree ts-backchain-limit)))
-         (t (mv-let (t2 ttree)
-                    (normalize t2 iff-flg tta ens wrld ttree ts-backchain-limit)
-                    (mv-let (t3 ttree)
-                            (normalize t3 iff-flg fta ens wrld ttree
-                                       ts-backchain-limit)
-                            (cond ((equal t2 t3)
-                                   (mv t2 ttree))
-                                  ((and (equal t1 t2)
-                                        (equal t3 *nil*))
-                                   (mv t1 ttree))
-                                  ((and (equal t2 *t*)
-                                        (equal t3 *nil*))
+           ((ffn-symb-p t1 'if)
+            (let ((t11 (fargn t1 1))
+                  (t12 (fargn t1 2))
+                  (t13 (fargn t1 3)))
+              (normalize (mcons-term* 'if t11
+                                      (mcons-term* 'if t12 t2 t3)
+                                      (mcons-term* 'if t13 t2 t3))
+                         iff-flg type-alist ens wrld ttree ts-backchain-limit)))
+           (t (mv-let (t2 ttree)
+                (normalize t2 iff-flg tta ens wrld ttree ts-backchain-limit)
+                (mv-let (t3 ttree)
+                  (normalize t3 iff-flg fta ens wrld ttree
+                             ts-backchain-limit)
+                  (cond ((equal t2 t3)
+                         (mv t2 ttree))
+                        ((and (equal t1 t2)
+                              (equal t3 *nil*))
+                         (mv t1 ttree))
+                        ((and (equal t2 *t*)
+                              (equal t3 *nil*))
 
 ; If t1 is Boolean and t2 and t3 are t and nil respectively, we can normalize
 ; to t1.  Similarly, if t1 is not Boolean but we are working in iff-mode,
@@ -12420,49 +12506,51 @@
 ; unnecessary.  If iff-flg is set then t2 will have been normalized in iff
 ; mode.  Thus, if it is non-nilp t2 would be *t*.
 
-                                   (cond
-                                    (iff-flg (mv t1 ttree))
-                                    (t
-                                     (mv-let (ts1 ttree1)
-                                             (type-set-bc
-                                              t1 ; see note above on force-flg
-                                              nil nil type-alist ens wrld nil
-                                              nil nil
-                                              ts-backchain-limit)
-                                             (cond
-                                              ((ts-subsetp ts1 *ts-boolean*)
-                                               (mv t1 (cons-tag-trees ttree1
-                                                                      ttree)))
-                                              (t (mv (mcons-term* 'if t1 t2 t3)
-                                                     ttree)))))))
-                                  (t (mv (mcons-term* 'if t1 t2 t3)
-                                         ttree)))))))))))
-    (t
-     (mv-let (normal-args ttree)
-             (normalize-lst (fargs term) nil
-                            type-alist ens wrld ttree ts-backchain-limit)
-             (let ((term (cons-term (ffn-symb term)
-                                    normal-args)))
-               (cond
-                ((fquotep term) (mv term ttree))
-                ((eq (ffn-symb term) 'equal)
-                 (cond ((equal (fargn term 1) (fargn term 2))
-                        (mv *t* ttree))
-                       (t (mv-let (not-ident ttree1)
-                                  (not-ident (fargn term 1)
-                                             (fargn term 2)
-                                             type-alist ens wrld)
-                                  (cond (not-ident (mv *nil*
-                                                       (cons-tag-trees ttree1
-                                                                       ttree)))
-                                        (t (distribute-first-if
-                                            term iff-flg
-                                            type-alist ens
-                                            wrld
-                                            ttree
-                                            ts-backchain-limit)))))))
-                (t (distribute-first-if term iff-flg type-alist ens wrld
-                                        ttree ts-backchain-limit))))))))
+                         (cond
+                          (iff-flg (mv t1 ttree))
+                          (t
+                           (mv-let (ts1 ttree1)
+                             (type-set-bc
+                              t1 ; see note above on force-flg
+                              nil nil type-alist ens wrld nil
+                              nil nil
+                              ts-backchain-limit)
+                             (cond
+                              ((ts-subsetp ts1 *ts-boolean*)
+                               (mv t1 (cons-tag-trees ttree1
+                                                      ttree)))
+                              (t (mv (mcons-term* 'if t1 t2 t3)
+                                     ttree)))))))
+                        (t (mv (mcons-term* 'if t1 t2 t3)
+                               ttree)))))))))))
+   ((eq (ffn-symb term) 'hide)
+    (mv term ttree))
+   (t
+    (mv-let (normal-args ttree)
+      (normalize-lst (fargs term) nil
+                     type-alist ens wrld ttree ts-backchain-limit)
+      (let ((term (cons-term (ffn-symb term)
+                             normal-args)))
+        (cond
+         ((fquotep term) (mv term ttree))
+         ((eq (ffn-symb term) 'equal)
+          (cond ((equal (fargn term 1) (fargn term 2))
+                 (mv *t* ttree))
+                (t (mv-let (not-ident ttree1)
+                     (not-ident (fargn term 1)
+                                (fargn term 2)
+                                type-alist ens wrld)
+                     (cond (not-ident (mv *nil*
+                                          (cons-tag-trees ttree1
+                                                          ttree)))
+                           (t (distribute-first-if
+                               term iff-flg
+                               type-alist ens
+                               wrld
+                               ttree
+                               ts-backchain-limit)))))))
+         (t (distribute-first-if term iff-flg type-alist ens wrld
+                                 ttree ts-backchain-limit))))))))
 
 (defun normalize-lst (args iff-flg type-alist ens wrld ttree
                            ts-backchain-limit)

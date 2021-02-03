@@ -12,11 +12,11 @@
 
 (include-book "../language/primitive-values")
 
-; these are so that the FTY::DEFLISTs in this file
-; can generate theorems about NTH, UPDATE-NTH, and REPEAT:
-(include-book "std/lists/nth" :dir :system)
-(include-book "std/lists/update-nth" :dir :system)
-(include-book "std/lists/repeat" :dir :system)
+(include-book "kestrel/fty/ubyte16-list" :dir :system)
+(include-book "kestrel/fty/sbyte8-list" :dir :system)
+(include-book "kestrel/fty/sbyte16-list" :dir :system)
+(include-book "kestrel/fty/sbyte32-list" :dir :system)
+(include-book "kestrel/fty/sbyte64-list" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -35,797 +35,399 @@
      a perhaps more general model from the Java language formalization.
      The current model only serves ATJ's needs;
      it is not meant to model all aspects of Java primitive arrays.
-     ATJ's use of this model of Java primitive arrays is described "
-    (xdoc::seetopic "atj-java-primitive-arrays" "here")
-    ".")
+     ATJ's use of this model of Java primitive arrays
+     is described in @(see atj-java-primitive-arrays).")
    (xdoc::p
-    "We model a Java primitive array as a list of Java primitive values
-     whose length is below @($2^{31}$).
+    "We model a Java primitive array essentially as
+     a list of Java primitive values whose length is below @($2^{31}$).
      This length limit is derived from the fact that
      the @('length') field of an array has type @('int') [JLS:10.7],
-     and the maximum integer representable with @('int') is @($2^{31}-1$).")
+     and the maximum integer representable with @('int') is @($2^{31}-1$).
+     We tag the list, via @(tsee fty::defprod),
+     with an indication of the primitive types.")
    (xdoc::p
     "We introduce the following functions,
-     eight of each kind, for the eight Java primitive types
-     (with an exception noted below):")
+     eight of each kind, for the eight Java primitive types:")
    (xdoc::ul
     (xdoc::li
-     "Recognizers for the lists just described,
-      i.e. for (ATJ's ACL2 model of) Java primitive arrays.
-      Here we really model just the component of the arrays,
-      and none of the additional information
-      that is part of every Java object (e.g. locks),
-      but that is adequate for ATJ's code generation purpose.
-      (Recall that arrays are object in Java.)")
-    (xdoc::li
-     "Operations to read components of Java primitive arrays.
+     "Operations to read components of Java primitive arrays:
+      these model array accesses whose results are used as values.
       The index is (our ACL2 model of) a Java @('int'),
       and the result is (our ACL2 model of) the array component type.")
     (xdoc::li
-     "Operations to obtain the lengths of Java primitive arrays.
+     "Operations to obtain the lengths of Java primitive arrays:
+      these model accesses of the @('length') field of arrays.
       The result is (our ACL2 model of) a Java @('int').")
     (xdoc::li
-     "Operations to write components of Java primitive arrays.
+     "Operations to write components of Java primitive arrays:
+      these model the assignment of values
+      to array access expressions whose results are used as variables
+      (these operations functionally return updated arrays).
       The index is (our ACL2 model of) a Java @('int'),
       the new component value is (our ACL2 model of) the array component type,
       and the result is the new Java primitive array.")
     (xdoc::li
-     "Operations to construct Java primitive arrays from lists.
-      These are currently identity operations,
-      but their explicit presence can be recognized by ATJ
-      and translated into array creation expressions with initializers
-      under suitable conditions,
-      where the components of the array initializers
-      are derived from the list elements.
-      Furthermore, the ``abstraction'' provided by these functions
-      allows us to change the model of arrays in the future, if desired.")
-    (xdoc::li
-     "Operations to construct Java primitive arrays of given sizes
-      and with every component the default value for the component type,
+     "Operations to create new Java primitive arrays of given lengths
+      (and with every component the default value for the component type,
       i.e. @('false') for @('boolean') and 0 for the integral types
-      [JLS:4.12.5].
-      The size is (our ACL2 model of) a Java @('int').
-      These operations can be recognized by ATJ
-      and translated to array creation expressions without initializers.")))
+      [JLS:4.12.5]):
+      these model array creation expressions
+      with lengths and without initializers.
+      The size is (our ACL2 model of) a Java @('int'),
+      and the result is the newly created Java primitive array.")
+    (xdoc::li
+     "Operations to create new Java primitive arrays with given components:
+      these model array creation expressions
+      without lengths and with initializers.
+      The inputs are lists of (our ACL2 models of) Java primitive values
+      (of the arrays' component types),
+      and the outputs are the newly created Java primitive arrays.
+      These operations are the same as the constructors of the array fixtypes,
+      but introducing them provides future flexibility,
+      should the definition of the fixtype change in some way.")
+    (xdoc::li
+     "Operations to convert from Java primitive arrays to ACL2 lists,
+      component-wise:
+      a Java @('boolean') array is converted to
+      the list of corresponding ACL2 @(tsee booleanp) values;
+      a Java @('char') array is converted to
+      the list of corresponding ACL2 @(tsee ubyte16p) values;
+      a Java @('byte') array is converted to
+      the list of corresponding ACL2 @(tsee sbyte8p) values;
+      a Java @('short') array is converted to
+      the list of corresponding ACL2 @(tsee sbyte16p) values;
+      a Java @('int') array is converted to
+      the list of corresponding ACL2 @(tsee sbyte32p) values; and
+      a Java @('long') array is converted to
+      the list of corresponding ACL2 @(tsee sbyte64p) values.
+      No conversion operations for @('float') and @('double') arrays
+      are defined here,
+      because we have an abstract model of those two primitive types.")
+    (xdoc::li
+     "Operations to convert to Java primitive arrays from ACL2 lists,
+      component-wise; these are the inverse conversions of
+      those described just above."))
+   (xdoc::p
+    "Note that the convertions between Java arrays and ACL2 lists
+     involve lists of ACL2 values, not of Java primitive values.
+     The reason is that ACL2 lists of (our model of) Java primitive values
+     do not really have a place in the generated Java code,
+     which separates Java primitive values and arrays from built-in ACL2 values,
+     through the ATJ types."))
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deflist boolean-value-list
-  :short "Fixtype of true lists of Java @('boolean') values."
-  :elt-type boolean-value
-  :true-listp t
-  :elementp-of-nil nil
-  :pred boolean-value-listp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deflist char-value-list
-  :short "Fixtype of true lists of Java @('char') values."
-  :elt-type char-value
-  :true-listp t
-  :elementp-of-nil nil
-  :pred char-value-listp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deflist byte-value-list
-  :short "Fixtype of true lists of Java @('byte') values."
-  :elt-type byte-value
-  :true-listp t
-  :elementp-of-nil nil
-  :pred byte-value-listp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deflist short-value-list
-  :short "Fixtype of true lists of Java @('short') values."
-  :elt-type short-value
-  :true-listp t
-  :elementp-of-nil nil
-  :pred short-value-listp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deflist int-value-list
-  :short "Fixtype of true lists of Java @('int') values."
-  :elt-type int-value
-  :true-listp t
-  :elementp-of-nil nil
-  :pred int-value-listp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deflist long-value-list
-  :short "Fixtype of true lists of Java @('long') values."
-  :elt-type long-value
-  :true-listp t
-  :elementp-of-nil nil
-  :pred long-value-listp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deflist float-value-list
-  :short "Fixtype of true lists of Java @('float') values."
-  :elt-type float-value
-  :true-listp t
-  :elementp-of-nil nil
-  :pred float-value-listp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deflist double-value-list
-  :short "Fixtype of true lists of Java @('double') values."
-  :elt-type double-value
-  :true-listp t
-  :elementp-of-nil nil
-  :pred double-value-listp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defsection boolean-array
-  :short "Fixtype of (our model of) Java @('boolean') arrays."
-
-  (define boolean-array-p (x)
-    :returns (yes/no booleanp)
-    :parents (boolean-array)
-    :short "Recognizer for @(tsee boolean-array)."
-    (and (boolean-value-listp x)
-         (< (len x) (expt 2 31)))
-    ///
-    (defrule boolean-value-listp-when-boolean-array-p
-      (implies (boolean-array-p x)
-               (boolean-value-listp x))))
-
-  (std::deffixer boolean-array-fix
-    :pred boolean-array-p
-    :body-fix nil
-    :parents (boolean-array)
-    :short "Fixer for @(tsee boolean-array).")
-
-  (fty::deffixtype boolean-array
-    :pred boolean-array-p
-    :fix boolean-array-fix
-    :equiv boolean-array-equiv
-    :define t
-    :forward t))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defsection char-array
-  :short "Fixtype of (our model of) Java @('char') arrays."
-
-  (define char-array-p (x)
-    :returns (yes/no booleanp)
-    :parents (boolean-array)
-    :short "Recognizer for @(tsee char-array)."
-    (and (char-value-listp x)
-         (< (len x) (expt 2 31)))
-    ///
-    (defrule char-value-listp-when-char-array-p
-      (implies (char-array-p x)
-               (char-value-listp x))))
-
-  (std::deffixer char-array-fix
-    :pred char-array-p
-    :body-fix nil
-    :parents (char-array)
-    :short "Fixer for @(tsee char-array).")
-
-  (fty::deffixtype char-array
-    :pred char-array-p
-    :fix char-array-fix
-    :equiv char-array-equiv
-    :define t
-    :forward t))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defsection byte-array
-  :short "Fixtype of (our model of) Java @('byte') arrays."
-
-  (define byte-array-p (x)
-    :returns (yes/no booleanp)
-    :parents (byte-array)
-    :short "Recognizer for @(tsee byte-array)."
-    (and (byte-value-listp x)
-         (< (len x) (expt 2 31)))
-    ///
-    (defrule byte-value-listp-when-byte-array-p
-      (implies (byte-array-p x)
-               (byte-value-listp x))))
-
-  (std::deffixer byte-array-fix
-    :pred byte-array-p
-    :body-fix nil
-    :parents (byte-array)
-    :short "Fixer for @(tsee byte-array).")
-
-  (fty::deffixtype byte-array
-    :pred byte-array-p
-    :fix byte-array-fix
-    :equiv byte-array-equiv
-    :define t
-    :forward t))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defsection short-array
-  :short "Fixtype of (our model of) Java @('short') arrays."
-
-  (define short-array-p (x)
-    :returns (yes/no booleanp)
-    :parents (short-array)
-    :short "Recognizer for @(tsee short-array)."
-    (and (short-value-listp x)
-         (< (len x) (expt 2 31)))
-    ///
-    (defrule short-value-listp-when-short-array-p
-      (implies (short-array-p x)
-               (short-value-listp x))))
-
-  (std::deffixer short-array-fix
-    :pred short-array-p
-    :body-fix nil
-    :parents (short-array)
-    :short "Fixer for @(tsee short-array).")
-
-  (fty::deffixtype short-array
-    :pred short-array-p
-    :fix short-array-fix
-    :equiv short-array-equiv
-    :define t
-    :forward t))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defsection int-array
-  :short "Fixtype of (our model of) Java @('int') arrays."
-
-  (define int-array-p (x)
-    :returns (yes/no booleanp)
-    :parents (int-array)
-    :short "Recognizer for @(tsee int-array)."
-    (and (int-value-listp x)
-         (< (len x) (expt 2 31)))
-    ///
-    (defrule int-value-listp-when-int-array-p
-      (implies (int-array-p x)
-               (int-value-listp x))))
-
-  (std::deffixer int-array-fix
-    :pred int-array-p
-    :body-fix nil
-    :parents (int-array)
-    :short "Fixer for @(tsee int-array).")
-
-  (fty::deffixtype int-array
-    :pred int-array-p
-    :fix int-array-fix
-    :equiv int-array-equiv
-    :define t
-    :forward t))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defsection long-array
-  :short "Fixtype of (our model of) Java @('long') arrays."
-
-  (define long-array-p (x)
-    :returns (yes/no booleanp)
-    :parents (long-array)
-    :short "Recognizer for @(tsee long-array)."
-    (and (long-value-listp x)
-         (< (len x) (expt 2 31)))
-    ///
-    (defrule long-value-listp-when-long-array-p
-      (implies (long-array-p x)
-               (long-value-listp x))))
-
-  (std::deffixer long-array-fix
-    :pred long-array-p
-    :body-fix nil
-    :parents (long-array)
-    :short "Fixer for @(tsee long-array).")
-
-  (fty::deffixtype long-array
-    :pred long-array-p
-    :fix long-array-fix
-    :equiv long-array-equiv
-    :define t
-    :forward t))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defsection float-array
-  :short "Fixtype of (our model of) Java @('float') arrays."
+(defsection atj-def-java-primitive-array-model
+  :short "Macro to define the models of Java primitive arrays."
   :long
-  (xdoc::topstring-p
-   "The components of a @('float') array
-    are always in the float value set [JLS:10].
-    Thus, we use @(tsee float-value) for the components,
-    not @(tsee floatx-value).")
+  (xdoc::topstring
+   (xdoc::p
+    "The models vary slightly across the eight Java primitive array types,
+     but they have a lot of common structure, which is captured via this macro.
+     We define this macro and then we call it eight times.")
+   (xdoc::p
+    "This macro introduces, for each Java primitive (array) type:")
+   (xdoc::ul
+    (xdoc::li
+     "A fixtype for the arrays of that type.
+      This is a product type with one field,
+      namely the list of primitive values that are the array's components.
+      The fixtype includes the length requirement.")
+    (xdoc::li
+     "A predicate to check whether a Java @('int')
+      is a valid index in an array.")
+    (xdoc::li
+     "The operations described in @(see atj-java-primitive-array-model)."))
+   (xdoc::@def "atj-def-java-primitive-array-model"))
 
-  (define float-array-p (x)
-    :returns (yes/no booleanp)
-    :parents (float-array)
-    :short "Recognizer for @(tsee float-array)."
-    (and (float-value-listp x)
-         (< (len x) (expt 2 31)))
-    ///
-    (defrule float-value-listp-when-float-array-p
-      (implies (float-array-p x)
-               (float-value-listp x))))
+  (defmacro atj-def-java-primitive-array-model (type)
 
-  (std::deffixer float-array-fix
-    :pred float-array-p
-    :body-fix nil
-    :parents (float-array)
-    :short "Fixer for @(tsee float-array).")
+    (declare (xargs :guard (member-eq type '(boolean
+                                             char
+                                             byte
+                                             short
+                                             int
+                                             long
+                                             float
+                                             double))))
 
-  (fty::deffixtype float-array
-    :pred float-array-p
-    :fix float-array-fix
-    :equiv float-array-equiv
-    :define t
-    :forward t))
+    (b* ((type-name (symbol-name type))
+         (type-doc (str::cat "@('" (str::downcase-string type-name) "')"))
+         (jwit (pkg-witness "JAVA"))
+         (type-value (packn-pos (list type '-value) jwit))
+         (type-valuep (packn-pos (list type '-valuep) jwit))
+         (type-value-fix (packn-pos (list type '-value-fix) jwit))
+         (type-value->get (case type
+                            (boolean 'boolean-value->bool)
+                            (char 'char-value->nat)
+                            (byte 'byte-value->int)
+                            (short 'short-value->int)
+                            (int 'int-value->int)
+                            (long 'long-value->int)
+                            (t nil))) ; for float or double -- not used
+         (type-value-list (packn-pos (list type '-value-list) jwit))
+         (type-value-listp (packn-pos (list type '-value-listp) jwit))
+         (type-array (packn-pos (list type '-array) jwit))
+         (type-arrayp (packn-pos (list type-array 'p) jwit))
+         (type-array-fix (packn-pos (list type-array '-fix) jwit))
+         (type-array->components (packn-pos (list type-array '->components)
+                                            jwit))
+         (type-array-index-in-range-p (packn-pos (list type
+                                                       '-array-index-in-range-p)
+                                                 jwit))
+         (type-array-read (packn-pos (list type '-array-read) jwit))
+         (type-array-length (packn-pos (list type '-array-length) jwit))
+         (type-array-write (packn-pos (list type '-array-write) jwit))
+         (type-array-new-len (packn-pos (list type '-array-new-len) jwit))
+         (type-array-new-init (packn-pos (list type '-array-new-init) jwit))
+         (acl2type (case type
+                     (boolean 'boolean)
+                     (char 'ubyte16)
+                     (byte 'sbyte8)
+                     (short 'sbyte16)
+                     (int 'sbyte32)
+                     (long 'sbyte64)
+                     (t nil))) ; for float or double -- not used
+         (acl2type-listp (case type
+                           (boolean 'boolean-listp)
+                           (char 'ubyte16-listp)
+                           (byte 'sbyte8-listp)
+                           (short 'sbyte16-listp)
+                           (int 'sbyte32-listp)
+                           (long 'sbyte64-listp)
+                           (t nil))) ; for float or double -- not used
+         (acl2type-doc (case type
+                         (boolean "booleans")
+                         (char "unsigned 16-bit integers")
+                         (byte "signed 8-bit integers")
+                         (short "signed 16-bit integers")
+                         (int "signed 32-bit integers")
+                         (long "signed 64-bit integers")
+                         (t ""))) ; for float or double -- not used
+         (type-array-to-list (packn-pos (list type-array
+                                              '-to-
+                                              acl2type
+                                              '-list)
+                                        jwit))
+         (type-array-to-list-aux (packn-pos (list type-array-to-list '-aux)
+                                            jwit))
+         (type-array-from-list (packn-pos (list type-array
+                                                '-from-
+                                                acl2type
+                                                '-list)
+                                          jwit))
+         (type-array-from-list-aux (packn-pos (list type-array-from-list '-aux)
+                                              jwit)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+      `(progn
 
-(defsection double-array
-  :short "Fixtype of (our model of) Java @('double') arrays."
-  :long
-  (xdoc::topstring-p
-   "The components of a @('double') array
-     are always in the double value set [JLS:10].
-     Thus, we use @(tsee double-value) for the components,
-     not @(tsee doublex-value).")
+         ;; fixtype:
 
-  (define double-array-p (x)
-    :returns (yes/no booleanp)
-    :parents (double-array)
-    :short "Recognizer for @(tsee double-array)."
-    (and (double-value-listp x)
-         (< (len x) (expt 2 31)))
-    ///
-    (defrule double-value-listp-when-double-array-p
-      (implies (double-array-p x)
-               (double-value-listp x))))
+         (fty::defprod ,type-array
+           :short ,(str::cat
+                    "Fixtype of (our model of) Java " type-doc " arrays.")
+           ((components ,type-value-list
+                        :reqfix (if (< (len components) (expt 2 31))
+                                    components
+                                  nil)))
+           :require (< (len components) (expt 2 31))
+           :layout :list
+           :tag ,(intern (symbol-name type-array) "KEYWORD")
+           :pred ,type-arrayp
+           ///
+           (defrule ,(packn-pos (list 'len-of-
+                                      type-array->components
+                                      '-upper-bound)
+                                jwit)
+             (< (len (,type-array->components array))
+                (expt 2 31))
+             :rule-classes :linear
+             :enable ,type-array->components))
 
-  (std::deffixer double-array-fix
-    :pred double-array-p
-    :body-fix nil
-    :parents (double-array)
-    :short "Fixer for @(tsee double-array).")
+         ;; predicate to check int index in range:
 
-  (fty::deffixtype double-array
-    :pred double-array-p
-    :fix double-array-fix
-    :equiv double-array-equiv
-    :define t
-    :forward t))
+         (define ,type-array-index-in-range-p ((array ,type-arrayp)
+                                               (index int-valuep))
+           :returns (yes/no booleanp)
+           :short ,(str::cat "Check if a Java @('int') is a valid index
+                              (i.e. in range) for a " type-doc " array.")
+           (integer-range-p 0
+                            (len (,type-array->components array))
+                            (int-value->int index)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+         ;; array read:
 
-(define boolean-array-read ((array boolean-array-p) (index int-value-p))
-  :guard (integer-range-p 0 (len array) (int-value->int index))
-  :returns (component boolean-value-p
-                      :hyp :guard
-                      :hints (("Goal" :in-theory (enable boolean-array-p))))
-  :short "Read a component from a Java @('boolean') array."
-  (nth (int-value->int index) array)
-  :guard-hints (("Goal" :in-theory (enable boolean-array-p))))
+         (define ,type-array-read ((array ,type-arrayp) (index int-valuep))
+           :guard (,type-array-index-in-range-p array index)
+           :returns (component ,type-valuep)
+           :short ,(str::cat "Read a component from a Java " type-doc " array.")
+           (,type-value-fix
+            (nth (int-value->int index) (,type-array->components array)))
+           :guard-hints (("Goal" :in-theory (enable
+                                             ,type-array-index-in-range-p)))
+           :prepwork ((local (include-book "std/lists/nth" :dir :system))
+                      ;; generates theorems about NTH:
+                      (local (fty::deflist ,type-value-list
+                               :elt-type ,type-value
+                               :true-listp t
+                               :elementp-of-nil nil
+                               :pred ,type-value-listp))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+         ;; array length:
 
-(define char-array-read ((array char-array-p) (index int-value-p))
-  :guard (integer-range-p 0 (len array) (int-value->int index))
-  :returns (component char-value-p
-                      :hyp :guard
-                      :hints (("Goal" :in-theory (enable char-array-p))))
-  :short "Read a component from a Java @('char') array."
-  (nth (int-value->int index) array)
-  :guard-hints (("Goal" :in-theory (enable char-array-p))))
+         (define ,type-array-length ((array ,type-arrayp))
+           :returns (length int-valuep)
+           :short ,(str::cat "Obtain the length of a Java " type-doc " array.")
+           (int-value (len (,type-array->components array)))
+           :guard-hints (("Goal" :in-theory (enable ,type-array->components
+                                                    sbyte32p))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+         ;; array write:
 
-(define byte-array-read ((array byte-array-p) (index int-value-p))
-  :guard (integer-range-p 0 (len array) (int-value->int index))
-  :returns (component byte-value-p
-                      :hyp :guard
-                      :hints (("Goal" :in-theory (enable byte-array-p))))
-  :short "Read a component from a Java @('byte') array."
-  (nth (int-value->int index) array)
-  :guard-hints (("Goal" :in-theory (enable byte-array-p))))
+         (define ,type-array-write ((array ,type-arrayp)
+                                    (index int-valuep)
+                                    (component ,type-valuep))
+           :guard (,type-array-index-in-range-p array index)
+           :returns (new-array ,type-arrayp)
+           :short ,(str::cat "Write a component to a Java " type-doc " array.")
+           (if (mbt (,type-array-index-in-range-p array index))
+               (,type-array (update-nth (int-value->int index)
+                                        component
+                                        (,type-array->components array)))
+             (,type-array-fix array))
+           :guard-hints (("Goal" :in-theory (enable
+                                             ,type-array->components
+                                             ,type-array-index-in-range-p)))
+           :prepwork ((local (include-book "std/lists/update-nth" :dir :system))
+                      ;; generates theorems about UPDATE-NTH:
+                      (local (fty::deflist ,type-value-list
+                               :elt-type ,type-value
+                               :true-listp t
+                               :elementp-of-nil nil
+                               :pred ,type-value-listp)))
+           ///
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+           (defret ,(packn-pos (list 'len-of-components-of- type-array-write)
+                               jwit)
+             (equal (len (,type-array->components new-array))
+                    (len (,type-array->components array)))
+             :hints (("Goal" :in-theory (enable ,type-array->components
+                                                ,type-array-index-in-range-p
+                                                ,type-array
+                                                ,type-array-fix))))
 
-(define short-array-read ((array short-array-p) (index int-value-p))
-  :guard (integer-range-p 0 (len array) (int-value->int index))
-  :returns (component short-value-p
-                      :hyp :guard
-                      :hints (("Goal" :in-theory (enable short-array-p))))
-  :short "Read a component from a Java @('short') array."
-  (nth (int-value->int index) array)
-  :guard-hints (("Goal" :in-theory (enable short-array-p))))
+           (defret ,(packn-pos (list type-array-index-in-range-p
+                                     '-of-
+                                     type-array-write)
+                               jwit)
+             (equal (,type-array-index-in-range-p new-array index1)
+                    (,type-array-index-in-range-p array index1))
+             :hints (("Goal" :in-theory (enable
+                                         ,type-array-index-in-range-p)))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+         ;; new array with length:
 
-(define int-array-read ((array int-array-p) (index int-value-p))
-  :guard (integer-range-p 0 (len array) (int-value->int index))
-  :returns (component int-value-p
-                      :hyp :guard
-                      :hints (("Goal" :in-theory (enable int-array-p))))
-  :short "Read a component from a Java @('int') array."
-  (nth (int-value->int index) array)
-  :guard-hints (("Goal" :in-theory (enable int-array-p))))
+         (define ,type-array-new-len ((length int-valuep))
+           :guard (>= (int-value->int length) 0)
+           :returns (array ,type-arrayp)
+           :short ,(str::cat "Construct a Java " type-doc " array
+                              with the given length
+                              and with default components.")
+           (,type-array (repeat (int-value->int length)
+                                ,(case type
+                                   (boolean '(boolean-value nil))
+                                   (char '(char-value 0))
+                                   (byte '(byte-value 0))
+                                   (short '(short-value 0))
+                                   (int '(int-value 0))
+                                   (long '(long-value 0))
+                                   (float '(float-value
+                                            (float-value-abs-pos-zero)))
+                                   (double '(double-value
+                                             (double-value-abs-pos-zero)))
+                                   (t (impossible)))))
+           :prepwork ((local (include-book "std/lists/repeat" :dir :system))
+                      ;; generates theorems about REPEAT:
+                      (local (fty::deflist ,type-value-list
+                               :elt-type ,type-value
+                               :true-listp t
+                               :elementp-of-nil nil
+                               :pred ,type-value-listp))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+         ;; new array with initializer:
 
-(define long-array-read ((array long-array-p) (index int-value-p))
-  :guard (integer-range-p 0 (len array) (int-value->int index))
-  :returns (component long-value-p
-                      :hyp :guard
-                      :hints (("Goal" :in-theory (enable long-array-p))))
-  :short "Read a component from a Java @('long') array."
-  (nth (int-value->int index) array)
-  :guard-hints (("Goal" :in-theory (enable long-array-p))))
+         (define ,type-array-new-init ((comps ,type-value-listp))
+           :guard (< (len comps) (expt 2 31))
+           :returns (array ,type-arrayp)
+           :short ,(str::cat "Construct a Java " type-doc " array
+                              with the given initializer (i.e. components).")
+           (,type-array comps))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+         ;; conversion to lists:
 
-(define float-array-read ((array float-array-p) (index int-value-p))
-  :guard (integer-range-p 0 (len array) (int-value->int index))
-  :returns (component float-value-p
-                      :hyp :guard
-                      :hints (("Goal" :in-theory (enable float-array-p))))
-  :short "Read a component from a Java @('float') array."
-  (nth (int-value->int index) array)
-  :guard-hints (("Goal" :in-theory (enable float-array-p))))
+         ,@(and
+            acl2type
+            `((define ,type-array-to-list ((array ,type-arrayp))
+                :returns (list ,acl2type-listp)
+                :short ,(str::cat "Convert a Java " type-doc " array to
+                              an ACL2 list of " acl2type-doc ".")
+                (,type-array-to-list-aux (,type-array->components array))
+                :prepwork
+                ((define ,type-array-to-list-aux ((comps ,type-value-listp))
+                   :returns (list ,acl2type-listp)
+                   :parents nil
+                   (cond ((endp comps) nil)
+                         (t (cons (,type-value->get (car comps))
+                                  (,type-array-to-list-aux (cdr comps)))))
+                   ///
+                   (defret ,(packn-pos (list 'len-of- type-array-to-list-aux)
+                                       jwit)
+                     (equal (len list)
+                            (len comps)))))
+                ///
+                (defret ,(packn-pos (list 'len-of- type-array-to-list) jwit)
+                  (equal (len list)
+                         (len (,type-array->components array)))))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+         ;; conversion from lists:
 
-(define double-array-read ((array double-array-p) (index int-value-p))
-  :guard (integer-range-p 0 (len array) (int-value->int index))
-  :returns (component double-value-p
-                      :hyp :guard
-                      :hints (("Goal" :in-theory (enable double-array-p))))
-  :short "Read a component from a Java @('double') array."
-  (nth (int-value->int index) array)
-  :guard-hints (("Goal" :in-theory (enable double-array-p))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define boolean-array-length ((array boolean-array-p))
-  :returns (length int-value-p)
-  :short "Obtain the length of a Java @('boolean') array."
-  (int-value (len array))
-  :guard-hints (("Goal" :in-theory (enable boolean-array-p sbyte32p))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define char-array-length ((array char-array-p))
-  :returns (length int-value-p)
-  :short "Obtain the length of a Java @('char') array."
-  (int-value (len array))
-  :guard-hints (("Goal" :in-theory (enable char-array-p sbyte32p))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define byte-array-length ((array byte-array-p))
-  :returns (length int-value-p)
-  :short "Obtain the length of a Java @('byte') array."
-  (int-value (len array))
-  :guard-hints (("Goal" :in-theory (enable byte-array-p sbyte32p))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define short-array-length ((array short-array-p))
-  :returns (length int-value-p)
-  :short "Obtain the length of a Java @('short') array."
-  (int-value (len array))
-  :guard-hints (("Goal" :in-theory (enable short-array-p sbyte32p))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define int-array-length ((array int-array-p))
-  :returns (length int-value-p)
-  :short "Obtain the length of a Java @('int') array."
-  (int-value (len array))
-  :guard-hints (("Goal" :in-theory (enable int-array-p sbyte32p))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define long-array-length ((array long-array-p))
-  :returns (length int-value-p)
-  :short "Obtain the length of a Java @('long') array."
-  (int-value (len array))
-  :guard-hints (("Goal" :in-theory (enable long-array-p sbyte32p))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define float-array-length ((array float-array-p))
-  :returns (length int-value-p)
-  :short "Obtain the length of a Java @('float') array."
-  (int-value (len array))
-  :guard-hints (("Goal" :in-theory (enable float-array-p sbyte32p))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define double-array-length ((array double-array-p))
-  :returns (length int-value-p)
-  :short "Obtain the length of a Java @('double') array."
-  (int-value (len array))
-  :guard-hints (("Goal" :in-theory (enable double-array-p sbyte32p))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define boolean-array-write ((array boolean-array-p)
-                             (index int-value-p)
-                             (component boolean-value-p))
-  :guard (integer-range-p 0 (len array) (int-value->int index))
-  :returns (new-array boolean-array-p
-                      :hyp :guard
-                      :hints (("Goal" :in-theory (enable boolean-array-p))))
-  :short "Write a component to a Java @('boolean') array."
-  (update-nth (int-value->int index) component array)
-  :guard-hints (("Goal" :in-theory (enable boolean-array-p))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define char-array-write ((array char-array-p)
-                          (index int-value-p)
-                          (component char-value-p))
-  :guard (integer-range-p 0 (len array) (int-value->int index))
-  :returns (new-array char-array-p
-                      :hyp :guard
-                      :hints (("Goal" :in-theory (enable char-array-p))))
-  :short "Write a component to a Java @('char') array."
-  (update-nth (int-value->int index) component array)
-  :guard-hints (("Goal" :in-theory (enable char-array-p))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define byte-array-write ((array byte-array-p)
-                          (index int-value-p)
-                          (component byte-value-p))
-  :guard (integer-range-p 0 (len array) (int-value->int index))
-  :returns (new-array byte-array-p
-                      :hyp :guard
-                      :hints (("Goal" :in-theory (enable byte-array-p))))
-  :short "Write a component to a Java @('byte') array."
-  (update-nth (int-value->int index) component array)
-  :guard-hints (("Goal" :in-theory (enable byte-array-p))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define short-array-write ((array short-array-p)
-                           (index int-value-p)
-                           (component short-value-p))
-  :guard (integer-range-p 0 (len array) (int-value->int index))
-  :returns (new-array short-array-p
-                      :hyp :guard
-                      :hints (("Goal" :in-theory (enable short-array-p))))
-  :short "Write a component to a Java @('short') array."
-  (update-nth (int-value->int index) component array)
-  :guard-hints (("Goal" :in-theory (enable short-array-p))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define int-array-write ((array int-array-p)
-                         (index int-value-p)
-                         (component int-value-p))
-  :guard (integer-range-p 0 (len array) (int-value->int index))
-  :returns (new-array int-array-p
-                      :hyp :guard
-                      :hints (("Goal" :in-theory (enable int-array-p))))
-  :short "Write a component to a Java @('int') array."
-  (update-nth (int-value->int index) component array)
-  :guard-hints (("Goal" :in-theory (enable int-array-p))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define long-array-write ((array long-array-p)
-                          (index int-value-p)
-                          (component long-value-p))
-  :guard (integer-range-p 0 (len array) (int-value->int index))
-  :returns (new-array long-array-p
-                      :hyp :guard
-                      :hints (("Goal" :in-theory (enable long-array-p))))
-  :short "Write a component to a Java @('long') array."
-  (update-nth (int-value->int index) component array)
-  :guard-hints (("Goal" :in-theory (enable long-array-p))))
+         ,@(and
+            acl2type
+            `((define ,type-array-from-list ((list ,acl2type-listp))
+                :guard (< (len list) (expt 2 31))
+                :returns (array ,type-arrayp)
+                :short ,(str::cat "Convert an ACL2 list of " acl2type-doc
+                                  " to a Java @('boolean') array.")
+                (,type-array (,type-array-from-list-aux list))
+                :prepwork
+                ((define ,type-array-from-list-aux ((list ,acl2type-listp))
+                   :returns (comps ,type-value-listp)
+                   :parents nil
+                   (cond ((endp list) nil)
+                         (t (cons (,type-value (car list))
+                                  (,type-array-from-list-aux (cdr list)))))
+                   ///
+                   (defret ,(packn-pos (list 'len-of- type-array-from-list-aux)
+                                       jwit)
+                     (equal (len comps)
+                            (len list))))))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define float-array-write ((array float-array-p)
-                           (index int-value-p)
-                           (component float-value-p))
-  :guard (integer-range-p 0 (len array) (int-value->int index))
-  :returns (new-array float-array-p
-                      :hyp :guard
-                      :hints (("Goal" :in-theory (enable float-array-p))))
-  :short "Write a component to a Java @('float') array."
-  (update-nth (int-value->int index) component array)
-  :guard-hints (("Goal" :in-theory (enable float-array-p))))
+(atj-def-java-primitive-array-model boolean)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(atj-def-java-primitive-array-model char)
 
-(define double-array-write ((array double-array-p)
-                            (index int-value-p)
-                            (component double-value-p))
-  :guard (integer-range-p 0 (len array) (int-value->int index))
-  :returns (new-array double-array-p
-                      :hyp :guard
-                      :hints (("Goal" :in-theory (enable double-array-p))))
-  :short "Write a component to a Java @('double') array."
-  (update-nth (int-value->int index) component array)
-  :guard-hints (("Goal" :in-theory (enable double-array-p))))
+(atj-def-java-primitive-array-model byte)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(atj-def-java-primitive-array-model short)
 
-(define boolean-array-with-comps ((list boolean-value-listp))
-  :guard (< (len list) (expt 2 31))
-  :returns (array boolean-array-p
-                  :hyp :guard
-                  :hints (("Goal" :in-theory (enable boolean-array-p))))
-  :short "Construct a Java @('boolean') array
-          from a list of @('boolean') values."
-  list)
+(atj-def-java-primitive-array-model int)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(atj-def-java-primitive-array-model long)
 
-(define char-array-with-comps ((list char-value-listp))
-  :guard (< (len list) (expt 2 31))
-  :returns (array char-array-p
-                  :hyp :guard
-                  :hints (("Goal" :in-theory (enable char-array-p))))
-  :short "Construct a Java @('char') array
-          from a list of @('char') values."
-  list)
+(atj-def-java-primitive-array-model float)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define byte-array-with-comps ((list byte-value-listp))
-  :guard (< (len list) (expt 2 31))
-  :returns (array byte-array-p
-                  :hyp :guard
-                  :hints (("Goal" :in-theory (enable byte-array-p))))
-  :short "Construct a Java @('byte') array
-          from a list of @('byte') values."
-  list)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define short-array-with-comps ((list short-value-listp))
-  :guard (< (len list) (expt 2 31))
-  :returns (array short-array-p
-                  :hyp :guard
-                  :hints (("Goal" :in-theory (enable short-array-p))))
-  :short "Construct a Java @('short') array
-          from a list of @('short') values."
-  list)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define int-array-with-comps ((list int-value-listp))
-  :guard (< (len list) (expt 2 31))
-  :returns (array int-array-p
-                  :hyp :guard
-                  :hints (("Goal" :in-theory (enable int-array-p))))
-  :short "Construct a Java @('int') array
-          from a list of @('int') values."
-  list)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define long-array-with-comps ((list long-value-listp))
-  :guard (< (len list) (expt 2 31))
-  :returns (array long-array-p
-                  :hyp :guard
-                  :hints (("Goal" :in-theory (enable long-array-p))))
-  :short "Construct a Java @('long') array
-          from a list of @('long') values."
-  list)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define float-array-with-comps ((list float-value-listp))
-  :guard (< (len list) (expt 2 31))
-  :returns (array float-array-p
-                  :hyp :guard
-                  :hints (("Goal" :in-theory (enable float-array-p))))
-  :short "Construct a Java @('float') array
-          from a list of @('float') values."
-  list)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define double-array-with-comps ((list double-value-listp))
-  :guard (< (len list) (expt 2 31))
-  :returns (array double-array-p
-                  :hyp :guard
-                  :hints (("Goal" :in-theory (enable double-array-p))))
-  :short "Construct a Java @('double') array
-          from a list of @('double') values."
-  list)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define boolean-array-of-length ((length int-value-p))
-  :guard (>= (int-value->int length) 0)
-  :returns (array boolean-array-p
-                  :hints (("Goal" :in-theory (enable boolean-array-p))))
-  :short "Construct a Java @('boolean') array with the given size
-          and with @('false') as every component."
-  (repeat (int-value->int length) (boolean-value nil)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define char-array-of-length ((length int-value-p))
-  :guard (>= (int-value->int length) 0)
-  :returns (array char-array-p
-                  :hints (("Goal" :in-theory (enable char-array-p))))
-  :short "Construct a Java @('char') array with the given size
-          and with 0 as every component."
-  (repeat (int-value->int length) (char-value 0)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define byte-array-of-length ((length int-value-p))
-  :guard (>= (int-value->int length) 0)
-  :returns (array byte-array-p
-                  :hints (("Goal" :in-theory (enable byte-array-p))))
-  :short "Construct a Java @('byte') array with the given size
-          and with 0 as every component."
-  (repeat (int-value->int length) (byte-value 0)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define short-array-of-length ((length int-value-p))
-  :guard (>= (int-value->int length) 0)
-  :returns (array short-array-p
-                  :hints (("Goal" :in-theory (enable short-array-p))))
-  :short "Construct a Java @('short') array with the given size
-          and with 0 as every component."
-  (repeat (int-value->int length) (short-value 0)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define int-array-of-length ((length int-value-p))
-  :guard (>= (int-value->int length) 0)
-  :returns (array int-array-p
-                  :hints (("Goal" :in-theory (enable int-array-p))))
-  :short "Construct a Java @('int') array with the given size
-          and with 0 as every component."
-  (repeat (int-value->int length) (int-value 0)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define long-array-of-length ((length int-value-p))
-  :guard (>= (int-value->int length) 0)
-  :returns (array long-array-p
-                  :hints (("Goal" :in-theory (enable long-array-p))))
-  :short "Construct a Java @('long') array with the given size
-          and with 0 as every component."
-  (repeat (int-value->int length) (long-value 0)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define float-array-of-length ((length int-value-p))
-  :guard (>= (int-value->int length) 0)
-  :returns (array float-array-p
-                  :hints (("Goal" :in-theory (enable float-array-p))))
-  :short "Construct a Java @('float') array with the given size
-          and with positive 0 as every component."
-  (repeat (int-value->int length) (float-value (float-value-abs-pos-zero))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define double-array-of-length ((length int-value-p))
-  :guard (>= (int-value->int length) 0)
-  :returns (array double-array-p
-                  :hints (("Goal" :in-theory (enable double-array-p))))
-  :short "Construct a Java @('double') array with the given size
-          and with positive 0 as every component."
-  (repeat (int-value->int length) (double-value (double-value-abs-pos-zero))))
+(atj-def-java-primitive-array-model double)

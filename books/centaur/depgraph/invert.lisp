@@ -33,7 +33,7 @@
 (include-book "std/alists/alist-defuns" :dir :system)
 (local (include-book "std/lists/top" :dir :system))
 (local (include-book "std/alists/top" :dir :system))
-(local (include-book "misc/assert" :dir :system))
+(local (include-book "std/testing/assert-bang" :dir :system))
 
 (define invert-inner-loop
   :parents (invert)

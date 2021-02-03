@@ -81,16 +81,16 @@ slash, e.g., <tt>/n/fv2/translations</tt>.</p>"
   :short "Recognize strings of the form @('YYYY-MM-DD*')."
   :guard-hints(("Goal" :in-theory (disable nth-when-zp)))
   (and (<= 10 (length x))
-       (str::digitp (char x 0)) ;; y
-       (str::digitp (char x 1)) ;; y
-       (str::digitp (char x 2)) ;; y
-       (str::digitp (char x 3)) ;; y
+       (str::dec-digit-char-p (char x 0)) ;; y
+       (str::dec-digit-char-p (char x 1)) ;; y
+       (str::dec-digit-char-p (char x 2)) ;; y
+       (str::dec-digit-char-p (char x 3)) ;; y
        (eql (char x 4) #\-)     ;; -
-       (str::digitp (char x 5)) ;; m
-       (str::digitp (char x 6)) ;; m
+       (str::dec-digit-char-p (char x 5)) ;; m
+       (str::dec-digit-char-p (char x 6)) ;; m
        (eql (char x 7) #\-)     ;; -
-       (str::digitp (char x 8)) ;; d
-       (str::digitp (char x 9)) ;; d
+       (str::dec-digit-char-p (char x 8)) ;; d
+       (str::dec-digit-char-p (char x 9)) ;; d
        ))
 
 (define vls-filter-datestrs

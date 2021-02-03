@@ -17,9 +17,10 @@ data last modified: [2014-08-07]
 
 ; DEFDATA POLYMORPHIC SUPPORT EVENT GENERATION FUNCTIONS.
 
-(defconst *allowed-type-vars* '(:a :b :c :d :a1 :b1 :c1 :d1 :a2 :b2 :c2 :d2))
+(def-const *allowed-type-vars*
+  '(:a :b :c :d :a1 :b1 :c1 :d1 :a2 :b2 :c2 :d2))
  
-(defconst *tvar-typename-alist*
+(def-const *tvar-typename-alist*
   '((:a . A)
     (:b . B)
     (:c . C)
@@ -38,6 +39,7 @@ data last modified: [2014-08-07]
 (table psig-template-map nil) ;UNUSED now -- but seems like a more general idea to support arbitrary polymorphic type expressions. REVISIT
 
 (defstub psig-templ-instantiation-ev (* * * * * * *) => *)
+
 (defloop psig-inst-templates
   (tname tvar-sigma templates new-types kwd-alist wrld)
   (for ((templ in templates))
@@ -239,11 +241,12 @@ get as much automated polymorphic support as possible.
 
 (program)
 
-;(defconst *allowed-type-var->named-type-binding* (pairlis$ *allowed-type-vars* *tvar-typename-alist*))
+;(def-const *allowed-type-var->named-type-binding*
+;   (pairlis$ *allowed-type-vars* *tvar-typename-alist*))
 
 
 ;ACHTUNG: make sure people dont use names from defdata namespace. Note that A,Ap,... reside in defdata namespace.
-(defconst *initial-tvar-M*
+(def-const *initial-tvar-M*
   (type-metadata-bases (strip-cdrs *tvar-typename-alist*) "DEFDATA"))
 
 ;maps typenames of type vars to metadata like in M.
@@ -283,7 +286,7 @@ get as much automated polymorphic support as possible.
 
 ;(include-book "coi/util/pseudo-translate" :dir :system)
 
-(defconst *sig-keywords*
+(def-const *sig-keywords*
   '(:hints :gen-rule-classes :rule-classes :verbose :satisfies :suffix))
 
 ;check -- also take care of monomorphic sig, but make sure only tnames are allowed!
@@ -312,7 +315,7 @@ get as much automated polymorphic support as possible.
        )
 
     (case-match sig
-      ((name arg-type-list 'ACL2::=> return-type)
+      ((name arg-type-list 'ACL2S-SHARED::=> return-type)
        (b* (((unless (proper-symbolp name))
              (er hard? ctx "~| Name ~x0 should be a symbol.~%" name))
 ;simple syntax checks
@@ -436,7 +439,7 @@ get as much automated polymorphic support as possible.
              undef-pred-bodies)
             (make-derived-tvar-type-defthms undef-pred-names undef-texps pkg))))
 
-(defconst *poly-combinators* '(listof alistof map))
+(def-const *poly-combinators* '(listof alistof map))
 
 ;map: pred name -> actual tvar comb exp
 (table derived-pred->poly-texp-map nil)
@@ -445,7 +448,7 @@ get as much automated polymorphic support as possible.
   (for ((key in keys) (val in vals))
        (collect `(TABLE ,tble-name ',key ',val :put))))
 
-(defconst *sig-singular-dominant-poly-comb-limitation-msg* 
+(def-const *sig-singular-dominant-poly-comb-limitation-msg* 
 "~| SIG: Limitation -- There should be one polymorphic combinator argument that dominates all other arguments. ~
 But ~x0 does not have this property. Therefore we are unable to functionally instantiate this polymorphic signature. ~
 Please send this example to the implementors for considering removal of this restriction.~%")
@@ -721,7 +724,7 @@ constant). In the latter return a lambda expression"
 ;       (n-ret-type (parse-top-texp '* return-type1 ctx wrld))
 ;       (p-ret-type (untrans-texp '* n-ret-type ctx wrld))
 
-(defconst *map-all-to-a*
+(def-const *map-all-to-a*
   (pairlis$ *allowed-type-vars*
             (make-list (len *allowed-type-vars*)
                        :initial-element ':a)))

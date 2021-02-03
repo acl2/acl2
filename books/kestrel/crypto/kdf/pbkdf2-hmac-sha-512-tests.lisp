@@ -1,6 +1,6 @@
 ; KDF Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -12,8 +12,7 @@
 (include-book "pbkdf2-hmac-sha-512")
 
 
-;; for assert-equal
-(include-book "../../utilities/testing")
+(include-book "std/testing/assert-equal" :dir :system)
 
 
 ;;; --------------------------------
@@ -93,4 +92,3 @@ passwordPASSWORDpassword saltSALTsaltSALTsaltSALTsaltSALTsalt 4096 64 8C0511F4C6
 (acl2::assert-equal
  (pbkdf2-hmac-sha-512-from-strings "passwordPASSWORDpassword" "saltSALTsaltSALTsaltSALTsaltSALTsalt" 4096 64)
  (acl2::unpackbv 64 8 #x8C0511F4C6E597C6AC6315D8F0362E225F3C501495BA23B868C005174DC4EE71115B59F9E60CD9532FA33E0F75AEFE30225C583A186CD82BD4DAEA9724A3D3B8))
-

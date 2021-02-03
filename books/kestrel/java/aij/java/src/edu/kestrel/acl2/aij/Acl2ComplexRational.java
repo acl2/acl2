@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
+ * Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
  * License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
  * Author: Alessandro Coglio (coglio@kestrel.edu)
  */
@@ -27,7 +27,7 @@ final class Acl2ComplexRational extends Acl2Number {
 
     /**
      * Imaginary part of this complex rational.
-     * Invariants: not null, not 0.
+     * Invariant: not null, not 0.
      */
     private final Acl2Rational imaginaryPart;
 
@@ -58,6 +58,19 @@ final class Acl2ComplexRational extends Acl2Number {
     @Override
     Acl2Symbol complexRationalp() {
         return Acl2Symbol.T;
+    }
+
+    /**
+     * Checks if this complex rational is a complex rational,
+     * which is always true,
+     * returning a Java boolean instead of an ACL2 symbol.
+     * This is consistent with the {@code complex-rationalp} ACL2 function.
+     *
+     * @return {@code true}.
+     */
+    @Override
+    boolean complexRationalpBoolean() {
+        return true;
     }
 
     /**

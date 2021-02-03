@@ -1,4 +1,4 @@
-; ACL2 Version 8.2 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2020, Matt Kaufmann
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
@@ -33,7 +33,7 @@
 ; has worked on a Mac; a different command, perhaps just a call of
 ; "firefox" [rather than "open"], may work on Linux):
 
-; #!/bin/bash
+; #!/usr/bin/env bash
 ; open -a 'firefox' "$@"
 
 (defun manual-dir ()

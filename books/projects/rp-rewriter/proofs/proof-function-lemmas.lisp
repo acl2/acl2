@@ -464,6 +464,7 @@
 
 (defthm valid-rules-subsetp
   (implies (and (valid-rulesp rules)
+                (true-listp subrules)
                 (subsetp subrules rules))
            (valid-rulesp subrules))
   :hints (("Goal"
@@ -613,7 +614,7 @@
   
 (defthm rp-evl-of-trans-list-lemma
   (equal (rp-evl (trans-list lst) a)
-         (rp-evl-of-trans-list lst a))
+         (rp-evl-lst lst a))
   :hints (("Goal"
            :do-not-induct t
            :induct (trans-list lst)
@@ -634,31 +635,59 @@
  (defthm rp-evl-of-trans-list-lemma-3
    (implies (and (not (consp x))
                  (not (rp-evl-lst y a)))
-            (not (rp-evl-of-trans-list y a)))))
+            (not (rp-evl-lst y a)))))
 
 
 (defthm rp-evl-of-trans-list-lemma-2
   (implies (equal (rp-evl-lst x a1)
                   (rp-evl-lst y a2))
-           (equal (equal (rp-evl-of-trans-list x a1)
-                         (rp-evl-of-trans-list y a2))
+           (equal (equal (rp-evl-lst x a1)
+                         (rp-evl-lst y a2))
                   t))
   :otf-flg t
   :hints (("goal"
            :do-not-induct t
            :induct (two-cdr-induct x y)
-           :in-theory (e/d (rp-evl-of-trans-list) ()))))
+           :in-theory (e/d () ()))))
 
 (defthm consp-of-RP-EVL-OF-TRANS-LIST
-  (equal (CONSP (RP-EVL-OF-TRANS-LIST lst A))
+  (equal (CONSP (rp-evl-lst lst A))
          (consp lst))
   :hints (("Goal"
-           :in-theory (e/d (RP-EVL-OF-TRANS-LIST) ()))))
+           :use ((:instance RP-EVL-LST-OF-ATOM
+                            (ACL2::X-LST lst)
+                            (ACL2::a a)))
+           :in-theory (e/d ()
+                           (RP-EVL-LST-OF-ATOM)))))
 
 (defthm RP-EVL-OF-TRANS-LIST-nil
-  (equal (RP-EVL-OF-TRANS-LIST nil A)
+  (equal (rp-evl-lst nil A)
          nil)
   :hints (("Goal"
-           :in-theory (e/d (RP-EVL-OF-TRANS-LIST) ()))))
+           :in-theory (e/d () ()))))
 
-(in-theory (disable rp-evl-of-trans-list))
+
+(defthm rp-state-preservedp-implies-valid-rp-statep
+  (implies (and ;;(rp-statep rp-state)
+                (valid-rp-statep rp-state)
+                (rp-state-preservedp rp-state new-rp-state))
+           (valid-rp-statep new-rp-state))
+  :hints (("Goal"
+           :do-not-induct t
+           :use ((:instance RP-STATE-PRESERVEDP-SK-necc
+                            (key (valid-rp-statep-witness NEW-RP-STATE))
+                            (OLD-RP-STATE rp-state))
+                 (:instance valid-rp-statep-necc
+                            (key (valid-rp-statep-witness NEW-RP-STATE))))
+           :expand (valid-rp-statep new-rp-state)
+           :in-theory (e/d (rp-state-preservedp)
+                           (RP-STATE-PRESERVEDP-SK
+                            VALID-RP-STATEP
+                            VALID-RULESP
+                            RP-STATE-PRESERVEDP-SK
+                            VALID-RP-STATE-SYNTAXP-AUX
+                            valid-rp-statep
+                            (:DEFINITION NOT)
+                            (:TYPE-PRESCRIPTION VALID-RP-STATEP)
+                            (:TYPE-PRESCRIPTION VALID-RULESP)
+                            RP-STATEP)))))

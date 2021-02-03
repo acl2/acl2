@@ -23,12 +23,15 @@
 (subsume-ttags-since-defttag)
 
 ; From ACL2 source file defthm.lisp, utilities.lisp
+; Matt K. mod: now in logic mode, guard-verified.
+#|
 (defun fix-pkg (pkg)
   (declare (xargs :guard (and (or (null pkg) (stringp pkg))
                               (not (equal pkg "")))))
   (if (and pkg (not (equal pkg *main-lisp-package-name*)))
       pkg
     "ACL2"))
+|#
 
 (defmacro fix-intern$ (name pkg)
   `(intern$ ,name (fix-pkg ,pkg)))

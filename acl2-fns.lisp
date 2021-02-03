@@ -1,5 +1,5 @@
-; ACL2 Version 8.2 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2019, Regents of the University of Texas
+; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2020, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -1994,6 +1994,15 @@ notation causes an error and (b) the use of ,. is not permitted."
   #+ccl
   `(ccl::defstaticvar ,@r))
 
+#+allegro
+(setq excl::*warn-smp-usage*
+
+; We turn off warnings for excl:without-interrupts, as per:
+; Section 2.0, Deprecated macros,
+; https://franz.com/support/documentation/current/doc/smp.htm.
+
+      nil)
+
 (defmacro without-interrupts (&rest forms)
 
 ; This macro prevents, in raw Lisp for underlying Common Lisp implementations
@@ -2030,8 +2039,23 @@ notation causes an error and (b) the use of ,. is not permitted."
 ; "with-interrupts-blocked".
 
   `(mp:with-interrupts-blocked ,@forms)
-  #-(or ccl sbcl gcl lispworks)
-  `(progn ,@forms))
+  #+allegro
+
+; Excl:with-interrupts is deprecated in Allegro CL.  However, the documentation
+; suggests (Section 2.0, Deprecated macros,
+; https://franz.com/support/documentation/current/doc/smp.htm) that this is
+; fine to use in single-process applications.
+
+  `(excl:without-interrupts ,@forms)
+  #+cmucl
+  `(system:without-interrupts ,@forms)
+  #-(or allegro ccl cmucl gcl lispworks sbcl)
+  '(error "This Lisp implementation does not support ~s, which is used, for~%~
+           example, to support certain atomic operations when installing an~%~
+           ACL2 logical world.  One could define (without-interrupts ...) ~%~
+           to be (progn ...), but think about whether that provides enough~%~
+           support for those operations!"
+          'without-interrupts))
 
 (defmacro with-interrupts (&rest forms)
 
@@ -2069,6 +2093,8 @@ notation causes an error and (b) the use of ,. is not permitted."
   #+ccl
   `(unwind-protect ,body-form ,@cleanup-forms)
   #+lispworks
+; See http://www.lispworks.com/documentation/lw60/LW/html/lw-808.htm for why we
+; don't just use without-interrupts in the cleanup form here.
   `(hcl:unwind-protect-blocking-interrupts-in-cleanups ,body-form
                                                        ,@cleanup-forms)
   #-(or ccl lispworks)

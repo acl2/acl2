@@ -31,7 +31,7 @@
 (in-package "ACL2")
 (include-book "../getpid")
 (include-book "std/util/defconsts" :dir :system)
-(include-book "misc/assert" :dir :system)
+(include-book "std/testing/assert-bang" :dir :system)
 
 (defconsts (*pid* state)
   (oslib::getpid))

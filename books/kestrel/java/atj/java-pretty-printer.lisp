@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -85,6 +85,8 @@
   :prepwork
   ((local (include-book "std/typed-lists/character-listp" :dir :system))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define print-comma-sep ((parts msg-listp))
   :returns (part msgp :hyp (msg-listp parts))
   :short "Turn zero or more parts into a single part
@@ -94,6 +96,8 @@
         (t (msg "~@0, ~@1"
                 (car parts)
                 (print-comma-sep (cdr parts))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define print-jchar ((char characterp))
   :returns (part msgp)
@@ -149,6 +153,170 @@
                 (print-jchar (car chars))
                 (print-jchars (cdr chars))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define print-optional-integer-type-suffix
+  ((l/L? optional-integer-type-suffix-p))
+  :returns (part msgp)
+  :short "Pretty-print an optional integer type suffix."
+  (optional-integer-type-suffix-case l/L?
+                                     :none ""
+                                     :lowercase "l"
+                                     :uppercase "L")
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define print-dec-digit ((digit dec-digitp))
+  :returns (part msgp)
+  :short "Pretty-print a decimal digit."
+  (implode (list (code-char digit)))
+  :guard-hints (("Goal" :in-theory (enable dec-digitp))))
+
+(define print-hex-digit ((digit hex-digitp))
+  :returns (part msgp)
+  :short "Pretty-print a hexadecimal digit."
+  (implode (list (code-char digit)))
+  :guard-hints (("Goal" :in-theory (enable hex-digitp))))
+
+(define print-oct-digit ((digit oct-digitp))
+  :returns (part msgp)
+  :short "Pretty-print an octal digit."
+  (implode (list (code-char digit)))
+  :guard-hints (("Goal" :in-theory (enable oct-digitp))))
+
+(define print-bin-digit ((digit bin-digitp))
+  :returns (part msgp)
+  :short "Pretty-print a binary digit."
+  (implode (list (code-char digit)))
+  :guard-hints (("Goal" :in-theory (enable bin-digitp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define print-decdig/uscore ((du decdig/uscore-p))
+  :returns (part msgp)
+  :short "Pretty-print a decimal digit or underscore."
+  (decdig/uscore-case du
+                      :digit (print-dec-digit du.get)
+                      :underscore "_")
+  :hooks (:fix))
+
+(define print-hexdig/uscore ((du hexdig/uscore-p))
+  :returns (part msgp)
+  :short "Pretty-print a hexadecimal digit or underscore."
+  (hexdig/uscore-case du
+                      :digit (print-hex-digit du.get)
+                      :underscore "_")
+  :hooks (:fix))
+
+(define print-octdig/uscore ((du octdig/uscore-p))
+  :returns (part msgp)
+  :short "Pretty-print an octal digit or underscore."
+  (octdig/uscore-case du
+                      :digit (print-oct-digit du.get)
+                      :underscore "_")
+  :hooks (:fix))
+
+(define print-bindig/uscore ((du bindig/uscore-p))
+  :returns (part msgp)
+  :short "Pretty-print a binary digit or underscore."
+  (bindig/uscore-case du
+                      :digit (print-bin-digit du.get)
+                      :underscore "_")
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define print-decdig/uscore-list ((dus decdig/uscore-listp))
+  :returns (part msgp)
+  :short "Pretty-print a list of decimal digits and underscores."
+  (cond ((endp dus) "")
+        (t (msg "~@0~@1"
+                (print-decdig/uscore (car dus))
+                (print-decdig/uscore-list (cdr dus)))))
+  :hooks (:fix))
+
+(define print-hexdig/uscore-list ((dus hexdig/uscore-listp))
+  :returns (part msgp)
+  :short "Pretty-print a list of hexadecimal digits and underscores."
+  (cond ((endp dus) "")
+        (t (msg "~@0~@1"
+                (print-hexdig/uscore (car dus))
+                (print-hexdig/uscore-list (cdr dus)))))
+  :hooks (:fix))
+
+(define print-octdig/uscore-list ((dus octdig/uscore-listp))
+  :returns (part msgp)
+  :short "Pretty-print a list of octal digits and underscores."
+  (cond ((endp dus) "")
+        (t (msg "~@0~@1"
+                (print-octdig/uscore (car dus))
+                (print-octdig/uscore-list (cdr dus)))))
+  :hooks (:fix))
+
+(define print-bindig/uscore-list ((dus bindig/uscore-listp))
+  :returns (part msgp)
+  :short "Pretty-print a list of binary digits and underscores."
+  (cond ((endp dus) "")
+        (t (msg "~@0~@1"
+                (print-bindig/uscore (car dus))
+                (print-bindig/uscore-list (cdr dus)))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define print-dec-integer-literal ((lit dec-integer-literalp))
+  :returns (part msgp)
+  :short "Pretty-print a decimal integer literal."
+  (b* (((dec-integer-literal lit) lit))
+    (msg "~@0~@1"
+         (print-decdig/uscore-list lit.digits/uscores)
+         (print-optional-integer-type-suffix lit.suffix?)))
+  :hooks (:fix))
+
+(define print-hex-integer-literal ((lit hex-integer-literalp))
+  :returns (part msgp)
+  :short "Pretty-print a hexadecimal integer literal."
+  (b* (((hex-integer-literal lit) lit))
+    (msg "~@0~@1~@2"
+         (if lit.prefix-upcase-p "0X" "0x")
+         (print-hexdig/uscore-list lit.digits/uscores)
+         (print-optional-integer-type-suffix lit.suffix?)))
+  :hooks (:fix))
+
+(define print-oct-integer-literal ((lit oct-integer-literalp))
+  :returns (part msgp)
+  :short "Pretty-print an octal integer literal."
+  (b* (((oct-integer-literal lit) lit))
+    (msg "~@0~@1"
+         (print-octdig/uscore-list lit.digits/uscores)
+         (print-optional-integer-type-suffix lit.suffix?)))
+  :hooks (:fix))
+
+(define print-bin-integer-literal ((lit bin-integer-literalp))
+  :returns (part msgp)
+  :short "Pretty-print a binary integer literal."
+  (b* (((bin-integer-literal lit) lit))
+    (msg "~@0~@1~@2"
+         (if lit.prefix-upcase-p "0B" "0b")
+         (print-bindig/uscore-list lit.digits/uscores)
+         (print-optional-integer-type-suffix lit.suffix?)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define print-integer-literal ((lit integer-literalp))
+  :returns (part msgp :hints (("Goal" :in-theory (disable msgp))))
+  :short "Pretty-print an integer literal."
+  (integer-literal-case lit
+                        :dec (print-dec-integer-literal lit.get)
+                        :hex (print-hex-integer-literal lit.get)
+                        :oct (print-oct-integer-literal lit.get)
+                        :bin (print-bin-integer-literal lit.get))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define print-jliteral ((lit jliteralp))
   :returns (part msgp)
   :short "Pretty-print a literal."
@@ -158,23 +326,15 @@
     just by appending @('.0') after their decimal integer digits.")
   (jliteral-case
    lit
-   :integer (b* ((digits (jintbase-case
-                          lit.base
-                          :decimal (str::natstr lit.value)
-                          :hexadecimal (str::cat "0x" (str::natstr16 lit.value))
-                          :octal (if (= lit.value 0)
-                                     "0"
-                                   (str::cat "0" (str::natstr8 lit.value)))
-                          :binary (str::cat "0b" (str::natstr2 lit.value)))))
-              (if lit.long?
-                  (str::cat digits "L")
-                digits))
+   :integer (print-integer-literal lit.get)
    :floating (b* ((digits (str::natstr lit.value)))
                (str::cat digits ".0"))
    :boolean (if lit.value "true" "false")
    :character (msg "'~@0'" (print-jchar lit.value))
    :string (msg "\"~@0\"" (print-jchars (explode lit.value)))
    :null "null"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define print-primitive-type ((ptype primitive-typep))
   :returns (part msgp)
@@ -189,6 +349,8 @@
                        :float "float"
                        :double "double"))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define print-jtype ((type jtypep))
   :returns (part msgp)
   :short "Pretty-print a type."
@@ -197,6 +359,8 @@
               :class type.name
               :array (msg "~@0[]" (print-jtype type.comp)))
   :measure (jtype-count type))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define print-junop ((unop junopp))
   :returns (part msgp)
@@ -208,6 +372,8 @@
               :uminus "-"
               :bitcompl "~~" ; a single ~ is interpreted as a directive
               :logcompl "!"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define print-jbinop ((binop jbinopp))
   :returns (part msgp)
@@ -244,6 +410,8 @@
                :asg-and "&="
                :asg-xor "^="
                :asg-ior "|="))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc print-jexprs
   :short "Pretty-printing of expressions."
@@ -374,7 +542,7 @@
      by adding parentheses, we ``change'' the rank of the actual expression
      into the bottom of the partial order,
      i.e. the rank corresponding to @('primary'),
-     which again lets the parenthesize expression be parsed
+     which again lets the parenthesized expression be parsed
      into an expression of the expected rank.")
    (xdoc::p
     "For instance, consider the abstract syntax tree for @('(x + y) * z'),
@@ -420,6 +588,8 @@
      do not correspond to any tree structure,
      but rather allow the same expression to have, in effect,
      different ranks (a form of subtyping).")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum jexpr-rank
   :short "Ranks of expressions."
@@ -582,6 +752,8 @@
                       :postfix 1
                       :primary 0))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define jbinop-expected-ranks ((op jbinopp))
   :returns (mv (left-rank jexpr-rankp)
                (right-rank jexpr-rankp))
@@ -623,6 +795,8 @@
    :asg-xor (mv (jexpr-rank-postfix) (jexpr-rank-expression))
    :asg-ior (mv (jexpr-rank-postfix) (jexpr-rank-expression))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines print-jexpr
   :short "Pretty-print an expression."
   :long
@@ -643,16 +817,7 @@
     "The function to pretty-print lists of expressions
      takes a single rank argument,
      because we only need to pretty-print lists of expressions
-     that all have the same required rank.")
-   (xdoc::p
-    "According to the grammar,
-     the target of a field access expression should be a primary
-     (or a possibly type-qualified @('super')) [JLS:15.11],
-     but that would prevent it from being an expression name [JLS:15.8];
-     thus, here we pretend that the target of a field access expression
-     is a postfix expression, which includes expression names
-     (similarly to array access expressions);
-     this should be investigated further in [JLS]."))
+     that all have the same required rank."))
 
   (define print-jexpr ((expr jexprp) (expected-rank jexpr-rankp))
     :returns (part msgp)
@@ -740,10 +905,14 @@
   ///
   (verify-guards print-jexpr))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define print-jline-blank ()
   :returns (line msgp)
   :short "Pretty-print a blank line of code."
   "~%")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define print-jline ((content msgp) (indent-level natp))
   :returns (line msgp)
@@ -753,6 +922,8 @@
    "The content to print is preceded by
     indentation according to the current level.")
   (msg "~s0~@1~%" (atj-indent indent-level) content))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define print-jlocvar ((locvar jlocvarp) (indent-level natp))
   :returns (line msgp)
@@ -770,6 +941,8 @@
                         (print-jtype locvar.type)
                         locvar.name)
                    indent-level))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defines print-jstatems+jblocks
   :short "Pretty-print a statement or block."
@@ -853,6 +1026,8 @@
                      (print-jblock (cdr block) indent-level))))
     :measure (jblock-count block)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define print-jaccess ((access jaccessp))
   :returns (part msgp)
   :short "Pretty-print an access modifier."
@@ -861,6 +1036,8 @@
                 :protected "protected "
                 :private "private "
                 :default ""))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define print-jfield ((field jfieldp) (indent-level natp))
   :returns (line msgp)
@@ -887,12 +1064,16 @@
                         field.name)
                    indent-level))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define print-jresult ((result jresultp))
   :returns (part msgp)
   :short "Pretty-print a method result."
   (jresult-case result
                 :type (print-jtype result.get)
                 :void "void"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define print-jparam ((param jparamp))
   :returns (part msgp)
@@ -909,6 +1090,8 @@
   (cond ((endp params) nil)
         (t (cons (print-jparam (car params))
                  (print-jparam-list (cdr params))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define print-jmethod ((method jmethodp) (indent-level natp))
   :returns (lines msg-listp)
@@ -936,6 +1119,8 @@
             (print-jblock method.body (1+ indent-level))
             (list (print-jline "}" indent-level)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define print-jcinitializer ((initializer jcinitializerp) (indent-level natp))
   :returns (lines msg-listp)
   :short "Pretty-print a class initializer."
@@ -945,6 +1130,8 @@
                              indent-level))
           (print-jblock (jcinitializer->code initializer) (1+ indent-level))
           (list (print-jline "}" indent-level))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defines print-jclasses+jcmembers
   :short "Pretty-print a class declaration or class member declaration."
@@ -1019,6 +1206,8 @@
                    (print-jclass (car classes) indent-level)
                    (print-jclass-list (cdr classes) indent-level)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define print-jimport ((import jimportp) (indent-level natp))
   :returns (line msgp)
   :short "Pretty-print an import declaration."
@@ -1033,6 +1222,8 @@
   (cond ((endp imports) nil)
         (t (cons (print-jimport (car imports) indent-level)
                  (print-jimports (cdr imports) indent-level)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define print-jcunit ((cunit jcunitp))
   :returns (lines msg-listp)
@@ -1059,6 +1250,8 @@
               (print-jimports cunit.imports 0))
             (print-jclass-list cunit.types 0))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define print-jlines-to-channel ((lines msg-listp) (channel symbolp) state)
   :returns state
   :mode :program ; because of FMT1!
@@ -1069,7 +1262,9 @@
                                      0 channel state nil)))
              (print-jlines-to-channel (cdr lines) channel state)))))
 
-(defttag :open-input-channel)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defttag :open-output-channel!)
 
 (define print-to-jfile ((lines msg-listp) (filename stringp) state)
   :returns state

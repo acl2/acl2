@@ -12,10 +12,13 @@
 (in-package "ACL2")
 
 (include-book "perm-def")
-(local (include-book "kestrel/lists-light/memberp" :dir :system))
+(local (include-book "memberp"))
+(local (include-book "member-equal"))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
-(local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
-(local (include-book "kestrel/lists-light/remove1-equal" :dir :system))
+(local (include-book "subsetp-equal"))
+(local (include-book "remove1-equal"))
+
+(local (in-theory (enable member-equal-becomes-memberp)))
 
 (defthm perm-self
   (perm x x)
@@ -27,6 +30,14 @@
                   (memberp a y)))
   :hints (("Goal" :in-theory (enable perm))
           ("subgoal *1/2" :cases ((equal a (car x))))))
+
+(defthmd member-equal-when-perm-iff
+  (implies (perm x y)
+           (iff (member-equal a x)
+                (member-equal a y)))
+  :hints (("Goal" :in-theory (enable perm))
+          ("subgoal *1/2" :cases ((equal a (car x))))))
+
 
 (defthm perm-of-remove1-equal-and-remove1-equal
   (implies (perm x y)

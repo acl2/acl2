@@ -12,8 +12,8 @@
 
 (include-book "event-landmark-names")
 
-(include-book "std/testing/assert" :dir :system)
-(include-book "std/testing/eval" :dir :system)
+(include-book "std/testing/assert-equal" :dir :system)
+(include-book "std/testing/must-succeed-star" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

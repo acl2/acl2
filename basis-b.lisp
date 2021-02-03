@@ -1,5 +1,5 @@
-; ACL2 Version 8.2 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2019, Regents of the University of Texas
+; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2020, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -735,15 +735,6 @@
 
   (list 'cons fn args))
 
-(defun fargn1 (x n)
-  (declare (xargs :guard (and (integerp n)
-                              (> n 0))))
-  (cond ((eql n 1) (list 'cdr x))
-        (t (list 'cdr (fargn1 x (- n 1))))))
-
-(defmacro fargn (x n)
-  (list 'car (fargn1 x n)))
-
 (defun cdr-nest (n v)
   (cond ((equal n 0) v)
         (t (fargn1 v n))))
@@ -1347,14 +1338,19 @@
 ; due to cancellation.  Choosing primes that are smaller may lead to
 ; checksums with less information.
 
-(defconst *check-sum-exclusive-maximum* 268435399
-  "268435399 is the first prime below 2^28.  We use integers
-   modulo this number as checksums.")
+(defconst *check-sum-exclusive-maximum*
 
-(defconst *check-length-exclusive-maximum* 2097143
-  "2097143 is the first prime below 2^21.  We use integers
-   modulo this number as indices into the stream we are
-   checksumming.")
+; 268435399 is the first prime below 2^28.  We use integers modulo this number
+; as checksums.
+
+  268435399)
+
+(defconst *check-length-exclusive-maximum*
+
+; 2097143 is the first prime below 2^21.  We use integers modulo this number as
+; indices into the stream we are checksumming.
+
+  2097143)
 
 ; We actually return checksums which are in (mod
 ; *check-sum-exclusive-maximum*).
@@ -2182,7 +2178,7 @@
 ; ; try this:
 ;
 ;  (include-book "arithmetic-3/floor-mod/mod-expt-fast" :dir :system)
-;  (include-book "make-event/assert" :dir :system)
+;  (include-book "std/testing/assert-bang" :dir :system)
 ;
 ; ; Here we establish that the factors of M31-1 are 2, 3, 7, 11, 31, 151, and
 ; ; 331.
@@ -3346,6 +3342,30 @@
     (f-put-global 'current-package val state)
     (value val))))
 
+(defun defun-for-state-name (name)
+  (add-suffix name "-STATE"))
+
+(defmacro error-free-triple-to-state (ctx form)
+  (declare (xargs :guard ; really (quotep ctx), but we don't check pseudo-termp
+                  (and (consp ctx)
+                       (eq (car ctx) 'quote))))
+  `(mv-let (erp val state)
+     ,form
+     (declare (ignore val))
+     (prog2$ (and erp (er hard ,ctx
+                          "Unexpected error.  An error message may have been ~
+                           printed above."))
+             state)))
+
+(defmacro defun-for-state (name args)
+  `(defun ,(defun-for-state-name name)
+       ,args
+     (error-free-triple-to-state
+      ',name
+      (,name ,@args))))
+
+(defun-for-state set-current-package (val state))
+
 (defun standard-oi (state)
   (f-get-global 'standard-oi state))
 
@@ -3412,19 +3432,49 @@
     (f-put-global 'proofs-co val state)
     (value val))))
 
+(defun illegal-state-ld-prompt (channel state)
+
+; See the Essay on Illegal-states.
+
+; Since ACL2 doesn't allow lower-case characters in package names, the
+; following is distinguishable from the prompts in legal states.  We indicate
+; the ld-level just as is done by default-print-prompt.
+
+  (fmt1 "[Illegal-State] ~*0"
+        (list (cons #\0 (list "" ">" ">" ">"
+                              (make-list-ac (f-get-global 'ld-level state)
+                                            nil nil))))
+        0 channel state nil))
+
+(defun ld-pre-eval-filter (state)
+  (f-get-global 'ld-pre-eval-filter state))
+
+(defun illegal-state-p (state)
+  (eq (ld-pre-eval-filter state)
+      :illegal-state))
+
 (defun ld-prompt (state)
-  (f-get-global 'ld-prompt state))
+  (cond ((illegal-state-p state) 'illegal-state-ld-prompt)
+        (t (f-get-global 'ld-prompt state))))
 
 (defun chk-ld-prompt (val ctx state)
   (cond ((or (null val)
-             (eq val t)
-             (let ((wrld (w state)))
-               (and (symbolp val)
-                    (equal (arity val wrld) 2)
-                    (equal (stobjs-in val wrld) '(nil state))
-                    (equal (stobjs-out val wrld) '(nil state)))))
+             (eq val t))
          (value nil))
-        (t (er soft ctx *ld-special-error* 'ld-prompt val))))
+        (t (let ((wrld (w state)))
+             (cond ((and (symbolp val)
+                         (equal (arity val wrld) 2)
+                         (equal (stobjs-in val wrld) '(nil state))
+                         (equal (stobjs-out val wrld) '(nil state)))
+                    (cond ((or (eq val 'brr-prompt)
+                               (ttag wrld))
+                           (value nil))
+                          (t (er soft ctx
+                                 "It is illegal to set the ld-prompt to ~x0 ~
+                                  unless there is an active trust ttag.  See ~
+                                  :DOC ~x1."
+                                 val 'ld-prompt))))
+                   (t (er soft ctx *ld-special-error* 'ld-prompt val)))))))
 
 (defun set-ld-prompt (val state)
   (er-progn
@@ -3512,9 +3562,6 @@
    (pprogn
     (f-put-global 'ld-missing-input-ok val state)
     (value val))))
-
-(defun ld-pre-eval-filter (state)
-  (f-get-global 'ld-pre-eval-filter state))
 
 (defun new-namep (name wrld)
 
@@ -3611,7 +3658,7 @@
                          nil))))))
 
 (defun chk-ld-pre-eval-filter (val ctx state)
-  (cond ((or (member-eq val '(:all :query))
+  (cond ((or (member-eq val '(:all :query :illegal-state))
              (and (symbolp val)
                   (not (keywordp val))
                   (not (equal (symbol-package-name val)
@@ -4295,60 +4342,19 @@
                flg)))
     `(f-put-global 'print-clause-ids ,flg state)))
 
-(defmacro set-saved-output (save-flg inhibit-flg)
-  (let ((save-flg-original save-flg)
-        (save-flg (if (and (consp save-flg)
-                           (eq (car save-flg) 'quote))
-                      (cadr save-flg)
-                    save-flg))
-        (inhibit-flg-original inhibit-flg)
-        (inhibit-flg (if (and (consp inhibit-flg)
-                              (eq (car inhibit-flg) 'quote))
-                         (cadr inhibit-flg)
-                       inhibit-flg)))
-    `(prog2$
-      (and (gag-mode)
-           (er hard 'set-saved-output
-               "It is illegal to call set-saved-output explicitly while ~
-                gag-mode is active.  First evaluate ~x0."
-               '(set-gag-mode nil)))
-      (pprogn ,(cond ((eq save-flg t)
-                      '(f-put-global 'saved-output-token-lst :all state))
-                     ((null save-flg)
-                      '(f-put-global 'saved-output-token-lst nil state))
-                     ((true-listp save-flg)
-                      `(f-put-global 'saved-output-token-lst ',save-flg state))
-                     (t (er hard 'set-saved-output
-                            "Illegal first argument to set-saved-output (must ~
-                             be ~x0 or a true-listp): ~x1."
-                            t save-flg-original)))
-              ,(if (eq inhibit-flg :same)
-                   'state
-                 `(f-put-global 'inhibit-output-lst
-                                ,(cond ((eq inhibit-flg t)
-                                        '(add-to-set-eq 'prove
-                                                        (f-get-global
-                                                         'inhibit-output-lst
-                                                         state)))
-                                       ((eq inhibit-flg :all)
-                                        '(set-difference-eq
-                                          *valid-output-names*
-                                          (set-difference-eq
-                                           '(error warning!)
-                                           (f-get-global
-                                            'inhibit-output-lst
-                                            state))))
-                                       ((eq inhibit-flg :normal)
-                                        ''(proof-tree))
-                                       ((true-listp inhibit-flg)
-                                        (list 'quote inhibit-flg))
-                                       (t (er hard 'set-saved-output
-                                              "Illegal second argument to ~
-                                               set-saved-output (must be ~v0, ~
-                                               or a true-listp): ~x1."
-                                              '(t :all :normal :same)
-                                              inhibit-flg-original)))
-                                state))))))
+(defun set-saved-output-token-lst (save-flg state)
+  (declare (xargs :stobjs state))
+  (cond ((member-eq save-flg '(t :all))
+         (f-put-global 'saved-output-token-lst :all state))
+        ((null save-flg)
+         (f-put-global 'saved-output-token-lst nil state))
+        ((true-listp save-flg)
+         (f-put-global 'saved-output-token-lst save-flg state))
+        (t (prog2$ (er hard 'set-saved-output
+                       "Illegal first argument to set-saved-output-token-lst ~
+                        (must be ~x0 or a true-listp): ~x1."
+                       t save-flg)
+                   state))))
 
 (defun set-gag-mode-fn (action state)
 
@@ -4361,25 +4367,22 @@
                     (cadr action)
                   action)))
     (pprogn
-     (f-put-global 'gag-mode nil state) ; to allow set-saved-output
      (case action
        ((t)
-        (pprogn (set-saved-output t :same)
-                (f-put-global 'gag-mode action state)
+        (pprogn (set-saved-output-token-lst t state)
                 (set-print-clause-ids nil)))
        (:goals
-        (pprogn (set-saved-output t :same)
-                (f-put-global 'gag-mode action state)
+        (pprogn (set-saved-output-token-lst t state)
                 (set-print-clause-ids t)))
        ((nil)
-        (pprogn ; (f-put-global 'gag-mode nil state) ; already done
-         (set-saved-output nil :same)
-         (set-print-clause-ids nil)))
+        (pprogn (set-saved-output-token-lst nil state)
+                (set-print-clause-ids nil)))
        (otherwise
         (prog2$ (er hard 'set-gag-mode
                     "Unknown set-gag-mode argument, ~x0"
                     action)
-                state))))))
+                state))) ; to allow set-saved-output
+     (f-put-global 'gag-mode action state))))
 
 (defmacro set-gag-mode (action)
   `(set-gag-mode-fn ,action state))

@@ -45,242 +45,490 @@
 (include-book "tools/templates" :dir :system)
 (include-book "std/strings/decimal" :dir :system)
 
-;(include-book "def-formula-checks")
 
-;; (table-alist 'rp-rw-meta-rules (w state)) has meta rules with formal checks
-;; that merge as books are added.
+(defthm rp-state-preservedp-of-the-same-rp-state
+  (implies (rp-statep rp-state)
+           (rp-state-preservedp rp-state rp-state))
+  :hints (("Goal"
+           :in-theory (e/d (rp-state-preservedp) ()))))
 
-;; (cdr (assoc-equal 'formal-checks-fn-list (table-alist 'rp-rw (w state))))
-;; this only has the name of meta checks functions that cannot be merged by
-;; sepearet books and is updated succesfully when a new clause processor is
-;; generated.
+(defconst *acceptable-meta-rule-args*
+  '(term
+    dont-rw
+    context
+    rp-state
+    state))
 
-(defun create-rp-clause-proc (cl-name-prefix appended-meta-rules)
-  (list
-   `(defun ,(sa cl-name-prefix "RP-CLAUSE-PROCESSOR") (cl hints rp-state state)
-      (declare
-       (xargs :stobjs (rp-state state)
-              :guard t
-              :guard-hints (("goal"
-                             :in-theory (e/d (rp-meta-valid-syntax-listp)
-                                             (rp-meta-valid-syntaxp-sk))))
-              :verify-guards nil))
-      (if (rp-cl-hints-p hints)
-          (rp-clause-processor-aux
-           cl hints
-           ,appended-meta-rules
-           rp-state
-           state)
-        (mv nil (list cl) rp-state state)))
+(defconst *acceptable-meta-rule-ret-vals*
+  '(term
+    dont-rw
+    rp-state
+    state))
 
-   `(defthm ,(sa 'correctness-of-rp-clause-processor cl-name-prefix)
-      (implies
-       (and
-        (pseudo-term-listp cl)
-        (alistp a)
-        (rp-evl-meta-extract-global-facts :state state)
-        (rp-evl (acl2::conjoin-clauses
-                 (acl2::clauses-result
-                  (,(sa cl-name-prefix "RP-CLAUSE-PROCESSOR") cl hint rp-state state)))
-                a))
-       (rp-evl (acl2::disjoin cl) a))
-      :otf-flg t
-      :hints (("Goal"
-               :in-theory (e/d (correctness-of-rp-clause-processor-aux
-                                valid-rp-meta-rule-listp
-                                rp-meta-valid-syntax-listp)
-                               (rp-clause-processor-aux
-                                valid-rp-meta-rulep
-                                rp-meta-valid-syntaxp-sk
-                                acl2::conjoin-clauses
-                                acl2::clauses-result))))
-      :rule-classes :clause-processor)))
 
-(defun make-appended-meta-rules (all-rp-rw-meta-rules)
-  (if (atom all-rp-rw-meta-rules)
+(defun fix-args/returns-package (lst)
+  (declare (xargs :guard t))
+  (if (atom lst)
       nil
-    `(append (and (,(caar all-rp-rw-meta-rules) state)
-                  ',(cdar all-rp-rw-meta-rules))
-             ,(make-appended-meta-rules (cdr all-rp-rw-meta-rules)))))
+    (b* (((when (not (symbolp (car lst))))
+          (cons (car lst)
+                (fix-args/returns-package (cdr lst))))
+         (cur (symbol-name (car lst)))
+         ((when (or (equal cur "rp-state")
+                    (equal cur "state")))
+          (cons (car lst)
+                (fix-args/returns-package (cdr lst)))))
+      (cons (intern$ cur "RP")
+            (fix-args/returns-package (cdr lst))))))
 
-(progn
-  (defun make-appended-meta-rules2-aux1 (all-rp-rw-meta-rules)
-    (if (atom all-rp-rw-meta-rules)
-        nil
-      (cons `',(cdar all-rp-rw-meta-rules)
-            (make-appended-meta-rules2-aux1 (cdr all-rp-rw-meta-rules)))))
+(defun add-meta-rule-guard (meta-fnc trig-fnc formula-checks
+                                     returns outside-in
+                                     valid-syntaxp cl-name-prefix state)
 
-  (defun make-appended-meta-rules2-aux2 (all-rp-rw-meta-rules)
-    (if (atom all-rp-rw-meta-rules)
-        nil
-      (cons `(,(caar all-rp-rw-meta-rules) state)
-            (make-appended-meta-rules2-aux2 (cdr all-rp-rw-meta-rules)))))
+  (declare (xargs :guard t
+                  :stobjs (state)
+                  :guard-hints (("Goal"
+                                 :in-theory (e/d () ((:DEFINITION acl2::formals)))))))
+  (and (or (and (symbolp meta-fnc)
+                meta-fnc)
+           (hard-error 'add-meta-rule-guard
+                       "You need to pass a non-nil symbol for :meta-fnc keyword ~%"
+                       nil))
+       (or (and (symbolp trig-fnc)
+                trig-fnc)
+           (hard-error 'add-meta-rule-guard
+                       "You need to pass a non-nil symbol for :trig-fnc keyword ~%"
+                       nil))
+       (or (and (symbolp formula-checks))
+           (hard-error 'add-meta-rule-guard
+                       "You need to pass a non-nil symbol for :formula-checks keyword~%"
+                       nil))
+       (or (subsetp-equal (true-list-fix (fix-args/returns-package (acl2::formals meta-fnc (w state))))
+                          *acceptable-meta-rule-args*)
+           (hard-error 'add-meta-rule-guard
+                       "The arguments of your function should be a subset of
+~p0 ~%"
+                       (list (cons #\0 *acceptable-meta-rule-args*))))
+       (or (and (symbolp returns)
+                (equal (symbol-name returns) "TERM"))
+           (and (symbol-listp returns)
+                (> (len returns) 2)
+                (equal (car returns) 'mv)
+                (subsetp-equal (true-list-fix (fix-args/returns-package (cdr
+                                                                         returns)))
+                               *acceptable-meta-rule-ret-vals*))
+           (hard-error 'add-meta-rule-guard
+                       "Possible options for :returns keyword are:
+1. (mv symbol1 symbol2 ...) where symbols must be a subset of ~p1
+2. term
+but instead you passed ~p0~%"
+                       (list (cons #\0 returns)
+                             (cons #\1 *acceptable-meta-rule-ret-vals*))))
+       (or (booleanp valid-syntaxp)
+           (hard-error 'add-meta-rule-guard
+                       "You need to pass a t or nil for :valid-syntaxp keyword~%"
+                       nil))
 
-  (defun make-appended-meta-rules2 (all-rp-rw-meta-rules)
-    `(if (and . ,(make-appended-meta-rules2-aux2 all-rp-rw-meta-rules))
-         (append . ,(make-appended-meta-rules2-aux1 all-rp-rw-meta-rules))
-       nil)))
+       (or (booleanp outside-in)
+           (equal outside-in ':both)
+           (hard-error 'add-meta-rule-guard
+                       "You need to pass a t, nil or :both for :outside-in keyword~%"
+                       nil))
+       (or (symbolp cl-name-prefix)
+           (hard-error 'add-meta-rule-guard
+                       "You need to pass a symbol for :cl-name-prefix keyword~%"
+                       nil))))
 
-(defun append-entries (alist)
-  (if (atom alist)
-      nil
-    (append (cdar alist)
-            (append-entries (cdr alist)))))
+(defrec meta-rule-table-rec
+  (formula-checks ;; formula-checks function for the associated meta rule
+   trig-fnc ;; trigger function name
+   meta-fnc ;; function name that meta rule executes
+   valid-syntaxp ;; if meta rule returns valid-syntax (rp-valid-termp)
+   outside-in ;; rewriting direction outside-in, inside-out or both
+   returns ;; return vals of "meta-fnc"
+   args
+   correctness-lemma
+   )
+  t)
 
-(defmacro update-rp-clause-proc (cl-name-prefix)
+
+(defund add-meta-rule-fn (meta-fnc trig-fnc formula-checks  returns outside-in
+                                   valid-syntaxp hints cl-name-prefix disabledp
+                                   state)
+  (declare (xargs :guard (add-meta-rule-guard meta-fnc trig-fnc
+                                              formula-checks returns
+                                              outside-in valid-syntaxp
+                                              cl-name-prefix state)
+                  :stobjs (state)))
+  (b* ((rune `(:meta ,meta-fnc . ,trig-fnc))
+       (returns (if (symbolp returns) (list returns) returns))
+       (returns (fix-args/returns-package returns))
+       (returns (if (equal (len returns) 1) (car returns) returns))
+       (args (true-list-fix (fix-args/returns-package (acl2::formals meta-fnc (w state)))))
+       (correctness-lemma (sa meta-fnc 'for trig-fnc 'valid))
+       (entry (make meta-rule-table-rec
+                    :formula-checks formula-checks
+                    :trig-fnc trig-fnc
+                    :meta-fnc meta-fnc
+                    :valid-syntaxp valid-syntaxp
+                    :outside-in outside-in
+                    :returns returns
+                    :correctness-lemma correctness-lemma
+                    :args args)))
+    `(encapsulate
+       nil
+       (set-ignore-ok t)
+
+       (table rp-rules ',rune
+              ',(cond
+                 ((equal outside-in ':both) `(:both . t))
+                 (outside-in `(:outside-in . t))
+                 (t `(:inside-out . t))))
+
+       (table rp-rw-all-meta-rules ',rune ',entry)
+
+       (,(if disabledp 'defthmd 'defthm) ,correctness-lemma
+         (and
+          (implies (and (rp-evl-meta-extract-global-facts)
+                        (rp-termp term)
+                        (valid-sc term a)
+                        ,@(append (and formula-checks
+                                       `((,formula-checks state)))
+                                  (and (member-equal 'context args)
+                                       `((valid-sc-subterms context a)
+                                         (rp-term-listp context)))
+                                  (and (member-equal 'rp-state args)
+                                       `((rp-statep rp-state)))))
+                   (b* ((term-input term)
+                        (,returns
+                         (,meta-fnc . ,args)))
+                     (and (equal (rp-evlt term a)
+                                 (rp-evlt term-input a))
+                          (valid-sc term a))))
+
+          ,@(append (and valid-syntaxp
+                         `((implies (rp-termp term)
+                                    (b* ((term-input term)
+                                         (,returns
+                                          (,meta-fnc . ,args)))
+                                      (rp-termp term)))))
+                    (and (true-listp returns)
+                         (member-equal 'rp-state returns)
+                         `((implies (rp-statep rp-state)
+                                    (b* ((rp-state-input rp-state)
+                                         (,returns (,meta-fnc . ,args)))
+                                      (rp-state-preservedp rp-state-input
+                                                           rp-state)))))))
+         :hints ,hints)
+
+       ,@(and cl-name-prefix
+              `((attach-meta-fncs ,cl-name-prefix))))))
+
+
+(defmacro add-meta-rule (&key meta-fnc
+                              trig-fnc
+                              formula-checks
+                              (returns 'term)
+                              (outside-in 'nil)
+                              (valid-syntaxp 't)
+                              (disabledp 't)
+                              hints
+                              (cl-name-prefix 'nil))
   `(make-event
-    (b* ((all-rp-rw-meta-rules (table-alist 'rp-rw-meta-rules (w state)))
-         (appended-meta-rules (make-appended-meta-rules2
-                               all-rp-rw-meta-rules))
-         (meta-rules-list (append-entries all-rp-rw-meta-rules))
-         (cl-name-prefix ',cl-name-prefix))
-      `(encapsulate
-         nil
-         (local
-          (in-theory (disable (:TYPE-PRESCRIPTION TRUE-LISTP-APPEND)
-                              (:e tau-system)
-                              (:TYPE-PRESCRIPTION RP-CLAUSE-PROCESSOR-AUX)
-                              (:TYPE-PRESCRIPTION BINARY-APPEND)
-                              (:DEFINITION PSEUDO-TERM-LISTP)
-                              (:TYPE-PRESCRIPTION RP-CLAUSE-PROCESSOR-AUX)
-                              (:TYPE-PRESCRIPTION PSEUDO-TERM-LISTP)
-                              (:TYPE-PRESCRIPTION ALISTP))))
-         (table rp-rw 'cl-name-prefix ',cl-name-prefix)
-         (table rp-rw 'meta-rules ',appended-meta-rules)
-         (table rp-rw 'meta-rules-list ',meta-rules-list)
-         (table rp-rw 'formal-checks-fn-list ',(strip-cars all-rp-rw-meta-rules))
-         ,@(create-rp-clause-proc cl-name-prefix appended-meta-rules)))))
+    (add-meta-rule-fn ',meta-fnc
+                      ',trig-fnc
+                      ',formula-checks
+                      ',returns
+                      ',outside-in
+                      ',valid-syntaxp
+                      ',hints
+                      ',cl-name-prefix
+                      ',disabledp
+                      state)))
 
 
-(xdoc::defxdoc
- update-rp-clause-proc
- :parents (rp-rewriter/meta-rules)
- :short "Creates a new clause processor function to register added meta rules."
- :long "<p>
-After calling @(see add-meta-rules) or when different books with meta rules are
- included, users need to call update-rp-clause-proc. This creates a
- new clause processor function and proves it correct. Then @(see defthmrp)
- automatically uses the most recently created clause processor function. </p>
-<code>(update-rp-clause-proc cl-name-prefix)</code>
-<p> cl-name-prefix: should be a unique name that will be a prefic to the name
- of the new clause processor.</p>
-")
+;; (add-meta-rule :meta-fnc test-meta-fnc
+;;                :trig-fnc foo
+;;                :formula-checks test-formula-checks
+;;                :returns (mv term rp-state dont-rw)
+;;                :outside-in t
+;;                :valid-syntaxp nil
+;;                :hints (("Goal"
+;;                         :in-theory (e/d (test-meta-fnc) ()))))
 
 
-(defun add-meta-rules-fn (formal-checks-fn new-meta-rules cl-name-prefix)
+
+#|(defun add-meta-rules-fn-aux (formula-checks-fn new-meta-rules  hints)
+  (declare (xargs :guard (weak-rp-meta-rule-recs-p new-meta-rules)))
+  (if (atom new-meta-rules)
+      nil
+    (cons
+     `(local
+       (in-theory (disable ,(rp-meta-fnc (car new-meta-rules)))))
+     (cons
+      (b* ((cur (car new-meta-rules))
+           (dont-rw (rp-meta-dont-rw cur))
+           (syntax (rp-meta-syntax-verified cur))
+           (trig-fnc (rp-meta-trig-fnc cur))
+           (fnc (rp-meta-fnc cur))
+           (outside-in (rp-meta-outside-in cur))
+           (rune `(:meta ,fnc . ,trig-fnc)))
+        `(progn
+           (table rp-rules ',rune
+                  ',(cond
+                     ((equal outside-in ':both) `(:both . t))
+                     (outside-in `(:outside-in . t))
+                     (t `(:inside-out . t))))
+
+           (table rp-rw-all-meta-rules ',rune ',formula-checks-fn)
+
+           (defthm ,(sa fnc 'for trig-fnc 'valid)
+             (and (implies (and (,formula-checks-fn state)
+                                (rp-evl-meta-extract-global-facts)
+                                (rp-termp term)
+                                (valid-sc term a))
+                           (and (equal (rp-evlt
+                                        ,(if dont-rw `(mv-nth 0 (,fnc term)) `(,fnc
+                                                                               term))
+                                        a)
+                                       (rp-evlt term a))
+                                (valid-sc ,(if dont-rw `(mv-nth 0 (,fnc term)) `(,fnc
+                                                                                 term))
+                                          a
+                                          )))
+                  ,@(append (and dont-rw
+                                 `((dont-rw-syntaxp (mv-nth 1 (,fnc term)))))
+                            (and syntax
+                                 `((implies (rp-termp term)
+                                            (rp-termp ,(if dont-rw `(mv-nth 0 (,fnc term)) `(,fnc
+                                                                                             term))))))))
+             :hints ,hints)))
+      (add-meta-rules-fn-aux formula-checks-fn (cdr new-meta-rules)  hints)))))||#
+
+#|(defun add-meta-rules-fn (formula-checks-fn new-meta-rules cl-name-prefix
+                                            hints)
+  (declare (ignorable hints cl-name-prefix))
   `(make-event
     (b* ((?talist (table-alist 'rp-rw (w state)))
          (?added-meta-rules (cdr (assoc-equal 'meta-rules talist)))
          (?added-meta-rules-list (cdr (assoc-equal 'meta-rules-list talist)))
          (?added-meta-formal-checks-fn-list (cdr (assoc-equal 'formal-checks-fn-list talist)))
-         (?formal-checks-fn ',formal-checks-fn)
-         (cl-name-prefix ',cl-name-prefix)
+         (formula-checks-fn ',formula-checks-fn)
          (?new-meta-rules ',new-meta-rules))
-
       `(encapsulate
          nil
 
-         (in-theory (disable ,formal-checks-fn
-                             (:type-prescription ,formal-checks-fn)))
+         (in-theory (disable ,formula-checks-fn
+                             (:type-prescription ,formula-checks-fn)))
 
-;(value-triple (cw  "Disabled for
+         (progn ,@(add-meta-rules-fn-aux formula-checks-fn new-meta-rules ',hints))
 
-         (table rp-rw-meta-rules
-                ',formal-checks-fn
-                ',new-meta-rules)
-
-         ,@(if ',cl-name-prefix
-               `((update-rp-clause-proc ,cl-name-prefix)
-                 #|(table rp-rw 'cl-name-prefix ',cl-name-prefix)
-
-                 (table rp-rw 'meta-rules `(append
-                 (and (,',formal-checks-fn state)
-                 ',',new-meta-rules)
-                 ,',added-meta-rules))
-
-                 (table rp-rw 'meta-rules-list (append
-                 ',new-meta-rules
-                 ',added-meta-rules-list))
-
-                 (table rp-rw 'formal-checks-fn-list (cons
-                 ',formal-checks-fn
-                 ',added-meta-formal-checks-fn-list))
-
-                 ,@(create-rp-clause-proc cl-name-prefix `(append
-                 (and (,formal-checks-fn state)
-                 ',new-meta-rules)
-                 ,added-meta-rules))||#)
-             nil)
-
-         ))))
-
-(defmacro add-meta-rules (formal-checks-fn new-meta-rules &optional cl-name-prefix)
-  `(make-event
-    (add-meta-rules-fn ',formal-checks-fn ,new-meta-rules ',cl-name-prefix)))
+         ))))||#
 
 (xdoc::defxdoc
- add-meta-rules
+ add-meta-rule
  :parents (rp-rewriter/meta-rules)
  :short "A macro to add created meta rules to RP-Rewriter"
  :long "<p>
-<code> (add-meta-rules formal-checks-fn new-meta-rules) </code>
+<code> 
+@('
+(add-meta-rule :meta-fnc <meta-fnc-name> ;; mandatory
+               :trig-fnc <trig-fnc-name> ;; mandatory
+               :formula-checks <formula-check-fnc-name> ;; nil by default,
+ necessary for most cases.
+               :returns <return-signature>   ;; optional
+               :outside-in <nil-t-or-:both>  ;; optional, nil by default
+               :valid-syntaxp <t-or-nil>     ;; optional, t by default
+               :disabledp <t-or-nil>         ;; optional, t by default
+               :hints    <regular-ACL2-hints> ;; optional
+               :cl-name-prefix <nil-or-a-unqiue-prefix> ;; optional, nil by default
+               )
+')
+ </code>
 
-OR  
-
-<code> (add-meta-rules formal-checks-fn new-meta-rules cl-name-prefix) </code>
-
-submits an event that saves previously proved meta-rules in rp-rewriter's
-rule-set for meta rules.  
+registers a verified meta-rule for RP-Rewriter.
 </p>
 
-<p> formal-checks-fn: it is the name of the formula-checks function created
-with def-formula-checks </p>
+<p> Mandatory arguments: </p>
+<ul>
+<li> :meta-fnc  must be the name of the meta function. </li>
+<li> :trig-fnc  the function to trigger this meta function </li>
+</ul>
 
-<p> new-meta-rules: a list of constructs created with defrec struct
-rp-meta-rule-rec. It can have one or more meta-rules that are proved with the
-same formula-checks function.  For example: <code> 
-(list
-  (make rp-meta-rule-rec
-        :fnc 'rp-equal-meta
-        :trig-fnc 'equal
-        :dont-rw t
-        :valid-syntax t))
-</code>
-</p>
+<p> Optional Arguments: </p>
 
-<p>cl-name-prefix: An optional argument. When non-nil, the macro also calls
-@(see rp::update-rp-clause-proc) to create a new clause processor function for
-RP-Rewriter. </p>
+<ul>
+<li> :formula-checks  the name of the formula-checks function created
+with def-formula-checks if the meta rule needed one. This will likely be
+necessary for most cases. </li>
+<li> :returns  return signature of the meta function. By default, it is 'term',
+which means that it only returns the rewritten term. Other acceptable forms are
+(mv term dont-rw), (mv term dont-rw rp-state), (mv term rp-state) etc. in any
+order. </li>
+<li> :outside-in  whether the meta rule be applied from outside-in or
+inside-out. You can pass t, nil, or :both. If you choose to make it outside-in,
+then it is recommended that you input the current dont-rw structure and update
+it accordingly. </li>
+<li> :valid-syntaxp  if you proved that your meta function returns rp-termp,
+then set this to t. Otherwise, RP-Rewriter will have to call rp-termp everytime
+the meta runction changes the term. </li>
+<li> :disabledp This macro will prove the necessary lemma to make sure that the
+meta function can be registered soundly (even though this lemma might be
+redundant). If you choose to keep this lemma disabled, then set this to t. It
+is, by default, set to t. </li>
+<li>:hints regular ACL2 hints passed to the defthm event of the aforementioned
+lemma to be proved.</li>
+<li> :cl-name-prefix Meta functions are attached to RP-Rewriter using a
+defattach mechanism. By default, add-meta-rule will not trigger this mechanism,
+and the user needs to call @(see attach-meta-fncs) once all the necessary meta
+rules are created and included in the same book. If you wish to call @(see
+attach-meta-fncs) autommatically with rp::add-meta-rule, then pass a unique
+name for :cl-name-prefix. It is nil by default, which will prevent @(see
+attach-meta-fncs) from being executed. </li> 
+</ul>
 "
  )
 
 
 
+(defun create-rp-rw-meta-rule-fn-aux1 (rp-rw-all-meta-rules)
+  ;; gets unique formula-checks function names
+  (if (atom rp-rw-all-meta-rules)
+      nil
+    (b* ((rest (create-rp-rw-meta-rule-fn-aux1 (cdr rp-rw-all-meta-rules)))
+         (formula-check-fnc (access meta-rule-table-rec
+                                    (cdr (car rp-rw-all-meta-rules))
+                                    :formula-checks)))
+      (if (or (member-equal formula-check-fnc rest)
+              (not formula-check-fnc))
+          rest
+        (cons formula-check-fnc rest)))))
+
+
+(defun create-rp-rw-meta-rule-fn-aux2 (rp-rw-all-meta-rules)
+  (if (atom rp-rw-all-meta-rules)
+      (mv nil `((t (mv term nil rp-state))))
+    (b* (((mv added-meta-fnc rest) (create-rp-rw-meta-rule-fn-aux2 (cdr rp-rw-all-meta-rules)))
+         (cur (cdar rp-rw-all-meta-rules))
+         (meta-fnc (access meta-rule-table-rec cur :meta-fnc))
+         ((when (member-equal meta-fnc added-meta-fnc))
+          (mv added-meta-fnc rest))
+         (valid-syntaxp (access meta-rule-table-rec cur :valid-syntaxp))
+         (returns (access meta-rule-table-rec cur :returns))
+         (args (access meta-rule-table-rec cur :args))
+         (body
+          `((eq meta-fnc-name ',meta-fnc)
+            (b* (,@(and (not valid-syntaxp)
+                        `((input-term term)))
+                 (,returns (,meta-fnc . ,args)))
+              ,(if valid-syntaxp
+                   `(mv term dont-rw rp-state)
+                 `(mv (if (rp-termp term) term input-term) dont-rw rp-state))))))
+      (mv (cons meta-fnc added-meta-fnc)
+          (cons body rest)))))
+
+(defun create-rp-rw-meta-rule-fn-aux3 (rp-rw-all-meta-rules)
+  (if (atom rp-rw-all-meta-rules)
+      nil
+    (b* ((cur (cdar rp-rw-all-meta-rules))
+         (correctness-lemma (access meta-rule-table-rec cur :correctness-lemma)))
+      (cons correctness-lemma
+            (create-rp-rw-meta-rule-fn-aux3 (cdr rp-rw-all-meta-rules))))))
+
+#|
+(add-meta-rule :meta-fnc test-meta-fnc
+               :trig-fnc foo
+               :formula-checks test-formula-checks
+               :returns (mv term rp-state dont-rw)
+               :outside-in t
+               :valid-syntaxp t
+               :hints (("Goal"
+                        :in-theory (e/d (test-meta-fnc) ()))))||#
+
+;;(create-rp-rw-meta-rule-fn-aux2 (table-alist 'rp-rw-all-meta-rules (w state)))
+
+(defun create-rp-rw-meta-rule-fn (prefix world)
+  (b* ((fnc-name (sa prefix 'rp-rw-meta-rule))
+       (rp-rw-all-meta-rules (table-alist 'rp-rw-all-meta-rules world))
+
+       (formula-checks-fnc-name (sa prefix 'rp-formula-checks))
+       (formula-checks-fns (create-rp-rw-meta-rule-fn-aux1 rp-rw-all-meta-rules))
+       (formula-checks-fn-body
+        (cons 'and (pairlis$ formula-checks-fns (pairlis$ (repeat (len
+                                                                   formula-checks-fns) 'state) nil))))
+
+       ((mv & new-fnc-body)
+        (create-rp-rw-meta-rule-fn-aux2 rp-rw-all-meta-rules))
+       #|(meta-rule-validity-lemmas (get-meta-rule-validity-lemma meta-rules))||#
+       )
+    `(encapsulate
+       nil
+
+       (defun ,formula-checks-fnc-name (state)
+         (declare (xargs :stobjs (state)))
+         ,formula-checks-fn-body)
+
+       (defun ,fnc-name (term meta-fnc-name dont-rw context rp-state state )
+         (declare (xargs :guard (rp-termp term)
+                         :stobjs (rp-state state)))
+         (declare (ignorable term meta-fnc-name dont-rw context rp-state state))
+         (cond
+          . ,new-fnc-body))
+
+       (local
+        (in-theory (theory 'minimal-theory)))
+
+       (table rp-rw 'main-formula-checks-fnc-name ',formula-checks-fnc-name)
+       (table rp-rw 'meta-rule-caller-fnc-name ',fnc-name)
+       (table rp-rw 'added-meta-rules ',rp-rw-all-meta-rules)
+
+       (local
+        (in-theory (e/d (,formula-checks-fnc-name
+                         ,fnc-name
+                         rp-state-preservedp-of-the-same-rp-state
+                         ,@(create-rp-rw-meta-rule-fn-aux3 rp-rw-all-meta-rules)
+                         (:e dont-rw-syntaxp))
+                        ())))
+
+       (defattach
+         (rp-formula-checks ,formula-checks-fnc-name)
+         (rp-rw-meta-rule ,fnc-name)))))
+
+(defun attach-meta-fncs-fn (prefix state)
+  (declare (xargs :stobjs (state)
+                  :guard (symbolp prefix)
+                  :verify-guards nil))
+  `(progn
+     (table rp-rw 'added-meta-rules
+            ',(table-alist 'rp-rw-all-meta-rules (w state)))
+     ,(create-rp-rw-meta-rule-fn prefix (w state))))
+
+(defmacro attach-meta-fncs (prefix)
+  `(make-event
+    (attach-meta-fncs-fn ',prefix state)))
+
 (defun is-rp-clause-processor-up-to-date (world)
   (declare (xargs :guard (and (PLIST-WORLDP world))
                   :guard-hints (("Goal"
                                  :in-theory (e/d (hons-assoc-equal
-                                                  ACL2::PLIST-WORLDP-WITH-FORMALS) ())))))
-  (b* ((all-rp-rw-meta-rules (table-alist 'rp-rw-meta-rules world))
-       (added-meta-formal-checks-fn-list (cdr (hons-assoc-equal
-                                               'formal-checks-fn-list
-                                               (table-alist 'rp-rw world)))))
-    (equal (len all-rp-rw-meta-rules)
-           (len added-meta-formal-checks-fn-list))))
-
+                                                  acl2::plist-worldp-with-formals)
+                                                 ())))))
+  (b* ((rp-rw-all-meta-rules (table-alist 'rp-rw-all-meta-rules world))
+       (add-meta-rules (cdr (hons-assoc-equal 'added-meta-rules
+                                              (table-alist 'rp-rw world)))))
+    (acl2::set-equiv (true-list-fix rp-rw-all-meta-rules)
+                     (true-list-fix add-meta-rules))))
 
 (xdoc::defxdoc
  is-rp-clause-processor-up-to-date
  :parents (rp-rewriter/meta-rules)
  :short "Checks if all the added meta-rules are 'registered'"
  :long "<p>
-After calling @(see add-meta-rules) or when different books with meta rules are
- included, users need to call @(see rp::update-rp-clause-proc). This function
- checks if it is necessary. </p>
+After calling @(see add-meta-rule) or when different books with meta rules are
+ included, users need to call @(see rp::attach-meta-fncs). This function
+ checks if it is necessary.</p>
 <code>(is-rp-clause-processor-up-to-date world)</code>
 ")
-
-
 
 (define check-if-clause-processor-up-to-date (world)
   (declare (xargs :guard (and (PLIST-WORLDP world))
@@ -290,101 +538,161 @@ After calling @(see add-meta-rules) or when different books with meta rules are
   (if (is-rp-clause-processor-up-to-date world)
       nil
     (hard-error 'defthmrp
-                "The clause processor function is NOT up-to-date with respect
-  to added meta rules. Run (update-rp-clause-proc cl-name-suffix) to create the
-  updated clause processor. cl-name-suffix should be a unique nickname for the
-  updated clause processor function. ~%"
+                "The clause processor function is NOT up-to-date with respect ~
+to added meta rules. Run (rp::attach-meta-fncs prefix) to create the ~
+attach all the meta functions to RP-Rewriter. \"prefix\" should be a unique ~
+symbol for the updated meta-rule caller function. ~%"
                 nil)))
 
-(progn
-  (defthm valid-rp-meta-rule-listp-opener-cons
-    (equal (valid-rp-meta-rule-listp (cons rule1 rest) state)
-           (and (valid-rp-meta-rulep rule1 state)
-                (valid-rp-meta-rule-listp rest state)))
-    :hints (("goal"
-             :in-theory (e/d (valid-rp-meta-rule-listp)
-                             (valid-rp-meta-rulep)))))
-
-  (defthm valid-rp-meta-rule-listp-opener-nil
-    (equal (valid-rp-meta-rule-listp nil state)
-           t)
-    :hints (("goal"
-             :in-theory (e/d (valid-rp-meta-rule-listp)
-                             (valid-rp-meta-rulep)))))
-
-  (defthm rp-meta-valid-syntax-listp-opener-cons
-    (equal (rp-meta-valid-syntax-listp (cons first rest) state)
-           (and (rp-meta-valid-syntaxp-sk first state)
-                (rp-meta-valid-syntax-listp rest
-                                            state)))
-    :hints (("goal"
-             :in-theory (e/d (rp-meta-valid-syntax-listp)
-                             (rp-meta-valid-syntaxp-sk)))))
-
-  (defthm rp-meta-valid-syntax-listp-opener-nil
-    (equal (rp-meta-valid-syntax-listp nil state)
-           t)
-    :hints (("goal"
-             :in-theory (e/d (rp-meta-valid-syntax-listp)
-                             (rp-meta-valid-syntaxp-sk))))))
 
 (progn
-  (define disable-meta-rules-fnc (args)
-    (if (atom args)
-        nil
-      (cons `(table disabled-rp-meta-rules
-                    ',(car args)
-                    t)
-            (disable-meta-rules-fnc (cdr args)))))
 
-  (define enable-meta-rules-fnc (args)
+  ;; (defwarrant RP-META-FNC)
+  ;; (defwarrant RP-META-TRIG-FNC)
+
+  (defwarrant meta-rune-fnc$inline)
+  
+  (define disable-meta-rules-fnc (rp-rw-all-meta-rules args)
+    :verify-guards nil
     (if (atom args)
         nil
-      (cons `(table disabled-rp-meta-rules
-                    ',(car args)
-                    nil)
-            (enable-meta-rules-fnc (cdr args)))))
+      (b* ((rest (disable-meta-rules-fnc rp-rw-all-meta-rules (cdr args)))
+           (cur (loop$ for x in rp-rw-all-meta-rules
+                       when (equal (car args)
+                                   (meta-rune-fnc (car x)))
+                       collect
+                       (car x))))
+        (if cur
+            (cons `(disable-rules
+                    ',cur)
+                  rest)
+          rest))))
+
+  (define enable-meta-rules-fnc (rp-rw-all-meta-rules args)
+    :verify-guards nil
+    (if (atom args)
+        nil
+      (b* ((rest (enable-meta-rules-fnc rp-rw-all-meta-rules (cdr args)))
+           (cur (loop$ for x in rp-rw-all-meta-rules
+                       when (equal (car args)
+                                   (meta-rune-fnc (car x)))
+                       collect
+                       (car x))))
+        (if cur
+            (cons `(enable-rules
+                    ',cur)
+                  rest)
+          rest))))
+
+  (defmacro disable-all-meta-rules ()
+    `(make-event
+      (b* ((rp-rw-all-meta-rules (table-alist 'rp-rw-all-meta-rules (w state)))
+           (meta-rules (strip-cars rp-rw-all-meta-rules)))
+        `(disable-rules ',meta-rules))))
+
+  (defmacro enable-all-meta-rules ()
+    `(make-event
+      (b* ((rp-rw-all-meta-rules (table-alist 'rp-rw-all-meta-rules (w state)))
+           (meta-rules (strip-cars rp-rw-all-meta-rules)))
+        `(enable-rules ',meta-rules))))
 
   (defmacro disable-meta-rules (&rest args)
     (if (not args)
         `(value-triple :none)
-      `(progn
-         ,@(disable-meta-rules-fnc args))))
+      `(make-event
+        (b* ((rp-rw-all-meta-rules (table-alist 'rp-rw-all-meta-rules (w state))))
+          `(progn
+             ,@(disable-meta-rules-fnc rp-rw-all-meta-rules ',args))))))
 
   (defmacro enable-meta-rules (&rest args)
     (if (not args)
         `(value-triple :none)
-      `(progn
-         ,@(enable-meta-rules-fnc args)))))
+      `(make-event
+        (b* ((rp-rw-all-meta-rules (table-alist 'rp-rw-all-meta-rules (w state))))
+          `(progn
+             ,@(enable-meta-rules-fnc rp-rw-all-meta-rules ',args))))))
 
-(defthm iff-of-RP-EVLt-LST
-  (iff (RP-EVLt-LST subterms A)
+  (defmacro bump-all-meta-rules ()
+    `(make-event
+      (b* ((rp-rw-all-meta-rules (table-alist 'rp-rw-all-meta-rules (w state)))
+           (meta-rules (strip-cars rp-rw-all-meta-rules)))
+        `(bump-rp-rules ,@(reverse meta-rules))))))
+
+(defthm iff-of-rp-evlt-lst
+  (iff (rp-evlt-lst subterms a)
        (consp subterms))
-  :hints (("Goal"
+  :hints (("goal"
            :induct (len subterms)
            :do-not-induct t
            :in-theory (e/d () ()))))
 
+(defthmd rp-evl-of-ex-from-rp-reverse-for-atom
+  (implies (syntaxp (atom x))
+           (equal (rp-evl x a)
+                  (rp-evl (ex-from-rp x) a)))
+  :hints (("Goal"
+           :do-not-induct t
+           :induct (ex-from-rp x)
+           :in-theory (e/d (is-rp) ()))))
+
+(defthmd rp-evlt-of-ex-from-rp-reverse-for-atom
+  (implies (syntaxp (atom x))
+           (equal (rp-evlt x a)
+                  (rp-evlt (ex-from-rp x) a)))
+  :hints (("Goal"
+           :do-not-induct t
+           :induct (ex-from-rp x)
+           :in-theory (e/d (is-rp) ()))))
+
+(acl2::def-ruleset
+ regular-eval-lemmas
+ nil)
+
+(acl2::def-ruleset
+ regular-eval-lemmas-with-ex-from-rp
+ nil)
 
 (defun create-regular-eval-lemma-fn (fn argc formula-checks)
-  `(defthm ,(sa 'regular-rp-evl-of fn 'when formula-checks)
-     (implies (and (rp-evl-meta-extract-global-facts :state state)
-                   (,formula-checks state)
-                   (case-match x ((',fn . ,(repeat argc '&)) t)))
-              (and (equal (rp-evl x a)
-                          (,fn . ,(loop$ for i from 1 to argc
-                                         collect `(rp-evl (nth ,i x) a))))
-                   (equal (rp-evlt x a)
-                          (,fn . ,(loop$ for i from 1 to argc
-                                         collect `(rp-evlt (nth ,i x) a))))))))
-
-
+  `(progn
+     (defthmd ,(sa 'regular-rp-evl-of fn 'when formula-checks)
+       (implies (and (rp-evl-meta-extract-global-facts :state state)
+                     (,formula-checks state)
+                     (case-match x ((',fn . ,(repeat argc '&)) t)))
+                (and (equal (rp-evl x a)
+                            (,fn . ,(loop$ for i from 1 to argc
+                                           collect `(rp-evl (nth ,i x) a))))
+                     (equal (rp-evlt x a)
+                            (,fn . ,(loop$ for i from 1 to argc
+                                           collect `(rp-evlt (nth ,i x)
+                                                             a)))))))
+     (acl2::add-to-ruleset regular-eval-lemmas '(,(sa 'regular-rp-evl-of fn 'when formula-checks)))
+     (defthmd ,(sa 'regular-rp-evl-of fn 'when formula-checks 'with-ex-from-rp)
+       (implies (and (rp-evl-meta-extract-global-facts :state state)
+                     (,formula-checks state)
+                     (let* ((x (ex-from-rp x))) (case-match x ((',fn . ,(repeat argc '&)) t))))
+                (and (equal
+                      (rp-evl x a)
+                      (,fn . ,(loop$ for i from 1 to argc
+                                     collect `(rp-evl (nth ,i (ex-from-rp  x)) a))))
+                     (equal
+                      (rp-evlt x a)
+                      (,fn . ,(loop$ for i from 1 to argc
+                                     collect `(rp-evlt (nth ,i (ex-from-rp x)) a))))))
+       :hints (("Goal"
+                :use ((:instance
+                       ,(sa 'regular-rp-evl-of fn 'when formula-checks)
+                       (x (ex-from-rp x))))
+                :in-theory '(
+                             rp-evlt-of-ex-from-rp-reverse-for-atom
+                             rp-evl-of-ex-from-rp-reverse-for-atom ))))
+     (acl2::add-to-ruleset regular-eval-lemmas
+                           '(,(sa 'regular-rp-evl-of fn 'when formula-checks 'with-ex-from-rp)))
+     (acl2::add-to-ruleset regular-eval-lemmas-with-ex-from-rp
+                           '(,(sa 'regular-rp-evl-of fn 'when formula-checks 'with-ex-from-rp)))))
 
 (defmacro create-regular-eval-lemma (fn argc formula-checks)
   `(make-event
-    (create-regular-eval-lemma-fn ',fn ',argc ',formula-checks)))  
-
-
+    (create-regular-eval-lemma-fn ',fn ',argc ',formula-checks)))
 
 
 (xdoc::defxdoc
@@ -409,13 +717,13 @@ you can return 't' for dont-rw.
 
 <p>
 2. Create formula-checks function.
-<code> 
+<code>
 @('(def-formula-checks <formula-check-name>
        (<list-of-function-names>))')
 </code>
 This event submits a function with signature @('(<formula-check-name> state)'). When
 you add this function to your correctness theorem for this meta function, the
-evaluator of RP-Rewriter will recognize the functions you list. 
+evaluator of RP-Rewriter will recognize the functions you list.
 </p>
 
 <p>
@@ -436,48 +744,49 @@ This is the correctness theorem of the meta rule. Optionally, you may have
 correct; and (rp-termp term), which states that some of the syntactic
 invariances hold and the term is syntactically compatible with RP-Rewriter. See
 discussions for @(see valid-sc) and @(see rp-termp).
-</p> 
-
-<p>
-If the meta function returns dont-rw, then you need to prove the same lemma for
-@('(mv-nth 0 (<meta-fnc> term))'). 
 </p>
 
 <p>
-4. Prove that meta-function retains the correctness of side-conditions. 
+If the meta function returns dont-rw, then you need to prove the same lemma for
+@('(mv-nth 0 (<meta-fnc> term))').
+</p>
+
+<p>
+4. Prove that meta-function retains the correctness of side-conditions.
 <code>
  @('(defthm valid-sc-of-meta-fnc
-    (implies (and (rp-termp term) ;;optional
-                  (valid-sc term a))               
+    (implies (and (valid-sc term a)
+                  (rp-termp term) ;;optional
+                  (rp-evl-meta-extract-global-facts) ;;optional
+                  (<formula-check-name> state)) ;;optional
              (valid-sc (<meta-fnc> term) a)))')
 </code>
 
 Meta functions can introduce or change side-conditions by manipulating 'rp'
 instances. Therefore users need to prove that the invariance about side
 conditions are maintained.
-</p> 
+</p>
 
 <p>
 If the meta function returns dont-rw, then you need to prove the same lemma for
-@('(mv-nth 0 (<meta-fnc> term))'). 
+@('(mv-nth 0 (<meta-fnc> term))').
 </p>
 
-
 <p>
-5. Optionally, prove that the meta function returns a valid syntax. 
+5. Optionally, prove that the meta function returns a valid syntax.
 <code>
 @('(defthm rp-termp-of-meta-fnc
-    (implies (rp-termp term)               
+    (implies (rp-termp term)
              (rp-termp (<meta-fnc> term))))')
 </code>
 
 Even though it is optional, it is recommended that you prove such a lemma for
 your meta function. It prevents syntactic check on every term returned from
 meta function.
-</p> 
+</p>
 <p>
 If the meta function returns dont-rw, then you need to prove the same lemma for
-@('(mv-nth 0 (<meta-fnc> term))'). 
+@('(mv-nth 0 (<meta-fnc> term))').
 </p>
 
 <p>
@@ -490,67 +799,45 @@ that it is syntactically correct. Otherwise skip this step.
 </p>
 
 <p>
-7. Submit an event of the following form that uses all the lemmas proved so
-far. This lemma will be the only necessary lemma to be used when registering the
-meta rule with  RP-Rewriter.
-
+7. Save the meta rule in the rule-set of RP-Rewriter for meta rules.
 <code>
 @('
- (defhtm <meta-fnc>-is-valid 
-   (implies (and (rp-equal-meta-formula-checks state)
-                 (rp-evl-meta-extract-global-facts :state state))
-            (let ((rule (make rp-meta-rule-rec
-                              :fnc <meta-fnc>
-                              :trig-fnc <trig-fnc>
-                              :dont-rw <t-if-returns-dont-rw>
-                              :valid-syntax <t-if-rp-termp-of-meta-fnc-is-proved>)))
-              (and (valid-rp-meta-rulep rule state)
-                   (rp-meta-valid-syntaxp-sk rule state))))
-   ')
+(rp::add-meta-rule
+ :meta-fnc <meta-fnc>
+ :trig-fnc <trig-fnc>
+ :returns <return-signature>
+ :outside-in <t-if-the-meta-rule-should-apply-from-outside-in>
+ :valid-syntaxp <t-if-rp-termp-of-meta-fnc-is-proved>)
+')
 </code>
+
+See @(see add-meta-rule) for further discussion of the options.
 
 </p>
 
 <p>
-8. Save the meta rule in the rule-set of RP-Rewriter for meta rules.
+8. Attach these newly created meta functions.
 <code>
-@('
-(add-meta-rules <formula-check-name>
-                (list (make rp-meta-rule-rec
-                            :fnc <meta-fnc>
-                            :trig-fnc <trig-fnc>
-                            :dont-rw <t-if-returns-dont-rw>
-                            :valid-syntax <t-if-rp-termp-of-meta-fnc-is-proved>)))')
-</code>
-
-</p>
-
-
-<p>
-9. Update clause processor with @(see rp::update-rp-clause-proc). 
-<code>
-@('(update-rp-clause-proc <a-unique-name-for-updated-clause-processor>)')
+@('(rp::attach-meta-fncs <a-unique-name-for-updated-clause-processor>)')
 </code>
 If you are going to include this book later when other meta rules for
 RP-Rewriter is present, you may want to call this function when all the meta
 rules are included.
 </p>
 
-
-
 <p>
 You may look at examples of RP-Rewriter meta rules under
-/books/projects/RP-Rewriter/meta/*
+/books/projects/RP-Rewriter/meta/*. implies-meta.lisp is a very simple example
+of an outside-in meta rule.
 </p>
 
 <p>
 Some books under /books/projects/RP-Rewriter/proofs/* might be useful when
 proving when proving meta rules correct, especially aux-function-lemmas and
 eval-functions-lemmas.
-</p> 
+</p>
 
 ")
-
 
 (xdoc::defxdoc
  dont-rw
@@ -580,3 +867,20 @@ dont-rw structure would enable that.</p>
  (nil (nil t t)
       (nil t t))
 </code>")
+
+
+(xdoc::defxdoc
+ attach-meta-fncs
+ :parents (rp-rewriter/meta-rules)
+ :short "Creates and attaches a new meta-rule caller function to register added meta rules."
+ :long "<p>
+After calling @(see add-meta-rule) or when different books with meta rules are
+ included, users need to call attach-meta-fncs. This creates a
+ new meta function caller function and attaches it to rp::rp-rw-meta-rule. </p>
+<code>(rp::attach-meta-fncs unique-prefix)</code>
+<p> unique-prefix should be a unique name that will be a prefix to the name
+ of the new  meta-rule caller function. </p>
+")
+
+
+

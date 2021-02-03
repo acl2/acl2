@@ -12,7 +12,7 @@
 
 (include-book "abnf")
 
-(include-book "../types-for-built-ins")
+(include-book "../atj" :ttags (:open-output-channel! :oslib :quicklisp :quicklisp.osicat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -31,7 +31,7 @@
 
 (java::atj-main-function-type nat-match-insensitive-char-p
                               (:ainteger :acharacter)
-                              :asymbol)
+                              :aboolean)
 
 (java::atj-main-function-type parse-exact
                               (:ainteger :avalue)

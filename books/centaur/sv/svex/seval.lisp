@@ -252,6 +252,19 @@ s4veclist)s.  ``Safely'' causes a run-time error if @('n') is out of bounds."
                   (s4vec-bit? test
                               (svex-s4eval (second x.args) env)
                               (svex-s4eval (third x.args) env))))
+               (bit?!
+                (b* (((unless (eql (len x.args) 3))
+                      (svex-s4apply x.fn (svexlist-s4eval x.args env)))
+                     (test (svex-s4eval (first x.args) env))
+                     ((s4vec test))
+                     ((when (and (sparseint-equal test.upper -1)
+                                 (sparseint-equal test.lower -1)))
+                      (svex-s4eval (second x.args) env))
+                     ((when (sparseint-equal (sparseint-bitand test.upper test.lower) 0))
+                      (svex-s4eval (third x.args) env)))
+                  (s4vec-bit?! test
+                               (svex-s4eval (second x.args) env)
+                               (svex-s4eval (third x.args) env))))
                (bitand
                 (b* (((unless (eql (len x.args) 2))
                       (svex-s4apply x.fn (svexlist-s4eval x.args env)))
@@ -373,6 +386,18 @@ s4veclist)s.  ``Safely'' causes a run-time error if @('n') is out of bounds."
                                 (4vec-fix then))))
            :hints(("Goal" :in-theory (enable 4vec-bit? 3vec-bit? s4vec->4vec)))))
 
+  (local (defthm s4vec-bit?!-cases
+           (and (implies  (equal (logand (sparseint-val (s4vec->upper test))
+                                         (sparseint-val (s4vec->lower test)))
+                                 0)
+                          (equal (4vec-bit?! (s4vec->4vec test) then else)
+                                 (4vec-fix else)))
+                (implies (and (equal (sparseint-val (s4vec->upper test)) -1)
+                              (equal (sparseint-val (s4vec->lower test)) -1))
+                         (equal (4vec-bit?! (s4vec->4vec test) then else)
+                                (4vec-fix then))))
+           :hints(("Goal" :in-theory (enable 4vec-bit?! s4vec->4vec)))))
+
 
 
   ;; (local (defthm s4vec-bitor-case
@@ -407,14 +432,18 @@ s4veclist)s.  ``Safely'' causes a run-time error if @('n') is out of bounds."
                   (cons (s4vec->4vec a) (s4veclist->4veclist b)))
            :hints(("Goal" :in-theory (enable s4veclist->4veclist)))))
 
+
   (std::defret-mutual svex-s4eval-correct
     (defret <fn>-correct
       (equal (s4vec->4vec val)
              (svex-eval x (svex-s4env->svex-env env)))
       :hints ('(:expand (<call>
-                         (svex-eval x (svex-s4env->svex-env env))))
+                         (svex-eval x (svex-s4env->svex-env env)))
+                :do-not-induct t)
               (and stable-under-simplificationp
-                   '(:in-theory (enable svex-apply))))
+                   '(:in-theory (enable svex-apply)))
+              (and stable-under-simplificationp
+                   '(:in-theory (enable s4vec->4vec))))
       :fn svex-s4eval)
 
     (defret <fn>-correct
@@ -438,6 +467,7 @@ s4veclist)s.  ``Safely'' causes a run-time error if @('n') is out of bounds."
       (let ((x.fn (case x.fn
                        (=== '==)
                        (==? 'safer-==?)
+                       (bit?! 'bit?)
                        (otherwise x.fn))))
         ;; Shortcuts for ?, bit?, bitand, bitor
         (case x.fn

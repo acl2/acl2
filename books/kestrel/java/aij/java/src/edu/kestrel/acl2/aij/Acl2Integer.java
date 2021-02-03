@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
+ * Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
  * License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
  * Author: Alessandro Coglio (coglio@kestrel.edu)
  */
@@ -231,12 +231,25 @@ public final class Acl2Integer extends Acl2Rational {
 
     /**
      * Checks if this integer is an integer, which is always true.
+     * This is consistent with the {@code integerp} ACL2 function.
      *
      * @return The symbol {@code t}.
      */
     @Override
     Acl2Symbol integerp() {
         return Acl2Symbol.T;
+    }
+
+    /**
+     * Checks if this integer is an integer, which is always true,
+     * returning a Java boolean instead of an ACL2 symbol.
+     * This is consistent with the {@code integerp} ACL2 function.
+     *
+     * @return {@code true}.
+     */
+    @Override
+    boolean integerpBoolean() {
+        return true;
     }
 
     /**
@@ -253,6 +266,50 @@ public final class Acl2Integer extends Acl2Rational {
             return Acl2Character.imake((char) numericValue.intValue());
         else
             return Acl2Character.CODE_0;
+    }
+
+    /**
+     * Returns the character in the argument string
+     * at the index specified by this integer,
+     * consistently with the {@code char} ACL2 function.
+     * According to the definition of {@code char},
+     * a negative index value is treated like 0.
+     * If the index is greater than or equal the string length,
+     * {@code nil} is returned,
+     * because the definition of {@code char} uses {@code nth}.
+     * Otherwise, the character at the index is returned.
+     *
+     * @param jstring The string from where the character is taken.
+     *                Invariant: not null.
+     * @return The character at this integer index in the string,
+     * or {@code nil} if the index is out of range.
+     */
+    @Override
+    Acl2Value charAtThisIndex(String jstring) {
+        if (this.compareToInteger(Acl2Integer.make(jstring.length())) >= 0)
+            return Acl2Symbol.NIL;
+        int index = this.compareToInteger(Acl2Integer.ZERO) < 0 ? 0
+                : this.numericValue.intValue();
+        return Acl2Character.imake(jstring.charAt(index));
+    }
+
+    /**
+     * Returns the character in the argument string
+     * at the index, assumed in range, specified by this integer,
+     * consistently with the {@code char} ACL2 function.
+     * This is a variant of {@link #charAtThisIndex(String)},
+     * optimized for the case in which the index is in range
+     * and thus it does not need to be checked,
+     * and coerced to 0 if negative.
+     *
+     * Invariant: this integer is non-negative and below the string length.
+     * @param jstring The string from where the character is taken.
+     *                Invariant: not null.
+     * @return The character at this integer index in the string,
+     */
+    Acl2Character charAtThisIndexInRange(String jstring) {
+        return Acl2Character.imake
+                (jstring.charAt(this.numericValue.intValue()));
     }
 
     /**

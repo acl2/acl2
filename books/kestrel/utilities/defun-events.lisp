@@ -192,7 +192,7 @@
          (verify-guards (assoc-keyword :verify-guards xargs)))
     (if (not verify-guards)
         nil
-      (equal nil (cadr verify-guards)))))
+      (eq nil (cadr verify-guards)))))
 
 (defun any-defun-has-verify-guards-nilp (defuns)
   (declare (xargs :guard (all-defun-formp defuns)))

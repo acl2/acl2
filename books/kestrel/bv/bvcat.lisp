@@ -1,7 +1,7 @@
 ; BV Library: Theorems about bvcat
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2020 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -16,7 +16,7 @@
 (include-book "slice")
 (include-book "getbit")
 (include-book "bvchop")
-(include-book "unsigned-byte-p")
+(local (include-book "unsigned-byte-p"))
 (local (include-book "../arithmetic-light/denominator"))
 (local (include-book "../arithmetic-light/floor"))
 (local (include-book "../arithmetic-light/mod"))
@@ -63,7 +63,7 @@
   :hints (("Goal" :cases ((integerp lowval))
            :in-theory (enable bvcat))))
 
-(defthm unsigned-byte-p-of-+-when-<-of-logtail-and-expt
+(defthmd unsigned-byte-p-of-+-when-<-of-logtail-and-expt
   (implies (and (< (logtail size x) (expt 2 size2))
                 (natp size)
                 (natp size2)
@@ -403,7 +403,9 @@
                 (natp high1))
            (equal (bvcat size1 (slice high1 low1 x) 1 (getbit n x))
                   (slice high1 n x)))
-  :hints (("Goal" :use (:instance bvcat-of-slice-and-slice-adjacent (low2 n) (high2 n) (size2 1)))))
+  :hints (("Goal" :use (:instance bvcat-of-slice-and-slice-adjacent (low2 n) (high2 n) (size2 1))
+           :in-theory (disable <-of-+-of---and-0-arg1
+                               <-of-+-of---and-0-arg2))))
 
 (defthm bvcat-of-getbit-and-getbit-adjacent
   (implies (and (equal n (+ 1 m))

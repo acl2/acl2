@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
+ * Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
  * License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
  * Author: Alessandro Coglio (coglio@kestrel.edu)
  */
@@ -55,7 +55,7 @@ public final class Acl2PackageName implements Comparable<Acl2PackageName> {
     /**
      * Java string representation of the package name.
      * Note that Java strings are a superset of the valid package names.
-     * Invariants: not null, satisfies {@link #isValidString(String)}.
+     * Invariant: not null, satisfies {@link #isValidString(String)}.
      */
     private final String name;
 
@@ -77,7 +77,7 @@ public final class Acl2PackageName implements Comparable<Acl2PackageName> {
      * the key is the {@link #name} field of the value.
      * The values of the map are reused  by the {@link #make(String)} method.
      * In other words, all the package names are interned.
-     * Invariants: not null, no null keys, no null values.
+     * Invariant: not null, no null keys, no null values.
      */
     private static final Map<String, Acl2PackageName> packageNames =
             new HashMap<>();

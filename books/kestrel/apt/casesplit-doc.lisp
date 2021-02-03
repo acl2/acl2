@@ -12,7 +12,6 @@
 
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
 (include-book "utilities/xdoc-constructors")
-(include-book "casesplit")
 
 ; (depends-on "design-notes/casesplit.pdf")
 ; (depends-on "kestrel/design-notes/notation.pdf" :dir :system)
@@ -20,7 +19,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defconst *casesplit-design-notes*
-  (xdoc::ahref "res/kestrel-apt-design-notes/casesplit.pdf" "design notes"))
+  (xdoc::&& "@('casesplit') "
+            (xdoc::ahref "res/kestrel-apt-design-notes/casesplit.pdf"
+                         "design notes")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -55,7 +56,7 @@
       a use of @(tsee restrict) with the corresponding condition.")
 
     (xdoc::p
-     "These " *casesplit-design-notes* ", which use "
+     "The " *casesplit-design-notes* ", which use "
      (xdoc::a :href "res/kestrel-design-notes/notation.pdf" "this notation")
      ", provide the mathematical concepts and template proofs
       upon which this transformation is based.
@@ -64,7 +65,20 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::evmac-section-form-auto casesplit)
+   (xdoc::evmac-section-form
+    (xdoc::codeblock
+     "(casesplit old"
+     "           conditions"
+     "           theorems"
+     "           :new-name       ; default :auto"
+     "           :new-enable     ; default :auto"
+     "           :thm-name       ; default :auto"
+     "           :thm-enable     ; default t"
+     "           :verify-guards  ; default :auto"
+     "           :hints          ; default nil"
+     "           :print          ; default :result"
+     "           :show-only      ; default nil"
+     "  )"))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -150,7 +164,7 @@
 
     (xdoc::desc-apt-input-thm-enable :never)
 
-    (xdoc::desc-apt-input-verify-guards :never)
+    (xdoc::desc-apt-input-verify-guards :plural-functions nil)
 
     (xdoc::evmac-input-hints)
 

@@ -1,6 +1,6 @@
 ; Error Checking -- Tests
 ;
-; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -11,63 +11,10 @@
 (in-package "ACL2")
 
 (include-book "top")
-(include-book "kestrel/utilities/testing" :dir :system)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(must-eval-to-t
- (b* (((er x) (ensure-nil nil "This" t nil 'test state)))
-   (value (equal x nil))))
-
-(must-fail
- (ensure-nil '(1 2 3) "This" t nil 'test state)
- :with-output-off nil)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(must-eval-to-t
- (b* (((er x) (ensure-boolean t "This" t nil 'test state)))
-   (value (equal x nil))))
-
-(must-eval-to-t
- (b* (((er x) (ensure-boolean nil "This" t nil 'test state)))
-   (value (equal x nil))))
-
-(must-fail
- (ensure-boolean "nil" "This" t nil 'test state)
- :with-output-off nil)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(must-eval-to-t
- (b* (((er x) (ensure-symbol 'abc "This" t nil 'test state)))
-   (value (equal x nil))))
-
-(must-eval-to-t
- (b* (((er x) (ensure-symbol t "This" t nil 'test state)))
-   (value (equal x nil))))
-
-(must-eval-to-t
- (b* (((er x) (ensure-symbol :xyz "This" t nil 'test state)))
-   (value (equal x nil))))
-
-(must-fail
- (ensure-symbol #\a "This" t nil 'test state)
- :with-output-off nil)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(must-eval-to-t
- (b* (((er x) (ensure-string "" "This" t nil 'test state)))
-   (value (equal x nil))))
-
-(must-eval-to-t
- (b* (((er x) (ensure-string "XYZ" "This" t nil 'test state)))
-   (value (equal x nil))))
-
-(must-fail
- (ensure-string 88 "This" t nil 'test state)
- :with-output-off nil)
+(include-book "std/testing/must-eval-to-t" :dir :system)
+(include-book "std/testing/must-fail" :dir :system)
+(include-book "std/testing/must-succeed-star" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -88,24 +35,6 @@
 
 (must-fail
  (ensure-string-or-nil '("a") "This" t nil 'test state))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(must-eval-to-t
- (b* (((er x) (ensure-symbol-list nil "This" t nil 'test state)))
-   (value (equal x nil))))
-
-(must-eval-to-t
- (b* (((er x) (ensure-symbol-list '(a b c) "This" t nil 'test state)))
-   (value (equal x nil))))
-
-(must-fail
- (ensure-symbol-list #\Space "This" t nil 'test state)
- :with-output-off nil)
-
-(must-fail
- (ensure-symbol-list '(a 1 b) "This" t nil 'test state)
- :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -155,20 +84,6 @@
 
 (must-fail
  (ensure-symbol-different 'zero 'zero "that" "This" t nil 'test state)
- :with-output-off nil)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(must-eval-to-t
- (b* (((er x) (ensure-list-no-duplicates nil "This" t nil 'test state)))
-   (value (equal x nil))))
-
-(must-eval-to-t
- (b* (((er x) (ensure-list-no-duplicates '(1 2 3) "This" t nil 'test state)))
-   (value (equal x nil))))
-
-(must-fail
- (ensure-list-no-duplicates '(1 2 2) "This" t nil 'test state)
  :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -255,46 +170,6 @@
 
 (must-fail
  (ensure-keyword-value-list '((:a . 1) (:b . 2)) "This" t nil 'test state)
- :with-output-off nil)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(must-eval-to-t
- (b* (((er x) (ensure-member-of-list
-               4 '(2 4 88) "in the list" "This" t nil 'test state)))
-   (value (equal x nil))))
-
-(must-eval-to-t
- (b* (((er x) (ensure-member-of-list
-               "a" '(:a "a" (1 2)) "in the list" "This" t nil 'test state)))
-   (value (equal x nil))))
-
-(must-fail
- (ensure-member-of-list 4 nil "in the list" "This" t nil 'test state)
- :with-output-off nil)
-
-(must-fail
- (ensure-member-of-list 4 '("tt" t 41) "in the list" "This" t nil 'test state)
- :with-output-off nil)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(must-eval-to-t
- (b* (((er x) (ensure-not-member-of-list
-               4 nil "not in the list" "This" t nil 'test state)))
-   (value (equal x nil))))
-
-(must-eval-to-t
- (b* (((er x) (ensure-not-member-of-list
-               4 '(55 #\c (4)) "not in the list" "This" t nil 'test state)))
-   (value (equal x nil))))
-
-(must-fail
- (ensure-not-member-of-list 4 '(4) "not in the list" "This" t nil 'test state)
- :with-output-off nil)
-
-(must-fail
- (ensure-not-member-of-list 4 '(5 4) "not in the list" "This" t nil 'test state)
  :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -447,32 +322,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (must-eval-to-t
- (b* (((er x) (ensure-variable-name 'x "This" t nil 'test state)))
-   (value (equal x nil))))
-
-(must-eval-to-t
- (b* (((er x) (ensure-variable-name 'acl2-user::var "This" t nil 'test state)))
-   (value (equal x nil))))
-
-(must-fail
- (ensure-variable-name t "This" t nil 'test state)
- :with-output-off nil)
-
-(must-fail
- (ensure-variable-name nil "This" t nil 'test state)
- :with-output-off nil)
-
-(must-fail
- (ensure-variable-name :x "This" t nil 'test state)
- :with-output-off nil)
-
-(must-fail
- (ensure-variable-name 67 "This" t nil 'test state)
- :with-output-off nil)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(must-eval-to-t
  (b* (((er x) (ensure-constant-name '*c* "This" t nil 'test state)))
    (value (equal x nil))))
 
@@ -550,34 +399,6 @@
 
 (must-fail
  (ensure-symbol-new-event-name 'len "This" t nil 'test state)
- :with-output-off nil)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(must-eval-to-t
- (b* (((er x) (ensure-function-name 'cons "This" t nil 'test state)))
-   (value (equal x nil))))
-
-(must-eval-to-t
- (b* (((er x) (ensure-function-name 'len "This" t nil 'test state)))
-   (value (equal x nil))))
-
-(must-succeed*
- (defun g (x) x)
- (must-eval-to-t
-  (b* (((er x) (ensure-function-name 'g "This" t nil 'test state)))
-    (value (equal x nil)))))
-
-(must-fail
- (ensure-function-name #\w "This" t nil 'test state)
- :with-output-off nil)
-
-(must-fail
- (ensure-function-name 'lenn "This" t nil 'test state)
- :with-output-off nil)
-
-(must-fail
- (ensure-function-name 'car-cdr-elim "This" t nil 'test state)
  :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -774,46 +595,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (must-eval-to-t
- (b* (((er x) (ensure-term 'v "This" t nil 'test state)))
-   (value (and (equal (nth 0 x) 'v)
-               (equal (nth 1 x) '(nil))))))
-
-(must-eval-to-t
- (b* (((er x) (ensure-term 5/4 "This" t nil 'test state)))
-   (value (and (equal (nth 0 x) ''5/4)
-               (equal (nth 1 x) '(nil))))))
-
-(must-eval-to-t
- (b* (((er x) (ensure-term '(* x 4) "This" t nil 'test state)))
-   (value (and (equal (nth 0 x) '(binary-* x '4))
-               (equal (nth 1 x) '(nil))))))
-
-(must-eval-to-t
- (b* (((er x) (ensure-term '(mv state 33) "This" t nil 'test state)))
-   (value (and (equal (nth 0 x) '(cons state (cons '33 'nil)))
-               (equal (nth 1 x) '(state nil))))))
-
-(must-fail
- (ensure-term '(binary-* x y z) "This" t nil 'test state)
- :with-output-off nil)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(must-eval-to-t
- (b* (((er x) (ensure-function-logic-mode 'cons "This" t nil 'test state)))
-   (value (equal x nil))))
-
-(must-eval-to-t
- (b* (((er x) (ensure-function-logic-mode 'len "This" t nil 'test state)))
-   (value (equal x nil))))
-
-(must-fail
- (ensure-function-logic-mode 'untranslate "This" t nil 'test state)
- :with-output-off nil)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(must-eval-to-t
  (b* (((er x) (ensure-function-program-mode 'fmt "This" t nil 'test state)))
    (value (equal x nil))))
 
@@ -823,16 +604,6 @@
 
 (must-fail
  (ensure-function-program-mode 'len "This" t nil 'test state)
- :with-output-off nil)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(must-eval-to-t
- (b* (((er x) (ensure-function-defined 'len "This" t nil 'test state)))
-   (value (equal x nil))))
-
-(must-fail
- (ensure-function-defined 'cons "This" t nil 'test state)
  :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1016,23 +787,6 @@
 
 (must-fail
  (ensure-function-number-of-results 'error1 7 "This" t nil 'test state)
- :with-output-off nil)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(must-eval-to-t
- (b* (((er x) (ensure-function-guard-verified 'cons "This" t nil 'test state)))
-   (value (equal x nil))))
-
-(must-eval-to-t
- (b* (((er x) (ensure-function-guard-verified 'len "This" t nil 'test state)))
-   (value (equal x nil))))
-
-(must-succeed*
- (defun h (x) (declare (xargs :verify-guards nil)) x)
- (must-fail
-  (ensure-function-guard-verified 'h "This" t nil 'test state)
-  :with-output-off nil)
  :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

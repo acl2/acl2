@@ -1,5 +1,5 @@
-; ACL2 Version 8.2 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2019, Regents of the University of Texas
+; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2020, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -567,6 +567,11 @@
 ; Notice that unlike Lisp macros, the global Lisp state is available for the
 ; expansion.  Hence we can query the ACL2 database etc.
 
+; Moreover, we can modify state, and in particular set state globals but with
+; the same protection as we have during make-event: the use of
+; protect-system-state-globals.  That macro is invoked by the call below of
+; xtrans-eval.
+
   (let ((instr (make-official-pc-instr raw-instr)))
 
 ; Notice that instr is syntactically valid, i.e. is a true-listp headed by a
@@ -873,10 +878,13 @@
 
                             (car (access assumption bad-ass :assumnotes))))
                        (print-no-change
-                        "A false assumption was encountered from applying the ~
-                         rune ~x0 to the target ~x1."
+                        "When applying the rune ~x0 to the target ~x1, a ~
+                         hypothesis of the form (~x2 ...) or (~x3 ...) was ~
+                         later found to be false."
                         (list (cons #\0 (access assumnote assumnote :rune))
-                              (cons #\1 (access assumnote assumnote :target)))))
+                              (cons #\1 (access assumnote assumnote :target))
+                              (cons #\2 'force)
+                              (cons #\3 'case-split))))
                      (mv nil nil state)))
                    (t
                     (let* ((returned-pc-state (car vals))
@@ -936,7 +944,7 @@
                                                process of preparing to deal ~
                                                with forced assumptions.~|"
                                               (list (cons #\0 goal-name)
-                                                    (cons #\0 instr))
+                                                    (cons #\1 instr))
                                               0 nil))
                                    (io? proof-builder nil state
                                         (goals)
@@ -1148,6 +1156,75 @@
                               (t
                                "error or abort.")))))))
 
+(defun chk-absstobj-invariants (state)
+
+; See the Essay on Illegal-states.
+
+  (declare (xargs :stobjs state
+
+; If this were in :logic mode:
+;                 :guard-hints (("Goal" :in-theory (enable read-acl2-oracle)))
+
+                  ))
+  (mv-let (erp msg state)
+    #+acl2-loop-only
+    (read-acl2-oracle state)
+    #-acl2-loop-only
+    (let ((temp (svref *inside-absstobj-update* 0)))
+      (cond
+       ((or (null temp)
+            (eql temp 0)
+            (eq temp :ignore))
+        (value nil))
+
+; At one time we called abort! when (> (f-get-global 'ld-level state) 1).  Our
+; concern was that if we are in a wormhole, the f-put-global forms below would
+; be undone when exiting that wormhole.  However, that is not actually a
+; problem, because stobj updates are disallowed inside a wormhole.
+
+       (t
+        (let ((msg
+               (msg "Possible invariance violation for an abstract ~
+                     stobj!~|**PROCEED AT YOUR OWN RISK.**~|To proceed, ~
+                     evaluate the following form.~|~x0~|See :DOC ~
+                     set-absstobj-debug.~|~@1"
+                    :continue-from-illegal-state
+                    (cond
+                     ((natp temp) "")
+                     (t ; absstobj-debug case
+                      (let* ((inner temp)
+                             (inner (loop (if (atom inner) 
+                                              (return inner)
+                                            (pop inner)))))
+                        (msg "Evaluation was aborted under ~@0~@1"
+                             (msg "a call of abstract stobj export ~x0."
+                                  inner)
+                             (cond
+                              ((atom temp) ; i.e., (symbolp temp)
+                               "")
+                              (t
+                               (msg "~|Moreover, it appears that evaluation ~
+                                     was aborted within the following stack ~
+                                     of stobj updater calls (innermost call ~
+                                     appearing first): ~x0."
+                                    (let ((y nil))
+                                      (loop
+                                       (if (atom temp) 
+                                           (return (nreverse
+                                                    (cons temp y)))
+                                         (push (pop temp) y))))))))))))))
+          (setf (svref *inside-absstobj-update* 0)
+                (if (natp temp) 0 nil))
+          (value msg)))))
+    (declare (ignore erp))
+    (cond (msg (pprogn (f-put-global 'illegal-to-certify-message msg state)
+                       (f-put-global 'ld-pre-eval-filter :illegal-state state)
+                       (error-fms nil 'chk-absstobj-invariants
+                                  "~@0"
+                                  (list (cons #\0 msg))
+                                  state)))
+          (t state))))
+
 (defun pc-main-loop (instr-list quit-conditions last-value
                                 pc-print-prompt-and-instr-flg state)
 
@@ -1167,73 +1244,81 @@
 ; This only returns non-nil if we exit successfully, or if all instructions
 ; succeed (null erp, non-nil value) without error.
 
-  (if (null instr-list)
-      (mv nil last-value state)
-    (mv-let
-     (col state)
-     (if pc-print-prompt-and-instr-flg
-         (print-pc-prompt state)
-       (mv 0 state))
-     (mv-let
-      (erp instr state)
-      (if (consp instr-list)
-          (pprogn (if pc-print-prompt-and-instr-flg
-                      (io? proof-builder nil state
-                           (col instr-list)
-                           (fms0 "~y0~|"
-                                 (list (cons #\0
-                                             (car instr-list)))
-                                 col))
-                    state)
-                  (value (car instr-list)))
-        (with-infixp-nil
-         (read-object instr-list state)))
-      (cond
-       (erp
+  (cond
+   ((null instr-list)
+    (mv nil last-value state))
+   (t
+    (pprogn
+     (chk-absstobj-invariants state)
+     (cond
+      ((illegal-state-p state) ; kick us out of the loop
+       (mv t nil state))
+      (t
+       (mv-let
+         (col state)
+         (if pc-print-prompt-and-instr-flg
+             (print-pc-prompt state)
+           (mv 0 state))
+         (mv-let
+           (erp instr state)
+           (if (consp instr-list)
+               (pprogn (if pc-print-prompt-and-instr-flg
+                           (io? proof-builder nil state
+                                (col instr-list)
+                                (fms0 "~y0~|"
+                                      (list (cons #\0
+                                                  (car instr-list)))
+                                      col))
+                         state)
+                       (value (car instr-list)))
+             (with-infixp-nil
+              (read-object instr-list state)))
+           (cond
+            (erp
 
 ; Read-object encountered end-of-file, presumably because a control-d was
 ; issued.  Note that raw Lisp errors are not handled here, but rather, in
 ; ld-read-eval-print, where a (verify) command is re-issued (to get back into
 ; the proof-builder) instead of taking input from the user.
 
-        (pprogn
-         (print-re-entering-proof-builder t state)
-         (pc-main-loop instr-list quit-conditions last-value
-                       pc-print-prompt-and-instr-flg state)))
-       (t (mv-let
-           (signal val state)
-           (pc-single-step
-            (make-official-pc-instr instr)
-            state)
-           (cond
-            ((or (and signal
-                      (or (member-eq 'signal quit-conditions)
-                          (and (eq signal *pc-complete-signal*)
-                               (member-eq 'exit quit-conditions))))
-                 (and (null val)
-                      (member-eq 'value quit-conditions)))
+             (pprogn
+              (print-re-entering-proof-builder t state)
+              (pc-main-loop instr-list quit-conditions last-value
+                            pc-print-prompt-and-instr-flg state)))
+            (t (mv-let
+                 (signal val state)
+                 (pc-single-step
+                  (make-official-pc-instr instr)
+                  state)
+                 (cond
+                  ((or (and signal
+                            (or (member-eq 'signal quit-conditions)
+                                (and (eq signal *pc-complete-signal*)
+                                     (member-eq 'exit quit-conditions))))
+                       (and (null val)
+                            (member-eq 'value quit-conditions)))
 
 ; We set 'in-verify-flg back to nil when exiting explicitly from verify-fn and,
 ; in case we never get that chance because of an interrupt or abort, in
 ; ld-read-eval-print.
 
-             (mv signal val state))
-            (t (let ((new-last-value
+                   (mv signal val state))
+                  (t (let ((new-last-value
 
 ; We ultimately "succeed" if and only if every instruction "succeeds".  We use
 ; a let-binding here in order to avoid an Allegro CL compiler bug (found using
 ; Allegro CL 8.0, but told by Franz support that it still exists in Allegro CL
 ; 9.0).
 
-                      (and last-value (null signal) val)))
-                 (pc-main-loop
-                  (if (consp instr-list)
-                      (cdr instr-list)
-                    instr-list)
-                  quit-conditions
-                  new-last-value
-                  pc-print-prompt-and-instr-flg
-                  state)))))))))))
+                            (and last-value (null signal) val)))
+                       (pc-main-loop
+                        (if (consp instr-list)
+                            (cdr instr-list)
+                          instr-list)
+                        quit-conditions
+                        new-last-value
+                        pc-print-prompt-and-instr-flg
+                        state)))))))))))))))
 
 (defun make-initial-goal (term)
   (make goal

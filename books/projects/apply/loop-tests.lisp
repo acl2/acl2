@@ -8,15 +8,22 @@
 (in-package "ACL2")
 
 (include-book "projects/apply/top" :dir :system)
-(include-book "misc/assert" :dir :system)
-(include-book "misc/eval" :dir :system)
+(include-book "std/testing/assert-bang" :dir :system)
+(include-book "std/testing/assert-bang-stobj" :dir :system)
+(include-book "std/testing/must-fail" :dir :system)
 
 (assert-event
  (equal (loop$ for x in '(1 2 3 4) sum (* x x))
         30))
 
 (thm (equal (loop$ for x in '(1 2 3 4) sum (* x x))
-            (SUM$ '(LAMBDA (X) (BINARY-* X X))
+            (SUM$ '(LAMBDA (LOOP$-IVAR)
+                           (DECLARE (IGNORABLE LOOP$-IVAR))
+                           (RETURN-LAST 'PROGN
+                                        '(LAMBDA$ (LOOP$-IVAR)
+                                                  (LET ((X LOOP$-IVAR)) (* X X)))
+                                        ((LAMBDA (X) (BINARY-* X X))
+                                         LOOP$-IVAR)))
                   '(1 2 3 4))))
 
 (thm (equal (sum$ fn lst)
@@ -109,31 +116,38 @@
             'top   ; ctx
             (w state)
             state)
- (RETURN-LAST 'PROGN
-              '(LOOP$ FOR X IN '(1 2 3 4) SUM (* X X))
-              (SUM$ '(LAMBDA (X)
-                             (DECLARE (IGNORABLE X))
-                             (RETURN-LAST 'PROGN
-                                          '(LAMBDA$ (X) (* X X))
-                                          (BINARY-* X X)))
-                    '(1 2 3 4))))
+ (RETURN-LAST
+  'PROGN
+  '(LOOP$ FOR X IN '(1 2 3 4) SUM (* X X))
+  (SUM$ '(LAMBDA (LOOP$-IVAR)
+                 (DECLARE (IGNORABLE LOOP$-IVAR))
+                 (RETURN-LAST 'PROGN
+                              '(LAMBDA$ (LOOP$-IVAR)
+                                        (LET ((X LOOP$-IVAR)) (* X X)))
+                              ((LAMBDA (X) (BINARY-* X X))
+                               LOOP$-IVAR)))
+        '(1 2 3 4))))
 
 (assert! ; Assert-event fails because of program-only code and safe-mode.
  (equal
-  (untranslate '(RETURN-LAST 'PROGN
-                             '(LOOP$ FOR X IN '(1 2 3 4) SUM (* X X))
-                             (SUM$ '(LAMBDA (X)
-                                            (DECLARE (IGNORABLE X))
-                                            (RETURN-LAST 'PROGN
-                                                         '(LAMBDA$ (X) (* X X))
-                                                         (BINARY-* X X)))
-                                   '(1 2 3 4)))
+  (untranslate '(RETURN-LAST
+                 'PROGN
+                 '(LOOP$ FOR X IN '(1 2 3 4) SUM (* X X))
+                 (SUM$ '(LAMBDA (LOOP$-IVAR)
+                                (DECLARE (IGNORABLE LOOP$-IVAR))
+                                (RETURN-LAST 'PROGN
+                                             '(LAMBDA$ (LOOP$-IVAR)
+                                                       (LET ((X LOOP$-IVAR)) (* X X)))
+                                             ((LAMBDA (X) (BINARY-* X X))
+                                              LOOP$-IVAR)))
+                       '(1 2 3 4)))
                nil
                (w state))
   '(PROG2$ '(LOOP$ FOR X IN '(1 2 3 4) SUM (* X X))
-           (SUM$ (LAMBDA$ (X)
-                          (PROG2$ '(LAMBDA$ (X) (* X X))
-                                  (* X X)))
+           (SUM$ (LAMBDA$ (LOOP$-IVAR)
+                          (PROG2$ '(LAMBDA$ (LOOP$-IVAR)
+                                            (LET ((X LOOP$-IVAR)) (* X X)))
+                                  (LET ((X LOOP$-IVAR)) (* X X))))
                  '(1 2 3 4)))))
 
 (defun sum-squares (lst)
@@ -152,20 +166,23 @@
 (assert-event
  (equal
   (body 'sum-squares nil (w state)) ; unnormalized body
-  '(RETURN-LAST 'PROGN
-                '(LOOP$ FOR X IN LST SUM (* X X))
-                (SUM$ '(LAMBDA (X)
-                               (DECLARE (IGNORABLE X))
-                               (RETURN-LAST 'PROGN
-                                            '(LAMBDA$ (X) (* X X))
-                                            (BINARY-* X X)))
-                      LST))))
+  '(RETURN-LAST
+    'PROGN
+    '(LOOP$ FOR X IN LST SUM (* X X))
+    (SUM$ '(LAMBDA (LOOP$-IVAR)
+                   (DECLARE (IGNORABLE LOOP$-IVAR))
+                   (RETURN-LAST 'PROGN
+                                '(LAMBDA$ (LOOP$-IVAR)
+                                          (LET ((X LOOP$-IVAR)) (* X X)))
+                                ((LAMBDA (X) (BINARY-* X X))
+                                 LOOP$-IVAR)))
+          LST))))
 
 (assert-event
  (equal
   (body 'sum-squares t (w state)) ; normalized body
-  '(SUM$ '(LAMBDA (X)
-                  (BINARY-* X X))
+  '(SUM$ '(LAMBDA (LOOP$-IVAR)
+                  (BINARY-* LOOP$-IVAR LOOP$-IVAR))
          LST)))
 
 (assert! ; Assert-event fails because of program-only code and safe-mode.
@@ -270,16 +287,16 @@
                                     FROM LOWER TO UPPER COLLECT (SQUARE I))
                             (global-val 'loop$-alist (w state))))
           :term)
-  '(COLLECT$ '(LAMBDA (I)
-                      (DECLARE (TYPE INTEGER I)
-                               (XARGS :GUARD (INTEGERP I)
+  '(COLLECT$ '(LAMBDA (LOOP$-IVAR)
+                      (DECLARE (TYPE INTEGER LOOP$-IVAR)
+                               (XARGS :GUARD (INTEGERP LOOP$-IVAR)
                                       :SPLIT-TYPES T)
-                               (IGNORABLE I))
+                               (IGNORABLE LOOP$-IVAR))
                       (RETURN-LAST 'PROGN
-                                   '(LAMBDA$ (I)
-                                             (DECLARE (TYPE INTEGER I))
-                                             (SQUARE I))
-                                   (SQUARE I)))
+                                   '(LAMBDA$ (LOOP$-IVAR)
+                                             (DECLARE (TYPE INTEGER LOOP$-IVAR))
+                                             (LET ((I LOOP$-IVAR)) (SQUARE I)))
+                                   ((LAMBDA (I) (SQUARE I)) LOOP$-IVAR)))
              (FROM-TO-BY LOWER UPPER '1))))
 
 (assert! ; may be able to use assert-event after a bug fix is in place

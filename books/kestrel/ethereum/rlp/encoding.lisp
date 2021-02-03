@@ -14,7 +14,7 @@
 (include-book "trees")
 
 (include-book "kestrel/fty/deffixequiv-sk" :dir :system)
-(include-book "kestrel/utilities/define-sk" :dir :system)
+(include-book "std/util/define-sk" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -189,17 +189,17 @@
     (rlp-tree-case
      tree
      :leaf (rlp-encode-bytes tree.bytes)
-     :branch (b* (((mv error? encoding) (rlp-encode-tree-list tree.subtrees))
+     :branch (b* (((mv error? subencoding) (rlp-encode-tree-list tree.subtrees))
                   ((when error?) (mv t nil)))
-               (cond ((< (len encoding) 56)
-                      (b* ((encoding (cons (+ 192 (len encoding))
-                                           encoding)))
+               (cond ((< (len subencoding) 56)
+                      (b* ((encoding (cons (+ 192 (len subencoding))
+                                           subencoding)))
                         (mv nil encoding)))
-                     ((< (len encoding)
+                     ((< (len subencoding)
                          (expt 2 64))
-                      (b* ((be (nat=>bebytes* (len encoding)))
+                      (b* ((be (nat=>bebytes* (len subencoding)))
                            (encoding (cons (+ 247 (len be))
-                                           (append be encoding))))
+                                           (append be subencoding))))
                         (mv nil encoding)))
                      (t (mv t nil)))))
     :measure (rlp-tree-count tree)

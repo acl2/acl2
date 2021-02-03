@@ -1655,6 +1655,7 @@ construct fast alists binding identifiers to things, etc.</p>"
     :returns (names string-listp)
     :measure (vl-expr-count x)
     :flag :expr
+    :short "Extract all the variable names from a VL expression."
     (mbe :logic (if (vl-idexpr-p x)
                     (list (vl-idexpr->name x))
                   (vl-exprlist-varnames (vl-expr->subexprs x)))

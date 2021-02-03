@@ -25,7 +25,7 @@
 
 (include-book "projects/apply/top" :dir :system)
 
-(include-book "misc/assert" :dir :system)
+(include-book "std/testing/assert-bang" :dir :system)
 
 (defun foo-1 (fn args)
   (declare (xargs :guard (true-listp args)))

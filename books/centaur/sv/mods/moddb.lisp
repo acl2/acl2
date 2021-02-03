@@ -2318,7 +2318,7 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
       (equal (elab-modlist-norm x) x)
       ///
       (deffixtype elab-modlist-norm :fix elab-modlist-norm :pred elab-modlist-normp
-        :equiv elab-modlist-norm-equiv :define t :forward t :execp nil))
+        :equiv elab-modlist-norm-equiv :define t :forward t :executablep nil))
 
     (defthm elab-modlist-fix-of-elab-modlist-norm
       (equal (elab-modlist-fix (elab-modlist-norm x))
@@ -2401,7 +2401,7 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
       (implies (moddbp moddb)
                (equal (moddb-fix moddb) moddb)))
 
-    (deffixtype moddb :pred moddbp :fix moddb-fix :equiv moddb-equiv :define t :execp nil)
+    (deffixtype moddb :pred moddbp :fix moddb-fix :equiv moddb-equiv :define t :executablep nil)
 
     (defthm nth-of-moddb-fix
       (and (equal (nth 0 (moddb-fix moddb))
@@ -2502,7 +2502,7 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
     ///
     (deffixtype moddb-norm :pred moddb-norm-p
       :fix moddb-norm :equiv moddb-norm-equiv
-      :define t :forward t :execp nil)
+      :define t :forward t :executablep nil)
 
     (fty::deffixcong moddb-norm-equiv nat-equiv (nth *moddb->nmods* moddb) moddb)
 
@@ -5146,6 +5146,7 @@ to clear out the wires or instances; just start over with a new elab-mod.</p>")
     :measure (mod-meas (modname-fix modname) modalist)
     :ruler-extenders :all
     :verify-guards nil
+    :short "Copy the wire hierarchy of an SV module into a moddb."
     (b* ((modalist (mbe :logic (modalist-fix modalist) :exec modalist))
          (modname (mbe :logic (modname-fix modname) :exec modname))
          ((when (moddb-modname-get-index modname moddb))
@@ -6703,8 +6704,8 @@ checked to see if it is a valid bitselect and returned as a separate value."
     (b* ((addr (svar->address x))
          ((address addr))
          ((unless (eql 0 addr.scope))
-          (mv nil (change-svar
-                   x :name (change-address addr :index nil))))
+          (mv nil (change-svar x :name (change-address addr :index nil)
+                               :override-test nil :override-val nil)))
          (idx (moddb-path->wireidx addr.path modidx moddb))
          ((unless idx)
           (mv (msg "Did not find wire: ~x0 in module ~s1~%"
@@ -6713,10 +6714,10 @@ checked to see if it is a valid bitselect and returned as a separate value."
                               (name)
                               (elab-mod->name elab-mod)
                               name))
-              (change-svar
-               x :name (change-address addr :index nil)))))
-      (mv nil (change-svar
-               x :name (change-address addr :index idx))))
+              (change-svar x :name (change-address addr :index nil)
+                           :override-test nil :override-val nil))))
+      (mv nil (change-svar x  :name (change-address addr :index idx)
+                           :override-test nil :override-val nil)))
     ///
     (deffixequiv svar-named->indexed)
 
@@ -7699,6 +7700,7 @@ checked to see if it is a valid bitselect and returned as a separate value."
                  ;;                                       svex-modinsts->flatten)
                  ;;                   :expand ((svex-mod->flatten scope modalist moddb)))))
                  )
+    :short "Flatten an SV module into a list of assignments and aliases."
     (b* (((modscope scope))
          ((stobj-get name ninsts)
           ((elab-mod (moddb->modsi scope.modidx moddb)))

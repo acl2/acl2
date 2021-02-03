@@ -1,5 +1,5 @@
-; ACL2 Version 8.2 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2019, Regents of the University of Texas
+; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2020, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -90,7 +90,9 @@
 ; been assigned a badge by defwarrant.  We return one of three answers:
 
 ; - (mv nil badge): fn was found in the badge-table and the badge is badge.
-;      Fn's warrant is named APPLY$-WARRANT-fn.
+;      Every symbol in the :badge-userfn-structure has both a badge and a
+;      warrant, because defwarrant put the symbol there after successfully
+;      processing it.  Fn's warrant is named APPLY$-WARRANT-fn.
 
 ; - (mv msg nil): there is no entry for fn in the badge-table, so no
 ;      defwarrant has been successful on fn; msg is a tilde-@ msg possibly
@@ -3140,7 +3142,7 @@
 ;                                  symbol with the original measure
 ;                                  term used in its admission
 
-; *MAX-LEX-LENGTH*                length of the longest LLIST justifying a 
+; *MAX-LEX-LENGTH*                length of the longest LLIST justifying a
 ;                                  user-defined G2 function
 
 ; *BIG-0*                         a list of *MAX-LEX-LENGTH* zeros to fill the

@@ -12,6 +12,8 @@
 
 (include-book "multivalue")
 
+(include-book "../atj" :ttags (:open-output-channel! :oslib :quicklisp :quicklisp.osicat))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (java::atj add-sub

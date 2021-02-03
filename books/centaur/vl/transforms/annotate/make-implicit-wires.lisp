@@ -1121,6 +1121,7 @@ Our version of VCS says this isn't yet implemented.</li>
        (new-decl (make-vl-genbase
                   :item (make-vl-vardecl :name    portdecl.name
                                          :type    portdecl.type
+                                         :nettype portdecl.nettype
                                          :atts    (cons '("VL_PORT_IMPLICIT") portdecl.atts)
                                          :loc     portdecl.loc))))
     (vl-make-port-implicit-wires (cdr items) decls (list* item new-decl newitems))))

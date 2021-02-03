@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+ * Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
  * License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
  * Author: Alessandro Coglio (coglio@kestrel.edu)
  */
@@ -52,7 +52,7 @@ public final class Acl2Package {
      * The values of the map are reused
      * by the {@link #define(Acl2PackageName, List)} method.
      * In other words, all the packages are interned.
-     * Invariants: not null, no null keys, no null values.
+     * Invariant: not null, no null keys, no null values.
      */
     private static final Map<Acl2PackageName, Acl2Package> packages =
             new HashMap<>();

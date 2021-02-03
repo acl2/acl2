@@ -1,5 +1,5 @@
-; ACL2 Version 8.2 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2019, Regents of the University of Texas
+; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2020, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -32,21 +32,8 @@
 ; which are checked when building with feature :acl2-devel, for example
 ; building with `make' with ACL2_DEVEL=d.  But normal builds will not set that
 ; feature, and will simply trust that functions marked in
-; *system-verify-guards-alist* can be guard-verified.
-
-; The following commands will check that things are as they should be, after
-; adjusting *system-verify-guards-alist* (see comments there).  Altogether they
-; took only about two minutes on a fast machine in May 2015.
-
-;   (time nice make ACL2_DEVEL=d)
-;   cd books
-;   make clean ACL2=`pwd`/../saved_acl2d
-;   time ./build/cert.pl -j 8 --acl2 `pwd`/../saved_acl2d system/top.cert
-;   cd ..
-;   (time nice make -j 8 devel-check ACL2=`pwd`/saved_acl2d)
-
-; For details, see the comment just above the call of system-verify-guards near
-; the end of this section.
+; *system-verify-guards-alist* can be guard-verified.  For more about this, see
+; the comments in *system-verify-guards-alist*.
 
 ; A flaw in our approach is that user-supplied guard verifications may depend
 ; on package axioms.  Thus, we view such verifications as strong hints, rather
@@ -144,312 +131,29 @@
 ; into :logic mode and calls logicp.
 (verify-termination-boot-strap logicp) ; and guards
 
-(defconst *system-verify-guards-alist*
+(defconst *devel-check-book* "system/devel-check")
 
-; Each member of each cdr below is of the form (fn . nil), for non-recursive
-; fn, or else (fn . measure).
-
-; Each cdr was produced by evaluating
-
-; (new-verify-guards-fns state)
-
-; after including the book indicated in the car in a build with feature
-; :acl2-devel set (see discussion in the comment at the top of this section).
-; For example, cdr of the entry for "system/top" is produced by evaluating:
-
-; (include-book "system/top" :dir :system).
-
-; The indicated books need to be certified using an ACL2 executable that was
-; built with feature :acl2-devel set (typically with "make ACL2_DEVEL=t"), but
-; this should take several minutes.  It assumes that ACL2 is your ACL2 sources
-; directory.  Note: Replace "saved_acl2d" as necessary, e.g., perhaps
-; "ccl-saved_acl2d".
-
-; cd ACL2
-; make ACL2_DEVEL=t
-; make clean-books
-; cd books
-; WARNING: Use the following command.  If you certify
-; system/apply/loop-scions.cert before certifying system/top.cert, you might
-; fail; in that case, you might be able to see the problem by looking at the
-; .cert file of a failed include-book.
-; (time ./build/cert.pl -j 8 --acl2 `pwd`/../saved_acl2d \
-;                       system/top.cert system/apply/loop-scions.cert)
-; cd ACL2
-; make devel-check ACL2=`pwd`/saved_acl2d
-
-; Note that it is not necessary to do a full regression with an :acl2-devel
-; executable; only the books in the keys of this alist need to be certified.
-
-  '(("system/top"
-     (>=-LEN ACL2-COUNT X)
-     (ABBREV-EVISC-TUPLE)
-     (ACCESS-COMMAND-TUPLE-NUMBER)
-     (ADD-SUFFIX-TO-FN)
-     (ALIST-TO-DOUBLETS ACL2-COUNT ALIST)
-     (ALL->=-LEN ACL2-COUNT LST)
-     (ALL-FNNAMES1 ACL2-COUNT X)
-     (ARGLISTP)
-     (ARGLISTP1 ACL2-COUNT LST)
-     (ARITIES-OKP ACL2-COUNT USER-TABLE)
-     (ARITY)
-     (ARITY-ALISTP ACL2-COUNT ALIST)
-     (BACKCHAIN-LIMIT-LISTP ACL2-COUNT LST)
-     (CERT-ANNOTATIONSP)
-     (CHK-LENGTH-AND-KEYS ACL2-COUNT ACTUALS)
-     (CLEAN-BRR-STACK)
-     (CLEAN-BRR-STACK1 ACL2-COUNT STACK)
-     (COLLECT-BY-POSITION ACL2-COUNT FULL-DOMAIN)
-     (COLLECT-LAMBDA-KEYWORDPS ACL2-COUNT LST)
-     (COLLECT-NON-X ACL2-COUNT LST)
-     (CONS-TERM1-MV2)
-     (DEF-BODY)
-     (DEFUN-MODE)
-     (DEREF-MACRO-NAME)
-     (DISABLEDP-FN)
-     (DISABLEDP-FN-LST ACL2-COUNT RUNIC-MAPPING-PAIRS)
-     (DOUBLET-LISTP ACL2-COUNT X)
-     (DUMB-NEGATE-LIT)
-     (DUPLICATE-KEYS-ACTION)
-     (ENABLED-NUMEP)
-     (ENABLED-RUNEP)
-     (ENABLED-STRUCTURE-P)
-     (ENS)
-     (EQUAL-X-CONSTANT)
-     (ER-CMP-FN)
-     (FETCH-DCL-FIELD)
-     (FETCH-DCL-FIELDS ACL2-COUNT LST)
-     (FETCH-DCL-FIELDS1 ACL2-COUNT LST)
-     (FETCH-DCL-FIELDS2 ACL2-COUNT KWD-LIST)
-     (FFNNAMEP ACL2-COUNT TERM)
-     (FFNNAMEP-LST ACL2-COUNT L)
-     (FIND-ALTERNATIVE-SKIP NFIX (BINARY-+ MAXIMUM (UNARY-- I)))
-     (FIND-ALTERNATIVE-START)
-     (FIND-ALTERNATIVE-START1 NFIX (BINARY-+ MAXIMUM (UNARY-- I)))
-     (FIND-ALTERNATIVE-STOP NFIX
-                            (BINARY-+ (BINARY-+ '1 MAXIMUM)
-                                      (UNARY-- I)))
-     (FIND-DOT-DOT NFIX
-                   (BINARY-+ (LENGTH FULL-PATHNAME)
-                             (UNARY-- I)))
-     (FIND-FIRST-BAD-ARG ACL2-COUNT ARGS)
-     (FMT-CHAR)
-     (FMT-VAR)
-     (FMX!-CW-FN)
-     (FMX-CW-FN)
-     (FMX-CW-FN-GUARD)
-     (FMX-CW-MSG)
-     (FMX-CW-MSG-1 NFIX CLK)
-     (FNUME)
-     (FORMALIZED-VARLISTP ACL2-COUNT VARLIST)
-     (FSUBCOR-VAR ACL2-COUNT FORM)
-     (FSUBCOR-VAR-LST ACL2-COUNT FORMS)
-     (ILKS-PER-ARGUMENT-SLOT)
-     (ILKS-PLIST-WORLDP)
-     (ILLEGAL-FMT-STRING)
-     (IMPLICATE)
-     (LAMBDA-KEYWORDP)
-     (LAMBDA-SUBTERMP ACL2-COUNT TERM)
-     (LAMBDA-SUBTERMP-LST ACL2-COUNT TERMLIST)
-     (LATEST-BODY)
-     (LEGAL-CONSTANTP)
-     (LEGAL-CONSTANTP1)
-     (LEGAL-INITP)
-     (LEGAL-VARIABLE-OR-CONSTANT-NAMEP)
-     (LEGAL-VARIABLEP)
-     (LOGIC-FNS-LIST-LISTP ACL2-COUNT X)
-     (LOGIC-FNS-LISTP ACL2-COUNT LST)
-     (LOGIC-FNSP ACL2-COUNT TERM)
-     (LOGIC-TERM-LIST-LISTP)
-     (LOGIC-TERM-LISTP)
-     (LOGIC-TERMP)
-     (LOGICAL-NAMEP)
-     (MACRO-ARGLIST-AFTER-RESTP)
-     (MACRO-ARGLIST-KEYSP ACL2-COUNT ARGS)
-     (MACRO-ARGLIST-OPTIONALP ACL2-COUNT ARGS)
-     (MACRO-ARGLIST1P ACL2-COUNT ARGS)
-     (MACRO-ARGS)
-     (MACRO-ARGS-STRUCTUREP)
-     (MACRO-VARS ACL2-COUNT ARGS)
-     (MACRO-VARS-AFTER-REST)
-     (MACRO-VARS-KEY ACL2-COUNT ARGS)
-     (MACRO-VARS-OPTIONAL ACL2-COUNT ARGS)
-     (MAKE-LAMBDA-APPLICATION)
-     (MATCH-CLAUSE)
-     (MATCH-CLAUSE-LIST ACL2-COUNT CLAUSES)
-     (MATCH-TESTS-AND-BINDINGS ACL2-COUNT PAT)
-     (MERGE-SORT-SYMBOL-< ACL2-COUNT L)
-     (MERGE-SORT-TERM-ORDER ; . (STEPS-TO-NIL L)
-      :? L)
-     (MERGE-SYMBOL-< BINARY-+ (LEN L1) (LEN L2))
-     (MERGE-TERM-ORDER ; . (BINARY-+ (STEPS-TO-NIL L1) (STEPS-TO-NIL L2))
-      :? L2 L1)
-     (META-EXTRACT-CONTEXTUAL-FACT)
-     (META-EXTRACT-GLOBAL-FACT+)
-     (META-EXTRACT-RW+-TERM)
-     (MSGP)
-     (NEWLINE)
-     (OBSERVATION1-CW)
-     (OVERRIDE-HINTS)
-     (PLAUSIBLE-DCLSP ACL2-COUNT LST)
-     (PLAUSIBLE-DCLSP1 ACL2-COUNT LST)
-     (PLIST-WORLDP-WITH-FORMALS ACL2-COUNT ALIST)
-     (PUSH-IO-RECORD)
-     (RELATIVIZE-BOOK-PATH)
-     (REMOVE-GUARD-HOLDERS-WEAK)
-     (REMOVE-GUARD-HOLDERS1 ACL2-COUNT TERM)
-     (REMOVE-GUARD-HOLDERS1-LST ACL2-COUNT LST)
-     (REMOVE-LAMBDAS)
-     (REMOVE-LAMBDAS-LST ACL2-COUNT TERMLIST)
-     (REMOVE-LAMBDAS1 ACL2-COUNT TERM)
-     (RUNEP)
-     (SAVED-OUTPUT-TOKEN-P)
-     (SCAN-PAST-WHITESPACE NFIX (BINARY-+ MAXIMUM (UNARY-- I)))
-     (SCAN-TO-CLTL-COMMAND ACL2-COUNT WRLD)
-     (SILENT-ERROR)
-     (STANDARD-EVISC-TUPLEP)
-     (STOBJP)
-     (STRING-PREFIXP)
-     (STRING-PREFIXP-1 ACL2-COUNT I)
-     (STRIP-CADRS ACL2-COUNT X)
-     (STRIP-DCLS ACL2-COUNT LST)
-     (STRIP-DCLS1 ACL2-COUNT LST)
-     (STRIP-KEYWORD-LIST ACL2-COUNT LST)
-     (SUBCOR-VAR ACL2-COUNT FORM)
-     (SUBCOR-VAR-LST ACL2-COUNT FORMS)
-     (SUBCOR-VAR1 ACL2-COUNT VARS)
-     (SUBLIS-VAR)
-     (SUBLIS-VAR-LST)
-     (SUBLIS-VAR1 ACL2-COUNT FORM)
-     (SUBLIS-VAR1-LST ACL2-COUNT L)
-     (SUBSEQUENCEP ACL2-COUNT LST1)
-     (SUBST-EXPR)
-     (SUBST-EXPR-ERROR)
-     (SUBST-EXPR1 ACL2-COUNT TERM)
-     (SUBST-EXPR1-LST ACL2-COUNT ARGS)
-     (SUBST-VAR ACL2-COUNT FORM)
-     (SUBST-VAR-LST ACL2-COUNT L)
-     (SYSFILE-OR-STRING-LISTP ACL2-COUNT X)
-     (SYSFILE-P)
-     (TERM-LIST-LISTP ACL2-COUNT L)
-     (TERM-LISTP ACL2-COUNT X)
-     (TERM-ORDER)
-     (TERM-ORDER1)
-     (TERMIFY-CLAUSE-SET ACL2-COUNT CLAUSES)
-     (TERMP ACL2-COUNT X)
-     (THROW-NONEXEC-ERROR-P)
-     (THROW-NONEXEC-ERROR-P1)
-     (TRANSLATE-ABBREV-RUNE)
-     (TTAG-ALISTP ACL2-COUNT X)
-     (WARNING-OFF-P1)
-     (WARNING1-CW)
-     (WEAK-APPLY$-BADGE-ALISTP ACL2-COUNT X)
-     (WORLD-EVISCERATION-ALIST)
-     (WRITE-FOR-READ)
-     (ZERO-ONE-OR-MORE))
-
-; Note that system/apply/apply.lisp is included (indirectly) in
-; system/apply/loop-scions.lisp.
-
-    ("system/apply/loop-scions"
-     (ALWAYS$ ACL2-COUNT LST)
-     (ALWAYS$+ ACL2-COUNT LST)
-     (APPEND$ ACL2-COUNT LST)
-     (APPEND$+ ACL2-COUNT LST)
-     (APPEND$+-AC ACL2-COUNT LST)
-     (APPEND$-AC ACL2-COUNT LST)
-     (APPLY$ :? ARGS FN)
-     (APPLY$-LAMBDA :? ARGS FN)
-     (ARGLISTP)
-     (ARGLISTP1 ACL2-COUNT LST)
-     (ARITIES-OKP ACL2-COUNT USER-TABLE)
-     (ARITY)
-     (CAR-LOOP$-AS-TUPLE ACL2-COUNT TUPLE)
-     (CDR-LOOP$-AS-TUPLE ACL2-COUNT TUPLE)
-     (COLLECT$ ACL2-COUNT LST)
-     (COLLECT$+ ACL2-COUNT LST)
-     (COLLECT$+-AC ACL2-COUNT LST)
-     (COLLECT$-AC ACL2-COUNT LST)
-     (EMPTY-LOOP$-AS-TUPLEP ACL2-COUNT TUPLE)
-     (EV$ :? A X)
-     (EV$-LIST :? A X)
-     (FIND-FIRST-BAD-ARG ACL2-COUNT ARGS)
-     (FROM-TO-BY FROM-TO-BY-MEASURE I J)
-     (FROM-TO-BY-AC FROM-TO-BY-MEASURE I J)
-     (LAMBDA-KEYWORDP)
-     (LEGAL-CONSTANTP)
-     (LEGAL-CONSTANTP1)
-     (LEGAL-VARIABLE-OR-CONSTANT-NAMEP)
-     (LEGAL-VARIABLEP)
-     (LOGIC-FNS-LIST-LISTP ACL2-COUNT X)
-     (LOGIC-FNS-LISTP ACL2-COUNT LST)
-     (LOGIC-FNSP ACL2-COUNT TERM)
-     (LOGIC-TERM-LIST-LISTP)
-     (LOGIC-TERM-LISTP)
-     (LOGIC-TERMP)
-     (LOOP$-AS ACL2-COUNT TUPLE)
-     (LOOP$-AS-AC ACL2-COUNT TUPLE)
-     (PLIST-WORLDP-WITH-FORMALS ACL2-COUNT ALIST)
-     (REVAPPEND-TRUE-LIST-FIX ACL2-COUNT X)
-     (SUITABLY-TAMEP-LISTP ACL2-COUNT ARGS)
-     (SUM$ ACL2-COUNT LST)
-     (SUM$+ ACL2-COUNT LST)
-     (SUM$+-AC ACL2-COUNT LST)
-     (SUM$-AC ACL2-COUNT LST)
-     (TAILS ACL2-COUNT LST)
-     (TAILS-AC ACL2-COUNT LST)
-     (TAMEP ACL2-COUNT X)
-     (TAMEP-FUNCTIONP ACL2-COUNT FN)
-     (TERM-LIST-LISTP ACL2-COUNT L)
-     (TERM-LISTP ACL2-COUNT X)
-     (TERMP ACL2-COUNT X)
-     (THEREIS$ ACL2-COUNT LST)
-     (THEREIS$+ ACL2-COUNT LST)
-     (UNTIL$ ACL2-COUNT LST)
-     (UNTIL$+ ACL2-COUNT LST)
-     (UNTIL$+-AC ACL2-COUNT LST)
-     (UNTIL$-AC ACL2-COUNT LST)
-     (WHEN$ ACL2-COUNT LST)
-     (WHEN$+ ACL2-COUNT LST)
-     (WHEN$+-AC ACL2-COUNT LST)
-     (WHEN$-AC ACL2-COUNT LST))))
-
-(defconst *len-system-verify-guards-alist*
-  (length *system-verify-guards-alist*))
-
-(defmacro chk-new-verified-guards (n)
-  (cond
-   ((or (not (natp n))
-        (> n *len-system-verify-guards-alist*))
-    `(er soft 'chk-new-verified-guards
-         "The index ~x0 is not a valid index for *system-verify-guards-alist*."
-         ',n))
-   ((eql n *len-system-verify-guards-alist*)
-    '(value-triple :CHK-NEW-VERIFIED-GUARDS-COMPLETE))
-   (t
-    (let* ((pair (nth n *system-verify-guards-alist*))
-           (user-book-name (car pair))
-           (fns (cdr pair)))
-      `(progn (include-book ,user-book-name
-                            :DIR :SYSTEM
-                            :UNCERTIFIED-OKP nil
-                            :DEFAXIOMS-OKP nil
-                            :SKIP-PROOFS-OKP nil
-                            :TTAGS nil)
-              (assert-event
-               (equal ',fns
-                      (new-verify-guards-fns state))
-               :msg (msg "ERROR: The set of newly guard-verified functions ~
-                          from the ACL2 community book ~x0 does not match the ~
-                          expected set from the constant ~
-                          *system-verify-guards-alist*.~|~%From the ~
-                          book:~|~X13~|~%Expected from ~
-                          *system-verify-guards-alist*:~|~X23~|"
-                         ',user-book-name
-                         (new-verify-guards-fns state)
-                         ',fns
-                         nil))
-              (value-triple :CHK-NEW-VERIFIED-GUARDS-SUCCESS))))))
+(defmacro chk-new-verified-guards ()
+  `(progn (include-book ,*devel-check-book*
+                        :DIR :SYSTEM
+                        :UNCERTIFIED-OKP nil
+                        :DEFAXIOMS-OKP nil
+                        :SKIP-PROOFS-OKP nil
+                        :TTAGS nil)
+          (assert-event
+           (equal *system-verify-guards-alist*
+                  (new-verify-guards-fns state))
+           :msg (msg "ERROR: The set of newly guard-verified functions from ~
+                      the ACL2 community book ~x0 does not match the expected ~
+                      set from the constant ~
+                      *system-verify-guards-alist*.~|~%From the ~
+                      book:~|~X13~|~%Expected from ~
+                      *system-verify-guards-alist*:~|~X23~|"
+                     ,*devel-check-book*
+                     (new-verify-guards-fns state)
+                     *system-verify-guards-alist*
+                     nil))
+          (value-triple :CHK-NEW-VERIFIED-GUARDS-SUCCESS)))
 
 (defun system-verify-guards-aux (fns-alist acc acc1 old-num)
   (declare (xargs :guard
@@ -511,11 +215,11 @@
   (merge-sort-car->
    (cons-absolute-event-numbers fns-alist wrld nil)))
 
-(defmacro system-verify-guards ()
+(defmacro system-verify-guards (alist)
   `(make-event
     (let ((events (system-verify-guards-aux
                    (sort->-absolute-event-number
-                    (append-lst (strip-cdrs *system-verify-guards-alist*))
+                    ,alist
                     (w state))
                    nil nil nil)))
       (list* 'encapsulate
@@ -524,23 +228,40 @@
              '(set-verify-guards-eagerness 2)
              events))))
 
-; Normally we go ahead and trust *system-verify-guards-alist*, installing
-; guard-verified functions with the following form.  But when feature
+; Normally we trust *system-verify-guards-alist*, installing guard-verified
+; functions with the two calls below of system-verify-guards.  But when feature
 ; :acl2-devel is set, then we do not do so, as we instead intend to run
-; (chk-new-verified-guards i) for each i less than the length of
-; *system-verify-guards-alist*, in order to check that the effect of
+; (chk-new-verified-guards) in order to check that the effect of
 ; system-verify-guards is sound.  This check is performed by using `make' with
-; target devel-check, as shown near the top of this section.
+; target devel-check; see the comments in *system-verify-guards-alist*.
+
+; Note that we have two calls of system-verify-guards below.  First, we verify
+; termination and guards for other than apply$ scions.  That is necessary
+; before we verify termination and guards for apply$-prim and badge, which is
+; done next.  Finally, we verify termination and guards for apply$ scions.
 
 #+(and acl2-loop-only ; Note that make-event can't be called here in raw Lisp.
        (not acl2-devel))
-(system-verify-guards)
+(system-verify-guards *system-verify-guards-alist-1*)
+
+#-acl2-devel
+(verify-termination-boot-strap apply$-prim) ; and guards
+#-acl2-devel
+(verify-termination-boot-strap badge) ; and guards
+
+#-acl2-devel
+(in-theory (disable badge
+                    (:executable-counterpart badge)))
+
+#+(and acl2-loop-only ; Note that make-event can't be called here in raw Lisp.
+       (not acl2-devel))
+(system-verify-guards *system-verify-guards-alist-2*)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Support for system-events
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro system-event (event &optional (book-name '"system/top"))
+(defmacro system-event (event)
 
 ; (System-event E) expands to (skip-proofs E) during normal builds.  However,
 ; for acl2-devel builds (see discussion under the section "Support for
@@ -548,7 +269,7 @@
 ; table, to be checked by Make target devel-check, which invokes function
 ; system-verify-skip-proofs for that purpose.
 
-  #+acl2-devel `(table system-event-table ',event ',book-name)
+  #+acl2-devel `(table system-event-table ',event t)
 
 ; It is tempting to generate a progn, where the skip-proofs is preceded by:
 
@@ -557,40 +278,30 @@
 ; However, that value-triple event doesn't show up with any of :pe, :pcb, or
 ; :pcb!, so we won't bother.
 
-  #-acl2-devel (declare (ignore book-name))
   #-acl2-devel `(skip-proofs ,event))
 
-(defun system-events-fn (events book-name)
+(defun system-events-fn (events)
   (declare (xargs :guard (true-listp events)))
   (cond ((endp events) nil)
-        (t (cons `(system-event ,(car events) ,book-name)
-                 (system-events-fn (cdr events) book-name)))))
+        (t (cons `(system-event ,(car events))
+                 (system-events-fn (cdr events))))))
 
-(defmacro system-events (book-name &rest events)
-  (declare (xargs :guard (stringp book-name)))
-  (cons 'progn (system-events-fn events book-name)))
-
-(defun system-include-book-forms (book-names)
-  (declare (xargs :guard (true-listp book-names)))
-  (cond ((endp book-names) nil)
-        (t (cons `(include-book ,(car book-names) :dir :system)
-                 (system-include-book-forms (cdr book-names))))))
+(defmacro system-events (&rest events)
+  (declare (xargs :guard t))
+  (cons 'progn (system-events-fn events)))
 
 (defmacro check-system-events ()
 
 ; Executed by "make devel-check".
 
-  `(make-event
+  '(make-event
     (let ((event-book-alist (table-alist 'system-event-table (w state))))
-      (cons 'progn
-            (append (system-include-book-forms
-                     (remove-duplicates (strip-cdrs event-book-alist)
-                                        :test 'equal))
-                    '((set-enforce-redundancy t))
-                    (strip-cars event-book-alist)
-                    '((value-triple :CHECK-SYSTEM-EVENTS-SUCCESS)))))))
+      `(progn (include-book ,*devel-check-book* :dir :system)
+              (set-enforce-redundancy t)
+              ,@(strip-cars event-book-alist)
+              (value-triple :CHECK-SYSTEM-EVENTS-SUCCESS)))))
 
-(system-events "system/termp"
+(system-events ; "system/termp"
 
 (defthm legal-variable-or-constant-namep-implies-symbolp
   (implies (not (symbolp x))
@@ -626,7 +337,7 @@
 ;;; Finishing up with apply$
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Events in this section must occur after the call above of
+; Events in this section must occur after the calls above of
 ; system-verify-guards.  They would naturally belong in apply.lisp were it not
 ; for the fact that the relevant functions are in :program mode at that point.
 
@@ -677,11 +388,11 @@
            (tamep-functionp fn2)
            (apply$-equivalence fn1 fn2))))
 
-(system-events "system/apply/apply"
+(system-events ; "system/apply/apply"
 (defequiv fn-equal :package :legacy)
 )
 
-(system-events "system/apply/loop-scions"
+(system-events ; "system/apply/loop-scions"
 (defthm natp-from-to-by-measure
   (natp (from-to-by-measure i j))
   :rule-classes :type-prescription)
@@ -703,8 +414,8 @@
 #-acl2-devel
 (when-pass-2
 
-; The following function symbols must be in :logic mode, and they are, from
-; (system-verify-guards) above.  Moreover, we must restrict to pass 2 since
+; The following function symbols must be in :logic mode, and they are, from the
+; system-verify-guards calls above.  Moreover, we must restrict to pass 2 since
 ; defwarrant is defined within when-pass-2.  Of course, this source file
 ; (boot-strap-pass-2-b.lisp) is only given to LD in pass 2 anyhow; but by using
 ; when-pass-2, we don't rely on that and more importantly, we do not evaluate

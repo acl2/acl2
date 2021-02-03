@@ -30,6 +30,9 @@
 
 (in-package "SVL")
 
+
+
+
 (defconst *svl-flatten-simplify-lemmas*
   '(;;4vec-rsh-of-4vec-concat
     ;;4vec-rsh-of-4vec-concat-2
@@ -41,6 +44,9 @@
     ;;4vec-bitor-of-4vec-rsh
     integerp-4vec-plus
     integerp-4vec-rsh
+
+
+    rp::force$-of-t
     
     ;;bits-sbits.lisp
     4vec-bitnot$-of-bits-of-same-size

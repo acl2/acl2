@@ -625,7 +625,7 @@
    (b+
     --
     type-fix
-    resolve-b+-order
+    ;;resolve-b+-order
     hide
     m2
     f2
@@ -1642,7 +1642,7 @@
                              (:REWRITE DEFAULT-CDR)
                              (:REWRITE DEFAULT-CAR)))))))
 
-(defthm resolve-b+-order-is-valid-rp-meta-rulep
+#|(defthm resolve-b+-order-is-valid-rp-meta-rulep
   (implies (and (sum-meta-formal-checks state)
                 (rp-evl-meta-extract-global-facts :state state))
            (let ((rule (make rp-meta-rule-rec
@@ -1660,13 +1660,22 @@
                             resolve-b+-order
                             RP-TERM-LISTP
                             
-                            VALID-SC)))))
+                            VALID-SC)))))||#
 
-(rp::add-meta-rules
+#|(rp::add-meta-rules
  sum-meta-formal-checks
  (list
   (make rp-meta-rule-rec
         :fnc 'resolve-b+-order
         :trig-fnc 'merge-b+
         :dont-rw t
-        :valid-syntax t)))
+        :valid-syntax t)))||#
+
+(rp::add-meta-rule
+ :meta-fnc resolve-b+-order
+ :trig-fnc merge-b+
+ :valid-syntaxp t
+ :formula-checks sum-meta-formal-checks
+ :returns (mv term dont-rw)
+ :hints (("Goal"
+          :in-theory (e/d () (resolve-b+-order)))))

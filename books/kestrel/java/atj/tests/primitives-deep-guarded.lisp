@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -12,22 +12,36 @@
 
 (include-book "primitives")
 
+(include-book "../atj" :ttags (:open-output-channel! :oslib :quicklisp :quicklisp.osicat))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Generate Java code for the functions that manipulate Java primitive values.
 
-(java::atj test-boolean-not
-           test-boolean-and
-           test-boolean-xor
-           test-boolean-ior
-           test-boolean-eq
-           test-boolean-neq
+(java::atj test-boolean-value
+           test-char-value
+           test-byte-value
+           test-short-value
+           test-int-value
+           test-long-value
+           test-boolean-value->bool
+           test-char-value->nat
+           test-byte-value->int
+           test-short-value->int
+           test-int-value->int
+           test-long-value->int
+           test-boolean-not
            test-int-plus
            test-long-plus
            test-int-minus
            test-long-minus
            test-int-not
            test-long-not
+           test-boolean-and
+           test-boolean-xor
+           test-boolean-ior
+           test-boolean-eq
+           test-boolean-neq
            test-int-add
            test-long-add
            test-int-sub

@@ -32,7 +32,7 @@
 (in-package "ACL2")
 (include-book "load-stobj")
 (include-book "std/util/defconsts" :dir :system)
-(include-book "misc/assert" :dir :system)
+(include-book "std/testing/assert-bang" :dir :system)
 
 ; These are basic tests of DEF-LOAD-STOBJ-ARRAY.
 
@@ -133,4 +133,3 @@
 (assert! (equal (arr4i 1 demo$) 18))
 (assert! (equal (arr4i 2 demo$) 17))
 (assert! (equal (arr4-length demo$) 3))
-

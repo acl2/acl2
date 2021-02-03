@@ -13,19 +13,12 @@
 (include-book "primitive-values")
 (include-book "primitive-function-macros")
 
-(include-book "ihs/basic-definitions" :dir :system)
+(include-book "kestrel/fty/sbyte32-ihs-theorems" :dir :system)
+(include-book "kestrel/fty/sbyte64-ihs-theorems" :dir :system)
+
+(local (include-book "ihs/logops-lemmas" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defrulel sbyte32p-of-logext32
-  (sbyte32p (logext 32 x))
-  :enable sbyte32p
-  :prep-books ((include-book "arithmetic-5/top" :dir :system)))
-
-(defrulel sbyte64p-of-logext64
-  (sbyte64p (logext 64 x))
-  :enable sbyte64p
-  :prep-books ((include-book "arithmetic-5/top" :dir :system)))
 
 (local (in-theory (disable logext)))
 
@@ -71,38 +64,47 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-boolean-unary boolean-not
-  :operation (not x)
-  :short "Logical complement @('!') [JLS:4.2.5] [JLS:15.15.6].")
+  :short "Logical complement @('!') [JLS:4.2.5] [JLS:15.15.6]."
+  :operation (not x))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-boolean-binary boolean-and
+  :short "Logical conjunction @('&') [JLS:4.2.5] [JLS:15.22.2]."
   :operation (and x y)
-  :short "Logical conjunction @('&') [JLS:4.2.5] [JLS:15.22.2].")
+  :commutative t
+  :commutative-hints (("Goal" :in-theory (enable boolean-value-fix
+                                                 boolean-value->bool))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-boolean-binary boolean-xor
+  :short "Logical exclusive disjunction @('^') [JLS:4.2.5] [JLS:15.22.2]."
   :operation (not (equal x y))
-  :short "Logical exclusive disjunction @('^') [JLS:4.2.5] [JLS:15.22.2].")
+  :commutative t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-boolean-binary boolean-ior
+  :short "Logical inclusive disjunction @('|') [JLS:4.2.5] [JLS:15.22.2]."
   :operation (or x y)
-  :short "Logical inclusive disjunction @('|') [JLS:4.2.5] [JLS:15.22.2].")
+  :commutative t
+  :commutative-hints (("Goal" :in-theory (enable boolean-value-fix
+                                                 boolean-value->bool))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-boolean-binary boolean-eq
+  :short "Equality @('==') on @('boolean')s [JLS:4.2.5] [JLS:15.21.2]."
   :operation (equal x y)
-  :short "Equality @('==') on @('boolean')s [JLS:4.2.5] [JLS:15.21.2].")
+  :commutative t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-boolean-binary boolean-neq
+  :short "Non-equality @('!=') on @('boolean')s [JLS:4.2.5] [JLS:15.21.2]."
   :operation (not (equal x y))
-  :short "Non-equality @('!=') on @('boolean')s [JLS:4.2.5] [JLS:15.21.2].")
+  :commutative t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -118,7 +120,7 @@
      is used in the title of [JLS:4.2.2].")
    (xdoc::p
     "Since integral values are subjected to
-     unary and binary numeric promotion [JLS:5.6.1] [JLS:5.6.2] [JLS:15],
+     unary and binary numeric promotion [JLS:5.6] [JLS:15],
      the operations on integral values actually only operate on
      @('int') and @('long') values as operands.")
    (xdoc::p
@@ -149,20 +151,20 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-int-unary int-plus
-  :operation x
-  :short "Unary plus @('+') on @('int')s [JLS:4.2.2] [JLS:15.15.3].")
+  :short "Unary plus @('+') on @('int')s [JLS:4.2.2] [JLS:15.15.3]."
+  :operation x)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-long-unary long-plus
-  :operation x
-  :short "Unary plus @('+') on @('long')s [JLS:4.2.2] [JLS:15.15.3].")
+  :short "Unary plus @('+') on @('long')s [JLS:4.2.2] [JLS:15.15.3]."
+  :operation x)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-int-unary int-minus
-  :operation (logext 32 (- x))
-  :short "Unary minus @('-') on @('int')s [JLS:4.2.2] [JLS:15.15.4].")
+  :short "Unary minus @('-') on @('int')s [JLS:4.2.2] [JLS:15.15.4]."
+  :operation (logext 32 (- x)))
 
 (assert-event (equal (int-minus (int-value (- (expt 2 31))))
                      (int-value (- (expt 2 31)))))
@@ -170,8 +172,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-long-unary long-minus
-  :operation (logext 64 (- x))
-  :short "Unary minus @('-') on @('long')s [JLS:4.2.2] [JLS:15.15.4].")
+  :short "Unary minus @('-') on @('long')s [JLS:4.2.2] [JLS:15.15.4]."
+  :operation (logext 64 (- x)))
 
 (assert-event (equal (long-minus (long-value (- (expt 2 63))))
                      (long-value (- (expt 2 63)))))
@@ -179,45 +181,49 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-int-binary int-add
+  :short "Addition @('+') on @('int')s [JLS:4.2.2] [JLS:15.18.2]."
   :operation (logext 32 (+ x y))
-  :short "Addition @('+') on @('int')s [JLS:4.2.2] [JLS:15.18.2].")
+  :commutative t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-long-binary long-add
+  :short "Addition @('+') on @('long')s [JLS:4.2.2] [JLS:15.18.2]."
   :operation (logext 64 (+ x y))
-  :short "Addition @('+') on @('long')s [JLS:4.2.2] [JLS:15.18.2].")
+  :commutative t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-int-binary int-sub
-  :operation (logext 32 (- x y))
-  :short "Subtraction @('-') on @('int')s [JLS:4.2.2] [JLS:15.18.2].")
+  :short "Subtraction @('-') on @('int')s [JLS:4.2.2] [JLS:15.18.2]."
+  :operation (logext 32 (- x y)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-long-binary long-sub
-  :operation (logext 64 (- x y))
-  :short "Subtraction @('-') on @('long')s [JLS:4.2.2] [JLS:15.18.2].")
+  :short "Subtraction @('-') on @('long')s [JLS:4.2.2] [JLS:15.18.2]."
+  :operation (logext 64 (- x y)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-int-binary int-mul
+  :short "Multiplication @('*') on @('int')s [JLS:4.2.2] [JLS:15.17.1]."
   :operation (logext 32 (* x y))
-  :short "Multiplication @('*') on @('int')s [JLS:4.2.2] [JLS:15.17.1].")
+  :commutative t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-long-binary long-mul
+  :short "Multiplication @('*') on @('long')s [JLS:4.2.2] [JLS:15.17.1]."
   :operation (logext 64 (* x y))
-  :short "Multiplication @('*') on @('long')s [JLS:4.2.2] [JLS:15.17.1].")
+  :commutative t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-int-binary int-div
+  :short "Division @('/') on @('int')s [JLS:4.2.2] [JLS:15.17.2]."
   :nonzero t
-  :operation (logext 32 (truncate x y))
-  :short "Division @('/') on @('int')s [JLS:4.2.2] [JLS:15.17.2].")
+  :operation (logext 32 (truncate x y)))
 
 (assert-event (equal (int-div (int-value (- (expt 2 31)))
                               (int-value -1))
@@ -226,9 +232,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-long-binary long-div
+  :short "Division @('/') on @('long')s [JLS:4.2.2] [JLS:15.17.2]."
   :nonzero t
-  :operation (logext 64 (truncate x y))
-  :short "Division @('/') on @('long')s [JLS:4.2.2] [JLS:15.17.2].")
+  :operation (logext 64 (truncate x y)))
 
 (assert-event (equal (long-div (long-value (- (expt 2 63)))
                                (long-value -1))
@@ -237,242 +243,250 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-int-binary int-rem
+  :short "Remainder @('&') on @('int')s [JLS:4.2.2] [JLS:15.17.3]."
   :nonzero t
-  :operation (logext 32 (rem x y))
-  :short "Remainder @('&') on @('int')s [JLS:4.2.2] [JLS:15.17.3].")
+  :operation (logext 32 (rem x y)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-long-binary long-rem
+  :short "Remainder @('&') on @('long')s [JLS:4.2.2] [JLS:15.17.3]."
   :nonzero t
-  :operation (logext 64 (rem x y))
-  :short "Remainder @('&') on @('long')s [JLS:4.2.2] [JLS:15.17.3].")
+  :operation (logext 64 (rem x y)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-int-unary int-not
-  :operation (logext 32 (lognot x))
-  :short "Bitwise complement @('~') on @('int')s [JLS:4.2.2] [JLS:15.15.5].")
+  :short "Bitwise complement @('~') on @('int')s [JLS:4.2.2] [JLS:15.15.5]."
+  :operation (logext 32 (lognot x)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-long-unary long-not
-  :operation (logext 64 (lognot x))
-  :short "Bitwise complement @('~') on @('long')s [JLS:4.2.2] [JLS:15.15.5].")
+  :short "Bitwise complement @('~') on @('long')s [JLS:4.2.2] [JLS:15.15.5]."
+  :operation (logext 64 (lognot x)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-int-binary int-and
+  :short "Bitwise conjunction @('&') on @('int')s [JLS:4.2.2] [JLS:15.22.1]."
   :operation (logext 32 (logand x y))
-  :short "Bitwise conjunction @('&') on @('int')s [JLS:4.2.2] [JLS:15.22.1].")
+  :commutative t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-long-binary long-and
+  :short "Bitwise conjunction @('&') on @('long')s [JLS:4.2.2] [JLS:15.22.1]."
   :operation (logext 64 (logand x y))
-  :short "Bitwise conjunction @('&') on @('long')s [JLS:4.2.2] [JLS:15.22.1].")
+  :commutative t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-int-binary int-xor
-  :operation (logext 32 (logxor x y))
   :short "Bitwise exclusive disjunction @('^') on @('int')s
-          [JLS:4.2.2] [JLS:15.22.1].")
+          [JLS:4.2.2] [JLS:15.22.1]."
+  :operation (logext 32 (logxor x y))
+  :commutative t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-long-binary long-xor
-  :operation (logext 64 (logxor x y))
   :short "Bitwise exclusive disjunction @('^') on @('long')s
-          [JLS:4.2.2] [JLS:15.22.1].")
+          [JLS:4.2.2] [JLS:15.22.1]."
+  :operation (logext 64 (logxor x y))
+  :commutative t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-int-binary int-ior
-  :operation (logext 32 (logior x y))
   :short "Bitwise inclusive disjunction @('|') on @('int')s
-          [JLS:4.2.2] [JLS:15.22.1].")
+          [JLS:4.2.2] [JLS:15.22.1]."
+  :operation (logext 32 (logior x y))
+  :commutative t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-long-binary long-ior
-  :operation (logext 64 (logior x y))
   :short "Bitwise inclusive disjunction @('|') on @('long')s
-          [JLS:4.2.2] [JLS:15.22.1].")
+          [JLS:4.2.2] [JLS:15.22.1]."
+  :operation (logext 64 (logior x y))
+  :commutative t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-int=>boolean-binary int-eq
+  :short "Equality @('==') on @('int')s [JLS:4.2.2] [JLS:15.21.1]."
   :operation (equal x y)
-  :short "Equality @('==') on @('int')s [JLS:4.2.2] [JLS:15.21.1].")
+  :commutative t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-long=>boolean-binary long-eq
+  :short "Equality @('==') on @('long')s [JLS:4.2.2] [JLS:15.21.1]."
   :operation (equal x y)
-  :short "Equality @('==') on @('long')s [JLS:4.2.2] [JLS:15.21.1].")
+  :commutative t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-int=>boolean-binary int-neq
+  :short "Non-equality @('!=') on @('int')s [JLS:4.2.2] [JLS:15.21.1]."
   :operation (not (equal x y))
-  :short "Non-equality @('!=') on @('int')s [JLS:4.2.2] [JLS:15.21.1].")
+  :commutative t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-long=>boolean-binary long-neq
+  :short "Non-equality @('!=') on @('long')s [JLS:4.2.2] [JLS:15.21.1]."
   :operation (not (equal x y))
-  :short "Non-equality @('!=') on @('long')s [JLS:4.2.2] [JLS:15.21.1].")
+  :commutative t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-int=>boolean-binary int-less
-  :operation (< x y)
   :short "Less-than comparison @('<') on @('int')s
-          [JLS:4.2.2] [JLS:15.20.1].")
+          [JLS:4.2.2] [JLS:15.20.1]."
+  :operation (< x y))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-long=>boolean-binary long-less
-  :operation (< x y)
   :short "Less-than comparison @('<') on @('long')s
-          [JLS:4.2.2] [JLS:15.20.1].")
+          [JLS:4.2.2] [JLS:15.20.1]."
+  :operation (< x y))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-int=>boolean-binary int-lesseq
-  :operation (<= x y)
   :short "Less-than-or-equal-to comparison @('<=') on @('int')s
-          [JLS:4.2.2] [JLS:15.20.1].")
+          [JLS:4.2.2] [JLS:15.20.1]."
+  :operation (<= x y))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-long=>boolean-binary long-lesseq
-  :operation (<= x y)
   :short "Less-than-or-equal-to comparison @('<=') on @('long')s
-          [JLS:4.2.2] [JLS:15.20.1].")
+          [JLS:4.2.2] [JLS:15.20.1]."
+  :operation (<= x y))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-int=>boolean-binary int-great
-  :operation (> x y)
   :short "Greater-than comparison @('>') on @('int')s
-          [JLS:4.2.2] [JLS:15.20.1].")
+          [JLS:4.2.2] [JLS:15.20.1]."
+  :operation (> x y))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-long=>boolean-binary long-great
-  :operation (> x y)
   :short "Greater-than comparison @('>') on @('long')s
-          [JLS:4.2.2] [JLS:15.20.1].")
+          [JLS:4.2.2] [JLS:15.20.1]."
+  :operation (> x y))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-int=>boolean-binary int-greateq
-  :operation (>= x y)
   :short "Greater-than-or-equal-to comparison @('>=') on @('int')s
-          [JLS:4.2.2] [JLS:15.20.1].")
+          [JLS:4.2.2] [JLS:15.20.1]."
+  :operation (>= x y))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-long=>boolean-binary long-greateq
-  :operation (>= x y)
   :short "Greater-than-or-equal-to comparison @('>=') on @('long')s
-          [JLS:4.2.2] [JLS:15.20.1].")
+          [JLS:4.2.2] [JLS:15.20.1]."
+  :operation (>= x y))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-int-binary int-int-shiftl
-  :operation (logext 32 (ash x (loghead 5 y)))
   :short "Left shift of an @('int') by an @('int') [JLS:4.2.2] [JLS:15.19]."
   :long
   (xdoc::topstring-p
-   "Only the low 5 bits of the distance are used [JLS:15.19]."))
+   "Only the low 5 bits of the distance are used [JLS:15.19].")
+  :operation (logext 32 (ash x (loghead 5 y))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-long-binary long-long-shiftl
-  :operation (logext 64 (ash x (loghead 6 y)))
   :short "Left shift of a @('long') by a @('long') [JLS:4.2.2] [JLS:15.19]."
   :long
   (xdoc::topstring-p
-   "Only the low 6 bits of the distance are used [JLS:15.19]."))
+   "Only the low 6 bits of the distance are used [JLS:15.19].")
+  :operation (logext 64 (ash x (loghead 6 y))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-primitive-binary long-int-shiftl
-  :in-type-left (primitive-type-long)
-  :in-type-right (primitive-type-int)
-  :out-type (primitive-type-long)
-  :operation (logext 64 (ash x (loghead 6 y)))
   :short "Left shift of a @('long') by an @('int') [JLS:4.2.2] [JLS:15.19]."
   :long
   (xdoc::topstring-p
-   "Only the low 6 bits of the distance are used [JLS:15.19]."))
+   "Only the low 6 bits of the distance are used [JLS:15.19].")
+  :in-type-left (primitive-type-long)
+  :in-type-right (primitive-type-int)
+  :out-type (primitive-type-long)
+  :operation (logext 64 (ash x (loghead 6 y))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-primitive-binary int-long-shiftl
-  :in-type-left (primitive-type-int)
-  :in-type-right (primitive-type-long)
-  :out-type (primitive-type-int)
-  :operation (logext 32 (ash x (loghead 5 y)))
   :short "Left shift of an @('int') by a @('long') [JLS:4.2.2] [JLS:15.19]."
   :long
   (xdoc::topstring-p
-   "Only the low 5 bits of the distance are used [JLS:15.19]."))
+   "Only the low 5 bits of the distance are used [JLS:15.19].")
+  :in-type-left (primitive-type-int)
+  :in-type-right (primitive-type-long)
+  :out-type (primitive-type-int)
+  :operation (logext 32 (ash x (loghead 5 y))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-int-binary int-int-shiftr
-  :operation (logext 32 (ash x (- (loghead 5 y))))
   :short "(Signed) right shift of an @('int') by an @('int')
           [JLS:4.2.2] [JLS:15.19]."
   :long
   (xdoc::topstring-p
-   "Only the low 5 bits of the distance are used [JLS:15.19]."))
+   "Only the low 5 bits of the distance are used [JLS:15.19].")
+  :operation (logext 32 (ash x (- (loghead 5 y)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-long-binary long-long-shiftr
-  :operation (logext 64 (ash x (- (loghead 6 y))))
   :short "(Signed) right shift of a @('long') by a @('long')
           [JLS:4.2.2] [JLS:15.19]."
   :long
   (xdoc::topstring-p
-   "Only the low 6 bits of the distance are used [JLS:15.19]."))
+   "Only the low 6 bits of the distance are used [JLS:15.19].")
+  :operation (logext 64 (ash x (- (loghead 6 y)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-primitive-binary long-int-shiftr
-  :in-type-left (primitive-type-long)
-  :in-type-right (primitive-type-int)
-  :out-type (primitive-type-long)
-  :operation (logext 64 (ash x (- (loghead 6 y))))
   :short "(Signed) right shift of a @('long') by an @('int')
           [JLS:4.2.2] [JLS:15.19]."
   :long
   (xdoc::topstring-p
-   "Only the low 6 bits of the distance are used [JLS:15.19]."))
+   "Only the low 6 bits of the distance are used [JLS:15.19].")
+  :in-type-left (primitive-type-long)
+  :in-type-right (primitive-type-int)
+  :out-type (primitive-type-long)
+  :operation (logext 64 (ash x (- (loghead 6 y)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-primitive-binary int-long-shiftr
-  :in-type-left (primitive-type-int)
-  :in-type-right (primitive-type-long)
-  :out-type (primitive-type-int)
-  :operation (logext 32 (ash x (- (loghead 5 y))))
   :short "(Signed) right shift of an @('int') by a @('long')
           [JLS:4.2.2] [JLS:15.19]."
   :long
   (xdoc::topstring-p
-   "Only the low 5 bits of the distance are used [JLS:15.19]."))
+   "Only the low 5 bits of the distance are used [JLS:15.19].")
+  :in-type-left (primitive-type-int)
+  :in-type-right (primitive-type-long)
+  :out-type (primitive-type-int)
+  :operation (logext 32 (ash x (- (loghead 5 y)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-int-binary int-int-ushiftr
-  :operation (logext 32 (ash (loghead 32 x)
-                             (- (loghead 5 y))))
   :short "Unsigned right shift of an @('int') by an @('int')
           [JLS:4.2.2] [JLS:15.19]."
   :long
@@ -480,13 +494,13 @@
    (xdoc::p
     "We first convert the left operand to unsigned.")
    (xdoc::p
-    "Only the low 5 bits of the distance are used [JLS:15.19].")))
+    "Only the low 5 bits of the distance are used [JLS:15.19]."))
+  :operation (logext 32 (ash (loghead 32 x)
+                             (- (loghead 5 y)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-long-binary long-long-ushiftr
-  :operation (logext 64 (ash (loghead 64 x)
-                             (- (loghead 6 y))))
   :short "Unsigned right shift of an @('long') by an @('long')
           [JLS:4.2.2] [JLS:15.19]."
   :long
@@ -494,16 +508,13 @@
    (xdoc::p
     "We first convert the left operand to unsigned.")
    (xdoc::p
-    "Only the low 6 bits of the distance are used [JLS:15.19].")))
+    "Only the low 6 bits of the distance are used [JLS:15.19]."))
+  :operation (logext 64 (ash (loghead 64 x)
+                             (- (loghead 6 y)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-primitive-binary long-int-ushiftr
-  :in-type-left (primitive-type-long)
-  :in-type-right (primitive-type-int)
-  :out-type (primitive-type-long)
-  :operation (logext 64 (ash (loghead 64 x)
-                             (- (loghead 6 y))))
   :short "Unsigned right shift of a @('long') by an @('int')
           [JLS:4.2.2] [JLS:15.19]."
   :long
@@ -511,16 +522,16 @@
    (xdoc::p
     "We first convert the left operand to unsigned.")
    (xdoc::p
-    "Only the low 6 bits of the distance are used [JLS:15.19].")))
+    "Only the low 6 bits of the distance are used [JLS:15.19]."))
+  :in-type-left (primitive-type-long)
+  :in-type-right (primitive-type-int)
+  :out-type (primitive-type-long)
+  :operation (logext 64 (ash (loghead 64 x)
+                             (- (loghead 6 y)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-primitive-binary int-long-ushiftr
-  :in-type-left (primitive-type-int)
-  :in-type-right (primitive-type-long)
-  :out-type (primitive-type-int)
-  :operation (logext 32 (ash (loghead 32 x)
-                             (- (loghead 5 y))))
   :short "Unsigned right shift of an @('int') by a @('long')
           [JLS:4.2.2] [JLS:15.19]."
   :long
@@ -528,7 +539,12 @@
    (xdoc::p
     "We first convert the left operand to unsigned.")
    (xdoc::p
-    "Only the low 5 bits of the distance are used [JLS:15.19].")))
+    "Only the low 5 bits of the distance are used [JLS:15.19]."))
+  :in-type-left (primitive-type-int)
+  :in-type-right (primitive-type-long)
+  :out-type (primitive-type-int)
+  :operation (logext 32 (ash (loghead 32 x)
+                             (- (loghead 5 y)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -562,163 +578,163 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-float-unary float-plus
-  :operation (float-plus-abs x)
-  :short "Unary plus @('+') on @('float')s [JLS:4.2.4] [JLS:15.15.3].")
+  :short "Unary plus @('+') on @('float')s [JLS:4.2.4] [JLS:15.15.3]."
+  :operation (float-plus-abs x))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-double-unary double-plus
-  :operation (double-plus-abs x)
-  :short "Unary plus @('+') on @('double')s [JLS:4.2.4] [JLS:15.15.3].")
+  :short "Unary plus @('+') on @('double')s [JLS:4.2.4] [JLS:15.15.3]."
+  :operation (double-plus-abs x))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-float-unary float-minus
-  :operation (float-minus-abs x)
-  :short "Unary minus @('-') on @('float')s [JLS:4.2.4] [JLS:15.15.4].")
+  :short "Unary minus @('-') on @('float')s [JLS:4.2.4] [JLS:15.15.4]."
+  :operation (float-minus-abs x))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-double-unary double-minus
-  :operation (double-minus-abs x)
-  :short "Unary minus @('-') on @('double')s [JLS:4.2.4] [JLS:15.15.4].")
+  :short "Unary minus @('-') on @('double')s [JLS:4.2.4] [JLS:15.15.4]."
+  :operation (double-minus-abs x))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-float-binary float-add
-  :operation (float-add-abs x y)
-  :short "Addition @('+') on @('float')s [JLS:4.2.4] [JLS:15.18.2].")
+  :short "Addition @('+') on @('float')s [JLS:4.2.4] [JLS:15.18.2]."
+  :operation (float-add-abs x y))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-double-binary double-add
-  :operation (double-add-abs x y)
-  :short "Addition @('+') on @('double')s [JLS:4.2.4] [JLS:15.18.2].")
+  :short "Addition @('+') on @('double')s [JLS:4.2.4] [JLS:15.18.2]."
+  :operation (double-add-abs x y))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-float-binary float-sub
-  :operation (float-sub-abs x y)
-  :short "Subtraction @('-') on @('float')s [JLS:4.2.4] [JLS:15.18.2].")
+  :short "Subtraction @('-') on @('float')s [JLS:4.2.4] [JLS:15.18.2]."
+  :operation (float-sub-abs x y))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-double-binary double-sub
-  :operation (double-sub-abs x y)
-  :short "Subtraction @('-') on @('double')s [JLS:4.2.4] [JLS:15.18.2].")
+  :short "Subtraction @('-') on @('double')s [JLS:4.2.4] [JLS:15.18.2]."
+  :operation (double-sub-abs x y))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-float-binary float-mul
-  :operation (float-mul-abs x y)
-  :short "Multiplication @('*') on @('float')s [JLS:4.2.4] [JLS:15.17.1].")
+  :short "Multiplication @('*') on @('float')s [JLS:4.2.4] [JLS:15.17.1]."
+  :operation (float-mul-abs x y))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-double-binary double-mul
-  :operation (double-mul-abs x y)
-  :short "Multiplication @('*') on @('double')s [JLS:4.2.4] [JLS:15.17.1].")
+  :short "Multiplication @('*') on @('double')s [JLS:4.2.4] [JLS:15.17.1]."
+  :operation (double-mul-abs x y))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-float-binary float-div
-  :operation (float-div-abs x y)
-  :short "Division @('/') on @('float')s [JLS:4.2.4] [JLS:15.17.2].")
+  :short "Division @('/') on @('float')s [JLS:4.2.4] [JLS:15.17.2]."
+  :operation (float-div-abs x y))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-double-binary double-div
-  :operation (double-div-abs x y)
-  :short "Division @('/') on @('double')s [JLS:4.2.4] [JLS:15.17.2].")
+  :short "Division @('/') on @('double')s [JLS:4.2.4] [JLS:15.17.2]."
+  :operation (double-div-abs x y))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-float-binary float-rem
-  :operation (float-rem-abs x y)
-  :short "Remainder @('%') on @('float')s [JLS:4.2.4] [JLS:15.17.3].")
+  :short "Remainder @('%') on @('float')s [JLS:4.2.4] [JLS:15.17.3]."
+  :operation (float-rem-abs x y))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-double-binary double-rem
-  :operation (double-rem-abs x y)
-  :short "Remainder @('%') on @('double')s [JLS:4.2.4] [JLS:15.17.3].")
+  :short "Remainder @('%') on @('double')s [JLS:4.2.4] [JLS:15.17.3]."
+  :operation (double-rem-abs x y))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-float=>boolean-binary float-eq
-  :operation (float-eq-abs x y)
-  :short "Equality @('==') on @('float')s [JLS:4.2.4] [JLS:15.21.1].")
+  :short "Equality @('==') on @('float')s [JLS:4.2.4] [JLS:15.21.1]."
+  :operation (float-eq-abs x y))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-double=>boolean-binary double-eq
-  :operation (double-eq-abs x y)
-  :short "Equality @('==') on @('double')s [JLS:4.2.4] [JLS:15.21.1].")
+  :short "Equality @('==') on @('double')s [JLS:4.2.4] [JLS:15.21.1]."
+  :operation (double-eq-abs x y))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-float=>boolean-binary float-neq
-  :operation (float-neq-abs x y)
-  :short "Non-equality @('!=') on @('float')s [JLS:4.2.4] [JLS:15.21.1].")
+  :short "Non-equality @('!=') on @('float')s [JLS:4.2.4] [JLS:15.21.1]."
+  :operation (float-neq-abs x y))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-double=>boolean-binary double-neq
-  :operation (double-neq-abs x y)
-  :short "Non-equality @('!=') on @('double')s [JLS:4.2.4] [JLS:15.21.1].")
+  :short "Non-equality @('!=') on @('double')s [JLS:4.2.4] [JLS:15.21.1]."
+  :operation (double-neq-abs x y))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-float=>boolean-binary float-less
-  :operation (float-less-abs x y)
   :short "Less-than comparison @('<') on @('float')s
-          [JLS:4.2.4] [JLS:15.20.1].")
+          [JLS:4.2.4] [JLS:15.20.1]."
+  :operation (float-less-abs x y))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-double=>boolean-binary double-less
-  :operation (double-less-abs x y)
   :short "Less-than comparison @('<') on @('double')s
-          [JLS:4.2.4] [JLS:15.20.1].")
+          [JLS:4.2.4] [JLS:15.20.1]."
+  :operation (double-less-abs x y))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-float=>boolean-binary float-lesseq
-  :operation (float-lesseq-abs x y)
   :short "Less-than-or-equal-to comparison @('<=') on @('float')s
-          [JLS:4.2.4] [JLS:15.20.1].")
+          [JLS:4.2.4] [JLS:15.20.1]."
+  :operation (float-lesseq-abs x y))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-double=>boolean-binary double-lesseq
-  :operation (double-lesseq-abs x y)
   :short "Less-than-or-equal-to comparison @('<=') on @('double')s
-          [JLS:4.2.4] [JLS:15.20.1].")
+          [JLS:4.2.4] [JLS:15.20.1]."
+  :operation (double-lesseq-abs x y))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-float=>boolean-binary float-great
-  :operation (float-great-abs x y)
   :short "Greater-than comparison @('>') on @('float')s
-          [JLS:4.2.4] [JLS:15.20.1].")
+          [JLS:4.2.4] [JLS:15.20.1]."
+  :operation (float-great-abs x y))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-double=>boolean-binary double-great
-  :operation (double-great-abs x y)
   :short "Greater-than-or-equal-to comparison @('>') on @('double')s
-          [JLS:4.2.4] [JLS:15.20.1].")
+          [JLS:4.2.4] [JLS:15.20.1]."
+  :operation (double-great-abs x y))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-float=>boolean-binary float-greateq
-  :operation (float-greateq-abs x y)
   :short "Greater-than-or-equal-to comparison @('>=') on @('float')s
-          [JLS:4.2.4] [JLS:15.20.1].")
+          [JLS:4.2.4] [JLS:15.20.1]."
+  :operation (float-greateq-abs x y))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-double=>boolean-binary double-greateq
-  :operation (double-greateq-abs x y)
   :short "Greater-than-or-equal-to comparison @('>=') on @('double')s
-          [JLS:4.2.4] [JLS:15.20.1].")
+          [JLS:4.2.4] [JLS:15.20.1]."
+  :operation (double-greateq-abs x y))

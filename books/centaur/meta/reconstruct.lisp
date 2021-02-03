@@ -54,7 +54,7 @@
                 (and stable-under-simplificationp
                      '(:in-theory (e/d (pseudo-term-kind)))))
   (mbe :logic (cons (pseudo-lambda formals body)
-                    (remove-corresp-non-symbols formals (pseudo-term-list-fix args)))
+                    (take (len formals) (pseudo-term-list-fix args)))
        :exec
        (cons-with-hint (cons-with-hint 'lambda
                                        (cons-with-hint formals

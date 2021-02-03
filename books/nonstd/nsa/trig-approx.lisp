@@ -630,12 +630,6 @@
  ;; code for guess-num-iters (but hey, sqrt was our first ACL2
  ;; project!)
 
- ;; Added for v2-8 by Matt K. because otherwise, lemma-1 causes rewriter loop
- ;; with expt and expt-2-x-1, because "A change has been made in heuristics
- ;; for controlling rewriting during proofs by induction." (see :DOC
- ;; NOTE-2-8-PROOFS).
- (local (in-theory (disable expt-2-x-1)))
-
  (local
   (defthm lemma-1
     (implies (and (integerp n)

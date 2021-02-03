@@ -421,6 +421,21 @@ be a string or message identifying the particular SAT check.</p>"
              (bvar-db-debug bvar-db)
              db))
 
+(define interp-st-print-aig-lit ((lit aignet::litp) interp-st)
+  (stobj-let ((logicman (interp-st->logicman interp-st)))
+             (void)
+             (stobj-let ((aignet (logicman->aignet logicman)))
+                        (void)
+                        (if (aignet::fanin-litp lit aignet)
+                            (progn$ (cw "~@0~%" (aignet::aignet-print-lit lit aignet))
+                                    (b* (((acl2::local-stobjs bitarr) (mv void bitarr))
+                                         (bitarr (resize-bits (+ 1 (aignet::lit->var lit)) bitarr))
+                                         (bitarr (aignet::aignet-print-dfs (aignet::lit->var lit) bitarr aignet)))
+                                      (mv nil bitarr)))
+                          (cw "Literal out of range for AIGNET: ~x0~%" lit))
+                        void)
+             void))
+
 
 (defmacro fgl-error! (&key msg debug-obj)
   `(syntax-interp

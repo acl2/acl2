@@ -86,16 +86,16 @@
   :returns (mv (err acl2::maybe-stringp :rule-classes :type-prescription)
                (char characterp)
                (new-index natp :rule-classes :type-prescription))
-  :guard-hints (("goal" :in-theory (enable str::hex-digit-list-value)))
+  :guard-hints (("goal" :in-theory (enable str::hex-digit-chars-value)))
   (b* ((index (lnfix index))
        ((unless (< (+ 1 index) (strlen x)))
         (mv "String ended within hex charcode" (code-char 0) index))
        (hex0 (char x index))
        (hex1 (char x (+ 1 index)))
-       ((unless (and (str::hex-digitp hex0)
-                     (str::hex-digitp hex1)))
+       ((unless (and (str::hex-digit-char-p hex0)
+                     (str::hex-digit-char-p hex1)))
         (mv "Malformed hex charcode" (code-char 0) index))
-       (val (str::hex-digit-list-value (list hex0 hex1))))
+       (val (str::hex-digit-chars-value (list hex0 hex1))))
     (mv nil (code-char val) (+ 2 index)))
   ///
   (defret new-index-of-<fn>
@@ -116,18 +116,18 @@
   :returns (mv (err acl2::maybe-stringp :rule-classes :type-prescription)
                (char characterp)
                (new-index natp :rule-classes :type-prescription))
-  :guard-hints (("goal" :in-theory (enable str::octal-digit-list-value)))
+  :guard-hints (("goal" :in-theory (enable str::oct-digit-chars-value)))
   (b* ((index (lnfix index))
        ((unless (< (+ 2 index) (strlen x)))
         (mv "String ended within octal charcode" (code-char 0) index))
        (octal0 (char x index))
        (octal1 (char x (+ 1 index)))
        (octal2 (char x (+ 2 index)))
-       ((unless (and (str::octal-digitp octal0)
-                     (str::octal-digitp octal1)
-                     (str::octal-digitp octal2)))
+       ((unless (and (str::oct-digit-char-p octal0)
+                     (str::oct-digit-char-p octal1)
+                     (str::oct-digit-char-p octal2)))
         (mv "Malformed octal charcode" (code-char 0) index))
-       (val (str::octal-digit-list-value (list octal0 octal1 octal2)))
+       (val (str::oct-digit-chars-value (list octal0 octal1 octal2)))
        ((when (<= 256 val))
         (mv "Octal charcodes greater than 256 not supported" (code-char 0) index)))
     (mv nil (code-char val) (+ 3 index)))
@@ -460,7 +460,7 @@
 
 
 (defenum repeatmod-p (:? :+ nil))
-        
+
 (define parse-repeatmod ((x stringp)
                          (index natp))
   :returns (mv (err acl2::maybe-stringp :rule-classes :type-prescription)
@@ -495,7 +495,7 @@
   (defret no-change-of-<fn>
     (implies err
              (equal new-index (nfix index)))))
-       
+
 
 (define parse-repeatop ((x stringp)
                         (index natp))
@@ -532,7 +532,7 @@
 
 
 
-  
+
 (define match-string-at ((target stringp)
                          (x stringp)
                          (index natp))
@@ -659,7 +659,7 @@
 (define charset-char-regex ((x))
   :returns (pat (implies pat (regex-p pat)))
   (cdr (assoc x *charset-table*)))
-  
+
 
 ;; backref = \ digit
 ;;           \g digit
@@ -760,7 +760,7 @@
        ((when (<= (strlen x) (lnfix index)))
         (mv "EOS parsing \\g backref" nil index))
        (char (char x index))
-       ((when (str::digitp char))
+       ((when (str::dec-digit-char-p char))
         (b* (((mv val len) (str::parse-nat-from-string x 0 0 index (strlen x)))
              (index (+ index len)))
           (mv nil (regex-backref val) index)))
@@ -783,15 +783,15 @@
 
   (local (in-theory (enable nth)))
 
-  (local (defthm len-of-take-leading-digits-when-car-digitp
-           (implies (str::digitp (car x))
-                    (< 0 (len (str::take-leading-digits x))))
-           :hints(("Goal" :in-theory (enable str::take-leading-digits)))
+  (local (defthm len-of-take-leading-dec-digit-chars-when-car-dec-digit-char-p
+           (implies (str::dec-digit-char-p (car x))
+                    (< 0 (len (str::take-leading-dec-digit-chars x))))
+           :hints(("Goal" :in-theory (enable str::take-leading-dec-digit-chars)))
            :rule-classes :linear))
 
-  (local (defthm len-of-take-leading-digits-upper-bound
-           (<= (len (str::take-leading-digits x)) (len x))
-           :hints(("Goal" :in-theory (enable str::take-leading-digits)))
+  (local (defthm len-of-take-leading-dec-digit-chars-upper-bound
+           (<= (len (str::take-leading-dec-digit-chars x)) (len x))
+           :hints(("Goal" :in-theory (enable str::take-leading-dec-digit-chars)))
            :rule-classes :linear))
 
 
@@ -842,7 +842,7 @@
             (charset (charset-char-regex char))
             ((when charset)
              (mv nil charset (+ 1 index)))
-            ((when (str::digitp char))
+            ((when (str::dec-digit-char-p char))
              (b* (((mv val len) (str::parse-nat-from-string x 0 0 index (strlen x)))
                   (index (+ index len)))
                (mv nil (regex-backref val) index)))
@@ -874,15 +874,15 @@
     (<= (nfix index) new-index)
     :rule-classes :linear)
 
-  (local (defthm len-of-take-leading-digits-when-car-digitp
-           (implies (str::digitp (car x))
-                    (< 0 (len (str::take-leading-digits x))))
-           :hints(("Goal" :in-theory (enable str::take-leading-digits)))
+  (local (defthm len-of-take-leading-dec-digit-chars-when-car-dec-digit-char-p
+           (implies (str::dec-digit-char-p (car x))
+                    (< 0 (len (str::take-leading-dec-digit-chars x))))
+           :hints(("Goal" :in-theory (enable str::take-leading-dec-digit-chars)))
            :rule-classes :linear))
 
-  (local (defthm len-of-take-leading-digits-upper-bound
-           (<= (len (str::take-leading-digits x)) (len x))
-           :hints(("Goal" :in-theory (enable str::take-leading-digits)))
+  (local (defthm len-of-take-leading-dec-digit-chars-upper-bound
+           (<= (len (str::take-leading-dec-digit-chars x)) (len x))
+           :hints(("Goal" :in-theory (enable str::take-leading-dec-digit-chars)))
            :rule-classes :linear))
 
 
@@ -1105,7 +1105,7 @@
    (make-event
     `(defconst *parse-regex-fns*
        ',(acl2::getpropc 'parse-regex-rec 'acl2::recursivep nil (w state)))))
-  
+
   (local (make-event `(in-theory (disable . ,*parse-regex-fns*))))
 
   (local (defun parse-regex-mr-fns (name body hints rule-classes fns)
@@ -1219,7 +1219,3 @@
   :short "Parse a pattern string into a regular expression object."
   (b* ((preproc-pat (if legible (preproc-legible pat) (lstrfix pat))))
     (parse-regex preproc-pat)))
-
-
-
-

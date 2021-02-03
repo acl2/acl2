@@ -17,6 +17,13 @@
      gen-sym-pkg
      eqlable-2-alistp
      make-symbl
+     rquotep
+     rfquotep
+     unrquote-lst
+     rquote-listp
+     unrquote-lst
+     def-const
+     _ ;range
      )
    (union-eq *acl2-exports*
              *common-lisp-symbols-from-main-lisp-package*)))
@@ -29,6 +36,14 @@
      gen-sym-pkg
      eqlable-2-alistp
      make-symbl
+     rquotep
+     rfquotep
+     unrquote-lst
+     rquote-listp
+     unrquote-lst
+     def-const
+     => ;sig
+     _ ;range
      )
    (union-eq *acl2-exports*
              *common-lisp-symbols-from-main-lisp-package*)))
@@ -53,11 +68,8 @@
      aconsp
      
      mget mset wf-keyp good-map
-     => ;sig
-     _ ;range
 
-
-     fix-pkg
+     ;; fix-pkg ; Matt K. mod: now in acl2::*acl2-exports*
      fix-sym
      fix-intern$
      fix-intern-in-pkg-of-sym
@@ -215,20 +227,44 @@
       flatten
       impliez
       v
-      
-      => ;sig
+
       _  ;range
 
       d<
       l<
       <<
       lexp
+
+      tshell-ensure
+      tshell-call
+      tshell-start
+      tshell-run-background
       
+      enable*
+      disable*
+      e/d*
+      add-to-ruleset
+      def-ruleset 
+      def-ruleset!
+      expand-ruleset
+      get-ruleset
+      ruleset
+    
       test? ;for acl2s-hooks query categorization
       acl2s-defaults acl2s-defaults-table
 
       def-pattern-match-constructor
       pattern-match
+      patbind-match
+      patbind-when
+      patbind-assocs
+      patbind-the
+      patbind-nths
+      patbind-nths*
+      patbind-fun
+      patbind-ret
+      patbind-wmv
+      patbind-run-when
       
       clear-memo-table
 
@@ -271,7 +307,7 @@
       cgen
       tests-and-calls
 
-      fix-pkg
+      ;; fix-pkg ; Matt K. mod: now in acl2::*acl2-exports*
       fix-sym
       fix-intern$
       fix-intern-in-pkg-of-sym

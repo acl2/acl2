@@ -21,7 +21,6 @@
 (local (include-book "../arithmetic-light/plus"))
 (local (include-book "../arithmetic-light/expt2"))
 (local (include-book "../arithmetic-light/floor-and-expt"))
-(local (include-book "../arithmetic-light/floor"))
 
 (in-theory (disable logtail))
 
@@ -235,9 +234,13 @@
   :hints (("Goal" :in-theory (e/d (expt logtail <-of-floor-arg1)
                                   (expt-hack)))))
 
+(defthm <=-of-logtail-same
+  (implies (natp x)
+           (<= (logtail n x) x))
+  :hints (("Goal" :in-theory (enable logtail))))
+
 (defthm <=-of-logtail-same-linear
-  (implies (and (natp x)
-                (posp n))
+  (implies (natp x)
            (<= (logtail n x) x))
   :rule-classes ((:linear))
   :hints (("Goal" :in-theory (enable logtail <-of-floor-arg1))))

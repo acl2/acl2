@@ -1,0 +1,14 @@
+(include-book "tools/run-script" :dir :system)
+; There is no need to see proofs for this test.
+; We also turn off event output since guard objligations
+; seem to differ for ACL2 and ACL2(r).
+(run-script "memoize-partial" :inhibit-output-lst '(prove proof-tree event))
+
+; Help dependency scanner.
+#||
+(depends-on "memoize-partial-input.lsp")
+(depends-on "memoize-partial-log.txt")
+(include-book "std/testing/must-fail" :dir :system)
+||#
+
+; cert-flags: ? t :ttags :all

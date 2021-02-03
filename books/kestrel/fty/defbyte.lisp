@@ -1,4 +1,4 @@
-; FTY -- Byte Fixtype Generator
+; FTY Library
 ;
 ; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -11,6 +11,7 @@
 (in-package "FTY")
 
 (include-book "centaur/fty/top" :dir :system)
+(include-book "kestrel/event-macros/proof-preparation" :dir :system)
 (include-book "std/util/defaggregate" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 (include-book "std/util/defval" :dir :system)
@@ -547,8 +548,7 @@
        ()
        (logic)
        ,@type-size-is-posp-event?
-       (set-default-hints nil)
-       (set-override-hints nil)
+       (acl2::evmac-prepare-proofs)
        ,pred-event
        ,fix-event
        ,type-event

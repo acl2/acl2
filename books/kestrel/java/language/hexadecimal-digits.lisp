@@ -10,7 +10,7 @@
 
 (in-package "JAVA")
 
-(include-book "unicode")
+(include-book "unicode-characters")
 
 (include-book "kestrel/std/util/deffixer" :dir :system)
 
@@ -88,7 +88,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deflist hex-digit-list
-  :short "Fixtype of true lists of Java hexadecimal digits."
+  :short "Fixtype of lists of Java hexadecimal digits."
   :elt-type hex-digit
   :true-listp t
   :elementp-of-nil nil

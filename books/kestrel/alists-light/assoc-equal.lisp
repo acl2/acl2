@@ -92,6 +92,12 @@
                 (assoc-equal key alist)))
   :hints (("Goal" :in-theory (enable alistp assoc-equal))))
 
+(defthmd assoc-equal-iff
+  (implies (alistp alist)
+           (iff (assoc-equal key alist)
+                (member-equal key (strip-cars alist))))
+  :hints (("Goal" :in-theory (enable assoc-equal))))
+
 (defthm assoc-equal-type
   (implies (or x ;if X is nil, and ALIST contains an atom, ASSOC-EQUAL might return that atom
                (alistp alist))
@@ -99,3 +105,8 @@
                (null (assoc-equal x alist))))
   :rule-classes :type-prescription
   :hints (("Goal" :in-theory (enable alistp assoc-equal))))
+
+(defthm <-of-0-and-len-of-assoc-equal-iff
+  (implies (alistp alist)
+           (iff (< 0 (len (assoc-equal key alist)))
+                (assoc-equal key alist))))

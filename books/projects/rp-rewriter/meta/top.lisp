@@ -43,7 +43,6 @@
 (include-book "hons-get-meta")
 (include-book "equal-meta")
 (include-book "mv-nth-meta")
+(include-book "implies-meta")
 
-
-
-(update-rp-clause-proc with-metas)
+(attach-meta-fncs built-in-metas)

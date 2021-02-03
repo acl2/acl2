@@ -377,11 +377,11 @@
   ;;   :rule-classes :linear)
 
   (defthm remove-self-bindings-of-remove-non-symbols
-    (equal (remove-self-bindings (remove-non-symbols formals)
-                                 (remove-corresp-non-symbols formals actuals)
+    (equal (remove-self-bindings (replace-non-symbols-with-nil formals)
+                                 (take (len formals) actuals)
                                  seen-formals)
            (remove-self-bindings formals actuals seen-formals))
-    :hints(("Goal" :in-theory (enable remove-non-symbols remove-corresp-non-symbols))))
+    :hints(("Goal" :in-theory (enable replace-non-symbols-with-nil))))
 
   (fty::deffixequiv remove-self-bindings :omit (formals seen-formals)
     :hints(("Goal" :in-theory (enable pseudo-term-list-fix))))
@@ -436,9 +436,9 @@
 
   (defret <fn>-removed-formals-redef
     (set-equiv removed-formals
-               (set-difference-eq (remove-non-symbols formals)
+               (set-difference-eq (replace-non-symbols-with-nil formals)
                                   (cons nil (append seen-formals new-formals))))
-    :hints(("Goal" :in-theory (e/d (set-difference-eq remove-non-symbols))
+    :hints(("Goal" :in-theory (e/d (set-difference-eq replace-non-symbols-with-nil))
             :induct <call>))))
 
 

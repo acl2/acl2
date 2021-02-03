@@ -36,7 +36,7 @@
 (local (include-book "std/strings/explode-atom" :dir :system))
 (local (include-book "std/strings/strtok" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
-(local (include-book "misc/assert" :dir :system))
+(local (include-book "std/testing/assert-bang" :dir :system))
 (local (include-book "std/typed-lists/character-listp" :dir :system))
 
 
@@ -165,10 +165,10 @@ instead of a nested array of arrays.</p>
 
 <h3>Note about Top-Level JSON Objects</h3>
 
-<p>Top-level @('JSON-text') objects must, according to the JSON grammer, be
-either JSON Objects or Arrays.  Note that <b>WE DO NOT OBEY THIS.</b> If the
-object we're given is an ordinary ACL2 atom, we just encode it as a JSON
-string.</p>
+<p>Earlier versions of the JSON grammar required top-level @('JSON-text')
+instances to be either JSON Objects or Arrays.  This is no longer the case: the
+latest JSON grammar allows any values at the top level.  If the object we're
+given is an ordinary ACL2 atom, we just encode it as a JSON string.</p>
 
 <p>We found this to be useful in our client code.  It's nice to create a JSON
 object that says: the return value is such and so, the standard output was such

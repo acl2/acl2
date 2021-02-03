@@ -38,8 +38,10 @@
 (include-book "intersection-equal")
 (include-book "add-to-set-equal")
 (include-book "set-difference-equal")
+(include-book "subsequencep")
 
 ;; Books about non-built-in functions:
+(include-book "equiv-def")
 (include-book "firstn-def")
 (include-book "firstn")
 (include-book "repeat")
@@ -50,8 +52,37 @@
 (include-book "perm-def")
 (include-book "perm")
 (include-book "perm2")
+(include-book "repeat-tail")
 (include-book "subrange-def")
 (include-book "subrange")
+(include-book "subsequencep-equal")
+(include-book "update-nth2")
+(include-book "last-elem")
+(include-book "finalcdr")
+(include-book "all-equal-dollar")
+(include-book "all-equal-dollar2")
+(include-book "all-eql-dollar")
+(include-book "all-same")
+(include-book "all-same-eql")
+(include-book "update-subrange")
+(include-book "add-to-end")
+(include-book "first-non-member")
+(include-book "count-occs")
+(include-book "prefixp")
+(include-book "prefixp2")
 
-;; Typed lists:
-(include-book "symbol-listp")
+(include-book "len-at-least")
+
+(include-book "take2")
+(include-book "memberp2")
+
+(include-book "group")
+(include-book "group2")
+(include-book "ungroup")
+(include-book "group-and-ungroup")
+(include-book "group-rules")
+
+(include-book "rules")
+(include-book "rules2")
+
+(include-book "append-with-key")

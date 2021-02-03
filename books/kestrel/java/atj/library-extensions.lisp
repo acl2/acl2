@@ -105,6 +105,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defrule pseudo-term-count-lemma4
+  (implies (< (nfix i) (len terms))
+           (< (pseudo-term-count (nth i terms))
+              (pseudo-term-list-count terms)))
+  :rule-classes :linear
+  :enable (pseudo-term-count pseudo-term-list-count))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define fty-check-mv-let-call ((term pseudo-termp))
   :returns (mv (yes/no booleanp)
                (mv-var symbolp)
@@ -141,7 +150,7 @@
      the results of @(tsee check-mv-let-call) are smaller.
      Note that, under that assumpion,
      the wrapper and the original utility return the same result
-     (the only possibly differ on non-terms).
+     (they only possibly differ on non-terms).
      In proving those lemmas, we need to break the FTY abstraction
      so that we can reduce the FTY term API operations
      to the ACL2 term API operations."))
@@ -288,6 +297,7 @@
    "Readable"
    "Runnable"
    ;; classes:
+   "Boolean"
    "Byte"
    "Character"
    "Class"

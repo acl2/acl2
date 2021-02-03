@@ -12,7 +12,7 @@
 (in-package "ACL2")
 
 (include-book "perm")
-(include-book "kestrel/lists-light/reverse-list" :dir :system)
+(include-book "reverse-list")
 
 (defthm perm-of-reverse-list
   (perm (reverse-list x)

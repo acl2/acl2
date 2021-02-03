@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
+ * Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
  * License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
  * Author: Alessandro Coglio (coglio@kestrel.edu)
  */
@@ -95,7 +95,7 @@ public final class Acl2Symbol extends Acl2Value {
      * <p>
      * All the symbols are thus interned.
      * <p>
-     * Invariants: not null, no null keys, no null values,
+     * Invariant: not null, no null keys, no null values,
      * no null keys or values in inner maps.
      */
     private static final Map<Acl2PackageName, Map<Acl2String, Acl2Symbol>>
@@ -135,6 +135,18 @@ public final class Acl2Symbol extends Acl2Value {
     }
 
     /**
+     * Checks if this symbol is a symbol, which is always true,
+     * returning a Java boolean instead of an ACL2 symbol.
+     * This is consistent with the {@code symbolp} ACL2 function.
+     *
+     * @return {@code true}.
+     */
+    @Override
+    boolean symbolpBoolean() {
+        return true;
+    }
+
+    /**
      * Returns the package name of this symbol,
      * consistently with the {@code symbol-package-name} ACL2 function.
      *
@@ -146,6 +158,18 @@ public final class Acl2Symbol extends Acl2Value {
     }
 
     /**
+     * Returns the package name of this symbol,
+     * consistently with the {@code symbol-package-name} ACL2 function,
+     * returning a Java string instead of an ACL2 string.
+     *
+     * @return The package name of this symbol.
+     */
+    @Override
+    String symbolPackageNameString() {
+        return packageName.getJavaString();
+    }
+
+    /**
      * Returns the name of this symbol,
      * consistently with the {@code symbol-name} ACL2 function.
      *
@@ -154,6 +178,18 @@ public final class Acl2Symbol extends Acl2Value {
     @Override
     Acl2String symbolName() {
         return name;
+    }
+
+    /**
+     * Returns the name of this symbol,
+     * consistently with the {@code symbol-name} ACL2 function,
+     * returning a Java string instead of an ACL2 string.
+     *
+     * @return The name of this symbol.
+     */
+    @Override
+    String symbolNameString() {
+        return name.getJavaString();
     }
 
     /**
@@ -301,6 +337,22 @@ public final class Acl2Symbol extends Acl2Value {
             innerMap.put(name, symbol);
         }
         return symbol;
+    }
+
+    /**
+     * Returns a symbol denoted by the given package name and name.
+     * The resulting symbol's package may differ from the given package,
+     * if the given package imports a symbol with that name.
+     *
+     * @param packageName The package name denoting the symbol.
+     *                    Invariant: not null, package defined.
+     * @param name        The name denoting the symbol.
+     *                    Invariant: not null, no elements above 255.
+     * @return The denoted symbol.
+     * @throws IllegalArgumentException If the package is not defined.
+     */
+    static Acl2Symbol imake(Acl2PackageName packageName, String name) {
+        return imake(packageName, Acl2String.imake(name));
     }
 
     //////////////////////////////////////// public members:
@@ -708,6 +760,11 @@ public final class Acl2Symbol extends Acl2Value {
      */
     public static final Acl2Symbol LEN;
 
+    /**
+     * The symbol denoted by {@code common-lisp::char}.
+     */
+    public static final Acl2Symbol CHAR;
+
     static { // builds the pre-created symbols
         // names of the symbols:
         Acl2String stringT = Acl2String.imake("T");
@@ -754,6 +811,7 @@ public final class Acl2Symbol extends Acl2Value {
                 Acl2String.imake("NONNEGATIVE-INTEGER-QUOTIENT");
         Acl2String stringStringAppend = Acl2String.make("STRING-APPEND");
         Acl2String stringLen = Acl2String.make("LEN");
+        Acl2String stringChar = Acl2String.make("CHAR");
         // symbols:
         T = new Acl2Symbol(Acl2PackageName.LISP, stringT);
         NIL = new Acl2Symbol(Acl2PackageName.LISP, stringNil);
@@ -803,6 +861,7 @@ public final class Acl2Symbol extends Acl2Value {
         STRING_APPEND =
                 new Acl2Symbol(Acl2PackageName.ACL2, stringStringAppend);
         LEN = new Acl2Symbol(Acl2PackageName.ACL2, stringLen);
+        CHAR = new Acl2Symbol(Acl2PackageName.LISP, stringChar);
         // initial inner map for the "COMMON-LISP" package:
         Map<Acl2String, Acl2Symbol> initialLispMap = new HashMap<>();
         initialLispMap.put(stringT, T);
@@ -830,6 +889,7 @@ public final class Acl2Symbol extends Acl2Value {
         initialLispMap.put(stringCdr, CDR);
         initialLispMap.put(stringEqual, EQUAL);
         initialLispMap.put(stringOr, OR);
+        initialLispMap.put(stringChar, CHAR);
         // initial inner map for the "ACL2" package:
         Map<Acl2String, Acl2Symbol> initialAcl2Map = new HashMap<>();
         initialAcl2Map.put(stringComplexRationalp, COMPLEX_RATIONALP);

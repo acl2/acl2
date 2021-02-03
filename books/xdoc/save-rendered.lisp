@@ -45,10 +45,49 @@
 
 (defttag :open-output-channel!)
 
+(defconst *acl2-doc-search-separator* "###---###---###---###---###")
+
+(defun acl2-doc-fix-symbol-msg (sym)
+  (cond ((eq (intern$ (symbol-name sym) "ACL2") sym)
+         (msg "~s0" (symbol-name sym)))
+        (t (msg "~s0::~s1" (symbol-package-name sym) (symbol-name sym)))))
+
+(defun acl2-doc-fix-symbol-lst-msg (lst)
+  (cond ((endp lst) "")
+        ((endp (cdr lst))
+         (acl2-doc-fix-symbol-msg (car lst)))
+        (t (msg "~@0 ~@1"
+                (acl2-doc-fix-symbol-msg (car lst))
+                (acl2-doc-fix-symbol-lst-msg (cdr lst))))))
+
+(defun acl2-doc-print-topic (tuple channel state)
+
+; Warning: Do not set the buffer to read-only here, because this
+; function may be called repeatedly for the same buffer, e.g., by
+; function acl2-doc-search-buffer.
+
+  (fms! "~s0~|Topic: ~@1~|Parent list: (~@2)~|~@3~%~s4~|"
+        (list (cons #\0 *acl2-doc-search-separator*)
+              (cons #\1 (acl2-doc-fix-symbol-msg (nth 0 tuple)))
+              (cons #\2 (acl2-doc-fix-symbol-lst-msg (nth 1 tuple)))
+              (cons #\3 (if (equal (length tuple) 4)
+                            (if (eq (nth 0 tuple) 'TOP)
+                                ""
+                              (msg ":DOC source: ~s0~|" (nth 3 tuple)))
+                          ":DOC source: ACL2 Sources~|"))
+              (cons #\4 (nth 2 tuple)))
+        channel state nil))
+
+(defun acl2-doc-print-topic-lst (tuple-lst channel state)
+  (cond ((endp tuple-lst) state)
+        (t (pprogn (acl2-doc-print-topic (car tuple-lst) channel state)
+                   (acl2-doc-print-topic-lst (cdr tuple-lst) channel state)))))
+
 (defun save-rendered (outfile
                       header
                       topic-list-name
                       error ; when true, cause an error on xdoc or Markup error
+                      write-acl2-doc-search-file
                       state)
 
 ; See books/doc/top.lisp for an example call of xdoc::save-rendered.  In
@@ -66,7 +105,13 @@
 
 
   (let ((force-missing-parents-p t)
-        (maybe-add-top-topic-p t))
+        (maybe-add-top-topic-p t)
+        (search-file (if (position acl2::*directory-separator* outfile)
+                         (concatenate 'string
+                                      (acl2::get-directory-of-file outfile)
+                                      acl2::*directory-separator-string*
+                                      "acl2-doc-search")
+                       "acl2-doc-search")))
     (state-global-let*
      ((current-package "ACL2" set-current-package-state))
      (b* ((- (initialize-xdoc-errors error))
@@ -102,7 +147,16 @@
           (state (fms! ")" nil channel state nil))
           (state (newline channel state))
           (state (close-output-channel channel state))
-          (- (report-xdoc-errors 'save-rendered)))
+          (- (report-xdoc-errors 'save-rendered))
+          ((when (not write-acl2-doc-search-file))
+           (value '(value-triple :ok)))
+          ((mv channel state)
+           (open-output-channel! search-file :character state))
+          ((unless channel)
+           (cw "can't open ~s0 for output." search-file)
+           (acl2::silent-error state))
+          (state (acl2-doc-print-topic-lst rendered channel state))
+          (state (close-output-channel channel state)))
        (value '(value-triple :ok))))))
 
 (defmacro save-rendered-event (outfile
@@ -113,10 +167,11 @@
                                script-file ; e.g., for building TAGS-acl2-doc
                                script-args
                                timep ; if a surrounding time$ call is desired
+                               write-acl2-doc-search-file
                                )
   (let* ((form1 `(save-rendered
                   ,outfile ,header ,topic-list-name ,error
-                  state))
+                  ,write-acl2-doc-search-file state))
          (form2 `(prog2$ (let ((script-file ,script-file)
                                (script-args ,script-args))
                            (and script-file

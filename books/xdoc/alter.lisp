@@ -158,7 +158,7 @@
 
 (local (progn
 
-(include-book "misc/assert" :dir :system)
+(include-book "std/testing/assert-bang" :dir :system)
 
 (table xdoc 'doc nil)
 (defxdoc foo :short "test topic")

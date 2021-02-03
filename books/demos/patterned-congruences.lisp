@@ -19,7 +19,7 @@
 
 (in-package "ACL2")
 
-(include-book "misc/eval" :dir :system)
+(include-book "std/testing/must-fail" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Demo

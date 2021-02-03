@@ -32,3 +32,15 @@
 
 (include-book "portcullis")
 ; cert-flags: ? t :ttags :all
+
+;;; Added 9/12/2020 by Matt K.: An attempt to certify server.lisp in ACL2(r)
+;;; using CCL on Ubuntu linux is creating file server.cert.out that appears to
+;;; grow without bound; I killed the job after that file reached about 44 GB.
+;;; So for now I will avoid certifying books in this directory with ACL2(r).
+;;; That may be overkill; perhaps it would suffice to avoid certifying just
+;;; server.lisp, but better yet would be for someone to fix this problem, of
+;;; course.  The only recent change to server.lisp was in documentation, and
+;;; server-raw.lsp hasn't been changed since 2017, so I don't know why there
+;;; would suddenly be this problem.
+
+; cert_param: (non-acl2r)

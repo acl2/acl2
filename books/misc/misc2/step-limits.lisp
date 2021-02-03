@@ -4,7 +4,8 @@
 
 (in-package "ACL2")
 
-(include-book "misc/eval" :dir :system)
+(include-book "std/testing/must-fail" :dir :system)
+(include-book "std/testing/must-succeed" :dir :system)
 
 (must-succeed
 ; 435 steps exactly in a version between ACL2 4.2 and 4.3

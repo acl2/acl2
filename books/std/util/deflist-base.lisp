@@ -27,6 +27,7 @@
 ;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
+; Contributing author: Alessandro Coglio <coglio@kestrel.edu>
 ;
 ; Additional Copyright Notice.
 ;
@@ -72,6 +73,7 @@ generates basic, automatic @(see xdoc) documentation.</p>
    :parents                 nil
    :short                   nil
    :long                    nil
+   :prepwork                nil
 })
 
 <h4>Basic Examples</h4>
@@ -154,6 +156,10 @@ implicitly with @(see xdoc::set-default-parents), and suitable documentation
 will be automatically generated for @(':short') and @(':long').  If you don't
 like this documentation, you can supply your own @(':short') and/or @(':long')
 to override it.</p>
+
+<p>The optional @(':prepwork') may provide a list of event forms that are
+submitted just before the generated events.  These are preparatory events,
+e.g. local lemmas to help prove @(':elementp-of-nil').</p>
 
 <h3>Pluggable Architecture</h3>
 
@@ -332,6 +338,7 @@ of which recognizers require true-listp and which don't.</p>")
     :true-listp
     :rest
     :verbosep
+    :prepwork
     ;; Undocumented option for customizing the theory, mainly meant for
     ;; problematic cases, e.g., built-in functions where ACL2 "knows too much"
     :theory-hack))
@@ -502,7 +509,7 @@ of which recognizers require true-listp and which don't.</p>")
         ;; rules just get consed onto the table, if we don't do this reverse
         ;; then the first things you see are rules about revappend, remove,
         ;; last, etc., which are kind of obscure.
-        
+
         (reverse (table-alist (if non-emptyp 'acl2::nonempty-listp-rules 'acl2::listp-rules) world)))
        (fn-subst (deflist-substitution name formals element kwd-alist x))
        (req-alist (deflist-requirement-alist kwd-alist formals element)))
@@ -572,6 +579,7 @@ of which recognizers require true-listp and which don't.</p>")
        (theory-hack      (getarg :theory-hack      nil      kwd-alist))
        (non-emptyp       (getarg :non-emptyp       nil      kwd-alist))
 
+       (prepwork         (getarg :prepwork         nil      kwd-alist))
 
        (rest             (append
                           (getarg :rest nil kwd-alist)
@@ -688,6 +696,7 @@ of which recognizers require true-listp and which don't.</p>")
        ((when (eq mode :program))
         `(encapsulate nil
            (program)
+           ,@prepwork
            ,@def
            ,@rest))
 
@@ -713,6 +722,7 @@ of which recognizers require true-listp and which don't.</p>")
 
        (events
         `((logic)
+          ,@prepwork
           (set-inhibit-warnings ;; implicitly local
            "theory" "free" "non-rec" "double-rewrite" "subsume" "disable")
 

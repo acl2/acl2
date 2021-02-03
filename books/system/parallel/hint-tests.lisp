@@ -12,7 +12,8 @@
 #+acl2-par
 (progn
 
-(include-book "misc/eval" :dir :system)
+(include-book "std/testing/must-fail" :dir :system)
+(include-book "std/testing/must-succeed" :dir :system)
 
 ;==============================================================================
 ; Computed Hints
@@ -167,9 +168,10 @@
 (set-override-hints
  '((append '(:no-thanks t) keyword-alist)))
 
-(must-fail
- (make-event (er-progn (set-waterfall-parallelism nil)
-                       (value '(value-triple nil)))))
+; Matt K. mod: This failed until the change on August 16, 2020, that allows
+; (set-waterfall-parallelism nil) to succeed even with override-hints in place.
+(make-event (er-progn (set-waterfall-parallelism nil)
+                      (value '(value-triple nil))))
 
 (set-override-hints nil)
 

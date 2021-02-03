@@ -9,6 +9,7 @@
 (in-package "ACL2S")
 (include-book "kestrel/utilities/proof-builder-macros" :dir :system)
 (include-book "std/util/bstar" :dir :system)
+(include-book "data-structures/utilities" :dir :system)
 
 (defxdoc ACL2s-utilities
   :parents (acl2::acl2-sedan)
@@ -339,12 +340,12 @@ Now in defthm.lisp
                 (print-base-p b))
            (character-listp (explode-atom x b))))
 
-(verify-termination fix-pkg)
+; (verify-termination fix-pkg) ; Matt K. mod: now comes in :logic mode
 (verify-termination fix-sym)
 (verify-termination pack-to-string)
 (verify-termination gen-sym-sym)
 
-(verify-guards fix-pkg)
+; (verify-guards fix-pkg) ; Matt K. mod: now comes guard-verified
 (verify-guards fix-sym)
 (verify-guards pack-to-string)
 (verify-guards gen-sym-sym)
@@ -366,8 +367,9 @@ Now in defthm.lisp
   (fix-intern$ (pack-to-string l)
                (if pkg pkg (best-package-symbl-list l "ACL2"))))
 
-(defun mk-acl2s-sym (lsym)
-  (make-symbl lsym "ACL2S"))
+(defun mk-acl2s-sym (l)
+  (declare (xargs :guard (good-atom-listp l)))
+  (make-symbl l "ACL2S"))
 
 (defmacro make-sym (s suf &optional pkg)
 ; Returns the symbol s-suf.
@@ -593,3 +595,43 @@ functions over natural numbers.
                         nil *standard-co* state nil))
           (value :invisible))))))
 
+; A recognizer for quoted objects. Notice that quotep and fquotep only
+; recognize quoted object for pseudo-terms, even though they have a
+; guard of t.
+
+(defun rquotep (x)
+  (declare (xargs :guard t))
+  (and (consp x)
+       (consp (cdr x))
+       (eq (car x) 'quote)
+       (null (cddr x))))
+
+; A recognizer for quoted objects that are conses. Notice that quotep
+; and fquotep only recognize quoted object for pseudo-terms, even
+; though they have a guard of t.
+
+(defun rfquotep (x)
+  (declare (xargs :guard (consp x)))
+  (and (consp (cdr x))
+       (eq (car x) 'quote)
+       (null (cdr (cdr x)))))
+
+(defloop rquote-listp (xs)
+  (declare (xargs :guard t))
+  (for ((x in xs)) (always (rquotep x))))
+
+(defloop unrquote-lst (xs)
+  (declare (xargs :guard (rquote-listp xs)))
+  (for ((x in xs))
+       (collect (unquote x))))
+
+; Added this since even on very simple examples defconst
+; seems to go on forever.
+(defmacro def-const (name form &optional doc)
+  `(with-output
+    :off :all :gag-mode nil :stack :push
+    (make-event
+     (let ((form ,form))
+       `(with-output
+         :stack :pop 
+         (defconst ,',name ',form ,@(and ,doc '(,doc))))))))

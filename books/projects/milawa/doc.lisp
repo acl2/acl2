@@ -64,9 +64,9 @@ so on.  In this way, Milawa discovers its own soundness proof, hence
 \"self-verifying\".</p>
 
 <p>Milawa was originally developed as part of <a
-href='http://www.cs.utexas.edu/users/jared/'>Jared Davis'</a>
+href='https://www.kookamara.com/jared/'>Jared Davis'</a>
 Ph.D. dissertation, <a
-href='http://www.cs.utexas.edu/users/jared/milawa/Documentation/dissertation.pdf'>A
+href='https://www.kookamara.com/jared/milawa/Documentation/dissertation.pdf'>A
 self-verifying theorem prover.</a>.  The dissertation covers the process
 described above, i.e., it explains how the question of trusting the prover's
 tactics may be reduced to that of trusting its kernel.  The kernel and its
@@ -97,10 +97,10 @@ software</a> released under an MIT/X11 style license.</p>
 <p>The authoritative description of Milawa is:</p>
 
 <box><p>Jared Davis.  <i><a
-href=\"http://www.cs.utexas.edu/users/jared/milawa/Documentation/dissertation.pdf\">A
+href=\"https://www.kookamara.com/jared/milawa/Documentation/dissertation.pdf\">A
 self-verifying theorem prover</a></i>. Ph.D. thesis, University of Texas at
 Austin, December 2009.  <a
-href=\"http://www.cs.utexas.edu/users/jared/milawa/Documentation/defense.pdf\">Defense
+href=\"https://www.kookamara.com/jared/milawa/Documentation/defense.pdf\">Defense
 slides.</a> See also @(see errata).</p></box>
 
 <p>See @(see jitawa) for information about Jitawa and the HOL4 verification of
@@ -115,37 +115,37 @@ and how things went.</p>
 <ul>
 
 <li>Jared Davis. <i><a
-href=\"http://www.cs.utexas.edu/users/jared/milawa/Documentation/Rewriter/rewrite.pdf\">The
+href=\"https://www.kookamara.com/jared/milawa/Documentation/Rewriter/rewrite.pdf\">The
 Milawa rewriter<br/>and an ACL2 proof of its soundness</a></i>.  Unpublished.
 October 5, 2007.</li>
 
 <li>Jared Davis.  <i><a
-href='http://www.cs.utexas.edu/users/jared/milawa/Documentation/Proposal/proposal-web.pdf'>A
+href='https://www.kookamara.com/jared/milawa/Documentation/Proposal/proposal-web.pdf'>A
 trustworthy, extensible theorem prover</a></i>.  Ph.D. dissertation proposal.
 October 22, 2007.  Also a technical report: The University of Texas at Austin,
 Department of Computer Sciences, <a
 href=\"ftp://ftp.cs.utexas.edu/pub/techreports/tr08-14.pdf\">Report
 #TR-08-14</a>, March 2008.  See also the <a
-href='http://www.cs.utexas.edu/users/jared/milawa/Documentation/Proposal/oral/proposal.pdf'>slides</a>
+href='https://www.kookamara.com/jared/milawa/Documentation/Proposal/oral/proposal.pdf'>slides</a>
 from the proposal talk.</li>
 
 <li>Jared Davis.  <i><a
-href=\"http://www.cs.utexas.edu/users/jared/milawa/Documentation/Talks/2007-11-acl2-rewriter/rewriter.pdf\">The
+href=\"https://www.kookamara.com/jared/milawa/Documentation/Talks/2007-11-acl2-rewriter/rewriter.pdf\">The
 Milawa rewriter and an ACL2 proof of its soundness</a></i><br/> Slides from the
 <a href=\"http://www.cs.uwyo.edu/~ruben/acl2-07/\">ACL2 Workshop
 2007</a>. November 16, 2007.</li>
 
 <li>Jared Davis.  <i><a
-href=\"http://www.cs.utexas.edu/users/jared/milawa/Documentation/Talks/2007-03-28-acl2-meeting/Update.pdf\">Tactics
+href=\"https://www.kookamara.com/jared/milawa/Documentation/Talks/2007-03-28-acl2-meeting/Update.pdf\">Tactics
 and tracing</a></i>.  Slides from an ACL2 Seminar talk, March 28, 2007.</li>
 
 <li>Jared Davis.  <i><a
-href=\"http://www.cs.utexas.edu/users/jared/milawa/Documentation/Talks/2006-summer-acl2/talk.pdf\">Adding
+href=\"https://www.kookamara.com/jared/milawa/Documentation/Talks/2006-summer-acl2/talk.pdf\">Adding
 a computation rule</a></i>.  Slides from an ACL2 Seminar talk, August 2,
 2006.</li>
 
 <li>Jared Davis.  <i><a
-href=\"http://www.cs.utexas.edu/users/jared/milawa/Documentation/Talks/2005-11-acl2-talk/talk.pdf\">Milawa:
+href=\"https://www.kookamara.com/jared/milawa/Documentation/Talks/2005-11-acl2-talk/talk.pdf\">Milawa:
 an extensible proof checker</a></i>.  Slides form an ACL2 Seminar talk,
 November 16, 2005.</li>
 
@@ -184,14 +184,14 @@ also be interested in the following papers and slides.</p>
 <ul>
 
 <li>Magnus Myreen and Jared Davis.  <i><a
-href=\"http://www.cs.utexas.edu/users/jared/publications/2012-itp-milawa/2012-itp-milawa.pdf\">The
+href=\"https://www.kookamara.com/jared/publications/2012-itp-milawa/2012-itp-milawa.pdf\">The
 reflective Milawa theorem prover is sound (down to the machine code that runs
 it)</a></i>.  Unpublished.  There are also related <a
-href=\"http://www.cs.utexas.edu/users/jared/milawa/Documentation/Talks/2012-northeastern/milawa-northeastern.pdf\">Slides</a>
+href=\"https://www.kookamara.com/jared/milawa/Documentation/Talks/2012-northeastern/milawa-northeastern.pdf\">Slides</a>
 from Jared's July 2012 talk at Northeastern University.</li>
 
 <li>Magnus Myreen and Jared Davis.  <i><a
-href=\"http://www.cs.utexas.edu/users/jared/publications/2011-itp-jitawa/2011-itp-jitawa.pdf\">A
+href=\"https://www.kookamara.com/jared/publications/2011-itp-jitawa/2011-itp-jitawa.pdf\">A
 verified runtime for a verified theorem prover</a></i>.  ITP 2011.</li>
 
 </ul>")

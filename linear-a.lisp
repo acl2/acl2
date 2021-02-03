@@ -1,5 +1,5 @@
-; ACL2 Version 8.2 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2019, Regents of the University of Texas
+; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2020, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -2329,7 +2329,7 @@
   (cond ((variablep term)
          (er hard 'dumb-eval
              "Bad term. We were expecting a constant, but encountered
-              the variable ~x."
+              the variable ~x0."
              term))
         ((fquotep term)
          (if (acl2-numberp (unquote term))
@@ -2345,7 +2345,7 @@
          (- (dumb-eval (fargn term 1))))
         (t
          (er hard 'dumb-eval
-             "Bad term. The term ~x was not as expected by dumb-eval."
+             "Bad term. The term ~x0 was not as expected by dumb-eval."
              term))))
 
 (defun add-linear-term (term side p)

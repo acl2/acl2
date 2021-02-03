@@ -6,7 +6,7 @@
 
 ; Get the MUST-FAIL macro so that we can check that the original weird-identity
 ; is not admissible.
-(include-book "misc/eval" :dir :system)
+(include-book "std/testing/must-fail" :dir :system)
 
 (must-fail
  (defun weird-identity (x)

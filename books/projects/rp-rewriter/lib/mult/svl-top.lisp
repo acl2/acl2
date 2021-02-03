@@ -51,7 +51,7 @@
                        (:meta acl2::mv-nth-cons-meta)
                        (:rewrite rp-evl-of-variable))))
 
-  (update-rp-clause-proc svl-multiplier))
+  (attach-meta-fncs svl-multiplier))
 
 (local
  (rp::fetch-new-events
@@ -566,3 +566,6 @@
          (adder-and a b))
   :hints (("Goal"
            :in-theory (e/d (adder-and) ()))))
+
+
+(bump-all-meta-rules)

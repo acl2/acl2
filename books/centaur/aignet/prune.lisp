@@ -282,7 +282,7 @@
                   '(acl2::use-termhint
                     (b* ((suff (lookup-id id aignet)))
                       (and (equal (stype (car suff)) :and)
-                           (b* ((fanin (fanin :gate0 suff))
+                           (b* ((fanin (fanin 0 suff))
                                 ((mv mark1 copy1 & aignet21)
                                  (aignet-copy-dfs-rec (lit->var fanin) aignet mark copy strash gatesimp aignet2)))
                    `(:use ((:instance aignet-copy-dfs-simple-invar-necc-of-lit-copy
@@ -447,7 +447,7 @@
 
   (defthm fanin-marked-of-aignet-copy-dfs-outs-iter
     (implies (< (nfix m) (nfix n))
-             (equal (nth (lit->var (fanin :co (lookup-stype m (po-stype) aignet)))
+             (equal (nth (lit->var (fanin 0 (lookup-stype m (po-stype) aignet)))
                          (mv-nth 0 (aignet-copy-dfs-outs-iter
                                     n aignet mark copy strash gatesimp aignet2)))
                     1))
@@ -484,7 +484,7 @@
                    (aignet-copy-dfs-outs-iter
                     n aignet mark copy strash gatesimp aignet2)))
                (implies (< (nfix m) (nfix n))
-                        (equal (lit-eval (lit-copy (fanin :co (lookup-stype m :po aignet)) copy)
+                        (equal (lit-eval (lit-copy (fanin 0 (lookup-stype m :po aignet)) copy)
                                          invals regvals aignet2)
                                (output-eval m invals regvals aignet)))))
     :hints(("Goal" :in-theory (e/d (output-eval)
@@ -797,7 +797,7 @@
                   (zp (num-outs aignet2)))
              (let ((aignet2-new (aignet-copy-outs aignet copy aignet2)))
                (equal (output-eval m invals regvals aignet2-new)
-                      (lit-eval (lit-copy (fanin :co (lookup-stype m (po-stype) aignet))
+                      (lit-eval (lit-copy (fanin 0 (lookup-stype m (po-stype) aignet))
                                           copy)
                                 invals regvals aignet2))))
     :hints(("Goal" :in-theory (enable output-eval))))
@@ -1024,16 +1024,16 @@
 
   (defmacro gate-fanins-marked (id aignet mark)
     `(let ((look (lookup-id ,id ,aignet)))
-       (and (equal (nth (lit-id (fanin :gate0 look))
+       (and (equal (nth (lit-id (fanin 0 look))
                         ,mark)
                    1)
-            (equal (nth (lit-id (fanin :gate1 look))
+            (equal (nth (lit-id (fanin 1 look))
                         ,mark)
                    1))))
 
   (defmacro co-fanin-marked (n aignet mark)
     `(let ((look (lookup-stype ,n :po ,aignet)))
-       (equal (nth (lit-id (fanin :co look))
+       (equal (nth (lit-id (fanin 0 look))
                    ,mark)
               1)))
 
@@ -1249,7 +1249,7 @@
   (defthm outputs-marked-of-aignet-mark-dfs-outs-iter
     (implies (and (< (nfix n) (nfix m))
                   (<= (nfix m) (stype-count (po-stype) aignet)))
-             (equal (nth (lit->var (fanin :co (lookup-stype n (po-stype) aignet)))
+             (equal (nth (lit->var (fanin 0 (lookup-stype n (po-stype) aignet)))
                          (aignet-mark-dfs-outs-iter m mark aignet))
                     1))
     :hints((acl2::just-induct-and-expand
@@ -1278,7 +1278,7 @@
 
   (defthm outputs-marked-of-aignet-mark-dfs-outs
     (implies (and (< (nfix n) (stype-count (po-stype) aignet)))
-             (equal (nth (lit->var (fanin :co (lookup-stype n (po-stype) aignet)))
+             (equal (nth (lit->var (fanin 0 (lookup-stype n (po-stype) aignet)))
                          (aignet-mark-dfs-outs mark aignet))
                     1)))
 
@@ -1382,7 +1382,7 @@
 
   (defthm outputs-marked-of-aignet-mark-dfs-comb
     (implies (and (< (nfix n) (stype-count (po-stype) aignet)))
-             (equal (nth (lit->var (fanin :co (lookup-stype n (po-stype) aignet)))
+             (equal (nth (lit->var (fanin 0 (lookup-stype n (po-stype) aignet)))
                          (aignet-mark-dfs-comb mark aignet))
                     1)))
 
@@ -1726,7 +1726,7 @@
             (aignet-prune-comb-aux
              mark copy aignet gatesimp strash aignet2)))
         (implies (< (nfix n) (num-outs aignet))
-                 (let ((id (lit->var (fanin :co (lookup-stype n (po-stype) aignet)))))
+                 (let ((id (lit->var (fanin 0 (lookup-stype n (po-stype) aignet)))))
                    (equal (nth id mark) 1)))))
 
     (defthm aignet-nxsts-marked-of-aignet-prune-comb-aux
@@ -2243,7 +2243,7 @@
   (defthm outputs-marked-of-aignet-mark-dfs-seq-iter
     (implies (and (< (nfix n) (nfix m))
                   (<= (nfix m) (stype-count (po-stype) aignet)))
-             (equal (nth (lit->var (fanin :co (lookup-stype n (po-stype) aignet)))
+             (equal (nth (lit->var (fanin 0 (lookup-stype n (po-stype) aignet)))
                          (aignet-mark-dfs-seq-iter m mark aignet))
                     1))
     :hints((acl2::just-induct-and-expand
@@ -2272,7 +2272,7 @@
 
   (defthm outputs-marked-of-aignet-mark-dfs-seq
     (implies (and (< (nfix n) (stype-count (po-stype) aignet)))
-             (equal (nth (lit->var (fanin :co (lookup-stype n (po-stype) aignet)))
+             (equal (nth (lit->var (fanin 0 (lookup-stype n (po-stype) aignet)))
                          (aignet-mark-dfs-seq mark aignet))
                     1)))
 
@@ -3158,12 +3158,12 @@
       (implies (< (nfix n) (stype-count :po aignet))
                (b* ((look2 (lookup-stype n :po aignet2))
                     (look1 (lookup-stype n :po aignet))
-                    (fanin (lit-copy (fanin :co look1) copy)))
-                 (and (equal (fanin :co look2) fanin)
+                    (fanin (lit-copy (fanin 0 look1) copy)))
+                 (and (equal (fanin 0 look2) fanin)
                       ;; (equal (car look2)
                       ;;        (po-node fanin))
                       ;; (aignet-litp fanin (cdr look2))
-                      (equal (nth (lit->var (fanin :co look1)) mark) 1))))))
+                      (equal (nth (lit->var (fanin 0 look1)) mark) 1))))))
 
   ;; (equal (id-eval (fanin-count (lookup-stype n :po aignet2))
   ;;                 invals regvals aignet2)
@@ -3381,9 +3381,9 @@
   (defthm seq-eval-output-of-aignet-prune-seq-aux-seq
     (b* (((mv ?mark ?copy ?strash ?aignet2)
           (aignet-prune-seq-aux aignet nil nil gatesimp strash aignet2)))
-      (equal (lit-eval-seq k (fanin :co (lookup-stype n :po aignet2))
+      (equal (lit-eval-seq k (fanin 0 (lookup-stype n :po aignet2))
                           frames nil aignet2)
-             (lit-eval-seq k (fanin :co (lookup-stype n :po aignet))
+             (lit-eval-seq k (fanin 0 (lookup-stype n :po aignet))
                           frames nil aignet)))
     :hints (("goal" :expand
              (;; (:free (aignet2)
@@ -3429,9 +3429,9 @@
 
   (defthm eval-output-of-aignet-prune-seq
     (let ((aignet2 (aignet-prune-seq aignet gatesimp aignet2)))
-      (equal (lit-eval-seq k (fanin :co (lookup-stype n :po aignet2))
+      (equal (lit-eval-seq k (fanin 0 (lookup-stype n :po aignet2))
                            frames nil aignet2)
-             (lit-eval-seq k (fanin :co (lookup-stype n :po aignet))
+             (lit-eval-seq k (fanin 0 (lookup-stype n :po aignet))
                            frames nil aignet))))
 
   (defthm seq-equiv-of-aignet-prune-seq

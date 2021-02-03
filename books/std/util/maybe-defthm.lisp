@@ -87,7 +87,11 @@
          (wrld  (acl2::w state))
          ;; Call ACL2's function that checks whether the rule is okay or not.
          ((mv msg ?eqv ?lhs ?rhs ?ttree)
-          (acl2::interpret-term-as-rewrite-rule name nil
+; J Moore mod 8/22/2020:  Interpret-term-as-rewrite-rule now expects a new
+; first argument, qc-flg, which if true indicates we're processing a
+; :rewrite-quoted-constant-rule.
+          (acl2::interpret-term-as-rewrite-rule nil ; qc-flg
+                                                name nil
 
 ; Matt K. mod, 8/22/2016: Interpret-term-as-rewrite-rule now expects its term
 ; argument to have had remove-guard-holders applied.
@@ -95,7 +99,7 @@
                                                 (acl2::remove-guard-holders
                                                  concl
                                                  wrld)
-                                                ens wrld))
+                                                nil ens wrld))
          ((when msg)
           ;; Not okay!  Don't submit the theorem.
           (value '(value-triple :invisible))))
@@ -122,38 +126,3 @@
       (if (is-theorem-p name (w state))
           (value `(in-theory (disable ,name)))
         (value `(value-triple :invisible))))))
-
-(local
- (progn
-
-   ;; Some basic tests
-
-   (include-book "misc/assert" :dir :system)
-
-   (maybe-defthm-as-rewrite foo (equal (car (cons x y)) x))
-   (maybe-defthm-as-rewrite bar (equal (not 'nil) 't))
-   (maybe-defthm-as-rewrite baz (equal (stringp 'nil) 'nil))
-
-   (assert! (is-theorem-p 'foo (w state)))
-   (assert! (not (is-theorem-p 'bar (w state))))
-   (assert! (not (is-theorem-p 'baz (w state))))
-
-   (assert! (let ((acl2::ens (acl2::ens state))) (active-runep '(:rewrite foo))))
-   (assert! (let ((acl2::ens (acl2::ens state))) (not (active-runep '(:rewrite bar)))))
-
-   (enable-if-theorem foo)
-
-   (assert! (let ((acl2::ens (acl2::ens state)))
-              (active-runep '(:rewrite foo))))
-
-   (disable-if-theorem foo)
-
-   (assert! (let ((acl2::ens (acl2::ens state)))
-              (not (active-runep '(:rewrite foo)))))
-
-   (enable-if-theorem foo)
-
-   (assert! (let ((acl2::ens (acl2::ens state)))
-              (active-runep '(:rewrite foo))))
-
-   ))

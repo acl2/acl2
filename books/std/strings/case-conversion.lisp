@@ -133,7 +133,17 @@ logical definition.</p>"
 
   (defthm string-upcase1-is-upcase-charlist
     (equal (acl2::string-upcase1 x)
-           (upcase-charlist (double-rewrite x)))))
+           (upcase-charlist (double-rewrite x))))
+
+  ;; Mihir M. mod: added a lemma.
+  (defthm
+    not-charlist-has-some-down-alpha-p-of-upcase-charlist
+    (not (charlist-has-some-down-alpha-p
+          (upcase-charlist x)))
+    :hints
+    (("goal"
+      :in-theory (enable charlist-has-some-down-alpha-p
+                         upcase-charlist)))))
 
 
 (define charlist-has-some-up-alpha-p ((x character-listp))

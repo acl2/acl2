@@ -129,3 +129,10 @@
          (eval `(in-package ,*startup-package-name*))
          (setq *lp-ever-entered-p* t)))
   nil)
+
+; Replacement definition (needed for caller SAVE-EXEC-FN)
+; (WARNING: This restricts us to Unix),
+; to avoid an error from looking up the os in the world:
+(defun os (wrld)
+  (declare (ignore wrld))
+  :UNIX)

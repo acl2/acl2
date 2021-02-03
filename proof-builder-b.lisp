@@ -1,5 +1,5 @@
-; ACL2 Version 8.2 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2019, Regents of the University of Texas
+; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2020, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -2202,13 +2202,27 @@
           (new (trans0 y abbreviations :equiv))
           (equiv (if (null equiv)
                      (value 'equal)
-                   (if (equivalence-relationp equiv w)
+                   (if (and (symbolp equiv)
+                            (equivalence-relationp equiv w))
                        (value equiv)
                      (er soft :equiv
                          "The name ~x0 is not currently the name of an ACL2 ~
-                          equivalence relation.  The current list of ~
-                          ACL2 equivalence relations is ~x1."
+                          equivalence relation.~@1  The current list of ~
+                          ACL2 equivalence relations is ~x2."
                          equiv
+                         (let ((pair (and (symbolp equiv)
+                                          (assoc-eq
+                                           equiv
+                                           (table-alist 'macro-aliases-table
+                                                        w)))))
+                           (if (and pair
+                                    (equivalence-relationp (cdr pair) w))
+                               (msg "  Perhaps you intended the corresponding ~
+                                     function for which it is an ~
+                                     ``alias''(see :DOC macro-aliases-table), ~
+                                     ~x0."
+                                    (cdr pair))
+                             ""))
                          (getpropc 'equal 'coarsenings nil w))))))
          (if (find-equivalence-hyp-term old
                                         (flatten-ands-in-lit-lst assumptions)
@@ -2412,7 +2426,7 @@
                                       The value(s) returned was ~
                                       (were):~%~ ~ ~x1.~%"
                                      (list (cons #\0 success-expr)
-                                           (cons #\2 vals))))
+                                           (cons #\1 vals))))
                           (mv erp val state))
                 (mv (car vals) (cadr vals) state))))))
 
@@ -2763,11 +2777,27 @@
                        (value :fail)))
               ((not (member-eq equiv
                                (getpropc 'equal 'coarsenings nil w)))
-               (pprogn (print-no-change
-                        "The ``equivalence relation'' that you supplied, ~p0, ~
-                         is not known to ACL2 as an equivalence relation."
-                        (list (cons #\0 equiv)))
-                       (value :fail)))
+               (pprogn
+                (print-no-change
+                 "The ``equivalence relation'' that you supplied, ~p0, is not ~
+                  known to ACL2 as an equivalence relation.~@1"
+                 (list (cons #\0 equiv)
+                       (cons #\1
+                             (let ((pair
+                                    (and (symbolp equiv)
+                                         (assoc-eq
+                                          equiv
+                                          (table-alist 'macro-aliases-table
+                                                       w)))))
+                               (if (and pair
+                                        (equivalence-relationp (cdr pair) w))
+                                   (msg "  Perhaps you intended the ~
+                                         corresponding function for which it ~
+                                         is an ``alias''(see :DOC ~
+                                         macro-aliases-table), ~x0."
+                                        (cdr pair))
+                                 "")))))
+                (value :fail)))
               ((null args)
                (mv-let (found-hyp new)
                  (find-equivalence-hyp-term-no-target
@@ -4779,6 +4809,11 @@
      ((null cl)
       (er soft ctx
           "There is no legal way to prove a goal of NIL!"))
+     ((not (true-listp instr-list))
+      (er soft ctx
+          "The value of the :INSTRUCTIONS hint must be a true ~
+           (null-terminated) list.  The value ~x0 is thus illegal."
+          instr-list))
      (t
       (let ((term (make-implication (dumb-negate-lit-lst (butlast cl 1))
                                     (car (last cl))))

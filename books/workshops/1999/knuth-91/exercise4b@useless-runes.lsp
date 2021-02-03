@@ -1,0 +1,6 @@
+(<_A)
+(TWO-B)
+(IRREFLEXIVITY-OF-<_A)
+(TWO-A)
+(TWO-C)
+(TWO-D (1 1 (:REWRITE TWO-A)))

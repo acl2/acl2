@@ -32,8 +32,8 @@
 ; ------------------------------
 
 (logic)
-(local (include-book "misc/assert" :dir :system))
-(local (include-book "misc/eval" :dir :system))
+(local (include-book "std/testing/assert-bang" :dir :system))
+(local (include-book "std/testing/must-succeed" :dir :system))
 (defmacro local-test (&rest args)
   `(local (encapsulate () (local (progn ,@args)))))
 

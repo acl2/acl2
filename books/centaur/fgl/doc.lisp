@@ -741,30 +741,84 @@ setting of @('make-ites').  (See also @(see fgl-handling-if-then-elses).)</p>
   :short "Proving SAT instances in FGL"
   :long "
 
-<p>When finished symbolically executing the theorem, FGL automatically tries to
-solve the resulting Boolean formula, proving it valid.  It may also call SAT
-during symbolic execution if directed to by user rules; see @(see
-fgl-sat-check).  Both of these satisfiability checks are done by calling an
-attachable function @('interp-st-sat-check').  By default the attachment for
-this is @('fgl-default-sat-check-impl'), which takes a @(see fgl-sat-config)
-object.  This object may either be a configuration object for calling <see
-topic='@(url ipasir::ipasir)'>IPASIR</see> incremental SAT or <see topic='@(url
-satlink::satlink)'>SATLINK</see> monolithic SAT (perhaps with AIGNET transforms
-in the latter case).  The IPASIR solver is suitable for numerous easy SAT
-checks where it is beneficial to save lemmas from previous SAT checks in order
-to help with solving subsequent ones, whereas the SATLINK solver is suitable
-for more difficult problems.</p>
+<p>Calls of SAT in FGL are controlled by configuration objects of the type
+@(see fgl-sat-config).  (An exception is when the default attachment of the
+stub function @('interp-st-sat-check') is changed by the user; this topic
+pertains to the usual situation where its attachment is
+@('fgl-default-sat-check-impl').)</p>
 
-<p>The attachment for @('interp-st-sat-check') may be changed in order to
-drastically reconfigure the way FGL calls SAT.  However, it is usually better
-to tweak the configuration object passed into the SAT solver.  The top-level
-validity check is configured using the attachable function
-@('fgl-toplevel-sat-check-config'); this may be overridden by either attaching
-a different function or setting the @(':sat-config') field of the FGL
-configuration object.  The type of the SAT configuration object (for the
-default attachment of @('interp-st-sat-check')) is @(see fgl-sat-config).</p>
+<p>When FGL calls SAT automatically on the result of symbolically executing a
+theorem, the @(see fgl-sat-config) object that is used is the result of calling
+the attachable stub function @('fgl-toplevel-sat-check-config').  When FGL
+rewrite rules or top-level theorems call SAT using @(see fgl-sat-check), the
+configuration object is provided as an argument to that function.</p>
+
+<p>An @(see fgl-sat-config) object is either an @(see
+fgl-satlink-monolithic-sat-config) or an @(see fgl-ipasir-config) object.  When
+it is a @(see fgl-satlink-monolithic-sat-config), satisfiability is checked by
+perhaps performing some
+<see topic='@(url aignet::aignet-comb-transforms)'>AIG transformations</see>
+and subsequently calling a
+<see topic='@(url satlink::satlink)'>SATLINK</see>
+monolithic solver.
+When it is an @(see fgl-ipasir-config), satisfiability is
+checked by calling an 
+<see topic='@(url ipasir::ipasir)'>IPASIR</see>
+incremental SAT shared library, which may allow the
+current check to benefit from learned lemmas and heuristic information from
+previous checks.</p>
+
+<p>Both the @(see fgl-satlink-monolithic-sat-config) and @(see
+fgl-ipasir-config) types are simple tagged products, and they have two fields
+in common:</p>
+<ul>
+<li>@('ignore-pathcond') says to ignore the path condition when checking satisfiability</li>
+<li>@('ignore-constraint') says to ignore the constraint condition (see @(see def-fgl-boolean-constraint) when checking satisfiability.</li>
+</ul>
+
+<p>The other fields of the @(see fgl-satlink-monolithic-sat-config) object are
+as follows:</p>
+
+<ul>
+
+<li>@('satlink-config-override') may either be a @(see satlink::config) object
+or nil.  If set, this object determines how to call SAT, e.g., what
+command-line solver to use.  If not, the SATLINK configuration object used is
+the attachment of the stub function @('fgl-satlink-config').</li>
+
+<li>@('transform') is a Boolean value; if @('T'), then AIGNET transforms are
+used to simplify the problem before calling the solver.</li>
+
+<li>@('transform-config-override') is a list of AIGNET transform configuration
+objects; see @(see aignet::aignet-comb-transforms).  If empty, the attachment
+of the stub function @('fgl-aignet-transforms-config') is used as the list of
+transforms.</li>
+
+</ul>
+
+
+<p>The other fields of the @(see fgl-ipasir-config) object are:</p>
+
+<ul>
+
+<li>@('ipasir-callback-limit') may be nil or a natural number.  If a number, it
+provides a work limit for the incremental SAT checker, the precise meaning of
+which depends on the solver but is generally a conflict or restart count.</li>
+
+<li>@('ipasir-recycle-callback-limit') may be nil or a natural number.  If a
+number, it causes the solver object to be destroyed and recreated after the
+given number of callbacks, which may be important for performance.</li>
+
+<li>@('ipasir-index') is a natural number, default 0.  This determines which
+solver object is used.  If a new ipasir index is used, then a new solver object
+is created and initialized, and every subsequent use of that ipasir index
+refers to that solver object (until perhaps the recycle-callback-limit causes
+it to be reinitialized).</li>
+
+</ul>
 
 ")
+
 
 (defxdoc fgl-rewrite-rules
   :parents (fgl)
@@ -912,7 +966,7 @@ syntactic term using a custom evaluator, @(see fancy-ev), that can be
 instrumented to call functions that examine the ACL2 state and the FGL
 interpreter state, and even make limited modifications to them.  See the
 documentation for @(see fancy-ev) for how to use it, and see @(see
-fgl-internals) for documentation of the contents of the interpreter state. One
+fgl-interpreter-state) for documentation of the contents of the interpreter state. One
 main use of this is to examine counterexamples produced from incremental SAT
 calls.  By default, after loading @('fgl/top'), the rewrite rule
 @('show-counterexample-rw') rewrites the constant-nil function
@@ -1349,7 +1403,7 @@ under the evaluation of @('bindings') to @('f') of the evaluations of the
 arguments.  The returned @('interp-st') must satisfy several constraints
 showing that it was not invalidly modified; usually, all a primitive should do
 with the @('interp-st') is build new gates onto the @('aignet') of its
-@('logicman') (see @(see fgl-internals)).  Primitives take the same inputs but
+@('logicman') (see @(see fgl-interpreter-state)).  Primitives take the same inputs but
 return @('(mv successp obj interp-st state)'), where the evaluation of @('obj')
 must equal @('f') of the evaluations of the arguments.</p>
 
@@ -1640,6 +1694,10 @@ there exists another triple that is missing from the list.</p>
 
 (defxdoc fgl-internals
   :parents (fgl)
+  :short "Topics describing implementation-level details.")
+
+(defxdoc fgl-interpreter-state
+  :parents (fgl-internals)
   :short "Description of FGL's interpreter state object."
   :long
 "<p>The FGL interpreter state is a stobj containing, as the name suggests,

@@ -44,8 +44,6 @@
 
 (include-book "bits-sbits")
 
-(include-book "meta/top")
-
 (include-book "macros")
 
 (include-book "svl-openers")
@@ -54,9 +52,12 @@
 
 (include-book "svl-run-to-svex-alist")
 
+(include-book "meta/top")
+
 
 (xdoc::defxdoc
  acl2::svl
+ :parents (acl2::hardware-verification)
  :short "A framework to simulate Verilog designs with retained design hiearchy"
  :long "
 <p>Similar to @(see sv::svtv), SVL semantics is converted from @(see acl2::sv)
@@ -65,12 +66,17 @@
  sequential circuits but it fails in case of combinational loops.
 </p>
 
-<p> You need @(see acl2::VL) and @(see acl2::SV) designs to create SVL
-designs. You can use functions svl::svl-flatten-design to create SVL design,
-and svl::svl-run to run the generated design.</p>
+<p>  You  need @(see  acl2::VL)  and  @(see  acl2::SV)  designs to  create  SVL
+designs. You  can use  functions @(see  svl::svl-flatten-design) to  create SVL
+design, and @(see svl::svl-run) to run the generated design.</p>
+
+<p> Using the SVL system, you can perform hierarchical reasoning on Verilog
+designs. For combinational submodules, you can have a rewrite rule replacing
+@(see svl-run-phase-wog) instance of that submodule with its specification, and
+that rule can be applied when rewriting the main module. See @(see
+rp::multiplier-verification) for a use case. </p> 
 "
  )
-
 
 (xdoc::defxdoc
  svl

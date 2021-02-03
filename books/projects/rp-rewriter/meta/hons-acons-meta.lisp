@@ -81,14 +81,14 @@
 
 ;; special meta-like functions integrated into rp-rewriter.
 (defun hons-acons-meta (term)
-  (declare (xargs :guard t #|(rp-termp term)||#))
+  (declare (xargs :guard (rp-termp term)))
   ;; behaviour when hons-cons is encountered in the term
   ;; as if "hons-acons-meta" is a meta function triggered by hons-acons
   ;; this funciton stores assoc-lists in a special way in order to access the
   ;; elements in alists fast.
   (case-match term
     (('hons-acons ('quote key) val falist)
-     (b* ((falist (ex-from-rp falist)))
+     (b* ((falist (ex-from-rp$ falist)))
        (case-match falist
          (('falist ('quote fa) ra)
           (mv
@@ -142,7 +142,7 @@
 
   (def-formula-checks
    hons-acons-meta-formula-checks
-   (hons-acons-meta
+   (;;hons-acons-meta
     hons-acons)))
 
 #|(local
@@ -302,7 +302,7 @@
             :in-theory (e/d (DONT-RW-SYNTAXP)
                             ())))))
 
-(defthm hons-acons-meta-is-valid-rp-meta-rulep
+#|(defthm hons-acons-meta-is-valid-rp-meta-rulep
   (implies (and (hons-acons-meta-formula-checks state)
                 (rp-evl-meta-extract-global-facts :state state))
            (let ((rule (make rp-meta-rule-rec
@@ -317,13 +317,16 @@
            :in-theory (e/d (RP-META-VALID-SYNTAXP)
                            (RP-TERMP
                             hons-acons-meta
-                            VALID-SC)))))
+                            VALID-SC)))))||#
 
-(rp::add-meta-rules
- hons-acons-meta-formula-checks
- (list
-  (make rp-meta-rule-rec
-        :fnc 'hons-acons-meta
-        :trig-fnc 'hons-acons
-        :dont-rw t
-        :valid-syntax t)))
+
+
+(rp::add-meta-rule
+ :meta-fnc hons-acons-meta
+ :trig-fnc hons-acons
+ :formula-checks hons-acons-meta-formula-checks
+ :valid-syntaxp t
+ :returns (mv term dont-rw)
+ 
+ :hints (("Goal"
+          :in-theory (e/d () (hons-acons-meta)))))

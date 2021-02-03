@@ -72,3 +72,15 @@
   (equal (boolif x (not x) y)
          (boolif x nil y))
   :hints (("Goal" :in-theory (enable boolif))))
+
+(defthmd if-becomes-boolif
+  (implies (and (booleanp x)
+                (booleanp y))
+           (equal (if test x y)
+                  (boolif test x y)))
+  :hints (("Goal" :in-theory (enable boolif))))
+
+;; These help justify some things that Axe does:
+(defcong iff equal (boolif test x y) 1 :hints (("Goal" :in-theory (enable boolif))))
+(defcong iff equal (boolif test x y) 2 :hints (("Goal" :in-theory (enable boolif))))
+(defcong iff equal (boolif test x y) 3 :hints (("Goal" :in-theory (enable boolif))))

@@ -10,8 +10,8 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/std/system/macro-keyword-args" :dir :system)
-(include-book "kestrel/std/system/macro-required-args" :dir :system)
+(include-book "kestrel/std/util/defmacro-plus" :dir :system)
+(include-book "std/util/define" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -50,283 +50,148 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection xdoc::evmac-section-intro
+(defmacro+ xdoc::evmac-section (title &rest content)
+  :short "Construct a section
+          of the user documentation of an event macro."
+  :long
+  (xdoc::topstring-p
+   "This provides more abstraction than using a specific heading.")
+  `(xdoc::&&
+    (xdoc::h3 ,title)
+    ,@content))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defmacro+ xdoc::evmac-subsection (title &rest content)
+  :short "Construct a subsection
+          of the user documentation of an event macro."
+  :long
+  (xdoc::topstring-p
+   "This provides more abstraction than using a specific heading.")
+  `(xdoc::&&
+    (xdoc::h4 ,title)
+    ,@content))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defmacro+ xdoc::evmac-subsubsection (title &rest content)
+  :short "Construct a subsubsection
+          of the user documentation of an event macro."
+  :long
+  (xdoc::topstring-p
+   "This provides more abstraction than using a specific heading.")
+  `(xdoc::&&
+    (xdoc::h5 ,title)
+    ,@content))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defmacro+ xdoc::evmac-subsubsubsection (title &rest content)
+  :short "Construct a subsubsubsection
+          of the user documentation of an event macro."
+  :long
+  (xdoc::topstring-p
+   "This provides more abstraction than using a specific heading.")
+  `(xdoc::&&
+    (xdoc::h6 ,title)
+    ,@content))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defconst xdoc::*evmac-section-intro-title*
+  "Introduction")
+
+(defmacro+ xdoc::evmac-section-intro (&rest content)
   :short "Construct the introduction section
-          of the reference documentation of an event macro."
-  :long
-  (xdoc::topstring
-   (xdoc::@def "xdoc::*evmac-section-intro-title*")
-   (xdoc::@def "xdoc::evmac-section-intro"))
-
-  (defconst xdoc::*evmac-section-intro-title*
-    "Introduction")
-
-  (defmacro xdoc::evmac-section-intro (&rest content)
-    `(xdoc::&&
-      (xdoc::h3 xdoc::*evmac-section-intro-title*)
-      ,@content)))
+          of the user documentation of an event macro."
+  `(xdoc::evmac-section xdoc::*evmac-section-intro-title*
+                        ,@content))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection xdoc::evmac-section-form
+(defconst xdoc::*evmac-section-form-title*
+  "General Form")
+
+(defmacro+ xdoc::evmac-section-form (&rest content)
   :short "Construct the general form section
-          of the reference documentation of an event macro."
-  :long
-  (xdoc::topstring
-   (xdoc::@def "xdoc::*evmac-section-form-title*")
-   (xdoc::@def "xdoc::evmac-section-form"))
-
-  (defconst xdoc::*evmac-section-form-title*
-    "General Form")
-
-  (defmacro xdoc::evmac-section-form (&rest content)
-    `(xdoc::&&
-      (xdoc::h3 xdoc::*evmac-section-form-title*)
-      ,@content)))
+          of the user documentation of an event macro."
+  `(xdoc::evmac-section xdoc::*evmac-section-form-title*
+                        ,@content))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection xdoc::evmac-section-form-auto
-  :short "Construct and fill the general form section
-          of the reference documentation of an event macro."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The section is filled with a form that starts with the macro name,
-     followed by the required arguments, one per line, vertically aligned;
-     then there is @('&key') on one line, vertically aligned with the arguments,
-     followed by the keyword arguments, one per line, vertically aligned,
-     each preceded by colon
-     and followed by an end-of-line comment indicating the default value.
-     This form is also used in other ACL2+Books manual pages.")
-   (xdoc::p
-    "If the macro includes @('&...') lambda keywords
-     other than @('&key') and @('&whole'),
-     we fail because this utility
-     only handles required and keyword arguments for now.")
-   (xdoc::p
-    "The name of the symbol of the macro is made lowercase,
-     without the package because the manual page where this section goes
-     should be in the same package.")
-   (xdoc::p
-    "We calculate the indentation of the arguments as
-     1 for the opening pathenthesis
-     plus the length of the macro name
-     plus 1 for the space after the macro name.
-     We calculate the indentation of
-     the semicolons of the end-of-line comments as
-     the maximum length of a keyword argument plus two spaces
-     (which provide a little more visual separation that just one space).")
-   (xdoc::p
-    "We construct the lines (strings) via two loops (recursions).
-     The first loop is for the macro's required arguments.
-     A boolean flag,
-     initially @('t') but @('nil') at the first recursive call,
-     determines whether we are constructing the first line
-     (which must start with the name of the macro)
-     or a successive line
-     (which must start with just spaces).")
-   (xdoc::p
-    "Before the second loop, we construct a line with just @('&key').
-     This is preceded by the macro name if the macro has no required arguments,
-     otherwise it is preceded by spaces.")
-   (xdoc::p
-    "The second loop is for the macro's keyword arguments.
-     Each line starts with the spaces to align to the other arguments,
-     then there's the keyword argument name,
-     made lowercase and preceded by colon,
-     then some padding to the end-of-line comment,
-     then the end-of-line comment.
-     For now we only support keyword arguments
-     whose default values are symbols:
-     the symbols are printed, lowercase, in the end-of-line comments;
-     if the symbols are keywords, they are preceded by colon.")
-   (xdoc::p
-    "We conclude the form with a line with a closing parenthesis.")
-   (xdoc::@def "xdoc::evmac-section-form-auto"))
+(defconst xdoc::*evmac-section-inputs-title*
+  "Inputs")
 
-  (define xdoc::evmac-section-form-auto-max-key ((key-args symbol-alistp))
-    :returns (max natp)
-    :parents nil ; override default
-    (cond ((endp key-args) 0)
-          (t (max (length (symbol-name (caar key-args)))
-                  (xdoc::evmac-section-form-auto-max-key (cdr key-args))))))
-
-  (define xdoc::evmac-section-form-auto-req-lines ((macro-name stringp)
-                                                   (req-args symbol-listp)
-                                                   (spaces stringp)
-                                                   (first-line-p booleanp))
-    :returns (lines string-listp)
-    :verify-guards nil
-    :parents nil ; override default
-    (b* (((when (endp req-args)) nil)
-         (arg-name (string-downcase (symbol-name (car req-args))))
-         (start (if first-line-p
-                    (concatenate 'string "(" macro-name " ")
-                  spaces))
-         (line (concatenate 'string start arg-name))
-         (lines (xdoc::evmac-section-form-auto-req-lines
-                 macro-name (cdr req-args) spaces nil)))
-      (cons line lines)))
-
-  (define xdoc::evmac-section-form-auto-key-lines ((key-args symbol-alistp)
-                                                   (spaces stringp)
-                                                   (indent-comment natp))
-    :returns (lines string-listp)
-    :verify-guards nil
-    :parents nil ; override default
-    (b* (((when (endp key-args)) nil)
-         (arg-name (string-downcase (symbol-name (caar key-args))))
-         (padding (coerce (make-list (- indent-comment (length arg-name))
-                                     :initial-element #\Space)
-                          'string))
-         (comment-start "; default ")
-         (value (cdar key-args))
-         ((unless (symbolp value))
-          (raise "Unsupported macro default value ~x0." value))
-         (value-string (concatenate 'string
-                                    (if (keywordp value) ":" "")
-                                    (string-downcase (symbol-name value))))
-         (line (concatenate 'string
-                            spaces
-                            arg-name
-                            padding
-                            comment-start
-                            value-string))
-         (lines (xdoc::evmac-section-form-auto-key-lines
-                 (cdr key-args) spaces indent-comment)))
-      (cons line lines)))
-
-  (define xdoc::evmac-section-form-auto-lines ((macro symbolp)
-                                               (wrld plist-worldp))
-    :returns (lines string-listp)
-    :verify-guards nil
-    :parents nil ; override default
-    (b* ((all-args (macro-args macro wrld))
-         ((when (intersectp-eq all-args
-                               '(&optional &rest &body &allow-other-keys)))
-          (raise "Unsupported macro keywords: ~&0."
-                 (intersection-eq all-args
-                                  '(&optional &rest &body &allow-other-keys))))
-         (req-args (macro-required-args macro wrld))
-         (key-args (macro-keyword-args macro wrld))
-         (macro-name (string-downcase (symbol-name macro)))
-         (indent-arg (+ 2 (length macro-name)))
-         (indent-comment (+ 2 (xdoc::evmac-section-form-auto-max-key key-args)))
-         (spaces (coerce (make-list indent-arg :initial-element #\Space)
-                         'string))
-         (req-lines (xdoc::evmac-section-form-auto-req-lines
-                     macro-name req-args spaces t))
-         (key-line (concatenate 'string
-                                (if (= (len req-args) 0)
-                                    (concatenate 'string "(" macro-name " ")
-                                  spaces)
-                                "&key"))
-         (key-lines (xdoc::evmac-section-form-auto-key-lines
-                     key-args spaces indent-comment))
-         (last-line "  )"))
-      (append req-lines
-              (list key-line)
-              key-lines
-              (list last-line)))
-    :prepwork
-    ((local (include-book "std/typed-lists/string-listp" :dir :system))))
-
-  (defmacro xdoc::evmac-section-form-auto (macro)
-    (declare (xargs :guard (symbolp macro)))
-    `(xdoc::evmac-section-form
-      (xdoc::codeblock-fn
-       (xdoc::evmac-section-form-auto-lines ',macro (w state))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defsection xdoc::evmac-section-inputs
+(defmacro+ xdoc::evmac-section-inputs (&rest content)
   :short "Construct the inputs section
-          of the reference documentation of an event macro."
-  :long
-  (xdoc::topstring
-   (xdoc::@def "xdoc::*evmac-section-inputs-title*")
-   (xdoc::@def "xdoc::evmac-section-inputs"))
-
-  (defconst xdoc::*evmac-section-inputs-title*
-    "Inputs")
-
-  (defmacro xdoc::evmac-section-inputs (&rest content)
-    `(xdoc::&&
-      (xdoc::h3 xdoc::*evmac-section-inputs-title*)
-      ,@content)))
+          of the user documentation of an event macro."
+  `(xdoc::evmac-section xdoc::*evmac-section-inputs-title*
+                        ,@content))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection xdoc::evmac-section-appconds
+(defconst xdoc::*evmac-section-appconds-title*
+  "Applicability Conditions")
+
+(defmacro+ xdoc::evmac-section-appconds (macro &rest content)
+  (declare (xargs :guard (symbolp macro)))
   :short "Construct the applicability conditions section
-          of the reference documentation of an event macro."
+          of the user documentation of an event macro."
   :long
   (xdoc::topstring
    (xdoc::p
     "Since this documentation is part of the XDOC topic
      whose name is the name of the macro,
-     the @('macro-ref') variable is not a link.")
-   (xdoc::@def "xdoc::*evmac-section-appconds-title*")
-   (xdoc::@def "xdoc::evmac-section-appconds"))
-
-  (defconst xdoc::*evmac-section-appconds-title*
-    "Applicability Conditions")
-
-  (defmacro xdoc::evmac-section-appconds (macro &rest content)
-    (declare (xargs :guard (symbolp macro)))
-    (b* ((macro-name (string-downcase (symbol-name macro)))
-         (macro-ref (concatenate 'string "@('" macro-name "')"))
-         (inputs-ref (concatenate 'string
-                                  "`"
-                                  xdoc::*evmac-section-inputs-title*
-                                  "' section")))
-      `(xdoc::&&
-        (xdoc::h3 xdoc::*evmac-section-appconds-title*)
-        (xdoc::p
-         "In order for "
-         ,macro-ref
-         " to apply,
-          in addition to the requirements on the inputs
-          stated in the "
-         ,inputs-ref
-         ", the following "
-         (xdoc::seetopic "acl2::event-macro-applicability-conditions"
-                         "applicability conditions")
-         " must be proved.
-          The proofs are attempted when "
-         ,macro-ref
-         " is called,
-          using the hints optionally supplied as the @(':hints') input
-          described in the "
-         ,inputs-ref
-         ".")
-        ,@content))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defsection xdoc::evmac-section-generated
-  :short "Construct the generated events section
-          of the reference documentation of an event macro."
-  :long
-  (xdoc::topstring
-   (xdoc::@def "xdoc::*evmac-section-generated-title*")
-   (xdoc::@def "xdoc::evmac-section-generated"))
-
-  (defconst xdoc::*evmac-section-generated-title*
-    "Generated Events")
-
-  (defmacro xdoc::evmac-section-generated (&rest content)
-    `(xdoc::&&
-      (xdoc::h3 xdoc::*evmac-section-generated-title*)
+     the @('macro-ref') variable is not a link."))
+  (b* ((macro-name (string-downcase (symbol-name macro)))
+       (macro-ref (concatenate 'string "@('" macro-name "')"))
+       (inputs-ref (concatenate 'string
+                                "`"
+                                xdoc::*evmac-section-inputs-title*
+                                "' section")))
+    `(xdoc::evmac-section
+      xdoc::*evmac-section-appconds-title*
+      (xdoc::p
+       "In order for "
+       ,macro-ref
+       " to apply,
+        in addition to the requirements on the inputs
+        stated in the "
+       ,inputs-ref
+       ", the following "
+       (xdoc::seetopic "acl2::event-macro-applicability-conditions"
+                       "applicability conditions")
+       " must be proved.
+         The proofs are attempted when "
+       ,macro-ref
+       " is called,
+        using the hints optionally supplied as the @(':hints') input
+        described in the "
+       ,inputs-ref
+       ".")
       ,@content)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection xdoc::evmac-section-redundancy
-  :returns (text xdoc::treep)
+(defconst xdoc::*evmac-section-generated-title*
+  "Generated Events")
+
+(defmacro+ xdoc::evmac-section-generated (&rest content)
+  :short "Construct the generated events section
+          of the user documentation of an event macro."
+  `(xdoc::evmac-section xdoc::*evmac-section-generated-title*
+                        ,@content))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defconst xdoc::*evmac-section-redundancy-title*
+  "Redundancy")
+
+(defmacro+ xdoc::evmac-section-redundancy (macro)
+  (declare (xargs :guard (symbolp macro)))
   :short "Construct the redundancy section
-          of the reference documentation of an event macro."
+          of the user documentation of an event macro."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -338,197 +203,154 @@
    (xdoc::p
     "Since this documentation is part of the XDOC topic
      whose name is the name of the macro,
-     the @('macro-ref') variable is not a link.")
-   (xdoc::@def "xdoc::*evmac-section-redundancy-title*")
-   (xdoc::@def "xdoc::evmac-section-redundancy"))
-
-  (defconst xdoc::*evmac-section-redundancy-title*
-    "Redundancy")
-
-  (defmacro xdoc::evmac-section-redundancy (macro)
-    (declare (xargs :guard (symbolp macro)))
-    (b* ((macro-name (string-downcase (symbol-name macro)))
-         (macro-ref (concatenate 'string "@('" macro-name "')")))
-      `(xdoc::&&
-        (xdoc::h3 xdoc::*evmac-section-redundancy-title*)
-        (xdoc::p
-         (concatenate
-          'string
-          "A call of "
-          ,macro-ref
-          " is redundant if and only if
-           it is identical to a previous successful call of "
-          ,macro-ref
-          " whose @(':show-only') input is not @('t'),
-           except that the two calls may differ in
-           their @(':print') and @(':show-only') inputs.
-           These inputs do not affect the generated events,
-           and thus they are ignored for the purpose of redundancy."))
-        (xdoc::p
-         (concatenate
-          'string
-          "A call of "
-          ,macro-ref
-          " whose @(':show-only') input is @('t')
-           does not generate any event.
-           Thus, no successive call may be redundant with such a call."))))))
+     the @('macro-ref') variable is not a link."))
+  (b* ((macro-name (string-downcase (symbol-name macro)))
+       (macro-ref (concatenate 'string "@('" macro-name "')")))
+    `(xdoc::evmac-section
+      xdoc::*evmac-section-redundancy-title*
+      (xdoc::p
+       (concatenate
+        'string
+        "A call of "
+        ,macro-ref
+        " is redundant if and only if
+         it is identical to a previous successful call of "
+        ,macro-ref
+        " whose @(':show-only') input is not @('t'),
+         except that the two calls may differ in
+         their @(':print') and @(':show-only') inputs.
+         These inputs do not affect the generated events,
+         and thus they are ignored for the purpose of redundancy."))
+      (xdoc::p
+       (concatenate
+        'string
+        "A call of "
+        ,macro-ref
+        " whose @(':show-only') input is @('t')
+         does not generate any event.
+         Thus, no successive call may be redundant with such a call.")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection xdoc::evmac-input-hints
+(defmacro+ xdoc::evmac-input-hints (&key additional)
   :short "Construct a description of the @(':hints') input
-          for the reference documentation of an event macro."
-  :long (xdoc::topstring-@def "xdoc::evmac-input-hints")
-
-  (defmacro xdoc::evmac-input-hints (&rest additional)
-    (let ((appconds-ref (concatenate 'string
-                                     "`"
-                                     xdoc::*evmac-section-appconds-title*
-                                     "' section")))
-      `(xdoc::desc
-        "@(':hints') &mdash; default @('nil')"
-        (xdoc::p
-         "Hints to prove the applicability conditions.")
-        (xdoc::p
-         (concatenate
-          'string
-          "It must be a
-           <see topic='@(url acl2::keyword-value-listp)'>keyword-value
-           list</see> @('(appcond1 hints1 ... appcondp hintsp)'),
-           where each @('appcondk') is a keyword
-           that identifies one of the applicability conditions
-           listed in the "
-          ,appconds-ref
-          ", and each @('hintsk') consists of hints that may appear
-           just after @(':hints') in a @(tsee defthm).
-           The hints @('hintsk') are used
-           to prove applicability condition @('appcondk')."))
-        (xdoc::p
-         "The @('appcond1'), ..., @('appcondp') keywords must be all distinct.")
-        (xdoc::p
-         (concatenate
-          'string
-          "An @('appcondk') keyword is allowed in the @(':hints') input iff
-           the corresponding applicability condition is present,
-           as specified in the "
-          ,appconds-ref
-          "."))
-        ,@additional))))
+          for the user documentation of an event macro."
+  (let ((appconds-ref (concatenate 'string
+                                   "`"
+                                   xdoc::*evmac-section-appconds-title*
+                                   "' section")))
+    `(xdoc::desc
+      "@(':hints') &mdash; default @('nil')"
+      (xdoc::p
+       "Hints to prove the applicability conditions.")
+      (xdoc::p
+       "It must be one of the following:")
+      (xdoc::ul
+       (xdoc::li
+        "A "
+        (xdoc::seetopic "acl2::keyword-value-listp" "keyword-value list")
+        " @('(appcond1 hints1 appcond2 hints2 ...)'),
+         where each @('appcondk') is a keyword
+         that identifies one of the applicability conditions
+         listed in the "
+        ,appconds-ref
+        " and each @('hintsk') is a list of hints of the kind
+         that may appear just after @(':hints') in a @(tsee defthm).
+         The hints @('hintsk') are used
+         to prove applicability condition @('appcondk').
+         The @('appcond1'), @('appcond2'), ... keywords must be all distinct.
+         An @('appcondk') keyword is allowed only if
+         the corresponding applicability condition is present,
+         as specified in the "
+        ,appconds-ref
+        ".")
+       (xdoc::li
+        "A list of hints of the kind
+         that may appear just after @(':hints') in a @(tsee defthm).
+         In this case, these same hints are used
+         to prove every applicability condition,."))
+      ,@additional)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection xdoc::evmac-input-print
+(defmacro+ xdoc::evmac-input-print (macro &key additional)
   :short "Construct a description of the @(':print') input
-          for the reference documentation of an event macro."
+          for the user documentation of an event macro."
   :long
-  (xdoc::topstring
-   (xdoc::p
-    "Since this documentation is part of the XDOC topic
-     whose name is the name of the macro,
-     the @('macro-ref') variable is not a link.")
-   (xdoc::@def "xdoc::evmac-input-print"))
-
-  (defmacro xdoc::evmac-input-print (macro &rest additional)
-    (declare (xargs :guard (symbolp macro)))
-    (b* ((macro-name (string-downcase (symbol-name macro)))
-         (macro-ref (concatenate 'string "@('" macro-name "')"))
-         (generated-ref (concatenate 'string
-                                     "`"
-                                     xdoc::*evmac-section-generated-title*
-                                     "' section"))
-         (redundancy-ref (concatenate 'string
-                                      "`"
-                                      xdoc::*evmac-section-redundancy-title*
-                                      "' section")))
-      `(xdoc::desc
-        "@(':print') &mdash; default @(':result')"
-        (xdoc::p
-         "Specifies what is printed on the screen:")
-        (xdoc::ul
-         (xdoc::li
-          "@('nil'), to print nothing (not even error output).")
-         (xdoc::li
-          "@(':error'), to print only error output (if any).")
-         (xdoc::li
-          (concatenate
-           'string
-           "@(':result'), to print,
-            besides any error output,
-            also the generated events described
-            in the "
-           ,generated-ref
-           ", i.e. the resulting events of "
-           ,macro-ref
-           ". This is the default value of the @(':print') input."))
-         (xdoc::li
-          (concatenate
-           'string
-           "@(':info'), to print,
-            besides any error output and the resulting events,
-            also some additional information about the operations performed by "
-           ,macro-ref
-           "."))
-         (xdoc::li
-          "@(':all'), to print,
+  (xdoc::topstring-p
+   "Since this documentation is part of the XDOC topic
+    whose name is the name of the macro,
+    the @('macro-ref') variable is not a link.")
+  (declare (xargs :guard (symbolp macro)))
+  (b* ((macro-name (string-downcase (symbol-name macro)))
+       (macro-ref (concatenate 'string "@('" macro-name "')")))
+    `(xdoc::desc
+      "@(':print') &mdash; default @(':result')"
+      (xdoc::p
+       "Specifies what is printed on the screen
+        (see @(see acl2::event-macro-screen-printing)).")
+      (xdoc::p
+       "It must be one of the following:")
+      (xdoc::ul
+       (xdoc::li
+        "@('nil'), to print nothing (not even error output).")
+       (xdoc::li
+        "@(':error'), to print only error output (if any).")
+       (xdoc::li
+        "@(':result'), to print, besides any error output,
+         also the "
+        (xdoc::seetopic "acl2::event-macro-results" "results")
+        " of " ,macro-ref ".
+         This is the default value of the @(':print') input.")
+       (xdoc::li
+        "@(':info'), to print,
+         besides any error output and the results,
+         also some additional information about
+         the internal operations of " ,macro-ref ".")
+       (xdoc::li
+        "@(':all'), to print,
           besides any error output,
-          the resulting events,
+          the results,
           and the additional information,
-          also ACL2's output in response to all the submitted events
-          (the ones that form the result as well as some ancillary ones)."))
-        (xdoc::p
-         "These are ordered printing levels")
-        (xdoc::codeblock
-         "nil < :error < :result < :info < :all")
-        (xdoc::p
-         "where the amount of printed material increases monotonically.")
-        (xdoc::p
-         (concatenate
-          'string
-          "If the call of "
-          ,macro-ref
-          " is redundant
-           (as defined in the "
-          ,redundancy-ref
-          "), a message to that effect is printed on the screen,
-           unless @(':print') is @('nil')."))
-        ,@additional))))
+          also ACL2's output in response to all the submitted events."))
+      (xdoc::p
+       "If the call of " ,macro-ref " is redundant,
+        an indication to that effect is printed on the screen,
+        unless @(':print') is @('nil').")
+      ,@additional)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection xdoc::evmac-input-show-only
+(defmacro+ xdoc::evmac-input-show-only (macro &key additional)
   :short "Construct a description of the @(':show-only') input
-          for the reference documentation of an event macro."
+          for the user documentation of an event macro."
   :long
-  (xdoc::topstring
-   (xdoc::p
-    "Since this documentation is part of the XDOC topic
-     whose name is the name of the macro,
-     the @('macro-ref') variable is not a link.")
-   (xdoc::@def "xdoc::evmac-input-show-only"))
-
-  (defmacro xdoc::evmac-input-show-only (macro &rest additional)
-    (declare (xargs :guard (symbolp macro)))
-    (b* ((macro-name (string-downcase (symbol-name macro)))
-         (macro-ref (concatenate 'string "@('" macro-name "')"))
-         (redundancy-ref (concatenate 'string
-                                      "`"
-                                      xdoc::*evmac-section-redundancy-title*
-                                      "' section")))
-      `(xdoc::desc
-        "@(':show-only') &mdash; default @('nil')"
-        (xdoc::p
-         (concatenate
-          'string
-          "Determines whether the event expansion of "
-          ,macro-ref
-          " is submitted to ACL2 or just printed on the screen:"))
-        (xdoc::ul
-         (xdoc::li
-          "@('nil'), to submit it.")
-         (xdoc::li
-          (concatenate
-           'string
-           "@('t'), to just print it.
+  (xdoc::topstring-p
+   "Since this documentation is part of the XDOC topic
+    whose name is the name of the macro,
+    the @('macro-ref') variable is not a link.")
+  (declare (xargs :guard (symbolp macro)))
+  (b* ((macro-name (string-downcase (symbol-name macro)))
+       (macro-ref (concatenate 'string "@('" macro-name "')"))
+       (redundancy-ref (concatenate 'string
+                                    "`"
+                                    xdoc::*evmac-section-redundancy-title*
+                                    "' section")))
+    `(xdoc::desc
+      "@(':show-only') &mdash; default @('nil')"
+      (xdoc::p
+       (concatenate
+        'string
+        "Determines whether the event expansion of "
+        ,macro-ref
+        " is submitted to ACL2 or just printed on the screen:"))
+      (xdoc::ul
+       (xdoc::li
+        "@('nil'), to submit it.")
+       (xdoc::li
+        (concatenate
+         'string
+         "@('t'), to just print it.
             In this case:
             the event expansion is printed even if @(':print') is @('nil')
             (because the user has explicitly asked to show the event expansion);
@@ -539,17 +361,115 @@
             even if @(':print') is @(':all')
             (because the event expansion is not submitted).
             If the call of "
-           ,macro-ref
-           " is redundant
+         ,macro-ref
+         " is redundant
             (as defined in the "
-           ,redundancy-ref
-           "), the event expansion generated by the existing call
+         ,redundancy-ref
+         "), the event expansion generated by the existing call
             is printed.")))
-        ,@additional))))
+      ,@additional)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection xdoc::evmac-desc-function/lambda/macro
+(defmacro+ xdoc::evmac-desc-input-name (prefix
+                                        &key
+                                        desc
+                                        auto-desc
+                                        additional
+                                        name-rest)
+  :short "Construct a description of a @(':...-name') input
+          for the user documentation of an event macro."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is for an input to determine the name of
+     an entity (e.g. a function) generated by the event macro.")
+   (xdoc::p
+    "The @('...') in @(':...-name') is passed as
+     the @('prefix') argument of this macro.")
+   (xdoc::p
+    "A description of the entitty whose name is being determined
+     is passed as the @('desc') argument of this macro.")
+   (xdoc::p
+    "The @('auto-desc') argument of this macro describes the name used
+     when the @(':...-name') input is @(':auto').")
+   (xdoc::p
+    "An XDOC tree of additional text can be passed
+     as the @('additional') argument of this macro.")
+   (xdoc::p
+    "The @('name-rest') argument of this macro is
+     the name that the generated documentation says that will be used
+     as the name of the entity in the rest of the documentation page."))
+  (declare (xargs :guard (and (stringp prefix)
+                              (stringp desc)
+                              (stringp auto-desc)
+                              (stringp name-rest))))
+  `(xdoc::desc
+    ,(concatenate 'string
+                  "@(':" prefix "-name') &mdash; default @(':auto')")
+    (xdoc::p
+     "Determines the name of " ,desc ".")
+    (xdoc::p
+     "It must be one of the following:")
+    (xdoc::ul
+     (xdoc::li
+      "@(':auto'), to use " ,auto-desc ".")
+     (xdoc::li
+      "Any other symbol, to use as the name."))
+    ,@(and additional (list additional))
+    (xdoc::p
+     "In the rest of this documentation page,
+      let @('" ,name-rest "') be this name.")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defmacro+ xdoc::evmac-desc-input-enable-t/nil (prefix
+                                                &key
+                                                default
+                                                desc)
+  :short "Construct a description of a @(':...-enable') input
+          for the user documentation of an event macro."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is for an input to determine the enablement of
+     an entity (e.g. a function) generated by the event macro.")
+   (xdoc::p
+    "The @('...') in @(':...-enable') is passed as
+     the @('prefix') argument of this macro.")
+   (xdoc::p
+    "The default is passed as the @('default') argument of this macro.")
+   (xdoc::p
+    "The description of the entity is passed as
+     the @('desc') argument of this macro."))
+  (declare (xargs :guard (and (stringp prefix)
+                              (booleanp default)
+                              (stringp desc))))
+  `(xdoc::desc
+    ,(concatenate 'string
+                  "@(':" prefix "-enable') &mdash; default "
+                  (if default "@('t')" "@('nil')"))
+    (xdoc::p
+     "Determines whether " ,desc " is enabled.")
+    (xdoc::p
+     "It must be one of the following:")
+    (xdoc::ul
+     (xdoc::li
+      "@('t'), to enable.")
+     (xdoc::li
+      "@('nil'), to disable."))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defmacro+ xdoc::evmac-desc-function/lambda/macro (&key
+                                                   (subject '"It")
+                                                   (1arg 'nil)
+                                                   (1res 'nil)
+                                                   (guard 'nil)
+                                                   (dont-be-or-call 'nil)
+                                                   (additional-function 'nil)
+                                                   (additional-lambda 'nil)
+                                                   (additional-forms '""))
   :short "Construct a common description text for an input that must be
           a function name or a lambda expression or a macro name."
   :long
@@ -609,86 +529,81 @@
     "Looking at some uses of this utility should make it clearer.")
    (xdoc::p
     "This utility may need to be extended and generalized in the future,
-     in particular with more customization facilities.")
-   (xdoc::@def "xdoc::evmac-desc-function/lambda/macro"))
-
-  (defmacro xdoc::evmac-desc-function/lambda/macro (&key
-                                                    (subject '"It")
-                                                    (1arg 'nil)
-                                                    (1res 'nil)
-                                                    (guard 'nil)
-                                                    (dont-be-or-call 'nil)
-                                                    (additional-function 'nil)
-                                                    (additional-lambda 'nil)
-                                                    (additional-forms '""))
-    `(xdoc::&&
-      (xdoc::p
-       ,subject " must be one of the following:")
-      (xdoc::ul
-       (xdoc::li
-        "The name of a "
-        ,(if 1arg "unary " "")
-        "logic-mode function.
+     in particular with more customization facilities."))
+  `(xdoc::&&
+    (xdoc::p
+     ,subject " must be one of the following:")
+    (xdoc::ul
+     (xdoc::li
+      "The name of a "
+      ,(if 1arg "unary " "")
+      "logic-mode function.
          This function must have no input or output @(see acl2::stobj)s."
-        ,(if 1res
-             " This function must return
+      ,(if 1res
+           " This function must return
               a single (i.e. non-@(tsee acl2::mv)) result."
-           "")
-        ,(cond ((eq guard t) " This function must be guard-verified.")
-               ((eq guard nil) "")
-               (t `(xdoc::&&
-                    " If "
-                    ,guard
-                    ", then this function must be guard-verified.")))
-        ,(if dont-be-or-call
-             `(xdoc::&& " This function must be distinct from "
-                        ,dont-be-or-call
-                        ".")
-           "")
-        ,(if additional-function
-             `(xdoc::&& " " ,additional-function)
-           ""))
-       (xdoc::li
-        "A "
-        ,(if 1arg "unary " "")
-        "closed lambda expression
+         "")
+      ,(cond ((eq guard t) " This function must be guard-verified.")
+             ((eq guard nil) "")
+             (t `(xdoc::&&
+                  " If "
+                  ,guard
+                  ", then this function must be guard-verified.")))
+      ,(if dont-be-or-call
+           `(xdoc::&& " This function must be distinct from "
+                      ,dont-be-or-call
+                      ".")
+         "")
+      ,(if additional-function
+           `(xdoc::&& " " ,additional-function)
+         ""))
+     (xdoc::li
+      "A "
+      ,(if 1arg "unary " "")
+      "closed lambda expression
          that only references logic-mode functions.
          This lambda expression must have
          no input or output @(see acl2::stobj)s."
-        ,(if 1res
-             " This lambda expression must return
+      ,(if 1res
+           " This lambda expression must return
               a single (i.e. non-@(tsee acl2::mv)) result."
-           "")
-        ,(cond ((eq guard t) " The body of this lambda expression
+         "")
+      ,(cond ((eq guard t) " The body of this lambda expression
                               must only call guard-verified functions,
                               except possibly
                               in the @(':logic') subterms of @(tsee acl2::mbe)s
                               or via @(tsee acl2::ec-call).")
-               ((eq guard nil) "")
-               (t `(xdoc::&&
-                    " If " ,guard ", then the body of this lambda expression
+             ((eq guard nil) "")
+             (t `(xdoc::&&
+                  " If " ,guard ", then the body of this lambda expression
                      must only call guard-verified functions,
                      except possibly
                      in the @(':logic') subterms of @(tsee acl2::mbe)s
                      or via @(tsee acl2::ec-call).")))
-        " As an abbreviation, the name @('mac') of a macro stands for
+      " As an abbreviation, the name @('mac') of a macro stands for
          the lambda expression @('(lambda (z1 z2 ...) (mac z1 z2 ...))'),
          where @('z1'), @('z2'), ... are the required parameters of @('mac');
          that is, a macro name abbreviates its eta-expansion
          (considering only the macro's required parameters)."
-        ,(if dont-be-or-call
-             `(xdoc::&& " This lambda expression must not reference "
-                        ,dont-be-or-call
-                        ".")
-           "")
-        ,(if additional-lambda
-             `(xdoc::&& " " ,additional-lambda)
-           ""))
-       ,additional-forms))))
+      ,(if dont-be-or-call
+           `(xdoc::&& " This lambda expression must not reference "
+                      ,dont-be-or-call
+                      ".")
+         "")
+      ,(if additional-lambda
+           `(xdoc::&& " " ,additional-lambda)
+         ""))
+     ,additional-forms)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection xdoc::evmac-desc-term
+(defmacro+ xdoc::evmac-desc-term (&key
+                                  (subject '"It")
+                                  (free-vars 'nil)
+                                  (1res 'nil)
+                                  (guard 'nil)
+                                  (dont-call 'nil)
+                                  (additional 'nil))
   :short "Construct a common description text for an input that must be a term."
   :long
   (xdoc::topstring
@@ -734,54 +649,50 @@
     "Looking at some uses of this utility should make it clearer.")
    (xdoc::p
     "This utility may need to be extended and generalized in the future,
-     in particular with more customization facilities.")
-   (xdoc::@def "xdoc::evmac-desc-term"))
-
-  (defmacro xdoc::evmac-desc-term (&key
-                                   (subject '"It")
-                                   (free-vars 'nil)
-                                   (1res 'nil)
-                                   (guard 'nil)
-                                   (dont-call 'nil)
-                                   (additional 'nil))
-    `(xdoc::&&
-      (xdoc::p
-       ,subject
-       " must be a term that only references logic-mode functions"
-       ,(if free-vars
-            `(xdoc::&&
-              " and that includes no free variables other than "
-              ,free-vars)
-          "")
-       ". This term must have no output @(see acl2::stobj)s."
-       ,(if 1res
-            " This term must return
+     in particular with more customization facilities."))
+  `(xdoc::&&
+    (xdoc::p
+     ,subject
+     " must be a term that only references logic-mode functions"
+     ,(if free-vars
+          `(xdoc::&&
+            " and that includes no free variables other than "
+            ,free-vars)
+        "")
+     ". This term must have no output @(see acl2::stobj)s."
+     ,(if 1res
+          " This term must return
               a single (i.e. non-@(tsee acl2::mv)) value."
-          "")
-       ,(cond ((eq guard t) " This term
+        "")
+     ,(cond ((eq guard t) " This term
                              must only call guard-verified functions,
                              except possibly
                              in the @(':logic') subterms of @(tsee acl2::mbe)s
                              or via @(tsee acl2::ec-call).")
-              ((eq guard nil) "")
-              (t `(xdoc::&&
-                   " If " ,guard ", then this term
+            ((eq guard nil) "")
+            (t `(xdoc::&&
+                 " If " ,guard ", then this term
                     must only call guard-verified functions,
                     except possibly
                     in the @(':logic') subterms of @(tsee acl2::mbe)s
                     or via @(tsee acl2::ec-call).")))
-       ,(if dont-call
-            `(xdoc::&& " This term must not reference " ,dont-call ".")
-          "")
-       ,(if additional
-            `(xdoc::&& " " ,additional)
-          "")))))
+     ,(if dont-call
+          `(xdoc::&& " This term must not reference " ,dont-call ".")
+        "")
+     ,(if additional
+          `(xdoc::&& " " ,additional)
+        ""))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection xdoc::evmac-appcond
+(defmacro+ xdoc::evmac-appcond (name
+                                main
+                                &key
+                                design-notes
+                                design-notes-appcond
+                                presence)
   :short "Construct an applicability condition description
-          in the reference documentation of an event macro."
+          in the user documentation of an event macro."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -812,26 +723,19 @@
      the generated XDOC includes text
      explaining that the applicability condition is present
      under the condition described by the @('presence') input."))
-
-  (defmacro xdoc::evmac-appcond (name
-                                 main
-                                 &key
-                                 design-notes
-                                 design-notes-appcond
-                                 presence)
-    (declare (xargs :guard (stringp name)))
-    `(xdoc::desc
-      ,(concatenate 'string "@('" name "')")
-      ,main
-      ,@(and design-notes
-             design-notes-appcond
-             `((xdoc::p
-                "This corresponds to " ,design-notes-appcond
-                " in the " ,design-notes ".")))
-      ,@(and presence
-             `((xdoc::p
-                "This applicability condition if present if and only if "
-                ,presence "."))))))
+  (declare (xargs :guard (stringp name)))
+  `(xdoc::desc
+    ,(concatenate 'string "@('" name "')")
+    ,main
+    ,@(and design-notes
+           design-notes-appcond
+           `((xdoc::p
+              "This corresponds to " ,design-notes-appcond
+              " in the " ,design-notes ".")))
+    ,@(and presence
+           `((xdoc::p
+              "This applicability condition if present if and only if "
+              ,presence ".")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -854,7 +758,7 @@
     (xdoc::li
      "Zero or more XDOC trees (often just strings)
       to put into the bullets that explain the correspondence between
-      the symbols in the design notes and the reference documentation.
+      the symbols in the design notes and the user documentation.
       If this list is empty,
       then no bulletted list is generated,
       and no introductory text for it.")
@@ -904,7 +808,7 @@
                  ,@(and correspondences
                         `((xdoc::p
                            "The correspondence between
-                            the design notes and the reference documentation
+                            the design notes and the user documentation
                             is the following:")
                           (xdoc::ul-fn
                            nil
@@ -934,51 +838,37 @@
    (xdoc::p
     "The topic lists the names used for arguments and results of functions,
      along with brief descriptions of the names.
-     This listing consists of bullet in an unordered list.
+     This listing consists of bullets  in an unordered list.
      The @(':items') argument must be a list of XDOC trees,
      each of which is wrapped into an @(tsee xdoc::li),
      and the so-wrapped items are put into an @(tsee xdoc::ul).")
    (xdoc::p
-    "Certain common items, like the @('state') variable,
-     can be included among the items just by setting
-     the corresponding keyword options to @('t').")
+    "We also provide some named constants for certain common items,
+     like the @('state') variable.
+     We also provide some functions for certain common kinds of items,
+     like the user inputs to the event macro.")
    (xdoc::p
-    "If there are items, the list is omitted altogether.")
+    "If there are no items, the list is omitted altogether.")
+   (xdoc::p
+    "This macro also provide a @(':default-parent') option,
+     which is @('nil') by default and is passed to @(tsee defxdoc+).")
    (xdoc::@def "xdoc::evmac-topic-implementation"))
 
   (define xdoc::evmac-topic-implementation-li-wrap ((items true-listp))
+    :parents nil
     :returns (li-wrapped-items true-listp)
     (cond ((endp items) nil)
           (t (cons `(xdoc::li ,(car items))
                    (xdoc::evmac-topic-implementation-li-wrap (cdr items))))))
 
-  (defmacro xdoc::evmac-topic-implementation (macro
-                                              &key
-                                              items
-                                              item-state
-                                              item-wrld
-                                              item-ctx)
+  (defmacro xdoc::evmac-topic-implementation (macro &key items default-parent)
     (declare (xargs :guard (symbolp macro)))
     (b* ((macro-name (string-downcase (symbol-name macro)))
          (macro-ref (concatenate 'string "@(tsee " macro-name ")"))
          (this-topic (add-suffix macro "-IMPLEMENTATION"))
          (parent-topic macro)
          (short (concatenate 'string "Implementation of " macro-ref "."))
-         (all-items
-          (append (and item-state
-                       '((xdoc::&&
-                          "@('state') is the ACL2 "
-                          (xdoc::seetopic "acl2::state" "state")
-                          ".")))
-                  (and item-wrld
-                       '((xdoc::&&
-                          "@('wrld') is the ACL2 "
-                          (xdoc::seetopic "acl2::world" "world")
-                          ".")))
-                  (and item-ctx
-                       '("@('ctx') is the context used for errors."))
-                  items))
-         (long (and all-items
+         (long (and items
                     `(xdoc::topstring
                       (xdoc::p
                        "The implementation functions have arguments,
@@ -987,7 +877,7 @@
                                        "@(':returns') specifiers")
                        "), consistently named as follows:")
                       (xdoc::ul
-                       ,@(xdoc::evmac-topic-implementation-li-wrap all-items))
+                       ,@(xdoc::evmac-topic-implementation-li-wrap items))
                       (xdoc::p
                        "Implementation functions' arguments and results
                         that are not listed above
@@ -997,138 +887,191 @@
          :parents (,parent-topic)
          :short ,short
          ,@(and long (list :long long))
-         :order-subtopics t))))
+         :order-subtopics t
+         :default-parent ,default-parent)))
+
+  (defconst xdoc::*evmac-topic-implementation-item-state*
+    (xdoc::&& "@('state') is the ACL2 "
+              (xdoc::seetopic "acl2::state" "state")
+              "."))
+
+  (defconst xdoc::*evmac-topic-implementation-item-wrld*
+    (xdoc::&& "@('wrld') is the ACL2 "
+              (xdoc::seetopic "acl2::world" "world")
+              "."))
+
+  (defconst xdoc::*evmac-topic-implementation-item-ctx*
+    "@('ctx') is the context used for errors.")
+
+  (defconst xdoc::*evmac-topic-implementation-item-call*
+    "@('call') is the call of the event macro.")
+
+  (defconst xdoc::*evmac-topic-implementation-item-names-to-avoid*
+    "@('names-to-avoid') is a cumulative list of names of generated events,
+     used to ensure the absence of name clashes in the generated events.")
+
+  (defconst xdoc::*evmac-topic-implementation-item-appcond-thm-names*
+    "@('appcond-thm-names') is an alist
+     from the keywords that identify the applicability conditions
+     to the corresponding generated theorem names.")
+
+  (define xdoc::evmac-topic-implementation-item-input ((name stringp))
+    :parents nil
+    (xdoc::&&
+     "@('" name "') is the homonymous input to the event macro."))
+
+  (define xdoc::evmac-topic-implementation-item-input-untyped/typed
+    ((name stringp))
+    :parents nil
+    (xdoc::&& "@('" name "') is the homonymous input to the event macro
+               if it has no type;
+               otherwise, it is the (possibly different) typed value
+               resulting from processing that input."))
+
+  (define xdoc::evmac-topic-implementation-item-fn-doc ((name stringp))
+    :parents nil
+    (xdoc::&& "@('" name "') is the homonymous function symbol "
+              "described in the user documentation."))
+
+  (define xdoc::evmac-topic-implementation-item-thm-doc ((name stringp))
+    :parents nil
+    (xdoc::&& "@('" name "') is the homonymous theorem symbol "
+              "described in the user documentation."))
+
+  (define xdoc::evmac-topic-implementation-item-var-doc ((name stringp))
+    :parents nil
+    (xdoc::&& "@('" name "') is the homonymous variable symbol "
+              "described in the user documentation.")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection xdoc::evmac-topic-library-extensions
+(defmacro+ xdoc::evmac-topic-library-extensions (macro)
   :short "Generate an XDOC topic for the library extensions
           that are part of the implementation of an event macro."
-  :long (xdoc::topstring-@def "xdoc::evmac-topic-library-extensions")
-
-  (defmacro xdoc::evmac-topic-library-extensions (macro)
-    (declare (xargs :guard (symbolp macro)))
-    (b* ((macro-name (string-downcase (symbol-name macro)))
-         (macro-ref (concatenate 'string "@(tsee " macro-name ")"))
-         (this-topic (add-suffix macro "-LIBRARY-EXTENSIONS"))
-         (parent-topic (add-suffix macro "-IMPLEMENTATION"))
-         (short (concatenate 'string "Library extensions for " macro-ref "."))
-         (long (xdoc::topstring-p
-                "These are used by, but more general than, "
-                macro-ref
-                ". Thus, they should be moved
+  (declare (xargs :guard (symbolp macro)))
+  (b* ((macro-name (string-downcase (symbol-name macro)))
+       (macro-ref (concatenate 'string "@(tsee " macro-name ")"))
+       (this-topic (add-suffix macro "-LIBRARY-EXTENSIONS"))
+       (parent-topic (add-suffix macro "-IMPLEMENTATION"))
+       (short (concatenate 'string "Library extensions for " macro-ref "."))
+       (long (xdoc::topstring-p
+              "These are used by, but more general than, "
+              macro-ref
+              ". Thus, they should be moved
                  to more general libraries eventually.")))
-      `(defxdoc+ ,this-topic
-         :parents (,parent-topic)
-         :short ,short
-         :long ,long
-         :order-subtopics t
-         :default-parent t))))
+    `(defxdoc+ ,this-topic
+       :parents (,parent-topic)
+       :short ,short
+       :long ,long
+       :order-subtopics t
+       :default-parent t)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection xdoc::evmac-topic-input-processing
+(defmacro+ xdoc::evmac-topic-input-processing (macro &rest additional)
   :short "Generate an XDOC topic for the input processing
           that is part of the implementation of an event macro."
   :long
-  (xdoc::topstring
-   (xdoc::p
-    "This macro accepts additional pieces of XDOC text,
-     which are added at the end of the generated @(':long').")
-   (xdoc::@def "xdoc::evmac-topic-input-processing"))
-
-  (defmacro xdoc::evmac-topic-input-processing (macro &rest additional)
-    (declare (xargs :guard (symbolp macro)))
-    (b* ((macro-name (string-downcase (symbol-name macro)))
-         (macro-ref (concatenate 'string "@(tsee " macro-name ")"))
-         (this-topic (add-suffix macro "-INPUT-PROCESSING"))
-         (parent-topic (add-suffix macro "-IMPLEMENTATION"))
-         (short (concatenate 'string
-                             "Input processing performed by "
-                             macro-ref
-                             "."))
-         (long `(xdoc::topstring
-                 (xdoc::p
-                  "This involves validating the inputs.
-                   When validation fails, "
-                  (xdoc::seetopic "acl2::er" "soft errors")
-                  " occur.
-                   Thus, generally the input processing functions return "
-                  (xdoc::seetopic "acl2::error-triple" "error triples")
-                  ".")
-                 ,@additional)))
-      `(defxdoc+ ,this-topic
-         :parents (,parent-topic)
-         :short ,short
-         :long ,long
-         :order-subtopics t
-         :default-parent t))))
+  (xdoc::topstring-p
+   "This macro accepts additional pieces of XDOC text,
+    which are added at the end of the generated @(':long').")
+  (declare (xargs :guard (symbolp macro)))
+  (b* ((macro-name (string-downcase (symbol-name macro)))
+       (macro-ref (concatenate 'string "@(tsee " macro-name ")"))
+       (this-topic (add-suffix macro "-INPUT-PROCESSING"))
+       (parent-topic (add-suffix macro "-IMPLEMENTATION"))
+       (short (concatenate 'string
+                           "Input processing performed by "
+                           macro-ref
+                           "."))
+       (long `(xdoc::topstring
+               (xdoc::p
+                "See "
+                (xdoc::seetopic "acl2::event-macro-input-processing"
+                                "input processing")
+                " for general background.")
+               ,@additional)))
+    `(defxdoc+ ,this-topic
+       :parents (,parent-topic)
+       :short ,short
+       :long ,long
+       :order-subtopics t
+       :default-parent t)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection xdoc::evmac-topic-event-generation
+(defmacro+ xdoc::evmac-topic-event-generation (macro
+                                               &key
+                                               some-local-p
+                                               some-local-nonlocal-p
+                                               some-nonlocal-p)
   :short "Generate an XDOC topic for the event generation
           that is part of the implementation of an event macro."
   :long
-  (xdoc::topstring
-   (xdoc::p
-    "An event macro may generate some events only locally;
-     in this case, the @(':some-local-p') argument must be @('t').
-     An event macro may generate some events both locally and non-locally,
-     where the local variant has proof hints and the non-local variant does not;
-     in this case, the @(':some-local-nonlocal-p') argument must be @('t').
-     These arguments are used to customize the generated @(':long').")
-   (xdoc::@def "xdoc::evmac-topic-event-generation"))
-
-  (defmacro xdoc::evmac-topic-event-generation (macro
-                                                &key
-                                                some-local-p
-                                                some-local-nonlocal-p)
-    (declare (xargs :guard (and (symbolp macro)
-                                (booleanp some-local-p)
-                                (booleanp some-local-nonlocal-p))))
-    (b* ((macro-name (string-downcase (symbol-name macro)))
-         (macro-ref (concatenate 'string "@(tsee " macro-name ")"))
-         (this-topic (add-suffix macro "-EVENT-GENERATION"))
-         (parent-topic (add-suffix macro "-IMPLEMENTATION"))
-         (short (concatenate 'string
-                             "Event generation performed by "
-                             macro-ref
-                             "."))
-         (para-local-nonlocal?
-          (and some-local-nonlocal-p
-               '((xdoc::p
-                  "Some events are generated in two slightly different variants:
-                   one that is local to the generated "
-                  (xdoc::seetopic "acl2::encapsulate" "@(tsee encapsulate)")
-                  ", and one that is exported from the "
-                  (xdoc::seetopic "acl2::encapsulate" "@(tsee encapsulate)")
-                  ". Proof hints are in the former but not in the latter,
-                   thus keeping the ACL2 history ``clean'';
-                   some proof hints may refer to events
-                   that are generated only locally to the "
-                  (xdoc::seetopic "acl2::encapsulate" "@(tsee encapsulate)")
-                  "."))))
-         (para-local?
-          (and some-local-p
-               '((xdoc::p
-                  "Some events are generated only locally to the generated "
-                  (xdoc::seetopic "acl2::encapsulate" "@(tsee encapsulate)")
-                  ". These are auxiliary events
-                   needed to introduce the non-local (i.e. exported) events,
-                   but whose presence in the ACL2 history is no longer needed
-                   once the exported events have been introduced.
-                   These only-local events have generated fresh names.
-                   In contrast, exported events have names
-                   that are user-controlled, directly or indirectly."))))
-         (long? (and (or some-local-nonlocal-p
-                         some-local-p)
-                     `(xdoc::topstring
-                       ,@para-local-nonlocal?
-                       ,@para-local?))))
-      `(defxdoc+ ,this-topic
-         :parents (,parent-topic)
-         :short ,short
-         ,@(and long? (list :long long?))
-         :order-subtopics t
-         :default-parent t))))
+  (xdoc::topstring-p
+   "An event macro may generate some events only locally;
+    in this case, the @(':some-local-p') argument must be @('t').
+    An event macro may generate some events both locally and non-locally,
+    where the local variant has proof hints and the non-local variant does not;
+    in this case, the @(':some-local-nonlocal-p') argument must be @('t').
+    An event macro may generate some events only non-locally;
+    in this case the @(':some-nonlocal-p') argument must be @('t').
+    These arguments are used to customize the generated @(':long').")
+  (declare (xargs :guard (and (symbolp macro)
+                              (booleanp some-local-p)
+                              (booleanp some-local-nonlocal-p)
+                              (booleanp some-nonlocal-p))))
+  (b* ((macro-name (string-downcase (symbol-name macro)))
+       (macro-ref (concatenate 'string "@(tsee " macro-name ")"))
+       (this-topic (add-suffix macro "-EVENT-GENERATION"))
+       (parent-topic (add-suffix macro "-IMPLEMENTATION"))
+       (short (concatenate 'string
+                           "Event generation performed by "
+                           macro-ref
+                           "."))
+       (para-local-nonlocal?
+        (and some-local-nonlocal-p
+             '((xdoc::p
+                "Some events are generated in two slightly different variants:
+                 one that is local to the generated "
+                (xdoc::seetopic "acl2::encapsulate" "@(tsee encapsulate)")
+                ", and one that is exported from the "
+                (xdoc::seetopic "acl2::encapsulate" "@(tsee encapsulate)")
+                ". Proof hints are in the former but not in the latter,
+                 thus keeping the ACL2 history ``clean'';
+                 some proof hints may refer to events
+                 that are generated only locally to the "
+                (xdoc::seetopic "acl2::encapsulate" "@(tsee encapsulate)")
+                "."))))
+       (para-local?
+        (and some-local-p
+             '((xdoc::p
+                "Some events are generated only locally to the generated "
+                (xdoc::seetopic "acl2::encapsulate" "@(tsee encapsulate)")
+                ". These are auxiliary events
+                 needed to introduce the non-local (i.e. exported) events,
+                 but whose presence in the ACL2 history is no longer needed
+                 once the exported events have been introduced.
+                 These only-local events have generated fresh names.
+                 In contrast, exported events have names
+                 that are user-controlled, directly or indirectly."))))
+       (para-nonlocal?
+        (and some-nonlocal-p
+             '((xdoc::p
+                "Some events are generated only non-locally to the generated "
+                (xdoc::seetopic "acl2::encapsulate" "@(tsee encapsulate)")
+                ", i.e. they are exported,
+                 without local counterparts."))))
+       (long? (and (or some-local-nonlocal-p
+                       some-local-p
+                       some-nonlocal-p)
+                   `(xdoc::topstring
+                     ,@para-local-nonlocal?
+                     ,@para-local?
+                     ,@para-nonlocal?))))
+    `(defxdoc+ ,this-topic
+       :parents (,parent-topic)
+       :short ,short
+       ,@(and long? (list :long long?))
+       :order-subtopics t
+       :default-parent t)))

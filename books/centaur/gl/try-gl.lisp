@@ -491,7 +491,7 @@
   (declare (xargs :mode :program :stobjs state))
   (b* ((gl-clause-proc (latest-gl-clause-proc))
        (- (maybe-print-clause :final-clause "using GL on clause: ~x0~%"))
-       (config (make-glcp-config))
+       (config (make-glcp-config :abort-vacuous nil))
        (cov-hints (glcp-coverage-hints nil nil nil nil))
        (hyp (car clause))
        (concl (cadr clause))

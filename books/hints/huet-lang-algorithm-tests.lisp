@@ -146,7 +146,8 @@
                (GENERIC-LIST-ITERATOR LAMBDA (X ANS)
                                       (GET-INTEGERS X ANS)))))
 
-(include-book "misc/eval" :dir :system)
+(include-book "std/testing/must-fail" :dir :system)
+(include-book "std/testing/must-succeed" :dir :system)
 
 (must-succeed
  (cond

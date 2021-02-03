@@ -12,7 +12,10 @@
 
 (include-book "isodata")
 
-(include-book "std/testing/eval" :dir :system)
+(include-book "std/testing/must-be-redundant" :dir :system)
+(include-book "std/testing/must-fail" :dir :system)
+(include-book "std/testing/must-succeed" :dir :system)
+(include-book "std/testing/must-succeed-star" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -103,7 +106,7 @@
       nil)))
 
  (must-be-redundant
-  (defthm f-~>-f1
+  (defthm f-to-f1
     (implies (oldp x)
              (equal (f x)
                     (back (f1 (forth x))))))))
@@ -213,7 +216,7 @@
       nil)))
 
  (must-be-redundant
-  (defthm f-~>-f1
+  (defthm f-to-f1
     (implies (in-oldp x)
              (equal (f x)
                     (out-back (f1 (in-forth x))))))))
@@ -429,7 +432,7 @@
   (must-fail (isodata f ((x (oldp newp forth back))))))
 
  ;; OLDP is a lambda expression in program mode:
- (must-fail (isodata f ((x ((lambda (x) (assert-event x)) newp forth back)))))
+ (must-fail (isodata f ((x ((lambda (x) (digit-char-p x)) newp forth back)))))
 
  ;; OLDP is a non-unary lambda expression:
  (must-fail (isodata f ((x ((lambda (x y) (+ x y)) newp forth back)))))
@@ -452,7 +455,7 @@
  (must-fail (isodata f ((x (list newp forth back)))))
 
  ;; OLDP is a macro that abbreviates a lambda expression in program mode:
- (must-fail (isodata f ((x (assert-event newp forth back)))))
+ (must-fail (isodata f ((x (digit-char-p newp forth back)))))
 
  ;; OLDP is a macro that abbreviates a lambda expression with stobjs:
  (must-succeed*
@@ -508,7 +511,7 @@
   (must-fail (isodata f ((x (natp newp forth back))))))
 
  ;; NEWP is a lambda expression in program mode:
- (must-fail (isodata f ((x (natp (lambda (x) (assert-event x)) forth back)))))
+ (must-fail (isodata f ((x (natp (lambda (x) (digit-char-p x)) forth back)))))
 
  ;; NEWP is a non-unary lambda expression:
  (must-fail (isodata f ((x (natp (lambda (x y) (+ x y)) forth back)))))
@@ -531,7 +534,7 @@
  (must-fail (isodata f ((x (natp list forth back)))))
 
  ;; NEWP is a macro that abbreviates a lambda expression in program mode:
- (must-fail (isodata f ((x (natp assert-event forth back)))))
+ (must-fail (isodata f ((x (natp digit-char-p forth back)))))
 
  ;; NEWP is a macro that abbreviates a lambda expression with stobjs:
  (must-succeed*
@@ -587,7 +590,7 @@
   (must-fail (isodata f ((x (natp natp forth back))))))
 
  ;; FORTH is a lambda expression in program mode:
- (must-fail (isodata f ((x (natp natp (lambda (x) (assert-event x)) back)))))
+ (must-fail (isodata f ((x (natp natp (lambda (x) (digit-char-p x)) back)))))
 
  ;; FORTH is a non-unary lambda expression:
  (must-fail (isodata f ((x (natp natp (lambda (x y) (+ x y)) back)))))
@@ -610,7 +613,7 @@
  (must-fail (isodata f ((x (natp natp list back)))))
 
  ;; FORTH is a macro that abbreviates a lambda expression in program mode:
- (must-fail (isodata f ((x (natp natp assert-event back)))))
+ (must-fail (isodata f ((x (natp natp digit-char-p back)))))
 
  ;; FORTH is a macro that abbreviates a lambda expression with stobjs:
  (must-succeed*
@@ -667,7 +670,7 @@
 
  ;; BACK is a lambda expression in program mode:
  (must-fail
-  (isodata f ((x (natp natp identity (lambda (x) (assert-event x)))))))
+  (isodata f ((x (natp natp identity (lambda (x) (digit-char-p x)))))))
 
  ;; BACK is a non-unary lambda expression:
  (must-fail (isodata f ((x (natp natp identity (lambda (x y) (+ x y)))))))
@@ -690,7 +693,7 @@
  (must-fail (isodata f ((x (natp natp identity list)))))
 
  ;; BACK is a macro that abbreviates a lambda expression in program mode:
- (must-fail (isodata f ((x (natp natp identity assert-event)))))
+ (must-fail (isodata f ((x (natp natp identity digit-char-p)))))
 
  ;; BACK is a macro that abbreviates a lambda expression with stobjs:
  (must-succeed*
@@ -791,45 +794,81 @@
 
 (must-succeed*
 
- (test-title "Check THM-NAME input.")
+ (test-title "Check OLD-TO-NEW-NAME input.")
 
  (defun f (x) (declare (xargs :guard (natp x))) (1+ x)) ; OLD
 
  (defiso nat-id natp natp identity identity)
 
- ;; THM-NAME is not a symbol:
+ ;; OLD-TO-NEW-NAME is not a symbol:
  (must-fail
-  (isodata f ((x (natp natp identity identity))) :thm-name "f-~>-f{1}"))
+  (isodata f ((x (natp natp identity identity))) :old-to-new-name "f-to-f{1}"))
  (must-fail
-  (isodata f ((x nat-id)) :thm-name "f-~>-f{1}"))
+  (isodata f ((x nat-id)) :old-to-new-name "f-to-f{1}"))
 
- ;; THM-NAME is in the main Lisp package:
- (must-fail (isodata f ((x (natp natp identity identity))) :thm-name cons))
- (must-fail (isodata f ((x nat-id)) :thm-name cons))
+ ;; OLD-TO-NEW-NAME is in the main Lisp package:
+ (must-fail (isodata f ((x (natp natp identity identity)))
+                     :old-to-new-name cons))
+ (must-fail (isodata f ((x nat-id)) :old-to-new-name cons))
 
- ;; THM-NAME is a keyword (other than :AUTO):
- (must-fail
-  (isodata f ((x (natp natp identity identity))) :thm-name :f-~>-f{1}))
- (must-fail
-  (isodata f ((x nat-id)) :thm-name :f-~>-f{1}))
-
- ;; THM-NAME yields an automatic name that already exists:
+ ;; OLD-TO-NEW-NAME yields an automatic name that already exists:
  (must-succeed*
-  (defun f-~>-f{1} (x) x)
-  (must-fail (isodata f ((x (natp natp identity identity))) :thm-name :auto))
-  (must-fail (isodata f ((x nat-id)) :thm-name :auto)))
+  (defun f-to-f{1} (x) x)
+  (must-fail (isodata f ((x (natp natp identity identity)))
+                      :old-to-new-name nil))
+  (must-fail (isodata f ((x nat-id)) :old-to-new-name nil)))
 
- ;; THM-NAME yields a default name that already exists:
+ ;; OLD-TO-NEW-NAME yields a default name that already exists:
  (must-succeed*
-  (defun f-~>-f{1} (x) x)
+  (defun f-to-f{1} (x) x)
   (must-fail (isodata f ((x (natp natp identity identity)))))
   (must-fail (isodata f ((x nat-id)))))
 
- ;; THM-NAME is a name that already exists:
+ ;; OLD-TO-NEW-NAME is a name that already exists:
  (must-fail
-  (isodata f ((x (natp natp identity identity))) :thm-name car-cdr-elim))
+  (isodata f ((x (natp natp identity identity))) :old-to-new-name car-cdr-elim))
  (must-fail
-  (isodata f ((x nat-id)) :thm-name car-cdr-elim)))
+  (isodata f ((x nat-id)) :old-to-new-name car-cdr-elim)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-succeed*
+
+ (test-title "Check NEW-TO-OLD-NAME input.")
+
+ (defun f (x) (declare (xargs :guard (natp x))) (1+ x)) ; OLD
+
+ (defiso nat-id natp natp identity identity)
+
+ ;; NEW-TO-OLD-NAME is not a symbol:
+ (must-fail
+  (isodata f ((x (natp natp identity identity))) :new-to-old-name "f{1}-to-f"))
+ (must-fail
+  (isodata f ((x nat-id)) :new-to-old-name "f{1}-to-f"))
+
+ ;; NEW-TO-OLD-NAME is in the main Lisp package:
+ (must-fail (isodata f ((x (natp natp identity identity)))
+                     :new-to-old-name cons))
+ (must-fail (isodata f ((x nat-id)) :new-to-old-name cons))
+
+ ;; NEW-TO-OLD-NAME yields an automatic name that already exists:
+ (must-succeed*
+  (defun f{1}-to-f (x) x)
+  (must-fail (isodata f ((x (natp natp identity identity)))
+                      :new-to-old-name nil))
+  (must-fail (isodata f ((x nat-id)) :new-to-old-name nil)))
+
+ ;; NEW-TO-OLD-NAME yields a default name that already exists:
+ (must-succeed*
+  (defun f{1}-to-f (x) x)
+  (must-fail (isodata f ((x (natp natp identity identity)))))
+  (must-fail (isodata f ((x nat-id)))))
+
+ ;; NEW-TO-OLD-NAME is a name that already exists:
+ (must-fail
+  (isodata f ((x (natp natp identity identity))) :new-to-old-name car-cdr-elim))
+ (must-fail
+  (isodata f ((x nat-id)) :new-to-old-name car-cdr-elim)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -849,13 +888,10 @@
  (must-fail (isodata f ((x (natp natp identity identity))) :new-enable "t"))
  (must-fail (isodata f ((x nat-id)) :new-enable "t"))
 
- ;; THM-ENABLE is not a boolean:
- (must-fail (isodata f ((x (natp natp identity identity))) :thm-enable :auto))
- (must-fail (isodata f ((x nat-id)) :thm-enable :auto))
-
- ;; NON-EXECUTABLE is not in (T NIL :AUTO):
- (must-fail (isodata f ((x (natp natp identity identity))) :non-executable #\t))
- (must-fail (isodata f ((x nat-id)) :non-executable #\t))
+ ;; OLD-TO-NEW-ENABLE is not a boolean:
+ (must-fail (isodata f ((x (natp natp identity identity)))
+                     :old-to-new-enable :auto))
+ (must-fail (isodata f ((x nat-id)) :old-to-new-enable :auto))
 
  ;; VERIFY-GUARDS is not in (T NIL :AUTO):
  (must-fail
@@ -1501,85 +1537,178 @@
  (must-succeed*
   (isodata f ((x (natp natp identity identity))))
   (must-be-redundant
-   (DEFTHM F-~>-F{1}
+   (DEFTHM F-TO-F{1}
      (IMPLIES (NATP X) (EQUAL (F X) (F{1} (IDENTITY X)))))))
  (must-succeed*
   (isodata f ((x nat-id)))
   (must-be-redundant
-   (DEFTHM F-~>-F{1}
+   (DEFTHM F-TO-F{1}
      (IMPLIES (NATP X) (EQUAL (F X) (F{1} (IDENTITY X)))))))
 
  ;; default OLD-TO-NEW name for P:
  (must-succeed*
   (isodata p ((x (natp natp identity identity))) :predicate t)
   (must-be-redundant
-   (DEFTHM P-~>-P{1}
+   (DEFTHM P-TO-P{1}
      (IMPLIES (NATP X) (EQUAL (P X) (P{1} (IDENTITY X)))))))
  (must-succeed*
   (isodata p ((x nat-id)) :predicate t)
   (must-be-redundant
-   (DEFTHM P-~>-P{1}
+   (DEFTHM P-TO-P{1}
      (IMPLIES (NATP X) (EQUAL (P X) (P{1} (IDENTITY X)))))))
 
- ;; automatic OLD-TO-NEW name for F:
+ ;; keyword-specified OLD-TO-NEW for F:
  (must-succeed*
   (isodata f ((x (natp natp identity identity)))
-           :thm-name :auto)
+           :old-to-new-name :-is-expressible-as-)
   (must-be-redundant
-   (DEFTHM F-~>-F{1}
+   (DEFTHM F-IS-EXPRESSIBLE-AS-F{1}
      (IMPLIES (NATP X) (EQUAL (F X) (F{1} (IDENTITY X)))))))
  (must-succeed*
   (isodata f ((x nat-id))
-           :thm-name :auto)
+           :old-to-new-name :-is-expressible-as-)
   (must-be-redundant
-   (DEFTHM F-~>-F{1}
+   (DEFTHM F-IS-EXPRESSIBLE-AS-F{1}
      (IMPLIES (NATP X) (EQUAL (F X) (F{1} (IDENTITY X)))))))
 
- ;; automatic OLD-TO-NEW name for P:
+ ;; keyword-specified OLD-TO-NEW for P:
  (must-succeed*
   (isodata p ((x (natp natp identity identity)))
            :predicate t
-           :thm-name :auto)
+           :old-to-new-name :-is-expressible-as-)
   (must-be-redundant
-   (DEFTHM P-~>-P{1}
+   (DEFTHM P-IS-EXPRESSIBLE-AS-P{1}
      (IMPLIES (NATP X) (EQUAL (P X) (P{1} (IDENTITY X)))))))
  (must-succeed*
   (isodata p ((x nat-id))
            :predicate t
-           :thm-name :auto)
+           :old-to-new-name :-is-expressible-as-)
   (must-be-redundant
-   (DEFTHM P-~>-P{1}
+   (DEFTHM P-IS-EXPRESSIBLE-AS-P{1}
      (IMPLIES (NATP X) (EQUAL (P X) (P{1} (IDENTITY X)))))))
 
  ;; explicitly named OLD-TO-NEW for F:
  (must-succeed*
   (isodata f ((x (natp natp identity identity)))
-           :thm-name f{1}-correct-wrt-f)
+           :old-to-new-name f-correct-wrt-f{1})
   (must-be-redundant
-   (DEFTHM F{1}-CORRECT-WRT-F
+   (DEFTHM F-CORRECT-WRT-F{1}
      (IMPLIES (NATP X) (EQUAL (F X) (F{1} (IDENTITY X)))))))
  (must-succeed*
   (isodata f ((x nat-id))
-           :thm-name f{1}-correct-wrt-f)
+           :old-to-new-name f-correct-wrt-f{1})
   (must-be-redundant
-   (DEFTHM F{1}-CORRECT-WRT-F
+   (DEFTHM F-CORRECT-WRT-F{1}
      (IMPLIES (NATP X) (EQUAL (F X) (F{1} (IDENTITY X)))))))
 
  ;; explicitly named OLD-TO-NEW for P:
  (must-succeed*
   (isodata p ((x (natp natp identity identity)))
            :predicate t
-           :thm-name p{1}-correct-wrt-p)
+           :old-to-new-name p-correct-wrt-p{1})
   (must-be-redundant
-   (DEFTHM P{1}-CORRECT-WRT-P
+   (DEFTHM P-CORRECT-WRT-P{1}
      (IMPLIES (NATP X) (EQUAL (P X) (P{1} (IDENTITY X)))))))
  (must-succeed*
   (isodata p ((x nat-id))
            :predicate t
-           :thm-name p{1}-correct-wrt-p)
+           :old-to-new-name p-correct-wrt-p{1})
+  (must-be-redundant
+   (DEFTHM P-CORRECT-WRT-P{1}
+     (IMPLIES (NATP X) (EQUAL (P X) (P{1} (IDENTITY X))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-succeed*
+
+ (test-title "Naming of NEW-TO-OLD.")
+
+ (defun f (x) ; OLD when :PREDICATE is NIL
+   (declare (xargs :guard (natp x))) (1+ x))
+
+ (defun p (x) (and (natp x) (> x 10))) ; OLD when :PREDICATE is T
+
+ (defiso nat-id natp natp identity identity)
+
+ ;; default NEW-TO-OLD name for F:
+ (must-succeed*
+  (isodata f ((x (natp natp identity identity))))
+  (must-be-redundant
+   (DEFTHM f{1}-to-f
+     (IMPLIES (NATP X) (EQUAL (F{1} X) (F (IDENTITY X)))))))
+ (must-succeed*
+  (isodata f ((x nat-id)))
+  (must-be-redundant
+   (DEFTHM f{1}-to-f
+     (IMPLIES (NATP X) (EQUAL (F{1} X) (F (IDENTITY X)))))))
+
+ ;; default NEW-TO-OLD name for P:
+ (must-succeed*
+  (isodata p ((x (natp natp identity identity))) :predicate t)
+  (must-be-redundant
+   (DEFTHM p{1}-to-p
+     (IMPLIES (NATP X) (EQUAL (P{1} X) (P (IDENTITY X)))))))
+ (must-succeed*
+  (isodata p ((x nat-id)) :predicate t)
+  (must-be-redundant
+   (DEFTHM p{1}-to-p
+     (IMPLIES (NATP X) (EQUAL (P{1} X) (P (IDENTITY X)))))))
+
+ ;; keyword-specified NEW-TO-OLD for F:
+ (must-succeed*
+  (isodata f ((x (natp natp identity identity)))
+           :new-to-old-name :-is-expressible-as-)
+  (must-be-redundant
+   (DEFTHM F{1}-IS-EXPRESSIBLE-AS-F
+     (IMPLIES (NATP X) (EQUAL (F{1} X) (F (IDENTITY X)))))))
+ (must-succeed*
+  (isodata f ((x nat-id))
+           :new-to-old-name :-is-expressible-as-)
+  (must-be-redundant
+   (DEFTHM F{1}-IS-EXPRESSIBLE-AS-F
+     (IMPLIES (NATP X) (EQUAL (F{1} X) (F (IDENTITY X)))))))
+
+ ;; keyword-specified NEW-TO-OLD for P:
+ (must-succeed*
+  (isodata p ((x (natp natp identity identity)))
+           :predicate t
+           :new-to-old-name :-is-expressible-as-)
+  (must-be-redundant
+   (DEFTHM P{1}-IS-EXPRESSIBLE-AS-P
+     (IMPLIES (NATP X) (EQUAL (P{1} X) (P (IDENTITY X)))))))
+ (must-succeed*
+  (isodata p ((x nat-id))
+           :predicate t
+           :new-to-old-name :-is-expressible-as-)
+  (must-be-redundant
+   (DEFTHM P{1}-IS-EXPRESSIBLE-AS-P
+     (IMPLIES (NATP X) (EQUAL (P{1} X) (P (IDENTITY X)))))))
+
+ ;; explicitly named NEW-TO-OLD for F:
+ (must-succeed*
+  (isodata f ((x (natp natp identity identity))) :new-to-old-name f{1}-correct-wrt-f)
+  (must-be-redundant
+   (DEFTHM F{1}-CORRECT-WRT-F
+     (IMPLIES (NATP X) (EQUAL (F{1} X) (F (IDENTITY X)))))))
+ (must-succeed*
+  (isodata f ((x nat-id)) :new-to-old-name f{1}-correct-wrt-f)
+  (must-be-redundant
+   (DEFTHM F{1}-CORRECT-WRT-F
+     (IMPLIES (NATP X) (EQUAL (F{1} X) (F (IDENTITY X)))))))
+
+ ;; explicitly named NEW-TO-OLD for P:
+ (must-succeed*
+  (isodata p ((x (natp natp identity identity)))
+           :predicate t :new-to-old-name p{1}-correct-wrt-p)
   (must-be-redundant
    (DEFTHM P{1}-CORRECT-WRT-P
-     (IMPLIES (NATP X) (EQUAL (P X) (P{1} (IDENTITY X))))))))
+     (IMPLIES (NATP X) (EQUAL (P{1} X) (P (IDENTITY X)))))))
+ (must-succeed*
+  (isodata p ((x nat-id))
+           :predicate t :new-to-old-name p{1}-correct-wrt-p)
+  (must-be-redundant
+   (DEFTHM P{1}-CORRECT-WRT-P
+     (IMPLIES (NATP X) (EQUAL (P{1} X) (P (IDENTITY X))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1591,29 +1720,63 @@
 
  (defiso nat-id natp natp identity identity)
 
- ;; by default, OLD-TO-NEW is enabled:
+ ;; by default, OLD-TO-NEW is disabled:
  (must-succeed*
   (isodata f ((x (natp natp identity identity))))
-  (assert-event (rune-enabledp '(:rewrite f-~>-f{1}) state)))
+  (assert-event (rune-disabledp '(:rewrite f-to-f{1}) state)))
  (must-succeed*
   (isodata f ((x nat-id)))
-  (assert-event (rune-enabledp '(:rewrite f-~>-f{1}) state)))
+  (assert-event (rune-disabledp '(:rewrite f-to-f{1}) state)))
 
  ;; enable OLD-TO-NEW:
  (must-succeed*
-  (isodata f ((x (natp natp identity identity))) :thm-enable t)
-  (assert-event (rune-enabledp '(:rewrite f-~>-f{1}) state)))
+  (isodata f ((x (natp natp identity identity))) :old-to-new-enable t)
+  (assert-event (rune-enabledp '(:rewrite f-to-f{1}) state)))
  (must-succeed*
-  (isodata f ((x nat-id)) :thm-enable t)
-  (assert-event (rune-enabledp '(:rewrite f-~>-f{1}) state)))
+  (isodata f ((x nat-id)) :old-to-new-enable t)
+  (assert-event (rune-enabledp '(:rewrite f-to-f{1}) state)))
 
  ;; disable OLD-TO-NEW:
  (must-succeed*
-  (isodata f ((x (natp natp identity identity))) :thm-enable nil)
-  (assert-event (not (rune-enabledp '(:rewrite f-~>-f{1}) state))))
+  (isodata f ((x (natp natp identity identity))) :old-to-new-enable nil)
+  (assert-event (not (rune-enabledp '(:rewrite f-to-f{1}) state))))
  (must-succeed*
-  (isodata f ((x nat-id)) :thm-enable nil)
-  (assert-event (not (rune-enabledp '(:rewrite f-~>-f{1}) state)))))
+  (isodata f ((x nat-id)) :old-to-new-enable nil)
+  (assert-event (not (rune-enabledp '(:rewrite f-to-f{1}) state)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-succeed*
+
+ (test-title "Enabling of NEW-TO-OLD.")
+
+ (defun f (x) (declare (xargs :guard (natp x))) (1+ x)) ; OLD
+
+ (defiso nat-id natp natp identity identity)
+
+ ;; by default, NEW-TO-OLD is disabled:
+ (must-succeed*
+  (isodata f ((x (natp natp identity identity))))
+  (assert-event (rune-disabledp '(:rewrite f{1}-to-f) state)))
+ (must-succeed*
+  (isodata f ((x nat-id)))
+  (assert-event (rune-disabledp '(:rewrite f{1}-to-f) state)))
+
+ ;; enable NEW-TO-OLD:
+ (must-succeed*
+  (isodata f ((x (natp natp identity identity))) :new-to-old-enable t)
+  (assert-event (rune-enabledp '(:rewrite f{1}-to-f) state)))
+ (must-succeed*
+  (isodata f ((x nat-id)) :new-to-old-enable t)
+  (assert-event (rune-enabledp '(:rewrite f{1}-to-f) state)))
+
+ ;; disable NEW-TO-OLD:
+ (must-succeed*
+  (isodata f ((x (natp natp identity identity))) :new-to-old-enable nil)
+  (assert-event (not (rune-enabledp '(:rewrite f{1}-to-f) state))))
+ (must-succeed*
+  (isodata f ((x nat-id)) :new-to-old-enable nil)
+  (assert-event (not (rune-enabledp '(:rewrite f{1}-to-f) state)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1623,7 +1786,7 @@
 
  (defiso nat-id natp natp identity identity)
 
- ;; by default, NEW is non-executable iff OLD is:
+ ;; NEW is non-executable iff OLD is:
  (must-succeed*
   ;; :PREDICATE is NIL:
   (must-succeed*
@@ -1669,169 +1832,7 @@
    (must-succeed*
     (defun-nx p (x) (and (natp x) (> x 10))) ; non-executable OLD
     (isodata p ((x nat-id)) :predicate t)
-    (assert-event (non-executablep 'p{1} (w state))))))
-
- ;; make NEW non-executable iff OLD is:
- (must-succeed*
-  ;; :PREDICATE is NIL:
-  (must-succeed*
-   (must-succeed*
-    (defun f (x) (declare (xargs :guard (natp x))) (1+ x)) ; executable OLD
-    (isodata f ((x (natp natp identity identity))) :non-executable :auto)
-    (assert-event (not (non-executablep 'f{1} (w state)))))
-   (must-succeed*
-    (defun-nx f (x) ; non-executable OLD
-      (declare (xargs :guard (natp x)))
-      (1+ x))
-    (isodata f ((x (natp natp identity identity))) :non-executable :auto)
-    (assert-event (non-executablep 'f{1} (w state)))))
-  ;; :PREDICATE is T:
-  (must-succeed*
-   (must-succeed*
-    (defun p (x) (and (natp x) (> x 10))) ; executable OLD
-    (isodata p ((x (natp natp identity identity)))
-             :predicate t
-             :non-executable :auto)
-    (assert-event (not (non-executablep 'p{1} (w state)))))
-   (must-succeed*
-    (defun-nx p (x) (and (natp x) (> x 10))) ; non-executable OLD
-    (isodata p ((x (natp natp identity identity)))
-             :predicate t
-             :non-executable :auto)
-    (assert-event (non-executablep 'p{1} (w state))))))
- (must-succeed*
-  ;; :PREDICATE is NIL:
-  (must-succeed*
-   (must-succeed*
-    (defun f (x) (declare (xargs :guard (natp x))) (1+ x)) ; executable OLD
-    (isodata f ((x nat-id)) :non-executable :auto)
-    (assert-event (not (non-executablep 'f{1} (w state)))))
-   (must-succeed*
-    (defun-nx f (x) ; non-executable OLD
-      (declare (xargs :guard (natp x)))
-      (1+ x))
-    (isodata f ((x nat-id)) :non-executable :auto)
-    (assert-event (non-executablep 'f{1} (w state)))))
-  ;; :PREDICATE is T:
-  (must-succeed*
-   (must-succeed*
-    (defun p (x) (and (natp x) (> x 10))) ; executable OLD
-    (isodata p ((x nat-id))
-             :predicate t
-             :non-executable :auto)
-    (assert-event (not (non-executablep 'p{1} (w state)))))
-   (must-succeed*
-    (defun-nx p (x) (and (natp x) (> x 10))) ; non-executable OLD
-    (isodata p ((x nat-id))
-             :predicate t
-             :non-executable :auto)
-    (assert-event (non-executablep 'p{1} (w state))))))
-
- ;; make NEW non-executable:
- (must-succeed*
-  ;; :PREDICATE is NIL:
-  (must-succeed*
-   (must-succeed*
-    (defun f (x) (declare (xargs :guard (natp x))) (1+ x)) ; executable OLD
-    (isodata f ((x (natp natp identity identity))) :non-executable t)
-    (assert-event (non-executablep 'f{1} (w state))))
-   (must-succeed*
-    (defun-nx f (x) ; non-executable OLD
-      (declare (xargs :guard (natp x)))
-      (1+ x))
-    (isodata f ((x (natp natp identity identity))) :non-executable t)
-    (assert-event (non-executablep 'f{1} (w state)))))
-  ;; :PREDICATE is T:
-  (must-succeed*
-   (must-succeed*
-    (defun p (x) (and (natp x) (> x 10))) ; executable OLD
-    (isodata p ((x (natp natp identity identity)))
-             :predicate t :non-executable t)
-    (assert-event (non-executablep 'p{1} (w state))))
-   (must-succeed*
-    (defun-nx p (x) (and (natp x) (> x 10))) ; non-executable OLD
-    (isodata p ((x (natp natp identity identity)))
-             :predicate t :non-executable t)
-    (assert-event (non-executablep 'p{1} (w state))))))
- (must-succeed*
-  ;; :PREDICATE is NIL:
-  (must-succeed*
-   (must-succeed*
-    (defun f (x) (declare (xargs :guard (natp x))) (1+ x)) ; executable OLD
-    (isodata f ((x nat-id)) :non-executable t)
-    (assert-event (non-executablep 'f{1} (w state))))
-   (must-succeed*
-    (defun-nx f (x) ; non-executable OLD
-      (declare (xargs :guard (natp x)))
-      (1+ x))
-    (isodata f ((x nat-id)) :non-executable t)
-    (assert-event (non-executablep 'f{1} (w state)))))
-  ;; :PREDICATE is T:
-  (must-succeed*
-   (must-succeed*
-    (defun p (x) (and (natp x) (> x 10))) ; executable OLD
-    (isodata p ((x nat-id))
-             :predicate t :non-executable t)
-    (assert-event (non-executablep 'p{1} (w state))))
-   (must-succeed*
-    (defun-nx p (x) (and (natp x) (> x 10))) ; non-executable OLD
-    (isodata p ((x nat-id))
-             :predicate t :non-executable t)
-    (assert-event (non-executablep 'p{1} (w state))))))
-
- ;; do not make NEW non-executable:
- (must-succeed*
-  ;; :PREDICATE is NIL:
-  (must-succeed*
-   (must-succeed*
-    (defun f (x) (declare (xargs :guard (natp x))) (1+ x)) ; executable OLD
-    (isodata f ((x (natp natp identity identity))) :non-executable nil)
-    (assert-event (not (non-executablep 'f{1} (w state)))))
-   (must-succeed*
-    (defun-nx f (x) ; non-executable OLD
-      (declare (xargs :guard (natp x)))
-      (1+ x))
-    (defun-nx p (x) (and (natp x) (> x 10))) ; non-executable OLD
-    (isodata f ((x (natp natp identity identity))) :non-executable nil)
-    (assert-event (not (non-executablep 'f{1} (w state))))))
-  ;; :PREDICATE is T:
-  (must-succeed*
-   (must-succeed*
-    (defun p (x) (and (natp x) (> x 10))) ; executable OLD
-    (isodata p ((x (natp natp identity identity)))
-             :predicate t :non-executable nil)
-    (assert-event (not (non-executablep 'p{1} (w state)))))
-   (must-succeed*
-    (defun-nx p (x) (and (natp x) (> x 10))) ; non-executable OLD
-    (isodata p ((x (natp natp identity identity)))
-             :predicate t :non-executable nil)
-    (assert-event (not (non-executablep 'p{1} (w state)))))))
- (must-succeed*
-  ;; :PREDICATE is NIL:
-  (must-succeed*
-   (must-succeed*
-    (defun f (x) (declare (xargs :guard (natp x))) (1+ x)) ; executable OLD
-    (isodata f ((x nat-id)) :non-executable nil)
-    (assert-event (not (non-executablep 'f{1} (w state)))))
-   (must-succeed*
-    (defun-nx f (x) ; non-executable OLD
-      (declare (xargs :guard (natp x)))
-      (1+ x))
-    (defun-nx p (x) (and (natp x) (> x 10))) ; non-executable OLD
-    (isodata f ((x nat-id)) :non-executable nil)
-    (assert-event (not (non-executablep 'f{1} (w state))))))
-  ;; :PREDICATE is T:
-  (must-succeed*
-   (must-succeed*
-    (defun p (x) (and (natp x) (> x 10))) ; executable OLD
-    (isodata p ((x nat-id))
-             :predicate t :non-executable nil)
-    (assert-event (not (non-executablep 'p{1} (w state)))))
-   (must-succeed*
-    (defun-nx p (x) (and (natp x) (> x 10))) ; non-executable OLD
-    (isodata p ((x nat-id))
-             :predicate t :non-executable nil)
-    (assert-event (not (non-executablep 'p{1} (w state))))))))
+    (assert-event (non-executablep 'p{1} (w state)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2735,4 +2736,31 @@
     (lambda (i) (if (>= i 0)
                     (* 2 i)
                   (1- (- (* 2 i))))))
-  (isodata j ((x nat/int)))))
+  (isodata j ((x nat/int))))
+
+ ;;;;;;;;;;
+
+ (defun i (x y z)
+   (declare (xargs :guard (and (natp x) (natp y) (natp z))))
+   (mv z x y))
+
+ (must-succeed*
+  (defiso nat-id natp natp identity identity)
+  (isodata i (((x y z :result1 :result2 :result3) nat-id))))
+
+ (must-succeed*
+  (defun nat-to-int (n) ; FORTH
+    (declare (xargs :guard (natp n)))
+    (if (evenp n)
+        (/ n 2)
+      (- (/ (1+ n) 2))))
+  (defun int-to-nat (i) ; BACK
+    (declare (xargs :guard (integerp i)))
+    (if (>= i 0)
+        (* 2 i)
+      (1- (- (* 2 i)))))
+  (defiso nat/int natp integerp nat-to-int int-to-nat)
+  (isodata i (((x y z :result1 :result2 :result3) nat/int)))
+  (isodata i (((y :result3 z) nat/int))))
+
+ :with-output-off nil)

@@ -20,7 +20,8 @@
 (in-package "MODAPP")
 (include-book "user-defs")
 (include-book "doppelgangers")
-(include-book "misc/eval" :dir :system)
+(include-book "std/testing/must-fail" :dir :system)
+(include-book "std/testing/must-succeed" :dir :system)
 
 (defattach badge-userfn badge-userfn!)
 (defattach apply$-userfn apply$-userfn!)
@@ -132,4 +133,3 @@
 (expected-to :succeed :evaluation
              (badge 'expt-5)
              '(APPLY$-BADGE T 1 . T))
-

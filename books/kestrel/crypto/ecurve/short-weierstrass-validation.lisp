@@ -21,15 +21,15 @@
 (local (include-book "kestrel/crypto/ecurve/prime-field-intro" :dir :system))
 
 (defthm rule1
-  (equal (curve-group-+ '(0 . 0) '(0 . 0) p a b)
-         '(0 . 0)))
+  (equal (curve-group-+ :infinity :infinity p a b)
+         :infinity))
 
 (defthm rule2a
   (implies (and (natp x)
                 (< x p)
                 (natp y)
                 (< y p))
-           (equal (curve-group-+ (cons x y) '(0 . 0) p a b)
+           (equal (curve-group-+ (cons x y) :infinity p a b)
                   (cons x y))))
 
 (defthm rule2b
@@ -37,7 +37,7 @@
                 (< x p)
                 (natp y)
                 (< y p))
-           (equal (curve-group-+ '(0 . 0) (cons x y) p a b)
+           (equal (curve-group-+ :infinity (cons x y) p a b)
                   (cons x y))))
 
 (defthm rule3
@@ -48,7 +48,7 @@
                 (point-in-pxp-p (cons x y) p)
                 (posp p))
            (equal (curve-group-+ (cons x y) (cons x (- y)) p a b)
-                  '(0 . 0)))
+                  :infinity))
   :hints (("Goal" :in-theory (enable fep curve-group-+))))
 
 (defthm rule4
@@ -69,8 +69,8 @@
                 ;; These two assumptions seem justified if the rules are
                 ;; interpreted in an ordered way, where the rules about '(0
                 ;; . 0) take precedence:
-                (not (equal (cons x1 y1) '(0 . 0)))
-                (not (equal (cons x2 y2) '(0 . 0))))
+                (not (equal (cons x1 y1) :infinity))
+                (not (equal (cons x2 y2) :infinity)))
            (equal (curve-group-+ (cons x1 y1) (cons x2 y2) p a b)
                   (let ((lamb (div (sub y2 y1 p)
                                    (sub x2 x1 p)
@@ -99,4 +99,4 @@
                       (cons x3
                             (sub (mul lamb (sub x1 x3 p) p) y1 p)   ;y3
                             )))))
-  :hints (("Goal" :in-theory (enable pfield::sub-rewrite curve-group-+))))
+  :hints (("Goal" :in-theory (enable curve-group-+))))

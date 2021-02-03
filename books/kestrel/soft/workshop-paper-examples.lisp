@@ -1,6 +1,6 @@
 ; SOFT (Second-Order Functions and Theorems) Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -10,7 +10,12 @@
 
 (in-package "ACL2")
 
-(include-book "implementation")
+(include-book "defunvar")
+(include-book "defun2")
+(include-book "defchoose2")
+(include-book "defun-sk2")
+(include-book "defun-inst")
+(include-book "defthm-inst")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -65,11 +70,10 @@
 ; 1.2.3  Quantifier Functions
 
 (defun-sk2 injective[?f] ()
+  (declare (xargs :guard t))
   (forall (x y)
           (implies (equal (?f x) (?f y))
                    (equal x y))))
-
-(verify-guards injective[?f])
 
 ; 1.3  Instances of Second-Order Functions
 
@@ -102,8 +106,6 @@
 
 (defun-inst injective[quad[?f]]
   (injective[?f] (?f . quad[?f])))
-
-(verify-guards injective[quad[?f]])
 
 ; 1.4  Second-Order Theorems
 
@@ -140,21 +142,19 @@
 (defunvar ?io (* *) => *)
 
 (defun-sk2 atom-io[?f][?io] ()
+  (declare (xargs :guard t))
   (forall x (implies (atom x)
                      (?io x (?f x))))
   :rewrite :direct)
 
-(verify-guards atom-io[?f][?io])
-
 (defun-sk2 consp-io[?g][?io] ()
+  (declare (xargs :guard t))
   (forall (x y1 y2)
           (implies (and (consp x)
                         (?io (car x) y1)
                         (?io (cdr x) y2))
                    (?io x (?g y1 y2))))
   :rewrite :direct)
-
-(verify-guards consp-io[?g][?io])
 
 (defthm fold-io[?f][?g][?io]
   (implies (and (atom-io[?f][?io])
@@ -169,42 +169,45 @@
 (defun-inst injective[quad[wrap]]
   (injective[quad[?f]] (?f . wrap)))
 
-(verify-guards injective[quad[wrap]])
-
 (defun-inst injective[wrap]
   (injective[?f] (?f . wrap)))
-
-(verify-guards injective[wrap])
 
 (defthm-inst injective[quad[wrap]]-when-injective[wrap]
   (injective[quad[?f]]-when-injective[?f] (?f . wrap)))
 
 ; 2  Use in Program Refinement
 
-(set-verify-guards-eagerness 0) ; to keep the program refinement example shorter
-
 ; 2.1  Specifications as Second-Order Predicates
 
 (defun leaf (e bt)
+  (declare (xargs :guard t))
   (cond ((atom bt) (equal e bt))
         (t (or (leaf e (car bt))
                (leaf e (cdr bt))))))
 
 (defunvar ?h (*) => *)
 
+(defun memberp (e x)
+  (declare (xargs :guard t))
+  (and (not (atom x))
+       (or (equal e (car x))
+           (memberp e (cdr x)))))
+
 (defun-sk io (x y)
-  (forall e (iff (member e y)
+  (declare (xargs :guard t))
+  (forall e (iff (memberp e y)
                  (and (leaf e x)
                       (natp e))))
   :rewrite :direct)
 
 (defun-sk2 spec[?h] ()
+  (declare (xargs :guard t))
   (forall x (io x (?h x)))
   :rewrite :direct)
 
 (defthm natp-of-member-of-output
   (implies (and (spec[?h])
-                (member e (?h x)))
+                (memberp e (?h x)))
            (natp e))
   :hints (("Goal" :use (spec[?h]-necc
                         (:instance io-necc (y (?h x)))))))
@@ -214,11 +217,13 @@
 ; Step 1
 
 (defun-sk2 def-?h-fold[?f][?g] ()
+  (declare (xargs :guard t))
   (forall x (equal (?h x)
                    (fold[?f][?g] x)))
   :rewrite :direct)
 
 (defun2 spec1[?h][?f][?g]  ()
+  (declare (xargs :guard t))
   (and (def-?h-fold[?f][?g])
        (spec[?h])))
 
@@ -239,6 +244,7 @@
   (fold-io[?f][?g][?io] (?io . io)))
 
 (defun2 spec2[?h][?f][?g] ()
+  (declare (xargs :guard t))
   (and (def-?h-fold[?f][?g])
        (atom-io[?f])
        (consp-io[?g])))
@@ -255,6 +261,7 @@
 ; Step 3
 
 (defun f (x)
+  (declare (xargs :guard t))
   (if (natp x)
       (list x)
     nil))
@@ -266,10 +273,12 @@
   (atom-io[f]))
 
 (defun-sk2 def-?f ()
+  (declare (xargs :guard t))
   (forall x (equal (?f x) (f x)))
   :rewrite :direct)
 
 (defun2 spec3[?h][?f][?g] ()
+  (declare (xargs :guard t))
   (and (def-?h-fold[?f][?g])
        (def-?f)
        (consp-io[?g])))
@@ -291,13 +300,23 @@
 
 ; Step 4
 
+(defun app (x y)
+  (declare (xargs :guard t))
+  (cond ((atom x) y)
+        (t (cons (car x)
+                 (app (cdr x) y)))))
+
 (defun g (y1 y2)
-  (append y1 y2))
+  (declare (xargs :guard t))
+  (app y1 y2))
 
 (defun-inst consp-io[g]
   (consp-io[?g] (?g . g)))
 
-; member-of-append is already included here
+(defthm memberp-of-app
+  (equal (memberp e (app x y))
+         (or (memberp e x)
+             (memberp e y))))
 
 (defthm consp-io[g]-lemma
   (implies (and (consp x)
@@ -306,18 +325,20 @@
            (io x (g y1 y2)))
   :hints (("Goal"
            :in-theory (disable io)
-           :expand (io x (append y1 y2)))))
+           :expand (io x (app y1 y2)))))
 
 (defthm consp-io[g]!
   (consp-io[g])
   :hints (("Goal" :in-theory (disable g))))
 
 (defun-sk2 def-?g ()
+  (declare (xargs :guard t))
   (forall (y1 y2)
           (equal (?g y1 y2) (g y1 y2)))
   :rewrite :direct)
 
 (defun2 spec4[?h][?f][?g] ()
+  (declare (xargs :guard t))
   (and (def-?h-fold[?f][?g])
        (def-?f)
        (def-?g)))
@@ -340,14 +361,15 @@
 ; Step 5
 
 (defun-inst h
-  (fold[?f][?g] (?f . f) (?g . g))
-  :verify-guards nil)
+  (fold[?f][?g] (?f . f) (?g . g)))
 
 (defun-sk2 def-?h ()
+  (declare (xargs :guard t))
   (forall x (equal (?h x) (h x)))
   :rewrite :direct)
 
 (defun2 spec5[?h][?f][?g] ()
+  (declare (xargs :guard t))
   (and (def-?h)
        (def-?f)
        (def-?g)))

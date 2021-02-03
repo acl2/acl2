@@ -219,7 +219,7 @@
                                   (floor-of-*-of-/-and-1)))))
 
 ;from rtl:
-(defthm mod-sum-cases
+(defthmd mod-sum-cases
   (implies (and (<= 0 y)
                 (rationalp x)
                 (rationalp y)
@@ -285,14 +285,76 @@
          0)
   :hints (("Goal" :in-theory (enable mod))))
 
-(defthm mod-of-minus-arg1
+(defthm mod-when-not-acl2-numberp-arg1
+  (implies (not (acl2-numberp x))
+           (equal (mod x y)
+                  0))
+  :hints (("Goal" :in-theory (enable mod floor))))
+
+(defthm mod-when-not-acl2-numberp-arg2
+  (implies (not (acl2-numberp y))
+           (equal (mod x y)
+                  (if (acl2-numberp x)
+                      x
+                    0)))
+  :hints (("Goal" :in-theory (enable mod floor))))
+
+;; generalizing this is hard since even if x is not rational, the quotient may be.
+(defthm mod-when-not-rationalp-arg1-and-rationalp-arg2
+  (implies (and (not (rationalp x))
+                (rationalp y))
+           (equal (mod x y)
+                  (fix x)))
+  :hints (("Goal" :in-theory (enable mod))))
+
+;; generalizing this is hard since even if x is not rational, the quotient may be.
+(defthm mod-when-rationalp-arg1-and-not-rationalp-arg2
   (implies (and (rationalp x)
-                (rationalp y)
-                (not (equal y 0)))
-           (equal (mod (- x) y)
-                  (if (equal 0 (mod x y))
-                      0
-                    (- y (mod x y))))))
+                (not (rationalp y)))
+           (equal (mod x y)
+                  x))
+  :hints (("Goal" :in-theory (enable mod floor))))
+
+;move
+(local
+ (defthm floor-of---special-case
+   (implies (and (acl2-numberp i)
+                 ;; (not (rationalp i))
+                 (acl2-numberp j)
+                 (not (rationalp j)))
+            (equal (floor (- i) j)
+                   (if (rationalp (* i (/ j)))
+                       (if (integerp (* i (/ j)))
+                           (- (floor i j))
+                           (+ -1 (- (floor i j))))
+                     0)))
+   :hints (("Goal" :in-theory (enable floor)))))
+
+;; TODO: Improve the form of the RHS?
+(defthm mod-of-minus-arg1
+  (equal (mod (- x) y)
+         (if (rationalp y)
+             (if (and (rationalp x)
+                      (not (equal y 0)))
+                 ;; usual case:
+                 (if (equal 0 (mod x y))
+                     0
+                   (- y (mod x y)))
+               (- x))
+           (if (acl2-numberp y)
+               ;; y is complex:
+               (if (integerp (* x (/ y))) ;; (equal 0 (mod x y))
+                   0
+                 (if (rationalp (* x (/ y)))
+                     (- y (mod x y))
+                   (- x)))
+             (- x))))
+  :hints (("Goal"
+           :in-theory (e/d (mod floor-when-integerp-of-quotient)
+                           (prefer-positive-addends-equal))
+           :cases ((not (acl2-numberp y))
+                   (rationalp y)
+                   (not (acl2-numberp x))))))
 
 (defthm mod-of-minus-arg2
   (implies (and (rationalp x)
@@ -301,20 +363,6 @@
                   (- (mod (- x) y))))
   :hints (("Goal" :cases ((equal '0 y)))))
 
-
-;; generalizing this is hard since even if x is not rational, the quotient may be.
-(defthm mod-when-not-rationalp-arg1
-  (implies (and (not (rationalp x))
-                (rationalp y))
-           (equal (mod x y)
-                  (fix x)))
-  :hints (("Goal" :in-theory (enable mod))))
-
-(defthm mod-when-not-acl2-numberp
-  (implies (not (acl2-numberp x))
-           (equal (mod x y)
-                  0))
-  :hints (("Goal" :in-theory (enable mod floor))))
 
 (defthm mod-when-multiple
   (implies (and (integerp (* x (/ y)))
@@ -356,7 +404,7 @@
   :hints (("Goal" :in-theory (enable mod-sum-cases))))
 
 ;enable?
-(defthmd mod-of-*-subst
+(defthmd mod-of-*-subst-arg2
   (implies (and (equal (mod y p)
                        (mod free p))
                 (syntaxp (not (term-order y free)))
@@ -374,6 +422,21 @@
                                   (z p)
                                   (y free)))
            :in-theory (disable mod-of-*-of-mod))))
+
+;enable?
+(defthmd mod-of-*-subst-arg1
+  (implies (and (equal (mod y p)
+                       (mod free p))
+                (syntaxp (not (term-order y free)))
+                (integerp x)
+                (integerp y)
+                (integerp free)
+                (integerp p)
+                (< 0 p))
+           (equal (mod (* y x) p)
+                  (mod (* free x) p)))
+  :hints (("Goal" :use (:instance mod-of-*-subst-arg2)
+           :in-theory (disable mod-of-*-subst-arg2))))
 
 (defthm mod-of-+-of---same
   (implies (and (rationalp x)
@@ -445,10 +508,12 @@
 
 ;gen?
 (defthm equal-of-mod-same
-  (implies (and (< 0 y)
-                (rationalp y)
+  (implies (and (rationalp y)
                 (rationalp x))
-           (not (equal y (mod x y)))))
+           (equal (equal y (mod x y))
+                  (if (equal 0 y)
+                      (equal 0 x)
+                    nil))))
 
 ;two ways of saying that i is odd
 (defthm equal-of-+-1-and-*-2-of-floor-of-2
@@ -464,25 +529,6 @@
                       (+ -1 i)
                     i)))
   :hints (("Goal" :in-theory (enable))))
-
-(defthm split-low-bit
-  (implies (rationalp i)
-           (equal i (+ (* 2 (floor i 2)) (mod i 2))))
-  :rule-classes nil
-  :hints (("Goal" :in-theory (enable mod))))
-
-(defthmd floor-of-2-cases
-  (implies (integerp i)
-           (equal (floor i 2)
-                  (if (equal 0 (mod i 2))
-                      (/ i 2)
-                    (+ -1/2 (/ i 2)))))
-  :hints (("Goal" :use ((:instance floor-unique
-                                   (j 2)
-                                   (n (if (equal 0 (mod i 2))
-                                          (/ i 2)
-                                        (+ 1/2 (/ i 2)))))
-                        (:instance split-low-bit)))))
 
 ;two ways of saying that i is even
 (defthmd equal-of-*-2-of-floor-of-2-same
@@ -525,3 +571,104 @@
                 (< 0 p))
            (equal (mod (* y x) p)
                   (mod (* y free) p))))
+
+;; since (mod x p) is less than p
+(defthm integerp-of-*-of-/-and-mod-same
+  (implies (natp p)
+           (equal (integerp (* (/ p) (mod x p)))
+                  (or (equal 0 (mod x p))
+                      (equal p 0)))))
+
+(defthmd mod-when-not-rationalp-of-quotient
+  (implies (not (rationalp (* (/ p) x)))
+           (equal (mod x p)
+                  (fix x)))
+  :hints (("Goal" :in-theory (enable mod floor))))
+
+(defthm mod-when-integerp-of-quotient
+  (implies (integerp (* x (/ y)))
+           (equal (mod x y)
+                  (if (or (not (acl2-numberp x))
+                          (and (acl2-numberp y)
+                               (not (equal 0 y))))
+                      0
+                    x)))
+  :hints (("Goal" :cases ((acl2-numberp x))
+           :in-theory (enable mod
+                              floor-when-integerp-of-quotient))))
+
+(defthmd mod-when-equal-of-mod-and-0-free
+  (implies (and (equal 0 (mod x y2)) ;y2 is a free var
+                (equal 0 (mod y2 y))
+                (rationalp y2))
+           (equal (mod x y)
+                  0))
+  :hints (("Goal"
+           :use (:instance acl2::integerp-of-*
+                           (x (* x (/ y2)))
+                           (y (* (/ y) y2)))
+           :in-theory (e/d (acl2::equal-of-0-and-mod)
+                           (acl2::integerp-of-*)))))
+
+(defthm mod-when-equal-of-mod-and-0-free-cheap
+  (implies (and (syntaxp (quotep y))
+                (equal 0 (mod x y2)) ;y2 is a free var
+                (syntaxp (quotep y2))
+                (equal 0 (mod y2 y)) ;gets computed
+                (rationalp y2))
+           (equal (mod x y)
+                  0))
+  :hints (("Goal" :in-theory (enable mod-when-equal-of-mod-and-0-free))))
+
+;gen
+(defthmd mod-of-mod-when-multiple
+  (implies (and (equal 0 (mod y1 y2))
+                (rationalp y2)
+                (< 0 y2)
+                (rationalp y1)
+                (not (equal 0 y1)))
+           (equal (mod (mod x y1) y2)
+                  (mod x y2)))
+  :hints (("Goal" :in-theory (enable acl2::equal-of-0-and-mod
+                                     mod-sum-cases ; why?
+                                     ))))
+
+(defthm mod-of-mod-when-multiple-safe
+  (implies (and (syntaxp (and (quotep y1)
+                              (quotep y2)))
+                (equal 0 (mod y1 y2)) ;gets computed
+                (rationalp y2)
+                (< 0 y2)
+                (rationalp y1)
+                (not (equal 0 y1)))
+           (equal (mod (mod x y1) y2)
+                  (mod x y2)))
+  :hints (("Goal" :use (:instance mod-of-mod-when-multiple))))
+
+(defthm unsigned-byte-p-of-mod-when-<=-of-expt
+  (implies (and (<= y (expt 2 size))
+                (integerp x)
+                (posp y)
+                (natp size))
+           (unsigned-byte-p size (mod x y)))
+  :hints (("Goal" :in-theory (enable unsigned-byte-p))))
+
+(defthm unsigned-byte-p-of-mod
+  (implies (and (unsigned-byte-p size y)
+                (< 0 y)
+                (natp size)
+                (natp x))
+           (unsigned-byte-p size (mod x y)))
+  :hints (("Goal"
+           :in-theory (enable unsigned-byte-p))))
+
+(defthm mod-of-+-of---when-equal-of-mod
+  (implies (and (syntaxp (not (quotep x1))) ; prevent ACL2 from matching (- x1) with a constant
+                (equal (mod x1 y) k)
+                (syntaxp (quotep k))
+                (integerp x1)
+                (integerp x2)
+                (posp y)
+                )
+           (equal (mod (+ (- x1) x2) y)
+                  (mod (+ (- k) x2) y))))

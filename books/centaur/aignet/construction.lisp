@@ -32,6 +32,7 @@
 (include-book "semantics")
 (include-book "deps")
 (include-book "axi-reductions")
+(include-book "maybe-litp")
 (include-book "centaur/fty/bitstruct" :dir :system)
 (local (include-book "tools/trivial-ancestors-check" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
@@ -202,56 +203,6 @@
          :rule-classes :compound-recognizer))
 
 
-(defsection maybe-litp
-  :parents (litp)
-  :short "Recognizer for lits and @('nil')."
-  :long "<p>This is like an <a
-href='https://en.wikipedia.org/wiki/Option_type'>option type</a>; when @('x')
-satisfies @('maybe-litp'), then either it is a @(see litp) or nothing.</p>"
-
-  (defund-inline maybe-litp (x)
-    (declare (xargs :guard t))
-    (or (not x)
-        (litp x)))
-
-  (local (in-theory (enable maybe-litp)))
-
-  (defthm maybe-litp-compound-recognizer
-    (equal (maybe-litp x)
-           (or (not x)
-               (litp x)))
-    :rule-classes :compound-recognizer))
-
-(defsection maybe-lit-fix
-  :parents (fty::basetypes maybe-litp)
-  :short "@(call maybe-lit-fix) is the identity for @(see maybe-litp)s, or
-  coerces any non-@(see litp) to @('nil')."
-  :long "<p>Performance note.  In the execution this is just an inlined
-  identity function, i.e., it should have zero runtime cost.</p>"
-
-  (defund-inline maybe-lit-fix (x)
-    (declare (xargs :guard (maybe-litp x)
-                    :guard-hints (("Goal" :in-theory (e/d (maybe-litp)
-                                                          ())))))
-    (mbe :logic (if x (lit-fix x) nil)
-         :exec x))
-
-  (local (in-theory (enable maybe-litp maybe-lit-fix)))
-
-  (defthm maybe-litp-of-maybe-lit-fix
-    (maybe-litp (maybe-lit-fix x))
-    :rule-classes (:rewrite :type-prescription))
-
-  (defthm maybe-lit-fix-when-maybe-litp
-    (implies (maybe-litp x)
-             (equal (maybe-lit-fix x) x)))
-
-  (defthm maybe-lit-fix-under-iff
-    (iff (maybe-lit-fix x) x))
-
-  (defthm maybe-lit-fix-under-lit-equiv
-    (lit-equiv (maybe-lit-fix x) x)
-    :hints(("Goal" :in-theory (enable maybe-lit-fix)))))
 
 
 (fty::defbitstruct simpcode
@@ -565,16 +516,16 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
 ;;       nil
 ;;     (cons (case (car lits)
 ;;             (y0 (if (member 'x0 all-lits)
-;;                     '(fanin :gate0 (lookup-id (lit-id x0) aignet))
+;;                     '(fanin 0 (lookup-id (lit-id x0) aignet))
 ;;                   'y0))
 ;;             (y1 (if (member 'x0 all-lits)
-;;                     '(fanin :gate1 (lookup-id (lit-id x0) aignet))
+;;                     '(fanin 1 (lookup-id (lit-id x0) aignet))
 ;;                   'y1))
 ;;             (y2 (if (member 'x1 all-lits)
-;;                     '(fanin :gate0 (lookup-id (lit-id x1) aignet))
+;;                     '(fanin 0 (lookup-id (lit-id x1) aignet))
 ;;                   'y2))
 ;;             (y3 (if (member 'x1 all-lits)
-;;                     '(fanin :gate1 (lookup-id (lit-id x1) aignet))
+;;                     '(fanin 1 (lookup-id (lit-id x1) aignet))
 ;;                   'y3))
 ;;             (t (car lits)))
 ;;           (substitute-lits (cdr lits) all-lits))))
@@ -589,8 +540,8 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
                  (axi-term-case x0.abs
                    :var nil :const nil
                    :gate ;; (append '((equal (ctype (stype (car (lookup-id (lit-id x0) aignet)))) :gate)
-                         ;;           (equal y0 (fanin :gate0 (lookup-id (lit-id x0) aignet)))
-                         ;;           (equal y1 (fanin :gate1 (lookup-id (lit-id x0) aignet))))
+                         ;;           (equal y0 (fanin 0 (lookup-id (lit-id x0) aignet)))
+                         ;;           (equal y1 (fanin 1 (lookup-id (lit-id x0) aignet))))
                          ;;         `((equal (regp (stype (car (lookup-id (lit-id x0) aignet))))
                          ;;                  ,(if (eq x0.abs.op 'and) 0 1))
                          ;;           (equal ,(if x0.negp 1 0) (lit->neg^ x0))))
@@ -602,8 +553,8 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
                  (axi-term-case x1.abs
                    :var nil :const nil
                    :gate ;; (append '((equal (ctype (stype (car (lookup-id (lit-id x1) aignet)))) :gate)
-                         ;;           (equal y2 (fanin :gate0 (lookup-id (lit-id x1) aignet)))
-                         ;;           (equal y3 (fanin :gate1 (lookup-id (lit-id x1) aignet))))
+                         ;;           (equal y2 (fanin 0 (lookup-id (lit-id x1) aignet)))
+                         ;;           (equal y3 (fanin 1 (lookup-id (lit-id x1) aignet))))
                          ;;         `((equal (regp (stype (car (lookup-id (lit-id x1) aignet))))
                          ;;                  ,(if (eq x1.abs.op 'and) 0 1))
                          ;;           (equal ,(if x1.negp 1 0) (lit->neg^ x1))))
@@ -1574,6 +1525,7 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
                                    (fanin-id-lte-fanin-count-strong
                                     fanin-id-lte-fanin-count))
             :use ((:instance fanin-id-lte-fanin-count
+                   (which type)
                    (aignet (lookup-id id aignet)))))
            (and stable-under-simplificationp
                 '(:cases ((consp (lookup-id id aignet))))))))
@@ -1581,13 +1533,13 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
 
 (local (defthm lit->var-of-gate-fanin0
          (implies (equal (ctype (stype (car x))) :gate)
-                  (< (lit->var (fanin :gate0 x)) (fanin-count x)))
+                  (< (lit->var (fanin 0 x)) (fanin-count x)))
          :hints(("Goal" :in-theory (enable fanin aignet-id-fix aignet-idp)))
          :rule-classes :linear))
 
 (local (defthm lit->var-of-gate-fanin1
          (implies (equal (ctype (stype (car x))) :gate)
-                  (< (lit->var (fanin :gate1 x)) (fanin-count x)))
+                  (< (lit->var (fanin 1 x)) (fanin-count x)))
          :hints(("Goal" :in-theory (enable fanin aignet-id-fix aignet-idp)))
          :rule-classes :linear))
 
@@ -2048,6 +2000,8 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
     (strashtab :type (hash-table eql))
     :inline t)
 
+  (defstobj-clone strash2 strash :suffix "2")
+
   ;; returns (mv exists key id).
   ;; exists implies that id is a gate with the two specified fanins.
   (define strash-lookup ((lit1 litp :type (unsigned-byte 30))
@@ -2086,9 +2040,9 @@ product types produced by @(see fty::defprod) and @(see fty::defbitstruct).</p>"
                            (node (car suff)))
                         (and (equal (stype node)
                                     (if (bit->bool xorp) :xor :and))
-                             (equal (fanin :gate0 suff)
+                             (equal (fanin 0 suff)
                                     (lit-fix lit1))
-                             (equal (fanin :gate1 suff)
+                             (equal (fanin 1 suff)
                                     (lit-fix lit2)))))))
       :hints(("Goal" :in-theory (enable aignet-litp))))
 
@@ -3400,6 +3354,154 @@ of the @('b*').</li>
     :hints(("Goal" :in-theory (enable lit-eval aignet-idp)
             :expand ((:free (aignet) (id-eval id in-vals reg-vals aignet))
                      (:free (aignet) (lit-eval (mk-lit id neg) in-vals reg-vals aignet)))))))
+
+
+(define aignet-add-outs ((lits lit-listp) aignet)
+  :guard (aignet-lit-listp lits aignet)
+  :returns (new-aignet)
+  (if (atom lits)
+      (mbe :logic (non-exec (node-list-fix aignet))
+           :exec aignet)
+    (b* ((aignet (aignet-add-out (car lits) aignet)))
+      (aignet-add-outs (cdr lits) aignet)))
+  ///
+
+  (def-aignet-preservation-thms aignet-add-outs)
+
+  ;; (defthm good-varmap-p-of-aignet-add-outs
+  ;;   (implies (good-varmap-p varmap aignet)
+  ;;            (good-varmap-p varmap (aignet-add-outs lits aignet)))
+  ;;   :hints (("goal" :induct (aignet-add-outs lits aignet))))
+
+  (local (defthm lit-listp-true-listp
+           (implies (lit-listp x)
+                    (true-listp x))))
+
+  (defret num-outs-of-aignet-add-outs
+    (equal (stype-count :po new-aignet)
+           (+ (len lits) (stype-count :po aignet)))
+    :hints (("goal" :induct t :do-not-induct t)))
+
+  (defret other-stype-count-of-aignet-add-outs
+    (implies (not (equal (stype-fix stype) :po))
+             (equal (stype-count stype new-aignet)
+                    (stype-count stype aignet))))
+
+  (local (defthm aignet-lit-fix-of-cons-po
+           (equal (aignet-lit-fix lit (cons (po-node lit1) aignet))
+                  (aignet-lit-fix lit aignet))
+           :hints(("Goal" :in-theory (enable aignet-lit-fix
+                                             aignet-id-fix
+                                             aignet-idp)))))
+
+  (defret lookup-output-fanin-of-aignet-add-outs
+    ;; (implies (aignet-lit-listp lits aignet)
+    (equal (fanin 0 (lookup-stype n :po new-aignet))
+           ;;
+           (cond ((< (nfix n) (stype-count :po aignet))
+                  (fanin 0 (lookup-stype n :po aignet)))
+                 ((< (nfix n) (+ (stype-count :po aignet) (len lits)))
+                  (aignet-lit-fix (nth (- (nfix n) (stype-count :po aignet)) lits) aignet))
+                 (t 0)))
+    :hints(("Goal" :in-theory (enable nth lookup-stype)
+            :induct t :do-not-induct t)))
+
+  (defret lookup-of-aignet-add-outs-is-extension
+    (implies (and (<= (stype-count :po aignet) (nfix n))
+                  (< (nfix n) (+ (stype-count :po aignet) (len lits)))
+                  (aignet-extension-p aignet orig))
+             (and (aignet-extension-p (cdr (lookup-stype n :po new-aignet)) orig)
+                  (aignet-extension-p (lookup-stype n :po new-aignet) orig)))
+    :hints(("Goal" :in-theory (enable lookup-stype))))
+
+  (defret lookup-non-output-of-aignet-add-outs
+    (implies (not (equal (stype-fix stype) :po))
+             (equal (lookup-stype n stype new-aignet)
+                    (lookup-stype n stype aignet)))
+    :hints(("Goal" :in-theory (enable lookup-stype)))))
+
+
+(define aignet-set-nxsts ((regnum natp)
+                          (lits lit-listp)
+                          aignet)
+  :guard (and (aignet-lit-listp lits aignet)
+              (<= (+ regnum (len lits))
+                  (num-regs aignet)))
+  :returns (new-aignet)
+  (b* (((when (atom lits))
+        (mbe :logic (non-exec (node-list-fix aignet))
+             :exec aignet))
+       (aignet (aignet-set-nxst (car lits) regnum aignet)))
+    (aignet-set-nxsts (1+ (lnfix regnum)) (cdr lits) aignet))
+  ///
+  (def-aignet-preservation-thms aignet-set-nxsts)
+
+
+  (defret other-stype-count-of-aignet-set-nxsts
+    (implies (not (equal (stype-fix stype) :nxst))
+             (equal (stype-count stype new-aignet)
+                    (stype-count stype aignet))))
+
+  ;; (local (defun-nx aignet-set-nxsts-nth-ind (n regnum lits aignet)
+  ;;          (b* (((when (atom lits)) (list n aignet))
+  ;;               (reg-id (regnum->id regnum aignet))
+  ;;               (aignet (aignet-set-nxst (car lits) reg-id aignet)))
+  ;;            (aignet-set-nxsts-nth-ind (1- (nfix n)) (1+ (lnfix regnum)) (cdr lits) aignet))))
+
+  
+
+  (local (defthm aignet-lit-fix-of-cons-nxst
+           (equal (aignet-lit-fix lit (cons (nxst-node lit1 reg) aignet))
+                  (aignet-lit-fix lit aignet))
+           :hints(("Goal" :in-theory (enable aignet-lit-fix
+                                             aignet-id-fix
+                                             aignet-idp)))))
+
+  (defret lookup-nxst-fanin-of-aignet-set-nxsts
+    (implies (And ;; (aignet-lit-listp lits aignet)
+                  (< (nfix n) (+ (nfix regnum) (len lits)))
+                  (< (nfix n) (stype-count :reg aignet)))
+             (equal (lookup-reg->nxst n new-aignet)
+                    (if (< (nfix n) (nfix regnum))
+                        (lookup-reg->nxst n aignet)
+                      (aignet-lit-fix (nth (- (nfix n) (nfix regnum)) lits) aignet))))
+    :hints(("Goal" :in-theory (e/d (nth lookup-reg->nxst))
+            :induct <call> :do-not-induct t)))
+
+  (defret lookup-non-nxst-of-aignet-set-nxsts
+    (implies (not (equal (stype-fix stype) :nxst))
+             (equal (lookup-stype n stype new-aignet)
+                    (lookup-stype n stype aignet))))
+
+  (defret lookup-of-aignet-set-nxsts-is-extension
+    (implies (and (<= (stype-count :nxst aignet) (nfix n))
+                  (< (nfix n) (+ (stype-count :nxst aignet) (len lits)))
+                  (aignet-extension-p aignet orig))
+             (and (aignet-extension-p (cdr (lookup-stype n :nxst new-aignet)) orig)
+                  (aignet-extension-p (lookup-stype n :nxst new-aignet) orig)))
+    :hints(("Goal" :in-theory (enable lookup-stype))))
+
+  (defret nxst-count-of-aignet-set-nxsts
+    (equal (stype-count :nxst new-aignet)
+           (+ (len lits)
+              (stype-count :nxst aignet))))
+
+  ;; (defret lookup-regnum->nxst-of-aignet-set-nxsts
+  ;;   ;; (b* ((n (stype-count :reg (cdr (lookup-id reg-id aignet)))))
+  ;;     (implies (and (< (nfix n) (+ (nfix regnum) (len lits)))
+  ;;                   (<= (+ (nfix regnum) (len lits)) (num-regs aignet)))
+  ;;              (equal (lookup-reg->nxst n new-aignet)
+  ;;                     (if (<= (nfix regnum) (nfix n))
+  ;;                         (lookup-stype (+ (stype-count :nxst aignet)
+  ;;                                          (- (nfix n) (nfix regnum)))
+  ;;                                       :nxst new-aignet)
+  ;;                       (lookup-regnum->nxst n aignet))))
+  ;;   :hints(("Goal" :in-theory (enable* lookup-regnum->nxst
+  ;;                                      lookup-stype
+  ;;                                      acl2::arith-equiv-forwarding)
+  ;;           :induct t
+  ;;           :do-not-induct t)))
+  )
 
 
 

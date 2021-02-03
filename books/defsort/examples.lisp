@@ -37,7 +37,7 @@
 (in-package "ACL2")
 (include-book "defsort")
 (include-book "misc/total-order" :dir :system)
-(include-book "misc/assert" :dir :system)
+(include-book "std/testing/assert-bang" :dir :system)
 
 
 ;; The following defines (<-SORT X), which orders a list of rational numbers
@@ -107,6 +107,34 @@
 (assert! (equal (<<-sort '(a c b 1 3 2 1/3 1/2 (1 . 2)))
                 '(1/3 1/2 1 2 3 a b c (1 . 2))))
 
+(defthm
+  common-<<-sort-for-perms
+  (implies (set-equiv x y)
+           (equal (<<-sort (remove-duplicates-equal x))
+                  (<<-sort (remove-duplicates-equal y))))
+  :hints
+  ((defsort-functional-inst
+     common-sort-for-perms
+     ((compare<-negation-transitive (lambda nil t))
+      (compare<-strict (lambda nil t))
+      (compare<-total (lambda nil t))
+      (comparable-insert (lambda (elt x) (<<-insert elt x)))
+      (comparable-insertsort (lambda (x) (<<-insertsort x)))
+      (compare< (lambda (x y) (<< x y)))
+      (comparablep (lambda (x) t))
+      (comparable-listp (lambda (x) t))
+      (element-list-final-cdr-p (lambda (x) t))
+      (comparable-merge (lambda (x y) (<<-merge x y)))
+      (comparable-orderedp (lambda (x) (<<-ordered-p x)))
+      (comparable-merge-tr (lambda (x y acc)
+                             (<<-merge-tr x y acc)))
+      (fast-comparable-mergesort-fixnums (lambda (x len)
+                                           (<<-mergesort-fixnum x len)))
+      (fast-comparable-mergesort-integers
+       (lambda (x len)
+         (<<-mergesort-integers x len)))
+      (comparable-mergesort (lambda (x) (<<-sort x))))))
+  :rule-classes :congruence)
 
 ;; Sort with respect to an alist that maps each key to an integer.
 (defun intval-alistp (x)

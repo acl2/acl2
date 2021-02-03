@@ -139,13 +139,12 @@
 ;; using code from bvseq/packbv.lisp
 ;; This book also brings in other things we use like getbit.
 
-(include-book "kestrel/bv-lists/packbv" :dir :system)
-(include-book "kestrel/bv-lists/unpackbv" :dir :system)
+(include-book "kestrel/bv-lists/packbv-def" :dir :system)
+(include-book "kestrel/bv-lists/unpackbv-def" :dir :system)
 (include-book "kestrel/bv-lists/bytes-to-bits-little" :dir :system)
 (include-book "kestrel/bv-lists/bits-to-bytes-little" :dir :system)
 
-(include-book "kestrel/bv-lists/all-unsigned-byte-p-of-repeat" :dir :system)
-(include-book "kestrel/bv-lists/all-unsigned-byte-p-of-reverse-list" :dir :system)
+(include-book "kestrel/bv-lists/all-unsigned-byte-p2" :dir :system)
 
 (include-book "kestrel/bv/defs-bitwise" :dir :system)
 (include-book "kestrel/bv/defs-shifts" :dir :system)
@@ -173,6 +172,8 @@
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
+
+(local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 
 (local (include-book "kestrel/bv-lists/packbv-and-unpackbv" :dir :system)) ;for unpackbv-of-packbv
 
@@ -1273,7 +1274,7 @@
            ;; f. trunc8[R] is their R[0..7] which is
            ;; our (getbit 8 ..) down to (getbit 1 ..).
            ;; We could do it as a slice or as a right shift by 1
-           (R-f (shr 9 R-e 1)))
+           (R-f (bvshr 9 R-e 1)))
       (k-rcbit-aux R-f (- num-iters 1)))))
 
 ;; This function might easily become more efficient if memoized.

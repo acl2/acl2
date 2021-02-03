@@ -23,6 +23,8 @@
 ; books/system/apply/loop.lisp, which is certified during devel builds in order
 ; to put loop$ scions in guard-verified logic mode.
 
+; (depends-on "build/first-order-like-terms-and-out-arities.certdep" :dir :system)
+
 (include-book "ordinals/lexicographic-ordering-without-arithmetic" :dir :system)
 
 #-acl2-devel
@@ -458,6 +460,11 @@
                   (apply$-lambda fn args)))
   :hints (("Goal" :use apply$-lambda-takes-arity-args)))
 
+(local
+ (defthm hide-is-identity
+   (equal (hide x) x)
+   :hints (("Goal" :expand ((hide x))))))
+
 (defthm apply$-prim-takes-arity-args
   (implies (apply$-primp fn)
            (equal (apply$-prim fn args)
@@ -472,6 +479,7 @@
                                cdr-cons
                                hons-get
                                (:executable-counterpart hons-assoc-equal)
+                               hide-is-identity
                                )))
   :rule-classes nil)
 

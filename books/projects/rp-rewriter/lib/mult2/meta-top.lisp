@@ -47,134 +47,142 @@
 
 (include-book "adder-rules-meta")
 
-(defthm sort-sum-meta-valid-rp-meta-rulep
-    (implies (and (rp-evl-meta-extract-global-facts :state state)
-                  (mult-formula-checks state))
-             (let ((rule (make rp-meta-rule-rec
-                               :fnc 'sort-sum-meta
-                               :trig-fnc 'sort-sum
-                               :dont-rw t
-                               :valid-syntax t)))
-               (and (valid-rp-meta-rulep rule state)
-                    (rp-meta-valid-syntaxp-sk rule state))))
-    :otf-flg t
-    :hints (("Goal"
-             :in-theory (e/d (rp-meta-valid-syntaxp)
-                             (rp-termp
-                              rp-term-listp
-                              valid-sc)))))
+;; (defthm sort-sum-meta-valid-rp-meta-rulep
+;;     (implies (and (rp-evl-meta-extract-global-facts :state state)
+;;                   (mult-formula-checks state))
+;;              (let ((rule (make rp-meta-rule-rec
+;;                                :fnc 'sort-sum-meta
+;;                                :trig-fnc 'sort-sum
+;;                                :dont-rw t
+;;                                :valid-syntax t)))
+;;                (and (valid-rp-meta-rulep rule state)
+;;                     (rp-meta-valid-syntaxp-sk rule state))))
+;;     :otf-flg t
+;;     :hints (("Goal"
+;;              :in-theory (e/d (rp-meta-valid-syntaxp)
+;;                              (rp-termp
+;;                               rp-term-listp
+;;                               valid-sc)))))
 
-(defthm c-spec-valid-rp-meta-rulep
-  (implies (and (rp-evl-meta-extract-global-facts :state state)
-                (mult-formula-checks state))
-           (let ((rule (make rp-meta-rule-rec
-                             :fnc 's-c-spec-meta
-                             :trig-fnc 'c-spec
-                             :dont-rw t
-                             :valid-syntax t)))
-             (and (valid-rp-meta-rulep rule state)
-                  (rp-meta-valid-syntaxp-sk rule state))))
-  :otf-flg t
-  :hints (("Goal"
-           :in-theory (e/d (rp-meta-valid-syntaxp)
-                           (rp-termp
-                            rp-term-listp
-                            valid-sc
-                            )))))
+;; (defthm c-spec-valid-rp-meta-rulep
+;;   (implies (and (rp-evl-meta-extract-global-facts :state state)
+;;                 (mult-formula-checks state))
+;;            (let ((rule (make rp-meta-rule-rec
+;;                              :fnc 's-c-spec-meta
+;;                              :trig-fnc 'c-spec
+;;                              :dont-rw t
+;;                              :valid-syntax t)))
+;;              (and (valid-rp-meta-rulep rule state)
+;;                   (rp-meta-valid-syntaxp-sk rule state))))
+;;   :otf-flg t
+;;   :hints (("Goal"
+;;            :in-theory (e/d (rp-meta-valid-syntaxp)
+;;                            (rp-termp
+;;                             rp-term-listp
+;;                             valid-sc
+;;                             )))))
 
-(defthm s-spec-valid-rp-meta-rulep
-  (implies (and (rp-evl-meta-extract-global-facts :state state)
-                (mult-formula-checks state))
-           (let ((rule (make rp-meta-rule-rec
-                             :fnc 's-c-spec-meta
-                             :trig-fnc 's-spec
-                             :dont-rw t
-                             :valid-syntax t)))
-             (and (valid-rp-meta-rulep rule state)
-                  (rp-meta-valid-syntaxp-sk rule state))))
-  :otf-flg t
-  :hints (("Goal"
-           :in-theory (e/d (rp-meta-valid-syntaxp)
-                           (rp-termp
-                            rp-term-listp
-                            valid-sc)))))
+;; (defthm s-spec-valid-rp-meta-rulep
+;;   (implies (and (rp-evl-meta-extract-global-facts :state state)
+;;                 (mult-formula-checks state))
+;;            (let ((rule (make rp-meta-rule-rec
+;;                              :fnc 's-c-spec-meta
+;;                              :trig-fnc 's-spec
+;;                              :dont-rw t
+;;                              :valid-syntax t)))
+;;              (and (valid-rp-meta-rulep rule state)
+;;                   (rp-meta-valid-syntaxp-sk rule state))))
+;;   :otf-flg t
+;;   :hints (("Goal"
+;;            :in-theory (e/d (rp-meta-valid-syntaxp)
+;;                            (rp-termp
+;;                             rp-term-listp
+;;                             valid-sc)))))
 
-(defthm s-c-spec-valid-rp-meta-rulep
-  (implies (and (rp-evl-meta-extract-global-facts :state state)
-                (mult-formula-checks state))
-           (let ((rule (make rp-meta-rule-rec
-                             :fnc 's-c-spec-meta
-                             :trig-fnc 's-c-spec
-                             :dont-rw t
-                             :valid-syntax t)))
-             (and (valid-rp-meta-rulep rule state)
-                  (rp-meta-valid-syntaxp-sk rule state))))
-  :otf-flg t
-  :hints (("Goal"
-           :in-theory (e/d (rp-meta-valid-syntaxp)
-                           (rp-termp
-                            rp-term-listp
-                            valid-sc)))))
+;; (defthm s-c-spec-valid-rp-meta-rulep
+;;   (implies (and (rp-evl-meta-extract-global-facts :state state)
+;;                 (mult-formula-checks state))
+;;            (let ((rule (make rp-meta-rule-rec
+;;                              :fnc 's-c-spec-meta
+;;                              :trig-fnc 's-c-spec
+;;                              :dont-rw t
+;;                              :valid-syntax t)))
+;;              (and (valid-rp-meta-rulep rule state)
+;;                   (rp-meta-valid-syntaxp-sk rule state))))
+;;   :otf-flg t
+;;   :hints (("Goal"
+;;            :in-theory (e/d (rp-meta-valid-syntaxp)
+;;                            (rp-termp
+;;                             rp-term-listp
+;;                             valid-sc)))))
 
-(defthm c-s-spec-valid-rp-meta-rulep
-  (implies (and (rp-evl-meta-extract-global-facts :state state)
-                (mult-formula-checks state))
-           (let ((rule (make rp-meta-rule-rec
-                             :fnc 's-c-spec-meta
-                             :trig-fnc 'c-s-spec
-                             :dont-rw t
-                             :valid-syntax t)))
-             (and (valid-rp-meta-rulep rule state)
-                  (rp-meta-valid-syntaxp-sk rule state))))
-  :otf-flg t
-  :hints (("Goal"
-           :in-theory (e/d (rp-meta-valid-syntaxp)
-                           (rp-termp
-                            rp-term-listp
-                            valid-sc)))))
+;; (defthm c-s-spec-valid-rp-meta-rulep
+;;   (implies (and (rp-evl-meta-extract-global-facts :state state)
+;;                 (mult-formula-checks state))
+;;            (let ((rule (make rp-meta-rule-rec
+;;                              :fnc 's-c-spec-meta
+;;                              :trig-fnc 'c-s-spec
+;;                              :dont-rw t
+;;                              :valid-syntax t)))
+;;              (and (valid-rp-meta-rulep rule state)
+;;                   (rp-meta-valid-syntaxp-sk rule state))))
+;;   :otf-flg t
+;;   :hints (("Goal"
+;;            :in-theory (e/d (rp-meta-valid-syntaxp)
+;;                            (rp-termp
+;;                             rp-term-listp
+;;                             valid-sc)))))
 
-(defthm sort-sum-meta-valid-rp-meta-rulep
-  (implies (and (rp-evl-meta-extract-global-facts :state state)
-                (mult-formula-checks state))
-           (let ((rule (make rp-meta-rule-rec
-                             :fnc 'sort-sum-meta
-                             :trig-fnc 'sort-sum
-                             :dont-rw t
-                             :valid-syntax t)))
-             (and (valid-rp-meta-rulep rule state)
-                  (rp-meta-valid-syntaxp-sk rule state))))
-  :otf-flg t
-  :hints (("Goal"
-           :in-theory (e/d (rp-meta-valid-syntaxp)
-                           (rp-termp
-                            rp-term-listp
-                            valid-sc)))))
+;; (defthm sort-sum-meta-valid-rp-meta-rulep
+;;   (implies (and (rp-evl-meta-extract-global-facts :state state)
+;;                 (mult-formula-checks state))
+;;            (let ((rule (make rp-meta-rule-rec
+;;                              :fnc 'sort-sum-meta
+;;                              :trig-fnc 'sort-sum
+;;                              :dont-rw t
+;;                              :valid-syntax t)))
+;;              (and (valid-rp-meta-rulep rule state)
+;;                   (rp-meta-valid-syntaxp-sk rule state))))
+;;   :otf-flg t
+;;   :hints (("Goal"
+;;            :in-theory (e/d (rp-meta-valid-syntaxp)
+;;                            (rp-termp
+;;                             rp-term-listp
+;;                             valid-sc)))))
 
-(rp::add-meta-rules
- mult-formula-checks
- (list
-  (make rp-meta-rule-rec
-        :fnc 's-c-spec-meta
-        :trig-fnc 's-spec
-        :dont-rw t
-        :valid-syntax t)
-  (make rp-meta-rule-rec
-        :fnc 's-c-spec-meta
-        :trig-fnc 'c-spec
-        :dont-rw t
-        :valid-syntax t)
-  (make rp-meta-rule-rec
-        :fnc 's-c-spec-meta
-        :trig-fnc 's-c-spec
-        :dont-rw t
-        :valid-syntax t)
-  (make rp-meta-rule-rec
-        :fnc 's-c-spec-meta
-        :trig-fnc 'c-s-spec
-        :dont-rw t
-        :valid-syntax t)
-  (make rp-meta-rule-rec
-        :fnc 'sort-sum-meta
-        :trig-fnc 'sort-sum
-        :dont-rw t
-        :valid-syntax t)))
+
+(rp::add-meta-rule
+ :meta-fnc sort-sum-meta
+ :trig-fnc sort-sum
+ :valid-syntaxp t
+ :formula-checks mult-formula-checks
+ :returns (mv term dont-rw))
+
+(rp::add-meta-rule
+ :meta-fnc s-c-spec-meta
+ :trig-fnc s-spec
+ :valid-syntaxp t
+ :formula-checks mult-formula-checks
+ :returns (mv term dont-rw))
+
+(rp::add-meta-rule
+ :meta-fnc s-c-spec-meta
+ :trig-fnc c-spec
+ :valid-syntaxp t
+ :formula-checks mult-formula-checks
+ :returns (mv term dont-rw))
+
+(rp::add-meta-rule
+ :meta-fnc s-c-spec-meta
+ :trig-fnc s-c-spec
+ :valid-syntaxp t
+ :formula-checks mult-formula-checks
+ :returns (mv term dont-rw))
+
+(rp::add-meta-rule
+ :meta-fnc s-c-spec-meta
+ :trig-fnc c-s-spec
+ :valid-syntaxp t
+ :formula-checks mult-formula-checks
+ :returns (mv term dont-rw))
+

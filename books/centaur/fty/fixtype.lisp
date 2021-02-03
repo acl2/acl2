@@ -55,7 +55,7 @@
 (defun get-fixtypes-alist (world)
   (cdr (assoc 'fixtype-alist (table-alist 'fixtypes world))))
 
-(defun deffixtype-fn (name predicate fix equiv execp definep inline equal topic verbosep hints forward)
+(defun deffixtype-fn (name predicate fix equiv executablep definep inline equal topic verbosep hints forward)
   (if definep
       `(with-output ,@(and (not verbosep) '(:off :all :on acl2::error)) :stack :push
          (encapsulate nil
@@ -67,13 +67,13 @@
                      (value-triple
                       (er hard? 'deffixtype
                           "Failed to prove that ~x0 is idempotent.~%" ',fix)))))
-           (,(cond ((not execp)  'defun-nx)
+           (,(cond ((not executablep) 'defun-nx)
                    ((not inline) 'defun)
                    (t            'defun-inline))
             ,equiv (x y)
              (declare (xargs :normalize nil
-                             ,@(and execp `(:guard (and (,predicate x) (,predicate y))))
-                             :verify-guards ,execp))
+                             ,@(and executablep `(:guard (and (,predicate x) (,predicate y))))
+                             :verify-guards ,executablep))
              (,equal (,fix x) (,fix y)))
            (local (in-theory '(,equiv tmp-deffixtype-idempotent
                                       booleanp-compound-recognizer)))
@@ -114,10 +114,10 @@
                                                      :pred predicate
                                                      :fix fix
                                                      :equiv equiv
-                                                     :executablep execp
+                                                     :executablep executablep
                                                      :equiv-means-fixes-equal
                                                      ;; BOZO stupid ACL2 is so awful...
-                                                     (if (and execp inline)
+                                                     (if (and executablep inline)
                                                          (intern-in-package-of-symbol
                                                           (concatenate 'string (symbol-name equiv) "$INLINE")
                                                           equiv)
@@ -154,7 +154,7 @@
                                                    :pred predicate
                                                    :fix fix
                                                    :equiv equiv
-                                                   :executablep execp
+                                                   :executablep executablep
                                                    :equiv-means-fixes-equal thmname
                                                    :inline inline
                                                    :equal equal
@@ -163,8 +163,11 @@
                              (get-fixtypes-alist world))))))))
 
 
-(defmacro deffixtype (name &key pred fix equiv (execp 't)
-                           ;; optional
+(defmacro deffixtype (name &key
+                           pred
+                           fix
+                           equiv
+                           (executablep 't)
                            define
                            verbosep
                            hints
@@ -175,7 +178,7 @@
 ; We contemplated making "equal" the default equivalence relation but decided
 ; against it.  See Github Issue 240 for relevant discussion.
   (declare (xargs :guard (and pred fix equiv)))
-  (deffixtype-fn name pred fix equiv execp define inline equal
+  (deffixtype-fn name pred fix equiv executablep define inline equal
     (if topic-p topic name)
     verbosep hints forward))
 
@@ -302,7 +305,8 @@
                      (member arg vars)))
         (raise "Expected ~x0 to be among variables of ~x1" arg form))
 
-       (fix-body `(,out-equiv ,(subst `(,fix ,arg) arg form)
+       (subst-alist `((,arg . (,fix ,arg))))
+       (fix-body `(,out-equiv ,(acl2::sublis-var subst-alist form)
                               ,form))
        (fix-thm `(defthm ,fix-thmname
                    ,fix-body
@@ -312,14 +316,14 @@
                           (implies (syntaxp (and (quotep ,arg)
                                                  (not (,pred (cadr ,arg)))))
                                    (,out-equiv ,form
-                                               ,(subst `(,fix ,arg) arg form)))
+                                               ,(acl2::sublis-var subst-alist form)))
                           :hints (("Goal" :in-theory
                                    '(,out-equiv-equiv-rune ,fix-thmname))))))
        (cong-thm (and (not skip-cong-thm)
                       `(defthm ,congruence-thmname
                          (implies (,equiv ,arg ,argequiv)
                                   (,out-equiv ,form
-                                              ,(subst argequiv arg form)))
+                                              ,(acl2::sublis-var `((,arg . ,argequiv)) form)))
                          :hints (("Goal" :in-theory nil
                                   :do-not '(preprocess)
                                   :use ((:instance ,fix-thmname)
@@ -406,4 +410,3 @@
 
 
 ||#
-

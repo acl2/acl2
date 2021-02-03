@@ -12,7 +12,7 @@
 
 (include-book "projects/apply/top" :dir :system)
 
-(include-book "misc/eval" :dir :system)
+(include-book "std/testing/must-fail" :dir :system)
 
 ; Avoid distracting warnings produced by :hints in this file that insist on
 ; using executing for the proof.
@@ -494,5 +494,3 @@
                               (equal (len x) 1)
                               (consp (car x)))))
   (apply$ (lambda$ (x) (declare (xargs :guard (consp x))) (my-car x)) x))
-
-

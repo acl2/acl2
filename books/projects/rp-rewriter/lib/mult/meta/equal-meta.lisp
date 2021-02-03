@@ -93,7 +93,7 @@
 
 (def-formula-checks
  rp-equal-iter-pp+-meta-formula-checks
- (rp-equal-iter-pp+-meta
+ (;;rp-equal-iter-pp+-meta
   p+))
 
 (local
@@ -163,7 +163,7 @@
                :do-not-induct t
                :cases ((is-falist x))
                :expand ((RP-TRANS Y)
-                        (RP-EVL-OF-TRANS-LIST NIL A))
+                        )
                :in-theory (e/d (rp-evl-of-fncall-args) ())))))
 
    (local
@@ -232,7 +232,7 @@
    :hints (("Goal"
             :in-theory (e/d (rp-equal-iter-pp+-meta) ())))))
 
-(defthm rp-equal-iter-pp+-meta-is-valid-rp-meta-rulep
+#|(defthm rp-equal-iter-pp+-meta-is-valid-rp-meta-rulep
   (implies (and (rp-equal-iter-pp+-meta-formula-checks state)
                 (rp-evl-meta-extract-global-facts :state state))
            (let ((rule (make rp-meta-rule-rec
@@ -247,17 +247,16 @@
            :in-theory (e/d (RP-META-VALID-SYNTAXP)
                            (RP-TERMP
                             rp-term-listp
-                            VALID-SC)))))
+                            VALID-SC)))))||#
 
 
-(rp::add-meta-rules
- rp-equal-iter-pp+-meta-formula-checks
- (list
-  (make rp-meta-rule-rec
-        :fnc 'rp-equal-iter-pp+-meta
-        :trig-fnc 'equal
-        :dont-rw t
-        :valid-syntax t)))
+
+(rp::add-meta-rule
+ :meta-fnc rp-equal-iter-pp+-meta
+ :trig-fnc equal
+ :valid-syntaxp t
+ :formula-checks rp-equal-iter-pp+-meta-formula-checks
+ :returns (mv term dont-rw))
 
 #|(mutual-recursion
 (defun

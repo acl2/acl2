@@ -1,5 +1,5 @@
-; ACL2 Version 8.2 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2019, Regents of the University of Texas
+; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2020, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -119,7 +119,14 @@
 ; 1. Badges
 
 (defun badge (fn)
-  (declare (xargs :guard t :mode :logic))
+  (declare (xargs :guard t
+
+; Badge, apply$-primp, and apply$ all come up in :program mode in #+acl2-devel
+; builds.  These all depend on functions in *system-verify-guards-alist-1*,
+; which are in :program mode in #+acl2-devel builds (see the discussion in
+; *system-verify-guards-alist*).
+
+                  :mode :program))
   (cond
    ((apply$-primp fn) (badge-prim fn))
    ((eq fn 'BADGE) *generic-tame-badge-1*)
@@ -133,9 +140,6 @@
 
 #-acl2-devel
 (in-theory (disable apply$-primp badge-prim))
-
-#-acl2-devel
-(in-theory (disable badge))
 
 ; -----------------------------------------------------------------
 ; 2. Tameness
@@ -490,10 +494,6 @@
 ; clique as a reflexive function: the fact that (ev$ (cadr x) a) is smaller
 ; than (cadr x) when (cadr x) is tame requires reasoning about ev$ before it is
 ; admitted.
-
-#-acl2-devel
-(in-theory (disable badge
-                    (:executable-counterpart badge)))
 
 ; -----------------------------------------------------------------
 ; 4. Executable Versions of BADGE and TAMEP
@@ -1022,7 +1022,7 @@
         (cond ((ffnnamep fn (cadr term))
 
 ; We don't even allow fns admitted with :LOOP$-RECURSION T because we don't
-; think the user will ever explicitly type a call of EV$! 
+; think the user will ever explicitly type a call of EV$!
 
                (mv (msg "~x0 cannot be warranted because an :EXPR slot ~
                          in its body is occupied by a quoted term, ~x1, that ~
@@ -1500,6 +1500,19 @@
     (let ((body (expand-all-lambdas (body fn nil wrld)))
           (formals (formals fn wrld)))
       (cond
+       ((member-eq fn *blacklisted-apply$-fns*)
+
+; We could relax this check to allow ttag functions to be warranted when there
+; is an active trust tag.  But as of this writing, that relaxation would only
+; apply to SYS-CALL, HONS-CLEAR!, and HONS-WASH!.  It doesn't seem worth the
+; bother to make such exceptions; after all, with a trust tag one can redefine
+; *blacklisted-apply$-fns*!
+
+        (mv (msg "~x0 cannot be warranted because apply$ is prohibited from ~
+                  calling it.  This is generally because its Common Lisp ~
+                  behavior is different from its logical behavior."
+                 fn)
+            nil))
        ((or (not (all-nils (getpropc fn 'stobjs-in nil wrld)))
             (not (all-nils (getpropc fn 'stobjs-out nil wrld))))
 
@@ -1689,7 +1702,7 @@
            ~x0 and badge ~x1, but surprisingly, the table event specified an ~
            extension by that record of~|~%  ~x2~|~%instead of specifying an ~
            extension of the existing list of stored badge structures,~|~%~  ~
-           x3."
+           ~x3."
           fn
           specified-badge
           (cdr val)
@@ -1985,21 +1998,31 @@
 
 (defun defwarrant-fn1 (fn state)
   (declare (xargs :mode :program))
-  (let ((ens (ens state))
-        (wrld (w state))
-        (apply-lemmas-book
-         (extend-pathname :system "projects/apply/base.lisp" state)))
-    (mv-let (msg bdg)
-      (badger fn ens wrld)
-      (cond
-       (msg
-        (er soft 'defwarrant "~@0" msg))
-       ((and (not (assoc-equal
-                   apply-lemmas-book
-                   (global-val 'include-book-alist (w state))))
-             (not (equal apply-lemmas-book
-                         (active-book-name (w state) state)))
-             (not (global-val 'boot-strap-flg (w state))))
+  (cond
+   ((apply$-primp fn)
+    (pprogn (observation (cons 'defwarrant fn)
+                         "The function ~x0 is an APPLY$ primitive and hence ~
+                          does not need a warrant.  This event thus has no ~
+                          effect.~|~%"
+                         fn)
+            (value `(with-output
+                      :stack :pop
+                      (value-triple nil)))))
+   (t (let ((ens (ens state))
+            (wrld (w state))
+            (apply-lemmas-book
+             (extend-pathname :system "projects/apply/base.lisp" state)))
+        (mv-let (msg bdg)
+          (badger fn ens wrld)
+          (cond
+           (msg
+            (er soft 'defwarrant "~@0" msg))
+           ((and (not (assoc-equal
+                       apply-lemmas-book
+                       (global-val 'include-book-alist (w state))))
+                 (not (equal apply-lemmas-book
+                             (active-book-name (w state) state)))
+                 (not (global-val 'boot-strap-flg (w state))))
 
 ; In order to succeed, defwarrant needs base.lisp to have been included.  That
 ; is because defwarrant tries to prove congruence rules and at the very least
@@ -2012,46 +2035,46 @@
 ; We make an exception for the boot-strap, where we take responsibility for the
 ; necessary verification.
 
-        (er soft 'defwarrant
-            "Please execute~%~x0~|before the first defun$ or defwarrant.  ~
-             See :DOC defwarrant."
-            '(include-book
-              "projects/apply/top" :dir :system)))
-       (t
-        (value
+            (er soft 'defwarrant
+                "Please execute~%~x0~|before the first defun$ or defwarrant.  ~
+                 See :DOC defwarrant."
+                '(include-book
+                  "projects/apply/top" :dir :system)))
+           (t
+            (value
 
 ; WARNING: Be sure no event under this (encapsulate () ...) is local!  At one
 ; time we used (progn ...) instead.  However, we found that defwarrant events
 ; were never redundant because of the defattach below.
 
-         `(encapsulate ; Read the warning above before changing to progn.
-            ()
-            ,@(defwarrant-event fn (formals fn wrld)
-                bdg)
-            (table badge-table
-                   :badge-userfn-structure
-                   (cons ',(cons fn bdg)
-                         (cdr (assoc :badge-userfn-structure
-                                     (table-alist 'badge-table world))))
-                   :put)
-            ,(if (getpropc fn 'predefined nil wrld)
-                 `(defattach (,(warrant-name fn)
-                              true-apply$-warrant)
-                    :system-ok t)
-               `(defattach ,(warrant-name fn) true-apply$-warrant))
-            ,@(if (eq (access apply$-badge bdg :ilks) t)
-                  nil
-                (defcong-fn-equal-equal-events
-                  (cons fn (formals fn wrld))
-                  1
-                  (access apply$-badge bdg :ilks)))
-            (with-output
-              :stack :pop
-              (value-triple
-               (prog2$
-                (cw "~%~x0 is now warranted, with badge ~x1.~%~%"
-                    ',fn ',bdg)
-                :warranted))))))))))
+             `(encapsulate ; Read the warning above before changing to progn.
+                ()
+                ,@(defwarrant-event fn (formals fn wrld)
+                    bdg)
+                (table badge-table
+                       :badge-userfn-structure
+                       (cons ',(cons fn bdg)
+                             (cdr (assoc :badge-userfn-structure
+                                         (table-alist 'badge-table world))))
+                       :put)
+                ,(if (getpropc fn 'predefined nil wrld)
+                     `(defattach (,(warrant-name fn)
+                                  true-apply$-warrant)
+                        :system-ok t)
+                   `(defattach ,(warrant-name fn) true-apply$-warrant))
+                ,@(if (eq (access apply$-badge bdg :ilks) t)
+                      nil
+                    (defcong-fn-equal-equal-events
+                      (cons fn (formals fn wrld))
+                      1
+                      (access apply$-badge bdg :ilks)))
+                (with-output
+                  :stack :pop
+                  (value-triple
+                   (prog2$
+                    (cw "~%~x0 is now warranted, with badge ~x1.~%~%"
+                        ',fn ',bdg)
+                    :warranted))))))))))))
 
 (defun defwarrant-fn (fn)
   (declare (xargs :mode :logic :guard t)) ; for execution speed in safe-mode
@@ -2280,118 +2303,19 @@
 ; with verify-guards nil, prove the lemma equating them, and verify-guards to
 ; install the fast :exec.
 
-(defun tails-ac (lst ac)
-  (declare (xargs :guard (and (true-listp lst)
-                              (true-listp ac))
-                  :mode :program))
-  (cond ((endp lst) (revappend ac nil))
-        (t (tails-ac (cdr lst) (cons lst ac)))))
-
-(defun tails (lst)
-  (declare (xargs :guard (true-listp lst)
-                  :mode :program))
-  (mbe :logic
-       (cond ((endp lst) nil)
-             (t (cons lst (tails (cdr lst)))))
-       :exec (tails-ac lst nil)))
+; See apply-prim.lisp for definitions of tails-ac and tails.
 
 ; -----------------------------------------------------------------
 ; Loop$-as and Its Tail Recursive Counterpart
 
-(defun empty-loop$-as-tuplep (tuple)
-; A loop$-as-tuple is empty if at least one element is empty.
-  (declare (xargs :guard (true-list-listp tuple)
-                  :mode :program))
-  (cond ((endp tuple) nil)
-        ((endp (car tuple)) t)
-        (t (empty-loop$-as-tuplep (cdr tuple)))))
-
-(defun car-loop$-as-tuple (tuple)
-  (declare (xargs :guard (true-list-listp tuple)
-                  :mode :program))
-  (cond ((endp tuple) nil)
-        (t (cons (caar tuple) (car-loop$-as-tuple (cdr tuple))))))
-
-(defun cdr-loop$-as-tuple (tuple)
-  (declare (xargs :guard (true-list-listp tuple)
-                  :mode :program))
-  (cond ((endp tuple) nil)
-        (t (cons (cdar tuple) (cdr-loop$-as-tuple (cdr tuple))))))
-
-(defun loop$-as-ac (tuple ac)
-  (declare (xargs :guard (and (true-list-listp tuple)
-                              (true-listp ac))
-                  :mode :program))
-  (cond ((endp tuple) (revappend ac nil))
-        ((empty-loop$-as-tuplep tuple) (revappend ac nil))
-        (t (loop$-as-ac (cdr-loop$-as-tuple tuple)
-                        (cons (car-loop$-as-tuple tuple)
-                              ac)))))
-
-(defun loop$-as (tuple)
-  (declare (xargs :guard (true-list-listp tuple)
-                  :mode :program))
-  (mbe :logic
-       (cond ((endp tuple) nil)
-             ((empty-loop$-as-tuplep tuple) nil)
-             (t (cons (car-loop$-as-tuple tuple)
-                      (loop$-as (cdr-loop$-as-tuple tuple)))))
-       :exec
-       (loop$-as-ac tuple nil)))
+; See apply-prim.lisp for definitions of empty-loop$-as-tuplep,
+; car-loop$-as-tuple, cdr-loop$-as-tuple, loop$-as-ac, and loop$-as.
 
 ; -----------------------------------------------------------------
 ; From-to-by and Its Tail Recursive Counterpart
 
-; We will need this measure in order to warrant from-to-by-ac.
-(defun from-to-by-measure (i j)
-  (declare (xargs :guard t))
-  (if (and (integerp i)
-           (integerp j)
-           (<= i j))
-      (+ 1 (- j i))
-      0))
-
-(defun from-to-by-ac (i j k ac)
-  (declare (xargs :guard (and (integerp i)
-                              (integerp j)
-                              (integerp k)
-                              (< 0 k)
-                              (true-listp ac))
-                  :mode :program))
-  (cond ((mbt (and (integerp i)
-                   (integerp j)
-                   (integerp k)
-                   (< 0 k)))
-         (cond
-          ((<= i j)
-           (from-to-by-ac i (- j k) k (cons j ac)))
-          (t ac)))
-        (t nil)))
-
-(defun from-to-by (i j k)
-  (declare (xargs :guard (and (integerp i)
-                              (integerp j)
-                              (integerp k)
-                              (< 0 k))
-                  :mode :program))
-
-; Before we verify the guards (and so avail ourselves of the :exec branch
-; below), (time$ (length (from-to-by 1 1000000 1))) took 0.21 seconds.  After
-; verify guards it took 0.07 seconds.
-
-  (mbe :logic
-       (cond ((mbt (and (integerp i)
-                        (integerp j)
-                        (integerp k)
-                        (< 0 k)))
-              (cond
-               ((<= i j)
-                (cons i (from-to-by (+ i k) j k)))
-               (t nil)))
-             (t nil))
-       :exec (if (< j i)
-                 nil
-                 (from-to-by-ac i (+ i (* k (floor (- j i) k))) k nil))))
+; See apply-prim.lisp for definitions of from-to-by-measure, from-to-by-ac, and
+; from-to-by.
 
 ; Timing Comparision
 ; (time$ (length (from-to-by 1 1000000 1))
@@ -2712,16 +2636,7 @@
 ; scion guard conjectures will require it to be proved because CLTL doesn't fix
 ; the result.
 
-(defun revappend-true-list-fix (x ac)
-
-; This function is equivalent to (revappend (true-list-fix x) ac) but doesn't
-; copy x before reversing it onto ac.
-
-  (declare (xargs :guard t
-                  :mode :program))
-  (if (atom x)
-      ac
-      (revappend-true-list-fix (cdr x) (cons (car x) ac))))
+; See apply-prim.lisp for the definition of revappend-true-list-fix.
 
 (defun append$-ac (fn lst ac)
   (declare (xargs :guard (and (apply$-guard fn '(nil))

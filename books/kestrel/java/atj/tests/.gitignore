@@ -1,69 +1,110 @@
 *.class
 
 FactorialDeepUnguarded.java
+FactorialDeepUnguardedEnvironment.java
 FactorialDeepUnguardedTests.java
 
 FactorialDeepGuarded.java
+FactorialDeepGuardedEnvironment.java
 FactorialDeepGuardedTests.java
 
 FactorialShallowUnguarded.java
+FactorialShallowUnguardedEnvironment.java
 FactorialShallowUnguardedTests.java
 
 FactorialShallowGuarded.java
+FactorialShallowGuardedEnvironment.java
 FactorialShallowGuardedTests.java
 
 FibonacciDeepUnguarded.java
+FibonacciDeepUnguardedEnvironment.java
 FibonacciDeepUnguardedTests.java
 
 FibonacciDeepGuarded.java
+FibonacciDeepGuardedEnvironment.java
 FibonacciDeepGuardedTests.java
 
 FibonacciShallowUnguarded.java
+FibonacciShallowUnguardedEnvironment.java
 FibonacciShallowUnguardedTests.java
 
 FibonacciShallowGuarded.java
+FibonacciShallowGuardedEnvironment.java
 FibonacciShallowGuardedTests.java
 
 ABNFDeepUnguarded.java
+ABNFDeepUnguardedEnvironment.java
 
 ABNFDeepGuarded.java
+ABNFDeepGuardedEnvironment.java
 
 ABNFShallowUnguarded.java
+ABNFShallowUnguardedEnvironment.java
 
 ABNFShallowGuarded.java
+ABNFShallowGuardedEnvironment.java
 
 NativesDeepUnguarded.java
+NativesDeepUnguardedEnvironment.java
 NativesDeepUnguardedTests.java
 
 NativesDeepGuarded.java
+NativesDeepGuardedEnvironment.java
 NativesDeepGuardedTests.java
 
 NativesShallowUnguarded.java
+NativesShallowUnguardedEnvironment.java
 NativesShallowUnguardedTests.java
 
 NativesShallowGuarded.java
+NativesShallowGuardedEnvironment.java
 NativesShallowGuardedTests.java
 
 PrimitivesDeepUnguarded.java
+PrimitivesDeepUnguardedEnvironment.java
 
 PrimitivesDeepGuarded.java
+PrimitivesDeepGuardedEnvironment.java
 
 PrimitivesShallowUnguarded.java
+PrimitivesShallowUnguardedEnvironment.java
 
 PrimitivesShallowGuarded.java
+PrimitivesShallowGuardedEnvironment.java
 PrimitivesShallowGuardedTests.java
 
 PrimarraysShallowGuarded.java
+PrimarraysShallowGuardedEnvironment.java
 PrimarraysShallowGuardedTests.java
 
 MultivalueDeepUnguarded.java
+MultivalueDeepUnguardedEnvironment.java
 MultivalueDeepUnguardedTests.java
 
 MultivalueDeepGuarded.java
+MultivalueDeepGuardedEnvironment.java
 MultivalueDeepGuardedTests.java
 
 MultivalueShallowUnguarded.java
+MultivalueShallowUnguardedEnvironment.java
 MultivalueShallowUnguardedTests.java
 
 MultivalueShallowGuarded.java
+MultivalueShallowGuardedEnvironment.java
 MultivalueShallowGuardedTests.java
+
+BooleansDeepUnguarded.java
+BooleansDeepUnguardedEnvironment.java
+BooleansDeepUnguardedTests.java
+
+BooleansDeepGuarded.java
+BooleansDeepGuardedEnvironment.java
+BooleansDeepGuardedTests.java
+
+BooleansShallowUnguarded.java
+BooleansShallowUnguardedEnvironment.java
+BooleansShallowUnguardedTests.java
+
+BooleansShallowGuarded.java
+BooleansShallowGuardedEnvironment.java
+BooleansShallowGuardedTests.java

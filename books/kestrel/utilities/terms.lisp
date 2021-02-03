@@ -16,13 +16,22 @@
 (include-book "forms") ;for farg1, etc.
 (include-book "kestrel/alists-light/lookup" :dir :system)
 (include-book "substitution")
+(include-book "symbol-term-alistp")
+(include-book "expand-lambdas-in-term")
 (include-book "tools/flag" :dir :system)
-(local (include-book "kestrel/lists-light/symbol-listp" :dir :system))
+(local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/lists-light/member-equal" :dir :system))
 (local (include-book "kestrel/lists-light/add-to-set-equal" :dir :system))
 (local (include-book "kestrel/alists-light/pairlis-dollar" :dir :system))
 
 ;todo: use list fix to combine these into a nice rule?
+
+(defthm pseudo-termp-of-lookup-equal-when-symbol-term-alistp
+  (implies (and (symbol-term-alistp subst)
+;                (assoc-equal term subst)
+                )
+           (pseudo-termp (lookup-equal term subst)))
+  :hints (("Goal" :in-theory (enable symbol-term-alistp))))
 
 (defthm pseudo-term-listp-of-append1
   (implies (true-listp l1)
@@ -222,169 +231,7 @@
           (drop-terms-that-mention-vars (rest terms) vars) ;drop the term
         (cons term (drop-terms-that-mention-vars (rest terms) vars))))))
 
-(make-flag my-sublis-var)
 
-(defund symbol-term-alistp (x)
-  (declare (xargs :guard t))
-  (cond ((atom x) (eq x nil))
-        (t (and (consp (car x))
-                (symbolp (car (car x)))
-                (pseudo-termp (cdr (car x)))
-                (symbol-term-alistp (cdr x))))))
-
-(defthm symbol-term-alistp-of-cdr
-  (implies (symbol-term-alistp alist)
-           (symbol-term-alistp (cdr alist)))
-  :hints (("Goal" :in-theory (enable symbol-term-alistp))))
-
-(defthm symbolp-of-car-of-car-when-symbol-term-alistp
-  (implies (symbol-term-alistp x)
-           (symbolp (car (car x))))
-  :rule-classes :type-prescription
-  :hints (("Goal" :in-theory (enable symbol-term-alistp))))
-
-(defthm pseudo-termp-of-cdr-of-car-when-symbol-term-alistp-cheap
-  (implies (symbol-term-alistp x)
-           (pseudo-termp (cdr (car x))))
-  :hints (("Goal" :in-theory (enable symbol-term-alistp))))
-
-(defthm symbol-alistp-when-symbol-term-alistp-cheap
-  (implies (symbol-term-alistp x)
-           (symbol-alistp x))
-  :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :hints (("Goal" :in-theory (enable symbol-term-alistp))))
-
-(defthm symbol-term-alistp-forward-to-symbol-alistp
-  (implies (symbol-term-alistp x)
-           (symbol-alistp x))
-  :rule-classes :forward-chaining)
-
-(defthm consp-of-car-when-symbol-term-alistp-cheap
-  (implies (symbol-term-alistp alist)
-           (equal (consp (car alist))
-                  (consp alist)))
-  :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :hints (("Goal" :in-theory (enable symbol-term-alistp))))
-
-(defthm iff-of-car-when-symbol-term-alistp-cheap
-  (implies (symbol-term-alistp alist)
-           (iff (car alist)
-                alist))
-  :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :hints (("Goal" :in-theory (enable symbol-term-alistp))))
-
-(defthm pseudo-termp-of-cdr-of-assoc-equal
-  (implies (and ;(assoc-equal form alist)
-                ;(symbolp form)
-                (symbol-term-alistp alist))
-           (pseudo-termp (cdr (assoc-equal form alist))))
-  :hints (("Goal" :in-theory (enable assoc-equal symbol-term-alistp))))
-
-(defthm pseudo-termp-of-lookup-equal-when-symbol-term-alistp
-  (implies (and (symbol-term-alistp subst)
-;                (assoc-equal term subst)
-                )
-           (pseudo-termp (lookup-equal term subst)))
-  :hints (("Goal" :in-theory (enable symbol-term-alistp))))
-
-(defthm symbol-term-alistp-of-pairlis$
-  (implies (and (symbol-listp syms)
-                (pseudo-term-listp terms))
-           (symbol-term-alistp (pairlis$ syms terms)))
-  :hints (("Goal" :in-theory (enable symbol-term-alistp))))
-
-(defthm symbol-term-alistp-of-pairlis$-alt
-  (implies (equal (len vars) (len terms))
-           (equal (symbol-term-alistp (pairlis$ vars terms))
-                  (and (symbol-listp (true-list-fix vars))
-                       (pseudo-term-listp (true-list-fix terms)))))
-  :hints (("Goal" :in-theory (enable symbol-term-alistp))))
-
-;dup
-(defthm len-of-my-sublis-var-lst
-  (equal (len (my-sublis-var-lst alist l))
-         (len l))
-  :hints (("Goal"
-           :induct (len l)
-           :in-theory (enable my-sublis-var-lst len))))
-
-;TODO change the formals of my-sublis-var and my-sublis-var-lst to be term and terms, not form and l?
-(defthm-flag-my-sublis-var
-  (defthm pseudo-termp-of-my-sublis-var
-    (implies (and (pseudo-termp form)
-                  (symbol-term-alistp alist))
-             (pseudo-termp (my-sublis-var alist form)))
-    :flag my-sublis-var)
-  (defthm pseudo-term-listp-of-my-sublis-var-lst
-    (implies (and (pseudo-term-listp l)
-                  (symbol-term-alistp alist))
-             (pseudo-term-listp (my-sublis-var-lst alist l)))
-    :flag my-sublis-var-lst)
-  :hints (("Goal" :expand ((PSEUDO-TERMP (CONS (CAR FORM)
-                                               (MY-SUBLIS-VAR-LST ALIST (CDR FORM))))))))
-
-;(later we may handle non-pseudo-terms that still include lets).
-;This is similar to remove-lambdas, but we don't use remove-lambdas,
-;because it has to preserve quote normal form. For example:
-;(remove-lambdas '((lambda (x y) (binary-+ x y)) '1 '2)) produces '3
-;whereas we want (binary-+ '1 '2).
-(mutual-recursion
- (defund expand-lambdas-in-term (term)
-   (declare (xargs :measure (acl2-count term)
-                   :guard (pseudo-termp term)
-                   :verify-guards nil)) ;see verify-guards form below
-   (if (variablep term)
-       term
-     (if (quotep term)
-         term
-       ;;it's a function call (maybe a lambda application):
-       (let* ((args (fargs term))
-              (args (expand-lambdas-in-terms args)) ;process the args first
-              (fn (ffn-symb term)))
-         (if (flambdap fn) ;test for lambda application.  term is: ((lambda (formals) body) ... args ...)
-             (let* ((lambda-body (expand-lambdas-in-term (lambda-body fn)))) ;;apply recursively to the lambda body
-               ;; beta-reduce:
-               (my-sublis-var (pairlis$ (lambda-formals fn) args) lambda-body))
-           ;;not a lambda application, so just rebuild the function call:
-           `(,fn ,@args))))))
-
- (defund expand-lambdas-in-terms (terms)
-   (declare (xargs :measure (acl2-count terms)
-                   :guard (pseudo-term-listp terms)))
-   (if (endp terms)
-       nil
-     (cons (expand-lambdas-in-term (first terms))
-           (expand-lambdas-in-terms (rest terms))))))
-
-(make-flag expand-lambdas-in-term)
-
-;TODO: Automate some of this?
-
-(defthm len-of-expand-lambdas-in-terms
-  (equal (len (expand-lambdas-in-terms terms))
-         (len terms))
-  :hints (("Goal" :induct (len terms)
-           :in-theory (enable len expand-lambdas-in-terms))))
-
-(defthm consp-of-expand-lambdas-in-terms
-  (equal (consp (expand-lambdas-in-terms terms))
-         (consp terms))
-  :hints (("Goal" :induct (len terms)
-           :in-theory (enable len expand-lambdas-in-terms))))
-
-(defthm-flag-expand-lambdas-in-term
-  (defthm pseudo-termp-of-expand-lambdas-in-term
-    (implies (pseudo-termp term)
-             (pseudo-termp (expand-lambdas-in-term term)))
-    :flag expand-lambdas-in-term)
-  (defthm pseudo-term-listp-of-expand-lambdas-in-terms
-    (implies (pseudo-term-listp terms)
-             (pseudo-term-listp (expand-lambdas-in-terms terms)))
-    :flag expand-lambdas-in-terms)
-  :hints (("Goal" :in-theory (enable expand-lambdas-in-term
-                                     expand-lambdas-in-terms))))
-
-(verify-guards expand-lambdas-in-term)
 
 ;replace sym with its binding in the alist (if any).  otherwise, return sym
 (defun replace-if-bound (sym alist)
@@ -590,25 +437,6 @@
     (my-sublis-var (pairlis$ formals actuals)
                    body)))
 
-;todo: what about lambdas?
-(mutual-recursion
- (defun subtermp (a b)
-   (declare (xargs :guard (pseudo-termp b)))
-   (if (atom b)
-       (equal b a)
-     (let ((fn (ffn-symb b)))
-       (if (eq 'quote fn)
-           (equal a b)
-         (or (equal a b)
-             (subterm-of-anyp a (fargs b)))))))
-
- (defun subterm-of-anyp (a b-lst)
-   (declare (xargs :guard (pseudo-term-listp b-lst)))
-   (if (endp b-lst)
-       nil
-     (or (subtermp a (car b-lst))
-         (subterm-of-anyp a (cdr b-lst))))))
-
 ;; where should this go?
 ;; Negate TERM by adding or removing a call of not (avoids double negation)
 (defun negate-term (term)
@@ -685,6 +513,11 @@
 (defthm lambda-free-termsp-of-true-list-fix
   (equal (lambda-free-termsp (true-list-fix terms))
          (lambda-free-termsp terms)))
+
+(defthmd lambda-free-termsp-when-symbol-listp
+  (implies (symbol-listp terms)
+           (lambda-free-termsp terms))
+  :hints (("Goal" :in-theory (enable lambda-free-termsp))))
 
 
 ;; (thm

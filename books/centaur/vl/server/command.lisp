@@ -33,7 +33,7 @@
 (include-book "../mlib/fmt")
 (include-book "centaur/bridge/to-json" :dir :system)
 (local (include-book "../util/arithmetic"))
-(include-book "std/testing/assert" :dir :system)
+(include-book "std/testing/assert-bang" :dir :system)
 
 (defsection vls-commands
   :parents (vl-server)

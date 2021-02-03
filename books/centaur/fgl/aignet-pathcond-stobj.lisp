@@ -109,7 +109,7 @@
   (verify-guards+ nbalist-fix
                   :hints (("goal" :expand ((nbalistp x)))))
   (defsection
-    nbalist-equiv :parents (nbalist)
+    nbalist-equiv
     (fty::deffixtype nbalist
       :pred nbalistp
       :fix nbalist-fix
@@ -574,12 +574,41 @@
   :enabled t
   (len (nbalist-fix nbalist)))
 
+(local
+ (defthm maybe-bitp-compound-recognizer
+   (equal (maybe-bitp x)
+          (or (not x) (bitp x)))
+   :hints(("Goal" :in-theory (enable maybe-bitp)))
+   :rule-classes :compound-recognizer))
+
 (define nbalist-lookup ((id natp)
                         (nbalist nbalistp))
-  :returns ans
+  :returns (ans maybe-bitp :rule-classes :type-prescription
+                :hints(("Goal" :in-theory (enable maybe-bitp))))
   (cdr (hons-get (lnfix id) (nbalist-fix nbalist))))
 
-(local (in-theory (enable nbalist-lookup)))
+(define nbalist-boundp ((id natp)
+                        (nbalist nbalistp))
+  :returns ans
+  (and (hons-get (lnfix id) (nbalist-fix nbalist)) t)
+  ///
+  (defthm nbalist-lookup-under-iff
+    (iff (nbalist-lookup id nbalist)
+         (nbalist-boundp id nbalist))
+    :hints(("Goal" :in-theory (enable nbalist-lookup))))
+
+  (defthm bitp-of-nbalist-lookup
+    (implies (nbalist-boundp id nbalist)
+             (bitp (nbalist-lookup id nbalist)))
+    :hints(("Goal" :in-theory (disable nbalist-boundp nbalist-lookup-under-iff)
+            :use nbalist-lookup-under-iff))
+    :rule-classes (:rewrite :type-prescription))
+
+  (defthm nbalist-lookup-when-not-boundp
+    (implies (not (nbalist-boundp id nbalist))
+             (equal (nbalist-lookup id nbalist) nil))))
+
+(local (in-theory (enable nbalist-lookup nbalist-boundp)))
 
 (define nbalist-stobj-lookup$a ((id natp :type (unsigned-byte 32))
                                 (nbalist nbalist-stobj$ap))

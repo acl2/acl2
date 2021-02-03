@@ -2,6 +2,23 @@
 ; Written by Matt Kaufmann and J Strother Moore
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
+; Members of the ACL2 community are invited to strengthen the
+; predicate pseudo-good-worldp that is defined in this book.  If you
+; do so, then please include your name in a standard-form comment in
+; the relevant code, like this, and also add your name to the list of
+; additional contributors just above this comment.
+
+; Contributed by: Frank N. Stein
+
+; Also, please understand that you are responsible for fixing any
+; resulting errors in running "make chk-include-book-worlds" (in
+; either the top-level ACL2 directory or, equivalently, in the books/
+; subdirectory).  That target checks worlds after including most
+; community books (some with ttags are exempted, for example, since
+; they put unusual triples in the world).  Note that every ordinary
+; regression does one such check by certifying
+; books/system/worldp-check.lisp.
+
 (in-package "ACL2")
 
 ; -----------------------------------------------------------------
@@ -1261,6 +1278,72 @@
   (true-listp val))
 
 ;-----------------------------------------------------------------
+; REWRITE-QUOTED-CONSTANT-RULES
+
+; This is a list of rewrite-rule records, all of which have the subclass
+; REWRITE-QUOTED-CONSTANT.
+
+(defun pseudo-loop-stopper-elementp (x)
+  (case-match x
+    ((var1 var2 . fns)
+     (and (symbolp var1)
+          (symbolp var2)
+          (pseudo-function-symbol-listp fns nil)))
+    (& nil)))
+
+(defun pseudo-loop-stopperp (x)
+  (cond ((atom x) (null x))
+        (t (and (pseudo-loop-stopper-elementp (car x))
+                (pseudo-loop-stopperp (cdr x))))))
+
+(defun nil-or-nat-listp (x)
+  (cond ((atom x) (null x))
+        (t (and (or (null (car x))
+                    (natp (car x)))
+                (nil-or-nat-listp (cdr x))))))
+
+(defun pseudo-match-freep (x)
+
+; According to a comment in the defrec for rewrite-rule, the match-free should
+; be :once or :all if there are free vars in the hypotheses of a rule.  This
+; function doesn't check that condition.
+
+  (or (null x)
+      (eq x :once)
+      (eq x :all)))
+
+(defun pseudo-rewrite-quoted-constant-rulep (x)
+  (case-match x
+    (('REWRITE-RULE rune nume hyps equiv lhs rhs
+                    subclass heuristic-info
+                    backchain-limit-lst
+                    var-info . match-free)
+     (cond
+      ((eq subclass 'rewrite-quoted-constant)
+       (and (pseudo-runep rune)
+            (pseudo-numep nume)
+            (pseudo-term-listp hyps)
+            (pseudo-function-symbolp equiv 2)
+            (pseudo-termp lhs)
+            (pseudo-termp rhs)
+            (consp heuristic-info)
+            (integerp (car heuristic-info))
+            (<= 1 (car heuristic-info))
+            (<= (car heuristic-info) 3)
+            (pseudo-loop-stopperp (cdr heuristic-info))
+            (or (null backchain-limit-lst) ; If the user explicitly sets this field to a nat
+                (nil-or-nat-listp backchain-limit-lst)) ; it is coerced to a list of nats.
+            (booleanp var-info)
+            (pseudo-match-freep match-free)))
+      (t nil)))
+    (& nil)))
+
+(defun pseudo-rewrite-quoted-constant-rulesp (x)
+  (cond ((atom x) (null x))
+        (t (and (pseudo-rewrite-quoted-constant-rulep (car x))
+                (pseudo-rewrite-quoted-constant-rulesp (cdr x))))))
+
+;-----------------------------------------------------------------
 ; ABSOLUTE-EVENT-NUMBER
 
 (defun absolute-event-numberp (sym val)
@@ -1666,16 +1749,6 @@
 ;   ((rune . nume) trigger hyps concls . match-free)
 ;   nil)
 
-(defun pseudo-match-freep (x)
-
-; According to a comment in the defrec for rewrite-rule, the match-free should
-; be :once or :all if there are free vars in the hypotheses of a rule.  This
-; function doesn't check that condition.
-
-  (or (null x)
-      (eq x :once)
-      (eq x :all)))
-
 (defun pseudo-forward-chaining-rulep (x)
   (case-match x
     (('FORWARD-CHAINING-RULE (rune . nume) trigger hyps concls . match-free)
@@ -1770,6 +1843,8 @@
     (LOOP$-ALIST (loop$-alistp val))
     (COMMON-LISP-COMPLIANT-LAMBDAS (common-lisp-compliant-lambdasp val))
     (NEVER-IRRELEVANT-FNS-ALIST (never-irrelevant-fns-alistp val))
+    (REWRITE-QUOTED-CONSTANT-RULES
+     (pseudo-rewrite-quoted-constant-rulesp val))
     (otherwise nil)))
 
 ;-----------------------------------------------------------------
@@ -1861,25 +1936,6 @@
 ;   nil)
 
 ; But the restrictions on the fields depend on the subclass of the rule.
-
-(defun pseudo-loop-stopper-elementp (x)
-  (case-match x
-    ((var1 var2 . fns)
-     (and (symbolp var1)
-          (symbolp var2)
-          (pseudo-function-symbol-listp fns nil)))
-    (& nil)))
-
-(defun pseudo-loop-stopperp (x)
-  (cond ((atom x) (null x))
-        (t (and (pseudo-loop-stopper-elementp (car x))
-                (pseudo-loop-stopperp (cdr x))))))
-
-(defun nil-or-nat-listp (x)
-  (cond ((atom x) (null x))
-        (t (and (or (null (car x))
-                    (natp (car x)))
-                (nil-or-nat-listp (cdr x))))))
 
 (defun pseudo-rewrite-rulep (x)
   (case-match x
@@ -2221,6 +2277,16 @@
 
 ;-----------------------------------------------------------------
 ; REDUNDANCY-BUNDLE
+
+; Through Version_8.3 we stored a so-called redundancy-bundle for a defstobj
+; event.  We found however that this was not sufficient for determining
+; redundancy, as discussed in :doc note-8-4.  Perhaps everything in this
+; section could therefore be deleted; however, it seems harmless to leave these
+; functions in place for now, which could be helpful if they are useful
+; elsewhere.
+
+; At any rate, everything below in this section should be considered irrelevant
+; to well-formedness of a world.
 
 ; The structure of a redundancy-bundle of a stobj is actually pretty
 ; unimportant.  They are only used as fingerprints of a defstobj event,
@@ -2646,7 +2712,8 @@
 ; The form of an untranslated theorem is quite arbitrary, because of macros.
 
   (declare (ignore sym))
-  (true-listp val))
+  (or (atom val)
+      (true-listp val)))
 
 ; -----------------------------------------------------------------
 
@@ -2858,7 +2925,6 @@
           (RECOGNIZER-ALIST (pseudo-recognizer-alistp sym val))
           (RECURSIVEP (pseudo-recursivepp sym val))
           (REDEFINED (redefinedp sym val))
-          (REDUNDANCY-BUNDLE (pseudo-redundancy-bundlep sym val))
           (RUNIC-MAPPING-PAIRS (pseudo-runic-mapping-pairsp sym val))
           (SIBLINGS (siblings-propertyp sym val))
           (SIGNATURE-RULES-FORM-1

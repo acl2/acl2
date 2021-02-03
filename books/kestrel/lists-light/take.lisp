@@ -76,7 +76,7 @@
                       (nth n lst)
                     nil)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (take nth) ()))))
+           :in-theory (enable take nth))))
 
 (defthm nthcdr-of-take
   (equal (nthcdr i (take j x))
@@ -213,3 +213,8 @@
            (equal (equal x (take n x))
                   (and (true-listp x)
                        (equal (len x) n)))))
+
+(defthm equal-of-take-and-take-same
+  (equal (equal (take n1 x) (take n2 x))
+         (equal (nfix n1) (nfix n2)))
+  :hints (("Goal" :in-theory (enable take))))

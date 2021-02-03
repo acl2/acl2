@@ -321,6 +321,7 @@ tagged with @(':osets') you could do:</p>
                                       &key
                                       (name 'nil name-p)
                                       (body 'nil body-p)
+                                      disable
                                       (requirement 'nil requirement-p)
                                       (inst-rule-classes 'nil inst-rule-classes-p)
                                       (cheap-rule-classes 'nil cheap-rule-classes-p)
@@ -331,11 +332,12 @@ tagged with @(':osets') you could do:</p>
   `(progn (defthm ,thmname ,thm :hints ,hints :rule-classes ,rule-classes :otf-flg ,otf-flg)
           (table ,tablename ',thmname
                  (or '(,@(and name-p `((:name ,name)))
-                         ,@(and body-p `((:body ,body)))
-                         ,@(and requirement-p `((:requirement ,requirement)))
-                         ,@(and inst-rule-classes-p `((:rule-classes ,inst-rule-classes)))
-                         ,@(and cheap-rule-classes-p `((:cheap-rule-classes ,cheap-rule-classes)))
-                         ,@(and tags `((:tags . ,tags))))
+                       ,@(and body-p `((:body ,body)))
+                       ,@(and disable `((:disable t)))
+                       ,@(and requirement-p `((:requirement ,requirement)))
+                       ,@(and inst-rule-classes-p `((:rule-classes ,inst-rule-classes)))
+                       ,@(and cheap-rule-classes-p `((:cheap-rule-classes ,cheap-rule-classes)))
+                       ,@(and tags `((:tags . ,tags))))
                      t))))
 
 (defun ruletable-delete-tags (tags table)

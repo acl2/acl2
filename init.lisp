@@ -1,5 +1,5 @@
-; ACL2 Version 8.2 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2019, Regents of the University of Texas
+; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2020, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -40,6 +40,22 @@
 ;(setq ccl:*trace-print-length* 10)
 ;(setq ccl::*backtrace-print-length* 10)
 ;(setq ccl::*backtrace-print-level* 10)
+
+; We formerly pushed :hons onto *features* as part of the "make" process.  But
+; that caused build failures when not using "make".  For "classic" ACL2(c)
+; (which is no longer supported but might work) without support for hash-cons
+; and fast-alists, comment out this form.  We could consider using getenv$-raw
+; to conditionalize this push on environment variable ACL2_HONS, though
+; getenv$-raw would need to be defined at this point (currently it is defined
+; in acl2-fns.lisp, which is loaded by acl2.lisp, acl2-init.lisp, which is
+; loaded below.  If you thus delay setting this :hons feature, be careful that
+; none of that code loaded before doing so depends on that feature!
+; Of course, it might be best simply to eliminate this feature, both by
+; eliminating the push onto features below and by searching for its use in the
+; source code and the books, especially to remove code guarded by #-hons.  But
+; that seems unnecessarily painful and prone to omissions, and could affect
+; proprietary books that we cannot fix ourselves.
+(push :hons *features*)
 
 (unless (find-package "ACL2")
 

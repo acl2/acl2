@@ -1,5 +1,5 @@
-; ACL2 Version 8.2 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2019, Regents of the University of Texas
+; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2020, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -117,6 +117,8 @@
                      memo-table-init-size
                      aokp
                      stats
+                     total
+                     invoke
                      ideal-okp)
 
 ; Jared Davis suggests that we consider bundling up these 13 parameters, for
@@ -141,6 +143,8 @@
                                        *mht-default-size*))
                             (cons :aokp ,aokp)
                             (cons :stats ,stats)
+                            (cons :total ,total)
+                            (cons :invoke ,invoke)
                             (and (not (eq ,ideal-okp :default))
                                  (list (cons :ideal-okp ,ideal-okp)))))
               (value-triple (deref-macro-name
@@ -167,6 +171,8 @@
                (memo-table-init-size ,memo-table-init-size)
                (aokp ,aokp)
                (stats ,stats)
+               (total ,total)
+               (invoke ,invoke)
                (ideal-okp ,ideal-okp))
           (cond ((not (and
                        (symbolp fn)
@@ -225,6 +231,8 @@
                                             *mht-default-size*))
                                   (cons :aokp ',aokp)
                                   (cons :stats ,stats)
+                                  (cons :total ',total)
+                                  (cons :invoke ',invoke)
                                   (and (not (eq ',ideal-okp :default))
                                        (list (cons :ideal-okp ',ideal-okp)))))
                     (value-triple ',fn)))))))
@@ -239,6 +247,8 @@
                                         *mht-default-size*))
                               (cons :aokp ',aokp)
                               (cons :stats ,stats)
+                              (cons :total ,total)
+                              (cons :invoke ,invoke)
                               (and (not (eq ',ideal-okp :default))
                                    (list (cons :ideal-okp ',ideal-okp)))))
                 (value-triple (deref-macro-name
@@ -248,12 +258,14 @@
 (defmacro memoize (fn &key
                       (condition 't condition-p)
                       condition-fn hints otf-flg
-                      (recursive 't)
+                      (recursive ':default)
                       commutative
                       forget
                       memo-table-init-size
                       aokp
                       (stats ':default)
+                      total
+                      invoke
                       (ideal-okp ':default)
                       (verbose 't))
 
@@ -271,10 +283,10 @@
 ; unmemoize should be changed to modify the 'saved-memoize-table instead of
 ; 'memoize-table.
 
-  (declare (xargs :guard (booleanp recursive))
+  (declare (xargs :guard (member-eq recursive '(t nil :default)))
            (ignorable condition-p condition condition-fn hints otf-flg
                       recursive commutative forget memo-table-init-size
-                      aokp stats ideal-okp verbose))
+                      aokp stats total invoke ideal-okp verbose))
 
   #-acl2-loop-only
   `(progn (when (eql *ld-level* 0)
@@ -298,8 +310,24 @@
          Note that the arguments to MEMOIZE are evaluated; so perhaps you ~
          intended the first argument to be (QUOTE ~x0) or, equivalently, '~x0."
         fn))
+   ((and invoke (symbolp invoke))
+    (er hard 'memoize
+        "It is illegal for the :INVOKE argument of MEMOIZE to be a symbol.  ~
+         Note that the arguments to MEMOIZE are evaluated; so perhaps you ~
+         intended that argument to be (QUOTE ~x0) or, equivalently, '~x0."
+        invoke))
    (t
-    (let* ((inline recursive)
+    (let* ((inline (if (eq recursive :default)
+                       (if invoke nil t)
+                     recursive))
+           (condition (cond ((and invoke
+                                  (not condition-p)
+                                  (not condition-fn))
+                             nil)
+                            (t condition)))
+           (stats (if (and invoke (eq stats :default))
+                      nil
+                    stats))
            (form
             (cond
              ((eq commutative t)
@@ -325,10 +353,13 @@
                                  ',memo-table-init-size
                                  ',aokp
                                  ',stats
+                                 ',total
+                                 ',invoke
                                  ',ideal-okp)))))
              (t (memoize-form fn condition condition-p condition-fn
                               hints otf-flg inline commutative forget
-                              memo-table-init-size aokp stats ideal-okp)))))
+                              memo-table-init-size aokp stats total invoke
+                              ideal-okp)))))
       (cond (verbose form)
             (t `(with-output
                  :off (summary prove event)

@@ -13,7 +13,7 @@
 ; Avoid failure for (atj-main-function-type < ...) in ACL2(r):
 ; cert_param: (non-acl2r)
 
-(include-book "types")
+(include-book "type-macros")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -26,7 +26,7 @@
 
 ; primary types:
 
-(atj-main-function-type acl2-numberp (:avalue) :asymbol)
+(atj-main-function-type acl2-numberp (:avalue) :aboolean)
 
 (atj-main-function-type binary-* (:anumber :anumber) :anumber)
 
@@ -36,7 +36,7 @@
 
 (atj-main-function-type unary-/ (:anumber) :anumber)
 
-(atj-main-function-type < (:arational :arational) :asymbol)
+(atj-main-function-type < (:arational :arational) :aboolean)
 
 (atj-main-function-type car (:avalue) :avalue)
 
@@ -44,29 +44,29 @@
 
 (atj-main-function-type char-code (:acharacter) :ainteger)
 
-(atj-main-function-type characterp (:avalue) :asymbol)
+(atj-main-function-type characterp (:avalue) :aboolean)
 
 (atj-main-function-type code-char (:ainteger) :acharacter)
 
 (atj-main-function-type complex (:arational :arational) :anumber)
 
-(atj-main-function-type complex-rationalp (:avalue) :asymbol)
+(atj-main-function-type complex-rationalp (:avalue) :aboolean)
 
 (atj-main-function-type coerce (:avalue :asymbol) :avalue)
 
 (atj-main-function-type cons (:avalue :avalue) :acons)
 
-(atj-main-function-type consp (:avalue) :asymbol)
+(atj-main-function-type consp (:avalue) :aboolean)
 
 (atj-main-function-type denominator (:arational) :ainteger)
 
-(atj-main-function-type equal (:avalue :avalue) :asymbol)
+(atj-main-function-type equal (:avalue :avalue) :aboolean)
 
 (atj-main-function-type if (:avalue :avalue :avalue) :avalue)
 
 (atj-main-function-type imagpart (:anumber) :arational)
 
-(atj-main-function-type integerp (:avalue) :asymbol)
+(atj-main-function-type integerp (:avalue) :aboolean)
 
 (atj-main-function-type intern-in-package-of-symbol
                         (:astring :asymbol)
@@ -78,17 +78,17 @@
 
 (atj-main-function-type pkg-witness (:astring) :asymbol)
 
-(atj-main-function-type rationalp (:avalue) :asymbol)
+(atj-main-function-type rationalp (:avalue) :aboolean)
 
 (atj-main-function-type realpart (:anumber) :arational)
 
-(atj-main-function-type stringp (:avalue) :asymbol)
+(atj-main-function-type stringp (:avalue) :aboolean)
 
 (atj-main-function-type symbol-name (:asymbol) :astring)
 
 (atj-main-function-type symbol-package-name (:asymbol) :astring)
 
-(atj-main-function-type symbolp (:avalue) :asymbol)
+(atj-main-function-type symbolp (:avalue) :aboolean)
 
 (atj-main-function-type nonnegative-integer-quotient
                         (:ainteger :ainteger)
@@ -97,6 +97,8 @@
 (atj-main-function-type string-append (:astring :astring) :astring)
 
 (atj-main-function-type len (:avalue) :ainteger)
+
+(atj-main-function-type char (:astring :ainteger) :acharacter)
 
 ; secondary types:
 

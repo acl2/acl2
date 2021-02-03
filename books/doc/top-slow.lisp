@@ -159,6 +159,8 @@
 (include-book "centaur/misc/dag-measure" :dir :system)
 (include-book "centaur/misc/try-gl-concls" :dir :system)
 
+(include-book "centaur/svl/top" :dir :system)
+
 ;; BOZO conflicts with something in 4v-sexpr?
 
 ;; (include-book "misc/remove-assoc")
@@ -182,6 +184,7 @@
 (include-book "centaur/ubdds/param" :dir :system)
 
 (include-book "centaur/sv/top" :dir :system)
+(include-book "centaur/fgl/top" :dir :system)
 
 (ifdef "OS_HAS_GLUCOSE"
        (include-book "centaur/sv/tutorial/alu" :dir :system)
@@ -261,6 +264,8 @@ book that depends on Glucose being installed.</p>")
 (include-book "tools/defthmg" :dir :system)
 (include-book "tools/trivial-ancestors-check" :dir :system)
 (include-book "tools/without-subsumption" :dir :system)
+(include-book "tools/rewrite-dollar" :dir :system)
+(include-book "tools/open-trace-file-bang" :dir :system)
 (include-book "coi/util/rewrite-equiv" :dir :system)
 
 ;; This book memoizes several functions including translate11, translate11-lst,
@@ -305,7 +310,7 @@ book that depends on Glucose being installed.</p>")
 (include-book "centaur/fty/top" :dir :system)
 (include-book "centaur/fty/bitstruct" :dir :system)
 
-(include-book "misc/assert" :dir :system)
+(include-book "std/testing/assert" :dir :system)
 (include-book "misc/bash" :dir :system)
 (include-book "misc/defmac" :dir :system)
 (include-book "misc/defopener" :dir :system)
@@ -313,7 +318,7 @@ book that depends on Glucose being installed.</p>")
 (include-book "misc/defpun" :dir :system)
 (include-book "misc/dft" :dir :system)
 (include-book "misc/dump-events" :dir :system)
-(include-book "misc/eval" :dir :system)
+(include-book "std/testing/eval" :dir :system)
 (include-book "misc/expander" :dir :system)
 (include-book "misc/file-io" :dir :system)
 (include-book "misc/find-lemmas" :dir :system)
@@ -356,7 +361,7 @@ book that depends on Glucose being installed.</p>")
 (include-book "coi/documentation" :dir :system)
 (include-book "clause-processors/pseudo-term-fty" :dir :system)
 
-(include-book "std/util/defret-mutual-generate" :dir :system)
+(include-book "std/util/defretgen" :dir :system)
 ) ;; end progn for including all the books
 
 #||

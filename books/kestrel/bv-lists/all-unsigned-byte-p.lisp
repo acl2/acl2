@@ -16,8 +16,10 @@
 ;; may allow for better congruence rules.  It also may be more efficient, since
 ;; it only calls expt once.
 
-(include-book "all-integerp")
-(in-theory (disable unsigned-byte-p))
+(include-book "../typed-lists-light/all-integerp")
+(local (include-book "../bv/unsigned-byte-p"))
+
+(in-theory (disable unsigned-byte-p)) ;todo
 
 ;;could rename to all-natp-less-than
 (defund all-unsigned-byte-p-exec (bound lst)
@@ -190,3 +192,12 @@
            (equal (all-unsigned-byte-p size (take n lst))
                   (<= (nfix n) (len lst))))
   :hints (("Goal" :in-theory (enable all-unsigned-byte-p take))))
+
+;rename?
+(defthm all-unsigned-byte-p-from-all-unsigned-byte-p-narrower
+  (implies (and (all-unsigned-byte-p m lst) ;m is a free var
+                (<= m n)
+                (natp m)
+                (natp n))
+           (all-unsigned-byte-p n lst))
+  :hints (("Goal" :in-theory (enable all-unsigned-byte-p))))

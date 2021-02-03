@@ -8,7 +8,9 @@
 
 (defpkg "RTL"
   (union-eq
-   *acl2-exports*
+   (set-difference-eq *acl2-exports*
+; Matt K. mod: sum$ is defined in books/projects/curve25519/.
+                      '(sum$))
    *common-lisp-symbols-from-main-lisp-package*
    STD::*std-exports*
    '(defxdoc defsection
@@ -16,9 +18,12 @@
       *default-step-limit* ; should perhaps be in *acl2-exports*
       binary-logand binary-logior binary-logxor binary-logeqv ; used in lib/log.lisp
       b*
+      const-fns-gen
       def-gl-rule
       def-gl-thm
+      defundd
       find-lemmas
+      loop-fns-gen
       nonlinearp-default-hint
       nonlinearp-default-hint++
       proof-by-arith

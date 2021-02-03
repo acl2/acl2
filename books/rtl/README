@@ -31,9 +31,9 @@ libraries that may severely affect efficiency.  These may be
 (partially) addressed by something like the following:
 
 (in-theory (disable
-  |(mod (+ x y) z) where (<= 0 z)| |(mod (+ x (- (mod a b))) y)| 
+  |(mod (+ x y) z) where (<= 0 z)| |(mod (+ x (- (mod a b))) y)|
   |(mod (mod x y) z)| |(mod (+ x (mod a b)) y)| cancel-mod-+
-  mod-cancel-*-const simplify-products-gather-exponents-equal 
+  mod-cancel-*-const simplify-products-gather-exponents-equal
   simplify-products-gather-exponents-<
   cancel-mod-+ reduce-additive-constant-< |(floor x 2)|
   |(equal x (if a b c))| |(equal (if a b c) x)|))
@@ -113,7 +113,7 @@ Lemma 1.31       chop-int-neg
 Chapter 2        bits.lisp
 ---------        ----------
 Definition 2.1   bvecp
-Definition 2.2   bits, bitn   
+Definition 2.2   bits, bitn
 Lemma 2.1        bits-bvecp
 Lemma 2.2        mod-bits-equal
 Lemma 2.3        bits-mod
@@ -324,7 +324,7 @@ Lemma 6.36       minus-rtz-raz
 Corollary 6.37   rtz-plus-minus
 Lemma 6.38       raz-imp
 Definition 6.3   rne
-Lemma 6.39       rne-exactp-a     
+Lemma 6.39       rne-exactp-a
 Lemma 6.40       rne-exactp-b
 Lemma 6.41       rne-exactp-c, rne-exactp-d
 Lemma 6.42       expo-rne
@@ -376,7 +376,7 @@ Lemma 6.84       rne-rto, rna-rto
 Lemma 6.85       rto-plus
 Definition 6.7   rup
 Definition 6.8   rdn
-Lemma 6.86       rup-lower-bound, rdn-lower-bound
+Lemma 6.86       rup-lower-bound, rdn-upper-bound
 Definition 6.9   common-mode-p
 Lemma 6.87       rnd-minus
 Lemma 6.88       rnd-choise
@@ -470,8 +470,8 @@ Definition 9.4   eta
 Lemma 9.13       sum-eta-lemma
 Lemma 9.14       booth8-corollary
 
-Chapter 9        srt.lisp
----------        --------
+Chapter 10       srt.lisp
+----------       --------
 Lemma 10.1       remd-recurrence
 Lemma 10.2       remd0-bound
 Lemma 10.3       remd-bnd-next
@@ -488,8 +488,8 @@ Lemma 10.13      sqrt-containment
 Lemma 10.14      rem-sqrt-bnds-next
 Lemma 10.15      srt-sqrt-rad-4
 
-Chapter 9        div.lisp
----------        --------
+Chapter 11       div.lisp
+----------       --------
 Definition 11.1  rcp24
 Lemma 11.1       rcp24-spec
 Lemma 11.2       init-approx
@@ -497,10 +497,10 @@ Lemma 11.3       r-exactp, markstein
 Lemma 11.4       quotient-refinement-1, quotient-refinement-2
 Lemma 11.5       recip-refinement-1, recip-refinement-2
 Lemma 11.6       harrison-lemma
-Definition 11.1  divsp
+Definition 11.2  divsp
 Lemma 11.7       divsp-small-cases
 Theorem 11.1     divsp-correct
-Definition 11.2  divdp
+Definition 11.3  divdp
 Lemma 11.8       rcp24-rtz-error
 Lemma 11.9       divdp-small-cases
 Theorem 11.2     divdp-correct

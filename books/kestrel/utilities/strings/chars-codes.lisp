@@ -99,7 +99,13 @@
 
   (defrule nats=>chars-of-nthcdr
     (equal (nats=>chars (nthcdr n nats))
-           (nthcdr n (nats=>chars nats)))))
+           (nthcdr n (nats=>chars nats))))
+
+  (defrule nats=>chars-of-take
+    (implies (<= (nfix n) (len nats))
+             (equal (nats=>chars (take n nats))
+                    (take n (nats=>chars nats))))
+    :enable take))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -163,6 +169,11 @@
     (equal (chars=>nats (repeat n char))
            (repeat n (char-code char)))
     :enable repeat)
+
+  (defrule car-of-chars=>nats
+    (equal (car (chars=>nats chars))
+           (and (consp chars)
+                (char-code (car chars)))))
 
   (defrule nth-of-chars=>nats
     (equal (nth i (chars=>nats chars))

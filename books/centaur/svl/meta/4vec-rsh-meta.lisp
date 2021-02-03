@@ -40,6 +40,16 @@
 (local
  (include-book "projects/rp-rewriter/proofs/eval-functions-lemmas" :dir :system))
 
+(define has-bitp-rp (term)
+  :hints
+  (("goal" :in-theory (e/d (rp::is-rp) nil)))
+  :guard-hints
+  (("goal" :in-theory (e/d (rp::is-rp) nil)))
+  (if (rp::is-rp term)
+      (or (equal (cadr term) ''bitp)
+          (has-bitp-rp (caddr term)))
+      nil))
+
 (define 4vec-rsh-of-meta (term)
   (case-match term
     (('4vec-rsh ('quote s1) x)
@@ -71,7 +81,11 @@
                  (mv `(4vec-rsh ',(+ s2 s1) ,a)
                      `(nil t t)))))
          (&
-          (mv term `(nil t t))))))
+          (cond ((and (has-bitp-rp x-orig)
+                      (posp s1))
+                 (mv ''0 ''t))
+                (t 
+                 (mv term `(nil t t))))))))
     (& (progn$
         (cw "unexpected instances in 4vec-rsh-of-meta ~%")
         (hard-error '4vec-rsh-of-meta "error" nil)
@@ -88,8 +102,9 @@
 
   (rp::def-formula-checks
    4vec-rsh-of-formula-checks
-   (4vec-rsh-of-meta
+   (;4vec-rsh-of-meta
     bits
+    bitp
     4vec-rsh
     4vec-concat$
     4vec-concat)))
@@ -109,6 +124,7 @@
               (rp::dont-rw-syntaxp (mv-nth 1 (4vec-rsh-of-meta term))))
      :hints (("Goal"
               :in-theory (e/d (4vec-rsh-of-meta) ()))))))
+
 
 (local
  (encapsulate
@@ -155,7 +171,6 @@
                     (CONSP (CDR X))
                     (CONSP (CDdR X))
                     (not (CDddR X))
-
                     (and (rp-evl-meta-extract-global-facts)
                          (4vec-rsh-of-formula-checks state)))
                (and (equal (rp-evlt x a)
@@ -243,22 +258,75 @@
                :in-theory (e/d (rp::ex-from-rp
                                 rp::is-rp) ())))))
 
+
+
+   (local
+    (defthmd has-bitp-rp-implies-lemma
+      (implies (and (has-bitp-rp term)
+                    (4vec-rsh-of-formula-checks state)
+                    (rp-evl-meta-extract-global-facts)
+                    (rp::eval-and-all (rp::context-from-rp term nil) a))
+               (bitp (rp-evlt term a)))
+      :hints (("goal"
+               :induct (has-bitp-rp term)
+               :do-not-induct t
+               :in-theory (e/d (has-bitp-rp
+                                rp::is-rp
+                                rp::is-if
+                                rp::eval-and-all
+                                rp::context-from-rp)
+                               (bitp
+                                ;;rp::ex-from-rp-lemma1
+                                rp::valid-sc))))))
    
+   (defthm HAS-BITP-RP-implies
+     (implies (and (rp-evl-meta-extract-global-facts)
+                   (4vec-rsh-of-formula-checks state)
+                   (rp::valid-sc term a)
+                   (HAS-BITP-RP term))
+              (and (bitp (rp-evlt term a))
+                   ;;(bitp (rp-evl term a))
+                   (bitp (rp-evlt (rp::ex-from-rp term) a))))
+     :hints (("Goal"
+              :induct (HAS-BITP-RP term)
+              :expand ((rp::valid-sc term a))
+              :do-not-induct t
+              :in-theory (e/d (has-bitp-rp
+                               has-bitp-rp-implies-lemma
+                               rp::is-rp
+                               rp::is-if
+                              )
+                              (bitp
+                               rp-trans
+                               ;;rp::valid-sc
+                               )))))
+
+   
+
+   (local
+    (defthm rp-evlt-of-quoted
+      (implies (quotep x)
+               (equal (rp-evlt x a)
+                      (cadr x)))))
    
    (defthm rp-evl-of-4vec-rsh-of-meta
      (implies (and (rp-evl-meta-extract-global-facts)
-                   (4vec-rsh-of-formula-checks state))
+                   (4vec-rsh-of-formula-checks state)
+                   (rp::valid-sc term a))
               (equal (rp-evlt (mv-nth 0 (4vec-rsh-of-meta term)) a)
                      (rp-evlt term a)))
-     :otf-flg t
      :hints (("Goal"
               :do-not-induct t
               :induct (4vec-rsh-of-meta term)
               :in-theory (e/d (4vec-rsh-of-meta
+                               rp::is-rp
+                               rp::is-if
                                rp-evlt-of-ex-from-rp-reverse-caddr)
                               (natp
+                               bitp
                                rp-trans
                                rp-trans-lst
+                               RP::RP-TRANS-IS-TERM-WHEN-LIST-IS-ABSENT
                                RP::RP-EVLT-OF-EX-FROM-RP
                                rp::ex-from-rp)))))))
 
@@ -271,7 +339,7 @@
                              rp::is-if
                              rp::is-rp) ())))))
 
-(defthm valid-rp-meta-rulep-4vec-rsh-of-formula-checks
+#|(defthm valid-rp-meta-rulep-4vec-rsh-of-formula-checks
   (implies (and (rp-evl-meta-extract-global-facts)
                 (4vec-rsh-of-formula-checks state))
            (let ((rule (make rp::rp-meta-rule-rec
@@ -285,11 +353,18 @@
   :hints (("Goal"
            :in-theory (e/d (rp::RP-META-VALID-SYNTAXP)
                            (rp::RP-TERMP
-                            rp::VALID-SC)))))
+                            rp::VALID-SC)))))||#
 
-(rp::add-meta-rules 4vec-rsh-of-formula-checks
+#|(rp::add-meta-rules 4vec-rsh-of-formula-checks
                     (list (make rp::rp-meta-rule-rec
                                 :fnc '4vec-rsh-of-meta
                                 :trig-fnc '4vec-rsh
                                 :dont-rw t
-                                :valid-syntax t)))
+                                :valid-syntax t)))||#
+
+(rp::add-meta-rule
+ :meta-fnc 4vec-rsh-of-meta
+ :trig-fnc 4vec-rsh
+ :formula-checks 4vec-rsh-of-formula-checks
+ :valid-syntaxp t
+ :returns (mv term dont-rw))

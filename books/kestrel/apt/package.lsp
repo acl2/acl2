@@ -16,7 +16,7 @@
 
 (defpkg "APT" (set-difference-eq
                (append *std-pkg-symbols*
-                       '(*defiso-table-name*
+                       '(*defmapping-table-name*
                          *fake-runes*
                          *force-xnume*
                          *geneqv-iff*
@@ -35,6 +35,7 @@
                          append?
                          apply-fn-if-known
                          apply-fn-into-ifs
+                         apply-renaming-to-hints
                          apply-term
                          apply-term*
                          apply-unary-to-terms
@@ -42,8 +43,16 @@
                          assume-true-false-aggressive-p
                          attachment-pair
                          body
+                         check-numbered-name
                          check-user-lambda
+                         check-user-term
                          clausify
+                         clean-up-0ary-lambdas-in-untranslated-term
+                         clean-up-and-of-t-in-untranslated-term
+                         clean-up-equal-of-len-of-cons-nest-and-number-untranslated-term
+                         clean-up-implies-of-t-in-untranslated-term
+                         clean-up-nth-of-cons-in-untranslated-term
+                         clean-up-true-listp-of-cons-in-untranslated-term
                          cltl-def-from-name
                          collect-ideals
                          compute-stobj-flags
@@ -62,11 +71,22 @@
                          current-theory-fn
                          cw-event
                          def-error-checker
+                         def-process-input-fresh-function-name
                          defattach-system
+                         defexists
+                         deffilter
+                         defforall
                          definedp
+                         definj
                          defiso
-                         defiso-info
                          defiso-lookup
+                         defmacro+
+                         defmap
+                         defmapping-info
+                         defmapping-infop
+                         defsurj
+                         defsurj-lookup
+                         deftransformation
                          defun-sk-bound-vars
                          defun-sk-imatrix
                          defun-sk-matrix
@@ -89,19 +109,20 @@
                          dumb-negate-lit
                          dumb-occur
                          e/d*
+                         enable-disable-runes-in-hints
                          enabled-numep
                          enabled-runep
                          enabled-xfnp
                          encapsulate-report-errors
                          ens
-                         ensure-boolean$
                          ensure-boolean-or-auto-and-return-boolean$
                          ensure-doublet-list$
-                         ensure-function-defined$
-                         ensure-function-guard-verified$
+                         ensure-function-arity$
                          ensure-function-has-args$
+                         ensure-function-is-defined$
+                         ensure-function-is-guard-verified$
+                         ensure-function-is-logic-mode$
                          ensure-function-known-measure$
-                         ensure-function-logic-mode$
                          ensure-function-name-or-numbered-wildcard$
                          ensure-function-no-stobjs$
                          ensure-function-not-in-termination-thm$
@@ -116,12 +137,11 @@
                          ensure-function/macro/lambda$
                          ensure-keyword-value-list
                          ensure-keyword-value-list$
-                         ensure-list-no-duplicates$
+                         ensure-list-has-no-duplicates$
                          ensure-list-subset$
                          ensure-named-formulas
-                         ensure-symbol$
                          ensure-symbol-different$
-                         ensure-symbol-list$
+                         ensure-symbol-is-fresh-event-name$
                          ensure-symbol-new-event-name
                          ensure-symbol-new-event-name$
                          ensure-term$
@@ -134,18 +154,36 @@
                          ensure-term-no-stobjs$
                          ensure-term-not-call-of$
                          ensure-tuple$
+                         ensure-value-is-boolean$
+                         ensure-value-is-function-name$
+                         ensure-value-is-in-list$
+                         ensure-value-is-legal-variable-name$
+                         ensure-value-is-not-in-list$
+                         ensure-value-is-symbol$
+                         ensure-value-is-symbol-list$
+                         ensure-value-is-true-list$
+                         ensure-value-is-untranslated-term$
                          equivalence-relationp
                          er-soft+
                          evmac-appcond-listp
                          evmac-appcond-theorem-list
                          evmac-appcond-theorems-no-extra-hints
                          evmac-appcondp
+                         evmac-generate-defthm
+                         evmac-generate-defun
+                         evmac-generate-soft-defun-sk2
+                         evmac-generate-soft-defun2
+                         evmac-generate-soft-defunvar
                          evmac-input-hints-p
                          evmac-input-print-p
+                         evmac-prepare-proofs
                          evmac-process-input-hints
                          evmac-process-input-hints$
                          evmac-process-input-print
                          evmac-process-input-show-only
+                         exists
+                         expand-ruleset
+                         explode
                          ext-address-subterm-governors-lst
                          ext-address-subterm-governors-lst-state
                          ext-fdeposit-term
@@ -167,11 +205,13 @@
                          fn-is-fn-copy-name
                          fn-rune-nume
                          fn-ubody
+                         forall
                          formals
                          formals+
                          fquotep
                          fresh-logical-name-with-$s-suffix
                          fresh-name-in-world-with-$s
+                         fresh-namep-msg-weak
                          fsublis-fn-lst-simple
                          fsublis-fn-simple
                          fsublis-var
@@ -180,14 +220,21 @@
                          fundef-enabledp
                          geneqv-from-g?equiv
                          genvar
+                         get-called-fns-in-untranslated-term
+                         get-calls-in-untranslated-term
                          get-event
                          get-unambiguous-xargs-flg1/edcls1
                          get-unnormalized-bodies
+                         get-vars-in-untranslated-term
                          guard-raw
                          guard-verified-p
+                         guard-verified-p+
                          ibody
+                         if-tree-leaf-terms
                          implicate
                          implicate-untranslated-terms
+                         impliez
+                         implode
                          impossible
                          induction-machine
                          induction-machine-for-fn
@@ -204,6 +251,7 @@
                          lambda-applicationp
                          lambda-body
                          lambda-formals
+                         lookup-eq
                          macro-namep
                          macro-required-args
                          make-event-terse
@@ -224,13 +272,19 @@
                          must-succeed*
                          mvify
                          named-formulas-to-thm-events
+                         negate-term
+                         next-fresh-numbered-name
+                         next-fresh-numbered-names
                          next-numbered-name
                          non-executablep
                          number-of-results
+                         nvariablep
                          on-failure
+                         pack$
                          packn
                          packn-pos
                          pairlis-x1
+                         parse-enable-disable-e/d
                          pos-fix
                          pos-listp
                          pseudo-event-form-listp
@@ -244,9 +298,13 @@
                          remove-keyword
                          remove-lambdas
                          rename-fns
+                         rename-fns-and-expand-lambdas-in-untranslated-term
+                         rename-fns-in-untranslated-term
                          rename-fns-lst
+                         replace-in-untranslated-term
                          resolve-numbered-name-wildcard
                          restore-output?
+                         rewrite$
                          rewrite-if-avoid-swap
                          rewrite-if1
                          rewrite1
@@ -267,13 +325,16 @@
                          subcor-var-lst
                          sublis-expr
                          sublis-var
+                         sublis-var-untranslated-term
                          subst-expr
                          subst-expr1
                          subst-var
                          symbol-class
-                         symbol-package-name-safe
+                         symbol-name-equal
+                         symbol-package-name-non-cl
                          symbol-symbol-alistp
                          symbol-truelist-alistp
+                         table-alist+
                          term-guard-obligation
                          termify-clause-set
                          tests-and-call
@@ -289,13 +350,17 @@
                          translate-hints
                          translate-term-lst
                          try-event
+                         tuple
                          ubody
                          uguard
                          unnormalized-body
                          untranslate-lst
+                         untranslated-term-listp
+                         untranslated-termp
                          unwrapped-nonexec-body
                          variablep
-                         well-founded-relation))
+                         well-founded-relation)
+                       )
 
 ; It's not clear why acl2::simplify is in *acl2-exports*.  That may change, but
 ; for now it is convenient to avoid importing it into the "APT" package in view

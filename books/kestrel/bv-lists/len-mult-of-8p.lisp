@@ -18,6 +18,7 @@
 (local (include-book "../lists-light/nthcdr"))
 (local (include-book "../lists-light/len"))
 (local (include-book "../lists-light/cons"))
+(local (include-book "../lists-light/append"))
 
 ;gen the 8?
 (defund len-mult-of-8p (x)
@@ -49,3 +50,10 @@
                   (/ (len x) 8)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable ceiling-in-terms-of-floor len-mult-of-8p floor-when-mod-0))))
+
+(defthm len-mult-of-8p-of-append
+  (implies (and (len-mult-of-8p x)
+                (len-mult-of-8p y))
+           (len-mult-of-8p (append x y)))
+  :hints (("Goal" :in-theory (enable len-mult-of-8p
+                                     mod-sum-cases))))

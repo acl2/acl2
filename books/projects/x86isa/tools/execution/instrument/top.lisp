@@ -39,6 +39,7 @@
 (in-package "X86ISA")
 (include-book "../init-page-tables" :ttags :all)
 (include-book "std/strings/hex" :dir :system)
+(include-book "std/strings/decimal" :dir :system)
 
 ;; ==================================================================
 
@@ -49,387 +50,357 @@
 
   :long "<h5>Command Reference</h5>
 
-<ul>
+ <ul>
 
-<li><p>Utilities to save the x86 state to a log file:</p>
+ <li><p>Utilities to save the x86 state to a log file:</p>
 
-<code>
-(printing-x86-components x86 16 state) ;; 16 is the print-base.
-</code>
+ <code>
+ (printing-x86-components 16 x86 state) ;; 16 is the print-base.
+ </code>
 
-<p>The current state of the general-purpose registers, instruction
-pointer, and the flags will be stored in a log file, which is called
-@('acl2-instrument.log') by default.  The log file's name can be
-changed by the following:</p>
+ <p>The current state of the general-purpose registers, instruction
+ pointer, and the flags will be stored in a log file, which is called
+ @('acl2-instrument.log') by default.  The log file's name can be
+ changed by the following:</p>
 
-<code> (!log-file-name \"my-very-own-log-file\") </code>
+ <code> (!log-file-name \"my-very-own-log-file\") </code>
 
-</li>
+ </li>
 
-<li><p>Utilities to print the x86 state in the ACL2 session \(and not log it into a file\):</p>
+ <li><p>Utilities to print the x86 state in the ACL2 session \(and not log it into a file\):</p>
 
-<p>The current state of the general-purpose registers, instruction
-pointer, and the flags can be printed on screen by the following:</p>
+ <p>The current state of the general-purpose registers, instruction
+ pointer, and the flags can be printed on screen by the following:</p>
 
-<code>
-(printing-x86-to-terminal x86 state)
-</code>
+ <code>
+ (printing-x86-to-terminal 16 x86 state) ;; 16 is the print-base.
+ </code>
 
-<p>The following will print the current values of CF, PF, AF, ZF, SF,
-and OF flags \(i.e., from the @('rflags') field in the x86
-state\):</p>
+ <p>The following will print the current values of CF, PF, AF, ZF, SF,
+ and OF flags \(i.e., from the @('rflags') field in the x86
+ state\):</p>
 
-<code>
-(printing-flgs x86 state)
-</code>
+ <code>
+ (printing-flgs x86 state)
+ </code>
 
-<p>The following will interpret its first argument \(100 in this
-example\) as an @('rflags') value and print the values of CF, PF, AF,
-ZF, SF, and OF flags.</p>
+ <p>The following will interpret its first argument \(100 in this
+ example\) as an @('rflags') value and print the values of CF, PF, AF,
+ ZF, SF, and OF flags.</p>
 
-<code>
-(printing-flg-val 100 state)
-</code>
+ <code>
+ (printing-flg-val 100 state)
+ </code>
 
-<p>To trace memory reads and writes, you can use the following:</p>
+ <p>To trace memory reads and writes, you can use the following:</p>
 
-<code>
-;; Trace rml08 and rml16.
-(trace-read-memory (rml08 rml16))
+ <code>
+ ;; Trace rml08 and rml16.
+ (trace-read-memory (rml08 rml16))
 
-;; The following is the same as
-;; (trace-read-memory (rml08 riml08 rml16 riml16 rml32 riml32 rml64 riml64))
-(trace-all-reads)
+ ;; The following is the same as
+ ;; (trace-read-memory (rml08 riml08 rml16 riml16 rml32 riml32 rml64 riml64))
+ (trace-all-reads)
 
-;; Trace wml32 and wml64.
-(trace-write-memory (wml32 wml64))
+ ;; Trace wml32 and wml64.
+ (trace-write-memory (wml32 wml64))
 
-;; The following is the same as
-;; (trace-write-memory (wml08 wiml08 wml16 wiml16 wml32 wiml32 wml64 wiml64))
-(trace-all-writes)
-</code>
+ ;; The following is the same as
+ ;; (trace-write-memory (wml08 wiml08 wml16 wiml16 wml32 wiml32 wml64 wiml64))
+ (trace-all-writes)
+ </code>
 
-<p>You can send the output of these memory traces to file using the
-ACL2 utility @(see open-trace-file).  Note that doing so will also
-send the output of any other functions that you have traced to the
-same file.</p>
+ <p>You can send the output of these memory traces to file using the
+ ACL2 utility @(see open-trace-file).  Note that doing so will also
+ send the output of any other functions that you have traced to the
+ same file.</p>
 
-</li>
+ </li>
 
-<li>
-<p>To step the interpreter once (like @('stepi') command of GDB):</p>
-<code> (one_step) </code>
+ <li>
+ <p>To step the interpreter once (like @('stepi') command of GDB):</p>
+ <code> (one_step) </code>
 
-<p>@('one_step') logs the resulting state in the log file, which is
-called @('acl2-instrument.log') by default, and can be changed via
-@('!log-file-name').</p>
+ <p>@('one_step') logs the resulting state in the log file, which is
+ called @('acl2-instrument.log') by default, and can be changed via
+ @('!log-file-name').</p>
 
-</li>
+ </li>
 
-<li>
-<p>To execute @('<n>') steps of a program \(or less if it halts or an
-error occurs\):</p>
-<code> (big_step @('<n>')) </code>
+ <li>
+ <p>To execute @('<n>') steps of a program \(or less if it halts or an
+ error occurs\):</p>
+ <code> (big_step @('<n>')) </code>
 
-<p>@('big_step') logs the final state in the log file, which is called
-@('acl2-instrument.log') by default, and can be changed via
-@('!log-file-name').</p>
+ <p>@('big_step') logs the final state in the log file, which is called
+ @('acl2-instrument.log') by default, and can be changed via
+ @('!log-file-name').</p>
 
-</li>
+ </li>
 
-<li>
+ <li>
 
-<p>To step the interpreter till a halt instruction \(#xF4\) is
-encountered or an error occurs or \(2^60 - 1\) instructions \(you will
-probably never want to execute these many instructions all at once\)
-have been executed \(whatever comes first\):</p>
+ <p>To step the interpreter till a halt instruction \(#xF4\) is
+ encountered or an error occurs or \(2^60 - 1\) instructions \(you will
+ probably never want to execute these many instructions all at once\)
+ have been executed \(whatever comes first\):</p>
 
-<code> (log_instr) </code>
+ <code> (log_instr) </code>
 
-<p>@('log_instr') logs the x86 state after <b>every</b> instruction in
-the log file, which is called @('acl2-instrument.log') by default, and
-can be changed via @('!log-file-name'). Note that if you are executing
-a large number of instructions, @('log_instr') might be really slow
-because of all the file output.</p>
+ <p>@('log_instr') logs the x86 state after <b>every</b> instruction in
+ the log file, which is called @('acl2-instrument.log') by default, and
+ can be changed via @('!log-file-name'). Note that if you are executing
+ a large number of instructions, @('log_instr') might be really slow
+ because of all the file output.</p>
 
-</li>
+ </li>
 
-<li>
-<p>To set a breakpoint:</p>
+ <li>
+ <p>To set a breakpoint:</p>
 
-<code>
+ <code>
 
-(x86-break '(equal (rip x86) 10))
-(x86-break '(equal (rgfi *rax* x86) 42))
-(x86-break '(and (equal (rgfi *rsp* x86) 0)
-                 (equal (rip x86) 12)))
-</code>
+ (x86-break '(equal (rip x86) 10))
+ (x86-break '(equal (rgfi *rax* x86) 42))
+ (x86-break '(and (equal (rgfi *rsp* x86) 0)
+                  (equal (rip x86) 12)))
+ </code>
 
-<p>Any well-formed ACL2 expression that evaluates to a boolean is a
-valid breakpoint.  Multiple breakpoints can be set using
-@('x86-break') repeatedly.</p>
+ <p>Any well-formed ACL2 expression that evaluates to a boolean is a
+ valid breakpoint.  Multiple breakpoints can be set using
+ @('x86-break') repeatedly.</p>
 
-</li>
+ </li>
 
-<li>
-<p>See all active breakpoints:</p>
-<code> (show-breakpoints) </code>
-</li>
+ <li>
+ <p>See all active breakpoints:</p>
+ <code> (show-breakpoints) </code>
+ </li>
 
-<li>
-<p>To delete all breakpoints:</p>
-<code>(delete-all-breakpoints)</code>
-</li>
+ <li>
+ <p>To delete all breakpoints:</p>
+ <code>(delete-all-breakpoints)</code>
+ </li>
 
-<li>
-<p>To delete some breakpoints:</p>
-<code> (delete-breakpoints '(0 2)) </code>
+ <li>
+ <p>To delete some breakpoints:</p>
+ <code> (delete-breakpoints '(0 2)) </code>
 
-<p>@('delete-breakpoints') takes a list of the identifiers of the
-breakpoints, where the identifiers are reported by
-@('show-breakpoints').</p>
-</li>
+ <p>@('delete-breakpoints') takes a list of the identifiers of the
+ breakpoints, where the identifiers are reported by
+ @('show-breakpoints').</p>
+ </li>
 
-<li>
-<p>Run the program when breakpoints are set:</p>
+ <li>
+ <p>Run the program when breakpoints are set:</p>
 
-<code> (x86-debug) </code>
+ <code> (x86-debug) </code>
 
-<p>Like GDB, <b>the first breakpoint encountered will stop the
- execution of the program</b>.  Of course, execution can also come to
- a stop if an error is encountered or if \(2^60 - 1\) instructions
- \(again, you probably never want to execute these many
- instructions!\) have been executed \(whatever comes first\).</p>
+ <p>Like GDB, <b>the first breakpoint encountered will stop the
+  execution of the program</b>.  Of course, execution can also come to
+  a stop if an error is encountered or if \(2^60 - 1\) instructions
+  \(again, you probably never want to execute these many
+  instructions!\) have been executed \(whatever comes first\).</p>
 
-<p>To continue execution, see @('continue-debug') below.  Note that
- @('x86-debug') works only when at least one breakpoint is set.</p>
+ <p>To continue execution, see @('continue-debug') below.  Note that
+  @('x86-debug') works only when at least one breakpoint is set.</p>
 
-<p>@('x86-debug') logs the x86 state after every breakpoint in the log
-file, which is called @('acl2-instrument.log') by default, and can be
-changed via @('!log-file-name').</p>
+ <p>@('x86-debug') logs the x86 state after every breakpoint in the log
+ file, which is called @('acl2-instrument.log') by default, and can be
+ changed via @('!log-file-name').</p>
 
-<p>When @('x86-debug') stops when a breakpoint is reached, the @('ms')
-field contains @('BREAKPOINT-REACHED'). This can be used to
-differentiate between executions that stop because of an error or
-those that stop when a breakpoint is reached.</p>
+ <p>When @('x86-debug') stops when a breakpoint is reached, the @('ms')
+ field contains @('BREAKPOINT-REACHED'). This can be used to
+ differentiate between executions that stop because of an error or
+ those that stop when a breakpoint is reached.</p>
 
-</li>
+ </li>
 
-<li>
- <p>To continue execution of the program past a breakpoint:</p>
-<code> (continue-debug) </code>
-<p>Note that @('continue-debug') will set the contents of @('MS') to
- nil only if @('MS') contained @('breakpoint-reached'), then it will
- <i>step one instruction</i>, and then carry on with
- @('x86-debug').</p>
+ <li>
+  <p>To continue execution of the program past a breakpoint:</p>
+ <code> (continue-debug) </code>
+ <p>Note that @('continue-debug') will set the contents of @('MS') to
+  nil only if @('MS') contained @('breakpoint-reached'), then it will
+  <i>step one instruction</i>, and then carry on with
+  @('x86-debug').</p>
 
-<p>Since @('continue-debug') essentially calls @('x86-debug'), it logs
-the x86 state after every breakpoint in the log file, which is called
-@('acl2-instrument.log') by default, and can be changed via
-@('!log-file-name').</p>
+ <p>Since @('continue-debug') essentially calls @('x86-debug'), it logs
+ the x86 state after every breakpoint in the log file, which is called
+ @('acl2-instrument.log') by default, and can be changed via
+ @('!log-file-name').</p>
 
-<p>@('continue-debug') also sets @('ms') to @('BREAKPOINT-REACHED') if
-it stops at a breakpoint.  @('ms') will be set to a legal halt message
-when \(if\) @('continue-debug') finally leads the program to
-completion.</p>
+ <p>@('continue-debug') also sets @('ms') to @('BREAKPOINT-REACHED') if
+ it stops at a breakpoint.  @('ms') will be set to a legal halt message
+ when \(if\) @('continue-debug') finally leads the program to
+ completion.</p>
 
-</li>
+ </li>
 
-<li>
-<p>To record the x86 state at a breakpoint and then continue:</p>
-<code>(x86-debug!)</code>
+ <li>
+ <p>To record the x86 state at a breakpoint and then continue:</p>
+ <code>(x86-debug!)</code>
 
-<p>@('x86-debug!') logs the x86 state after every breakpoint in the
-log file and continues execution till a halt or error is encountered
-or if \(2^60 - 1\) instructions \(Do we need to say again that you
-might never want to execute these many instructions?\) have been
-executed \(whatever comes first\).</p>
+ <p>@('x86-debug!') logs the x86 state after every breakpoint in the
+ log file and continues execution till a halt or error is encountered
+ or if \(2^60 - 1\) instructions \(Do we need to say again that you
+ might never want to execute these many instructions?\) have been
+ executed \(whatever comes first\).</p>
 
-</li>
+ </li>
 
-</ul>
-"
+ </ul>
+ "
   )
+
+(local (xdoc::set-default-parents dynamic-instrumentation))
 
 ;; ======================================================================
 ;; Printing and other utilities:
 
 (defttag :instrument)
 
-(defun !log-file-name-function (name state)
-  (declare (xargs :stobjs (state)))
-  (mv nil name state))
+(defsection !log-file-name
+  :short "Assign a log file where the instrumentation output from
+  @(tsee printing-x86-components) will be stored"
+  
+  (defun !log-file-name-function (name state)
+    (declare (xargs :stobjs (state)))
+    (mv nil name state))
 
-;; Smashing the definition of !log-file-name-function in raw Lisp...
+  (defmacro !log-file-name (name)
+    `(!log-file-name-function ,name state))
 
-(defmacro !log-file-name (name)
-  `(!log-file-name-function ,name state))
+  ;; Smashing the definition of !log-file-name-function in raw Lisp:
+  (progn!
+   (ACL2::set-raw-mode-on state)
+   (defun !log-file-name-function (name state)
+     (declare (ignorable state))
+     (assign log-file-name name))
+   ;; Default name of the ACL2 log file.
+   (!log-file-name "acl2-instrument.log")))
 
-(progn!
- (ACL2::set-raw-mode-on state)
- (defun !log-file-name-function (name state)
-   (declare (ignorable state))
-   (assign log-file-name name))
- ;; Default name of the ACL2 log file.
- (!log-file-name "acl2-instrument.log"))
+(defsection printing-x86-components
+  :short "Functions to print some components of the x86 state, either
+  to file (@('printing-x86-components')) or to
+  terminal (@('printing-x86-to-terminal'))"
+  
+  (defun print-component (base num)
+    (declare (xargs :guard (and (member-equal base '(10 16))
+                                (natp num))))
+    (case base
+      (10 (str::natstr num))
+      (t (str::cat "#x" (str::natstr16 num)))))
 
-(ACL2::remove-untouchable 'print-base nil)
+  (defun printing-x86-to-string (base x86)
+    (declare (xargs :stobjs (x86))
+             (ignorable base x86))
+    "")
 
-(defun printing-x86-components (x86 base state)
-  (declare (xargs :stobjs (x86 state))
-           (ignorable x86 base state))
-  state)
+  (defun printing-x86-components (base x86 state)
+    (declare (xargs :stobjs (x86 state))
+             (ignorable base x86 state))
+    state)
 
-;; Smashing the definition of printing-x86-components in raw Lisp...
-
-(progn!
- (ACL2::set-raw-mode-on state)
- (defun printing-x86-components (x86 base state)
-   (declare (xargs :stobjs (x86 state)))
-   (with-open-file
-    (*terminal-io* (@ log-file-name)
-                   :direction :output
-                   :if-exists :append
-                   :if-does-not-exist :create)
-    (b* ((rax (n64 (rgfi *rax* x86)))
-         (rbx (n64 (rgfi *rbx* x86)))
-         (rcx (n64 (rgfi *rcx* x86)))
-         (rdx (n64 (rgfi *rdx* x86)))
-         (rsi (n64 (rgfi *rsi* x86)))
-         (rdi (n64 (rgfi *rdi* x86)))
-         (rbp (n64 (rgfi *rbp* x86)))
-         (rsp (n64 (rgfi *rsp* x86)))
-         (r8  (n64 (rgfi *r8* x86)))
-         (r9  (n64 (rgfi *r9* x86)))
-         (r10 (n64 (rgfi *r10* x86)))
-         (r11 (n64 (rgfi *r11* x86)))
-         (r12 (n64 (rgfi *r12* x86)))
-         (r13 (n64 (rgfi *r13* x86)))
-         (r14 (n64 (rgfi *r14* x86)))
-         (r15 (n64 (rgfi *r15* x86)))
-         (flg (rflags x86))
-         (rip (n48 (rip x86)))
-         ((mv ?col state)
-          (fmt! "(@@GPR . ~%~
- ~tI((#.*RAX* . #x~s0)~%~
- ~tI (#.*RBX* . #x~s1)~%~
- ~tI (#.*RCX* . #x~s2)~%~
- ~tI (#.*RDX* . #x~s3)~%~
- ~tI (#.*RSI* . #x~s4)~%~
- ~tI (#.*RDI* . #x~s5)~%~
- ~tI (#.*RBP* . #x~s6)~%~
- ~tI (#.*RSP* . #x~s7)~%~
- ~tI (#.*R8*  . #x~s8)~%~
- ~tI (#.*R9*  . #x~s9)~%~
- ~tI (#.*R10* . #x~sA)~%~
- ~tI (#.*R11* . #x~sB)~%~
- ~tI (#.*R12* . #x~sC)~%~
- ~tI (#.*R13* . #x~sD)~%~
- ~tI (#.*R14* . #x~sE)~%~
- ~tI (#.*R15* . #x~sF))~%~
+  ;; Smashing the definitions of printing-x86-to-string and
+  ;; printing-x86-components in raw Lisp:
+  (progn!
+   (ACL2::set-raw-mode-on state)
+   (defun printing-x86-to-string (base x86)
+     ;; TODO: Add other components of the state here as and when necessary.
+     (declare (xargs :stobjs (x86)))
+     (std::b*
+      ((rax (x86isa::n64 (x86isa::rgfi x86isa::*rax* x86)))
+       (rbx (x86isa::n64 (x86isa::rgfi x86isa::*rbx* x86)))
+       (rcx (x86isa::n64 (x86isa::rgfi x86isa::*rcx* x86)))
+       (rdx (x86isa::n64 (x86isa::rgfi x86isa::*rdx* x86)))
+       (rsi (x86isa::n64 (x86isa::rgfi x86isa::*rsi* x86)))
+       (rdi (x86isa::n64 (x86isa::rgfi x86isa::*rdi* x86)))
+       (rbp (x86isa::n64 (x86isa::rgfi x86isa::*rbp* x86)))
+       (rsp (x86isa::n64 (x86isa::rgfi x86isa::*rsp* x86)))
+       (r8  (x86isa::n64 (x86isa::rgfi x86isa::*r8* x86)))
+       (r9  (x86isa::n64 (x86isa::rgfi x86isa::*r9* x86)))
+       (r10 (x86isa::n64 (x86isa::rgfi x86isa::*r10* x86)))
+       (r11 (x86isa::n64 (x86isa::rgfi x86isa::*r11* x86)))
+       (r12 (x86isa::n64 (x86isa::rgfi x86isa::*r12* x86)))
+       (r13 (x86isa::n64 (x86isa::rgfi x86isa::*r13* x86)))
+       (r14 (x86isa::n64 (x86isa::rgfi x86isa::*r14* x86)))
+       (r15 (x86isa::n64 (x86isa::rgfi x86isa::*r15* x86)))
+       (flg (x86isa::rflags x86))
+       (rip (x86isa::n48 (x86isa::rip x86)))
+       (str
+        (acl2::fms-to-string "(@@GPR . ~%~
+ ~tI((#.*RAX* . ~s0)~%~
+ ~tI (#.*RBX* . ~s1)~%~
+ ~tI (#.*RCX* . ~s2)~%~
+ ~tI (#.*RDX* . ~s3)~%~
+ ~tI (#.*RSI* . ~s4)~%~
+ ~tI (#.*RDI* . ~s5)~%~
+ ~tI (#.*RBP* . ~s6)~%~
+ ~tI (#.*RSP* . ~s7)~%~
+ ~tI (#.*R8*  . ~s8)~%~
+ ~tI (#.*R9*  . ~s9)~%~
+ ~tI (#.*R10* . ~sA)~%~
+ ~tI (#.*R11* . ~sB)~%~
+ ~tI (#.*R12* . ~sC)~%~
+ ~tI (#.*R13* . ~sD)~%~
+ ~tI (#.*R14* . ~sE)~%~
+ ~tI (#.*R15* . ~sF))~%~
  @@)~%~
- (@@RFLAGS . ~%~tI#x~sG~%@@) ~%~
- (@@RIP . ~%~tI#x~sH~%@@)~%~%"
-                (list (cons #\0 (str::natstr16 rax))
-                      (cons #\1 (str::natstr16 rbx))
-                      (cons #\2 (str::natstr16 rcx))
-                      (cons #\3 (str::natstr16 rdx))
-                      (cons #\4 (str::natstr16 rsi))
-                      (cons #\5 (str::natstr16 rdi))
-                      (cons #\6 (str::natstr16 rbp))
-                      (cons #\7 (str::natstr16 rsp))
-                      (cons #\8 (str::natstr16  r8))
-                      (cons #\9 (str::natstr16  r9))
-                      (cons #\A (str::natstr16 r10))
-                      (cons #\B (str::natstr16 r11))
-                      (cons #\C (str::natstr16 r12))
-                      (cons #\D (str::natstr16 r13))
-                      (cons #\E (str::natstr16 r14))
-                      (cons #\F (str::natstr16 r15))
-                      (cons #\G (str::natstr16 flg))
-                      (cons #\H (str::natstr16 rip))
-                      (cons #\I '8))
-                *standard-co* state nil)))
+ (@@RFLAGS . ~%~tI~sG~%@@) ~%~
+ (@@RIP . ~%~tI~sH~%@@)~%~%"
+                             (list (cons #\0 (print-component base rax))
+                                   (cons #\1 (print-component base rbx))
+                                   (cons #\2 (print-component base rcx))
+                                   (cons #\3 (print-component base rdx))
+                                   (cons #\4 (print-component base rsi))
+                                   (cons #\5 (print-component base rdi))
+                                   (cons #\6 (print-component base rbp))
+                                   (cons #\7 (print-component base rsp))
+                                   (cons #\8 (print-component base  r8))
+                                   (cons #\9 (print-component base  r9))
+                                   (cons #\A (print-component base r10))
+                                   (cons #\B (print-component base r11))
+                                   (cons #\C (print-component base r12))
+                                   (cons #\D (print-component base r13))
+                                   (cons #\E (print-component base r14))
+                                   (cons #\F (print-component base r15))
+                                   (cons #\G (print-component base flg))
+                                   (cons #\H (print-component base rip))
+                                   (cons #\I '8)))))
+      str))
+ 
+   (defun printing-x86-components (base x86 state)
+     (declare (xargs :stobjs (x86 state)) (ignorable x86 base state))
+     (acl2::pprogn
+      (b* ((fname (@ x86isa::log-file-name))
+           (-
+            (with-open-file
+              (file fname
+                    :direction :output
+                    :if-exists :append
+                    :if-does-not-exist :create)
+              (format file (printing-x86-to-string base x86)))))
         state))))
 
-(push-untouchable 'print-base nil)
+  (defun printing-x86-to-terminal (base x86 state)
+    (declare (xargs :stobjs (x86 state)
+                    :mode :program))
+    (b* ((str (printing-x86-to-string base x86))
+         (state (fms str nil *standard-co* state nil)))
+      (value :invisible)))
 
-(defun printing-x86-to-terminal (x86 state)
-  (declare (xargs :stobjs (x86 state)
-                  :mode :program))
-  (b* ((rax (n64 (rgfi *rax* x86)))
-       (rbx (n64 (rgfi *rbx* x86)))
-       (rcx (n64 (rgfi *rcx* x86)))
-       (rdx (n64 (rgfi *rdx* x86)))
-       (rsi (n64 (rgfi *rsi* x86)))
-       (rdi (n64 (rgfi *rdi* x86)))
-       (rbp (n64 (rgfi *rbp* x86)))
-       (rsp (n64 (rgfi *rsp* x86)))
-       (r8  (n64 (rgfi *r8* x86)))
-       (r9  (n64 (rgfi *r9* x86)))
-       (r10 (n64 (rgfi *r10* x86)))
-       (r11 (n64 (rgfi *r11* x86)))
-       (r12 (n64 (rgfi *r12* x86)))
-       (r13 (n64 (rgfi *r13* x86)))
-       (r14 (n64 (rgfi *r14* x86)))
-       (r15 (n64 (rgfi *r15* x86)))
-       (flg (rflags x86))
-       (rip (n48 (rip x86)))
-       ((mv ?col state)
-        (fmt! "(@@GPR . ~%~
- ~tI((#.*RAX* . #x~s0)~%~
- ~tI (#.*RBX* . #x~s1)~%~
- ~tI (#.*RCX* . #x~s2)~%~
- ~tI (#.*RDX* . #x~s3)~%~
- ~tI (#.*RSI* . #x~s4)~%~
- ~tI (#.*RDI* . #x~s5)~%~
- ~tI (#.*RBP* . #x~s6)~%~
- ~tI (#.*RSP* . #x~s7)~%~
- ~tI (#.*R8*  . #x~s8)~%~
- ~tI (#.*R9*  . #x~s9)~%~
- ~tI (#.*R10* . #x~sA)~%~
- ~tI (#.*R11* . #x~sB)~%~
- ~tI (#.*R12* . #x~sC)~%~
- ~tI (#.*R13* . #x~sD)~%~
- ~tI (#.*R14* . #x~sE)~%~
- ~tI (#.*R15* . #x~sF))~%~
- @@)~%~
- (@@RFLAGS . ~%~tI#x~sG~%@@) ~%~
- (@@RIP . ~%~tI#x~sH~%@@)~%~%"
-              (list (cons #\0 (str::natstr16 rax))
-                    (cons #\1 (str::natstr16 rbx))
-                    (cons #\2 (str::natstr16 rcx))
-                    (cons #\3 (str::natstr16 rdx))
-                    (cons #\4 (str::natstr16 rsi))
-                    (cons #\5 (str::natstr16 rdi))
-                    (cons #\6 (str::natstr16 rbp))
-                    (cons #\7 (str::natstr16 rsp))
-                    (cons #\8 (str::natstr16  r8))
-                    (cons #\9 (str::natstr16  r9))
-                    (cons #\A (str::natstr16 r10))
-                    (cons #\B (str::natstr16 r11))
-                    (cons #\C (str::natstr16 r12))
-                    (cons #\D (str::natstr16 r13))
-                    (cons #\E (str::natstr16 r14))
-                    (cons #\F (str::natstr16 r15))
-                    (cons #\G (str::natstr16 flg))
-                    (cons #\H (str::natstr16 rip))
-                    (cons #\I '8))
-              *standard-co* state nil)))
-      state))
-
-(defun printing-flgs (x86 state)
-  (declare (xargs :stobjs (x86 state)
-                  :mode :program))
-  (b* ((cf  (flgi :cf x86))
-       (pf  (flgi :pf x86))
-       (af  (flgi :af x86))
-       (zf  (flgi :zf x86))
-       (sf  (flgi :sf x86))
-       (of  (flgi :of x86))
-       ((mv ?col state)
-        (fmt!
-         "(@@FLGS . ~%~
+  (defun printing-flgs (x86 state)
+    (declare (xargs :stobjs (x86 state)
+                    :mode :program))
+    (b* ((cf  (flgi :cf x86))
+         (pf  (flgi :pf x86))
+         (af  (flgi :af x86))
+         (zf  (flgi :zf x86))
+         (sf  (flgi :sf x86))
+         (of  (flgi :of x86))
+         ((mv ?col state)
+          (fmt!
+           "(@@FLGS . ~%~
 ~tI((CF . ~s0)~%~
 ~tI (PF . ~s1)~%~
 ~tI (AF . ~s2)~%~
@@ -437,27 +408,27 @@ executed \(whatever comes first\).</p>
 ~tI (SF . ~s4)~%~
 ~tI (OF . ~s5))~%~
 @@)~%~%"
-         (list (cons #\0 cf)
-               (cons #\1 pf)
-               (cons #\2 af)
-               (cons #\3 zf)
-               (cons #\4 sf)
-               (cons #\5 of)
-               (cons #\I '8))
-         *standard-co* state nil)))
-    (mv x86 state)))
+           (list (cons #\0 cf)
+                 (cons #\1 pf)
+                 (cons #\2 af)
+                 (cons #\3 zf)
+                 (cons #\4 sf)
+                 (cons #\5 of)
+                 (cons #\I '8))
+           *standard-co* state nil)))
+      (value :invisible)))
 
-(defun printing-flg-val (eflags state)
-  (declare (xargs :stobjs (state)
-                  :mode :program))
-  (b* ((cf  (rflagsBits->cf eflags))
-       (pf  (rflagsBits->pf eflags))
-       (af  (rflagsBits->af eflags))
-       (zf  (rflagsBits->zf eflags))
-       (sf  (rflagsBits->sf eflags))
-       (of  (rflagsBits->of eflags))
-       ((mv ?col state)
-        (fmt! "(@@FLGS . ~%~
+  (defun printing-flg-val (eflags state)
+    (declare (xargs :stobjs (state)
+                    :mode :program))
+    (b* ((cf  (rflagsBits->cf eflags))
+         (pf  (rflagsBits->pf eflags))
+         (af  (rflagsBits->af eflags))
+         (zf  (rflagsBits->zf eflags))
+         (sf  (rflagsBits->sf eflags))
+         (of  (rflagsBits->of eflags))
+         ((mv ?col state)
+          (fmt! "(@@FLGS . ~%~
 ~tI((CF . ~s0)~%~
 ~tI (PF . ~s1)~%~
 ~tI (AF . ~s2)~%~
@@ -465,15 +436,15 @@ executed \(whatever comes first\).</p>
 ~tI (SF . ~s4)~%~
 ~tI (OF . ~s5))~%~
 @@)~%~%"
-              (list (cons #\0 cf)
-                    (cons #\1 pf)
-                    (cons #\2 af)
-                    (cons #\3 zf)
-                    (cons #\4 sf)
-                    (cons #\5 of)
-                    (cons #\I '8))
-              *standard-co* state nil)))
-      state))
+                (list (cons #\0 cf)
+                      (cons #\1 pf)
+                      (cons #\2 af)
+                      (cons #\3 zf)
+                      (cons #\4 sf)
+                      (cons #\5 of)
+                      (cons #\I '8))
+                *standard-co* state nil)))
+      (value :invisible))))
 
 ;; ======================================================================
 ;; Execution:
@@ -486,12 +457,16 @@ executed \(whatever comes first\).</p>
   (declare (xargs :guard (unsigned-byte-p 59 n)
                   :stobjs (x86 state)))
   (mv-let (steps x86 state)
-          (b* (((mv steps x86)
-                (x86-run-steps n x86))
-               (state (printing-x86-components x86 16 state)))
-              (mv steps x86 state))
-          (mv (cw "Instructions Run: ~p0~%" steps) x86 state)))
-
+    (b* ((base (ec-call (get-global 'acl2::print-base state)))
+         ((unless (or (eql base 10) (eql base 16)))
+          (prog2$
+           (er hard? 'big-step "Unexpected value of print-base global: ~x0." base)
+           (mv nil x86 state)))         
+         ((mv steps x86)
+          (x86-run-steps n x86))
+         (state (printing-x86-components base x86 state)))
+      (mv steps x86 state))
+    (mv (cw "Instructions Run: ~p0~%" steps) x86 state)))
 
 (defmacro big_step (n)
   `(big-step ,n x86 state))
@@ -505,8 +480,9 @@ executed \(whatever comes first\).</p>
 (defun one-step (x86 state)
   (declare (xargs :stobjs (x86 state)))
   (b* ((x86 (x86-fetch-decode-execute x86))
-       (state (printing-x86-components x86 16 state)))
-      (mv x86 state)))
+       (base (ec-call (get-global 'acl2::print-base state)))
+       (state (printing-x86-components base x86 state)))
+    (mv x86 state)))
 
 (defmacro one_step ()
   `(one-step x86 state))
@@ -567,9 +543,10 @@ executed \(whatever comes first\).</p>
 
 (defun log-instr (x86 state)
   (declare (xargs :stobjs (x86 state)))
-  (b* ((state ;; Print initial state
-        (printing-x86-components x86 16 state)))
-      (log-instr-fn (1- *2^60*) x86 state)))
+  (b* ((base (ec-call (get-global 'acl2::print-base state)))
+       (state ;; Print initial state
+        (printing-x86-components base x86 state)))
+    (log-instr-fn (1- *2^60*) x86 state)))
 
 (defmacro log_instr ()
   `(log-instr x86 state))
@@ -602,11 +579,11 @@ executed \(whatever comes first\).</p>
        (let* ((state (set-print-base 16 state))
               (state (set-print-radix t state)))
          (cond ((ms x86)
-                (let ((state (printing-x86-components x86 16 state)))
+                (let ((state (printing-x86-components 16 x86 state)))
                   (mv n x86 state)))
                (,stop-conds
                 (let* ((x86 (!ms 'breakpoint-reached! x86))
-                       (state (printing-x86-components x86 16 state)))
+                       (state (printing-x86-components 16 x86 state)))
                   (mv n x86 state)))
                (t (let ((x86 (x86-fetch-decode-execute x86)))
                     (x86-run-debug1 (1- n) x86 state))))))))
@@ -689,11 +666,11 @@ executed \(whatever comes first\).</p>
               (state (set-print-radix t state)))
          (cond
           (,stop-conds
-           (let* ((state (printing-x86-components x86 16 state))
+           (let* ((state (printing-x86-components 16 x86 state))
                   (x86 (x86-fetch-decode-execute x86)))
              (x86-debug!-fn1 (1- n) x86 state)))
           ((ms x86)
-           (let ((state (printing-x86-components x86 16 state)))
+           (let ((state (printing-x86-components 16 x86 state)))
              (mv n x86 state)))
           (t (let ((x86 (x86-fetch-decode-execute x86)))
                (x86-debug!-fn1 (1- n) x86 state))))))))
@@ -824,7 +801,7 @@ executed \(whatever comes first\).</p>
                :cond (and (equal ACL2::traced-fn (quote ,fn))
                           (not (equal (nth 1 ACL2::arglist) :x)))
                :entry (:fmt! (msg "~%"))
-               :exit (:fmt! (msg "~x0: R ~x1 ~x2 ~x3"
+               :exit (:fmt! (msg "[PC: ~x0]: R@~x1: NumBytes: ~x2 Value: ~x3"
                                  (rip x86)
                                  (nth 0 ACL2::arglist) ;; Linear address
                                  ,numbytes             ;; Size
@@ -864,7 +841,7 @@ executed \(whatever comes first\).</p>
      `(trace! (,fn
                :cond (equal ACL2::traced-fn (quote ,fn))
                :entry (:fmt! (msg "~%"))
-               :exit (:fmt! (msg "~x0: W ~x1 ~x2 ~x3"
+               :exit (:fmt! (msg "[PC: ~x0]: W@~x1 NumBytes: ~x2 Value: ~x3"
                                  (rip x86)
                                  (nth 0 ACL2::arglist) ;; Linear address
                                  ,numbytes

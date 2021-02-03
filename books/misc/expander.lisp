@@ -62,7 +62,10 @@
 (defxdoc expander
   :parents (miscellaneous)
   :short "Routines for simplifying terms."
-  :long "<p>The routines provided by the expander can be useful in generating
+  :long "<p>NOTE: If you are looking for a simple interface to the ACL2
+rewriter, see @(see rewrite$).</p>
+
+<p>The routines provided by the expander can be useful in generating
 theorems and simplifying expressions, under given assumptions.</p>
 
 <p>They were developed rather in a hurry and should be used without expecting
@@ -1050,7 +1053,8 @@ then roughly speaking, no proof of forced hypotheses is attempted until after
 simplification is complete.  The documentation of :prove-assumptions is
 admittedly weak here; feel free to experiment.</p>
 
-<p>Also see @(see symsim).</p>
+<p>See @(see rewrite$) for a flexible, convenient interface to the ACL2
+rewriter that can be called programmatically.  Also see @(see symsim).</p>
 
 <p>Here are some examples, including the one above.  Try them out and see what
 happens.</p>
@@ -1291,10 +1295,12 @@ Only proof output is inhibited if @(':inhibit-output') is @(':prove') (so for
 example, summaries and warnings are printed), and all prover output is shown or
 inhibited if @(':inhibit-output') is @('nil') or @(':all'), respectively.</p>
 
-<p>Also see @(see defthm?), which has a related functionality and is a bit more
-thoroughly documented.  Here are some examples that should help give an idea of
-how @('symsim') works.  (The name, by the way, is short for \"symbolically
-simulate\".)  Try these, as well as the examples shown above.</p>
+<p>See @(see rewrite$) for a flexible, convenient interface to the ACL2
+rewriter that can be called programmatically.  Also see @(see defthm?), which
+is related to @('symsim') and is a bit more thoroughly documented.  Here are
+some examples that should help give an idea of how @('symsim') works.  (The
+name, by the way, is short for \"symbolically simulate\".)  Try these, as well
+as the examples shown above.</p>
 
   @({
 
@@ -1354,8 +1360,7 @@ simulate\".)  Try these, as well as the examples shown above.</p>
 (defun symsim-fn-print-lst (tuples n total wrld state)
   (cond ((null tuples)
          (fms "========================================~%~%"
-              (list (cons #\0 n))
-              *standard-co* state nil))
+              nil *standard-co* state nil))
         (t
          (let ((tuple (car tuples)))
            (pprogn

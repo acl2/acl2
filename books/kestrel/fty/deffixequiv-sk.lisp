@@ -29,13 +29,13 @@
 
 (xdoc::evmac-topic-implementation
 
- deffixequiv
-
- :item-wrld t
+ deffixequiv-sk
 
  :items
 
- ("@('fn') and @('args') are
+ (xdoc::*evmac-topic-implementation-item-wrld*
+
+  "@('fn') and @('args') are
    the homonymous inputs of @(tsee deffixequiv-sk)."
 
   "@('fn-witness') is the witness function associated to @('fn').
@@ -53,6 +53,8 @@
    from the names of the arguments
    to their corresponding predicates.
    In other words, it is @('args') in alist form."))
+
+(local (xdoc::set-default-parents deffixequiv-sk-implementation))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

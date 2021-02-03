@@ -1,0 +1,9 @@
+; The following allow us to use #. in primep-exec-tests.lisp.
+(include-book "kestrel/crypto/primes/top" :dir :system)
+(acl2::merge-io-pairs
+        rtl::primep
+        (include-book "kestrel/crypto/primes/baby-jubjub-subgroup-prime" :dir :system))
+
+; The following seems needed to get add-io-pairs-tests.lisp to work, now that
+; the include-books above call add-io-pairs:
+(acl2::remove-io-pairs rtl::primep)

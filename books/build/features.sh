@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # ACL2 Community Books build system
 # Copyright (C) 2019 Centaur Technology
@@ -73,6 +73,45 @@ rm -f Makefile-features;
 ACL2_CUSTOMIZATION=NONE $STARTJOB -c "$ACL2 < cert_features.lsp &> Makefile-features.out" || echo "*** Failed to run ACL2! ***" 1>&2
 
 
+search_ld_library_path () {
+    local target=$1
+    local dirs=(); IFS=:; for x in $LD_LIBRARY_PATH; do dirs+=("$x"); done; unset IFS
+    for x in "${dirs[@]}"; do
+        [[ -e $x/$target ]] && return 0
+    done
+    return 1
+}
+
+check_ipasir () {
+    if [[ $IPASIR_SHARED_LIBRARY == */* && -e $IPASIR_SHARED_LIBRARY ]]; then
+        # found at user-supplied absolute or relative path (ld.so
+        # treats it as such if it contains a slash)
+        return 0
+    else
+        # look in $LD_LIBRARY_PATH for either the user-supplied library name or
+        # libipasirglucose4.so if the user didn't supply a library name
+        if search_ld_library_path ${IPASIR_SHARED_LIBRARY:-libipasirglucose4.so}; then
+            return 0
+        fi
+    fi
+    # Ideally there should be another if-branch here checking the actual
+    # dynamic load path using `ldconfig -p` or `ld.so` or something but there
+    # doesn't seem to be an easy portable way to do that, so I'm skipping it.
+    if [[ -n $IPASIR_SHARED_LIBRARY ]]; then
+        # user supplied path but this simple script couldn't find it;
+        # maybe ld.so still can, so we press on
+        cat <<EOF 1>&2
+!!! WARNING: \$IPASIR_SHARED_LIBRARY was set to "$IPASIR_SHARED_LIBRARY", which
+             could be found neither as an absolute or relative path, nor in
+             \$LD_LIBRARY_PATH.  Books requiring an ipasir shared library will
+             be tried anyway, but may fail.  If you want to skip them, unset
+             \$IPASIR_SHARED_LIBRARY.
+EOF
+        return 0
+    fi
+    return 1
+}
+
 echo "Determining whether Glucose is installed" 1>&2
 if glucose --help 2> /dev/null;
 then
@@ -82,20 +121,12 @@ EXPORTED_VARS += OS_HAS_GLUCOSE
 EOF
 fi
 
-
 echo "Determining whether an ipasir shared library is installed" 1>&2
-if [[ $IPASIR_SHARED_LIBRARY != '' ]];
-then
-    if [[ -e $IPASIR_SHARED_LIBRARY ]];
-    then
-	cat >> Makefile-features <<EOF
+if check_ipasir; then
+    cat >> Makefile-features <<EOF
 export OS_HAS_IPASIR ?= 1
 EXPORTED_VARS += OS_HAS_IPASIR
 EOF
-    else
-	echo "!!!WARNING: IPASIR_SHARED_LIBRARY was set to \"${IPASIR_SHARED_LIBRARY}\"," 1>&2
-	echo "but this file doees not exist." 1>&2
-    fi
 fi
 
 echo "Determining whether ABC is installed" 1>&2

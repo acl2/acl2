@@ -38,11 +38,15 @@
 
 (in-package "RP")
 
-(xdoc::defxdoc
+#|(xdoc::defxdoc
  multiplier-proofs-2
  :parents (rp-rewriter/applications)
  :short "A demo for integer multiplier proofs 2.0"
- :long "<p> We implement an efficient and verified method for multiplier
+ :long " <p> A newer  version is available with a better performance
+but with the same instructions at @(see rp::Multiplier-Verification-v3) </p>
+
+
+<p> We implement an efficient and verified method for multiplier
  correctness proofs from (System) Verilog designs. There exists two
  implementations of the same method. Below is a demo for the second version,
  which is much faster and easier to use. </p>
@@ -253,4 +257,4 @@ acl2::set-max-mem) and it can finish large proofs when SBCL terminates with memo
 errors.  </p>
 "
 
- )
+ )||#

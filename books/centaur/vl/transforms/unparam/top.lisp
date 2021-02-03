@@ -1283,6 +1283,8 @@ for each usertype is stored in the res field.</p>"
                                 (warnings vl-warninglist-p)
                                 &key
                                 ((config vl-simpconfig-p) 'config))
+      :parents (vl-unparameterize-flow)
+      :short "Substitutes the parameter values given by @('ledger') throughout the given object."
       :returns (mv (warnings1 vl-warninglist-p)
                    (keylist vl-unparam-instkeylist-p)
                    (new-x vl-genblob-p)
@@ -1819,6 +1821,7 @@ for each usertype is stored in the res field.</p>"
                  (donelist vl-unparam-donelist-p)
                  (new-elabindex)
                  (ledger   vl-unparam-ledger-p))
+    :short "Unparameterize a module and its dependencies."
     (b* ((instkey (vl-unparam-instkey-fix instkey))
          (ledger (vl-unparam-ledger-fix ledger))
          (donelist (vl-unparam-donelist-fix donelist))

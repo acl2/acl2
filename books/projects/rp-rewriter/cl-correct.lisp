@@ -3,7 +3,7 @@
 ; Note: The license below is based on the template at:
 ; http://opensource.org/licenses/BSD-3-Clause
 
-; Copyright (C) 2019, Regents of the University of Texas
+; Copyright (C) 2020, Regents of the University of Texas
 ; All rights reserved.
 
 ; Redistribution and use in source and binary forms, with or without
@@ -41,9 +41,7 @@
 (include-book "rp-rewriter")
 (include-book "extract-formula")
 (include-book "eval-functions")
-;(include-book "proof-functions")
 
-;(include-book "tools/with-supporters" :dir :system)
 (local (include-book "proofs/extract-formula-lemmas"))
 (local (include-book "proofs/rp-correct"))
 (local (include-book "proofs/rp-equal-lemmas"))
@@ -53,147 +51,195 @@
 (encapsulate
   nil
   (defrec rp-cl-hints
-    (runes . new-synps)
+    (runes runes-outside-in . new-synps)
     t)
   (defun rp-cl-hints-p (hints)
     (declare (xargs :guard t))
     (and  (weak-rp-cl-hints-p hints)
           (alistp (access rp-cl-hints hints :new-synps)))))
 
-(defun rp-clause-processor-aux (cl hints meta-rules rp-state state)
-  (declare #|(ignorable rule-names)||#
+(defund get-meta-rules (table-entry)
+  (declare (xargs :guard t ))
+  (if (or (atom table-entry)
+          (atom (car table-entry)))
+      nil
+    (b* ((e (cdar table-entry)))
+      (append (true-list-fix e) (get-meta-rules (cdr table-entry))))))
+
+;;(defwarrant rp-meta-fnc)
+;;(defwarrant rp-meta-trig-fnc)
+
+#|(define get-enabled-meta-rules-from-table (outside-in-flg state)
+  :prepwork
+  ((local
+    (defthm weak-rp-meta-rule-recs-p-implies-true-listp
+      (implies (weak-rp-meta-rule-recs-p x)
+               (true-listp x)))))
+  :guard-hints (("Goal"
+                 :in-theory (e/d () (weak-rp-meta-rule-rec-p
+                                     (:rewrite
+                                      acl2::member-equal-strip-cars-assoc-equal)
+                                     hons-get
+                                     assoc-equal
+                                     (:definition no-duplicatesp-equal)
+                                     (:definition always$)
+                                     (:rewrite acl2::fancy-uqi-integer-1)
+                                     (:definition integer-listp)
+                                     (:definition fgetprop)
+                                     (:rewrite acl2::apply$-badgep-properties
+                                               . 1)
+                                     (:definition acl2::apply$-badgep)
+                                     (:definition member-equal)))))
+  (b* ((meta-rules-list (cdr (hons-assoc-equal 'meta-rules-list
+                                               (table-alist 'rp-rw
+                                                            (w state)))))
+       (rp-rules (make-fast-alist (table-alist 'rp-rules (w state))))
+       ((unless (weak-rp-meta-rule-recs-p meta-rules-list))
+        (progn$ (fast-alist-clean rp-rules)))
+       (runes (loop$ for x in meta-rules-list
+                     collect
+                     :guard (weak-rp-meta-rule-rec-p x)
+                     `(:meta ,(rp-meta-fnc x) . ,(rp-meta-trig-fnc  x))))
+       (res (loop$ for x in runes when
+                   (b* ((entry (cdr (hons-get x rp-rules))))
+                     (case-match entry
+                       ((':outside-in . t)
+                        outside-in-flg)
+                       ((':inside-out . t)
+                        (not outside-in-flg))
+                       ((':both . t)
+                        t)
+                       (&
+                        (and entry
+                             (not outside-in-flg)))))
+                   collect x))
+       (- (fast-alist-clean rp-rules)))
+    res))||#
+
+(defun rp-clause-processor-aux (cl hints rp-state state)
+  (declare
    (xargs
-    :guard (and (rp-meta-rule-recs-p meta-rules state)
-                (rp-cl-hints-p hints))
+    :guard (and
+            (rp-cl-hints-p hints))
     :stobjs (rp-state state)
     :guard-hints (("Goal"
                    :in-theory (e/d ()
-                                   (rp-rw-aux
+                                   (preprocess-then-rp-rw
                                     get-rules
-                                    #|GET-ENABLED-EXEC-RULES||#
                                     beta-search-reduce))))
     :verify-guards t))
   (if (and (consp cl)
            (not (consp (cdr cl))))
       (b* ((car-cl (beta-search-reduce (car cl) *big-number*))
            ((when (not (and (rp-termp car-cl)
-                            (not (include-fnc car-cl 'rp)))))
+                            (mbt (rp-statep rp-state))
+                            (or (alistp (access rp-cl-hints hints
+                                                     :new-synps))
+                                (hard-error 'rp-clause-processor-aux
+                                            "The :new-synps hint should be an alist. ~%" nil))
+                            (or (not (include-fnc car-cl 'rp))
+                                (hard-error 'rp-clause-processor-aux
+                                            "Conjectures given to RP-Rewriter cannot include an rp instance~%" nil)))))
             ;; we have to have it here because pseudo-termp allows nil to
             ;; appear in the term but rp-termp does not.
             (mv nil (list cl) rp-state state))
-           (runes (access rp-cl-hints hints :runes))
-           ((mv runes exc-rules)
-            (if runes
-                (mv runes (get-disabled-exc-rules-from-table
-                           (table-alist 'rp-exc-rules (w state))))
+           ;;(runes-inside-out (access rp-cl-hints hints :runes))
+           ;;(runes-outside-in (access rp-cl-hints hints :runes-outside-in))
+           #|(- (and runes-outside-in (not runes-inside-out)
+                   (cw "WARNING: You passed some values for runes-outside-in
+but did not pass anything for runes. Assigning values to any one of those
+values will cause runes to be not retrieved from the table.~%")))||#
+           ;;(new-synps (access rp-cl-hints hints :new-synps))
+           #|((mv runes runes-outside-in disabled-exc-rules)
+            (if (or runes runes-outside-in)
+                (mv runes runes-outside-in
+                    (get-disabled-exc-rules-from-table
+                     (table-alist 'rp-exc-rules (w state))))
               (get-enabled-rules-from-table state)))
-           (new-synps (access rp-cl-hints hints :new-synps))
+           
            (rules-alist (get-rules runes state :new-synps new-synps))
-           ((when (not (rules-alistp rules-alist)))
+           (rules-alist-outside-in (get-rules runes-outside-in state :new-synps new-synps))
+           ((unless (and (rules-alistp rules-alist)
+                         (rules-alistp rules-alist-outside-in)))
             (progn$ (hard-error 'rp-clause-precessor-aux
                                 "format of rules-alist is bad ~%" nil)
-                    (mv nil (list cl) rp-state state)))
+                    (mv nil (list cl) rp-state state)))||#
            (rp-state (rp-state-new-run rp-state))
-
-           (disabled-meta-rules (table-alist 'disabled-rp-meta-rules
-                                             (w state)))
-           (meta-rules (remove-disabled-meta-rules meta-rules disabled-meta-rules))
-           (meta-rules (make-fast-alist meta-rules))
+           (rp-state (rp-state-init-rules (access rp-cl-hints hints :runes)
+                                          (access rp-cl-hints hints :runes-outside-in)
+                                          (access rp-cl-hints hints :new-synps)
+                                          rp-state
+                                          state))
            ((mv rw rp-state)
-            (rp-rw-aux car-cl
-                       rules-alist
-                       exc-rules
-                       meta-rules
-                       rp-state
-                       state))
-           (- (fast-alist-free meta-rules))
-           (- (fast-alist-free exc-rules))
-           (- (fast-alist-free rules-alist)))
+            (if (rp-formula-checks state)
+                (preprocess-then-rp-rw car-cl rp-state state)
+              (mv car-cl rp-state))))
         (mv nil
             (list (list rw))
             rp-state
             state))
     (mv nil (list cl) rp-state state)))
 
-;; When the clause-processor is to be proved with a new evaluator, this lemmas
-;; will be used with functional instantiation with the new evaluator and other
-;; functions. We would be needing a new evaluator when we want to use a new
-;; meta function.
-(defthm correctness-of-rp-clause-processor-aux
-  (implies (and (pseudo-term-listp cl)
-                (rp-meta-valid-syntax-listp meta-rules state)
-                (valid-rp-meta-rule-listp meta-rules state)
-                (alistp a)
-                (rp-evl-meta-extract-global-facts :state state))
-           (iff (rp-evl (acl2::conjoin-clauses
-                         (acl2::clauses-result
-                          (rp-clause-processor-aux cl hint meta-rules rp-state state)))
-                        a)
-                (rp-evl (acl2::disjoin cl) a)))
-  :otf-flg t
-  :hints (("Goal"
-           :do-not-induct t
-           :expand ((REMOVE-DISABLED-META-RULES
-                     NIL
-                     (TABLE-ALIST 'DISABLED-RP-META-RULES
-                                  (CDR (ASSOC-EQUAL 'ACL2::CURRENT-ACL2-WORLD
-                                                    (NTH 2 STATE))))))
-           :in-theory (e/d (rp-evl-of-fncall-args
-                            ;; valid-rp-meta-rule-listp
-                            rp-evl-of-beta-search-reduce
-                            rp-meta-valid-syntax-listp
-                            ;;symbol-alistp-get-enabled-exec-rules
-                            rp-rw-aux-is-correct)
-                           (get-rules
-                            valid-rp-meta-rule-listp
-                            
-                            valid-rp-meta-rulep
-                            rp-meta-valid-syntaxp-sk
-                            ex-from-synp-lemma1
-                            valid-rules-alistp
-                            rp-rw-aux
-                            #|get-enabled-exec-rules||#
-                            assoc-eq
-                            table-alist))))
-  :rule-classes :rewrite)
+(local
+ (defthm correctness-of-rp-clause-processor-aux
+   (implies (and (pseudo-term-listp cl)
+                 (alistp a)
+                 (rp-evl-meta-extract-global-facts :state state))
+            (iff (rp-evl (acl2::conjoin-clauses
+                          (acl2::clauses-result
+                           (rp-clause-processor-aux cl hint rp-state state)))
+                         a)
+                 (rp-evl (acl2::disjoin cl) a)))
+   :otf-flg t
+   :hints (("Goal"
+            :do-not-induct t
+          #|  :expand ((remove-disabled-meta-rules
+                      nil
+                      (table-alist 'disabled-rp-meta-rules
+                                   (cdr (assoc-equal 'acl2::current-acl2-world
+                                                     (nth 2 state))))))||#
+            :in-theory (e/d (rp-evl-of-fncall-args
+                             rp-evl-of-beta-search-reduce
+                             ;;rp-meta-valid-syntax-listp
+                             preprocess-then-rp-rw-is-correct)
+                            (get-rules
+                             ;;valid-rp-meta-rule-listp
+                             ;;valid-rp-meta-rulep
+                             ;;rp-meta-valid-syntaxp-sk
+                             ex-from-synp-lemma1
+                             valid-rules-alistp
+                             preprocess-then-rp-rw
+                             assoc-eq
+                             table-alist))))
+   :rule-classes :rewrite))
 
-;; This function needs a guard (rp-evl-meta-extract-global-facts :state state)
-;; because we need to use resolve-b+-order-is-valid-rp-meta-rulep proved in
-;; proofs/apply-meta-lemmas.lisp. We need to verify the guards because
-;; rp-clause-processor-aux is not executable (its guards call a defun-sk).
-(defun rp-clause-processor (cl hints rp-state state)
+(defun rp-rewriter (cl hints rp-state state)
   (declare
    (xargs :stobjs (rp-state state)
           :guard t
           :guard-hints (("goal"
-                         :in-theory (e/d (rp-meta-valid-syntax-listp)
+                         :in-theory (e/d ()
                                          (rp-meta-valid-syntaxp-sk))))
           :verify-guards nil))
   (if (rp-cl-hints-p hints)
       (rp-clause-processor-aux
        cl hints
-       nil
        rp-state
        state)
     (mv nil (list cl) rp-state state)))
 
-(verify-guards rp-clause-processor)
+(verify-guards rp-rewriter)
 
-(progn
-  (table rp-rw 'meta-rules nil)
-
-  (table rp-rw 'rp-clause-processor
-         'rp-clause-processor))
-
-(defthm correctness-of-rp-clause-processor-lemma
-  (implies (and (pseudo-term-listp cl)
-                (alistp a)
-                (rp-evl (acl2::conjoin-clauses
-                         (acl2::clauses-result (list nil (list cl) rp-state state)))
-                        a))
-           (rp-evl (acl2::disjoin cl) a))
-  :hints (("goal"
-           :in-theory (e/d (acl2::disjoin acl2::conjoin-clauses) ()))))
+(local
+ (defthm correctness-of-rp-clause-processor-lemma
+   (implies (and (pseudo-term-listp cl)
+                 (alistp a)
+                 (rp-evl (acl2::conjoin-clauses
+                          (acl2::clauses-result (list nil (list cl) rp-state state)))
+                         a))
+            (rp-evl (acl2::disjoin cl) a))
+   :hints (("goal"
+            :in-theory (e/d (acl2::disjoin acl2::conjoin-clauses) ())))))
 
 (defthm correctness-of-rp-clause-processor
   (implies
@@ -203,19 +249,19 @@
     (rp-evl-meta-extract-global-facts :state state)
     (rp-evl (acl2::conjoin-clauses
              (acl2::clauses-result
-              (rp-clause-processor cl hint rp-state state)))
+              (rp-rewriter cl hint rp-state state)))
             a))
    (rp-evl (acl2::disjoin cl) a))
   :otf-flg t
   :hints (("Goal"
            :in-theory (e/d (correctness-of-rp-clause-processor-aux
-                            valid-rp-meta-rule-listp
-                            rp-meta-valid-syntax-listp
-                            rp-rw-aux-is-correct)
+                            ;;valid-rp-meta-rule-listp
+                            
+                            preprocess-then-rp-rw-is-correct)
                            (rp-clause-processor-aux
                             rp-cl-hints-p
-                            valid-rp-meta-rulep
-                            rp-meta-valid-syntaxp-sk
+                            ;;valid-rp-meta-rulep
+                            ;;rp-meta-valid-syntaxp-sk
                             acl2::conjoin-clauses
                             acl2::clauses-result))))
   :rule-classes :clause-processor)

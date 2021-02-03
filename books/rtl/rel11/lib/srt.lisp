@@ -35,30 +35,34 @@
   (local (defun q$ (j) (declare (ignore j)) 0))
   (defund r$ () (expt 2 (e$)))
   (defund rho$ () (/ (a$) (1- (r$))))
-  (defthm e$-constraint
-    (not (zp (e$)))
-    :rule-classes ())
-  (defthm d$-constraint
+  (defthmd e$-constraint
+    (not (zp (e$))))
+  (defthmd d$-constraint
     (and (rationalp (d$))
-         (> (d$) 0))
-    :rule-classes ())
-  (defthm x$-constraint
+         (> (d$) 0)))
+  (defthmd x$-constraint
     (and (rationalp (x$))
 	 (> (x$) 0)
-         (< (x$) (* 2 (d$))))
-    :rule-classes ())
-  (defthm a$-constraint
-    (not (zp (a$)))
-    :rule-classes ())
+         (< (x$) (* 2 (d$)))))
+  (defthmd a$-constraint
+    (not (zp (a$))))
   (defthm q$-constraint
     (implies (not (zp j))
              (and (integerp (q$ j))
                   (<= (abs (q$ j)) (a$))))
-    :rule-classes ())
-  (defthm rho$-constraint
+    :rule-classes
+    ((:type-prescription
+      :corollary
+      (implies (not (zp j))
+               (integerp (q$ j))))
+     (:linear
+      :corollary
+      (implies (not (zp j))
+               (and (<= (- (a$)) (q$ j))
+                    (<= (q$ j) (a$)))))))
+  (defthmd rho$-constraint
     (and (< 1/2 (rho$))
-         (<= (rho$) 1))
-    :rule-classes ()))
+         (<= (rho$) 1))))
 
 (defund quot$ (j)
   (if (zp j)
@@ -290,26 +294,31 @@
   (local (defun q% (j) (declare (ignore j)) 0))
   (defund r% () (expt 2 (e%)))
   (defund rho% () (/ (a%) (1- (r%))))
-  (defthm e%-constraint
-    (not (zp (e%)))
-    :rule-classes ())
-  (defthm x%-constraint
+  (defthmd e%-constraint
+    (not (zp (e%))))
+  (defthmd x%-constraint
     (and (rationalp (x%))
          (<= 1/4 (x%))
-         (< (x%) 1))
-    :rule-classes ())
-  (defthm a%-constraint
-    (not (zp (a%)))
-    :rule-classes ())
+         (< (x%) 1)))
+  (defthmd a%-constraint
+    (not (zp (a%))))
   (defthm q%-constraint
     (implies (not (zp j))
              (and (integerp (q% j))
                   (<= (abs (q% j)) (a%))))
-    :rule-classes ())
-  (defthm rho%-constraint
+    :rule-classes
+    ((:type-prescription
+      :corollary
+      (implies (not (zp j))
+               (integerp (q% j))))
+     (:linear
+      :corollary
+      (implies (not (zp j))
+               (and (<= (- (a%)) (q% j))
+                    (<= (q% j) (a%)))))))
+  (defthmd rho%-constraint
     (and (< 1/2 (rho%))
-         (<= (rho%) 1))
-    :rule-classes ()))
+         (<= (rho%) 1))))
 
 (defund quot% (j)
   (if (zp j)
@@ -494,5 +503,128 @@
 		(s4-hyp j))
 	   (and (quot%-bnds-inv (1+ j))
                 (rem%-bnds-inv (1+ j)))))
+
+;;------------------------------------------------------------------------------------------------------------------
+
+(defun ms8-0 (k)
+  (nth (- 1 k) '(0 -64 -176 -272 -352)))
+
+(defun ms8-1 (i k)
+  (nth (- 4 k) (nth (/ i 8) '((236 166 96 31 -32 -92 -152 -212)
+                              (291 206 121 41 -42 -122 -192 -267)
+                              (351 241 141 46 -47 -142 -232 -322)
+                              (406 281 171 61 -62 -172 -277 -377)
+                              (461 326 191 61 -62 -192 -317 -442)))))
+
+(defun ms8-2 (i k)
+  (nth (- 4 k) (nth i '((226 161 97 32 -32 -97 -161 -226)
+                        (231 165 99 33 -33 -99 -165 -231)
+                        (238 170 102 34 -34 -102 -170 -238)
+                        (245 175 105 35 -35 -105 -175 -245)
+                        (252 180 108 36 -36 -108 -180 -252)
+                        (259 185 112 37 -37 -112 -185 -259)
+                        (266 190 114 38 -38 -114 -190 -266)
+                        (273 195 117 39 -39 -117 -195 -273)
+                        (280 200 120 40 -40 -120 -200 -280)
+                        (287 205 123 41 -41 -123 -205 -287)
+                        (294 210 128 42 -42 -128 -210 -294)
+                        (301 215 129 43 -43 -129 -215 -301)
+                        (308 220 132 44 -44 -132 -220 -308)
+                        (315 225 135 45 -45 -135 -225 -315)
+                        (322 230 138 48 -48 -138 -230 -322)
+                        (329 235 141 48 -48 -141 -235 -329)
+                        (336 240 144 48 -48 -144 -240 -336)
+                        (343 245 147 49 -49 -147 -245 -343)
+                        (350 250 150 50 -50 -150 -250 -350)
+                        (357 255 153 51 -51 -153 -255 -357)
+                        (364 260 156 52 -52 -156 -260 -364)
+                        (371 265 160 53 -53 -160 -265 -371)
+                        (378 270 162 54 -54 -162 -270 -378)
+                        (385 275 165 55 -55 -165 -275 -385)
+                        (392 280 168 56 -56 -168 -280 -392)
+                        (398 285 171 57 -57 -171 -285 -398)
+                        (406 290 174 58 -58 -174 -290 -406)
+                        (413 295 177 59 -59 -177 -295 -413)
+                        (420 300 180 60 -60 -180 -300 -420)
+                        (427 305 183 61 -61 -183 -305 -427)
+                        (434 310 186 62 -62 -186 -310 -434)
+                        (441 315 189 64 -64 -189 -315 -441)
+                        (447 319 191 64 -64 -191 -319 -447)))))
+
+(defun ms8*64 (i j k)
+  (case j
+    (0 (ms8-0 k))
+    (1 (ms8-1 i k))
+    (t (ms8-2 i k))))
+
+(defund ms8 (i j k)
+  (/ (ms8*64 i j k) 64))
+
+(defund select-digit-s8 (a i j)
+  (cond ((<= (ms8 i j 4) a) 4)
+        ((<= (ms8 i j 3) a) 3)
+        ((<= (ms8 i j 2) a) 2)
+        ((<= (ms8 i j 1) a) 1)
+        ((<= (ms8 i j 0) a) 0)
+        ((<= (ms8 i j -1) a) -1)
+        ((<= (ms8 i j -2) a) -2)
+        ((<= (ms8 i j -3) a) -3)
+        (t -4)))
+
+(defund i8% (j)
+  (* 64 (- (quot% (min (nfix j) 2)) 1/2)))
+
+(defund quot%-bnds-inv (j)
+  (and (<= 1/2 (quot% j))
+       (>= 1 (quot% j))))
+
+(defund rem%-bnds-inv (j)
+  (and (<= (blo% j) (rem% j))
+       (>= (bhi% j) (rem% j))))
+
+(encapsulate (((approx8% *) => *))
+  (local (defun approx8% (j) (* 8 (rem% j))))
+  (defthm ratp-approx8%
+    (rationalp (approx8% j))
+    :rule-classes (:type-prescription :rewrite))
+  (defthm approx8%-0
+    (equal (approx8% 0) (* 8 (rem% 0)))))
+
+(defund approx8%-bounds (j k)
+  (and (implies (< (approx8% j) (ms8 (i8% j) j k))
+                (< (* 8 (rem% j)) (ms8 (i8% j) j k)))
+       (implies (>= (approx8% j) (ms8 (i8% j) j k))
+                (> (* 8 (rem% j)) (- (ms8 (i8% j) j k) 1/128)))))
+
+(defund approx8%-inv (j)
+  (and (= (q% (1+ j)) (select-digit-s8 (approx8% j) (i8% j) j))
+       (approx8%-bounds j 4)
+       (approx8%-bounds j 3)
+       (approx8%-bounds j 2)
+       (approx8%-bounds j 1)
+       (approx8%-bounds j 0)
+       (approx8%-bounds j -1)
+       (approx8%-bounds j -2)
+       (approx8%-bounds j -3)))
+
+(defund s8-inv (j)
+  (and (quot%-bnds-inv j)
+       (rem%-bnds-inv j)
+       (approx8%-inv j)))
+
+(defund s8-hyp (j)
+  (if (zp j)
+      (s8-inv 0)
+    (and (s8-inv j)
+         (s8-hyp (1- j)))))
+
+(defthmd srt-sqrt-rad-8
+  (implies (and (= (r%) 8)
+                (= (a%) 4)
+                (natp j)
+		(s8-hyp j))
+	   (and (quot%-bnds-inv (1+ j))
+                (rem%-bnds-inv (1+ j))))
+  :hints (("Goal" :use (rem%-8-bnds quot8%-bnds))))
 
 )

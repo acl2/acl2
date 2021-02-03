@@ -1,0 +1,6 @@
+(F1$NOTINLINE)
+(F2$INLINE)
+(G1)
+(G2)
+(G3)
+(G4)

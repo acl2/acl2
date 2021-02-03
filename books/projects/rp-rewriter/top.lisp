@@ -50,12 +50,7 @@
 
 (include-book "xdoc/top" :dir :system)
 
-
-(xdoc::defxdoc
- acl2::rp-rewriter
- :short "See @(see rp::rp-rewriter)")
                
-
 (xdoc::defxdoc rp-rewriter
   :parents (acl2::projects acl2::clause-processor-tools)
   :short "A verified clause-processor and customized rewriter for large terms

@@ -75,7 +75,8 @@
 (defthm fl+int-rewrite
     (implies (and (integerp n)
 		  (real/rationalp x))
-	     (equal (fl (+ x n)) (+ (fl x) n))))
+	     (and (equal (fl (+ x n)) (+ (fl x) n))
+                  (equal (fl (+ n x)) (+ n (fl x))))))
 
 (defrule fl/int-rewrite
   (implies (and (integerp n)
@@ -92,6 +93,30 @@
            (equal (fl (* (/ n) (fl x)))
                   (fl (/ x n))))
   :enable fl)
+
+(defthm fl*1/int-rewrite
+  (implies (and (integerp (/ n))
+                (<= 0 n)
+                (real/rationalp x))
+           (equal (fl (* (fl x) n))
+                  (fl (* x n))))
+  :hints (("Goal"
+           :use (:instance fl/int-rewrite
+                           (n (/ n)))
+           :in-theory (disable fl/int-rewrite))))
+
+(defthm fl*1/int-rewrite-alt
+  (implies (and (integerp (/ n))
+                (<= 0 n)
+                (real/rationalp x))
+           (equal (fl (* n (fl x)))
+                  (fl (* x n))))
+  :hints (("Goal"
+           :use (:instance fl/int-rewrite-alt
+                           (n (/ n)))
+           :in-theory (disable fl/int-rewrite-alt))))
+
+(local (in-theory (disable fl*1/int-rewrite fl*1/int-rewrite-alt)))
 
 (defrule fl-int-div-radix
   (implies (and (integerp n)
@@ -576,11 +601,28 @@
            (and (equal (chop-r (chop-r x m r) k r)
                        (chop-r x k r))
                 (equal (chop-r (chop-r x k r) m r)
-                       (chop-r x k r))))
+                       (chop-r x k r))
+		(<= (chop-r x k r) (chop-r x m r))))
   :enable chop-r
-  :use (:instance fl/int-rewrite
-         (x (* (expt r m) x))
-         (n (expt r (- m k)))))
+  :use ((:instance fl/int-rewrite
+          (x (* (expt r m) x))
+          (n (expt r (- m k))))
+        (:instance chop-r-down (x (chop-r x m r)) (n k))))
+
+(defruled chop-r-plus
+  (implies (and (real/rationalp x)
+	        (real/rationalp y)
+	        (integerp k)
+		(radixp r))
+           (and (equal (chop-r (+ x (chop-r y k r)) k r)
+		       (+ (chop-r x k r) (chop-r y k r)))
+		(equal (chop-r (+ (chop-r x k r) (chop-r y k r)) k r)
+		       (+ (chop-r x k r) (chop-r y k r)))
+		(equal (chop-r (- x (chop-r y k r)) k r)
+		       (- (chop-r x k r) (chop-r y k r)))
+		(equal (chop-r (- (chop-r x k r) (chop-r y k r)) k r)
+		       (- (chop-r x k r) (chop-r y k r)))))
+  :enable chop-r)
 
 (defruled chop-r-shift
   (implies (and (real/rationalp x)
@@ -727,16 +769,31 @@
   :use (:instance chop-r-monotone (r 2))
   :rule-classes ())
 
-(defruled chop-chop
-  (implies (and (real/rationalp x)
+(defrule chop-chop
+  (implies (and (rationalp x)
                 (integerp k)
                 (integerp m)
                 (<= k m))
            (and (equal (chop (chop x m) k)
                        (chop x k))
                 (equal (chop (chop x k) m)
-                       (chop x k))))
+                       (chop x k))
+		(<= (chop x k) (chop x m))))
   :enable chop-r-chop-r)
+
+(defrule chop-plus
+  (implies (and (rationalp x)
+	        (rationalp y)
+	        (integerp k))
+           (and (equal (chop (+ x (chop y k)) k)
+		       (+ (chop x k) (chop y k)))
+		(equal (chop (+ (chop x k) (chop y k)) k)
+		       (+ (chop x k) (chop y k)))
+		(equal (chop (- x (chop y k)) k)
+		       (- (chop x k) (chop y k)))
+		(equal (chop (- (chop x k) (chop y k)) k)
+		       (- (chop x k) (chop y k)))))
+  :enable chop-r-plus)
 
 (defruled chop-shift
   (implies (and (real/rationalp x)

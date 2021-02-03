@@ -34,35 +34,35 @@
 (defparameter *read-string-should-check-bad-lisp-object* t)
 
 (defun read-string-fn (str state)
-  (handler-case
-   (progn (unless (live-state-p state)
-            (error "read-string requires a live state!"))
-          (let ((acc         nil)
-                (*readtable* *acl2-readtable*)
-                (*package*   (find-package (current-package state))))
-            (with-input-from-string
-             (stream str)
+  (with-input-from-string
+   (stream str)
+   (handler-case
+    (progn (unless (live-state-p state)
+             (error "read-string requires a live state!"))
+           (let ((acc         nil)
+                 (*readtable* *acl2-readtable*)
+                 (*package*   (find-package (current-package state))))
              (loop do
                    (let* ((eof-marker (cons nil nil))
                           (elem       (read stream nil eof-marker)))
                      (if (eq elem eof-marker)
                          (loop-finish)
-                       (push elem acc)))))
-            (setq acc (nreverse acc))
-            (let ((msg (and *read-string-should-check-bad-lisp-object*
-                            (bad-lisp-objectp acc))))
-              (if msg
-                  (mv msg nil state)
-                (mv nil acc state)))))
-   (error (condition)
-          (return-from read-string-fn
-                       (mv (format nil "~A" condition) nil state)))
-   ;; Really bad-lisp-objectp shouldn't just stack-overflow on #1=(a . #1#).
-   ;; Catching it is tricky...
-   ;; "Because such a condition is indicative of a limitation of the
-   ;;  implementation or of the image rather than an error in a program,
-   ;;  objects of type storage-condition are not of type error."
-   (storage-condition (condition)
-                      (return-from read-string-fn
-                                   (mv (format nil "~A" condition) nil state)))))
+                       (push elem acc))))
+             (setq acc (nreverse acc))
+             (let ((msg (and *read-string-should-check-bad-lisp-object*
+                             (bad-lisp-objectp acc))))
+               (if msg
+                   (mv msg nil state)
+                 (mv nil acc state)))))
+    (error (condition)
+           (return-from read-string-fn
+                        (mv (format nil "~A" condition) nil state)))
+    ;; Really bad-lisp-objectp shouldn't just stack-overflow on #1=(a . #1#).
+    ;; Catching it is tricky...
+    ;; "Because such a condition is indicative of a limitation of the
+    ;;  implementation or of the image rather than an error in a program,
+    ;;  objects of type storage-condition are not of type error."
+    (storage-condition (condition)
+                       (return-from read-string-fn
+                                    (mv (format nil "~A" condition) nil state))))))
 

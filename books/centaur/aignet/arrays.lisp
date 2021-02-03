@@ -690,5 +690,10 @@
 
 
 (defstobj-clone mark bitarr :suffix "-MARK")
-(defstobj-clone copy litarr :prefix "COPY")
-(defstobj-clone vals bitarr :prefix "VALS")
+(defstobj-clone mark2 bitarr :suffix "-MARK2")
+
+(defstobj-clone copy litarr :prefix "COPY-")
+(defstobj-clone copy2 litarr :prefix "COPY2-")
+
+(defstobj-clone vals bitarr :prefix "VALS-")
+(defstobj-clone vals2 bitarr :prefix "VALS2-")

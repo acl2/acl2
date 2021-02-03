@@ -1,0 +1,23 @@
+; FTY Library
+;
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Alessandro Coglio (coglio@kestrel.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(in-package "ACL2")
+
+(include-book "kestrel/fty/defset" :dir :system)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defset nat-set
+  :short "Fixtype of finite sets of natural numbers."
+  :elt-type nat
+  :elementp-of-nil nil
+  :pred nat-setp
+  :fix nat-sfix
+  :equiv nat-sequiv)

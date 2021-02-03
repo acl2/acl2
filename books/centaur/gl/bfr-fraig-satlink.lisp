@@ -83,14 +83,14 @@ satlink) after aignet fraiging to solve queries."
 
 (encapsulate
   (((gl-transforms-config) => *))
-  (local (defun gl-transforms-config ()
-           aignet::*default-transforms*))
+  (local (defun gl-transforms-config () nil))
   (defthm gl-transforms-config-constraint
     (aignet::comb-transformlist-p (gl-transforms-config))))
 
 (defun gl-default-transforms-config ()
   (declare (xargs :guard t))
-  aignet::*default-transforms*)
+  #!aignet (list (make-balance-config)
+                 (make-fraig-config)))
 
 (defattach gl-transforms-config gl-default-transforms-config)
 

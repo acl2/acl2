@@ -10,8 +10,18 @@
 
 (in-package "ACL2")
 
-(include-book "implementation")
-(include-book "kestrel/utilities/testing" :dir :system)
+(include-book "defunvar")
+(include-book "defsoft")
+(include-book "defun2")
+(include-book "defchoose2")
+(include-book "defun-sk2")
+(include-book "defun-inst")
+(include-book "defthm-inst")
+
+(include-book "std/testing/assert-bang" :dir :system)
+(include-book "std/testing/assert-equal" :dir :system)
+(include-book "std/testing/must-fail" :dir :system)
+(include-book "std/testing/must-succeed-star" :dir :system)
 
 (include-book "kestrel/std/system/theorem-namep" :dir :system)
 
@@ -142,10 +152,6 @@
   :with-output-off nil)
  :with-output-off nil)
 
-(must-fail ; bad :PRINT option
- (defun2 h (x) (?f x) :print 456)
- :with-output-off nil)
-
 (defun2 nonrec (x y)
   (cons (?f x) (?g x y)))
 
@@ -188,18 +194,6 @@
   (cond ((atom bt) (?f bt))
         (t (?g (fold[?f][?g] (car bt)) (fold[?f][?g] (cdr bt))))))
 
-(must-succeed ; print everything
- (defun2 h (x) (?f x) :print :all)
- :with-output-off nil)
-
-(must-succeed ; print nothing
- (defun2 h (x) (?f x) :print nil)
- :with-output-off nil)
-
-(must-succeed ; print the function output only
- (defun2 h (x) (?f x) :print :fn-output)
- :with-output-off nil)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; DEFCHOOSE2:
@@ -207,12 +201,6 @@
 (must-fail ; bad name
  (defchoose2 #\h (b) (x y)
    (< (fix b) (fix (?f (?g x y)))))
- :with-output-off nil)
-
-(must-fail ; bad :PRINT option
- (defchoose2 h (b) (x)
-   (equal b (?f x))
-   :print "all")
  :with-output-off nil)
 
 (defchoose2 choose (b) (x y)
@@ -230,38 +218,6 @@
 (defchoose2 fixpoint[?f] x ()
   (equal (?f x) x))
 
-(must-succeed ; print everything
- (defchoose2 h (b) (x)
-   (equal b (?f x))
-   :print :all)
- :with-output-off nil)
-
-(must-succeed ; print nothing
- (defchoose2 h (b) (x)
-   (equal b (?f x))
-   :print nil)
- :with-output-off nil)
-
-(must-succeed ; print the function output only
- (defchoose2 h (b) (x)
-   (equal b (?f x))
-   :print :fn-output)
- :with-output-off nil)
-
-(must-succeed ; :PRINT after another option
- (defchoose2 h (b) (x)
-   (equal b (?f x))
-   :strengthen t
-   :print :all)
- :with-output-off nil)
-
-(must-succeed ; :PRINT before another option
- (defchoose2 h (b) (x)
-   (equal b (?f x))
-   :print :all
-   :strengthen t)
- :with-output-off nil)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; DEFUN-SK2:
@@ -269,12 +225,6 @@
 (must-fail ; bad name
  (defun-sk2 (h 1) (x y)
    (forall (z w) (equal (?f (?g x y)) (cons z w))))
- :with-output-off nil)
-
-(must-fail ; bad :PRINT option
- (defun-sk2 h (x)
-   (forall y (equal y (?f x)))
-   :print (1 2 2))
  :with-output-off nil)
 
 (defun-sk2 ex (x y)
@@ -339,46 +289,6 @@
 ;; Example 1 in :DOC DEFUN-SK2:
 (defun-sk2 injective[?f] ()
   (forall (x y) (implies (equal (?f x) (?f y)) (equal x y))))
-
-(must-succeed ; print everything
- (defun-sk2 h (x)
-   (forall y (equal y (?f x)))
-   :print :all)
- :with-output-off nil)
-
-(must-succeed ; print nothing
- (defun-sk2 h (x)
-   (forall y (equal y (?f x)))
-   :print nil)
- :with-output-off nil)
-
-(must-succeed ; print the function output only
- (defun-sk2 h (x)
-   (forall y (equal y (?f x)))
-   :print :fn-output)
- :with-output-off nil)
-
-(must-succeed ; :PRINT after another option
- (defun-sk2 h (x)
-   (forall y (equal y (?f x)))
-   :skolem-name h-wit
-   :print :all)
- :with-output-off nil)
-
-(must-succeed ; :PRINT before another option
- (defun-sk2 h (x)
-   (forall y (equal y (?f x)))
-   :print :all
-   :skolem-name h-wit)
- :with-output-off nil)
-
-(must-succeed ; :PRINT between two options
- (defun-sk2 h (x)
-   (forall y (equal y (?f x)))
-   :thm-name h-thm
-   :print :all
-   :skolem-name h-wit)
- :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -600,11 +510,6 @@
 (must-succeed ; print result
  (defun-inst i (choose (?g . cons))
    :print :result)
- :with-output-off nil)
-
-(must-fail ; bad option for quantifier 2nd-order function
- (defun-inst i (ex (?g . cons))
-   :verify-guards nil)
  :with-output-off nil)
 
 (must-fail ; duplicate options
@@ -923,3 +828,15 @@
    :print :all
    :rule-classes nil)
  :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; DEFSOFT:
+
+(defun thrice[?f] (x)
+  (?f (?f (?f x))))
+
+(defsoft thrice[?f])
+
+(defun-inst thrice[wrap]
+  (thrice[?f] (?f . wrap)))

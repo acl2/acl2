@@ -21,6 +21,78 @@ questions.
 
 <><><><><><><><><><><><><><><><><><><><><><><><><>
 
+{{Improve error message for linear rule that is illegal because of evaluation.}}
+
+Eric Smith's email just below raises that issue; some analysis is
+below that.
+
+..........
+
+[acl2-devel] improving error message about :linear rules
+Eric Smith <eric.smith@kestrel.edu>	Wed, May 20, 2020 at 1:07 AM
+Reply-To: acl2-devel@utlists.utexas.edu
+To: acl2-devel@utlists.utexas.edu
+
+Here is a weird little example of something I ran into:
+
+(defun two () 2)
+
+;fails somewhat mysteriously
+(defthm two-bound
+  (< 1 (two))
+  :rule-classes :linear)
+
+(in-theory (disable (:e two)))
+
+;same as before but succeeds!
+(defthm two-bound
+  (< 1 (two))
+  :rule-classes :linear)
+
+I presume that the first defthm fails because ACL2 evaluates the call of
+TWO and perhaps also the < (:doc linear does mention evaluation of
+ground subexpressions).  But the error message is just:
+
+ACL2 Error in ( DEFTHM TWO-BOUND ...):  No :LINEAR rule can be generated
+from TWO-BOUND.  See :DOC linear.
+
+Perhaps it could be improved to show a bit more information, e.g., that
+it is trying to make a linear rule from the constant T.
+
+Thanks,
+-Eric
+
+..........
+
+[acl2-devel] improving error message about :linear rules
+Matt Kaufmann <kaufmann@cs.utexas.edu>	Wed, May 20, 2020 at 7:13 AM
+Reply-To: acl2-devel@utlists.utexas.edu
+To: acl2-devel@utlists.utexas.edu
+
+Hi Eric,
+
+Good suggestion.  I took a quick look, and it might take a bit of work
+to pass the necessary information back.  The evaluation of ground
+subexpressions takes place in the following call chain, from top to
+bottom; the problem then is passing back the result of
+eval-ground-subexpressions to chk-acceptable-linear-rule2, so that it
+can print an extra message like "Note that the term was simplified to
+<term> before attempting to construct a linear rule; see :DOC linear."
+
+chk-acceptable-linear-rule2
+  external-linearize
+    linearize
+      linearize1
+        eval-ground-subexpressions
+
+May I incorporate your email into a note to add to
+books/system/to-do.txt?
+
+Thanks,
+Matt
+
+<><><><><><><><><><><><><><><><><><><><><><><><><>
+
 {{Possibly add function-symbolp to the guard of logicp.}}
 
 Currently logicp returns t on a symbol that is not a function symbol, which is
@@ -567,5 +639,206 @@ ACL2 !>(let ((rule (car (find-rules-of-rune
 	  (all-vars (access rewrite-rule rule :lhs))))
 (Y)
 ACL2 !>
+
+<><><><><><><><><><><><><><><><><><><><><><><><><>
+
+{{Enable the generation of extra-info hypothesis for each functional instantiation constraint}}
+
+A couple of reasons for this: a) knowing where constraints are coming
+from is useful for debugging. and, perhaps more importantly, b) the
+proofs of different constraints can have radically different
+strategies.  Generating extra-info hyps would allow a user to write
+robust computed hints that could employ strategies appropriate for
+each constraint.
+
+There could be a table to enable this feature.  A good model for that
+is the inhibit-warnings-table, where the macro set-inhibit-warnings is
+a local table event using that table:
+
+(defmacro set-inhibit-warnings (&rest lst)
+  `(local (set-inhibit-warnings! ,@lst)))
+
+Or it could be yet another acl2-defaults-table key, which would
+automatically make it local to books and encapsulate events.  That's
+probably best in general, but the former approach is good if one wants
+a way to make the setting global in one's session, including all books
+that one is certifying in that session.
+
+Note: extra-info hypotheses are already available for guard and
+termination proofs.
+
+Note: A cursory look into how constraints are computed reveals that
+some constraints (ie: from encapsulations) are associated with
+function symbols at the time of their admission:
+
+ACL2 !>(trace$ putprop-constraints)
+ACL2 !>(encapsulate
+    (
+     ((fn *) => *)
+     )
+  (local (defun fn (x) x))
+  (defthm integerp-fn
+    (implies
+     (integerp x)
+     (integerp (fn x))))
+  )
+
+1> (PUTPROP-CONSTRAINTS FN NIL
+                        ((IMPLIES (INTEGERP X)
+                                  (INTEGERP (FN X))))
+                        NIL
+                        ((FN SIBLINGS FN)
+                         . |current-acl2-world|))
+<1 (PUTPROP-CONSTRAINTS ((FN CONSTRAINT-LST
+                             (IMPLIES (INTEGERP X)
+                                      (INTEGERP (FN X))))
+                         (FN SIBLINGS FN)
+                         . |current-acl2-world|))
+
+In other words, enabling the event:
+
+:hints (("Goal" :use (:functional-instance lemma
+                                           (fn zed))))
+
+to generate an attributed constraint, such as:
+
+(implies
+ (and
+  (extra-info '(:functional-instantiation) '(:constraint integerp-fn))
+  (integerp x))
+ (integerp (zed x)))
+
+will require us to generate constraint attribution at the time of
+function admission.
+
+[[
+Matt's reply: Or will it?  It seems to me that at the time the
+:functional-instance hint is processed, we have this chain of calls:
+
+translate-lmi
+calls
+translate-lmi/functional-instance
+calls
+relevant-constraints
+calls
+relevant-constraints1
+calls
+constraint-info
+
+If a suitable flag were passed, then constraint-info could return
+extra-info.  For example, after the encapsulate above, try this:
+
+(defthm lemma (equal (fn x) (fn x)) :rule-classes nil)
+(trace$ constraint-info)
+(thm t :hints (("Goal" :use (:functional-instance lemma (fn ifix)))))
+
+Then you'll see this:
+
+1> (CONSTRAINT-INFO FN |current-acl2-world|)
+<1 (CONSTRAINT-INFO FN
+                    ((IMPLIES (INTEGERP X)
+                              (INTEGERP (FN X)))))
+
+But actually, I think it would make a lot more sense to modify
+relevant-constraints1 to take a flag instead of constraint-info.
+... end of Matt's reply]]
+
+<><><><><><><><><><><><><><><><><><><><><><><><><>
+
+{{Improve :pl output when a free variable of the rule occurs in the argument of :pl.}}
+
+Eric Smith sent this example:
+
+(defthm <-trans
+  (implies (and (< x y) ; y is a free var
+                (< y z))
+           (< x z)))
+
+and then do:
+
+:pl (< y z)
+
+The current output is confusing, since sometimes "Y" refers to the
+free variable in the hypotheses of <-trans, and other times "Y" refers
+to the variable in the input term, (< y z)::
+
+(:REWRITE <-TRANS)
+  New term: T
+  Hypotheses: ((< Y Y) (< Y Z))
+  Equiv: EQUAL
+  Substitution: ((Z Z) (X Y))
+  Free variable: Y
+
+On the acl2-devel list we seemed to agree on the following as desired
+output for this example.
+
+(:REWRITE <-TRANS)
+ New term: T
+ Hypotheses: ((< Y Y{FREE}) (< Y{FREE} Z))
+ Equiv: EQUAL
+ Substitution: ((Z Z) (X Y) (Y Y{FREE}))
+ Free variable bindings: ((Y Y{FREE}))
+
+Of course, if Y{FREE} should be suitably "fresh"; if it weren't then
+we could search for the first "fresh" variable of the form Y{FREE}1,
+Y{FREE}2, etc.
+
+The same issue arises in the proof-builder: you can see it with
+(verify (< y z)) followed by sr.
+
+This issue also applies to :linear rules and perhaps others; whoever
+takes this item on should figure out which rule classes are relevant
+and fix them all.  Perhaps :pl2 or :pr should also be considered (not
+sure).  Here's an example involving a :linear rule.
+
+(defthm <-trans
+  (implies (and (< x y) ; y is a free var
+                (< y z))
+           (< (identity x) (identity z)))
+  :rule-classes :linear)
+
+:pl (identity y) currently gives this output.
+
+(:LINEAR <-TRANS)
+  Conclusion: (< (IDENTITY Y) (IDENTITY Z))
+  Hypotheses: ((< Y Y) (< Y Z))
+  Substitution: ((X Y))
+  Free variables: Y and Z
+
+Again, an analogous issue arises in the proof-builder: you can see it
+with (verify (< (identity y) (identity z))) followed by (dv 1) and
+show-linears.
+
+<><><><><><><><><><><><><><><><><><><><><><><><><>
+
+{{Move computation of defrec names from books/build/cert_features.lsp to ACL2 build.}}
+
+By moving that compuatation (see constant *defrecs* and function
+write-defrec-certdeps in books/build/cert_features.lsp) to the build,
+we can compute the set of defrec names without affecting regression
+times, just build time.  The computation.  Sol S. and Matt
+K. discussed this and it was OK with both of them.
+
+There are lots of examples in the ACL2 sources of defining a constant
+and then checking their accuracy at the end of the build.  See
+function check-built-in-constants in interface-raw.lisp.
+
+<><><><><><><><><><><><><><><><><><><><><><><><><>
+
+{{Fix arguments of subseq-list.}}
+
+Simplest, and perhaps sufficient, might be to fix the start argument
+of (subseq-list lst start end) to a natural number using MBE.  But
+perhaps more fixing would be useful, so that the entire guard holds.
+
+Quite a few rules about subseq-list and subseq will become more
+concise and have fewer case-splits when we replace start with (nfix
+start). A quick look suggests that this will, however, require some
+work to get "make devel-check" (see :doc
+verify-guards-for-system-functions) to pass and to get the community
+books to certify afterwards.
+
+Note that others seem to independently have noted the desirability
+of doing this in :doc subseq-list.
 
 <><><><><><><><><><><><><><><><><><><><><><><><><>

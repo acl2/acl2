@@ -379,6 +379,7 @@
                           delayed-env
                           modules)
    :verify-guards nil
+   :parents (svl-run svl-run-phase)
    :flag svl-run-phase-wog
    :measure (acl2::nat-list-measure
              (list (svl-get-module-rank$ modname; (sv::modname-fix modname)
@@ -390,7 +391,12 @@
             :in-theory (e/d (rp::measure-lemmas
                              SVL-GET-MAX-OCC-RANK$
                              SVL-WELL-RANKED-MODULE$) ())))
-
+   
+   :short "Same as @(see svl-run-phase) but without guards"
+   :long "<p>Please see @(see svl::svl-run-phase) for the explanation of the
+arguments. svl-run-phase-wog has the same functionality as svl-run-phase but it
+does not have any guards. This can help makes the rewrite-based proof go faster
+because guards might be executed too many times during such proofs.</p>" 
    (cond ((not (svl-well-ranked-module$ modname modules)) ;; for termination
           (mv nil (make-svl-env)))
          (t
@@ -715,7 +721,7 @@
                      modules)
     :do-not-print (modules))
 
-  (rp::defthm-lambda
+  (def-rp-rule
    svl-run-phase-wog-opener
    (implies
     (svl-well-ranked-module$ modname modules)
@@ -723,7 +729,7 @@
                             delayed-env
                             modules)
            (b* ((x (cdr (assoc-equal modname modules)))
-                (- (cw "Using svl-run-phase-wog-opener for ~p0 ~%"
+                (- (cw "Expanding the module ~p0... ~%"
                        modname))
                 (env-wires (svex-env-append
                             (car delayed-env)
@@ -783,7 +789,7 @@
                       env-wires delayed-env-alist modules)
              :in-theory (e/d () ()))))
 
-  (defthm-lambda svl-run-phase-occs-wog-opener-cons-module
+  (def-rp-rule svl-run-phase-occs-wog-opener-cons-module
     (equal (svl-run-phase-occs-wog
             (cons (cons occ-name (cons ':module cdr-occ)) rest)
             env-wires delayed-env-alist modules)
@@ -845,7 +851,7 @@
     :hints (("Goal"
              :in-theory (e/d (svl-run-save-output) ()))))
 
-  (rp::defthm-lambda
+  (def-rp-rule
    svl-run-save-output-opener-cons
    (equal (svl-run-save-output out-alist
                                 (cons x rest))
@@ -938,7 +944,7 @@
     :hints (("Goal"
              :in-theory (e/d (svl-run-aux-wog) ()))))
   
-  (rp::defthm-lambda
+  (def-rp-rule
    svl-run-aux-opener-cons
    (equal (svl-run-aux-wog modname (cons x y) out-wires out-bind-alist
                            delayed-env modules)
@@ -995,7 +1001,7 @@
               (sv::svarlist-p (strip-cars wires))))) 
 
   
-  (rp::defthm-lambda
+  (def-rp-rule
    svl-run-def-opener
    (implies (and (force (sv::modname-p modname))
                  (force (svex-env-p inputs-env))

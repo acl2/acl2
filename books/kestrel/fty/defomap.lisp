@@ -1,6 +1,6 @@
-; FTY -- Omap Fixtype Generator
+; FTY Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -33,10 +33,21 @@
 
    (xdoc::p
     "This is analogous to
-     @(tsee fty::deflist), @(tsee fty::defalist), and @(tsee fty::defset).
+     @(tsee fty::deflist),
+     @(tsee fty::defalist), and
+     @(tsee fty::defset).
      Besides the fixtype itself,
      this macro also generates some theorems about the fixtype.
      Future versions of this macro may generate more theorems, as needed.")
+
+   (xdoc::p
+    "Aside from the recognizer, fixer, and equivalence for the fixtype,
+     this macro does not generate any operations on the typed omaps.
+     Instead, the "
+    (xdoc::seetopic "omap::omaps" "generic omap operations")
+    " can be used on typed omaps.
+     This macro generates theorems about
+     the use of these generic operations on typed omaps.")
 
    (xdoc::p
     "Future versions of this macro may be modularized to provide
@@ -127,7 +138,8 @@
      "The recognizer, the fixer, the equivalence, and the fixtype.")
 
     (xdoc::li
-     "Several theorems about the recognizer, fixer, and equivalence."))
+     "Several theorems about the recognizer, fixer, equivalence,
+      and omap operations applied to this type of omaps."))
 
    (xdoc::p
     "See the implementation, which uses a readable backquote notation,
@@ -212,6 +224,8 @@
                                         pkg-witness))
        (pred-of-update (acl2::packn-pos (list pred '-of-update) pkg-witness))
        (pred-of-update* (acl2::packn-pos (list pred '-of-update*) pkg-witness))
+       (pred-of-delete (acl2::packn-pos (list pred '-of-delete) pkg-witness))
+       (pred-of-delete* (acl2::packn-pos (list pred '-of-delete*) pkg-witness))
        (key-pred-when-in-pred (acl2::packn-pos (list key-pred
                                                      '-when-in-
                                                      pred
@@ -224,7 +238,12 @@
        (val-pred-of-cdr-of-in-pred (acl2::packn-pos
                                     (list val-pred '-of-cdr-of-in- pred)
                                     pkg-witness))
-       (empty-of-fix (acl2::packn-pos (list 'empty-of- fix) pkg-witness))
+       (empty-of-fix (acl2::packn-pos (list 'empty-of-
+                                            fix
+                                            '-to-not-
+                                            pred
+                                            '-or-empty)
+                                      pkg-witness))
        ;; reference to the fixtype for the generated XDOC documentation:
        (type-ref (concatenate 'string
                               "@(tsee "
@@ -281,6 +300,14 @@
                            (,pred ,y))
                       (,pred (omap::update* ,x ,y)))
              :enable omap::update*)
+           (defrule ,pred-of-delete
+             (implies (,pred ,x)
+                      (,pred (omap::delete ,k ,x)))
+             :enable omap::delete)
+           (defrule ,pred-of-delete*
+             (implies (,pred ,x)
+                      (,pred (omap::delete* ,k ,x)))
+             :enable omap::delete*)
            (defrule ,key-pred-when-in-pred
              (implies (and (omap::in ,k ,x) ; binds free X
                            (,pred ,x))

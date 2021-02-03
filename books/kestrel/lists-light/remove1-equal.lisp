@@ -85,6 +85,11 @@
            (not (member-equal x (remove1-equal y l))))
   :hints (("Goal" :in-theory (enable remove1-equal))))
 
+(defthm member-equal-of-remove1-equal-when-not-equal-iff
+  (implies (not (equal a b))
+           (iff (member-equal a (remove1-equal b x))
+                (member-equal a x))))
+
 (defthm no-duplicatesp-equal-of-remove1-equal
   (implies (no-duplicatesp-equal l)
            (no-duplicatesp-equal (remove1-equal x l)))

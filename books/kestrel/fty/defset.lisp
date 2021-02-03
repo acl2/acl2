@@ -1,6 +1,6 @@
-; FTY -- Oset Fixtype Generator
+; FTY Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -34,10 +34,22 @@
    (xdoc::h3 "Introduction")
 
    (xdoc::p
-    "This is analogous to @(tsee fty::deflist) and @(tsee fty::defalist).
+    "This is analogous to
+     @(tsee fty::deflist),
+     @(tsee fty::defalist), and
+     @(tsee fty::defomap).
      Besides the fixtype itself,
      this macro also generates some theorems about the fixtype.
      Future versions of this macro may generate more theorems, as needed.")
+
+   (xdoc::p
+    "Aside from the recognizer, fixer, and equivalence for the fixtype,
+     this macro does not generate any operations on the typed osets.
+     Instead, the "
+    (xdoc::seetopic "acl2::std/osets" "generic oset operations")
+    " can be used on typed osets.
+     This macro generates theorems about
+     the use of these generic operations on typed osets.")
 
    (xdoc::p
     "Future versions of this macro may be modularized to provide
@@ -59,7 +71,8 @@
     "        :equiv ..."
     "        :parents ..."
     "        :short ..."
-    "        :long ...")
+    "        :long ..."
+    "  )")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -203,9 +216,10 @@
        (pred-of-fix (acl2::packn-pos (list pred '-of- fix) pkg-witness))
        (fix-when-pred (acl2::packn-pos (list fix '-when- pred) pkg-witness))
        (setp-when-pred (acl2::packn-pos (list 'setp-when- pred) pkg-witness))
-       (elt-pred-of-head (acl2::packn-pos (list elt-pred
-                                                '-of-head) pkg-witness))
-       (pred-of-tail (acl2::packn-pos (list pred '-of-tail) pkg-witness))
+       (elt-pred-of-head (acl2::packn-pos (list elt-pred '-of-head-when- pred)
+                                          pkg-witness))
+       (pred-of-tail (acl2::packn-pos (list pred '-of-tail-when- pred)
+                                      pkg-witness))
        (pred-of-insert (acl2::packn-pos (list pred '-of-insert) pkg-witness))
        (elt-pred-when-in-pred (acl2::packn-pos (list elt-pred
                                                      '-when-in-
@@ -216,6 +230,7 @@
        (pred-of-union (acl2::packn-pos (list pred '-of-union) pkg-witness))
        (pred-of-difference (acl2::packn-pos (list pred '-of-difference)
                                             pkg-witness))
+       (pred-of-delete (acl2::packn-pos (list pred '-of-delete) pkg-witness))
        ;; reference to the fixtype for the generated XDOC documentation:
        (type-ref (concatenate 'string
                               "@(tsee "
@@ -275,7 +290,11 @@
            (defrule ,pred-of-difference
              (implies (,pred ,x)
                       (,pred (set::difference ,x ,y)))
-             :enable set::difference)))
+             :enable set::difference)
+           (defrule ,pred-of-delete
+             (implies (,pred ,x)
+                      (,pred (set::delete ,a ,x)))
+             :enable set::delete)))
        (fix-event
         `(define ,fix ((,x ,pred))
            :parents (,type)

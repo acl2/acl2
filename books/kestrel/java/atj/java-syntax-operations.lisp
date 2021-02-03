@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -80,6 +80,109 @@
   ///
   (local (include-book "std/lists/union" :dir :system))
   (verify-guards jexpr-vars))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defines jexpr-methods
+  :short "Method names in a Java expression."
+  :long
+  (xdoc::topstring-p
+   "We return all the method names in method calls.")
+
+  (define jexpr-methods ((expr jexprp))
+    :returns (methods string-listp)
+    (jexpr-case expr
+                :literal nil
+                :name nil
+                :newarray (jexpr-methods expr.size)
+                :newarray-init (jexpr-list-methods expr.init)
+                :array (union-equal (jexpr-methods expr.array)
+                                    (jexpr-methods expr.index))
+                :newclass (jexpr-list-methods expr.args)
+                :field (jexpr-methods expr.target)
+                :method (add-to-set-equal expr.name
+                                          (jexpr-list-methods expr.args))
+                :smethod (add-to-set-equal expr.name
+                                           (jexpr-list-methods expr.args))
+                :imethod (add-to-set-equal expr.name
+                                           (union-equal
+                                            (jexpr-methods expr.target)
+                                            (jexpr-list-methods expr.args)))
+                :postinc (jexpr-methods expr.arg)
+                :postdec (jexpr-methods expr.arg)
+                :cast (jexpr-methods expr.arg)
+                :unary (jexpr-methods expr.arg)
+                :binary (union-equal (jexpr-methods expr.left)
+                                     (jexpr-methods expr.right))
+                :instanceof (jexpr-methods expr.left)
+                :cond (union-equal (jexpr-methods expr.test)
+                                   (union-equal (jexpr-methods expr.then)
+                                                (jexpr-methods expr.else)))
+                :paren (jexpr-methods expr.get))
+    :measure (jexpr-count expr))
+
+  (define jexpr-list-methods ((exprs jexpr-listp))
+    :returns (methods string-listp)
+    (cond ((endp exprs) nil)
+          (t (union-equal (jexpr-methods (car exprs))
+                          (jexpr-list-methods (cdr exprs)))))
+    :measure (jexpr-list-count exprs))
+
+  :prepwork ((local (include-book "std/typed-lists/string-listp" :dir :system)))
+
+  :verify-guards nil ; done below
+  ///
+  (local (include-book "std/lists/top" :dir :system))
+  (verify-guards jexpr-methods))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defines jstatems+jblocks-methods
+  :short "Method names in a statement or block."
+  :long
+  (xdoc::topstring-p
+   "We return all the methods names in expressions.")
+
+  (define jstatem-methods ((statem jstatemp))
+    :returns (methods string-listp)
+    (jstatem-case statem
+                  :locvar nil
+                  :expr (jexpr-methods statem.get)
+                  :return (and statem.expr? (jexpr-methods statem.expr?))
+                  :throw (jexpr-methods statem.expr)
+                  :break nil
+                  :continue nil
+                  :if (union-equal (jexpr-methods statem.test)
+                                   (jblock-methods statem.then))
+                  :ifelse (union-equal (jexpr-methods statem.test)
+                                       (union-equal
+                                        (jblock-methods statem.then)
+                                        (jblock-methods statem.else)))
+                  :while (union-equal (jexpr-methods statem.test)
+                                      (jblock-methods statem.body))
+                  :do (union-equal (jblock-methods statem.body)
+                                   (jexpr-methods statem.test))
+                  :for (union-equal
+                        (union-equal
+                         (union-equal (jexpr-methods statem.init)
+                                      (jexpr-methods statem.test))
+                         (jexpr-methods statem.update))
+                        (jblock-methods statem.body)))
+    :measure (jstatem-count statem))
+
+  (define jblock-methods ((block jblockp))
+    :returns (methods string-listp)
+    (cond ((endp block) nil)
+          (t (union-equal (jstatem-methods (car block))
+                          (jblock-methods (cdr block)))))
+    :measure (jblock-count block))
+
+  :prepwork ((local (include-book "std/typed-lists/string-listp" :dir :system)))
+
+  :verify-guards nil ; done below
+  ///
+  (local (include-book "std/lists/top" :dir :system))
+  (verify-guards jstatem-methods))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -297,3 +400,41 @@
                    (:ne (jexpr-binary (jbinop-eq) left right))
                    (otherwise default-result))))
       (otherwise default-result))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define make-right-assoc-condand ((exprs jexpr-listp))
+  :guard (consp exprs)
+  :returns (expr jexprp)
+  :short "Make a right-associated conditional conjunction
+          from a non-empty list of conjuncts."
+  (cond ((not (mbt (consp exprs))) (ec-call (jexpr-fix :irrelevant)))
+        ((consp (cdr exprs)) (jexpr-binary
+                              (jbinop-condand)
+                              (jexpr-fix (car exprs))
+                              (make-right-assoc-condand (cdr exprs))))
+        (t (jexpr-fix (car exprs))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define unmake-right-assoc-condand ((expr jexprp))
+  :returns (exprs jexpr-listp)
+  :short "Split a right-associated conditional conjunction into its conjuncts."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Let the expression be @('expr1 && (expr2 && (... && exprN)...)'),
+     where @('exprN') is not a conditional conjunction.
+     We return the list of @('expr1'), @('expr2'), ..., @('exprN')."))
+  (if (and (jexpr-case expr :binary)
+           (jbinop-case (jexpr-binary->op expr) :condand))
+      (cons (jexpr-binary->left expr)
+            (unmake-right-assoc-condand (jexpr-binary->right expr)))
+    (list (jexpr-fix expr)))
+  :measure (jexpr-count expr)
+  :hooks (:fix)
+  ///
+  (defret consp-of-unmake-right-assoc-condand
+    (consp exprs)
+    :rule-classes :type-prescription))

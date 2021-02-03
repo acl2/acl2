@@ -1,18 +1,16 @@
-(:CREATION-TIME "2018-11-04T20:54:08Z" :REQUESTED-SYSTEMS
+(:CREATION-TIME "2020-08-03T05:12:30Z" :REQUESTED-SYSTEMS
  ("bordeaux-threads" "bt-semaphore" "cl-fad" "hunchentoot" "osicat"
   "uiop" "html-template" "shellpool" "babel")
  :LISP-INFO
- (:MACHINE-INSTANCE "dlr-mint" :MACHINE-TYPE "x86_64"
-  :MACHINE-VERSION "Intel(R) Core(TM) i7-7700HQ CPU @ 2.80GHz"
+ (:MACHINE-INSTANCE "some-hostname" :MACHINE-TYPE "x86_64" :MACHINE-VERSION
+  "Intel(R) Core(TM) i7-6700K CPU @ 4.00GHz"
   :LISP-IMPLEMENTATION-TYPE "Clozure Common Lisp"
-  :LISP-IMPLEMENTATION-VERSION
-  "Version 1.12-dev/v1.12-dev.0-39-g030b03e  (LinuxX8664)")
+  :LISP-IMPLEMENTATION-VERSION "Version 1.11.5  (LinuxX8664)")
  :QUICKLISP-INFO
- (:HOME
-  "/home/ragerdl/r/acl2-update-quicklisp-nov2018/books/quicklisp/temp-quicklisp-inst/"
+ (:HOME "/path/to/acl2/books/quicklisp/temp-quicklisp-inst/"
   :LOCAL-PROJECT-DIRECTORIES
-  ("/home/ragerdl/r/acl2-update-quicklisp-nov2018/books/quicklisp/temp-quicklisp-inst/local-projects/")
+  ("/path/to/acl2/books/quicklisp/temp-quicklisp-inst/local-projects/")
   :DISTS
   ((:NAME "quicklisp" :DIST-URL
-    "http://beta.quicklisp.org/dist/quicklisp/2018-10-18/distinfo.txt"
-    :VERSION "2018-10-18"))))
+    "http://beta.quicklisp.org/dist/quicklisp/2020-07-15/distinfo.txt"
+    :VERSION "2020-07-15"))))

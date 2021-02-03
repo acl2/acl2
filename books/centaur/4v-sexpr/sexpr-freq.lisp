@@ -35,7 +35,7 @@
 (include-book "std/util/defines" :dir :system)
 (include-book "std/strings/cat" :dir :system)
 (include-book "std/strings/decimal" :dir :system)
-(include-book "misc/assert" :dir :system)
+(include-book "std/testing/assert-bang" :dir :system)
 
 (defxdoc 4v-frequency-analysis
   :parents (4v-sexprs)

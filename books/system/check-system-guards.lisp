@@ -33,17 +33,22 @@
 ; One can do more, for example as follows.
 
 #||
+(value :q)
+(load "check-system-guards-raw.lsp")
+(add-guards-as-assertions-all)
 (lp)
 (set-rewrite-stack-limit nil)
 ; This may cause a stack overflow, but that's OK.
 (ld ; linebreak to avoid warning during regression
  "../workshops/2004/legato/support/proof-by-generalization-mult.lisp") ; ;
-:ubt 1
+(ubt 1)
 (ld ; linebreak to avoid warning during regression
  "../projects/hexnet/hexnet-model.lisp")
-:q
+(value :q)
 (report-guard-checks) ; should show lots of checking
 ||#
+
+; (depends-on "check-system-guards-raw.lsp")
 
 (in-package "ACL2")
 
@@ -69,5 +74,7 @@
                (mini-proveall)))
 
 ; We can report results during both passes of certification.
+; But note that we will not be able to include this book in
+; a new session, because report-guard-checks will be undefined!
 (progn! (set-raw-mode t)
         (report-guard-checks))

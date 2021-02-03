@@ -20,6 +20,7 @@
 (include-book "fapply-term")
 (include-book "fapply-terms-same-args")
 (include-book "fapply-unary-to-terms")
+(include-book "flatten-ands-in-lit")
 (include-book "fsublis-fn")
 (include-book "fsublis-var")
 (include-book "make-mv-let-call")

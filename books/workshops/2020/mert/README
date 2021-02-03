@@ -1,0 +1,18 @@
+The implementation  for the paper  "RP-Rewriter: An Optimized  Rewriter for
+Large   Terms   in  ACL2"   is   available   under  the   community   books
+books/projects/rp-rewriter/top.lisp. Its documentation :DOC RP::RP-REWRITER
+is  also available  with a  demo :DOC  RP::RP-REWRITER-DEMO. The  events in
+Example 4 on page 6 are given in demo.lsp in the same directory.
+
+
+The paper  describes various  application cases of  the rewriter.  They are
+described in  :DOC RP::MULTIPLIER-PROOFS-2 and :DOC  SVL::SVEX-SIMPLIFY. An
+up-to-date   list   of   these   applications  can   be   found   at   :DOC
+RP::RP-REWRITER/APPLICATIONS.
+
+
+An experiment comparing the performance of ACL2's rewriter with RP-Rewriter
+is  given on  Figure 1  on  page 5.   These  results can  be reproduced  by
+loading/certifying acl2-vs-rp.lisp. This file runs the same experiments and
+prints the results for each depth. The maximum depth (*maxdepth*) is set to
+15, and may be changed in this file.

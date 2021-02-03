@@ -475,6 +475,7 @@ my $TIME_CERT      = $ENV{"TIME_CERT"} ? 1 : 0;
 my $STARTJOB       = $ENV{"STARTJOB"} || "";
 my $ON_FAILURE_CMD = $ENV{"ON_FAILURE_CMD"} || "";
 my $ACL2           = $ENV{"ACL2"} || "acl2";
+my $STACK_TRACES   = $ENV{"NO_STACK_TRACES"} ? 0 : 1;
 
 # Figure out what ACL2 points to before we switch directories.
 
@@ -557,6 +558,11 @@ $ENV{"ACL2"} = $acl2;
 print "-- Image to use = $acl2\n" if $DEBUG;
 die("Can't determine which ACL2 to use.") if !$acl2;
 
+# Set ACL2_CUSTOMIZATION to NONE if not defined.
+if (! defined($ENV{"ACL2_CUSTOMIZATION"})) {
+    $ENV{"ACL2_CUSTOMIZATION"}="NONE";
+}
+
 # ------------ TEMPORARY LISP FILE FOR ACL2 INSTRUCTIONS ----------------------
 
 my $rnd = int(rand(2**30));
@@ -575,7 +581,7 @@ $instrs .= "#+(and hons (not acl2-par)) (profile-fn 'prove)\n";
 $instrs .= "#+(and hons (not acl2-par)) (profile-fn 'certify-book-fn)\n";
 $instrs .= "(acl2::lp)\n";
 # We used to comment this out, but maybe it's better to leave this enabled by default?
-$instrs .= "(set-debugger-enable :bt)\n";
+$instrs .= "(set-debugger-enable :bt)\n" if ($STACK_TRACES);
 $instrs .= "(acl2::in-package \"ACL2\")\n\n";
 $instrs .= "(set-ld-error-action (quote (:exit 1)) state)\n";
 $instrs .= "(set-write-acl2x t state)\n" if ($STEP eq "acl2x");
@@ -683,7 +689,7 @@ write_whole_file($lisptmp, $instrs);
     $shinsts .= "echo >> '$outfile'\n";
 
     $shinsts .= "echo Environment variables: >> '$outfile'\n";
-    my @relevant_env_vars = ("ACL2_CUSTOMIZATION", "ACL2_SYSTEM_BOOKS", "ACL2");
+    my @relevant_env_vars = ("ACL2_CUSTOMIZATION", "ACL2_SYSTEM_BOOKS", "ACL2", "ACL2_USELESS_RUNES");
     foreach my $var (@relevant_env_vars) {
 	if (exists $ENV{$var}) {
 	    $shinsts .= "echo $var=$ENV{$var} >> '$outfile'\n";
@@ -826,15 +832,16 @@ if ($success) {
 	($STEP eq "pcertifyplus") ? "PROVISIONAL CERTIFICATION+" :
 	($STEP eq "convert")  ? "PCERT0->PCERT1 CONVERSION" :
 	($STEP eq "complete") ? "PCERT1->CERT COMLETION" : "UNKNOWN";
-    print "**$taskname FAILED** for $dir$file.lisp\n\n";
-    system("tail -300 $outfile | sed 's/^/   | /'") if $outfile;
-    print "\n\n";
+    print "\n**$taskname FAILED** for $dir$file.lisp\n\n" .
+        ($outfile ? `tail -300 $outfile | sed 's/^/   | /'` : "") .
+        "\n**$taskname FAILED** for $dir$file.lisp\n\n";
 
     if ($ON_FAILURE_CMD) {
-	system($ON_FAILURE_CMD);
+        print "\n-- Executing ON_FAILURE_CMD='$ON_FAILURE_CMD' for $dir$file.lisp\n\n" .
+            `{ $ON_FAILURE_CMD ; } 2>&1` .
+            "\n-- Finished executing ON_FAILURE_CMD='$ON_FAILURE_CMD' for $dir$file.lisp\n\n";
     }
 
-    print "**$taskname FAILED** for $dir$file.lisp\n\n";
     exit(1);
 }
 

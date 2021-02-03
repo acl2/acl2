@@ -1,6 +1,6 @@
 ; A lightweight book about the built-in function numerator.
 ;
-; Copyright (C) 2019 Kestrel Institute
+; Copyright (C) 2019-2020 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -38,9 +38,22 @@
                   (signum x))))
 
 (defthm numerator-of--
-  (implies (rationalp x)
-           (equal (numerator (- x))
-                  (- (numerator x)))))
+  (equal (numerator (- x))
+         (- (numerator x))))
+
+;move
+(local
+ (defthmd not-rationalp-of--
+   (implies (and (not (rationalp x))
+                 (complex-rationalp x))
+            (not (rationalp (- x))))))
+
+(defthm numerator-of-+-of---and--
+  (equal (numerator (+ (- x) (- y)))
+         (- (numerator (+ x y))))
+  :hints (("Goal" :use ((:instance not-rationalp-of-- (x (+ x y)))
+                        (:instance numerator-of-- (x (+ x y))))
+           :in-theory (disable numerator-of--))))
 
 (local (include-book "../../arithmetic/mod-gcd"))
 
@@ -51,3 +64,9 @@
                i))
   :hints (("Goal" :use (:instance least-numerator-denominator-<= (n i) (d j))
            :in-theory (disable least-numerator-denominator-<=))))
+
+(defthm numerator-of-*-of---arg2
+  (equal (numerator (* x (- y)))
+         (- (numerator (* x y))))
+  :hints (("Goal" :use (:instance numerator-of-- (x (* x y)))
+           :in-theory (disable numerator-of--))))

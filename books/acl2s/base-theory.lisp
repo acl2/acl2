@@ -76,6 +76,7 @@
 (include-book "arithmetic-5/lib/basic-ops/building-blocks" :dir :system)
 (include-book "arithmetic-5/lib/floor-mod/floor-mod" :dir :system)
 (local (include-book "arithmetic-5/top" :dir :system))
+(local (set-defunc-timeout 1000))
 
 #|
 PETE: adding something like this might be useful.
@@ -915,6 +916,14 @@ I commented out some disabled theorems that seem fine to me.
                            (<= 0 b)
                            (equal (mod b n) b))))))
 
+(defthm |(x*y mod m)/y = x|
+  (implies (and (acl2-numberp y)
+                (/= y 0)
+                (acl2-numberp x)
+                (acl2-numberp m))
+           (equal (equal (* (/ y) (mod (* x y) m)) x)
+                  (equal (mod (* x y) m) (* x y)))))
+
 #|
 
 Useful for testing defunc/definec errors
@@ -939,6 +948,9 @@ Useful for testing defunc/definec errors
   (and (consp X)
        (or (== a (car X))
            (in a (cdr X)))))
+
+(definec nin (a :all X :tl) :bool
+  (not (in a X)))
 
 (defdata non-empty-true-list (cons all true-list))
 
@@ -1006,8 +1018,7 @@ Useful for testing defunc/definec errors
 ; The termination hint isn't need, but it saves 10 seconds and I
 ; certify this file enough that it is worth annotating.
 (definec-no-test gen-car-cdr-aux
-  (car :var cdr :var carstr :string cdrstr :string
-       depth :nat res :l-str-all) :l-str-all
+  (car :var cdr :var carstr :string cdrstr :string depth :nat res :l-str-all) :l-str-all
   (declare (xargs :consider-only-ccms (depth)))
   (cond ((endp res) (gen-car-cdr-aux
                      car
@@ -1311,17 +1322,6 @@ Useful for testing defunc/definec errors
 (definec lrev (x :tl) :tl
   (rev x))
 
-; Added this since even on very simple examples defconst
-; seems to go on forever.
-(defmacro def-const (name form &optional doc)
-  `(with-output
-    :off :all :gag-mode nil :stack :push
-    (make-event
-     (let ((form ,form))
-       `(with-output
-         :stack :pop 
-         (defconst ,',name ',form ,@(and ,doc '(,doc))))))))
-
 (in-theory
  #!acl2(disable
         ;; |(mod (+ x y) z) where (<= 0 z)|
@@ -1349,4 +1349,3 @@ Useful for testing defunc/definec errors
         ;;  mod-sums-cancel-1
         ;;  |(equal (mod a n) (mod b n))|
         ))
-

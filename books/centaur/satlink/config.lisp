@@ -81,7 +81,7 @@ invoke the SAT solver.</p>"
 @(def *default-config*)"
 
   (defconst *default-config*
-    (make-config :cmdline "glucose-cert"
+    (make-config :cmdline "glucose -model"
                  :verbose t
                  :mintime 1/2
                  :remove-temps t)))

@@ -10,7 +10,8 @@
 
 (in-package "ACL2")
 
-(include-book "../implementation" :ttags (:open-input-channel (:oslib) (:quicklisp) :quicklisp.osicat))
+(include-book "../../language/primitive-operations")
+(include-book "../../language/primitive-conversions")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -22,356 +23,444 @@
 ; As explained in the ATJ user documentation,
 ; the tests passed to :TESTS may only involve
 ; the target functions explicitly passed to ATJ,
-; which cannot include the functions in *ATJ-JAVA-PRIMITIVE-FNS*
+; which cannot include the functions in *ATJ-JPRIM-FNS*
 ; when :DEEP is NIL and :GUARDS is T.
 ; Thus, here we introduce wrappers for such functions,
 ; which are the ones that we want to test here.
+; We exclude the floating-point operations,
+; since tests involving them are not supported yet.
 
-;; boolean operations:
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; constructors:
+
+(defun test-boolean-value (x)
+  (declare (xargs :guard (booleanp x)))
+  (java::boolean-value x))
+
+(defun test-char-value (x)
+  (declare (xargs :guard (ubyte16p x)))
+  (java::char-value x))
+
+(defun test-byte-value (x)
+  (declare (xargs :guard (sbyte8p x)))
+  (java::byte-value x))
+
+(defun test-short-value (x)
+  (declare (xargs :guard (sbyte16p x)))
+  (java::short-value x))
+
+(defun test-int-value (x)
+  (declare (xargs :guard (sbyte32p x)))
+  (java::int-value x))
+
+(defun test-long-value (x)
+  (declare (xargs :guard (sbyte64p x)))
+  (java::long-value x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; deconstructors:
+
+(defun test-boolean-value->bool (x)
+  (declare (xargs :guard (java::boolean-valuep x)))
+  (java::boolean-value->bool x))
+
+(defun test-char-value->nat (x)
+  (declare (xargs :guard (java::char-valuep x)))
+  (java::char-value->nat x))
+
+(defun test-byte-value->int (x)
+  (declare (xargs :guard (java::byte-valuep x)))
+  (java::byte-value->int x))
+
+(defun test-short-value->int (x)
+  (declare (xargs :guard (java::short-valuep x)))
+  (java::short-value->int x))
+
+(defun test-int-value->int (x)
+  (declare (xargs :guard (java::int-valuep x)))
+  (java::int-value->int x))
+
+(defun test-long-value->int (x)
+  (declare (xargs :guard (java::long-valuep x)))
+  (java::long-value->int x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; unary operations:
+
+;;;;;;;;;;;;;;;;;;;;
+
+; boolean:
 
 (defun test-boolean-not (x)
-  (declare (xargs :guard (java::boolean-value-p x)))
+  (declare (xargs :guard (java::boolean-valuep x)))
   (java::boolean-not x))
 
-(defun test-boolean-and (x y)
-  (declare (xargs :guard (and (java::boolean-value-p x)
-                              (java::boolean-value-p y))))
-  (java::boolean-and x y))
+;;;;;;;;;;;;;;;;;;;;
 
-(defun test-boolean-xor (x y)
-  (declare (xargs :guard (and (java::boolean-value-p x)
-                              (java::boolean-value-p y))))
-  (java::boolean-xor x y))
-
-(defun test-boolean-ior (x y)
-  (declare (xargs :guard (and (java::boolean-value-p x)
-                              (java::boolean-value-p y))))
-  (java::boolean-ior x y))
-
-(defun test-boolean-eq (x y)
-  (declare (xargs :guard (and (java::boolean-value-p x)
-                              (java::boolean-value-p y))))
-  (java::boolean-eq x y))
-
-(defun test-boolean-neq (x y)
-  (declare (xargs :guard (and (java::boolean-value-p x)
-                              (java::boolean-value-p y))))
-  (java::boolean-neq x y))
-
-;; integer operations:
+; integer:
 
 (defun test-int-plus (x)
-  (declare (xargs :guard (java::int-value-p x)))
+  (declare (xargs :guard (java::int-valuep x)))
   (java::int-plus x))
 
 (defun test-long-plus (x)
-  (declare (xargs :guard (java::long-value-p x)))
+  (declare (xargs :guard (java::long-valuep x)))
   (java::long-plus x))
 
 (defun test-int-minus (x)
-  (declare (xargs :guard (java::int-value-p x)))
+  (declare (xargs :guard (java::int-valuep x)))
   (java::int-minus x))
 
 (defun test-long-minus (x)
-  (declare (xargs :guard (java::long-value-p x)))
+  (declare (xargs :guard (java::long-valuep x)))
   (java::long-minus x))
 
 (defun test-int-not (x)
-  (declare (xargs :guard (java::int-value-p x)))
+  (declare (xargs :guard (java::int-valuep x)))
   (java::int-not x))
 
 (defun test-long-not (x)
-  (declare (xargs :guard (java::long-value-p x)))
+  (declare (xargs :guard (java::long-valuep x)))
   (java::long-not x))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; binary operations:
+
+;;;;;;;;;;;;;;;;;;;;
+
+; boolean:
+
+(defun test-boolean-and (x y)
+  (declare (xargs :guard (and (java::boolean-valuep x)
+                              (java::boolean-valuep y))))
+  (java::boolean-and x y))
+
+(defun test-boolean-xor (x y)
+  (declare (xargs :guard (and (java::boolean-valuep x)
+                              (java::boolean-valuep y))))
+  (java::boolean-xor x y))
+
+(defun test-boolean-ior (x y)
+  (declare (xargs :guard (and (java::boolean-valuep x)
+                              (java::boolean-valuep y))))
+  (java::boolean-ior x y))
+
+(defun test-boolean-eq (x y)
+  (declare (xargs :guard (and (java::boolean-valuep x)
+                              (java::boolean-valuep y))))
+  (java::boolean-eq x y))
+
+(defun test-boolean-neq (x y)
+  (declare (xargs :guard (and (java::boolean-valuep x)
+                              (java::boolean-valuep y))))
+  (java::boolean-neq x y))
+
+;;;;;;;;;;;;;;;;;;;;
+
+; integer:
+
 (defun test-int-add (x y)
-  (declare (xargs :guard (and (java::int-value-p x)
-                              (java::int-value-p y))))
+  (declare (xargs :guard (and (java::int-valuep x)
+                              (java::int-valuep y))))
   (java::int-add x y))
 
 (defun test-long-add (x y)
-  (declare (xargs :guard (and (java::long-value-p x)
-                              (java::long-value-p y))))
+  (declare (xargs :guard (and (java::long-valuep x)
+                              (java::long-valuep y))))
   (java::long-add x y))
 
 (defun test-int-sub (x y)
-  (declare (xargs :guard (and (java::int-value-p x)
-                              (java::int-value-p y))))
+  (declare (xargs :guard (and (java::int-valuep x)
+                              (java::int-valuep y))))
   (java::int-sub x y))
 
 (defun test-long-sub (x y)
-  (declare (xargs :guard (and (java::long-value-p x)
-                              (java::long-value-p y))))
+  (declare (xargs :guard (and (java::long-valuep x)
+                              (java::long-valuep y))))
   (java::long-sub x y))
 
 (defun test-int-mul (x y)
-  (declare (xargs :guard (and (java::int-value-p x)
-                              (java::int-value-p y))))
+  (declare (xargs :guard (and (java::int-valuep x)
+                              (java::int-valuep y))))
   (java::int-mul x y))
 
 (defun test-long-mul (x y)
-  (declare (xargs :guard (and (java::long-value-p x)
-                              (java::long-value-p y))))
+  (declare (xargs :guard (and (java::long-valuep x)
+                              (java::long-valuep y))))
   (java::long-mul x y))
 
 (defun test-int-div (x y)
-  (declare (xargs :guard (and (java::int-value-p x)
-                              (java::int-value-p y)
+  (declare (xargs :guard (and (java::int-valuep x)
+                              (java::int-valuep y)
                               (not (equal (java::int-value->int y) 0)))))
   (java::int-div x y))
 
 (defun test-long-div (x y)
-  (declare (xargs :guard (and (java::long-value-p x)
-                              (java::long-value-p y)
+  (declare (xargs :guard (and (java::long-valuep x)
+                              (java::long-valuep y)
                               (not (equal (java::long-value->int y) 0)))))
   (java::long-div x y))
 
 (defun test-int-rem (x y)
-  (declare (xargs :guard (and (java::int-value-p x)
-                              (java::int-value-p y)
+  (declare (xargs :guard (and (java::int-valuep x)
+                              (java::int-valuep y)
                               (not (equal (java::int-value->int y) 0)))))
   (java::int-rem x y))
 
 (defun test-long-rem (x y)
-  (declare (xargs :guard (and (java::long-value-p x)
-                              (java::long-value-p y)
+  (declare (xargs :guard (and (java::long-valuep x)
+                              (java::long-valuep y)
                               (not (equal (java::long-value->int y) 0)))))
   (java::long-rem x y))
 
 (defun test-int-and (x y)
-  (declare (xargs :guard (and (java::int-value-p x)
-                              (java::int-value-p y))))
+  (declare (xargs :guard (and (java::int-valuep x)
+                              (java::int-valuep y))))
   (java::int-and x y))
 
 (defun test-long-and (x y)
-  (declare (xargs :guard (and (java::long-value-p x)
-                              (java::long-value-p y))))
+  (declare (xargs :guard (and (java::long-valuep x)
+                              (java::long-valuep y))))
   (java::long-and x y))
 
 (defun test-int-xor (x y)
-  (declare (xargs :guard (and (java::int-value-p x)
-                              (java::int-value-p y))))
+  (declare (xargs :guard (and (java::int-valuep x)
+                              (java::int-valuep y))))
   (java::int-xor x y))
 
 (defun test-long-xor (x y)
-  (declare (xargs :guard (and (java::long-value-p x)
-                              (java::long-value-p y))))
+  (declare (xargs :guard (and (java::long-valuep x)
+                              (java::long-valuep y))))
   (java::long-xor x y))
 
 (defun test-int-ior (x y)
-  (declare (xargs :guard (and (java::int-value-p x)
-                              (java::int-value-p y))))
+  (declare (xargs :guard (and (java::int-valuep x)
+                              (java::int-valuep y))))
   (java::int-ior x y))
 
 (defun test-long-ior (x y)
-  (declare (xargs :guard (and (java::long-value-p x)
-                              (java::long-value-p y))))
+  (declare (xargs :guard (and (java::long-valuep x)
+                              (java::long-valuep y))))
   (java::long-ior x y))
 
 (defun test-int-eq (x y)
-  (declare (xargs :guard (and (java::int-value-p x)
-                              (java::int-value-p y))))
+  (declare (xargs :guard (and (java::int-valuep x)
+                              (java::int-valuep y))))
   (java::int-eq x y))
 
 (defun test-long-eq (x y)
-  (declare (xargs :guard (and (java::long-value-p x)
-                              (java::long-value-p y))))
+  (declare (xargs :guard (and (java::long-valuep x)
+                              (java::long-valuep y))))
   (java::long-eq x y))
 
 (defun test-int-neq (x y)
-  (declare (xargs :guard (and (java::int-value-p x)
-                              (java::int-value-p y))))
+  (declare (xargs :guard (and (java::int-valuep x)
+                              (java::int-valuep y))))
   (java::int-neq x y))
 
 (defun test-long-neq (x y)
-  (declare (xargs :guard (and (java::long-value-p x)
-                              (java::long-value-p y))))
+  (declare (xargs :guard (and (java::long-valuep x)
+                              (java::long-valuep y))))
   (java::long-neq x y))
 
 (defun test-int-less (x y)
-  (declare (xargs :guard (and (java::int-value-p x)
-                              (java::int-value-p y))))
+  (declare (xargs :guard (and (java::int-valuep x)
+                              (java::int-valuep y))))
   (java::int-less x y))
 
 (defun test-long-less (x y)
-  (declare (xargs :guard (and (java::long-value-p x)
-                              (java::long-value-p y))))
+  (declare (xargs :guard (and (java::long-valuep x)
+                              (java::long-valuep y))))
   (java::long-less x y))
 
 (defun test-int-lesseq (x y)
-  (declare (xargs :guard (and (java::int-value-p x)
-                              (java::int-value-p y))))
+  (declare (xargs :guard (and (java::int-valuep x)
+                              (java::int-valuep y))))
   (java::int-lesseq x y))
 
 (defun test-long-lesseq (x y)
-  (declare (xargs :guard (and (java::long-value-p x)
-                              (java::long-value-p y))))
+  (declare (xargs :guard (and (java::long-valuep x)
+                              (java::long-valuep y))))
   (java::long-lesseq x y))
 
 (defun test-int-great (x y)
-  (declare (xargs :guard (and (java::int-value-p x)
-                              (java::int-value-p y))))
+  (declare (xargs :guard (and (java::int-valuep x)
+                              (java::int-valuep y))))
   (java::int-great x y))
 
 (defun test-long-great (x y)
-  (declare (xargs :guard (and (java::long-value-p x)
-                              (java::long-value-p y))))
+  (declare (xargs :guard (and (java::long-valuep x)
+                              (java::long-valuep y))))
   (java::long-great x y))
 
 (defun test-int-greateq (x y)
-  (declare (xargs :guard (and (java::int-value-p x)
-                              (java::int-value-p y))))
+  (declare (xargs :guard (and (java::int-valuep x)
+                              (java::int-valuep y))))
   (java::int-greateq x y))
 
 (defun test-long-greateq (x y)
-  (declare (xargs :guard (and (java::long-value-p x)
-                              (java::long-value-p y))))
+  (declare (xargs :guard (and (java::long-valuep x)
+                              (java::long-valuep y))))
   (java::long-greateq x y))
 
 (defun test-int-int-shiftl (x y)
-  (declare (xargs :guard (and (java::int-value-p x)
-                              (java::int-value-p y))))
+  (declare (xargs :guard (and (java::int-valuep x)
+                              (java::int-valuep y))))
   (java::int-int-shiftl x y))
 
 (defun test-long-long-shiftl (x y)
-  (declare (xargs :guard (and (java::long-value-p x)
-                              (java::long-value-p y))))
+  (declare (xargs :guard (and (java::long-valuep x)
+                              (java::long-valuep y))))
   (java::long-long-shiftl x y))
 
 (defun test-long-int-shiftl (x y)
-  (declare (xargs :guard (and (java::long-value-p x)
-                              (java::int-value-p y))))
+  (declare (xargs :guard (and (java::long-valuep x)
+                              (java::int-valuep y))))
   (java::long-int-shiftl x y))
 
 (defun test-int-long-shiftl (x y)
-  (declare (xargs :guard (and (java::int-value-p x)
-                              (java::long-value-p y))))
+  (declare (xargs :guard (and (java::int-valuep x)
+                              (java::long-valuep y))))
   (java::int-long-shiftl x y))
 
 (defun test-int-int-shiftr (x y)
-  (declare (xargs :guard (and (java::int-value-p x)
-                              (java::int-value-p y))))
+  (declare (xargs :guard (and (java::int-valuep x)
+                              (java::int-valuep y))))
   (java::int-int-shiftr x y))
 
 (defun test-long-long-shiftr (x y)
-  (declare (xargs :guard (and (java::long-value-p x)
-                              (java::long-value-p y))))
+  (declare (xargs :guard (and (java::long-valuep x)
+                              (java::long-valuep y))))
   (java::long-long-shiftr x y))
 
 (defun test-long-int-shiftr (x y)
-  (declare (xargs :guard (and (java::long-value-p x)
-                              (java::int-value-p y))))
+  (declare (xargs :guard (and (java::long-valuep x)
+                              (java::int-valuep y))))
   (java::long-int-shiftr x y))
 
 (defun test-int-long-shiftr (x y)
-  (declare (xargs :guard (and (java::int-value-p x)
-                              (java::long-value-p y))))
+  (declare (xargs :guard (and (java::int-valuep x)
+                              (java::long-valuep y))))
   (java::int-long-shiftr x y))
 
 (defun test-int-int-ushiftr (x y)
-  (declare (xargs :guard (and (java::int-value-p x)
-                              (java::int-value-p y))))
+  (declare (xargs :guard (and (java::int-valuep x)
+                              (java::int-valuep y))))
   (java::int-int-ushiftr x y))
 
 (defun test-long-long-ushiftr (x y)
-  (declare (xargs :guard (and (java::long-value-p x)
-                              (java::long-value-p y))))
+  (declare (xargs :guard (and (java::long-valuep x)
+                              (java::long-valuep y))))
   (java::long-long-ushiftr x y))
 
 (defun test-long-int-ushiftr (x y)
-  (declare (xargs :guard (and (java::long-value-p x)
-                              (java::int-value-p y))))
+  (declare (xargs :guard (and (java::long-valuep x)
+                              (java::int-valuep y))))
   (java::long-int-ushiftr x y))
 
 (defun test-int-long-ushiftr (x y)
-  (declare (xargs :guard (and (java::int-value-p x)
-                              (java::long-value-p y))))
+  (declare (xargs :guard (and (java::int-valuep x)
+                              (java::long-valuep y))))
   (java::int-long-ushiftr x y))
 
-;; widening conversions:
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; conversions:
+
+;;;;;;;;;;;;;;;;;;;;
+
+; widening:
 
 (defun test-byte-to-short (x)
-  (declare (xargs :guard (java::byte-value-p x)))
+  (declare (xargs :guard (java::byte-valuep x)))
   (java::byte-to-short x))
 
 (defun test-byte-to-int (x)
-  (declare (xargs :guard (java::byte-value-p x)))
+  (declare (xargs :guard (java::byte-valuep x)))
   (java::byte-to-int x))
 
 (defun test-byte-to-long (x)
-  (declare (xargs :guard (java::byte-value-p x)))
+  (declare (xargs :guard (java::byte-valuep x)))
   (java::byte-to-long x))
 
 (defun test-short-to-int (x)
-  (declare (xargs :guard (java::short-value-p x)))
+  (declare (xargs :guard (java::short-valuep x)))
   (java::short-to-int x))
 
 (defun test-short-to-long (x)
-  (declare (xargs :guard (java::short-value-p x)))
+  (declare (xargs :guard (java::short-valuep x)))
   (java::short-to-long x))
 
 (defun test-int-to-long (x)
-  (declare (xargs :guard (java::int-value-p x)))
+  (declare (xargs :guard (java::int-valuep x)))
   (java::int-to-long x))
 
 (defun test-char-to-int (x)
-  (declare (xargs :guard (java::char-value-p x)))
+  (declare (xargs :guard (java::char-valuep x)))
   (java::char-to-int x))
 
 (defun test-char-to-long (x)
-  (declare (xargs :guard (java::char-value-p x)))
+  (declare (xargs :guard (java::char-valuep x)))
   (java::char-to-long x))
 
-;; narrowing conversions:
+;;;;;;;;;;;;;;;;;;;;
+
+; narrowing:
 
 (defun test-short-to-byte (x)
-  (declare (xargs :guard (java::short-value-p x)))
+  (declare (xargs :guard (java::short-valuep x)))
   (java::short-to-byte x))
 
 (defun test-int-to-byte (x)
-  (declare (xargs :guard (java::int-value-p x)))
+  (declare (xargs :guard (java::int-valuep x)))
   (java::int-to-byte x))
 
 (defun test-long-to-byte (x)
-  (declare (xargs :guard (java::long-value-p x)))
+  (declare (xargs :guard (java::long-valuep x)))
   (java::long-to-byte x))
 
 (defun test-char-to-byte (x)
-  (declare (xargs :guard (java::char-value-p x)))
+  (declare (xargs :guard (java::char-valuep x)))
   (java::char-to-byte x))
 
 (defun test-int-to-short (x)
-  (declare (xargs :guard (java::int-value-p x)))
+  (declare (xargs :guard (java::int-valuep x)))
   (java::int-to-short x))
 
 (defun test-long-to-short (x)
-  (declare (xargs :guard (java::long-value-p x)))
+  (declare (xargs :guard (java::long-valuep x)))
   (java::long-to-short x))
 
 (defun test-char-to-short (x)
-  (declare (xargs :guard (java::char-value-p x)))
+  (declare (xargs :guard (java::char-valuep x)))
   (java::char-to-short x))
 
 (defun test-long-to-int (x)
-  (declare (xargs :guard (java::long-value-p x)))
+  (declare (xargs :guard (java::long-valuep x)))
   (java::long-to-int x))
 
 (defun test-short-to-char (x)
-  (declare (xargs :guard (java::short-value-p x)))
+  (declare (xargs :guard (java::short-valuep x)))
   (java::short-to-char x))
 
 (defun test-int-to-char (x)
-  (declare (xargs :guard (java::int-value-p x)))
+  (declare (xargs :guard (java::int-valuep x)))
   (java::int-to-char x))
 
 (defun test-long-to-char (x)
-  (declare (xargs :guard (java::long-value-p x)))
+  (declare (xargs :guard (java::long-valuep x)))
   (java::long-to-char x))
 
-;; widening and narrowing conversions:
+;;;;;;;;;;;;;;;;;;;;
+
+; widening and narrowing:
 
 (defun test-byte-to-char (x)
-  (declare (xargs :guard (java::byte-value-p x)))
+  (declare (xargs :guard (java::byte-valuep x)))
   (java::byte-to-char x))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -379,79 +468,79 @@
 ; More functions over (ACL2 representations of) Java primitive values.
 
 (defun f-boolean (x y)
-  (declare (xargs :guard (and (java::boolean-value-p x)
-                              (java::boolean-value-p y))))
+  (declare (xargs :guard (and (java::boolean-valuep x)
+                              (java::boolean-valuep y))))
   (java::boolean-and (java::boolean-xor x y)
                      (java::boolean-ior x y)))
 
 (defun g-boolean (x y z)
-  (declare (xargs :guard (and (java::boolean-value-p x)
-                              (java::boolean-value-p y)
-                              (java::boolean-value-p z))))
+  (declare (xargs :guard (and (java::boolean-valuep x)
+                              (java::boolean-valuep y)
+                              (java::boolean-valuep z))))
   (java::boolean-eq (java::boolean-not x)
                     (java::boolean-neq y z)))
 
 (defun f-int (x y)
-  (declare (xargs :guard (and (java::int-value-p x)
-                              (java::int-value-p y))))
+  (declare (xargs :guard (and (java::int-valuep x)
+                              (java::int-valuep y))))
   (java::int-add (java::int-mul (java::int-value 2) x)
                  (java::int-mul y y)))
 
 (defun g-int (x y z)
-  (declare (xargs :guard (and (java::int-value-p x)
-                              (java::int-value-p y)
-                              (java::int-value-p z))))
+  (declare (xargs :guard (and (java::int-valuep x)
+                              (java::int-valuep y)
+                              (java::int-valuep z))))
   (java::int-int-shiftl (java::int-sub x
                                        (java::int-and y z))
                         (java::int-not z)))
 
 (defun h-int (x)
-  (declare (xargs :guard (and (java::int-value-p x))))
+  (declare (xargs :guard (and (java::int-valuep x))))
   (java::int-xor (java::int-div x (java::int-value 119))
                  (java::int-rem x (java::int-value -373))))
 
 (defun f-long (x y)
-  (declare (xargs :guard (and (java::long-value-p x)
-                              (java::long-value-p y))))
+  (declare (xargs :guard (and (java::long-valuep x)
+                              (java::long-valuep y))))
   (java::long-add (java::long-mul (java::long-value 2) x)
                   (java::long-mul y y)))
 
 (defun g-long (x y z)
-  (declare (xargs :guard (and (java::long-value-p x)
-                              (java::long-value-p y)
-                              (java::long-value-p z))))
+  (declare (xargs :guard (and (java::long-valuep x)
+                              (java::long-valuep y)
+                              (java::long-valuep z))))
   (java::long-long-shiftl (java::long-sub x
                                           (java::long-and y z))
                           (java::long-not z)))
 
 (defun h-long (x)
-  (declare (xargs :guard (and (java::long-value-p x))))
+  (declare (xargs :guard (and (java::long-valuep x))))
   (java::long-xor (java::long-div x (java::long-value 119))
                   (java::long-rem x (java::long-value -373))))
 
 (defun f-float (x y z)
-  (declare (xargs :guard (and (java::float-value-p x)
-                              (java::float-value-p y)
-                              (java::float-value-p z))))
+  (declare (xargs :guard (and (java::float-valuep x)
+                              (java::float-valuep y)
+                              (java::float-valuep z))))
   (java::float-add (java::float-mul x y) z))
 
 (defun f-double (x y z)
-  (declare (xargs :guard (and (java::double-value-p x)
-                              (java::double-value-p y)
-                              (java::double-value-p z))))
+  (declare (xargs :guard (and (java::double-valuep x)
+                              (java::double-valuep y)
+                              (java::double-valuep z))))
   (java::double-sub (java::double-div x y) z))
 
 (defun f-conv (x y z)
-  (declare (xargs :guard (and (java::byte-value-p x)
-                              (java::short-value-p y)
-                              (java::long-value-p z))))
+  (declare (xargs :guard (and (java::byte-valuep x)
+                              (java::short-valuep y)
+                              (java::long-valuep z))))
   (java::int-mul (java::int-add (java::byte-to-int x)
                                 (java::short-to-int y))
                  (java::long-to-int z)))
 
 (defun g-conv (x y)
-  (declare (xargs :guard (and (java::float-value-p x)
-                              (java::double-value-p y))))
+  (declare (xargs :guard (and (java::float-valuep x)
+                              (java::double-valuep y))))
   (java::double-mul (java::float-to-double x)
                     (java::double-add (java::int-to-double (java::int-value 2))
                                       y)))
@@ -460,10 +549,10 @@
 
 ; Wrap-around factorial over Java ints.
 
-(define factorial-int ((n java::int-value-p))
+(define factorial-int ((n java::int-valuep))
   :guard (java::boolean-value->bool (java::int-greateq n (java::int-value 0)))
-  :returns (result java::int-value-p)
-  (if (mbt (and (java::int-value-p n)
+  :returns (result java::int-valuep)
+  (if (mbt (and (java::int-valuep n)
                 (java::boolean-value->bool
                  (java::int-greateq n (java::int-value 0)))))
       (if (java::boolean-value->bool (java::int-eq n (java::int-value 0)))
@@ -484,17 +573,17 @@
     :hints (("Goal" :in-theory (enable java::int-eq
                                        java::int-greateq
                                        java::int-sub
-                                       java::int-value-p
+                                       java::int-valuep
                                        sbyte32p)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Wrap-around factorial over Java longs.
 
-(define factorial-long ((n java::long-value-p))
+(define factorial-long ((n java::long-valuep))
   :guard (java::boolean-value->bool (java::long-greateq n (java::long-value 0)))
-  :returns (result java::long-value-p)
-  (if (mbt (and (java::long-value-p n)
+  :returns (result java::long-valuep)
+  (if (mbt (and (java::long-valuep n)
                 (java::boolean-value->bool
                  (java::long-greateq n (java::long-value 0)))))
       (if (java::boolean-value->bool (java::long-eq n (java::long-value 0)))
@@ -515,18 +604,132 @@
     :hints (("Goal" :in-theory (enable java::long-eq
                                        java::long-greateq
                                        java::long-sub
-                                       java::long-value-p
+                                       java::long-valuep
                                        sbyte64p)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Tests for the functions above (except the ones involving floating-point),
-; when :DEEP is NIL and :GUARDS is T.
+; Tests for the functions above, when :DEEP is NIL and :GUARDS is T.
 
 (defconst *shallow-guarded-basic-tests*
-  '(;; boolean negation:
+  '(;; boolean constructor:
+    ("BooleanValueT" (test-boolean-value t))
+    ("BooleanValueF" (test-boolean-value nil))
+    ;; char constructor:
+    ("CharValue0" (test-char-value 0))
+    ("CharValue1" (test-char-value 60000))
+    ("CharValue2" (test-char-value 256))
+    ("CharValue3" (test-char-value 32))
+    ("CharValue4" (test-char-value 65))
+    ("CharValue5" (test-char-value 12345))
+    ;; byte constructor:
+    ("ByteValue0" (test-byte-value 0))
+    ("ByteValue1" (test-byte-value -128))
+    ("ByteValue2" (test-byte-value 127))
+    ("ByteValue3" (test-byte-value -67))
+    ("ByteValue4" (test-byte-value 88))
+    ("ByteValue5" (test-byte-value 1))
+    ;; short constructor:
+    ("ShortValue0" (test-short-value 0))
+    ("ShortValue1" (test-short-value -32768))
+    ("ShortValue2" (test-short-value 32767))
+    ("ShortValue3" (test-short-value 1001))
+    ("ShortValue4" (test-short-value 78))
+    ("ShortValue5" (test-short-value -1))
+    ;; int constructor:
+    ("IntValue0" (test-int-value 0))
+    ("IntValue1" (test-int-value -2147483648))
+    ("IntValue2" (test-int-value 2147483647))
+    ("IntValue3" (test-int-value 736382))
+    ("IntValue4" (test-int-value -22))
+    ("IntValue5" (test-int-value 90000))
+    ;; long constructor:
+    ("LongValue0" (test-long-value 0))
+    ("LongValue1" (test-long-value -9223372036854775808))
+    ("LongValue2" (test-long-value 9223372036854775807))
+    ("LongValue3" (test-long-value 882882929292))
+    ("LongValue4" (test-long-value 27))
+    ("LongValue5" (test-long-value -27777))
+    ("LongValue6" (test-long-value -292999999999))
+    ;; boolean deconstructor:
+    ("BooleanValueBoolT" (test-boolean-value->bool (java::boolean-value t)))
+    ("BooleanValueBoolF" (test-boolean-value->bool (java::boolean-value nil)))
+    ;; char deconstructor:
+    ("CharValueNat0" (test-char-value->nat (java::char-value 0)))
+    ("CharValueNat1" (test-char-value->nat (java::char-value 60000)))
+    ("CharValueNat2" (test-char-value->nat (java::char-value 256)))
+    ("CharValueNat3" (test-char-value->nat (java::char-value 32)))
+    ("CharValueNat4" (test-char-value->nat (java::char-value 65)))
+    ("CharValueNat5" (test-char-value->nat (java::char-value 12345)))
+    ;; byte deconstructor:
+    ("ByteValueInt0" (test-byte-value->int (java::byte-value 0)))
+    ("ByteValueInt1" (test-byte-value->int (java::byte-value -128)))
+    ("ByteValueInt2" (test-byte-value->int (java::byte-value 127)))
+    ("ByteValueInt3" (test-byte-value->int (java::byte-value -67)))
+    ("ByteValueInt4" (test-byte-value->int (java::byte-value 88)))
+    ("ByteValueInt5" (test-byte-value->int (java::byte-value 1)))
+    ;; short deconstructor:
+    ("ShortValueInt0" (test-short-value->int (java::short-value 0)))
+    ("ShortValueInt1" (test-short-value->int (java::short-value -32768)))
+    ("ShortValueInt2" (test-short-value->int (java::short-value 32767)))
+    ("ShortValueInt3" (test-short-value->int (java::short-value 1001)))
+    ("ShortValueInt4" (test-short-value->int (java::short-value 78)))
+    ("ShortValueInt5" (test-short-value->int (java::short-value -1)))
+    ;; int deconstructor:
+    ("IntValueInt0" (test-int-value->int (java::int-value 0)))
+    ("IntValueInt1" (test-int-value->int (java::int-value -2147483648)))
+    ("IntValueInt2" (test-int-value->int (java::int-value 2147483647)))
+    ("IntValueInt3" (test-int-value->int (java::int-value 736382)))
+    ("IntValueInt4" (test-int-value->int (java::int-value -22)))
+    ("IntValueInt5" (test-int-value->int (java::int-value 90000)))
+    ;; long deconstructor:
+    ("LongValueInt0" (test-long-value->int (java::long-value 0)))
+    ("LongValueInt1" (test-long-value->int (java::long-value
+                                            -9223372036854775808)))
+    ("LongValueInt2" (test-long-value->int (java::long-value 9223372036854775807)))
+    ("LongValueInt3" (test-long-value->int (java::long-value 882882929292)))
+    ("LongValueInt4" (test-long-value->int (java::long-value 27)))
+    ("LongValueInt5" (test-long-value->int (java::long-value -27777)))
+    ("LongValueInt6" (test-long-value->int (java::long-value -292999999999)))
+    ;; boolean negation:
     ("BooleanNotT" (test-boolean-not (java::boolean-value t)))
     ("BooleanNotF" (test-boolean-not (java::boolean-value nil)))
+    ;; int unary plus:
+    ("IntPlus0" (test-int-plus (java::int-value 0)))
+    ("IntPlus1" (test-int-plus (java::int-value 1)))
+    ("IntPlus2" (test-int-plus (java::int-value 875753)))
+    ("IntPlus3" (test-int-plus (java::int-value -16)))
+    ("IntPlus4" (test-int-plus (java::int-value -1600000)))
+    ;; long unary plus:
+    ("LongPlus0" (test-long-plus (java::long-value 0)))
+    ("LongPlus1" (test-long-plus (java::long-value 1)))
+    ("LongPlus2" (test-long-plus (java::long-value 875753)))
+    ("LongPlus3" (test-long-plus (java::long-value -16)))
+    ("LongPlus4" (test-long-plus (java::long-value -1600000)))
+    ;; int unary minus:
+    ("IntMinus0" (test-int-minus (java::int-value 0)))
+    ("IntMinus1" (test-int-minus (java::int-value 1)))
+    ("IntMinus2" (test-int-minus (java::int-value 875753)))
+    ("IntMinus3" (test-int-minus (java::int-value -16)))
+    ("IntMinus4" (test-int-minus (java::int-value -1600000)))
+    ;; long unary minus:
+    ("LongMinus0" (test-long-minus (java::long-value 0)))
+    ("LongMinus1" (test-long-minus (java::long-value 1)))
+    ("LongMinus2" (test-long-minus (java::long-value 875753)))
+    ("LongMinus3" (test-long-minus (java::long-value -16)))
+    ("LongMinus4" (test-long-minus (java::long-value -1600000)))
+    ;; int bitwise complement:
+    ("IntNot0" (test-int-not (java::int-value 0)))
+    ("IntNot1" (test-int-not (java::int-value 1)))
+    ("IntNot2" (test-int-not (java::int-value 875753)))
+    ("IntNot3" (test-int-not (java::int-value -16)))
+    ("IntNot4" (test-int-not (java::int-value -1600000)))
+    ;; long bitwise complement:
+    ("LongNot0" (test-long-not (java::long-value 0)))
+    ("LongNot1" (test-long-not (java::long-value 1)))
+    ("LongNot2" (test-long-not (java::long-value 875753)))
+    ("LongNot3" (test-long-not (java::long-value -16)))
+    ("LongNot4" (test-long-not (java::long-value -1600000)))
     ;; boolean conjunction:
     ("BooleanAndTT" (test-boolean-and (java::boolean-value t)
                                       (java::boolean-value t)))
@@ -572,42 +775,6 @@
                                       (java::boolean-value t)))
     ("BooleanNeqFF" (test-boolean-neq (java::boolean-value nil)
                                       (java::boolean-value nil)))
-    ;; int unary plus:
-    ("IntPlus0" (test-int-plus (java::int-value 0)))
-    ("IntPlus1" (test-int-plus (java::int-value 1)))
-    ("IntPlus2" (test-int-plus (java::int-value 875753)))
-    ("IntPlus3" (test-int-plus (java::int-value -16)))
-    ("IntPlus4" (test-int-plus (java::int-value -1600000)))
-    ;; long unary plus:
-    ("LongPlus0" (test-long-plus (java::long-value 0)))
-    ("LongPlus1" (test-long-plus (java::long-value 1)))
-    ("LongPlus2" (test-long-plus (java::long-value 875753)))
-    ("LongPlus3" (test-long-plus (java::long-value -16)))
-    ("LongPlus4" (test-long-plus (java::long-value -1600000)))
-    ;; int unary minus:
-    ("IntMinus0" (test-int-minus (java::int-value 0)))
-    ("IntMinus1" (test-int-minus (java::int-value 1)))
-    ("IntMinus2" (test-int-minus (java::int-value 875753)))
-    ("IntMinus3" (test-int-minus (java::int-value -16)))
-    ("IntMinus4" (test-int-minus (java::int-value -1600000)))
-    ;; long unary minus:
-    ("LongMinus0" (test-long-minus (java::long-value 0)))
-    ("LongMinus1" (test-long-minus (java::long-value 1)))
-    ("LongMinus2" (test-long-minus (java::long-value 875753)))
-    ("LongMinus3" (test-long-minus (java::long-value -16)))
-    ("LongMinus4" (test-long-minus (java::long-value -1600000)))
-    ;; int bitwise complement:
-    ("IntNot0" (test-int-not (java::int-value 0)))
-    ("IntNot1" (test-int-not (java::int-value 1)))
-    ("IntNot2" (test-int-not (java::int-value 875753)))
-    ("IntNot3" (test-int-not (java::int-value -16)))
-    ("IntNot4" (test-int-not (java::int-value -1600000)))
-    ;; long bitwise complement:
-    ("LongNot0" (test-long-not (java::long-value 0)))
-    ("LongNot1" (test-long-not (java::long-value 1)))
-    ("LongNot2" (test-long-not (java::long-value 875753)))
-    ("LongNot3" (test-long-not (java::long-value -16)))
-    ("LongNot4" (test-long-not (java::long-value -1600000)))
     ;; int addition:
     ("IntAdd0" (test-int-add (java::int-value 2)
                              (java::int-value 3)))

@@ -288,8 +288,8 @@ hooks.</dd>
 <p>A configuration object can also be defined to specify some extended options;
 here's an example.</p>
 
-@({ (make-define-config 
-     :inline t 
+@({ (make-define-config
+     :inline t
      :no-function t) })
 
 <p>As of now, the following options can be set through the configuration
@@ -1218,7 +1218,7 @@ examples.</p>")
        (macro         (and need-macrop
                            (make-wrapper-macro name name-fn raw-formals)))
        (formals       (remove-macro-args name raw-formals nil))
-       (formals       (parse-formals name formals '(:type) world))
+       (formals       (parse-formals name formals '(:type :props) world))
 
        (formal-names  (formallist->names formals))
        (formal-guards (remove t (formallist->guards formals)))
@@ -1380,6 +1380,7 @@ examples.</p>")
 
 (defun events-from-guts (guts world)
   (b* (((defguts guts) guts)
+       (non-exec   (getarg :non-executable nil guts.kwd-alist))
        (enabled-p  (getarg :enabled        nil guts.kwd-alist))
        (prepwork   (getarg :prepwork       nil guts.kwd-alist))
        (short      (getarg :short          nil guts.kwd-alist))
@@ -1429,6 +1430,13 @@ examples.</p>")
          ;; the rest-events needs to make use of it.
          ,(extend-define-guts-alist guts)
          (set-define-current-function ,guts.name)
+
+         ;; [Shilpi] Disable the executable-counterpart of a
+         ;; non-executable function. For background, see email thread
+         ;; "I can't (un)hide" on acl2-help list, dated Apr. 24th,
+         ;; 2020.
+         ,@(and non-exec
+                `((in-theory (disable (:executable-counterpart ,guts.name-fn)))))
 
          ,@(and guts.returnspecs
                 `((make-event
@@ -1870,7 +1878,7 @@ the names.</li>
 </ul>
 
 ")
-    
+
 
 (defun defret-core (name concl-term kwd-alist disablep guts world)
   (b* ((__function__ 'defret)

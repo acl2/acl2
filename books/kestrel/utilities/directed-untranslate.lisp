@@ -2360,7 +2360,7 @@
                       ,@bindings2)
                    ,@rest2))
                (& `(b* (,new-binding)
-                     r-fbr)))))
+                     ,r-fbr)))))
           (& ; test presumably simplified to true or false; don't know which
            (du-untranslate sterm iff-flg wrld))))
        (& ; probably an impossible case
@@ -2396,7 +2396,7 @@
                       ,@bindings2)
                    ,@rest2))
                (& `(b* (,new-binding)
-                     r-tbr)))))
+                     ,r-tbr)))))
           (& ; test presumably simplified to true or false; don't know which
            (du-untranslate sterm iff-flg wrld))))
        (& ; probably an impossible case
@@ -2473,7 +2473,7 @@
              (directed-untranslate-rec
               (list 'b* bindings rest)
               rest2 sterm iff-flg lflg exec-p wrld))))
-         (& (er hard 'directed-untranslate-rec
+         (& (er hard 'directed-untranslate-b*
                 "Implementation error: unexpected translation of ~x0:~|~x1."
                 uterm tterm))))
       ((eq var '&)

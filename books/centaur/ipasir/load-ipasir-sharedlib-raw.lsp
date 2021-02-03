@@ -29,12 +29,12 @@
 ; Original authors: Sol Swords <sswords@centtech.com>
 
 (er-let* ((libname (acl2::getenv$ "IPASIR_SHARED_LIBRARY" acl2::*the-live-state*)))
-         (if libname
-             (handler-case 
-               (cffi::load-foreign-library libname)
-               (error () (er hard? 'load-ipasir-shardlib-raw
-                             "Couldn't load the specified ipasir shared library, ~s0."
-                             libname)))
-           (er hard? 'load-ipasir-shardlib-raw
-               "Couldn't load an ipasir library because the ~
-                IPASIR_SHARED_LIBRARY environment variable was unset.")))
+  (handler-case
+      (cffi::load-foreign-library
+       (or libname
+           (cw "WARNING: $IPASIR_SHARED_LIBRARY not specified, ~
+                defaulting to \"libipasirglucose4.so\"")
+           "libipasirglucose4.so"))
+    (error () (er hard? 'load-ipasir-shardlib-raw
+                  "Couldn't load ipasir shared library from ~s0."
+                  libname))))

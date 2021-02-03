@@ -149,7 +149,7 @@
         (t (cons (cadar x)
                  (strip-cadrs (cdr x))))))
 
-(defconst *defthm-aliases*
+(def-const *defthm-aliases*
   '(acl2::defthm acl2::defthmd acl2::defthm+ acl2::defrule
                  acl2::defaxiom acl2s::test-then-skip-proofs acl2::defcong
                  acl2::defrefinement acl2::defequiv acl2::skip-proofs
@@ -658,7 +658,8 @@ see (defdata foo rational)
                (and lst (cadr lst))))
        (- (cw "~%")))
     `(with-output
-      ,@(and (not verbosep) '(:off :all :on (summary error) :summary (acl2::form acl2::time)))
+      ,@(and (not verbosep)
+             '(:off :all :on (summary error) :summary (acl2::form acl2::time)))
       :gag-mode t :stack :push
       (make-event
        (b* ((pkg (current-package state))
@@ -666,8 +667,10 @@ see (defdata foo rational)
             (A (type-alias-table (w state)))
             (pred (if ',pred ',pred (make-predicate-symbol ',alias pkg)))
             (type (base-alias-type ',type A))
-            (predicate (acl2s::get-alist
-                        :predicate (acl2s::get-alist type M)))
+            (type-alist (acl2s::get-alist type M))
+            (predicate (acl2s::get-alist :predicate type-alist))
+            (def (acl2s::get-alist :def type-alist))
+            (record? (and (consp def) (equal 'record (car def))))
             (base-enum (enumerator-name type A M))
             (base-enum/acc (enum/acc-name type A M))
             (alias-enum (acl2s::make-symbl `(nth- ,',alias) pkg))
@@ -676,7 +679,10 @@ see (defdata foo rational)
             (seed (acl2s::fix-intern$ "SEED" pkg))
             ((unless predicate)
              (er hard 'defdata-alias
-                 "~%**Unknown type**: ~x0 is not a known type name.~%" ',type)))
+                 "~%**Unknown type**: ~x0 is not a known type name.~%" ',type))
+            ((when record?)
+             (er hard 'defdata-alias
+                 "~%**Record type**: ~x0 is a record and records cannot be aliased.~%" ',type)))
          `(encapsulate
            ()
            (table type-alias-table
@@ -1159,3 +1165,9 @@ fix s+ form so that it has access to pkg.
     (if (subsetp-equal (get-vars (car terms)) vars)
         (cons (car terms) (filter-terms-with-vars (cdr terms) vars))
       (filter-terms-with-vars (cdr terms) vars))))
+
+(defloop var-or-quoted-listp (xs)
+  (declare (xargs :guard (true-listp xs)))
+  (for ((x in xs)) (always (or (proper-symbolp x)
+                               (rquotep x)))))
+

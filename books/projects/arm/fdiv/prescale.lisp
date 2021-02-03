@@ -56,7 +56,7 @@
            (and (<= 63/64 (d))
 	        (<= (d) 9/8)))
   :hints (("Goal" :in-theory (enable d mul)
-                  :use (bits-sigb-bounds		  
+                  :use (bits-sigb-bounds
 		        (:instance bvecp-member (x (bits (sigb) 51 49)) (n 3))))))
 
 (defthmd x-bounds
@@ -68,7 +68,7 @@
 		        (:instance sig-upper-bound (x (a)))
 		        (:instance sig-lower-bound (x (a)))
 		        (:instance sig-upper-bound (x (b)))
-		        (:instance sig-lower-bound (x (b)))			
+		        (:instance sig-lower-bound (x (b)))
 		        (:instance bvecp-member (x (bits (sigb) 51 49)) (n 3))))))
 
 (defund div1 ()
@@ -193,7 +193,7 @@
        (equal (q-1) (q1))
        (equal (expq) (expq*)))
   :hints (("Goal" :do-not '(preprocess) :expand :lambdas
-                  :in-theory '(prescale div1 div2 div3 divsum divcar div* rem1 rem2 rem3 remsum remcar sigabar sigcmp 
+                  :in-theory '(prescale div1 div2 div3 divsum divcar div* rem1 rem2 rem3 remsum remcar sigabar sigcmp
 		               sigaltsigb remcarbits remsumbits remcin rembits q1 rp-1* rn-1* expq* div rp-1 rn-1 expq q-1))))
 
 (defthm q1-vals
@@ -240,6 +240,8 @@
 			 (rem$ (lambda (j) (if (specialp) (expt 4 (1- j)) (r j))))
 			 (d$ (lambda () (if (specialp) 1 (d))))
 			 (x$ (lambda () (if (specialp) 1 (x)))))))
+          ("Subgoal 8" :use (q-vals))
+          ("Subgoal 7" :use (q-vals))
           ("Subgoal 6" :use (q-vals))
           ("Subgoal 5" :use (x-bounds))
           ("Subgoal 4" :use (x-bounds))
@@ -334,7 +336,7 @@
           ("Subgoal 1" :in-theory (enable r quot))))
 
 (local-in-theory (disable maxk-select-digit-d4))
-   
+
 (local-defthmd div123
   (implies (not (specialp))
            (equal (+ (div1) (div2) (div3))
@@ -534,7 +536,7 @@
 	          (if (< (siga) (sigb)) 1 0)))
   :hints (("Goal" :in-theory (enable bitn-bits lognot sigabar sigaltsigb bvecp sigcmp)
                   :use (siga-bounds sigb-bounds
-		        (:instance bitn-plus-bits (x (+ (1- (expt 2 53)) (- (sigb) (siga)))) (n 53) (m 0))			
+		        (:instance bitn-plus-bits (x (+ (1- (expt 2 53)) (- (sigb) (siga)))) (n 53) (m 0))
 			(:instance bits-bounds (x (+ (1- (expt 2 53)) (- (sigb) (siga)))) (i 52) (j 0))))))
 
 (defthmd rp-1-rewrite

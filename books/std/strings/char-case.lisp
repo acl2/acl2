@@ -301,7 +301,15 @@ contrast, @('upcase-char') works on arbitrary characters.</p>"
 
   (defthm char-upcase-is-upcase-char
     (equal (acl2::char-upcase x)
-           (upcase-char (double-rewrite x)))))
+           (upcase-char (double-rewrite x))))
+
+  ;; Mihir M. mod: added a lemma.
+  (defthm
+    not-down-alpha-p-of-upcase-char
+    (not (down-alpha-p (upcase-char x)))
+    :hints
+    (("goal"
+      :in-theory (enable down-alpha-p)))))
 
 
 (define downcase-char ((x :type character))
@@ -543,4 +551,3 @@ during @(see downcase-first).</p>"
                      (equal (aref1 '*downcase-first-strtbl* *downcase-first-strtbl* i)
                             (implode (list (downcase-char (code-char i))))))
             :hints(("Goal" :use ((:instance l0 (n 255)))))))))
-

@@ -24,7 +24,7 @@
             bvand
             bvnot
             bvplus
-            acl2::shr
+            bvshr
             and32
             xor32
             not32

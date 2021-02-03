@@ -1,5 +1,5 @@
-; ACL2 Version 8.2 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2019, Regents of the University of Texas
+; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2020, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -63,6 +63,15 @@
 
 ; We keep this list sorted, since that makes defpkg more efficient when users
 ; choose to import these symbols; it avoids having to sort them then.
+
+; Here is the documentation string that was supplied before the optional
+; argument to defconst was eliminated after Version_8.3.
+
+;     "This is the list of ACL2 symbols that the ordinary user is extremely
+;   likely to want to include in the import list of any package created
+;   because these symbols are the basic hooks for using ACL2.  However,
+;   it is never necessary to do such importing: one can always use the
+;   acl2:: prefix."
 
   (sort-symbol-listp
    (append
@@ -166,6 +175,7 @@
         CODE-CHAR-TYPE COERCE COERCE-INVERSE-1
         COERCE-INVERSE-2 COERCE-OBJECT-TO-STATE
         COERCE-STATE-TO-OBJECT
+        COLLECT$ COLLECT$+ 
         COMMENT
         COMMUNITY-BOOKS
         COMMUTATIVITY-OF-*
@@ -260,17 +270,18 @@
         EXPT-TYPE-PRESCRIPTION-NON-ZERO-BASE
         EXTEND-32-BIT-INTEGER-STACK
         EXTEND-PE-TABLE EXTEND-T-STACK
-        EXTEND-WORLD EXTRA-INFO F-GET-GLOBAL F-PUT-GLOBAL
+        EXTEND-WORLD EXTRA-INFO F-BOUNDP-GLOBAL F-GET-GLOBAL F-PUT-GLOBAL
         FAST-ALIST-CLEAN FAST-ALIST-CLEAN! FAST-ALIST-FORK FAST-ALIST-FORK!
         FAST-ALIST-FREE-ON-EXIT FC-REPORT FERTILIZE
         FGETPROP FIFTH FILE-CLOCK FILE-CLOCK-P
         FILE-CLOCK-P-FORWARD-TO-INTEGERP FILE-LENGTH$ FILE-WRITE-DATE$
         FINALIZE-EVENT-USER
         FIRST FIRST-N-AC
-        FIX FIX-TRUE-LIST FLET FLOOR FLUSH-COMPRESS
+        FIX FIX-PKG FIX-TRUE-LIST FLET FLOOR FLUSH-COMPRESS
         FMS FMS!
         FMS!-TO-STRING FMS-TO-STRING
         FMT FMT! FMT!-TO-STRING
+        FMT-HARD-RIGHT-MARGIN FMT-SOFT-RIGHT-MARGIN
         FMT-TO-COMMENT-WINDOW FMT-TO-STRING FMT1 FMT1!
         FMT1!-TO-STRING FMT1-TO-STRING
         FMX FMX!-CW FMX-CW
@@ -359,6 +370,7 @@
         MAYBE-FLUSH-AND-COMPRESS1
         MBE MBT MBT*
         MEMBER MEMBER-EQ MEMBER-EQUAL MEMBER-SYMBOL-NAME
+        MEMOIZE-PARTIAL
         META-EXTRACT-CONTEXTUAL-FACT META-EXTRACT-FORMULA
         META-EXTRACT-GLOBAL-FACT META-EXTRACT-GLOBAL-FACT+ META-EXTRACT-RW+-TERM
         MFC
@@ -433,7 +445,7 @@
         PUT-ASSOC PUT-ASSOC-EQ PUT-ASSOC-EQL
         PUT-ASSOC-EQUAL PUT-GLOBAL PUTPROP
         QUICK-AND-DIRTY-SUBSUMPTION-REPLACEMENT-STEP
-        QUIT QUOTE QUOTEP R-EQLABLE-ALISTP R-SYMBOL-ALISTP
+        QUIT QUOTE QUOTEP QUOTE~ R-EQLABLE-ALISTP R-SYMBOL-ALISTP
         RANDOM$ RASSOC RASSOC-EQ RASSOC-EQUAL
         RATIO RATIONAL RATIONAL-IMPLIES1
         RATIONAL-IMPLIES2 RATIONAL-LISTP
@@ -482,7 +494,8 @@
         RESET-PREHISTORY RESET-PRINT-CONTROL
         RESIZE-LIST REST RESTORE-MEMOIZATION-SETTINGS RETRACT-WORLD
         RETRIEVE RETURN-LAST RETURN-LAST-TABLE
-        REVAPPEND REVERSE REVERT-WORLD REWRITE-EQUIV REWRITE-STACK-LIMIT
+        REVAPPEND REVERSE REVERT-WORLD REWRITE-EQUIV
+        REWRITE-QUOTED-CONSTANT REWRITE-STACK-LIMIT
         RFIX ROUND RW-CACHE SATISFIES
         SAVE-AND-CLEAR-MEMOIZATION-SETTINGS SAVE-EXEC
         SEARCH SECOND
@@ -539,7 +552,7 @@
         SET-REGISTER-INVARIANT-RISK SET-REWRITE-STACK-LIMIT
         SET-RULER-EXTENDERS
         SET-RW-CACHE-STATE SET-RW-CACHE-STATE!
-        SET-SAVED-OUTPUT SET-SERIALIZE-CHARACTER SET-SERIALIZE-CHARACTER-SYSTEM
+        SET-SERIALIZE-CHARACTER SET-SERIALIZE-CHARACTER-SYSTEM
         SET-SKIP-META-TERMP-CHECKS SET-SKIP-META-TERMP-CHECKS!
         SET-SLOW-ALIST-ACTION SET-SPLITTER-OUTPUT SET-STATE-OK
         SET-TAU-AUTO-MODE
@@ -596,8 +609,8 @@
         SUBLIS SUBLIS-FN SUBLIS-FN-LST-SIMPLE SUBLIS-FN-SIMPLE
         SUBSEQ SUBSEQ-LIST SUBSEQUENCEP
         SUBSETP SUBSETP-EQ SUBSETP-EQUAL
-        SUBST SUBSTITUTE SUBSTITUTE-AC SUITABLY-TAMEP-LISTP SUMMARY
-        SWAP-STOBJS
+        SUBST SUBSTITUTE SUBSTITUTE-AC SUITABLY-TAMEP-LISTP
+        SUM$ SUM$+ SUMMARY SWAP-STOBJS
         SYMBOL SYMBOL-< SYMBOL-<-ASYMMETRIC
         SYMBOL-<-IRREFLEXIVE SYMBOL-<-TRANSITIVE
         SYMBOL-<-TRICHOTOMY SYMBOL-ALISTP
@@ -627,7 +640,7 @@
         THIRD
         THM TIME$ TIME-TRACKER TIME-TRACKER-TAU TIMER-ALISTP
         TIMER-ALISTP-FORWARD-TO-TRUE-LIST-LISTP-AND-SYMBOL-ALISTP
-        TOGGLE-PC-MACRO
+        TOGGLE-INHIBIT-WARNING TOGGLE-INHIBIT-WARNING! TOGGLE-PC-MACRO
         TOP-LEVEL TRACE! TRACE$ TRANS
         TRANS!
         TRANS-EVAL TRANS-EVAL-DEFAULT-WARNING TRANS-EVAL-NO-WARNING
@@ -697,15 +710,7 @@
 
         DEFTHM-STD DEFUN-STD DEFUNS-STD
         I-CLOSE I-LARGE I-LIMITED I-SMALL
-        REAL-LISTP STANDARD-PART STANDARDP)))
-
-  "This is the list of ACL2 symbols that the ordinary user is extremely
-likely to want to include in the import list of any package created
-because these symbols are the basic hooks for using ACL2.  However,
-it is never necessary to do such importing: one can always use the
-acl2:: prefix."
-
-  )
+        REAL-LISTP STANDARD-PART STANDARDP))))
 
 (defpkg "ACL2-USER"
   (union-eq *acl2-exports*

@@ -650,7 +650,7 @@ the order given (LSBs-first).</p>")
     (equal x (lhs-norm x))
     ///
     (deffixtype lhs-norm :fix lhs-norm :pred lhs-normp
-      :equiv lhs-norm-equiv :define t :forward t :execp nil)
+      :equiv lhs-norm-equiv :define t :forward t :executablep nil)
 
     (defrefinement lhs-equiv lhs-norm-equiv)
 
@@ -1739,10 +1739,10 @@ the order given (LSBs-first).</p>")
   (defthm svex-lhsrewrite-vars
     (implies (not (member v (svex-vars x)))
              (not (member v (svex-vars (svex-lhsrewrite x w)))))))
-  
-    
-      
-  
+
+
+
+
 
 ;; { a[3:0], b[2:1] } = foo
 
@@ -2369,7 +2369,7 @@ bits of @('foo'):</p>
   (if (atom x)
       (svex-quote (4vec-z))
     (b* (((lhrange xf) (car x)))
-      (svex-concat xf.w 
+      (svex-concat xf.w
                    (lhatom->svex xf.atom)
                    (lhs->svex (cdr x)))))
   ///
@@ -3156,7 +3156,3 @@ bits of @('foo'):</p>
 ;; book that both include...
 (defconst *svex-longest-static-prefix-var*
   :svex-longest-static-prefix)
-
-
-
-

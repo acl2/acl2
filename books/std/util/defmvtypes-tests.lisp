@@ -30,7 +30,7 @@
 
 (in-package "STD")
 (include-book "defmvtypes")
-(include-book "std/testing/assert" :dir :system)
+(include-book "std/testing/assert-bang" :dir :system)
 
 (assert! (not (inducting-p (acl2::parse-clause-id "Goal"))))
 (assert! (not (inducting-p (acl2::parse-clause-id "Goal''"))))

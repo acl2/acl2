@@ -111,6 +111,7 @@
     SAFE-MODE
     TAG-TREE
     TYPE-SET
+    USELESS-RUNES
     WATERFALL
 
 ; Some of the following might be added to *acl2-exports*, but perhaps not; they
@@ -148,6 +149,7 @@
     FIRST-KEYWORD
     FLAMBDA-APPLICATIONP
     FLAMBDAP
+    FLATTEN-ANDS-IN-LIT
     FN-RUNE-NUME
     FN-SYMB
     FORMALS
@@ -180,6 +182,7 @@
     PRETTYIFY-CLAUSE
     PROGRAMP
     RECURSIVEP
+    REWRITE-LAMBDA-OBJECT
     RW-CACHE-STATE
     STOBJP
     STOBJS-IN
@@ -200,6 +203,7 @@
 
 ; Symbols below should probably be added to *acl2-exports*.
 
+    VERIFY-GUARD-IMPLICATION
   ))
 
 (defconst *special-ops*

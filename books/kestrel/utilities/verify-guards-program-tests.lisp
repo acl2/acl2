@@ -6,8 +6,8 @@
 
 ; Tests for verify-guards-program
 
-(include-book "testing")
 (include-book "verify-guards-program")
+(include-book "std/testing/must-fail" :dir :system)
 
 (defun f1p (x) (declare (xargs :mode :program)) x)
 (defun f2p (x)

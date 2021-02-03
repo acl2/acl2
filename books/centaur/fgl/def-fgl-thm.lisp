@@ -62,13 +62,76 @@
 (defmacro fgl-thm (&rest args)
   (fgl-thm-fn args))
 
+(defun maybe-add-xdoc (name thm args)
+  (b* ((parents-look (assoc-keyword :parents args))
+       (short-look (assoc-keyword :short args))
+       (long-look (assoc-keyword :long args))
+       (want-xdoc (or parents-look short-look long-look)))
+    (if want-xdoc
+        `(defsection ,name
+           ,@(and parents-look `(:parents ,(cadr parents-look)))
+           ,@(and short-look `(:short ,(cadr short-look)))
+           ,@(and long-look `(:long ,(cadr long-look)))
+           ,thm)
+      thm)))
+
 (defun def-fgl-thm-fn (name args)
   (declare (xargs :mode :program))
-  `(defthm ,name
-     . ,(cdr (fgl-thm-fn args))))
+  (maybe-add-xdoc name
+                  `(defthm ,name
+                     . ,(cdr (fgl-thm-fn args)))
+                  (if (keywordp (car args)) args (cdr args))))
 
 (defmacro def-fgl-thm (name &rest args)
   (def-fgl-thm-fn name args))
+
+(defxdoc def-fgl-thm
+  :parents (fgl)
+  :short "Prove a theorem using FGL"
+  :long "
+
+<p>@('Def-fgl-thm') is the main macro used for proving a theorem using FGL.  It
+produces a @(see defthm) form containing hints that cause the FGL clause
+processor to be used to attempt the proof of the theorem.  Basic usage is as
+follows:</p>
+
+@({
+ (def-fgl-thm <thmname>
+    <theorem-body>
+    <keyword-args>)
+ })
+<p>However, for backward compatibility with GL, the following usage is also supported:</p>
+@({
+ (def-fgl-thm <thmname>
+   :hyp <hyp-term>
+   :concl <concl-term>
+   <keyword-args>)
+ })
+
+<p>The main keyword arguments supported include the fields of the @(see
+fgl-config) object, and a few others listed below.  Each field of the
+@('fgl-config') object is assigned as follows:</p>
+<ul>
+<li>The explicit value given in the @('def-fgl-thm') form, if there is one</li>
+<li>Else if the table @('fgl::fgl-config-table') has an entry for the keyword field name, the value to which it is bound</li>
+<li>Else if the keyword field name is bound as a state global, its global value</li>
+<li>Else the default value defined by @(see make-fgl-config).</li>
+</ul>
+
+<p>The non-@('fgl-config') keywords recognized are:</p>
+<ul>
+<li>@(':hyp') and @(':concl'), used with the backward-compatible usage form above</li>
+<li>@(':rule-classes'), giving the rule classes of the theorem proved</li>
+<li>@(':hints'), a list of subgoal or computed hints that are listed before the
+FGL clause processor hints.</li>
+<li>@(':parents'), @(':short'), @(':long'), the usual xdoc documentation
+arguments.  If any of these are provided, a @('defsection') containing the
+theorem is created, rather than just the theorem.</li>
+</ul>
+
+<p>For now, other keyword arguments are accepted and ignored without complaint.
+This probably will someday need to change.</p>
+")
 
 
 (defun fgl-param-thm-cases (param-bindings param-hyp)
@@ -117,10 +180,47 @@
 
 (defun def-fgl-param-thm-fn (name args)
   (declare (xargs :mode :program))
-  `(defthm ,name
-     . ,(cdr (fgl-param-thm-fn args))))
+  (maybe-add-xdoc name
+                  `(defthm ,name
+                     . ,(cdr (fgl-param-thm-fn args)))
+                  (if (keywordp (car args)) args (cdr args))))
 
 (defmacro def-fgl-param-thm (name &rest args)
   (def-fgl-param-thm-fn name args))
-                         
+
+
+(defxdoc def-fgl-param-thm
+  :parents (fgl)
+  :short "Prove a theorem using FGL with case-splitting."
+  :long "
+
+<p>@('Def-fgl-param-thm') is similar to @(see def-fgl-thm), but runs a clause
+processor prior to FGL that splits the goal into several cases based on the
+provided arguments.  It somewhat replicates the behavior of @(see
+gl::def-gl-param-thm), but ignores the shape specifiers provided for the
+various cases.</p>
+
+<p>The usage of @('def-fgl-param-thm') is similar to that of @(see
+def-fgl-thm), but it accepts several more keyword arguments:</p>
+
+<ul>
+
+<li>@(':param-bindings') is the same as in @(see gl::def-gl-param-thm), but
+the shape specifier alist in each entry is ignored.</li>
+
+<li>@(':param-hyp') is the same as in @(see gl::def-gl-param-thm).</li>
+
+<li>@(':split-params') provides the @(see fgl-sat-check) parameters object for
+proving that case split provided covers all cases.</li>
+
+<li>@(':solve-params') provides the @(see fgl-sat-check) object for proving each case.</li>
+
+<li>@(':repeat-concl-p') controls whether the conclusion is (if nil)
+rewritten/symbolically executed once and then solved separately for each case,
+or (if nonnil) rewritten/symbolically executed (and also solved) separately for
+each case.</li>
+
+</ul>
+
+")
             

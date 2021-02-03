@@ -42,6 +42,7 @@
                            true-listp-update-nth)))
 
 (defstobj-clone aignet-levels u32arr :suffix "-LEVELS")
+(defstobj-clone levels u32arr :prefix "LEVELS-")
 
 (define aignet-record-levels-aux ((n natp)
                                   (aignet)

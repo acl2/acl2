@@ -12,6 +12,8 @@
 
 (include-book "natives")
 
+(include-book "../atj" :ttags (:open-output-channel! :oslib :quicklisp :quicklisp.osicat))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Generate Java code for the natively implemented functions, with testing code.
@@ -50,6 +52,7 @@
            nonnegative-integer-quotient
            string-append
            len
+           char
            :deep t
            :guards nil
            :java-class "NativesDeepUnguarded"

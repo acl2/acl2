@@ -3,3 +3,5 @@
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
 (include-book "../portcullis")
+; The book basic.lisp, at least, seems to need :useless-runes nil:
+; cert-flags: ? t :useless-runes nil

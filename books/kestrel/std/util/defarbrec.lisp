@@ -10,11 +10,20 @@
 
 (in-package "ACL2")
 
+(include-book "kestrel/error-checking/ensure-list-has-no-duplicates" :dir :system)
+(include-book "kestrel/error-checking/ensure-value-is-boolean" :dir :system)
+(include-book "kestrel/error-checking/ensure-value-is-not-in-list" :dir :system)
+(include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
+(include-book "kestrel/error-checking/ensure-value-is-symbol-list" :dir :system)
+(include-book "kestrel/error-checking/ensure-value-is-untranslated-term" :dir :system)
+(include-book "kestrel/event-macros/cw-event" :dir :system)
+(include-book "kestrel/event-macros/make-event-terse" :dir :system)
+(include-book "kestrel/event-macros/proof-preparation" :dir :system)
+(include-book "kestrel/event-macros/restore-output" :dir :system)
 (include-book "kestrel/std/system/fresh-logical-name-with-dollars-suffix" :dir :system)
 (include-book "kestrel/std/system/pseudo-event-form-listp" :dir :system)
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
 (include-book "kestrel/utilities/trans-eval-error-triple" :dir :system)
-(include-book "kestrel/utilities/user-interface" :dir :system)
 (include-book "std/util/defaggregate" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -223,7 +232,7 @@
   :verify-guards nil
   :short "Process the @('fn') input."
   (b* ((description "The first input")
-       ((er &) (ensure-symbol$ fn description t nil))
+       ((er &) (ensure-value-is-symbol$ fn description t nil))
        ((er &) (ensure-symbol-new-event-name$ fn description t nil)))
     (value nil)))
 
@@ -232,8 +241,8 @@
   :verify-guards nil
   :short "Process the @('(x1 ... xn)') input."
   (b* ((description "The second input")
-       ((er &) (ensure-symbol-list$ x1...xn description t nil))
-       ((er &) (ensure-list-no-duplicates$ x1...xn description t nil)))
+       ((er &) (ensure-value-is-symbol-list$ x1...xn description t nil))
+       ((er &) (ensure-list-has-no-duplicates$ x1...xn description t nil)))
     (value nil)))
 
 (define defarbrec-process-body (body fn$ x1...xn$ ctx state)
@@ -334,11 +343,11 @@
   (xdoc::topstring-p
    "Return the names to use for the iterated argument update functions,
     in the same order as the function's formal arguments.")
-  (b* (((er &) (ensure-symbol-list$ update-names
-                                    "The :UPDATE-NAMES input"
-                                    t nil))
+  (b* (((er &) (ensure-value-is-symbol-list$ update-names
+                                             "The :UPDATE-NAMES input"
+                                             t nil))
        (symbols (or update-names (defarbrec-default-update-names x1...xn$ fn$)))
-       ((er &) (ensure-list-no-duplicates$
+       ((er &) (ensure-list-has-no-duplicates$
                 symbols
                 "The list of symbols supplied as the :UPDATE-NAMES input"
                 t nil))
@@ -350,7 +359,7 @@
                   fn$))
        ((er &) (defarbrec-process-update-names-aux
                  symbols fn$ x1...xn$ ctx state))
-       ((er &) (ensure-not-member-of-list$
+       ((er &) (ensure-value-is-not-in-list$
                 fn$
                 symbols
                 (if (= 1 (len symbols))
@@ -426,7 +435,7 @@
     "For now we use, for witness and rewrite rule,
      the same names that @(tsee defun-sk) would generate by default.
      But this might change in the future."))
-  (b* (((er &) (ensure-symbol$
+  (b* (((er &) (ensure-value-is-symbol$
                 terminates-name "The :TERMINATES-NAME input" t nil))
        (symbol (or terminates-name (add-suffix-to-fn fn$ "-TERMINATES")))
        (symbol-witness (add-suffix symbol "-WITNESS"))
@@ -473,15 +482,15 @@
                 symbol-rewrite fn$
                 fn-description symbol-rewrite-description
                 t nil))
-       ((er &) (ensure-not-member-of-list$
+       ((er &) (ensure-value-is-not-in-list$
                 symbol update-names$
                 update-names$-description symbol-description
                 t nil))
-       ((er &) (ensure-not-member-of-list$
+       ((er &) (ensure-value-is-not-in-list$
                 symbol-witness update-names$
                 update-names$-description symbol-witness-description
                 t nil))
-       ((er &) (ensure-not-member-of-list$
+       ((er &) (ensure-value-is-not-in-list$
                 symbol-rewrite update-names$
                 update-names$-description symbol-rewrite-description
                 t nil)))
@@ -501,7 +510,8 @@
   :long
   (xdoc::topstring-p
    "Return the name to use for the measure function.")
-  (b* (((er &) (ensure-symbol$ measure-name "The :MEASURE-NAME input" t nil))
+  (b* (((er &) (ensure-value-is-symbol$ measure-name
+                                        "The :MEASURE-NAME input" t nil))
        (symbol (or measure-name (add-suffix-to-fn fn$ "-MEASURE")))
        (description (msg "The name ~x0 of the measure function, ~
                           determined (perhaps by default) by ~
@@ -514,7 +524,7 @@
                 (msg "the name ~x0 of the function to generate" fn$)
                 description
                 t nil))
-       ((er &) (ensure-not-member-of-list$
+       ((er &) (ensure-value-is-not-in-list$
                 symbol
                 update-names$
                 (if (= 1 (len update-names$))
@@ -575,9 +585,10 @@
    (xdoc::p
     "Note that the check that the term calls only logic-mode functions
      ensures that the term does not call the program-mode function @('fn')."))
-  (b* (((er (list term stobjs-out)) (ensure-term$ nonterminating
-                                                  "The :NONTERMINATING input"
-                                                  t nil))
+  (b* (((er (list term stobjs-out))
+        (ensure-value-is-untranslated-term$ nonterminating
+                                            "The :NONTERMINATING input"
+                                            t nil))
        (description (msg "The term ~x0 supplied as the :NONTERMINATING input"
                          nonterminating))
        ((er &) (ensure-term-free-vars-subset$ term x1...xn$ description t nil))
@@ -602,7 +613,7 @@
 (define defarbrec-process-show-only (show-only ctx state)
   :returns (mv erp (nothing "Always @('nil').") state)
   :short "Process the @(':show-only') input."
-  (ensure-boolean$ show-only "The :SHOW-ONLY input" t nil))
+  (ensure-value-is-boolean$ show-only "The :SHOW-ONLY input" t nil))
 
 (define defarbrec-process-inputs (fn
                                   x1...xn
@@ -851,7 +862,8 @@
     "              (not (natp k)))"
     "         test<(update*-x1 0 x1 ... xn),...,(update*-xn 0 x1 ... xn)>)"))
   (b* ((name (add-suffix fn$ "-UPDATE*-LEMMA"))
-       (name (fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
+       ((mv name &)
+        (fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
        (test-of-updates-k (defarbrec-gen-test-of-updates-term
                             x1...xn$ test update-names$ k))
        (test-of-updates-0 (defarbrec-gen-test-of-updates-term
@@ -970,7 +982,8 @@
      because we do not generate a function corresponding to @('mu') here
      and we use this theorem only with @(':use') hints."))
   (b* ((name (add-suffix measure-name$ "-NATP"))
-       (name (fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
+       ((mv name &)
+        (fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
        (event
         `(local
           (defthm ,name
@@ -1018,7 +1031,8 @@
      because we do not generate a function corresponding to @('mu') here
      and we use this theorem only with @(':use') hints."))
   (b* ((name (add-suffix measure-name$ "-END"))
-       (name (fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
+       ((mv name &)
+        (fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
        (iterations (apply-term measure-name$ `(,@x1...xn$ ,k)))
        (test-of-updates-measure (defarbrec-gen-test-of-updates-term
                                   x1...xn$ test update-names$ iterations))
@@ -1072,7 +1086,8 @@
      because we do not generate a function corresponding to @('mu') here
      and we use this theorem only with @(':use') hints."))
   (b* ((name (add-suffix measure-name$ "-MIN"))
-       (name (fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
+       ((mv name &)
+        (fresh-logical-name-with-$s-suffix name nil names-to-avoid wrld))
        (test-of-updates-l (defarbrec-gen-test-of-updates-term
                             x1...xn$ test update-names$ l))
        (test-of-updates-l (untranslate test-of-updates-l nil wrld))
@@ -1330,8 +1345,7 @@
                      (logic)
                      (set-ignore-ok t)
                      (set-irrelevant-formals-ok t)
-                     (set-default-hints nil)
-                     (set-override-hints nil)
+                     (evmac-prepare-proofs)
                      ,@local-update-fns
                      ,@exported-update-fns
                      ,update-fns-lemma
@@ -1449,18 +1463,19 @@
                   teminates-witness-name$
                   terminates-rewrite-name$
                   measure-name$
-                  nonterminating$)) (defarbrec-process-inputs
-                                      fn
-                                      x1...xn
-                                      body
-                                      update-names
-                                      terminates-name
-                                      measure-name
-                                      nonterminating
-                                      print
-                                      show-only
-                                      ctx
-                                      state))
+                  nonterminating$))
+        (defarbrec-process-inputs
+          fn
+          x1...xn
+          body
+          update-names
+          terminates-name
+          measure-name
+          nonterminating
+          print
+          show-only
+          ctx
+          state))
        (event (defarbrec-gen-everything
                 fn
                 x1...xn

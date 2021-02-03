@@ -54,13 +54,8 @@
 (include-book "kestrel/bitcoin/portcullis" :dir :system)
 (include-book "kestrel/utilities/omaps/portcullis" :dir :system)
 
-; Please note:
-;
-;  - Jared often has uncommitted edits to this file.  Please coordinate with
-;    him before editing these topics!
-;
-;  - Book release notes are typically very disorganized.  This shouldn't be
-;    considered a bug until we are very close to a release.
+; Book release notes are sometimes disorganized.
+; They are often cleaned up before a release.
 
 ; Starting with Version 7.3, we no longer maintain release notes
 ; note-x-x-books.  Instead, we hope that the ACL2 Community will track
@@ -83,6 +78,1032 @@
 
  <p>The current version of ACL2 is the value of the constant @('(@
  acl2-version)').</p>")
+
+(defxdoc note-8-4-books
+
+; Please add information about your library in the appropriate
+; category below --- the category title is enclosed in (xdoc::h3 ...)
+; (of course, feel free to add a new category if needed).  To
+; ensure consistency with the style of previous book release doc
+; topics, please follow the following convention:
+
+;  (xdoc::h4 "Your Library Title")
+;  (xdoc::p "Details go here.")
+
+; Please put the h4's in alphabetical order, each preceded by 40 semicolons.
+; You can also use (xdoc::h5 ...) under each h4, e.g. for sub-libraries:
+; There is no need to order the h5's alphabetically,
+; but please precede each h5 by 20 semicolons.
+; If you are stuck, see the entries about other libraries.
+
+  :parents (note-8-4 release-notes-books)
+
+  :short "Release notes for the ACL2 Community Books for ACL2 8.4"
+
+  :long
+
+  (xdoc::topstring
+
+   (xdoc::p
+    "The following is a brief summary of
+     changes made to the @(see community-books)
+     between the releases of ACL2 8.3 and 8.4.")
+
+   (xdoc::p
+    "See also @(see note-8-4) for the changes made to ACL2 itself.
+     For additional details,
+     you may also see the raw "
+    (xdoc::ahref "https://github.com/acl2/acl2/commits/master" "commit log")
+    ".")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h3 "New Libraries")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "acl2pl::acl2-programming-language"
+                             "ACL2 Programming Language Library"))
+
+   (xdoc::p
+    "This is a library about the ACL2 programming language.
+     It includes a formalization of its evaluation semantics.
+     (This is just the work of this library's author,
+     not an official semantics of the ACL programming language;
+     see @(see evaluation) for an official description
+     of the ACL2 evaluation semantics.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "c::c" "C Library"))
+
+   (xdoc::p
+    "This is a library about the C language.
+     It contains a formalization of (some aspects of) the C language
+     and ATC (`ACL2 To C'), a C code generator for ACL2.")
+
+   ;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h5 (xdoc::seetopic "c::atc" "ATC, the C Code Generator for ACL2"))
+
+   (xdoc::p
+    "This is a proof-generating C code generator for ACL2.
+     Besides the C code, it also generates proofs (i.e. ACL2 theorems)
+     asserting the correctness of the C code.")
+
+   (xdoc::p
+    "This currently covers a relatively simple subset of ACL2 and C.
+     The coverage is being extended.")
+
+   ;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h5 (xdoc::seetopic "c::language" "C Language Formalization"))
+
+   (xdoc::p
+    "This currently covers just
+     character sets, bytes, and keywords.
+     The coverage is being extended.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "isar::isar" "Isar Library"))
+
+   (xdoc::p
+    "This is a library to support proofs in the style of Isabelle's
+     Isar (Intelligent Semi-Automated Reasoning) language.
+     It is just a small step in that direction for now.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "json::json" "JSON Library"))
+
+   (xdoc::p
+    "This is a library about " (xdoc::ahref "json.org" "JSON") ".
+     It currently contains an initial abstract syntax of JSON,
+     consisting of " (xdoc::seetopic "fty" "fixtypes") ";
+     it also contains some initial operations on this abstract syntax,
+     as well as a translator from the output of the parser at
+     @('[books]/kestrel/json-parser/') to the abstract syntax.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "obag::obags" "Orderd Bags Library"))
+
+   (xdoc::p
+    "This is a library that represents bags (a.k.a. multisets)
+     as non-strictly ordered lists.
+     Thus, they capture (up to isomorphism) the mathematical notion of bag;
+     in particular, bag equality is @(tsee equal).")
+
+   (xdoc::p
+    "This is analogous to "
+    (xdoc::seetopic "set::std/osets" "the library of ordered sets")
+    " and to "
+    (xdoc::seetopic "omap::omaps" "the library of ordered maps")
+    ".")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "pfcs::prime-field-constraint-systems"
+                             "PFCS (Prime Field Constraint System) Library"))
+
+   (xdoc::p
+    "This is a library that introduces and formalizes
+     the notion of PFCS (Prime Field Consttaint Systems),
+     which generalize R1CS and possibly other constraint systems
+     for zero-knowledge proofs.
+     This is currently under the "
+    (xdoc::seetopic "crypto::cryptography" "cryptographic library")
+    ".")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "simpl-imp::imp-language"
+                             "Simple Programming Language Imp"))
+
+   (xdoc::p
+    "This is a library about a simple programming language, called Imp,
+     found (with small variations) in a variety of didactic resources.
+     This library formalizes syntax and semantics of this language,
+     and provides a program-mode interpreter of Imp programs.
+     This library may be extended with examples of
+     formal verification of Imp programs in ACL2.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "solidity::solidity" "Solidity Library"))
+
+   (xdoc::p
+    "This is a library about
+     the Solidity language for Ethereum smart contracts.
+     It includes a formalization of some aspects of the language.
+     There are plans to extend this to cover more aspects.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "el::execloader"
+                             "Read and Parse ELF/Mach-O Binary Files"))
+
+   (xdoc::p
+    "This library can be used to read in sections of ELF/Mach-O files into ACL2.
+     An older version of these books used to live in the @(tsee x86isa::x86isa)
+     library.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "zcash::zcash" "Zcash Library"))
+
+   (xdoc::p
+    "This is a library about the Zcash blockchain currency,
+     which is based on zero-knowledge proofs.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h3 "Changes to Existing Libraries")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "abnf::abnf" "ABNF Library"))
+
+   (xdoc::p
+    "The proofs of correctness of the grammar parser
+     have been moved to a separate file,
+     so that including the parser
+     does not necessarily also includes the proofs,
+     and so that book certification can be faster.")
+
+   (xdoc::p
+    "A new file and XDOC topic has been started
+     to collect parsing primitives,
+     i.e. parsing functions from the ABNF grammar parser
+     that are more generally useful than that parser.
+     These parsing primitives may be useful to write parsers
+     for other languages specified by ABNF grammars
+     (besides ABNF itself, which is what the grammar parser does).")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "apt::apt" "APT Library"))
+
+   (xdoc::p
+    "An " (xdoc::seetopic "apt::defaults-table" "APT defaults table")
+    " has been added, analogous to the "
+    (xdoc::seetopic "acl2-defaults-table" "ACL2 defaults table")
+    " but specific to APT.
+     Utilities to set and retrieve a number of defaults have also been added.")
+
+   (xdoc::p
+    "Some XDOC constructors have been added, and others have been improved.
+     See @(see xdoc::apt-constructors).")
+
+   (xdoc::p
+    "Some input processors have been added, and others have been improved.
+     See @(see apt::input-processors).")
+
+   (xdoc::p
+    "A new transformation has been added:
+     @(tsee apt::schemalg), the `schematic algorithm transformation'.
+     This transformation applies algorithm schemas
+     to non-executable specifications:
+     given a functional specification
+     (e.g. consisting of an input/output relation,
+     possibly as a precondition and postcondition),
+     this transformation partially determines the solution
+     and generates sub-specifications that, once recursively solve,
+     provide a solution to the initial specification.
+     In particular, divide-and-conquer algorithm schemas are supported:
+     the schema is a recursive function that
+     decompose the input,
+     solve the sub-input(s),
+     and composes the sub-output(s) to obtain an output.
+     This schematic algorithm transformation is currently realized
+     using " (xdoc::seetopic "soft::soft" "SOFT") " to represent
+     specifications and algorithm schemas,
+     with specifications as second-order functions
+     and refinement as backward implication,
+     as described in the ACL2-2015 Workshop paper on SOFT.
+     In the future, this transformation may be extended to represent
+     specifications and algorithm schemas via the built-in @(tsee apply$).")
+
+   (xdoc::p
+    "A new transformation has been added:
+     @(tsee apt::solve), the `solving transformation'.
+     This attempts to directly solve a program synthesis problem,
+     expressed as a constraint problem,
+     via inference methods like rewriting, SMT solving, SAT solving, etc.
+     Currently two rewriting methods are supported,
+     along with a manual method in which the solution is supplied
+     (which still automates some event and proof generation);
+     support for more methods will be added.")
+
+   (xdoc::p
+    "A new transformation has been added:
+     @(tsee apt::expdata), the `expanded data transformation'.
+     This can realize data type refinements where
+     each instance of the old data may be represented by
+     multiple instances of the new data,
+     according to a surjective mapping from the new to the old data.
+     These are more general data type refinements than @(tsee apt::isodata),
+     but the transformation is not inherently reversible
+     (e.g. for raising the level of abstraction in program analysis).")
+
+   (xdoc::p
+    "The @(tsee apt::isodata) transformation has been improved as follows:")
+   (xdoc::ul
+    (xdoc::li
+     "The @(':thm-name') input has been replaced
+      with a new @(':old-to-new-name') input,
+      which, when absent, is taken from the APT defaults table.")
+    (xdoc::li
+     "The @(':thm-enable') input has been replaced
+      with a new @(':old-to-new-enable') input,
+      which, when absent, is taken from the APT defaults table.")
+    (xdoc::li
+     "A new @(':new-to-old-name') input has been added
+      to specify the name of the theorem @('new-to-old')
+      that rewrites calls of the new functions
+      to terms involving calls of the old function.
+      This theorem is now generated along with the converse one.
+      If the @(':new-to-old-name') input is absent,
+      it is taken from the APT defaults table.")
+    (xdoc::li
+     "A new @(':new-to-old-enable') input has been added
+      to specify whether the @('new-to-old') theorem is enabled or not.
+      If this input is absent, it is taken from the APT defaults table.")
+    (xdoc::li
+     "The @('newp-of-new') theorem,
+      which asserts that the new function maps
+      arguments in the new representation to results in the new representation,
+      is now generated not only locally to support some generated proofs,
+      but also non-locally, so that it remains in the ACL2 history.
+      This theorem is only generated if some result is being transformed.")
+    (xdoc::li
+     "A new @(':newp-of-new-name') input has been added
+      to specify the name fo the @('newp-of-new') theorem.
+      This input is allowed only if some result is being transformed,
+      because otherwise no @('newp-of-new') theorems is generated.")
+    (xdoc::li
+     "A new @(':newp-of-new-enable') input has been added
+      to specify whether the @('newp-of-new') theorem is enabled or not.
+      This input is allowed only if some result is being transformed,
+      because otherwise no @('newp-of-new') theorems is generated."))
+
+   (xdoc::p
+    "The @(tsee apt::restrict) transformation has been improved as folows:")
+   (xdoc::ul
+    (xdoc::li
+     "The transformation has been simplified
+      by removing the @(':non-executable') option,
+      which does not seem necessary or useful.
+      The new function is marked non-executable
+      if and only if the target function is.")
+    (xdoc::li
+     "The transformation has been made more widely or readily applicable
+      by removing the applicability condition that required
+      the restriction predicate to be boolean-valued.
+      The new function now uses @(tsee mbt$) instead of @(tsee mbt),
+      thus obviating the need for the removed applicability condition.")
+    (xdoc::li
+     "The @(':thm-name') and @(':thm-enable') inputs have been renamed to
+      @(':old-to-new-name') and @(':old-to-new-enable'),
+      in line with other transformations.
+      Besides the name change, these two inputs now support
+      the APT defaults table.")
+    (xdoc::li
+     "A new @(':new-to-old-name') input has been added
+      to specify the name of the theorem @('new-to-old')
+      that rewrites calls of the new functions
+      to terms calls of the old function.
+      This theorem is now generated along with the converse one.
+      If the @(':new-to-old-name') input is absent,
+      it is taken from the APT defaults table.")
+    (xdoc::li
+     "A new @(':new-to-old-enable') input has been added
+      to specify whether the @('new-to-old') theorem is enabled or not.
+      If this input is absent, it is taken from the APT defaults table."))
+
+   (xdoc::p
+    "The @(tsee apt::tailrec) transformation has been improved as follows:")
+   (xdoc::ul
+    (xdoc::li
+     "The transformation has been extended with a new variant,
+      @(':assoc-alt'), which is an alternative associative variant.")
+    (xdoc::li
+     "The transformation has been simplified
+      by removing the @(':non-executable') option,
+      which does not seem necessary or useful.
+      The new function is marked non-executable
+      if and only if the target function is;
+      the wrapper is never marked non-executable.")
+    (xdoc::li
+     "The generated names for the new and wrapper functions,
+      when @(':new-name') is @(':auto')
+      and/or @(':wrapper-name') is @(':auto'),
+      have been improved.
+      If the target function is @('f{i}') (where we view @('f') as @('f{0}')),
+      now the new function is @('f{j}') if no wrapper is generated;
+      otherwise, the new function is @('f-aux{j}')
+      and the wrapper is @('f{j}').
+      Here @('j') is the smallest integer above @('i')
+      that results in fresh function names.
+      Note that, in this way, these automatically generated names
+      are always numbered names,
+      which facilitates the application of further transformations.")
+    (xdoc::li
+     "The default of the @(':wrapper') input
+      has been changed from @('t') to @('nil').
+      The rationale is that not generating the wrapper is expected to be
+      more frequent than generating it.")
+    (xdoc::li
+     "Now the @(':wrapper-enable') input, if absent, is taken from the "
+     (xdoc::seetopic "apt::defaults-table" "APT defaults table")
+     ".")
+    (xdoc::li
+     "An @(':accumulator') input has been added to optinally specify
+      the name of the accumulator argument of the new function.")
+    (xdoc::li
+     "The theorem that rewrites the target function
+      in terms of the new function
+      is now always generated, regardless of the @(':wrapper') input.
+      If @(':wrapper') is @('t'),
+      the theorem that rewrites the target function
+      in terms of the wrapper function
+      is also generated.")
+    (xdoc::li
+     "The @(':thm-name') input has been replaced with
+      two new inputs @(':old-to-new-name') and @(':old-to-wrapper-name'),
+      which individually control the names of the theorems that rewrite
+      the target function in terms of the new or wrapper function.
+      These new inputs, if absent, take their values from the "
+     (xdoc::seetopic "apt::defaults-table" "APT defaults table")
+     ".")
+    (xdoc::li
+     "The @(':thm-enable') input has been replaced with
+      two new inputs @(':old-to-new-enable') and @(':old-to-wrapper-enable'),
+      which individually control the enablement of the theorems that rewrites
+      the target function in terms of the new or wrapper function.
+      These new inputs, if absent, take their values from the "
+     (xdoc::seetopic "apt::defaults-table" "APT defaults table")
+     ".")
+    (xdoc::li
+     "Now the transformation also generates a theorem
+      that rewrites the new function in terms of the old function.
+      The name and enablement of this theorem are controlled
+      by two new inputs @(':new-to-old-name') and @(':new-to-old-enable').
+      These new inputs, if absent, take their values from the "
+     (xdoc::seetopic "apt::defaults-table" "APT defaults table")
+     ".")
+    (xdoc::li
+     "Now the transformation also generates a theorem
+      that rewrites the wrapper function in terms of the old function
+      (when the @(':wrapper') input is @('t').
+      The name and enablement of this theorem are controlled
+      by two new inputs
+      @(':wrapper-to-old-name') and @(':wrapper-to-old-enable').
+      These new inputs, if absent, take their values from the "
+     (xdoc::seetopic "apt::defaults-table" "APT defaults table")
+     ".")
+    (xdoc::li
+     "The heuristics for inferring the domain of the binary operator
+      (when the @(':domain') input is, generally by default, @(':auto'),
+      have been extended to infer more cases automatically.")
+    (xdoc::li
+     "The target function's @(tsee if) body,
+      after translation and @(tsee let) expansion,
+      can now have a recursive `then' branch and a non-recursive `else' branch.
+      Before, the `then' branch had to be the non-recursive one
+      and the `else' branch had to be the recursive one.
+      This makes the transformation more widely applicable."))
+
+   (xdoc::p
+    "A file @('[books]/kestrel/apt/tailrec-examples.lisp') has been added.
+     It contains examples of uses of @(tsee apt::tailrec),
+     with explanatory comments.
+     This could serve as a preliminary tutorial.")
+
+   (xdoc::p
+    "New design notes about specifications and refinements have been added,
+     along with a manual page that describes various forms of specifications.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "crypto::cryptography" "Cryptographic Library"))
+
+   ;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h5 (xdoc::seetopic "ecurve::elliptic-curves"
+                             "Elliptic Curve Library"))
+
+   (xdoc::p
+    "The formalization of "
+    (xdoc::seetopic "ecurve::short-weierstrass-curves"
+                    "short Weierstrass curves")
+    " has been extended and improved.")
+
+   (xdoc::p
+    "A formalization of "
+    (xdoc::seetopic "ecurve::twisted-edwards" "twisted Edwards curves")
+    " has been added.")
+
+   (xdoc::p
+    "A formalization of "
+    (xdoc::seetopic "ecurve::montgomery-curves" "Montgomery curves")
+    " has been added.")
+
+   (xdoc::p
+    "A formalization of the "
+    (xdoc::seetopic "ecurve::birational-montgomery-twisted-edwards"
+                    "birational equivalence between
+                     Montgomery and twisted Edwards curves")
+    " has been added.")
+
+   (xdoc::p
+    "The files
+     @('[books]/kestrel/crypto/ecurve/bls12-377-domain-parameters.lisp') and
+     @('[books]/kestrel/crypto/ecurve/bls12-377-prime.lisp')
+     have been added.
+     They introduce some parameters of the BLS12-377 elliptic curve.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "error-checking" "Error Checking Library"))
+
+   (xdoc::p
+    "This library is being moved
+     from @('[books]/kestrel/utilities/error-checking/')
+     to @('[books]/kestrel/error-checking/').
+     It is also being refactored and improved in the process.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "ethereum::ethereum" "Ethereum Library"))
+
+   (xdoc::p
+    "Some theorems about hex-prefix encoding have been added.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "event-macros" "Event Macros Library"))
+
+   (xdoc::p
+    "The utilities
+     @(tsee cw-event),
+     @(tsee fail-event),
+     @(tsee make-event-terse), and
+     @(tsee try-event)
+     have been moved here
+     from @('[books]/kestrel/utilities/user-interface.lisp').")
+
+   (xdoc::p
+    "The XDOC constructor @('xdoc::evmac-section-form-auto') has been removed.
+     Not being able to use this XDOC constructor avoids
+     additional inter-dependencies among books
+     that do not seem worth the small savings in writing user documentation,
+     whose general form section should be normally a small fraction.")
+
+   (xdoc::p
+    "The XDOC constructor @(tsee xdoc::evmac-topic-event-generation)
+     has been extended with an additional option.")
+
+   (xdoc::p
+    "New XDOC constructors have been added
+     and some XDOC constructors have been improve.")
+
+   (xdoc::p
+    "A utility @(tsee evmac-prepare-proofs) has been added,
+     to improve the robustness of proofs generated by event macros.")
+
+   (xdoc::p
+    "Utilities have been added to generate various kinds of event forms
+     from attributes of the event forms.")
+
+   (xdoc::p
+    "Some general XDOC topics about event macros have been added,
+     which can be referenced by the user documentation of event macros.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "fty" "Fixtype Definition Library"))
+
+   (xdoc::p
+    "A new macro @(tsee fty::defbyte-ihs-theorems) has been added
+     to generate theorems about fixtypes introduced via @(tsee fty::defbyte)
+     and functions in the " (xdoc::seetopic "ihs" "IHS") " library.
+     This macro has been used to generate, and make available,
+     these theorems for some of the "
+     (xdoc::seetopic "fty::defbyte-standard-instances"
+                     "@('fty::defbyte') standard instances")
+     ".")
+
+   (xdoc::p
+    "More "
+    (xdoc::seetopic "fty::defbyte-standard-instances"
+                    "@('fty::defbyte') standard instances")
+    " have been added.")
+
+   (xdoc::p
+    "The macro @(tsee fty::defset) has been improved
+     to generate additional theorems.")
+
+   (xdoc::p
+    "The macro @(tsee fty::defomap) has been improved
+     to generate additional theorems.")
+
+   (xdoc::p
+    "A fixtype @(tsee nat-set) of osets of natural numbers has been added.")
+
+   (xdoc::p
+    "@(tsee fty::deflist) has been extended to generate a theorem
+     about the list fixer applied to @(tsee repeat).")
+
+   (xdoc::p
+    "A macro @(tsee fty::defsubtype) has been added.")
+
+   (xdoc::p
+    "A macro @(tsee fty::defunit) has been added.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "java::java" "Java Library"))
+
+   ;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h5 (xdoc::seetopic "java::aij"
+                             "AIJ, the Deep Embedding of ACL2 into Java"))
+
+   (xdoc::p
+    "More " (xdoc::ahref "https://junit.org" "JUnit")
+    " unit tests have been added,
+     integrated with the IntelliJ IDEA project.")
+
+   (xdoc::p
+    "The Java implementations of some natively implemented ACL2 functions
+     have been optimized.")
+
+   (xdoc::p
+    "Variant Java implementations of some natively implemented ACL2 functions
+     have been added,
+     in support of the automatic mapping, in the shallow embedding with guards,
+     of ACL2 booleans and characters to Java booleans and characters.")
+
+   (xdoc::p
+    "A native implementation has been added
+     of the @(tsee char) ACL2 built-in function.
+     As with other native implementations,
+     this consists of a few variants for different input and output types.
+     This native Java implementation is faster than
+     the Java code obtained from the unnormalized body of @(tsee char),
+     which converts the string to a list of characters
+     and then calls @(tsee nth);
+     the native Java implementation accesses the string directly.")
+
+   ;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h5 (xdoc::seetopic "java::atj"
+                             "ATJ, the Java Code Generator for ACL2"))
+
+   (xdoc::p
+    "The model of Java primitive arrays has been extended
+     with functions to convert between arrays and corresponding ACL2 lists.
+     The model has been made much more compact
+     by defining and using a macro that captures the structure
+     common to the eight Java primitive array types.")
+
+   (xdoc::p
+    "Support has been added to recognize ACL2 functions
+     that convert between Java primitive arrays and ACL2 lists,
+     and translate them to Java code that converts between arrays and lists.
+     This applies to the shallow embedding with guards.")
+
+   (xdoc::p
+    "In the shallow embedding with guards,
+     now ACL2 booleans are mapped to Java booleans when possible.
+     The generated Java code takes care of converting, as needed,
+     between the Java booleans
+     and the @('Acl2Symbol') objects for @('t') and @('nil').
+     This new mapping happens automatically;
+     it is separate from the explicit targeting of Java booleans
+     via the ACL2 model of Java boolean values.")
+
+   (xdoc::p
+    "In the shallow embedding with guards,
+     now ACL2 characters are mapped to Java characters when possible.
+     The generated Java code takes care of converting, as needed,
+     between the Java characters
+     and the @('Acl2Character') objects.
+     This new mapping happens automatically;
+     it is separate from the explicit targeting of Java characters
+     via the ACL2 model of Java character values.")
+
+   (xdoc::p
+    "In the shallow embedding with guards,
+     now ACL2 strings are mapped to Java strings when possible.
+     The generated Java code takes care of converting, as needed,
+     between the Java strings (i.e. @('java.lang.String') objects)
+     and the @('Acl2String') objects.")
+
+   (xdoc::p
+    "Some of the generated Java code in the shallow embedding with guards
+     has been made more idiomatic.
+     Calls of the Java method corresponding to @(tsee not)
+     are now avoided in favor of using Java's @('!') operator
+     or Java's @('==') operator with the symbol @('nil').
+     Calls of ACL2's @(tsee and) are translated
+     to Java's @('&&') operator when possible.
+     Calls of ACL2's @(tsee or) are translated
+     to Java's @('||') operator when possible.")
+
+   (xdoc::p
+    "A new post-translation step has been added
+     to ``inline'' (in a suitable sense) the calls of the array write methods
+     that are generated by the translation step.
+     This makes the generated Java code more idiomatic.
+     This applies to the shallow embedding with guards.")
+
+   (xdoc::p
+    "A new post-translation step has been added
+     to simplify generated Java conditional expressions
+     whose test is a boolean literal.")
+
+   (xdoc::p
+    "The Java code to build the ACL2 environment is now generated
+     in a separate Java class in a separate Java file.
+     This class's name is obtained by adding @('Environment')
+     after the main class's name.
+     This way, the main class is free of the extensive and boilerplate code
+     to build the ACL2 environment,
+     making it easier to find and see the ``interesting'' generated Java code.")
+
+   (xdoc::p
+    "The Java abstract syntax used by the code generator is now more precise,
+     in the sense that it captures more syntactic aspects of Java.")
+
+   (xdoc::p
+    "ATJ function types have been verified and recorded
+     for more built-in functions,
+     thus avoiding certain type casts and other conversions
+     in the generated Java code.
+     ATJ function types have also been verified and recorded
+     for certain library functions, for the same reason;
+     these files can be included as needed.")
+
+   (xdoc::p
+    "The macros @(tsee java::atj-main-function-type)
+     and @(tsee java::atj-other-function-type)
+     have been extended with an option to provide hints
+     for the theorems they prove internally.")
+
+   (xdoc::p
+    "An option @(':ignore-whitelist') has been added
+     to ignore the whitelist of ACL2 functions with raw Lisp code,
+     i.e. to translate them to Java (so long as they have an unnormalized body).
+     This must be used by caution: side effects in the raw Lisp code
+     will not be replicated in Java,
+     e.g. @(tsee hard-error) will just return @('nil').
+     This could be useful when the functions in question
+     are unreachable under guard verification, for instance.
+     The default is @('nil'), i.e. do not ignore the whitelist,
+     so the user must explicitly write @(':ignore-whitelist t')
+     to ignore the whitelist.")
+
+   ;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h5 (xdoc::seetopic "java::language" "Java Language Formalization"))
+
+   (xdoc::p
+    "Some functions and theorems related to integer literals have been added.
+     These are part of the formalized abstract syntax of Java.")
+
+   (xdoc::p
+    "Some theorems about the Java primitive operations have been added.")
+
+   (xdoc::p
+    "More aspects of the Java syntax have been formalized, including:
+     the ISO 8851-1 subset of Unicode characters;
+     type identifiers;
+     unqualified method identifiers;
+     package names;
+     reference types; and
+     all types.")
+
+   (xdoc::p
+    "The formalization, including the ABNF grammar,
+     have been updated to Java 14.
+     In particular, this involved updating of the ABNF grammar with
+     @('switch') expressions and @('yield') statements.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "omap::omaps" "Ordered Maps (Omaps) Library"))
+
+   (xdoc::p
+    "Added an operation to create an omap
+     from a list of keys and a corresponding list of values.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "soft::soft" "SOFT Library"))
+
+   (xdoc::p
+    "A new macro @(tsee soft::defsoft) has been added,
+     to record a function as second-order
+     after the function has been introduced via a non-SOFT event.
+     The SOFT macros
+     @(tsee soft::defun2),
+     @(tsee soft::defchoose2), and
+     @(tsee soft::defun-sk2)
+     have been simplified to be abbreviations of
+     @(tsee defun), @(tsee defchoose), and @(tsee defun-sk)
+     followed by @(tsee soft::defsoft).")
+
+   (xdoc::p
+    "New macros
+     @('defund2'),
+     @(tsee soft::define2),
+     @(tsee soft::defund-sk2), and
+     @(tsee soft::define-sk2)
+     have been added.
+     These abbreviate
+     @(tsee defund),
+     @(tsee define),
+     @(tsee defund-sk), and
+     @(tsee std::define-sk)
+     followed by @(tsee soft::defsoft),
+     analogously to other macros as described above.")
+
+   (xdoc::p
+    "A new macro @(tsee soft::defequal),
+     to define second-order equalities between functions
+     and provide some reasoning support for them.")
+
+   (xdoc::p
+    "An option @(':enable') has been added to @(tsee soft::defun-inst),
+     to control the enablement of the generated function
+     (and, for quantifier functions, also of the associated rewrite rule).")
+
+   (xdoc::p
+    "An option @(':enable') has been added to @(tsee soft::defthm-inst),
+     to control the enablement of the generated theorem.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "std/basic" "Standard Basic Library"))
+
+   (xdoc::p
+    "A new utility @(tsee good-valuep) has been added,
+     which checks whether a value is either a good atom
+     or a @(tsee cons) pair whose components are recursively good values.
+     That is, the value must not be a bad arom
+     or contains (directly or indirectly) bad atoms.")
+
+   (xdoc::p
+    "A new utility @(tsee good-pseudo-termp) has been added,
+     which checks whether a pseudo-term only contains good values
+     (see @(tsee good-valuep)) in its quoted constants.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "std/io" "Standard IO Library"))
+
+   (xdoc::p
+    "Modified the raw-Lisp implementation of @(tsee read-string) to catch
+     errors successfully, as intended.  This could fail in SBCL
+     2.0.5 (implementation note: because the error message referenced a string
+     stream that was already closed).")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "std/system" "Standard System Library"))
+
+   (xdoc::p
+    "A new utility @(tsee check-if-call) has been added,
+     to check if a term is a call of @(tsee if)
+     and to return its three arguments if that is the case.")
+
+   (xdoc::p
+    "A new utility @(tsee check-and-call) has been added,
+     to check if a term is a (translated) call of @(tsee and)
+     and to return its two conjuncts if that is the case.")
+
+   (xdoc::p
+    "A new utility @(tsee check-or-call) has been added,
+     to check if a term is a (translated) call of @(tsee or)
+     and to return its two disjuncts if that is the case.")
+
+   (xdoc::p
+    "A new utility @(tsee check-mbt-call) has been added,
+     to check if a term is a (translated) call of @(tsee mbt)
+     and to return its argument if that is the case.")
+
+   (xdoc::p
+    "A new utility @(tsee check-mbt$-call) has been added,
+     to check if a term is a (translated) call of @(tsee mbt$)
+     and to return its argument if that is the case.")
+
+   (xdoc::p
+    "A theorem about the built-in @('flatten-ands-in-lit') has been added,
+     in @('[books]/kestrel/std/system/flatten-ands-in-lit').")
+
+   (xdoc::p
+    "A new utility @(tsee fresh-name-listp-msg-weak) has been added,
+     which lifts @(tsee fresh-namep-msg-weak) to lists.")
+
+   (xdoc::p
+    "The utilities
+     @(tsee install-not-normalized-event) and
+     @(tsee install-not-normalized-event-lst)
+     have been improved to return an additional result,
+     namely the updated list of names to avoid.
+     This helps making the calling code more concise and less error-prone.")
+
+   (xdoc::p
+    "A new utility @(tsee if-tree-leaf-terms) has been added,
+     to collect the leaf sub-terms of a term
+     according to the @(tsee if) tree structure of the term.")
+
+   (xdoc::p
+    "The utility @('acceptable-rewrite-rulep') has been moved
+     from @('[books]/kestrel/utilities/') to @('[books]/std/system/').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "std/testing" "Standard Testing Library"))
+
+   (xdoc::p
+    "The contents of the file @('[books]/misc/assert-tests.lisp')
+     have been moved to new separate files under Std/testing.
+     That file has been removed.")
+
+   (xdoc::p
+    "The relocation stub @('[books]/misc/assert.lisp')
+     for books that are now in Std/testing
+     has been removed.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "std/typed-alists"
+                             "Standard Typed Alists Library"))
+
+   (xdoc::p
+    "A type @(tsee symbol-symbollist-alistp) has been added for alists
+     from symbols to true lists of symbols.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "std::std/util" "Standard Utilities Library"))
+
+   (xdoc::p
+    "A new event macro @(tsee defund-sk) has been added,
+     which is like @(tsee defun-sk) but it disables
+     (1) the function definition (if @(':constrain') is @('nil'))
+     or the definition rule (if @(':constrain') is non-@('nil'))
+     and (2) the rewrite rule
+     if the @(':thm-enable') input is @('nil') (which is the default).")
+
+   (xdoc::p
+    "A new event macro @(tsee defmacro+) has been added,
+     with is like @(tsee defmacro) but with "
+    (xdoc::seetopic "xdoc" "XDOC")
+    "integration.")
+
+   (xdoc::p
+    "Like @(see defun-nx), now @(see define) also disables the executable
+     counterpart of a non-executable function.")
+
+   (xdoc::p
+    "A new event macro @(tsee defmapping) has been added,
+     to verify and record mappings that must be (based on supplied options)
+     injective, surjective, or bijective.")
+
+   (xdoc::p
+    "The @(tsee defiso) event macro is now
+     a specialization of @(tsee defmapping),
+     implemented as a thin wrapper of @(tsee defmapping).")
+
+   (xdoc::p
+    "A new event macro @(tsee definj) has been added
+     to verify and record injective mappings.
+     It is a specialization of @(tsee defmapping),
+     implemented as a thin wrapper of @(tsee defmapping).")
+
+   (xdoc::p
+    "A new event macro @(tsee defsurj) has been added
+     to verify and record surjective mappings.
+     It is a specialization of @(tsee defmapping),
+     implemented as a thin wrapper of @(tsee defmapping).")
+
+   (xdoc::p
+    "A new event macro @(tsee defthm-commutative) has been added,
+     to generate commutativity theorems for binary operations
+     more concisely.")
+
+   (xdoc::p
+    "Support for @(':prepwork') has been added to @(tsee std::deflist).")
+
+   (xdoc::p
+    "Support for @(tsee defun-sk)'s option @(':constrain')
+     has been added to @(tsee std::define-sk).")
+
+   (xdoc::p
+    "A macro @(tsee std::tuple) has been added,
+     to mimic the @(tsee mv) return specifier notation
+     for tuple (i.e. list) results, useful inside error triples.")
+
+   (xdoc::p
+    "The macro @(tsee std::define-sk) has been moved
+     from @('[books]/kestrel/utilities/') to @('[books]/std/util/').")
+
+   (xdoc::p
+    "A new event macro @(tsee add-io-pairs) has been added, to speed
+     up a function using verified input-output pairs.  Related
+     utilities include @(tsee add-io-pair), @(tsee remove-io-pairs),
+     @(tsee show-io-pairs), and @(tsee get-io-pairs).")
+
+   (xdoc::p
+    "A new event macro @(tsee defmin-int) has been added,
+     to declarative define the minimum of
+     a (possibly infinite) set of integers.
+     This is similar to @(tsee defmax-nat).")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h3 "Licensing Changes")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h3 "Build System Updates")
+
+   (xdoc::p
+    "By default, @('make') commands for certifying ACL2 books take advantage of
+     files @('*@useless-runes.lsp').  See @(see useless-runes).")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h3 "Testing")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h3 "Miscellaneous")
+
+   (xdoc::p
+    "The line containing @('#!/bin/bash') at the top of various shell scripts
+     has been replaced by a line containing @('#!/usr/bin/env bash'), for
+     increased portability.")
+
+   (xdoc::p
+    "The book @('tools/defttag-muffled.lisp') provides a way, using a trust
+     tag, to turn off all subsequent ``TTAG NOTE'' messages.  Use with care!!")
+
+   (xdoc::p
+    "See @(see rewrite$) for a flexible, convenient interface to the ACL2
+     rewriter that can be called programmatically.  See @(see rewrite$-hyps)
+     for a related utility that rewrites a list of hypotheses.")
+
+   (xdoc::p
+    "See @(see open-trace-file!) for a variant of @(tsee open-trace-file)
+     suitable for use within @(tsee make-event).")
+
+   ))
 
 (defxdoc note-8-3-books
 
@@ -130,40 +1151,53 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 (xdoc::seetopic "defarbrec" "Arbitrary Recursion Library"))
+   (xdoc::h4 "Alists-light library")
 
-   (xdoc::p
-    "A new macro @(tsee defarbrec) (for `define arbitrary recursion')
-     has been added, to introduce recursive functions
-     without having to prove termination right away.
-     There exist similar macros in the community books,
-     but the specifics of this new macro are motivated for use with "
-    (xdoc::seetopic "apt::apt" "APT")
-    ". See the `Related Tools' section
-     of the documentation of @(tsee defarbrec) for more information.")
+   (xdoc::p "A new library, @('alists-light') has been added.  It aims to
+   provide basic reasoning about alists while being as lightweight as possible.
+   See the directory @('[books]/kestrel/alists-light').")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 "Arithmetic-light library")
 
-   (xdoc::p "The @('[books]/kestrel/arithmetic-light') directory contains a
-   library about arithmetic that aims to be as lightweight as possible.")
+   (xdoc::p "A new library, @('arithmetic-light') has been added.  It aims to
+   provide basic arithmetic reasoning while being as lightweight as possible.  See
+   the directory @('[books]/kestrel/arithmetic-light').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Axe")
+
+   (xdoc::p "A directory has been started to contain the implementation of
+   Kestrel's Axe tool.  This will be populated over time as we open source Axe.
+   See the directory @('[books]/kestrel/axe').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Booleans library")
+
+   (xdoc::p "A new library, @('booleans') has been added.  It provides
+   definitions and rules about operations on booleans.  See the directory
+   @('[books]/kestrel/booleans').")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 "BV (bit vector) library")
 
-   (xdoc::p "The @('[books]/kestrel/bv') directory contains a formalization of
-   bit vectors as natural numbers that underlies several tools developed by
-   Kestrel researchers.")
+   (xdoc::p "A new library, @('bv'), has been added.  It contains a
+   formalization of bit vectors as natural numbers.  The library underlies
+   several tools developed by Kestrel researchers. See the directory
+   @('[books]/kestrel/bv').")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 "BV-Lists library")
 
-   (xdoc::p "The @('[books]/kestrel/bv-lists') directory contains a library
-   about lists of bit vectors, including packing, unpacking, and conversions
-   between lists of bits and lists of bytes.")
+   (xdoc::p "A new library, @('bv-lists'), has been added. It formalizes
+   notions related to lists of bit vectors from the @('bv') library, including
+   packing, unpacking, and conversions between lists of bits and lists of
+   bytes. See the directory @('[books]/kestrel/bv-lists').")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -192,37 +1226,51 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 "File-io-light library")
+
+   (xdoc::p "A new library, @('file-io-light') has been added.  It aims to
+   provide rules about basic input/output operations on files, while being as
+   lightweight as possible.  See the directory
+   @('[books]/kestrel/file-io-light').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 "Library-wrappers library")
 
-   (xdoc::p "The @('[books]/kestrel/library-wrappers') directory contains books
-   that aim to improve other libraries by including them and then disabling
-   or replacing rules that may be problematic.")
+   (xdoc::p "A new library, @('library-wrappers'), has been added. It contains
+   books that aim to improve other libraries by including them and then
+   disabling or replacing rules that may be problematic. See the directory
+   @('[books]/kestrel/library-wrappers').")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 "Lists-light library")
 
-   (xdoc::p "The @('[books]/kestrel/lists-light') directory contains a
-   library about lists that aims to be as lightweight as possible.")
+   (xdoc::p "A new library, @('lists-light') has been added.  It aims to
+   provide basic reasoning about lists while being as lightweight as possible.  See
+   the directory @('[books]/kestrel/lists-light').")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 "Prime-fields library")
 
-   (xdoc::p "The @('[books]/kestrel/prime-fields') directory contains a
+   (xdoc::p "A new library, @('prime-fields') has been added.  It contains a
    formalization of prime fields and associated operations.  A prime field is a
-   finite field consisting of the integers modulo some prime p.")
+   finite field consisting of the integers modulo some prime. See the directory
+   @('[books]/kestrel/prime-fields').")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "std/system" "Standard System Library"))
 
    (xdoc::p
-    "A new library for standard system utilities has been started.  This is
-     currently under the Kestrel books, but it could be moved directly under
-     @('[books]/std/system') eventually.  This new library is being populated
-     with existing utilities factored out of some Kestrel Books with system
-     utilities, as well as with some new utilities.")
+    "A new library for standard system utilities has been started.
+     This is currently mostly under the Kestrel books,
+     but it will be gradually moved directly under @('[books]/std/system').
+     This new library is being populated
+     with existing utilities factored out of
+     some Kestrel Books with system utilities,
+     as well as with some new utilities.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -246,9 +1294,7 @@
     "A new library has been added,
      to collect recognizers and theorems for typed alists,
      i.e. alists whose keys and values have specified types.
-     This is analogous to "
-    (xdoc::seetopic "std/typed-lists" "the library for typed lists")
-    ".")
+     This is analogous to @(csee std/typed-lists).")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -259,7 +1305,7 @@
    (xdoc::h4 (xdoc::seetopic "abnf::abnf" "ABNF Library"))
 
    (xdoc::p
-    "Some functions have been tweaked to fix their arguments.")
+    "Some functions have been improved slightly.")
 
    (xdoc::p
     "Some theorems have been added.")
@@ -300,36 +1346,36 @@
    (xdoc::h4 (xdoc::seetopic "apt::apt" "APT"))
 
    (xdoc::p
-    "A new APT-specific XDOC constructor has been added.")
+    "A new transformation, @(tsee apt::casesplit),
+     has been added to rephrase a function by cases.")
 
    (xdoc::p
-    "Some APT-specific XDOC constructors have been extended and improved.")
+    "A new transformation, @(tsee apt::isodata),
+     has been added to transform data between isomorphic representations.")
 
    (xdoc::p
-    "An input has been added to @(tsee apt::tailrec) to control whether
-     the wrapper function is generated or not.")
+    "@(tsee apt::parteval) now provides better support
+     for recursive functions whose static arguments
+     do not change across recursive calls.
+     @(tsee apt::parteval) has also been extended to support "
+    (xdoc::seetopic "apt::untranslate-specifier" "untranslate specifiers")
+    ".")
 
    (xdoc::p
     "@(tsee apt::restrict) now supports reflexive functions,
      i.e. functions that occur in their termination theorem.")
 
    (xdoc::p
-    "A new transformation, @(tsee apt::casesplit),
-     has been added to rephrase a function by cases.")
+    "An input has been added to @(tsee apt::tailrec) to control whether
+     the wrapper function is generated or not.")
 
    (xdoc::p
-    "@(tsee apt::parteval) now provides better support
-     for recursive functions whose static arguments
-     do not change across recursive calls.")
+    "A table of APT defaults has been started.
+     See @('[books]/kestrel/apt/utilities/defaults-table.lisp').")
 
    (xdoc::p
-    "@(tsee apt::parteval) has been extended to support "
-    (xdoc::seetopic "apt::untranslate-specifier" "untranslate specifiers")
-    ".")
-
-   (xdoc::p
-    "A new transformation, @(tsee apt::isodata),
-     has been added to transform data between isomorphic representations.")
+    "New APT-specific XDOC constructors have been added.
+     Some APT-specific XDOC constructors have been extended and improved.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -353,7 +1399,7 @@
    (xdoc::h4 (xdoc::seetopic "bitcoin::bitcoin" "Bitcoin Library"))
 
    (xdoc::p
-    "Some theorems have been added to the BIP 32 formalization.")
+    "Some theorems have been added.")
 
    (xdoc::p
     "Verified executable attachments have been added
@@ -402,9 +1448,8 @@
    (xdoc::p
     "A sub-library for Password-Based Key Derivation Function 2 (PBKDF2)
      as specified by RFC 8018, and specialized to use HMAC SHA-512,
-     has been added.")
-   ;; xdoc to be added later
-   ;; (xdoc::seetopic "kdf::pbkdf2-hmac-sha-512")
+     has been added.
+     See @(tsee kdf::pbkdf2-hmac-sha-512).")
 
    (xdoc::p
     "A sub-library has been added that includes formal specifications for
@@ -504,6 +1549,9 @@
    (xdoc::h4 (xdoc::seetopic "event-macros" "Event Macros Library"))
 
    (xdoc::p
+    "Utilities for applicability conditions have been added.")
+
+   (xdoc::p
     "XDOC constructors for documenting the implementation of event macros
      have been added.")
 
@@ -530,6 +1578,15 @@
      similar to @(tsee std::deflist),
      which results in some better theorems when supplied.")
 
+   (xdoc::p
+    "A new macro @(tsee fty::deffixequiv-sk) has been added
+     to automate the proof of @(tsee fty::deffixequiv) theorems
+     for @(tsee defun-sk) (including @(tsee std::define-sk)) functions.")
+
+   (xdoc::p
+    "A new macro @(tsee fty::defflatsum) has been added
+     to introduce ``flat'' (i.e. not tagged) sums of disjoint types.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "gl::gl" "GL"))
@@ -550,7 +1607,7 @@
    (xdoc::p
     "The implementation of ATJ has been improved
      to use a more general abstract syntax and pretty-printer for Java
-     (which are part of the implementation of ATJ),
+     (which are currently part of the implementation of ATJ),
      instead of writing directly to the output channel piecewise.
      This provides more flexibility, and the ability to have more code
      in logic mode and guard-verified.")
@@ -569,19 +1626,20 @@
 
    (xdoc::p
     "ATJ has been extended with the ability to generate Java code
+     that operates on narrower types than the one for all ACL2 values.
+     This ability is available in the shallow embedding approach,
+     when guards are assumed satisfied.")
+
+   (xdoc::p
+    "ATJ has been extended with the ability to generate Java code
      that uses Java primitive values and operations.
      This ability is available in the shallow embedding approach,
      when guards are assumed satisfied.")
 
    (xdoc::p
     "ATJ has been extended with the ability to generate Java code
-     that uses Java primitive arrays and operations.
-     This ability is available in the shallow embedding approach,
-     when guards are assumed satisfied.")
-
-   (xdoc::p
-    "ATJ has been extended with the ability to generate Java code
-     that operates on narrower types than the one for all ACL2 values.
+     that uses Java primitive arrays and operations,
+     and to destructively update arrays.
      This ability is available in the shallow embedding approach,
      when guards are assumed satisfied.")
 
@@ -590,6 +1648,10 @@
      from tail-recursive ACL2 functions.
      This ability is available in the shallow embedding approach,
      when guards are assumed satisfied.")
+
+   (xdoc::p
+    "A comprehensive tutorial on ATJ has been started.
+     It is available at @(tsee java::atj-tutorial).")
 
    ;;;;;;;;;;;;;;;;;;;;
 
@@ -615,10 +1677,19 @@
      (see release notes about ATJ).")
 
    (xdoc::p
+    "Native Java implementations of a few more ACL2 built-in functions
+     have been added.")
+
+   (xdoc::p
     "The documentation of AIJ has been extended and improved.
      In particular, explicit preconditions have been added for public methods,
      and explicit invariants have been added for non-public fields
      and for arguments and results of non-public methods.")
+
+   (xdoc::p
+    "A number of JUnit unit tests have been added
+     for some of the AIJ Java code.
+     More unit tests are planned.")
 
    ;;;;;;;;;;;;;;;;;;;;
 
@@ -651,7 +1722,11 @@
 
    (xdoc::p
     "Models have been added
-     of the decimal, hexadecimal, octal, and binary integer literals.")
+     of the decimal, hexadecimal, octal, and binary integer literals.
+     Abstract models have been added
+     of the floating-point literals.
+     Models have been added
+     of the character and string literals.")
 
    (xdoc::p
     "A model of the processing of Unicode escapes has been added.
@@ -664,18 +1739,123 @@
      as well as of all the primitive conversions
      involving floating-point values.")
 
+   (xdoc::p
+    "A model of (opaque) pointers has been added.
+     A model of reference values (consisting of pointers and a null reference)
+     has been added.
+     A model of all values, consisting of primitive and reference values,
+     has been added.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 "Kestrel Utilities")
+
+   (xdoc::p
+    "Note that some of the books below are not as polished as they could be.
+    Such books contain the text @('STATUS: IN-PROGRESS') near the top of the
+    file.")
+
+   (xdoc::p
+    "A new book, @('[books]/kestrel/utilities/conjunctions') contains
+     utilities for manipulating conjunctions.")
+
+   (xdoc::p
+    "A new book, @('[books]/kestrel/utilities/declares0') contains
+     utilities for manipulating @(tsee declare)s .")
+
+   (xdoc::p
+    "A new book, @('[books]/kestrel/utilities/def-constant-opener')
+    contains a utility that generates an opener theorem for a function when all
+    arguments are constant (this is used by Axe).")
+
+   (xdoc::p
+    "A new book, @('[books]/kestrel/utilities/defopeners') contains a
+    utility for making opener rules for recursive functions.")
+
+   (xdoc::p
+    "A new book, @('[books]/kestrel/utilities/deftest'), contains a utility,
+     @('deftest') for isolating tests and running them with extensive guard
+     checking.")
+
+   (xdoc::p
+    "A new book, @('[books]/kestrel/utilities/defthm-events') contains
+    utilities for processing @(tsee defthm) forms.")
+
+   (xdoc::p
+    "A new book, @('[books]/kestrel/utilities/defun-events') contains
+    utilities for processing @(tsee defun) forms.")
+
+   (xdoc::p
+    "A new book, @('[books]/kestrel/utilities/disables') disables some
+    built-in functions that may be convenient to have disabled from the
+    start.")
+
+   (xdoc::p
+    "A new book, @('[books]/kestrel/utilities/doublets2') contains
+    utilities that deal with doublets (true lists of length 2).")
+
+   (xdoc::p
+    "A new book, @('[books]/kestrel/utilities/equal-of-booleans'), contains
+     rules to break an equality of two booleans into the equivalent conjunction
+     of two implications.")
+
+   (xdoc::p
+    "A new book, @('[books]/kestrel/utilities/erp') contains utilities
+    for returning errors (which are often assigned to a variable called @('erp').")
+
+   (xdoc::p
+    "A new book, @('[books]/kestrel/utilities/forms') contains basic
+    utilities about forms that look like function calls.")
+
+   (xdoc::p
+    "A new book, @('[books]/kestrel/utilities/keyword-value-lists2')
+    contains utilities about keyword-value-lists.")
+
+   (xdoc::p
+    "A new book, @('[books]/kestrel/utilities/make-and') contains a
+    utility to make an untranslated conjunction.")
+
+   (xdoc::p
+    "A new book, @('[books]/kestrel/utilities/make-and-nice') contains a
+    utility to make a, possibly simplified, untranslated conjunction.")
+
+   (xdoc::p
+    "A new book, @('[books]/kestrel/utilities/make-or') contains a
+    utility to make an untranslated disjunction.")
+
+   (xdoc::p
+    "A new book, @('[books]/kestrel/utilities/make-or-nice') contains a
+    utility to make a, possibly simplified, untranslated disjunction.")
+
+   (xdoc::p
+    "A new book, @('[books]/kestrel/utilities/my-get-event') contains a utility
+    to get the (untranslated) event that introduced a function.")
+
+   (xdoc::p
+    "A new book, @('[books]/kestrel/utilities/pack') contains utilities for
+    making symbols from strings, natural numbers, characters, and other
+    symbols.")
+
+   (xdoc::p
+    "A new book,
+    @('[books]/kestrel/utilities/remove-duplicates-equal-dollar') contains a
+    utility to remove duplicates, keeping the first of each set.")
 
    (xdoc::p
     "A new book, @('[books]/kestrel/utilities/smaller-termp'), contains
      a utility to compare the sizes of terms.")
 
    (xdoc::p
-    "A new book, @('[books]/kestrel/utilities/equal-of-booleans'), contains
-     rules to break an equality of two booleans into the equivalent conjunction
-     of two implications.")
+    "A new book, @('[books]/kestrel/utilities/substitution') contains
+   utilities that perform substitution.")
+
+   (xdoc::p
+    "A new book, @('[books]/kestrel/utilities/terms') contains various
+    utilities for manipulating terms.")
+
+   (xdoc::p
+    "A new book, @('[books]/kestrel/utilities/world') contains utilities
+    for querying the ACL2 logical world.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -696,7 +1876,7 @@
    (xdoc::h4 "Pseudo-good-world")
 
    (xdoc::p
-    "Some functions have been factored ouf of the file
+    "Some functions have been factored out of the file
      @('[book]/system/pseudo-good-worldp.lisp'),
      and put into new individual files,
      for greater modularity.")
@@ -731,7 +1911,13 @@
    (xdoc::p
     "The function @(tsee symbol-package-name-lst)
      has been moved to the Std extensions in the Kestrel Books,
-     under @('[books]/kestrel/std/basic/symbol-package-name-lst.lisp').")
+     under @('[books]/kestrel/std/basic/').")
+
+   (xdoc::p
+    "The function @(tsee symbol-package-name-non-cl),
+     originally called @('symbol-package-name-safe') but now renamed,
+     has been moved to the Std extensions in the Kestrel Books,
+     under @('[books]/kestrel/std/basic/').")
 
    (xdoc::p
     "The functions @(tsee organize-symbols-by-name)
@@ -742,14 +1928,17 @@
    (xdoc::p
     "A variant @(tsee mbt$) of @(tsee mbt) has been introduced,
      which requires the argument to be just non-@('nil')
-     instead of exactly @('t').")
+     instead of exactly @('t').
+     This is in the Std extensions in the Kestrel Books,
+     under @('[books]/kestrel/std/basic/').")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "std/lists" "Standard Lists Library"))
 
    (xdoc::p
-    "Added a file @('union.lisp') with theorems about @(tsee union-equal).")
+    "A file @('union.lisp') has been added
+     with theorems about @(tsee union-equal).")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -803,6 +1992,18 @@
      symbols named @('<VALUES>') in the body and hints.")
 
    (xdoc::p
+    "A new macro @(tsee defarbrec) (for `define arbitrary recursion')
+     has been added, to introduce recursive functions
+     without having to prove termination right away.
+     There exist similar macros in the community books,
+     but the specifics of this new macro are motivated for use with "
+    (xdoc::seetopic "apt::apt" "APT")
+    ". See the `Related Tools' section
+     of the documentation of @(tsee defarbrec) for more information.
+     This macro is currently in the Std/util extensions in the Kestrel Books,
+     but could be moved to @('[books]/std/util') at some point.")
+
+   (xdoc::p
     "A new macro @(tsee std::deffixer) has been added
      that automates the definition of fixing functions,
      and the generation of theorems about them,
@@ -813,6 +2014,14 @@
      not only the equivalence, but also the fixer for the fixtype.
      This macro is currently in the Std/util extensions in the Kestrel Books,
      but could be moved to @('[books]/std/util') at some point.")
+
+   (xdoc::p
+    "A new macro @(tsee defiso) has been added,
+     to establish isomorphic mappings by verification.")
+
+   (xdoc::p
+    "A new macro @(tsee defmax-nat) has been added,
+     to introduce functions to return maxima of sets of natural numbers.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -911,6 +2120,10 @@
      and :long strings, when supplied, consist solely of standard
      characters (see @(see standard-char-p)), except that tabs are also
      permitted.")
+
+   (xdoc::p
+    "Supporting materials for ACL2 Workshop 2020 have been added.  They are in
+    directory @('workshops/2020/'); see the @('README') file there.")
 
    ))
 
@@ -1687,8 +2900,8 @@
  string of hex digit characters.  Refactored all the old and new utilities into
  separate files to reduce dependencies.</p>
 
- <p>Extended the <see topic='@(url symbol-utilities)'>symbol utilities</see>
- with a utility that lifts @(tsee symbol-package-name) to lists.</p>
+ <p>Extended the Kestrel symbol utilities with a utility that lifts @(tsee
+ symbol-package-name) to lists.</p>
 
  <p>Moved @(tsee maybe-msgp) under newly created <see topic='@(url
  message-utilities)'>message utilities</see>.  Extended these utilities with a
@@ -1980,7 +3193,7 @@
  @(':rewrite').</p>
 
  <p>The rule @('sets-are-true-lists') has been split into three rules with the
- same formula: a disabled @(see rewrite) rule of that name, a (@see
+ same formula: a disabled @(see rewrite) rule of that name, a @(see
  compound-recognizer) rule @('sets-are-true-lists-compound-recognizer'), and a
  rewrite rule @('sets-are-true-lists-cheap') whose @(see backchain-limit) is
  1.</p>
@@ -2071,8 +3284,8 @@
  <p>A new @(see logic)-mode utility, @(tsee magic-macroexpand), performs
  macroexpansion when all macros to be expanded are in logic mode.</p>
 
- <p>There is a new @(see symbol-utilities) book (initially with a single
- function, @(tsee symbol-package-name-safe)).</p>
+ <p>There is a new Kestrel symbol utilities book (initially with a single
+ function, @('symbol-package-name-safe')).</p>
 
  <h4>The apply books</h4>
 
@@ -2219,7 +3432,7 @@
  <h3>Testing</h3>
 
  <p>The documentation topics for testing have been reorganized, with
- introduction of a new topic, @(see kestrel-testing-utilities), as a parent of
+ introduction of a new topic, @('kestrel-testing-utilities'), as a parent of
  the testing utilities that are part of the @(see kestrel-books), so that now
  the topic @(see testing-utilities) is the top-level topic for the testing
  utilities.</p>

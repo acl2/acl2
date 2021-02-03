@@ -10,16 +10,21 @@
 
 (in-package "APT")
 
+(include-book "kestrel/error-checking/ensure-function-is-guard-verified" :dir :system)
+(include-book "kestrel/error-checking/ensure-function-is-logic-mode" :dir :system)
+(include-book "kestrel/error-checking/ensure-value-is-boolean" :dir :system)
+(include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
+(include-book "kestrel/error-checking/ensure-value-is-untranslated-term" :dir :system)
 (include-book "kestrel/event-macros/applicability-conditions" :dir :system)
+(include-book "kestrel/event-macros/event-generation" :dir :system)
 (include-book "kestrel/event-macros/input-processing" :dir :system)
-(include-book "kestrel/event-macros/intro-macros" :dir :system)
+(include-book "kestrel/event-macros/proof-preparation" :dir :system)
+(include-book "kestrel/event-macros/restore-output" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
 (include-book "kestrel/std/system/install-not-normalized-event" :dir :system)
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
 (include-book "kestrel/utilities/keyword-value-lists" :dir :system)
-(include-book "kestrel/utilities/orelse" :dir :system)
 (include-book "kestrel/utilities/system/paired-names" :dir :system)
-(include-book "kestrel/utilities/user-interface" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
 (include-book "utilities/input-processing")
@@ -31,15 +36,15 @@
 
  casesplit
 
- :item-state t
-
- :item-wrld t
-
- :item-ctx t
-
  :items
 
- ("@('old'),
+ (xdoc::*evmac-topic-implementation-item-state*
+
+  xdoc::*evmac-topic-implementation-item-wrld*
+
+  xdoc::*evmac-topic-implementation-item-ctx*
+
+  "@('old'),
    @('conditions'),
    @('theorems'),
    @('new-name'),
@@ -118,12 +123,12 @@
   (b* (((er old$) (ensure-function-name-or-numbered-wildcard$
                    old "The first input" t nil))
        (description (msg "The target function ~x0" old$))
-       ((er &) (ensure-function-logic-mode$ old$ description t nil))
+       ((er &) (ensure-function-is-logic-mode$ old$ description t nil))
        ((er &) (ensure-function-number-of-results$ old$ 1
                                                    description t nil))
        ((er &) (ensure-function-no-stobjs$ old$ description t nil))
        ((er &) (if (eq verify-guards t)
-                   (ensure-function-guard-verified$
+                   (ensure-function-is-guard-verified$
                     old$
                     (msg "Since the :VERIFY-GUARDS input is T, ~
                           the target function ~x0" old$)
@@ -148,7 +153,8 @@
   :short "Process an element of the @('conditions') input."
   (b* ((wrld (w state))
        (description (msg "The ~n0 element of the second input" (list pos)))
-       ((er (list term stobjs-out)) (ensure-term$ cond description t nil))
+       ((er (list term stobjs-out))
+        (ensure-value-is-untranslated-term$ cond description t nil))
        (description (msg "The term ~x0 that denotes the ~n1 condition"
                          cond (list pos)))
        ((er &) (ensure-term-free-vars-subset$ term
@@ -347,7 +353,7 @@
                state)
   :verify-guards nil
   :short "Process the @(':thm-name') input."
-  (b* (((er &) (ensure-symbol$ thm-name "The :THM-NAME input" t nil))
+  (b* (((er &) (ensure-value-is-symbol$ thm-name "The :THM-NAME input" t nil))
        (name (if (eq thm-name :auto)
                  (make-paired-name old$ new-name$ 2 (w state))
                thm-name))
@@ -394,7 +400,8 @@
                                     new-enable$
                                     thm-name$
                                     verify-guards$
-                                    hints$)')
+                                    hints$
+                                    names-to-avoid)')
                         satisfying
                         @('(typed-tuplep symbolp
                                          pseudo-term-listp
@@ -404,24 +411,9 @@
                                          booleanp
                                          symbolp
                                          booleanp
-                                         symbol-alistp
-                                         result)'),
-                        where @('old$') is
-                        the result of @(tsee casesplit-process-old),
-                        @('conditions$') is
-                        the result of @(tsee casesplit-process-conditions),
-                        @('hyps') and @('news') are
-                        the result of @(tsee casesplit-process-theorems),
-                        @('new-name$') is
-                        the result of @(tsee process-input-new-name),
-                        @('new-enable$') indicates whether
-                        the new function should be enabled or not,
-                        @('thm-name$') is
-                        the result of @(tsee casesplit-process-thm-name),
-                        @('verify-guards$') indicates whether the guards of
-                        the new function should be verified or not, and
-                        @('hints$') is
-                        the result of @(tsee evmac-process-input-hints).")
+                                         evmac-input-hints-p
+                                         symbol-listp
+                                         result)').")
                state)
   :mode :program
   :short "Process all the inputs."
@@ -438,24 +430,26 @@
     @(':verify-guards') is also used to process @('old'),
     but it is only tested for equality with @('t')
     (see @(tsee casesplit-process-old)).")
-  (b* ((wrld (w state))
-       ((er old$) (casesplit-process-old old verify-guards ctx state))
-       ((er verify-guards$) (ensure-boolean-or-auto-and-return-boolean$
-                             verify-guards
-                             (guard-verified-p old$ wrld)
-                             "The :VERIFY-GUARDS input" t nil))
+  (b* (((er old$) (casesplit-process-old old verify-guards ctx state))
+       ((er verify-guards$) (process-input-verify-guards verify-guards
+                                                         old$
+                                                         ctx
+                                                         state))
        ((er conditions$) (casesplit-process-conditions
                           conditions old$ verify-guards$ ctx state))
        ((er (list hyps news)) (casesplit-process-theorems
                                theorems old$ conditions$ ctx state))
-       ((er new-name$) (process-input-new-name new-name old$ ctx state))
-       ((er new-enable$) (ensure-boolean-or-auto-and-return-boolean$
-                          new-enable
-                          (fundef-enabledp old state)
-                          "The :NEW-ENABLE input" t nil))
+       ((er (list new-name$ names-to-avoid)) (process-input-new-name new-name
+                                                                     old$
+                                                                     nil
+                                                                     ctx
+                                                                     state))
+       ((er new-enable$) (process-input-new-enable new-enable old$ ctx state))
        ((er thm-name$) (casesplit-process-thm-name
                         thm-name old$ new-name$ ctx state))
-       ((er &) (ensure-boolean$ thm-enable "The :THM-ENABLE input" t nil))
+       (names-to-avoid (cons thm-name$ names-to-avoid))
+       ((er &) (ensure-value-is-boolean$ thm-enable
+                                         "The :THM-ENABLE input" t nil))
        ((er hints$) (evmac-process-input-hints hints ctx state))
        ((er &) (evmac-process-input-print print ctx state))
        ((er &) (evmac-process-input-show-only show-only ctx state)))
@@ -467,7 +461,8 @@
                  new-enable$
                  thm-name$
                  verify-guards$
-                 hints$))))
+                 hints$
+                 names-to-avoid))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -771,35 +766,24 @@
      We also use the guard theorem of @('old'),
      which may be needed to discharge the guard obligations
      within the guard term of @('old')."))
-  (b* ((macro (function-intro-macro new-enable$ nil))
-       (formals (formals old$ wrld))
-       (new0 (car (last news)))
-       (body
-        (casesplit-gen-new-fn-body (len conditions$) conditions$ news new0))
-       (body (untranslate body nil wrld))
-       (guard (uguard old$ wrld))
-       (guard-appcond-thm-names (nthcdr (len news) appcond-thm-names))
-       (guard-hints? (and verify-guards$
-                          `(("Goal"
-                             :in-theory nil
-                             :use (,@(strip-cdrs guard-appcond-thm-names)
-                                   (:guard-theorem ,old$))))))
-       (local-event
-        `(local
-          (,macro ,new-name$ (,@formals)
-                  (declare (xargs
-                            :guard ,guard
-                            :verify-guards ,verify-guards$
-                            ,@(if verify-guards$
-                                  (list :guard-hints guard-hints?)
-                                nil)))
-                  ,body)))
-       (exported-event
-        `(,macro ,new-name$ (,@formals)
-                 (declare (xargs :guard ,guard
-                                 :verify-guards ,verify-guards$))
-                 ,body)))
-    (mv local-event exported-event))
+  (evmac-generate-defun
+   new-name$
+   :formals (formals old$ wrld)
+   :guard (uguard old$ wrld)
+   :body (b* ((new0 (car (last news)))
+              (body (casesplit-gen-new-fn-body (len conditions$)
+                                               conditions$
+                                               news
+                                               new0)))
+           (untranslate body nil wrld))
+   :guard-hints (b* ((guard-appcond-thm-names (nthcdr (len news)
+                                                      appcond-thm-names)))
+                  `(("Goal"
+                     :in-theory nil
+                     :use (,@(strip-cdrs guard-appcond-thm-names)
+                           (:guard-theorem ,old$)))))
+   :verify-guards verify-guards$
+   :enable new-enable$)
 
   :prepwork
   ((local (include-book "std/typed-lists/pseudo-term-listp" :dir :system))
@@ -848,8 +832,7 @@
      these are all the applicability conditions,
      because there are no guard-related applicability conditions.
      We also use the theorem names specified in the @('theorems') input."))
-  (b* ((macro (theorem-intro-macro thm-enable$))
-       (formals (formals old$ wrld))
+  (b* ((formals (formals old$ wrld))
        (formula `(equal (,old$ ,@formals)
                         (,new-name$ ,@formals)))
        (formula (untranslate formula t wrld))
@@ -858,14 +841,12 @@
        (hints `(("Goal"
                  :in-theory '(,new-unnorm-name)
                  :use (,@(strip-cdrs thm-hyp-appcond-thm-names)
-                       ,@theorems$))))
-       (local-event `(local
-                      (,macro ,thm-name$
-                              ,formula
-                              :hints ,hints)))
-       (exported-event `(,macro ,thm-name$
-                                ,formula)))
-    (mv local-event exported-event)))
+                       ,@theorems$)))))
+    (evmac-generate-defthm
+     thm-name$
+     :formula formula
+     :hints hints
+     :enable thm-enable$)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -883,6 +864,7 @@
                                   (print$ evmac-input-print-p)
                                   (show-only$ booleanp)
                                   (call pseudo-event-formp)
+                                  (names-to-avoid symbol-listp)
                                   ctx
                                   state)
   :returns (mv erp
@@ -944,7 +926,6 @@
      a blank line is printed just before the @(tsee encapsulate),
      for visual separation."))
   (b* ((wrld (w state))
-       (names-to-avoid (list new-name$ thm-name$))
        (appconds (casesplit-gen-appconds old$
                                          conditions$
                                          hyps
@@ -954,40 +935,42 @@
        ((er (list appcond-thm-events
                   appcond-thm-names
                   names-to-avoid))
-        (evmac-appcond-theorems-no-extra-hints
-         appconds hints$ names-to-avoid print$ ctx state))
+        (evmac-appcond-theorems-no-extra-hints appconds
+                                               hints$
+                                               names-to-avoid
+                                               print$
+                                               ctx
+                                               state))
        ((mv new-fn-local-event
-            new-fn-exported-event) (casesplit-gen-new-fn
-            old$
-            conditions$
-            news
-            new-name$
-            new-enable$
-            verify-guards$
-            appcond-thm-names
-            wrld))
+            new-fn-exported-event)
+        (casesplit-gen-new-fn old$
+                              conditions$
+                              news
+                              new-name$
+                              new-enable$
+                              verify-guards$
+                              appcond-thm-names
+                              wrld))
        ((mv new-unnorm-event
-            new-unnorm-name) (install-not-normalized-event new-name$
-            t
-            names-to-avoid
-            wrld))
-       ((mv old-to-new-thm-local-event
-            old-to-new-thm-exported-event) (casesplit-gen-old-to-new-thm
-            old$
-            theorems$
-            new-name$
-            thm-name$
-            thm-enable$
-            appcond-thm-names
             new-unnorm-name
-            wrld))
+            &)
+        (install-not-normalized-event new-name$ t names-to-avoid wrld))
+       ((mv old-to-new-thm-local-event
+            old-to-new-thm-exported-event)
+        (casesplit-gen-old-to-new-thm old$
+                                      theorems$
+                                      new-name$
+                                      thm-name$
+                                      thm-enable$
+                                      appcond-thm-names
+                                      new-unnorm-name
+                                      wrld))
        (new-fn-numbered-name-event `(add-numbered-name-in-use ,new-name$))
        (encapsulate-events `((logic)
                              (set-ignore-ok t)
                              (set-irrelevant-formals-ok t)
                              ,@appcond-thm-events
-                             (set-default-hints nil)
-                             (set-override-hints nil)
+                             (evmac-prepare-proofs)
                              ,new-fn-local-event
                              ,new-unnorm-event
                              ,old-to-new-thm-local-event
@@ -1059,18 +1042,20 @@
                   new-enable$
                   thm-name$
                   verify-guards$
-                  hints$)) (casesplit-process-inputs old
-                                                     conditions
-                                                     theorems
-                                                     new-name
-                                                     new-enable
-                                                     thm-name
-                                                     thm-enable
-                                                     verify-guards
-                                                     hints
-                                                     print
-                                                     show-only
-                                                     ctx state))
+                  hints$
+                  names-to-avoid))
+        (casesplit-process-inputs old
+                                  conditions
+                                  theorems
+                                  new-name
+                                  new-enable
+                                  thm-name
+                                  thm-enable
+                                  verify-guards
+                                  hints
+                                  print
+                                  show-only
+                                  ctx state))
        ((er event) (casesplit-gen-everything old$
                                              conditions$
                                              theorems
@@ -1085,6 +1070,7 @@
                                              print
                                              show-only
                                              call
+                                             names-to-avoid
                                              ctx
                                              state)))
     (value event)))

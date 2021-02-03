@@ -1,7 +1,6 @@
 (in-package "ACL2")
 
-; Define must-succeed (used below).
-(include-book "misc/eval" :dir :system)
+(include-book "std/testing/must-eval-to-t" :dir :system)
 
 ; We add this for the dependency scanner, though perhaps the dependency of
 ; acl2x-pcert-test-2-include.pcert0 on acl2x-pcert-test-2.cert in Makefile is

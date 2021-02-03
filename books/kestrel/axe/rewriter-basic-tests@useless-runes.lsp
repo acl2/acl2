@@ -1,0 +1,2 @@
+(IF-SAME-BRANCHES)
+(FOO)

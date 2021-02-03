@@ -7,8 +7,8 @@
 
 (in-package "ACL2")
 
-; Define must-succeed and must-fail macros.
-(include-book "misc/eval" :dir :system)
+(include-book "std/testing/must-fail" :dir :system)
+(include-book "std/testing/must-succeed" :dir :system)
 
 ; A very basic example.
 
@@ -212,7 +212,7 @@
   :hints (("Goal"
            :instructions
            ((:prove
-             :hints (("Goal" 
+             :hints (("Goal"
                       :clause-processor
                       (strengthen-cl2 clause '(equal x x) state)))))))
   :rule-classes nil)
@@ -260,7 +260,7 @@
   :hints (("Goal"
            :instructions
            ((:prove
-             :hints (("Goal" 
+             :hints (("Goal"
                       :clause-processor
                       (strengthen-cl3 clause '(equal x x) state)))))))
   :rule-classes nil)

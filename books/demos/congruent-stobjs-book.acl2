@@ -1,0 +1,10 @@
+(include-book "tools/run-script" :dir :system)
+(run-script "congruent-stobjs")
+
+; Help dependency scanner.
+#||
+(depends-on "congruent-stobjs-input.lsp")
+(depends-on "congruent-stobjs-log.txt")
+(include-book "std/testing/must-fail" :dir :system)
+(include-book "std/testing/must-succeed" :dir :system)
+||#

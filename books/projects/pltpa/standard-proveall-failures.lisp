@@ -125,7 +125,7 @@
 
 ; will be
 
-; (defun f (v1 ... vn) 
+; (defun f (v1 ... vn)
 ;  (if (and (pltp-objectp v1) ... (pltp-objectp vn))
 ;      body'
 ;      '???))
@@ -140,7 +140,7 @@
 ; theorems insure that the ??? exits on all the functions are never taken.
 
 (in-package "PLTP")
-(include-book "misc/eval" :dir :system)
+(include-book "std/testing/must-fail" :dir :system)
 
 (defun pltp-objectp (x)
   (declare (xargs :guard t))
@@ -175,7 +175,7 @@ PLTP !>(props numberp)
 ||#
 
 (defun pltp-numberp (x)
-  (declare (xargs :guard t))  
+  (declare (xargs :guard t))
   (if (pltp-objectp x)
       (IF X (IF (CAR X) NIL (PLTP-NUMBERP (CDR X)))
           (CONS NIL NIL))
@@ -402,7 +402,7 @@ PLTP !>(props BINARYP)
 ; reach of PLTP had it been able to use lemmas!
 ; That didn't happen until around 1977 with
 
-; A Lemma Driven Automatic Theorem Prover for Recursive Function Theory, 
+; A Lemma Driven Automatic Theorem Prover for Recursive Function Theory,
 ; R.S. Boyer and J S. Moore. Proceedings of the 5th International Joint
 ; Conference on Artificial Intelligence, 1977, pp. 511-519.
 
@@ -591,4 +591,3 @@ PLTP !>(props BINARYP)
 ; had no way to express that idea... unless the definition of BINADD were
 ; changed somehow to coerce those outputs.  I've tried several versions of BINADD
 ; and BINARYOF without success.
-

@@ -1,0 +1,4895 @@
+(MILAWA::CAR)
+(MILAWA::CDR)
+(MILAWA::SYMBOLP)
+(MILAWA::SYMBOL-< (12 2
+                      (:REWRITE INTERN-IN-PACKAGE-OF-SYMBOL-SYMBOL-NAME))
+                  (8 8
+                     (:TYPE-PRESCRIPTION STRINGP-SYMBOL-PACKAGE-NAME))
+                  (6 2
+                     (:REWRITE INTERN-IN-PACKAGE-OF-SYMBOL-IS-IDENTITY))
+                  (4 4
+                     (:TYPE-PRESCRIPTION MEMBER-SYMBOL-NAME))
+                  (2 2
+                     (:REWRITE DEFAULT-SYMBOL-PACKAGE-NAME))
+                  (2 2 (:REWRITE DEFAULT-SYMBOL-NAME))
+                  (2 2
+                     (:REWRITE DEFAULT-INTERN-IN-PACKAGE-OF-SYMBOL)))
+(MILAWA::NATP)
+(MILAWA::NFIX (1 1 (:TYPE-PRESCRIPTION MILAWA::NFIX)))
+(MILAWA::< (2 2 (:REWRITE DEFAULT-<-2))
+           (2 2 (:REWRITE DEFAULT-<-1)))
+(MILAWA::<=)
+(MILAWA::ZP)
+(MILAWA::+ (2 2 (:REWRITE DEFAULT-<-2))
+           (2 2 (:REWRITE DEFAULT-<-1)))
+(MILAWA::UNBOUNDED-RANK (184 88 (:REWRITE DEFAULT-+-2))
+                        (126 9 (:DEFINITION LENGTH))
+                        (123 88 (:REWRITE DEFAULT-+-1))
+                        (99 9 (:DEFINITION LEN))
+                        (72 18 (:REWRITE COMMUTATIVITY-OF-+))
+                        (72 18 (:DEFINITION INTEGER-ABS))
+                        (62 35 (:REWRITE DEFAULT-CDR))
+                        (31 24 (:REWRITE DEFAULT-<-2))
+                        (30 24 (:REWRITE DEFAULT-<-1))
+                        (30 5 (:DEFINITION MEMBER-EQUAL))
+                        (27 27
+                            (:TYPE-PRESCRIPTION STR::TRUE-LISTP-OF-EXPLODE))
+                        (27 18 (:REWRITE STR::CONSP-OF-EXPLODE))
+                        (26 26 (:REWRITE FOLD-CONSTS-IN-+))
+                        (22 22 (:REWRITE DEFAULT-CAR))
+                        (18 18 (:REWRITE DEFAULT-UNARY-MINUS))
+                        (18 9
+                            (:REWRITE STR::COERCE-TO-LIST-REMOVAL))
+                        (12 12 (:LINEAR ACL2-COUNT-WHEN-MEMBER))
+                        (10 10 (:REWRITE SUBSETP-MEMBER . 2))
+                        (10 10 (:REWRITE SUBSETP-MEMBER . 1))
+                        (9 9 (:TYPE-PRESCRIPTION LEN))
+                        (9 9
+                           (:REWRITE STR::EXPLODE-WHEN-NOT-STRINGP))
+                        (9 9 (:REWRITE DEFAULT-REALPART))
+                        (9 9 (:REWRITE DEFAULT-NUMERATOR))
+                        (9 9 (:REWRITE DEFAULT-IMAGPART))
+                        (9 9 (:REWRITE DEFAULT-DENOMINATOR))
+                        (5 5 (:REWRITE MEMBER-SELF))
+                        (1 1 (:REWRITE SUBSETP-TRANS2))
+                        (1 1 (:REWRITE SUBSETP-TRANS)))
+(MILAWA::- (2 2 (:REWRITE DEFAULT-<-2))
+           (2 2 (:REWRITE DEFAULT-<-1)))
+(MILAWA::NATP-SAME-AS-IN-ACL2 (2 2 (:REWRITE DEFAULT-<-2))
+                              (2 2 (:REWRITE DEFAULT-<-1)))
+(MILAWA::NFIX-SAME-AS-IN-ACL2 (2 2 (:REWRITE DEFAULT-<-2))
+                              (2 2 (:REWRITE DEFAULT-<-1)))
+(MILAWA::ZP-SAME-AS-IN-ACL2 (2 2 (:REWRITE ZP-OPEN))
+                            (2 2 (:REWRITE DEFAULT-<-2))
+                            (2 2 (:REWRITE DEFAULT-<-1)))
+(MILAWA::BOOLEANP)
+(MILAWA::EQUAL-OF-BOOLEANS-REWRITE)
+(MILAWA::BOOLEANP-OF-BOOLEANP
+     (1 1
+        (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE)))
+(MILAWA::BOOLEANP-OF-EQUAL (4 3
+                              (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE)))
+(MILAWA::BOOLEANP-OF-NOT)
+(MILAWA::BOOLEANP-OF-IFF)
+(MILAWA::BOOLEANP-OF-ZP)
+(MILAWA::BOOLEANP-OF-CONSP)
+(MILAWA::CAR-WHEN-NOT-CONSP)
+(MILAWA::CDR-WHEN-NOT-CONSP)
+(MILAWA::CAR-OF-CONS (1 1 (:REWRITE DEFAULT-CAR))
+                     (1 1
+                        (:REWRITE MILAWA::CAR-WHEN-NOT-CONSP)))
+(MILAWA::CDR-OF-CONS (1 1 (:REWRITE DEFAULT-CDR))
+                     (1 1
+                        (:REWRITE MILAWA::CDR-WHEN-NOT-CONSP)))
+(MILAWA::CAR-CDR-ELIM (1 1 (:REWRITE DEFAULT-CDR))
+                      (1 1 (:REWRITE DEFAULT-CAR))
+                      (1 1 (:REWRITE MILAWA::CDR-WHEN-NOT-CONSP))
+                      (1 1
+                         (:REWRITE MILAWA::CAR-WHEN-NOT-CONSP)))
+(MILAWA::CONS-OF-CAR-AND-CDR (8 8 (:REWRITE DEFAULT-CDR))
+                             (8 8 (:REWRITE DEFAULT-CAR))
+                             (4 4
+                                (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+                             (4 4 (:REWRITE MILAWA::CDR-WHEN-NOT-CONSP))
+                             (4 4
+                                (:REWRITE MILAWA::CAR-WHEN-NOT-CONSP)))
+(MILAWA::EQUAL-OF-CONS-REWRITE
+     (3 3
+        (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (2 2 (:REWRITE MILAWA::CDR-WHEN-NOT-CONSP))
+     (2 2
+        (:REWRITE MILAWA::CAR-WHEN-NOT-CONSP)))
+(MILAWA::EQUAL-OF-CONS-REWRITE-CONSTANTS
+     (4 4
+        (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (2 2 (:REWRITE MILAWA::CDR-WHEN-NOT-CONSP))
+     (2 2
+        (:REWRITE MILAWA::CAR-WHEN-NOT-CONSP)))
+(MILAWA::BOOLEANP-OF-SYMBOLP
+     (10 1
+         (:REWRITE INTERN-IN-PACKAGE-OF-SYMBOL-SYMBOL-NAME))
+     (7 3
+        (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (6 6
+        (:TYPE-PRESCRIPTION STRINGP-SYMBOL-PACKAGE-NAME))
+     (3 1
+        (:REWRITE INTERN-IN-PACKAGE-OF-SYMBOL-IS-IDENTITY))
+     (2 2
+        (:TYPE-PRESCRIPTION MEMBER-SYMBOL-NAME))
+     (1 1
+        (:REWRITE DEFAULT-SYMBOL-PACKAGE-NAME))
+     (1 1 (:REWRITE DEFAULT-SYMBOL-NAME))
+     (1 1
+        (:REWRITE DEFAULT-INTERN-IN-PACKAGE-OF-SYMBOL)))
+(MILAWA::BOOLEANP-OF-SYMBOL-< (2 2 (:REWRITE DEFAULT-SYMBOL-NAME)))
+(MILAWA::IRREFLEXIVITY-OF-SYMBOL-< (2 2 (:REWRITE DEFAULT-SYMBOL-NAME)))
+(MILAWA::ANTISYMMETRY-OF-SYMBOL-<
+     (142 22
+          (:REWRITE INTERN-IN-PACKAGE-OF-SYMBOL-SYMBOL-NAME))
+     (80 80
+         (:TYPE-PRESCRIPTION STRINGP-SYMBOL-PACKAGE-NAME))
+     (66 22
+         (:REWRITE INTERN-IN-PACKAGE-OF-SYMBOL-IS-IDENTITY))
+     (44 44
+         (:TYPE-PRESCRIPTION MEMBER-SYMBOL-NAME))
+     (42 6 (:DEFINITION EQLABLE-LISTP))
+     (38 36 (:REWRITE DEFAULT-SYMBOL-NAME))
+     (30 30
+         (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (22 22
+         (:REWRITE DEFAULT-INTERN-IN-PACKAGE-OF-SYMBOL))
+     (20 20
+         (:REWRITE DEFAULT-SYMBOL-PACKAGE-NAME))
+     (14 14 (:REWRITE DEFAULT-COERCE-2))
+     (14 14 (:REWRITE DEFAULT-COERCE-1))
+     (11 11 (:REWRITE STRING<-L-TRICHOTOMY))
+     (11 11 (:REWRITE STRING<-L-TRANSITIVE))
+     (6 6 (:TYPE-PRESCRIPTION EQLABLEP))
+     (6 6 (:REWRITE DEFAULT-CDR))
+     (6 6 (:REWRITE DEFAULT-CAR)))
+(MILAWA::TRANSITIVITY-OF-SYMBOL-<
+     (1090 37
+           (:REWRITE MILAWA::ANTISYMMETRY-OF-SYMBOL-<))
+     (772 112
+          (:REWRITE INTERN-IN-PACKAGE-OF-SYMBOL-SYMBOL-NAME))
+     (440 440
+          (:TYPE-PRESCRIPTION STRINGP-SYMBOL-PACKAGE-NAME))
+     (336 112
+          (:REWRITE INTERN-IN-PACKAGE-OF-SYMBOL-IS-IDENTITY))
+     (224 224
+          (:TYPE-PRESCRIPTION MEMBER-SYMBOL-NAME))
+     (210 180 (:REWRITE DEFAULT-SYMBOL-NAME))
+     (146 146
+          (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (114 19
+          (:REWRITE STR::CHARACTER-LISTP-WHEN-OCTAL-DIGIT-LISTP))
+     (114 19
+          (:REWRITE STR::CHARACTER-LISTP-WHEN-HEX-DIGIT-LISTP))
+     (112 112
+          (:REWRITE DEFAULT-INTERN-IN-PACKAGE-OF-SYMBOL))
+     (110 110
+          (:REWRITE DEFAULT-SYMBOL-PACKAGE-NAME))
+     (98 14 (:DEFINITION EQLABLE-LISTP))
+     (76 19
+         (:REWRITE STR::CHARACTER-LISTP-WHEN-DIGIT-LISTP))
+     (68 68 (:REWRITE DEFAULT-COERCE-2))
+     (68 68 (:REWRITE DEFAULT-COERCE-1))
+     (54 54 (:REWRITE STRING<-L-TRICHOTOMY))
+     (38 38
+         (:TYPE-PRESCRIPTION STR::OCTAL-DIGIT-LISTP))
+     (38 38
+         (:TYPE-PRESCRIPTION STR::HEX-DIGIT-LISTP))
+     (38 38
+         (:TYPE-PRESCRIPTION STR::DIGIT-LISTP))
+     (38 38
+         (:REWRITE STR::OCTAL-DIGIT-LISTP-WHEN-SUBSETP-EQUAL))
+     (38 38
+         (:REWRITE STR::HEX-DIGIT-LISTP-WHEN-SUBSETP-EQUAL))
+     (19 19
+         (:REWRITE STR::OCTAL-DIGIT-LISTP-WHEN-NOT-CONSP))
+     (19 19
+         (:REWRITE STR::HEX-DIGIT-LISTP-WHEN-NOT-CONSP))
+     (19 19
+         (:REWRITE STR::DIGIT-LISTP-WHEN-NOT-CONSP))
+     (14 14 (:TYPE-PRESCRIPTION EQLABLEP))
+     (14 14 (:REWRITE DEFAULT-CDR))
+     (14 14 (:REWRITE DEFAULT-CAR)))
+(MILAWA::LEMMA (4 4
+                  (:REWRITE STR::EXPLODE-WHEN-NOT-STRINGP))
+               (3 3
+                  (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE)))
+(MILAWA::LEMMA2 (6 6
+                   (:REWRITE DEFAULT-SYMBOL-PACKAGE-NAME))
+                (6 6 (:REWRITE DEFAULT-SYMBOL-NAME))
+                (4 4
+                   (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE)))
+(MILAWA::TRICHOTOMY-OF-SYMBOL-<
+     (108 12
+          (:REWRITE INTERN-IN-PACKAGE-OF-SYMBOL-SYMBOL-NAME))
+     (88 2
+         (:REWRITE MILAWA::ANTISYMMETRY-OF-SYMBOL-<))
+     (36 12
+         (:REWRITE INTERN-IN-PACKAGE-OF-SYMBOL-IS-IDENTITY))
+     (30 30
+         (:TYPE-PRESCRIPTION MEMBER-SYMBOL-NAME))
+     (25 25
+         (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (25 22
+         (:REWRITE DEFAULT-SYMBOL-PACKAGE-NAME))
+     (25 1 (:REWRITE STRING<-L-ASYMMETRIC))
+     (22 22 (:REWRITE DEFAULT-SYMBOL-NAME))
+     (22 1 (:DEFINITION EQLABLE-LISTP))
+     (14 2
+         (:REWRITE STR::CHARACTER-LISTP-WHEN-OCTAL-DIGIT-LISTP))
+     (14 2
+         (:REWRITE STR::CHARACTER-LISTP-WHEN-HEX-DIGIT-LISTP))
+     (12 12
+         (:REWRITE DEFAULT-INTERN-IN-PACKAGE-OF-SYMBOL))
+     (10 2
+         (:REWRITE STR::CHARACTER-LISTP-WHEN-DIGIT-LISTP))
+     (9 3
+        (:REWRITE SYMBOL-PACKAGE-NAME-INTERN-IN-PACKAGE-OF-SYMBOL))
+     (8 8
+        (:REWRITE STR::EXPLODE-WHEN-NOT-STRINGP))
+     (6 3 (:REWRITE STR::CONSP-OF-EXPLODE))
+     (5 5 (:TYPE-PRESCRIPTION EQLABLE-LISTP))
+     (4 4
+        (:TYPE-PRESCRIPTION STR::OCTAL-DIGIT-LISTP))
+     (4 4
+        (:TYPE-PRESCRIPTION STR::HEX-DIGIT-LISTP))
+     (4 4 (:TYPE-PRESCRIPTION STR::DIGIT-LISTP))
+     (4 4
+        (:REWRITE MILAWA::TRANSITIVITY-OF-SYMBOL-<))
+     (4 4
+        (:REWRITE STR::OCTAL-DIGIT-LISTP-WHEN-SUBSETP-EQUAL))
+     (4 4
+        (:REWRITE STR::HEX-DIGIT-LISTP-WHEN-SUBSETP-EQUAL))
+     (4 2
+        (:REWRITE STR::OCTAL-DIGIT-LISTP-WHEN-NOT-CONSP))
+     (4 2
+        (:REWRITE STR::HEX-DIGIT-LISTP-WHEN-NOT-CONSP))
+     (4 2
+        (:REWRITE STR::DIGIT-LISTP-WHEN-NOT-CONSP))
+     (4 1 (:REWRITE DEFAULT-CDR))
+     (4 1 (:REWRITE DEFAULT-CAR))
+     (3 3 (:REWRITE STRING<-L-TRANSITIVE))
+     (1 1 (:TYPE-PRESCRIPTION EQLABLEP)))
+(MILAWA::SYMBOL-<-COMPLETION-LEFT
+     (16 2
+         (:REWRITE MILAWA::ANTISYMMETRY-OF-SYMBOL-<))
+     (4 4
+        (:REWRITE MILAWA::TRICHOTOMY-OF-SYMBOL-<))
+     (4 4
+        (:REWRITE MILAWA::TRANSITIVITY-OF-SYMBOL-<))
+     (4 4 (:REWRITE DEFAULT-SYMBOL-NAME)))
+(MILAWA::SYMBOL-<-COMPLETION-RIGHT
+     (19 2
+         (:REWRITE MILAWA::ANTISYMMETRY-OF-SYMBOL-<))
+     (12 5
+         (:REWRITE MILAWA::SYMBOL-<-COMPLETION-LEFT))
+     (4 4
+        (:REWRITE MILAWA::TRICHOTOMY-OF-SYMBOL-<))
+     (4 4
+        (:REWRITE MILAWA::TRANSITIVITY-OF-SYMBOL-<))
+     (4 4 (:REWRITE DEFAULT-SYMBOL-NAME)))
+(MILAWA::BOOLEANP-OF-NATP (1 1 (:REWRITE DEFAULT-<-2))
+                          (1 1 (:REWRITE DEFAULT-<-1)))
+(MILAWA::SYMBOLP-WHEN-NATP-CHEAP (1 1 (:REWRITE DEFAULT-<-2))
+                                 (1 1 (:REWRITE DEFAULT-<-1)))
+(MILAWA::SYMBOLP-WHEN-CONSP-CHEAP
+     (1 1
+        (:REWRITE MILAWA::SYMBOLP-WHEN-NATP-CHEAP)))
+(MILAWA::CONSP-WHEN-NATP-CHEAP)
+(MILAWA::BOOLEANP-WHEN-NATP-CHEAP
+     (1 1
+        (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE)))
+(MILAWA::BOOLEANP-WHEN-CONSP-CHEAP
+     (1 1
+        (:REWRITE MILAWA::CONSP-WHEN-NATP-CHEAP))
+     (1 1
+        (:REWRITE MILAWA::BOOLEANP-WHEN-NATP-CHEAP)))
+(MILAWA::SYMBOLP-WHEN-BOOLEANP-CHEAP
+     (1 1
+        (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (1 1
+        (:REWRITE MILAWA::BOOLEANP-WHEN-NATP-CHEAP))
+     (1 1
+        (:REWRITE MILAWA::BOOLEANP-WHEN-CONSP-CHEAP)))
+(MILAWA::NATP-OF-NFIX)
+(MILAWA::NFIX-WHEN-NATP-CHEAP)
+(MILAWA::NFIX-WHEN-NOT-NATP-CHEAP
+     (1 1
+        (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP)))
+(MILAWA::EQUAL-OF-NFIX-OF-SELF)
+(MILAWA::EQUAL-OF-ZERO-AND-NFIX
+     (2 2
+        (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (1 1
+        (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (1 1
+        (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP)))
+(MILAWA::ZP-WHEN-NATP-CHEAP (2 2
+                               (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE)))
+(MILAWA::ZP-WHEN-NOT-NATP-CHEAP (1 1
+                                   (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP)))
+(MILAWA::ZP-OF-NFIX (2 2 (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+                    (1 1
+                       (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+                    (1 1
+                       (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP)))
+(MILAWA::NFIX-OF-NFIX)
+(MILAWA::NATP-WHEN-NOT-ZP-CHEAP (1 1
+                                   (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP)))
+(MILAWA::NATP-WHEN-ZP-CHEAP (3 3
+                               (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+                            (3 2
+                               (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+                            (1 1
+                               (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE)))
+(MILAWA::NFIX-WHEN-ZP-CHEAP)
+(MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT
+     (18 14
+         (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (13 7
+         (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (12 4
+         (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (11 5 (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (8 4 (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (4 4
+        (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE)))
+(MILAWA::NATP-OF-PLUS (17 7 (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+                      (12 2
+                          (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+                      (11 5
+                          (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+                      (10 10
+                          (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+                      (8 8 (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+                      (8 2
+                         (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+                      (6 2 (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+                      (5 5 (:REWRITE DEFAULT-<-2))
+                      (5 5 (:REWRITE DEFAULT-<-1))
+                      (2 2
+                         (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+                      (1 1 (:REWRITE DEFAULT-+-2))
+                      (1 1 (:REWRITE DEFAULT-+-1)))
+(MILAWA::PLUS-UNDER-IFF)
+(MILAWA::COMMUTATIVITY-OF-+)
+(MILAWA::ASSOCIATIVITY-OF-+ (44 18
+                                (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+                            (33 8
+                                (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+                            (29 13
+                                (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+                            (26 26
+                                (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+                            (23 8
+                                (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+                            (21 21
+                                (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+                            (18 8 (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+                            (13 13 (:REWRITE DEFAULT-<-2))
+                            (13 13 (:REWRITE DEFAULT-<-1))
+                            (7 7 (:REWRITE DEFAULT-+-2))
+                            (7 7 (:REWRITE DEFAULT-+-1))
+                            (5 5
+                               (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+                            (3 3 (:REWRITE FOLD-CONSTS-IN-+)))
+(MILAWA::COMMUTATIVITY-OF-+-TWO)
+(MILAWA::GATHER-CONSTANTS-FROM-PLUS-OF-PLUS)
+(MILAWA::PLUS-WHEN-NOT-NATP-LEFT
+     (25 11
+         (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (19 9
+         (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (16 16
+         (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (14 14
+         (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (14 6 (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (10 4
+         (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (7 7 (:REWRITE DEFAULT-<-2))
+     (7 7 (:REWRITE DEFAULT-<-1))
+     (2 2
+        (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (2 2 (:REWRITE DEFAULT-+-2))
+     (2 2 (:REWRITE DEFAULT-+-1)))
+(MILAWA::PLUS-OF-ZERO-WHEN-NATURAL
+     (7 3 (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (6 1
+        (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (4 4
+        (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (4 2
+        (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (4 1
+        (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (3 3 (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (3 3 (:REWRITE DEFAULT-<-2))
+     (3 3 (:REWRITE DEFAULT-<-1))
+     (3 1 (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (2 2 (:REWRITE DEFAULT-+-2))
+     (2 2 (:REWRITE DEFAULT-+-1))
+     (1 1
+        (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE)))
+(MILAWA::PLUS-COMPLETION-LEFT
+     (12 4
+         (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (10 9 (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (7 7
+        (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (1 1
+        (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP)))
+(MILAWA::PLUS-COMPLETION-RIGHT
+     (4 1
+        (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (3 1 (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (3 1
+        (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (2 2
+        (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (1 1 (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (1 1
+        (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP)))
+(MILAWA::PLUS-OF-ZERO-RIGHT
+     (12 6 (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (9 5
+        (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (5 5 (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (4 1
+        (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (3 3
+        (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (3 1
+        (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (1 1
+        (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT)))
+(MILAWA::PLUS-OF-ZERO-LEFT)
+(MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP
+     (9 3
+        (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (7 3 (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (7 3
+        (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (4 4
+        (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (3 3
+        (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (2 2 (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (2 2
+        (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP)))
+(MILAWA::PLUS-WHEN-ZP-RIGHT-CHEAP
+     (9 3
+        (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (7 3 (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (7 3
+        (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (6 6
+        (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (6 2
+        (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP))
+     (4 4 (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (3 3
+        (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (2 2
+        (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP)))
+(MILAWA::PLUS-OF-NFIX-LEFT (24 22
+                               (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+                           (23 9 (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+                           (18 7
+                               (:REWRITE MILAWA::PLUS-WHEN-ZP-RIGHT-CHEAP))
+                           (17 7
+                               (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+                           (9 3
+                              (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+                           (7 3 (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+                           (7 3
+                              (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+                           (5 5
+                              (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE)))
+(MILAWA::PLUS-OF-NFIX-RIGHT (20 8 (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+                            (14 6
+                                (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+                            (13 13
+                                (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+                            (9 3
+                               (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+                            (7 3 (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+                            (7 3
+                               (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+                            (4 2
+                               (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP))
+                            (3 3
+                               (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE)))
+(MILAWA::BOOLEANP-OF-ACL2-< (3 2 (:REWRITE DEFAULT-<-2))
+                            (3 2 (:REWRITE DEFAULT-<-1))
+                            (3 1
+                               (:REWRITE MILAWA::BOOLEANP-WHEN-NATP-CHEAP))
+                            (2 2
+                               (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
+                            (1 1 (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+                            (1 1
+                               (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+                            (1 1
+                               (:REWRITE MILAWA::BOOLEANP-WHEN-CONSP-CHEAP)))
+(MILAWA::BOOLEANP-OF-<)
+(MILAWA::IRREFLEXIVITY-OF-<)
+(MILAWA::LESS-OF-ZERO-RIGHT (7 3 (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+                            (6 1
+                               (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+                            (4 4
+                               (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+                            (4 2
+                               (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+                            (4 1
+                               (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+                            (3 3 (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+                            (3 3 (:REWRITE DEFAULT-<-2))
+                            (3 3 (:REWRITE DEFAULT-<-1))
+                            (3 1 (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+                            (1 1
+                               (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE)))
+(MILAWA::LESS-COMPLETION-RIGHT
+     (19 9 (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (13 7
+         (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (12 12
+         (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (12 4 (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (10 10
+         (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (8 2
+        (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (7 7 (:REWRITE DEFAULT-<-2))
+     (7 7 (:REWRITE DEFAULT-<-1))
+     (2 2
+        (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE)))
+(MILAWA::LESS-WHEN-ZP-RIGHT-CHEAP
+     (1 1
+        (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE)))
+(MILAWA::LESS-OF-ZERO-LEFT-WHEN-NATP
+     (7 3 (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (6 1
+        (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (4 4
+        (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (4 4 (:REWRITE DEFAULT-<-2))
+     (4 4 (:REWRITE DEFAULT-<-1))
+     (4 3
+        (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (4 2
+        (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (4 1
+        (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (3 3 (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (3 1 (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (1 1
+        (:REWRITE MILAWA::BOOLEANP-OF-ACL2-<)))
+(MILAWA::LESS-OF-ZERO-LEFT (12 9 (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+                           (11 5
+                               (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+                           (10 4 (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+                           (5 4
+                              (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+                           (1 1 (:REWRITE MILAWA::BOOLEANP-OF-<)))
+(MILAWA::LESS-COMPLETION-LEFT
+     (7 3 (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (5 2
+        (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (4 2
+        (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (4 2
+        (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (3 3 (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (3 2 (:REWRITE DEFAULT-<-2))
+     (2 2 (:REWRITE DEFAULT-<-1))
+     (1 1
+        (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
+     (1 1
+        (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE)))
+(MILAWA::LESS-WHEN-ZP-LEFT-CHEAP
+     (8 4
+        (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (8 4 (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (4 4
+        (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (3 2
+        (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (3 1
+        (:REWRITE MILAWA::LESS-WHEN-ZP-RIGHT-CHEAP))
+     (1 1 (:REWRITE MILAWA::BOOLEANP-OF-<)))
+(MILAWA::LESS-OF-NFIX-LEFT (27 17
+                               (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+                           (4 2
+                              (:REWRITE MILAWA::LESS-WHEN-ZP-RIGHT-CHEAP))
+                           (4 1
+                              (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+                           (3 1 (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+                           (3 1
+                              (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP)))
+(MILAWA::LESS-OF-NFIX-RIGHT (17 3
+                                (:REWRITE MILAWA::LESS-WHEN-ZP-LEFT-CHEAP))
+                            (15 9 (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+                            (14 8 (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+                            (11 7
+                                (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+                            (4 1
+                               (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+                            (3 1 (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+                            (3 1
+                               (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP)))
+(MILAWA::TRANSITIVITY-OF-< (24 12
+                               (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+                           (24 6
+                               (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+                           (18 6 (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+                           (18 6
+                               (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+                           (12 12
+                               (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+                           (6 6 (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+                           (6 6
+                              (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
+                           (6 6
+                              (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+                           (6 6
+                              (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+                           (6 3 (:REWRITE DEFAULT-<-2))
+                           (6 3 (:REWRITE DEFAULT-<-1)))
+(MILAWA::ANTISYMMETRY-OF-<)
+(MILAWA::TRICHOTOMY-OF-<-WHEN-NATP
+     (28 12
+         (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (24 4
+         (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (16 16
+         (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (16 8
+         (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (16 4
+         (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (13 13 (:REWRITE DEFAULT-<-2))
+     (13 13 (:REWRITE DEFAULT-<-1))
+     (12 12
+         (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (12 4 (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (5 5
+        (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE)))
+(MILAWA::TRICHOTOMY-OF-< (14 6 (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+                         (12 3
+                             (:REWRITE MILAWA::LESS-WHEN-ZP-RIGHT-CHEAP))
+                         (10 10 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+                         (10 10
+                             (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+                         (8 4
+                            (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+                         (8 2
+                            (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+                         (6 2 (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+                         (6 2
+                            (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP)))
+(MILAWA::ONE-PLUS-TRICK (47 23
+                            (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+                        (30 30
+                            (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+                        (30 16
+                            (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+                        (27 9 (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+                        (24 7
+                            (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+                        (23 23
+                            (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+                        (18 18 (:REWRITE DEFAULT-<-2))
+                        (18 18 (:REWRITE DEFAULT-<-1))
+                        (3 3
+                           (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+                        (1 1 (:REWRITE DEFAULT-+-2))
+                        (1 1 (:REWRITE DEFAULT-+-1)))
+(MILAWA::NATURAL-LESS-THAN-ONE-IS-ZERO
+     (6 3 (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (6 1
+        (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (4 4
+        (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (4 4 (:REWRITE DEFAULT-<-2))
+     (4 4 (:REWRITE DEFAULT-<-1))
+     (4 2
+        (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (3 3 (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (3 1 (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (3 1
+        (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP)))
+(MILAWA::LESS-OF-ONE-RIGHT
+     (14 7 (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (10 6 (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (9 9
+        (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (7 5
+        (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (7 4
+        (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (6 6 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (6 4
+        (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (4 2
+        (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT))
+     (2 2
+        (:REWRITE MILAWA::LESS-WHEN-ZP-RIGHT-CHEAP)))
+(MILAWA::LESS-OF-ONE-LEFT
+     (31 16
+         (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (28 15
+         (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (13 12
+         (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (12 3 (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (7 1
+        (:REWRITE MILAWA::LESS-WHEN-ZP-RIGHT-CHEAP))
+     (4 2
+        (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (2 1
+        (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT))
+     (1 1 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (1 1
+        (:REWRITE MILAWA::LESS-WHEN-ZP-LEFT-CHEAP))
+     (1 1 (:REWRITE MILAWA::BOOLEANP-OF-<)))
+(MILAWA::TRANSITIVITY-OF-<-TWO
+     (168 24
+          (:REWRITE MILAWA::LESS-WHEN-ZP-LEFT-CHEAP))
+     (96 39
+         (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (48 40
+         (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (42 38
+         (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (8 2
+        (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (6 2 (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (6 2
+        (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP)))
+(MILAWA::TRANSITIVITY-OF-<-THREE
+     (130 9 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+     (73 4 (:REWRITE MILAWA::ANTISYMMETRY-OF-<))
+     (65 9
+         (:REWRITE MILAWA::LESS-WHEN-ZP-LEFT-CHEAP))
+     (44 30
+         (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (43 19
+         (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (42 26
+         (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (39 18
+         (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (32 18
+         (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (32 18
+         (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (27 9 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (23 23
+         (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (12 4
+         (:REWRITE MILAWA::LESS-WHEN-ZP-RIGHT-CHEAP))
+     (9 9
+        (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT)))
+(MILAWA::TRANSITIVITY-OF-<-FOUR)
+(MILAWA::|(< (+ a b) (+ a c))|
+     (86 76 (:REWRITE DEFAULT-<-1))
+     (76 76 (:REWRITE DEFAULT-<-2))
+     (44 18
+         (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (33 8
+         (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (29 13
+         (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (26 26
+         (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (23 8
+         (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (21 21
+         (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (18 8 (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (10 10
+         (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
+     (10 10 (:REWRITE DEFAULT-+-2))
+     (10 10 (:REWRITE DEFAULT-+-1)))
+(MILAWA::|(< a (+ a b))|)
+(MILAWA::|(< a (+ b a))|
+     (28 3 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+     (17 2 (:REWRITE MILAWA::ANTISYMMETRY-OF-<))
+     (13 11
+         (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (12 10
+         (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (10 2
+         (:REWRITE MILAWA::EQUAL-OF-ZERO-AND-NFIX))
+     (6 4 (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (6 2
+        (:REWRITE MILAWA::PLUS-WHEN-ZP-RIGHT-CHEAP))
+     (6 2
+        (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP))
+     (5 2
+        (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (4 2 (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (4 2
+        (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (3 3
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+     (3 3
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (3 3 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (3 3
+        (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (2 2
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR))
+     (2 2
+        (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT))
+     (1 1 (:REWRITE MILAWA::LESS-OF-ZERO-RIGHT))
+     (1 1
+        (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE)))
+(MILAWA::|(< (+ a b) a)|)
+(MILAWA::|(< (+ b a) a)| (6 2
+                            (:REWRITE MILAWA::PLUS-WHEN-ZP-RIGHT-CHEAP))
+                         (6 2
+                            (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP))
+                         (4 4
+                            (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+                         (4 4
+                            (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP)))
+(MILAWA::|(< a (+ b c a))|
+     (18 2 (:REWRITE MILAWA::ANTISYMMETRY-OF-<))
+     (16 3 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+     (14 6
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-RIGHT-CHEAP))
+     (13 11
+         (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (12 6
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP))
+     (5 5
+        (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (4 2 (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (4 2
+        (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (3 3
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+     (3 3
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (3 3 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (3 2
+        (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (2 2
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR))
+     (2 2
+        (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-PLUS-OF-PLUS))
+     (1 1
+        (:REWRITE MILAWA::LESS-OF-ZERO-RIGHT)))
+(MILAWA::|(< a (+ b a c))|
+     (18 2 (:REWRITE MILAWA::ANTISYMMETRY-OF-<))
+     (16 3 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+     (11 9
+         (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (11 5
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-RIGHT-CHEAP))
+     (9 5
+        (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP))
+     (5 5
+        (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (4 2 (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (4 2
+        (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (3 3
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+     (3 3
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (3 3 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (3 2
+        (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (2 2
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR))
+     (2 2
+        (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-PLUS-OF-PLUS))
+     (1 1
+        (:REWRITE MILAWA::LESS-OF-ZERO-RIGHT)))
+(MILAWA::|(< a (+ b c d a))|
+     (22 10
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-RIGHT-CHEAP))
+     (18 10
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP))
+     (18 2 (:REWRITE MILAWA::ANTISYMMETRY-OF-<))
+     (16 14
+         (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (16 3 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+     (6 6
+        (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-PLUS-OF-PLUS))
+     (5 5
+        (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (4 2 (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (4 2
+        (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (3 3
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+     (3 3
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (3 3 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (3 2
+        (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (2 2
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR))
+     (1 1
+        (:REWRITE MILAWA::LESS-OF-ZERO-RIGHT)))
+(MILAWA::|(< a (+ b c a d))|
+     (19 9
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-RIGHT-CHEAP))
+     (18 2 (:REWRITE MILAWA::ANTISYMMETRY-OF-<))
+     (16 3 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+     (15 9
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP))
+     (14 12
+         (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (6 6
+        (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-PLUS-OF-PLUS))
+     (5 5
+        (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (4 2 (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (4 2
+        (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (3 3
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+     (3 3
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (3 3 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (3 2
+        (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (2 2
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR))
+     (1 1
+        (:REWRITE MILAWA::LESS-OF-ZERO-RIGHT)))
+(MILAWA::|(< a (+ b c d e a))|
+     (30 14
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-RIGHT-CHEAP))
+     (24 14
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP))
+     (19 17
+         (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (18 2 (:REWRITE MILAWA::ANTISYMMETRY-OF-<))
+     (16 3 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+     (10 10
+         (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-PLUS-OF-PLUS))
+     (5 5
+        (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (4 2 (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (4 2
+        (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (3 3
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+     (3 3
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (3 3 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (3 2
+        (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (2 2
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR))
+     (1 1
+        (:REWRITE MILAWA::LESS-OF-ZERO-RIGHT)))
+(MILAWA::|(< a (+ b c d a e))|
+     (27 13
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-RIGHT-CHEAP))
+     (21 13
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP))
+     (18 2 (:REWRITE MILAWA::ANTISYMMETRY-OF-<))
+     (17 15
+         (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (16 3 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+     (10 10
+         (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-PLUS-OF-PLUS))
+     (5 5
+        (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (4 2 (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (4 2
+        (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (3 3
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+     (3 3
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (3 3 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (3 2
+        (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (2 2
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR))
+     (1 1
+        (:REWRITE MILAWA::LESS-OF-ZERO-RIGHT)))
+(MILAWA::|(< a (+ b c d e f a))|
+     (38 18
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-RIGHT-CHEAP))
+     (30 18
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP))
+     (22 20
+         (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (18 2 (:REWRITE MILAWA::ANTISYMMETRY-OF-<))
+     (16 3 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+     (14 14
+         (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-PLUS-OF-PLUS))
+     (5 5
+        (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (4 2 (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (4 2
+        (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (3 3
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+     (3 3
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (3 3 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (3 2
+        (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (2 2
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR))
+     (1 1
+        (:REWRITE MILAWA::LESS-OF-ZERO-RIGHT)))
+(MILAWA::|(< a (+ b c d e a f))|
+     (35 17
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-RIGHT-CHEAP))
+     (27 17
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP))
+     (20 18
+         (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (18 2 (:REWRITE MILAWA::ANTISYMMETRY-OF-<))
+     (16 3 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+     (14 14
+         (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-PLUS-OF-PLUS))
+     (5 5
+        (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (4 2 (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (4 2
+        (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (3 3
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+     (3 3
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (3 3 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (3 2
+        (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (2 2
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR))
+     (1 1
+        (:REWRITE MILAWA::LESS-OF-ZERO-RIGHT)))
+(MILAWA::|(< (+ a b) (+ c a))|
+     (33 3 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+     (22 2 (:REWRITE MILAWA::ANTISYMMETRY-OF-<))
+     (17 3
+         (:REWRITE MILAWA::LESS-WHEN-ZP-LEFT-CHEAP))
+     (16 12
+         (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (16 10
+         (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (12 8 (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (10 4
+         (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (9 3
+        (:REWRITE MILAWA::PLUS-WHEN-ZP-RIGHT-CHEAP))
+     (8 4 (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (8 4
+        (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (7 3
+        (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP))
+     (6 6
+        (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (6 6
+        (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (4 2
+        (:REWRITE MILAWA::LESS-WHEN-ZP-RIGHT-CHEAP))
+     (3 3
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+     (3 3
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (3 3 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (2 2
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR))
+     (2 2
+        (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT)))
+(MILAWA::|(< (+ b a) (+ c a))|
+     (33 3 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+     (22 2 (:REWRITE MILAWA::ANTISYMMETRY-OF-<))
+     (17 13
+         (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (17 11
+         (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (17 3
+         (:REWRITE MILAWA::LESS-WHEN-ZP-LEFT-CHEAP))
+     (12 8 (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (10 4
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-RIGHT-CHEAP))
+     (10 4
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP))
+     (10 4
+         (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (8 4 (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (8 4
+        (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (6 6
+        (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (6 6
+        (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (4 2
+        (:REWRITE MILAWA::LESS-WHEN-ZP-RIGHT-CHEAP))
+     (3 3
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+     (3 3
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (3 3 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (2 2
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR))
+     (2 2
+        (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT)))
+(MILAWA::|(< (+ b a) (+ a c))|
+     (33 3 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+     (22 2 (:REWRITE MILAWA::ANTISYMMETRY-OF-<))
+     (17 3
+         (:REWRITE MILAWA::LESS-WHEN-ZP-LEFT-CHEAP))
+     (16 12
+         (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (16 10
+         (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (12 8 (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (10 4
+         (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (9 3
+        (:REWRITE MILAWA::PLUS-WHEN-ZP-RIGHT-CHEAP))
+     (8 4 (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (8 4
+        (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (7 3
+        (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP))
+     (6 6
+        (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (6 6
+        (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (4 2
+        (:REWRITE MILAWA::LESS-WHEN-ZP-RIGHT-CHEAP))
+     (3 3
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+     (3 3
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (3 3 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (2 2
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR))
+     (2 2
+        (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT)))
+(MILAWA::|(< (+ a b) (+ c a d))|
+     (31 3 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+     (21 2 (:REWRITE MILAWA::ANTISYMMETRY-OF-<))
+     (16 11
+         (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (15 12
+         (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (15 3
+         (:REWRITE MILAWA::LESS-WHEN-ZP-LEFT-CHEAP))
+     (14 6
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-RIGHT-CHEAP))
+     (10 6
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP))
+     (9 4
+        (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (8 4 (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (7 4
+        (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (6 4 (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (5 5 (:REWRITE MILAWA::NATP-OF-PLUS))
+     (5 5
+        (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (4 2
+        (:REWRITE MILAWA::LESS-WHEN-ZP-RIGHT-CHEAP))
+     (3 3
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+     (3 3
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (3 3 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (3 3
+        (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (2 2
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR))
+     (2 2
+        (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-PLUS-OF-PLUS))
+     (2 2
+        (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT)))
+(MILAWA::|(< (+ b a c) (+ d a))|
+     (31 3 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+     (23 2 (:REWRITE MILAWA::ANTISYMMETRY-OF-<))
+     (18 13
+         (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (17 14
+         (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (17 7
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-RIGHT-CHEAP))
+     (15 3
+         (:REWRITE MILAWA::LESS-WHEN-ZP-LEFT-CHEAP))
+     (13 7
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP))
+     (9 4
+        (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (8 4 (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (7 4
+        (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (6 4 (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (5 5 (:REWRITE MILAWA::NATP-OF-PLUS))
+     (5 5
+        (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (4 2
+        (:REWRITE MILAWA::LESS-WHEN-ZP-RIGHT-CHEAP))
+     (3 3
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+     (3 3
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (3 3 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (3 3
+        (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (2 2
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR))
+     (2 2
+        (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-PLUS-OF-PLUS))
+     (2 2
+        (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT)))
+(MILAWA::|a <= b, c != 0 --> a < b+c|
+     (23 15
+         (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (21 7 (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (17 13
+         (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (17 13
+         (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (11 11
+         (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (11 7
+         (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (7 1
+        (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP))
+     (7 1
+        (:REWRITE MILAWA::LESS-WHEN-ZP-RIGHT-CHEAP))
+     (5 5
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+     (3 3
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR))
+     (3 3 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (3 1
+        (:REWRITE MILAWA::PLUS-WHEN-ZP-RIGHT-CHEAP))
+     (2 2
+        (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT)))
+(MILAWA::|a <= b, c != 0 --> a < c+b|
+     (32 2 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+     (21 1 (:REWRITE MILAWA::ANTISYMMETRY-OF-<))
+     (16 10
+         (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (16 8 (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (16 2
+         (:REWRITE MILAWA::LESS-WHEN-ZP-LEFT-CHEAP))
+     (14 10
+         (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (10 4
+         (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (8 8
+        (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (8 4 (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (8 4
+        (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (6 6
+        (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (4 2
+        (:REWRITE MILAWA::PLUS-WHEN-ZP-RIGHT-CHEAP))
+     (4 2
+        (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP))
+     (3 1
+        (:REWRITE MILAWA::LESS-WHEN-ZP-RIGHT-CHEAP))
+     (2 2
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+     (2 2
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (2 2 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (2 2
+        (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT))
+     (1 1
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR)))
+(MILAWA::|a <= b, c != 0 --> a < c+b+d|
+     (233 13 (:REWRITE MILAWA::ANTISYMMETRY-OF-<))
+     (170 22 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+     (130 14
+          (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR))
+     (71 5
+         (:REWRITE MILAWA::|a <= b, c != 0 --> a < b+c|))
+     (68 22
+         (:REWRITE MILAWA::LESS-WHEN-ZP-LEFT-CHEAP))
+     (52 32
+         (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (50 37
+         (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (43 24
+         (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (36 24
+         (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (35 24
+         (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (32 22
+         (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (22 22
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+     (22 22 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (22 22
+         (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (17 17
+         (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (13 13
+         (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT))
+     (10 4
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-RIGHT-CHEAP))
+     (10 2
+         (:REWRITE MILAWA::EQUAL-OF-ZERO-AND-NFIX))
+     (8 8 (:REWRITE MILAWA::NATP-OF-PLUS))
+     (6 4
+        (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP))
+     (2 2
+        (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-PLUS-OF-PLUS)))
+(MILAWA::|a <= b, c != 0 --> a < c+d+b|
+     (253 15 (:REWRITE MILAWA::ANTISYMMETRY-OF-<))
+     (207 25 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+     (149 16
+          (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR))
+     (125 2
+          (:REWRITE MILAWA::|a <= b, c != 0 --> a < c+b+d|))
+     (87 25
+         (:REWRITE MILAWA::LESS-WHEN-ZP-LEFT-CHEAP))
+     (59 33
+         (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (57 30
+         (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (55 38
+         (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (43 30
+         (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (42 30
+         (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (41 31
+         (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (33 5
+         (:REWRITE MILAWA::|a <= b, c != 0 --> a < b+c|))
+     (27 27
+         (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (26 26
+         (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (25 25
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+     (25 25 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (16 16
+         (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT))
+     (13 5
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-RIGHT-CHEAP))
+     (10 2
+         (:REWRITE MILAWA::EQUAL-OF-ZERO-AND-NFIX))
+     (9 5
+        (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP))
+     (8 8 (:REWRITE MILAWA::NATP-OF-PLUS))
+     (2 2
+        (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-PLUS-OF-PLUS)))
+(MILAWA::|c < a, d <= b --> c+d < a+b|)
+(MILAWA::|c < a, d <= b --> c+d < b+a|
+     (64 4 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+     (42 2 (:REWRITE MILAWA::ANTISYMMETRY-OF-<))
+     (32 4
+         (:REWRITE MILAWA::LESS-WHEN-ZP-LEFT-CHEAP))
+     (28 20
+         (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (28 16
+         (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (24 16
+         (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (20 8
+         (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (16 8 (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (16 8
+         (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (12 12
+         (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (12 12
+         (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (9 3
+        (:REWRITE MILAWA::PLUS-WHEN-ZP-RIGHT-CHEAP))
+     (9 3
+        (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP))
+     (6 2
+        (:REWRITE MILAWA::LESS-WHEN-ZP-RIGHT-CHEAP))
+     (4 4
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+     (4 4
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (4 4 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (4 4
+        (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT))
+     (2 2
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR)))
+(MILAWA::|c <= a, d < b --> c+d < a+b|
+     (216 7
+          (:REWRITE MILAWA::|a <= b, c != 0 --> a < b+c|))
+     (195 27 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+     (193 7
+          (:REWRITE MILAWA::|a <= b, c != 0 --> a < c+b|))
+     (80 29
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (79 24
+         (:REWRITE MILAWA::LESS-WHEN-ZP-LEFT-CHEAP))
+     (76 2
+         (:REWRITE MILAWA::|c < a, d <= b --> c+d < b+a|))
+     (55 32
+         (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (52 32
+         (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (50 36
+         (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (44 32
+         (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (42 32
+         (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (36 24 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (29 29
+         (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (26 18
+         (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (21 2
+         (:REWRITE MILAWA::|c < a, d <= b --> c+d < a+b|))
+     (20 10
+         (:REWRITE MILAWA::LESS-WHEN-ZP-RIGHT-CHEAP))
+     (18 18 (:REWRITE MILAWA::NATP-OF-PLUS))
+     (14 14
+         (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (14 14
+         (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT))
+     (12 4
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-RIGHT-CHEAP))
+     (12 4
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP))
+     (12 1 (:REWRITE MILAWA::|(< a (+ a b))|))
+     (6 1 (:REWRITE MILAWA::LESS-OF-ZERO-LEFT))
+     (1 1 (:REWRITE MILAWA::IRREFLEXIVITY-OF-<))
+     (1 1 (:REWRITE MILAWA::|(< (+ b a) a)|)))
+(MILAWA::|c <= a, d < b --> c+d < b+a|
+     (64 4 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+     (42 2 (:REWRITE MILAWA::ANTISYMMETRY-OF-<))
+     (32 4
+         (:REWRITE MILAWA::LESS-WHEN-ZP-LEFT-CHEAP))
+     (28 20
+         (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (28 16
+         (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (24 16
+         (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (20 8
+         (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (16 8 (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (16 8
+         (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (12 12
+         (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (12 12
+         (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (9 3
+        (:REWRITE MILAWA::PLUS-WHEN-ZP-RIGHT-CHEAP))
+     (9 3
+        (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP))
+     (6 2
+        (:REWRITE MILAWA::LESS-WHEN-ZP-RIGHT-CHEAP))
+     (4 4
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+     (4 4
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (4 4 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (4 4
+        (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT))
+     (2 2
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR)))
+(MILAWA::|c <= a, d <= b --> c+d <= a+b|)
+(MILAWA::|c <= a, d <= b --> c+d <= b+a|
+     (64 4 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+     (42 2 (:REWRITE MILAWA::ANTISYMMETRY-OF-<))
+     (32 4
+         (:REWRITE MILAWA::LESS-WHEN-ZP-LEFT-CHEAP))
+     (28 20
+         (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (28 16
+         (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (24 16
+         (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (20 8
+         (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (16 8 (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (16 8
+         (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (12 12
+         (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (12 12
+         (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (9 3
+        (:REWRITE MILAWA::PLUS-WHEN-ZP-RIGHT-CHEAP))
+     (9 3
+        (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP))
+     (6 2
+        (:REWRITE MILAWA::LESS-WHEN-ZP-RIGHT-CHEAP))
+     (4 4
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+     (4 4
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (4 4 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (4 4
+        (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT))
+     (2 2
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR)))
+(MILAWA::|(= a (+ a b))|
+     (84 12 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+     (76 7 (:REWRITE MILAWA::ANTISYMMETRY-OF-<))
+     (65 43
+         (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (60 1
+         (:REWRITE MILAWA::|a <= b, c != 0 --> a < c+b|))
+     (29 16
+         (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (25 14
+         (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (13 4
+         (:REWRITE MILAWA::LESS-WHEN-ZP-RIGHT-CHEAP))
+     (12 12
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+     (12 12
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (11 11 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (10 1
+         (:REWRITE MILAWA::|a <= b, c != 0 --> a < b+c|))
+     (7 7
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR))
+     (6 6
+        (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT))
+     (6 2
+        (:REWRITE MILAWA::EQUAL-OF-ZERO-AND-NFIX))
+     (2 2 (:REWRITE MILAWA::NATP-OF-PLUS))
+     (1 1 (:REWRITE MILAWA::LESS-OF-ZERO-RIGHT))
+     (1 1 (:REWRITE MILAWA::BOOLEANP-OF-<))
+     (1 1 (:REWRITE MILAWA::|(< (+ a b) a)|)))
+(MILAWA::|(= a (+ b a))| (12 8
+                             (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+                         (12 8 (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+                         (8 6 (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+                         (8 6
+                            (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+                         (6 2
+                            (:REWRITE MILAWA::PLUS-WHEN-ZP-RIGHT-CHEAP))
+                         (6 2
+                            (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP)))
+(MILAWA::|lemma for (= (+ a b) (+ a c))|
+     (104 2
+          (:REWRITE MILAWA::|c <= a, d <= b --> c+d <= b+a|))
+     (42 22
+         (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (34 18
+         (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (33 10
+         (:REWRITE MILAWA::LESS-WHEN-ZP-LEFT-CHEAP))
+     (28 24
+         (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (22 22
+         (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (22 18
+         (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (20 15
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (18 5
+         (:REWRITE MILAWA::LESS-WHEN-ZP-RIGHT-CHEAP))
+     (16 4
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-RIGHT-CHEAP))
+     (15 15
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+     (12 8 (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (10 10
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR))
+     (10 10 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (8 4
+        (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP))
+     (6 6
+        (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (4 4
+        (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT))
+     (1 1
+        (:REWRITE MILAWA::IRREFLEXIVITY-OF-<)))
+(MILAWA::|(= (+ a b) (+ a c))|
+     (88 36
+         (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (58 26
+         (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (53 51
+         (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (38 18
+         (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (15 15
+         (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (12 6
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP)))
+(MILAWA::|(= (+ a b) (+ c a))|
+     (10 4
+         (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (9 9
+        (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (9 3
+        (:REWRITE MILAWA::PLUS-WHEN-ZP-RIGHT-CHEAP))
+     (8 4 (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (8 4
+        (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (8 4 (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (7 7 (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (7 3
+        (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP))
+     (4 4
+        (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (2 2
+        (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (2 2
+        (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT)))
+(MILAWA::|(= (+ b a) (+ c a))|
+     (10 10
+         (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (10 4
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-RIGHT-CHEAP))
+     (10 4
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP))
+     (10 4
+         (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (8 8 (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (8 4 (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (8 4
+        (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (8 4 (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (4 4
+        (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (2 2
+        (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (2 2
+        (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT)))
+(MILAWA::|(= (+ b a) (+ a c))|
+     (10 4
+         (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (8 4 (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (8 4
+        (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (8 4 (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (4 4
+        (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (4 4
+        (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (2 2 (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (2 2
+        (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (2 2
+        (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT)))
+(MILAWA::LEMMA (34 2 (:REWRITE MILAWA::ANTISYMMETRY-OF-<))
+               (32 4 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+               (12 4
+                   (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+               (10 10
+                   (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+               (8 4
+                  (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+               (7 7
+                  (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+               (6 2
+                  (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+               (4 4
+                  (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+               (4 4
+                  (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+               (4 4 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+               (4 4 (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+               (2 2
+                  (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR))
+               (2 2
+                  (:REWRITE MILAWA::PLUS-WHEN-ZP-RIGHT-CHEAP))
+               (2 2
+                  (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP))
+               (1 1
+                  (:REWRITE MILAWA::LESS-OF-ZERO-RIGHT)))
+(MILAWA::|(= 0 (+ a b))|
+     (48 24
+         (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (46 22
+         (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (40 28
+         (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (18 18
+         (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (8 2
+        (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (6 2
+        (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (3 1 (:REWRITE MILAWA::LEMMA))
+     (2 2
+        (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT)))
+(MILAWA::|lemma for (= (+ a x b) (+ c x d))|
+     (26 12
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-RIGHT-CHEAP))
+     (20 12
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP))
+     (13 13
+         (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (13 13
+         (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (6 2 (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (4 4
+        (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-PLUS-OF-PLUS))
+     (4 2
+        (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (2 2
+        (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE)))
+(MILAWA::|(= (+ a x b) (+ c x d))|)
+(MILAWA::SQUEEZE-LAW-ONE
+     (85 41
+         (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (70 36
+         (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (55 2
+         (:REWRITE MILAWA::|a <= b, c != 0 --> a < c+b|))
+     (48 35
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (46 34
+         (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (45 44
+         (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (35 35
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+     (34 2
+         (:REWRITE MILAWA::|a <= b, c != 0 --> a < b+c|))
+     (23 23
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR))
+     (20 20 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (11 1
+         (:REWRITE MILAWA::|c <= a, d <= b --> c+d <= b+a|))
+     (9 9
+        (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP))
+     (7 1 (:REWRITE MILAWA::LESS-OF-ONE-RIGHT))
+     (1 1 (:REWRITE MILAWA::BOOLEANP-OF-<)))
+(MILAWA::SQUEEZE-LAW-TWO (92 40
+                             (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+                         (83 37
+                             (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+                         (63 2 (:REWRITE MILAWA::SQUEEZE-LAW-ONE))
+                         (58 38
+                             (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+                         (53 38
+                             (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+                         (45 34
+                             (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+                         (41 41
+                             (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+                         (34 22 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+                         (28 2
+                             (:REWRITE MILAWA::|a <= b, c != 0 --> a < b+c|))
+                         (25 25
+                             (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR))
+                         (20 2 (:REWRITE MILAWA::LESS-OF-ONE-LEFT))
+                         (4 4
+                            (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP))
+                         (2 2 (:REWRITE MILAWA::NATP-OF-PLUS)))
+(MILAWA::SQUEEZE-LAW-THREE (112 9 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+                           (54 24
+                               (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+                           (42 33
+                               (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+                           (39 19
+                               (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+                           (32 16
+                               (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+                           (25 10
+                               (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+                           (20 10
+                               (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+                           (17 17
+                               (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+                           (9 9
+                              (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+                           (9 9
+                              (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+                           (8 8 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+                           (7 3
+                              (:REWRITE MILAWA::PLUS-WHEN-ZP-RIGHT-CHEAP))
+                           (7 2
+                              (:REWRITE MILAWA::LESS-WHEN-ZP-RIGHT-CHEAP))
+                           (5 5
+                              (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR))
+                           (3 3
+                              (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP)))
+(MILAWA::NATP-OF-MINUS)
+(MILAWA::MINUS-UNDER-IFF)
+(MILAWA::MINUS-WHEN-NOT-LESS)
+(MILAWA::MINUS-OF-SELF (1 1 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+                       (1 1
+                          (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+                       (1 1
+                          (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+                       (1 1
+                          (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR)))
+(MILAWA::MINUS-OF-ZERO-LEFT
+     (27 2 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+     (18 1 (:REWRITE MILAWA::ANTISYMMETRY-OF-<))
+     (10 2
+         (:REWRITE MILAWA::EQUAL-OF-ZERO-AND-NFIX))
+     (9 7
+        (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (9 2
+        (:REWRITE MILAWA::LESS-WHEN-ZP-LEFT-CHEAP))
+     (8 6 (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (6 4 (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (5 2
+        (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (4 2 (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (4 2
+        (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (3 3
+        (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (3 1 (:DEFINITION NOT))
+     (2 2
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+     (2 2
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (2 2 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (2 2
+        (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT))
+     (1 1
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR))
+     (1 1
+        (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE)))
+(MILAWA::MINUS-CANCELS-SUMMAND-RIGHT
+     (34 14
+         (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (26 6
+         (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (22 10
+         (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (20 20
+         (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (18 6
+         (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (16 16
+         (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (14 6 (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (10 10 (:REWRITE DEFAULT-<-2))
+     (10 10 (:REWRITE DEFAULT-<-1))
+     (6 6 (:REWRITE DEFAULT-+-2))
+     (6 6 (:REWRITE DEFAULT-+-1))
+     (4 4
+        (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (1 1 (:REWRITE FOLD-CONSTS-IN-+))
+     (1 1 (:REWRITE DEFAULT-UNARY-MINUS)))
+(MILAWA::MINUS-OF-ZERO-RIGHT
+     (60 6 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+     (46 3 (:REWRITE MILAWA::ANTISYMMETRY-OF-<))
+     (23 18
+         (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (22 10
+         (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (16 8
+         (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (11 7
+         (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (10 2
+         (:REWRITE MILAWA::EQUAL-OF-ZERO-AND-NFIX))
+     (9 9
+        (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (6 6
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+     (6 6
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (6 6 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (3 3
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR))
+     (2 2 (:REWRITE MILAWA::LESS-OF-ZERO-RIGHT))
+     (2 2
+        (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT)))
+(MILAWA::MINUS-CANCELS-SUMMAND-LEFT
+     (416 4
+          (:REWRITE MILAWA::MINUS-WHEN-NOT-LESS))
+     (240 4
+          (:REWRITE MILAWA::|a <= b, c != 0 --> a < c+b|))
+     (196 20 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+     (144 12 (:REWRITE MILAWA::ANTISYMMETRY-OF-<))
+     (132 4 (:REWRITE MILAWA::|(< a (+ a b))|))
+     (96 64
+         (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (92 16
+         (:REWRITE MILAWA::LESS-WHEN-ZP-LEFT-CHEAP))
+     (88 72
+         (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (56 36
+         (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (52 28
+         (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (44 28
+         (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (44 28
+         (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (40 4
+         (:REWRITE MILAWA::|a <= b, c != 0 --> a < b+c|))
+     (36 36
+         (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (36 12
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-RIGHT-CHEAP))
+     (36 12
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP))
+     (24 24
+         (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (24 8
+         (:REWRITE MILAWA::EQUAL-OF-ZERO-AND-NFIX))
+     (20 20
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+     (20 20
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (20 20
+         (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT))
+     (16 16 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (12 12
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR))
+     (12 4
+         (:REWRITE MILAWA::LESS-WHEN-ZP-RIGHT-CHEAP))
+     (4 4
+        (:REWRITE MILAWA::LESS-OF-ZERO-RIGHT)))
+(MILAWA::LESS-OF-MINUS-LESS (119 52
+                                 (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+                            (83 39
+                                (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+                            (72 72
+                                (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+                            (59 59
+                                (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+                            (58 22
+                                (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+                            (56 26
+                                (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+                            (51 51 (:REWRITE DEFAULT-<-2))
+                            (51 51 (:REWRITE DEFAULT-<-1))
+                            (12 12 (:REWRITE DEFAULT-+-2))
+                            (12 12 (:REWRITE DEFAULT-+-1))
+                            (3 3 (:REWRITE DEFAULT-UNARY-MINUS)))
+(MILAWA::|(< (- a b) c)|
+     (531 45 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+     (392 6
+          (:REWRITE MILAWA::|a <= b, c != 0 --> a < c+b|))
+     (235 46
+          (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (217 110
+          (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (181 126
+          (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (169 23
+          (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR))
+     (165 62
+          (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (162 111
+          (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (118 66
+          (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (113 62
+          (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (104 90
+          (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (83 43 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (71 71
+         (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (42 16
+         (:REWRITE MILAWA::LESS-WHEN-ZP-RIGHT-CHEAP))
+     (34 34
+         (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT))
+     (33 3 (:REWRITE MILAWA::|(= 0 (+ a b))|))
+     (28 6
+         (:REWRITE MILAWA::EQUAL-OF-ZERO-AND-NFIX))
+     (14 14 (:REWRITE MILAWA::NATP-OF-PLUS))
+     (10 4
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP))
+     (8 4
+        (:REWRITE MILAWA::PLUS-WHEN-ZP-RIGHT-CHEAP))
+     (5 5 (:REWRITE MILAWA::IRREFLEXIVITY-OF-<))
+     (1 1
+        (:REWRITE MILAWA::LESS-OF-ZERO-RIGHT)))
+(MILAWA::|(< a (- b c))| (149 63
+                              (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+                         (123 23
+                              (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+                         (122 111 (:REWRITE DEFAULT-<-1))
+                         (112 111 (:REWRITE DEFAULT-<-2))
+                         (89 43
+                             (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+                         (86 86
+                             (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+                         (83 23
+                             (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+                         (66 66
+                             (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+                         (63 23
+                             (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+                         (29 29 (:REWRITE DEFAULT-+-2))
+                         (29 29 (:REWRITE DEFAULT-+-1))
+                         (12 12
+                             (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
+                         (10 10 (:REWRITE DEFAULT-UNARY-MINUS)))
+(MILAWA::PLUS-OF-MINUS-RIGHT
+     (150 66
+          (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (105 49
+          (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (92 92
+         (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (75 75
+         (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (73 28
+         (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (70 32
+         (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (61 60 (:REWRITE DEFAULT-<-1))
+     (60 60 (:REWRITE DEFAULT-<-2))
+     (40 40 (:REWRITE DEFAULT-+-2))
+     (40 40 (:REWRITE DEFAULT-+-1))
+     (12 12
+         (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (11 11 (:REWRITE DEFAULT-UNARY-MINUS))
+     (7 7 (:REWRITE FOLD-CONSTS-IN-+))
+     (1 1
+        (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
+     (1 1
+        (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT)))
+(MILAWA::|(+ a (- b c))|
+     (239 18 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+     (176 10 (:REWRITE MILAWA::ANTISYMMETRY-OF-<))
+     (170 2
+          (:REWRITE MILAWA::|a <= b, c != 0 --> a < b+c|))
+     (86 35
+         (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (82 16
+         (:REWRITE MILAWA::LESS-WHEN-ZP-LEFT-CHEAP))
+     (79 47
+         (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (78 60
+         (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (77 49
+         (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (71 2
+         (:REWRITE MILAWA::|a <= b, c != 0 --> a < c+b|))
+     (63 35
+         (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (63 35
+         (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (60 20
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+     (44 16 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (40 40
+         (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (38 32
+         (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (22 8
+         (:REWRITE MILAWA::LESS-WHEN-ZP-RIGHT-CHEAP))
+     (20 20
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (16 16
+         (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT))
+     (12 12
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR))
+     (10 4
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP))
+     (2 2 (:REWRITE MILAWA::|(< (+ b a) a)|)))
+(MILAWA::|(+ (- a b) c)|
+     (312 3
+          (:REWRITE MILAWA::MINUS-WHEN-NOT-LESS))
+     (192 2
+          (:REWRITE MILAWA::|a <= b, c != 0 --> a < c+b|))
+     (172 14 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+     (133 9 (:REWRITE MILAWA::ANTISYMMETRY-OF-<))
+     (62 26
+         (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (61 39
+         (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (58 12
+         (:REWRITE MILAWA::LESS-WHEN-ZP-LEFT-CHEAP))
+     (56 16
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+     (55 47
+         (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (54 32
+         (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (50 2
+         (:REWRITE MILAWA::|a <= b, c != 0 --> a < b+c|))
+     (46 26
+         (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (46 26
+         (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (40 12 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (28 28
+         (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (26 22
+         (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (17 7
+         (:REWRITE MILAWA::LESS-WHEN-ZP-RIGHT-CHEAP))
+     (16 16
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (12 12
+         (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT))
+     (12 4
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-RIGHT-CHEAP))
+     (12 4
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP))
+     (11 11
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR))
+     (2 2 (:REWRITE MILAWA::|(< (+ a b) a)|)))
+(MILAWA::MINUS-OF-MINUS-RIGHT
+     (171 76
+          (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (117 57
+          (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (104 104
+          (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (88 38
+         (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (85 85
+         (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (84 30
+         (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (65 64 (:REWRITE DEFAULT-<-1))
+     (64 64 (:REWRITE DEFAULT-<-2))
+     (39 39 (:REWRITE DEFAULT-+-2))
+     (39 39 (:REWRITE DEFAULT-+-1))
+     (22 22 (:REWRITE DEFAULT-UNARY-MINUS))
+     (18 18
+         (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (4 4 (:REWRITE FOLD-CONSTS-IN-+))
+     (1 1
+        (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
+     (1 1
+        (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT)))
+(MILAWA::|(- a (- b c))|
+     (326 26 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+     (237 1 (:REWRITE MILAWA::|(< (- a b) c)|))
+     (227 13 (:REWRITE MILAWA::ANTISYMMETRY-OF-<))
+     (178 26
+          (:REWRITE MILAWA::LESS-WHEN-ZP-LEFT-CHEAP))
+     (165 3
+          (:REWRITE MILAWA::|a <= b, c != 0 --> a < b+c|))
+     (149 73
+          (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (117 86
+          (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (108 45
+          (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (101 69
+          (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (83 45
+         (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (80 45
+         (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (62 56
+         (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (57 3
+         (:REWRITE MILAWA::|a <= b, c != 0 --> a < c+b|))
+     (50 50
+         (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (36 26
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (32 12
+         (:REWRITE MILAWA::LESS-WHEN-ZP-RIGHT-CHEAP))
+     (29 3 (:REWRITE MILAWA::|(= 0 (+ a b))|))
+     (26 26
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+     (26 26 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (22 22
+         (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT))
+     (15 15 (:REWRITE MILAWA::NATP-OF-PLUS))
+     (13 13
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR))
+     (13 5
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-RIGHT-CHEAP))
+     (13 5
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP))
+     (10 2
+         (:REWRITE MILAWA::EQUAL-OF-ZERO-AND-NFIX))
+     (7 1 (:REWRITE MILAWA::COMMUTATIVITY-OF-+))
+     (1 1 (:REWRITE MILAWA::LESS-OF-ZERO-RIGHT))
+     (1 1
+        (:REWRITE MILAWA::IRREFLEXIVITY-OF-<)))
+(MILAWA::|(- (- a b) c)|
+     (676 254
+          (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (665 291
+          (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (282 60
+          (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (245 60
+          (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (201 186 (:REWRITE DEFAULT-<-1))
+     (194 194
+          (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (186 186 (:REWRITE DEFAULT-<-2))
+     (174 174
+          (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (171 60
+          (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (157 157
+          (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (76 75 (:REWRITE DEFAULT-+-2))
+     (76 75 (:REWRITE DEFAULT-+-1))
+     (47 47 (:REWRITE DEFAULT-UNARY-MINUS))
+     (17 17
+         (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
+     (6 6 (:REWRITE FOLD-CONSTS-IN-+))
+     (2 2
+        (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT)))
+(MILAWA::EQUAL-OF-MINUS-PROPERTY
+     (80 37
+         (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (53 27
+         (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (48 48
+         (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (41 17
+         (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (40 13
+         (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (38 38
+         (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (24 24 (:REWRITE DEFAULT-<-2))
+     (24 24 (:REWRITE DEFAULT-<-1))
+     (13 13
+         (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (8 8 (:REWRITE DEFAULT-+-2))
+     (8 8 (:REWRITE DEFAULT-+-1))
+     (1 1 (:REWRITE DEFAULT-UNARY-MINUS)))
+(MILAWA::|(= (- a b) c)|
+     (154 16 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+     (84 13
+         (:REWRITE MILAWA::LESS-WHEN-ZP-LEFT-CHEAP))
+     (70 41
+         (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (66 42
+         (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (51 21
+         (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (50 25
+         (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (41 21
+         (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (36 32
+         (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (28 28
+         (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (17 17
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (15 15 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (14 1 (:REWRITE MILAWA::LESS-OF-NFIX-LEFT))
+     (12 4
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP))
+     (10 10
+         (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT))
+     (10 2
+         (:REWRITE MILAWA::EQUAL-OF-ZERO-AND-NFIX))
+     (9 9
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR))
+     (8 2 (:REWRITE MILAWA::NFIX-OF-NFIX))
+     (6 1
+        (:REWRITE MILAWA::EQUAL-OF-MINUS-PROPERTY))
+     (3 1 (:REWRITE MILAWA::ZP-OF-NFIX)))
+(MILAWA::|(= c (- a b))|
+     (60 1
+         (:REWRITE MILAWA::MINUS-WHEN-NOT-LESS))
+     (34 4 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+     (23 3 (:REWRITE MILAWA::ANTISYMMETRY-OF-<))
+     (18 4
+         (:REWRITE MILAWA::LESS-WHEN-ZP-LEFT-CHEAP))
+     (15 11
+         (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (15 9 (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (12 8 (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (10 10
+         (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (10 4
+         (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (8 4 (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (8 4
+        (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (6 6
+        (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (6 2
+        (:REWRITE MILAWA::PLUS-WHEN-ZP-RIGHT-CHEAP))
+     (6 2
+        (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP))
+     (5 3
+        (:REWRITE MILAWA::LESS-WHEN-ZP-RIGHT-CHEAP))
+     (4 4
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+     (4 4
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (4 4 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (3 3
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR))
+     (2 2
+        (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT)))
+(MILAWA::|(- (+ a b) (+ a c))|
+     (627 3
+          (:REWRITE MILAWA::MINUS-WHEN-NOT-LESS))
+     (393 55 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+     (250 5
+          (:REWRITE MILAWA::|c <= a, d <= b --> c+d <= b+a|))
+     (160 94
+          (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (116 14
+          (:REWRITE MILAWA::|a <= b, c != 0 --> a < b+c|))
+     (115 98
+          (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (114 55
+          (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+     (111 14
+          (:REWRITE MILAWA::|a <= b, c != 0 --> a < c+b|))
+     (107 4
+          (:REWRITE MILAWA::|c <= a, d < b --> c+d < b+a|))
+     (102 53
+          (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (79 55
+         (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (73 53
+         (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (68 46
+         (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (61 44 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (55 55
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (53 2 (:REWRITE MILAWA::|(< a (+ a b))|))
+     (50 2
+         (:REWRITE MILAWA::|a <= b, c != 0 --> a < c+b+d|))
+     (48 38
+         (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (46 2
+         (:REWRITE MILAWA::|a <= b, c != 0 --> a < c+d+b|))
+     (43 43
+         (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (39 3
+         (:REWRITE MILAWA::|c < a, d <= b --> c+d < b+a|))
+     (34 34
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR))
+     (31 31
+         (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT))
+     (31 9
+         (:REWRITE MILAWA::EQUAL-OF-ZERO-AND-NFIX))
+     (26 10
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-RIGHT-CHEAP))
+     (24 10
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP))
+     (23 3 (:REWRITE MILAWA::|(= 0 (+ a b))|))
+     (15 15 (:REWRITE MILAWA::NATP-OF-PLUS))
+     (9 3
+        (:REWRITE MILAWA::|c < a, d <= b --> c+d < a+b|))
+     (3 3 (:REWRITE MILAWA::LESS-OF-ZERO-RIGHT))
+     (3 3
+        (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-PLUS-OF-PLUS))
+     (1 1
+        (:REWRITE MILAWA::IRREFLEXIVITY-OF-<)))
+(MILAWA::|(- (+ a b) (+ c a))|
+     (61 2
+         (:REWRITE MILAWA::MINUS-WHEN-NOT-LESS))
+     (32 2 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+     (21 1 (:REWRITE MILAWA::ANTISYMMETRY-OF-<))
+     (16 12
+         (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (16 10
+         (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (16 2
+         (:REWRITE MILAWA::LESS-WHEN-ZP-LEFT-CHEAP))
+     (12 8 (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (10 4
+         (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (9 3
+        (:REWRITE MILAWA::PLUS-WHEN-ZP-RIGHT-CHEAP))
+     (8 4 (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (8 4
+        (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (7 3
+        (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP))
+     (6 6
+        (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (6 6
+        (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (3 1
+        (:REWRITE MILAWA::LESS-WHEN-ZP-RIGHT-CHEAP))
+     (2 2
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+     (2 2
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (2 2 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (2 2
+        (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT))
+     (1 1
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR)))
+(MILAWA::|(- (+ b a) (+ c a))|
+     (61 2
+         (:REWRITE MILAWA::MINUS-WHEN-NOT-LESS))
+     (32 2 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+     (21 1 (:REWRITE MILAWA::ANTISYMMETRY-OF-<))
+     (17 13
+         (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (17 11
+         (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (16 2
+         (:REWRITE MILAWA::LESS-WHEN-ZP-LEFT-CHEAP))
+     (12 8 (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (10 4
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-RIGHT-CHEAP))
+     (10 4
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP))
+     (10 4
+         (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (8 4 (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (8 4
+        (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (6 6
+        (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (6 6
+        (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (3 1
+        (:REWRITE MILAWA::LESS-WHEN-ZP-RIGHT-CHEAP))
+     (2 2
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+     (2 2
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (2 2 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (2 2
+        (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT))
+     (1 1
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR)))
+(MILAWA::|(- (+ b a) (+ a c))|
+     (61 2
+         (:REWRITE MILAWA::MINUS-WHEN-NOT-LESS))
+     (32 2 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+     (21 1 (:REWRITE MILAWA::ANTISYMMETRY-OF-<))
+     (16 12
+         (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (16 10
+         (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (16 2
+         (:REWRITE MILAWA::LESS-WHEN-ZP-LEFT-CHEAP))
+     (12 8 (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (10 4
+         (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (9 3
+        (:REWRITE MILAWA::PLUS-WHEN-ZP-RIGHT-CHEAP))
+     (8 4 (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (8 4
+        (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (7 3
+        (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP))
+     (6 6
+        (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (6 6
+        (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (3 1
+        (:REWRITE MILAWA::LESS-WHEN-ZP-RIGHT-CHEAP))
+     (2 2
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+     (2 2
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (2 2 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (2 2
+        (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT))
+     (1 1
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR)))
+(MILAWA::|(- (+ a b) (+ c d a))|
+     (121 2
+          (:REWRITE MILAWA::MINUS-WHEN-NOT-LESS))
+     (74 3 (:REWRITE MILAWA::ANTISYMMETRY-OF-<))
+     (50 6 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+     (34 19
+         (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (34 6
+         (:REWRITE MILAWA::LESS-WHEN-ZP-LEFT-CHEAP))
+     (27 20
+         (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (26 1
+         (:REWRITE MILAWA::|a <= b, c != 0 --> a < c+b|))
+     (26 1
+         (:REWRITE MILAWA::|a <= b, c != 0 --> a < b+c|))
+     (17 7
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-RIGHT-CHEAP))
+     (13 8
+         (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (13 7
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP))
+     (13 1 (:REWRITE MILAWA::|(= 0 (+ a b))|))
+     (12 8 (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (11 8
+         (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (10 8 (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (9 3
+        (:REWRITE MILAWA::LESS-WHEN-ZP-RIGHT-CHEAP))
+     (7 7
+        (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (6 6
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+     (6 6
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (6 6 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (6 6
+        (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (5 5 (:REWRITE MILAWA::NATP-OF-PLUS))
+     (4 4
+        (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT))
+     (3 3
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR))
+     (2 2
+        (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-PLUS-OF-PLUS)))
+(MILAWA::|a < b --> a <= b-1|
+     (94 10 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+     (41 29
+         (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (39 23
+         (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (39 18
+         (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (27 17
+         (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (26 14
+         (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (18 18
+         (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (17 1
+         (:REWRITE MILAWA::MINUS-WHEN-NOT-LESS))
+     (14 1 (:REWRITE MILAWA::LESS-OF-NFIX-LEFT))
+     (13 13
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (13 1 (:REWRITE MILAWA::LESS-OF-ONE-LEFT))
+     (8 8
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR))
+     (8 8 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (8 2 (:REWRITE MILAWA::NFIX-OF-NFIX))
+     (7 1
+        (:REWRITE MILAWA::EQUAL-OF-ZERO-AND-NFIX))
+     (6 2
+        (:REWRITE MILAWA::LESS-WHEN-ZP-RIGHT-CHEAP))
+     (5 5
+        (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT))
+     (3 1
+        (:REWRITE MILAWA::PLUS-WHEN-ZP-RIGHT-CHEAP))
+     (1 1
+        (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP)))
+(MILAWA::MINUS-WHEN-ZP-LEFT-CHEAP
+     (29 2 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+     (19 1 (:REWRITE MILAWA::ANTISYMMETRY-OF-<))
+     (12 8
+         (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (11 7 (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (10 2
+         (:REWRITE MILAWA::EQUAL-OF-ZERO-AND-NFIX))
+     (9 2
+        (:REWRITE MILAWA::LESS-WHEN-ZP-LEFT-CHEAP))
+     (8 6 (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (6 4 (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (5 5
+        (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (5 2
+        (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (4 2
+        (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (2 2
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+     (2 2
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (2 2 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (2 2
+        (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT))
+     (1 1
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR))
+     (1 1
+        (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE)))
+(MILAWA::MINUS-WHEN-ZP-RIGHT-CHEAP
+     (47 1
+         (:REWRITE MILAWA::MINUS-WHEN-NOT-LESS))
+     (30 3 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+     (17 11
+         (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (17 2 (:REWRITE MILAWA::ANTISYMMETRY-OF-<))
+     (16 10
+         (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (14 10
+         (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (8 6 (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (8 4
+        (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (3 3
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+     (3 3
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (3 3 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (3 3
+        (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT))
+     (3 3
+        (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (3 1
+        (:REWRITE MILAWA::MINUS-WHEN-ZP-LEFT-CHEAP))
+     (2 2
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR))
+     (1 1
+        (:REWRITE MILAWA::PLUS-WHEN-ZP-RIGHT-CHEAP)))
+(MILAWA::MINUS-OF-NFIX-LEFT
+     (176 19 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+     (117 2
+          (:REWRITE MILAWA::MINUS-WHEN-NOT-LESS))
+     (71 12
+         (:REWRITE MILAWA::LESS-WHEN-ZP-LEFT-CHEAP))
+     (61 38
+         (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (57 32
+         (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (48 24
+         (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (47 31
+         (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (38 24
+         (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (31 6 (:REWRITE MILAWA::NFIX-OF-NFIX))
+     (29 25
+         (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (27 20
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (21 21
+         (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (18 18 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (12 4 (:REWRITE MILAWA::ZP-OF-NFIX))
+     (11 11
+         (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT))
+     (10 3
+         (:REWRITE MILAWA::MINUS-WHEN-ZP-LEFT-CHEAP))
+     (10 2
+         (:REWRITE MILAWA::EQUAL-OF-ZERO-AND-NFIX))
+     (7 3
+        (:REWRITE MILAWA::MINUS-WHEN-ZP-RIGHT-CHEAP))
+     (6 2
+        (:REWRITE MILAWA::PLUS-WHEN-ZP-RIGHT-CHEAP))
+     (6 2
+        (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP)))
+(MILAWA::MINUS-OF-NFIX-RIGHT
+     (359 3
+          (:REWRITE MILAWA::MINUS-WHEN-NOT-LESS))
+     (278 39 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+     (149 4
+          (:REWRITE MILAWA::|a <= b, c != 0 --> a < c+b|))
+     (115 6 (:REWRITE MILAWA::LESS-OF-NFIX-RIGHT))
+     (91 52
+         (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (90 35 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (75 52
+         (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (68 56
+         (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (65 39
+         (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (54 11 (:REWRITE MILAWA::NFIX-OF-NFIX))
+     (52 39
+         (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (46 32
+         (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (42 42
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (31 31
+         (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (30 26
+         (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (25 4
+         (:REWRITE MILAWA::|a <= b, c != 0 --> a < b+c|))
+     (17 17
+         (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT))
+     (16 4
+         (:REWRITE MILAWA::EQUAL-OF-ZERO-AND-NFIX))
+     (15 5 (:REWRITE MILAWA::ZP-OF-NFIX))
+     (11 3
+         (:REWRITE MILAWA::MINUS-WHEN-ZP-RIGHT-CHEAP))
+     (10 4
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-RIGHT-CHEAP))
+     (10 4
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP))
+     (7 3
+        (:REWRITE MILAWA::MINUS-WHEN-ZP-LEFT-CHEAP))
+     (3 3 (:REWRITE MILAWA::NATP-OF-PLUS))
+     (1 1 (:REWRITE MILAWA::LESS-OF-ZERO-RIGHT))
+     (1 1 (:REWRITE MILAWA::|(< (+ b a) a)|)))
+(MILAWA::GATHER-CONSTANTS-FROM-LESS-OF-PLUS
+     (165 7 (:REWRITE MILAWA::ANTISYMMETRY-OF-<))
+     (149 14 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+     (90 14
+         (:REWRITE MILAWA::LESS-WHEN-ZP-LEFT-CHEAP))
+     (77 38
+         (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (61 42
+         (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (52 2
+         (:REWRITE MILAWA::|a <= b, c != 0 --> a < c+b|))
+     (44 22
+         (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (38 28
+         (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (36 22
+         (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (33 22
+         (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (27 2
+         (:REWRITE MILAWA::|a <= b, c != 0 --> a < b+c|))
+     (26 24
+         (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (26 2 (:REWRITE MILAWA::|(= 0 (+ a b))|))
+     (22 21
+         (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (19 7
+         (:REWRITE MILAWA::LESS-WHEN-ZP-RIGHT-CHEAP))
+     (14 14
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+     (14 14
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (14 14 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (12 4
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-RIGHT-CHEAP))
+     (12 4
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP))
+     (11 11
+         (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT))
+     (8 8 (:REWRITE MILAWA::NATP-OF-PLUS))
+     (1 1 (:REWRITE MILAWA::BOOLEANP-OF-<)))
+(MILAWA::GATHER-CONSTANTS-FROM-LESS-OF-PLUS-TWO
+     (271 24 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+     (200 3
+          (:REWRITE MILAWA::|a <= b, c != 0 --> a < c+b|))
+     (129 21
+          (:REWRITE MILAWA::LESS-WHEN-ZP-LEFT-CHEAP))
+     (110 56
+          (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (85 3
+         (:REWRITE MILAWA::|a <= b, c != 0 --> a < b+c|))
+     (84 64
+         (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (84 38
+         (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (71 48
+         (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (64 38
+         (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (61 38
+         (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (55 1
+         (:REWRITE MILAWA::MINUS-WHEN-NOT-LESS))
+     (45 39
+         (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (42 41
+         (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (36 26
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (35 21 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (27 11
+         (:REWRITE MILAWA::LESS-WHEN-ZP-RIGHT-CHEAP))
+     (19 19
+         (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT))
+     (18 2 (:REWRITE MILAWA::|(= 0 (+ a b))|))
+     (9 9 (:REWRITE MILAWA::NATP-OF-PLUS))
+     (9 3
+        (:REWRITE MILAWA::PLUS-WHEN-ZP-RIGHT-CHEAP))
+     (9 3
+        (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP))
+     (3 3
+        (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-LESS-OF-PLUS))
+     (3 1
+        (:REWRITE MILAWA::MINUS-WHEN-ZP-RIGHT-CHEAP))
+     (3 1
+        (:REWRITE MILAWA::MINUS-WHEN-ZP-LEFT-CHEAP))
+     (1 1 (:REWRITE MILAWA::IRREFLEXIVITY-OF-<))
+     (1 1 (:REWRITE MILAWA::BOOLEANP-OF-<)))
+(MILAWA::GATHER-CONSTANTS-FROM-LESS-OF-PLUS-AND-PLUS
+     (1554 191 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+     (805 28
+          (:REWRITE MILAWA::|a <= b, c != 0 --> a < c+b|))
+     (774 183
+          (:REWRITE MILAWA::LESS-WHEN-ZP-LEFT-CHEAP))
+     (726 7
+          (:REWRITE MILAWA::|c <= a, d <= b --> c+d <= b+a|))
+     (585 292
+          (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (547 103
+          (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR))
+     (523 198
+          (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (458 237
+          (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (424 322
+          (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (384 5
+          (:REWRITE MILAWA::MINUS-WHEN-NOT-LESS))
+     (366 28
+          (:REWRITE MILAWA::|a <= b, c != 0 --> a < b+c|))
+     (347 237
+          (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (337 237
+          (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (326 228
+          (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (277 183
+          (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (275 10
+          (:REWRITE MILAWA::|c <= a, d < b --> c+d < b+a|))
+     (228 194
+          (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (224 9
+          (:REWRITE MILAWA::|c < a, d <= b --> c+d < b+a|))
+     (177 89
+          (:REWRITE MILAWA::LESS-WHEN-ZP-RIGHT-CHEAP))
+     (128 14 (:REWRITE MILAWA::|(= 0 (+ a b))|))
+     (111 111
+          (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT))
+     (61 61 (:REWRITE MILAWA::NATP-OF-PLUS))
+     (60 9
+         (:REWRITE MILAWA::|c < a, d <= b --> c+d < a+b|))
+     (44 16
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-RIGHT-CHEAP))
+     (44 16
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP))
+     (36 2 (:REWRITE MILAWA::|(< a (+ a b))|))
+     (30 30
+         (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-LESS-OF-PLUS-TWO))
+     (29 29
+         (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-LESS-OF-PLUS))
+     (15 5
+         (:REWRITE MILAWA::MINUS-WHEN-ZP-LEFT-CHEAP))
+     (13 5
+         (:REWRITE MILAWA::MINUS-WHEN-ZP-RIGHT-CHEAP))
+     (7 7 (:REWRITE MILAWA::IRREFLEXIVITY-OF-<))
+     (6 2
+        (:REWRITE MILAWA::EQUAL-OF-ZERO-AND-NFIX)))
+(MILAWA::LEMMA-FOR-GATHER-CONSTANTS-FROM-EQUAL-OF-PLUS-AND-PLUS
+     (128 2
+          (:REWRITE MILAWA::MINUS-WHEN-NOT-LESS))
+     (99 8 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+     (96 2
+         (:REWRITE MILAWA::|a <= b, c != 0 --> a < c+b|))
+     (38 6
+         (:REWRITE MILAWA::LESS-WHEN-ZP-LEFT-CHEAP))
+     (37 29
+         (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (37 23
+         (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (34 21
+         (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (33 15
+         (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (27 15
+         (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (27 15
+         (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (26 2
+         (:REWRITE MILAWA::|a <= b, c != 0 --> a < b+c|))
+     (20 20
+         (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (20 6 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (14 14
+         (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (11 11
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (9 3
+        (:REWRITE MILAWA::LESS-WHEN-ZP-RIGHT-CHEAP))
+     (8 8
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR))
+     (8 4
+        (:REWRITE MILAWA::PLUS-WHEN-ZP-RIGHT-CHEAP))
+     (8 4
+        (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP))
+     (7 7
+        (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT))
+     (6 2
+        (:REWRITE MILAWA::MINUS-WHEN-ZP-LEFT-CHEAP))
+     (4 2
+        (:REWRITE MILAWA::MINUS-WHEN-ZP-RIGHT-CHEAP))
+     (2 2
+        (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-LESS-OF-PLUS-TWO))
+     (2 2
+        (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-LESS-OF-PLUS)))
+(MILAWA::LEMMA2-FOR-GATHER-CONSTANTS-FROM-EQUAL-OF-PLUS-AND-PLUS
+     (177 82
+          (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (131 66
+          (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (123 4
+          (:REWRITE MILAWA::MINUS-WHEN-NOT-LESS))
+     (91 4
+         (:REWRITE MILAWA::|a <= b, c != 0 --> a < c+b|))
+     (55 27
+         (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (50 39
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (37 26 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (35 10
+         (:REWRITE MILAWA::LESS-WHEN-ZP-RIGHT-CHEAP))
+     (20 4
+         (:REWRITE MILAWA::|a <= b, c != 0 --> a < b+c|))
+     (17 5
+         (:REWRITE MILAWA::MINUS-WHEN-ZP-LEFT-CHEAP))
+     (4 4
+        (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-LESS-OF-PLUS-TWO))
+     (4 4
+        (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-LESS-OF-PLUS))
+     (2 2
+        (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT)))
+(MILAWA::GATHER-CONSTANTS-FROM-EQUAL-OF-PLUS-AND-PLUS)
+(MILAWA::GATHER-CONSTANTS-FROM-EQUAL-OF-PLUS
+     (71 42
+         (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (65 49
+         (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (60 1
+         (:REWRITE MILAWA::|a <= b, c != 0 --> a < c+b|))
+     (59 6 (:REWRITE MILAWA::ANTISYMMETRY-OF-<))
+     (55 34
+         (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (46 1
+         (:REWRITE MILAWA::MINUS-WHEN-NOT-LESS))
+     (38 16
+         (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (32 16
+         (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (32 12
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (28 24
+         (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (15 5
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP))
+     (12 12
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+     (11 4
+         (:REWRITE MILAWA::LESS-WHEN-ZP-RIGHT-CHEAP))
+     (10 10 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (10 1
+         (:REWRITE MILAWA::|a <= b, c != 0 --> a < b+c|))
+     (9 9
+        (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT))
+     (7 7
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR))
+     (4 1
+        (:REWRITE MILAWA::MINUS-WHEN-ZP-LEFT-CHEAP))
+     (3 1
+        (:REWRITE MILAWA::MINUS-WHEN-ZP-RIGHT-CHEAP))
+     (2 2 (:REWRITE MILAWA::IRREFLEXIVITY-OF-<))
+     (1 1 (:REWRITE MILAWA::LESS-OF-ZERO-RIGHT))
+     (1 1
+        (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-LESS-OF-PLUS-TWO))
+     (1 1
+        (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-LESS-OF-PLUS)))
+(MILAWA::GATHER-CONSTANTS-FROM-MINUS-OF-PLUS
+     (1042 24
+           (:REWRITE MILAWA::|a <= b, c != 0 --> a < c+b|))
+     (420 325
+          (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (322 147
+          (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (305 207
+          (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (243 147
+          (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (237 147
+          (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (219 107
+          (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (211 88 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (209 64
+          (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR))
+     (180 160
+          (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (157 157
+          (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (96 38
+         (:REWRITE MILAWA::LESS-WHEN-ZP-RIGHT-CHEAP))
+     (78 32
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-RIGHT-CHEAP))
+     (75 75
+         (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT))
+     (72 32
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP))
+     (69 1
+         (:REWRITE MILAWA::|c <= a, d <= b --> c+d <= b+a|))
+     (51 2 (:REWRITE MILAWA::|(< a (+ a b))|))
+     (33 11
+         (:REWRITE MILAWA::MINUS-WHEN-ZP-LEFT-CHEAP))
+     (32 32
+         (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-EQUAL-OF-PLUS))
+     (27 11
+         (:REWRITE MILAWA::MINUS-WHEN-ZP-RIGHT-CHEAP))
+     (26 4
+         (:REWRITE MILAWA::|a <= b, c != 0 --> a < c+b+d|))
+     (25 25
+         (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-LESS-OF-PLUS-TWO))
+     (20 4
+         (:REWRITE MILAWA::|a <= b, c != 0 --> a < c+d+b|))
+     (16 16
+         (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-LESS-OF-PLUS))
+     (8 8
+        (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-PLUS-OF-PLUS))
+     (5 5 (:REWRITE MILAWA::LESS-OF-ZERO-RIGHT))
+     (2 2 (:REWRITE MILAWA::IRREFLEXIVITY-OF-<))
+     (1 1
+        (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-LESS-OF-PLUS-AND-PLUS))
+     (1 1
+        (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-EQUAL-OF-PLUS-AND-PLUS)))
+(MILAWA::GATHER-CONSTANTS-FROM-MINUS-OF-PLUS-TWO
+     (366 36 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+     (230 33
+          (:REWRITE MILAWA::LESS-WHEN-ZP-LEFT-CHEAP))
+     (226 115
+          (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (192 6
+          (:REWRITE MILAWA::|a <= b, c != 0 --> a < c+b|))
+     (97 72
+         (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (94 48
+         (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (92 8 (:REWRITE MILAWA::|(= 0 (+ a b))|))
+     (85 51
+         (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (75 49
+         (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (65 61
+         (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (45 45
+         (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (41 15
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP))
+     (40 38
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (40 6
+         (:REWRITE MILAWA::|a <= b, c != 0 --> a < b+c|))
+     (39 15
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-RIGHT-CHEAP))
+     (33 33 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (33 1 (:REWRITE MILAWA::|(< a (+ a b))|))
+     (25 25 (:REWRITE MILAWA::NATP-OF-PLUS))
+     (25 25
+         (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT))
+     (19 7
+         (:REWRITE MILAWA::MINUS-WHEN-ZP-LEFT-CHEAP))
+     (17 17
+         (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-EQUAL-OF-PLUS))
+     (17 7
+         (:REWRITE MILAWA::MINUS-WHEN-ZP-RIGHT-CHEAP))
+     (10 10
+         (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-LESS-OF-PLUS))
+     (9 3
+        (:REWRITE MILAWA::EQUAL-OF-ZERO-AND-NFIX))
+     (6 6
+        (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-LESS-OF-PLUS-TWO))
+     (2 2
+        (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-MINUS-OF-PLUS))
+     (1 1 (:REWRITE MILAWA::LESS-OF-ZERO-RIGHT))
+     (1 1
+        (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-PLUS-OF-PLUS)))
+(MILAWA::GATHER-CONSTANTS-FROM-MINUS-OF-PLUS-AND-PLUS
+     (2087 108
+           (:REWRITE MILAWA::|a <= b, c != 0 --> a < b+c|))
+     (1823 108
+           (:REWRITE MILAWA::|a <= b, c != 0 --> a < c+b|))
+     (1536 34
+           (:REWRITE MILAWA::|c <= a, d <= b --> c+d <= b+a|))
+     (1252 578
+           (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (1144 895
+           (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (1052 591
+           (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (1029 33
+           (:REWRITE MILAWA::|c <= a, d < b --> c+d < b+a|))
+     (871 33
+          (:REWRITE MILAWA::|c < a, d <= b --> c+d < b+a|))
+     (844 594
+          (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (820 591
+          (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (763 523
+          (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (757 531
+          (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (527 317
+          (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR))
+     (499 499
+          (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (396 33
+          (:REWRITE MILAWA::|c <= a, d < b --> c+d < a+b|))
+     (363 6 (:REWRITE MILAWA::|(< a (+ a b))|))
+     (286 286
+          (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT))
+     (214 92
+          (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP))
+     (206 16
+          (:REWRITE MILAWA::|a <= b, c != 0 --> a < c+d+b|))
+     (174 8 (:REWRITE MILAWA::|(< a (+ b a))|))
+     (128 128
+          (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-EQUAL-OF-PLUS))
+     (119 119
+          (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-LESS-OF-PLUS-TWO))
+     (114 16
+          (:REWRITE MILAWA::|a <= b, c != 0 --> a < c+b+d|))
+     (105 105
+          (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-LESS-OF-PLUS))
+     (75 25
+         (:REWRITE MILAWA::EQUAL-OF-ZERO-AND-NFIX))
+     (63 21
+         (:REWRITE MILAWA::MINUS-WHEN-ZP-LEFT-CHEAP))
+     (51 21
+         (:REWRITE MILAWA::MINUS-WHEN-ZP-RIGHT-CHEAP))
+     (42 42
+         (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-LESS-OF-PLUS-AND-PLUS))
+     (36 4
+         (:REWRITE MILAWA::|(< (+ b a) (+ c a))|))
+     (25 25
+         (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-PLUS-OF-PLUS))
+     (20 20
+         (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-EQUAL-OF-PLUS-AND-PLUS))
+     (15 15
+         (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-MINUS-OF-PLUS))
+     (13 13
+         (:REWRITE MILAWA::LESS-OF-ZERO-RIGHT))
+     (12 2 (:REWRITE MILAWA::LESS-OF-ZERO-LEFT))
+     (10 10
+         (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-MINUS-OF-PLUS-TWO))
+     (9 9
+        (:REWRITE MILAWA::IRREFLEXIVITY-OF-<)))
+(MILAWA::NOT-EQUAL-WHEN-LESS (16 2
+                                 (:REWRITE MILAWA::LESS-WHEN-ZP-LEFT-CHEAP))
+                             (14 1 (:REWRITE MILAWA::ANTISYMMETRY-OF-<))
+                             (9 3 (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+                             (7 3
+                                (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+                             (4 4 (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+                             (4 4
+                                (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+                             (3 1
+                                (:REWRITE MILAWA::LESS-WHEN-ZP-RIGHT-CHEAP))
+                             (2 2 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+                             (2 2
+                                (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+                             (2 2
+                                (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+                             (2 2 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+                             (2 2
+                                (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+                             (1 1
+                                (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR)))
+(MILAWA::NOT-EQUAL-WHEN-LESS-TWO
+     (16 2
+         (:REWRITE MILAWA::LESS-WHEN-ZP-LEFT-CHEAP))
+     (14 1 (:REWRITE MILAWA::ANTISYMMETRY-OF-<))
+     (9 3 (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (7 3
+        (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (4 4 (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (4 4
+        (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (3 1
+        (:REWRITE MILAWA::LESS-WHEN-ZP-RIGHT-CHEAP))
+     (2 2 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+     (2 2
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+     (2 2
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (2 2 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (2 2
+        (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (1 1
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR)))
+(MILAWA::|a <= d, b+c <= e --> b+a+c <= d+e|
+     (355 40 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+     (196 6 (:REWRITE MILAWA::ANTISYMMETRY-OF-<))
+     (160 1
+          (:REWRITE MILAWA::|c <= a, d <= b --> c+d <= b+a|))
+     (131 13
+          (:REWRITE MILAWA::NOT-EQUAL-WHEN-LESS))
+     (109 23
+          (:REWRITE MILAWA::LESS-WHEN-ZP-LEFT-CHEAP))
+     (84 8 (:REWRITE MILAWA::LESS-OF-NFIX-RIGHT))
+     (83 6
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR))
+     (83 5
+         (:REWRITE MILAWA::|a <= b, c != 0 --> a < c+b|))
+     (76 37
+         (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (74 5
+         (:REWRITE MILAWA::|a <= b, c != 0 --> a < b+c|))
+     (66 45
+         (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (60 9 (:REWRITE MILAWA::LESS-OF-NFIX-LEFT))
+     (56 40
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (54 38
+         (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (52 26
+         (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (44 26
+         (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (44 13
+         (:REWRITE MILAWA::NOT-EQUAL-WHEN-LESS-TWO))
+     (43 26
+         (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (40 40
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+     (40 40 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (31 31
+         (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (30 30
+         (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (16 6
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-RIGHT-CHEAP))
+     (16 6
+         (:REWRITE MILAWA::LESS-WHEN-ZP-RIGHT-CHEAP))
+     (14 6
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP))
+     (13 13
+         (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT))
+     (9 1 (:REWRITE MILAWA::|(= 0 (+ a b))|))
+     (6 6
+        (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-LESS-OF-PLUS-TWO))
+     (5 5 (:REWRITE MILAWA::NATP-OF-PLUS))
+     (4 4
+        (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-LESS-OF-PLUS))
+     (3 3
+        (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-EQUAL-OF-PLUS))
+     (2 2
+        (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-PLUS-OF-PLUS))
+     (1 1
+        (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-LESS-OF-PLUS-AND-PLUS)))
+(MILAWA::|(< (+ a b) (+ c b d))|
+     (760 110 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+     (524 21
+          (:REWRITE MILAWA::|a <= b, c != 0 --> a < c+b|))
+     (317 34 (:REWRITE MILAWA::ANTISYMMETRY-OF-<))
+     (283 26
+          (:REWRITE MILAWA::NOT-EQUAL-WHEN-LESS))
+     (244 21
+          (:REWRITE MILAWA::|a <= b, c != 0 --> a < b+c|))
+     (205 3
+          (:REWRITE MILAWA::|c <= a, d <= b --> c+d <= b+a|))
+     (177 74
+          (:REWRITE MILAWA::LESS-WHEN-ZP-LEFT-CHEAP))
+     (173 17
+          (:REWRITE MILAWA::LESS-OF-NFIX-RIGHT))
+     (161 1
+          (:REWRITE MILAWA::|a <= b, c != 0 --> a < c+d+b|))
+     (124 1
+          (:REWRITE MILAWA::|a <= b, c != 0 --> a < c+b+d|))
+     (110 110
+          (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+     (110 110
+          (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (106 106
+          (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (102 46
+          (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (100 15 (:REWRITE MILAWA::LESS-OF-NFIX-LEFT))
+     (83 3
+         (:REWRITE MILAWA::|c <= a, d <= b --> c+d <= a+b|))
+     (80 1 (:REWRITE MILAWA::|(< a (+ b a))|))
+     (79 54
+         (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (79 1
+         (:REWRITE MILAWA::|a <= d, b+c <= e --> b+a+c <= d+e|))
+     (78 3
+         (:REWRITE MILAWA::|c <= a, d < b --> c+d < b+a|))
+     (75 28
+         (:REWRITE MILAWA::NOT-EQUAL-WHEN-LESS-TWO))
+     (66 54
+         (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (66 50
+         (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (64 54
+         (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (64 3
+         (:REWRITE MILAWA::|c <= a, d < b --> c+d < a+b|))
+     (46 3
+         (:REWRITE MILAWA::|c < a, d <= b --> c+d < b+a|))
+     (42 30
+         (:REWRITE MILAWA::LESS-WHEN-ZP-RIGHT-CHEAP))
+     (38 29
+         (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (36 4 (:REWRITE MILAWA::|(= 0 (+ a b))|))
+     (35 35
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR))
+     (35 35
+         (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (26 26
+         (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT))
+     (24 24
+         (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (23 23 (:REWRITE MILAWA::NATP-OF-PLUS))
+     (21 21
+         (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-LESS-OF-PLUS-TWO))
+     (18 3
+         (:REWRITE MILAWA::|c < a, d <= b --> c+d < a+b|))
+     (16 16
+         (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-LESS-OF-PLUS))
+     (14 6
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-RIGHT-CHEAP))
+     (13 13
+         (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-EQUAL-OF-PLUS))
+     (12 6
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP))
+     (12 2 (:REWRITE MILAWA::LESS-OF-ZERO-LEFT))
+     (9 3 (:DEFINITION NOT))
+     (6 2
+        (:REWRITE MILAWA::EQUAL-OF-ZERO-AND-NFIX))
+     (3 3
+        (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-LESS-OF-PLUS-AND-PLUS))
+     (2 2 (:REWRITE MILAWA::LESS-OF-ZERO-RIGHT))
+     (2 2
+        (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-PLUS-OF-PLUS)))
+(MILAWA::|(< (+ a b c)) (+ d c))|
+     (2010 283 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+     (1302 42
+           (:REWRITE MILAWA::|a <= b, c != 0 --> a < c+b|))
+     (870 42
+          (:REWRITE MILAWA::|a <= b, c != 0 --> a < b+c|))
+     (810 85
+          (:REWRITE MILAWA::NOT-EQUAL-WHEN-LESS))
+     (615 189
+          (:REWRITE MILAWA::LESS-WHEN-ZP-LEFT-CHEAP))
+     (559 7
+          (:REWRITE MILAWA::|c <= a, d <= b --> c+d <= b+a|))
+     (538 3 (:REWRITE MILAWA::|(< a (+ b c a))|))
+     (458 218
+          (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (429 42
+          (:REWRITE MILAWA::LESS-OF-NFIX-RIGHT))
+     (421 8
+          (:REWRITE MILAWA::|a <= b, c != 0 --> a < c+b+d|))
+     (360 285
+          (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (330 8
+          (:REWRITE MILAWA::|a <= b, c != 0 --> a < c+d+b|))
+     (284 230
+          (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (283 267
+          (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (267 85
+          (:REWRITE MILAWA::NOT-EQUAL-WHEN-LESS-TWO))
+     (235 36 (:REWRITE MILAWA::LESS-OF-NFIX-LEFT))
+     (205 143
+          (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (201 26 (:REWRITE MILAWA::|(= 0 (+ a b))|))
+     (187 143
+          (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (177 143
+          (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (155 7
+          (:REWRITE MILAWA::|c <= a, d < b --> c+d < b+a|))
+     (150 7
+          (:REWRITE MILAWA::|c <= a, d < b --> c+d < a+b|))
+     (129 100
+          (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (128 3 (:REWRITE MILAWA::|(< a (+ b a))|))
+     (127 2 (:REWRITE MILAWA::|(< a (+ a b))|))
+     (92 58
+         (:REWRITE MILAWA::LESS-WHEN-ZP-RIGHT-CHEAP))
+     (83 83
+         (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (78 13 (:REWRITE MILAWA::LESS-OF-ZERO-LEFT))
+     (73 73
+         (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT))
+     (72 72 (:REWRITE MILAWA::NATP-OF-PLUS))
+     (62 1
+         (:REWRITE MILAWA::|(< (+ a b) (+ c b d))|))
+     (60 7
+         (:REWRITE MILAWA::|c < a, d <= b --> c+d < b+a|))
+     (58 58
+         (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-LESS-OF-PLUS))
+     (46 46
+         (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-LESS-OF-PLUS-TWO))
+     (44 44
+         (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-EQUAL-OF-PLUS))
+     (44 20
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-RIGHT-CHEAP))
+     (44 20
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP))
+     (41 1
+         (:REWRITE MILAWA::|a <= d, b+c <= e --> b+a+c <= d+e|))
+     (39 13
+         (:REWRITE MILAWA::EQUAL-OF-ZERO-AND-NFIX))
+     (27 7
+         (:REWRITE MILAWA::|c < a, d <= b --> c+d < a+b|))
+     (18 18
+         (:REWRITE MILAWA::LESS-OF-ZERO-RIGHT))
+     (11 11
+         (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-LESS-OF-PLUS-AND-PLUS))
+     (7 7 (:REWRITE MILAWA::|(< (+ b a) a)|))
+     (3 3
+        (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-PLUS-OF-PLUS))
+     (2 2
+        (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-EQUAL-OF-PLUS-AND-PLUS))
+     (1 1 (:REWRITE MILAWA::|(< (+ a b) a)|)))
+(MILAWA::|a <= b, b <= c --> a < 1+c|
+     (279 35 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+     (129 35
+          (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (123 1 (:REWRITE MILAWA::SQUEEZE-LAW-TWO))
+     (113 8
+          (:REWRITE MILAWA::NOT-EQUAL-WHEN-LESS))
+     (99 9 (:REWRITE MILAWA::LESS-OF-NFIX-RIGHT))
+     (99 3 (:REWRITE MILAWA::ANTISYMMETRY-OF-<))
+     (73 17
+         (:REWRITE MILAWA::LESS-WHEN-ZP-LEFT-CHEAP))
+     (54 9 (:REWRITE MILAWA::LESS-OF-NFIX-LEFT))
+     (48 32
+         (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (44 28
+         (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (44 20
+         (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (40 16
+         (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (38 8
+         (:REWRITE MILAWA::NOT-EQUAL-WHEN-LESS-TWO))
+     (35 35
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+     (35 35 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (32 16
+         (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (32 16
+         (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (24 24
+         (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (24 24
+         (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (9 3
+        (:REWRITE MILAWA::LESS-WHEN-ZP-RIGHT-CHEAP))
+     (8 8
+        (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT))
+     (3 1
+        (:REWRITE MILAWA::PLUS-WHEN-ZP-RIGHT-CHEAP))
+     (1 1
+        (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP))
+     (1 1
+        (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-LESS-OF-PLUS-TWO)))
+(MILAWA::|b <= c, a <= b --> a < 1+c|
+     (195 26 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+     (80 5
+         (:REWRITE MILAWA::NOT-EQUAL-WHEN-LESS))
+     (77 7 (:REWRITE MILAWA::LESS-OF-NFIX-RIGHT))
+     (76 2 (:REWRITE MILAWA::ANTISYMMETRY-OF-<))
+     (73 26
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (47 12
+         (:REWRITE MILAWA::LESS-WHEN-ZP-LEFT-CHEAP))
+     (42 7 (:REWRITE MILAWA::LESS-OF-NFIX-LEFT))
+     (35 5
+         (:REWRITE MILAWA::NOT-EQUAL-WHEN-LESS-TWO))
+     (30 20
+         (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (28 18
+         (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (28 13
+         (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (26 26
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+     (26 26 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (25 10
+         (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (20 10
+         (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (20 10
+         (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (15 15
+         (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (15 15
+         (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (6 2
+        (:REWRITE MILAWA::LESS-WHEN-ZP-RIGHT-CHEAP))
+     (5 5
+        (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT))
+     (3 1
+        (:REWRITE MILAWA::PLUS-WHEN-ZP-RIGHT-CHEAP))
+     (2 2
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR))
+     (1 1
+        (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP)))
+(MILAWA::MAX)
+(MILAWA::NATP-OF-MAX
+     (83 13 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+     (38 3
+         (:REWRITE MILAWA::NOT-EQUAL-WHEN-LESS))
+     (38 1 (:REWRITE MILAWA::ANTISYMMETRY-OF-<))
+     (33 3 (:REWRITE MILAWA::LESS-OF-NFIX-RIGHT))
+     (23 13
+         (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (23 3
+         (:REWRITE MILAWA::NOT-EQUAL-WHEN-LESS-TWO))
+     (21 7
+         (:REWRITE MILAWA::LESS-WHEN-ZP-LEFT-CHEAP))
+     (21 6
+         (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (18 14
+         (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (18 3 (:REWRITE MILAWA::LESS-OF-NFIX-LEFT))
+     (17 11
+         (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (14 10
+         (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (14 6 (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (14 6
+         (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (13 13
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+     (13 13
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (13 13 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (3 1
+        (:REWRITE MILAWA::LESS-WHEN-ZP-RIGHT-CHEAP))
+     (2 2
+        (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT))
+     (1 1
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR)))
+(MILAWA::EQUAL-OF-MAX-AND-ZERO
+     (122 11
+          (:REWRITE MILAWA::NOT-EQUAL-WHEN-LESS))
+     (81 7 (:REWRITE MILAWA::LESS-OF-NFIX-RIGHT))
+     (68 40
+         (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (65 45
+         (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (51 35
+         (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (46 46
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+     (46 46
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (46 7 (:REWRITE MILAWA::LESS-OF-NFIX-LEFT))
+     (44 44 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (28 14
+         (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (6 6
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR))
+     (6 6 (:REWRITE MILAWA::LESS-OF-ZERO-RIGHT))
+     (6 6
+        (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT)))
+(MILAWA::MAX-OF-ZERO-LEFT
+     (78 12 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+     (40 3
+         (:REWRITE MILAWA::NOT-EQUAL-WHEN-LESS))
+     (34 1 (:REWRITE MILAWA::ANTISYMMETRY-OF-<))
+     (30 3 (:REWRITE MILAWA::LESS-OF-NFIX-RIGHT))
+     (29 3
+         (:REWRITE MILAWA::NOT-EQUAL-WHEN-LESS-TWO))
+     (13 2 (:REWRITE MILAWA::LESS-OF-NFIX-LEFT))
+     (12 12
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+     (12 12
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (12 12 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (12 10
+         (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (12 8 (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (12 2 (:REWRITE MILAWA::LESS-OF-ZERO-LEFT))
+     (10 4
+         (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (8 4 (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (3 3
+        (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT))
+     (3 3
+        (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (2 2 (:REWRITE MILAWA::LESS-OF-ZERO-RIGHT))
+     (1 1
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR)))
+(MILAWA::MAX-OF-ZERO-RIGHT
+     (69 8 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+     (31 1 (:REWRITE MILAWA::ANTISYMMETRY-OF-<))
+     (29 2
+         (:REWRITE MILAWA::NOT-EQUAL-WHEN-LESS))
+     (14 2 (:REWRITE MILAWA::LESS-OF-NFIX-LEFT))
+     (13 11
+         (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (13 2
+         (:REWRITE MILAWA::NOT-EQUAL-WHEN-LESS-TWO))
+     (12 5
+         (:REWRITE MILAWA::LESS-WHEN-ZP-LEFT-CHEAP))
+     (12 1 (:REWRITE MILAWA::LESS-OF-NFIX-RIGHT))
+     (11 9 (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (10 6 (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (10 4
+         (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (10 2
+         (:REWRITE MILAWA::EQUAL-OF-ZERO-AND-NFIX))
+     (8 8
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+     (8 8
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (8 8 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (8 4 (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (8 4
+        (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (6 2 (:DEFINITION NOT))
+     (6 1 (:REWRITE MILAWA::LESS-OF-ZERO-LEFT))
+     (4 4
+        (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (2 2 (:REWRITE MILAWA::LESS-OF-ZERO-RIGHT))
+     (2 2
+        (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT))
+     (2 2
+        (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (1 1
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR)))
+(MILAWA::MIN)
+(MILAWA::NATP-OF-MIN
+     (83 13 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+     (38 3
+         (:REWRITE MILAWA::NOT-EQUAL-WHEN-LESS))
+     (38 1 (:REWRITE MILAWA::ANTISYMMETRY-OF-<))
+     (33 3 (:REWRITE MILAWA::LESS-OF-NFIX-RIGHT))
+     (23 13
+         (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (23 3
+         (:REWRITE MILAWA::NOT-EQUAL-WHEN-LESS-TWO))
+     (21 7
+         (:REWRITE MILAWA::LESS-WHEN-ZP-LEFT-CHEAP))
+     (21 6
+         (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (18 14
+         (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (18 3 (:REWRITE MILAWA::LESS-OF-NFIX-LEFT))
+     (17 11
+         (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (14 10
+         (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (14 6 (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (14 6
+         (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (13 13
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+     (13 13
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (13 13 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (3 1
+        (:REWRITE MILAWA::LESS-WHEN-ZP-RIGHT-CHEAP))
+     (2 2
+        (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT))
+     (1 1
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR)))
+(MILAWA::EQUAL-OF-MIN-AND-ZERO
+     (99 13
+         (:REWRITE MILAWA::NOT-EQUAL-WHEN-LESS))
+     (71 39
+         (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (68 48
+         (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (47 47
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+     (47 47
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (41 41 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (33 3 (:REWRITE MILAWA::LESS-OF-NFIX-RIGHT))
+     (31 17
+         (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (18 3 (:REWRITE MILAWA::LESS-OF-NFIX-LEFT))
+     (9 9
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR))
+     (4 4 (:REWRITE MILAWA::LESS-OF-ZERO-RIGHT))
+     (2 2
+        (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT)))
+(MILAWA::MIN-OF-ZERO-LEFT
+     (74 8 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+     (34 1 (:REWRITE MILAWA::ANTISYMMETRY-OF-<))
+     (29 2
+         (:REWRITE MILAWA::NOT-EQUAL-WHEN-LESS))
+     (24 2 (:REWRITE MILAWA::LESS-OF-NFIX-RIGHT))
+     (18 2
+         (:REWRITE MILAWA::NOT-EQUAL-WHEN-LESS-TWO))
+     (12 10
+         (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (12 2 (:REWRITE MILAWA::LESS-OF-ZERO-LEFT))
+     (11 9 (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (10 2
+         (:REWRITE MILAWA::EQUAL-OF-ZERO-AND-NFIX))
+     (8 8
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+     (8 8
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (8 8 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (7 1 (:REWRITE MILAWA::LESS-OF-NFIX-LEFT))
+     (6 4 (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (5 2
+        (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (4 2
+        (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (3 3
+        (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (2 2 (:REWRITE MILAWA::LESS-OF-ZERO-RIGHT))
+     (2 2
+        (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT))
+     (1 1
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR))
+     (1 1
+        (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE)))
+(MILAWA::MIN-OF-ZERO-RIGHT
+     (69 8 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+     (31 1 (:REWRITE MILAWA::ANTISYMMETRY-OF-<))
+     (29 2
+         (:REWRITE MILAWA::NOT-EQUAL-WHEN-LESS))
+     (14 2 (:REWRITE MILAWA::LESS-OF-NFIX-LEFT))
+     (13 2
+         (:REWRITE MILAWA::NOT-EQUAL-WHEN-LESS-TWO))
+     (12 5
+         (:REWRITE MILAWA::LESS-WHEN-ZP-LEFT-CHEAP))
+     (12 1 (:REWRITE MILAWA::LESS-OF-NFIX-RIGHT))
+     (11 9
+         (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (10 8 (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (10 2
+         (:REWRITE MILAWA::EQUAL-OF-ZERO-AND-NFIX))
+     (8 8
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+     (8 8
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (8 8 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (6 4 (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (6 2 (:DEFINITION NOT))
+     (6 1 (:REWRITE MILAWA::LESS-OF-ZERO-LEFT))
+     (5 2
+        (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (4 2 (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (4 2
+        (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (3 3
+        (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (2 2 (:REWRITE MILAWA::LESS-OF-ZERO-RIGHT))
+     (2 2
+        (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT))
+     (1 1
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR))
+     (1 1
+        (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE)))
+(MILAWA::MAX3)
+(MILAWA::ORD< (1023 31 (:DEFINITION LENGTH))
+              (930 31 (:DEFINITION LEN))
+              (660 310 (:REWRITE DEFAULT-+-2))
+              (496 62 (:REWRITE STR::CONSP-OF-EXPLODE))
+              (434 310 (:REWRITE DEFAULT-+-1))
+              (423 175
+                   (:REWRITE MILAWA::CONSP-WHEN-NATP-CHEAP))
+              (378 63
+                   (:REWRITE MILAWA::NOT-EQUAL-WHEN-LESS-TWO))
+              (378 63
+                   (:REWRITE MILAWA::NOT-EQUAL-WHEN-LESS))
+              (364 14 (:REWRITE ACL2-COUNT-WHEN-MEMBER))
+              (294 14 (:DEFINITION MEMBER-EQUAL))
+              (282 96 (:REWRITE DEFAULT-CDR))
+              (248 62 (:DEFINITION INTEGER-ABS))
+              (126 126 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+              (126 126
+                   (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+              (126 126
+                   (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+              (126 126
+                   (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+              (126 126
+                   (:REWRITE MILAWA::LESS-WHEN-ZP-LEFT-CHEAP))
+              (124 124
+                   (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+              (124 124
+                   (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+              (108 81 (:REWRITE DEFAULT-<-2))
+              (99 81 (:REWRITE DEFAULT-<-1))
+              (93 93
+                  (:TYPE-PRESCRIPTION STR::TRUE-LISTP-OF-EXPLODE))
+              (70 70 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
+              (65 65 (:REWRITE DEFAULT-CAR))
+              (63 63
+                  (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+              (62 62 (:REWRITE DEFAULT-UNARY-MINUS))
+              (62 31
+                  (:REWRITE STR::COERCE-TO-LIST-REMOVAL))
+              (48 48 (:LINEAR ACL2-COUNT-WHEN-MEMBER))
+              (31 31 (:TYPE-PRESCRIPTION LEN))
+              (31 31
+                  (:REWRITE STR::EXPLODE-WHEN-NOT-STRINGP))
+              (31 31 (:REWRITE DEFAULT-REALPART))
+              (31 31 (:REWRITE DEFAULT-NUMERATOR))
+              (31 31 (:REWRITE DEFAULT-IMAGPART))
+              (31 31 (:REWRITE DEFAULT-DENOMINATOR))
+              (28 28 (:REWRITE SUBSETP-MEMBER . 2))
+              (28 28 (:REWRITE SUBSETP-MEMBER . 1))
+              (4 4
+                 (:REWRITE MILAWA::CONS-OF-CAR-AND-CDR)))
+(MILAWA::BOOLEANP-OF-ORD<
+     (1004 164 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+     (480 40
+          (:REWRITE MILAWA::NOT-EQUAL-WHEN-LESS))
+     (456 12 (:REWRITE MILAWA::ANTISYMMETRY-OF-<))
+     (396 36
+          (:REWRITE MILAWA::LESS-OF-NFIX-RIGHT))
+     (300 40
+          (:REWRITE MILAWA::NOT-EQUAL-WHEN-LESS-TWO))
+     (260 92
+          (:REWRITE MILAWA::LESS-WHEN-ZP-LEFT-CHEAP))
+     (216 36 (:REWRITE MILAWA::LESS-OF-NFIX-LEFT))
+     (180 132
+          (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (164 164
+          (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+     (164 164
+          (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (164 164
+          (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (141 87
+          (:REWRITE MILAWA::CONSP-WHEN-NATP-CHEAP))
+     (132 84
+          (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (132 60
+          (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (126 94
+          (:REWRITE MILAWA::CAR-WHEN-NOT-CONSP))
+     (120 48
+          (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (108 108
+          (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (96 48
+         (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (96 48
+         (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (68 40
+         (:REWRITE MILAWA::CDR-WHEN-NOT-CONSP))
+     (36 12
+         (:REWRITE MILAWA::LESS-WHEN-ZP-RIGHT-CHEAP))
+     (27 9
+         (:REWRITE MILAWA::BOOLEANP-WHEN-NATP-CHEAP))
+     (24 24
+         (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT))
+     (12 12
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR))
+     (9 9
+        (:REWRITE MILAWA::BOOLEANP-WHEN-CONSP-CHEAP)))
+(MILAWA::ORD<-WHEN-NATURALS (82 10 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+                            (46 2 (:REWRITE MILAWA::ANTISYMMETRY-OF-<))
+                            (24 14
+                                (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+                            (24 4
+                                (:REWRITE MILAWA::NOT-EQUAL-WHEN-LESS))
+                            (22 10
+                                (:REWRITE MILAWA::LESS-WHEN-ZP-LEFT-CHEAP))
+                            (20 8 (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+                            (14 14
+                                (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+                            (14 14
+                                (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+                            (14 4
+                                (:REWRITE MILAWA::NOT-EQUAL-WHEN-LESS-TWO))
+                            (10 10
+                                (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+                            (10 10
+                                (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+                            (10 10 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+                            (8 8
+                               (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+                            (8 8
+                               (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+                            (8 2
+                               (:REWRITE MILAWA::LESS-WHEN-ZP-RIGHT-CHEAP))
+                            (6 2 (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+                            (6 2
+                               (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+                            (2 2
+                               (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR)))
+(MILAWA::ORDP (594 18 (:DEFINITION LENGTH))
+              (540 18 (:DEFINITION LEN))
+              (389 182 (:REWRITE DEFAULT-+-2))
+              (288 36 (:REWRITE STR::CONSP-OF-EXPLODE))
+              (260 10 (:REWRITE ACL2-COUNT-WHEN-MEMBER))
+              (258 36
+                   (:REWRITE MILAWA::NOT-EQUAL-WHEN-LESS-TWO))
+              (255 182 (:REWRITE DEFAULT-+-1))
+              (239 36
+                   (:REWRITE MILAWA::NOT-EQUAL-WHEN-LESS))
+              (222 74
+                   (:REWRITE MILAWA::CONSP-WHEN-NATP-CHEAP))
+              (210 10 (:DEFINITION MEMBER-EQUAL))
+              (167 59 (:REWRITE DEFAULT-CDR))
+              (144 36 (:DEFINITION INTEGER-ABS))
+              (142 76 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+              (90 88
+                  (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+              (87 87
+                  (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+              (76 76
+                  (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+              (76 76
+                  (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+              (76 76 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+              (64 48 (:REWRITE DEFAULT-<-2))
+              (60 48 (:REWRITE DEFAULT-<-1))
+              (54 54
+                  (:TYPE-PRESCRIPTION STR::TRUE-LISTP-OF-EXPLODE))
+              (50 50 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
+              (48 8 (:REWRITE MILAWA::LESS-OF-ZERO-LEFT))
+              (45 45
+                  (:REWRITE MILAWA::CAR-WHEN-NOT-CONSP))
+              (41 41 (:REWRITE DEFAULT-CAR))
+              (39 27
+                  (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+              (38 26
+                  (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+              (36 36 (:REWRITE DEFAULT-UNARY-MINUS))
+              (36 18
+                  (:REWRITE STR::COERCE-TO-LIST-REMOVAL))
+              (35 35
+                  (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+              (34 1 (:REWRITE MILAWA::ANTISYMMETRY-OF-<))
+              (24 24 (:LINEAR ACL2-COUNT-WHEN-MEMBER))
+              (24 2 (:REWRITE MILAWA::LESS-OF-NFIX-RIGHT))
+              (20 20 (:REWRITE SUBSETP-MEMBER . 2))
+              (20 20 (:REWRITE SUBSETP-MEMBER . 1))
+              (18 18 (:TYPE-PRESCRIPTION LEN))
+              (18 18
+                  (:REWRITE STR::EXPLODE-WHEN-NOT-STRINGP))
+              (18 18 (:REWRITE DEFAULT-REALPART))
+              (18 18 (:REWRITE DEFAULT-NUMERATOR))
+              (18 18 (:REWRITE DEFAULT-IMAGPART))
+              (18 18 (:REWRITE DEFAULT-DENOMINATOR))
+              (10 10
+                  (:REWRITE MILAWA::CDR-WHEN-NOT-CONSP))
+              (10 2
+                  (:REWRITE MILAWA::EQUAL-OF-ZERO-AND-NFIX))
+              (8 8 (:REWRITE MILAWA::LESS-OF-ZERO-RIGHT))
+              (7 1 (:REWRITE MILAWA::LESS-OF-NFIX-LEFT))
+              (5 2
+                 (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+              (4 2 (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+              (4 2
+                 (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+              (2 2
+                 (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT))
+              (1 1
+                 (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR)))
+(MILAWA::BOOLEANP-OF-ORDP
+     (216 18
+          (:REWRITE MILAWA::LESS-OF-NFIX-RIGHT))
+     (163 135
+          (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (158 112
+          (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (108 108
+          (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+     (108 108
+          (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (102 102
+          (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (102 96
+          (:REWRITE MILAWA::CAR-WHEN-NOT-CONSP))
+     (102 38
+          (:REWRITE MILAWA::CONSP-WHEN-NATP-CHEAP))
+     (90 18
+         (:REWRITE MILAWA::EQUAL-OF-ZERO-AND-NFIX))
+     (63 9 (:REWRITE MILAWA::LESS-OF-NFIX-LEFT))
+     (51 27
+         (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (47 29
+         (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (36 12
+         (:REWRITE MILAWA::BOOLEANP-WHEN-NATP-CHEAP))
+     (33 33
+         (:REWRITE MILAWA::CDR-WHEN-NOT-CONSP))
+     (28 28
+         (:REWRITE MILAWA::LESS-OF-ZERO-RIGHT))
+     (24 6 (:REWRITE MILAWA::ORD<-WHEN-NATURALS))
+     (18 18
+         (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT))
+     (16 16
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR))
+     (12 12
+         (:REWRITE MILAWA::BOOLEANP-WHEN-CONSP-CHEAP)))
+(MILAWA::ORDP-WHEN-NATP (9 2
+                           (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+                        (8 4 (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+                        (7 2
+                           (:REWRITE MILAWA::NOT-EQUAL-WHEN-LESS-TWO))
+                        (7 2
+                           (:REWRITE MILAWA::NOT-EQUAL-WHEN-LESS))
+                        (7 2 (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+                        (4 4
+                           (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+                        (2 2 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+                        (2 2
+                           (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+                        (2 2
+                           (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+                        (2 2 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+                        (2 2
+                           (:REWRITE MILAWA::LESS-WHEN-ZP-LEFT-CHEAP)))
+(MILAWA::RANK (528 16 (:DEFINITION LENGTH))
+              (480 16 (:DEFINITION LEN))
+              (326 156 (:REWRITE DEFAULT-+-2))
+              (260 10 (:REWRITE ACL2-COUNT-WHEN-MEMBER))
+              (256 32 (:REWRITE STR::CONSP-OF-EXPLODE))
+              (218 156 (:REWRITE DEFAULT-+-1))
+              (210 10 (:DEFINITION MEMBER-EQUAL))
+              (174 58
+                   (:REWRITE MILAWA::CONSP-WHEN-NATP-CHEAP))
+              (156 26
+                   (:REWRITE MILAWA::NOT-EQUAL-WHEN-LESS-TWO))
+              (156 26
+                   (:REWRITE MILAWA::NOT-EQUAL-WHEN-LESS))
+              (150 54 (:REWRITE DEFAULT-CDR))
+              (128 32 (:REWRITE COMMUTATIVITY-OF-+))
+              (128 32 (:DEFINITION INTEGER-ABS))
+              (58 58
+                  (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+              (58 58
+                  (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+              (58 44 (:REWRITE DEFAULT-<-2))
+              (56 44 (:REWRITE DEFAULT-<-1))
+              (52 52 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+              (52 52
+                  (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+              (52 52
+                  (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+              (52 52 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+              (52 52
+                  (:REWRITE MILAWA::LESS-WHEN-ZP-LEFT-CHEAP))
+              (50 50 (:TYPE-PRESCRIPTION MEMBER-EQUAL))
+              (48 48
+                  (:TYPE-PRESCRIPTION STR::TRUE-LISTP-OF-EXPLODE))
+              (46 46 (:REWRITE FOLD-CONSTS-IN-+))
+              (38 38 (:REWRITE DEFAULT-CAR))
+              (32 32 (:REWRITE DEFAULT-UNARY-MINUS))
+              (32 16
+                  (:REWRITE STR::COERCE-TO-LIST-REMOVAL))
+              (26 26
+                  (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+              (24 24 (:LINEAR ACL2-COUNT-WHEN-MEMBER))
+              (20 20 (:REWRITE SUBSETP-MEMBER . 2))
+              (20 20 (:REWRITE SUBSETP-MEMBER . 1))
+              (16 16 (:TYPE-PRESCRIPTION LEN))
+              (16 16
+                  (:REWRITE STR::EXPLODE-WHEN-NOT-STRINGP))
+              (16 16 (:REWRITE DEFAULT-REALPART))
+              (16 16 (:REWRITE DEFAULT-NUMERATOR))
+              (16 16 (:REWRITE DEFAULT-IMAGPART))
+              (16 16 (:REWRITE DEFAULT-DENOMINATOR))
+              (5 5 (:REWRITE MILAWA::CDR-WHEN-NOT-CONSP))
+              (5 5
+                 (:REWRITE MILAWA::CAR-WHEN-NOT-CONSP)))
+(MILAWA::NATP-OF-RANK
+     (37 12
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-RIGHT-CHEAP))
+     (34 32
+         (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (32 32
+         (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (28 14
+         (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (28 14
+         (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (25 12
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP))
+     (21 7
+         (:REWRITE MILAWA::CONSP-WHEN-NATP-CHEAP))
+     (6 6
+        (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-PLUS-OF-PLUS))
+     (6 1
+        (:REWRITE MILAWA::NOT-EQUAL-WHEN-LESS-TWO))
+     (6 1
+        (:REWRITE MILAWA::NOT-EQUAL-WHEN-LESS))
+     (5 5 (:REWRITE MILAWA::CDR-WHEN-NOT-CONSP))
+     (5 5 (:REWRITE MILAWA::CAR-WHEN-NOT-CONSP))
+     (2 2 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+     (2 2
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+     (2 2
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (2 2 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (2 2
+        (:REWRITE MILAWA::LESS-WHEN-ZP-LEFT-CHEAP)))
+(MILAWA::RANK-WHEN-NOT-CONSP (3 1
+                                (:REWRITE MILAWA::CONSP-WHEN-NATP-CHEAP))
+                             (1 1 (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+                             (1 1
+                                (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP)))
+(MILAWA::RANK-OF-CONS
+     (57 15
+         (:REWRITE MILAWA::RANK-WHEN-NOT-CONSP))
+     (46 18
+         (:REWRITE MILAWA::CONSP-WHEN-NATP-CHEAP))
+     (42 14
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-RIGHT-CHEAP))
+     (28 14
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP))
+     (21 21
+         (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (21 21
+         (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (14 14
+         (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (14 14
+         (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (7 7
+        (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-PLUS-OF-PLUS))
+     (4 4 (:REWRITE MILAWA::CDR-WHEN-NOT-CONSP))
+     (4 4
+        (:REWRITE MILAWA::CAR-WHEN-NOT-CONSP)))
+(MILAWA::|(< 0 (rank x))|
+     (89 13
+         (:REWRITE MILAWA::NOT-EQUAL-WHEN-LESS))
+     (83 29
+         (:REWRITE MILAWA::CONSP-WHEN-NATP-CHEAP))
+     (67 25 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+     (66 11 (:REWRITE MILAWA::LESS-OF-ZERO-LEFT))
+     (60 20
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-RIGHT-CHEAP))
+     (57 55
+         (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (40 20
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP))
+     (30 1 (:REWRITE MILAWA::ANTISYMMETRY-OF-<))
+     (27 27
+         (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (27 27
+         (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (25 25
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+     (25 25
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (25 25 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (14 14
+         (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (11 11
+         (:REWRITE MILAWA::LESS-OF-ZERO-RIGHT))
+     (10 10
+         (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-PLUS-OF-PLUS))
+     (8 8 (:REWRITE MILAWA::CDR-WHEN-NOT-CONSP))
+     (8 8 (:REWRITE MILAWA::CAR-WHEN-NOT-CONSP))
+     (4 4
+        (:REWRITE MILAWA::|b <= c, a <= b --> a < 1+c|))
+     (4 4
+        (:REWRITE MILAWA::|a <= b, b <= c --> a < 1+c|))
+     (4 2 (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (4 2
+        (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (3 2
+        (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (1 1
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR)))
+(MILAWA::ORDP-OF-RANK (4 1
+                         (:REWRITE MILAWA::RANK-WHEN-NOT-CONSP))
+                      (3 1
+                         (:REWRITE MILAWA::CONSP-WHEN-NATP-CHEAP))
+                      (1 1 (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+                      (1 1
+                         (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP)))
+(MILAWA::RANK-OF-CAR
+     (237 11 (:DEFINITION MILAWA::RANK))
+     (227 27 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+     (135 5 (:REWRITE MILAWA::ANTISYMMETRY-OF-<))
+     (99 39
+         (:REWRITE MILAWA::CONSP-WHEN-NATP-CHEAP))
+     (79 59
+         (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (77 27
+         (:REWRITE MILAWA::LESS-WHEN-ZP-LEFT-CHEAP))
+     (69 59
+         (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (69 23
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-RIGHT-CHEAP))
+     (66 11
+         (:REWRITE MILAWA::NOT-EQUAL-WHEN-LESS))
+     (50 50 (:REWRITE MILAWA::NATP-OF-RANK))
+     (45 23
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP))
+     (41 11
+         (:REWRITE MILAWA::NOT-EQUAL-WHEN-LESS-TWO))
+     (40 20
+         (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (40 20
+         (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (30 30
+         (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (30 30
+         (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (30 20
+         (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (27 27
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+     (27 27
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (27 27 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (15 5
+         (:REWRITE MILAWA::LESS-WHEN-ZP-RIGHT-CHEAP))
+     (11 11
+         (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-PLUS-OF-PLUS))
+     (11 11
+         (:REWRITE MILAWA::CDR-WHEN-NOT-CONSP))
+     (5 5
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR))
+     (1 1
+        (:REWRITE MILAWA::|b <= c, a <= b --> a < 1+c|))
+     (1 1
+        (:REWRITE MILAWA::|a <= b, b <= c --> a < 1+c|)))
+(MILAWA::RANK-OF-CAR-WEAK
+     (253 11 (:DEFINITION MILAWA::RANK))
+     (209 18 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+     (116 50
+          (:REWRITE MILAWA::CONSP-WHEN-NATP-CHEAP))
+     (74 56
+         (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (73 25
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-RIGHT-CHEAP))
+     (61 56
+         (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (59 2 (:REWRITE MILAWA::SQUEEZE-LAW-ONE))
+     (49 25
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP))
+     (40 18
+         (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (39 10
+         (:REWRITE MILAWA::NOT-EQUAL-WHEN-LESS-TWO))
+     (37 37 (:REWRITE MILAWA::NATP-OF-RANK))
+     (36 18
+         (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (36 3
+         (:REWRITE MILAWA::|a <= b, c != 0 --> a < c+b|))
+     (33 33
+         (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (33 33
+         (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (30 10
+         (:REWRITE MILAWA::LESS-WHEN-ZP-LEFT-CHEAP))
+     (30 3
+         (:REWRITE MILAWA::|a <= b, c != 0 --> a < c+d+b|))
+     (29 18
+         (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (29 6
+         (:REWRITE MILAWA::NOT-EQUAL-WHEN-LESS))
+     (21 3
+         (:REWRITE MILAWA::|a <= b, c != 0 --> a < b+c|))
+     (18 18
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+     (18 18
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (12 12
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR))
+     (12 12
+         (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-PLUS-OF-PLUS))
+     (12 4
+         (:REWRITE MILAWA::LESS-WHEN-ZP-RIGHT-CHEAP))
+     (11 11
+         (:REWRITE MILAWA::CDR-WHEN-NOT-CONSP))
+     (10 10 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (9 9
+        (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (9 3 (:REWRITE MILAWA::SQUEEZE-LAW-TWO))
+     (8 8 (:REWRITE MILAWA::RANK-OF-CAR))
+     (6 6
+        (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-LESS-OF-PLUS-TWO))
+     (6 2 (:REWRITE MILAWA::|(< a (+ a b))|))
+     (6 1 (:REWRITE MILAWA::|(< a (+ b a c))|))
+     (5 3 (:REWRITE MILAWA::|(< 0 (rank x))|))
+     (4 4
+        (:REWRITE MILAWA::|b <= c, a <= b --> a < 1+c|))
+     (4 4
+        (:REWRITE MILAWA::|a <= b, b <= c --> a < 1+c|))
+     (4 2 (:REWRITE MILAWA::SQUEEZE-LAW-THREE))
+     (3 3
+        (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-LESS-OF-PLUS))
+     (2 2 (:REWRITE MILAWA::NATP-OF-PLUS))
+     (1 1 (:REWRITE MILAWA::|(< (+ a b) a)|)))
+(MILAWA::RANK-OF-CDR
+     (237 11 (:DEFINITION MILAWA::RANK))
+     (227 27 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+     (135 5 (:REWRITE MILAWA::ANTISYMMETRY-OF-<))
+     (99 39
+         (:REWRITE MILAWA::CONSP-WHEN-NATP-CHEAP))
+     (79 59
+         (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (77 27
+         (:REWRITE MILAWA::LESS-WHEN-ZP-LEFT-CHEAP))
+     (69 59
+         (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (69 23
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-RIGHT-CHEAP))
+     (66 11
+         (:REWRITE MILAWA::NOT-EQUAL-WHEN-LESS))
+     (50 50 (:REWRITE MILAWA::NATP-OF-RANK))
+     (45 23
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP))
+     (41 11
+         (:REWRITE MILAWA::NOT-EQUAL-WHEN-LESS-TWO))
+     (40 20
+         (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (40 20
+         (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (30 30
+         (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (30 30
+         (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (30 20
+         (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (27 27
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+     (27 27
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (27 27 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (15 5
+         (:REWRITE MILAWA::LESS-WHEN-ZP-RIGHT-CHEAP))
+     (11 11
+         (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-PLUS-OF-PLUS))
+     (11 11
+         (:REWRITE MILAWA::CAR-WHEN-NOT-CONSP))
+     (5 5
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR))
+     (1 1
+        (:REWRITE MILAWA::|b <= c, a <= b --> a < 1+c|))
+     (1 1
+        (:REWRITE MILAWA::|a <= b, b <= c --> a < 1+c|)))
+(MILAWA::RANK-OF-CDR-WEAK
+     (253 11 (:DEFINITION MILAWA::RANK))
+     (181 16 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+     (116 50
+          (:REWRITE MILAWA::CONSP-WHEN-NATP-CHEAP))
+     (74 56
+         (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (73 25
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-RIGHT-CHEAP))
+     (61 56
+         (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (59 2 (:REWRITE MILAWA::SQUEEZE-LAW-ONE))
+     (49 25
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP))
+     (37 8
+         (:REWRITE MILAWA::NOT-EQUAL-WHEN-LESS-TWO))
+     (36 14
+         (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (36 3
+         (:REWRITE MILAWA::|a <= b, c != 0 --> a < b+c|))
+     (33 33
+         (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (33 33
+         (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (33 33 (:REWRITE MILAWA::NATP-OF-RANK))
+     (30 10
+         (:REWRITE MILAWA::LESS-WHEN-ZP-LEFT-CHEAP))
+     (29 6
+         (:REWRITE MILAWA::NOT-EQUAL-WHEN-LESS))
+     (28 14
+         (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (25 14
+         (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (21 3
+         (:REWRITE MILAWA::|a <= b, c != 0 --> a < c+b|))
+     (16 16
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+     (16 16
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (12 12
+         (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-PLUS-OF-PLUS))
+     (12 4
+         (:REWRITE MILAWA::LESS-WHEN-ZP-RIGHT-CHEAP))
+     (11 11
+         (:REWRITE MILAWA::CAR-WHEN-NOT-CONSP))
+     (10 10
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR))
+     (10 10 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (9 9
+        (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (9 3 (:REWRITE MILAWA::SQUEEZE-LAW-TWO))
+     (8 8 (:REWRITE MILAWA::RANK-OF-CDR))
+     (6 6
+        (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-LESS-OF-PLUS-TWO))
+     (6 2 (:REWRITE MILAWA::|(< a (+ b a))|))
+     (6 1 (:REWRITE MILAWA::|(< a (+ b c a))|))
+     (5 3 (:REWRITE MILAWA::|(< 0 (rank x))|))
+     (4 4
+        (:REWRITE MILAWA::|b <= c, a <= b --> a < 1+c|))
+     (4 4
+        (:REWRITE MILAWA::|a <= b, b <= c --> a < 1+c|))
+     (4 2 (:REWRITE MILAWA::SQUEEZE-LAW-THREE))
+     (3 3
+        (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-LESS-OF-PLUS))
+     (2 2 (:REWRITE MILAWA::NATP-OF-PLUS))
+     (1 1
+        (:REWRITE MILAWA::|a <= b, c != 0 --> a < c+b+d|))
+     (1 1 (:REWRITE MILAWA::|(< (+ b a) a)|)))
+(MILAWA::RANK-OF-SECOND (48 8 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+                        (19 11
+                            (:REWRITE MILAWA::CONSP-WHEN-NATP-CHEAP))
+                        (18 3
+                            (:REWRITE MILAWA::NOT-EQUAL-WHEN-LESS))
+                        (17 7
+                            (:REWRITE MILAWA::LESS-WHEN-ZP-LEFT-CHEAP))
+                        (13 3
+                            (:REWRITE MILAWA::NOT-EQUAL-WHEN-LESS-TWO))
+                        (10 10 (:REWRITE MILAWA::NATP-OF-RANK))
+                        (9 9
+                           (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+                        (9 5 (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+                        (8 4 (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+                        (8 4
+                           (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+                        (7 7 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+                        (7 5
+                           (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+                        (6 4
+                           (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+                        (4 4 (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+                        (4 4
+                           (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+                        (4 2 (:REWRITE MILAWA::CAR-WHEN-NOT-CONSP))
+                        (3 1
+                           (:REWRITE MILAWA::LESS-WHEN-ZP-RIGHT-CHEAP)))
+(MILAWA::RANK-OF-SECOND-WEAK)
+(MILAWA::RANK-OF-THIRD (48 8 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+                       (21 13
+                           (:REWRITE MILAWA::CONSP-WHEN-NATP-CHEAP))
+                       (18 3
+                           (:REWRITE MILAWA::NOT-EQUAL-WHEN-LESS))
+                       (17 7
+                           (:REWRITE MILAWA::LESS-WHEN-ZP-LEFT-CHEAP))
+                       (13 3
+                           (:REWRITE MILAWA::NOT-EQUAL-WHEN-LESS-TWO))
+                       (10 10 (:REWRITE MILAWA::NATP-OF-RANK))
+                       (9 9
+                          (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+                       (9 5 (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+                       (8 4 (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+                       (8 4
+                          (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+                       (7 7 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+                       (7 5
+                          (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+                       (6 4
+                          (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+                       (4 4 (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+                       (4 4
+                          (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+                       (4 2 (:REWRITE MILAWA::CAR-WHEN-NOT-CONSP))
+                       (3 1
+                          (:REWRITE MILAWA::LESS-WHEN-ZP-RIGHT-CHEAP)))
+(MILAWA::RANK-OF-THIRD-WEAK)
+(MILAWA::RANK-OF-FOURTH (32 20
+                            (:REWRITE MILAWA::CONSP-WHEN-NATP-CHEAP))
+                        (17 7
+                            (:REWRITE MILAWA::LESS-WHEN-ZP-LEFT-CHEAP))
+                        (16 8 (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+                        (15 3
+                            (:REWRITE MILAWA::NOT-EQUAL-WHEN-LESS))
+                        (12 8
+                            (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+                        (11 7 (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+                        (9 9
+                           (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+                        (9 7
+                           (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+                        (7 7 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+                        (6 6 (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+                        (6 6
+                           (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+                        (4 2 (:REWRITE MILAWA::CAR-WHEN-NOT-CONSP))
+                        (3 3
+                           (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR))
+                        (3 1
+                           (:REWRITE MILAWA::LESS-WHEN-ZP-RIGHT-CHEAP)))
+(MILAWA::RANK-OF-FOURTH-WEAK)
+(MILAWA::LEMMA (36955 19947
+                      (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+               (33662 3165
+                      (:REWRITE MILAWA::NOT-EQUAL-WHEN-LESS))
+               (28719 3165
+                      (:REWRITE MILAWA::NOT-EQUAL-WHEN-LESS-TWO))
+               (16341 3736
+                      (:REWRITE MILAWA::CONSP-WHEN-NATP-CHEAP))
+               (13959 13877 (:REWRITE DEFAULT-<-2))
+               (10310 6170
+                      (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+               (9785 6170
+                     (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+               (8107 6150
+                     (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+               (6528 501
+                     (:REWRITE MILAWA::LESS-OF-ZERO-LEFT))
+               (3983 3314
+                     (:REWRITE MILAWA::CAR-WHEN-NOT-CONSP))
+               (3575 3575
+                     (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+               (3575 3575
+                     (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+               (3535 3535
+                     (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+               (3076 2212 (:REWRITE DEFAULT-CDR))
+               (1886 485
+                     (:REWRITE MILAWA::ORD<-WHEN-NATURALS))
+               (1341 375 (:REWRITE MILAWA::ORDP-WHEN-NATP))
+               (518 518
+                    (:REWRITE MILAWA::LESS-OF-ZERO-RIGHT))
+               (477 477
+                    (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR))
+               (164 164
+                    (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
+               (24 24
+                   (:REWRITE MILAWA::IRREFLEXIVITY-OF-<)))
+(MILAWA::LEMMA2 (44207 47 (:DEFINITION MILAWA::ORD<))
+                (16693 1500
+                       (:REWRITE MILAWA::NOT-EQUAL-WHEN-LESS))
+                (15198 1500
+                       (:REWRITE MILAWA::NOT-EQUAL-WHEN-LESS-TWO))
+                (14185 8450
+                       (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+                (12689 2474
+                       (:REWRITE MILAWA::CONSP-WHEN-NATP-CHEAP))
+                (7324 7135 (:REWRITE DEFAULT-<-2))
+                (7313 7135 (:REWRITE DEFAULT-<-1))
+                (3998 2534
+                      (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+                (3801 2534
+                      (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+                (3764 289
+                      (:REWRITE MILAWA::LESS-OF-ZERO-LEFT))
+                (3573 1413 (:REWRITE DEFAULT-CDR))
+                (3231 2530
+                      (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+                (1697 1697
+                      (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+                (1697 1697
+                      (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+                (1687 1687
+                      (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+                (1469 1226
+                      (:REWRITE MILAWA::CAR-WHEN-NOT-CONSP))
+                (1041 268 (:REWRITE MILAWA::ORDP-WHEN-NATP))
+                (715 527
+                     (:REWRITE MILAWA::CDR-WHEN-NOT-CONSP))
+                (620 155
+                     (:REWRITE MILAWA::ORD<-WHEN-NATURALS))
+                (520 80
+                     (:REWRITE MILAWA::LESS-WHEN-ZP-RIGHT-CHEAP))
+                (367 367
+                     (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
+                (292 292
+                     (:REWRITE MILAWA::LESS-OF-ZERO-RIGHT))
+                (125 125
+                     (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR))
+                (5 5 (:REWRITE MILAWA::BOOLEANP-OF-ORD<)))
+(MILAWA::ORD<-IS-WELL-FOUNDED
+     (195 65
+          (:REWRITE MILAWA::CONSP-WHEN-NATP-CHEAP))
+     (172 100 (:REWRITE DEFAULT-CAR))
+     (108 14
+          (:REWRITE MILAWA::NOT-EQUAL-WHEN-LESS))
+     (102 42 (:REWRITE DEFAULT-CDR))
+     (88 14
+         (:REWRITE MILAWA::NOT-EQUAL-WHEN-LESS-TWO))
+     (65 65
+         (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (65 65
+         (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (28 28 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+     (28 28
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+     (28 28
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (28 28 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (28 28
+         (:REWRITE MILAWA::LESS-WHEN-ZP-LEFT-CHEAP))
+     (28 18 (:REWRITE DEFAULT-<-2))
+     (28 18 (:REWRITE DEFAULT-<-1))
+     (24 4 (:REWRITE MILAWA::LESS-OF-ZERO-LEFT))
+     (20 20
+         (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
+     (14 14
+         (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (8 8
+        (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (8 8 (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (4 4
+        (:REWRITE MILAWA::LESS-OF-ZERO-RIGHT)))
+(MILAWA::TWO-NATS-MEASURE)
+(MILAWA::ORDP-OF-TWO-NATS-MEASURE
+     (11 5 (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (6 6
+        (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (6 3
+        (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (6 2 (:REWRITE MILAWA::ZP-OF-NFIX))
+     (4 4 (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (4 1
+        (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (3 1
+        (:REWRITE MILAWA::PLUS-WHEN-ZP-RIGHT-CHEAP))
+     (3 1 (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (3 1
+        (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (1 1
+        (:REWRITE MILAWA::|b <= c, a <= b --> a < 1+c|))
+     (1 1
+        (:REWRITE MILAWA::|a <= b, b <= c --> a < 1+c|))
+     (1 1
+        (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP))
+     (1 1
+        (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE)))
+(MILAWA::ORD<-OF-TWO-NATS-MEASURE
+     (709 116 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+     (165 21
+          (:REWRITE MILAWA::NOT-EQUAL-WHEN-LESS-TWO))
+     (154 52
+          (:REWRITE MILAWA::LESS-WHEN-ZP-LEFT-CHEAP))
+     (118 118
+          (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (118 71
+          (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (114 114
+          (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (114 51
+          (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (111 62
+          (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (104 76
+          (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (98 56
+         (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (91 51
+         (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (59 51
+         (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (58 11 (:REWRITE MILAWA::NFIX-OF-NFIX))
+     (51 51
+         (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (28 12
+         (:REWRITE MILAWA::LESS-WHEN-ZP-RIGHT-CHEAP))
+     (21 21
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR))
+     (21 7 (:REWRITE MILAWA::ZP-OF-NFIX))
+     (17 17
+         (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT))
+     (12 6
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-RIGHT-CHEAP))
+     (8 2 (:REWRITE MILAWA::PLUS-OF-ZERO-LEFT))
+     (3 3
+        (:REWRITE MILAWA::|b <= c, a <= b --> a < 1+c|))
+     (3 3
+        (:REWRITE MILAWA::|a <= b, b <= c --> a < 1+c|))
+     (1 1
+        (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-EQUAL-OF-PLUS)))
+(MILAWA::THREE-NATS-MEASURE)
+(MILAWA::ORDP-OF-THREE-NATS-MEASURE
+     (15 7 (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (9 9
+        (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (7 3
+        (:REWRITE MILAWA::PLUS-WHEN-ZP-RIGHT-CHEAP))
+     (6 3
+        (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (6 2 (:REWRITE MILAWA::ZP-OF-NFIX))
+     (5 5 (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (5 2
+        (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (4 2 (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (4 2
+        (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (3 3
+        (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP))
+     (2 2
+        (:REWRITE MILAWA::|b <= c, a <= b --> a < 1+c|))
+     (2 2
+        (:REWRITE MILAWA::|a <= b, b <= c --> a < 1+c|))
+     (1 1
+        (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE)))
+(MILAWA::ORD<-OF-THREE-NATS-MEASURE
+     (1149 215 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+     (347 34
+          (:REWRITE MILAWA::NOT-EQUAL-WHEN-LESS-TWO))
+     (283 98
+          (:REWRITE MILAWA::LESS-WHEN-ZP-LEFT-CHEAP))
+     (240 143
+          (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (226 88
+          (:REWRITE MILAWA::NFIX-WHEN-NATP-CHEAP))
+     (219 219
+          (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (211 211
+          (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (206 156
+          (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (203 103
+          (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (186 111
+          (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (176 88
+          (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (108 98
+          (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (94 94
+         (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (74 15 (:REWRITE MILAWA::NFIX-OF-NFIX))
+     (59 25
+         (:REWRITE MILAWA::LESS-WHEN-ZP-RIGHT-CHEAP))
+     (41 41
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR))
+     (30 14
+         (:REWRITE MILAWA::PLUS-WHEN-ZP-RIGHT-CHEAP))
+     (26 26
+         (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT))
+     (24 8 (:REWRITE MILAWA::ZP-OF-NFIX))
+     (16 4 (:REWRITE MILAWA::PLUS-OF-ZERO-LEFT))
+     (6 6
+        (:REWRITE MILAWA::|b <= c, a <= b --> a < 1+c|))
+     (6 6
+        (:REWRITE MILAWA::|a <= b, b <= c --> a < 1+c|))
+     (2 2
+        (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-EQUAL-OF-PLUS)))
+(MILAWA::CDR-INDUCTION (6 2
+                          (:REWRITE MILAWA::CONSP-WHEN-NATP-CHEAP))
+                       (5 2
+                          (:REWRITE MILAWA::RANK-WHEN-NOT-CONSP))
+                       (2 2 (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+                       (2 2
+                          (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+                       (1 1
+                          (:REWRITE MILAWA::CDR-WHEN-NOT-CONSP)))
+(MILAWA::CDR-CDR-INDUCTION (9 3
+                              (:REWRITE MILAWA::CONSP-WHEN-NATP-CHEAP))
+                           (5 2
+                              (:REWRITE MILAWA::RANK-WHEN-NOT-CONSP))
+                           (3 3 (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+                           (3 3
+                              (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+                           (1 1
+                              (:REWRITE MILAWA::CDR-WHEN-NOT-CONSP)))
+(MILAWA::CDR-CDR-CDR-INDUCTION (12 4
+                                   (:REWRITE MILAWA::CONSP-WHEN-NATP-CHEAP))
+                               (5 2
+                                  (:REWRITE MILAWA::RANK-WHEN-NOT-CONSP))
+                               (4 4 (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+                               (4 4
+                                  (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+                               (1 1
+                                  (:REWRITE MILAWA::CDR-WHEN-NOT-CONSP)))
+(MILAWA::FOUR-CDRS-INDUCTION (15 5
+                                 (:REWRITE MILAWA::CONSP-WHEN-NATP-CHEAP))
+                             (5 5 (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+                             (5 5
+                                (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+                             (5 2
+                                (:REWRITE MILAWA::RANK-WHEN-NOT-CONSP))
+                             (1 1
+                                (:REWRITE MILAWA::CDR-WHEN-NOT-CONSP)))
+(MILAWA::DEC-INDUCTION
+     (21 1
+         (:REWRITE MILAWA::MINUS-WHEN-NOT-LESS))
+     (18 13
+         (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (17 1 (:REWRITE MILAWA::LESS-OF-ONE-LEFT))
+     (14 10
+         (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (10 5
+         (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (9 5 (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (7 1
+        (:REWRITE MILAWA::|a < b --> a <= b-1|))
+     (6 6
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+     (6 6
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (6 2 (:REWRITE MILAWA::ZP-OF-NFIX))
+     (4 4 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+     (3 3
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR))
+     (3 3 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (3 3
+        (:REWRITE MILAWA::LESS-WHEN-ZP-LEFT-CHEAP))
+     (1 1
+        (:REWRITE MILAWA::|b <= c, a <= b --> a < 1+c|))
+     (1 1
+        (:REWRITE MILAWA::|a <= b, b <= c --> a < 1+c|))
+     (1 1
+        (:REWRITE MILAWA::PLUS-WHEN-ZP-RIGHT-CHEAP))
+     (1 1
+        (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP))
+     (1 1
+        (:REWRITE MILAWA::MINUS-WHEN-ZP-RIGHT-CHEAP))
+     (1 1
+        (:REWRITE MILAWA::MINUS-WHEN-ZP-LEFT-CHEAP))
+     (1 1 (:REWRITE MILAWA::IRREFLEXIVITY-OF-<))
+     (1 1
+        (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-LESS-OF-PLUS-TWO))
+     (1 1
+        (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE)))
+(MILAWA::DEC-DEC-INDUCTION
+     (21 1
+         (:REWRITE MILAWA::MINUS-WHEN-NOT-LESS))
+     (20 15
+         (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (17 11
+         (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (17 1 (:REWRITE MILAWA::LESS-OF-ONE-LEFT))
+     (10 5
+         (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (9 5 (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (7 1
+        (:REWRITE MILAWA::|a < b --> a <= b-1|))
+     (6 6
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+     (6 6
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (6 2 (:REWRITE MILAWA::ZP-OF-NFIX))
+     (4 4 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+     (3 3
+        (:REWRITE MILAWA::TRANSITIVITY-OF-<-FOUR))
+     (3 3 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (3 3
+        (:REWRITE MILAWA::LESS-WHEN-ZP-LEFT-CHEAP))
+     (1 1
+        (:REWRITE MILAWA::|b <= c, a <= b --> a < 1+c|))
+     (1 1
+        (:REWRITE MILAWA::|a <= b, b <= c --> a < 1+c|))
+     (1 1
+        (:REWRITE MILAWA::PLUS-WHEN-ZP-RIGHT-CHEAP))
+     (1 1
+        (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP))
+     (1 1
+        (:REWRITE MILAWA::MINUS-WHEN-ZP-RIGHT-CHEAP))
+     (1 1
+        (:REWRITE MILAWA::MINUS-WHEN-ZP-LEFT-CHEAP))
+     (1 1 (:REWRITE MILAWA::IRREFLEXIVITY-OF-<))
+     (1 1
+        (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-LESS-OF-PLUS-TWO))
+     (1 1
+        (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE)))
+(MILAWA::SUB-INDUCTION
+     (104 15 (:REWRITE MILAWA::TRICHOTOMY-OF-<))
+     (58 1
+         (:REWRITE MILAWA::MINUS-WHEN-NOT-LESS))
+     (33 3
+         (:REWRITE MILAWA::NOT-EQUAL-WHEN-LESS))
+     (31 19
+         (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+     (27 15
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-THREE))
+     (25 19
+         (:REWRITE MILAWA::ZP-WHEN-NOT-NATP-CHEAP))
+     (25 17
+         (:REWRITE MILAWA::ZP-WHEN-NATP-CHEAP))
+     (25 17
+         (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+     (23 9
+         (:REWRITE MILAWA::LESS-WHEN-ZP-LEFT-CHEAP))
+     (20 9
+         (:REWRITE MILAWA::NFIX-WHEN-NOT-NATP-CHEAP))
+     (18 3 (:REWRITE MILAWA::LESS-OF-NFIX-LEFT))
+     (17 9 (:REWRITE MILAWA::NFIX-WHEN-ZP-CHEAP))
+     (15 15
+         (:REWRITE MILAWA::TRANSITIVITY-OF-<-TWO))
+     (13 13 (:REWRITE MILAWA::TRANSITIVITY-OF-<))
+     (13 3
+         (:REWRITE MILAWA::NOT-EQUAL-WHEN-LESS-TWO))
+     (12 4 (:REWRITE MILAWA::ZP-OF-NFIX))
+     (9 1
+        (:REWRITE MILAWA::|a <= b, c != 0 --> a < c+b|))
+     (7 7
+        (:REWRITE MILAWA::EQUAL-OF-BOOLEANS-REWRITE))
+     (6 1 (:REWRITE MILAWA::LESS-OF-NFIX-RIGHT))
+     (5 3
+        (:REWRITE MILAWA::LESS-WHEN-ZP-RIGHT-CHEAP))
+     (4 2
+        (:REWRITE MILAWA::PLUS-WHEN-ZP-RIGHT-CHEAP))
+     (4 2
+        (:REWRITE MILAWA::PLUS-WHEN-ZP-LEFT-CHEAP))
+     (3 3
+        (:REWRITE MILAWA::EQUAL-OF-NFIX-WITH-POSITIVE-CONSTANT))
+     (3 1
+        (:REWRITE MILAWA::MINUS-WHEN-ZP-LEFT-CHEAP))
+     (1 1
+        (:REWRITE MILAWA::MINUS-WHEN-ZP-RIGHT-CHEAP))
+     (1 1 (:REWRITE MILAWA::IRREFLEXIVITY-OF-<))
+     (1 1
+        (:REWRITE MILAWA::GATHER-CONSTANTS-FROM-LESS-OF-PLUS-TWO)))
+(MILAWA::CAR-CDR-INDUCTION (12 4
+                               (:REWRITE MILAWA::CONSP-WHEN-NATP-CHEAP))
+                           (10 4
+                               (:REWRITE MILAWA::RANK-WHEN-NOT-CONSP))
+                           (4 4 (:REWRITE MILAWA::NATP-WHEN-ZP-CHEAP))
+                           (4 4
+                              (:REWRITE MILAWA::NATP-WHEN-NOT-ZP-CHEAP))
+                           (1 1 (:REWRITE MILAWA::CDR-WHEN-NOT-CONSP))
+                           (1 1
+                              (:REWRITE MILAWA::CAR-WHEN-NOT-CONSP)))

@@ -612,7 +612,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "A @('raw-input-character) tree is essentially a single Unicode character,
+    "A @('raw-input-character') tree is essentially a single Unicode character,
      which is unchanged by Java's first lexical translation step.
      In other words, we abstract this kind of tree
      to its single Unicode character.")

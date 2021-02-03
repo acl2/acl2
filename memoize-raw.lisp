@@ -1,5 +1,5 @@
-; ACL2 Version 8.2 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2019, Regents of the University of Texas
+; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2020, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -189,13 +189,13 @@
 ;; RDTSC nonsense, but we still can report mysterious results since we have no
 ;; clue about which core we are running on in CCL (or, presumably, SBCL).
 
-#+(or ccl sbcl)
+#+(and (or ccl sbcl) x86-64)
 (eval-when
  (:execute :compile-toplevel :load-toplevel)
  (when #+ccl (fboundp 'ccl::rdtsc)
        #+sbcl
 
-; In SBCL 1.4.7, function sb-impl::read-cycle-counter is no longer defined, as
+; In SBCL 1.4.7, function sb-impl::read-cycle-counter was no longer defined, as
 ; it was in older versions (at least as recently as 1.4.2).  With (apropos
 ; "READ-CYCLE-COUNTER") we found sb-vm::%read-cycle-counter; actually, Keshav
 ; Kini first pointed us to sb-vm::%read-cycle-counter.  Oddly, fboundp returns
@@ -205,7 +205,17 @@
 ; a successful build and used it for (profile 'rewrite) followed by
 ; :mini-proveall and then (memsum), on top of both SBCL 1.1.11 and SBCL 1.4.7.
 
-       (not (ignore-errors (sb-vm::%read-cycle-counter)))
+; But in SBCL 1.5.1 and probably beyond, sb-impl::read-cycle-counter was once
+; again defined, and in fact it was fboundp, hence much simpler to deal with.
+; After a report of a package-lock read error with a 32-bit version of SBCL on
+; 9/8/2020, we replaced "(sb-vm::%read-cycle-counter)" just below with
+; (sb-impl::read-cycle-counter), to avoid the package lock.  We call it with
+; funcall and intern, so as to avoid a package-lock read error when the symbol
+; sb-impl::read-cycle-counter does not exist at read time.
+
+       (ignore-errors (funcall (intern "READ-CYCLE-COUNTER" "SB-IMPL")))
+   (format t "; Note: pushing :RDTSC onto *features*.~&")
+   (finish-output)
    (pushnew :RDTSC *features*)))
 
 #+rdtsc
@@ -223,7 +233,7 @@
   #+sbcl
   '(multiple-value-bind
        (t1 t2)
-       (sb-vm::%read-cycle-counter)
+       (sb-impl::read-cycle-counter)
      (declare (fixnum t1 t2))
      (the fixnum (logior (the fixnum (ash (logand t1 *2^30-1-for-rdtsc*)
                                           32))
@@ -240,7 +250,7 @@
   #+sbcl
   '(multiple-value-bind
        (t1 t2)
-       (sb-vm::%read-cycle-counter)
+       (sb-impl::read-cycle-counter)
      (declare (fixnum t1 t2))
      (+ (ash t1 32) t2)))
 
@@ -1788,6 +1798,7 @@
    forget               ; Boolean, clears memo when outermost call exits
    memo-table-init-size ; integer, reasonable default of *mht-default-size*
    aokp                 ; use of attachments is allowed
+   invoke               ; for :invoke argument of memoize
 
 ; [Jared] multithreading notes: we could probably add a lock here that was only
 ; on a per-function basis.  That could help avoid needing the global lock, much
@@ -3251,6 +3262,34 @@
                 ))))
       formals)))
 
+(defun cltl-def-memoize-invoke (fn-def old-fn invoke)
+
+; Fn-def is a definition (defun fn ...), old-symbol-fn is the existing
+; symbol-function of fn, and invoke is a function symbol.  We return a
+; definition of invoke, which we want to invoke when calling fn.
+
+  (let ((gsym (gensym))
+        (fn (car fn-def))
+        (formals (cadr fn-def))
+        (decls (butlast (cddr fn-def) 1)))
+    (eval `(defvar ,gsym nil))
+    `(,fn ,formals
+       ,@decls
+       (if ,gsym
+
+; We could lay down the body of f, (car (last fn-def)) instead of the funcall
+; just below.  We are guessing that the overhead of memoization, the possible
+; benefit of code compactness, and the possible efficiency of separate
+; compilation of f (admittedly a wild guess) make it unimportant to do avoid
+; funcall here.
+
+           (funcall
+            #-gcl ,old-fn
+            #+gcl ',old-fn ; old-fn could be (lisp:lambda-block ...)
+            ,@formals)
+         (let ((,gsym t))
+           (,invoke ,@formals))))))
+
 (defun memoize-fn (fn &key
                       (condition t)
                       (inline t)
@@ -3263,6 +3302,7 @@
                       (forget nil)
                       (memo-table-init-size *mht-default-size*)
                       (aokp nil)
+                      (invoke nil)
                       &aux
                       (wrld (w *the-live-state*))
                       (memoize-fn-signature-error
@@ -3364,7 +3404,11 @@
 
    (with-warnings-suppressed ; e.g., might avoid redefinition warnings
     (memoize-fn-init fn inline wrld)
-    (let* ((cl-defun (memoize-look-up-def fn cl-defun inline wrld))
+    (let* ((cl-defun0 (memoize-look-up-def fn cl-defun inline wrld))
+           (old-fn (symbol-function fn))
+           (cl-defun (if invoke
+                         (cltl-def-memoize-invoke cl-defun0 old-fn invoke)
+                       cl-defun0))
            (formals
             (cond
              ((eq formals :default)
@@ -3411,11 +3455,11 @@
               (symbol-to-fixnum-create fn))
              (fn-col-base ; performance counting
               (ma-index fnn))
-             (old-fn (symbol-function fn))
              (body
               (progn
                 (assert old-fn)
                 (cond
+                 (invoke (car (last cl-defun)))
                  (inline
 
 ; When memoize-look-up-def is called with a non-nil value of inline and it
@@ -3555,7 +3599,8 @@
                                 :record-time       *record-time*
                                 :forget            forget
                                 :memo-table-init-size memo-table-init-size
-                                :aokp aokp)
+                                :aokp aokp
+                                :invoke invoke)
                     *memoize-info-ht*)
               (mf-sethash fnn fn *memoize-info-ht*)
               (and condition (loop for s in sts do
@@ -3743,7 +3788,9 @@
                  :memo-table-init-size
                  (access memoize-info-ht-entry v :memo-table-init-size)
                  :aokp
-                 (access memoize-info-ht-entry v :aokp))
+                 (access memoize-info-ht-entry v :aokp)
+                 :invoke
+                 (access memoize-info-ht-entry v :invoke))
 
 ; Warning: Keep the following list in sync with the set of *record-xxx*
 ; globals, and with rememoize-all.
@@ -3831,10 +3878,10 @@
 (defun-one-output profiled-functions ()
 
 ; For purposes of this function, the profiled functions are defined as those
-; produced by memoize-fn with null :condition and :inline fields.  We could
-; probably allow :inline to be non-nil, but it will always be nil for functions
-; profiled using profile-fn in raw Lisp or profile in the loop, so we enforce a
-; nil value for :inline, not just :condition.
+; produced by memoize-fn with null :condition, :inline, and :invoke fields.  We
+; could probably allow :inline to be non-nil, but it will always be nil for
+; functions profiled using profile-fn in raw Lisp or profile in the loop, so we
+; enforce a nil value for :inline, not just :condition.
 
   (with-global-memoize-lock
    (let (lst)
@@ -3842,7 +3889,8 @@
       (lambda (k v)
         (when (and (symbolp k)
                    (null (access memoize-info-ht-entry v :condition))
-                   (null (access memoize-info-ht-entry v :inline)))
+                   (null (access memoize-info-ht-entry v :inline))
+                   (null (access memoize-info-ht-entry v :invoke)))
           (push k lst)))
       *memoize-info-ht*)
      lst)))

@@ -151,6 +151,22 @@
                (equal b x)))
   :hints (("Goal" :in-theory (enable myif))))
 
+(defthm equal-of-myif-arg1-safe
+  (implies (syntaxp (quotep x))
+           (equal (equal (myif test a b) x)
+                  (myif test
+                        (equal a x)
+                        (equal b x))))
+  :hints (("Goal" :in-theory (enable myif))))
+
+(defthm equal-of-myif-arg2-safe
+  (implies (syntaxp (quotep x))
+           (equal (equal x (myif test a b))
+                  (myif test
+                        (equal x a)
+                        (equal x b))))
+  :hints (("Goal" :in-theory (enable myif))))
+
 (defthm equal-of-myifs-same-test
   (equal (equal (myif test a b) (myif test c d))
          (myif test (equal a c) (equal b d)))
@@ -176,4 +192,29 @@
 (defthm myif-not-myif-same
   (equal (myif test x (not (myif test y z)))
          (myif test x (not z)))
+  :hints (("Goal" :in-theory (enable myif))))
+
+;;;
+;;; myif "lifting" rules
+;;;
+
+;; In general, lifting MYIFs using rules of the form "foo of myif" can cause
+;; the term size to explode, because other arguments of foo appear once in the
+;; LHS but more than once in the RHS.  However, for unary functions, or when
+;; those other arguments are small (e.g., constants), lifting is probably a
+;; good idea.
+
+(defthm len-of-myif
+  (equal (len (myif test thenpart elsepart))
+         (myif test (len thenpart) (len elsepart)))
+  :hints (("Goal" :in-theory (enable myif))))
+
+(defthm cdr-of-myif
+  (equal (cdr (myif test thenpart elsepart))
+         (myif test (cdr thenpart) (cdr elsepart)))
+  :hints (("Goal" :in-theory (enable myif))))
+
+(defthm car-of-myif
+  (equal (car (myif test thenpart elsepart))
+         (myif test (car thenpart) (car elsepart)))
   :hints (("Goal" :in-theory (enable myif))))

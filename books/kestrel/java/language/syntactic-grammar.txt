@@ -106,7 +106,7 @@ package-or-type-name = identifier
 expression-name = identifier
                 / ambiguous-name "." identifier
 
-method-name = identifier
+method-name = unqualified-method-identifier
 
 ambiguous-name = identifier
                / ambiguous-name "." identifier
@@ -285,8 +285,8 @@ unann-reference-type = unann-class-or-interface-type
                      / unann-type-variable
                      / unann-array-type
 
-Unann-Class-Or-Interface-Type = Unann-Class-Type
-                              / Unann-Interface-Type
+unann-class-or-interface-type = unann-class-type
+                              / unann-interface-type
 
 unann-class-type =
     type-identifier [type-arguments]
@@ -660,6 +660,7 @@ statement-without-trailing-substatement = block
                                         / synchronized-statement
                                         / throw-statement
                                         / try-statement
+                                        / yield-statement
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -714,17 +715,22 @@ assert-statement = %s"assert" expression ";"
 
 switch-statement = %s"switch" "(" expression ")" switch-block
 
-switch-block = "{" *switch-block-statement-group *switch-label "}"
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-switch-block-statement-group = switch-labels block-statements
+switch-block = "{" 1*switch-rule "}"
+             / "{" *switch-block-statement-group *(switch-label ":") "}"
 
-switch-labels = 1*switch-label
+switch-rule = switch-label "->" expression ";"
+            / switch-label "->" block
+            / switch-label "->" throw-statement
 
-switch-label = %s"case" constant-expression ":"
-             / %s"case" enum-constant-name ":"
-             / %s"default" ":"
+switch-block-statement-group =
+  switch-label ":" *(switch-label ":") block-statements
 
-enum-constant-name = identifier
+switch-label = %s"case" case-constant *("," case-constant)
+             / %s"default"
+
+case-constant = conditional-expression
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -766,7 +772,7 @@ for-init = statement-expression-list
 
 for-update = statement-expression-list
 
-statement-expression-list = 1*statement-expression
+statement-expression-list = statement-expression *("," statement-expression)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -844,6 +850,12 @@ resource = *variable-modifier local-variable-type identifier "=" expression
 
 variable-access = expression-name
                 / field-access
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:14.21]
+
+yield-statement = %s"yield" expression ";"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -995,6 +1007,7 @@ unary-expression-not-plus-minus = postfix-expression
                                 / "~" unary-expression
                                 / "!" unary-expression
                                 / cast-expression
+                                / switch-expression
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1147,5 +1160,11 @@ lambda-body = expression
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; [JLS:15.28]
+
+switch-expression = %s"switch" "(" expression ")" switch-block
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:15.29]
 
 constant-expression = expression

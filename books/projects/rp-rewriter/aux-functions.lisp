@@ -470,6 +470,27 @@
          (+ (cons-count (car x))
             (cons-count (cdr x))))))
 
+(progn
+  (defun cons-count-compare-aux (x count)
+    (declare (xargs :guard (natp count)))
+    (cond ((zp count)
+           (mv 0 t))
+          ((atom x)
+           (mv (1- count) nil))
+          ((quotep x)
+           (mv (1- count) nil))
+          (t (b* (((mv count count-reached)
+                   (cons-count-compare-aux (car x) count))
+                  ((when count-reached)
+                   (mv 0 t)))
+               (cons-count-compare-aux (cdr x) count)))))
+
+  (defun cons-count-compare (x count)
+    (declare (xargs :guard (natp count)))
+    (b* (((mv & count-reached)
+          (cons-count-compare-aux x count)))
+      count-reached)))
+
 (mutual-recursion
  (defun count-lambdas (x)
    (declare (xargs :guard t
@@ -573,13 +594,21 @@
   (local
    (in-theory (enable ex-from-rp-loose)))
 
+
+  (defun-inline ex-from-rp$ (term)
+    (declare (xargs :guard (rp-termp term)))
+    (mbe :exec (ex-from-rp-loose term)
+         :logic (ex-from-rp term)))
+
+  
   (defun extract-from-rp-with-context (term context)
-    (declare (xargs :guard t #|(rp-termp term)||#))
-    (if (is-rp term)
+    (declare (xargs :guard (rp-termp term)))
+    (if (mbe :logic (is-rp term)
+             :exec (is-rp-loose term))
         (b* ((type (cadr (cadr term)))
              ((mv rcontext rterm)
               (extract-from-rp-with-context (caddr term) context)))
-          (mv (cons `(,type ,(ex-from-rp (caddr term))) rcontext) rterm))
+          (mv (cons `(,type ,(ex-from-rp$ (caddr term))) rcontext) rterm))
       (mv context term)))
 
   (defun extract-from-synp (term)
@@ -696,7 +725,7 @@
 (encapsulate
   nil
   (defrec custom-rewrite-rule
-    (lhs (flg . hyp) rule-fnc . (rhs . rune))
+    ((meta-rulep . lhs/trig-fnc) (flg . hyp) rhs/meta-fnc . rune)
     t) ; t when we are confident that the code is OK
 
   (defun weak-custom-rewrite-rule-listp (rules)
@@ -706,33 +735,90 @@
       (and (weak-custom-rewrite-rule-p (car rules))
            (weak-custom-rewrite-rule-listp (cdr rules)))))
 
-  (defun-inline rp-hyp (rule)
+  (defun-inline rp-rule-metap (rule)
     ;; return hyps from a given rule
     (declare (xargs :guard (weak-custom-rewrite-rule-p rule)))
+    (access custom-rewrite-rule rule :meta-rulep))
+
+  (defun-inline rp-rule-rwp (rule)
+    ;; return hyps from a given rule
+    (declare (xargs :guard (weak-custom-rewrite-rule-p rule)))
+    (not (rp-rule-metap rule)))
+
+  (defun rp-rule-meta-listp (rules)
+    (declare (xargs :guard (weak-custom-rewrite-rule-listp rules)))
+    (if (atom rules)
+        (eq rules nil)
+      (and (rp-rule-metap (car rules))
+           (rp-rule-meta-listp (cdr rules)))))
+
+  (defun rp-rule-rw-listp (rules)
+    (declare (xargs :guard (weak-custom-rewrite-rule-listp rules)))
+    (if (atom rules)
+        (eq rules nil)
+      (and (rp-rule-rwp (car rules))
+           (rp-rule-rw-listp (cdr rules)))))
+  
+  (defun-inline rp-hyp (rule)
+    ;; return hyps from a given rule
+    (declare (xargs :guard (and (weak-custom-rewrite-rule-p rule)
+                                (not (rp-rule-metap rule)))))
     (access custom-rewrite-rule rule :hyp))
 
   (defun-inline rp-lhs (rule)
     ;; return hyps from a given rule
-    (declare (xargs :guard (weak-custom-rewrite-rule-p rule)))
-    (access custom-rewrite-rule rule :lhs))
+    (declare (xargs :guard (and (weak-custom-rewrite-rule-p rule)
+                                (not (rp-rule-metap rule)))))
+    (access custom-rewrite-rule rule :lhs/trig-fnc))
+  
+  (defun-inline rp-rule-trig-fnc (rule)
+    ;; return hyps from a given rule
+    (declare (xargs :guard (and (weak-custom-rewrite-rule-p rule)
+                                (rp-rule-metap rule))))
+    (access custom-rewrite-rule rule :lhs/trig-fnc))
 
   (defun-inline rp-rhs (rule)
     ;; return hyps from a given rule
-    (declare (xargs :guard (weak-custom-rewrite-rule-p rule)))
-    (access custom-rewrite-rule rule :rhs))
+    (declare (xargs :guard (and (weak-custom-rewrite-rule-p rule)
+                                (not (rp-rule-metap rule)))))
+    (access custom-rewrite-rule rule :rhs/meta-fnc))
+
+  (defun-inline rp-rule-meta-fnc (rule)
+    ;; return hyps from a given rule
+    (declare (xargs :guard (and (weak-custom-rewrite-rule-p rule)
+                                (rp-rule-metap rule))))
+    (access custom-rewrite-rule rule :rhs/meta-fnc))
 
   (defun-inline rp-rune (rule)
     ;; return hyps from a given rule
-    (declare (xargs :guard (weak-custom-rewrite-rule-p rule)))
+    (declare (xargs :guard (and (weak-custom-rewrite-rule-p rule))))
     (access custom-rewrite-rule rule :rune))
 
   (defun-inline rp-iff-flag (rule)
-    (declare (xargs :guard (weak-custom-rewrite-rule-p rule)))
+    (declare (xargs :guard (and (weak-custom-rewrite-rule-p rule)
+                                (not (rp-rule-metap rule)))))
     (access custom-rewrite-rule rule :flg))
 
-  (defun-inline rp-rule-fnc (rule)
+  (defun meta-runep (rune)
+    (declare (xargs :guard t))
+    (case-match rune
+      ((':meta meta-fnc . trig-fnc)
+       (and (symbolp meta-fnc)
+            meta-fnc
+            (symbolp trig-fnc)
+            trig-fnc))))
+
+  (defun-inline meta-rune-fnc (rune)
+    (declare (xargs :guard (meta-runep rune)))
+    (cadr rune))
+  
+  (defun-inline meta-rune-trig-fnc (rune)
+    (declare (xargs :guard (meta-runep rune)))
+    (cddr rune))
+
+  #|(defun-inline rp-rule-fnc (rule)
     (declare (xargs :guard (weak-custom-rewrite-rule-p rule)))
-    (access custom-rewrite-rule rule :rule-fnc)))
+    (access custom-rewrite-rule rule :rule-fnc))||#)
 
 (encapsulate
   nil
@@ -744,11 +830,11 @@
 
   (defmacro rp-lhsm (rule)
     ;; return hyps from a given rule
-    `(access custom-rewrite-rule ,rule :lhs))
+    `(access custom-rewrite-rule ,rule :lhs/trig-fnc))
 
   (defmacro rp-rhsm (rule)
     ;; return hyps from a given rule
-    `(access custom-rewrite-rule ,rule :rhs))
+    `(access custom-rewrite-rule ,rule :rhs/meta-fnc))
 
   (defmacro rp-runem (rule)
     ;; return hyps from a given rule
@@ -1015,11 +1101,11 @@
      :enabled t
      (declare (xargs :mode :logic
                      :verify-guards nil
-                     :guard (and (integerp cnt)
+                     :guard (and (natp cnt)
                                  #|(rp-termp term1)||#
                                  #|(rp-termp term2)||#)))
      "Same as rp-equal but also runs equal after counter goes below 0."
-     (or (if (and (< cnt 0))
+     (or (if (and (zp cnt))
              (equal term1 term2)
            nil)
          (let* ((term1 (ex-from-rp term1))
@@ -1031,13 +1117,13 @@
              (equal term1 term2))
             (t ;(or (if (< cnt 0) (equal term1 term2) nil)
              (and (equal (car term1) (car term2))
-                  (rp-equal-cnt-subterms (cdr term1) (cdr term2) (1- cnt))))))))
+                  (rp-equal-cnt-subterms (cdr term1) (cdr term2) (nfix (1- cnt)))))))))
 
    (define rp-equal-cnt-subterms (subterm1 subterm2 cnt)
      :enabled t
      (declare (xargs :mode :logic
                      :verify-guards nil
-                     :guard (and (integerp cnt)
+                     :guard (and (natp cnt)
                                  #|(rp-term-listp subterm1)||#
                                  #|(rp-term-listp subterm2)||#)))
      (if (or (atom subterm1)
@@ -1080,6 +1166,7 @@
 
   (define no-free-variablep (rule)
     (declare (xargs :guard (and (weak-custom-rewrite-rule-p rule)
+                                 (NOT (RP-RULE-METAP RULE))
                                 #|(rp-termp (rp-hyp rule))||#
                                 #|(rp-termp (rp-lhs rule))||#
                                 #|(rp-termp (rp-rhs rule))||#)))
@@ -1104,87 +1191,93 @@
                'rule-syntaxp
                "ATTENTION! weak-custom-rewrite-rule-p failed! ~p0 ~%"
                (list (cons #\0 rule)))))
-     (or (not (include-fnc (rp-lhs rule) 'rp))
-         (and warning
-              (cw "ATTENTION! (not (include-fnc (rp-lhs rule) 'rp))
+     (if (rp-rule-metap rule)
+         (and (symbolp (rp-rule-trig-fnc rule))
+              (rp-rule-trig-fnc rule)
+              (symbolp (rp-rule-meta-fnc rule))
+              (rp-rule-meta-fnc rule))
+       (and
+        (or (not (include-fnc (rp-lhs rule) 'rp))
+            (and warning
+                 (cw "ATTENTION! (not (include-fnc (rp-lhs rule) 'rp))
     failed! LHS cannot contain an instance of rp. ~%")))
-     (or (not (include-fnc (rp-hyp rule) 'rp))
-         (and warning
-              (cw "ATTENTION! (not (include-fnc (rp-hyp rule) 'rp))
+        (or (not (include-fnc (rp-hyp rule) 'rp))
+            (and warning
+                 (cw "ATTENTION! (not (include-fnc (rp-hyp rule) 'rp))
     failed! HYP cannot contain an instance of rp. ~%")))
-     (or (not (include-fnc (rp-rhs rule) 'falist))
-         (and warning
-              (cw "ATTENTION! (not (include-fnc (rp-rhs rule) 'falist))
+        (or (not (include-fnc (rp-rhs rule) 'falist))
+            (and warning
+                 (cw "ATTENTION! (not (include-fnc (rp-rhs rule) 'falist))
     failed! RHS cannot contain an instance of falist ~%")))
-     (or (not (include-fnc (rp-hyp rule) 'falist))
-         (and warning
-              (cw "ATTENTION! (not (include-fnc (rp-hyp rule) 'falist))
+        (or (not (include-fnc (rp-hyp rule) 'falist))
+            (and warning
+                 (cw "ATTENTION! (not (include-fnc (rp-hyp rule) 'falist))
     failed! HYP cannot contain an instance of falist ~%")))
-     (or (and
-          (or (rp-termp (rp-hyp rule))
-              (and warning
-                   (cw "ATTENTION! (rp-termp (rp-hyp rule)) failed! Hyp of the ~
+        (or (and
+             (or (rp-termp (rp-hyp rule))
+                 (and warning
+                      (cw "ATTENTION! (rp-termp (rp-hyp rule)) failed! Hyp of the ~
     rule does not satisfy rp::rp-termp. ~%")))
-          (or (rp-termp (rp-lhs rule))
-              (and warning
-                   (cw "ATTENTION! (rp-termp (rp-lhs rule)) failed! LSH of the ~
+             (or (rp-termp (rp-lhs rule))
+                 (and warning
+                      (cw "ATTENTION! (rp-termp (rp-lhs rule)) failed! LSH of the ~
     rule does not satisfy rp::rp-termp. ~%")))
-          (or (rp-termp (rp-rhs rule))
-              (and warning
-                   (cw "ATTENTION! (rp-termp (rp-rhs rule)) failed! RHS of the ~
+             (or (rp-termp (rp-rhs rule))
+                 (and warning
+                      (cw "ATTENTION! (rp-termp (rp-rhs rule)) failed! RHS of the ~
     rule does not satisfy rp::rp-termp. ~%")))
 
-          (or (not (include-fnc (rp-lhs rule) 'if))
-              (and warning
-                   (cw "ATTENTION! (not (include-fnc (rp-lhs rule) 'if))
+             (or (not (include-fnc (rp-lhs rule) 'if))
+                 (and warning
+                      (cw "ATTENTION! (not (include-fnc (rp-lhs rule) 'if))
     failed! LHS cannot contain an instance of 'if'. ~%")))
-          (or (consp (rp-lhs rule))
-              (and warning
-                   (cw "ATTENTION! (consp (rp-lhs rule)) failed! LHS cannot
+             (or (consp (rp-lhs rule))
+                 (and warning
+                      (cw "ATTENTION! (consp (rp-lhs rule)) failed! LHS cannot
     be a variable. ~%")))
-          (or (not (acl2::fquotep (rp-lhs rule)))
-              (and warning
-                   (cw "ATTENTION! (not (acl2::fquotep (rp-lhs rule))) failed!
+             (or (not (acl2::fquotep (rp-lhs rule)))
+                 (and warning
+                      (cw "ATTENTION! (not (acl2::fquotep (rp-lhs rule))) failed!
     LHS cannot be a quoted value ~%")))
-          (or (not (include-fnc (rp-lhs rule) 'synp))
-              (and warning
-                   (cw "ATTENTION! (not (include-fnc (rp-lhs rule) 'synp))
+             (or (not (include-fnc (rp-lhs rule) 'synp))
+                 (and warning
+                      (cw "ATTENTION! (not (include-fnc (rp-lhs rule) 'synp))
     failed! LHS cannot contain an instance of synp ~%")))
-          (or (no-free-variablep rule)
-              (and warning
-                   (cw "ATTENTION! (no-free-variablep rule) failed! We do not
+             (or (no-free-variablep rule)
+                 (and warning
+                      (cw "ATTENTION! (no-free-variablep rule) failed! We do not
     support rules with free variables ~%")))
-          (not (include-fnc (rp-lhs rule) 'list))
-          (not (include-fnc (rp-hyp rule) 'list))
-          (not (include-fnc (rp-rhs rule) 'list)))
-         (and (equal warning ':err)
-              (hard-error
-               'rule-syntaxp
-               "Error  is issued for: ~%
+             (not (include-fnc (rp-lhs rule) 'list))
+             (not (include-fnc (rp-hyp rule) 'list))
+             (not (include-fnc (rp-rhs rule) 'list)))
+            (and (equal warning ':err)
+                 (hard-error
+                  'rule-syntaxp
+                  "Error  is issued for: ~%
  rp-rune: ~p0 ~% rp-hyp: ~p1 ~% rp-lhs: ~p2 ~% rp-rhs ~p3 ~%"
-               (list (cons #\0 (rp-rune rule))
-                     (cons #\1 (rp-hyp rule))
-                     (cons #\2 (rp-lhs rule))
-                     (cons #\3 (rp-rhs rule)))))
-         (and warning
-              (cw "Warning in rp::rule-syntaxp is issued for: ~%
+                  (list (cons #\0 (rp-rune rule))
+                        (cons #\1 (rp-hyp rule))
+                        (cons #\2 (rp-lhs rule))
+                        (cons #\3 (rp-rhs rule)))))
+            (and warning
+                 (cw "Warning in rp::rule-syntaxp is issued for: ~%
  rp-rune: ~p0 ~% rp-hyp: ~p1 ~% rp-lhs: ~p2 ~% rp-rhs ~p3 ~%"
-                  (rp-rune rule)
-                  (rp-hyp rule)
-                  (rp-lhs rule)
-                  (rp-rhs rule))))))
+                     (rp-rune rule)
+                     (rp-hyp rule)
+                     (rp-lhs rule)
+                     (rp-rhs rule))))))))
 
   (defun rule-list-syntaxp (rules)
     (declare (xargs :guard t))
     (if (atom rules)
-        t;(equal rules nil)
+        (equal rules nil)
       (and (rule-syntaxp (car rules))
            (rule-list-syntaxp (cdr rules)))))
 
   (defun rule-list-list-syntaxp (rules)
     (declare (xargs :guard t))
     (if (atom rules)
-        t;(equal rules nil)
+        (equal rules nil)
       (and (rule-list-syntaxp (car rules))
            (rule-list-list-syntaxp (cdr rules)))))
 
@@ -1220,32 +1313,39 @@
      (cons (ex-from-rp-all (car lst))
            (ex-from-rp-all-lst (cdr lst))))))
 
-(encapsulate
+#|(encapsulate
   nil
 
-  (defrec rp-meta-rule-rec
+  (defrec meta-rule-rec
     (trig-fnc ;; trigger function name
      fnc ;; function name that meta rule executes
      dont-rw ;; if meta rule also returns a structure for dont-rw
-     . valid-syntax ;; if meta rule returns valid-syntax (rp-valid-termp)
+     valid-syntax ;; if meta rule returns valid-syntax (rp-valid-termp)
+     outside-in ;; rewriting direction outside-in, inside-out or both
+     args ;; arguments of "fnc"
+     ret-vals ;; return vals of "fnc"
      )
     t)
 
   (defun rp-meta-fnc (rule)
     (declare (xargs :guard (weak-rp-meta-rule-rec-p rule)))
-    (access rp-meta-rule-rec rule :fnc))
+    (access meta-rule-rec rule :fnc))
 
   (defun rp-meta-trig-fnc (rule)
     (declare (xargs :guard (weak-rp-meta-rule-rec-p rule)))
-    (access rp-meta-rule-rec rule :trig-fnc))
+    (access meta-rule-rec rule :trig-fnc))
 
   (defun rp-meta-dont-rw (rule)
     (declare (xargs :guard (weak-rp-meta-rule-rec-p rule)))
-    (access rp-meta-rule-rec rule :dont-rw))
+    (access meta-rule-rec rule :dont-rw))
 
   (defun rp-meta-syntax-verified (rule)
     (declare (xargs :guard (weak-rp-meta-rule-rec-p rule)))
-    (access rp-meta-rule-rec rule :valid-syntax))
+    (access meta-rule-rec rule :valid-syntax))
+
+  (defun rp-meta-outside-in (rule)
+    (declare (xargs :guard (weak-rp-meta-rule-rec-p rule)))
+    (access meta-rule-rec rule :outside-in))
 
   #|(defun rp-meta-rule-syntaxp (term)
   "Returned term from meta rule functin should meet this syntax."
@@ -1320,12 +1420,30 @@
       (and (rp-meta-valid-syntaxp-sk (car meta-rules) state)
            (rp-meta-valid-syntax-listp (cdr meta-rules) state))))
 
+
+  (define simple-meta-rule-alistp (meta-rules)
+    :short "A simple trig-fnc and meta-fnc pair list recognizer."
+    :parents (rp-utilities)
+    (declare (xargs :Guard t))
+    (if (atom meta-rules)
+        (eq meta-rules nil)
+      (and (consp (car meta-rules))
+           (symbolp (cdar meta-rules))
+           (symbolp (caar meta-rules))
+           (simple-meta-rule-alistp (cdr meta-rules)))))
+
+  (define simple-meta-rule-alist-fix (x)
+    :returns (res simple-meta-rule-alistp)
+    (if (simple-meta-rule-alistp x)
+        x
+      nil))
+
   #|(defmacro rp-meta-rulesp (meta-rules &optional (state 'state))
   (declare (xargs :guard t)
   (ignorable state))
   `(and (weak-rp-meta-rule-recs-p ,meta-rules)
   ;;(rp-meta-valid-syntax-listp ,meta-rules ,state)
-  ))||#)
+  ))||#)||#
 
 (mutual-recursion
  (defun subtermp (term subterm)
@@ -1448,7 +1566,7 @@
 
   (verify-guards merge-comperator-sort))
 
-(define remove-disabled-meta-rules ((meta-rules weak-rp-meta-rule-recs-p)
+#|(define remove-disabled-meta-rules ((meta-rules weak-rp-meta-rule-recs-p)
                                     (disabled-meta-rules ))
   :guard-hints (("Goal"
                  :in-theory (e/d (weak-rp-meta-rule-rec-p) ())))
@@ -1464,12 +1582,10 @@
                                              disabled-meta-rules)
                (cons (car meta-rules)
                      (remove-disabled-meta-rules (cdr meta-rules)
-                                                 disabled-meta-rules)))))))
+                                                 disabled-meta-rules)))))))||#
 
 
-(progn
-
-  (defund get-rune-name (fn state)
+(defund get-rune-name (fn state)
     (declare (xargs :guard (and (symbolp fn))
                     :stobjs (state)
                     :verify-guards t))
@@ -1486,29 +1602,7 @@
           (cdr mapping)
         fn)))
 
-  (defmacro add-rp-rule (rule-name &optional (disabled 'nil))
-    `(make-event
-      (b* ((rune (get-rune-name ',rule-name state))
-           (- (get-rules `(,rune) state :warning :err)))
-        `(progn
-           (table rp-rules-inorder ',rune nil)
-           (table rp-rules ',rune ,,(not disabled))))))
 
-  (defmacro def-rp-rule (rule-name rule &rest hints)
-    `(progn
-       (defthm
-         ,rule-name ,rule ,@hints)
-       (add-rp-rule ,rule-name)))
-
-  (defmacro def-rp-rule$ (defthmd disabled rule-name rule  &rest hints)
-    `(progn
-       (,(if defthmd 'defthmd 'defthm)
-        ,rule-name ,rule ,@hints)
-       (add-rp-rule ,rule-name ,disabled))))
-
-
-
- 
 
 
 (defun trans-list (lst)
@@ -1576,3 +1670,124 @@
        nil
      (cons (rp-untrans (car lst))
            (rp-untrans-lst (cdr lst))))))
+
+
+(defund force$ (term rule-name hyp)
+  ;; When rules are processed, force instances in the hyps will be replaced by
+  ;; this function. rule-name will be the name of the rule, and hyp will be the
+  ;; main hypothesis from the rule that the force is originated from.
+  ;; when force fails, an error will be thrown and a message will be printed
+  ;; the rule that causes this error is in user-lemmas.lisp
+  (declare (ignorable rule-name hyp))
+  term)
+
+
+
+(defstobj rp-state
+
+  
+  ;;(context :type (satisfies rp-term-listp)  :initially nil)
+  ;;(iff-flg :type (satisfies booleanp) :initially nil)
+  ;;(outside-in-flg :type (satisfies booleanp) :initially nil)
+
+  (rules-alist-inside-out :type (hash-table eq) :initially nil)
+  (rules-alist-outside-in :type (hash-table eq) :initially nil)
+  (disabled-exc-rules :type (hash-table eq) :initially nil) 
+  
+  (show-used-rules-flg :type (satisfies booleanp) :initially t)
+  (count-used-rules-flg :type (satisfies booleanp) :initially nil)
+  (rules-used :type (hash-table equal) :initially nil)
+
+  (rp-brr :type (satisfies booleanp) :initially nil)
+  (rw-stack-size :type (satisfies integerp) :initially 0)
+  (rw-stack :type (satisfies alistp) :initially nil)
+  (rule-frame-cnts :type (satisfies alistp) :initially nil)
+
+  (rw-step-limit :type (unsigned-byte 58) :initially 100000)
+
+  (not-simplified-action :type (satisfies symbolp) :initially :error)
+
+  :inline t)
+
+
+(in-theory (disable rules-alist-inside-out-put
+                    rules-alist-outside-in-put
+                    disabled-exc-rules-put
+
+                    rules-alist-inside-out-get
+                    rules-alist-outside-in-get
+                    disabled-exc-rules-get
+
+                    rules-alist-inside-out-boundp
+                    rules-alist-outside-in-boundp
+                    disabled-exc-rules-boundp
+
+                    disabled-exc-rules-init
+                    rules-alist-inside-out-init
+                    rules-alist-outside-in-init
+                    ))
+
+(defund rp-state-new-run (rp-state)
+  (declare (xargs :stobjs (rp-state)))
+  (b* ((rp-state (rules-used-clear rp-state))
+       (rp-state (update-rw-stack-size 0 rp-state))
+       (rp-state (update-rw-stack nil rp-state))
+       (rp-state (update-rule-frame-cnts nil rp-state)))
+    rp-state))
+
+;; (defmacro set-outside-in-flg ()
+;;   `(update-outside-in-flg t rp-state))
+
+;; (defmacro unset-outside-in-flg ()
+;;   `(update-outside-in-flg nil rp-state))
+
+
+;; (defmacro set-iff-flg ()
+;;   `(update-iff-flg t rp-state))
+
+;; (defmacro unset-iff-flg ()
+;;   `(update-iff-flg nil rp-state))
+
+
+(defun-sk valid-rp-state-syntaxp-aux (rp-state)
+  (declare (xargs :stobjs (rp-state)))
+  (forall key
+          (or 
+           (not (symbolp key))
+           (and  (rule-list-syntaxp
+                  (rules-alist-outside-in-get key rp-state))
+                 (rule-list-syntaxp
+                  (rules-alist-inside-out-get key rp-state))))))
+
+(verify-guards valid-rp-state-syntaxp-aux
+  :hints (("Goal"
+           :in-theory (e/d () (rp-statep
+                               rule-list-syntaxp)))))
+
+
+
+;; :i-am-here
+
+;; (define valid-rp-state-syntaxp-exec (rp-state)
+;;   (b* ((
+
+(define valid-rp-state-syntaxp (rp-state)
+  (and (rp-statep rp-state)
+       (valid-rp-state-syntaxp-aux rp-state)))
+
+(defun-sk rp-state-preservedp-sk (old-rp-state new-rp-state)
+  (declare (xargs :verify-guards nil))
+  (forall key
+          (or (not (symbolp key))
+              (and  (equal (rules-alist-outside-in-get key old-rp-state)
+                           (rules-alist-outside-in-get key new-rp-state))
+                    (equal (rules-alist-inside-out-get key old-rp-state)
+                           (rules-alist-inside-out-get key new-rp-state))))))
+              
+
+(define rp-state-preservedp (old-rp-state new-rp-state)
+  :verify-guards nil
+  (and (rp-statep new-rp-state)
+       (rp-state-preservedp-sk old-rp-state
+                               new-rp-state)))     
+       

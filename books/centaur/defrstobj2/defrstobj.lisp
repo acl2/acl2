@@ -477,7 +477,8 @@ the typed record.</li>
     :recognizer :logic-recognizer
     :creator :logic-creator
     :accessor :updater
-    :accessor-template :updater-template))
+    :accessor-template :updater-template
+    :enable))
 
 (make-event
  (std::da-make-binder-gen
@@ -631,6 +632,7 @@ the typed record.</li>
        (updater-look (assoc :updater kwd-alist))
        (updater (if updater-look (cdr updater-look)
                   (mksym-list (subst name 'x updater-template))))
+       (enable (cdr (assoc :enable kwd-alist)))
        (tmp-x `((:name . ,name)
                 (:recname . ,recname)
                 (:inline . ,(std::getarg :inline t kwd-alist))
@@ -648,7 +650,8 @@ the typed record.</li>
                 (:accessor . ,accessor)
                 (:updater . ,updater)
                 (:accessor-template . ,accessor-template)
-                (:updater-template . ,updater-template)))
+                (:updater-template . ,updater-template)
+                (:enable . ,enable)))
        (fields (parse-defrstobj-fields fields tmp-x)))
     (cons (cons :fields fields) tmp-x)))
 
@@ -764,7 +767,7 @@ the typed record.</li>
 
 (defun rstobj-elem-default-case (field)
   (b* (((rstobj-field field)))
-    `(,field.field-key ,field.initially)))
+    `(,field.field-key ',field.initially)))
 
 (defun rstobj-elem-default-cases (fields)
   (if (Atom fields)
@@ -1100,20 +1103,22 @@ the typed record.</li>
        ,(rstobj-record-def x)
 
        (local (in-theory (union-theories
+                          ,x.enable
                           (union-theories
-                           (theory 'minimal-theory)
-                           '(acl2::natp-compound-recognizer
-                             nth-update-nth
-                             cons-equal
-                             acl2::nfix-when-natp
-                             (nfix) (natp)
-                             car-cons cdr-cons
-                             (make-list-ac)
-                             (nth) (cons) (len)
-                             update-nth-array))
-                          (set-difference-theories
-                           (current-theory :here)
-                           (current-theory ',(rstobj-start-label x))))))
+                           (union-theories
+                            (theory 'minimal-theory)
+                            '(acl2::natp-compound-recognizer
+                              nth-update-nth
+                              cons-equal
+                              acl2::nfix-when-natp
+                              (nfix) (natp)
+                              car-cons cdr-cons
+                              (make-list-ac)
+                              (nth) (cons) (len)
+                              update-nth-array))
+                           (set-difference-theories
+                            (current-theory :here)
+                            (current-theory ',(rstobj-start-label x)))))))
 
        ,@(rstobj-accessor/updater-defs x)
 

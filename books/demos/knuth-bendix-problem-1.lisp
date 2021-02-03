@@ -38,9 +38,7 @@
   (equal (foo (bar x))
          x))
 
-; Include a book defining the MUST-FAIL macro.
-
-(include-book "misc/eval" :dir :system)
+(include-book "std/testing/must-fail" :dir :system)
 
 (must-fail
 
@@ -131,4 +129,3 @@
            (union-theories '(rule-1-better rule-2)
                            (theory 'ground-zero))))
   :rule-classes nil)
-

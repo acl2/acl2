@@ -40,7 +40,7 @@
 (local (std::add-default-post-define-hook :fix))
 
 (defsection bfr
-  :parents (reference)
+  :parents (fgl-internals)
   :short "An abstraction of the <b>B</b>oolean <b>F</b>unction
 <b>R</b>epresentation used by GL."
 

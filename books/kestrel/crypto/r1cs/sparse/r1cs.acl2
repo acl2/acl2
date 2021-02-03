@@ -1,0 +1,12 @@
+; R1CS formalization
+;
+; Copyright (C) 2019-2020 Kestrel Institute
+;
+; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
+;
+; Author: Eric Smith (eric.smith@kestrel.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(ld "rtl/rel11/package.lsp" :dir :system)
+(include-book "../portcullis")

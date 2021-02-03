@@ -40,7 +40,7 @@
 
 
 
-(define bfr-pathcond-p (pathcond &optional (bfrstate 'bfrstate))
+(define bfr-pathcond-p (pathcond &optional ((bfrstate bfrstate-p) 'bfrstate))
   (declare (xargs :non-executable t))
   :no-function t
   :verify-guards nil

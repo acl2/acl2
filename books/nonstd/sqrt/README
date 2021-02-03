@@ -1,7 +1,0 @@
-This is the README file for the acl2 directory books/nonstd/sqrt.
-
-Ruben Gamboa
-
-no-sqrt.lisp -  no rational square root of 2.
-iter-sqrt.lisp - a rational approximation
-

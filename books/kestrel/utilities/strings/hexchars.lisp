@@ -24,8 +24,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ubyte8=>hexchars ((byte (unsigned-byte-p 8 byte)))
-  :returns (mv (hi-char str::hex-digitp)
-               (lo-char str::hex-digitp))
+  :returns (mv (hi-char str::hex-digit-char-p)
+               (lo-char str::hex-digit-char-p))
   :parents (8bitbytes-hexchars-conversions)
   :short "Convert an unsigned 8-bit byte to two hexadecimal digit characters."
   :long
@@ -54,7 +54,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define hexchars=>ubyte8 ((hi-char str::hex-digitp) (lo-char str::hex-digitp))
+(define hexchars=>ubyte8 ((hi-char str::hex-digit-char-p)
+                          (lo-char str::hex-digit-char-p))
   :returns (byte (unsigned-byte-p 8 byte))
   :parents (8bitbytes-hexchars-conversions)
   :short "Convert two hexadecimal digit characters to an unsigned 8-bit byte."
@@ -62,8 +63,8 @@
   (xdoc::topstring-p
    "The most significant digit comes first,
     followed by the least significant one.")
-  (b* ((hi-digit (str::hex-digit-val hi-char))
-       (lo-digit (str::hex-digit-val lo-char)))
+  (b* ((hi-digit (str::hex-digit-char-value hi-char))
+       (lo-digit (str::hex-digit-char-value lo-char)))
     (+ (* 16 hi-digit) lo-digit)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -83,8 +84,8 @@
     :disable str::hex-digit-to-char)
 
   (defrule ubyte8=>hexchars-of-hexchars=>ubyte8
-    (implies (and (str::hex-digitp hi-char)
-                  (str::hex-digitp lo-char))
+    (implies (and (str::hex-digit-char-p hi-char)
+                  (str::hex-digit-char-p lo-char))
              (b* ((byte (hexchars=>ubyte8 hi-char lo-char)))
                (and (equal (mv-nth 0 (ubyte8=>hexchars byte))
                            (str::upcase-char hi-char))
@@ -98,7 +99,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ubyte8s=>hexchars ((bytes (unsigned-byte-listp 8 bytes)))
-  :returns (chars str::hex-digit-listp)
+  :returns (chars str::hex-digit-char-listp)
   :parents (8bitbytes-hexchars-conversions)
   :short "Convert a list of unsigned 8-bit bytes
           to a sequence of hexadecimal digit characters."
@@ -119,7 +120,7 @@
 
   :prepwork
   ((define ubyte8s=>hexchars-aux ((bytes (unsigned-byte-listp 8 bytes))
-                                  (rev-chars str::hex-digit-listp))
+                                  (rev-chars str::hex-digit-char-listp))
      (cond ((endp bytes) (rev rev-chars))
            (t (b* (((mv hi-char lo-char) (ubyte8=>hexchars (car bytes))))
                 (ubyte8s=>hexchars-aux (cdr bytes)
@@ -152,7 +153,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define hexchars=>ubyte8s ((chars (and (str::hex-digit-listp chars)
+(define hexchars=>ubyte8s ((chars (and (str::hex-digit-char-listp chars)
                                        (true-listp chars)
                                        (evenp (len chars)))))
   :returns (bytes (unsigned-byte-listp 8 bytes))
@@ -171,7 +172,7 @@
        :exec (hexchars=>ubyte8s-aux chars nil))
 
   :prepwork
-  ((define hexchars=>ubyte8s-aux ((chars (and (str::hex-digit-listp chars)
+  ((define hexchars=>ubyte8s-aux ((chars (and (str::hex-digit-char-listp chars)
                                               (true-listp chars)
                                               (evenp (len chars))))
                                   (rev-bytes (unsigned-byte-listp 8 rev-bytes)))
@@ -185,7 +186,7 @@
   ///
 
   (defrulel verify-guards-lemma
-    (implies (and (str::hex-digit-listp chars)
+    (implies (and (str::hex-digit-char-listp chars)
                   (true-listp chars)
                   (evenp (len chars)))
              (equal (hexchars=>ubyte8s-aux chars rev-bytes)
@@ -215,7 +216,7 @@
              unsigned-byte-list-fix))
 
   (defrule ubyte8s=>hexchars-of-hexchars=>ubyte8s
-    (implies (and (str::hex-digit-listp chars)
+    (implies (and (str::hex-digit-char-listp chars)
                   (true-listp chars)
                   (evenp (len chars)))
              (equal (ubyte8s=>hexchars (hexchars=>ubyte8s chars))

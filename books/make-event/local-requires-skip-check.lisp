@@ -74,7 +74,7 @@
 
  (defun test9 (x) x))
 
-(include-book "misc/eval" :dir :system)
+(include-book "std/testing/must-fail" :dir :system)
 
 (must-fail
  (local

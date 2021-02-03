@@ -10,7 +10,7 @@
 
 (in-package "JAVA")
 
-(include-book "unicode")
+(include-book "unicode-characters")
 
 (include-book "kestrel/std/util/deffixer" :dir :system)
 
@@ -68,7 +68,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deflist bin-digit-list
-  :short "Fixtype of true lists of Java binary digits."
+  :short "Fixtype of lists of Java binary digits."
   :elt-type bin-digit
   :true-listp t
   :elementp-of-nil nil

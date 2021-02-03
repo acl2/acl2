@@ -25,7 +25,7 @@
 (include-book "std/util/bstar" :dir :system)
 (include-book "std/util/defconsts" :dir :system)
 (include-book "xdoc/top" :dir :system)
-(include-book "misc/assert" :dir :system)
+(include-book "std/testing/assert-bang" :dir :system)
 (include-book "object-representations")
 (include-book "grammar-reader" :skip-proofs-okp t)
 (include-book "strings")
@@ -742,7 +742,6 @@
         *simple-java-example-chart-tree-target*))
 
 #|
-
 (trace$ earley-parse earley-parse25 earley-parse50 earley-parse100
         earley-parse200 earley-parse400)
 
@@ -756,5 +755,4 @@
         earley-parse load-lexicon)
 
 (trace$ predictor1 predictor scanner completer1 completer)
-
 |#

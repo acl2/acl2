@@ -151,6 +151,7 @@ For example, @('natp-of-foo').</dd>
    hintsp        ; t if hints were provided
    rule-classes  ; :rewrite when omitted
    thm-name      ; NIL (to generate a name) or the name for the theorem
+   opts          ; alist binding keywords to values
    )
   :tag :return-spec)
 
@@ -285,7 +286,8 @@ For example, @('natp-of-foo').</dd>
 
        ((mv kwd-alist other-opts)
         ;; bozo better context for error message here would be good
-        (extract-keywords fnname '(:hyp :hints :rule-classes :name) options nil))
+        (extract-keywords fnname '(:hyp :hints :rule-classes :name :props)
+                          options nil))
        (hyp (if (assoc :hyp kwd-alist)
                 (cdr (assoc :hyp kwd-alist))
               t))
@@ -334,7 +336,8 @@ For example, @('natp-of-foo').</dd>
                      :hyp hyp
                      :hints hints
                      :hintsp hintsp
-                     :thm-name thm-name)))
+                     :thm-name thm-name
+                     :opts kwd-alist)))
 
 (defun parse-returnspecs-aux (fnname x world)
   "Returns a returnspeclist-p"

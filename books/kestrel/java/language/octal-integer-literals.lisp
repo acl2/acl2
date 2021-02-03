@@ -13,6 +13,8 @@
 (include-book "optional-integer-type-suffix")
 (include-book "octal-digits")
 
+(include-book "std/util/defprojection" :dir :system)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ octal-integer-literals
@@ -35,7 +37,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deflist octdig/uscore-list
-  :short "Fixtype of true lists of octal digits and underscores."
+  :short "Fixtype of lists of octal digits and underscores."
   :long
   (xdoc::topstring-p
    "An @('octal-numeral') in the grammar
@@ -46,6 +48,19 @@
   :true-listp t
   :elementp-of-nil nil
   :pred octdig/uscore-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection octdig/uscore-digit-list (x)
+  :guard (oct-digit-listp x)
+  :returns (dus octdig/uscore-listp)
+  :short "Lift @(tsee octdig/uscore-digit) to lists."
+  (octdig/uscore-digit x)
+  ///
+
+  (defret octdig/uscore-kind-of-car-of-last-of-octdig/uscore-digit-list
+    (equal (octdig/uscore-kind (car (last dus))) :digit)
+    :hyp (consp x)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -120,6 +135,7 @@
                                    (octdig/uscore-digit (char-code #\0)))))
    (prefix-upcase-p bool)
    (suffix? optional-integer-type-suffix))
+  :require (octdig/uscore-list-wfp digits/uscores)
   :tag :oct-integer-lit
   :layout :list
-  :require (octdig/uscore-list-wfp digits/uscores))
+  :pred oct-integer-literalp)

@@ -21,8 +21,8 @@
 
 (in-package "ACL2")
 
-(include-book "misc/eval" :dir :system) ; defines must-fail
-(include-book "misc/assert" :dir :system)
+(include-book "std/testing/must-fail" :dir :system)
+(include-book "std/testing/assert-bang" :dir :system)
 
 (defmacro local-test (&key defs run check)
 
@@ -1305,7 +1305,7 @@ ACL2 !>
      (mv a b))
    dd))
 
-;; want these both to remain illegal 
+;; want these both to remain illegal
 (must-fail
  (defun access-dd-as-both (dd)
    (declare (xargs :stobjs dd))
@@ -1408,5 +1408,5 @@ ACL2 !>
    (let ((aaaa (update-a-fld (not (a-fld aaaa)) aaaa)))
      (mv (list (a-fld a) (a-fld aa) (a-fld aaa)) aaaa))
    (mv x scal-and-arr)))
-  
+
 )))

@@ -1,0 +1,6 @@
+(FAST-ALIST-POP (8 1 (:DEFINITION HONS-ASSOC-EQUAL))
+                (7 7 (:REWRITE DEFAULT-CDR))
+                (7 7 (:REWRITE DEFAULT-CAR))
+                (1 1 (:DEFINITION HONS-EQUAL)))
+(FAST-ALIST-POP* (4 4 (:REWRITE DEFAULT-CDR))
+                 (1 1 (:REWRITE DEFAULT-CAR)))

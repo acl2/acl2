@@ -31,7 +31,6 @@
          (bvplus size y x))
   :hints (("Goal" :in-theory (enable bvplus))))
 
-;loop stopper?
 (defthm bvplus-commutative-2
   (equal (bvplus size y (bvplus size x z))
          (bvplus size x (bvplus size y z)))

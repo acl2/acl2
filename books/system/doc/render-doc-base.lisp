@@ -128,6 +128,21 @@
                         (- (len x) n)
                       0)))))
 
+ (local (include-book "std/strings/coerce" :dir :system))
+
+ ;; (local (defthm character-listp-of-take
+ ;;          (implies (and (character-listp x)
+ ;;                        (<= (nfix n) (len x)))
+ ;;                   (character-listp (take n x)))
+ ;;          :hints(("Goal" :in-theory (enable take)))))
+
+ ;; (local (defthm character-listp-of-nthcdr
+ ;;          (implies (character-listp x)
+ ;;                   (character-listp (nthcdr n x)))
+ ;;          :hints(("Goal" :in-theory (enable nthcdr)))))
+
+ ;; (local (in-theory (disable len position-equal-ac take nfix)))
+
  (defun escape-char (c replacement name)
    (declare (xargs :guard (and (characterp c)
                                (stringp replacement)

@@ -1,5 +1,5 @@
-; ACL2 Version 8.2 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2019, Regents of the University of Texas
+; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2020, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -1639,7 +1639,7 @@
   `(if (stringp ,s)
        (the string ,s)
      (er-hard-val "" ,ctx
-                  "Not a string:  ~s0."
+                  "Not a string:  ~x0."
                   ,s)))
 
 (defun xxxjoin-fixnum (fn args root)
@@ -3027,6 +3027,20 @@
           (mv (flsz-atom x print-base print-radix col state)
               state)))
 
+(defun splat-string (x indent col channel state)
+
+; This variant of splat-atom prints the string x flat, without the quotes.
+
+  (let* ((sz (the-half-fixnum! (length x) 'splat-string))
+         (too-bigp (> (+ col sz) (fmt-hard-right-margin state))))
+    (pprogn (if too-bigp
+                (pprogn (newline channel state)
+                        (spaces indent 0 channel state))
+                state)
+            (princ$ x channel state)
+            (mv (if too-bigp (+ indent sz) (+ col sz))
+                state))))
+
 ; Splat, below, prints out an arbitrary ACL2 object flat, introducing
 ; the single-gritch notation for quote and breaking lines between lexemes
 ; to avoid going over the hard right margin.  It indents all but the first
@@ -3034,22 +3048,24 @@
 
 (mutual-recursion
 
-(defun splat (x print-base print-radix indent col channel state)
+(defun splat (x print-base print-radix indent eviscp col channel state)
   (cond ((atom x)
          (splat-atom x print-base print-radix indent col channel state))
+        ((evisceratedp eviscp x)
+         (splat-string (cdr x) indent col channel state))
         ((and (eq (car x) 'quote)
               (consp (cdr x))
               (null (cddr x)))
          (pprogn (princ$ #\' channel state)
-                 (splat (cadr x) print-base print-radix indent (1+ col) channel
-                        state)))
+                 (splat (cadr x) print-base print-radix indent eviscp
+                        (1+ col) channel state)))
         (t (pprogn (princ$ #\( channel state)
-                   (splat1 x print-base print-radix indent (1+ col) channel
-                           state)))))
+                   (splat1 x print-base print-radix indent eviscp (1+ col)
+                           channel state)))))
 
-(defun splat1 (x print-base print-radix indent col channel state)
+(defun splat1 (x print-base print-radix indent eviscp col channel state)
   (mv-let (col state)
-          (splat (car x) print-base print-radix indent col channel state)
+          (splat (car x) print-base print-radix indent eviscp col channel state)
           (cond ((null (cdr x))
                  (pprogn (princ$ #\) channel state)
                          (mv (1+ col) state)))
@@ -3061,6 +3077,7 @@
                                 (mv-let (col state)
                                         (splat (cdr x)
                                                print-base print-radix indent
+                                               eviscp
                                                (+ indent 2)
                                                channel state)
                                         (pprogn (princ$ #\) channel state)
@@ -3069,15 +3086,15 @@
                            (princ$ " . " channel state)
                            (mv-let (col state)
                                    (splat (cdr x)
-                                          print-base print-radix indent
+                                          print-base print-radix indent eviscp
                                           (+ 3 col)
                                           channel state)
                                    (pprogn (princ$ #\) channel state)
                                            (mv (1+ col) state)))))))
                 (t (pprogn
                     (princ$ #\Space channel state)
-                    (splat1 (cdr x) print-base print-radix indent (1+ col)
-                            channel state))))))
+                    (splat1 (cdr x) print-base print-radix indent eviscp
+                            (1+ col) channel state))))))
 
 )
 
@@ -3310,6 +3327,64 @@
            (stringp (car x))
            (character-alistp (cdr x)))))
 
+(defun scan-past-empty-fmt-directives (s alist i maximum)
+
+; We return a natural number j with i <= j < maximum, such that fmt printing of
+; the characters of s from i through j-1, with respect to alist, produces no
+; output.  It is thus always sound to return i, but we aim to do better than
+; that when feasible.
+
+  (declare (type (unsigned-byte 29) i maximum)
+           (type string s))
+  (the-fixnum
+   (cond
+    ((>= i maximum) i)
+    (t (let ((c (charf s i)))
+         (declare (type character c))
+         (cond
+          ((eql c #\~)
+           (let ((fmc (the character (fmt-char s i 1 maximum t))))
+             (declare (type character fmc))
+             (case
+               fmc
+               ((#\s #\S)
+                (cond
+                 ((equal (fmt-var s alist i maximum) "")
+                  (scan-past-empty-fmt-directives s alist (+f i 3) maximum))
+                 (t i)))
+               (#\@
+                (let ((val (fmt-var s alist i maximum)))
+                  (cond
+                   ((equal val "")
+                    (scan-past-empty-fmt-directives s alist (+f i 3) maximum))
+                   ((atom val) i)
+                   ((equal (car val) "")
+                    (scan-past-empty-fmt-directives s alist (+f i 3) maximum))
+                   ((not (stringp (car val))) ; always false?
+                    i)
+                   (t (let ((len (length (car val)))
+                            (alist1 (append (cdr val) alist)))
+                        (if (equal (scan-past-empty-fmt-directives
+                                    (car val) alist1 0 len)
+                                   len)
+                            (scan-past-empty-fmt-directives s alist (+f i 3)
+                                                            maximum)
+                          i))))))
+               (#\#
+                (let* ((n (find-alternative-start
+                           (fmt-var s alist i maximum) s i maximum nil))
+                       (m (find-alternative-stop s n maximum nil))
+                       (o (find-alternative-skip s m maximum nil)))
+                  (declare (type (signed-byte 30) n)
+                           (type (unsigned-byte 29) m o))
+                  (cond
+                   ((or (= n m) ; optimization
+                        (= (scan-past-empty-fmt-directives s alist n m) m))
+                    (scan-past-empty-fmt-directives s alist o maximum))
+                   (t i))))
+               (otherwise i))))
+          (t i)))))))
+
 (mutual-recursion
 
 (defun fmt0* (str0 str1 str2 str3 lst alist col channel state evisc-tuple)
@@ -3328,26 +3403,26 @@
   (the2s
    (signed-byte 30)
    (cond ((null lst)
-          (fmt0 str0 alist 0 (the-fixnum! (length str0) 'fmt0*) col channel
+          (fmt0 str0 alist 0 (the-fixnum! (length str0) 'fmt0*) col nil channel
                 state evisc-tuple))
          ((null (cdr lst))
           (fmt0 str1
                 (cons (cons #\* (car lst)) alist)
-                0 (the-fixnum! (length str1) 'fmt0*) col channel
+                0 (the-fixnum! (length str1) 'fmt0*) col nil channel
                 state evisc-tuple))
          ((null (cddr lst))
           (mv-letc (col state)
                    (fmt0 str2
                          (cons (cons #\* (car lst)) alist)
                          0 (the-fixnum! (length str2) 'fmt0*)
-                         col channel state evisc-tuple)
+                         col nil channel state evisc-tuple)
                    (fmt0* str0 str1 str2 str3 (cdr lst) alist col channel
                           state evisc-tuple)))
          (t (mv-letc (col state)
                      (fmt0 str3
                            (cons (cons #\* (car lst)) alist)
                            0 (the-fixnum! (length str3) 'fmt0*)
-                           col channel state evisc-tuple)
+                           col nil channel state evisc-tuple)
                      (fmt0* str0 str1 str2 str3 (cdr lst) alist col channel
                             state evisc-tuple))))))
 
@@ -3465,7 +3540,7 @@
                  (t (cond ((and (<= 0 (car n)) (<= (car n) 13)) nil)
                           (t (list (cons #\0 (car n)))))))
            0 (the-fixnum! (length str) 'spell-number)
-           col channel state evisc-tuple))))
+           col nil channel state evisc-tuple))))
 
 (defun fmt-tilde-s (s col channel state)
 
@@ -3491,7 +3566,7 @@
          (cond
           ((needs-slashes str state)
            (splat-atom s (print-base) (print-radix) 0 col channel state))
-          (t (fmt0 ":~s0" (list (cons #\0 str)) 0 4 col channel state nil))))
+          (t (fmt0 ":~s0" (list (cons #\0 str)) 0 4 col nil channel state nil))))
         ((symbol-in-current-package-p s state)
          (cond
           ((needs-slashes str state)
@@ -3508,7 +3583,7 @@
             (t (fmt0 "~s0::~-~s1"
                      (list (cons #\0 p)
                            (cons #\1 str))
-                     0 10 col channel state nil)))))))))))
+                     0 10 col nil channel state nil)))))))))))
 
 (defun fmt-tilde-cap-s (s col channel state)
 
@@ -3531,7 +3606,7 @@
          (cond
           ((needs-slashes str state)
            (splat-atom! s (print-base) (print-radix) col channel state))
-          (t (fmt0 ":~S0" (list (cons #\0 str)) 0 4 col channel state nil))))
+          (t (fmt0 ":~S0" (list (cons #\0 str)) 0 4 col nil channel state nil))))
         ((symbol-in-current-package-p s state)
          (cond
           ((needs-slashes str state)
@@ -3548,11 +3623,14 @@
             (t (fmt0 "~S0::~S1"
                      (list (cons #\0 p)
                            (cons #\1 str))
-                     0 10 col channel state nil)))))))))))
+                     0 10 col nil channel state nil)))))))))))
 
-(defun fmt0 (s alist i maximum col channel state evisc-tuple)
+(defun fmt0 (s alist i maximum col pn channel state evisc-tuple)
 
 ; Warning: Keep this in sync with fmx-cw-msg-1-body and :DOC fmt.
+
+; Pn is either nil or else punctuation to print when we reach the end of s,
+; presumably not in column 0.
 
   (declare (xargs :guard ; incomplete guard
 
@@ -3565,12 +3643,13 @@
                        (standard-evisc-tuplep evisc-tuple)))
            (type (unsigned-byte 29) i maximum col)
            (type string s))
-  (declare (type (unsigned-byte 29) col))
   (the2s
    (unsigned-byte 29)
    (cond
     ((>= i maximum)
-     (mv (the (unsigned-byte 29) col) state))
+     (cond (pn (pprogn (princ$ pn channel state)
+                       (mv (the (unsigned-byte 29) (1+f col)) state)))
+           (t (mv (the (unsigned-byte 29) col) state))))
     (t
      (let ((c (charf s i)))
        (declare (type character c))
@@ -3596,8 +3675,8 @@
 ; On symbols, ~x and ~y are alike and just print starting in col.  On non-
 ; symbols they both prettyprint.  But ~y starts printing in col while ~x may do
 ; a terpri and indent first.  ~x concludes with a terpri if it put out a terpri
-; before printing.  ~y always concludes with a terpri on non-symbols, so you
-; know where you end up.
+; before printing.  ~y always concludes with a terpri, so you know where you
+; end up.
 
               (maybe-newline
                (let* ((caps (or (eql fmc #\P) (eql fmc #\Q)
@@ -3611,15 +3690,15 @@
                        (cond (caps
                               (let ((x (fmt-var s alist (1+f i) maximum)))
                                 (cond
-                                ((not (standard-evisc-tuplep x))
-                                 (er hard 'fmt0
-                                     "~@0"
-                                     (illegal-fmt-msg
-                                      bad-evisc-tuple
-                                      i
-                                      (charf s (+f i 3))
-                                      x 'standard-evisc-tuplep s)))
-                                (t x))))
+                                 ((not (standard-evisc-tuplep x))
+                                  (er hard 'fmt0
+                                      "~@0"
+                                      (illegal-fmt-msg
+                                       bad-evisc-tuple
+                                       i
+                                       (charf s (+f i 3))
+                                       x 'standard-evisc-tuplep s)))
+                                 (t x))))
                              (t evisc-tuple)))
                       (evisc-table (table-alist 'evisc-table (w state)))
                       (eviscp (or local-evisc-tuple evisc-table)))
@@ -3627,7 +3706,7 @@
                    (x state)
                    (cond (eviscp (eviscerate-top
                                   (fmt-var s alist i maximum)
-                                  (cadr local-evisc-tuple) ;;; print-level
+                                  (cadr local-evisc-tuple)  ;;; print-level
                                   (caddr local-evisc-tuple) ;;; print-length
                                   (car local-evisc-tuple)   ;;; alist
                                   evisc-table
@@ -3655,143 +3734,140 @@
 ;                                                 (eql fmc #\Y))
 ;                                             4
 ;                                           3))
-;                                   maximum col channel state evisc-tuple)))
+;                                   maximum col nil channel state
+;                                   evisc-tuple)))
 
-                   (let ((fmt-hard-right-margin
-                          (fmt-hard-right-margin state)))
-                     (declare (type (unsigned-byte 29) fmt-hard-right-margin))
-                     (let ((sz (flsz x pq col fmt-hard-right-margin state
-                                     eviscp)))
-                       (declare (type (unsigned-byte 29) sz))
-                       (cond
-                        ((and px
-                              (> col (the-fixnum *fmt-ppr-indentation*))
-                              (>= sz fmt-hard-right-margin)
-                              (not (>= (flsz x
-                                             pq
-                                             (the-fixnum
-                                              *fmt-ppr-indentation*)
-                                             fmt-hard-right-margin
-                                             state eviscp)
-                                       fmt-hard-right-margin)))
-                         (pprogn
-                          (newline channel state)
-                          (spaces1 (the-fixnum *fmt-ppr-indentation*) 0
-                                   fmt-hard-right-margin
-                                   channel state)
-                          (fmt0 s alist i maximum
-                                (the-fixnum *fmt-ppr-indentation*)
-                                channel state evisc-tuple)))
-                        ((or qy
-                             (>= sz fmt-hard-right-margin))
-                         (pprogn
-                          (cond (qy
-                                 state)
-                                ((= col 0) state)
-                                (t (newline channel state)))
-                          (if qy
-                              state
-                            (spaces1 (the-fixnum *fmt-ppr-indentation*)
-                                     0 fmt-hard-right-margin channel state))
-                          (let ((c (fmt-char s i
-                                             (the-fixnum
-                                              (if caps
-                                                  4
-                                                3))
-                                             maximum nil)))
-                            (cond ((punctp c)
-                                   (pprogn
-                                    (fmt-ppr
-                                     x
-                                     pq
-                                     (+f fmt-hard-right-margin
-                                         (-f (if qy
-                                                 col
-                                               *fmt-ppr-indentation*)))
-                                     1
-                                     (the-fixnum
-                                      (if qy
-                                          col
-                                        *fmt-ppr-indentation*))
-                                     channel state eviscp)
-                                    (princ$ c channel state)
-                                    (newline channel state)
-                                    (fmt0 s alist
-                                          (scan-past-whitespace
-                                           s
-                                           (+f i (if caps
-                                                     5
-                                                   4))
-                                           maximum)
-                                          maximum 0 channel state
-                                          evisc-tuple)))
-                                  (t
-                                   (pprogn
-                                    (fmt-ppr
-                                     x
-                                     pq
-                                     (+f fmt-hard-right-margin
-                                         (-f (if qy
-                                                 col
-                                               *fmt-ppr-indentation*)))
-                                     0
-                                     (the-fixnum
-                                      (if qy
-                                          col
-                                        *fmt-ppr-indentation*))
-                                     channel state eviscp)
-                                    (newline channel state)
-                                    (fmt0 s alist
-                                          (scan-past-whitespace
-                                           s
-                                           (+f i (if caps
-                                                     4
-                                                   3))
-                                           maximum)
-                                          maximum 0 channel state
-                                          evisc-tuple)))))))
-                        (t (pprogn
-                            (flpr x pq channel state eviscp)
-                            (fmt0 s alist
-                                  (+f i (if caps
-                                            4
-                                          3))
-                                  maximum sz
-                                  channel state evisc-tuple))))))))))
-             (#\@ (let ((s1 (fmt-var s alist i maximum)))
-                    (mv-letc (col state)
-                             (cond ((stringp s1)
-                                    (fmt0 s1 alist 0
-                                          (the-fixnum! (length s1) 'fmt0)
-                                          col channel state evisc-tuple))
-                                   ((msgp s1)
-                                    (fmt0 (car s1)
-                                          (append (cdr s1) alist)
-                                          0
-                                          (the-fixnum! (length (car s1)) 'fmt0)
-                                          col channel state evisc-tuple))
-                                   (t (mv (er-hard-val
-                                           0 'fmt0 "~@0"
-                                           (illegal-fmt-msg
-                                            bad-tilde-@-arg
-                                            i s1 'msgp s))
-                                          state)))
-                             (fmt0 s alist (+f i 3) maximum col
-                                   channel state evisc-tuple))))
-             (#\# (let ((n (find-alternative-start
-                            (fmt-var s alist i maximum) s i maximum nil)))
-                    (declare (type (signed-byte 30) n))
-                    (let ((m (find-alternative-stop s n maximum nil)))
-                      (declare (type (unsigned-byte 29) m))
-                      (let ((o (find-alternative-skip s m maximum nil)))
-                        (declare (type (unsigned-byte 29) o))
-                        (mv-letc (col state) (fmt0 s alist
-                                                   (the-fixnum n)
-                                                   (the-fixnum m)
-                                                   col channel
-                                                   state evisc-tuple)
-                                 (fmt0 s alist (the-fixnum o) maximum
-                                       col channel state evisc-tuple))))))
+                   (let* ((fmt-hard-right-margin (fmt-hard-right-margin state))
+                          (sz (flsz x pq col fmt-hard-right-margin state
+                                    eviscp))
+                          (incr (the-fixnum (if caps 4 3)))
+                          (c (fmt-char s i incr maximum nil))
+                          (punctp (punctp c))
+                          (print-pn (and pn
+                                         (not punctp) ; optimization
+                                         (= (+f i incr) maximum)))
+                          (p+ (if (or punctp print-pn) 1 0)))
+                     (declare (type (unsigned-byte 29)
+                                    fmt-hard-right-margin sz incr))
+                     (cond
+                      ((and px
+                            (> col (the-fixnum *fmt-ppr-indentation*))
+                            (> (+f p+ sz) fmt-hard-right-margin)
+                            (not (> (+f p+
+                                        (flsz x
+                                              pq
+                                              (the-fixnum
+                                               *fmt-ppr-indentation*)
+                                              fmt-hard-right-margin
+                                              state eviscp))
+                                    fmt-hard-right-margin)))
+                       (pprogn
+                        (newline channel state)
+                        (spaces1 (the-fixnum *fmt-ppr-indentation*) 0
+                                 fmt-hard-right-margin
+                                 channel state)
+                        (fmt0 s alist i maximum
+                              (the-fixnum *fmt-ppr-indentation*)
+                              pn channel state evisc-tuple)))
+                      ((or qy
+                           (> (the-fixnum (+f p+ sz))
+                              fmt-hard-right-margin))
+                       (pprogn
+                        (cond (qy state)
+                              ((= col 0) state)
+                              (t (newline channel state)))
+                        (if qy
+                            state
+                          (spaces1 (the-fixnum *fmt-ppr-indentation*)
+                                   0 fmt-hard-right-margin channel state))
+                        (let* ((i1 (the-fixnum (if punctp
+                                                   (+f i incr 1)
+                                                 (+f i incr))))
+                               (i2 (if qy ; then respect trailing whitespace
+                                       i1
+                                     (scan-past-whitespace s i1 maximum))))
+                          (declare (type (unsigned-byte 29) i1 i2))
+                          (pprogn
+                           (fmt-ppr
+                            x
+                            pq
+                            (+f fmt-hard-right-margin
+                                (-f (if qy
+                                        col
+                                      *fmt-ppr-indentation*)))
+                            p+
+                            (the-fixnum
+                             (if qy
+                                 col
+                               *fmt-ppr-indentation*))
+                            channel state eviscp)
+                           (cond (punctp (princ$ c channel state))
+                                 (print-pn (princ$ pn channel state))
+                                 (t state))
+                           (newline channel state)
+                           (fmt0 s alist i2 maximum 0
+                                 (and (not print-pn) pn)
+                                 channel state
+                                 evisc-tuple)))))
+                      (t (pprogn
+                          (flpr x pq channel state eviscp)
+                          (fmt0 s alist
+                                (+f i (if caps
+                                          4
+                                        3))
+                                maximum sz pn
+                                channel state evisc-tuple)))))))))
+             (#\@ (let ((s1 (fmt-var s alist i maximum))
+                        (i0 (scan-past-empty-fmt-directives s alist (+f i 3)
+                                                            maximum)))
+                    (declare (type (unsigned-byte 29) i0))
+                    (mv-let (i1 pn pn@)
+                      (cond ((< i0 maximum)
+                             (let ((punctp (punctp (charf s i0))))
+                               (cond (punctp (mv (1+f i0) pn punctp))
+                                     (t (mv i0 pn nil)))))
+                            (t ; print any pending punctuation with s1
+                             (mv i0 nil pn)))
+                      (mv-letc (col state)
+                               (cond ((stringp s1)
+                                      (fmt0 s1 alist 0
+                                            (the-fixnum! (length s1) 'fmt0)
+                                            col pn@ channel state evisc-tuple))
+                                     ((msgp s1)
+                                      (fmt0 (car s1)
+                                            (append (cdr s1) alist)
+                                            0
+                                            (the-fixnum! (length (car s1)) 'fmt0)
+                                            col pn@ channel state evisc-tuple))
+                                     (t (mv (er-hard-val
+                                             0 'fmt0 "~@0"
+                                             (illegal-fmt-msg
+                                              bad-tilde-@-arg
+                                              i s1 'msgp s))
+                                            state)))
+                               (fmt0 s alist i1 maximum col pn
+                                     channel state evisc-tuple)))))
+             (#\# (let* ((n (find-alternative-start
+                             (fmt-var s alist i maximum) s i maximum nil))
+                         (m (find-alternative-stop s n maximum nil))
+                         (o (find-alternative-skip s m maximum nil)))
+                    (declare (type (signed-byte 30) n)
+                             (type (unsigned-byte 29) m o))
+                    (mv-let (pn1 pn2 o)
+                      (cond ((= o maximum)
+                             (mv pn nil o))
+                            ((punctp (charf s o))
+                             (mv (charf s o) pn (1+f o)))
+                            (t
+                             (mv nil pn o)))
+                      (declare (type (unsigned-byte 29) o))
+                      (mv-letc (col state)
+                               (fmt0 s alist
+                                     (the-fixnum n)
+                                     (the-fixnum m)
+                                     col pn1 channel state evisc-tuple)
+                               (fmt0 s alist (the-fixnum o) maximum col pn2
+                                     channel state evisc-tuple)))))
              (#\* (let ((x (fmt-var s alist i maximum)))
                     (cond
                      ((or (< (len x) 5)
@@ -3817,7 +3893,7 @@
                                       (car (cddddr x))
                                       (append (cdr (cddddr x)) alist)
                                       col channel state evisc-tuple)
-                               (fmt0 s alist (+f i 3) maximum col
+                               (fmt0 s alist (+f i 3) maximum col pn
                                      channel state evisc-tuple))))))
              ((#\& #\v)
               (let ((i+3 (+f i 3))
@@ -3850,7 +3926,7 @@
                                     (+f i 4))
                                    (t i+3)))
                                  maximum
-                                 col channel state evisc-tuple))))))
+                                 col pn channel state evisc-tuple))))))
              ((#\n #\N)
               (let ((k (fmt-var s alist i maximum)))
                 (cond
@@ -3873,7 +3949,7 @@
                             (spell-number k
                                           (eql fmc #\N)
                                           col channel state evisc-tuple)
-                            (fmt0 s alist (+f i 3) maximum col channel
+                            (fmt0 s alist (+f i 3) maximum col pn channel
                                   state evisc-tuple)))))))
              (#\t (maybe-newline
                    (let ((goal-col (fmt-var s alist i maximum))
@@ -3911,7 +3987,7 @@
                                         channel state)))
                       (fmt0 s alist (+f i 3) maximum
                             (the-fixnum goal-col)
-                            channel state evisc-tuple)))))
+                            pn channel state evisc-tuple)))))
              (#\c (maybe-newline
                    (let ((pair (fmt-var s alist i maximum)))
                      (cond ((and (consp pair)
@@ -3922,8 +3998,8 @@
                                      (left-pad-with-blanks (car pair)
                                                            (cdr pair)
                                                            col channel state)
-                                     (fmt0 s alist (+f i 3) maximum col channel
-                                           state evisc-tuple)))
+                                     (fmt0 s alist (+f i 3) maximum col pn
+                                           channel state evisc-tuple)))
                            (t (mv (er-hard-val
                                    0 'fmt0 "~@0"
                                    (illegal-fmt-msg
@@ -3931,14 +4007,27 @@
                                     i pair s))
                                   state))))))
              ((#\f #\F)
-              (maybe-newline
-               (mv-letc (col state)
-                        (splat (fmt-var s alist i maximum)
-                               (print-base) (print-radix)
-                               (if (eql fmc #\F) (1+f col) 0)
-                               col channel state)
-                        (fmt0 s alist (+f i 3) maximum col channel
-                              state evisc-tuple))))
+              (let ((evisc-table (table-alist 'evisc-table (w state))))
+                (mv-let
+                  (x state)
+                  (cond (evisc-table (eviscerate-top
+                                      (fmt-var s alist i maximum)
+                                      nil ;;; print-level
+                                      nil ;;; print-length
+                                      nil ;;; alist
+                                      evisc-table
+                                      nil ;;; hiding-cars
+                                      state))
+                        (t (mv (fmt-var s alist i maximum)
+                               state)))
+                  (maybe-newline
+                   (mv-letc (col state)
+                            (splat x
+                                   (print-base) (print-radix)
+                                   (if (eql fmc #\F) (1+f col) 0)
+                                   evisc-table col channel state)
+                            (fmt0 s alist (+f i 3) maximum col pn channel
+                                  state evisc-tuple))))))
              ((#\s #\S)
               (let ((x (fmt-var s alist i maximum)))
                 (cond
@@ -3950,7 +4039,7 @@
                             (if (eql fmc #\s)
                                 (fmt-tilde-s x col channel state)
                               (fmt-tilde-cap-s x col channel state))
-                            (fmt0 s alist (+f i 3) maximum col channel
+                            (fmt0 s alist (+f i 3) maximum col pn channel
                                   state evisc-tuple))))
                  (t (mv (er-hard-val
                          0 'fmt0 "~@0"
@@ -3959,19 +4048,20 @@
                           (if (eql fmc #\s) "s" "S")
                           i x s))
                         state)))))
-             (#\Space (let ((fmt-hard-right-margin
-                             (fmt-hard-right-margin state)))
-                        (declare (type (unsigned-byte 29) fmt-hard-right-margin))
+             (#\Space (let ((exceeds-margin
+                             (or (> col (the-fixnum
+                                         (fmt-hard-right-margin state)))
+                                 (> col (the-fixnum
+                                         (fmt-soft-right-margin state))))))
                         (pprogn
-                         (cond ((> col fmt-hard-right-margin)
-                                (newline channel state))
+                         (cond (exceeds-margin (newline channel state))
                                (t state))
                          (princ$ #\Space channel state)
                          (fmt0 s alist (+f i 2) maximum
-                               (cond ((> col fmt-hard-right-margin)
+                               (cond (exceeds-margin
                                       1)
                                      (t (1+f col)))
-                               channel state evisc-tuple))))
+                               pn channel state evisc-tuple))))
              (#\_ (maybe-newline
                    (let ((fmt-hard-right-margin
                           (fmt-hard-right-margin state)))
@@ -4000,22 +4090,22 @@
                                   ((> new-col fmt-hard-right-margin)
                                    0)
                                   (t new-col)))
-                                channel state evisc-tuple)))))))
+                                pn channel state evisc-tuple)))))))
              (#\Newline
               (fmt0 s alist (scan-past-whitespace s (+f i 2) maximum)
-                    maximum col channel state evisc-tuple))
+                    maximum col pn channel state evisc-tuple))
              (#\| (pprogn
                    (if (int= col 0) state (newline channel state))
                    (fmt0 s alist (+f i 2)
-                         maximum 0 channel state evisc-tuple)))
+                         maximum 0 pn channel state evisc-tuple)))
              (#\% (pprogn
                    (newline channel state)
                    (fmt0 s alist (+f i 2)
-                         maximum 0 channel state evisc-tuple)))
+                         maximum 0 pn channel state evisc-tuple)))
              (#\~ (maybe-newline
                    (pprogn
                     (princ$ #\~ channel state)
-                    (fmt0 s alist (+f i 2) maximum (1+f col) channel
+                    (fmt0 s alist (+f i 2) maximum (1+f col) pn channel
                           state evisc-tuple))))
              (#\- (cond ((> col (fmt-soft-right-margin state))
                          (pprogn
@@ -4023,8 +4113,8 @@
                           (newline channel state)
                           (fmt0 s alist
                                 (scan-past-whitespace s (+f i 2) maximum)
-                                maximum 0 channel state evisc-tuple)))
-                        (t (fmt0 s alist (+f i 2) maximum col channel
+                                maximum 0 pn channel state evisc-tuple)))
+                        (t (fmt0 s alist (+f i 2) maximum col pn channel
                                  state evisc-tuple))))
              (otherwise (mv (er-hard-val
                              0 'fmt0 "~@0"
@@ -4038,7 +4128,7 @@
                  (fmt0 s alist
                        (scan-past-whitespace s (+f i 1) maximum)
                        maximum
-                       0 channel state evisc-tuple)))
+                       0 pn channel state evisc-tuple)))
         ((and (>= col (fmt-soft-right-margin state))
               (eql c #\-))
          (pprogn (princ$ c channel state)
@@ -4046,7 +4136,7 @@
                  (fmt0 s alist
                        (scan-past-whitespace s (+f i 1) maximum)
                        maximum
-                       0 channel state evisc-tuple)))
+                       0 pn channel state evisc-tuple)))
 ;       ((and (eql c #\Space)
 ; I cut out this code in response to Kaufmann's complaint 38.  The idea is
 ; *not* to ignore spaces after ~% directives.  I've left the code here to
@@ -4057,7 +4147,7 @@
             (pprogn (princ$ c channel state)
                     (fmt0 s alist (+f i 1) maximum
                           (if (eql c #\Newline) 0 (+f col 1))
-                          channel state evisc-tuple))))))))))
+                          pn channel state evisc-tuple))))))))))
 
 )
 
@@ -4121,6 +4211,7 @@
            (fmt0 (the-string! str 'fmt1) alist 0
                  (the-fixnum! (length str) 'fmt1)
                  (the-fixnum! col 'fmt1)
+                 nil
                  channel state evisc-tuple)
            (declare (type (signed-byte 30) col))
            (prog2$ (and (eq channel *standard-co*)
@@ -5462,6 +5553,19 @@
                        `(nth ,i (@ wormhole-input)))
                  (io?-wormhole-bindings (1+ i) (cdr vars))))))
 
+(defconst *tracked-warning-summaries*
+
+; If you want to prevent duplicate warning messages of another kind (i.e., with
+; another summary string, e.g., "use" or "free-vars"), add it to this constant.
+; Every element of this list should satisfy both stringp and standard-string-p.
+; We use the wormhole data field of the 'COMMENT-WINDOW-IO wormhole to collect
+; the explanations of those warnings whose summaries are listed here.  This
+; prevents duplicate warnings.  See the note regarding the invariant we
+; maintain in the defmacro of io? where we lay down the entry lambda for the
+; wormhole.
+
+  '("rewrite-lambda-object"))
+
 (defmacro io? (token commentp shape vars body
                      &key
                      (clear 'nil clear-argp)
@@ -5596,8 +5700,92 @@
                `(chk-translatable ,body ,shape)
              nil)
           (wormhole 'comment-window-io
-                    '(lambda (whs)
-                       (set-wormhole-entry-code whs :ENTER))
+                    ',(cond ((or (eq token 'warning)
+                                 (eq token 'warning!))
+
+; ``Invariant'' on the Wormhole-Data field of the COMMENT-WINDOW-IO wormhole:
+
+; We'd like to know that the wormhole-data field of the wormhole named
+; comment-window-io is an alist and that any key in that alist that is
+; string-equal to a member of *tracked-warning-summaries* is bound to a
+; true-listp.  We can't actually guarantee that invariant since there is
+; nothing to stop the user from invoking wormhole on that name.  We can't just
+; prevent the translation of (wormhole 'comment-window-io ...) after boot-strap
+; because many books use this macro to lay down such a form.  So instead of
+; guaranteeing the invariant we merely check that the data field has the right
+; shape when we need it.  The consequence of running this code after the user
+; has violated the invariant is merely that some tracked warnings might be
+; printed multiple times during a proof.
+
+; Preventing Duplicate Warnings: When the comment window is being used for
+; warnings, we assume the supplied input (i.e., the values of the expressions
+; in `vars' here which will become the wormhole-input when we manufacture the
+; actual wormhole) is exactly as laid down in the macro warning1-form.  We
+; check that assumption below as we generate the entry lambda for the wormhole.
+; Given that check, the entry lambda below can refer to summary, ctx, alist,
+; and str which are, respectively, warning's ``label,'' the context, the fmt
+; alist and the fmt string.  Note that the summary here is a string, e.g.,
+; "Use" or "use" or "rewrite-lambda-object" and is colloquially called the
+; warning's ``label'' or ``kind'' in the documentation.  Let's call ctx, alist,
+; and str, collectively as (list ctx alist str), the ``explanation'' of the
+; warning.  When the comment window is being used for warnings and the summary
+; is string-equal to a member of *tracked-warning-summaries* we keep track of
+; the explanations already printed for that summary.  If a warning to be
+; printed has a tracked summary and its explanation is already on the alist
+; paired with that summary in the wormhole-data we do not print the
+; explanation.  We clear the data (of tracked summaries only) in print-summary.
+; We spot check that the data field has the right shape according to our
+; ``invariant'' above: if the summary is to be tracked, we check that the
+; wormhole-data is an alist and that this particular summary string is bound to
+; a true-list (so we can do a member-equal check on it).  If these
+; ``invariants'' don't hold, we proceed as though the warning isn't to be
+; tracked, i.e., we might print the same warning multiple times.
+
+; Here is the entry lambda for warnings:
+                             (assert$
+                              (equal vars '(summary ctx alist str))
+                              '(lambda (whs)
+                                 (cond
+                                  ((and summary
+                                        (member-string-equal
+                                         summary
+                                         *tracked-warning-summaries*)
+                                        (standard-string-alistp
+                                         (wormhole-data whs)))
+                                   (let ((expln (list ctx alist str))
+                                         (entry (or (assoc-string-equal
+                                                     summary
+                                                     (wormhole-data whs))
+                                                    (cons summary nil))))
+                                     (cond
+                                      ((not (true-listp (cdr entry)))
+                                       (set-wormhole-entry-code whs :ENTER))
+                                      ((member-equal expln (cdr entry))
+; This summary and explanation has already been printed.
+                                       (set-wormhole-entry-code whs :SKIP))
+                                      (t (make-wormhole-status
+                                          whs
+                                          :ENTER
+; Note: It would, perhaps, be clearer to use put-assoc-string-equal to update
+; the entry for this summary label.  But that function hasn't been defined and
+; rather than define it we use (the probably faster) put-assoc-equal and
+; instead of looking for the current spelling of the summary we look for (car
+; entry), the first variation of this summary stored.  E.g., imagine multiple
+; "Use" warnings, with different capitalization, e.g., "use", "Use", "USE",
+; etc.  The first one stored becomes the ``standard key'' we look for with
+; put-assoc-equal.
+
+                                          (put-assoc-equal
+                                           (car entry)
+                                           (cons expln (cdr entry))
+                                           (wormhole-data whs)))))))
+                                  (t (set-wormhole-entry-code whs :ENTER))))))
+                            (t
+
+; Here is the entry lambda for non-warnings:
+
+                             '(lambda (whs)
+                                (set-wormhole-entry-code whs :ENTER))))
                     (list ,@vars)
                     ',form
                     :ld-error-action :return!
@@ -5971,7 +6159,8 @@
   ((congruent-to . non-memoizable)
    (recognizer . creator)
    field-templates
-   inline)
+   inline
+   . non-executable)
   nil)
 
 (defun packn1 (lst)
@@ -6192,7 +6381,7 @@
               (cdr field-descriptors) renaming wrld))))))
 
 (defconst *defstobj-keywords*
-  '(:renaming :inline :congruent-to :non-memoizable))
+  '(:renaming :inline :congruent-to :non-memoizable :non-executable))
 
 ; The following function is used to implement a slightly generalized
 ; form of macro args, namely one in which we can provide an arbitrary
@@ -6280,13 +6469,15 @@
      (let ((renaming (cdr (assoc-eq :renaming key-alist)))
            (inline (cdr (assoc-eq :inline key-alist)))
            (congruent-to (cdr (assoc-eq :congruent-to key-alist)))
-           (non-memoizable (cdr (assoc-eq :non-memoizable key-alist))))
+           (non-memoizable (cdr (assoc-eq :non-memoizable key-alist)))
+           (non-executable (cdr (assoc-eq :non-executable key-alist))))
        (make defstobj-template
              :recognizer (defstobj-fnname name :recognizer :top renaming)
              :creator (defstobj-fnname name :creator :top renaming)
              :field-templates (defstobj-field-templates
                                 field-descriptors renaming wrld)
              :non-memoizable non-memoizable
+             :non-executable non-executable
              :inline inline
              :congruent-to congruent-to))))))
 
@@ -6427,6 +6618,20 @@
                  (s (if suffix (concatenate 'string s suffix) s)))
             (intern-in-package-of-symbol s name))))
 
+(defrec defstobj-redundant-raw-lisp-discriminator-value
+
+; The first field, :event, completely determines the other fields.  We store
+; those simply for convenience, as per the comments below.  At the time of this
+; writing (6/14/2020), none of the accesses needs to be efficient; if that
+; changes then we can rearrange the fields.
+
+  (event
+   creator             ; helpful for get-stobj-creator
+   congruent-stobj-rep ; helpful for congruent-stobj-rep-raw
+   non-memoizable      ; helpful for non-memoizable-stobj-raw
+   non-executable)     ; helpful for add-trip
+  nil)
+
 (defun get-stobj-creator (stobj wrld)
 
 ; This function assumes that wrld is an ACL2 logical world, although wrld may
@@ -6448,7 +6653,7 @@
 
 ; Then d is (defabsstobj name . keyword-alist).
 
-                  (let ((tail (assoc-keyword :CREATOR d)))
+                  (let ((tail (assoc-keyword :CREATOR (cddr d))))
                     (cond (tail (let* ((field-descriptor (cadr tail))
                                        (c (if (consp field-descriptor)
                                               (car field-descriptor)
@@ -6457,7 +6662,11 @@
                                            c)))
                           (t (let ((name (cadr d)))
                                (absstobj-name name :CREATOR))))))
-                 (t (caddr d))))
+                 ((eq (car d) 'defstobj)
+                  (access defstobj-redundant-raw-lisp-discriminator-value
+                          (cdr d)
+                          :creator))
+                 (t nil)))
          #+acl2-loop-only
          (er hard 'stobj-creator
              "Implementation error: The call ~x0 is illegal, because ~
@@ -6490,7 +6699,12 @@
            ,(if (eq test 'hons-equal)
                 #+hons 'eql #-hons 'equal
                 test)
-           ,@(and size `(:size ,size))
+           ,@(and size `(:size
+
+; The GCL implementation installed at UT CS on 9/16/2020 does not allow
+; hash-tables of size 0.
+
+                         ,(if (= size 0) 1 size)))
            ,@(and rehash-size `(:rehash-size ,(float rehash-size)))
            ,@(and rehash-threshold `(:rehash-threshold ,(float rehash-threshold))))))
 
@@ -7278,7 +7492,17 @@
   (f-get-global 'standard-co state))
 
 #-acl2-loop-only
-(defmacro defstobj (name &rest args)
+(defun congruent-stobj-rep-raw (name)
+  (assert name)
+  (let ((d (get (the-live-var name) 'redundant-raw-lisp-discriminator)))
+    (assert (eq (car d) 'defstobj))
+    (assert (cdr d))
+    (access defstobj-redundant-raw-lisp-discriminator-value
+            (cdr d)
+            :congruent-stobj-rep)))
+
+#-acl2-loop-only
+(defmacro defstobj (&whole event name &rest args)
 
 ; Warning: If you change this definition, consider the possibility of making
 ; corresponding changes to the #-acl2-loop-only definition of defabsstobj.
@@ -7305,7 +7529,9 @@
          (congruent-stobj-rep (if congruent-to
                                   (congruent-stobj-rep-raw congruent-to)
                                 name))
+         (creator (access defstobj-template template :creator))
          (non-memoizable (access defstobj-template template :non-memoizable))
+         (non-executable (access defstobj-template template :non-executable))
          (init-form (defstobj-raw-init template))
          (the-live-name (the-live-var name)))
     `(progn
@@ -7335,61 +7561,62 @@
            (strip-accessor-names (access defstobj-template template
                                          :field-templates))
            0)
-       (let* ((template ',template)
+       (let* ((event ',event)
+              (creator ',creator)
               (congruent-stobj-rep ',congruent-stobj-rep)
               (non-memoizable ',non-memoizable)
+              (non-executable ',non-executable)
               (old-pair (assoc-eq ',name *user-stobj-alist*))
-              (d (and old-pair
+              (d (and (or old-pair non-executable) ; optimization
                       (get ',the-live-name
                            'redundant-raw-lisp-discriminator)))
 
 ; d is expected to be of the form (DEFSTOBJ namep creator field-templates
 ; . congruent-stobj-rep).
 
-              (ok-p (and old-pair
-                         (consp d)
+              (ok-p (and (consp d)
                          (eq (car d) 'defstobj)
-                         (consp (cdr d))
-                         (eq (cadr d) (access defstobj-template template
-                                              :recognizer))
-                         (consp (cddr d))
-                         (eq (caddr d) (access defstobj-template template
-                                               :creator))
-                         (equal (cadddr d) (access defstobj-template template
-                                                   :field-templates))
-                         (eq (car (cddddr d)) congruent-stobj-rep)
-                         (eq (cdr (cddddr d)) non-memoizable)
-
-; We do not check the :inline :congruent-to fields, because these incur no
-; proof obligations.  If a second pass of encapsulate, or inclusion of a book,
-; exposes a later non-local defstobj that is redundant with an earlier local
-; one, then any problems will be caught during local compatibility checks.
-
-                         )))
+                         (equal (access
+                                 defstobj-redundant-raw-lisp-discriminator-value
+                                 (cdr d)
+                                 :event)
+                                event))))
          (cond
           (ok-p ',name)
           ((and old-pair (not (raw-mode-p *the-live-state*)))
+
+; If the old stobj was non-executable, then it should be OK to redeclare it
+; since there is no issue about what to do with the old value (there isn't
+; one).
+
            (interface-er
             "Illegal attempt to redeclare the single-threaded object ~s0."
             ',name))
           (t
            (setf (get ',the-live-name 'redundant-raw-lisp-discriminator)
-                 (list* 'defstobj
-                        (access defstobj-template template
-                                :recognizer)
-                        (access defstobj-template template
-                                :creator)
-                        (access defstobj-template template
-                                :field-templates)
-                        congruent-stobj-rep
-                        (access defstobj-template template
-                                :non-memoizable)))
+                 (cons 'defstobj
+                       (make defstobj-redundant-raw-lisp-discriminator-value
+                             :event event
+                             :creator creator
+                             :congruent-stobj-rep congruent-stobj-rep
+                             :non-memoizable non-memoizable
+                             :non-executable non-executable)))
            (cond (old-pair ; hence raw-mode
-                  (fms "Note:  Redefining and reinitializing stobj ~x0 in raw ~
-                        mode.~%"
-                       (list (cons #\0 ',name))
+                  (fms "Note:  Redefining and ~@0 stobj ~x1 in ~
+                        raw mode.~%"
+                       (list (cons #\0 (if non-executable
+                                           "removing executability of"
+                                         "reinitializing"))
+                             (cons #\1 ',name))
                        (standard-co *the-live-state*) *the-live-state* nil)
-                  (setf (cdr old-pair) ,init-form))
+                  (if non-executable
+                      (assert$
+                       (not (member-eq ',name *non-executable-user-stobj-lst*))
+                       (setq *user-stobj-alist*
+                             (remove1-assoc-eq ',name *user-stobj-alist*)))
+                    (setf (cdr old-pair) ,init-form)))
+                 (non-executable
+                  (pushnew ',name *non-executable-user-stobj-lst*))
                  (t
                   (setq *user-stobj-alist* ; update-user-stobj-alist
                         (cons (cons ',name ,init-form)
@@ -7477,8 +7704,10 @@
           (eq pat nil)
           (keywordp pat))
       (mv (cons (list 'eq x pat) tests) bindings))
-     ((and (> (length (symbol-name pat)) 0)
-           (eql #\* (char (symbol-name pat) 0)))
+     ((let ((len (length (symbol-name pat))))
+        (and (> len 0)
+             (eql #\* (char (symbol-name pat) 0))
+             (eql #\* (char (symbol-name pat) (1- len)))))
       (mv (cons (list 'equal x pat) tests) bindings))
      ((and (> (length (symbol-name pat)) 0)
            (eql #\! (char (symbol-name pat) 0)))
@@ -7797,6 +8026,40 @@
 #-acl2-loop-only
 (defvar *lp-init-forms* nil)
 
+(defun expand-tilde-to-user-home-dir (str os ctx state)
+
+; Note that character `~' need not get special treatment by Windows.  See
+; comment just above error message below, and see absolute-pathname-string-p.
+
+  (cond ((or (equal str "~")
+             (and (< 1 (length str))
+                  (eql (char str 0) #\~)
+                  (eql (char str 1) #\/)))
+         (let ((user-home-dir (f-get-global 'user-home-dir state)))
+           (cond
+            (user-home-dir
+             (concatenate 'string
+                          user-home-dir
+                          (subseq str 1 (length str))))
+            (t
+
+; On Linux or Mac OS, it is surprising to find that user-home-dir is nil.  (See
+; the definition of lp to see how it is set.)  But on Windows, it seems that
+; this could be the case, say outside an environment like Cygwin, MSYS, or
+; MinGW.
+
+             (let ((certify-book-info (f-get-global 'certify-book-info state)))
+               (prog2$ (and (or certify-book-info
+                                (not (eq os :mswindows)))
+                            (er hard ctx
+                                "The use of ~~/ for the user home directory ~
+                                 in filenames is not supported ~@0."
+                                (if certify-book-info
+                                    "inside books being certified"
+                                  "for this host Common Lisp")))
+                       str))))))
+        (t str)))
+
 (defun save-exec-fn (exec-filename extra-startup-string host-lisp-args
                                    toplevel-args inert-args return-from-lp
                                    init-forms)
@@ -7872,7 +8135,10 @@
 
           (cons (saved-build-date-string)
                 *saved-build-date-lst*))
-    (save-exec-raw exec-filename
+    (save-exec-raw (expand-tilde-to-user-home-dir exec-filename
+                                                  (os (w *the-live-state*))
+                                                  'save-exec
+                                                  *the-live-state*)
                    host-lisp-args
                    #+sbcl toplevel-args
                    inert-args))

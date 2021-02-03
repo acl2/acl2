@@ -59,12 +59,11 @@
    integerp-ifix
    (integerp (ifix x)))
 
-
   (rp::def-rp-rule$ t nil
-   ifix-opener
-   (implies (integerp x)
-            (equal (ifix x)
-                   x)))
+                    ifix-opener
+                    (implies (integerp x)
+                             (equal (ifix x)
+                                    x)))
 
   ;; optional but may make it faster::
   (defthm ifix-opener-side-cond
@@ -101,6 +100,22 @@
 (local
  (in-theory (enable sv::4vec->upper sv::4vec->lower sv::4vec)))
 
+
+
+
+(defthm bitp-of-4vec-part-select
+  (implies (and (integerp x)
+                (natp start))
+           (bitp (sv::4vec-part-select start 1 x)))
+  :hints (("Goal"
+           :in-theory (e/d (sv::4vec-part-select
+                            4VEC-ZERO-EXT
+                            4VEC-CONCAT
+                            4VEC-RSH
+                            4VEC-SHIFT-CORE)
+                           ()))))
+
+
 (def-rp-rule natp-4vec-rsh
   (implies (and (natp start)
                 (natp num))
@@ -108,6 +123,26 @@
   :hints (("goal"
            :in-theory (e/d (4vec-rsh
                             sv::4vec-shift-core) ()))))
+
+(defthm 4vec-rsh-of-bitp
+  (implies (and (posp pos)
+                (bitp x))
+           (equal (4vec-rsh pos x)
+                  0))
+  :hints (("Goal"
+           :in-theory (e/d (4vec-rsh
+                            4VEC-SHIFT-CORE)
+                           ()))))
+
+(defthm 4vec-rsh-of-0
+  (implies t
+           (equal (4vec-rsh 0 x)
+                  (4vec-fix x)))
+  :hints (("Goal"
+           :in-theory (e/d (4vec-rsh
+                            4vec-fix
+                            4vec-shift-core)
+                           ()))))
 
 (def-rp-rule natp-4vec-zero-ext
   (implies (and (natp size)
@@ -155,8 +190,6 @@
                   (mod val (expt 2 size))))
   :hints (("goal"
            :in-theory (e/d (4vec-zero-ext loghead) ()))))
-
-
 
 (local
  (defthm 4vec->lower-opener
@@ -533,6 +566,76 @@
   nil
 
   (local
+   (use-arithmetic-5 nil))
+
+  (local
+   (use-ihs-logops-lemmas nil))
+
+  (local
+   (use-qr-lemmas nil))
+
+  (defthmd logior-of-loghead-same-size
+    (equal (logior (loghead x y)
+                   (loghead x z))
+           (loghead x (logior y z))))
+
+  (defthmd logior-of-logtail-same-size
+    (equal (logior (logtail x y)
+                   (logtail x z))
+           (logtail x (logior y z))))
+
+  (local
+   (defthm lemma1
+     (implies (or (equal (logior (car x) (cdr x))
+                         (logand (car x) (cdr x)))
+                  (equal (logior (logtail a (car x))
+                                 (logtail a (cdr x)))
+                         (logand (logtail a (car x))
+                                 (logtail a (cdr x)))))
+              (equal (logior (loghead b (logtail a (car x)))
+                             (loghead b (logtail a (cdr x))))
+                     (logand (loghead b (logtail a (car x)))
+                             (loghead b (logtail a (cdr x))))))
+     :hints (("goal"
+              :in-theory (e/d (logior-of-loghead-same-size
+                               logior-of-logtail-same-size)
+                              (bitops::loghead-of-logior
+                               bitops::logtail-of-logior))))))
+  
+  (defthm 4vec-part-select-of-3vec-fix
+    (implies (and (natp a)
+                  (natp b))
+             (equal (4vec-part-select a b (sv::3vec-fix x))
+                    (sv::3vec-fix (4vec-part-select a b x))))
+    :otf-flg t
+    :hints (("Goal"
+             :do-not-induct t
+             :in-theory (e/d*
+                         (4vec-part-select
+                          ;;logior-of-loghead-same-size
+                          ;;bitops::ihsext-inductions
+                          ;;bitops::ihsext-recursive-redefs
+                          SV::4VEC->UPPER
+                          SV::4VEC->LOWER
+                          4VEC-CONCAT
+                          ACL2::NEGP
+                          4VEC-RSH
+                          4VEC-SHIFT-CORE
+                          2vec
+                          SV::3VEC-FIX
+                          4VEC-ZERO-EXT
+                          ;;logior-of-logtail-same-size
+                          )
+                         (;;BITOPS::LOGHEAD-OF-LOGIOR
+                          ;;BITOPS::LOGTAIL-OF-LOGIOR
+                          ))))))
+
+
+
+(encapsulate
+  nil
+
+  (local
    (use-arithmetic-5 t))
 
   (local
@@ -704,8 +807,8 @@
     :hints (("goal"
              :use ((:instance lemma2))
              :expand ((ACL2::LOGCONS 0 (ASH TERM2 (+ -1 C-SIZE))))
-             :in-theory (e/d* (bitops::ihsext-inductions
-                               zip
+             :in-theory (e/d* (zip
+                               bitops::ihsext-inductions
                                bitops::ihsext-recursive-redefs)
                               (logapp-of-logapp-2
                                lemma2
@@ -867,9 +970,9 @@
 
 (local
  (defthm nfix-opener
-  (implies (natp x)
-           (equal (nfix x)
-                  x))))
+   (implies (natp x)
+            (equal (nfix x)
+                   x))))
 (local
  (encapsulate
    nil
@@ -2752,7 +2855,6 @@
                                (:definition integer-range-p)
                                (:rewrite default-<-1)))))))
 
-
 (local
  (define logapp$ ((size natp)
                   (a integerp)
@@ -2861,11 +2963,10 @@
                               (:REWRITE BITOPS::LOGBIT-TO-LOGBITP)
                               (:REWRITE BITOPS::LOGCAR-OF-BIT)
                               (:REWRITE
-                                    BITOPS::EXPT-2-LOWER-BOUND-BY-LOGBITP)
+                               BITOPS::EXPT-2-LOWER-BOUND-BY-LOGBITP)
                               zp
                               acl2::LOGAPP-0
                               ACL2::LOGCAR-LOGAPP))))))
-
 
 (local
  (defthm logand-of-logapp$-lemma
@@ -2873,15 +2974,15 @@
           (LOGHEAD size a))
    :hints (("Goal"
             :in-theory (e/d* (bitops::ihsext-inductions
-                             bitops::ihsext-recursive-redefs
-                             ) ())))))
+                              bitops::ihsext-recursive-redefs
+                              ) ())))))
 
 (local
  (defthmd logand-of-logapp$
    (implies (and (natp size)
-                 ;(integerp x)
-                 ;(integerp a)
-                 ;(integerp b)
+;(integerp x)
+;(integerp a)
+;(integerp b)
                  )
             (equal (LOGand x (LOGAPP$ SIZE a b))
                    (logapp size (logand (loghead size x)
@@ -4456,7 +4557,6 @@
   (rp-attach-sc logxor-to-4vec-bitxor
                 logxor-to-4vec-bitxor-side-cond))
 
-
 (progn
   (def-rp-rule$ t nil
     binary-+-to-4vec-plus
@@ -4482,33 +4582,129 @@
   (rp-attach-sc binary-+-to-4vec-plus
                 binary-+-to-4vec-plus-side-cond))
 
+(progn
+  (def-rp-rule$ t nil
+    logapp-to-4vec-concat
+    (implies (and (integerp x)
+                  (natp size)
+                  (integerp y))
+             (and (equal (logapp size x y)
+                         (sv::4vec-concat size x y))))
+    :hints (("Goal"
+             :in-theory (e/d (sv::4vec-concat)
+                             ()))))
+  (defthm logapp-to-4vec-concat-side-cond
+    (implies (and (integerp x)
+                  (natp size)
+                  (integerp y))
+             (integerp (sv::4vec-concat size x y)))
+    :rule-classes nil
+    :hints (("Goal"
+             :in-theory (e/d (sv::4vec-concat)
+                             ()))))
 
-
- (progn
-   (def-rp-rule$ t nil
-     logapp-to-4vec-concat
-     (implies (and (integerp x)
-                   (natp size)
-                   (integerp y))
-              (and (equal (logapp size x y)
-                          (sv::4vec-concat size x y))))
-     :hints (("Goal"
-              :in-theory (e/d (sv::4vec-concat)
-                              ()))))
-   (defthm logapp-to-4vec-concat-side-cond
-     (implies (and (integerp x)
-                   (natp size)
-                   (integerp y))
-              (integerp (sv::4vec-concat size x y)))
-     :rule-classes nil
-     :hints (("Goal"
-              :in-theory (e/d (sv::4vec-concat)
-                              ()))))
-
-   (rp-attach-sc logapp-to-4vec-concat
-                 logapp-to-4vec-concat-side-cond))
+  (rp-attach-sc logapp-to-4vec-concat
+                logapp-to-4vec-concat-side-cond))
 
 (def-rp-rule$ t nil
   integerp-of--
   (implies (integerp x)
            (integerp (- x))))
+
+
+(def-rp-rule 4vec-p-of-nth
+   (implies (and (or (sv::4veclist-p lst)
+                     (integer-listp lst))
+                 (< index (len lst))
+                 (natp index))
+            (sv::4vec-p (nth index lst)))
+   :hints (("Goal"
+            :in-theory (e/d (4vec-p) ()))))
+
+
+(def-rp-rule sv::4vec-xdet-opener
+  (implies (integerp x)
+           (equal (sv::4vec-xdet x)
+                  x))
+  :hints (("goal"
+           :in-theory (e/d (sv::4vec-xdet
+                            4vec-fix
+                            4VEC-P
+                            sv::4vec->upper
+                            sv::4vec->lower)
+                           ()))))
+
+(local
+ (defthmd 4vec-parity-to-4vec-bitxor-lemma
+   (implies (and (integerp x)
+                 (natp start))
+            (and (equal (sv::4vec-parity
+                         (sv::4vec-concat
+                          1
+                          (sv::4vec-part-select start 1 x)
+                          (sv::4vec-part-select (1+ start) 1 x)))
+                        (- (sv::4vec-bitxor (sv::4vec-part-select start 1 x)
+                                            (sv::4vec-part-select (1+ start) 1 x))))
+                 (equal (sv::4vec-parity (sv::4vec-part-select start 1 x))
+                        (- (sv::4vec-part-select start 1 x)))))
+   :hints (("Goal"
+            :do-not-induct t
+            :use ((:instance bitp-of-4vec-part-select)
+                  (:instance bitp-of-4vec-part-select
+                             (start (1+ start))))
+            :cases ((equal (sv::4vec-part-select start 1 x) 0)
+                    (equal (sv::4vec-part-select (1+ start) 1 x) 0))
+            :in-theory (e/d (bitp)
+                            (bitp-of-4vec-part-select))))))
+
+
+
+
+(local
+ (defthmd 4vec-parity-to-4vec-bitxor-lemma2
+   (implies (and (integerp x)
+                 (natp start))
+            (equal (4vec-concat 1 (4vec-part-select start 1 x)
+                                (4vec-part-select (+ 1 start) 1 x))
+                   (4vec-part-select start 2 x)))
+   :hints (("goal"
+            :in-theory (e/d* (4vec-part-select
+                              4vec-rsh
+                              bitops::ihsext-inductions
+                              bitops::ihsext-recursive-redefs
+                              4vec-concat
+                              sv::4vec->upper
+                              4vec-shift-core)
+                             (equal-of-4vec-concat-with-size=1))))))
+
+(defthm 4vec-parity-of-4vec-part-select-to-4vec-bitxor
+  (implies (and (integerp x)
+                (natp start))
+           (and (equal (sv::4vec-parity (sv::4vec-part-select start 2 x))
+                       (- (sv::4vec-bitxor (sv::4vec-part-select start 1 x)
+                                           (sv::4vec-part-select (1+ start) 1 x))))
+                (equal (sv::4vec-parity (sv::4vec-part-select start 1 x))
+                       (- (sv::4vec-part-select start 1 x)))))
+  :hints (("Goal"
+           :do-not-induct t
+           :use ((:instance 4vec-parity-to-4vec-bitxor-lemma))
+           :in-theory (e/d (4vec-parity-to-4vec-bitxor-lemma2)
+                           (4vec-parity-to-4vec-bitxor-lemma)))))
+
+(def-rp-rule 4vec-reduction-or-to-4vec-bitor
+  (implies (and (integerp x))
+           (equal (sv::4vec-reduction-or x)
+                  (- (sv::4vec-bitor (sv::4vec-part-select 0 1 x)
+                                     (- (sv::4vec-reduction-or (sv::4vec-rsh 1 x)))))))
+  :hints (("Goal"
+           :in-theory (e/d* (sv::4vec-reduction-or
+                             4VEC-BITOR
+                             bitops::ihsext-recursive-redefs
+                             bitops::ihsext-inductions
+                             SV::3VEC-BITOR
+                             4VEC-PART-SELECT
+                             4VEC-CONCAT
+                             4VEC-RSH
+                             4VEC-SHIFT-CORE
+                             SV::3VEC-REDUCTION-OR)
+                           ()))))

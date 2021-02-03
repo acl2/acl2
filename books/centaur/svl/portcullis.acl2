@@ -114,7 +114,18 @@
 	    rp::defthmrp
 	    rp::def-rp-thm
 	    rp::add-rp-rule
+	    rp::rp-state
+	    rp::valid-rp-statep
+	    rp::valid-rp-state-syntaxp
 
+
+            acl2::sv
+            acl2::defsvtv
+            acl2::vl
+            acl2::svtv-run
+            acl2::svl-run
+            acl2::svl-flatten-design
+            
             acl2::arglist
 	    acl2::value
             acl2::in
@@ -126,6 +137,7 @@
             acl2::by
             acl2::to
             acl2::as
+            acl2::svl
             acl2::from)
           *common-lisp-symbols-from-main-lisp-package*
           :test 'eq))

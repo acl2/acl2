@@ -1,5 +1,5 @@
-; ACL2 Version 8.2 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2019, Regents of the University of Texas
+; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2020, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -198,13 +198,18 @@
 
 (font-lock-add-keywords
  'lisp-mode
- '(("(\\(\\([A-Za-z0-9-_]+::\\)?def[^ \t]*\\)\\>"
+ '(("(\\(def\\w*\\)\\_>\\s *\\(\\(?:\\sw\\|\\s_\\)+\\)?"
+    (1 font-lock-keyword-face nil t)
+    (2 font-lock-function-name-face nil t))
+   ("(\\(defattach\\|defevaluator\||defrefinement\\)\\_>\\s *\\(\\(?:\\sw\\|\\s_\\)+\\)?\\s *\\(\\(?:\\sw\\|\\s_\\)+\\)?"
+    (1 font-lock-keyword-face nil t)
+    (2 font-lock-function-name-face nil t)
+    (3 font-lock-function-name-face nil t))
+   ("(\\(comp\\|encapsulate\\|partial-encapsulate\\|in-theory\\|in-arithmetic-theory\\|include-book\\|local\\)\\>"
     . 1)
-   ("(\\(encapsulate\\|partial-encapsulate\\|in-theory\\|include-book\\|local\\)\\>"
+   ("(\\(make-event\\|memoize\\|unmemoize\\|mutual-recursion\\|profile\\|prog[^ \t]*\\)\\>"
     . 1)
-   ("(\\(make-event\\|mutual-recursion\\|prog[^ \t]*\\)\\>"
-    . 1)
-   ("(\\(table\\|theory-invariant\\)\\>"
+   ("(\\(set-body\\|table\\|theory-invariant\\)\\>"
     . 1)
    ("(\\(value-triple\\|verify-guards\\|verify-termination\\)\\>"
     . 1)))

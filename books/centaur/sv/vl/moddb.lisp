@@ -3086,6 +3086,34 @@ ourstruct, above.)</p>"
              :hints(("Goal" :in-theory (enable sv::lhspairs-vars sv::lhatom-vars))))))
 
 
+(define vl-datatype-dimension->mod-components-tr ((count natp)
+                                                  (msi integerp)
+                                                  (incr integerp)
+                                                  (subwire sv::wire-p)
+                                                  (submod (or (sv::modname-p submod)
+                                                              (not submod)))
+                                                  (wires sv::wirelist-p)
+                                                  (insts sv::modinstlist-p)
+                                                  (aliases sv::lhspairs-p))
+  :short "Iterates over the indices of an array, creating svex module components
+          for each index using @(see vl-datatype-elem->mod-components)"
+  :guard-hints (("goal" :in-theory (enable sv::name-p)))
+  :returns (mv (wires sv::wirelist-p)
+               (insts sv::modinstlist-p)
+               (aliases sv::lhspairs-p))
+  (b* (((when (zp count)) (mv (rev (sv::wirelist-fix wires))
+                              (rev (sv::modinstlist-fix insts))
+                              (rev (sv::lhspairs-fix aliases))))
+       (next-count (1- count))
+       ((mv wire1 insts1 aliases1)
+        (vl-datatype-elem->mod-components
+         (lifix msi) subwire (* (sv::wire->width subwire) next-count) submod)))
+    (vl-datatype-dimension->mod-components-tr
+     next-count (+ (lifix incr) (lifix msi)) incr subwire submod
+     (cons wire1 wires)
+     (revappend-without-guard insts1 insts)
+     (revappend-without-guard aliases1 aliases))))
+
 (define vl-datatype-dimension->mod-components ((count natp)
                                                (msi integerp)
                                                (incr integerp)
@@ -3094,22 +3122,42 @@ ourstruct, above.)</p>"
                                                            (not submod))))
   :short "Iterates over the indices of an array, creating svex module components
           for each index using @(see vl-datatype-elem->mod-components)"
-  :guard-hints (("goal" :in-theory (enable sv::name-p)))
   :returns (mv (wires sv::wirelist-p)
                (insts sv::modinstlist-p)
                (aliases sv::lhspairs-p))
-  (b* (((when (zp count)) (mv nil nil nil))
-       (next-count (1- count))
-       ((mv wire1 insts1 aliases1)
-        (vl-datatype-elem->mod-components
-         (lifix msi) subwire (* (sv::wire->width subwire) next-count) submod))
-       ((mv wires insts aliases)
-        (vl-datatype-dimension->mod-components
-         next-count (+ (lifix incr) (lifix msi)) incr subwire submod)))
-    (mv (cons wire1 wires)
-        (append-without-guard insts1 insts)
-        (append-without-guard aliases1 aliases)))
+  :verify-guards nil
+  (mbe :logic
+       (b* (((when (zp count)) (mv nil nil nil))
+            (next-count (1- count))
+            ((mv wire1 insts1 aliases1)
+             (vl-datatype-elem->mod-components
+              (lifix msi) subwire (* (sv::wire->width subwire) next-count) submod))
+            ((mv wires insts aliases)
+             (vl-datatype-dimension->mod-components
+              next-count (+ (lifix incr) (lifix msi)) incr subwire submod)))
+         (mv (cons wire1 wires)
+             (append-without-guard insts1 insts)
+             (append-without-guard aliases1 aliases)))
+       :exec (vl-datatype-dimension->mod-components-tr
+              count msi incr subwire submod nil nil nil))
   ///
+  (local (defthm vl-datatype-dimension->mod-components-tr-elim
+           (equal (vl-datatype-dimension->mod-components-tr count msi incr subwire submod
+                                                            wires1 insts1 aliases1)
+                  (b* (((mv wires insts aliases)
+                        (vl-datatype-dimension->mod-components
+                         count msi incr subwire submod)))
+                    (mv (revappend (sv::wirelist-fix wires1) wires)
+                        (revappend (sv::modinstlist-fix insts1) insts)
+                        (revappend (sv::lhspairs-fix aliases1) aliases))))
+           :hints(("Goal" :in-theory (enable vl-datatype-dimension->mod-components-tr)))))
+
+  (verify-guards vl-datatype-dimension->mod-components
+    :hints (("goal" :in-theory (e/d (sv::name-p)
+                                    (vl-datatype-dimension->mod-components))
+             :expand ((:free (count submod)
+                       (vl-datatype-dimension->mod-components
+                        count msi incr subwire submod))))))
   (more-returns
    (aliases :name vars-of-vl-datatype-dimension->mod-components
              (sv::svarlist-addr-p (sv::lhspairs-vars aliases))

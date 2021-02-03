@@ -108,4 +108,11 @@ defined in a special way in the @(see std/strings) library, see in particular
   :pred true-list-listp
   :elementp-of-nil t)
 
+(defrefinement
+  list-equiv true-list-list-equiv
+  :hints
+  (("goal"
+    :induct (fast-list-equiv x y)
+    :in-theory (enable fast-list-equiv true-list-list-fix))))
+
 ;; string-listp is handled specially in std/strings/eqv.

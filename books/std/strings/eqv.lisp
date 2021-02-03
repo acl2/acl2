@@ -166,6 +166,10 @@ same length and their elements must be @(see chareqv) to one another.</p>
              (not (charlisteqv x y)))
     :hints(("Goal" :induct (ind x y))))
 
+  (defthm make-character-list-is-identity-under-charlisteqv
+    (str::charlisteqv (make-character-list x)
+                      x))
+
   (defthmd charlisteqv*
     ;; For compatibility with the old definition
     (equal (charlisteqv x y)
@@ -230,4 +234,3 @@ same length and their elements must be @(see chareqv) to one another.</p>
   (fty::deffixcong string-list-equiv string-list-equiv (cdr x) x)
   (fty::deffixcong streqv string-list-equiv (cons x y) x)
   (fty::deffixcong string-list-equiv string-list-equiv (cons x y) y))
-

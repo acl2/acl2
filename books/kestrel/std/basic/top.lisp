@@ -1,6 +1,6 @@
 ; Standard Basic Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -10,11 +10,14 @@
 
 (in-package "ACL2")
 
+(include-book "good-pseudo-termp")
+(include-book "good-valuep")
 (include-book "mbt-dollar")
 (include-book "organize-symbols-by-name")
 (include-book "organize-symbols-by-pkg")
 (include-book "symbol-name-lst")
 (include-book "symbol-package-name-lst")
+(include-book "symbol-package-name-non-cl")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

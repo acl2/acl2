@@ -36,11 +36,11 @@
 (local (progn
 
 (include-book "aig-sat")
-(include-book "misc/assert" :dir :system)
+(include-book "std/testing/assert-bang" :dir :system)
 
 (defun my-glucose-config ()
   (declare (xargs :guard t))
-  (satlink::make-config :cmdline "glucose"
+  (satlink::make-config :cmdline "glucose -model"
                         :verbose t
                         :mintime 1/2
                         :remove-temps t))

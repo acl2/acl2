@@ -269,7 +269,7 @@
 
 (defun fn-hyps-name (fn)
   (intern$ (concatenate 'string (symbol-name fn) "-HYPS")
-           (symbol-package-name-safe fn)))
+           (symbol-package-name-non-cl fn)))
 
 (defun hyps-preserved-thm-name (fn hyps-fn)
   (declare (xargs :guard (and (symbolp fn)
@@ -281,7 +281,7 @@
                         (symbol-name hyps-fn)
                         "-PRESERVED-FOR-"
                         (symbol-name fn))
-           (symbol-package-name-safe hyps-fn)))
+           (symbol-package-name-non-cl hyps-fn)))
 
 (defun hyps-preserved-thm-name-lst (fn-hyps-alist)
   (cond ((endp fn-hyps-alist) nil)
@@ -298,7 +298,7 @@
 ; using symbol-has-propsp (which is used by increment-name-suffix-safe); note
 ; that it's easy to make new-namep guard-verified by adding the obvious guard
 ; of (and (symbolp name) (plist-worldp wrld)).  I'm also a bit concerned about
-; symbols in the Common Lisp package (see symbol-package-name-safe aove),
+; symbols in the Common Lisp package (see symbol-package-name-non-cl aove),
 ; though maybe I shouldn't be.  HOWEVER, for now I'll just use
 ; increment-name-suffix-safe in order to keep this file simple and to help with
 ; compatibility with the old simplify-body.
@@ -308,7 +308,7 @@
 
 (defun fn-runes-name (fn)
   (intern$ (concatenate 'string "*" (symbol-name fn) "-RUNES*")
-           (symbol-package-name-safe fn)))
+           (symbol-package-name-non-cl fn)))
 
 (defunsr before-vs-after-name (fnsr index)
   (add-suffix fnnc

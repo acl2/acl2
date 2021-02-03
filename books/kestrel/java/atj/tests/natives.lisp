@@ -10,7 +10,9 @@
 
 (in-package "ACL2")
 
-(include-book "../implementation" :ttags (:open-input-channel (:oslib) (:quicklisp) :quicklisp.osicat))
+(include-book "std/strings/cat-base" :dir :system)
+(include-book "std/strings/decimal" :dir :system)
+(include-book "std/util/define" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -969,6 +971,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defconst *char-tests*
+  '(("Char0" (char "abc" 0))
+    ("Char1" (char "abc" 1))
+    ("Char2" (char "abc" 2))
+    ("Char3" (char "s7ee3dssyd8u2hfjhdfw" 8))
+    ("Char4" (char "s7ee3dssyd8u2hfjhdfw" 17))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defconst *all-tests*
   (append *characterp-tests*
           *stringp-tests*
@@ -1003,4 +1014,5 @@
           *if-tests*
           *nonnegative-integer-quotient-tests*
           *string-append-tests*
-          *len-tests*))
+          *len-tests*
+          *char-tests*))

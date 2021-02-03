@@ -93,7 +93,7 @@
 
 (defun valid-sc-bindings (bindings a)
   (if (atom bindings)
-      t
+      (equal bindings nil)
     (and (valid-sc (cdar bindings) a)
          (valid-sc-bindings (cdr bindings) a))))
 
@@ -193,7 +193,7 @@
 
 (defun valid-rulesp (rules)
   (if (endp rules)
-      t;(equal rules nil)
+      (equal rules nil)
     (and (valid-rulep (car rules))
          (valid-rulesp (cdr rules)))))
 
@@ -207,7 +207,7 @@
 
 (defun valid-rules-list-listp (rules-list)
   (if (atom rules-list)
-      t;(equal rules-list nil)
+      (equal rules-list nil)
     (and (valid-rulesp (car rules-list))
          (valid-rules-list-listp (cdr rules-list)))))
 
@@ -287,7 +287,7 @@
               (bindings-alistp bindings2))
   :verify-guards nil
   (if (atom keys)
-      t;(equal bindings1 nil)
+      (equal bindings1 nil)
     (let ((entry1 (assoc-eq (car keys) bindings1))
           (entry2 (assoc-eq (car keys) bindings2)))
       (and entry1
@@ -330,7 +330,7 @@
                               acc-bindings))))
  (defun all-vars-bound-subterms (subterms acc-bindings)
    (if (atom subterms)
-       t
+       (equal subterms nil)
      (and (all-vars-bound (car subterms)
                           acc-bindings)
           (all-vars-bound-subterms (cdr subterms)
@@ -402,10 +402,32 @@
        (valid-sc term a)))
 
 
-(defun rp-evl-of-trans-list (lst a)
-     (if (atom lst)
-         (rp-evl ''nil a)
-       (if (atom (cdr lst))
-           (rp-evl `(cons ,(car lst) 'nil) a)
-         (cons (rp-evl (car lst) a)
-               (rp-evl-of-trans-list (cdr lst) a)))))
+#|(defun rp-evl-of-trans-list (lst a)
+  (if (atom lst)
+      nil
+    (cons (rp-evl (car lst) a)
+          (rp-evl-of-trans-list (cdr lst) a))))||#
+
+
+;; (defun rp-evl-lst-fn (lst a)
+;;   (if (atom lst)
+;;       nil
+;;     (cons (rp-evl (car lst) a)
+;;           (rp-evl-lst-fn (cdr lst) a)))
+
+;; I leave it here for backwards compatibility.
+;; (defmacro rp-evl-of-trans-list (lst a)
+;;   `(rp-evl-lst ,lst ,a))
+
+#|(defun rp-evl-of-trans-list (lst a)
+  (rp-evl-lst lst a))||#
+
+
+(defun-sk valid-rp-statep (rp-state)
+  (declare (xargs :stobjs (rp-state)))
+  (forall key
+          (or (not (symbolp key))
+              (and (valid-rulesp
+                    (rules-alist-outside-in-get key rp-state))
+                   (valid-rulesp
+                    (rules-alist-inside-out-get key rp-state))))))

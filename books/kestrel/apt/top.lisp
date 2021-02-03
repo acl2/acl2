@@ -18,14 +18,34 @@
 (include-book "casesplit")
 (include-book "casesplit-doc")
 
+(include-book "expdata")
+(include-book "expdata-doc")
+
 (include-book "isodata")
 (include-book "isodata-doc")
 
 (include-book "parteval")
 (include-book "parteval-doc")
 
+;; (include-book "propagate-iso") ;; TODO: Uncomment once name clashes resolved
+
 (include-book "restrict")
 (include-book "restrict-doc")
+
+(include-book "schemalg")
+(include-book "schemalg-doc")
+(include-book "schemalg-divconq-list-0-1-doc")
+(include-book "schemalg-divconq-oset-0-1-doc")
+
+(include-book "simplify")
+(include-book "simplify-defun-doc")
+(include-book "simplify-defun-sk-doc")
+(include-book "simplify-doc")
+(include-book "simplify-term-doc")
+
+(include-book "solve")
+(include-book "solve-doc")
+(include-book "solve-method-acl2-rewriter")
 
 (include-book "tailrec")
 (include-book "tailrec-doc")
@@ -93,14 +113,9 @@
 
    (xdoc::p
     "The <see topic='@(url community-books)'>Community Books</see>
-     currently contain only a few APT transformations.
+     currently contain only some APT transformations.
      More transformations exist in Kestrel Institute's private files,
-     but they will be eventually moved to the Community Books;
-     this includes the latest version of the @('simplify-defun') transformation
-     described in the
-     <a href=\"http://www.cs.utexas.edu/users/moore/acl2/workshop-2017\"
-     >ACL2-2017 Workshop</a> paper
-     `A Versatile, Sound Tool for Simplifying Definitions'.")
+     but they will be eventually moved to the Community Books.")
 
    (xdoc::p
     "Also see the "
@@ -110,9 +125,21 @@
 (xdoc::order-subtopics apt (common-concepts
                             common-options
                             casesplit
+                            divconq
+                            expdata
                             isodata
                             parteval
                             restrict
+                            schemalg
+                            simplify
+                            simplify-defun
+                            simplify-defun+
+                            simplify-defun-programmatic
+                            simplify-defun-sk
+                            simplify-defun-sk-programmatic
+                            simplify-term
+                            simplify-term-programmatic
+                            solve
                             tailrec
                             utilities))
 

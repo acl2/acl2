@@ -24,8 +24,9 @@
    (xdoc::p
     "We check if the function symbol has an @('unnormalized-body') property.")
    (xdoc::p
-    "Some program-mode functions may be defined
-     but not have an @('unnormalized-body') property.")
+    "The built-in program-mode functions are defined
+     but do not have an @('unnormalized-body') property.
+     This is why this utility should only be used on logic-mode functions.")
    (xdoc::p
     "See @(tsee definedp+) for an enhanced variant of this utility."))
   (if (getpropc fn 'unnormalized-body nil wrld) t nil))

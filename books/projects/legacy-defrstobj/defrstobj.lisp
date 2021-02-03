@@ -28,6 +28,9 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
+; (depends-on "build/defrec-certdeps/DEFSTOBJ-FIELD-TEMPLATE.certdep" :dir :system)
+; (depends-on "build/defrec-certdeps/DEFSTOBJ-TEMPLATE.certdep" :dir :system)
+
 (in-package "RSTOBJ")
 (include-book "def-typed-record")
 (include-book "g-delete-keys")

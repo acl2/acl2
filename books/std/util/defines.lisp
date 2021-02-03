@@ -438,7 +438,9 @@ encapsulate), and is mainly meant as a tool for macro developers.</dd>
        (parents    (getarg :parents        nil guts.kwd-alist))
        (parents    (if (assoc :parents guts.kwd-alist)
                        parents
-                     (and cliquename (list cliquename)))))
+                     (and cliquename
+                          (not (eq cliquename guts.name))
+                          (list cliquename)))))
 
     `((defsection ,guts.name
         ,@(and parents `(:parents ,parents))
@@ -678,7 +680,8 @@ encapsulate), and is mainly meant as a tool for macro developers.</dd>
                name 'define 'defines))
        ((when (and long sub-long))
         (raise "Can't give :long in (~x1 ~x0 ...) because there is a global ~
-                :long in the (~x2 ~x0 ...) form."))
+                :long in the (~x2 ~x0 ...) form."
+               name 'define 'defines))
 
        (kwd-alist guts1.kwd-alist)
        (kwd-alist (remove1-assoc :short kwd-alist))
@@ -686,7 +689,7 @@ encapsulate), and is mainly meant as a tool for macro developers.</dd>
        (kwd-alist (remove1-assoc :parents kwd-alist))
        (kwd-alist (acons :short (or short sub-short) kwd-alist))
        (kwd-alist (acons :long  (or long  sub-long) kwd-alist))
-       (kwd-alist (acons :parents (or parents sub-parents) kwd-alist))
+       (kwd-alist (acons :parents (if parentsp parents sub-parents) kwd-alist))
        (new-guts (change-defguts guts1 :kwd-alist kwd-alist)))
     (cons new-guts rest)))
 
@@ -727,7 +730,7 @@ encapsulate), and is mainly meant as a tool for macro developers.</dd>
                      (xdoc::get-default-parents world)))
        (fnnames    (collect-names-from-guts gutslist))
 
-       (want-xdoc-p (or short long parents))
+       (want-xdoc-p (or short long parents-p))
 
        ((mv short long parents kwd-alist gutslist)
         (if (and want-xdoc-p (member name fnnames))
@@ -815,7 +818,7 @@ encapsulate), and is mainly meant as a tool for macro developers.</dd>
     `(,@(if prognp '(progn) '(encapsulate nil))
        (with-output :stack :pop (progn . ,prepwork))
        (defsection-progn ,name
-         ,@(and parents `(:parents ,parents))
+         ,@(and parents-p `(:parents ,parents))
          ,@(and short   `(:short ,short))
          ,@(and long    `(:long ,long))
          (with-output :on (error) (progn . ,macros))
@@ -1025,7 +1028,7 @@ lemma for the overall mutually recursive proof, and doesn't export it.</p>
         (raise "Defret-mutual needs a mutual recursion created with defines to work on."))
        (guts (cdr (assoc mutual-recursion defines-alist)))
        ((unless guts)
-        (raise "~x0 is not the name of a mutual recursion created with defines."))
+        (raise "~x0 is not the name of a mutual recursion created with defines." mutual-recursion))
        ((defines-guts guts))
        ((unless guts.flag-defthm-macro)
         (raise "No flag defthm macro for ~x0." mutual-recursion))

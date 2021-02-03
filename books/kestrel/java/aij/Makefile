@@ -1,6 +1,6 @@
 # Java Library
 #
-# Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+# Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 #
 # License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 #
@@ -19,14 +19,13 @@
 # javadoc-public, javadoc-package, and javadoc-private,
 # from where it can be opened in a browser.
 
-# This file also certifies the ACL2 files in this directory,
-# which currently just consist of XDOC documentation for AIJ.
+# This file also certifies the ACL2 files in this directory.
 # Note that the ACL2 files do not depend on the Java-related files,
 # and that the Java-related files do not depend on the ACL2 files.
 # This file does not assume cert.pl and clean.pl to be in the path:
 # it references them via a relative path from this directory.
 
-# This file assumes that OpenJDK Java 13 is in the path,
+# This file assumes that OpenJDK Java 14 is in the path,
 # but it may well work with other Java versions or implementations.
 
 ################################################################################
@@ -50,17 +49,23 @@ java/out/artifacts/AIJ_jar/AIJ.jar: java/src/edu/kestrel/acl2/aij/*.java
 
 javadoc-all: javadoc-public javadoc-package javadoc-private
 
-javadoc-public: java/src/edu/kestrel/acl2/aij/*.java
+javadoc-public: javadoc-public/index.html
+
+javadoc-package: javadoc-package/index.html
+
+javadoc-private: javadoc-private/index.html
+
+javadoc-public/index.html: java/src/edu/kestrel/acl2/aij/*.java
 	@echo "Generate public Javadoc documentation:"
 	javadoc -d javadoc-public -public java/src/edu/kestrel/acl2/aij/*.java
 	@echo ""
 
-javadoc-package: java/src/edu/kestrel/acl2/aij/*.java
+javadoc-package/index.html: java/src/edu/kestrel/acl2/aij/*.java
 	@echo "Generate package Javadoc documentation:"
 	javadoc -d javadoc-package -package java/src/edu/kestrel/acl2/aij/*.java
 	@echo ""
 
-javadoc-private: java/src/edu/kestrel/acl2/aij/*.java
+javadoc-private/index.html: java/src/edu/kestrel/acl2/aij/*.java
 	@echo "Generate private Javadoc documentation:"
 	javadoc -d javadoc-private -private java/src/edu/kestrel/acl2/aij/*.java
 	@echo ""

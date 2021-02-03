@@ -13,29 +13,13 @@
 (include-book "primitive-values")
 (include-book "primitive-function-macros")
 
-(include-book "ihs/basic-definitions" :dir :system)
+(include-book "kestrel/fty/sbyte8-ihs-theorems" :dir :system)
+(include-book "kestrel/fty/sbyte16-ihs-theorems" :dir :system)
+(include-book "kestrel/fty/sbyte32-ihs-theorems" :dir :system)
+
+(include-book "kestrel/fty/ubyte16-ihs-theorems" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defrulel sbyte8p-of-logext8
-  (sbyte8p (logext 8 x))
-  :enable sbyte8p
-  :prep-books ((include-book "arithmetic-5/top" :dir :system)))
-
-(defrulel sbyte16p-of-logext16
-  (sbyte16p (logext 16 x))
-  :enable sbyte16p
-  :prep-books ((include-book "arithmetic-5/top" :dir :system)))
-
-(defrulel sbyte32p-of-logext32
-  (sbyte32p (logext 32 x))
-  :enable sbyte32p
-  :prep-books ((include-book "arithmetic-5/top" :dir :system)))
-
-(defrulel ubyte16p-of-loghead16
-  (ubyte16p (loghead 16 x))
-  :enable (ubyte16p)
-  :prep-books ((include-book "arithmetic-5/top" :dir :system)))
 
 (local (in-theory (disable logext loghead)))
 
@@ -44,25 +28,10 @@
            (sbyte16p x))
   :enable (sbyte8p sbyte16p))
 
-(defrulel sbyte32p-when-sbyte8p
-  (implies (sbyte8p x)
-           (sbyte32p x))
-  :enable (sbyte8p sbyte32p))
-
-(defrulel sbyte64p-when-sbyte8p
-  (implies (sbyte8p x)
-           (sbyte64p x))
-  :enable (sbyte8p sbyte64p))
-
 (defrulel sbyte32p-when-sbyte16p
   (implies (sbyte16p x)
            (sbyte32p x))
   :enable (sbyte16p sbyte32p))
-
-(defrulel sbyte64p-when-sbyte16p
-  (implies (sbyte16p x)
-           (sbyte64p x))
-  :enable (sbyte16p sbyte64p))
 
 (defrulel sbyte64p-when-sbyte32p
   (implies (sbyte32p x)
@@ -492,4 +461,4 @@
   :out-type (primitive-type-char)
   :operation (loghead 16 x)
   :short "Widening and narrowing conversion
-          from @('byte') to @('char') [JLS:5.1.3].")
+          from @('byte') to @('char') [JLS:5.1.4].")

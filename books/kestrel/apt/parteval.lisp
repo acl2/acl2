@@ -10,8 +10,21 @@
 
 (in-package "APT")
 
+(include-book "kestrel/error-checking/ensure-function-is-defined" :dir :system)
+(include-book "kestrel/error-checking/ensure-function-is-guard-verified" :dir :system)
+(include-book "kestrel/error-checking/ensure-function-is-logic-mode" :dir :system)
+(include-book "kestrel/error-checking/ensure-list-has-no-duplicates" :dir :system)
+(include-book "kestrel/error-checking/ensure-value-is-boolean" :dir :system)
+(include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
+(include-book "kestrel/error-checking/ensure-value-is-symbol-list" :dir :system)
+(include-book "kestrel/error-checking/ensure-value-is-untranslated-term" :dir :system)
+(include-book "kestrel/event-macros/cw-event" :dir :system)
+(include-book "kestrel/event-macros/event-generation" :dir :system)
 (include-book "kestrel/event-macros/input-processing" :dir :system)
 (include-book "kestrel/event-macros/intro-macros" :dir :system)
+(include-book "kestrel/event-macros/make-event-terse" :dir :system)
+(include-book "kestrel/event-macros/proof-preparation" :dir :system)
+(include-book "kestrel/event-macros/restore-output" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
 (include-book "kestrel/std/system/ibody" :dir :system)
 (include-book "kestrel/std/system/pseudo-event-form-listp" :dir :system)
@@ -19,7 +32,6 @@
 (include-book "kestrel/utilities/doublets" :dir :system)
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
 (include-book "kestrel/utilities/system/paired-names" :dir :system)
-(include-book "kestrel/utilities/user-interface" :dir :system)
 (include-book "std/alists/remove-assocs" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
@@ -33,15 +45,15 @@
 
  parteval
 
- :item-state t
-
- :item-wrld t
-
- :item-ctx t
-
  :items
 
- ("@('old'),
+ (xdoc::*evmac-topic-implementation-item-state*
+
+  xdoc::*evmac-topic-implementation-item-wrld*
+
+  xdoc::*evmac-topic-implementation-item-ctx*
+
+  "@('old'),
    @('static'),
    @('new-name'),
    @('new-enable'),
@@ -99,13 +111,13 @@
   (b* (((er old$) (ensure-function-name-or-numbered-wildcard$
                    old "The first input" t nil))
        (description (msg "The target function ~x0" old$))
-       ((er &) (ensure-function-logic-mode$ old$ description t nil))
-       ((er &) (ensure-function-defined$ old$ description t nil))
+       ((er &) (ensure-function-is-logic-mode$ old$ description t nil))
+       ((er &) (ensure-function-is-defined$ old$ description t nil))
        ((er &) (ensure-function-number-of-results$ old$ 1
                                                    description t nil))
        ((er &) (ensure-function-no-stobjs$ old$ description t nil))
        ((er &) (if (eq verify-guards t)
-                   (ensure-function-guard-verified$
+                   (ensure-function-is-guard-verified$
                     old$
                     (msg "Since the :VERIFY-GUARDS input is T, ~
                           the target function ~x0" old$)
@@ -135,7 +147,8 @@
        (cj (car cj...cm))
        (description
         (msg "The term ~x0 assigned to the static parameter ~x1" cj yj))
-       ((er (list cj$ stobjs-out)) (ensure-term$ cj description t nil))
+       ((er (list cj$ stobjs-out))
+        (ensure-value-is-untranslated-term$ cj description t nil))
        ((er &) (ensure-term-ground$ cj$ description t nil))
        ((er &) (ensure-term-logic-mode$ cj$ description t nil))
        ((er &) (ensure-function/lambda/term-number-of-results$ stobjs-out 1
@@ -179,8 +192,8 @@
         (msg "The list ~x0 of static parameters" y1...ym))
        ((when (null y1...ym))
         (er-soft+ ctx t nil "~@0 must not be empty." description))
-       ((er &) (ensure-list-no-duplicates$ y1...ym description t nil))
-       ((er &) (ensure-symbol-list$ y1...ym description t nil))
+       ((er &) (ensure-list-has-no-duplicates$ y1...ym description t nil))
+       ((er &) (ensure-value-is-symbol-list$ y1...ym description t nil))
        ((er &) (ensure-list-subset$ y1...ym (formals old$ (w state))
                                     description t nil))
        (c1...cm (strip-cdrs alist))
@@ -204,7 +217,7 @@
                state)
   :mode :program
   :short "Process the @(':thm-name') input."
-  (b* (((er &) (ensure-symbol$ thm-name "The :THM-NAME input" t nil))
+  (b* (((er &) (ensure-value-is-symbol$ thm-name "The :THM-NAME input" t nil))
        (name (if (eq thm-name :auto)
                  (make-paired-name old$ new-name$ 2 (w state))
                thm-name))
@@ -313,7 +326,8 @@
                                     new-enable$
                                     thm-name$
                                     verify-guards$
-                                    case)')
+                                    case
+                                    names-to-avoid)')
                         satisfying
                         @('(typed-tuplep symbolp
                                          symbol-alistp
@@ -322,6 +336,7 @@
                                          symbolp
                                          booleanp
                                          natp
+                                         symbol-listp
                                          result)').")
                state)
   :mode :program
@@ -341,21 +356,21 @@
     (see @(tsee parteval-process-old)).")
   (b* ((wrld (w state))
        ((er old$) (parteval-process-old old verify-guards ctx state))
-       ((er verify-guards$) (ensure-boolean-or-auto-and-return-boolean$
-                             verify-guards
-                             (guard-verified-p old$ wrld)
-                             "The :VERIFY-GUARDS input" t nil))
+       ((er verify-guards$) (process-input-verify-guards verify-guards
+                                                         old$
+                                                         ctx
+                                                         state))
        ((er static$) (parteval-process-static
                       static old$ verify-guards$ ctx state))
        (case (parteval-case-of-old old$ static$ wrld))
-       ((er new-name$) (process-input-new-name new-name old$ ctx state))
-       ((er new-enable$) (ensure-boolean-or-auto-and-return-boolean$
-                          new-enable
-                          (fundef-enabledp old$ state)
-                          "The :NEW-ENABLE input" t nil))
+       ((er (list new-name$ names-to-avoid))
+        (process-input-new-name new-name old$ nil ctx state))
+       ((er new-enable$) (process-input-new-enable new-enable old$ ctx state))
        ((er thm-name$) (parteval-process-thm-name
                         thm-name old$ new-name$ ctx state))
-       ((er &) (ensure-boolean$ thm-enable "The :THM-ENABLE input" t nil))
+       (names-to-avoid (cons thm-name$ names-to-avoid))
+       ((er &) (ensure-value-is-boolean$ thm-enable
+                                         "The :THM-ENABLE input" t nil))
        ((when (and (= case 3)
                    new-enable$
                    thm-enable))
@@ -378,7 +393,8 @@
                  new-enable$
                  thm-name$
                  verify-guards$
-                 case))))
+                 case
+                 names-to-avoid))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -620,8 +636,7 @@
    (xdoc::p
     "The hints follow the proof
      in the design notes and in @('parteval-template.lisp')."))
-  (b* ((macro (theorem-intro-macro thm-enable$))
-       (equalities (parteval-gen-static-equalities static$))
+  (b* ((equalities (parteval-gen-static-equalities static$))
        (antecedent (conjoin equalities))
        (consequent `(equal (,old$ ,@(formals old$ wrld))
                            (,new-name$ ,@new-formals)))
@@ -633,10 +648,11 @@
                       :in-theory '(,old$ ,new-name$)
                       :induct (,new-name$ ,@new-formals))))
                 (3 `(("Goal" :in-theory '(,new-name$))))
-                (t (impossible))))
-       (local-event `(local (,macro ,thm-name$ ,formula :hints ,hints)))
-       (exported-event `(,macro ,thm-name$ ,formula)))
-    (mv local-event exported-event)))
+                (t (impossible)))))
+    (evmac-generate-defthm thm-name$
+                           :formula formula
+                           :hints hints
+                           :enable thm-enable$)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -818,8 +834,7 @@
        (encapsulate-events `((logic)
                              (set-ignore-ok t)
                              (set-irrelevant-formals-ok t)
-                             (set-default-hints nil)
-                             (set-override-hints nil)
+                             (evmac-prepare-proofs)
                              ,new-fn-local-event
                              ,old-to-new-thm-local-event
                              ,@new-fn-verify-guards-event?
@@ -887,18 +902,20 @@
                   new-enable$
                   thm-name$
                   verify-guards$
-                  case)) (parteval-process-inputs
-                          old
-                          static
-                          new-name
-                          new-enable
-                          thm-name
-                          thm-enable
-                          verify-guards
-                          untranslate
-                          print
-                          show-only
-                          ctx state))
+                  case
+                  &)) ; NAMES-TO-AVOID
+        (parteval-process-inputs old
+                                 static
+                                 new-name
+                                 new-enable
+                                 thm-name
+                                 thm-enable
+                                 verify-guards
+                                 untranslate
+                                 print
+                                 show-only
+                                 ctx
+                                 state))
        (event (parteval-gen-everything old$
                                        static$
                                        new-name$

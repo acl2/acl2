@@ -30,6 +30,9 @@
 ; Shilpi Goel <shilpi@centtech.com>: added support for optional universal
 ;                                    accessor and updater functions
 
+; (depends-on "build/defrec-certdeps/DEFSTOBJ-FIELD-TEMPLATE.certdep" :dir :system)
+; (depends-on "build/defrec-certdeps/DEFSTOBJ-TEMPLATE.certdep" :dir :system)
+
 (in-package "RSTOBJ")
 (include-book "def-typed-record")
 (include-book "generic")
@@ -830,7 +833,7 @@ records book.  See @(see def-typed-record).</p>")
                   (append `((,field-key ,recog)) rest)))
               rest)
           rest))
-       ((unless (and (eq (len type) 3)
+       ((unless (and (eql (len type) 3)
                      (consp (third type))))
         (er hard? 'guards-for-top-level-acc/upd
             "~% Expected an array declaration for ~p0, but got ~p1 instead."
@@ -880,7 +883,7 @@ records book.  See @(see def-typed-record).</p>")
               (mbe :logic (,sw ,key nil ,vvar ,stname)
                    :exec  (,updater ,vvar ,stname))))))
 
-       ;; ((unless (and (eq (len type) 3)
+       ;; ((unless (and (eql (len type) 3)
        ;;               (consp (third type))))
        ;;  (er hard? 'mbe-accessor/updater-functions-aux
        ;;      "~% Expected an array declaration for ~p0, but got ~p1 instead."

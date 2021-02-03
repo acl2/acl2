@@ -1,5 +1,5 @@
 <HTML>
-<HEAD><TITLE>ACL2 Version 8.2 Installation Guide: Requirements</TITLE></HEAD>
+<HEAD><TITLE>ACL2 Version 8.3 Installation Guide: Requirements</TITLE></HEAD>
 
 <BODY TEXT="#000000" BGCOLOR="#FFFFFF" STYLE="font-family:'Verdana'">
 
@@ -9,7 +9,7 @@
 
 <p><hr size=3 noshade></p>
 
-<p>ACL2 Version 8.2<br> Copyright (C) 2019, Regents of the University of
+<p>ACL2 Version 8.3<br> Copyright (C) 2020, Regents of the University of
 Texas</p>
 
 <p>ACL2 is licensed under the terms of
@@ -27,8 +27,6 @@ file distributed with ACL2.  See also the documentation topic,
   <UL>
     <LI><A HREF="#Obtaining-Allegro">Obtaining Allegro Common Lisp</A>
     <LI><A HREF="#Obtaining-CCL">Obtaining CCL (OpenMCL)</A>
-    <LI><A HREF="#Obtaining-CLISP">Obtaining CLISP</A>
-    <LI><A HREF="#Obtaining-CMUCL">Obtaining CMU Common Lisp</A>
     <LI><A HREF="#Obtaining-GCL">Obtaining GCL</A>
     <LI><A HREF="#Obtaining-LispWorks">Obtaining LispWorks</A>
     <LI><A HREF="#Obtaining-SBCL">Obtaining SBCL</A>
@@ -40,28 +38,30 @@ file distributed with ACL2.  See also the documentation topic,
 <H3><A NAME="Performance">Performance comparisons</A></H3>
 
 <p>You can see recent performance numbers by following <a
-href="http://www.cs.utexas.edu/users/moore/acl2/v8-2/HTML/new.html#performance">this
+href="http://www.cs.utexas.edu/users/moore/acl2/v8-3/HTML/new.html#performance">this
 link</a>, or by going to the <a
 href="http://www.cs.utexas.edu/users/moore/acl2/">ACL2 home page on
 the web</a> and following the link "Recent changes to this page".</p>
 
 <H3><A NAME="Obtaining-Lisp">Obtaining Common Lisp</A></H3>
 
-<p>ACL2 works on Unix, GNU-Linux, and Mac OS X, which we call "Unix-like
-systems", as well as many Windows operating systems (at least
-including Windows 98, Windows 2000, and Windows XP).  It can be built
-on top of any of the following Common Lisps, listed here
-alphabetically.</p>
+<p>ACL2 has been built and tested on x86-64 Linux and on Mac OS X
+(Darwin), which we call "Unix-like systems", as well as (from time to
+time) some Windows operating systems.  It may run on other platforms
+as well (for example, on top of FreeBSD or running on ARM
+architectures), but we have not tested them.  It can be built on top
+of any of the following Common Lisps, listed here alphabetically.</p>
 
 <ul>
 <LI><A HREF="#Obtaining-Allegro">Allegro Common Lisp</A></B><P>
 <LI><A HREF="#Obtaining-CCL">CCL (OpenMCL)</A></B><P>
-<LI><A HREF="#Obtaining-CLISP">CLISP</A></B><P>
-<LI><A HREF="#Obtaining-CMUCL">CMU Common Lisp</A></B><P>
 <LI><A HREF="#Obtaining-GCL">GCL</A></B><P>
 <LI><A HREF="#Obtaining-LispWorks">LispWorks</A></B><P>
 <LI><A HREF="#Obtaining-SBCL">SBCL</A></B><P>
 </ul>
+
+<p>It has also been built on CMUCL, but not tested as extensively on
+that host Lisp as on the ones above.</p>
 
 <P><B><A NAME="Obtaining-Allegro">Obtaining Allegro Common Lisp</A></B></P>
 
@@ -93,44 +93,6 @@ be <code>YES</code>.</p>
 <p>Here
 are <a href="http://www.cs.utexas.edu/users/moore/acl2/manuals/current/manual/index.html?topic=ACL2____CCL-INSTALLATION">instructions
 for fetching and installing CCL</a>.</p>
-
-<P><B><A NAME="Obtaining-CLISP">Obtaining CLISP</A></B><P>
-
-<p>CLISP is a non-commercial Common Lisp implementation, available from
-<code><a href="http://clisp.cons.org/">http://clisp.cons.org/</a></code>.
-We do not recommend CLISP as a platform for ACL2, for the following
-reasons.</p>
-
-<ul>
-
-<li>CLISP appears to run ACL2 much more slowly than the other supported
-Common Lisp implementations.</li>
-
-<li>Only minimal testing is done for ACL2 built on CLISP.</li>
-
-<li>CLISP does not support building the
-  default, <a href="http://www.cs.utexas.edu/users/moore/acl2/current/combined-manual/index.html?topic=ACL2____HONS-ENABLED">hons-enabled</a>
-  ACL2 (ACL2(h)), but only (with the limitations expressed above)
-  a discontinued version, ACL2(c).</li>
-
-</ul>
-
-<P><B><A NAME="Obtaining-CMUCL">Obtaining CMU Common Lisp</A></B></P>
-
-<blockquote>
-
-<font color="red"><b>NOTE</b>: ACL2 Version 8.2 cannot be reliably run
-  on CMUCL, so we have disabled building ACL2 on CMUCL.  The CMUCL
-  implementor is aware of the problem, and we are hoping for a fix
-  before the next ACL2 release so that we can remove this note.</font>
-
-</blockquote>
-
-<p>
-
-<p>CMU Common Lisp (sometimes called CMUCL) is a non-commercial Common Lisp
-implementation, available from <code><a
-href="http://www.cons.org/cmucl/">http://www.cons.org/cmucl/</a></code>.</p>
 
 <P><B><A NAME="Obtaining-GCL">Obtaining GCL</A></B></P>
 
@@ -190,23 +152,6 @@ the SBCL distribution using this command:</p>
 sh make.sh --with-sb-thread
 </pre>
 
-<!-- The following is no longer needed, because saved_acl2 deals
-     directly with dynamic-space-size.
-
-<p>Depending on the platform, building ACL2 may initially fail with SBCL
-because of insufficient heap memory.  Harsh Raju Chamarthi points out
-that a fix is to run SBCL with an increased heap size limit.  As of
-2014 we find that the the option <code>--dynamic-space-size
-2000</code> following works well on 64-bit linux, for example using a
-script like the following for SBCL.</p>
-
-<pre>
-#!/bin/sh
-&lt;sbcl-dir-path&gt;/src/runtime/sbcl --core &lt;sbcl-dir-path&gt;/output/sbcl.core --dynamic-space-size 2000 "$@"
-</pre>
-
--->
-
 <p>If you try to run large jobs using ACL2 built on SBCL (version
   1.2.11 or later), such as building the ACL2+books combined manual,
   you may fail with an error, "Immobile space exhausted".  We have
@@ -227,6 +172,21 @@ when using the "time" command for such runs.</p>
 
 ;;; after using the options above in the build
 72693.740u 1565.148s 2:58:36.10 692.9%  0+0k 3778176+7630768io 1250pf+0w
+</pre>
+
+<p><i>Final note on SBCL</i></p>
+
+<p>The default SBCL may provide insufficient heap memory to build the
+  variants <a href="http://www.cs.utexas.edu/users/moore/acl2/manuals/current/manual/index.html?topic=ACL2____PARALLELISM">ACL2(p)</a>
+  and <a href="http://www.cs.utexas.edu/users/moore/acl2/manuals/current/manual/index.html?topic=COMMON-LISP____REAL">ACL2(r)</a>
+  of ACL2 (and much less likely, to build ACL2 itself).  The SBCL
+  option <code>--dynamic-space-size 2000</code> has been found to
+  solve that problem, for example using a script like the following
+  for SBCL.</p>
+
+<pre>
+#!/bin/sh
+&lt;sbcl-dir-path&gt;/run-sbcl.sh --dynamic-space-size 2000 "$@"
 </pre>
 
 <p><b><font size="+2">[<a href="installation.html">Back to Installation Guide.</a>]</font></b></p>

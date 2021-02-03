@@ -86,7 +86,7 @@
       :no-function t
       :ignore-ok t
       :short "First three-byte opcode dispatch function."
-      :long "<p>@('first-three-byte-opcode-execute) is the doorway to the
+      :long "<p>@('first-three-byte-opcode-execute') is the doorway to the
      first three-byte opcode map, i.e., to all three-byte opcodes whose first
      two opcode bytes are @('0F 38').</p>"
       :guard-hints (("Goal"
@@ -134,7 +134,7 @@
       :no-function t
       :ignore-ok t
       :short "Second three-byte opcode dispatch function."
-      :long "<p>@('second-three-byte-opcode-execute) is the doorway to the second
+      :long "<p>@('second-three-byte-opcode-execute') is the doorway to the second
      three-byte opcode map, i.e., to all three-byte opcodes whose second two
      opcode bytes are @('0F 3A').</p>"
       :guard-hints (("Goal"

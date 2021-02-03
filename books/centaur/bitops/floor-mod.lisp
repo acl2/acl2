@@ -57,8 +57,8 @@
                        (< x 1)))
          :hints (("goal" :use ((:instance rational-implies2))
                   :in-theory (disable rational-implies2
-                                      *-r-denominator-r
-                                      equal-*-/-1)))))
+                                      acl2::*-r-denominator-r
+                                      acl2::equal-*-/-1)))))
 
 (local (defthm numerator-<-0
          (implies (rationalp x)
@@ -73,11 +73,11 @@
                   (iff (integerp (* x (/ y)))
                        (equal x 0)))
          :hints ((and stable-under-simplificationp
-                      '(:use ((:instance <-*-/-LEFT (a 1))
-                              (:instance <-*-/-LEFT (a 0)))
-                        :in-theory (disable <-*-/-LEFT
-                                            <-UNARY-/-POSITIVE-RIGHT
-                                            <-*-0))))))
+                      '(:use ((:instance acl2::<-*-/-LEFT (a 1))
+                              (:instance acl2::<-*-/-LEFT (a 0)))
+                        :in-theory (disable acl2::<-*-/-LEFT
+                                            acl2::<-UNARY-/-POSITIVE-RIGHT
+                                            acl2::<-*-0))))))
 
 (defthmd floor-of-nonneg-operands-base-case
   (implies (and (< x y)
@@ -516,10 +516,10 @@
                        (rationalp x) (rationalp y))
                   (< (truncate x y) 0))
          :hints(("Goal" :in-theory (e/d (truncate) (numerator-<-denominator
-                                                    <-*-/-right))
+                                                    acl2::<-*-/-right))
                  :use ((:instance numerator-<-denominator
                         (x (* (- x) (/ y))))
-                       (:instance <-*-/-right
+                       (:instance acl2::<-*-/-right
                         (a -1)))))
          :rule-classes :linear))
 
@@ -565,3 +565,442 @@
           (t (truncate-rem-ind (- x y) y)))))
 
 
+
+
+
+(local (include-book "std/util/termhints" :dir :system))
+(Defsection truncate-unique
+
+  (local (defthm add-sides-of-ineqs
+           (implies (and (< a b)
+                         (<= c d))
+                    (< (+ a c) (+ b d)))
+           :rule-classes nil))
+
+  (local (include-book "arithmetic/top-with-meta" :dir :System))
+
+  (local (defthm lemma1
+           (implies (and (integerp delta)
+                         (< delta 0)
+                         (rationalp div)
+                         (< 0 div))
+                    (<= div (- (* delta div))))
+           :hints ((and stable-under-simplificationp
+                        '(:nonlinearp t)))))
+
+  (defthm nonneg-truncate-unique-lemma
+    (implies (and (rationalp num)
+                  (rationalp div)
+                  (< 0 div)
+                  (<= 0 num)
+                  (integerp quot)
+                  (integerp delta))
+             (let ((rem1 (- num (* quot div)))
+                   (rem2 (- num (* (+ delta quot) div))))
+               (implies (and (<= 0 rem1)
+                             (< rem1 div)
+                             (<= 0 rem2)
+                             (< rem2 div))
+                        (equal delta 0))))
+    :hints ((acl2::use-termhint
+             (cond ((< delta 0)
+                    '(:use ((:instance acl2::mark-clause-is-true
+                             (x "(< delta 0)"))
+                            (:instance add-sides-of-ineqs
+                             (a (+ num (- (* delta div)) (- (* div quot))))
+                             (b div)
+                             (c (* div quot))
+                             (d num)))))
+                   ((< 0 delta)
+                    '(:use ((:instance acl2::mark-clause-is-true
+                             (x "(< 0 delta)"))
+                            (:instance add-sides-of-ineqs
+                             (a (+ num (- (* div quot))))
+                             (b div)
+                             (c (+ (* delta div) (* div quot)))
+                             (d num)))))
+                   (t '(:use ((:instance acl2::mark-clause-is-true
+                               (x "neither"))))))))
+    :rule-classes nil)
+
+  (local (defthm lemma2
+           (implies (and (integerp delta)
+                         (< delta 0)
+                         (rationalp div)
+                         (< div 0))
+                    (<= (- div) (* delta div)))
+           :hints ((and stable-under-simplificationp
+                        '(:nonlinearp t)))))
+
+  (local (defthm lemma3
+           (implies (and (integerp delta)
+                         (< 0 delta)
+                         (rationalp div)
+                         (< div 0))
+                    (<= (- div) (- (* delta div))))
+           :hints ((and stable-under-simplificationp
+                        '(:nonlinearp t)))))
+
+  (defthm nonneg/neg-truncate-unique-lemma
+    (implies (and (rationalp num)
+                  (rationalp div)
+                  (< div 0)
+                  (<= 0 num)
+                  (integerp quot)
+                  (integerp delta))
+             (let ((rem1 (- num (* quot div)))
+                   (rem2 (- num (* (+ delta quot) div))))
+               (implies (and (<= 0 rem1)
+                             (< rem1 (- div))
+                             (<= 0 rem2)
+                             (< rem2 (- div)))
+                        (equal delta 0))))
+    :hints ((acl2::use-termhint
+             (cond ((< delta 0)
+                    '(:use ((:instance acl2::mark-clause-is-true
+                             (x "(< delta 0)"))
+                            (:instance add-sides-of-ineqs
+                             (a (+ num (- (* div quot))))
+                             (b (- div))
+                             (c (+ (* delta div) (* div quot)))
+                             (d num))
+                            
+                            )))
+                   ((< 0 delta)
+                    '(:use ((:instance acl2::mark-clause-is-true
+                             (x "(< 0 delta)"))
+                            (:instance add-sides-of-ineqs
+                             (a (+ num (- (* delta div)) (- (* div quot))))
+                             (b (- div))
+                             (d num)
+                             (c (* div quot)))
+                            )))
+                   (t '(:use ((:instance acl2::mark-clause-is-true
+                               (x "neither"))))))))
+    :rule-classes nil)
+
+
+  (local (defthm lemma4
+           (implies (and (integerp delta)
+                         (< delta 0)
+                         (rationalp div)
+                         (< 0 div))
+                    (<= (* delta div) (- div)))
+           :hints ((and stable-under-simplificationp
+                        '(:nonlinearp t)))))
+
+  (local (defthm lemma5
+           (implies (and (integerp delta)
+                         (< 0 delta)
+                         (rationalp div)
+                         (< 0 div))
+                    (<= (- (* delta div)) (- div)))
+           :hints ((and stable-under-simplificationp
+                        '(:nonlinearp t)))))
+
+  (defthm neg/nonneg-truncate-unique-lemma
+    (implies (and (rationalp num)
+                  (rationalp div)
+                  (< 0 div)
+                  (<= num 0)
+                  (integerp quot)
+                  (integerp delta))
+             (let ((rem1 (- num (* quot div)))
+                   (rem2 (- num (* (+ delta quot) div))))
+               (implies (and (<= rem1 0)
+                             (< (- div) rem1)
+                             (<= rem2 0)
+                             (< (- div) rem2))
+                        (equal delta 0))))
+    :hints ((acl2::use-termhint
+             (cond ((< delta 0)
+                    '(:use ((:instance acl2::mark-clause-is-true
+                             (x "(< delta 0)"))
+                            (:instance add-sides-of-ineqs
+                             (d (+ (* delta div) (* div quot)))
+                             (c num)
+                             (a (- div))
+                             (b (+ num (- (* div quot))))
+                             ))))
+                   ((< 0 delta)
+                    '(:use ((:instance acl2::mark-clause-is-true
+                             (x "(< 0 delta)"))
+                            (:instance add-sides-of-ineqs
+                             (d (* div quot))
+                             (c num)
+                             (b (+ num (- (* delta div)) (- (* div quot))))
+                             (a (- div)))
+                            )))
+                   (t '(:use ((:instance acl2::mark-clause-is-true
+                               (x "neither"))))))))
+    :rule-classes nil)
+
+
+  (local (defthm lemma6
+           (implies (and (integerp delta)
+                         (< delta 0)
+                         (rationalp div)
+                         (< div 0))
+                    (<= (- (* delta div)) div))
+           :hints ((and stable-under-simplificationp
+                        '(:nonlinearp t)))))
+
+  (defthm nonneg/neg-floor-unique-lemma
+    (implies (and (rationalp num)
+                  (rationalp div)
+                  (< div 0)
+                  (<= 0 num)
+                  (integerp quot)
+                  (integerp delta))
+             (let ((rem1 (- num (* quot div)))
+                   (rem2 (- num (* (+ delta quot) div))))
+               (implies (and (<= rem1 0)
+                             (< div rem1)
+                             (<= rem2 0)
+                             (< div rem2))
+                        (equal delta 0))))
+    :hints ((acl2::use-termhint
+             (cond ((< delta 0)
+                    '(:use ((:instance acl2::mark-clause-is-true
+                             (x "(< delta 0)"))
+                            (:instance add-sides-of-ineqs
+                             (a div)
+                             (b (+ num (- (* delta div)) (- (* div quot))))
+                             (c num)
+                             (d (* div quot)))
+                            
+                            )))
+                   ((< 0 delta)
+                    '(:use ((:instance acl2::mark-clause-is-true
+                             (x "(< 0 delta)"))
+                            (:instance add-sides-of-ineqs
+                             (a div)
+                             (b (+ num (- (* div quot))))
+                             (c num)
+                             (d (+ (* delta div) (* div quot))))
+                            )))
+                   (t '(:use ((:instance acl2::mark-clause-is-true
+                               (x "neither"))))))))
+    :rule-classes nil)
+
+  (defthm neg/nonneg-floor-unique-lemma
+    (implies (and (rationalp num)
+                  (rationalp div)
+                  (< 0 div)
+                  (<= num 0)
+                  (integerp quot)
+                  (integerp delta))
+             (let ((rem1 (- num (* quot div)))
+                   (rem2 (- num (* (+ delta quot) div))))
+               (implies (and (<= 0 rem1)
+                             (< rem1 div)
+                             (<= 0 rem2)
+                             (< rem2 div))
+                        (equal delta 0))))
+    :hints ((acl2::use-termhint
+             (cond ((< delta 0)
+                    '(:use ((:instance acl2::mark-clause-is-true
+                             (x "(< delta 0)"))
+                            (:instance add-sides-of-ineqs
+                             (d num)
+                             (c (* div quot))
+                             (a (+ num (- (* delta div)) (- (* div quot))))
+                             (b div)))))
+                   ((< 0 delta)
+                    '(:use ((:instance acl2::mark-clause-is-true
+                             (x "(< 0 delta)"))
+                            (:instance add-sides-of-ineqs
+                             (d num)
+                             (c (+ (* delta div) (* div quot)))
+                             (a (+ num (- (* div quot))))
+                             (b div)))))
+                   (t '(:use ((:instance acl2::mark-clause-is-true
+                               (x "neither"))))))))
+    :rule-classes nil)
+
+
+  (defthm neg/neg-truncate-unique-lemma
+    (implies (and (rationalp num)
+                  (rationalp div)
+                  (< div 0)
+                  (<= num 0)
+                  (integerp quot)
+                  (integerp delta))
+             (let ((rem1 (- num (* quot div)))
+                   (rem2 (- num (* (+ delta quot) div))))
+               (implies (and (<= rem1 0)
+                             (< div rem1)
+                             (<= rem2 0)
+                             (< div rem2))
+                        (equal delta 0))))
+    :hints ((acl2::use-termhint
+             (cond ((< 0 delta)
+                    '(:use ((:instance acl2::mark-clause-is-true
+                             (x "(< 0 delta)"))
+                            (:instance add-sides-of-ineqs
+                             (d (+ (* delta div) (* div quot)))
+                             (c num)
+                             (a div)
+                             (b (+ num (- (* div quot))))
+                             )
+                            )))
+                   ((< delta 0)
+                    '(:use ((:instance acl2::mark-clause-is-true
+                             (x "(< delta 0)"))
+                            (:instance add-sides-of-ineqs
+                             (d (* div quot))
+                             (c num)
+                             (b (+ num (- (* delta div)) (- (* div quot))))
+                             (a div)))))
+                   (t '(:use ((:instance acl2::mark-clause-is-true
+                               (x "neither"))))))))
+    :rule-classes nil)
+
+
+  (defthm truncate-unique-lemma
+    (implies (and (rationalp num)
+                  (rationalp div)
+                  (not (equal div 0))
+                  (integerp quot)
+                  (integerp delta))
+             (let ((rem1 (- num (* quot div)))
+                   (rem2 (- num (* (+ delta quot) div))))
+               (implies (and (implies (<= num 0) (<= rem1 0))
+                             (implies (<= 0 num) (<= 0 rem1))
+                             (< (abs rem1) (abs div))
+                             (implies (<= num 0) (<= rem2 0))
+                             (implies (<= 0 num) (<= 0 rem2))
+                             (< (abs rem2) (abs div)))
+                        (equal delta 0))))
+    :hints ((acl2::use-termhint
+             (if (< 0 div)
+                 (if (<= 0 num)
+                     `(:use ((:instance nonneg-truncate-unique-lemma
+                              (quot ,(acl2::hq quot)))))
+                   `(:use ((:instance neg/nonneg-truncate-unique-lemma
+                            (quot ,(acl2::hq quot))))))
+               (if (<= 0 num)
+                   `(:use ((:instance nonneg/neg-truncate-unique-lemma
+                            (quot ,(acl2::hq quot)))))
+                 `(:use ((:instance neg/neg-truncate-unique-lemma
+                          (quot ,(acl2::hq quot)))))))))
+    :rule-classes nil)
+
+
+  (defthm floor-unique-lemma
+    (implies (and (rationalp num)
+                  (rationalp div)
+                  (not (equal div 0))
+                  (integerp quot)
+                  (integerp delta))
+             (let ((rem1 (- num (* quot div)))
+                   (rem2 (- num (* (+ delta quot) div))))
+               (implies (and (implies (<= div 0) (<= rem1 0))
+                             (implies (<= 0 div) (<= 0 rem1))
+                             (< (abs rem1) (abs div))
+                             (implies (<= div 0) (<= rem2 0))
+                             (implies (<= 0 div) (<= 0 rem2))
+                             (< (abs rem2) (abs div)))
+                        (equal delta 0))))
+    :hints ((acl2::use-termhint
+             (if (< 0 div)
+                 (if (<= 0 num)
+                     `(:use ((:instance nonneg-truncate-unique-lemma
+                              (quot ,(acl2::hq quot)))))
+                   `(:use ((:instance neg/nonneg-floor-unique-lemma
+                            (quot ,(acl2::hq quot))))))
+               (if (<= 0 num)
+                   `(:use ((:instance nonneg/neg-floor-unique-lemma
+                            (quot ,(acl2::hq quot)))))
+                 `(:use ((:instance neg/neg-truncate-unique-lemma
+                          (quot ,(acl2::hq quot)))))))))
+    :rule-classes nil)
+
+  (local (defthm minus-x-plus-x
+           (equal (+ (- x) x) 0)))
+
+  (local (defthmd hide-<
+           (equal (< x y) (hide (< x y)))
+           :hints (("goal" :expand ((hide (< x y)))))))
+
+  (defthm truncate-bound
+    (implies (and (rationalp num)
+                  (rationalp div)
+                  (not (equal div 0)))
+             (let* ((quot (truncate num div))
+                    (rem (- num (* quot div))))
+               (and (implies (<= num 0) (<= rem 0))
+                    (implies (<= 0 num) (<= 0 rem))
+                    (< (abs rem) (abs div)))))
+    :hints (("goal" :induct (truncate-rem-ind num div)
+             :expand ((:with truncate-redef (truncate num div))
+                      (:with truncate-redef (truncate 0 div))
+                      (:with truncate-redef (truncate div div))
+                      (:with truncate-redef (truncate (- div) div)))
+             :in-theory (e/d ()
+                             (truncate-of-nonneg-operands-step
+                              truncate-of-nonneg-operands-base-case
+                              truncate-of-y-negative-invert
+                              truncate-of-negative-operands-step
+                              truncate-of-x-negative-invert)))))
+
+
+  (defthm floor-bound
+    (implies (and (rationalp num)
+                  (rationalp div)
+                  (not (equal div 0)))
+             (let* ((quot (floor num div))
+                    (rem (- num (* quot div))))
+               (and (implies (< 0 div) (<= 0 rem))
+                    (implies (< div 0) (<= rem 0))
+                    (< (abs rem) (abs div)))))
+    :hints (("goal" :induct (floor-mod-ind num div)
+             :expand ((:with floor-redef (floor num div))
+                      (:with floor-redef (floor 0 div))
+                      (:with floor-redef (floor div div))
+                      (:with floor-redef (floor (- div) div)))
+             :in-theory (e/d ()
+                             (floor-of-nonneg-operands-step
+                              floor-of-nonneg-operands-base-case
+                              floor-of-y-negative-invert
+                              floor-of-negative-operands-step)))))
+  
+
+  (defthmd truncate-unique
+    (implies (and (rationalp num)
+                  (rationalp div)
+                  (not (equal div 0))
+                  (integerp quot))
+             (let ((rem (- num (* quot div))))
+               (iff (equal quot (truncate num div))
+                    (and (implies (<= num 0) (<= rem 0))
+                         (implies (<= 0 num) (<= 0 rem))
+                         (< (abs rem) (abs div))))))
+    :hints (("goal" :use ((:instance truncate-unique-lemma
+                           (delta (- (truncate num div) quot)))
+                          (:instance truncate-bound))
+             :in-theory (e/d ()
+                             (truncate-of-nonneg-operands-step
+                              truncate-of-nonneg-operands-base-case
+                              truncate-of-y-negative-invert
+                              truncate-of-negative-operands-step
+                              truncate-of-x-negative-invert)))))
+
+  (defthmd floor-unique
+    (implies (and (rationalp num)
+                  (rationalp div)
+                  (not (equal div 0))
+                  (integerp quot))
+             (let ((rem (- num (* quot div))))
+               (iff (equal quot (floor num div))
+                    (and (implies (<= div 0) (<= rem 0))
+                         (implies (<= 0 div) (<= 0 rem))
+                         (< (abs rem) (abs div))))))
+    :hints (("goal" :use ((:instance floor-unique-lemma
+                           (delta (- (floor num div) quot)))
+                          (:instance floor-bound))
+             :in-theory (e/d ()
+                             (floor-of-nonneg-operands-step
+                              floor-of-nonneg-operands-base-case
+                              floor-of-y-negative-invert
+                              floor-of-negative-operands-step))))))

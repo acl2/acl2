@@ -19,7 +19,7 @@ data last modified: [2014-08-06]
 (include-book "register-combinator")
 
 
-(defconst *alistof-export-defthms*
+(def-const *alistof-export-defthms*
   '((defthm _pred_-IMPLIES-ALISTP
       (implies (_PRED_ x)
                (alistp x))
@@ -47,6 +47,7 @@ data last modified: [2014-08-06]
     ))
 
 (program)
+
 (defun alistof-theory-events (name keybody valbody new-types kwd-alist wrld)
   (declare (ignorable valbody))
   (declare (xargs :mode :program))
@@ -54,7 +55,9 @@ data last modified: [2014-08-06]
   (b* ((M (append new-types (table-alist 'type-metadata-table wrld)))
        (A (table-alist 'type-alias-table wrld))
        (pred (predicate-name name A M))
-       ((when (not (proper-symbolp pred))) (er hard? 'alistof-theory-events "~| Couldnt find predicate name for ~x0.~%" name))
+       ((when (not (proper-symbolp pred)))
+        (er hard? 'alistof-theory-events
+            "~| Couldnt find predicate name for ~x0.~%" name))
        ((mv symbol-alist-subtypep ?keypred) 
         (if (and (proper-symbolp keybody) (assoc-eq keybody M))
             (mv (subtype-p (predicate-name keybody A M)
@@ -63,6 +66,8 @@ data last modified: [2014-08-06]
                 (predicate-name keybody A M))
           (mv nil :undef)))
        (disabled (get1 :disabled  kwd-alist))
+       (curr-pkg (get1 :current-package kwd-alist))
+       (pkg-sym (pkg-witness curr-pkg))
        (local-events-template nil)
        (export-defthms-template *alistof-export-defthms*)
        (features (and symbol-alist-subtypep '(:symbol-alist-subtype-p)))
@@ -74,13 +79,13 @@ data last modified: [2014-08-06]
                                      :splice-alist splice-alist
                                      :atom-alist atom-alist
                                      :str-alist str-alist
-                                     :pkg-sym 'acl2::asdf))
+                                     :pkg-sym pkg-sym))
        (export-defthms (template-subst export-defthms-template
                                      :features features
                                      :splice-alist splice-alist
                                      :atom-alist atom-alist
                                      :str-alist str-alist
-                                     :pkg-sym 'acl2::asdf))
+                                     :pkg-sym pkg-sym))
        (all-defthm-names (get-event-names export-defthms))
        (theory-name (get1 :theory-name  kwd-alist))
 
@@ -90,9 +95,6 @@ data last modified: [2014-08-06]
       (acl2::def-ruleset! ,theory-name ',all-defthm-names)
       )))
 
-
-
-
 (defun alistof-theory-ev (p top-kwd-alist wrld)
   (b* (((cons name A) p)
        ((acl2::assocs pdef new-types kwd-alist) A) ;ignore odef
@@ -101,7 +103,6 @@ data last modified: [2014-08-06]
     (case-match pdef
       (('ALISTOF key-body val-body) (alistof-theory-events name key-body val-body new-types kwd-alist wrld))
       (& '()))))
-             
 
 (defloop user-alistof-theory-events1 (ps kwd-alist wrld)
   (for ((p in ps)) (append (alistof-theory-ev p kwd-alist wrld))))

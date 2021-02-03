@@ -1,5 +1,5 @@
-; ACL2 Version 8.2 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2019, Regents of the University of Texas
+; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2020, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -286,37 +286,21 @@
                       (erp val bad-fn)
                       (pstk
                        (ev-fncall+ fn (strip-cadrs expanded-args) t state))
+                      (declare (ignore bad-fn))
                       (cond
                        (erp
 
-; We follow a suggestion from Matt Wilding and attempt to simplify the term
-; before applying HIDE.
+; We originally followed a suggestion from Matt Wilding and attempt to simplify
+; the term before applying HIDE.  Now, we partially follow an idea from Eric
+; Smith of avoiding the application of HIDE -- we do this only here in
+; expand-abbreviations, expecting that the rewriter will apply HIDE if
+; appropriate.
 
-                        (let ((new-term1 (cons-term fn expanded-args)))
-                          (sl-let (new-term2 ttree)
-                                  (expand-abbreviations-with-lemma
-                                   new-term1 geneqv pequiv-info
-                                   fns-to-be-ignored-by-rewrite
-                                   rdepth step-limit ens wrld state ttree)
-                                  (cond
-                                   ((equal new-term2 new-term1)
-                                    (if bad-fn
-                                        (mv step-limit
-
-; Since bad-fn is non-nil, the evaluation failure was caused by aborting when a
-; warrant was needed.  This case is handled in rewrite, so we do not want to
-; hide the term.  See the Essay on Evaluation of Apply$ and Loop$ Calls During
-; Proofs.
-
-                                            new-term1
-                                            ttree)
-                                      (mv step-limit
-                                          (hide-with-comment erp new-term1
-                                                             state)
-                                          (push-lemma (fn-rune-nume 'hide nil
-                                                                    nil wrld)
-                                                      ttree))))
-                                   (t (mv step-limit new-term2 ttree))))))
+                        (expand-abbreviations-with-lemma
+                         (cons-term fn expanded-args)
+                         geneqv pequiv-info
+                         fns-to-be-ignored-by-rewrite
+                         rdepth step-limit ens wrld state ttree))
                        (t (mv step-limit
                               (kwote val)
                               (push-lemma (fn-rune-nume fn nil t wrld)
@@ -4162,6 +4146,12 @@
 ; we avoid the wormhole call in the #-acl2-loop-only case, which is the
 ; actually executed inside the prover.
 
+; Note: Recall the invariant on the wormhole-data of comment-window-io: it is
+; an alist and any key that is string-equal to one of the
+; *tracked-warning-summaries* must be bound to a true-list.  See defmacro io?
+; for details.  But this function doesn't touch the data field, so it maintains
+; the invariant.
+
   #+acl2-loop-only
   `(wormhole 'comment-window-io
              '(lambda (whs)
@@ -5414,9 +5404,32 @@
         (cond
          ((consp (access history-entry ; (SPECIOUS . processor)
                          (car new-hist) :processor))
-          (mv@par 'MISS nil ttree new-hist
-                  (accumulate-rw-cache-into-pspv processor ttree pspv)
-                  state))
+          (pprogn@par
+           (cond ((gag-mode)
+                  (mv-let (str cl-id-phrase assumption-1-0 case-split-lim)
+                    (mv "~@0The goal, ~@1, ~#2~[~/forcibly ~]simplifies to a ~
+                         set of conjectures including itself!  Therefore, we ~
+                         ignore this specious simp~-li~-fi~-ca~-tion.  See ~
+                         :DOC specious-simplification.~@3~|"
+                        (tilde-@-clause-id-phrase cl-id)
+                        (if (tagged-objectsp 'assumption ttree) 1 0)
+                        (tilde-@-case-split-limitations-phrase
+                         (tagged-objects 'sr-limit ttree)
+                         (tagged-objects 'case-limit ttree)
+                         "  "))
+                    (serial-first-form-parallel-second-form@par
+                     (fms str
+                          (list (cons #\0 "")
+                                (cons #\1 cl-id-phrase)
+                                (cons #\2 assumption-1-0)
+                                (cons #\3 case-split-lim))
+                          (proofs-co state) state nil)
+                     (cw str
+                         "~%" cl-id-phrase assumption-1-0 case-split-lim))))
+                 (t (state-mac@par)))
+           (mv@par 'MISS nil ttree new-hist
+                   (accumulate-rw-cache-into-pspv processor ttree pspv)
+                   state)))
          (t (mv@par signal clauses ttree new-hist
                     (cond
                      ((or (member-eq processor *simplify-clause-ledge-complement*)
@@ -6901,14 +6914,17 @@
            (let ((new-ht (make-hash-table :test 'equal :size (expt 2 13)
 
 ; Parallelism blemish: CCL locks these hashtable operations automatically
-; because of the argument :shared t below.  However in SBCL and LispWorks, we
-; should really lock these hashtable operations ourselves.  Note that the SBCL
-; documentation at http://www.sbcl.org/manual/Hash-Table-Extensions.html
-; describes a keyword, :synchronized, that is like CCL's :shared but is labeled
-; as "experimental".  At any rate, we are willing to take our chances for now
-; with SBCL and Lispworks.
+; because of the argument :shared t below.  SBCL documentation at
+; http://www.sbcl.org/manual/#Hash-Table-Extensions introduces the keyword,
+; :synchronized, that provides such a locking mechanism, but warns: "This
+; keyword argument is experimental, and may change incompatibly or be removed
+; in the future."  However, it has been around since at least 2011.  Using this
+; experimental feature is easier (and probably performs better) than
+; implementing the locking ourselves.  We would ideally do something similar
+; for LispWorks as well, but for now we are willing to take our chances.
 
-                                          #+ccl :shared #+ccl t)))
+                                          #+ccl :shared #+ccl t
+                                          #+sbcl :synchronized #+sbcl t)))
              (setf *waterfall-parallelism-timings-ht-alist*
                    (acons name
                           new-ht
@@ -8967,24 +8983,21 @@
        (let* ((cl-id-phrase
                (tilde-@-clause-id-phrase
                 (access assumnote (car lst) :cl-id)))
+              (rune (access assumnote (car lst) :rune))
               (x
-               (cond ((and (consp (access assumnote (car lst) :rune))
-                           (null (base-symbol (access assumnote (car lst)
-                                                      :rune))))
+               (cond ((and (consp rune)
+                           (null (base-symbol rune)))
                       (list " ~@0 by primitive type reasoning"
                             (cons #\0 cl-id-phrase)))
-                     ((eq (access assumnote (car lst) :rune) 'equal)
+                     ((eq rune 'equal)
                       (list " ~@0 by linearization"
                             (cons #\0 cl-id-phrase)))
-                     ((symbolp (access assumnote (car lst) :rune))
-                      (list " ~@0 by assuming the guard for ~x1"
-                            (cons #\0 cl-id-phrase)
-                            (cons #\1 (access assumnote (car lst) :rune))))
                      (t
-                      (list " ~@0 by applying ~x1"
-                            (cons #\0 cl-id-phrase)
-                            (cons #\1 (access assumnote (car lst)
-                                              :rune)))))))
+                      (assert$ ; Check that we no longer assume a guard.
+                       (not (symbolp rune))
+                       (list " ~@0 by applying ~x1"
+                             (cons #\0 cl-id-phrase)
+                             (cons #\1 rune)))))))
          (add-to-set-equal x acc))))))
 
 (defun tilde-*-assumnotes-column-phrase-gag-mode (assumnotes)
@@ -9063,8 +9076,7 @@
                (cons #\2 (if (= forcing-round 0) 0 1))
                (cons #\3 forcing-round)
                (cons #\4 (if (= n0 n) 0 1))
-               (cons #\5 n0)
-               (cons #\6 (1+ forcing-round)))
+               (cons #\5 n0))
          (proofs-co state)
          state
          nil)

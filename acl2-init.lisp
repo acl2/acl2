@@ -1,5 +1,5 @@
-; ACL2 Version 8.2 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2019, Regents of the University of Texas
+; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2020, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -19,12 +19,6 @@
 ; Austin, TX 78712 U.S.A.
 
 ; This file cannot be compiled because it changes packages in the middle.
-
-#+cmucl
-(error "CMUCL builds are temporarily disabled, pending some necessary fixes for
-CMUCL.  To remove this error (which may cause failures in the build or book
-certification), just remove the initial form from ACL2 source file
-acl2-init.lisp.")
 
 ; Allow taking advantage of threads in SBCL, CCL, and Lispworks (where we may
 ; want to build a parallel version, which needs this to take place).  At the
@@ -275,16 +269,6 @@ implementations.")
 (load "acl2.lisp")
 
 (acl2::proclaim-optimize)
-
-; We allow ACL2(h) code to take advantage of Ansi CL features.  It's
-; conceivable that we don't need this restriction (which only applies to GCL),
-; but it doesn't currently seem worth the trouble to figure that out.
-#+(and hons (not cltl2))
-(progn
-; ACL2(c) deprecated: no longer says "build a hons-enabled version of ACL2".
-  (format t "~%ERROR: It is illegal to build ACL2 in this non-ANSI Common ~
-             Lisp.~%~%")
-  (acl2::exit-lisp))
 
 ; Fix a bug in SBCL 1.0.49 (https://bugs.launchpad.net/bugs/795705), thanks to
 ; patch provided by Nikodemus Siivola.
@@ -949,7 +933,7 @@ implementations.")
   (concatenate
    'string
    "~% ~a built ~a.~
-    ~% Copyright (C) 2019, Regents of the University of Texas"
+    ~% Copyright (C) 2020, Regents of the University of Texas"
    "~% ACL2 comes with ABSOLUTELY NO WARRANTY.  This is free software and you~
     ~% are welcome to redistribute it under certain conditions.  For details,~
     ~% see the LICENSE file distributed with ACL2.~%"
@@ -1004,13 +988,27 @@ implementations.")
 
 (defmacro our-with-standard-io-syntax (&rest args)
 
+; See comment about SBCL below.
+
 ; Note for GCL:
 ; As of late May 2013, with-standard-io-syntax seems to work properly in ANSI
 ; GCL.
 
-  (cons #-cltl2 'progn
-        #+cltl2 'with-standard-io-syntax
-        args))
+  #-cltl2
+  (cons 'progn args)
+
+  #+(and cltl2 (not sbcl))
+  (cons 'with-standard-io-syntax args)
+
+; For sbcl we bind *print-readably* to nil.  Otherwise, there is a problem with
+; the call of write-exec-file in save-acl2-in-sbcl-aux: write-exec-file uses
+; our-with-standard-io-syntax, which (without the fix below) has caused the
+; printing of variable PROG (using format directive ~s) to produce not a
+; string, but rather, a structure like this: #A((62) BASE-CHAR . "<string>").
+  #+(and cltl2 sbcl)
+  `(with-standard-io-syntax
+    (let ((*print-readably* nil))
+      ,@args)))
 
 (defun user-args-string (inert-args &optional (separator '"--"))
 
@@ -1716,10 +1714,10 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
 ; probably later), which has the correct path (doesn't need "lisp" appended).
 
                          ((equal (subseq prog1 (- len 4) len) "bin/")
-                          (concatenate 'string prog1 "lisp"))
+                          (our-truename (concatenate 'string prog1 "lisp") t))
                          ((equal (subseq prog1 (- len 3) len) "bin")
-                          (concatenate 'string prog1 "/lisp"))
-                         (t prog1))))
+                          (our-truename (concatenate 'string prog1 "/lisp") t))
+                         (t (our-truename prog1 t)))))
        (write-exec-file str
                         ("~a"
                          (if use-thisscriptdir-p *thisscriptdir-def* ""))
@@ -1932,7 +1930,7 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
             (concatenate 'string "$THISSCRIPTDIR/" core-name ".core")))
     (with-open-file ; write to nsaved_acl2
       (str sysout-name :direction :output)
-      (let* ((prog (car sb-ext:*posix-argv*)))
+      (let* ((prog (our-truename (car sb-ext:*posix-argv*) t)))
         (write-exec-file
          str
          ("~a~a~%"
@@ -1966,7 +1964,16 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
 ; Example:
 ; (export SBCL_USER_ARGS="--lose-on-corruption" ; ./sbcl-saved_acl2)
 
-         "~s --dynamic-space-size ~s --control-stack-size 64 ~
+; On October 9, 2020 we added --tls-limit 8192, because certification of
+; community book books/kestrel/apt/schemalg-template-proofs.lisp failed with
+; ACL2 built on SBCL.  The error was "Thread local storage exhausted", which we
+; apparently indicates too many special variables.  The SBCL 1.5.2 release
+; notes say that "command-line option "--tls-limit" can be used to alter the
+; maximum number of thread-local symbols from its default of 4096".  We chose
+; 8192 because it was sufficient for the book above, but perhaps it can be
+; increased significantly more without bad effect (not sure).
+
+         "~s --tls-limit 8192 --dynamic-space-size ~s --control-stack-size 64 ~
           --disable-ldb --core ~s~a ${SBCL_USER_ARGS} ~
           --end-runtime-options --no-userinit --eval '(acl2::sbcl-restart)'~a ~a~%"
          prog
@@ -2060,7 +2067,7 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
 ;         "~s -I ~s -L ~s ~s~%"
 
           "~s -I ~s~s ~a~%"
-          (system::command-line-argument 0)
+          (our-truename (system::command-line-argument 0) t)
           eventual-sysout-dxl
           (insert-string host-lisp-args)
           (user-args-string inert-args)))
@@ -2186,7 +2193,7 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
               (error "Unable to determine CCL program pathname!")))
          (os (get-os))
          (ccl-program (qfuncall pathname-os-to-unix
-                                ccl-program0
+                                (our-truename ccl-program0 t)
                                 os
                                 *the-live-state*))
          (use-thisscriptdir-p (use-thisscriptdir-p sysout-name core-name))

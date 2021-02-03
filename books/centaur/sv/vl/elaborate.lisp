@@ -99,15 +99,14 @@ resolved items as a form of memoization.</p>
 <p>The lookup table in which we store these values is called an @(see
 elabindex).</p>
 
-<p>The elaboration algorithm calls subsidiary algorithms @(see vl-expr-to-svex)
-and @(see vl-fundecl-to-svex), which each use the elabindex lookup tables in a
-read-only manner.  Before translating an expression (or, similarly, function
-declaration) to svex, the elaboration algorithm walks over the expression and
-collects the information it needs to successfully resolve it to an svex
-expression: the types, svex translations, and port lists of functions that the
-expression calls, and types and values of parameters referenced in the
-expression.  This information is stored in the elabindex before translating the
-expression with @(see vl-expr-to-svex).</p>")
+<p>The elaboration algorithm calls subsidiary algorithms of @(see
+vl-expr-svex-translation), which use the elabindex lookup tables in a read-only
+manner.  Before translating an expression (or, similarly, function declaration)
+to svex, the elaboration algorithm walks over the expression and collects the
+information it needs to successfully resolve it to an svex expression: the
+types, svex translations, and port lists of functions that the expression
+calls, and types and values of parameters referenced in the expression.  This
+information is stored in the elabindex before translating the expression.</p>")
 
 ;; [Jared] Old notes about svexconfs -- do we describe this well for elabscopes
 ;; now?  Also BOZO need to check that the above description of elabindex is OK.

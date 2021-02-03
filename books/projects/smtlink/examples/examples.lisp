@@ -751,3 +751,21 @@ Possible counter-example found: ((M2 (SOME 0)) (M1 (SOME 0)))
   :hints(("Goal"
           :smtlink (:abstract (abstract-p))))
   :rule-classes nil)
+
+;; Thanks to Andrew Walter and Pete Manolios for providing this bug example.
+;; In this example, it used to be that unary-/ is translated to be integer
+;; division in Z3. Since unary-/ is interpreted as integer division and x >=
+;; 10, 1/x is 0, which makes y 0. We fixed this problem by casting the input of
+;; unary-/ to be real. Check the reciprocal function in ACL2_to_Z3.py for
+;; detail.
+(acl2::must-fail
+ (defthm smt-not-integer-division
+   (implies (and (integerp x)
+                 (integerp y)
+                 (integerp z)
+                 (>= x 10)
+                 (= y (* (unary-/ x) z)))
+            (= y 0))
+   :hints (("goal" :smtlink nil))
+   :rule-classes nil)
+ )

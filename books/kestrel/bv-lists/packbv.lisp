@@ -1,7 +1,7 @@
 ; BV Lists Library: theorems about packbv
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2020 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -17,8 +17,10 @@
 (include-book "../bv/getbit")
 (include-book "../lists-light/repeat")
 (local (include-book "../bv/bvcat"))
+(local (include-book "../bv/unsigned-byte-p"))
 (local (include-book "../../ihs/ihs-lemmas")) ;why? for <-*-left-cancel
 (local (include-book "../lists-light/butlast"))
+(local (include-book "../lists-light/nthcdr"))
 (local (include-book "../../meta/meta-plus-lessp"))
 
 (local (in-theory (disable mod-x-y-=-x+y-for-rationals))) ;bad
@@ -139,6 +141,14 @@
   :hints (("Goal" :use (:instance logtail-of-packbv-gen2 (n 1))
            :in-theory (disable logtail-of-packbv-gen2))))
 
+(defthm logtail-of-packbv-simple
+  (implies (and (equal len (len vals))
+                (posp itemsize))
+           (equal (logtail itemsize (packbv len itemsize vals))
+                  (packbv (- len 1) itemsize (butlast vals 1))))
+  :hints (("Goal" :induct (packbv len itemsize vals)
+           :in-theory (enable packbv))))
+
 (defthm packbv-of-1
   (equal (packbv 1 size items)
          (bvchop size (first items)))
@@ -159,3 +169,16 @@
   (equal (packbv count size (true-list-fix items))
          (packbv count size items))
   :hints (("Goal" :in-theory (enable packbv))))
+
+;; This version splits off the least significant piece
+(defthmd packbv-opener-alt
+  (implies (and (not (zp itemcount))
+                (posp itemsize)
+                (natp itemcount)
+                (equal itemcount (len items)))
+           (equal (packbv itemcount itemsize items)
+                  (bvcat (* itemsize (+ -1 itemcount))
+                         (packbv (+ -1 itemcount) itemsize (butlast items 1))
+                         itemsize
+                         (nth (+ -1 itemcount) items))))
+  :hints (("Goal" :in-theory (e/d (slice) (len BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))

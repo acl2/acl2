@@ -1,5 +1,5 @@
-; ACL2 Version 8.2 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2019, Regents of the University of Texas
+; ACL2 Version 8.3 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2020, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -92,6 +92,12 @@
 (verify-termination-boot-strap pairlis-x2) ; and guards
 (verify-termination-boot-strap first-keyword) ; and guards
 (verify-termination-boot-strap symbol-name-lst) ; and guards
+; for case-match expansions:
+(verify-termination-boot-strap symbol-name-equal) ; and guards
+(verify-termination-boot-strap fix-pkg) ; and guards
+(verify-termination-boot-strap unmake-true-list-cons-nest) ; and guards
+(verify-termination-boot-strap dumb-negate-lit) ; and guards
+(verify-termination-boot-strap flatten-ands-in-lit) ; and guards
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Attachment: too-many-ifs-post-rewrite and too-many-ifs-pre-rewrite

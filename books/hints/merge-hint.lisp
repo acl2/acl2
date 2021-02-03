@@ -528,7 +528,8 @@
 
 (logic)
 
-(local (include-book "misc/eval" :dir :system))
+(local (include-book "std/testing/must-fail" :dir :system))
+(local (include-book "std/testing/must-succeed" :dir :system))
 
 (local
  (encapsulate

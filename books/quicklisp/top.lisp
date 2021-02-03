@@ -63,15 +63,9 @@ books in the @('books/quicklisp') directory.  These books serve as the
 basis for other libraries such as @(see oslib) and the ACL2 @(see bridge).
 Naturally, all of these books require @(see trust-tag)s.</p>
 
-<p>Note that the Quicklisp books (and any libraries that depend on them) are
-<b>not built by default</b> when you run @('make') in the @('books') directory!
-The main reasons for this are that Common Lisp libraries vary in portability
-and may not work on all platforms that ACL2 runs on, and some libraries like <a
-href='https://common-lisp.net/project/cffi/'>CFFI</a> necessarily require
-additional tools, e.g., a C compiler that some users may not have installed.
-However, every ANSI-compliant host Common Lisp suitable for ACL2 should support
-the use of Quicklisp, where occasionally libraries may need to be installed.
-As of late 2016, all host Common Lisp implementations suitable for ACL2 are
+<p>Every ANSI-compliant host Common Lisp suitable for ACL2 should support the
+use of Quicklisp, where occasionally libraries may need to be installed.  As of
+late 2016, all host Common Lisp implementations suitable for ACL2 are
 sufficiently ANSI-compliant for the use of Quicklisp except for GCL.</p>
 
 <p>Because of this, if you want to use the Quicklisp books or any libraries
@@ -85,8 +79,10 @@ the Quicklisp books on MacOS Catalina with SBCL failed initially, but worked
 after installing OpenSSL via Homebrew (using the command @('brew install
 openssl')).  The initial certification error did not explicitly mention
 OpenSSL, but rather a @('SIGABRT'); thus, if this kind of certification error
-is observed, installing OpenSSL may solve the problem.</p>
-
+is observed, installing OpenSSL may solve the problem.  Note that Homebrew,
+which is a package/application manager for Mac, can be installed from <a
+href='https://brew.sh'>https://brew.sh</a>, following the simple instructions
+there.</p>
 
 <h3>Using the Quicklisp Books</h3>
 

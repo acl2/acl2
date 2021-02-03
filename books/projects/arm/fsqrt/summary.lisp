@@ -21,7 +21,7 @@
                   (fzp (bitn rin 24))
                   (rmode (bits rin 23 22)))
              (mv-let (data flags) (fsqrt64 opa fnum fzp dnp rmode)
-               (let ((r (logior rin flags)))         
+               (let ((r (logior rin flags)))
                  (mv-let (data-spec r-spec)
                          (arm-sqrt-spec (bits opa (1- fmtw) 0) rin f)
                    (and (equal data data-spec)
@@ -48,7 +48,7 @@
 (defund rmode () (bits (rin) 23 22))
 (defund f () (case (fnum) (0 (hp)) (1 (sp)) (2 (dp))))
 
-;; In terms of these constants, we define constants corresponding to the local 
+;; In terms of these constants, we define constants corresponding to the local
 ;; variables of the top-level function, fsqrt64, culminating in the constants
 ;; (data) and (flags) corresponding to the outputs.
 
@@ -128,7 +128,7 @@
     (0 (bits (qp-n) 53 42))
     (1 (bits (qp-n) 53 28))
     (t (qp-n))))
-    
+
 (defund qn-shft ()
   (case (fnum)
     (0 (bits (qn-n) 53 42))
@@ -463,7 +463,7 @@
 ;; The approximation:
 
 (defund rp4 (j) (bits (ash (rp j) 2) 58 0))
-         
+
 (defund rn4 (j) (bits (ash (rn j) 2) 58 0))
 
 (defund rs8 (j)
@@ -584,8 +584,8 @@
        (quot-bnds-inv j)
        (or (zp j)
            (and (approx-inv (1- j))
-               (qpn-inv j)
-               (rpn-inv j)))))
+                (qpn-inv j)
+                (rpn-inv j)))))
 
 (defthmd inv-lemma
   (implies (and (not (specialp))
@@ -622,7 +622,7 @@
 	              (quotf)))
 	      (expt 2 (- (* 2 (n)))))))
 
-;; Upper bounds on the square root and the final approximation: 
+;; Upper bounds on the square root and the final approximation:
 
 (defthmd qsqrt-x-upper
   (implies (not (specialp))
@@ -651,7 +651,7 @@
 ;; Sticky bit:
 
 (defthmd stk-rewrite
-  (implies (not (specialp))	
+  (implies (not (specialp))
 	   (equal (stk)
 	          (if (integerp (* (expt 2 (1+ (p))) (qsqrt (x) (1+ (* 2 (n))))))
 		      0 1))))
@@ -723,7 +723,7 @@
 	          (if (= (rnd (qsqrt (a) (1+ (* 2 (n)))) (mode) (p))
 		         (qsqrt (a) (1+ (* 2 (n)))))
 		      0 1))))
-		      
+
 (defthmd rnd-qsqrt-a
   (implies (not (specialp))
            (equal (rnd (qsqrt (a) (1+ (* 2 (n)))) (mode) (p))
@@ -760,7 +760,7 @@
                   (fzp (bitn rin 24))
                   (rmode (bits rin 23 22)))
              (mv-let (data flags) (fsqrt64 opa fnum fzp dnp rmode)
-               (let ((r (logior rin flags)))         
+               (let ((r (logior rin flags)))
                  (mv-let (data-spec r-spec)
                          (arm-sqrt-spec (bits opa (1- fmtw) 0) rin f)
                    (and (equal data data-spec)

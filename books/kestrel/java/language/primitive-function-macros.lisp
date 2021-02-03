@@ -12,6 +12,9 @@
 
 (include-book "primitive-types")
 
+(include-book "kestrel/std/util/defmacro-plus" :dir :system)
+(include-book "kestrel/std/util/defthm-commutative" :dir :system)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ primitive-function-macros
@@ -24,7 +27,7 @@
     "The ACL2 functions that formalize Java primitive operations and conversions
      have the following structure:
      they take one (if unary) or two (if binary) primitive values as arguments;
-     they uses primitive value destructors (e.g. @(tsee int-value->int))
+     they use primitive value destructors (e.g. @(tsee int-value->int))
      to obtain the ``core'' values to operate upon with existing ACL2 functions;
      they use existing ACL2 functions to generate the ``core'' result;
      they uses primitive value constructors (e.g. @(tsee int-value))
@@ -42,7 +45,11 @@
      which are all explicitly specified.
      Since certain combinations of operand and result types
      are shared by certain collections of primitive operations,
-     we also introduce more specialized macros for these combinations."))
+     we also introduce more specialized macros for these combinations.")
+   (xdoc::p
+    "These macros also provide options
+     to generate certain kinds of theorems about the operations,
+     e.g. commutativity theorems."))
   :order-subtopics t
   :default-parent t)
 
@@ -51,7 +58,7 @@
 (define primitive-type-predicate ((type primitive-typep))
   :returns (predicate symbolp)
   :short "The recognizer of the fixtype of the values of a primitive type."
-  (packn-pos (list (symbol-name (primitive-type-kind type)) '-value-p)
+  (packn-pos (list (symbol-name (primitive-type-kind type)) '-valuep)
              (pkg-witness "JAVA")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -164,6 +171,11 @@
      to be different from the zero value of the respective type.
      This is used to define the integer division and reminder operations;
      it is @('nil') by default.")
+   (xdoc::p
+    "This macro also takes an optional argument saying whether
+     a theorem should be generated
+     that asserts the commutativity of the operation.
+     There is also an optional argument to supply hints for this.")
    (xdoc::@def "def-primitive-binary"))
 
   (define def-primitive-binary-fn ((name symbolp)
@@ -172,6 +184,8 @@
                                    (out-type primitive-typep)
                                    (operation "An untranslated term.")
                                    (nonzero booleanp)
+                                   (commutative booleanp)
+                                   (commutative-hints true-listp)
                                    (parents symbol-listp)
                                    (parents-suppliedp booleanp)
                                    (short "A string or form or @('nil').")
@@ -194,7 +208,12 @@
                   but it is ~x0 instead."
                  (primitive-type-kind in-type-right)))
          (guard? (and nonzero
-                      `(not (equal (,in-destructor-right operand-right) 0)))))
+                      `(not (equal (,in-destructor-right operand-right) 0))))
+         (commutative-thm?
+          (and commutative
+               `(defthm-commutative ,(add-suffix name "-COMMUTATIVE")
+                  ,name
+                  :hints ,commutative-hints))))
       `(define ,name ((operand-left ,in-predicate-left)
                       (operand-right ,in-predicate-right))
          ,@(and guard? (list :guard guard?))
@@ -206,7 +225,9 @@
               (y (,in-destructor-right operand-right)))
            (,out-constructor ,operation))
          :hooks (:fix)
-         :no-function t)))
+         :no-function t
+         ///
+         ,@(and commutative (list commutative-thm?)))))
 
   (defmacro def-primitive-binary (name
                                   &key
@@ -215,6 +236,8 @@
                                   out-type
                                   operation
                                   nonzero
+                                  commutative
+                                  commutative-hints
                                   (parents 'nil parents-suppliedp)
                                   (short 'nil short-suppliedp)
                                   (long 'nil long-suppliedp))
@@ -226,317 +249,313 @@
         ,out-type
         ',operation
         ,nonzero
+        ,commutative
+        ',commutative-hints
         ',parents ,parents-suppliedp
         ,short ,short-suppliedp
         ,long ,long-suppliedp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection def-boolean-unary
+(defmacro+ def-boolean-unary (name
+                              &key
+                              operation
+                              (parents 'nil parents-suppliedp)
+                              (short 'nil short-suppliedp)
+                              (long 'nil long-suppliedp))
   :short "Specialization of @(tsee def-primitive-unary) to
           the case in which input and output types are @('boolean')."
-  :long (xdoc::topstring-@def "def-boolean-unary")
-
-  (defmacro def-boolean-unary (name
-                               &key
-                               operation
-                               (parents 'nil parents-suppliedp)
-                               (short 'nil short-suppliedp)
-                               (long 'nil long-suppliedp))
-    `(def-primitive-unary ,name
-       :in-type (primitive-type-boolean)
-       :out-type (primitive-type-boolean)
-       :operation ,operation
-       ,@(and parents-suppliedp (list :parents parents))
-       ,@(and short-suppliedp (list :short short))
-       ,@(and long-suppliedp (list :long long)))))
+  `(def-primitive-unary ,name
+     :in-type (primitive-type-boolean)
+     :out-type (primitive-type-boolean)
+     :operation ,operation
+     ,@(and parents-suppliedp (list :parents parents))
+     ,@(and short-suppliedp (list :short short))
+     ,@(and long-suppliedp (list :long long))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection def-int-unary
+(defmacro+ def-int-unary (name
+                          &key
+                          operation
+                          (parents 'nil parents-suppliedp)
+                          (short 'nil short-suppliedp)
+                          (long 'nil long-suppliedp))
   :short "Specialization of @(tsee def-primitive-unary) to
           the case in which input and output types are @('int')."
-  :long (xdoc::topstring-@def "def-int-unary")
+  `(def-primitive-unary ,name
+     :in-type (primitive-type-int)
+     :out-type (primitive-type-int)
+     :operation ,operation
+     ,@(and parents-suppliedp (list :parents parents))
+     ,@(and short-suppliedp (list :short short))
+     ,@(and long-suppliedp (list :long long))))
 
-  (defmacro def-int-unary (name
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defmacro+ def-long-unary (name
                            &key
                            operation
                            (parents 'nil parents-suppliedp)
                            (short 'nil short-suppliedp)
                            (long 'nil long-suppliedp))
-    `(def-primitive-unary ,name
-       :in-type (primitive-type-int)
-       :out-type (primitive-type-int)
-       :operation ,operation
-       ,@(and parents-suppliedp (list :parents parents))
-       ,@(and short-suppliedp (list :short short))
-       ,@(and long-suppliedp (list :long long)))))
+  :short "Specialization of @(tsee def-primitive-unary) to
+          the case in which input and output types are @('long')."
+  `(def-primitive-unary ,name
+     :in-type (primitive-type-long)
+     :out-type (primitive-type-long)
+     :operation ,operation
+     ,@(and parents-suppliedp (list :parents parents))
+     ,@(and short-suppliedp (list :short short))
+     ,@(and long-suppliedp (list :long long))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection def-long-unary
-  :short "Specialization of @(tsee def-primitive-unary) to
-          the case in which input and output types are @('long')."
-  :long (xdoc::topstring-@def "def-long-unary")
-
-  (defmacro def-long-unary (name
+(defmacro+ def-float-unary (name
                             &key
                             operation
                             (parents 'nil parents-suppliedp)
                             (short 'nil short-suppliedp)
                             (long 'nil long-suppliedp))
-    `(def-primitive-unary ,name
-       :in-type (primitive-type-long)
-       :out-type (primitive-type-long)
-       :operation ,operation
-       ,@(and parents-suppliedp (list :parents parents))
-       ,@(and short-suppliedp (list :short short))
-       ,@(and long-suppliedp (list :long long)))))
+  :short "Specialization of @(tsee def-primitive-unary) to
+          the case in which input and output types are @('float')."
+  `(def-primitive-unary ,name
+     :in-type (primitive-type-float)
+     :out-type (primitive-type-float)
+     :operation ,operation
+     ,@(and parents-suppliedp (list :parents parents))
+     ,@(and short-suppliedp (list :short short))
+     ,@(and long-suppliedp (list :long long))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection def-float-unary
-  :short "Specialization of @(tsee def-primitive-unary) to
-          the case in which input and output types are @('float')."
-  :long (xdoc::topstring-@def "def-float-unary")
-
-  (defmacro def-float-unary (name
+(defmacro+ def-double-unary (name
                              &key
                              operation
                              (parents 'nil parents-suppliedp)
                              (short 'nil short-suppliedp)
                              (long 'nil long-suppliedp))
-    `(def-primitive-unary ,name
-       :in-type (primitive-type-float)
-       :out-type (primitive-type-float)
-       :operation ,operation
-       ,@(and parents-suppliedp (list :parents parents))
-       ,@(and short-suppliedp (list :short short))
-       ,@(and long-suppliedp (list :long long)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defsection def-double-unary
   :short "Specialization of @(tsee def-primitive-unary) to
           the case in which input and output types are @('double')."
-  :long (xdoc::topstring-@def "def-double-unary")
-
-  (defmacro def-double-unary (name
-                              &key
-                              operation
-                              (parents 'nil parents-suppliedp)
-                              (short 'nil short-suppliedp)
-                              (long 'nil long-suppliedp))
-    `(def-primitive-unary ,name
-       :in-type (primitive-type-double)
-       :out-type (primitive-type-double)
-       :operation ,operation
-       ,@(and parents-suppliedp (list :parents parents))
-       ,@(and short-suppliedp (list :short short))
-       ,@(and long-suppliedp (list :long long)))))
+  `(def-primitive-unary ,name
+     :in-type (primitive-type-double)
+     :out-type (primitive-type-double)
+     :operation ,operation
+     ,@(and parents-suppliedp (list :parents parents))
+     ,@(and short-suppliedp (list :short short))
+     ,@(and long-suppliedp (list :long long))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection def-boolean-binary
-  :short "Specialization of @(tsee def-primitive-binary) to
-          the case in which input and output types are @('boolean')."
-  :long (xdoc::topstring-@def "def-boolean-binary")
-
-  (defmacro def-boolean-binary (name
-                                &key
-                                operation
-                                (parents 'nil parents-suppliedp)
-                                (short 'nil short-suppliedp)
-                                (long 'nil long-suppliedp))
-    `(def-primitive-binary ,name
-       :in-type-left (primitive-type-boolean)
-       :in-type-right (primitive-type-boolean)
-       :out-type (primitive-type-boolean)
-       :operation ,operation
-       ,@(and parents-suppliedp (list :parents parents))
-       ,@(and short-suppliedp (list :short short))
-       ,@(and long-suppliedp (list :long long)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defsection def-int-binary
-  :short "Specialization of @(tsee def-primitive-binary) to
-          the case in which input and output types are @('int')."
-  :long (xdoc::topstring-@def "def-int-binary")
-
-  (defmacro def-int-binary (name
-                            &key
-                            operation
-                            nonzero
-                            (parents 'nil parents-suppliedp)
-                            (short 'nil short-suppliedp)
-                            (long 'nil long-suppliedp))
-    `(def-primitive-binary ,name
-       :in-type-left (primitive-type-int)
-       :in-type-right (primitive-type-int)
-       :out-type (primitive-type-int)
-       :operation ,operation
-       :nonzero ,nonzero
-       ,@(and parents-suppliedp (list :parents parents))
-       ,@(and short-suppliedp (list :short short))
-       ,@(and long-suppliedp (list :long long)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defsection def-long-binary
-  :short "Specialization of @(tsee def-primitive-binary) to
-          the case in which input and output types are @('long')."
-  :long (xdoc::topstring-@def "def-long-binary")
-
-  (defmacro def-long-binary (name
-                             &key
-                             operation
-                             nonzero
-                             (parents 'nil parents-suppliedp)
-                             (short 'nil short-suppliedp)
-                             (long 'nil long-suppliedp))
-    `(def-primitive-binary ,name
-       :in-type-left (primitive-type-long)
-       :in-type-right (primitive-type-long)
-       :out-type (primitive-type-long)
-       :operation ,operation
-       :nonzero ,nonzero
-       ,@(and parents-suppliedp (list :parents parents))
-       ,@(and short-suppliedp (list :short short))
-       ,@(and long-suppliedp (list :long long)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defsection def-float-binary
-  :short "Specialization of @(tsee def-primitive-binary) to
-          the case in which input and output types are @('float')."
-  :long (xdoc::topstring-@def "def-float-binary")
-
-  (defmacro def-float-binary (name
-                              &key
-                              operation
-                              (parents 'nil parents-suppliedp)
-                              (short 'nil short-suppliedp)
-                              (long 'nil long-suppliedp))
-    `(def-primitive-binary ,name
-       :in-type-left (primitive-type-float)
-       :in-type-right (primitive-type-float)
-       :out-type (primitive-type-float)
-       :operation ,operation
-       ,@(and parents-suppliedp (list :parents parents))
-       ,@(and short-suppliedp (list :short short))
-       ,@(and long-suppliedp (list :long long)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defsection def-double-binary
-  :short "Specialization of @(tsee def-primitive-binary) to
-          the case in which input and output types are @('double')."
-  :long (xdoc::topstring-@def "def-double-binary")
-
-  (defmacro def-double-binary (name
+(defmacro+ def-boolean-binary (name
                                &key
                                operation
+                               commutative
+                               commutative-hints
                                (parents 'nil parents-suppliedp)
                                (short 'nil short-suppliedp)
                                (long 'nil long-suppliedp))
-    `(def-primitive-binary ,name
-       :in-type-left (primitive-type-double)
-       :in-type-right (primitive-type-double)
-       :out-type (primitive-type-double)
-       :operation ,operation
-       ,@(and parents-suppliedp (list :parents parents))
-       ,@(and short-suppliedp (list :short short))
-       ,@(and long-suppliedp (list :long long)))))
+  :short "Specialization of @(tsee def-primitive-binary) to
+          the case in which input and output types are @('boolean')."
+  `(def-primitive-binary ,name
+     :in-type-left (primitive-type-boolean)
+     :in-type-right (primitive-type-boolean)
+     :out-type (primitive-type-boolean)
+     :operation ,operation
+     :commutative ,commutative
+     :commutative-hints ,commutative-hints
+     ,@(and parents-suppliedp (list :parents parents))
+     ,@(and short-suppliedp (list :short short))
+     ,@(and long-suppliedp (list :long long))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defmacro+ def-int-binary (name
+                           &key
+                           operation
+                           nonzero
+                           commutative
+                           commutative-hints
+                           (parents 'nil parents-suppliedp)
+                           (short 'nil short-suppliedp)
+                           (long 'nil long-suppliedp))
+  :short "Specialization of @(tsee def-primitive-binary) to
+          the case in which input and output types are @('int')."
+  `(def-primitive-binary ,name
+     :in-type-left (primitive-type-int)
+     :in-type-right (primitive-type-int)
+     :out-type (primitive-type-int)
+     :operation ,operation
+     :nonzero ,nonzero
+     :commutative ,commutative
+     :commutative-hints ,commutative-hints
+     ,@(and parents-suppliedp (list :parents parents))
+     ,@(and short-suppliedp (list :short short))
+     ,@(and long-suppliedp (list :long long))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defmacro+ def-long-binary (name
+                            &key
+                            operation
+                            nonzero
+                            commutative
+                            commutative-hints
+                            (parents 'nil parents-suppliedp)
+                            (short 'nil short-suppliedp)
+                            (long 'nil long-suppliedp))
+  :short "Specialization of @(tsee def-primitive-binary) to
+          the case in which input and output types are @('long')."
+  `(def-primitive-binary ,name
+     :in-type-left (primitive-type-long)
+     :in-type-right (primitive-type-long)
+     :out-type (primitive-type-long)
+     :operation ,operation
+     :nonzero ,nonzero
+     :commutative ,commutative
+     :commutative-hints ,commutative-hints
+     ,@(and parents-suppliedp (list :parents parents))
+     ,@(and short-suppliedp (list :short short))
+     ,@(and long-suppliedp (list :long long))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defmacro+ def-float-binary (name
+                             &key
+                             operation
+                             commutative
+                             commutative-hints
+                             (parents 'nil parents-suppliedp)
+                             (short 'nil short-suppliedp)
+                             (long 'nil long-suppliedp))
+  :short "Specialization of @(tsee def-primitive-binary) to
+          the case in which input and output types are @('float')."
+  `(def-primitive-binary ,name
+     :in-type-left (primitive-type-float)
+     :in-type-right (primitive-type-float)
+     :out-type (primitive-type-float)
+     :operation ,operation
+     :commutative ,commutative
+     :commutative-hints ,commutative-hints
+     ,@(and parents-suppliedp (list :parents parents))
+     ,@(and short-suppliedp (list :short short))
+     ,@(and long-suppliedp (list :long long))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defmacro+ def-double-binary (name
+                              &key
+                              operation
+                              commutative
+                              commutative-hints
+                              (parents 'nil parents-suppliedp)
+                              (short 'nil short-suppliedp)
+                              (long 'nil long-suppliedp))
+  :short "Specialization of @(tsee def-primitive-binary) to
+          the case in which input and output types are @('double')."
+  `(def-primitive-binary ,name
+     :in-type-left (primitive-type-double)
+     :in-type-right (primitive-type-double)
+     :out-type (primitive-type-double)
+     :operation ,operation
+     :commutative ,commutative
+     :commutative-hints ,commutative-hints
+     ,@(and parents-suppliedp (list :parents parents))
+     ,@(and short-suppliedp (list :short short))
+     ,@(and long-suppliedp (list :long long))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection def-int=>boolean-binary
+(defmacro+ def-int=>boolean-binary (name
+                                    &key
+                                    operation
+                                    commutative
+                                    commutative-hints
+                                    (parents 'nil parents-suppliedp)
+                                    (short 'nil short-suppliedp)
+                                    (long 'nil long-suppliedp))
   :short "Specialization of @(tsee def-primitive-binary) to
           the case in which the input types are @('int')
           and the output type is @('boolean')."
-  :long (xdoc::topstring-@def "def-int=>boolean-binary")
+  `(def-primitive-binary ,name
+     :in-type-left (primitive-type-int)
+     :in-type-right (primitive-type-int)
+     :out-type (primitive-type-boolean)
+     :operation ,operation
+     :commutative ,commutative
+     :commutative-hints ,commutative-hints
+     ,@(and parents-suppliedp (list :parents parents))
+     ,@(and short-suppliedp (list :short short))
+     ,@(and long-suppliedp (list :long long))))
 
-  (defmacro def-int=>boolean-binary (name
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defmacro+ def-long=>boolean-binary (name
                                      &key
                                      operation
+                                     commutative
+                                     commutative-hints
                                      (parents 'nil parents-suppliedp)
                                      (short 'nil short-suppliedp)
                                      (long 'nil long-suppliedp))
-    `(def-primitive-binary ,name
-       :in-type-left (primitive-type-int)
-       :in-type-right (primitive-type-int)
-       :out-type (primitive-type-boolean)
-       :operation ,operation
-       ,@(and parents-suppliedp (list :parents parents))
-       ,@(and short-suppliedp (list :short short))
-       ,@(and long-suppliedp (list :long long)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defsection def-long=>boolean-binary
   :short "Specialization of @(tsee def-primitive-binary) to
           the case in which the input types are @('long')
           and the output type is @('boolean')."
-  :long (xdoc::topstring-@def "def-long=>boolean-binary")
+  `(def-primitive-binary ,name
+     :in-type-left (primitive-type-long)
+     :in-type-right (primitive-type-long)
+     :out-type (primitive-type-boolean)
+     :operation ,operation
+     :commutative ,commutative
+     :commutative-hints ,commutative-hints
+     ,@(and parents-suppliedp (list :parents parents))
+     ,@(and short-suppliedp (list :short short))
+     ,@(and long-suppliedp (list :long long))))
 
-  (defmacro def-long=>boolean-binary (name
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defmacro+ def-float=>boolean-binary (name
                                       &key
                                       operation
+                                      commutative
+                                      commutative-hints
                                       (parents 'nil parents-suppliedp)
                                       (short 'nil short-suppliedp)
                                       (long 'nil long-suppliedp))
-    `(def-primitive-binary ,name
-       :in-type-left (primitive-type-long)
-       :in-type-right (primitive-type-long)
-       :out-type (primitive-type-boolean)
-       :operation ,operation
-       ,@(and parents-suppliedp (list :parents parents))
-       ,@(and short-suppliedp (list :short short))
-       ,@(and long-suppliedp (list :long long)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defsection def-float=>boolean-binary
   :short "Specialization of @(tsee def-primitive-binary) to
           the case in which the input types are @('float')
           and the output type is @('boolean')."
-  :long (xdoc::topstring-@def "def-float=>boolean-binary")
-
-  (defmacro def-float=>boolean-binary (name
-                                       &key
-                                       operation
-                                       (parents 'nil parents-suppliedp)
-                                       (short 'nil short-suppliedp)
-                                       (long 'nil long-suppliedp))
-    `(def-primitive-binary ,name
-       :in-type-left (primitive-type-float)
-       :in-type-right (primitive-type-float)
-       :out-type (primitive-type-boolean)
-       :operation ,operation
-       ,@(and parents-suppliedp (list :parents parents))
-       ,@(and short-suppliedp (list :short short))
-       ,@(and long-suppliedp (list :long long)))))
+  `(def-primitive-binary ,name
+     :in-type-left (primitive-type-float)
+     :in-type-right (primitive-type-float)
+     :out-type (primitive-type-boolean)
+     :operation ,operation
+     :commutative ,commutative
+     :commutative-hints ,commutative-hints
+     ,@(and parents-suppliedp (list :parents parents))
+     ,@(and short-suppliedp (list :short short))
+     ,@(and long-suppliedp (list :long long))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection def-double=>boolean-binary
+(defmacro+ def-double=>boolean-binary (name
+                                       &key
+                                       operation
+                                       commutative
+                                       commutative-hints
+                                       (parents 'nil parents-suppliedp)
+                                       (short 'nil short-suppliedp)
+                                       (long 'nil long-suppliedp))
   :short "Specialization of @(tsee def-primitive-binary) to
           the case in which the input types are @('double')
           and the output type is @('boolean')."
-  :long (xdoc::topstring-@def "def-double=>boolean-binary")
-
-  (defmacro def-double=>boolean-binary (name
-                                        &key
-                                        operation
-                                        (parents 'nil parents-suppliedp)
-                                        (short 'nil short-suppliedp)
-                                        (long 'nil long-suppliedp))
-    `(def-primitive-binary ,name
-       :in-type-left (primitive-type-double)
-       :in-type-right (primitive-type-double)
-       :out-type (primitive-type-boolean)
-       :operation ,operation
-       ,@(and parents-suppliedp (list :parents parents))
-       ,@(and short-suppliedp (list :short short))
-       ,@(and long-suppliedp (list :long long)))))
+  `(def-primitive-binary ,name
+     :in-type-left (primitive-type-double)
+     :in-type-right (primitive-type-double)
+     :out-type (primitive-type-boolean)
+     :operation ,operation
+     :commutative ,commutative
+     :commutative-hints ,commutative-hints
+     ,@(and parents-suppliedp (list :parents parents))
+     ,@(and short-suppliedp (list :short short))
+     ,@(and long-suppliedp (list :long long))))

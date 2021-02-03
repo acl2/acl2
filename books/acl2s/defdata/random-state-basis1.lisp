@@ -7,11 +7,12 @@
 (in-package "DEFDATA")
 (set-verify-guards-eagerness 2)
 (include-book "std/util/bstar" :dir :system)
+(include-book "acl2s/utilities" :dir :system)
 (local (include-book "arithmetic-3/floor-mod/floor-mod" :dir :system))
 ;(local (include-book "arithmetic-5/top" :dir :system))
 
-(defconst *M31* 2147483647);1 less than 2^31
-(defconst *P1* 16807)
+(def-const *M31* 2147483647);1 less than 2^31
+(def-const *P1* 16807)
 
 (make-event
  (er-progn

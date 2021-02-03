@@ -13,6 +13,8 @@
 (include-book "optional-integer-type-suffix")
 (include-book "binary-digits")
 
+(include-book "std/util/defprojection" :dir :system)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ binary-integer-literals
@@ -35,7 +37,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deflist bindig/uscore-list
-  :short "Fixtype of true lists of binary digits and underscores."
+  :short "Fixtype of lists of binary digits and underscores."
   :long
   (xdoc::topstring-p
    "A @('binary-numeral') in the grammar, excluding the prefix,
@@ -46,6 +48,19 @@
   :true-listp t
   :elementp-of-nil nil
   :pred bindig/uscore-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection bindig/uscore-digit-list (x)
+  :guard (bin-digit-listp x)
+  :returns (dus bindig/uscore-listp)
+  :short "Lift @(tsee bindig/uscore-digit) to lists."
+  (bindig/uscore-digit x)
+  ///
+
+  (defret bindig/uscore-kind-of-car-of-last-of-bindig/uscore-digit-list
+    (equal (bindig/uscore-kind (car (last dus))) :digit)
+    :hyp (consp x)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -118,6 +133,7 @@
                              (list (bindig/uscore-digit (char-code #\0)))))
    (prefix-upcase-p bool)
    (suffix? optional-integer-type-suffix))
+  :require (bindig/uscore-list-wfp digits/uscores)
   :tag :bin-integer-lit
   :layout :list
-  :require (bindig/uscore-list-wfp digits/uscores))
+  :pred bin-integer-literalp)
