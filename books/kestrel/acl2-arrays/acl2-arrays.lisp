@@ -871,7 +871,7 @@
                       val
                     (aref1 array-name array index2)))))
 
-(defun array-to-alist-aux (n len array-name array acc)
+(defund array-to-alist-aux (n len array-name array acc)
   (declare (xargs :measure (nfix (+ 1 (- len n)))
                   :guard (and (array1p array-name array)
                               (natp n)
@@ -888,7 +888,8 @@
 
 (defthm alistp-of-array-to-alist-aux
   (implies (alistp acc)
-           (alistp (array-to-alist-aux n len array-name array acc))))
+           (alistp (array-to-alist-aux n len array-name array acc)))
+  :hints (("Goal" :in-theory (enable array-to-alist-aux))))
 
 (defthm len-of-array-to-alist-aux
   (implies (and (natp len)
@@ -917,12 +918,28 @@
   :hints (("Goal" :in-theory (enable array-to-alist-aux))))
 
 ;; The indices in the result will be decreasing.
-(defun array-to-alist (len array-name array)
+(defund array-to-alist (len array-name array)
   (declare (xargs :guard (and (array1p array-name array)
                               (natp len)
                               (<= len (alen1 array-name array)))))
   (array-to-alist-aux 0 len array-name array nil))
 
+(defthm len-of-array-to-alist
+  (implies (natp len)
+           (equal (len (array-to-alist len array-name array))
+                  len))
+  :hints (("Goal" :in-theory (enable array-to-alist))))
+
+(defthm true-listp-of-array-to-alist-type
+  (true-listp (array-to-alist len array-name array))
+  :rule-classes :type-prescription
+  :hints (("Goal" :in-theory (enable array-to-alist))))
+
+(defthm car-of-array-to-alist
+  (implies (posp len)
+           (equal (car (array-to-alist len array-name array))
+                  (cons (+ -1 len) (aref1 array-name array (+ -1 len)))))
+  :hints (("Goal" :in-theory (enable array-to-alist))))
 
 (defun print-array-vals (high-index low-index array-name array)
   (declare (xargs :measure (+ 1 (nfix (- (+ 1 high-index) low-index)))
