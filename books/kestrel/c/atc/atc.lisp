@@ -429,6 +429,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atc-var-newp ((var symbolp) (vars atc-symbol-type-alistp))
+  :returns (yes/no booleanp)
+  :short "Check if a variable is not already in the symbol table."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We do not just check that the symbol is not in the table:
+     we check that the table has no variable
+     whose @(tsee symbol-name) is the same as the one of @('var').
+     This is because the package name of ACL2 symbols
+     is ignored for the purpose of representing C variables:
+     only the symbol name is used,
+     and thus all the symbol names must be distinct."))
+  (not (member-equal (symbol-name var) (symbol-name-lst (strip-cars vars)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define atc-check-sint-const ((term pseudo-termp))
   :returns (mv (yes/no booleanp)
                (val acl2::sbyte32p))
@@ -1108,7 +1125,7 @@
                          the LET variable ~x1 of the function ~x2 ~
                          must be a portable ASCII C identifier, but it is not."
                         var-name var fn))
-             ((when (member-equal var-name (symbol-name-lst (strip-cars vars))))
+             ((unless (atc-var-newp var vars))
               (er-soft+ ctx t (list nil (irr-type))
                         "When generating C code for the function ~x0, ~
                          the LET variable ~x1 has the same symbol name as ~
