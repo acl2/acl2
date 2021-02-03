@@ -460,6 +460,15 @@
   :rule-classes (:rewrite :type-prescription)
   :hints (("Goal" :in-theory (enable add-function-call-expr-to-dag-array-with-name))))
 
+;; The dag length after adding the expr actually can't be zero.
+(defthm posp-of-mv-nth-3-of-add-function-call-expr-to-dag-array-with-name
+  (implies (and (natp dag-len)
+                (all-dargp-less-than args dag-len)
+                (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist))
+           (< 0 (mv-nth 3 (add-function-call-expr-to-dag-array-with-name fn args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name))))
+  :rule-classes (:rewrite :type-prescription)
+  :hints (("Goal" :in-theory (enable add-function-call-expr-to-dag-array-with-name wf-dagp))))
+
 (defthm <-of-mv-nth-3-of-add-function-call-expr-to-dag-array-with-name-and-0
   (implies (natp dag-len)
            (not (< (mv-nth 3 (add-function-call-expr-to-dag-array-with-name fn args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name))
