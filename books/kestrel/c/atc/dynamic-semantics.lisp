@@ -159,6 +159,18 @@
   :enable (scope-resultp
            scope-result-kind))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defresult scope-list "lists of scopes")
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled errorp-when-scope-list-resultp
+  (implies (scope-list-resultp x)
+           (equal (errorp x)
+                  (not (scope-listp x))))
+  :enable (errorp scope-list-resultp))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod frame
@@ -213,15 +225,22 @@
   ((frames frame-list))
   :pred compustatep)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defresult compustate "computation states")
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;
 
 (defrule not-compustatep-of-error
   (not (compustatep (error x)))
   :enable (compustatep error))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled not-errorp-when-compustatep
+  (implies (compustatep x)
+           (not (errorp x)))
+  :enable (errorp compustatep))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -453,7 +472,7 @@
 (define create-var ((var identp) (val sintp) (compst compustatep))
   :guard (> (compustate-frames-number compst) 0)
   :returns (result compustate-resultp)
-  :short "Add a variable to a computation state."
+  :short "Create a variable in a computation state."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -504,7 +523,7 @@
 
 (define read-var ((var identp) (compst compustatep))
   :returns (result value-resultp)
-  :short "Read a variable from a computation state."
+  :short "Read a variable in a computation state."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -538,18 +557,95 @@
      for the C function in the top frame."))
   (if (> (compustate-frames-number compst) 0)
       (read-var-aux var (frame->scopes (top-frame compst)))
-    (error (list :no-var-found-empty-frame-stack (ident-fix var))))
+    (error (list :read-var-empty-frame-stack (ident-fix var))))
   :hooks (:fix)
 
   :prepwork
   ((define read-var-aux ((var identp) (scopes scope-listp))
      :returns (result value-resultp)
-     (b* (((when (endp scopes)) (error (list :no-var-found (ident-fix var))))
+     (b* (((when (endp scopes))
+           (error (list :read-var-not-found (ident-fix var))))
           (scope (car scopes))
           (pair (omap::in (ident-fix var) (scope-fix scope)))
           ((when (not pair)) (read-var-aux var (cdr scopes))))
        (cdr pair))
      :hooks (:fix))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define write-var ((var identp) (val sintp) (compst compustatep))
+  :returns (new-compst compustate-resultp)
+  :short "Write a variable in the computation state."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We look for the variable in the same way as in @(tsee read-var),
+     i.e. in the top frame's scopes from innermost to outermost.
+     The variable must exist, it is not created;
+     variables are created via @(tsee create-var).
+     The new value must have the same type as the old value;
+     note that, in our restricted dynamic semantics of C,
+     variables always have values, they are never uninitialized.
+     Currently the new value is always an @('int'),
+     and so is the old value (so there is no need to actually check them),
+     but this will be generalized at some point."))
+  (b* (((unless (> (compustate-frames-number compst) 0))
+        (error (list :write-var-empty-frame-stack (ident-fix var))))
+       (frame (top-frame compst))
+       (new-scopes (write-var-aux var val (frame->scopes frame)))
+       ((when (errorp new-scopes)) new-scopes)
+       (new-frame (change-frame frame :scopes new-scopes)))
+    (push-frame new-frame (pop-frame compst)))
+  :hooks (:fix)
+
+  :prepwork
+  ((define write-var-aux ((var identp) (val sintp) (scopes scope-listp))
+     :returns (new-scopes scope-list-resultp)
+     (b* (((when (endp scopes))
+           (error (list :write-var-not-found (ident-fix var))))
+          (scope (scope-fix (car scopes)))
+          (pair (omap::in (ident-fix var) scope))
+          ((when (consp pair))
+           (cons (omap::update (ident-fix var) (sint-fix val) scope)
+                 (scope-list-fix (cdr scopes))))
+          (new-cdr-scopes (write-var-aux var val (cdr scopes)))
+          ((when (errorp new-cdr-scopes)) new-cdr-scopes))
+       (cons scope new-cdr-scopes))
+     :hooks (:fix)
+
+     ///
+
+     (defret consp-of-write-var-aux
+       (implies (scope-listp new-scopes)
+                (equal (consp new-scopes)
+                       (consp scopes)))
+       :hints (("Goal" :in-theory (enable error))))
+
+     (defret len-of-write-var-aux
+       (implies (scope-listp new-scopes)
+                (equal (len new-scopes)
+                       (len scopes)))
+       :hints (("Goal" :in-theory (enable error errorp))))))
+
+  ///
+
+  (defret compustate-frames-number-of-write-var
+    (implies (compustatep new-compst)
+             (equal (compustate-frames-number new-compst)
+                    (compustate-frames-number compst)))
+    :hints (("Goal" :in-theory (enable not-errorp-when-compustatep))))
+
+  (defret compustate-scopes-numbers-of-write-var
+    (implies (compustatep new-compst)
+             (equal (compustate-scopes-numbers new-compst)
+                    (compustate-scopes-numbers compst)))
+    :hints (("Goal" :in-theory (enable top-frame
+                                       push-frame
+                                       pop-frame
+                                       compustate-frames-number
+                                       compustate-scopes-numbers
+                                       compustate-scopes-numbers-aux
+                                       errorp-when-scope-list-resultp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
