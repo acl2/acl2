@@ -10,9 +10,15 @@
                               (or (myquotep dag)
                                   (and (pseudo-dagp dag)
                                        (<= (len dag) 2147483646))))
-                  :verify-guards nil ;todo
-                  ))
-  (acl2::make-conjunction-dag! (acl2::make-term-into-dag-basic! term
-                                                                nil ;todo: ifns
-                                                                )
-                               dag))
+                  :guard-hints (("Goal" :in-theory (disable myquotep quotep)))))
+  (mv-let (erp dag-or-quotep)
+    (acl2::make-term-into-dag-basic term
+                                    nil ;todo: ifns
+                                    )
+    (if erp
+        (er hard? 'conjoin-term-with-dag! "Error making term into dag.")
+      (if (and (not (myquotep dag-or-quotep))
+               (< 2147483646 (len dag-or-quotep)))
+          ;; todo: can this happen?
+          (er hard? 'conjoin-term-with-dag! "DAG too long.")
+        (acl2::make-conjunction-dag! dag-or-quotep dag)))))
