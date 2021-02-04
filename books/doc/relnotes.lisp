@@ -209,7 +209,7 @@
 
    (xdoc::p
     "This is a library that introduces and formalizes
-     the notion of PFCS (Prime Field Consttaint Systems),
+     the notion of PFCS (Prime Field Constraint Systems),
      which generalize R1CS and possibly other constraint systems
      for zero-knowledge proofs.
      This is currently under the "
@@ -580,6 +580,9 @@
 
    (xdoc::p
     "Some theorems about hex-prefix encoding have been added.")
+
+   (xdoc::p
+    "A sub-library for the Semaphore gadget has been added.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
