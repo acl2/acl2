@@ -32,34 +32,6 @@
 (local (in-theory (enable symbolp-of-car-when-dag-exprp0
                           car-of-car-when-pseudo-dagp-cheap)))
 
-;move
-(defthm pseudo-dagp-aux-of-array-to-alist-aux
-  (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                (natp n)
-                (<= n dag-len)
-                (pseudo-dagp-aux acc (+ -1 n)))
-           (pseudo-dagp-aux (array-to-alist-aux n dag-len dag-array-name dag-array acc) (+ -1 dag-len)))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (array-to-alist-aux
-                            pseudo-dagp-aux)
-                           (bounded-dag-exprp
-                            car-of-car-when-pseudo-dagp-aux)))))
-
-(defthm pseudo-dagp-of-array-to-alist
-  (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                (posp dag-len) ;a pseudo-dag can't be empty
-                )
-           (pseudo-dagp (array-to-alist dag-len dag-array-name dag-array)))
-  :otf-flg t
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :use (:instance pseudo-dagp-aux-of-array-to-alist-aux
-                           (n 0)
-                           (acc nil))
-           :in-theory (e/d (array-to-alist pseudo-dagp)
-                           (car-of-car-when-pseudo-dagp-aux
-                            natp
-                            pseudo-dagp-aux-of-array-to-alist-aux)))))
-
 ;; Merges dag1 into dag2. Takes two dag-lst-or-quoteps and returns a
 ;; dag-lst-or-quotep. Returns (mv erp nodenum-or-quotep-for-dag1
 ;; extended-dag2). any valid nodenums in dag2 remain the same.  fixme make an
@@ -178,7 +150,9 @@
                 (not (mv-nth 0 (merge-dag-into-dag-quick dag1 dag2))))
            (pseudo-dagp-aux (mv-nth 2 (merge-dag-into-dag-quick dag1 dag2))
                             (+ -1 (len (mv-nth 2 (merge-dag-into-dag-quick dag1 dag2))))))
-  :hints (("Goal" :in-theory (e/d (merge-dag-into-dag-quick PSEUDO-DAGP wf-dagp)
+  :hints (("Goal" :in-theory (e/d (merge-dag-into-dag-quick PSEUDO-DAGP wf-dagp
+                                                            ARRAY-TO-ALIST ;todo
+                                                            )
                                   (myquotep len PSEUDO-DAGP)))))
 
 (local

@@ -72,15 +72,7 @@
   :hints
   (("goal" :in-theory (e/d (frame-p path-clear
                                     1st-complete-under-path names-at)
-                           (prefixp-when-equal-lengths len-when-prefixp)))
-   ("subgoal *1/2" :use ((:instance prefixp-when-equal-lengths (x path2)
-                                    (y (fat32-filename-list-fix path1)))
-                         (:instance len-when-prefixp
-                                    (x (fat32-filename-list-fix path1))
-                                    (y path2))
-                         (:instance len-when-prefixp
-                                    (y (fat32-filename-list-fix path1))
-                                    (x path2))))))
+                           (prefixp-when-equal-lengths len-when-prefixp)))))
 
 ;; I suspect this might be useful later.
 (defthm partial-collapse-when-path-clear-of-prefix
@@ -1789,7 +1781,10 @@
   :hints (("goal" :do-not-induct t
            :use (:instance abs-find-file-correctness-1-lemma-36
                            (x (car indices)))
-           :in-theory (enable (:linear path-clear-partial-collapse-when-zp-src-lemma-6)))))
+           :in-theory (e/d
+                       ((:linear
+                         path-clear-partial-collapse-when-zp-src-lemma-6))
+                       (prefixp-when-prefixp)))))
 
 (local
  (defthmd
@@ -2079,13 +2074,4 @@
   :hints
   (("goal"
     :in-theory (e/d (path-clear)
-                    (len-when-prefixp (:rewrite prefixp-when-equal-lengths))))
-   ("subgoal *1/4'''" :use ((:instance (:rewrite prefixp-when-equal-lengths)
-                                       (y (fat32-filename-list-fix y))
-                                       (x (fat32-filename-list-fix x)))
-                            (:instance len-when-prefixp
-                                       (x (fat32-filename-list-fix x))
-                                       (y (fat32-filename-list-fix y)))
-                            (:instance len-when-prefixp
-                                       (x (fat32-filename-list-fix y))
-                                       (y (fat32-filename-list-fix x)))))))
+                    (len-when-prefixp (:rewrite prefixp-when-equal-lengths))))))
