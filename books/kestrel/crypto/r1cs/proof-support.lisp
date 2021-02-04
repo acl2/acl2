@@ -22,6 +22,7 @@
 (include-book "kestrel/bv/bitxor" :dir :system)
 (include-book "kestrel/bv/bitnot" :dir :system)
 (include-book "kestrel/crypto/r1cs/sparse/r1cs" :dir :system) ;for fe-listp, todo: reduce
+(include-book "kestrel/axe/axe-syntax-functions" :dir :system) ;for syntactic-variablep
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
@@ -122,13 +123,15 @@
 
 ;for acl2
 (defthm pfield::fep-when-fe-listp-and-member-equal
-  (implies (and (fe-listp free p)
+  (implies (and (syntaxp (acl2::variablep x)) ;for now, we only generate the fe-listp assumptions for vars
+                (fe-listp free p)
                 (acl2::member-equal x free))
            (fep x p)))
 
 ;for axe, since member-equal is not a known boolean, todo: why isn't that ok (can't make the axe rule)?
 (defthm pfield::fep-when-fe-listp-and-memberp
-  (implies (and (fe-listp free p)
+  (implies (and (acl2::axe-syntaxp (acl2::syntactic-variablep x dag-array)) ;for now, we only generate the fe-listp assumptions for vars
+                (fe-listp free p)
                 (acl2::memberp x free))
            (fep x p)))
 
