@@ -120,8 +120,8 @@
 ;; todo: wrap this command into a nice wrapper that prevents accidentally giving the wrong table name:
 (table acl2::axe-rule-priorities-table 'pfield::fep-when-fe-listp-and-memberp 1)
 (table acl2::axe-rule-priorities-table 'bitp-when-equal-1 1)
-(table acl2::axe-rule-priorities-table 'bitp-when-equal-2. 1)
-(table acl2::axe-rule-priorities-table 'acl2::bitp-when-bit-listp-and-memberp. 1)
+(table acl2::axe-rule-priorities-table 'bitp-when-equal-2 1)
+(table acl2::axe-rule-priorities-table 'acl2::bitp-when-bit-listp-and-memberp 1)
 
 (defthm equal-of-0-and-add-of-add-of-add-of-neg-lemma
   (implies (and (fep w p)
