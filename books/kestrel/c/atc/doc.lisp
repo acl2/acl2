@@ -423,31 +423,7 @@
         "do         long       union      _Imaginary"
         "double     register   unsigned   _Noreturn"
         "else       restrict   void       _Static_assert"
-        "enum       return     volatile   _Thread_local")))
-
-     (xdoc::p
-      "[C:6.4.2] allows the following characters in identifiers:")
-     (xdoc::ol
-      (xdoc::li
-       "The ten digits (but not in the starting position).
-        Even though [C] does not prescribe the use of (a superset of) ASCII,
-        these have obvious ASCII counterparts.")
-      (xdoc::li
-       "The 26 uppercase Latin letters,
-        the 26 lowercase Latin letter,
-        and the underscore.
-        Even though [C] does not prescribe the use of (a superset of) ASCII,
-        these have obvious ASCII counterparts.")
-      (xdoc::li
-       "Some ranges of universal characters
-        (some of which cannot occur in the starting position),
-        none of which are ASCII.")
-      (xdoc::li
-       "Other implementation-defined characters.
-        These are not portable."))
-     (xdoc::p
-      "Thus, portable ASCII C identifiers consists of only 1 and 2 above,
-       excluding 3 (non-ASCII) and 4 (non-portable).")))
+        "enum       return     volatile   _Thread_local")))))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
