@@ -1821,10 +1821,10 @@
         (atc-gen-wf-thm const print-info/all ctx state))
        ((er (list fn-thm-local-events fn-thm-exported-events))
         (atc-gen-fn-thm-list fn1...fnp nil const print-info/all ctx state))
-       ((acl2::run-when print-info/all)
+       ((run-when print-info/all)
         (cw "~%Generating the file ~s0..." output-file))
        ((er &) (atc-gen-file tunit output-file state))
-       ((acl2::run-when print-info/all) (cw " done.~%"))
+       ((run-when print-info/all) (cw " done.~%"))
        (print-events (and (member-eq print '(:result :info :all))
                           (atc-gen-print-result output-file
                                                 exported-const-event
