@@ -21,6 +21,7 @@
 (local (include-book "kestrel/lists-light/remove-equal" :dir :system))
 (local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
+(local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))
 
 ;move
@@ -32,23 +33,27 @@
 ;decides whether we should substitute (is it the nodenum of a var, and is it equated to a term that doesn't include itself?)
 ;returns (mv substp var nodenum-of-var)
 ;equated-thing is a quotep or nodenum
+;todo: don't return nodenum-or-quotep?
 (defund nodenum-of-var-to-substp (nodenum-or-quotep equated-thing dag-array dag-len)
   (declare (xargs :guard (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                               (dargp-less-than nodenum-or-quotep dag-len)
                               (dargp-less-than equated-thing dag-len)))
            (ignore dag-len))
-  (if (not (atom nodenum-or-quotep))
-      (mv nil nil nil) ;must be a quotep
-    (let ((expr (aref1 'dag-array dag-array nodenum-or-quotep)))
-      (if (and (symbolp expr) ;must be a variable
-               (not (quotep equated-thing)) ; an equality of a var and a constant should be used when rewriting.. (fixme allow this, to get rid of var=const when var appears nowhere else)
-               ;;helps prevent loops?:
-               (if (member nodenum-or-quotep (supporters-of-node equated-thing 'dag-array dag-array 'tag-array-for-supporters)) ;expensive?
-                   (prog2$ (cw "Refusing to substitute for ~x0 because it is equated to something involving itself !!~%" expr) ;fixme print the terms involved?
-                           nil)
-                 t))
-          (mv t expr nodenum-or-quotep)
-        (mv nil nil nil)))))
+  (if (and (atom nodenum-or-quotep) ;ensure it's a nodenum
+           (not (consp equated-thing)) ; an equality of a var and a constant should be used when rewriting.. (fixme allow this, to get rid of var=const when var appears nowhere else)
+           )
+      (let ((expr (aref1 'dag-array dag-array nodenum-or-quotep)))
+        (if (and (symbolp expr) ;must be a variable
+                 ;;helps prevent loops?:
+                 ;; TODO: Consider using a version of supporters-of-node that uses a worklist instead of walking over every node <= to the node of interest. See vars-that-support-dag-node.
+                 ;; Also, we really only need supporting vars, not all suporters
+                 (if (member nodenum-or-quotep (supporters-of-node equated-thing 'dag-array dag-array 'tag-array-for-supporters))
+                     (prog2$ (cw "Refusing to substitute for ~x0 because it is equated to something involving itself !!~%" expr) ;fixme print the terms involved?
+                             nil)
+                   t))
+            (mv t expr nodenum-or-quotep)
+          (mv nil nil nil)))
+    (mv nil nil nil)))
 
 ;; Returns (mv foundp var nodenum-of-var equated-thing) where equated-thing will always be a nodenum.
 ;the awkwardness here is to avoid doing the aref more than once..
@@ -111,21 +116,30 @@
 
 (local (in-theory (disable REMOVE-EQUAL))) ;prevent inductions
 
+;move
+(defthm consp-of-dargs-of-aref1-when-pseudo-dag-arrayp-simple-iff
+  (implies (and (pseudo-dag-arrayp dag-array-name dag-array (+ 1 n))
+                (natp n))
+           (iff (consp (dargs (aref1 dag-array-name dag-array n)))
+                (dargs (aref1 dag-array-name dag-array n)))))
+
 ;; Returns (mv foundp var nodenum-of-var nodenum-or-quotep-to-put-in).
 ;; nodenum-or-quotep-to-put-in may now always be a nodenum?
 (defund check-for-var-subst-literal (literal-nodenum dag-array dag-len)
   (declare (xargs :guard (and (natp literal-nodenum)
                               (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                              (< literal-nodenum dag-len))))
+                              (< literal-nodenum dag-len))
+                  :guard-hints (("Goal" :in-theory (enable CONSP-OF-CDR)))
+                  ))
   (let ((expr (aref1 'dag-array dag-array literal-nodenum)))
     ;; we seek an expr of the form (not <nodenum>)
     (if (not (and (call-of 'not expr)
-                  (= 1 (len (dargs expr)))
+                  (consp (dargs expr))
                   (integerp (darg1 expr))))
         (mv nil nil nil nil) ;fail
       (let ((non-nil-expr (aref1 'dag-array dag-array (darg1 expr)))) ;;we seek a NON-NIL-EXPR of the form (equal <nodenum-of-var> <thing>) or vice-versa
         (if (not (and (call-of 'equal non-nil-expr)
-                      (= 2 (len (dargs non-nil-expr)))))
+                      (consp (cdr (dargs non-nil-expr)))))
             (mv nil nil nil nil) ;fail
           (find-var-and-expr-to-subst (darg1 non-nil-expr) (darg2 non-nil-expr) dag-array dag-len) ;this is what prevents loops
           )))))
@@ -147,7 +161,8 @@
                                                          <-of-nth-when-all-<
                                                          check-for-var-subst-literal
                                                          find-var-and-expr-to-subst
-                                                         nodenum-of-var-to-substp)
+                                                         nodenum-of-var-to-substp
+                                                         consp-of-cdr)
                                                         (natp
                                                          ;cons-nth-0-nth-1 cons-of-nth-and-nth-plus-1 ;todo: why do these cause mv-nths to show up in appropriate places?
                                                          ))))))
@@ -197,7 +212,8 @@
               (len all-literal-nodenums)))
   :hints (("Goal" :in-theory (enable substitute-a-var))))
 
-(local (in-theory (enable check-for-var-subst-literal))) ;for the def-dag-builder-theorems just below
+(local (in-theory (enable check-for-var-subst-literal
+                          CONSP-OF-CDR))) ;for the def-dag-builder-theorems just below
 
 (def-dag-builder-theorems
   (substitute-a-var literal-nodenums all-literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print)
