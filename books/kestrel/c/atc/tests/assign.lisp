@@ -25,9 +25,21 @@
          (|a| (c::sint-bitnot |a|)))
     (c::sint-gt |a| (c::sint-const 0))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun |g| (|x| |y| |z|)
+  (declare (xargs :guard (and (c::sintp |x|)
+                              (c::sintp |y|)
+                              (c::sintp |z|))))
+  (let* ((|a| (c::sint-bitand |x| |y|))
+         (|a| (c::sint-bitior |a| |z|))
+         (|b| (c::sint-bitxor |x| |z|))
+         (|a| (c::sint-bitand |a| |b|)))
+    (c::sint-lt |a| |b|)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(c::atc |f| :output-file "assign.c")
+(c::atc |f| |g| :output-file "assign.c")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -36,6 +48,6 @@
 On macOS or Linux, you can compile and run this code as follows:
 
   gcc -o assign assign.c assign-test.c
-  ./f
+  ./assign
 
 |#
