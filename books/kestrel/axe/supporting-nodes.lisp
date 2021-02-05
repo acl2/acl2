@@ -210,11 +210,16 @@
 (defund tag-supporters (n dag-array-name dag-array tag-array-name tag-array)
   (declare (xargs :measure (nfix (+ 1 n))
                   :guard (and (integerp n)
+                              (<= -1 n)
                               (implies (natp n)
                                        (and (pseudo-dag-arrayp dag-array-name dag-array (+ 1 n))
                                             (array1p tag-array-name tag-array)
-                                            (< n (alen1 tag-array-name tag-array)))))))
-  (if (not (natp n))
+                                            (< n (alen1 tag-array-name tag-array)))))
+                  :split-types t)
+           (type (integer -1 2147483645) n))
+  (if (or (not (mbt (and (integerp n)
+                         (<= -1 n))))
+          (= -1 n))
       tag-array
     (let ((tag (aref1 tag-array-name tag-array n)))
       (if tag
@@ -904,6 +909,8 @@
 ;returns a list of the nodenums that support NODENUM
 ;a node counts as its own supporter
 ;; See also make-supporters-array.
+;; TODO: Make a version that builds in the array name (as 'tag-array-for-supporters?).
+;; TODO: Make a variant that, instead of calling harvest-non-nil-indices, simply checks whether a given node of interest is among the supporters.
 (defund supporters-of-node (nodenum dag-array-name dag-array tag-array-name)
   (declare (xargs :guard (and (natp nodenum)
                               (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum))
