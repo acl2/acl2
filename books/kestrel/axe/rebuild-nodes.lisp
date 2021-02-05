@@ -482,7 +482,7 @@
        ;; ensure that nodenum-to-replace gets replaced with new-nodenum:
        (translation-array (aset1 'translation-array translation-array nodenum-to-replace new-nodenum))
        ((mv erp translation-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-        (rebuild-nodes sorted-literal-nodenums ;; initial worklist, could use literal-nodenums instead
+        (rebuild-nodes sorted-literal-nodenums ;; initial worklist
                        translation-array
                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
        ((when erp) (mv erp literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
