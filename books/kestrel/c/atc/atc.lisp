@@ -46,6 +46,7 @@
 (include-book "tools/trivial-ancestors-check" :dir :system)
 
 (local (include-book "kestrel/std/system/flatten-ands-in-lit" :dir :system))
+(local (include-book "kestrel/std/system/pseudo-event-form-listp" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1773,24 +1774,78 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-print-result ((output-file stringp)
-                              (const-event pseudo-event-formp)
+(define atc-gen-file-event ((tunit transunitp)
+                            (output-file stringp)
+                            (print-info/all booleanp)
+                            state)
+  :returns (mv erp
+               (event "A @(tsee pseudo-event-formp).")
+               state)
+  :mode :program
+  :short "Event to pretty-print the generated C code to the output file."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This serves to run @(tsee atc-gen-file)
+     after the constant and theorem events have been submitted.
+     This function generates an event form
+     that is put (by @(tsee atc-gen-everything))
+     after the constant and theorem events.
+     When the events are submitted to and processed by ACL2,
+     we get to this file generation event
+     only if the previous events are successful.
+     This is a sort of safety/security constraint:
+     do not even generate the file, unless it is correct.")
+   (xdoc::p
+    "If @(':print') is at @(':info') or @(':all'),
+     we also generate events to print progress messages,
+     as done with the constant and theorem events.")
+   (xdoc::p
+    "In order to generate an embedded event form for file generation,
+     we generate a @(tsee make-event) whose argument generates the file.
+     The argument must also return an embedded event form,
+     so we use @(tsee value-triple) with @(':invisible'),
+     so there is no extra screen output.
+     This is a ``dummy'' event, it is not supposed to do anything:
+     it is the execution of the @(tsee make-event) argument
+     that matters, because it generates the file.
+     In essence, we use @(tsee make-event) to turn a computation
+     (the one that generates the file)
+     into an event.
+     But we cannot use just @(tsee value-triple)
+     because our computation returns an error triple."))
+  (b* ((progress-start?
+        (and print-info/all
+             `((cw-event "~%Generating the file ~s0..." ',output-file))))
+       (progress-end? (and print-info/all `((cw-event " done.~%"))))
+       (file-gen-event
+        `(make-event
+          (b* (((er &) (atc-gen-file ',tunit ,output-file state)))
+            (value '(value-triple :invisible))))))
+    (value `(progn ,@progress-start?
+                   ,file-gen-event
+                   ,@progress-end?))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-gen-print-result ((const-event pseudo-event-formp)
                               (wf-thm-event pseudo-event-formp)
-                              (fn-thm-events pseudo-event-form-listp))
+                              (fn-thm-events pseudo-event-form-listp)
+                              (output-file stringp))
   :returns (events pseudo-event-form-listp)
   :short "Generate the events to print the results of ATC."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is used only if @(':print') is at least @(':result')."))
-  (append (list `(cw-event "~%File ~s0.~%" ,output-file)
-                `(cw-event "~%~x0~|" ',const-event)
+  (append (list `(cw-event "~%~x0~|" ',const-event)
                 `(cw-event "~%~x0~|" ',wf-thm-event))
-          (atc-gen-print-result-aux fn-thm-events))
+          (atc-gen-print-result-aux fn-thm-events)
+          (list `(cw-event "~%File ~s0.~%" ,output-file)))
 
   :prepwork
   ((define atc-gen-print-result-aux ((events pseudo-event-form-listp))
-     :returns (cwevents pseudo-event-form-listp)
+     :returns (events pseudo-event-form-listp)
      (cond ((endp events) nil)
            (t (cons `(cw-event "~%~x0~|" ',(car events))
                     (atc-gen-print-result-aux (cdr events))))))))
@@ -1821,15 +1876,15 @@
         (atc-gen-wf-thm const print-info/all ctx state))
        ((er (list fn-thm-local-events fn-thm-exported-events))
         (atc-gen-fn-thm-list fn1...fnp nil const print-info/all ctx state))
-       ((run-when print-info/all)
-        (cw "~%Generating the file ~s0..." output-file))
-       ((er &) (atc-gen-file tunit output-file state))
-       ((run-when print-info/all) (cw " done.~%"))
+       ((er file-gen-event) (atc-gen-file-event tunit
+                                                output-file
+                                                print-info/all
+                                                state))
        (print-events (and (member-eq print '(:result :info :all))
-                          (atc-gen-print-result output-file
-                                                exported-const-event
+                          (atc-gen-print-result exported-const-event
                                                 wf-thm-exported-event
-                                                fn-thm-exported-events)))
+                                                fn-thm-exported-events
+                                                output-file)))
        (encapsulate
          `(encapsulate ()
             (evmac-prepare-proofs)
@@ -1839,7 +1894,8 @@
             ,wf-thm-exported-event
             (local (acl2::use-trivial-ancestors-check))
             ,@fn-thm-local-events
-            ,@fn-thm-exported-events))
+            ,@fn-thm-exported-events
+            ,file-gen-event))
        (encapsulate+ (acl2::restore-output? (eq print :all) encapsulate))
        (info (make-atc-call-info :encapsulate encapsulate))
        (table-event (atc-table-record-event call info)))
