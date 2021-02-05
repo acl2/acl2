@@ -26,6 +26,7 @@
             define-sk
             defrule
             defruled
+            defruledl
             defxdoc+
             rule
             unless
@@ -36,6 +37,12 @@
             pfield::fep
             rtl::primep
             acl2::keywords-to-acl2-package ; appears in proof examples
+            ecurve::make-twisted-edwards-curve
+            ecurve::pfield-squarep
+            ecurve::twisted-edwards-curvep
+            ecurve::twisted-edwards-curve-completep
+            ecurve::twisted-edwards-curve-primep
+            pfield::fep
             primes::*bn-254-group-prime*
             r1cs::lift-r1cs
             ) ; added symbols
