@@ -30,16 +30,34 @@
 (in-package "ACL2")
 
 (include-book "duplicates")
-(include-book "std/osets/sort" :dir :system)
-(include-book "std/osets/difference" :dir :system)
+(include-book "std/osets/top" :dir :system)
 (include-book "std/alists/alist-equiv" :dir :system)
 (include-book "std/alists/abstract" :dir :system)
 (local (include-book "std/util/termhints" :dir :system))
 (local (include-book "std/osets/under-set-equiv" :dir :system))
-(local (include-book "std/osets/top" :dir :system))
 (local (include-book "std/alists/fast-alist-clean" :dir :System))
 (local (include-book "std/osets/element-list" :dir :System))
 (local (in-theory (disable set::mergesort)))
+
+
+(local (defthm not-member-when-setp
+         (implies (and (<< k (car x))
+                       (set::setp x))
+                  (not (member k x)))
+         :hints(("Goal" :in-theory (enable set::setp
+                                           <<-irreflexive
+                                           <<-transitive)))))
+
+
+(local
+ (defthm no-duplicatesp-when-setp
+   (implies (set::setp x)
+            (no-duplicatesp x))
+   :hints(("Goal" :in-theory (enable set::setp)))))
+
+
+
+
 
 (local
  (defthm member-pair-implies-member-alist-keys

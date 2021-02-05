@@ -513,7 +513,7 @@ svl-run-phase-wog) instead, which has the same arguments but no guards.
                                                            ,last))))))
             (t
              (cons (cond ((s-equal (car cur) '_)
-                          `',(sv::4vec-x))
+                          (sv::4vec-x))
                          (t (car cur)))
                    (svl-run-fix-inputs_phases-aux (cdr cur)
                                                   (1- phase-cnt)
@@ -574,7 +574,7 @@ svl-run-phase-wog) instead, which has the same arguments but no guards.
 
       (if (atom new-binds)
           nil
-        (b* ((old-val (if (atom old-binds) `',(sv::4vec-x) (car old-binds)))
+        (b* ((old-val (if (atom old-binds) (sv::4vec-x) (car old-binds)))
              (new-bind (car new-binds)))
           (cons `(sv::partinst ,start ,size ,old-val ,new-bind)
                 (svl-run-fix-inputs_merge-aux (if (atom old-binds) nil (cdr old-binds))
@@ -638,7 +638,7 @@ svl-run-phase-wog) instead, which has the same arguments but no guards.
                   (acons
                    (car wire-names)
                    (repeat (len (cdar sig-bind-alist))
-                           `',(sv::4vec-x))
+                           (sv::4vec-x))
                    rest))))))
 
   (define strip-cars$ (x)

@@ -129,15 +129,6 @@
             
             
 
-(local (defthm len-of-svex-envlist-extract
-         (equal (len (svex-envlist-extract vars envs))
-                (len vars))
-         :hints(("Goal" :in-theory (enable svex-envlist-extract)))))
-
-(local (defthm len-of-base-fsm-run
-         (equal (len (base-fsm-run ins initst fsm outvars))
-                (len outvars))
-         :hints(("Goal" :in-theory (enable base-fsm-run)))))
 
 (define base-fsm-run-compile-phases ((phase natp)
                                      (outvars svarlist-list-p)
@@ -437,7 +428,7 @@
                   x
                   outvars)))
      :hints(("Goal" :use eval-of-<fn>
-             :in-theory (disable eval-of-<fn> <fn>)))))
+             :in-theory (disable eval-of-<fn> <fn> len-of-svtv-fsm-run)))))
 
 
   (defret normalize-<fn>-rewrite-under-svex-alistlist-eval-equiv

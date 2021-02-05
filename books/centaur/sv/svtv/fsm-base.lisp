@@ -562,7 +562,10 @@
                                       default-car nthcdr)
             :induct (list (nthcdr n signals) (nthcdr n x)))))
 
-  (defcong svex-envlists-similar svex-envlists-equivalent (svex-envlist-extract keys envs) 2))
+  (defcong svex-envlists-similar svex-envlists-equivalent (svex-envlist-extract keys envs) 2)
+
+  (defret len-of-<fn>
+    (equal (len new-envs) (len keys))))
 
 
 (local (defthm take-of-svex-envlist-fix
@@ -607,7 +610,10 @@
 
   (defcong base-fsm-eval-equiv svex-envlists-equivalent (base-fsm-run ins prev-st x signals) 3)
 
-  (defcong svex-envlists-similar svex-envlists-equivalent (base-fsm-run ins prev-st x signals) 1))
+  (defcong svex-envlists-similar svex-envlists-equivalent (base-fsm-run ins prev-st x signals) 1)
+
+  (defret len-of-<fn>
+    (equal (len outs) (len signals))))
 
 
 (define base-fsm-print-run ((ins svex-envlist-p)
@@ -684,7 +690,10 @@
 
   (defcong base-fsm-eval-equiv svex-envlists-equivalent (base-fsm-run-states ins prev-st x signals) 3)
 
-  (defcong svex-envlists-similar svex-envlists-equivalent (base-fsm-run-states ins prev-st x signals) 1))
+  (defcong svex-envlists-similar svex-envlists-equivalent (base-fsm-run-states ins prev-st x signals) 1)
+
+  (defret len-of-<fn>
+    (equal (len outs) (len signals))))
 
 
 (define base-fsm-run-states* ((ins svex-envlist-p)

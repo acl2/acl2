@@ -32,7 +32,7 @@
 
 (include-book "std/util/define" :dir :system)
 (include-book "std/lists/index-of" :dir :system)
-(include-book "std/osets/primitives" :dir :system)
+;; (include-book "std/osets/primitives" :dir :system)
 (include-book "std/alists/alist-defuns" :dir :system)
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "std/lists/sets" :dir :system))
@@ -213,19 +213,19 @@
               (not (intersection$ a b)))))
 
 
-(local (defthm not-member-when-setp
-         (implies (and (<< k (car x))
-                       (set::setp x))
-                  (not (member k x)))
-         :hints(("Goal" :in-theory (enable set::setp
-                                           <<-irreflexive
-                                           <<-transitive)))))
+;; (local (defthm not-member-when-setp
+;;          (implies (and (<< k (car x))
+;;                        (set::setp x))
+;;                   (not (member k x)))
+;;          :hints(("Goal" :in-theory (enable set::setp
+;;                                            <<-irreflexive
+;;                                            <<-transitive)))))
 
 
-(defthm no-duplicatesp-when-setp
-  (implies (set::setp x)
-           (no-duplicatesp x))
-  :hints(("Goal" :in-theory (enable set::setp))))
+;; (defthm no-duplicatesp-when-setp
+;;   (implies (set::setp x)
+;;            (no-duplicatesp x))
+;;   :hints(("Goal" :in-theory (enable set::setp))))g
 
 
 
