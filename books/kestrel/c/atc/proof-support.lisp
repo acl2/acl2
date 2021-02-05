@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2020 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -58,8 +58,7 @@
      since we use the rules in a symbolic execution,
      we expect that the simplification will take place there.")
    (xdoc::p
-    "We generate openers for the mutually recursive execution functions
-     @(tsee exec-expr) and companions.")
+    "We generate openers for the mutually recursive execution functions.")
    (xdoc::p
     "It seems to be a general heuristic that opener rules are needed
      for symbolic execution when there are mutually recursive calls.
@@ -78,11 +77,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defopeners exec-expr
+(defopeners exec-expr-call-or-pure
   :hyps ((syntaxp (quotep e)))
   :disable t)
 
-(add-to-ruleset exec-unfold-rules (defopeners-names exec-expr))
+(add-to-ruleset exec-unfold-rules (defopeners-names exec-expr-call-or-pure))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defopeners exec-expr-asg
+  :hyps ((syntaxp (quotep e)))
+  :disable t)
+
+(add-to-ruleset exec-unfold-rules (defopeners-names exec-expr-asg))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -115,3 +122,9 @@
   :disable t)
 
 (add-to-ruleset exec-unfold-rules (defopeners-names exec-block-item-list))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule car-of-compustate-not-error
+  (not (equal (car (compustate x)) :error))
+  :enable compustate)

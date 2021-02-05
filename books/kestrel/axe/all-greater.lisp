@@ -11,6 +11,9 @@
 
 (in-package "ACL2")
 
+(local (include-book "kestrel/lists-light/revappend" :dir :system))
+(local (include-book "kestrel/lists-light/reverse-list" :dir :system))
+
 (defund all-> (x n)
   (declare (xargs :guard (and (rational-listp x)
                               (rationalp n))))
@@ -33,3 +36,20 @@
   (implies (all-> x n)
            (all-> (cdr x) n))
   :hints (("Goal" :in-theory (enable all->))))
+
+(defthm all->-of-append
+  (equal (all-> (append x y) a)
+         (and (all-> x a)
+              (all-> y a)))
+  :hints (("Goal" :in-theory (enable all->))))
+
+(defthm all->-of-revappend
+  (equal (all-> (revappend x y) a)
+         (and (all-> x a)
+              (all-> y a)))
+  :hints (("Goal" :in-theory (e/d (all-> revappend-lemma) ()))))
+
+;; (defthm all->-of-reverse-list
+;;   (equal (all-> (reverse-list x) a)
+;;          (all-> x a))
+;;   :hints (("Goal" :in-theory (e/d (all-> reverse-list) ()))))

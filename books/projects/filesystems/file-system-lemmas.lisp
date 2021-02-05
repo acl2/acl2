@@ -683,12 +683,6 @@
 (defthmd
   painful-debugging-lemma-10
   (implies (not (zp x1))
-           (iff (equal (* x1 (len x2)) 0)
-                (atom x2))))
-
-(defthmd
-  painful-debugging-lemma-11
-  (implies (not (zp x1))
            (equal (< 0 (* x1 (len x2)))
                   (consp x2))))
 
@@ -1996,14 +1990,11 @@
 
 (encapsulate ()
   (local (in-theory (disable min)))
+
+  (defthm painful-debugging-lemma-11 (iff (< (min x y) y) (< x y))
+    :hints (("Goal" :in-theory (enable min))))
+
   (defthm painful-debugging-lemma-22
-    (implies (< z y) (iff (equal (min x y) z) (equal x z)))
-    :hints (("Goal" :in-theory (enable min))))
-
-  (defthm painful-debugging-lemma-23 (iff (< (min x y) y) (< x y))
-    :hints (("Goal" :in-theory (enable min))))
-
-  (defthm painful-debugging-lemma-24
     (implies (equal (+ w y) z)
              (iff (equal (+ w (min x y)) z)
                   (<= y x)))

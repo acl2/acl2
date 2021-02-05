@@ -377,19 +377,6 @@
         (mv fs -1 error-code)))
     (mv fs 0 0)))
 
-(defthm
-  hifat-unlink-guard-lemma-1
-  (implies (m1-file-p file)
-           (and
-            (true-listp (m1-file->d-e file))
-            (equal (len (m1-file->d-e file)) *ms-d-e-length*)
-            (unsigned-byte-listp 8 (m1-file->d-e file))))
-  :hints
-  (("goal" :in-theory (e/d (d-e-p)
-                           (d-e-p-of-m1-file->d-e))
-    :use (:instance d-e-p-of-m1-file->d-e
-                    (x file)))))
-
 ;; The fat driver in Linux actually keeps the directory entries of files it is
 ;; deleting, while removing links to their contents. Thus, in the special case
 ;; where the last file is deleted from the root directory, the root directory

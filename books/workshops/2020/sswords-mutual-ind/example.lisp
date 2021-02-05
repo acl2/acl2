@@ -89,7 +89,6 @@
 
   (defexample subst-term-custom-method
     (defun subst-term-ind (x)
-      (declare (xargs :ruler-extenders (cons)))
       (and (consp x)
            (list (subst-term-ind (car x))
                  (subst-term-ind (cdr x)))))

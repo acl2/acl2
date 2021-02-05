@@ -153,6 +153,15 @@
       (and (consp expr)
            (eq 'quote (car expr))))))
 
+(defund syntactic-variablep (nodenum-or-quotep dag-array)
+  (declare (xargs :guard (or (myquotep nodenum-or-quotep)
+                             (and (natp nodenum-or-quotep)
+                                  (pseudo-dag-arrayp 'dag-array dag-array (+ 1 nodenum-or-quotep))))))
+  (if (consp nodenum-or-quotep) ;check for quotep
+      nil
+    (let ((expr (aref1 'dag-array dag-array nodenum-or-quotep)))
+      (atom expr))))
+
 ;bozo make this a real table?
 ;args are numbered from 1
 ;make this a constant?

@@ -60,3 +60,5 @@
 (include-book "bvnth")
 
 (include-book "list-patterns")
+
+(include-book "bvplus-list")

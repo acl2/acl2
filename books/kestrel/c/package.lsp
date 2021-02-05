@@ -49,5 +49,6 @@
                pos-listp
                pseudo-event-form-listp
                pseudo-event-formp
+               run-when
                tuple
                std::defret-mutual)))

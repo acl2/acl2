@@ -23,7 +23,7 @@
 ;;; wf-dagp ("well-formed DAG")
 ;;;
 
-;; TODO: Strengthen to say that the dag-parent-array, dag-constant-alist, and dag-variable-alist are actually correct.
+;; TODO: Strengthen to say that the dag-parent-array is actually correct.
 (defund wf-dagp (dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
   (declare (xargs :guard t))
   (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
@@ -113,3 +113,8 @@
                     (make-dag-constant-alist 'dag-array dag-array dag-len)
                     (make-dag-variable-alist 'dag-array dag-array dag-len)))
   :hints (("Goal" :in-theory (enable wf-dagp))))
+
+;; free vars make this cheap
+(defthm dag-parent-arrayp-when-wf-dagp
+  (implies (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
+           (dag-parent-arrayp dag-parent-array-name dag-parent-array)))

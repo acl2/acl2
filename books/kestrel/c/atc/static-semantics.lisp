@@ -559,17 +559,17 @@
      an expression statement throws away the expression's value;
      indeed, we are only interested in the side effects of assignment here."))
   (b* (((unless (expr-case e :binary))
-        (error (list :expr-stmt-not-binary (expr-fix e))))
+        (error (list :expr-asg-not-binary (expr-fix e))))
        (op (expr-binary->op e))
        (left (expr-binary->arg1 e))
        (right (expr-binary->arg2 e))
        ((unless (binop-case op :asg))
-        (error (list :expr-stmt-not-asg op)))
+        (error (list :expr-asg-not-asg op)))
        ((unless (expr-case left :ident))
-        (error (list :expr-stmt-left-not-var left)))
+        (error (list :expr-asg-left-not-var left)))
        (var (expr-ident->get left))
        (ltype (var-table-lookup var vartab))
-       ((when (not ltype)) (error (list :expr-stmt-var-not-found var)))
+       ((when (not ltype)) (error (list :expr-asg-var-not-found var)))
        (rtype (expr-call-or-pure-check right funtab vartab))
        ((when (errorp rtype)) rtype)
        ((unless (equal ltype rtype))
@@ -592,7 +592,7 @@
      The information consists of:")
    (xdoc::ul
     (xdoc::li
-     "A set of optional types that describe
+     "A non-empty set of optional types that describe
       the possible values returned by the statement.
       These are determined by the @('return') statements;
       in the presence of conditionals,
@@ -612,8 +612,11 @@
       could just return a set of optional types (see above).
       However, for uniformity we have all three functions
       return also a possibly updated variable table.")))
-  ((return-types type-option-set)
+  ((return-types type-option-set :reqfix (if (set::empty return-types)
+                                             (set::insert nil nil)
+                                           return-types))
    (variables var-table))
+  :require (not (set::empty return-types))
   :pred stmt-typep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

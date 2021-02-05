@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2020 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -46,6 +46,7 @@
 (include-book "tools/trivial-ancestors-check" :dir :system)
 
 (local (include-book "kestrel/std/system/flatten-ands-in-lit" :dir :system))
+(local (include-book "kestrel/std/system/pseudo-event-form-listp" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -67,9 +68,11 @@
 
   "@('fns') is @('fn1...fnp') or a suffix of it."
 
-  "@('vars') is an alist from ACL2 variable symbols to C types.
+  "@('vars') is a list of alists from ACL2 variable symbols to C types.
    These are the variables in scope
-   for the ACL2 term whose code is being generated."
+   for the ACL2 term whose code is being generated,
+   organized in nested scopes from innermost to outermost.
+   This is like a symbol table for ACL2's representation of the C code."
 
   "@('prec-fns') is an alist from ACL2 function symbols to C types.
    The function symbols are the ones in @('fn1...fnp') that precede,
@@ -392,6 +395,13 @@
 
 (std::defalist atc-symbol-type-alistp (x)
   :short "Recognize alists from symbols to types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These represent scopes in the symbol tables for variables.")
+   (xdoc::p
+    "These also represent symbol tables for functions:
+     they associate output types to function symbols."))
   :key (symbolp x)
   :val (typep x)
   :true-listp t
@@ -403,6 +413,86 @@
     (implies (and (atc-symbol-type-alistp x)
                   (assoc-equal k x))
              (typep (cdr (assoc-equal k x))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::deflist atc-symbol-type-alist-listp (x)
+  :short "Recognize lists of alists from symbols to types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These represent symbol tables.
+     The @(tsee car) is the innermost scope."))
+  (atc-symbol-type-alistp x)
+  :true-listp t
+  :elementp-of-nil t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-get-var ((var symbolp) (vars atc-symbol-type-alist-listp))
+  :returns (type? type-optionp :hyp (atc-symbol-type-alist-listp vars))
+  :short "Obtain the type of a variable from the symbol table."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We look through the scopes, from innermost to outermost.
+     Actually, currently it is an invariant that the scopes are disjoint,
+     so any lookup order would give the same result.")
+   (xdoc::p
+    "Return @('nil') if the variable is not in scope."))
+  (if (endp vars)
+      nil
+    (or (cdr (assoc-eq var (car vars)))
+        (atc-get-var var (cdr vars)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-get-var-innermost ((var symbolp)
+                               (vars atc-symbol-type-alist-listp))
+  :returns (type? type-optionp
+                  :hyp (atc-symbol-type-alist-listp vars)
+                  :hints (("Goal" :in-theory (enable type-optionp))))
+  :short "Obtain the type of a variable
+          from the innermost scope of the symbol table."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This only looks at the innermost scope; it ignores the others."))
+  (cdr (assoc-eq var (car vars))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-add-var ((var symbolp)
+                     (type typep)
+                     (vars atc-symbol-type-alist-listp))
+  :returns (new-vars atc-symbol-type-alist-listp :hyp :guard)
+  :short "Add a variable with a type to the symbol table."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is added to the innermost scope.
+     The symbol table has always at least one scope."))
+  (cons (acons var type (car vars))
+        (cdr vars)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-var-newp ((var-name stringp) (vars atc-symbol-type-alist-listp))
+  :returns (yes/no booleanp)
+  :short "Check if a variable name is not already in the symbol table."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We check that no variable in the table
+     has the given string as @(tsee symbol-name).
+     This is because the package name of ACL2 symbols
+     is ignored for the purpose of representing C variables:
+     only the symbol name is used,
+     and thus all the symbol names must be distinct."))
+  (or (endp vars)
+      (and (not (member-equal var-name
+                              (symbol-name-lst (strip-cars (car vars)))))
+           (atc-var-newp var-name (cdr vars)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -572,24 +662,70 @@
                (var symbolp :hyp :guard)
                (init pseudo-termp :hyp :guard)
                (body pseudo-termp :hyp :guard))
-  :short "Check if a term represents a local variable declaration
+  :short "Check if a term represents
+          a local variable declaration or an assignment
           followed by more code."
   :long
   (xdoc::topstring
    (xdoc::p
     "Here we recognize and decompose allowed outer terms
      that are @(tsee let)s.
-     In translated form, these are terms @('((lambda (var) body) init)')."))
-  (b* (((mv okp formals body args) (acl2::check-lambda-call term))
+     In translated form, these are terms @('((lambda (var) body) init)').
+     However, if @('body') has other free variables in addition to @('var'),
+     those appear as both formal paramaters and actual arguments, e.g.
+     @('((lambda (var x y) body<var,x,y>) init x y)'):
+     this is because ACL2 translated terms have all closed lambda expressions,
+     so ACL2 adds formal parameters and actual arguments to make that happen.
+     Here, we must remove them in order to get the ``true'' @(tsee let).
+     This is easily done by going through
+     formal parameters and actual arguments at the same time,
+     and removing the ones that match."))
+  (b* (((mv okp formals body actuals) (acl2::check-lambda-call term))
        ((when (not okp)) (mv nil nil nil nil))
+       ((mv formals actuals) (atc-check-let-aux formals actuals))
        ((unless (and (= (len formals) 1)
-                     (= (len args) 1)))
+                     (= (len actuals) 1)))
         (mv nil nil nil nil))
        (var (car formals))
-       (init (car args)))
+       (init (car actuals)))
     (mv t var init body))
+  :guard-hints (("Goal"
+                 :in-theory
+                 (enable acl2::len-of-check-lambda-calls.args-is-formals)))
+
   :prepwork
-  ((local (include-book "std/typed-lists/pseudo-term-listp" :dir :system)))
+
+  ((local (include-book "std/typed-lists/pseudo-term-listp" :dir :system))
+
+   (define atc-check-let-aux ((formals symbol-listp) (actuals pseudo-term-listp))
+     :guard (= (len formals) (len actuals))
+     :returns (mv (new-formals symbol-listp
+                               :hyp (symbol-listp formals))
+                  (new-actuals pseudo-term-listp
+                               :hyp (pseudo-term-listp actuals)))
+     :parents nil
+     (b* (((when (endp formals)) (mv nil nil))
+          ((unless (mbt (consp actuals))) (mv nil nil))
+          (formal (car formals))
+          (actual (car actuals))
+          ((when (eq formal actual))
+           (atc-check-let-aux (cdr formals) (cdr actuals)))
+          ((mv rest-formals rest-actuals)
+           (atc-check-let-aux (cdr formals) (cdr actuals))))
+       (mv (cons formal rest-formals)
+           (cons actual rest-actuals)))
+     ///
+
+     (defret acl2-count-of-atc-check-let-aux.formals
+       (<= (acl2-count new-formals)
+           (acl2-count formals))
+       :rule-classes :linear)
+
+     (defret acl2-count-of-atc-check-let-aux.actuals
+       (<= (acl2-count new-actuals)
+           (acl2-count actuals))
+       :rule-classes :linear)))
+
   ///
 
   (defret acl2-count-of-atc-check-let-init
@@ -616,7 +752,7 @@
      and for allowed boolean terms (which are always pure)."))
 
   (define atc-gen-expr-pure-nonbool ((term pseudo-termp)
-                                     (vars atc-symbol-type-alistp)
+                                     (vars atc-symbol-type-alist-listp)
                                      (fn symbolp)
                                      ctx
                                      state)
@@ -638,7 +774,7 @@
       "We also return the C type of the expression.")
      (xdoc::p
       "An ACL2 variable is translated to a C variable.
-       Its type is looked up in the variable alist passed as input.")
+       Its type is looked up in the symbol table passed as input.")
      (xdoc::p
       "If the term fits the @(tsee sint-const) pattern,
        we translate it to a C integer constant.")
@@ -669,14 +805,13 @@
        We could extend this code to provide
        more information to the user at some point."))
     (b* (((when (acl2::variablep term))
-          (b* ((var+type (assoc-eq term vars))
-               ((when (not var+type))
+          (b* ((type (atc-get-var term vars))
+               ((when (not type))
                 (raise "Internal error: the variable ~x0 in function ~x1 ~
                         has no associated type." term fn)
-                (value (list (irr-expr) (irr-type))))
-               (type (type-fix (cdr var+type))))
+                (value (list (irr-expr) (irr-type)))))
             (value (list (expr-ident (make-ident :name (symbol-name term)))
-                         type))))
+                         (type-fix type)))))
          ((mv okp val) (atc-check-sint-const term))
          ((when okp)
           (value
@@ -768,7 +903,7 @@
                      fn term)))))
 
   (define atc-gen-expr-bool ((term pseudo-termp)
-                             (vars atc-symbol-type-alistp)
+                             (vars atc-symbol-type-alist-listp)
                              (fn symbolp)
                              ctx
                              state)
@@ -866,7 +1001,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-expr-pure-nonbool-list ((terms pseudo-term-listp)
-                                        (vars atc-symbol-type-alistp)
+                                        (vars atc-symbol-type-alist-listp)
                                         (fn symbolp)
                                         ctx
                                         state)
@@ -895,7 +1030,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-expr-nonbool ((term pseudo-termp)
-                              (vars atc-symbol-type-alistp)
+                              (vars atc-symbol-type-alist-listp)
                               (fn symbolp)
                               (prec-fns atc-symbol-type-alistp)
                               ctx
@@ -983,7 +1118,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-stmt ((term pseudo-termp)
-                      (vars atc-symbol-type-alistp)
+                      (vars atc-symbol-type-alist-listp)
                       (fn symbolp)
                       (prec-fns atc-symbol-type-alistp)
                       ctx
@@ -998,7 +1133,7 @@
   (xdoc::topstring
    (xdoc::p
     "More precisely, we return a list of block items.
-     These can be regarded as forming a compound statements,
+     These can be regarded as forming a compound statement,
      but lists of block items are compositional (via concatenation).")
    (xdoc::p
     "At the same time, we check that the term is an allowed outer term,
@@ -1007,7 +1142,7 @@
     "Besides the generated block items list,
      we also return the C type of the value it returns.
      Even though C block item lists do not always return values,
-     the ones generated here always do;
+     the ones generated by ATC always do;
      in fact, we are turning ACL2 terms (which return values)
      into block item lists that return values corresponding to the terms.")
    (xdoc::p
@@ -1019,19 +1154,30 @@
      (as a singleton block item list),
      with recursively generated compound statements as branches;
      the test expression is generated from the test term;
-     we ensure that the two branches have the same type.")
+     we ensure that the two branches have the same type.
+     When we process the branches,
+     we extend the symbol table with a new empty scope for each branch.")
    (xdoc::p
     "If the term is a @(tsee let),
-     we first check that a variable with the same symbol name
-     is not already in scope (i.e. in the variable alist):
-     as explained in the user documentation,
-     we currently disallow variable hiding in the C code.
-     We generate a declaration for the variable,
+     we first check whether a variable with the same symbol name
+     is not already in scope (i.e. in the symbol table):
+     in that case, as explained in the user documentation,
+     we generate a declaration for the variable,
      initialized with the expression obtained
      from the term that the variable is bound to,
      which also determines the type of the variable.
-     We recursively generate the block items for the body
-     and we put those just after the variable declaration.")
+     Otherwise, we check whether a variable with the same symbol
+     is in the innermost scope (only the innermost):
+     in that case, we ensure that the type of the existing variable
+     matches the one of the term bound to the inner variable,
+     and we generate an assignment to the C variable,
+     with the expression obtained
+     from the term that the inner variable is bound to.
+     In both cases, we recursively generate the block items for the body
+     and we put those just after the variable declaration or assignment.
+     If neither case applies,
+     it means that a variable with the same symbol is in an outer scope:
+     we stop with an error.")
    (xdoc::p
     "If the term is neither an @(tsee if) nor a @(tsee let),
      we treat it as a non-boolean term.
@@ -1050,13 +1196,13 @@
                                                           state))
              ((when erp) (mv erp (list nil (irr-type)) state))
              ((er (list then-items then-type)) (atc-gen-stmt then
-                                                             vars
+                                                             (cons nil vars)
                                                              fn
                                                              prec-fns
                                                              ctx
                                                              state))
              ((er (list else-items else-type)) (atc-gen-stmt else
-                                                             vars
+                                                             (cons nil vars)
                                                              fn
                                                              prec-fns
                                                              ctx
@@ -1077,7 +1223,7 @@
                                 :then (make-stmt-compound :items then-items)
                                 :else (make-stmt-compound :items else-items))))
             then-type))))
-       ((mv okp var init body) (atc-check-let term))
+       ((mv okp var val body) (atc-check-let term))
        ((when okp)
         (b* ((var-name (symbol-name var))
              ((unless (atc-ident-stringp var-name))
@@ -1086,27 +1232,50 @@
                          the LET variable ~x1 of the function ~x2 ~
                          must be a portable ASCII C identifier, but it is not."
                         var-name var fn))
-             ((when (member-equal var-name (symbol-name-lst (strip-cars vars))))
-              (er-soft+ ctx t (list nil (irr-type))
-                        "When generating C code for the function ~x0, ~
-                         the LET variable ~x1 has the same symbol name as ~
-                         another variable (formal parameter or LET variable) ~
-                         that is in scope; ~
-                         this is disallowed, even if the package names differ."
-                        fn var))
-             ((mv erp (list init-expr init-type) state)
-              (atc-gen-expr-nonbool init vars fn prec-fns ctx state))
-             ((when erp) (mv erp (list nil (irr-type)) state))
-             (decl (make-decl :type (atc-gen-tyspecseq init-type)
-                              :name (make-ident :name (symbol-name var))
-                              :init init-expr))
-             (item (block-item-decl decl))
-             (vars (acons var init-type vars))
-             ((er (list body-items body-type))
-              (atc-gen-stmt body vars fn prec-fns ctx state)))
-          (value
-           (list (cons item body-items)
-                 body-type))))
+             ((when (atc-var-newp var-name vars))
+              (b* (((mv erp (list init-expr init-type) state)
+                    (atc-gen-expr-nonbool val vars fn prec-fns ctx state))
+                   ((when erp) (mv erp (list nil (irr-type)) state))
+                   (decl (make-decl :type (atc-gen-tyspecseq init-type)
+                                    :name (make-ident :name (symbol-name var))
+                                    :init init-expr))
+                   (item (block-item-decl decl))
+                   (vars (atc-add-var var init-type vars))
+                   ((er (list body-items body-type))
+                    (atc-gen-stmt body vars fn prec-fns ctx state)))
+                (value (list (cons item body-items)
+                             body-type))))
+             (prev-type (atc-get-var-innermost var vars))
+             ((when (typep prev-type))
+              (b* (((mv erp (list expr type) state)
+                    (atc-gen-expr-nonbool val vars fn prec-fns ctx state))
+                   ((when erp) (mv erp (list nil (irr-type)) state))
+                   ((unless (equal prev-type type))
+                    (er-soft+ ctx t (list nil (irr-type))
+                              "The type ~x0 of the term ~x1 ~
+                               assigned to the LET variable ~x2 ~
+                               of the function ~x3 ~
+                               differs from the type ~x4 ~
+                               of a variable with the same symbol ~
+                               in the same innermost scope."
+                              type val var fn prev-type))
+                   (asg (make-expr-binary
+                         :op (binop-asg)
+                         :arg1 (expr-ident (make-ident :name var-name))
+                         :arg2 expr))
+                   (stmt (stmt-expr asg))
+                   (item (block-item-stmt stmt))
+                   ((er (list body-items body-type))
+                    (atc-gen-stmt body vars fn prec-fns ctx state)))
+                (value (list (cons item body-items)
+                             body-type)))))
+          (er-soft+ ctx t (list nil (irr-type))
+                    "When generating C code for the function ~x0, ~
+                     the LET variable ~x1 has the same symbol name as ~
+                     another variable (formal parameter or LET variable) ~
+                     that is in an outer scope; ~
+                     this is disallowed, even if the package names differ."
+                    fn var)))
        ((mv erp (list expr type) state) (atc-gen-expr-nonbool term
                                                               vars
                                                               fn
@@ -1214,7 +1383,7 @@
                                  state)
   :returns (mv erp
                (val (tuple (params param-decl-listp)
-                           (vars atc-symbol-type-alistp)
+                           (vars atc-symbol-type-alist-listp)
                            val))
                state)
   :short "Generate a list of C parameter declarations
@@ -1222,17 +1391,19 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Also generate an alist from the formal parameters to their C types."))
-  (b* (((when (endp formals)) (value (list nil nil)))
+    "Also generate an initial symbol table,
+     consisting of a single scope
+     that maps the formal parameters to their C types."))
+  (b* (((when (endp formals)) (value (list nil (list nil))))
        (formal (mbe :logic (acl2::symbol-fix (car formals))
                     :exec (car formals)))
        ((when (member-equal (symbol-name formal)
                             (symbol-name-lst (cdr formals))))
         (er-soft+ ctx t (list nil nil)
                   "The formal parameter ~x0 of the function ~x1 ~
-                   has the same symbol name as ~
-                   another formal parameter among ~x2; ~
-                   this is disallowed, even if the package names differ."
+                      has the same symbol name as ~
+                      another formal parameter among ~x2; ~
+                      this is disallowed, even if the package names differ."
                   formal fn (cdr formals)))
        ((mv erp (list param type) state) (atc-gen-param-decl formal
                                                              fn
@@ -1248,14 +1419,11 @@
                                                          ctx
                                                          state)))
     (value (list (cons param params)
-                 (acons formal type vars))))
+                 (atc-add-var formal type vars))))
 
   :verify-guards nil ; done below
   ///
-  (verify-guards atc-gen-param-decl-list
-    :hints
-    (("Goal"
-      :in-theory (enable alistp-when-atc-symbol-type-alistp-rewrite))))
+  (verify-guards atc-gen-param-decl-list)
 
   (more-returns
    (val true-listp :rule-classes :type-prescription)))
@@ -1509,7 +1677,8 @@
                                    exec-stmt
                                    exec-block-item
                                    exec-block-item-list
-                                   exec-expr
+                                   exec-expr-asg
+                                   exec-expr-call-or-pure
                                    exec-expr-pure
                                    exec-expr-pure-list
                                    exec-binary-pure
@@ -1523,9 +1692,11 @@
                                    top-frame
                                    push-frame
                                    pop-frame
-                                   lookup-var
-                                   lookup-var-aux
-                                   add-var
+                                   read-var
+                                   read-var-aux
+                                   write-var
+                                   write-var-aux
+                                   create-var
                                    enter-scope
                                    scope-result-kind
                                    scope-result-ok->get
@@ -1603,24 +1774,78 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-print-result ((output-file stringp)
-                              (const-event pseudo-event-formp)
+(define atc-gen-file-event ((tunit transunitp)
+                            (output-file stringp)
+                            (print-info/all booleanp)
+                            state)
+  :returns (mv erp
+               (event "A @(tsee pseudo-event-formp).")
+               state)
+  :mode :program
+  :short "Event to pretty-print the generated C code to the output file."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This serves to run @(tsee atc-gen-file)
+     after the constant and theorem events have been submitted.
+     This function generates an event form
+     that is put (by @(tsee atc-gen-everything))
+     after the constant and theorem events.
+     When the events are submitted to and processed by ACL2,
+     we get to this file generation event
+     only if the previous events are successful.
+     This is a sort of safety/security constraint:
+     do not even generate the file, unless it is correct.")
+   (xdoc::p
+    "If @(':print') is at @(':info') or @(':all'),
+     we also generate events to print progress messages,
+     as done with the constant and theorem events.")
+   (xdoc::p
+    "In order to generate an embedded event form for file generation,
+     we generate a @(tsee make-event) whose argument generates the file.
+     The argument must also return an embedded event form,
+     so we use @(tsee value-triple) with @(':invisible'),
+     so there is no extra screen output.
+     This is a ``dummy'' event, it is not supposed to do anything:
+     it is the execution of the @(tsee make-event) argument
+     that matters, because it generates the file.
+     In essence, we use @(tsee make-event) to turn a computation
+     (the one that generates the file)
+     into an event.
+     But we cannot use just @(tsee value-triple)
+     because our computation returns an error triple."))
+  (b* ((progress-start?
+        (and print-info/all
+             `((cw-event "~%Generating the file ~s0..." ',output-file))))
+       (progress-end? (and print-info/all `((cw-event " done.~%"))))
+       (file-gen-event
+        `(make-event
+          (b* (((er &) (atc-gen-file ',tunit ,output-file state)))
+            (value '(value-triple :invisible))))))
+    (value `(progn ,@progress-start?
+                   ,file-gen-event
+                   ,@progress-end?))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-gen-print-result ((const-event pseudo-event-formp)
                               (wf-thm-event pseudo-event-formp)
-                              (fn-thm-events pseudo-event-form-listp))
+                              (fn-thm-events pseudo-event-form-listp)
+                              (output-file stringp))
   :returns (events pseudo-event-form-listp)
   :short "Generate the events to print the results of ATC."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is used only if @(':print') is at least @(':result')."))
-  (append (list `(cw-event "~%File ~s0.~%" ,output-file)
-                `(cw-event "~%~x0~|" ',const-event)
+  (append (list `(cw-event "~%~x0~|" ',const-event)
                 `(cw-event "~%~x0~|" ',wf-thm-event))
-          (atc-gen-print-result-aux fn-thm-events))
+          (atc-gen-print-result-aux fn-thm-events)
+          (list `(cw-event "~%File ~s0.~%" ,output-file)))
 
   :prepwork
   ((define atc-gen-print-result-aux ((events pseudo-event-form-listp))
-     :returns (cwevents pseudo-event-form-listp)
+     :returns (events pseudo-event-form-listp)
      (cond ((endp events) nil)
            (t (cons `(cw-event "~%~x0~|" ',(car events))
                     (atc-gen-print-result-aux (cdr events))))))))
@@ -1651,15 +1876,15 @@
         (atc-gen-wf-thm const print-info/all ctx state))
        ((er (list fn-thm-local-events fn-thm-exported-events))
         (atc-gen-fn-thm-list fn1...fnp nil const print-info/all ctx state))
-       ((acl2::run-when print-info/all)
-        (cw "~%Generating the file ~s0..." output-file))
-       ((er &) (atc-gen-file tunit output-file state))
-       ((acl2::run-when print-info/all) (cw " done.~%"))
+       ((er file-gen-event) (atc-gen-file-event tunit
+                                                output-file
+                                                print-info/all
+                                                state))
        (print-events (and (member-eq print '(:result :info :all))
-                          (atc-gen-print-result output-file
-                                                exported-const-event
+                          (atc-gen-print-result exported-const-event
                                                 wf-thm-exported-event
-                                                fn-thm-exported-events)))
+                                                fn-thm-exported-events
+                                                output-file)))
        (encapsulate
          `(encapsulate ()
             (evmac-prepare-proofs)
@@ -1669,7 +1894,8 @@
             ,wf-thm-exported-event
             (local (acl2::use-trivial-ancestors-check))
             ,@fn-thm-local-events
-            ,@fn-thm-exported-events))
+            ,@fn-thm-exported-events
+            ,file-gen-event))
        (encapsulate+ (acl2::restore-output? (eq print :all) encapsulate))
        (info (make-atc-call-info :encapsulate encapsulate))
        (table-event (atc-table-record-event call info)))

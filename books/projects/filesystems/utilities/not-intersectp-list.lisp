@@ -57,16 +57,8 @@
          (not-intersectp-list x l))
   :hints (("Goal" :in-theory (enable not-intersectp-list))))
 
-(defthmd flatten-subset-no-duplicatesp-lemma-1
-  (implies (and (consp z)
-                (no-duplicatesp (flatten z))
-                (member-equal y z)
-                (not (equal y (car z))))
-           (not (intersectp-equal (car z) y)))
-  :hints (("Goal" :in-theory (enable not-intersectp-list))))
-
 (defthm
-  flatten-subset-no-duplicatesp-lemma-2
+  flatten-subset-no-duplicatesp-lemma-1
   (implies (and (no-duplicatesp (flatten z))
                 (consp z)
                 (member-equal x z)
@@ -84,7 +76,7 @@
             (not-intersectp-list z x))
    :hints (("Goal" :in-theory (enable not-intersectp-list)))))
 
-;; This is sort of the main lemma
+;; This is, sort of, the main lemma.
 (defthm flatten-subset-no-duplicatesp
   (implies (and (subsetp-equal x y)
                 (no-duplicatesp-equal (flatten y))

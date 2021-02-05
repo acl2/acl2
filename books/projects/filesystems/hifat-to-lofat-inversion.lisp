@@ -1835,12 +1835,6 @@
                            (max-entry-count fat32$c))))))
     :hints (("Goal" :in-theory (enable lofat-to-hifat)) ))))
 
-(defthm
-  stobj-set-indices-in-fa-table-guard-lemma-1
-  (implies (fat32$c-p fat32$c)
-           (fat32-entry-list-p (nth *fati* fat32$c)))
-  :hints (("Goal" :in-theory (enable fat32$c-p))))
-
 (defund
   stobj-set-indices-in-fa-table
   (fat32$c index-list value-list)
@@ -1876,24 +1870,6 @@
     (stobj-set-indices-in-fa-table
      fat32$c (cdr index-list)
      (cdr value-list))))
-
-(defthm
-  stobj-set-indices-in-fa-table-correctness-1-lemma-1
-  (implies
-   (fat32$c-p fat32$c)
-   (equal (update-nth *fati* (nth *fati* fat32$c)
-                      fat32$c)
-          fat32$c))
-  :hints (("Goal" :in-theory (enable fat32$c-p))))
-
-(defthm
-  stobj-set-indices-in-fa-table-correctness-1-lemma-2
-  (implies
-   (fat32$c-p fat32$c)
-   (equal
-    (fat32$c-p (update-nth *fati* val fat32$c))
-    (fat32-entry-list-p val)))
-  :hints (("Goal" :in-theory (enable fat32$c-p))))
 
 (defthm
   count-of-clusters-of-stobj-set-indices-in-fa-table
@@ -2649,19 +2625,6 @@
                                   contents file-length first-cluster))
           fat32$c))
   :hints (("goal" :in-theory (enable place-contents))))
-
-(encapsulate
-  ()
-
-  (local (include-book "rtl/rel9/arithmetic/top" :dir :system))
-
-  (defthm
-    get-cc-contents-of-place-contents-coincident-lemma-1
-    (implies (not (zp x))
-             (<= (* x
-                    (len (find-n-free-clusters fa-table n)))
-                 (* x (nfix n))))
-    :rule-classes :linear))
 
 (encapsulate
   ()
@@ -7992,8 +7955,7 @@
                  pseudo-root-d-e
                  not-intersectp-list
                  hifat-to-lofat-inversion-lemma-20
-                 painful-debugging-lemma-10
-                 painful-debugging-lemma-11)
+                 painful-debugging-lemma-10)
                 ((:rewrite find-n-free-clusters-when-zp))))))
 
 (defthm
@@ -8660,20 +8622,8 @@
     :use (:instance non-free-index-listp-correctness-6-lemma-3
                     (b *ms-first-data-cluster*)))))
 
-(encapsulate
-  ()
-
-  (local (include-book "rtl/rel9/arithmetic/top" :dir :system))
-
-  (defthm
-    lofat-to-hifat-helper-correctness-5-lemma-1
-    (implies (and (integerp cluster-size)
-                  (<= 64 cluster-size))
-             (equal (floor (+ 63 cluster-size) cluster-size)
-                    1))))
-
 (defthmd
-  lofat-to-hifat-helper-correctness-5-lemma-2
+  lofat-to-hifat-helper-correctness-lemma-1
   (implies
    (equal
     (len
@@ -9096,7 +9046,7 @@
   :hints
   (("goal" :in-theory (enable lofat-to-hifat-helper
                               hifat-cluster-count
-                              lofat-to-hifat-helper-correctness-5-lemma-2
+                              lofat-to-hifat-helper-correctness-lemma-1
                               d-e-cc
                               d-e-cc-contents
                               lofat-to-hifat-helper-correctness-5-lemma-5)
@@ -9186,83 +9136,8 @@
       cluster-size)
      (make-clusters "" cluster-size)))))
 
-;; The make-event is there to avoid writing out the value of (code-char 0),
-;; which makes git assess this file as a binary file and messes up the ability
-;; to do git diff and git merge.
-(make-event
- `(defthm
-    lofat-to-hifat-inversion-lemma-6
-    (implies
-     (and
-      (equal
-       (count-free-clusters
-        (set-indices-in-fa-table
-         (effective-fat fat32$c)
-         (generate-index-list 2 (count-of-clusters fat32$c))
-         (make-list-ac (count-of-clusters fat32$c)
-                       0 nil)))
-       (count-of-clusters fat32$c))
-      (lofat-fs-p fat32$c))
-     (equal
-      (root-d-e-list
-       (mv-nth
-        0
-        (place-contents
-         (update-fati
-          (fat32-entry-mask (bpb_rootclus fat32$c))
-          (fat32-update-lower-28
-           (fati
-            (fat32-entry-mask (bpb_rootclus fat32$c))
-            (stobj-set-indices-in-fa-table
-             fat32$c
-             (generate-index-list 2 (count-of-clusters fat32$c))
-             (make-list-ac (count-of-clusters fat32$c)
-                           0 nil)))
-           *ms-end-of-cc*)
-          (stobj-set-indices-in-fa-table
-           fat32$c
-           (generate-index-list 2 (count-of-clusters fat32$c))
-           (make-list-ac (count-of-clusters fat32$c)
-                         0 nil)))
-         ,(quote (make-list-ac 32 0 nil))
-         (implode (make-list-ac (cluster-size fat32$c)
-                                ,(code-char 0) nil))
-         0
-         (fat32-entry-mask (bpb_rootclus fat32$c)))))
-      (mv nil 0)))
-    :hints (("goal" :in-theory
-             (e/d (root-d-e-list)
-                  ((:rewrite place-contents-expansion-2)))
-             :use (:instance
-                   (:rewrite place-contents-expansion-2) (first-cluster
-                      (fat32-entry-mask (bpb_rootclus fat32$c)))
-                 (file-length 0)
-                 (contents
-                      (implode (make-list-ac (cluster-size fat32$c)
-                                             (code-char 0) nil)))
-                 (d-e (make-list-ac 32 0 nil))
-                 (fat32$c
-                  (update-fati
-                   (fat32-entry-mask (bpb_rootclus fat32$c))
-                   (fat32-update-lower-28
-                    (fati
-                       (fat32-entry-mask (bpb_rootclus fat32$c))
-                       (stobj-set-indices-in-fa-table
-                            fat32$c
-                            (generate-index-list
-                                 2 (count-of-clusters fat32$c))
-                            (make-list-ac (count-of-clusters fat32$c)
-                                          0 nil)))
-                    268435455)
-                   (stobj-set-indices-in-fa-table
-                        fat32$c
-                        (generate-index-list
-                             2 (count-of-clusters fat32$c))
-                        (make-list-ac (count-of-clusters fat32$c)
-                                      0 nil)))))))))
-
 (defthm
-  lofat-to-hifat-inversion-lemma-8
+  lofat-to-hifat-inversion-lemma-6
   (implies
    (and
     (equal
@@ -9419,7 +9294,7 @@
                     2097152))))
          0)))
       :in-theory
-      (e/d (root-d-e-list lofat-to-hifat-helper-correctness-5-lemma-2
+      (e/d (root-d-e-list lofat-to-hifat-helper-correctness-lemma-1
                               pseudo-root-d-e d-e-cc-contents
                               lofat-to-hifat-helper-correctness-5-lemma-6))
       :use

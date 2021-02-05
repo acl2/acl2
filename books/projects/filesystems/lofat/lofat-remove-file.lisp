@@ -21,7 +21,7 @@
 (local
  (in-theory
   (e/d
-   (hifat-equiv-of-cons-lemma-5)
+   (hifat-equiv-of-cons-lemma-4)
    (non-free-index-list-listp-correctness-1
     intersectp-member-when-not-member-intersectp
     no-duplicatesp-of-member
@@ -33,7 +33,6 @@
     (:rewrite acl2-numberp-of-car-when-acl2-number-listp)
     (:rewrite rationalp-of-car-when-rational-listp)
     (:definition acl2-number-listp)
-    (:rewrite flatten-subset-no-duplicatesp-lemma-2)
     (:definition rational-listp)
     (:rewrite true-listp-when-string-list)
     (:rewrite integerp-of-car-when-integer-listp)
@@ -2108,7 +2107,6 @@
       (:linear lofat-to-hifat-helper-correctness-3)
       (:rewrite member-intersectp-binary-append . 1)
       (:rewrite subdir-contents-p-when-zero-length)
-      (:rewrite flatten-subset-no-duplicatesp-lemma-2)
       (:rewrite member-intersectp-is-commutative-lemma-2)
       (:rewrite lofat-to-hifat-helper-of-delete-d-e-2
                 . 1)

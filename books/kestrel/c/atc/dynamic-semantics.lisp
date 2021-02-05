@@ -159,6 +159,18 @@
   :enable (scope-resultp
            scope-result-kind))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defresult scope-list "lists of scopes")
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled errorp-when-scope-list-resultp
+  (implies (scope-list-resultp x)
+           (equal (errorp x)
+                  (not (scope-listp x))))
+  :enable (errorp scope-list-resultp))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod frame
@@ -213,15 +225,22 @@
   ((frames frame-list))
   :pred compustatep)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defresult compustate "computation states")
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;
 
 (defrule not-compustatep-of-error
   (not (compustatep (error x)))
   :enable (compustatep error))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled not-errorp-when-compustatep
+  (implies (compustatep x)
+           (not (errorp x)))
+  :enable (errorp compustatep))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -450,10 +469,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define add-var ((var identp) (val sintp) (compst compustatep))
+(define create-var ((var identp) (val sintp) (compst compustatep))
   :guard (> (compustate-frames-number compst) 0)
   :returns (result compustate-resultp)
-  :short "Add a variable to a computation state."
+  :short "Create a variable in a computation state."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -476,7 +495,7 @@
   :hooks (:fix)
   ///
 
-  (defret compustate-frames-number-of-add-var
+  (defret compustate-frames-number-of-create-var
     (implies (compustate-result-case result :ok)
              (equal (compustate-frames-number
                      (compustate-result-ok->get result))
@@ -485,7 +504,7 @@
     :hints (("Goal" :in-theory (enable compustate-result-kind
                                        compustate-result-ok->get))))
 
-  (defret compustate-scopes-numbers-of-add-var
+  (defret compustate-scopes-numbers-of-create-var
     (implies (compustate-result-case result :ok)
              (equal (compustate-scopes-numbers
                      (compustate-result-ok->get result))
@@ -502,9 +521,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define lookup-var ((var identp) (compst compustatep))
+(define read-var ((var identp) (compst compustatep))
   :returns (result value-resultp)
-  :short "Look up a variable in a computation state."
+  :short "Read a variable in a computation state."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -537,19 +556,96 @@
      because the variables in other frames are not in scope
      for the C function in the top frame."))
   (if (> (compustate-frames-number compst) 0)
-      (lookup-var-aux var (frame->scopes (top-frame compst)))
-    (error (list :no-var-found-empty-frame-stack (ident-fix var))))
+      (read-var-aux var (frame->scopes (top-frame compst)))
+    (error (list :read-var-empty-frame-stack (ident-fix var))))
   :hooks (:fix)
 
   :prepwork
-  ((define lookup-var-aux ((var identp) (scopes scope-listp))
+  ((define read-var-aux ((var identp) (scopes scope-listp))
      :returns (result value-resultp)
-     (b* (((when (endp scopes)) (error (list :no-var-found (ident-fix var))))
+     (b* (((when (endp scopes))
+           (error (list :read-var-not-found (ident-fix var))))
           (scope (car scopes))
           (pair (omap::in (ident-fix var) (scope-fix scope)))
-          ((when (not pair)) (lookup-var-aux var (cdr scopes))))
+          ((when (not pair)) (read-var-aux var (cdr scopes))))
        (cdr pair))
      :hooks (:fix))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define write-var ((var identp) (val sintp) (compst compustatep))
+  :returns (new-compst compustate-resultp)
+  :short "Write a variable in the computation state."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We look for the variable in the same way as in @(tsee read-var),
+     i.e. in the top frame's scopes from innermost to outermost.
+     The variable must exist, it is not created;
+     variables are created via @(tsee create-var).
+     The new value must have the same type as the old value;
+     note that, in our restricted dynamic semantics of C,
+     variables always have values, they are never uninitialized.
+     Currently the new value is always an @('int'),
+     and so is the old value (so there is no need to actually check them),
+     but this will be generalized at some point."))
+  (b* (((unless (> (compustate-frames-number compst) 0))
+        (error (list :write-var-empty-frame-stack (ident-fix var))))
+       (frame (top-frame compst))
+       (new-scopes (write-var-aux var val (frame->scopes frame)))
+       ((when (errorp new-scopes)) new-scopes)
+       (new-frame (change-frame frame :scopes new-scopes)))
+    (push-frame new-frame (pop-frame compst)))
+  :hooks (:fix)
+
+  :prepwork
+  ((define write-var-aux ((var identp) (val sintp) (scopes scope-listp))
+     :returns (new-scopes scope-list-resultp)
+     (b* (((when (endp scopes))
+           (error (list :write-var-not-found (ident-fix var))))
+          (scope (scope-fix (car scopes)))
+          (pair (omap::in (ident-fix var) scope))
+          ((when (consp pair))
+           (cons (omap::update (ident-fix var) (sint-fix val) scope)
+                 (scope-list-fix (cdr scopes))))
+          (new-cdr-scopes (write-var-aux var val (cdr scopes)))
+          ((when (errorp new-cdr-scopes)) new-cdr-scopes))
+       (cons scope new-cdr-scopes))
+     :hooks (:fix)
+
+     ///
+
+     (defret consp-of-write-var-aux
+       (implies (scope-listp new-scopes)
+                (equal (consp new-scopes)
+                       (consp scopes)))
+       :hints (("Goal" :in-theory (enable error))))
+
+     (defret len-of-write-var-aux
+       (implies (scope-listp new-scopes)
+                (equal (len new-scopes)
+                       (len scopes)))
+       :hints (("Goal" :in-theory (enable error errorp))))))
+
+  ///
+
+  (defret compustate-frames-number-of-write-var
+    (implies (compustatep new-compst)
+             (equal (compustate-frames-number new-compst)
+                    (compustate-frames-number compst)))
+    :hints (("Goal" :in-theory (enable not-errorp-when-compustatep))))
+
+  (defret compustate-scopes-numbers-of-write-var
+    (implies (compustatep new-compst)
+             (equal (compustate-scopes-numbers new-compst)
+                    (compustate-scopes-numbers compst)))
+    :hints (("Goal" :in-theory (enable top-frame
+                                       push-frame
+                                       pop-frame
+                                       compustate-frames-number
+                                       compustate-scopes-numbers
+                                       compustate-scopes-numbers-aux
+                                       errorp-when-scope-list-resultp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -600,7 +696,7 @@
   (xdoc::topstring
    (xdoc::p
     "We read the variable's value (if any) from the computation state."))
-  (lookup-var id compst)
+  (read-var id compst)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -898,19 +994,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define exec-expr ((e exprp)
-                     (compst compustatep)
-                     (fenv fun-envp)
-                     (limit natp))
+  (define exec-expr-call-or-pure ((e exprp)
+                                  (compst compustatep)
+                                  (fenv fun-envp)
+                                  (limit natp))
     :returns (mv (result value-resultp)
                  (new-compst compustatep))
     :parents (dynamic-semantics exec)
-    :short "Execute an expression."
+    :short "Execute a function call or a pure expression."
     :long
     (xdoc::topstring
      (xdoc::p
-      "For now we only support function calls with pure expression arguments,
-       and pure expressions.
+      "This is only used for expressions that must be
+       either function calls or pure.
        If the expression is a call, we handle it here.
        Otherwise, we resort to @(tsee exec-expr-pure)."))
     (b* (((when (zp limit)) (mv (error :limit) (compustate-fix compst)))
@@ -925,6 +1021,47 @@
              :ok (exec-fun e.fun args.get compst fenv (1- limit))))
         (mv (exec-expr-pure e compst)
             (compustate-fix compst))))
+    :measure (nfix limit))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define exec-expr-asg ((e exprp)
+                         (compst compustatep)
+                         (fenv fun-envp)
+                         (limit natp))
+    :returns (new-compst compustate-resultp)
+    :parents (dynamic-semantics exec)
+    :short "Execute an assignment expression."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This is only used for expressions that must be assgnments,
+       whose left subexpression is a variable
+       and whose right subexpression is a function call or pure;
+       this is what we support for now.")
+     (xdoc::p
+      "We allow these assignment expressions
+       as the expressions of expression statements.
+       Thus, we discard the value of the assignment
+       (which is the value written to the variable);
+       this ACL2 function just returns an updated computation state."))
+    (b* (((when (zp limit)) (error :limit))
+         ((unless (expr-case e :binary))
+          (error (list :expr-asg-not-binary (expr-fix e))))
+         (op (expr-binary->op e))
+         (left (expr-binary->arg1 e))
+         (right (expr-binary->arg2 e))
+         ((unless (binop-case op :asg))
+          (error (list :expr-asg-not-asg op)))
+         ((unless (expr-case left :ident))
+          (error (list :expr-asg-left-not-var left)))
+         (var (expr-ident->get left))
+         ((mv val compst)
+          (exec-expr-call-or-pure right compst fenv (1- limit))))
+      (value-result-case
+       val
+       :err val.get
+       :ok (write-var var val.get compst)))
     :measure (nfix limit))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -988,6 +1125,9 @@
      (xdoc::p
       "For now we only support the execution of certain statements.")
      (xdoc::p
+      "We only allow, and in fact require,
+       assignment expressions in expression statements.")
+     (xdoc::p
       "For a compound statement (i.e. a block),
        we enter a new (empty) scope prior to executing the block items,
        and we exit that scope after executing the block items."))
@@ -1000,23 +1140,25 @@
                       ((mv value? compst)
                        (exec-block-item-list s.items compst fenv (1- limit))))
                    (mv value? (exit-scope compst)))
-       :expr (mv (error (list :exec-stmt s)) (compustate-fix compst))
+       :expr (b* ((compst/error (exec-expr-asg s.get compst fenv (1- limit)))
+                  ((when (errorp compst/error))
+                   (mv compst/error (compustate-fix compst))))
+               (mv nil compst/error))
        :null (mv (error (list :exec-stmt s)) (compustate-fix compst))
-       :if (b* (((mv test compst) (exec-expr s.test compst fenv (1- limit))))
+       :if (b* ((test (exec-expr-pure s.test compst)))
              (value-result-case
               test
               :ok (if (sint-nonzerop test.get)
                       (exec-stmt s.then compst fenv (1- limit))
-                    (mv nil compst))
-              :err (mv test.get compst)))
-       :ifelse (b* (((mv test compst)
-                     (exec-expr s.test compst fenv (1- limit))))
+                    (mv nil (compustate-fix compst)))
+              :err (mv test.get (compustate-fix compst))))
+       :ifelse (b* ((test (exec-expr-pure s.test compst)))
                  (value-result-case
                   test
                   :ok (if (sint-nonzerop test.get)
                           (exec-stmt s.then compst fenv (1- limit))
                         (exec-stmt s.else compst fenv (1- limit)))
-                  :err (mv test.get compst)))
+                  :err (mv test.get (compustate-fix compst))))
        :switch (mv (error (list :exec-stmt s)) (compustate-fix compst))
        :while (mv (error (list :exec-stmt s)) (compustate-fix compst))
        :dowhile (mv (error (list :exec-stmt s)) (compustate-fix compst))
@@ -1026,7 +1168,10 @@
        :break (mv (error (list :exec-stmt s)) (compustate-fix compst))
        :return (if (exprp s.value)
                    (b* (((mv retval compst)
-                         (exec-expr s.value compst fenv (1- limit))))
+                         (exec-expr-call-or-pure s.value
+                                                 compst
+                                                 fenv
+                                                 (1- limit))))
                      (value-result-case
                       retval
                       :err (mv retval.get compst)
@@ -1063,10 +1208,10 @@
        item
        :decl (b* (((decl decl) item.get)
                   ((mv init compst)
-                   (exec-expr decl.init compst fenv (1- limit))))
+                   (exec-expr-call-or-pure decl.init compst fenv (1- limit))))
                (value-result-case
                 init
-                :ok (b* ((new-compst (add-var decl.name init.get compst)))
+                :ok (b* ((new-compst (create-var decl.name init.get compst)))
                       (compustate-result-case
                        new-compst
                        :ok (mv (value-option-result-ok nil) new-compst.get)
@@ -1107,10 +1252,15 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (defret-mutual compustate-frames-number-of-exec
-    (defret compustate-frames-number-of-exec-expr
+    (defret compustate-frames-number-of-exec-expr-call-or-pure
       (equal (compustate-frames-number new-compst)
              (compustate-frames-number compst))
-      :fn exec-expr)
+      :fn exec-expr-call-or-pure)
+    (defret compustate-frames-number-of-exec-expr-asg
+      (implies (compustatep new-compst)
+               (equal (compustate-frames-number new-compst)
+                      (compustate-frames-number compst)))
+      :fn exec-expr-asg)
     (defret compustate-frames-number-of-exec-fun
       (equal (compustate-frames-number new-compst)
              (compustate-frames-number compst))
@@ -1130,7 +1280,7 @@
              (compustate-frames-number compst))
       :hyp (> (compustate-frames-number compst) 0)
       :fn exec-block-item-list)
-    :hints (("Goal" :expand ((exec-expr e compst fenv limit)
+    :hints (("Goal" :expand ((exec-expr-call-or-pure e compst fenv limit)
                              (exec-stmt s compst fenv limit)
                              (exec-block-item item compst fenv limit)
                              (exec-block-item-list items compst fenv limit)))))
@@ -1138,10 +1288,15 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (defret-mutual compustate-scopes-numbers-of-exec
-    (defret compustate-scopes-numbers-of-exec-expr
+    (defret compustate-scopes-numbers-of-exec-expr-call-or-pure
       (equal (compustate-scopes-numbers new-compst)
              (compustate-scopes-numbers compst))
-      :fn exec-expr)
+      :fn exec-expr-call-or-pure)
+    (defret compustate-scopes-numbers-of-exec-expr-asg
+      (implies (compustatep new-compst)
+               (equal (compustate-scopes-numbers new-compst)
+                      (compustate-scopes-numbers compst)))
+      :fn exec-expr-asg)
     (defret compustate-scopes-numbers-of-exec-fun
       (equal (compustate-scopes-numbers new-compst)
              (compustate-scopes-numbers compst))
@@ -1164,14 +1319,14 @@
       :hyp (and (> (compustate-frames-number compst) 0)
                 (> (compustate-top-frame-scopes-number compst) 1))
       :fn exec-block-item-list)
-    :hints (("Goal" :expand ((exec-expr e compst fenv limit)
+    :hints (("Goal" :expand ((exec-expr-call-or-pure e compst fenv limit)
                              (exec-stmt s compst fenv limit)
                              (exec-block-item item compst fenv limit)
                              (exec-block-item-list items compst fenv limit)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (verify-guards exec-expr)
+  (verify-guards exec-stmt)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

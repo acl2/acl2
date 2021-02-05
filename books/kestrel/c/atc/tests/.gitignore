@@ -21,3 +21,6 @@ calls
 
 locvars.c
 locvars
+
+assign.c
+assign

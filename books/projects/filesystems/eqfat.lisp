@@ -12,7 +12,7 @@
 
 ;; get-cc-alt really should be disabled here if it can!
 (local
- (in-theory (e/d ((:rewrite hifat-equiv-of-cons-lemma-5)
+ (in-theory (e/d ((:rewrite hifat-equiv-of-cons-lemma-4)
                   (:rewrite not-intersectp-list-of-cons-2))
                  ((:rewrite free-index-list-listp-of-update-nth-lemma-1)
                   (:rewrite free-index-list-listp-correctness-1)
@@ -54,7 +54,6 @@
                             . 1)
                   (:rewrite member-intersectp-is-commutative-lemma-2)
                   (:rewrite intersectp-member-when-not-member-intersectp)
-                  (:rewrite flatten-subset-no-duplicatesp-lemma-2)
                   (:rewrite not-intersectp-list-when-subsetp-2)
                   (:rewrite no-duplicatesp-of-member)
                   (:rewrite then-subseq-same-2)
@@ -7835,6 +7834,8 @@ channel state))
                               lofat-file-p lofat-file-contents-p
                               lofat-file->contents))))
 
+;; This exists, if I remember correctly, to ensure this file certifies properly
+;; even under the default useless-runes settings.
 (defthm lofat-remove-file-correctness-lemma-66
   (implies (equal (mv-nth 1 (d-e-cc-contents fat32$c d-e))
                   0)

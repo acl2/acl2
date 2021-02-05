@@ -2127,80 +2127,6 @@
 (defthm
   disk-image-to-lofat-guard-lemma-29
   (implies
-   (and
-    (stringp (read-file-into-string2 image-path 0 nil state))
-    (equal
-     (len
-      (explode
-       (read-file-into-string2
-        image-path
-        (*
-         (bpb_bytspersec
-          (mv-nth 0
-                  (read-reserved-area
-                   fat32$c
-                   (read-file-into-string2 image-path 0 nil state))))
-         (bpb_rsvdseccnt
-          (mv-nth 0
-                  (read-reserved-area
-                   fat32$c
-                   (read-file-into-string2 image-path 0 nil state)))))
-        (*
-         4
-         (fat-entry-count
-          (mv-nth 0
-                  (read-reserved-area
-                   fat32$c
-                   (read-file-into-string2 image-path 0 nil state)))))
-        state)))
-     (* 4
-        (fat-entry-count
-         (mv-nth 0
-                 (read-reserved-area
-                  fat32$c
-                  (read-file-into-string2 image-path 0 nil state))))))
-    (>=
-     (len
-      (explode
-       (read-file-into-string2 image-path 0 nil state)))
-     (*
-      (bpb_bytspersec
-       (mv-nth
-        0
-        (read-reserved-area
-         fat32$c
-         (read-file-into-string2 image-path 0 nil state))))
-      (bpb_rsvdseccnt
-       (mv-nth
-        0
-        (read-reserved-area
-         fat32$c
-         (read-file-into-string2 image-path 0 nil state)))))))
-   (<=
-    (+
-     (* 4
-        (fat-entry-count
-         (mv-nth 0
-                 (read-reserved-area
-                  fat32$c
-                  (read-file-into-string2 image-path 0 nil state)))))
-     (*
-      (bpb_bytspersec
-       (mv-nth
-        0
-        (read-reserved-area fat32$c
-                            (read-file-into-string2 image-path 0 nil state))))
-      (bpb_rsvdseccnt
-       (mv-nth 0
-               (read-reserved-area
-                fat32$c
-                (read-file-into-string2 image-path 0 nil state))))))
-    (len (explode (read-file-into-string2 image-path 0 nil state)))))
-  :rule-classes :linear)
-
-(defthm
-  disk-image-to-lofat-guard-lemma-30
-  (implies
    (or (not (stringp str))
        (> *initialbytcnt* (len (explode str))))
    (equal
@@ -3604,35 +3530,7 @@
                          (- index (nfix len)))
                       (make-character-list ac)))))))
 
-  (defthm
-    lofat-to-string-inversion-lemma-29
-    (implies (and (fat32$c-p fat32$c)
-                  (<= 512 (bpb_bytspersec fat32$c))
-                  (<= 1 (bpb_secperclus fat32$c))
-                  (> (+ (- (bpb_rsvdseccnt fat32$c))
-                        (bpb_totsec32 fat32$c)
-                        (- (* (bpb_fatsz32 fat32$c)
-                              (bpb_numfats fat32$c))))
-                     (bpb_secperclus fat32$c)))
-             (> (* (bpb_bytspersec fat32$c)
-                   (bpb_secperclus fat32$c)
-                   (floor (+ (- (bpb_rsvdseccnt fat32$c))
-                             (bpb_totsec32 fat32$c)
-                             (- (* (bpb_fatsz32 fat32$c)
-                                   (bpb_numfats fat32$c))))
-                          (bpb_secperclus fat32$c)))
-                0))
-    :rule-classes :linear
-    :hints
-    (("goal" :in-theory (disable painful-debugging-lemma-15)
-      :use (:instance painful-debugging-lemma-15
-                      (i (+ (- (bpb_rsvdseccnt fat32$c))
-                            (bpb_totsec32 fat32$c)
-                            (- (* (bpb_fatsz32 fat32$c)
-                                  (bpb_numfats fat32$c)))))
-                      (j (bpb_secperclus fat32$c))))))
-
-  (defthm lofat-to-string-inversion-lemma-31
+  (defthm lofat-to-string-inversion-lemma-29
     (implies (lofat-fs-p fat32$c)
              (<=
               (* 4 (fat-length fat32$c))
@@ -3705,70 +3603,13 @@
                    fat32$c)))))
   :hints (("Goal" :in-theory (enable make-fat-string-ac))))
 
-(defthm
-  lofat-to-string-inversion-lemma-36
-  (implies
-   (fat32-entry-p current)
-   (equal
-    (unsigned-byte-p 8
-                     (nth n
-                          (list (loghead 8 current)
-                                (loghead 8 (logtail 8 current))
-                                (loghead 8 (logtail 16 current))
-                                (logtail 24 current))))
-    (< (nfix n) 4)))
-  :hints (("goal" :in-theory (e/d (fat32-entry-p)
-                                  (unsigned-byte-p))))
-  :rule-classes
-  ((:linear
-    :corollary
-    (implies
-     (and (fat32-entry-p current)
-          (< (nfix n) 4))
-     (and (<= 0
-              (nth n
-                   (list (loghead 8 current)
-                         (loghead 8 (logtail 8 current))
-                         (loghead 8 (logtail 16 current))
-                         (logtail 24 current))))
-          (< (nth n
-                  (list (loghead 8 current)
-                        (loghead 8 (logtail 8 current))
-                        (loghead 8 (logtail 16 current))
-                        (logtail 24 current)))
-             256))))
-   (:rewrite
-    :corollary
-    (implies
-     (and (fat32-entry-p current)
-          (< (nfix n) 4))
-     (integerp (nth n
-                    (list (loghead 8 current)
-                          (loghead 8 (logtail 8 current))
-                          (loghead 8 (logtail 16 current))
-                          (logtail 24 current))))))))
-
-(defthm
-  lofat-to-string-inversion-lemma-37
-  (implies (and (integerp pos)
-                (integerp length)
-                (<= pos length))
-           (and (iff (< (+ -1 (* 4 pos)) (+ -4 (* 4 length)))
-                     (not (equal pos length)))
-                (iff (< (+ -2 (* 4 pos)) (+ -4 (* 4 length)))
-                     (not (equal pos length)))
-                (iff (< (+ -3 (* 4 pos)) (+ -4 (* 4 length)))
-                     (not (equal pos length)))
-                (iff (< (+ -4 (* 4 pos)) (+ -4 (* 4 length)))
-                     (not (equal pos length))))))
-
 (encapsulate
   ()
 
   (local (include-book "rtl/rel9/arithmetic/top" :dir :system))
 
   (defthm
-    lofat-to-string-inversion-lemma-38
+    lofat-to-string-inversion-lemma-31
     (implies
      (and (lofat-fs-p fat32$c)
           (not (zp pos))
@@ -4210,46 +4051,6 @@
   (defthm
     lofat-fs-p-of-string-to-lofat-lemma-1
     (implies
-     (and
-      (<= 512
-          (combine16u (nth 12 (get-initial-bytes str))
-                      (nth 11 (get-initial-bytes str))))
-      (<= 1 (nth 13 (get-initial-bytes str)))
-      (<
-       0
-       (* (nth 13 (get-initial-bytes str))
-          (combine16u (nth 12 (get-initial-bytes str))
-                      (nth 11 (get-initial-bytes str)))
-          (floor (+ (- (combine16u (nth 15 (get-initial-bytes str))
-                                   (nth 14 (get-initial-bytes str))))
-                    (combine32u (nth 19 (get-remaining-rsvdbyts str))
-                                (nth 18 (get-remaining-rsvdbyts str))
-                                (nth 17 (get-remaining-rsvdbyts str))
-                                (nth 16 (get-remaining-rsvdbyts str)))
-                    (- (* (nth 0 (get-remaining-rsvdbyts str))
-                          (combine32u (nth 23 (get-remaining-rsvdbyts str))
-                                      (nth 22 (get-remaining-rsvdbyts str))
-                                      (nth 21 (get-remaining-rsvdbyts str))
-                                      (nth 20 (get-remaining-rsvdbyts str))))))
-                 (nth 13 (get-initial-bytes str))))))
-     (not
-      (< (floor (+ (- (combine16u (nth 15 (get-initial-bytes str))
-                                  (nth 14 (get-initial-bytes str))))
-                   (combine32u (nth 19 (get-remaining-rsvdbyts str))
-                               (nth 18 (get-remaining-rsvdbyts str))
-                               (nth 17 (get-remaining-rsvdbyts str))
-                               (nth 16 (get-remaining-rsvdbyts str)))
-                   (- (* (nth 0 (get-remaining-rsvdbyts str))
-                         (combine32u (nth 23 (get-remaining-rsvdbyts str))
-                                     (nth 22 (get-remaining-rsvdbyts str))
-                                     (nth 21 (get-remaining-rsvdbyts str))
-                                     (nth 20 (get-remaining-rsvdbyts str))))))
-                (nth 13 (get-initial-bytes str)))
-         0))))
-
-  (defthm
-    lofat-fs-p-of-string-to-lofat-lemma-2
-    (implies
      (and (<= 512
               (combine16u (nth 12 (get-initial-bytes str))
                           (nth 11 (get-initial-bytes str))))
@@ -4391,18 +4192,6 @@
                          painful-debugging-lemma-1
                          painful-debugging-lemma-2
                          painful-debugging-lemma-3)))))
-
-(defthm
-  lofat-fs-p-of-string-to-lofat-lemma-5
-  (implies (and (<= (nfix i)
-                    (data-region-length fat32$c))
-                (cluster-listp (nth *data-regioni* fat32$c)
-                               cluster-size))
-           (cluster-listp (nth *data-regioni*
-                               (resize-data-region i fat32$c))
-                          cluster-size))
-  :hints (("goal" :in-theory (enable data-region-length
-                                     resize-data-region))))
 
 (defthm
   lofat-fs-p-of-string-to-lofat
@@ -4654,152 +4443,6 @@
    (defthm
      string-to-lofat-ignore-lemma-3
      (implies
-      (not
-       (equal fat32$c (create-fat32$c)))
-      (equal
-       (bpb_bytspersec
-        (mv-nth 0
-                (read-reserved-area fat32$c str)))
-       (bpb_bytspersec
-        (mv-nth 0
-                (read-reserved-area (create-fat32$c)
-                                    str)))))
-     :hints (("goal" :in-theory (e/d (read-reserved-area)
-                                     (create-fat32$c))))))
-
-  (local
-   (defthm
-     string-to-lofat-ignore-lemma-4
-     (implies
-      (not
-       (equal fat32$c (create-fat32$c)))
-      (equal
-       (bpb_rsvdseccnt
-        (mv-nth 0
-                (read-reserved-area fat32$c str)))
-       (bpb_rsvdseccnt
-        (mv-nth 0
-                (read-reserved-area (create-fat32$c)
-                                    str)))))
-     :hints (("goal" :in-theory (enable read-reserved-area
-                                        cluster-size
-                                        count-of-clusters
-                                        fat-entry-count)))))
-
-  (local
-   (defthm
-     string-to-lofat-ignore-lemma-5
-     (implies
-      (not
-       (equal fat32$c (create-fat32$c)))
-      (equal
-       (bpb_fatsz32
-        (mv-nth 0
-                (read-reserved-area fat32$c str)))
-       (bpb_fatsz32
-        (mv-nth 0
-                (read-reserved-area (create-fat32$c)
-                                    str)))))
-     :hints (("goal" :in-theory (enable read-reserved-area
-                                        count-of-clusters
-                                        fat-entry-count
-                                        cluster-size)))))
-
-  (local
-   (defthm
-     string-to-lofat-ignore-lemma-6
-     (implies
-      (not
-       (equal fat32$c (create-fat32$c)))
-      (equal
-       (bpb_numfats
-        (mv-nth 0
-                (read-reserved-area fat32$c str)))
-       (bpb_numfats
-        (mv-nth 0
-                (read-reserved-area (create-fat32$c)
-                                    str)))))
-     :hints (("goal" :in-theory (enable read-reserved-area
-                                        count-of-clusters
-                                        fat-entry-count
-                                        cluster-size)))))
-
-  (local
-   (defthm
-     string-to-lofat-ignore-lemma-7
-     (implies
-      (and
-       (not
-        (equal fat32$c (create-fat32$c)))
-       (equal
-        (mv-nth 1
-                (read-reserved-area fat32$c str))
-        0))
-      (equal
-       (bpb_totsec32
-        (mv-nth 0
-                (read-reserved-area fat32$c str)))
-       (bpb_totsec32
-        (mv-nth 0
-                (read-reserved-area (create-fat32$c)
-                                    str)))))
-     :hints (("goal" :in-theory (enable read-reserved-area
-                                        count-of-clusters
-                                        fat-entry-count
-                                        cluster-size)))))
-
-  (local
-   (defthm
-     string-to-lofat-ignore-lemma-8
-     (implies
-      (not
-       (equal fat32$c (create-fat32$c)))
-      (equal
-       (bpb_secperclus
-        (mv-nth 0
-                (read-reserved-area fat32$c str)))
-       (bpb_secperclus
-        (mv-nth 0
-                (read-reserved-area (create-fat32$c)
-                                    str)))))
-     :hints (("goal" :in-theory (enable read-reserved-area
-                                        count-of-clusters
-                                        fat-entry-count
-                                        cluster-size)))))
-
-  (local
-   (defthm
-     string-to-lofat-ignore-lemma-9
-     (implies
-      (not
-       (equal fat32$c (create-fat32$c)))
-      (equal
-       (mv-nth 1
-               (read-reserved-area fat32$c str))
-       (mv-nth 1
-               (read-reserved-area (create-fat32$c)
-                                   str))))
-     :hints (("goal" :in-theory (enable read-reserved-area
-                                        count-of-clusters
-                                        fat-entry-count
-                                        cluster-size)))))
-
-  (local
-   (defthm
-     string-to-lofat-ignore-lemma-10
-     (< '0
-        (binary-*
-         (bpb_bytspersec (mv-nth 0
-                                 (read-reserved-area fat32$c str)))
-         (bpb_secperclus (mv-nth 0
-                                 (read-reserved-area fat32$c str)))))
-     :rule-classes :linear
-     :hints (("goal" :in-theory (e/d (read-reserved-area cluster-size))))))
-
-  (local
-   (defthm
-     string-to-lofat-ignore-lemma-11
-     (implies
       (not (equal n *data-regioni*))
       (equal
        (nth n
@@ -4808,16 +4451,8 @@
        (nth n fat32$c)))
      :hints (("goal" :in-theory (enable update-data-regioni)))))
 
-  (local
-   (defthm string-to-lofat-ignore-lemma-12
-     (equal (nth *fati*
-                 (mv-nth 0
-                         (read-reserved-area fat32$c str)))
-            (nth *fati* fat32$c))
-     :hints (("Goal" :in-theory (enable read-reserved-area)) )))
-
   (defthmd
-    string-to-lofat-ignore-lemma-13
+    string-to-lofat-ignore-lemma-4
     (implies (and (equal (data-region-length fat32$c1)
                          (data-region-length fat32$c2))
                   (equal (cluster-size fat32$c1)
@@ -4844,7 +4479,7 @@
               count-of-clusters fat-entry-count string-to-lofat-nx)
       :use
       (:instance
-       (:rewrite string-to-lofat-ignore-lemma-13)
+       (:rewrite string-to-lofat-ignore-lemma-4)
        (len
         (floor (+ (- (combine16u (nth 15 (get-initial-bytes str))
                                  (nth 14 (get-initial-bytes str))))

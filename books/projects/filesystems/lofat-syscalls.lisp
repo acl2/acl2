@@ -451,57 +451,6 @@
   lofat-unlink-refinement-lemma-5
   (implies
    (and
-    (lofat-fs-p fat32$c)
-    (fat32-masked-entry-p first-cluster)
-    (stringp dir-contents)
-    (< 0 (len (explode dir-contents)))
-    (<= (len (explode dir-contents))
-        *ms-max-dir-size*)
-    (equal (mv-nth 1
-                   (get-cc-contents
-                    fat32$c
-                    first-cluster *ms-max-dir-size*))
-           0)
-    (no-duplicatesp-equal
-     (mv-nth
-      0
-      (fat32-build-index-list (effective-fat fat32$c)
-                              first-cluster *ms-max-dir-size*
-                              (cluster-size fat32$c))))
-    (< first-cluster
-       (+ *ms-first-data-cluster*
-          (count-of-clusters fat32$c))))
-   (no-duplicatesp-equal
-    (mv-nth
-     0
-     (fat32-build-index-list
-      (effective-fat
-       (mv-nth
-        0
-        (update-dir-contents fat32$c
-                             first-cluster dir-contents)))
-      first-cluster *ms-max-dir-size*
-      (cluster-size fat32$c)))))
-  :hints
-  (("goal"
-    :in-theory
-    (e/d
-     (update-dir-contents-correctness-1)
-     (no-duplicatesp-of-fat32-build-index-list-of-effective-fat-of-update-dir-contents
-      (:rewrite get-cc-contents-correctness-2)))
-    :expand (get-cc-contents
-             fat32$c first-cluster 2097152)
-    :use
-    (no-duplicatesp-of-fat32-build-index-list-of-effective-fat-of-update-dir-contents
-     (:instance
-      (:rewrite get-cc-contents-correctness-2)
-      (length 2097152)
-      (masked-current-cluster first-cluster))))))
-
-(defthm
-  lofat-unlink-refinement-lemma-6
-  (implies
-   (and
     (d-e-p d-e)
     (consp (cdr path))
     (lofat-fs-p fat32$c)
@@ -598,72 +547,11 @@
                                (d-e-cc fat32$c (pseudo-root-d-e fat32$c))))
                     (entry-limit (max-entry-count fat32$c))))))
 
-(defthm
-  lofat-unlink-refinement-lemma-9
-  (implies
-   (and
-    (lofat-fs-p fat32$c)
-    (fat32-filename-list-p path)
-    (equal (mv-nth 1
-                   (d-e-cc-contents fat32$c (pseudo-root-d-e fat32$c)))
-           0)
-    (<=
-     (len (make-d-e-list
-           (mv-nth 0
-                   (d-e-cc-contents fat32$c (pseudo-root-d-e fat32$c)))))
-     65534)
-    (not-intersectp-list
-     (mv-nth 0
-             (d-e-cc fat32$c (pseudo-root-d-e fat32$c)))
-     (mv-nth
-      2
-      (lofat-to-hifat-helper
-       fat32$c
-       (make-d-e-list
-        (mv-nth 0
-                (d-e-cc-contents fat32$c (pseudo-root-d-e fat32$c))))
-       (max-entry-count fat32$c))))
-    (equal
-     (mv-nth
-      3
-      (lofat-to-hifat-helper
-       fat32$c
-       (make-d-e-list
-        (mv-nth 0
-                (d-e-cc-contents fat32$c (pseudo-root-d-e fat32$c))))
-       (max-entry-count fat32$c)))
-     0))
-   (<=
-    (len
-     (make-d-e-list
-      (mv-nth
-       0
-       (d-e-cc-contents
-        (mv-nth 0
-                (lofat-remove-file fat32$c (pseudo-root-d-e fat32$c)
-                                       path))
-        (pseudo-root-d-e fat32$c)))))
-    65534))
-  :hints
-  (("goal"
-    :do-not-induct t
-    :in-theory
-    (e/d (lofat-remove-file)
-         ((:rewrite d-e-cc-contents-of-lofat-remove-file-coincident)
-          make-list-ac-removal))
-    :use
-    (:instance (:rewrite d-e-cc-contents-of-lofat-remove-file-coincident)
-               (path path)
-               (d-e (pseudo-root-d-e fat32$c))
-               (fat32$c fat32$c)
-               (entry-limit (max-entry-count fat32$c)))))
-  :rule-classes :linear)
-
 (encapsulate ()
   (local (include-book "std/lists/intersectp" :dir :system))
 
   (defthm
-    lofat-unlink-refinement-lemma-10
+    lofat-unlink-refinement-lemma-6
     (implies
      (and
       (equal

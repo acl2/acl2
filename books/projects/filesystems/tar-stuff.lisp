@@ -413,213 +413,6 @@
     :expand (strip-cars (cdr (assoc-equal dirp dir-stream-table))))))
 
 (defthm
-  get-names-from-dirp-alt-lemma-4
-  (implies
-   (and
-    (member-equal
-     "           "
-     (cdr (dir-stream->file-list
-           (cdr (assoc-equal dirp
-                             (dir-stream-table-fix dir-stream-table))))))
-    (equal
-     (get-names-from-dirp
-      dirp
-      (put-assoc-equal
-       dirp
-       (dir-stream
-        (cdr
-         (dir-stream->file-list
-          (cdr (assoc-equal dirp
-                            (dir-stream-table-fix dir-stream-table))))))
-       (dir-stream-table-fix dir-stream-table)))
-     (list
-      (take
-       (position-equal-ac
-        "           "
-        (cdr
-         (dir-stream->file-list
-          (cdr (assoc-equal dirp
-                            (dir-stream-table-fix dir-stream-table)))))
-        0)
-       (cdr
-        (dir-stream->file-list
-         (cdr (assoc-equal dirp
-                           (dir-stream-table-fix dir-stream-table))))))
-      (put-assoc-equal
-       dirp
-       (dir-stream
-        (cddr
-         (nthcdr
-          (position-equal-ac
-           "           "
-           (cdr
-            (dir-stream->file-list
-             (cdr (assoc-equal dirp
-                               (dir-stream-table-fix dir-stream-table)))))
-           0)
-          (dir-stream->file-list
-           (cdr (assoc-equal dirp
-                             (dir-stream-table-fix dir-stream-table)))))))
-       (dir-stream-table-fix dir-stream-table)))))
-   (equal
-    (cons
-     (car (dir-stream->file-list
-           (cdr (assoc-equal dirp
-                             (dir-stream-table-fix dir-stream-table)))))
-     (mv-nth
-      0
-      (get-names-from-dirp
-       dirp
-       (put-assoc-equal
-        dirp
-        (dir-stream
-         (cdr
-          (dir-stream->file-list
-           (cdr (assoc-equal dirp
-                             (dir-stream-table-fix dir-stream-table))))))
-        (dir-stream-table-fix dir-stream-table)))))
-    (take
-     (position-equal-ac
-      "           "
-      (cdr (dir-stream->file-list
-            (cdr (assoc-equal dirp
-                              (dir-stream-table-fix dir-stream-table)))))
-      1)
-     (dir-stream->file-list
-      (cdr (assoc-equal dirp
-                        (dir-stream-table-fix dir-stream-table)))))))
-  :instructions
-  ((:bash
-    ("goal"
-     :do-not-induct t
-     :in-theory (disable (:rewrite position-equal-ac-of-+))
-     :use
-     (:instance
-      (:rewrite position-equal-ac-of-+)
-      (n 1)
-      (acc 0)
-      (lst
-       (cdr
-        (dir-stream->file-list
-         (cdr (assoc-equal dirp
-                           (dir-stream-table-fix dir-stream-table))))))
-      (item "           "))))
-   (:dive 2 1)
-   := :top (:dive 2)
-   :x :top :bash (:dive 2 1 2)
-   := :up
-   (:=
-    (position-equal-ac
-     "           "
-     (cdr (dir-stream->file-list
-           (cdr (assoc-equal dirp
-                             (dir-stream-table-fix dir-stream-table)))))
-     0))
-   :top (:dive 1 2)
-   :=
-   :up :s
-   :top :bash))
-
-(defthm
-  get-names-from-dirp-alt-lemma-5
-  (implies
-   (and
-    (member-equal
-     "           "
-     (cdr (dir-stream->file-list
-           (cdr (assoc-equal dirp
-                             (dir-stream-table-fix dir-stream-table))))))
-    (equal
-     (get-names-from-dirp
-      dirp
-      (put-assoc-equal
-       dirp
-       (dir-stream
-        (cdr
-         (dir-stream->file-list
-          (cdr (assoc-equal dirp
-                            (dir-stream-table-fix dir-stream-table))))))
-       (dir-stream-table-fix dir-stream-table)))
-     (list
-      (take
-       (position-equal-ac
-        "           "
-        (cdr
-         (dir-stream->file-list
-          (cdr (assoc-equal dirp
-                            (dir-stream-table-fix dir-stream-table)))))
-        0)
-       (cdr
-        (dir-stream->file-list
-         (cdr (assoc-equal dirp
-                           (dir-stream-table-fix dir-stream-table))))))
-      (put-assoc-equal
-       dirp
-       (dir-stream
-        (cddr
-         (nthcdr
-          (position-equal-ac
-           "           "
-           (cdr
-            (dir-stream->file-list
-             (cdr (assoc-equal dirp
-                               (dir-stream-table-fix dir-stream-table)))))
-           0)
-          (dir-stream->file-list
-           (cdr (assoc-equal dirp
-                             (dir-stream-table-fix dir-stream-table)))))))
-       (dir-stream-table-fix dir-stream-table)))))
-   (equal
-    (mv-nth
-     1
-     (get-names-from-dirp
-      dirp
-      (put-assoc-equal
-       dirp
-       (dir-stream
-        (cdr
-         (dir-stream->file-list
-          (cdr (assoc-equal dirp
-                            (dir-stream-table-fix dir-stream-table))))))
-       (dir-stream-table-fix dir-stream-table))))
-    (put-assoc-equal
-     dirp
-     (dir-stream
-      (cdr
-       (nthcdr
-        (position-equal-ac
-         "           "
-         (cdr
-          (dir-stream->file-list
-           (cdr (assoc-equal dirp
-                             (dir-stream-table-fix dir-stream-table)))))
-         1)
-        (dir-stream->file-list
-         (cdr (assoc-equal dirp
-                           (dir-stream-table-fix dir-stream-table)))))))
-     (dir-stream-table-fix dir-stream-table))))
-  :instructions
-  ((:bash
-    ("goal"
-     :in-theory (disable)
-     :use
-     (:instance
-      (:rewrite position-equal-ac-of-+)
-      (n 1)
-      (acc 0)
-      (lst
-       (cdr
-        (dir-stream->file-list
-         (cdr (assoc-equal dirp
-                           (dir-stream-table-fix dir-stream-table))))))
-      (item "           "))))
-   (:dive 1 2)
-   := :up :s :top (:dive 2 2 1 1 1)
-   := :up (:drop 1)
-   :x
-   :top :bash))
-
-(defthm
   get-names-from-dirp-alt-lemma-2
   (implies (consp (dir-stream->file-list x))
            (car (dir-stream->file-list x)))
@@ -1409,28 +1202,6 @@
   :hints (("Goal" :in-theory (enable hifat-tar-name-list-alist))))
 
 (defthm
-  no-duplicatesp-of-strip-cars-of-hifat-tar-name-list-alist-lemma-14
-  (implies
-   (not (equal (mv-nth 1 (hifat-find-file fs path))
-               0))
-   (>
-    (mv-nth
-     1
-     (hifat-find-file
-      fs
-      (file-table-element->fid
-       (cdr
-        (assoc-equal
-         (cdr (assoc-equal (mv-nth 2 (hifat-open path fd-table file-table))
-                           (mv-nth 0
-                                   (hifat-open path fd-table file-table))))
-         (mv-nth 1
-                 (hifat-open path fd-table file-table)))))))
-    0))
-  :hints (("goal" :in-theory (enable hifat-open)))
-  :rule-classes :linear)
-
-(defthm
   no-duplicatesp-of-strip-cars-of-hifat-tar-name-list-alist-lemma-15
   (and (< 0
           (len (explode (tar-header-block path len typeflag))))
@@ -1484,41 +1255,6 @@
     :do-not-induct t
     :in-theory
     (enable (:rewrite hifat-tar-name-list-string-reduction-correctness-1)))))
-
-(defthm
-  no-duplicatesp-of-strip-cars-of-hifat-tar-name-list-alist-lemma-19
-  (implies
-   (and
-    (consp path)
-    (consp
-     (assoc-equal path2
-                  (hifat-tar-name-list-alist fs path name-list entry-count))))
-   (equal (mv-nth 1 (hifat-lstat fs path))
-          0))
-  :hints (("goal" :do-not-induct t
-           :in-theory (enable hifat-lstat))))
-
-(defthm
-  no-duplicatesp-of-strip-cars-of-hifat-tar-name-list-alist-lemma-20
-  (implies
-   (equal (mv-nth 1 (hifat-find-file fs path))
-          0)
-   (equal
-    (mv-nth
-     1
-     (hifat-find-file
-      fs
-      (file-table-element->fid
-       (cdr
-        (assoc-equal
-         (cdr (assoc-equal (mv-nth 2 (hifat-open path fd-table file-table))
-                           (mv-nth 0
-                                   (hifat-open path fd-table file-table))))
-         (mv-nth 1
-                 (hifat-open path fd-table file-table)))))))
-    0))
-  :hints (("goal" :do-not-induct t
-           :in-theory (enable hifat-open))))
 
 (defthm
   no-duplicatesp-of-strip-cars-of-hifat-tar-name-list-alist-lemma-21
@@ -1818,15 +1554,6 @@
                            ((y path2)))
             :top
             :bash (:bash ("goal" :in-theory (enable nth))))
-  :rule-classes :linear)
-
-;; Probably a stronger lemma can be proved...
-(defthm hifat-tar-name-list-alist-correctness-lemma-27
-  (and (>= (len (fat32-path-to-path (append x y)))
-           (len (fat32-path-to-path x)))
-       (>= (len (fat32-path-to-path (append x y)))
-           (len (fat32-path-to-path y))))
-  :hints (("goal" :in-theory (enable fat32-path-to-path)))
   :rule-classes :linear)
 
 (defthm
@@ -2202,16 +1929,6 @@
                                            (hifat-file-alist-fix fs)))))))))
 
 (defthm
-  hifat-tar-name-list-alist-correctness-lemma-10
-  (implies
-   (zp (mv-nth 1 (hifat-find-file fs path)))
-   (< (hifat-entry-count
-       (m1-file->contents$inline (mv-nth '0 (hifat-find-file fs path))))
-      (hifat-entry-count fs)))
-  :hints (("goal" :in-theory (enable hifat-find-file hifat-entry-count)))
-  :rule-classes :linear)
-
-(defthm
   hifat-tar-name-list-alist-correctness-lemma-11
   (implies
    (and
@@ -2275,7 +1992,6 @@
                      (:rewrite m1-regular-file-p-correctness-1)
                      (:definition nthcdr)
                      (:linear hifat-tar-name-list-alist-correctness-lemma-1)
-                     (:linear hifat-tar-name-list-alist-correctness-lemma-27)
                      (:linear hifat-entry-count-when-hifat-subsetp)
                      (:definition hifat-subsetp)
                      (:definition atom)
@@ -2283,22 +1999,6 @@
                      (:definition nfix)
                      (:definition natp)
                      nth-under-iff-1)))))
-
-(defthm
-  hifat-tar-name-list-alist-correctness-lemma-12
-  (implies (and (equal (car path2) (car name-list))
-                (m1-regular-file-p (mv-nth 0 (hifat-find-file fs path2)))
-                (<= (len (fat32-path-to-path path2))
-                    100))
-           (<= (len (fat32-path-to-path (list (car name-list))))
-               100))
-  :rule-classes :linear
-  :instructions
-  (:promote (:dive 1 2)
-            (:apply-linear hifat-tar-name-list-alist-correctness-lemma-26
-                           ((y path2)))
-            :top
-            :bash :bash))
 
 (defthm
   hifat-tar-name-list-alist-correctness-lemma-13
@@ -2380,6 +2080,7 @@
                (name (fat32-filename-fix (car name-list))))))
   :rule-classes :linear)
 
+;; Inductive, hence kept.
 (defthm
   hifat-tar-name-list-alist-correctness-lemma-15
   (implies (and (hifat-no-dups-p fs)
@@ -2387,7 +2088,7 @@
            (hifat-subsetp (remove-assocs-equal keys fs)
                           fs))
   :hints (("goal" :in-theory (enable remove-assocs-equal hifat-subsetp
-                                     hifat-equiv-of-cons-lemma-5)))
+                                     hifat-equiv-of-cons-lemma-4)))
   :rule-classes
   (:rewrite
    (:linear
@@ -2850,8 +2551,6 @@
           (:definition nthcdr)
           (:linear
            hifat-tar-name-list-alist-correctness-lemma-1)
-          (:linear
-           hifat-tar-name-list-alist-correctness-lemma-27)
           (:linear hifat-entry-count-when-hifat-subsetp)
           ;; it's dubious how much labour is saved by disabling these,
           ;; but it's worth a shot.

@@ -165,6 +165,7 @@
       allowed non-boolean terms,
       allowed pure non-boolean terms,
       and allowed boolean terms.")
+
     (xdoc::p
      "An <i>allowed outer term</i> is
       inductively defined as one of the following:")
@@ -197,23 +198,46 @@
        @('(return-last \'acl2::mbe1-raw \'t (if x \'nil \'t))');
        these are the patterns that ATC looks for.")
      (xdoc::li
-      "A term of the form @('(let ((var init)) body)'),
+      "A term of the form @('(let ((var term)) body)'),
        where @('var') is a portable ASCII C identifier
        as defined in Section `Portable ASCII C Identifiers' below,
-       @('init') is an allowed non-boolean term,
+       @('term') is an allowed non-boolean term,
        and @('body') is an allowed outer term.
-       This represents
-       a declaration of a C local variable represented  by @('var'),
-       initialized with the C expression represented by @('init'),
-       and followed by the C code represented by @('body');
-       the C type of the variable is determined from the initializer.
-       The @(tsee let) must have exactly one variable,
-       and its symbol name must be distinct from
-       the symbol names of all the other variables in scope
-       (both function parameters and variables bound in enclosing @(tsee let)s).
+       This represents one of the following:"
+      (xdoc::ul
+       (xdoc::li
+        "A declaration of a C local variable represented by @('var'),
+         initialized with the C expression represented by @('term'),
+         and followed by the C code represented by @('body').
+         The C type of the variable is determined from the initializer.
+         The symbol name of @('var') must be distinct from
+         the symbol names of all the other ACL2 variables in scope
+         (function parameters and variables bound in enclosing @(tsee let)s).")
+       (xdoc::li
+        "An assignment to the C local variable represented by @('var'),
+         with the C expression represented by @('term'),
+         and followed by the C code represented by @('body').
+         This @(tsee let) must be in the scope of
+         an ACL2 variable with the same symbol @('var');
+         while the @('var') in this @(tsee let)
+         is distinct from and shadows the one in scope in ACL2,
+         it represents the same variable in C.
+         In this case, the value bound to the outer @('var') must have
+         the same C type as the value bound to the inner @('var').
+         However, there must be no @(tsee if) ``between''
+         this @(tsee let) and the one of the outer @('var'),
+         i.e. the two variables must be in the same C scope
+         (as represented in ACL2)."))
+      "The two situations are distinguished by whether
+       there is no outer @('var') in scope,
+       in which case the @(tsee let) represents a declaration,
+       or there is one (subject to the scope restriction above),
+       in which case the @(tsee let) represents an assignment.
+       In any case, the @(tsee let) must have exactly one variable.
        In translated terms,
-       @('(let ((var init)) body)') is @('((lambda (var) body) init)');
+       @('(let ((var term)) body)') is @('((lambda (var) body) term)');
        this is the pattern that ATC looks for."))
+
     (xdoc::p
      "An <i>allowed non-boolean term</i> is
       inductively defined as one of the following:")
@@ -228,6 +252,7 @@
        and the target functions must be specified
        in a topological order of their call graph.
        This represents a call of the corresponding C function."))
+
     (xdoc::p
      "An <i>allowed pure non-boolean term</i> is
       inductively defined as one of the following:")
@@ -305,6 +330,7 @@
        @('(mbt$ x)') is
        @('(return-last \'acl2::mbe1-raw \'t (if x \'nil \'t))');
        these are the patterns that ATC looks for."))
+
     (xdoc::p
      "An <i>allowed boolean term</i> is
       inductively defined as one of the following:")
@@ -327,6 +353,7 @@
        In translated terms, @('(and x y)') and @('(or x y)') are
        @('(if x y \'nil)') and @('(or x x y)'):
        these are the patterns that ATC looks for."))
+
     (xdoc::p
      "Allowed outer terms represent C statements,
       while allowed non-boolean and boolean terms represent C expressions;
@@ -396,31 +423,7 @@
         "do         long       union      _Imaginary"
         "double     register   unsigned   _Noreturn"
         "else       restrict   void       _Static_assert"
-        "enum       return     volatile   _Thread_local")))
-
-     (xdoc::p
-      "[C:6.4.2] allows the following characters in identifiers:")
-     (xdoc::ol
-      (xdoc::li
-       "The ten digits (but not in the starting position).
-        Even though [C] does not prescribe the use of (a superset of) ASCII,
-        these have obvious ASCII counterparts.")
-      (xdoc::li
-       "The 26 uppercase Latin letters,
-        the 26 lowercase Latin letter,
-        and the underscore.
-        Even though [C] does not prescribe the use of (a superset of) ASCII,
-        these have obvious ASCII counterparts.")
-      (xdoc::li
-       "Some ranges of universal characters
-        (some of which cannot occur in the starting position),
-        none of which are ASCII.")
-      (xdoc::li
-       "Other implementation-defined characters.
-        These are not portable."))
-     (xdoc::p
-      "Thus, portable ASCII C identifiers consists of only 1 and 2 above,
-       excluding 3 (non-ASCII) and 4 (non-portable).")))
+        "enum       return     volatile   _Thread_local")))))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

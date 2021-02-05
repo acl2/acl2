@@ -1697,6 +1697,53 @@ sub collect_bottom_out_of_date {
 }
 
 
+sub clean_generated_files {
+    my ($base) = @_;
+
+    my @exts = ( ".cert",
+		 ".cert.out",
+		 ".cert.time",
+		 ".acl2x",
+		 ".lx64fsl",
+		 "\@expansion.lsp",
+		 ".date",
+		 ".cert.temp",
+		 ".pcert0",
+		 ".pcert1",
+		 ".pcert0.temp",
+		 ".port",
+		 ".h",
+		 ".c",
+		 ".data",
+		 ".o",
+		 ".sbin",
+		 ".lbin",
+		 ".fasl",
+		 ".ufsl",
+		 ".64ufasl",
+		 ".ufasl",
+		 ".pfsl",
+		 ".dfsl",
+		 ".dx32fsl",
+		 ".lx32fsl",
+		 ".d64fsl",
+		 ".dx64fsl",
+		 ".lx64fsl",
+		 ".bin",
+		 ".sparcf",
+		 ".axpf",
+		 ".x86f",
+		 ".ppcf",
+		 ".fas",
+		 ".lib"
+	);
+    foreach my $ext (@exts) {
+	my $tmpfile = $base . $ext;
+	unlink($tmpfile) if (-e $tmpfile);
+    }
+}
+
+
 # During a dependency search, this is run with $target set to each
 # cert and source file in the dependencies of the top-level targets.
 # If the target has been seen before, then it returns immediately.
@@ -1737,52 +1784,7 @@ sub add_deps {
     my $lispfile = $base . ".lisp";
 
     # Clean the cert and out files, etc., if we're cleaning.
-    if ($clean_certs) {
-	my $outfile = $target . ".out";
-	my $timefile = $target . ".time";
-	my $acl2xfile = $base . ".acl2x";
-	unlink($target) if (-e $target);
-	unlink($outfile) if (-e $outfile);
-	unlink($timefile) if (-e $timefile);
-	unlink($acl2xfile) if (-e $acl2xfile);
-	my $tmpfile;
-	# Keep what follows in sync with unversioned-files.txt.
-	$tmpfile = $base . ".lx64fsl"; unlink($tmpfile) if (-e $tmpfile);
-	$tmpfile = $base . "\@expansion.lsp"; unlink($tmpfile) if (-e $tmpfile);
-	# $tmpfile = $base . "*.out"; -- already covered by $outfile above
-	$tmpfile = $base . ".date"; unlink($tmpfile) if (-e $tmpfile);
-	# $tmpfile = $base . ".cert" -- already covered by $target above
-	$tmpfile = $base . ".cert.temp"; unlink($tmpfile) if (-e $tmpfile);
-	$tmpfile = $base . ".pcert0"; unlink($tmpfile) if (-e $tmpfile);
-	$tmpfile = $base . ".pcert1"; unlink($tmpfile) if (-e $tmpfile);
-	$tmpfile = $base . ".pcert0.temp"; unlink($tmpfile) if (-e $tmpfile);
-	$tmpfile = $base . ".port"; unlink($tmpfile) if (-e $tmpfile);
-	# $tmpfile = $base . ".acl2x"; -- already covered by $acl2xfile above
-	$tmpfile = $base . ".h"; unlink($tmpfile) if (-e $tmpfile);
-	$tmpfile = $base . ".c"; unlink($tmpfile) if (-e $tmpfile);
-	$tmpfile = $base . ".data"; unlink($tmpfile) if (-e $tmpfile);
-	$tmpfile = $base . ".o"; unlink($tmpfile) if (-e $tmpfile);
-	$tmpfile = $base . ".sbin"; unlink($tmpfile) if (-e $tmpfile);
-	$tmpfile = $base . ".lbin"; unlink($tmpfile) if (-e $tmpfile);
-	$tmpfile = $base . ".fasl"; unlink($tmpfile) if (-e $tmpfile);
-	$tmpfile = $base . ".ufsl"; unlink($tmpfile) if (-e $tmpfile);
-	$tmpfile = $base . ".64ufasl"; unlink($tmpfile) if (-e $tmpfile);
-	$tmpfile = $base . ".ufasl"; unlink($tmpfile) if (-e $tmpfile);
-	$tmpfile = $base . ".pfsl"; unlink($tmpfile) if (-e $tmpfile);
-	$tmpfile = $base . ".dfsl"; unlink($tmpfile) if (-e $tmpfile);
-	$tmpfile = $base . ".dx32fsl"; unlink($tmpfile) if (-e $tmpfile);
-	$tmpfile = $base . ".lx32fsl"; unlink($tmpfile) if (-e $tmpfile);
-	$tmpfile = $base . ".d64fsl"; unlink($tmpfile) if (-e $tmpfile);
-	$tmpfile = $base . ".dx64fsl"; unlink($tmpfile) if (-e $tmpfile);
-	$tmpfile = $base . ".lx64fsl"; unlink($tmpfile) if (-e $tmpfile);
-	$tmpfile = $base . ".bin"; unlink($tmpfile) if (-e $tmpfile);
-	$tmpfile = $base . ".sparcf"; unlink($tmpfile) if (-e $tmpfile);
-	$tmpfile = $base . ".axpf"; unlink($tmpfile) if (-e $tmpfile);
-	$tmpfile = $base . ".x86f"; unlink($tmpfile) if (-e $tmpfile);
-	$tmpfile = $base . ".ppcf"; unlink($tmpfile) if (-e $tmpfile);
-	$tmpfile = $base . ".fas"; unlink($tmpfile) if (-e $tmpfile);
-	$tmpfile = $base . ".lib"; unlink($tmpfile) if (-e $tmpfile);
-    }
+    clean_generated_files($base) if ($clean_certs);
 
     # First check that the corresponding .lisp file exists.
     # if (! -e $lispfile) {

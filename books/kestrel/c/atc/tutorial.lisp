@@ -252,7 +252,7 @@
     (the exact number of bits in a byte is also implementation-dependent
     [C:5.2.4.2.1/1] [C:6.2.6.1/3]).
     Under these assumptions, @('int') values must consist of at least 16 bits,
-    resulting in the range from -32768 to +32767 at a minimum.
+    resulting in at least the range from -32768 to +32767.
     [C:6.2.6.1/4] requires @('int') to take a whole number of bytes,
     and thus the possible bit sizes are 16, 24, 32, 40, 48, etc.
     [C:6.2.5/5] states that the size is
@@ -850,6 +850,119 @@
    "This prints the following on the screen:")
   (xdoc::codeblock
    "f(3, -2, 8) = 5"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-atc-tutorial-page identifiers
+
+  "ACL2 representation of C identifiers"
+
+  (xdoc::p
+   "(This page may be skipped at first reading.)")
+
+  (xdoc::p
+   "As mentioned in @(see atc-tutorial-int-programs),
+    C function and variable names are represented by
+    ACL2 symbols whose names are the C function and variable names.
+    This tutorial page explains in more detail
+    which and how C identifiers are represented in ACL2.")
+
+  (xdoc::p
+   "[C:5.2.1] describes two (possibly identical) character sets:
+    one in which the C code is written
+    (the source character set),
+    and one whose character values are manipulated by the C code
+    (the execution character set).
+    C identifiers consist of characters from the source set.")
+
+  (xdoc::p
+   "The source and execution character sets may be anything,
+    so long as they satisfy the requirements stated in [C:5.2.1];
+    they do not have to be ASCII or Unicode or anything specific.
+    However, they are required to contain certain characters
+    that have obvious ASCII counterparts.
+    It also seems that, given the prevalence of (supersets of) ASCII,
+    most C implementations will indeed use (some superset of) ASCII
+    for both the source and execution character set.
+    This certainly appears to be the case on platforms like macOS.")
+
+  (xdoc::p
+   "Based on the above considerations,
+    and the fact that the "
+   (xdoc::seetopic "acl2::characters" "ACL2 character set")
+   " is the ISO 8859-1 superset of ASCII,
+    ATC assumes that the C implementation supports a superset of ASCII,
+    and generates code that is entirely in ASCII,
+    for greater portability.
+    This means that the generated C identifiers, in particular,
+    must consist of ASCII characters.")
+
+  (xdoc::p
+   "[C:6.4.2] allows the following characters in identifiers:")
+  (xdoc::ol
+   (xdoc::li
+    "The ten numeric digits (but not in the starting position).
+     These are ASCII characters, under the above assumption.")
+   (xdoc::li
+    "The 26 uppercase Latin letters,
+     the 26 lowercase Latin letter,
+     and the underscore.
+     These are ASCII characters, under the above assumption.")
+   (xdoc::li
+    "Some ranges of universal characters
+     (some of which cannot occur in the starting position).
+     These are Unicode characters that are not ASCII,
+     because their codes are above 127.")
+   (xdoc::li
+    "Other implementation-defined characters.
+     These may or may not be ASCII;
+     no constraints in that sense are imposed by [C].
+     More importantly, these characters are not portable,
+     because different implementations may make different choices."))
+  (xdoc::p
+   "While (1) and (2) are both ASCII and portable,
+    (3) is not ASCII, and (4) is not portable.
+    Thus, we call a `portable ASCII identifier'
+    a C identifier that consists only of 1 and 2 above.
+    This is the term used in "
+   (xdoc::seetopic "atc" "the ATC reference documentation")
+   ", in Section `Portable ASCII C Identifiers'.")
+
+  (xdoc::p
+   "ATC generates C code with portable ASCII identifiers.
+    These are represented, in ACL2, by symbols whose @(tsee symbol-name)s
+    are exactly the C identifiers.
+    Since, as mentioned above, ACL2 characters are a superset of ASCII,
+    any portable ASCII C identifier may be represented by some ACL2 symbol.
+    The @(tsee symbol-package-name)s are ignored for this purpose:
+    different ACL2 symbols with the same name but different package name
+    represent the same C identifier
+    (provided that their names are legal portable ASCII C identifiers).")
+
+  (xdoc::p
+   "The Lisp platform on which ACL2 runs is typically case-insensitive,
+    in the sense that symbols may be written in uppercase or lowercase,
+    and either way their names are uppercase,
+    e.g. both @('(symbol-name \'abc)') and @('(symbol-name \'ABC)')
+    yield the string @('\"ABC\"').
+    However, enclosing a symbol in vertical bars makes it case-sensitive,
+    e.g. @('(symbol-name \'|abc|)') yields the string @('\"abc\"').")
+
+  (xdoc::p
+   "In ACL2, function and variable symbols are normally written
+    without vertical bars and with dashes to separate words.
+    Since dashes are illegal in C identifiers,
+    underscores should be used to separate words
+    in ACL2 function and variable symbols
+    that represent C function and variable names.
+    As explained above, the absence of vertical bars would result
+    in C identifiers with uppercase letters,
+    which goes against typical C conventions.
+    Therefore, it is best to use vertical bars around these symbols.
+    Examples are @('|x|'), @('|next_value|'), @('|var_k43|'), etc.
+    In any case, any portable ASCII C identifiers,
+    including ones with uppercase letters,
+    are representable via ACL2 symbols."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

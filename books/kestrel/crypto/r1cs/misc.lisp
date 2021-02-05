@@ -120,8 +120,8 @@
 ;; todo: wrap this command into a nice wrapper that prevents accidentally giving the wrong table name:
 (table acl2::axe-rule-priorities-table 'pfield::fep-when-fe-listp-and-memberp 1)
 (table acl2::axe-rule-priorities-table 'bitp-when-equal-1 1)
-(table acl2::axe-rule-priorities-table 'bitp-when-equal-2. 1)
-(table acl2::axe-rule-priorities-table 'acl2::bitp-when-bit-listp-and-memberp. 1)
+(table acl2::axe-rule-priorities-table 'bitp-when-equal-2 1)
+(table acl2::axe-rule-priorities-table 'acl2::bitp-when-bit-listp-and-memberp 1)
 
 (defthm equal-of-0-and-add-of-add-of-add-of-neg-lemma
   (implies (and (fep w p)
@@ -1098,3 +1098,24 @@
            (equal (mod (+ x y) 4294967296)
                   (acl2::bvplus 32 x y)))
   :hints (("Goal" :in-theory (enable acl2::bvplus acl2::bvchop))))
+
+(defthmd bitp-when-equal-of-getbit-1
+  (implies (equal x (acl2::getbit free-n free-y))
+           (acl2::bitp x)))
+
+(defthmd bitp-when-equal-of-getbit-2
+  (implies (equal (acl2::getbit free-n free-y) x)
+           (acl2::bitp x)))
+
+(defthmd bitp-when-equal-of-bitxor-1
+  (implies (equal x (acl2::bitxor free-y free-z))
+           (acl2::bitp x)))
+
+(defthmd bitp-when-equal-of-bitxor-2
+  (implies (equal (acl2::bitxor free-y free-z) x)
+           (acl2::bitp x)))
+
+(table acl2::axe-rule-priorities-table 'bitp-when-equal-of-getbit-1 1)
+(table acl2::axe-rule-priorities-table 'bitp-when-equal-of-getbit-2 1)
+(table acl2::axe-rule-priorities-table 'bitp-when-equal-of-bitxor-1 1)
+(table acl2::axe-rule-priorities-table 'bitp-when-equal-of-bitxor-2 1)
