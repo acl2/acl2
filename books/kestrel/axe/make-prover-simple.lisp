@@ -29,6 +29,7 @@
 (include-book "splitting")
 (include-book "elim")
 (include-book "substitute-vars")
+(include-book "substitute-vars2")
 (include-book "get-disjuncts")
 (include-book "rule-alists")
 (include-book "make-implication-dag")
@@ -3083,6 +3084,32 @@
          :hints (("Goal" :do-not '(generalize eliminate-destructors)
                   :in-theory (e/d (,rewrite-clause-name) (natp)))))
 
+       (defthm ,(pack$ rewrite-clause-name '-return-type-corollary)
+         (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                       (nat-listp literal-nodenums)
+                       (all-< literal-nodenums dag-len)
+                       (rule-alistp rule-alist)
+                       (interpreted-function-alistp interpreted-function-alist)
+                       (info-worldp info)
+                       (triesp tries)
+                       (symbol-listp monitored-symbols)
+                       (stringp case-designator)
+                       (natp prover-depth)
+                       ;; (symbol-listp known-booleans)
+                       (simple-prover-optionsp options))
+                  (mv-let (erp provedp changep new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries)
+                    (,rewrite-clause-name literal-nodenums
+                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                          rule-alist rule-set-number
+                                          interpreted-function-alist monitored-symbols
+                                          case-designator print ;move print arg?
+                                          info tries prover-depth known-booleans options)
+                    (declare (ignore provedp changep new-literal-nodenums new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries))
+                    (implies (not erp)
+                             (pseudo-dag-arrayp 'dag-array new-dag-array new-dag-len))))
+         :hints (("Goal" :use (:instance ,(pack$ rewrite-clause-name '-return-type))
+                  :in-theory (disable ,(pack$ rewrite-clause-name '-return-type)))))
+
        ;; can this loop? probably, if the rules loop?
        ;; Returns (mv erp provedp literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries).
        ;; where if provedp is non-nil we proved the clause and the other return values are irrelevant fffixme is test-cases?
@@ -3144,6 +3171,8 @@
                ;;Rewriting didn't change anything.
                ;;fixme think about when exactly to do this
                (b* ((- (and print (cw "(Substituting:~%")))
+                    (subst-candidates (subst-candidates literal-nodenums dag-array dag-len nil)) ;only used for printing the count, for now
+                    (- (cw "~x0 subst candidates.~%" (len subst-candidates)))
                     ((mv erp changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
                      (substitute-vars literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print prover-depth 0 nil))
                     ((when erp)
