@@ -317,6 +317,8 @@
               (cond ((and (atom ud)
                           (svexl-node-p ud))
                      (mv nil ud))
+                    ((4vec-p ud)
+                     (mv nil (sv::svex-quote ud)))
                     ((svex-p term)
                      (mv nil term))
                     (t
