@@ -113,3 +113,8 @@
                     (make-dag-constant-alist 'dag-array dag-array dag-len)
                     (make-dag-variable-alist 'dag-array dag-array dag-len)))
   :hints (("Goal" :in-theory (enable wf-dagp))))
+
+;; free vars make this cheap
+(defthm dag-parent-arrayp-when-wf-dagp
+  (implies (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
+           (dag-parent-arrayp dag-parent-array-name dag-parent-array)))
