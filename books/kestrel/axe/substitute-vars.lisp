@@ -130,13 +130,13 @@
           (find-var-and-expr-to-subst (darg1 non-nil-expr) (darg2 non-nil-expr) dag-array dag-len) ;this is what prevents loops
           )))))
 
-;; searches through literal-nodenums for a (negated) equality involving a variable (recall that a literal can be safely assumed false when rewriting other literals)
-;; requires that the variable is equated to some term not involving itself (to prevent loops)
-;; if such a (negated) equality is found, it is used to substitute in all the other literals.  the literal representing the equality is then dropped, eliminating that variable from the DAG.
+;; Searches through literal-nodenums for a (negated) equality involving a variable (recall that a literal can be safely assumed false when rewriting other literals).
+;; Requires that the variable is equated to some term not involving itself (to prevent loops).
+;; If such a (negated) equality is found, it is used to substitute in all the other literals.  The literal representing the equality is then dropped, eliminating that variable from the DAG.
 ;; Returns (mv erp changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
 ;fixme could this ever transform a literal into a constant?
-;fixme what if more than one var can be substituted away?
-;doesn't change any existing nodes in the dag (just builds new ones)
+;; TODO: Consider substituting multiple variables at once.
+;; Doesn't change any existing nodes in the dag (just builds new ones).
 (defund substitute-a-var (literal-nodenums all-literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print)
   (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                               (nat-listp literal-nodenums)
@@ -177,12 +177,14 @@
              ((mv erp literal-nodenums ;fixme could these ever be quoteps?
                   dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                   )
+              ;; TODO: Combine these 2 passes through the literals (the remove and the rebuild):
               (rebuild-literals-with-substitution (remove literal-nodenum all-literal-nodenums) ;remove the equality we used ;make use of the fact that the item appears only once?
                                                   dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                   nodenum-of-var
                                                   nodenum-or-quotep-to-put-in ;known to be a nodenum
                                                   ))
              ((when erp) (mv erp nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+             ;; todo: avoid the call of len (compute it during the pass through the literals above?):
              (- (and print (cw " ~x0 literals left, dag len is ~x1)~%" (len literal-nodenums) dag-len))))
           (mv (erp-nil) t literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))))))
 
