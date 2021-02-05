@@ -7733,28 +7733,6 @@
          z z-var (cdr y-path))))
       (name (fat32-filename-fix (car y-path))))))))
 
-(defthm
-  partial-collapse-correctness-lemma-3
-  (implies
-   (not
-    (intersectp-equal
-     (names-at z nil)
-     (names-at
-      (abs-file->contents (cdr (assoc-equal (fat32-filename-fix (car z-path))
-                                            x)))
-      (cdr y-path))))
-   (absfat-subsetp
-    (abs-file-contents-fix
-     (ctx-app (abs-file->contents$inline
-               (cdr (assoc-equal (fat32-filename-fix (car z-path))
-                                 x)))
-              z z-var (cdr y-path)))
-    (abs-file-contents-fix
-     (ctx-app (abs-file->contents$inline
-               (cdr (assoc-equal (fat32-filename-fix (car z-path))
-                                 x)))
-              z z-var (cdr y-path))))))
-
 (defthmd
   partial-collapse-correctness-lemma-9
   (implies

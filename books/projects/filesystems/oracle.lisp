@@ -11,6 +11,8 @@
 (defconst *syscall-unlink* 5)
 (defconst *syscall-rmdir* 6)
 (defconst *syscall-truncate* 7)
+(defconst *syscall-mkdir* 8)
+(defconst *syscall-opendir* 9)
 
 (fty::defprod lofat-st
               ((fd natp)
@@ -21,9 +23,14 @@
                (errno natp)
                (path fat32-filename-list-p)
                (stat struct-stat-p)
+               (statfs struct-statfs-p)
+               (dirp natp)
                (fd-table fd-table-p)
-               (file-table file-table-p)))
+               (file-table file-table-p)
+               (dirstream-table dirstream-table-p)))
 
+;; We aren't going to put statfs in this. It'll just make things pointlessly
+;; complicated.
 (defund lofat-oracle-single-step (fat32$c syscall-num st)
   (declare (xargs :stobjs fat32$c
                   :guard (and (lofat-fs-p fat32$c)
@@ -95,5 +102,25 @@
                (lofat-st->path st))))
           (mv fat32$c
               (change-lofat-st
-               st :retval retval :errno errno)))))
+               st :retval retval :errno errno))))
+       ((when (equal syscall-num *syscall-mkdir*))
+        (b*
+            (((mv fat32$c retval errno)
+              (lofat-mkdir
+               fat32$c
+               (lofat-st->path st))))
+          (mv fat32$c
+              (change-lofat-st
+               st :retval retval :errno errno))))
+       ((when (equal syscall-num *syscall-opendir*))
+        (b*
+            (((mv dirstream-table dirp retval)
+              (lofat-opendir
+               fat32$c
+               (lofat-st->dirstream-table st)
+               (lofat-st->path st))))
+          (mv fat32$c
+              (change-lofat-st
+               st :dirstream-table dirstream-table :dirp dirp
+               :retval retval :errno 0)))))
     (mv fat32$c st)))
