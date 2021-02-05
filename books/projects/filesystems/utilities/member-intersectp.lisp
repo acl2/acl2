@@ -105,6 +105,7 @@
          (member-intersectp-equal y x))
   :hints (("Goal" :in-theory (enable member-intersectp-is-commutative-lemma-3)) ))
 
+;; This is useful, but might be useful at some point...
 (defthm
   another-lemma-about-member-intersectp
   (implies (or (member-intersectp-equal x z)

@@ -206,40 +206,6 @@
    :hints (("goal" :in-theory (enable m1-file-alist-p)))))
 
 (defthm
-  hifat-entry-count-of-put-assoc-equal-lemma-2
-  (implies
-   (and
-    (not (equal name (car (car fs))))
-    (equal
-     (hifat-entry-count (put-assoc-equal name val (cdr fs)))
-     (+ (hifat-entry-count (cdr fs))
-        (hifat-entry-count (m1-file->contents val))
-        (- (hifat-entry-count
-            (m1-file->contents (cdr (assoc-equal name (cdr fs))))))))
-    (m1-file-alist-p fs)
-    (hifat-no-dups-p fs)
-    (m1-directory-file-p (cdr (assoc-equal name (cdr fs))))
-    (m1-directory-file-p val)
-    (hifat-no-dups-p (m1-file->contents val))
-    (consp (assoc-equal
-            (car (car fs))
-            (hifat-file-alist-fix (put-assoc-equal name val (cdr fs))))))
-   (equal
-    (hifat-entry-count (put-assoc-equal name val (cdr fs)))
-    (+ (hifat-entry-count fs)
-       (hifat-entry-count (m1-file->contents val))
-       (- (hifat-entry-count
-           (m1-file->contents (cdr (assoc-equal name (cdr fs)))))))))
-  :hints
-  (("goal"
-    :in-theory (e/d (hifat-entry-count hifat-no-dups-p)
-                    (hifat-file-alist-fix-when-hifat-no-dups-p))
-    :use ((:instance (:rewrite hifat-file-alist-fix-when-hifat-no-dups-p)
-                     (hifat-file-alist (put-assoc-equal name val (cdr fs))))
-          (:instance (:rewrite hifat-file-alist-fix-when-hifat-no-dups-p)
-                     (hifat-file-alist (cdr fs)))))))
-
-(defthm
   consp-of-assoc-of-hifat-file-alist-fix
   (implies (m1-file-alist-p hifat-file-alist)
            (iff (consp (assoc-equal name

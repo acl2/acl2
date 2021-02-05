@@ -360,21 +360,13 @@
                      (contents contents)
                      (d-e d-e))))))
 
-(local
- (defthm hifat-equiv-of-cons-lemma-4
-   (implies (and (not (assoc-equal (car head) tail1))
-                 (hifat-subsetp tail2 tail1)
-                 (fat32-filename-p (car head)))
-            (not (assoc-equal (car head) tail2)))
-  :hints (("Goal" :in-theory (enable hifat-no-dups-p hifat-subsetp)) )))
-
-(defthmd hifat-equiv-of-cons-lemma-5
+(defthmd hifat-equiv-of-cons-lemma-4
   (implies (and (hifat-no-dups-p (cons head tail1))
                 (hifat-subsetp tail2 tail1))
            (hifat-subsetp tail2 (cons head tail1)))
   :hints (("Goal" :in-theory (enable hifat-no-dups-p hifat-subsetp)) ))
 
-(local (in-theory (enable hifat-equiv-of-cons-lemma-5)))
+(local (in-theory (enable hifat-equiv-of-cons-lemma-4)))
 
 ;; This rule had a problem earlier - no loop-stopper could be defined on it,
 ;; because it was an hifat-equiv rule, not an equal rule. Without a

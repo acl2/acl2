@@ -1051,16 +1051,8 @@
              (mv-nth 1 (abs-find-file frame path))))
   :hints (("goal" :in-theory (enable abs-find-file))))
 
-(defthm abs-find-file-correctness-lemma-15
-  (implies (equal (mv-nth 1 (abs-find-file frame path))
-                  0)
-           (equal (cons (mv-nth 0 (abs-find-file frame path))
-                        '(0))
-                  (abs-find-file frame path)))
-  :hints (("goal" :use (:rewrite abs-find-file-correctness-lemma-1))))
-
 (defthmd
-  abs-find-file-correctness-1-lemma-49
+  abs-find-file-correctness-lemma-4
   (implies
    (and (prefixp (fat32-filename-list-fix path)
                  (fat32-filename-list-fix x-path))
@@ -1150,7 +1142,7 @@
         (frame-val->path (cdr (assoc-equal (1st-complete frame)
                                            frame))))))
      (:instance
-      abs-find-file-correctness-1-lemma-49
+      abs-find-file-correctness-lemma-4
       (fs
        (frame-val->dir
         (cdr
@@ -3665,17 +3657,6 @@
     :use ((:instance (:rewrite abs-find-file-helper-of-ctx-app-lemma-4)
                      (path path)
                      (fs (frame->root frame)))))))
-
-(defthm
-  abs-find-file-correctness-lemma-7
-  (and
-   (not
-    (consp
-     (frame-val->path (cdr (assoc-equal 0 (frame-with-root root frame))))))
-   (equal
-    (len (frame-val->path (cdr (assoc-equal 0 (frame-with-root root frame)))))
-    0))
-  :hints (("goal" :in-theory (enable frame-with-root))))
 
 (defthm
   abs-find-file-correctness-lemma-2
