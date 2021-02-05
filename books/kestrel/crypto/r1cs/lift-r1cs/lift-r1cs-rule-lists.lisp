@@ -85,7 +85,9 @@
             pfield::neg-of-mul-when-constant
             pfield::xor-idiom-3
             pfield::xor-idiom-3-alt
-            acl2::lookup-equal-of-acons)
+            acl2::lookup-equal-of-acons
+            pfield::integerp-when-fep ;todo: maybe drop, if we use the efficient plan for fep assumptions (fe-listp of a balanced append nest)
+            )
           (pfield::prime-field-proof-rules)
           (more-prime-fields-rules) ;todo
           (r1cs-rules)))
