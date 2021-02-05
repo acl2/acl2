@@ -98,7 +98,8 @@
       t
     (let ((parents (aref1 dag-parent-array-name dag-parent-array n)))
       (and (nat-listp parents)
-           (all-> parents n)
+           ;; todo: require no duplicates?
+           (all-> parents n) ;todo: switch to using <-all?
            (all-dag-parent-entriesp (+ -1 n) dag-parent-array-name dag-parent-array)))))
 
 (defthm all-dag-parent-entriesp-monotone-1
@@ -150,6 +151,7 @@
            (all-integerp (aref1 dag-parent-array-name dag-parent-array n)))
   :hints (("Goal" :in-theory (enable all-dag-parent-entriesp))))
 
+;todo: deprecate?
 (defthm all->-of-aref1-when-all-dag-parent-entriesp
   (implies (and (all-dag-parent-entriesp m dag-parent-array-name dag-parent-array)
                 (<= n m)
@@ -347,7 +349,7 @@
                 ;(< n (alen1 dag-parent-array-name dag-parent-array))
                 (natp n))
            (integer-listp (aref1 dag-parent-array-name dag-parent-array n)))
-  :hints (("Goal"  :cases ((< n (alen1 dag-parent-array-name dag-parent-array)))
+  :hints (("Goal" :cases ((< n (alen1 dag-parent-array-name dag-parent-array)))
            :in-theory (enable dag-parent-arrayp))))
 
 (defthm all->-of-aref1-when-dag-parent-arrayp
@@ -355,7 +357,7 @@
                 ;(< n (alen1 dag-parent-array-name dag-parent-array))
                 (natp n))
            (all-> (aref1 dag-parent-array-name dag-parent-array n) n))
-  :hints (("Goal"  :cases ((< n (alen1 dag-parent-array-name dag-parent-array)))
+  :hints (("Goal" :cases ((< n (alen1 dag-parent-array-name dag-parent-array)))
            :in-theory (enable dag-parent-arrayp))))
 
 (defthm dag-parent-arrayp-of-maybe-expand-array
