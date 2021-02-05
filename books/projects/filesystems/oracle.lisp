@@ -4,14 +4,6 @@
 
 (include-book "lofat-syscalls")
 
-(defconst *syscall-pwrite* 1)
-(defconst *syscall-pread* 2)
-(defconst *syscall-open* 3)
-(defconst *syscall-lstat* 4)
-(defconst *syscall-unlink* 5)
-(defconst *syscall-rmdir* 6)
-(defconst *syscall-truncate* 7)
-
 (fty::defprod lofat-st
               ((fd natp)
                (buf stringp)
@@ -21,10 +13,15 @@
                (errno natp)
                (path fat32-filename-list-p)
                (stat struct-stat-p)
+               (statfs struct-statfs-p)
+               (dirp natp)
                (fd-table fd-table-p)
-               (file-table file-table-p)))
+               (file-table file-table-p)
+               (dirstream-table dirstream-table-p)))
 
-(defund lofat-oracle-single-step (fat32$c syscall-num st)
+;; We aren't going to put statfs in this. It'll just make things pointlessly
+;; complicated.
+(defund lofat-oracle-single-step (fat32$c syscall-sym st)
   (declare (xargs :stobjs fat32$c
                   :guard (and (lofat-fs-p fat32$c)
                               (lofat-st-p st))
@@ -32,7 +29,7 @@
                   :verify-guards nil))
   (b*
       ((st (lofat-st-fix st))
-       ((when (equal syscall-num *syscall-pwrite*))
+       ((when (eq syscall-sym :pwrite))
         (b*
             (((mv fat32$c retval errno)
               (lofat-pwrite
@@ -45,7 +42,7 @@
           (mv fat32$c
               (change-lofat-st
                st :retval retval :errno errno))))
-       ((when (equal syscall-num *syscall-pread*))
+       ((when (eq syscall-sym :pread))
         (b*
             (((mv buf retval errno)
               (lofat-pread
@@ -58,7 +55,7 @@
           (mv fat32$c
               (change-lofat-st
                st :buf buf :retval retval :errno errno))))
-       ((when (equal syscall-num *syscall-open*))
+       ((when (eq syscall-sym :open))
         (b*
             (((mv fd-table file-table fd retval)
               (lofat-open
@@ -69,7 +66,7 @@
               (change-lofat-st
                st :fd fd :retval retval :errno 0 :file-table file-table
                :fd-table fd-table))))
-       ((when (equal syscall-num *syscall-lstat*))
+       ((when (eq syscall-sym :lstat))
         (b*
             (((mv stat retval errno)
               (lofat-lstat
@@ -78,7 +75,7 @@
           (mv fat32$c
               (change-lofat-st
                st :stat stat :retval retval :errno errno))))
-       ((when (equal syscall-num *syscall-unlink*))
+       ((when (eq syscall-sym :unlink))
         (b*
             (((mv fat32$c retval errno)
               (lofat-unlink
@@ -87,7 +84,7 @@
           (mv fat32$c
               (change-lofat-st
                st :retval retval :errno errno))))
-       ((when (equal syscall-num *syscall-truncate*))
+       ((when (eq syscall-sym :truncate))
         (b*
             (((mv fat32$c retval errno)
               (lofat-unlink
@@ -95,5 +92,25 @@
                (lofat-st->path st))))
           (mv fat32$c
               (change-lofat-st
-               st :retval retval :errno errno)))))
+               st :retval retval :errno errno))))
+       ((when (eq syscall-sym :mkdir))
+        (b*
+            (((mv fat32$c retval errno)
+              (lofat-mkdir
+               fat32$c
+               (lofat-st->path st))))
+          (mv fat32$c
+              (change-lofat-st
+               st :retval retval :errno errno))))
+       ((when (eq syscall-sym :opendir))
+        (b*
+            (((mv dirstream-table dirp retval)
+              (lofat-opendir
+               fat32$c
+               (lofat-st->dirstream-table st)
+               (lofat-st->path st))))
+          (mv fat32$c
+              (change-lofat-st
+               st :dirstream-table dirstream-table :dirp dirp
+               :retval retval :errno 0)))))
     (mv fat32$c st)))

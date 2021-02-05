@@ -29,16 +29,6 @@
   (set-equiv (remove-equal nil (true-list-list-fix x))
              (remove-equal nil (true-list-list-fix y))))
 
-;; Rename and move later.
-(defthm flatten-equiv-is-an-equivalence-lemma-1
-  (implies (and (true-list-listp l)
-                (not-intersectp-list x l))
-           (set-equiv (remove-equal nil (remove-equal x l))
-                      (remove-equal nil l)))
-  :hints (("goal" :in-theory (enable not-intersectp-list
-                                     remove-equal intersectp-equal
-                                     member-intersectp-of-set-difference$-lemma-2))))
-
 (defequiv flatten-equiv
   :hints (("goal" :in-theory (enable flatten-equiv))))
 
