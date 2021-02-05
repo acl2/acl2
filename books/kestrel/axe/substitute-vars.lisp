@@ -74,10 +74,8 @@
 
 (defthm natp-of-mv-nth-2-of-find-var-and-expr-to-subst
   (implies (and (mv-nth 0 (find-var-and-expr-to-subst lhs rhs dag-array dag-len))
-                (or (natp rhs)
-                    (consp rhs))
-                (or (natp lhs)
-                    (consp lhs)))
+                (dargp rhs)
+                (dargp lhs))
            (natp (mv-nth 2 (find-var-and-expr-to-subst lhs rhs dag-array dag-len))))
   :hints (("Goal" :in-theory (enable find-var-and-expr-to-subst NODENUM-OF-VAR-TO-SUBSTP))))
 
@@ -92,10 +90,8 @@
 
 (defthm natp-of-mv-nth-3-of-find-var-and-expr-to-subst
   (implies (and (mv-nth 0 (find-var-and-expr-to-subst lhs rhs dag-array dag-len))
-                (or (natp rhs)
-                    (consp rhs))
-                (or (natp lhs)
-                    (consp lhs))
+                (dargp rhs)
+                (dargp lhs)
                 (not (consp (mv-nth 3 (find-var-and-expr-to-subst lhs rhs dag-array dag-len)))))
            (natp (mv-nth 3 (find-var-and-expr-to-subst lhs rhs dag-array dag-len))))
   :hints (("Goal" :in-theory (enable find-var-and-expr-to-subst NODENUM-OF-VAR-TO-SUBSTP))))
