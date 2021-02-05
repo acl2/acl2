@@ -149,6 +149,7 @@
   (declare (xargs :guard (and (info-worldp info)
                               (symbol-listp all-rule-names))))
   (let ((len (len info)))
+    ;; TODO: We are transitioning to not counting hits for :brief printing
     (if (eq :brief print)
         ;; Just print the number of hits (TODO: In this case, we could keep a simple count of hits, rather than counting the hits of each rule):
         (if (= 0 len)

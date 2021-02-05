@@ -781,7 +781,7 @@
                 (mv (erp-nil) t alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
               (b* ((hyp (first hyps)) ;known to be a non-lambda function call
                    (fn (ffn-symb hyp))
-                   (- (and (eq :verbose print) (cw " Relieving hyp: ~x0 with alist ~x1.~%" hyp alist))))
+                   (- (and (member-eq print '(:verbose2 :verbose)) (cw " Relieving hyp: ~x0 with alist ~x1.~%" hyp alist))))
                 (if (eq 'axe-syntaxp fn)
                     (let* ((syntaxp-expr (farg1 hyp)) ;; strip off the AXE-SYNTAXP
                            (result (and (all-vars-in-term-bound-in-alistp syntaxp-expr alist) ; TODO: remove this check, since it should be guaranteed statically!  need a better guards in the alist wrt future hyps
@@ -850,7 +850,7 @@
                              (try-diff (and old-try-count (sub-tries tries old-try-count))))
                           (if (consp new-nodenum-or-quotep) ;tests for quotep
                               (if (unquote new-nodenum-or-quotep) ;hyp rewrote to a non-nil constant:
-                                  (prog2$ (and old-try-count (or (eq :verbose print) (eq t print)) (< 100 try-diff) (cw "(~x0 tries used(p) ~x1:~x2)~%" try-diff rule-symbol hyp-num))
+                                  (prog2$ (and old-try-count (member-eq print '(t :verbose :verbose2)) (< 100 try-diff) (cw "(~x0 tries used(p) ~x1:~x2)~%" try-diff rule-symbol hyp-num))
                                           (,relieve-rule-hyps-name
                                            (rest hyps) (+ 1 hyp-num) alist rule-symbol ;alist may have been extended by a hyp with free vars
                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
@@ -931,7 +931,7 @@
                   (,try-to-apply-rules-name (rest stored-rules) rule-alist args-to-match dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
                                             equiv-alist print info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count))
                 ;; The rule matched. now try to relieve its hyps:
-                (b* ((- (and (eq print :verbose) ;:verbose2?
+                (b* ((- (and (member-eq print '(:verbose :verbose2))
                              (cw "(Trying: ~x0. Alist: ~x1~%"
                                  (stored-rule-symbol stored-rule)
                                  (reverse alist-or-fail) ;nicer to read if reversed
@@ -964,7 +964,7 @@
                                     tries
                                     )))
                     ;;failed to relieve the hyps, so try the next rule
-                    (prog2$ (and (eq print :verbose)
+                    (prog2$ (and (member-eq print '(:verbose2 :verbose))
                                  (cw "Failed to apply rule ~x0.)~%" (stored-rule-symbol stored-rule)))
                             (,try-to-apply-rules-name
                              (rest stored-rules)
@@ -1277,7 +1277,7 @@
                    rule-alist nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes equiv-alist
                    print info tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count))
                 ;; No rule fired, so no simplification can be done.  This node is ready to add to the dag:
-                (b* ((- (and (eq :verbose print) (cw "(Making ~x0 term with args: ~x1.)~%" fn args)))
+                (b* ((- (and (member-eq print '(:verbose2 :verbose)) (cw "(Making ~x0 term with args: ~x1.)~%" fn args)))
                      ((mv erp nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
                       ;; todo: make a variant that takes (cons fn args), which we compute above:
                       ;; todo: perhaps inline this:
@@ -2419,7 +2419,7 @@
                                         nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
                                         rule-alist equiv-alist interpreted-function-alist print info tries monitored-symbols
                                         case-designator prover-depth options (+ -1 count))
-                 (b* ((- (and (eq :verbose print)
+                 (b* ((- (and (member-eq print '(:verbose2 :verbose))
                               (cw "Processing node ~x0 (may have to process the args first).~%" nodenum)))
                       (expr (aref1 'dag-array dag-array nodenum)))
                    (if (atom expr) ;must be a variable - just see if its node needs to be replaced
@@ -2457,7 +2457,7 @@
                              ;;all args are simplified (but under what equiv, just 'equal ?):
                              (b* ((args (lookup-args-in-result-array args result-array-name result-array)) ;combine this with the get-args-not-done somehow?
                                   (expr (cons fn args))
-                                  (- (and (eq :verbose print)
+                                  (- (and (member-eq print '(:verbose2 :verbose))
                                           (cw "(Rewriting node ~x0." nodenum)))
                                   ((mv erp new-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
                                    ;; TODO: use the fact that we know it's a function call with simplified args?
@@ -2470,7 +2470,7 @@
                                                         info tries interpreted-function-alist monitored-symbols 0 case-designator prover-depth options (+ -1 count)))
                                   ((when erp) (mv erp result-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
                                   (-  (and (or ;(eq t print) ;new
-                                            (eq :verbose print))
+                                            (member-eq print '(:verbose2 :verbose)))
                                            (cw ")~%"))))
                                ;;option to print the number of rule hits?
                                (,rewrite-nodes-name (rest worklist) result-array-name
@@ -2730,9 +2730,10 @@
                                      (simple-prover-optionsp options))
                          :guard-hints (("Goal" :do-not-induct t))))
          (if (endp work-list)
-             (progn$ (and (eq :verbose print) (progn$ (cw "(Literals after rewriting them all:~%")
-                                                      (print-dag-only-supporters-lst done-list 'dag-array dag-array)
-                                                      (cw "):~%")))
+             (progn$ (and (member-eq print '(:verbose2 :verbose))
+                          (progn$ (cw "(Literals after rewriting them all:~%")
+                                  (print-dag-only-supporters-lst done-list 'dag-array dag-array)
+                                  (cw "):~%")))
                      (mv (erp-nil)
                          nil ;did not prove the clause
                          changep done-list dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
@@ -3174,7 +3175,7 @@
                           interpreted-function-alist monitored-symbols case-designator print
                           info tries prover-depth known-booleans options (+ -1 count))
                        (prog2$
-                        (and (eq :verbose print) ;; TODO: improve this printing.
+                        (and (member-eq print '(:verbose2 :verbose)) ;; TODO: improve this printing.
                              ;;should this be printed by the parent, after we attack the clause miter?
                              ;;yes, probably.
                              (prog2$ (cw "Case ~s0 didn't simplify to true.  Literal nodenums:~% ~x1~%(This case: ~x2)~%Literals:~%"
@@ -4363,9 +4364,7 @@
               (options (if no-splitp (acons :no-splitp t options) options))
               (- (and print (cw "(Proving ~s0:~%" case-designator)))
               ((mv erp result & & & & & ; dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                   & ;info  ;todo: use this?
-                   tries
-                   )
+                   info tries)
                (,prove-disjunction-name (list top-nodenum) ;; just one disjunct
                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                         rule-alists
@@ -4373,16 +4372,20 @@
                                         monitor
                                         print
                                         case-designator
-                                        (empty-info-world) ;(and print (empty-info-world))
-                                        (zero-tries)  ;(and print (zero-tries))
+                                        (if (member-eq print '(nil :brief))
+                                            nil ; do not count hits
+                                          (empty-info-world))
+                                        (if (member-eq print '(nil :brief))
+                                            nil ; do not count tries
+                                          (zero-tries))
                                         0             ;prover-depth
                                         (known-booleans (w state))
                                         options))
-              ((when erp) (mv erp nil state)))
+              ((when erp) (mv erp nil state))
+              (- (and tries (cw "~%Total rule tries: ~x0.~%" tries)))
+              (- (and info (print-hit-counts print info (rules-from-rule-alists rule-alists)))))
            (if (eq result :proved)
-               (progn$ (and print (cw "Proved ~s0." case-designator))
-                       (and print tries (cw "~%Rule tries used: ~x0.~%" tries))
-                       (and print (cw ")~%"))
+               (progn$ (and print (cw "Proved ~s0.)~%" case-designator))
                        (mv (erp-nil) '(value-triple :ok) state))
              (prog2$ (and print (cw "Failed to prove ~s0.)~%" case-designator))
                      (mv :failed-to-prove nil state)))))
@@ -4429,7 +4432,7 @@
                                           (interpreted-function-alist 'nil)
                                           (no-splitp 'nil) ; whether to prevent splitting into cases
                                           (monitor 'nil)
-                                          (print 't))
+                                          (print ':brief))
          ;; all args get evaluated:
          (list 'make-event
                (list ',prove-implication-fn-name
@@ -4465,16 +4468,20 @@
                                         rule-alists ;;(make-rule-alist-simple rule-alist t (table-alist 'axe-rule-priorities-table (w state)))
                                         interpreted-function-alist
                                         monitored-symbols
-                                        t                              ;print
+                                        :brief                              ;print
                                         (symbol-name name) ;;case-designator
-                                        (and print (empty-info-world))
-                                        (and print (zero-tries))
+                                        (if (member-eq print '(nil :brief))
+                                            nil ; do not count hits
+                                          (empty-info-world))
+                                        (if (member-eq print '(nil :brief))
+                                            nil ; do not count tries
+                                          (zero-tries))
                                         0 ;prover-depth
                                         known-booleans
                                         options))
               ((when erp) (mv erp nil))
-              (- (and print (print-hit-counts print info (rules-from-rule-alists rule-alists))))
-              (- (and print (cw "Total tries: ~x0.~%" tries))))
+              (- (and tries (cw "Total rule tries: ~x0.~%" tries)))
+              (- (and info (print-hit-counts print info (rules-from-rule-alists rule-alists)))))
            (if (eq :proved result)
                (prog2$ (cw "Proved the theorem.)~%")
                        (mv (erp-nil) t))

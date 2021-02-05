@@ -29,6 +29,7 @@
                                     known-booleanp
                                     syntactic-call-of
                                     syntactic-constantp
+                                    syntactic-variablep
                                     should-reverse-equality
                                     bv-array-write-nest-ending-inp
                                     bvcat-nest-with-low-zeros
