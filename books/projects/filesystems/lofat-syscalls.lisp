@@ -1406,6 +1406,7 @@
         (d-e (pseudo-root-d-e fat32$c))
         (fat32$c fat32$c) (entry-limit (max-entry-count fat32$c))))))))
 
+;; This one needs some work.
 (defund lofat-rmdir (fat32$c path)
   (declare (xargs :stobjs fat32$c
                   :guard (and (lofat-fs-p fat32$c)

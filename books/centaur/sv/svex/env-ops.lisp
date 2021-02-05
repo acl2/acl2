@@ -139,6 +139,13 @@
                     (svex-env-extract keys x)))
     :hints(("Goal" :in-theory (enable svex-env-extract svarlist-fix))))
 
+  (defret svex-env-boundp-of-<fn>
+    (iff (svex-env-boundp k sub-env)
+         (member-equal (svar-fix k) (svarlist-fix keys)))
+    :hints(("Goal" :in-theory (enable svex-env-boundp (:i <fn>))
+            :induct <call>
+            :expand (<call>))))
+
   ;; for :fix hook
   (local (in-theory (enable svex-env-extract))))
 
@@ -325,14 +332,129 @@ provides.</p>")
   (defcong svex-envs-similar equal (svex-alist-eval x env) 2
     :hints(("Goal" :in-theory (enable svex-alist-eval))))
 
-  (defcong set-equiv svex-envs-similar (svex-env-extract keys env) 1
-    :hints ((witness :ruleset svex-envs-similar-witnessing)))
-
-  (defcong svex-envs-similar svex-envs-similar (svex-env-extract keys env) 2
-    :hints ((witness :ruleset svex-envs-similar-witnessing)))
-
   (deffixcong svex-env-equiv svex-env-equiv (append a b) a)
   (deffixcong svex-env-equiv svex-env-equiv (append a b) b)
 
   (defrefinement svex-env-equiv svex-envs-similar
     :hints ((witness))))
+
+
+
+
+(def-universal-equiv svex-envs-equivalent
+  :qvars (k)
+  :equiv-terms ((equal (svex-env-lookup k x))
+                (iff (svex-env-boundp k x)))
+  :defquant t
+  :parents (svex-env)
+  :short "@('(svex-envs-equivalent x y)') is a stronger form of alist
+equivalence for @(see svex-env)s than @(see svex-envs-similar): environments
+are <b>similar</b> if they bind all variables to the same values, in the sense
+of @(see svex-env-lookup), and they bind the same variables.")
+
+(defsection svex-envs-equivalent-thms
+  :extension (svex-envs-equivalent)
+  ;; bozo would be nice for def-universal-equiv to support /// instead
+
+  (defexample svex-envs-equivalent-lookup-ex
+    :pattern (svex-env-lookup k x)
+    :templates (k)
+    :instance-rulename svex-envs-equivalent-instancing)
+
+  (defexample svex-envs-equivalent-boundp-ex
+    :pattern (svex-env-boundp k x)
+    :templates (k)
+    :instance-rulename svex-envs-equivalent-instancing)
+
+  (defrefinement svex-envs-equivalent svex-envs-similar
+    :hints ((witness)))
+
+  (local (defthmd equal-of-booleans
+           (implies (and (booleanp a) (booleanp b))
+                    (equal (equal a b) (iff a b)))))
+
+  (defcong svex-envs-equivalent equal (svex-env-boundp k x) 2
+    :hints (("goal" :in-theory (enable equal-of-booleans))
+            (witness)))
+
+  (defcong set-equiv svex-envs-equivalent (svex-env-extract keys env) 1
+    :hints ((witness :ruleset svex-envs-equivalent-witnessing)))
+
+  (defcong svex-envs-similar svex-envs-equivalent (svex-env-extract keys env) 2
+    :hints ((witness :ruleset svex-envs-equivalent-witnessing)))
+
+  (defthm svex-env-boundp-of-append
+    (iff (svex-env-boundp k (append a b))
+         (or (svex-env-boundp k a)
+             (svex-env-boundp k b)))
+    :hints(("Goal" :in-theory (enable svex-env-boundp))))
+
+  (defthm svex-env-lookup-of-append
+    (equal (svex-env-lookup k (append a b))
+           (if (svex-env-boundp k a)
+               (svex-env-lookup k a)
+             (svex-env-lookup k b)))
+    :hints(("Goal" :in-theory (enable svex-env-boundp svex-env-lookup))))
+
+  (defcong svex-envs-equivalent svex-envs-equivalent (append a b) 1
+    :hints ((witness)))
+
+  (defcong svex-envs-equivalent svex-envs-equivalent (append a b) 2
+    :hints ((witness)))
+
+  (defcong svex-envs-similar svex-envs-similar (append a b) 2
+    :hints ((witness))))
+
+
+
+
+
+(define svex-alist-extract-aux ((keys svarlist-p)
+                                (alist svex-alist-p))
+  :returns (sub-alist svex-alist-p)
+  (if (atom keys)
+      nil
+    (cons (cons (svar-fix (car keys))
+                (or (svex-fastlookup (car keys) alist) (svex-x)))
+          (svex-alist-extract-aux (cdr keys) alist))))
+
+(define svex-alist-extract ((keys svarlist-p)
+                            (alist svex-alist-p))
+  :returns (sub-alist svex-alist-p)
+  :verify-guards nil
+  (mbe :logic
+       (if (atom keys)
+           nil
+         (cons (cons (svar-fix (car keys))
+                     (or (svex-fastlookup (car keys) alist) (svex-x)))
+               (svex-alist-extract (cdr keys) alist)))
+       :exec (with-fast-alist alist (svex-alist-extract-aux keys alist)))
+  ///
+  (local (defthm svex-alist-extract-aux-elim
+           (equal (svex-alist-extract-aux x alist)
+                  (svex-alist-extract x alist))
+           :hints(("Goal" :in-theory (enable svex-alist-extract-aux)))))
+
+  (verify-guards svex-alist-extract)
+
+  (defret svex-alist-eval-of-svex-alist-extract
+    (equal (svex-alist-eval sub-alist env)
+           (svex-env-extract keys (svex-alist-eval alist env)))
+    :hints(("Goal" :in-theory (enable svex-env-extract)
+            :induct t
+            :expand ((svex-alist-eval nil env)
+                     (:free (a b) (svex-alist-eval (cons a b) env))))))
+
+  (defret lookup-in-svex-alist-extract
+    (equal (svex-lookup v sub-alist)
+           (and (member (svar-fix v) (svarlist-fix keys))
+                (or (svex-lookup v alist) (svex-x))))
+    :hints(("Goal"
+            :in-theory
+            (e/d (svex-lookup hons-assoc-equal svarlist-fix)
+
+; Matt K.:  The following rewrite rule made the proof fail after introducing
+; the change, after v8-0, to keep LET expressions on right-hand-sides of
+; rewrite rules, like this one.
+
+                 (hons-assoc-equal-of-svex-alist-fix))))))

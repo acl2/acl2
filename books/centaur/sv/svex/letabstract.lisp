@@ -106,15 +106,6 @@
   (defret len-of-make-n-svex-vars
     (equal (len vars) (nfix n))))
 
-(define svarlist->svexes ((x svarlist-p))
-  :returns (svexes svexlist-p)
-  (if (atom x)
-      nil
-    (cons (make-svex-var :name (car x))
-          (svarlist->svexes (cdr x))))
-  ///
-  (defret len-of-svarlist->svexes
-    (equal (len svexes) (len x))))
 
 
 (fty::defalist svex-svex-alist :key-type svex :val-type svex)

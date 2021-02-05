@@ -32,9 +32,9 @@
 (in-package "SV")
 
 (include-book "../top")
-(include-book "centaur/gl/gl" :dir :system)
+(include-book "centaur/fgl/top" :dir :system)
 (include-book "centaur/gl/bfr-satlink" :dir :system)
-(include-book "centaur/sv/svtv/fsm" :dir :system)
+(include-book "centaur/sv/svtv/svtv-stobj-defcycle" :dir :system)
 (include-book "centaur/vl/loader/top" :dir :system)
 (include-book "centaur/sv/svex/gl-rules" :dir :system)
 (include-book "std/testing/eval" :dir :system)
@@ -59,7 +59,7 @@
    (value '(value-triple nil))))
 (local (include-book "centaur/aig/g-aig-eval" :dir :system))
 
-(local (gl::def-gl-clause-processor counter-glcp))
+;; (local (gl::def-gl-clause-processor counter-glcp))
 
 (defconsts (*counter* state)
   (b* (((mv loadres state)
@@ -74,17 +74,15 @@
     (mv svdesign state)))
 
 
-(defsvtv counter-step
-  :mod *counter*
-  :inputs '(("clk"    0  1)
-            ("reset"  reset _)
-            ("incr"   incr  _))
-  :outputs '(("count" count _)
-             ("reset"  reset _)
-             ("incr"   incr  _))
-  :state-machine t
-  :simplify t
-  :pre-simplify t)
+(defcycle counter-step
+  :design *counter*
+  :phases (list (make-svtv-cyclephase :constants '(("clk" . 0)) :inputs-free t
+                                       :outputs-captured t)
+                (make-svtv-cyclephase :constants '(("clk" . 1))))
+  :names '((reset . "reset")
+           (incr . "incr")
+           (count . "count"))
+  :rewrite-phases t :rewrite-cycle t)
 
 
 (gl::gl-satlink-mode)
@@ -98,7 +96,78 @@
                  :mintime 1))
               (defattach gl::gl-satlink-config my-satlink-config)))
 
-(gl::gl-set-uninterpreted svtv-fsm-symbolic-env)
+(local
+ (progn
+   (fgl::remove-fgl-rewrite sv::svex-env-lookup)
+
+   (fgl::remove-fgl-rewrite sv::svex-env-fix$inline)
+   (fgl::remove-fgl-rewrite acl2::alist-keys)
+
+   (fgl::add-fgl-rewrite sv::base-fsm-run-is-symbolic)
+   (fgl::add-fgl-rewrite sv::base-fsm-run-states-is-symbolic)
+
+   (fgl::remove-fgl-rewrite sv::base-fsm-symbolic-env)
+   (fgl::add-fgl-rewrite sv::svex-env-fix-of-base-fsm-symbolic-env)
+   (fgl::add-fgl-rewrite sv::svex-env-lookup-of-base-fsm-symbolic-env)
+
+   (fgl::def-fgl-rewrite svex-env-lookup-of-g-map
+     (implies (syntaxp (and (fgl::fgl-object-case x :g-map)
+                            (fgl::fgl-object-case k :g-concrete)))
+              (equal (sv::svex-env-lookup k x)
+                     (sv::4vec-fix (cdr (hons-get (sv::svar-fix k) x)))))
+     :hints(("Goal" :in-theory (enable sv::svex-env-lookup))))
+
+   (fgl::add-fgl-rewrite SV::4VEC-P-OF-SVEX-ENV-LOOKUP)
+
+   (fgl::def-ctrex-rule svex-env-lookup-ctrex-rule
+     :match ((val (sv::svex-env-lookup k x)))
+     :assign (hons-acons k val x)
+     :assigned-var x
+     ;;:hyp (alistp x)
+     :ruletype :property)
+
+   (fgl::def-ctrex-rule 4vec-elim
+     :match ((upper (sv::4vec->upper x))
+             (lower (sv::4vec->lower x)))
+     :assign (sv::4vec upper lower)
+     :assigned-var x
+     ;;:hyp (alistp x)
+     :ruletype :elim)
+
+   (fgl::def-fgl-rewrite integerp-of-svex-env-lookup-break
+     (equal (integerp (sv::svex-env-lookup k x))
+            (fgl::fgl-prog2 (fgl::fgl-error! :msg "(integerp (svex-env-lookup k x))"
+                                             :debug-obj `((k . ,k) (x . ,x)))
+                            (integerp (sv::svex-env-lookup k x)))))
+
+   (fgl::remove-fgl-rewrites fgl::4vec->upper-of-integer
+                             fgl::4vec->lower-of-integer)
+
+   (fgl::def-fgl-rewrite fgl::4vec->lower-of-int
+     (equal (sv::4vec->lower (fgl::int x))
+            (ifix x))
+     :hints(("Goal" :in-theory (enable sv::4vec->lower))))
+
+   (fgl::def-fgl-rewrite fgl::4vec->upper-of-int
+     (equal (sv::4vec->upper (fgl::int x))
+            (ifix x))
+     :hints(("Goal" :in-theory (enable sv::4vec->upper))))
+
+   (fgl::add-fgl-rewrite sv::nth-redef)
+
+   (fgl::add-fgl-rewrite sv::svtv-fsm-run-is-base-fsm-run)
+   (fgl::remove-fgl-rewrites sv::svtv-fsm-run)
+
+   (fgl::remove-fgl-rewrites sv::svtv-env-to-values)
+   (fgl::remove-fgl-rewrites sv::join-val/test-envs)
+
+   (fgl::add-fgl-rewrite sv::lookup-in-join-val/test-envs)
+
+   ;; (fgl::def-fgl-rewrite integerp-of-svex-env-lookup
+   ;;   (equal (integerp (sv::svex-env-lookup k x))
+   ;;          (sv::2vec-p (sv::svex-env-lookup k x)))
+   ;;   :hints(("Goal" :in-theory (enable sv::integerp-when-2vec-p))))
+   ))
 
 ;; ************************************************************************
 ;;  NOTE: This book is CURRENTLY MARKED BROKEN in books/GNUMakefile, because
@@ -120,9 +189,11 @@
 ;;  ************************************************************************
 
 
-(gl::def-gl-thm counter-step-does-not-overflow-symbolic
+
+
+(fgl::def-fgl-thm counter-step-does-not-overflow-symbolic
   :hyp t
-  :concl (b* ((steps (svtv-fsm-run ins prev-st (counter-step)
+  :concl (b* ((steps (svtv-fsm-run ins nil prev-st (counter-step)
                                    '((count reset incr)
                                      (count))))
               ((list step0 step1) steps)
@@ -143,13 +214,12 @@
                          (< (2vec->val count0) 10))
                     (and (2vec-p count1)
                          (< (2vec->val count1) 10))))
-  :g-bindings nil
-  :ctrex-transform (lambda (x) (ctrex-clean-envs '((ins . :fast-alist-list) (prev-st . :fast-alist)) x)))
+  :g-bindings nil)
 
 (acl2::must-fail
- (gl::def-gl-thm counter-step-does-not-overflow-symbolic-bug
+ (fgl::def-fgl-thm counter-step-does-not-overflow-symbolic-bug
    :hyp t
-   :concl (b* ((steps (svtv-fsm-run ins prev-st (counter-step)
+   :concl (b* ((steps (svtv-fsm-run ins nil prev-st (counter-step)
                                    '((count reset incr)
                                      (count))))
                ((list step0 step1) steps)
@@ -171,14 +241,13 @@
                      (and (2vec-p count1)
                           (< (2vec->val count1) 9))))
    :g-bindings nil
-   :rule-classes nil
-   :ctrex-transform (lambda (x) (ctrex-clean-envs '((ins . :fast-alist-list) (prev-st . :fast-alist)) x))))
+   :rule-classes nil))
 
-(defthm counter-step-no-cycle-vars
-  (and (not (svarlist-has-svex-cycle-var (svex-alist-keys (svtv->nextstate (counter-step)))))
-       (not (svarlist-has-svex-cycle-var (svex-alist-vars (svtv->nextstate (counter-step)))))
-       (not (svarlist-has-svex-cycle-var (svex-alist-vars (svtv->outexprs (counter-step))))))
-  :hints(("Goal" :in-theory (enable (counter-step)))))
+;; (defthm counter-step-no-cycle-vars
+;;   (and (not (svarlist-has-svex-cycle-var (svex-alist-keys (base-fsm->nextstate (svtv-fsm->base-fsm (counter-step))))))
+;;        (not (svarlist-has-svex-cycle-var (svex-alist-vars (base-fsm->nextstate (svtv-fsm->base-fsm (counter-step))))))
+;;        (not (svarlist-has-svex-cycle-var (svex-alist-vars (svtv->outexprs (counter-step))))))
+;;   :hints(("Goal" :in-theory (enable (counter-step)))))
 
 (define counter-step-preconds ((step svex-env-p))
   (and (2vec-p (svex-env-lookup 'reset step))
@@ -191,15 +260,16 @@
 
 
 (defthm counter-step-does-not-overflow-invariant
-  (b* ((steps (svtv-fsm-eval (list env0 env1) init-st (counter-step)))
+  (b* ((steps (svtv-fsm-eval (list env0 env1) nil init-st (counter-step)))
        ((list step0 step1) steps))
 
     (implies (and (counter-step-preconds step0)
                   (counter-step-invariant step0)
-                  (set-equiv (alist-keys (svex-env-fix init-st))
-                             (svex-alist-keys (svtv->nextstate (counter-step)))))
+                  ;; (set-equiv (alist-keys (svex-env-fix init-st))
+                  ;;            (svex-alist-keys (base-fsm->nextstate (svtv-fsm->base-fsm (counter-step)))))
+                  )
              (counter-step-invariant step1)))
-  :hints (("goal" :in-theory (e/d (svtv-fsm-run
+  :hints (("goal" :in-theory (e/d (svtv-fsm-run-is-extract-of-eval
                                    svex-envlist-extract
                                    counter-step-preconds
                                    counter-step-invariant)
@@ -224,22 +294,24 @@
 
 
 
-
+(local (defthm consp-of-svtv-fsm-eval
+         (equal (consp (svtv-fsm-eval ins overrides initst fsm))
+                (consp ins))
+         :hints(("Goal" :in-theory (enable svtv-fsm-eval)))))
 
 (defthm counter-step-does-not-overflow
   (implies (and (consp envs)
-                (set-equiv (alist-keys (svex-env-fix init-st))
-                           (svex-alist-keys (svtv->nextstate (counter-step)))))
-           (b* ((steps (svtv-fsm-eval envs init-st (counter-step))))
+                ;; (set-equiv (alist-keys (svex-env-fix init-st))
+                ;;            (svex-alist-keys (base-fsm->nextstate (svtv-fsm->base-fsm (counter-step)))))
+                )
+           (b* ((steps (svtv-fsm-eval envs nil init-st (counter-step))))
              (implies (counter-step-invariant (car steps))
                       (counter-step-invariant-holds steps))))
-  :hints (("goal" :induct (svtv-fsm-eval envs init-st (counter-step))
+  :hints (("goal" :induct (svtv-fsm-eval envs nil init-st (counter-step))
            :in-theory (e/d (counter-step-invariant-holds
                             counter-step-invariant
                             counter-step-preconds
-                            (:i svtv-fsm-eval)
-                            svtv-fsm-step-outs
-                            svtv-fsm-step)
+                            (:i svtv-fsm-eval))
                            (2vec-p
                             2vec->val
                             append
@@ -253,8 +325,9 @@
                             svex-env-p-when-not-consp
                             acl2::alist-keys-when-atom
                             (tau-system)))
-           :expand ((svtv-fsm-eval envs init-st (counter-step))))
+           :expand ((svtv-fsm-eval envs nil init-st (counter-step))))
           (and stable-under-simplificationp
                '(:use ((:instance counter-step-does-not-overflow-invariant
                         (env0 (car envs))
-                        (env1 (cadr envs))))))))
+                        (env1 (cadr envs))))
+                 :expand ((:free (a b initst fsm) (svtv-fsm-eval (cons a b) nil initst fsm)))))))

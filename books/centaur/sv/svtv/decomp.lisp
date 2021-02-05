@@ -1853,12 +1853,12 @@ trigger on any of the following:</p>
 
 (local
  (encapsulate nil
-   (local (defthm svex-env-lookup-of-append
-            (equal (svex-env-lookup k (append a b))
-                   (if (svar-lookup k a)
-                       (svex-env-lookup k a)
-                     (svex-env-lookup k b)))
-            :hints(("Goal" :in-theory (enable svex-env-lookup svar-lookup svex-env-fix)))))
+   ;; (local (defthm svex-env-lookup-of-append
+   ;;          (equal (svex-env-lookup k (append a b))
+   ;;                 (if (svar-lookup k a)
+   ;;                     (svex-env-lookup k a)
+   ;;                   (svex-env-lookup k b)))
+   ;;          :hints(("Goal" :in-theory (enable svex-env-lookup svar-lookup svex-env-fix)))))
 
    (defcong svex-envs-similar svex-envs-similar (append a b) 2
      :hints ((acl2::Witness :ruleset svex-envs-similar-witnessing)))))

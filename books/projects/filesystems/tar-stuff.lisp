@@ -1887,48 +1887,6 @@
   :rule-classes :linear)
 
 (defthm
-  hifat-tar-name-list-alist-correctness-lemma-8
-  (implies
-   (m1-directory-file-p (cdr (assoc-equal name (hifat-file-alist-fix fs))))
-   (<
-    (hifat-entry-count
-     (m1-file->contents (cdr (assoc-equal name (hifat-file-alist-fix fs)))))
-    (hifat-entry-count fs)))
-  :hints
-  (("goal" :in-theory (disable hifat-tar-name-list-alist-correctness-lemma-7)
-    :use (:instance hifat-tar-name-list-alist-correctness-lemma-7
-                    (fs (hifat-file-alist-fix fs)))))
-  :rule-classes :linear)
-
-(defthm
-  hifat-tar-name-list-alist-correctness-lemma-9
-  (implies
-   (and
-    (consp (assoc-equal (fat32-filename-fix (car path))
-                        (hifat-file-alist-fix fs)))
-    (not
-     (m1-directory-file-p (cdr (assoc-equal (fat32-filename-fix (car path))
-                                            (hifat-file-alist-fix fs))))))
-   (<
-    (hifat-entry-count
-     (m1-file->contents (cdr (assoc-equal (fat32-filename-fix (car path))
-                                          (hifat-file-alist-fix fs)))))
-    (hifat-entry-count fs)))
-  :rule-classes :linear
-  :hints
-  (("goal"
-    :do-not-induct t
-    :in-theory (enable hifat-find-file hifat-entry-count)
-    :expand
-    (hifat-entry-count
-     (m1-file->contents (cdr (assoc-equal (fat32-filename-fix (car path))
-                                          (hifat-file-alist-fix fs)))))
-    :cases
-    ((not
-      (m1-regular-file-p (cdr (assoc-equal (fat32-filename-fix (car path))
-                                           (hifat-file-alist-fix fs)))))))))
-
-(defthm
   hifat-tar-name-list-alist-correctness-lemma-11
   (implies
    (and

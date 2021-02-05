@@ -108,9 +108,7 @@
    (let* ((x.kind (svex-kind-wog x)))
      (case
        x.kind
-       (:quote (mv (cond ((atom x) (list 'quote x))
-                         ((atom (cdr x)) (list 'quote (sv::4vec-x)))
-                         (t (list 'quote (cadr x))))
+       (:quote (mv (list 'quote x)
                    t))
        (:var (if good-env-flg
                  (mv (let* ((val (hons-get x env-falist)))
@@ -186,9 +184,7 @@
    (let* ((x.kind (svexl-node-kind-wog x)))
      (case
        x.kind
-       (:quote (mv (cond ((atom x) (list 'quote x))
-                         ((atom (cdr x)) (list 'quote (sv::4vec-x)))
-                         (t (list 'quote (cadr x))))
+       (:quote (mv (list 'quote x)
                    t))
        (:var (if good-env-flg
                  (mv (let* ((val (hons-get x env-falist)))

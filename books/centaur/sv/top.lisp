@@ -33,6 +33,7 @@
 (include-book "mods/top")
 (include-book "vl/top")
 (include-book "svtv/top")
+(include-book "svtv/new-svtv-top")
 
 (defxdoc sv
   :parents (hardware-verification)
