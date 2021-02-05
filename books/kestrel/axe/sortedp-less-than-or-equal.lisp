@@ -24,3 +24,9 @@
   (implies (sortedp-<= x)
            (sortedp-<= (cdr x)))
   :hints (("Goal" :in-theory (enable sortedp-<=))))
+
+(defthmd <=-of-first-and-second-when-sortedp
+  (implies (and (sortedp-<= x)
+                (consp (cdr x)))
+           (<= (first x) (second x)))
+  :hints (("Goal" :in-theory (enable sortedp-<=))))

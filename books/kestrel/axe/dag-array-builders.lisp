@@ -609,9 +609,20 @@
            (dag-parent-arrayp 'dag-parent-array
                               (mv-nth 4 (add-function-call-expr-to-dag-array fn args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))))
   :hints (("Goal" :expand (all-dag-parent-entriesp dag-len 'dag-parent-array
-                                  (maybe-expand-array 'dag-parent-array
-                                                dag-parent-array dag-len))
+                                                   (maybe-expand-array 'dag-parent-array
+                                                                       dag-parent-array dag-len))
            :in-theory (enable add-function-call-expr-to-dag-array))))
+
+(defthm array1p-of-mv-nth-4-of-add-function-call-expr-to-dag-array
+  (implies (and (dag-parent-arrayp 'dag-parent-array dag-parent-array)
+                (all-dargp-less-than args (alen1 'dag-parent-array dag-parent-array))
+                (all-dargp-less-than args dag-len)
+                (natp dag-len)
+                (<= dag-len 2147483646))
+           (array1p 'dag-parent-array
+                    (mv-nth 4 (add-function-call-expr-to-dag-array fn args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))))
+  :hints (("Goal" :use (:instance dag-parent-arrayp-of-mv-nth-4-of-add-function-call-expr-to-dag-array)
+           :in-theory (disable dag-parent-arrayp-of-mv-nth-4-of-add-function-call-expr-to-dag-array))))
 
 (defthm dag-constant-alistp-of-mv-nth-5-of-add-function-call-expr-to-dag-array
   (implies (natp dag-len)

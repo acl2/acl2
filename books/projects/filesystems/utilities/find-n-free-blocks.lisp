@@ -174,8 +174,9 @@
                   (count-free-blocks (first-n-ac n alv ac))))
   :hints (("goal" :induct (first-n-ac n alv ac))))
 
+;; Might be useful at some point.
 (defthm
-  count-free-blocks-alt-correctness-2-lemma-1
+  count-free-blocks-alt-correctness-lemma-1
   (equal (count-free-blocks (true-list-fix alv))
          (count-free-blocks alv))
   :hints (("Goal" :in-theory (enable true-list-fix))))

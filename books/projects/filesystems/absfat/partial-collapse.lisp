@@ -7736,43 +7736,6 @@
 (defthm
   partial-collapse-correctness-lemma-3
   (implies
-   (and
-    (absfat-subsetp
-     (ctx-app
-      (ctx-app
-       (abs-file->contents (cdr (assoc-equal (fat32-filename-fix (car y-path))
-                                             x)))
-       z z-var (cdr z-path))
-      y y-var (cdr y-path))
-     (ctx-app
-      (ctx-app
-       (abs-file->contents (cdr (assoc-equal (fat32-filename-fix (car y-path))
-                                             x)))
-       y y-var (cdr y-path))
-      z z-var (cdr z-path)))
-    (m1-file-alist-p y)
-    (m1-file-alist-p z)
-    (abs-directory-file-p (cdr (assoc-equal (fat32-filename-fix (car y-path))
-                                            x))))
-   (absfat-subsetp
-    (abs-file-contents-fix
-     (ctx-app
-      (ctx-app (abs-file->contents$inline
-                (cdr (assoc-equal (fat32-filename-fix (car y-path))
-                                  x)))
-               z z-var (cdr z-path))
-      y y-var (cdr y-path)))
-    (abs-file-contents-fix
-     (ctx-app
-      (ctx-app (abs-file->contents$inline
-                (cdr (assoc-equal (fat32-filename-fix (car y-path))
-                                  x)))
-               y y-var (cdr y-path))
-      z z-var (cdr z-path))))))
-
-(defthm
-  partial-collapse-correctness-lemma-4
-  (implies
    (not
     (intersectp-equal
      (names-at z nil)
@@ -7832,9 +7795,10 @@
            (not (member-equal x (frame-addrs-before frame x n))))
   :hints (("goal" :in-theory (enable frame-addrs-before collapse))))
 
+;; Inductive, thus left enabled.
 (local
  (defthm
-   partial-collapse-correctness-lemma-12
+   partial-collapse-correctness-lemma-4
    (implies
     (and (frame-p (frame->frame frame))
          (not (zp (frame-val->src (cdr (assoc-equal (nth n (seq-this frame))

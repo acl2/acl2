@@ -21,6 +21,10 @@
 ;; See also dag-parent-arrayp.lisp and bounded-dag-parent-arrayp.lisp.
 ;; See also parent-array-with-name.lisp.
 
+;; NOTE: Do not change the parent array (e.g., to store only partial parent
+;; info) without considering the effect on tools like
+;; rebuild-literals-with-substitution2 that expect all parents to be stored.
+
 ;;;
 ;;; find-shortest-parent-lst
 ;;;
