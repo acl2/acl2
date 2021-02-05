@@ -15,7 +15,7 @@
 (include-book "substitute-vars")
 (local (include-book "kestrel/lists-light/len" :dir :system))
 
-(local (in-theory (disable natp)))
+(local (in-theory (disable natp dargp)))
 
 ;move
 (defthm not-consp-of-mv-nth-3-of-find-var-and-expr-to-subst
@@ -33,7 +33,8 @@
                 (< literal-nodenum dag-len)
                 (mv-nth 0 (check-for-var-subst-literal literal-nodenum dag-array dag-len)))
            (natp (mv-nth 2 (check-for-var-subst-literal literal-nodenum dag-array dag-len))))
-  :hints (("Goal" :in-theory (enable check-for-var-subst-literal))))
+  :hints (("Goal" :in-theory (enable check-for-var-subst-literal
+                                     consp-of-cdr))))
 
 (defthm natp-of-mv-nth-3-of-check-for-var-subst-literal
   (implies (and (natp literal-nodenum)
@@ -41,7 +42,7 @@
                 (< literal-nodenum dag-len)
                 (mv-nth 0 (check-for-var-subst-literal literal-nodenum dag-array dag-len)))
            (natp (mv-nth 3 (check-for-var-subst-literal literal-nodenum dag-array dag-len))))
-  :hints (("Goal" :in-theory (enable check-for-var-subst-literal))))
+  :hints (("Goal" :in-theory (enable check-for-var-subst-literal consp-of-cdr))))
 
 ;; a triple of the form (<nodenum-of-var> <equated-nodenum> <literal-nodenum>).
 (defun subst-candidatep (cand)
