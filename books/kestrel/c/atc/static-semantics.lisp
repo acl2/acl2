@@ -592,7 +592,7 @@
      The information consists of:")
    (xdoc::ul
     (xdoc::li
-     "A set of optional types that describe
+     "A non-empty set of optional types that describe
       the possible values returned by the statement.
       These are determined by the @('return') statements;
       in the presence of conditionals,
@@ -612,8 +612,11 @@
       could just return a set of optional types (see above).
       However, for uniformity we have all three functions
       return also a possibly updated variable table.")))
-  ((return-types type-option-set)
+  ((return-types type-option-set :reqfix (if (set::empty return-types)
+                                             (set::insert nil nil)
+                                           return-types))
    (variables var-table))
+  :require (not (set::empty return-types))
   :pred stmt-typep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
