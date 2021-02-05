@@ -661,24 +661,70 @@
                (var symbolp :hyp :guard)
                (init pseudo-termp :hyp :guard)
                (body pseudo-termp :hyp :guard))
-  :short "Check if a term represents a local variable declaration
+  :short "Check if a term represents
+          a local variable declaration or an assignment
           followed by more code."
   :long
   (xdoc::topstring
    (xdoc::p
     "Here we recognize and decompose allowed outer terms
      that are @(tsee let)s.
-     In translated form, these are terms @('((lambda (var) body) init)')."))
-  (b* (((mv okp formals body args) (acl2::check-lambda-call term))
+     In translated form, these are terms @('((lambda (var) body) init)').
+     However, if @('body') has other free variables in addition to @('var'),
+     those appear as both formal paramaters and actual arguments, e.g.
+     @('((lambda (var x y) body<var,x,y>) init x y)'):
+     this is because ACL2 translated terms have all closed lambda expressions,
+     so ACL2 adds formal parameters and actual arguments to make that happen.
+     Here, we must remove them in order to get the ``true'' @(tsee let).
+     This is easily done by going through
+     formal parameters and actual arguments at the same time,
+     and removing the ones that match."))
+  (b* (((mv okp formals body actuals) (acl2::check-lambda-call term))
        ((when (not okp)) (mv nil nil nil nil))
+       ((mv formals actuals) (atc-check-let-aux formals actuals))
        ((unless (and (= (len formals) 1)
-                     (= (len args) 1)))
+                     (= (len actuals) 1)))
         (mv nil nil nil nil))
        (var (car formals))
-       (init (car args)))
+       (init (car actuals)))
     (mv t var init body))
+  :guard-hints (("Goal"
+                 :in-theory
+                 (enable acl2::len-of-check-lambda-calls.args-is-formals)))
+
   :prepwork
-  ((local (include-book "std/typed-lists/pseudo-term-listp" :dir :system)))
+
+  ((local (include-book "std/typed-lists/pseudo-term-listp" :dir :system))
+
+   (define atc-check-let-aux ((formals symbol-listp) (actuals pseudo-term-listp))
+     :guard (= (len formals) (len actuals))
+     :returns (mv (new-formals symbol-listp
+                               :hyp (symbol-listp formals))
+                  (new-actuals pseudo-term-listp
+                               :hyp (pseudo-term-listp actuals)))
+     :parents nil
+     (b* (((when (endp formals)) (mv nil nil))
+          ((unless (mbt (consp actuals))) (mv nil nil))
+          (formal (car formals))
+          (actual (car actuals))
+          ((when (eq formal actual))
+           (atc-check-let-aux (cdr formals) (cdr actuals)))
+          ((mv rest-formals rest-actuals)
+           (atc-check-let-aux (cdr formals) (cdr actuals))))
+       (mv (cons formal rest-formals)
+           (cons actual rest-actuals)))
+     ///
+
+     (defret acl2-count-of-atc-check-let-aux.formals
+       (<= (acl2-count new-formals)
+           (acl2-count formals))
+       :rule-classes :linear)
+
+     (defret acl2-count-of-atc-check-let-aux.actuals
+       (<= (acl2-count new-actuals)
+           (acl2-count actuals))
+       :rule-classes :linear)))
+
   ///
 
   (defret acl2-count-of-atc-check-let-init
