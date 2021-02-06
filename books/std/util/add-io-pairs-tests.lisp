@@ -256,14 +256,12 @@ ACL2 !>
 
 ; Readers should probably ignore this encapsulate.  The point of it is to
 ; illustrate the workings of merge-io-pairs in terms of lower-level macros
-; add-io-pairs-lenience and install-io-pairs.  Most users should never have
-; reason to think about those lower-level macros.
+; push-io-pairs-lenience, install-io-pairs, and pop-io-pairs-lenience.  Most
+; users should never have reason to think about those lower-level macros.
 (encapsulate
   ()
 
-; The :warn argument below acts like argument t, except it produces a warning.
-; Merge-io-pairs actually lays down the argument t for add-io-pairs-lenience.
-  (local (add-io-pairs-lenience g :warn))
+  (local (push-io-pairs-lenience g))
 
   (local (include-book "add-io-pairs-tests-sub"))
 
@@ -278,6 +276,11 @@ ACL2 !>
 
   (local (install-io-pairs g))
 
+; The following pop-io-pairs-lenience is not necessary here since the earlier
+; push-io-pairs-lenience in this encapsulate is local.  But we include it
+; anyhow for illustrative purposes.
+  (local (pop-io-pairs-lenience g))
+
 ; Succeeds because of add-io-pair in sub-book:
   (local (assert-event (equal (mv-let (a b) (g 100 200) (list a b))
                               '(1000 2000))))
@@ -286,10 +289,6 @@ ACL2 !>
 ; the call of install-io-pairs, above:
   (local (assert-event (equal (mv-let (a b) (g 3 4) (list a b))
                               '(30 40))))
-
-; Normally would restore default behavior, but that's not necessary here since
-; the earlier add-io-pairs-lenience in this encapsulate is local.
-; (local (add-io-pairs-lenience g nil))
   )
 
 ; Still fails outside the encapsulate above just as it did before that
