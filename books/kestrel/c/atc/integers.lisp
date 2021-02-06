@@ -11,6 +11,7 @@
 
 (in-package "C")
 
+(include-book "unsigned-chars")
 (include-book "signed-ints")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
