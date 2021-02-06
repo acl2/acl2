@@ -21,7 +21,8 @@
                                   error
                                   pprint-indent
                                   type
-                                  typep))
+                                  typep
+                                  value))
              '(any
                bool
                cw-event

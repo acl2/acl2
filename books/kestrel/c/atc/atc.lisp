@@ -113,7 +113,7 @@
        ((er &) (acl2::ensure-function-is-logic-mode$ fn desc t nil))
        ((er &) (acl2::ensure-function-is-guard-verified$ fn desc t nil))
        ((er &) (acl2::ensure-function-is-defined$ fn desc t nil)))
-    (value nil))
+    (acl2::value nil))
   :guard-hints (("Goal" :in-theory (enable
                                     acl2::ensure-value-is-function-name
                                     acl2::ensure-function-is-guard-verified
@@ -124,7 +124,7 @@
 (define atc-process-function-list ((fns true-listp) ctx state)
   :returns (mv erp (nothing "Always @('nil').") state)
   :short "Lift @(tsee atc-process-function) to lists."
-  (b* (((when (endp fns)) (value nil))
+  (b* (((when (endp fns)) (acl2::value nil))
        ((er &) (atc-process-function (car fns) ctx state)))
     (atc-process-function-list (cdr fns) ctx state)))
 
@@ -138,7 +138,7 @@
        ((unless (consp fn1...fnp))
         (er-soft+ ctx t nil
                   "At least one target function must be supplied.")))
-    (value nil)))
+    (acl2::value nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -162,7 +162,7 @@
                 nil
                 t
                 nil)))
-    (value name)))
+    (acl2::value name)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -188,7 +188,7 @@
                               output-file msg?))
        ((er &)
         (if (equal dirname "")
-            (value nil)
+            (acl2::value nil)
           (b* (((mv msg? kind state) (oslib::file-kind dirname))
                ((when msg?) (er-soft+ ctx t nil
                                       "The kind of ~
@@ -200,7 +200,7 @@
                           "The output directory path ~x0 ~
                            is not a directory; it has kind ~x1 instead."
                           dirname kind)))
-            (value nil))))
+            (acl2::value nil))))
        ((mv msg? basename state) (oslib::basename output-file))
        ((when msg?) (er-soft+ ctx t nil
                               "No file name can be obtained ~
@@ -220,7 +220,7 @@
                               "The existence of the output path ~x0 ~
                                cannot be tested. ~@1"
                               output-file msg?))
-       ((when (not existsp)) (value nil))
+       ((when (not existsp)) (acl2::value nil))
        ((mv msg? kind state) (oslib::file-kind output-file))
        ((when msg?) (er-soft+ ctx t nil
                               "The kind of output file path ~x0 ~
@@ -231,7 +231,7 @@
                   "The output file path ~x0 ~
                    is not a regular file; it has kind ~x1 instead."
                   output-file kind)))
-    (value nil)))
+    (acl2::value nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -286,11 +286,11 @@
        ((er &) (acl2::evmac-process-input-print print ctx state))
        (print-info/all (or (eq print :info)
                            (eq print :all))))
-    (value (list fn1...fnp
-                 const
-                 output-file
-                 print
-                 print-info/all))))
+    (acl2::value (list fn1...fnp
+                       const
+                       output-file
+                       print
+                       print-info/all))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -809,12 +809,12 @@
                ((when (not type))
                 (raise "Internal error: the variable ~x0 in function ~x1 ~
                         has no associated type." term fn)
-                (value (list (irr-expr) (irr-type)))))
-            (value (list (expr-ident (make-ident :name (symbol-name term)))
-                         (type-fix type)))))
+                (acl2::value (list (irr-expr) (irr-type)))))
+            (acl2::value (list (expr-ident (make-ident :name (symbol-name term)))
+                               (type-fix type)))))
          ((mv okp val) (atc-check-sint-const term))
          ((when okp)
-          (value
+          (acl2::value
            (list
             (expr-const (const-int (make-iconst :value val
                                                 :base (iconst-base-dec)
@@ -828,8 +828,8 @@
                                                                   fn
                                                                   ctx
                                                                   state)))
-            (value (list (make-expr-unary :op op :arg arg-expr)
-                         type))))
+            (acl2::value (list (make-expr-unary :op op :arg arg-expr)
+                               type))))
          ((mv okp op arg1 arg2 type) (atc-check-binop term))
          ((when okp)
           (b* (((er (list arg1-expr &)) (atc-gen-expr-pure-nonbool arg1
@@ -842,10 +842,10 @@
                                                                    fn
                                                                    ctx
                                                                    state)))
-            (value (list (make-expr-binary :op op
-                                           :arg1 arg1-expr
-                                           :arg2 arg2-expr)
-                         type)))))
+            (acl2::value (list (make-expr-binary :op op
+                                                 :arg1 arg1-expr
+                                                 :arg2 arg2-expr)
+                               type)))))
       (case-match term
         (('c::sint01 arg)
          (b* (((mv erp expr state)
@@ -891,7 +891,7 @@
                           use conversion operations, if needed, ~
                           to make the branches of the same type."
                          fn then else then-type else-type)))
-           (value
+           (acl2::value
             (list
              (make-expr-cond :test test-expr :then then-expr :else else-expr)
              then-type))))
@@ -939,7 +939,7 @@
                                               fn
                                               ctx
                                               state)))
-         (value (make-expr-unary :op (unop-lognot) :arg arg-expr))))
+         (acl2::value (make-expr-unary :op (unop-lognot) :arg arg-expr))))
       (('if arg1 arg2 ''nil)
        (b* (((er arg1-expr) (atc-gen-expr-bool arg1
                                                vars
@@ -951,9 +951,9 @@
                                                fn
                                                ctx
                                                state)))
-         (value (make-expr-binary :op (binop-logand)
-                                  :arg1 arg1-expr
-                                  :arg2 arg2-expr))))
+         (acl2::value (make-expr-binary :op (binop-logand)
+                                        :arg1 arg1-expr
+                                        :arg2 arg2-expr))))
       (('if arg1 arg1 arg2)
        (b* (((er arg1-expr) (atc-gen-expr-bool arg1
                                                vars
@@ -965,9 +965,9 @@
                                                fn
                                                ctx
                                                state)))
-         (value (make-expr-binary :op (binop-logor)
-                                  :arg1 arg1-expr
-                                  :arg2 arg2-expr))))
+         (acl2::value (make-expr-binary :op (binop-logor)
+                                        :arg1 arg1-expr
+                                        :arg2 arg2-expr))))
       (('c::sint-nonzerop arg)
        (b* (((mv erp (list expr &) state)
              (atc-gen-expr-pure-nonbool arg vars fn ctx state)))
@@ -1013,7 +1013,7 @@
    (xdoc::p
     "This lifts @(tsee atc-gen-expr-pure-nonbool) to lists.
      However, we do not return the C types of the expressions."))
-  (b* (((when (endp terms)) (value nil))
+  (b* (((when (endp terms)) (acl2::value nil))
        ((mv erp (list expr &) state) (atc-gen-expr-pure-nonbool (car terms)
                                                                 vars
                                                                 fn
@@ -1025,7 +1025,7 @@
                                                    fn
                                                    ctx
                                                    state)))
-    (value (cons expr exprs))))
+    (acl2::value (cons expr exprs))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1067,11 +1067,11 @@
                                                                        ctx
                                                                        state))
              ((when erp) (mv erp (list (irr-expr) (irr-type)) state)))
-          (value (list
-                  (make-expr-call :fun (make-ident
-                                        :name (symbol-name called-fn))
-                                  :args arg-exprs)
-                  type)))))
+          (acl2::value (list
+                        (make-expr-call :fun (make-ident
+                                              :name (symbol-name called-fn))
+                                        :args arg-exprs)
+                        type)))))
     (atc-gen-expr-pure-nonbool term vars fn ctx state))
   ///
   (more-returns
@@ -1215,7 +1215,7 @@
                          use conversion operations, if needed, ~
                          to make the branches of the same type."
                         fn then else then-type else-type)))
-          (value
+          (acl2::value
            (list
             (list
              (block-item-stmt
@@ -1243,8 +1243,8 @@
                    (vars (atc-add-var var init-type vars))
                    ((er (list body-items body-type))
                     (atc-gen-stmt body vars fn prec-fns ctx state)))
-                (value (list (cons item body-items)
-                             body-type))))
+                (acl2::value (list (cons item body-items)
+                                   body-type))))
              (prev-type (atc-get-var-innermost var vars))
              ((when (typep prev-type))
               (b* (((mv erp (list expr type) state)
@@ -1267,8 +1267,8 @@
                    (item (block-item-stmt stmt))
                    ((er (list body-items body-type))
                     (atc-gen-stmt body vars fn prec-fns ctx state)))
-                (value (list (cons item body-items)
-                             body-type)))))
+                (acl2::value (list (cons item body-items)
+                                   body-type)))))
           (er-soft+ ctx t (list nil (irr-type))
                     "When generating C code for the function ~x0, ~
                      the LET variable ~x1 has the same symbol name as ~
@@ -1283,8 +1283,8 @@
                                                               ctx
                                                               state))
        ((when erp) (mv erp (list nil (irr-type)) state)))
-    (value (list (list (block-item-stmt (make-stmt-return :value expr)))
-                 type)))
+    (acl2::value (list (list (block-item-stmt (make-stmt-return :value expr)))
+                       type)))
 
   :verify-guards nil ; done below
 
@@ -1335,7 +1335,7 @@
                (t nil)))
        ((when (not type))
         (atc-find-param-type formal fn (cdr guard-conjuncts) guard ctx state)))
-    (value type)))
+    (acl2::value type)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1366,9 +1366,9 @@
        ((mv erp type state)
         (atc-find-param-type formal fn guard-conjuncts guard ctx state))
        ((when erp) (mv erp (list (irr-param-decl) (irr-type)) state)))
-    (value (list (make-param-decl :name (make-ident :name name)
-                                  :type (atc-gen-tyspecseq type))
-                 type)))
+    (acl2::value (list (make-param-decl :name (make-ident :name name)
+                                        :type (atc-gen-tyspecseq type))
+                       type)))
   ///
   (more-returns
    (val true-listp :rule-classes :type-prescription)))
@@ -1394,7 +1394,7 @@
     "Also generate an initial symbol table,
      consisting of a single scope
      that maps the formal parameters to their C types."))
-  (b* (((when (endp formals)) (value (list nil (list nil))))
+  (b* (((when (endp formals)) (acl2::value (list nil (list nil))))
        (formal (mbe :logic (acl2::symbol-fix (car formals))
                     :exec (car formals)))
        ((when (member-equal (symbol-name formal)
@@ -1418,8 +1418,8 @@
                                                          guard
                                                          ctx
                                                          state)))
-    (value (list (cons param params)
-                 (atc-add-var formal type vars))))
+    (acl2::value (list (cons param params)
+                       (atc-add-var formal type vars))))
 
   :verify-guards nil ; done below
   ///
@@ -1474,7 +1474,7 @@
                                                        ctx
                                                        state))
        ((when erp) (mv erp (list (irr-ext-decl) nil) state)))
-    (value
+    (acl2::value
      (list
       (ext-decl-fundef
        (make-fundef :result (atc-gen-tyspecseq type)
@@ -1502,7 +1502,7 @@
    (xdoc::p
     "After we process the first function @('fn') in @('fns'),
      we use the extended @('prec-fns') for the subsequent functions."))
-  (b* (((when (endp fns)) (value nil))
+  (b* (((when (endp fns)) (acl2::value nil))
        ((cons fn rest-fns) fns)
        (dup? (member-eq fn rest-fns))
        ((when dup?)
@@ -1516,7 +1516,7 @@
         (atc-gen-ext-decl fn prec-fns ctx state))
        ((when erp) (mv erp nil state))
        ((er exts) (atc-gen-ext-decl-list rest-fns prec-fns ctx state)))
-    (value (cons ext exts))))
+    (acl2::value (cons ext exts))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1525,7 +1525,7 @@
   :short "Generate a C translation unit from the ACL2 target functions."
   (b* (((mv erp exts state) (atc-gen-ext-decl-list fn1...fnp nil ctx state))
        ((when erp) (mv erp (irr-transunit) state)))
-    (value (make-transunit :decls exts))))
+    (acl2::value (make-transunit :decls exts))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1593,7 +1593,7 @@
        (local-event `(progn ,@progress-start?
                             ,local-event
                             ,@progress-end?)))
-    (value (list local-event exported-event))))
+    (acl2::value (list local-event exported-event))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1727,7 +1727,7 @@
        (local-event `(progn ,@progress-start?
                             ,local-event
                             ,@progress-end?)))
-    (value (list local-event exported-event))))
+    (acl2::value (list local-event exported-event))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1744,7 +1744,7 @@
                state)
   :mode :program
   :short "Lift @(tsee atc-gen-fn-thm) to lists."
-  (b* (((when (endp fns)) (value (list nil nil nil)))
+  (b* (((when (endp fns)) (acl2::value (list nil nil nil)))
        ((er (list local-event exported-event))
         (atc-gen-fn-thm (car fns)
                         prec-fns
@@ -1759,8 +1759,8 @@
                              print
                              ctx
                              state)))
-    (value (list (cons local-event local-events)
-                 (cons exported-event exported-events)))))
+    (acl2::value (list (cons local-event local-events)
+                       (cons exported-event exported-events)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1821,10 +1821,10 @@
        (file-gen-event
         `(make-event
           (b* (((er &) (atc-gen-file ',tunit ,output-file state)))
-            (value '(value-triple :invisible))))))
-    (value `(progn ,@progress-start?
-                   ,file-gen-event
-                   ,@progress-end?))))
+            (acl2::value '(value-triple :invisible))))))
+    (acl2::value `(progn ,@progress-start?
+                         ,file-gen-event
+                         ,@progress-end?))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1899,10 +1899,10 @@
        (encapsulate+ (acl2::restore-output? (eq print :all) encapsulate))
        (info (make-atc-call-info :encapsulate encapsulate))
        (table-event (atc-table-record-event call info)))
-    (value `(progn ,encapsulate+
-                   ,table-event
-                   ,@print-events
-                   (value-triple :invisible)))))
+    (acl2::value `(progn ,encapsulate+
+                         ,table-event
+                         ,@print-events
+                         (value-triple :invisible)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1915,7 +1915,7 @@
   :short "Process the inputs and
           generate the constant definition and the C file."
   (b* (((when (atc-table-lookup call (w state)))
-        (value '(value-triple :redundant)))
+        (acl2::value '(value-triple :redundant)))
        ((er (list fn1...fnp const output-file print print-info/all))
         (atc-process-inputs args ctx state)))
     (atc-gen-everything fn1...fnp
