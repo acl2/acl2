@@ -74,7 +74,7 @@
   (declare (xargs :guard (and (alistp netlist)
                               (posp n))))
   (equal (assoc (si 'ttl-input-pads n) netlist)
-         (ttl-input-pads* n))) 
+         (ttl-input-pads* n)))
 
 (defun ttl-input-pads$netlist (n)
   (declare (xargs :guard (posp n)))
@@ -137,7 +137,7 @@
      (list (si 'b m)             ; Useless buffers for LSI's "lpace".
            (list (si 'b-in m))
            'B-BUF
-           (list (si 'in m))) 
+           (list (si 'in m)))
      (cons
       (list (si 'g m)            ; Occurrence name
             (list (si 'out m))   ; Outputs

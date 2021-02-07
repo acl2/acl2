@@ -1097,7 +1097,7 @@
 	  (if (= u 0)
 	      (if (= sgna sgnb)
 	          (zencode sgna (sp))
-	        (zencode 0 (sp)))		
+	        (zencode 0 (sp)))
 	    (bf-post-comp u)))))))
 
 )

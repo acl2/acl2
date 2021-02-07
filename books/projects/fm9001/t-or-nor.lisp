@@ -76,11 +76,11 @@
                                       (tree-number tree))
                                   netlist)
                            (t-or-nor* tree parity))))
-    
+
     (if (or (atom tree)
             (and (atom (car tree))
                  (atom (cdr tree))))
-        lookup-okp             
+        lookup-okp
       (and lookup-okp
            (t-or-nor& delete-result (car tree) (not parity))
            (t-or-nor& delete-result (cdr tree) (not parity))))))
@@ -117,7 +117,7 @@
                              (delete-to-eq (si (if parity 't-nor 't-or)
                                                (tree-number tree))
                                            netlist)))))
-       
+
 (defund tr-or-nor (a parity tree)
   (declare (xargs :measure (acl2-count tree)
                   :guard (and (true-listp a)

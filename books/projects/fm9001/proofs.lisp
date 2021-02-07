@@ -47,7 +47,7 @@
                         (operating-inputs-p (cdr inputs) (1- n)))))))
 
 (in-theory (disable operating-inputs-p))
-  
+
 ;; This lemma relates our two predicates on the input streams.
 
 (defthm operating-inputs-p-implies-run-inputs-p
@@ -91,7 +91,7 @@
 ;; necessary to excute the instruction, given that the machine is
 ;; neither reset nor held.  MICROCYCLES assumes that the processor is in
 ;; state FETCH1.  Notice that in state FETCH1 the instruction resides in
-;; memory. 
+;; memory.
 
 ;; TOTAL-MICROCYCLES computes the number of clock cycles needed to
 ;; execute N instructions, again assuming that the machine is neither
@@ -151,7 +151,7 @@
 ;; counter;  there are no pending writes in the register file;  HOLD-
 ;; and RESET- are not asserted;  the PC-REG is equal to (and remains equal
 ;; to) the specified PC; and the memory is well-formed and in a quiescent
-;; state. 
+;; state.
 
 ;; This is an important invariant; one of the more important proofs that
 ;; follows states that if we begin in this state, and run for
@@ -265,7 +265,7 @@
 
 ;; MACROCYCLE-INVARIANT* is introduced to delay opening up the function
 ;; until the low-level machine has been completely rewritten. This should
-;; save a tremendous amount of time in the coming proof. 
+;; save a tremendous amount of time in the coming proof.
 
 (defun macrocycle-invariant* (st pc)
   (macrocycle-invariant st pc))
@@ -305,26 +305,26 @@
     :hints (("Goal"
              :in-theory (e/d (not* binary-and* binary-or*)
                              (fm9001-step-theory
-                              TRUE-LISTP-READ-MEM-OF-MEMORY-PROPERP-32
-                              TRUE-LISTP-READ-MEM-OF-MEMORY-PROPERP
-                              BVP-CVZBV           
-                              BOOLEANP-A-IMMEDIATE-P
-                              ACL2::TRUE-LISTP-NTHCDR-TYPE-PRESCRIPTION
-                              NTHCDR-OF-LEN-L
-                              BOOLEANP-SET-SOME-FLAGS
-                              DEFAULT-CAR
-                              BVP-SET-FLAGS
-                              DEFAULT-CDR
-                              NTHCDR
-                              TRUE-LISTP
-                              BVP-NTHCDR
-                              READ-REGS=READ-MEM-WRITE-MEM
-                              (:TYPE-PRESCRIPTION
-                               BVP-READ-MEM-OF-MEMORY-OKP-32)
-                              BVP-READ-MEM-OF-MEMORY-OKP
-                              TRUE-LISTP-WRITE-MEM
-                              ZP-OPEN
-                              PAIRLIS$
+                              true-listp-read-mem-of-memory-properp-32
+                              true-listp-read-mem-of-memory-properp
+                              bvp-cvzbv
+                              booleanp-a-immediate-p
+                              acl2::true-listp-nthcdr-type-prescription
+                              nthcdr-of-len-l
+                              booleanp-set-some-flags
+                              default-car
+                              bvp-set-flags
+                              default-cdr
+                              nthcdr
+                              true-listp
+                              bvp-nthcdr
+                              read-regs=read-mem-write-mem
+                              (:type-prescription
+                               bvp-read-mem-of-memory-okp-32)
+                              bvp-read-mem-of-memory-okp
+                              true-listp-write-mem
+                              zp-open
+                              pairlis$
                               plus (plus)
                               add1 (add1)
                               nfix
@@ -391,13 +391,13 @@
      (p-map-up p-st)
      (mem-map-up mem-st))))
 
-;; This rather obvious fact is stated in a non-obvious way.  We
-;; will be "mapping-up" a low-level simulation, i.e., a call of
-;; RUN-FM9001.  If MAP-UP opens before RUN-FM9001 is completely rewritten
-;; to a new state, i.e., a CONS, then we will be rewriting RUN-FM9001 
-;; 3 times for each path through the state diagram.  By stating the lemma
-;; this way, we wait until RUN-FM9001 is completely rewritten before
-;; extracting the 3 interesting bits, thus saving massive amounts of work.
+;; This rather obvious fact is stated in a non-obvious way.  We will be
+;; "mapping-up" a low-level simulation, i.e., a call of RUN-FM9001.  If MAP-UP
+;; opens before RUN-FM9001 is completely rewritten to a new state, i.e., a
+;; CONS, then we will be rewriting RUN-FM9001 3 times for each path through the
+;; state diagram.  By stating the lemma this way, we wait until RUN-FM9001 is
+;; completely rewritten before extracting the 3 interesting bits, thus saving
+;; massive amounts of work.
 
 (defthm open-map-up
   (let ((st (cons x y)))
@@ -415,18 +415,16 @@
 
 ;; MIDDLE=HIGH
 
-;; This is the proof that the architecture implements the specification
-;; for the execution of a single instruction.  The time abstraction
-;; between the behavioral-level specification and the implementation is a
-;; critical part of this proof; that is, the implementation requires a
-;; number of clock cycles to execute a single instruction while the
-;; behavioral-level specification executes just one instruction.
+;; This is the proof that the architecture implements the specification for the
+;; execution of a single instruction.  The time abstraction between the
+;; behavioral-level specification and the implementation is a critical part of
+;; this proof; that is, the implementation requires a number of clock cycles to
+;; execute a single instruction while the behavioral-level specification
+;; executes just one instruction.
 
-
-
-;; FM9001-STEP* is introduced to delay opening up the high-level
-;; specification until the low-level machine has been completely rewritten.
-;; This saves a fair amount of time in the coming proof.
+;; FM9001-STEP* is introduced to delay opening up the high-level specification
+;; until the low-level machine has been completely rewritten.  This saves a
+;; fair amount of time in the coming proof.
 
 (defun fm9001-step* (st pc-reg)
   (fm9001-step st pc-reg))
@@ -609,7 +607,7 @@
               (:TYPE-PRESCRIPTION V-DEC)
               (:TYPE-PRESCRIPTION V-INC))
 
-            (theory 'minimal-theory)))))                      
+            (theory 'minimal-theory)))))
 
 (defthm macrocycle-invariant==>pc-reg
   (implies (macrocycle-invariant st pc-reg)
@@ -620,7 +618,7 @@
  (defthm middle=high-aux
    (equal (nth 8 (cddr (car (car st))))
           (caddr (cddddr (cddddr (car (car st))))))))
-  
+
 (defthm middle=high
   (implies
    (and (fm9001-state-structure st)
@@ -668,8 +666,7 @@
 
 ;; ======================================================================
 
-;; Final Correctness Proofs 
-
+;; Final Correctness Proofs
 
 ;; The proof that the register-transfer specification implements the
 ;; behavioral specification.
@@ -708,7 +705,7 @@
                                   instructions)))))
   :hints (("Goal"
            :in-theory (disable macrocycle-invariant))))
-   
+
 ;; Note that when register 15 is the program counter, FM9001-INTERPRETER
 ;; is the same as FM9001.
 
@@ -732,7 +729,7 @@
                 (strip-cars (flags low-level-p-state)))
          (equal high-level-mem-state
                 (car low-level-mem-state)))))
-        
+
 ;; A minimal hypothesis about the high-level-state.
 
 (defun high-level-state-structure (st)
@@ -773,7 +770,7 @@
         (fm9001-state-structure low-level-state)
         (macrocycle-invariant low-level-state pc)
         (operating-inputs-p
-         inputs (total-microcycles low-level-state inputs n))) 
+         inputs (total-microcycles low-level-state inputs n)))
    (equal (map-up
            (run-fm9001 low-level-state
                        inputs
@@ -794,12 +791,12 @@
 
 ;; The proofs that follow were originally what we thought of as the "final"
 ;; correctness results.  On further analysis, these really aren't very
-;; satisfying because they presume that any high-level state can be mapped
-;; down to a very specific low-level-state.  (You *could* do it with the
-;; scan chain ...). All we can really guarantee about the machine is that
-;; you can reset it, and then move forward at the end of the reset sequence.
-;; We leave these events here for historical interest.
-  
+;; satisfying because they presume that any high-level state can be mapped down
+;; to a very specific low-level-state.  (You *could* do it with the scan
+;; chain.)  All we can really guarantee about the machine is that you can reset
+;; it, and then move forward at the end of the reset sequence.  We leave these
+;; events here for historical interest.
+
 (defun fm9001-machine-statep (p-st)
   (let ((regs (car p-st))
         (flags (cadr p-st)))
@@ -879,15 +876,15 @@
   :hints (("Goal" :in-theory (enable fm9001-state-structure))))
 
 (defthm fm9001-statep-implies-macrocycle-invariant-lemma1
-  (equal (equal (cv_fetch1 t 
-                           (make-list 4 :initial-element t) 
-                           (make-list 32) 
+  (equal (equal (cv_fetch1 t
+                           (make-list 4 :initial-element t)
+                           (make-list 32)
                            x
                            (make-list 4 :initial-element t))
-                (cv_fetch1 t 
-                           (list t t t t) 
-                           (make-list 32) 
-                           (list t nil nil nil) 
+                (cv_fetch1 t
+                           (list t t t t)
+                           (make-list 32)
+                           (list t nil nil nil)
                            (make-list 4 :initial-element t)))
          t)
   :hints (("Goal" :in-theory (enable cv_fetch1 carry-in-help c-flag))))
@@ -905,26 +902,26 @@
            :in-theory (disable fm9001-statep-implies-macrocycle-invariant-lemma1))))
 
 (defthm fm9001=chip-system
-  (implies (and (chip-system& netlist) 
+  (implies (and (chip-system& netlist)
                 (fm9001-statep st)
                 (chip-system-operating-inputs-p
-                 inputs 
-                 (total-microcycles (map-down st) 
-                                    (map-up-inputs inputs) 
-                                    n)) 
+                 inputs
+                 (total-microcycles (map-down st)
+                                    (map-up-inputs inputs)
+                                    n))
                 (operating-inputs-p
-                 (map-up-inputs inputs) 
-                 (total-microcycles (map-down st) 
-                                    (map-up-inputs inputs) 
-                                    n))) 
-           (equal (fm9001 st n) 
+                 (map-up-inputs inputs)
+                 (total-microcycles (map-down st)
+                                    (map-up-inputs inputs)
+                                    n)))
+           (equal (fm9001 st n)
                   (map-up
                    (de-sim-n
                     'chip-system inputs
                     (map-down st)
-                    netlist 
-                    (total-microcycles (map-down st) 
-                                       (map-up-inputs inputs) 
+                    netlist
+                    (total-microcycles (map-down st)
+                                       (map-up-inputs inputs)
                                        n)))))
   :hints (("Goal"
            :use (:instance chip-system=fm9001-interpreter
@@ -943,28 +940,25 @@
                        (theory 'minimal-theory)))))
 
 (defun no-holds-reset-or-test (i c)
-  (and (chip-system-operating-inputs-p i c) 
+  (and (chip-system-operating-inputs-p i c)
        (operating-inputs-p (map-up-inputs i) c)))
 
 ;; Here is an informal statement of the following lemma,
-;; FM9001=CHIP-SYSTEM-SUMMARY, which is the chief result proved
-;; about the FM9001.  Let H be the hardware netlist that we have
-;; constructed for the FM9001.  The lemma states that for each
-;; FM9001 user-visible state, S, and for each positive integer, N,
-;; there exists a positive integer C such that the result of running
-;; the user-model of the FM9001 (the function FM9001) N steps can
-;; instead be obtained by simulating H and S under the DE
-;; semantics for C steps.  In precisely stating the theorem, we
-;; arrange to supply the DE semantics with a transform
-;; (obtained with MAP-DOWN) of S, and afterwards we do a reverse
-;; transformation (with MAP-UP) to obtain the final user-visible
-;; state.  Futhermore, in making the statement precise we stipulate
-;; that the external stimuli, I, to the chip do not enable a hold, a
-;; reset, or a test input for the C clock cycles.  The fact that N
-;; and C are different reflects the fact that a single FM9001
-;; instruction takes several clock cycles to emulate at the
-;; DE netlist level.  The precise statement of this
-;; correctness result is:
+;; FM9001=CHIP-SYSTEM-SUMMARY, which is the chief result proved about the
+;; FM9001.  Let H be the hardware netlist that we have constructed for the
+;; FM9001.  The lemma states that for each FM9001 user-visible state, S, and
+;; for each positive integer, N, there exists a positive integer C such that
+;; the result of running the user-model of the FM9001 (the function FM9001) N
+;; steps can instead be obtained by simulating H and S under the DE semantics
+;; for C steps.  In precisely stating the theorem, we arrange to supply the DE
+;; semantics with a transform (obtained with MAP-DOWN) of S, and afterwards we
+;; do a reverse transformation (with MAP-UP) to obtain the final user-visible
+;; state.  Futhermore, in making the statement precise we stipulate that the
+;; external stimuli, I, to the chip do not enable a hold, a reset, or a test
+;; input for the C clock cycles.  The fact that N and C are different reflects
+;; the fact that a single FM9001 instruction takes several clock cycles to
+;; emulate at the DE netlist level.  The precise statement of this correctness
+;; result is:
 
 (defthm fm9001=chip-system-summary
   (let ((h (chip-system$netlist))

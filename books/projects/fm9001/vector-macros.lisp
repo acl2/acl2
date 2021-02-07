@@ -35,7 +35,7 @@
 ;; * enable -- A list of events to be enabled.
 
 ;; Example: (vector-module v-pullup (g (y) pullup (a)) ((v-pullup a))
-;;                         :enable (v-pullup)) 
+;;                         :enable (v-pullup))
 
 ;; More examples in "vector-module.lisp".
 

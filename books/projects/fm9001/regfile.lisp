@@ -102,10 +102,6 @@
            (bvp (strip-cars (cadddr (write-regs nil address regs data)))))
   :rule-classes (:rewrite :type-prescription))
 
-;; (defthm true-listp-write-regs
-;;   (true-listp (write-regs we address regs data))
-;;   :rule-classes :type-prescription)
-
 (defthm len-write-regs
   (equal (len (write-regs we address regs data))
          4))
@@ -121,7 +117,7 @@
    (equal (memory-okp n m (caar (write-regs we address regs data)))
           (if (caadr regs)
               (memory-okp n m (write-mem (strip-cars (cadddr regs))
-                                         (caar regs) 
+                                         (caar regs)
                                          (strip-cars (caddr regs))))
             (memory-okp n m (caar regs))))
    (equal (booleanp (caadr (write-regs we address regs data)))
@@ -217,7 +213,7 @@
                    (clk test-regfile- disable-regfile- we-dp-ram))
   ;;  The RAM.  This is a level-sensitive device.  The surrounding circuitry
   ;;  makes the entire register file work as if it were an edge-triggered
-  ;;  device. 
+  ;;  device.
   (list 'ram
         (sis 'ramout 0 32)
         'dp-ram-16x32
@@ -291,10 +287,6 @@
                       (cons (f-nand t (f-buf last-we))
                             (v-threefix last-data))))
       regfile))))
-
-;; (defthm true-listp-f$read-regs
-;;   (true-listp (f$read-regs address mem))
-;;   :rule-classes :type-prescription)
 
 (defthm len-f$read-regs
   (implies (equal (len (caddr mem)) 32)
@@ -384,16 +376,12 @@
      (pairlis$ (fv-if we address last-address)
                nil))))
 
-;; (defthm true-listp-f$write-regs
-;;   (true-listp (f$write-regs we address regs data))
-;;   :rule-classes :type-prescription)
-
 (defthm len-f$write-regs
   (equal (len (f$write-regs we address regs data))
          4))
 
 (defthm f$write-regs=write-regs
-  (implies (and                                 
+  (implies (and
             (booleanp we)
             (booleanp (caadr regs))
             (bvp (strip-cars (caddr regs))) (equal (len (caddr regs)) 32)
