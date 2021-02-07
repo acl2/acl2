@@ -5,7 +5,7 @@
 ;; See the README for historical information.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; October 2016
+;; February 2021
 
 ;; A zero detector optimized for quick detection of the last 2 bits of the
 ;; input vector.  It should save a few nanoseconds in the FM9001.
@@ -32,7 +32,7 @@
   (implies (>= (len v) 3)
            (equal (f$fast-zero v)
                   (tr-or-nor v t (cons (make-tree (- (len v) 2))
-                                       (cons 0 0)))))
+                                       (cons nil nil)))))
   :hints (("Goal" :in-theory (enable tr-or-nor f-nor3 f-nor
                                      car-nthcdr cdr-nthcdr))))
 
@@ -92,6 +92,6 @@
                             car-nthcdr
                             cdr-nthcdr
                             t-or-nor$value)
-                           (tv-disabled-rules)))))              
+                           (tv-disabled-rules)))))
 
 

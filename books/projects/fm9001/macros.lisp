@@ -46,7 +46,7 @@
          (cons (b-to-f (car body))
                (b-to-f (cdr body))))
         ((symbolp (car body))
-         (let ((sym-name (symbol-name (car body)))) 
+         (let ((sym-name (symbol-name (car body))))
            (cond ((and (<= 2 (length sym-name))
                        (equal (subseq sym-name 0 2)
                               "B-"))
@@ -135,7 +135,7 @@
    ((symbolp (car body))
     (b* ((var_i (si var i))
          (sym (car body))
-         (sym-name (symbol-name sym))) 
+         (sym-name (symbol-name sym)))
       (cond
        ((or (and (<= 2 (length sym-name))
                  (equal (subseq sym-name 0 2)
@@ -224,7 +224,7 @@
                                   name ins outs sts occs)
   (b* ((destructure (unstring (symbol-name fn) "$DESTRUCTURE"))
        (form `(,fn ,@args)))
-    
+
     `(progn
        (defun ,fn ,args
          ,declare-form
@@ -315,7 +315,7 @@
 
                 (defthmd ,len-vn-lemma
                   (equal (len (,vn)) 5))
-                
+
                 (defun ,nn ()
                   (declare (xargs :guard t))
                   (v-to-nat ,val)))
@@ -342,7 +342,7 @@
                 (+ i type/size)
                 (cdr control-template)))))))
 
-;; CONTROL-LET  
+;; CONTROL-LET
 ;; A macro for a LET that extracts and computes necessary fields and flags.
 
 (defun control-let (body)
@@ -469,7 +469,7 @@
                   :rule-classes (:rewrite :type-prescription))
 
                 (defthmd ,cv-lemma-name
-                  ,(control-let 
+                  ,(control-let
                     `(implies ,(if (member state-name '(reset0 reset1))
                                    t
                                  `(cv-hyps ,@control-arglist))
@@ -642,7 +642,6 @@
       (defthmd next-state$netlist-okp
         (and (net-syntax-okp (next-state$netlist))
              (net-arity-okp (next-state$netlist))))
-      
       )))
 
 ;; ======================================================================
@@ -706,10 +705,10 @@
                                        CV
                                        BINARY-AND* BINARY-OR*
                                        CV-STATES))))
-                 
+
        (next-cntl-state-lemmas (cdr state-table) control-arglist)))))
 
-(defun generate-next-cntl-state-lemmas (state-table control-arglist)  
+(defun generate-next-cntl-state-lemmas (state-table control-arglist)
   `(PROGN ,@(next-cntl-state-lemmas state-table control-arglist)))
 
 

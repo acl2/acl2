@@ -234,7 +234,7 @@
                                     fm9001-hardware-state-accessors)
                                    (open-v-threefix
                                     f-gates=b-gates)))))
-  
+
 ;; ======================================================================
 
 ;; SINGLE STEP SIMULATIONS
@@ -253,8 +253,6 @@
 
 ;; STEP-FM9001 is defined in "expand-fm9001-macros.lisp".
 
-
-
 ;; Page numbers refer to the page numbers of the state diagram drawings,
 ;; e.g., Page 0 is the figure with caption ``States Figure 0'' in
 ;; Technical Report 86.
@@ -263,7 +261,7 @@
 
 ;; (step-fm9001 fetch0 :suffix 0)
 ;; (step-fm9001 fetch0 :suffix 1 :mem-state 1)
-;; (step-fm9001 fetch0 :suffix 2 :mem-state 2 
+;; (step-fm9001 fetch0 :suffix 2 :mem-state 2
 ;;              :addr-stable t :data-stable t :last-rw- nil
 ;;              :hyps (zp mem-count))
 
@@ -589,7 +587,7 @@
   :split-term '(and* (or* (pre-dec-p (mode-b (strip-cars i-reg)))
                           (post-inc-p (mode-b (strip-cars i-reg))))
                      (unary-op-code-p (op-code (strip-cars i-reg))))))
-  
+
 ;; Page 2
 
 ;; (step-fm9001 reada0)
@@ -848,7 +846,7 @@
  (step-fm9001 state 'reada3 :suffix 1
               :addr-stable t :dtack- ''(t) :mem-state 1 :mem-dtack nil
               :split-term '(zp mem-count)))
-  
+
 ;; Page 3
 
 ;; (step-fm9001 readb0 :mem-state mem-state
@@ -1219,7 +1217,7 @@
  (step-fm9001 state 'readb3 :suffix 1
               :addr-stable t :dtack- ''(t) :mem-state 1 :mem-dtack nil
               :split-term '(zp mem-count)))
-  
+
 ;; Page 4
 
 ;; (step-fm9001 write0 :mem-state mem-state
@@ -1580,9 +1578,9 @@
 
 
 (deftheory fm9001-step-theory
-  '(sefb1$step sefb0$step sefa1$step sefa0$step write3$step1 write3$step0 
-               write2$step write1$step write0$step readb3$step1 readb3$step0 
-               readb2$step readb1$step readb0$step reada3$step1 reada3$step0 
+  '(sefb1$step sefb0$step sefa1$step sefa0$step write3$step1 write3$step0
+               write2$step write1$step write0$step readb3$step1 readb3$step0
+               readb2$step readb1$step readb0$step reada3$step1 reada3$step0
                reada2$step reada1$step reada0$step update$step regb$step
                rega$step decode$step fetch3$step1 fetch3$step0 fetch2$step
                fetch1$step fetch0$step2 fetch0$step1 fetch0$step0))
@@ -1660,7 +1658,7 @@ It was never necessary to expand these states.
 ;; FETCH3
 
 (defun fetch3$induction (n clock count inputs
-                           regs a-reg b-reg 
+                           regs a-reg b-reg
                            i-reg flags pc-reg
                            last-regs-address last-i-reg last-flags
                            last-data)
@@ -1876,7 +1874,7 @@ It was never necessary to expand these states.
 
   (if (zp n)
       (list clock count inputs
-            regs a-reg b-reg 
+            regs a-reg b-reg
             i-reg flags pc-reg
             last-regs-address last-i-reg last-flags
             last-data)
@@ -2080,7 +2078,7 @@ It was never necessary to expand these states.
 
   (if (zp n)
       (list clock count inputs
-            regs a-reg b-reg 
+            regs a-reg b-reg
             i-reg flags pc-reg
             last-regs-address last-i-reg last-flags
             last-data)
@@ -2278,14 +2276,14 @@ It was never necessary to expand these states.
 ;; WRITE3
 
 (defun write3$induction (n clock count inputs
-                           regs a-reg b-reg 
+                           regs a-reg b-reg
                            i-reg flags pc-reg
                            last-regs-address last-i-reg last-flags
                            last-data)
 
   (if (zp n)
       (list clock count inputs
-            regs a-reg b-reg 
+            regs a-reg b-reg
             i-reg flags pc-reg
             last-regs-address last-i-reg last-flags
             last-data)
@@ -2484,12 +2482,8 @@ It was never necessary to expand these states.
 
 ;; SIM-FM9001 is defined in "expand-fm9001-macros.lisp"
 
-
-
 ;; ZP-NOT-ZP-CASES is a bogus recursive function used to force the
 ;; prover to do these multi-step simulations by cases.
-
-
 
 ;; (defun zp-not-zp-cases (n)
 ;;   (declare (xargs :measure (acl2-count n)))

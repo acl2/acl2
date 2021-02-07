@@ -205,7 +205,7 @@
          (<= n (+ 2 (tree-size tree))))
   :hints (("Goal" :in-theory (enable bvp-len)))
   :rule-classes :linear)
-         
+
 ;; Proofs that TV-ALU-HELP "does the right thing."
 
 ;; ZERO
@@ -335,7 +335,7 @@
                             v-not-nthcdr)))))
 
 ;; DEC b
-           
+
 (defthmd tv-alu-help-tv-dec-b-works
   (implies (and (equal mpg *v1110001*)
                 (bvp b)
@@ -403,14 +403,6 @@
   :hints (("Goal"
            :in-theory (enable f$alu-cell tree-size))))
 
-;; (defthm true-listp-cddr-f$tv-alu-help
-;;   (true-listp (cddr (f$tv-alu-help c a b mpg tree)))
-;;   :rule-classes :type-prescription)
-
-;; (defthm true-listp-f$tv-alu-help
-;;   (true-listp (f$tv-alu-help c a b mpg tree))
-;;   :rule-classes :type-prescription)
-
 (defthm bvp-f$tv-alu-help
   (implies (and (booleanp c)
                 (bvp a) (equal (len a) (tree-size tree))
@@ -460,7 +452,7 @@
                             (alu-cell)))))
 
 (in-theory (disable f$tv-alu-help))
-        
+
 ;; ======================================================================
 
 ;; TV-ALU-HELP-BODY

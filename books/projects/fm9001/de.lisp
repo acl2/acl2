@@ -388,11 +388,6 @@
 
 ; se-primp-apply lemmas
 
-;; (defthm true-listp-se-primp-apply
-;;   (true-listp (se-primp-apply fn ins sts))
-;;   :rule-classes ((:type-prescription
-;;                   :typed-term (se-primp-apply fn ins sts))))
-
 (defun len-se-primp-apply (fn ins sts)
   (declare (xargs :guard t)
            (ignore ins sts))
@@ -410,11 +405,6 @@
 ;;   :hints (("Goal" :in-theory (enable primp))))
 
 ; de-primp-apply lemmas
-
-;; (defthm true-listp-de-primp-apply
-;;   (true-listp (de-primp-apply fn ins sts))
-;;   :rule-classes ((:type-prescription
-;;                   :typed-term (de-primp-apply fn ins sts))))
 
 (defun len-de-primp-apply (fn ins sts)
   (declare (xargs :guard (true-listp ins))
@@ -721,7 +711,6 @@
        ;;What about adding (no-duplicatesp-eq (strip-cars sts-alist)) ?
        ))
 
-
 ; The STS-OKP and STS-OCC-OKP functions check structure of state
 ; argument.  These functions are intended to make assure that the STS
 ; argument is "isomorphic" to the way it will be destructured by the
@@ -799,12 +788,12 @@
 ; computes the "wire" values for a module, and DE computes the next
 ; state value after calling SE to get the wire values.
 
-
 (defun se-ins-guard (fn ins netlist)
   (declare (xargs :guard t
                   :guard-hints
-                  (("Goal" :in-theory (e/d (consp-assoc-eq-fn-of-non-empty-netlist)
-                                            (md-occs md-sts))))))
+                  (("Goal"
+                    :in-theory (e/d (consp-assoc-eq-fn-of-non-empty-netlist)
+                                    (md-occs md-sts))))))
   (and (symbolp fn)
        (true-listp ins)
        (net-syntax-okp netlist)

@@ -62,7 +62,7 @@
                                                       "$DESTRUCTURE"
                                                       st))
        (term
-        `(RUN-FM9001 
+        `(RUN-FM9001
           (LIST (LIST
                  (LIST REGS
                        FLAGS

@@ -53,7 +53,7 @@
    (pairlis$ (make-list 32 :initial-element *x*) nil) ; data
    (pairlis$ (make-list 4 :initial-element *x*) nil)  ; address
    ))
-   
+
 (defun unknown-machine-state ()
   (declare (xargs :guard t))
   (list
@@ -172,10 +172,10 @@
    '(t)                                            ; hold
    (pairlis$ (make-list 4 :initial-element t) nil) ; pc-reg
    (pairlis$ (cv_fetch1                            ; cntl-state
-              t                                    ;   RW-           
-              (list t t t t)                       ;   REGS-ADDRESS  
-              (make-list 32)                       ;   I-REG         
-              (list t nil nil nil)                 ;   FLAGS         
+              t                                    ;   RW-
+              (list t t t t)                       ;   REGS-ADDRESS
+              (make-list 32)                       ;   I-REG
+              (list t nil nil nil)                 ;   FLAGS
               (make-list 4 :initial-element t))    ;   PC-REG
              nil)))
 
@@ -261,7 +261,7 @@
          t   ; disable-regfile-
          t   ; test-regfile-
 
-         (append 
+         (append
           (make-list 4 :initial-element t)       ; pc-reg
           (make-list 32 :initial-element *x*)))) ; data input
 
@@ -443,58 +443,58 @@
       (and
        (equal (len machine-state) 12)
        (true-listp machine-state)
-       
+
        (equal (len regs) 4)
        (true-listp regs)
-       
+
        (true-listp regs-regs)
        (equal (len regs-regs) 1)
        (all-ramp-mem 4 (car regs-regs))
        (memory-properp 4 32 (car regs-regs))
-       
+
        (true-listp regs-we)
        (equal (len regs-we) 1)
        (4vp (car regs-we))
-       
+
        (4v-listp (strip-cars regs-data))
        (len-1-true-listp regs-data) (equal (len regs-data) 32)
-       
+
        (4v-listp (strip-cars regs-address))
        (len-1-true-listp regs-address) (equal (len regs-address) 4)
-       
+
        (4v-listp (strip-cars flags))
        (len-1-true-listp flags) (equal (len flags) 4)
-       
+
        (4v-listp (strip-cars a-reg))
        (len-1-true-listp a-reg) (equal (len a-reg) 32)
-       
+
        (4v-listp (strip-cars b-reg))
        (len-1-true-listp b-reg) (equal (len b-reg) 32)
-       
+
        (4v-listp (strip-cars i-reg))
        (len-1-true-listp i-reg) (equal (len i-reg) 32)
-       
+
        (4v-listp (strip-cars data-out))
        (len-1-true-listp data-out) (equal (len data-out) 32)
-       
+
        (4v-listp (strip-cars addr-out))
        (len-1-true-listp addr-out) (equal (len addr-out) 32)
-       
+
        (true-listp last-reset-)
        (equal (len last-reset-) 1)
        (4vp (car last-reset-))
-       
+
        (true-listp last-dtack-)
        (equal (len last-dtack-) 1)
        (4vp (car last-dtack-))
-       
+
        (true-listp last-hold-)
        (equal (len last-hold-) 1)
        (4vp (car last-hold-))
-       
+
        (4v-listp (strip-cars pc-reg))
        (len-1-true-listp pc-reg) (equal (len pc-reg) 4)
-       
+
        (4v-listp (strip-cars cntl-state))
        (len-1-true-listp cntl-state) (equal (len cntl-state) 40)))))
 
@@ -605,7 +605,7 @@
                             not-memp-of-all-ramp-mem-2
                             not-memp-of-all-ramp-mem-3
                             not-memp-of-all-ramp-mem-4)
-                        
+
                           (theory 'minimal-theory))))))
 
   (defthm s-approx-of-car-unknown-regfile
@@ -626,7 +626,7 @@
 
 (encapsulate
   ()
-  
+
   (local
    (defthmd len-1-true-listp=>not-memp
      (implies (len-1-true-listp s)
@@ -678,7 +678,7 @@
                   (pairlis$ (make-list-ac 32 'x nil) nil)
                   (pairlis$ (make-list-ac 4 'x nil)
                             nil))))
-   
+
       (not (ramp (list
                   (list
                    (list*
@@ -703,7 +703,7 @@
                   (pairlis$ (make-list-ac 32 'x nil) nil)
                   (pairlis$ (make-list-ac 4 'x nil)
                             nil))))
-   
+
       (not (stubp (list
                    (list
                     (list*
@@ -1060,7 +1060,7 @@
 ;; NEW-MACHINE-STATE-INVARIANT-IMPLIES-MACHINE-STATE-INVARIANT
 ;; below).
 
-(defthm xs-suffice-for-reset-chip-final-state-for-any-unknown-state-better 
+(defthm xs-suffice-for-reset-chip-final-state-for-any-unknown-state-better
   (let ((n (1- (len (reset-sequence-chip-1)))))
     (implies (and (new-machine-state-invariant st)
                   (well-formed-sts 'chip (list st) (chip$netlist)))
@@ -1108,24 +1108,24 @@
                   ;;(fm9001-statep st)
                   (memory-okp 32 32 (cadr st))
                   (chip-system-operating-inputs-p
-                   inputs 
-                   (total-microcycles (map-down st) 
-                                      (map-up-inputs inputs) 
-                                      n)) 
+                   inputs
+                   (total-microcycles (map-down st)
+                                      (map-up-inputs inputs)
+                                      n))
                   (operating-inputs-p
-                   (map-up-inputs inputs) 
-                   (total-microcycles (map-down st) 
-                                      (map-up-inputs inputs) 
-                                      n))) 
-             (equal (fm9001 st n) 
+                   (map-up-inputs inputs)
+                   (total-microcycles (map-down st)
+                                      (map-up-inputs inputs)
+                                      n)))
+             (equal (fm9001 st n)
                     (map-up
                      (de-sim-n
                       'chip-system
                       inputs
                       (map-down st)
-                      netlist 
-                      (total-microcycles (map-down st) 
-                                         (map-up-inputs inputs) 
+                      netlist
+                      (total-microcycles (map-down st)
+                                         (map-up-inputs inputs)
                                          n))))))
   :hints (("Goal"
            :use (:instance
@@ -1166,24 +1166,24 @@
       (implies (and (chip-system& netlist)
                     (memory-okp 32 32 memory)
                     (chip-system-operating-inputs-p
-                     inputs 
-                     (total-microcycles low-st 
-                                        (map-up-inputs inputs) 
-                                        n)) 
+                     inputs
+                     (total-microcycles low-st
+                                        (map-up-inputs inputs)
+                                        n))
                     (operating-inputs-p
-                     (map-up-inputs inputs) 
-                     (total-microcycles low-st 
-                                        (map-up-inputs inputs) 
-                                        n))) 
-               (equal (fm9001 st n) 
+                     (map-up-inputs inputs)
+                     (total-microcycles low-st
+                                        (map-up-inputs inputs)
+                                        n)))
+               (equal (fm9001 st n)
                       (map-up
                        (de-sim-n
                         'chip-system
                         inputs
                         low-st
-                        netlist 
-                        (total-microcycles low-st 
-                                           (map-up-inputs inputs) 
+                        netlist
+                        (total-microcycles low-st
+                                           (map-up-inputs inputs)
                                            n)))))))
   :hints (("Goal"
            :use (:instance
@@ -1208,7 +1208,7 @@
 
 ;; Some of the earlier lemmas were written in terms of SIMULATE.  Since we
 ;; are only interested in the final state, we show that SIMULATE contains
-;; DE-SIM-N. 
+;; DE-SIM-N.
 
 (defthm simulate-contains-de-sim-n
   (implies
@@ -1252,7 +1252,7 @@
            :use (:instance
                  xs-suffice-for-reset-chip-lemma-instance
                  (st-2 any-state)))))
-            
+
 ;; CHIP-SYSTEM=FM9001-INTERPRETER$AFTER-RESET is the same as the lemma
 ;; chip-system=fm9001-interpreter in "proofs.lisp", except that it's
 ;; specialized to the case where the initial state is made up of the chip
