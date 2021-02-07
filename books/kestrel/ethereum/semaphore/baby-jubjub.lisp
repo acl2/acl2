@@ -225,7 +225,7 @@
 ;; (integer-length 2736030358979909402780800718157159386076813972158567259200215660948447373041)
 ;; => 251
 
-; This is primed::baby-jubjub-subgroup-prime,
+; This is primes::baby-jubjub-subgroup-prime,
 ; but we introduce a shorter synonym for it here,
 ; which conveys that it is the order divided by 8.
 
