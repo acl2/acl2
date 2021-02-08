@@ -1,4 +1,4 @@
-; Primes Library: Scalar Field prime for BLS-377
+; Primes Library: Scalar Field prime for BLS12-377
 ;
 ; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
 ;
@@ -20,7 +20,7 @@
 ;; https://eprint.iacr.org/2018/962.pdf
 ;; https://github.com/AleoHQ/snarkOS/blob/c9e5f823b8493f8c3a6c43e6f4dfd16173b99957/curves/README.md#bls12-377
 
-;; See also ../ecurve/bls-377-domain-parameters.lisp
+;; See also ../ecurve/bls12-377-domain-parameters.lisp
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

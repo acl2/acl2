@@ -372,15 +372,15 @@
   (and
    (equal (f-buf (3v-fix a))
           (f-buf a))
-   
+
    (equal (f-not (3v-fix a))
           (f-not a))
-   
+
    (equal (f-nand (3v-fix a) b)
           (f-nand a b))
    (equal (f-nand a (3v-fix b))
           (f-nand a b))
-   
+
    (equal (f-nand3 (3v-fix a) b c)
           (f-nand3 a b c))
    (equal (f-nand3 a (3v-fix b) c)
@@ -442,7 +442,7 @@
           (f-or a b))
    (equal (f-or a (3v-fix b))
           (f-or a b))
-   
+
    (equal (f-or3 (3v-fix a) b c)
           (f-or3 a b c))
    (equal (f-or3 a (3v-fix b) c)
@@ -463,7 +463,7 @@
           (f-xor a b))
    (equal (f-xor a (3v-fix b))
           (f-xor a b))
-   
+
    (equal (f-xor3 (3v-fix a) b c)
           (f-xor3 a b c))
    (equal (f-xor3 a (3v-fix b) c)
@@ -475,7 +475,7 @@
           (f-equv a b))
    (equal (f-equv a (3v-fix b))
           (f-equv a b))
-   
+
    (equal (f-equv3 (3v-fix a) b c)
           (f-equv3 a b c))
    (equal (f-equv3 a (3v-fix b) c)
@@ -487,7 +487,7 @@
           (f-and a b))
    (equal (f-and a (3v-fix b))
           (f-and a b))
-   
+
    (equal (f-and3 (3v-fix a) b c)
           (f-and3 a b c))
    (equal (f-and3 a (3v-fix b) c)
@@ -508,7 +508,7 @@
           (f-nor a b))
    (equal (f-nor a (3v-fix b))
           (f-nor a b))
-   
+
    (equal (f-nor3 (3v-fix a) b c)
           (f-nor3 a b c))
    (equal (f-nor3 a (3v-fix b) c)
@@ -580,7 +580,7 @@
     f-not
     f-nand f-nand3 f-nand4 f-nand5 f-nand6 f-nand8
     f-or f-or3 f-or4
-    f-xor f-xor3 
+    f-xor f-xor3
     f-equv f-equv3
     f-and f-and3 f-and4
     f-nor f-nor3 f-nor4 f-nor5 f-nor6 f-nor8
@@ -647,10 +647,6 @@
     (cons (f-or (car a) (car b))
           (fv-or (cdr a) (cdr b)))))
 
-;; (defthm true-listp-fv-or
-;;   (true-listp (fv-or a b))
-;;   :rule-classes :type-prescription)
-
 (defthm len-fv-or
   (equal (len (fv-or a b))
          (len a)))
@@ -674,10 +670,6 @@
     (cons (f-xor (car a) (car b))
           (fv-xor (cdr a) (cdr b)))))
 
-;; (defthm true-listp-fv-xor
-;;   (true-listp (fv-xor a b))
-;;   :rule-classes :type-prescription)
-
 (defthm len-fv-xor
   (equal (len (fv-xor a b))
          (len a)))
@@ -700,10 +692,6 @@
       nil
     (cons (f-if c (car a) (car b))
           (fv-if c (cdr a) (cdr b)))))
-
-;; (defthm true-listp-fv-if
-;;   (true-listp (fv-if c a b))
-;;   :rule-classes :type-prescription)
 
 (defthm len-fv-if
   (equal (len (fv-if c a b))
@@ -729,7 +717,7 @@
            (equal (fv-if c a b)
                   (if* c a b)))
   :hints (("Goal" :in-theory (enable bvp))))
-                 
+
 ;; Usually disabled to reduce splitting.
 (defthmd fv-if-rewrite
   (implies (equal (len a) (len b))
@@ -774,10 +762,6 @@
                   (v-fourfix v)))
   :hints (("Goal" :in-theory (enable v-fourfix))))
 
-;; (defthm true-listp-v-wire
-;;   (true-listp (v-wire a b))
-;;   :rule-classes :type-prescription)
-
 (defthm len-v-wire
   (equal (len (v-wire a b))
          (len a)))
@@ -798,10 +782,6 @@
       nil
     (cons (f-pullup (car v))
           (v-pullup (cdr v)))))
-
-;; (defthm true-listp-v-pullup
-;;   (true-listp (v-pullup v))
-;;   :rule-classes :type-prescription)
 
 (defthm len-v-pullup
   (equal (len (v-pullup v))
@@ -824,9 +804,9 @@
 
 (defun fv-shift-right (a si)
   (declare (xargs :guard t))
-  (if (atom a) 
-      nil 
-    (append (v-threefix (cdr a)) 
+  (if (atom a)
+      nil
+    (append (v-threefix (cdr a))
             (list (3v-fix si)))))
 
 (defthm fv-shift-right=v-shift-right
@@ -835,10 +815,6 @@
            (equal (fv-shift-right a si)
                   (v-shift-right a si)))
   :hints (("Goal" :in-theory (enable bvp v-shift-right))))
-
-;; (defthm true-listp-fv-shift-right
-;;   (true-listp (fv-shift-right a si))
-;;   :rule-classes :type-prescription)
 
 (defthm len-fv-shift-right
   (equal (len (fv-shift-right a si))
@@ -860,10 +836,6 @@
       nil
     (cons (ft-buf c (car a))
           (vft-buf c (cdr a)))))
-
-;; (defthm true-listp-vft-buf
-;;   (true-listp (vft-buf c a))
-;;   :rule-classes :type-prescription)
 
 (defthm len-vft-buf
   (equal (len (vft-buf c a))

@@ -317,7 +317,7 @@
   (declare (xargs :guard t))
   (and (equal (len st) 2)
        (true-listp st)
-       
+
        (equal (len (car st)) 1)
        (true-listp (car st))
        (equal (len (caar st)) 12)
@@ -327,7 +327,7 @@
        (true-listp (cadr st))
        (equal (len (caadr st)) 8)
        (true-listp (caadr st))
-       
+
        (equal (len (caaar st)) 4)
        (true-listp (caaar st))))
 

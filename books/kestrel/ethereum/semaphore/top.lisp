@@ -12,6 +12,9 @@
 
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
+; Added by Matt K. at the request of Alessandro C.:
+(include-book "baby-jubjub")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ semaphore

@@ -48,10 +48,6 @@
                         (cons (f$fast-zero out)
                               out)))))))))
 
-;; (defthm true-listp-f$core-alu
-;;   (true-listp (f$core-alu c a b zero mpg op tree))
-;;   :rule-classes :type-prescription)
-
 (defthm len-f$core-alu
   (equal (len (f$core-alu c a b zero mpg op tree))
          (+ 3 (tree-size tree))))

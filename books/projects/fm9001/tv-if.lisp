@@ -23,7 +23,7 @@
 
 ;; This generator creates modules which are to be used as in this sample module
 ;; occurence, where n = (tree-size tree):
-  
+
 ;; (LIST <occurence-name>
 ;;       <output list (n elements)>
 ;;       (SI 'TV-IF (TREE-NUMBER tree))
@@ -57,7 +57,7 @@
           (let ((c-name (if buffer? 'c-buf 'c)))
             (append
              ;; The buffer.
-             (if buffer? 
+             (if buffer?
                  '((c-buf (c-buf) b-buf (c)))
                nil)
              (list

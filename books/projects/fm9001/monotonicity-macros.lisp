@@ -22,7 +22,7 @@
 ;;       (IMPLIES (AND (B-APPROX A1 A2) (B-APPROX B1 B2) (B-APPROX C1 C2))
 ;;                (B-APPROX (F-AND3 A1 B1 C1) (F-AND3 A2 B2 C2))))
 ;;   T
-;;   
+;;
 ;;   >
 
 (defun b-approx-args (n)
@@ -36,7 +36,7 @@
   (declare (xargs :guard (and (symbolp name)
                               (natp arity))))
   (b* ((lemma-name (unstring (symbol-name name) "-MONOTONE")))
-    
+
     `(defthm ,lemma-name
        (implies (and ,@(rev (b-approx-args arity)))
                 (b-approx (,name ,@(sis 'a 1 arity))
@@ -111,13 +111,13 @@
 ;;                    (V-APPROX (CDR (CDR (CDR A1)))
 ;;                              (CDR (CDR (CDR A2)))))))))
 ;; T
-;; 
+;;
 ;; >
 
 (defun device-monotonicity-lemma (name)
   (declare (xargs :guard (symbolp name)))
   (b* ((lemma-name (unstring (symbol-name name) "-MONOTONE")))
-    
+
     `(defthm ,lemma-name
        (and (monotonicity-property 0 ',name netlist a1 a2 s1 s2)
             (monotonicity-property 2 ',name netlist a1 a2 s1 s2))

@@ -324,12 +324,12 @@ h = 01
 
 ;; See:
 ;; * E. Bach and J. Shallit, "Algorithmic number theory," Efficient
-;;   Algorithms. Cambridge, MA: MIT Press, 1996, vol. I.
+;;   Algorithms. Cambridge, MA: MIT Press, 1996, vol. I, p. 155.
 ;; *  J. L. Lagrange, "Sur la solution des problemes indetermines du second
 ;;    degre," Histoire Acad. Roy. Sci. Belle-Lett., Berlin, Germany, 1769,
 ;;    pp. 165-310 (reprint Oeuvres, vol. 2, pp. 377-535).
 
-;; For this case, the square root formula is (references above):
+;; For this case, because p = 3 mod 4, the square root formula is (references above):
 ;;   a^((p+1)/4) (mod p)
 ;; However, this will get the wrong answer if there is no square root.
 ;; We could call SECP256K1-HAS-SQUARE-ROOT? defined above, but
