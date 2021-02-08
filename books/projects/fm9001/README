@@ -23,6 +23,8 @@ Book Organization
 
 The DE simulator is implemented in de.lisp.
 
+See simulate.lsp for an example of simulating FM9001
+
 The memory model is specified in memory.lisp.
 
 The monotonicity property for simulation is established in
