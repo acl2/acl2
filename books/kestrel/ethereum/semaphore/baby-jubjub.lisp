@@ -281,3 +281,56 @@
   (assert-event (equal (baby-jubjub-order/8) (/ (baby-jubjub-order) 8)))
 
   (in-theory (disable (:e baby-jubjub-order/8))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define point-on-baby-jubjub-p ((point ecurve::pointp))
+  :returns (yes/no booleanp)
+  :short "Check if a point is on BabyJubjub."
+  (ecurve::point-on-twisted-edwards-p point (baby-jubjub-curve))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define baby-jubjub-pointp (x)
+  :returns (yes/no booleanp)
+  :short "Recognize the points on the BabyJubjub curve."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are all finite points."))
+  (and (ecurve::pointp x)
+       (point-on-baby-jubjub-p x))
+  :hooks (:fix)
+  ///
+  (defruled point-finite-when-baby-jubjub-pointp
+    (implies (baby-jubjub-pointp x)
+             (equal (ecurve::point-kind x) :finite))
+    :enable point-on-baby-jubjub-p))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define baby-jubjub-mul ((scalar integerp) (point baby-jubjub-pointp))
+  :returns (point1 baby-jubjub-pointp
+                   :hyp (baby-jubjub-pointp point)
+                   :hints (("Goal" :in-theory (enable baby-jubjub-pointp
+                                                      point-on-baby-jubjub-p))))
+  :short "Scalar multiplication on BabyJubjub."
+  (ecurve::twisted-edwards-mul scalar point (baby-jubjub-curve))
+  :guard-hints (("Goal" :in-theory (enable baby-jubjub-pointp
+                                           point-on-baby-jubjub-p)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define baby-jubjub-add ((point1 baby-jubjub-pointp)
+                         (point2 baby-jubjub-pointp))
+  :returns (point baby-jubjub-pointp
+                  :hyp (and (baby-jubjub-pointp point1)
+                            (baby-jubjub-pointp point2))
+                  :hints (("Goal" :in-theory (enable baby-jubjub-pointp
+                                                     point-on-baby-jubjub-p))))
+  :short "Group addition on BabyJubjub."
+  (ecurve::twisted-edwards-add point1 point2 (baby-jubjub-curve))
+  :guard-hints (("Goal" :in-theory (enable baby-jubjub-pointp
+                                           point-on-baby-jubjub-p))))
