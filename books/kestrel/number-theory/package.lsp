@@ -8,4 +8,33 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defpkg "PRIMES" *acl2-exports*)
+(in-package "ACL2")
+
+(defpkg "PRIMES"
+  (append '(;; added symbols
+            assert!
+            b*
+            define
+            defret
+            defrule
+            defruled
+            defsection
+            defxdoc
+            defxdoc+
+            patbind-unless
+            patbind-when
+            repeat
+;;            pfield::fep
+;;            pfield::mul
+;;            pfield::add
+;;            pfield::div
+;;            pfield::sub
+;;            pfield::inv
+;;            pfield::neg
+;;            pfield::pow
+            ///
+            )
+          (set-difference-eq
+           *acl2-exports*
+           '(;; removed symbols
+             ))))
