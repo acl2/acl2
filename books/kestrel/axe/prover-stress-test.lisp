@@ -42,6 +42,7 @@
          *t* ;use a hyp of t
          formula
          nil ; no rules
+         nil ; no global rules
          nil ; no ifns
          nil ; no-splitp
          nil ; no monitored rules

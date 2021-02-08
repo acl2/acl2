@@ -270,17 +270,13 @@
   :hints (("Goal" :in-theory (enable add))))
 
 (defthm add-of-mod-arg1
-  (implies (and (integerp x)
-                (posp p))
-           (equal (add (mod x p) y p)
-                  (add x y p)))
+  (equal (add (mod x p) y p)
+         (add x y p))
   :hints (("Goal" :in-theory (enable add))))
 
 (defthm add-of-mod-arg2
-  (implies (and (integerp y)
-                (posp p))
-           (equal (add x (mod y p) p)
-                  (add x y p)))
+  (equal (add x (mod y p) p)
+         (add x y p))
   :hints (("Goal" :in-theory (enable add))))
 
 ;; basic cancellation rule sufficient to prove the bind-free rules in other files

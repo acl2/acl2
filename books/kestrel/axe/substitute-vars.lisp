@@ -162,8 +162,12 @@
           ;; Keep looking:
           (substitute-a-var (rest literal-nodenums) all-literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print)
         ;; Substitute:
-        (b* ((- (and ;; print ;; (or (eq t print) (eq :verbose print))
-                 (and print (cw "~%(Using ~x0 to replace ~x1 (~x2 -> ~x3).~%" literal-nodenum var nodenum-of-var nodenum-or-quotep-to-put-in))
+        (b* (((when (consp nodenum-or-quotep-to-put-in)) ;tests for quotep - always false?
+              (prog2$ (er hard? 'substitute-a-var "Surprised to see a var equated to a constant") ;fixme print more..
+                      (mv (erp-t) nil all-literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))
+             (- (and ;; print ;; (or (eq t print) (eq :verbose print))
+                 ;; (and print (cw "~%(Using ~x0 to replace ~x1 (~x2 -> ~x3).~%" literal-nodenum var nodenum-of-var nodenum-or-quotep-to-put-in))
+                 (and print (cw "~%(Using ~x0 to replace ~x1, which is ~x2.~%" literal-nodenum var (aref1 'dag-array dag-array nodenum-or-quotep-to-put-in)))
                  ;; (progn$ (cw "~%(Substituting to replace ~x0 (node ~x1) with:~%" var nodenum-of-var)
                  ;;         (if (quotep nodenum-or-quotep-to-put-in) ;always false?
                  ;;             (cw "~x0" nodenum-or-quotep-to-put-in)
@@ -171,9 +175,6 @@
                  ;;               (print-dag-only-supporters 'dag-array dag-array nodenum-or-quotep-to-put-in)
                  ;;             (cw ":elided"))))
                  ))
-             ((when (consp nodenum-or-quotep-to-put-in)) ;tests for quotep - always false?
-              (prog2$ (er hard? 'substitute-a-var "Surprised to see a var equated to a constant") ;fixme print more..
-                      (mv (erp-t) nil all-literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))
              ((mv erp literal-nodenums ;fixme could these ever be quoteps?
                   dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                   )
