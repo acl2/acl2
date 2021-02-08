@@ -14,8 +14,7 @@
 (include-book "rtl/rel11/portcullis" :dir :system)
 
 (defpkg "PRIMES"
-  (append '(;; added symbols
-            assert!
+  (append '(assert!
             b*
             define
             defret
@@ -37,7 +36,4 @@
             pfield::pow
             ///
             )
-          (set-difference-eq
-           *acl2-exports*
-           '(;; removed symbols
-             ))))
+          *acl2-exports*))
