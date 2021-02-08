@@ -160,3 +160,9 @@
   :hints (("Goal" :in-theory (enable evenp))))
 
 (theory-invariant (incompatible (:rewrite integerp-of-*-of-1/2-becomes-evenp) (:definition evenp)))
+
+(defthm evenp-when-not-acl2-numberp-cheap
+  (implies (not (acl2-numberp x))
+           (evenp x))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable evenp))))
