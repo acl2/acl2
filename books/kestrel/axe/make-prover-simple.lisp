@@ -430,6 +430,21 @@
 (defconst-computed-erp-and-val *default-axe-prover-rule-alists*
   (make-rule-alists (list *default-axe-prover-rules*) (w state)))
 
+;; Union X into every element of Y
+(defund union-eq-with-all (x y)
+  (declare (xargs :guard (and (symbol-listp x)
+                              (symbol-list-listp y))))
+  (if (endp y)
+      nil
+    (cons (union-eq x (first y))
+          (union-eq-with-all x (rest y)))))
+
+(defthm symbol-list-listp-of-union-eq-with-all
+  (implies (and (symbol-listp x)
+                (symbol-list-listp y))
+           (symbol-list-listp (union-eq-with-all x y)))
+  :hints (("Goal" :in-theory (enable union-eq-with-all))))
+
 (defun make-prover-simple-fn (suffix ;; gets added to generated names
                               evaluator-base-name
                               eval-axe-syntaxp-expr-name
@@ -4327,6 +4342,7 @@
        (defund ,prove-implication-fn-helper-name (dag1
                                                   dag2
                                                   rule-lists
+                                                  global-rules
                                                   interpreted-function-alist
                                                   no-splitp
                                                   monitor
@@ -4349,6 +4365,9 @@
                (mv :bad-input nil state))
               ((when (not (rule-item-list-listp rule-lists)))
                (er hard? ',prove-implication-fn-helper-name "Bad rule lists: ~x0" rule-lists)
+               (mv :bad-input nil state))
+              ((when (not (rule-item-listp global-rules)))
+               (er hard? ',prove-implication-fn-helper-name "Bad global-rules: ~x0" global-rules)
                (mv :bad-input nil state))
               ((when (not (interpreted-function-alistp interpreted-function-alist)))
                (er hard? ',prove-implication-fn-helper-name "Ill-formed interpreted-function-alist: ~x0" interpreted-function-alist)
@@ -4385,6 +4404,8 @@
                (make-dag-indices 'dag-array dag-array 'dag-parent-array dag-len))
               ;; Build the rule-alists:
               (rule-lists (elaborate-rule-item-lists rule-lists state))
+              ;; Include the global-rules in each rule-list:
+              (rule-lists (union-eq-with-all (elaborate-rule-items global-rules nil state) rule-lists))
               ((mv erp rule-alists) (make-rule-alists rule-lists (w state)))
               ((when erp) (mv erp nil state))
               (case-designator "MAIN_CASE") ; the name of this case
@@ -4426,6 +4447,7 @@
        (defund ,prove-implication-fn-name (dag-or-term1 ; not yet translated
                                            dag-or-term2 ; not yet translated
                                            rule-lists
+                                           global-rules
                                            interpreted-function-alist
                                            no-splitp
                                            monitor
@@ -4434,6 +4456,7 @@
          (declare (xargs :guard (and (rule-item-list-listp rule-lists)
                                      ;; (interpreted-function-alistp interpreted-function-alist)
                                      (symbol-listp monitor)
+                                     (rule-item-listp global-rules)
                                      (ilks-plist-worldp (w state)))
                          :stobjs state
                          :mode :program ;because this translates its args if they are terms
@@ -4446,6 +4469,7 @@
            (,prove-implication-fn-helper-name dag1
                                               dag2
                                               rule-lists
+                                              global-rules
                                               interpreted-function-alist
                                               no-splitp
                                               monitor
@@ -4458,6 +4482,7 @@
                                           dag-or-term2
                                           &key
                                           (rule-lists 'nil) ;todo: improve by building some in and allowing :extra-rules and :remove-rules?
+                                          (global-rules 'nil) ;; rules to be added to every rule-list
                                           (interpreted-function-alist 'nil)
                                           (no-splitp 'nil) ; whether to prevent splitting into cases
                                           (monitor 'nil)
@@ -4468,6 +4493,7 @@
                      dag-or-term1
                      dag-or-term2
                      rule-lists
+                     global-rules
                      interpreted-function-alist
                      no-splitp
                      monitor
