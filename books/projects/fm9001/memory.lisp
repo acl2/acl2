@@ -5,7 +5,7 @@
 ;; See the README for historical information.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; October 2016
+;; February 2021
 
 (in-package "FM9001")
 
@@ -160,8 +160,7 @@
       (stubp mem)))
 
 (defthm memp=>consp
-  (implies (memp x)
-           (consp x))
+  (implies (memp x) (consp x))
   :rule-classes :forward-chaining)
 
 (deftheory mem-theory
@@ -206,6 +205,45 @@
            (consp mem)
            (memory-okp (1- n) width (car mem))
            (memory-okp (1- n) width (cdr mem))))))
+
+;; ALLOC-MEM & ALLOC-FULL-MEM
+
+(local (in-theory (enable bvp)))
+
+(defun alloc-mem1 (v-addr type v-val mem)
+  (declare (xargs :guard (and (bvp v-addr)
+                              (member type '(rom ram stub))
+                              (bvp v-val))))
+  (if (atom v-addr)
+      (list type v-val)
+    (if (not (listp mem))
+        mem
+      (if (car v-addr)
+          (cons (car mem)
+                (alloc-mem1 (cdr v-addr) type v-val (cdr mem)))
+        (cons (alloc-mem1 (cdr v-addr) type v-val (car mem))
+              (cdr mem))))))
+
+(defun alloc-mem (addr type val mem)
+  (declare (xargs :guard (and (unsigned-byte-p 32 addr)
+                              (member type '(rom ram stub))
+                              (unsigned-byte-p 32 val))))
+  (alloc-mem1 (reverse (nat-to-v addr 32))
+              type
+              (nat-to-v val 32)
+              mem))
+
+(defun alloc-full-mem1 (n type)
+  (declare (xargs :guard (and (natp n)
+                              (member type '(rom ram stub)))))
+  (if (zp n)
+      (list type nil)
+    (cons (alloc-full-mem1 (1- n) type)
+          (alloc-full-mem1 (1- n) type))))
+
+(defun alloc-full-mem (type)
+  (declare (xargs :guard (member type '(rom ram stub))))
+  (alloc-full-mem1 32 type))
 
 ;; READ-MEM
 
