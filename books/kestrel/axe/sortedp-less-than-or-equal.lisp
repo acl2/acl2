@@ -30,3 +30,7 @@
                 (consp (cdr x)))
            (<= (first x) (second x)))
   :hints (("Goal" :in-theory (enable sortedp-<=))))
+
+(defthm sortedp-<=-of-singleton
+  (sortedp-<= (list x))
+  :hints (("Goal" :in-theory (enable sortedp-<=))))
