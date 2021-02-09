@@ -10,6 +10,9 @@
 
 (in-package "ACL2")
 
+(include-book "kestrel/prime-fields/portcullis" :dir :system)
+(include-book "rtl/rel11/portcullis" :dir :system)
+
 (defpkg "PRIMES"
   (append '(;; added symbols
             assert!
@@ -24,14 +27,14 @@
             patbind-unless
             patbind-when
             repeat
-;;            pfield::fep
-;;            pfield::mul
-;;            pfield::add
-;;            pfield::div
-;;            pfield::sub
-;;            pfield::inv
-;;            pfield::neg
-;;            pfield::pow
+            pfield::fep
+            pfield::mul
+            pfield::add
+            pfield::div
+            pfield::sub
+            pfield::inv
+            pfield::neg
+            pfield::pow
             ///
             )
           (set-difference-eq
