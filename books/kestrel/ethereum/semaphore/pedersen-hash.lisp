@@ -10,7 +10,7 @@
 
 (in-package "ZKSEMAPHORE")
 
-(include-book "baby-jubjub")
+(include-book "base-points-for-pedersen-hash")
 
 (include-book "kestrel/utilities/typed-lists/bit-listp" :dir :system)
 
@@ -205,7 +205,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection pedersen-generator
+(define pedersen-generator ((i natp))
+  :returns (point baby-jubjub-pointp
+                  :hints (("Goal"
+                           :cases ((member i '(0 1 2 3 4 5 6 7 8 9)))
+                           :in-theory (enable ecurve::twisted-edwards-zero))))
   :short "Generator points for Pedersen hash."
   :long
   (xdoc::topstring
@@ -216,23 +220,22 @@
      This is described by equation (1) in [IS],
      and by the double summation in [ES].
      The points are denoted @($P_0,\\ldots,P_l$) in [IS] and @($g_s$) in [ES].
-     These points are fixed for Semaphore, so they can be precomputed.
-     We will formalize them soon,
-     but in the meanwhile, in order to complete the definition of Pedersen hash,
-     here we postulate a constrained function that returns BabyJubjub points.
-     The function takes a natural number @($i$) as argument
-     and returns the point @($P_i$) as result."))
-
-  (encapsulate
-    (((pedersen-generator *) => * :formals (i) :guard (natp i)))
-    (local
-     (define pedersen-generator ((i natp))
-       (declare (ignore i))
-       (ecurve::twisted-edwards-zero)))
-    (defrule baby-jubjub-pointp-of-pedersen-generator
-      (baby-jubjub-pointp (pedersen-generator i))
-      :enable (pedersen-generator
-               ecurve::twisted-edwards-zero))))
+     These points are fixed for Semaphore, so they can be precomputed.")
+   (xdoc::p
+    "We have precomputed the points in @(see pedersen-hash-base-points).
+     The constant @('*pedersen-base-points-for-semaphore*') lists them.
+     Even though Pedersen hash should allow any number of points in general,
+     for Semaphore we only need ten points (the ones in the list constant).
+     The outer summation in [ES] goes from 0 to @($S-1$), and @($S\leq10$).")
+   (xdoc::p
+    "We define this function to return one of the ten points
+     when the index is below 10,
+     or the zero point otherwise.
+     The index will always be below 10, when used in the Semaphore."))
+  (b* ((i (nfix i)))
+    (if (< i 10)
+        (nth i *pedersen-base-points-for-semaphore*)
+      (ecurve::twisted-edwards-zero))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
