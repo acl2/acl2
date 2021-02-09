@@ -445,6 +445,11 @@
            (symbol-list-listp (union-eq-with-all x y)))
   :hints (("Goal" :in-theory (enable union-eq-with-all))))
 
+(defthmd not-member-equal-of-car-when-not-intersection-equal
+  (implies (and (not (intersection-equal x y))
+                (consp x))
+           (not (member-equal (car x) y))))
+
 (defun make-prover-simple-fn (suffix ;; gets added to generated names
                               evaluator-base-name
                               eval-axe-syntaxp-expr-name
@@ -571,6 +576,7 @@
        (local (include-book "kestrel/lists-light/take" :dir :system))
        (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
        (local (include-book "kestrel/lists-light/cons" :dir :system)) ; for true-listp-of-cons
+       (local (include-book "kestrel/lists-light/intersection-equal" :dir :system)) ;for intersection-equal-of-cons-arg2-iff
        (local (include-book "kestrel/alists-light/strip-cdrs" :dir :system))
        (local (include-book "kestrel/alists-light/pairlis-dollar" :dir :system))
        (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
@@ -2932,6 +2938,22 @@
          :rule-classes :linear
          :hints (("Goal" :do-not '(generalize eliminate-destructors)
                   :in-theory (e/d (,rewrite-literals-name) (natp)))))
+
+       ;; TODO: It would be nice to prove this:
+       ;; (defthm ,(pack$ 'no-duplicatesp-equal-of-mv-nth-3-of- rewrite-literals-name)
+       ;;   (implies (and (no-duplicatesp-equal work-list)
+       ;;                 (no-duplicatesp-equal done-list)
+       ;;                 (not (intersection-equal work-list done-list)))
+       ;;            (no-duplicatesp-equal (mv-nth 3 (,rewrite-literals-name work-list
+       ;;                                                                    done-list
+       ;;                                                                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+       ;;                                                                    assumption-array assumption-array-num-valid-nodes
+       ;;                                                                    changep
+       ;;                                                                    rule-alist
+       ;;                                                                    interpreted-function-alist monitored-symbols print case-designator
+       ;;                                                                    info tries prover-depth known-booleans options))))
+       ;;   :hints (("Goal" :do-not '(generalize eliminate-destructors)
+       ;;            :in-theory (e/d (,rewrite-literals-name not-member-equal-of-car-when-not-intersection-equal) (natp intersection-equal)))))
 
        ;; This is separate to keep the caller smaller and simpler
        ;; Returns (mv erp provedp changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries).
