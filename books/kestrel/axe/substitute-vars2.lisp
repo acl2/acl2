@@ -43,7 +43,7 @@
            (natp (mv-nth 3 (check-for-var-subst-literal literal-nodenum dag-array dag-len))))
   :hints (("Goal" :in-theory (enable check-for-var-subst-literal))))
 
-;; a triple of the form (<nodenum-of-var> <equated-nodenum> <literal-nodenum).
+;; a triple of the form (<nodenum-of-var> <equated-nodenum> <literal-nodenum>).
 (defun subst-candidatep (cand)
   (declare (xargs :guard t))
   (and (nat-listp cand)
