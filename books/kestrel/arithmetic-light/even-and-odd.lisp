@@ -22,7 +22,7 @@
 
 ;; TODO: We might consider leaving oddp enabled, to use evenp as a normal form.
 
-(defthm evenp-of-sum-when-evenp-arg1
+(defthm evenp-of-+-when-evenp-arg1
   (implies (and (evenp x)
                 (integerp x)
                 (integerp y))
@@ -32,7 +32,7 @@
 
 ;TODO: generalize this to allow any addend to be even
 ;TODO: might be expensive?
-(defthm evenp-of-sum-when-evenp-arg2
+(defthm evenp-of-+-when-evenp-arg2
   (implies (and (evenp x)
                 (integerp x)
                 (integerp y))
@@ -40,7 +40,7 @@
                   (evenp y)))
   :hints (("Goal" :in-theory (enable evenp))))
 
-(defthm evenp-reduce-alt3
+(defthm evenp-of-+-when-evenp-arg3
   (implies (and (evenp x)
                 (integerp x)
                 (integerp y))
@@ -48,7 +48,7 @@
                   (evenp (+ y z))))
   :hints (("Goal" :in-theory (enable evenp))))
 
-(defthm evenp-of-minus
+(defthm evenp-of--
   (equal (evenp (- x))
          (evenp x))
   :hints (("Goal" :in-theory (enable evenp))))
@@ -69,7 +69,7 @@
   :hints (("Goal"
            :use ((:instance evenp-of-one-more (x x))
                  (:instance evenp-of-one-more (x y))
-                 (:instance integerp-of-+ (acl2::x (+ 1/2 (* 1/2 x))) (acl2::y (+ 1/2 (* 1/2 y))))
+                 (:instance integerp-of-+ (x (+ 1/2 (* 1/2 x))) (y (+ 1/2 (* 1/2 y))))
                  )
            :in-theory (e/d (evenp) (integerp-of-+)))))
 
@@ -82,7 +82,7 @@
   :hints (("Goal" :use (:instance odd-plus-odd-is-even)
            :in-theory (disable odd-plus-odd-is-even))))
 
-(defthm evenp-reduce-odd
+(defthm evenp-of-+-when-not-evenp-arg1
   (implies (and (not (evenp x))
                 (integerp x)
                 (integerp y))
@@ -92,18 +92,18 @@
            :in-theory (disable evenp-reduce-odd-alt))))
 
 ;FIXME can be expensive?
-(defthm evenp-of-product-when-evenp
+(defthm evenp-of-*-when-evenp
   (implies (and (evenp x)
                 (integerp y))
            (evenp (* x y)))
   :hints (("Goal" :in-theory (enable evenp integerp-of-*-three))))
 
-(defthm evenp-of-product-when-evenp-alt
+(defthm evenp-of-*-when-evenp-alt
   (implies (and (evenp x)
                 (integerp y))
            (evenp (* y x)))
-  :hints (("Goal" :use (:instance evenp-of-product-when-evenp)
-           :in-theory (disable evenp-of-product-when-evenp))))
+  :hints (("Goal" :use (:instance evenp-of-*-when-evenp)
+           :in-theory (disable evenp-of-*-when-evenp))))
 
 (defthmd odd-times-odd
   (implies (and (oddp x)
@@ -116,10 +116,8 @@
                  (:instance evenp-of-one-more (x x)))
            :in-theory (e/d (evenp oddp) (integerp-of-*)))))
 
-
-
 ;when one factor is odd, the other factor determines the even/odd-ness of the product
-(defthm odd-of-product-when-odd
+(defthm oddp-of-*-when-odd
   (implies (and (oddp x)
                 (integerp x)
                 (integerp y))
@@ -127,14 +125,14 @@
                   (oddp y)))
   :hints (("Goal" :use (:instance odd-times-odd))))
 
-(defthm evenp-of-product-when-odd-alt
+(defthm evenp-of-*-when-odd-alt
   (implies (and (oddp x)
                 (integerp x)
                 (integerp y))
            (equal (evenp (* y x))
                   (evenp y)))
-  :hints (("Goal" :use (:instance odd-of-product-when-odd)
-           :in-theory (disable odd-of-product-when-odd))))
+  :hints (("Goal" :use (:instance oddp-of-*-when-odd)
+           :in-theory (disable oddp-of-*-when-odd))))
 
 ;; (thm
 ;;  (IMPLIES (AND (INTEGERP X)
