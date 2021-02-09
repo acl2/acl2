@@ -21,12 +21,16 @@
 (defpkg "ZKSEMAPHORE" ; 'zk' stands for zero-knowledge
   (append '(///
             b*
+            bit-listp
             booland
             define
             define-sk
+            defret
             defrule
             defruled
             defruledl
+            defrulel
+            defsection
             defxdoc+
             rule
             unless
