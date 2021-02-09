@@ -274,12 +274,14 @@
 ;; Repeatedly get rid of vars by substitution.
 ;; Returns (mv erp changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
 ;; Doesn't change any nodes if prover-depth > 0.
-(defund substitute-vars (literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print prover-depth num changep-acc)
+(defund substitute-vars (literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print prover-depth
+                                          initial-dag-len ;; only used for deciding when to crunch
+                                          changep-acc)
   (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                               (nat-listp literal-nodenums)
                               (all-< literal-nodenums dag-len)
                               (natp prover-depth)
-                              (natp num)
+                              (posp initial-dag-len)
                               (booleanp changep-acc))
                   :measure (len literal-nodenums)))
   (b* (;; Try to subst a var.  TODO: Allow this to evaluate ground terms that arise when substituting.
@@ -296,7 +298,9 @@
             literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
       (b* (((mv erp literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
             (if (and (= 0 prover-depth)
-                     (= 0 (mod num 100))) ;; crunching is less important now that we substitute first with lits that were just rebuilt
+                     (> (/ dag-len initial-dag-len)
+                        ;; todo: what is the best threshold ratio to use here?:
+                        10)) ;; crunching is less important now that we substitute first with lits that were just rebuilt
                 ;; Crunch the dag:
                 (b* ((- (cw "(Crunching: ..."))
                      ((mv dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist literal-nodenums)
@@ -314,7 +318,7 @@
               (mv (erp-nil) literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))
            ((when erp) (mv erp changep-acc literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))
         ;; At least one var was substituted away, so keep going
-        (substitute-vars literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print prover-depth (+ 1 num) t)))))
+        (substitute-vars literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print prover-depth initial-dag-len t)))))
 
 (defthm substitute-vars-return-type
   (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
@@ -324,7 +328,7 @@
                 (natp num)
                 (booleanp changep-acc))
            (mv-let (erp changep new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
-             (substitute-vars literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print prover-depth num changep-acc)
+             (substitute-vars literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print prover-depth initial-dag-len changep-acc)
              (declare (ignore changep))
              (implies (not erp)
                       (and (nat-listp new-literal-nodenums)
@@ -344,7 +348,7 @@
                 (natp num)
                 (booleanp changep-acc))
            (mv-let (erp changep new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
-             (substitute-vars literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print prover-depth num changep-acc)
+             (substitute-vars literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print prover-depth initial-dag-len changep-acc)
              (declare (ignore changep new-literal-nodenums new-dag-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist))
              (implies (not erp)
                       (implies (< 0 prover-depth)
@@ -356,7 +360,7 @@
 (defthm substitute-vars-return-type-2
   (implies (true-listp literal-nodenums)
            (mv-let (erp changep new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
-             (substitute-vars literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print prover-depth num changep-acc)
+             (substitute-vars literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print prover-depth initial-dag-len changep-acc)
              (declare (ignore erp changep new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist))
              (true-listp new-literal-nodenums)))
   :rule-classes (:rewrite :type-prescription)
@@ -370,7 +374,7 @@
                 (natp num)
                 (booleanp changep-acc))
            (mv-let (erp changep new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
-             (substitute-vars literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print prover-depth num changep-acc)
+             (substitute-vars literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print prover-depth initial-dag-len changep-acc)
              (declare (ignore changep new-literal-nodenums new-dag-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist))
              (implies (not erp)
                       (natp new-dag-len))))
