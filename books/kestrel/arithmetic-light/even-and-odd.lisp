@@ -11,14 +11,16 @@
 
 (in-package "ACL2")
 
-(local (include-book "kestrel/library-wrappers/arithmetic-top-with-meta" :dir :system))
 (local (include-book "plus"))
 (local (include-book "times"))
 (local (include-book "integerp"))
-(local (include-book "mod2"))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
 (in-theory (disable evenp oddp))
+
+;; There are also some relevant rules in integerp.lisp.
+
+;; TODO: We might consider leaving oddp enabled, to use evenp as a normal form.
 
 (defthm evenp-of-sum-when-evenp-arg1
   (implies (and (evenp x)
@@ -160,3 +162,9 @@
   :hints (("Goal" :in-theory (enable evenp))))
 
 (theory-invariant (incompatible (:rewrite integerp-of-*-of-1/2-becomes-evenp) (:definition evenp)))
+
+(defthm evenp-when-not-acl2-numberp-cheap
+  (implies (not (acl2-numberp x))
+           (evenp x))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable evenp))))
