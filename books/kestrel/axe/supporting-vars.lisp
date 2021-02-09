@@ -19,6 +19,7 @@
 ;;; vars-that-support-dag-nodes-aux
 ;;;
 
+;; Extends ACC with the vars that support (any of the) the nodes in the WORKLIST.
 (defund vars-that-support-dag-nodes-aux (steps-left worklist dag-array-name dag-array dag-len done-array acc)
   (declare (xargs :guard (and (natp steps-left)
                               (nat-listp worklist)
@@ -37,10 +38,10 @@
           (let ((expr (aref1 dag-array-name dag-array nodenum)))
             (if (variablep expr)
                 (vars-that-support-dag-nodes-aux (+ -1 steps-left)
-                                         (rest worklist) dag-array-name dag-array dag-len
-                                         (aset1 'done-array done-array nodenum t)
-                                         (add-to-set-eq ;had cons here, but that led to lots of duplicates...
-                                          expr acc))
+                                                 (rest worklist) dag-array-name dag-array dag-len
+                                                 (aset1 'done-array done-array nodenum t)
+                                                 (add-to-set-eq ;had cons here, but that led to lots of duplicates...
+                                                  expr acc))
               (if (fquotep expr)
                   (vars-that-support-dag-nodes-aux (+ -1 steps-left) (rest worklist) dag-array-name dag-array dag-len (aset1 'done-array done-array nodenum t) acc)
                 ;;function call:
@@ -65,6 +66,7 @@
 ;;; vars-that-support-dag-nodes
 ;;;
 
+;; Returns the list of the vars that support (any of the) NODENUMS.
 (defund vars-that-support-dag-nodes (nodenums dag-array-name dag-array dag-len)
   (declare (xargs :guard (and (nat-listp nodenums)
                               (pseudo-dag-arrayp dag-array-name dag-array dag-len)
@@ -89,6 +91,11 @@
   :rule-classes :type-prescription
   :hints (("Goal" :in-theory (enable vars-that-support-dag-nodes))))
 
+;;;
+;;; vars-that-support-dag-node
+;;;
+
+;; Returns the list of the vars that support NODENUM.
 (defun vars-that-support-dag-node (nodenum dag-array-name dag-array dag-len)
   (declare (xargs :guard (and (natp nodenum)
                               (pseudo-dag-arrayp dag-array-name dag-array dag-len)
