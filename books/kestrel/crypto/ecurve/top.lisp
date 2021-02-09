@@ -47,6 +47,7 @@
    short-weierstrass
    twisted-edwards
    montgomery
+   edwards-bls12
    secp256k1-domain-parameters
    secp256k1-types
    secp256k1

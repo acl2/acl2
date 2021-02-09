@@ -30,8 +30,6 @@
 
 (include-book "kestrel/prime-fields/prime-fields" :dir :system)
 
-(include-book "data-structures/deflist" :dir :system) ; for deflist
-
 (include-book "std/testing/assert-bang" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
