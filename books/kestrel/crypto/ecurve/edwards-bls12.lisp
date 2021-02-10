@@ -194,6 +194,11 @@
   (and (pointp x)
        (point-on-twisted-edwards-p x (edwards-bls12-curve)))
   ///
+
+  (defruled pointp-when-edwards-bls12-pointp
+    (implies (edwards-bls12-pointp x)
+             (pointp x)))
+
   (defruled point-finite-when-edwards-bls12-pointp
     (implies (edwards-bls12-pointp x)
              (equal (point-kind x) :finite))))
