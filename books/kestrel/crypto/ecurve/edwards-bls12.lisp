@@ -28,7 +28,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We define the curve used to implement group operations in Leo,
+    "We define the edwards-bls12 curve,
      as a constant value of the fixtype @(tsee twisted-edwards-curve)
      of twisted Edwards elliptic curves.
      We show that the curve is complete.")
