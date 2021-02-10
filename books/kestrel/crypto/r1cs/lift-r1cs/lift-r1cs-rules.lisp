@@ -514,9 +514,7 @@
                 (acl2::power-of-2p k)
                 (bitp x)
                 (unsigned-byte-p (+ -1 (acl2::integer-length k)) y)
-                (posp p)
-                (integerp z)
-                )
+                (posp p))
            (equal (add (mul k x p) y p)
                   (mod (acl2::bvcat 1 x (+ -1 (acl2::integer-length k)) y)
                        p)))
@@ -581,14 +579,6 @@
            (equal (mod (+ z y (- (mod k p))) p)
                   (mod (+ z y (- k)) p)))
   :hints (("Goal" :in-theory (enable acl2::mod-sum-cases))))
-
-(defthm use-power-of-2p-cheap
-  (implies (and (acl2::power-of-2p x)
-                (integerp x))
-           (equal (expt 2 (+ -1 (integer-length x)))
-                  x))
-  :rule-classes ((:rewrite :backchain-limit-lst (0 nil)))
-  :hints (("Goal" :in-theory (enable acl2::power-of-2p))))
 
 (defthm add-of-mul-of-negated-power-of-2-and-add
   (implies (and (syntaxp (quotep k))

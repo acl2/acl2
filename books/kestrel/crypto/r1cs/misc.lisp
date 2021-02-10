@@ -62,6 +62,7 @@
                             extra
                             p)
                        p)
+                  ;; why does this swap the order of the bvcats?:
                   (add (acl2::bvcat 1 bit 31 0)
                        (add (acl2::bvcat highsize highval lowsize lowval)
                             extra
@@ -70,14 +71,14 @@
   :hints (("Goal" :in-theory (enable acl2::bvcat acl2::logapp add acl2::power-of-2p mul neg))))
 
 ;drop the other?
-;; move the lowval into the 0 in other other bvcat
+;; moves the lowval into the 0 of the other bvcat
 (defthm add-of-bvcat-and-add-of-bvcat-combine-interloper-gen
   (implies (and (syntaxp (not (quotep lowval))) ;prevent loops (really we just care about 0)
-                (unsigned-byte-p lowsize lowval)
-                (<= lowsize 31)
-                (integerp extra)
-                (natp highsize)
                 (< lowsize lowsize2) ;todo: think about this, trying to make sure we make progress (we prefer the lowval to be in the first bvcat since there is extra space in the second cat)
+                (unsigned-byte-p lowsize lowval)
+                ;(<= lowsize 31) ;why?
+                ;(integerp extra)
+                (natp highsize)
                 (natp lowsize2))
            (equal (add (acl2::bvcat highsize highval lowsize 0)
                        ;; todo: why does the highval2 here intercede in the blake proof?
@@ -93,7 +94,7 @@
   :hints (("Goal" :in-theory (enable acl2::bvcat acl2::logapp add acl2::power-of-2p mul neg))))
 
 (defthmd bvcat-of-bitnot-and-bitnot
-  (equal (acl2::bvcat '1 (acl2::bitnot x) '1 (acl2::bitnot y))
+  (equal (acl2::bvcat 1 (acl2::bitnot x) 1 (acl2::bitnot y))
          (acl2::bvnot 2 (acl2::bvcat 1 x 1 y))))
 
 (defthmd bvcat-of-bvnot-and-bitnot
