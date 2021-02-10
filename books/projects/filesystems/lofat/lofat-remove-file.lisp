@@ -613,6 +613,13 @@
    (count-of-clusters fat32$c))
   :hints (("goal" :in-theory (enable lofat-remove-file))))
 
+(defthm lofat-remove-file-correctness-3
+  (natp (mv-nth 1
+                (lofat-remove-file fat32$c root-d-e path)))
+  :hints (("goal" :in-theory (enable lofat-remove-file
+                                     lofat-remove-file-helper)))
+  :rule-classes :type-prescription)
+
 (encapsulate
   ()
 
