@@ -279,6 +279,7 @@
     (:e stmt-return->value)
     (:e unop-fix)
     (:e unop-kind)
+    (:e valuep)
     (:e value-list-fix)
     (:e value-listp)
     (:e value-option-result-kind)
@@ -421,37 +422,37 @@
                     scope))
     :enable scope-result-ok->get)
 
-  (defruled value-result-kind-when-sintp
-    (implies (sintp x)
+  (defruled value-result-kind-when-valuep
+    (implies (valuep x)
              (equal (value-result-kind x)
                     :ok))
     :enable value-result-kind)
 
-  (defruled value-result-ok->get-when-sintp
-    (implies (sintp x)
+  (defruled value-result-ok->get-when-valuep
+    (implies (valuep x)
              (equal (value-result-ok->get x)
                     x))
     :enable value-result-ok->get)
 
-  (defruled value-result-fix-when-sintp
-    (implies (sintp x)
+  (defruled value-result-fix-when-valuep
+    (implies (valuep x)
              (equal (value-result-fix x)
                     x)))
 
-  (defruled value-result-ok-when-sintp
-    (implies (sintp x)
+  (defruled value-result-ok-when-valuep
+    (implies (valuep x)
              (equal (value-result-ok x)
                     x))
     :enable value-result-ok)
 
-  (defruled value-option-result-kind-when-sintp
-    (implies (sintp x)
+  (defruled value-option-result-kind-when-value-optionp
+    (implies (value-optionp x)
              (equal (value-option-result-kind x)
                     :ok))
     :enable value-option-result-kind)
 
-  (defruled value-option-result-ok->get-when-sintp
-    (implies (sintp x)
+  (defruled value-option-result-ok->get-when-value-optionp
+    (implies (value-optionp x)
              (equal (value-option-result-ok->get x)
                     x))
     :enable value-option-result-ok->get)
@@ -480,10 +481,10 @@
                     x))
     :enable compustate-result-ok->get)
 
-  (defruled not-errorp-when-sintp
-    (implies (sintp x)
+  (defruled not-errorp-when-valuep
+    (implies (valuep x)
              (not (errorp x)))
-    :enable (errorp sintp))
+    :enable (errorp valuep sintp ucharp))
 
   (defruled not-errorp-when-value-listp
     (implies (value-listp x)
@@ -494,6 +495,17 @@
     (implies (scope-listp x)
              (not (errorp x)))
     :enable errorp)
+
+  (defruled not-ucharp-when-sintp
+    (implies (sintp x)
+             (not (ucharp x)))
+    :enable (sintp ucharp))
+
+  (defruled value-kind-when-sintp
+    (implies (sintp x)
+             (equal (value-kind x)
+                    :sint))
+    :enable value-kind)
 
   (defruled len-of-cons
     (equal (len (cons x y))
@@ -522,7 +534,19 @@
   (defruled value-result-ok->get-of-if
     (equal (value-result-ok->get (if a b c))
            (if a (value-result-ok->get b) (value-result-ok->get c)))
-    :enable value-result-ok->get))
+    :enable value-result-ok->get)
+
+  (defruled value-result-fix-of-if
+    (equal (value-result-fix (if a b c))
+           (if a (value-result-fix b) (value-result-fix c))))
+
+  (defruled errorp-of-if
+    (equal (errorp (if a b c))
+           (if a (errorp b) (errorp c))))
+
+  (defruled ucharp-of-if
+    (equal (ucharp (if a b c))
+           (if a (ucharp b) (ucharp c)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -577,25 +601,30 @@
     compustate-result-kind-when-compustatep
     compustate-result-ok->get-when-compustatep
     len-of-cons
-    not-errorp-when-sintp
+    not-errorp-when-valuep
     not-errorp-when-value-listp
     not-errorp-when-scope-listp
+    not-ucharp-when-sintp
     scope-result-kind-when-scopep
     scope-result-ok->get-when-scopep
     sint-nonzerop-of-0
     sint-nonzerop-of-1
     sint-lognot-of-0
     sint-lognot-of-1
-    value-option-result-kind-when-sintp
-    value-option-result-ok->get-when-sintp
+    value-kind-when-sintp
+    value-option-result-kind-when-value-optionp
+    value-option-result-ok->get-when-value-optionp
     value-list-result-kind-when-value-listp
     value-list-result-ok->get-when-value-listp
-    value-result-fix-when-sintp
-    value-result-kind-when-sintp
-    value-result-ok->get-when-sintp
-    value-result-ok-when-sintp
+    value-result-fix-when-valuep
+    value-result-kind-when-valuep
+    value-result-ok->get-when-valuep
+    value-result-ok-when-valuep
     value-result-kind-of-if
     value-result-ok->get-of-if
+    value-result-fix-of-if
+    errorp-of-if
+    ucharp-of-if
     ;; introduced elsewhere:
     car-cons
     cdr-cons
@@ -637,9 +666,11 @@
     sintp-of-sint-bitxor
     sintp-of-sint-bitior
     top-frame-of-push-frame
+    valuep-when-sintp
+    value-fix-when-valuep
     value-listp-of-cons
     value-list-fix-of-cons
-    value-optionp-when-sintp))
+    value-optionp-when-valuep))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
