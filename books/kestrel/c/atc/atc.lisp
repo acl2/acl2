@@ -89,6 +89,8 @@
 
   (xdoc::evmac-topic-implementation-item-input "output-file")
 
+  (xdoc::evmac-topic-implementation-item-input "proofs")
+
   (xdoc::evmac-topic-implementation-item-input "print")
 
   "@('print-info/all') is a boolean flag indicating whether
@@ -251,6 +253,7 @@
                (val "A @('(tuple (fn1...fnp symbol-listp)
                                  (const symbolp)
                                  (output-file stringp)
+                                 (proofs booleanp)
                                  (print evmac-input-print-p)
                                  (print-info/all booleanp)
                                  val)').")
@@ -273,6 +276,12 @@
         (if output-file-option
             (mv (cdr output-file-option) t)
           (mv :irrelevant nil)))
+       (proofs-option (assoc-eq :proofs options))
+       (proofs (if proofs-option
+                   (cdr proofs-option)
+                 t))
+       ((er &)
+        (acl2::ensure-value-is-boolean$ proofs "The :PROOFS input" t nil))
        (print-option (assoc-eq :print options))
        (print (if print-option
                   (cdr print-option)
@@ -289,6 +298,7 @@
     (value (list fn1...fnp
                  const
                  output-file
+                 proofs
                  print
                  print-info/all))))
 
@@ -1549,12 +1559,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-wf-thm ((const symbolp)
+                        (proofs booleanp)
                         (print-info/all booleanp)
                         ctx
                         state)
   :returns (mv erp
-               (val "A @('(tuple (local-event pseudo-event-formp)
-                                 (exported-event pseudo-event-formp)
+               (val "A @('(tuple (local-event? pseudo-event-form-listp)
+                                 (exported-event? pseudo-event-form-listp)
                                  val)').")
                state)
   :mode :program
@@ -1567,8 +1578,12 @@
     "Since this is a ground theorem,
      we expect that it should be easily provable
      using just the executable counterpart of @(tsee transunit-check),
-     which is an executable function."))
-  (b* ((name (add-suffix const "-WELL-FORMED"))
+     which is an executable function.")
+   (xdoc::p
+    "We generate singleton lists of events if @(':proofs') is @('t'),
+     empty lists otherwise."))
+  (b* (((unless proofs) (value (list nil nil)))
+       (name (add-suffix const "-WELL-FORMED"))
        ((er &) (acl2::ensure-symbol-is-fresh-event-name$
                 name
                 (msg "The constant name ~x0 ~
@@ -1593,19 +1608,21 @@
        (local-event `(progn ,@progress-start?
                             ,local-event
                             ,@progress-end?)))
-    (value (list local-event exported-event))))
+    (value (list (list local-event)
+                 (list exported-event)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-fn-thm ((fn symbolp)
                         (prec-fns symbol-listp)
                         (const symbolp)
+                        (proofs booleanp)
                         (print-info/all booleanp)
                         ctx
                         state)
   :returns (mv erp
-               (val "A @('(tuple (local-event pseudo-event-formp)
-                                 (exported-event pseudo-event-formp)
+               (val "A @('(tuple (local-event? pseudo-event-form-listp)
+                                 (exported-event? pseudo-event-form-listp)
                                  val)').")
                state)
   :mode :program
@@ -1650,8 +1667,12 @@
      with the rule @('omap::in-when-in-tail'),
      which we therefore disable in the generated hints.
      Clearly, the current proofs are brittle;
-     we plan to generate much more robust and compositional proofs soon."))
-  (b* ((name (acl2::packn (list const "-" (symbol-name fn) "-CORRECT")))
+     we plan to generate much more robust and compositional proofs soon.")
+   (xdoc::p
+    "We generate singleton lists of events if @(':proofs') is @('t'),
+     empty lists otherwise."))
+  (b* (((unless proofs) (value (list nil nil)))
+       (name (acl2::packn (list const "-" (symbol-name fn) "-CORRECT")))
        ((er &) (acl2::ensure-symbol-is-fresh-event-name$
                 name
                 (msg "The constant name ~x0 ~
@@ -1727,14 +1748,16 @@
        (local-event `(progn ,@progress-start?
                             ,local-event
                             ,@progress-end?)))
-    (value (list local-event exported-event))))
+    (value (list (list local-event)
+                 (list exported-event)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-fn-thm-list ((fns symbol-listp)
                              (prec-fns symbol-listp)
                              (const symbolp)
-                             (print evmac-input-print-p)
+                             (proofs booleanp)
+                             (print-info/all booleanp)
                              ctx
                              state)
   :returns (mv erp
@@ -1744,23 +1767,25 @@
                state)
   :mode :program
   :short "Lift @(tsee atc-gen-fn-thm) to lists."
-  (b* (((when (endp fns)) (value (list nil nil nil)))
-       ((er (list local-event exported-event))
+  (b* (((when (endp fns)) (value (list nil nil)))
+       ((er (list local-event? exported-event?))
         (atc-gen-fn-thm (car fns)
                         prec-fns
                         const
-                        print
+                        proofs
+                        print-info/all
                         ctx
                         state))
-       ((er (list local-events exported-events))
+       ((er (list local-events? exported-events?))
         (atc-gen-fn-thm-list (cdr fns)
                              (cons (car fns) prec-fns)
                              const
-                             print
+                             proofs
+                             print-info/all
                              ctx
                              state)))
-    (value (list (cons local-event local-events)
-                 (cons exported-event exported-events)))))
+    (value (list (append local-event? local-events?)
+                 (append exported-event? exported-events?)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1831,16 +1856,19 @@
 (define atc-gen-print-result ((const-event pseudo-event-formp)
                               (wf-thm-event pseudo-event-formp)
                               (fn-thm-events pseudo-event-form-listp)
-                              (output-file stringp))
+                              (output-file stringp)
+                              (proofs booleanp))
   :returns (events pseudo-event-form-listp)
   :short "Generate the events to print the results of ATC."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is used only if @(':print') is at least @(':result')."))
-  (append (list `(cw-event "~%~x0~|" ',const-event)
-                `(cw-event "~%~x0~|" ',wf-thm-event))
-          (atc-gen-print-result-aux fn-thm-events)
+  (append (list `(cw-event "~%~x0~|" ',const-event))
+          (and proofs
+               (list `(cw-event "~%~x0~|" ',wf-thm-event)))
+          (and proofs
+               (atc-gen-print-result-aux fn-thm-events))
           (list `(cw-event "~%File ~s0.~%" ,output-file)))
 
   :prepwork
@@ -1856,6 +1884,7 @@
                             (const symbolp)
                             (output-file stringp)
                             (print evmac-input-print-p)
+                            (proofs booleanp)
                             (print-info/all booleanp)
                             (call pseudo-event-formp)
                             ctx
@@ -1872,29 +1901,31 @@
   (b* (((er tunit) (atc-gen-transunit fn1...fnp ctx state))
        ((mv local-const-event exported-const-event)
         (atc-gen-const const tunit print-info/all))
-       ((er (list wf-thm-local-event wf-thm-exported-event))
-        (atc-gen-wf-thm const print-info/all ctx state))
-       ((er (list fn-thm-local-events fn-thm-exported-events))
-        (atc-gen-fn-thm-list fn1...fnp nil const print-info/all ctx state))
+       ((er (list wf-thm-local-event? wf-thm-exported-event?))
+        (atc-gen-wf-thm const proofs print-info/all ctx state))
+       ((er (list fn-thm-local-events? fn-thm-exported-events?))
+        (atc-gen-fn-thm-list fn1...fnp nil const proofs print-info/all
+                             ctx state))
        ((er file-gen-event) (atc-gen-file-event tunit
                                                 output-file
                                                 print-info/all
                                                 state))
        (print-events (and (member-eq print '(:result :info :all))
                           (atc-gen-print-result exported-const-event
-                                                wf-thm-exported-event
-                                                fn-thm-exported-events
-                                                output-file)))
+                                                wf-thm-exported-event?
+                                                fn-thm-exported-events?
+                                                output-file
+                                                proofs)))
        (encapsulate
          `(encapsulate ()
             (evmac-prepare-proofs)
             ,local-const-event
             ,exported-const-event
-            ,wf-thm-local-event
-            ,wf-thm-exported-event
+            ,@wf-thm-local-event?
+            ,@wf-thm-exported-event?
             (local (acl2::use-trivial-ancestors-check))
-            ,@fn-thm-local-events
-            ,@fn-thm-exported-events
+            ,@fn-thm-local-events?
+            ,@fn-thm-exported-events?
             ,file-gen-event))
        (encapsulate+ (acl2::restore-output? (eq print :all) encapsulate))
        (info (make-atc-call-info :encapsulate encapsulate))
@@ -1916,12 +1947,13 @@
           generate the constant definition and the C file."
   (b* (((when (atc-table-lookup call (w state)))
         (value '(value-triple :redundant)))
-       ((er (list fn1...fnp const output-file print print-info/all))
+       ((er (list fn1...fnp const output-file proofs print print-info/all))
         (atc-process-inputs args ctx state)))
     (atc-gen-everything fn1...fnp
                         const
                         output-file
                         print
+                        proofs
                         print-info/all
                         call
                         ctx

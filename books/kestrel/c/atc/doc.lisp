@@ -51,6 +51,7 @@
      "(atc fn1 ... fn"
      "     :const-name  ...  ; default :auto"
      "     :output-file ...  ; no default"
+     "     :proofs      ...  ; default t"
      "     :print       ...  ; default :result"
      "  )"))
 
@@ -83,6 +84,22 @@
      (xdoc::p
       "In the rest of this documentation page,
        let @('*const*') be the symbol specified by this input."))
+
+    (xdoc::desc
+     "@(':proofs') &mdash; default @('t')"
+     (xdoc::p
+      "Specifies whether proofs should be generated or not.")
+     (xdoc::p
+      "This must be one of the following:")
+     (xdoc::ul
+      (xdoc::li
+       "@('t'), to generate proofs.")
+      (xdoc::li
+       "@('nil'), to not generate proofs."))
+     (xdoc::p
+      "While it is obviously recommended to generate proofs,
+       setting this to @('nil') may be useful
+       in case proof generation is (temporarily) broken."))
 
     (xdoc::desc
      "@(':output-file') &mdash; no default"
@@ -458,6 +475,9 @@
        the generated (abstract syntax tree of the) translation unit
        is statically well-formed,
        i.e. it compiles according to [C].")
+     (xdoc::p
+      "If the @(':proofs') input is @('nil'),
+       this theorem is not generated.")
 
      (xdoc::p
       "For each target function @('fn'), ATC generates an event")
@@ -470,7 +490,10 @@
        the C function generated from @('fn')
        yields the same result as the function @('fn').
        That is,
-       the C function is functionally equivalent to the ACL2 function.")))
+       the C function is functionally equivalent to the ACL2 function.")
+     (xdoc::p
+      "If the @(':proofs') input is @('nil'),
+       this theorem is not generated.")))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
