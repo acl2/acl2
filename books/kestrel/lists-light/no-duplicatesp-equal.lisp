@@ -12,6 +12,7 @@
 (in-package "ACL2")
 
 (local (include-book "member-equal"))
+(local (include-book "intersection-equal"))
 
 (in-theory (disable no-duplicatesp-equal))
 
@@ -70,5 +71,31 @@
 
 (defthm no-duplicatesp-equal-of-true-list-fix
   (equal (no-duplicatesp-equal (true-list-fix x))
+         (no-duplicatesp-equal x))
+  :hints (("Goal" :in-theory (enable no-duplicatesp-equal))))
+
+(local
+ (defthm not-no-duplicatesp-equal-of-revappend-helper
+   (implies (not (no-duplicatesp-equal y))
+            (not (no-duplicatesp-equal (revappend x y))))
+   :hints (("Goal" :in-theory (enable no-duplicatesp-equal revappend)))))
+
+(local
+ (defthm not-no-duplicatesp-equal-of-revappend-helper2
+   (implies (and (member-equal a x)
+                 (member-equal a y))
+            (not (no-duplicatesp-equal (revappend x y))))
+   :hints (("Goal" :in-theory (enable no-duplicatesp-equal revappend)))))
+
+(defthm no-duplicatesp-equal-of-revappend
+  (equal (no-duplicatesp-equal (revappend x y))
+         (and (no-duplicatesp-equal x)
+              (no-duplicatesp-equal y)
+              (not (intersection-equal x y))))
+  :hints (("Goal" :in-theory (e/d (no-duplicatesp-equal revappend)
+                                  (intersection-equal)))))
+
+(defthm no-duplicatesp-equal-of-reverse
+  (equal (no-duplicatesp-equal (reverse x))
          (no-duplicatesp-equal x))
   :hints (("Goal" :in-theory (enable no-duplicatesp-equal))))

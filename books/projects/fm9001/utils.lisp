@@ -18,12 +18,6 @@
 ; The atoms of the DE description language are symbols.  We define
 ; functions to aid their manipulation.
 
-;; (defthm alistp-symbol-listp-symbol-alistp-are-true-listp
-;;   (implies (or (alistp        lst)
-;; 	       (symbol-listp  lst)
-;; 	       (symbol-alistp lst))
-;; 	   (true-listp lst)))
-
 (defun true-list-alistp (x)
   (declare (xargs :guard t))
   (cond ((atom x) (eq x nil))

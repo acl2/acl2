@@ -5,7 +5,7 @@
 ;; See the README for historical information.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; October 2016
+;; February 2021
 
 (in-package "FM9001")
 
@@ -448,6 +448,28 @@ Register Numbers for "a" and "b".
 (defund flags (st)
   (declare (xargs :guard (true-listp st)))
   (nth 1 st))
+
+;; Pretty print the FM9001 state
+
+(defund st-pprint (st)
+  (declare (xargs :guard t))
+  (if (atom st)
+      st
+    (if (bvp st)
+        (v-to-nat st)
+      (cons (st-pprint (car st))
+            (st-pprint (cdr st))))))
+
+(defund fm9001-state-pprint (st)
+  (declare (xargs :guard (true-list-listp st)))
+  (st-pprint
+   (list "Processor state:"
+         (list "Register file:"
+               (caar st)
+               "Flags:"
+               (cadar st))
+         "Memory state:"
+         (cadr st))))
 
 ;; ======================================================================
 

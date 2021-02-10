@@ -19,63 +19,78 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; This file contains a specification of the BabyJubjub elliptic curve.
-;; This curve was defined by Barry Whitehat:
-;; https://github.com/barryWhiteHat/baby_jubjub
-
-;; From that repo:
-;;   It is the twisted Edwards curve
-;;     168700.x^2 + y^2 = 1 + 168696.x^2.y^2
-;;   of rational points over
-;;   GF(21888242871839275222246405745257275088548364400416034343698204186575808495617)
-;; and, that repo also shows it satisfies the SafeCurves criteria.
+(defxdoc+ baby-jubjub
+  :parents (semaphore)
+  :short "The BabyJubjub complete twisted Edwards curve."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This curve was defined by Barry Whitehat:")
+   (xdoc::p
+    (xdoc::ahref "https://github.com/barryWhiteHat/baby_jubjub"
+                 "https://github.com/barryWhiteHat/baby_jubjub"))
+   (xdoc::p
+    "From that repo:")
+   (xdoc::codeblock
+    "It is the twisted Edwards curve"
+    " 168700.x^2 + y^2 = 1 + 168696.x^2.y^2"
+    "of rational points over"
+    "GF(21888242871839275222246405745257275088548364400416034343698204186575808495617)")
+   (xdoc::p
+    "That repo also shows that it satisfies the SafeCurves criteria."))
+  :order-subtopics t
+  :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; The prime that defines the field over which BabyJubjub is defined.
-
-; This is primes::bn-254-group-prime,
-; but we introduce a BabyJubjub-specific nullary function for it there.
-
 (define baby-jubjub-prime ()
   :returns (prime rtl::primep)
+  :short "The prime that defines the field over which BabyJubjub is defined."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is @('primes::bn-254-group-prime'),
+     but we introduce a BabyJubjub-specific nullary function for it here.")
+   (xdoc::p
+    "This prime is 254 bits long.")
+   (xdoc::p
+    "The fact that this prims mod 4 is 1 is relevant for EdDSA.")
+   (xdoc::p
+    "The fact that this prime mod 8 is 1
+     means there is no simple formula for modular square root.
+     However, there are reasonably efficient algorithms
+     that require a starting non-residue.
+     For a fixed prime we can often get a starting non-residue from the table
+     in "
+    (xdoc::ahref "https://en.wikipedia.org/wiki/Quadratic_residue"
+                 "https://en.wikipedia.org/wiki/Quadratic_residue")
+    ". It is the case that 5 is a quadratic non-residue for this prime."))
   (primes::bn-254-group-prime)
   ///
+
+  (assert-event (equal (integer-length (baby-jubjub-prime)) 254))
+
+  (assert-event (equal (mod (baby-jubjub-prime) 4) 1))
+
+  (assert-event (equal (mod (baby-jubjub-prime) 8) 1))
 
   (defrule baby-jubjub-prime-not-two
     (not (equal (baby-jubjub-prime) 2)))
 
   (in-theory (disable (:e baby-jubjub-prime))))
 
-; This prime is 254 bits long.
-
-(assert-event (equal (integer-length (baby-jubjub-prime)) 254))
-
-; The following fact (i.e. prime mod 4 = 1) is relevant for EdDSA.
-
-(assert-event (equal (mod (baby-jubjub-prime) 4) 1))
-
-; The following fact (i.e. prime mod 8 = 1)
-; means there is no simple formula for modular square root.
-
-(assert-event (equal (mod (baby-jubjub-prime) 8) 1))
-
-; However, there are reasonably efficient algorithms
-; that require a starting non-residue.
-; For a fixed prime we can often get a starting non-residue from the table
-; in https://en.wikipedia.org/wiki/Quadratic_residue.
-; It is the case that 5 is a quadratic non-residue for this prime.
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; The coefficient a of the twisted Edwards equation of BabyJubjub.
-; This is not zero and is a square.
-; We show that it is a square by exhibiting a square root,
-; found using Mathematica's PowerMod.
 
 (define baby-jubjub-a ()
   :returns (a (fep a (baby-jubjub-prime))
               :hints (("Goal" :in-theory (enable fep baby-jubjub-prime))))
+  :short "The coefficient @($a$) of the twisted Edwards equation of BabyJubjub."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is not zero and is a square.
+     We show that it is a square by exhibiting a square root,
+     found using Mathematica's PowerMod."))
   168700
   ///
 
@@ -96,18 +111,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; The coefficient d of the twisted Edwards equation of BabyJubjub.
-; This is not zero, is different from a, and is not a square.
-; We show that it is not a square using Euler's criterion:
-; we use the fast modular exponentiation operation
-; from the arithmetic-3 library
-; to calculate the modular exponentiation of the coefficient,
-; which must be different from 1
-; in order for the criterion to apply.
-
 (define baby-jubjub-d ()
   :returns (d (fep d (baby-jubjub-prime))
               :hints (("Goal" :in-theory (enable fep baby-jubjub-prime))))
+  :short "The coefficient @($d$) of the twisted Edwards equation of BabyJubjub."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is not zero, is different from @($a$), and is not a square.
+     We show that it is not a square using Euler's criterion:
+     we use the fast modular exponentiation operation
+     from the @('arithmetic-3') library
+     to calculate the modular exponentiation of the coefficient,
+     which must be different from 1
+     in order for the criterion to apply."))
   168696
   ///
 
@@ -152,13 +169,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; This is the BabyJubjub curve.
-; The fact that a is a square and d is not a square (see above)
-; means that BabyJubjub is a complete twisted Edwards curve,
-; i.e. the addition formula is complete (works for all points).
-
 (define baby-jubjub-curve ()
   :returns (curve twisted-edwards-curvep)
+  :short "The BabyJubjub curve."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The fact that a is a square and d is not a square
+     (see @(tsee baby-jubjub-a) and @(tsee baby-jubjub-d))
+     means that BabyJubjub is a complete twisted Edwards curve,
+     i.e. the addition formula is complete (works for all points)."))
   (make-twisted-edwards-curve :p (baby-jubjub-prime)
                               :a (baby-jubjub-a)
                               :d (baby-jubjub-d))
@@ -184,29 +204,45 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; BabyJubjub, as the twisted Edwards curve with a = 168700 and d = 168696,
-;; is birationally equivalent to
-;; the Montgomery curve with
-;; A = 2(a+d)/(a-d) = 2*(168700 + 168696)/(168700 - 168696) = 168698
-;; B = 4/(a-d) = 1
-;; So the Montgomery curve is y^2 = x^3 + 168698x^2 + x
-;;
-;; Now, represent that in Weierstrass form:
-;; [a1,a2,a3,a4,a6] in the Weierstrass equation:
-;; y^2 + a1*x*y + a3*y = x^3 + a2*x^2 + a4*x + a6
-;; a1=0, a3=0, a2=168698, a4=1, a6=0
-;; [0,168698,0,1,0]
-;;
-;; In Sage, which can be used at:
-;;   https://sagecell.sagemath.org/
-;; Type this Sage code:
-;;   P = 21888242871839275222246405745257275088548364400416034343698204186575808495617
-;;   E = EllipticCurve(GF(P),[0,168698,0,1,0])
-;;   E.cardinality()
-;; Clicking the Evaluate button will yield baby-jubjub-order:
-
 (define baby-jubjub-order ()
   :returns (order natp)
+  :short "Order (i.e. number of points) of the BabyJubjub curve."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "BabyJubjub, as the twisted Edwards curve with
+     @($a = 168700$) and @($d = 168696$),
+     is birationally equivalent to
+     the Montgomery curve with")
+   (xdoc::@[]
+    "\\begin{array}{l}
+     A = 2(a+d)/(a-d) = 2*(168700 + 168696)/(168700 - 168696) = 168698
+     \\\\
+     B = 4/(a-d) = 1
+     \\end{array}")
+   (xdoc::p
+    "So the Montgomery curve is")
+   (xdoc::@[]
+    "y^2 = x^3 + 168698x^2 + x")
+   (xdoc::p
+    "Now, represent that in Weierstrass form:")
+   (xdoc::@[]
+    "y^2 + a_1 x y + a_3 y = x^3 + a_2 x^2 + a_4 x + a_6")
+   (xdoc::p
+    "We have:")
+   (xdoc::@[]
+    "[a_1, a_2, a_3, a_4, a_6] = [0, 168698, 0, 1, 0]")
+   (xdoc::p
+    "In Sage, which can be used at "
+    (xdoc::ahref "https://sagecell.sagemath.org"
+                 "https://sagecell.sagemath.org")
+    ", type this Sage code:")
+   (xdoc::codeblock
+    "P = 21888242871839275222246405745257275088548364400416034343698204186575808495617"
+    "E = EllipticCurve(GF(P),[0,168698,0,1,0])"
+    "E.cardinality()")
+   (xdoc::p
+    "Clicking the `Evaluate' button will yield BabyJubjub order."))
   21888242871839275222246405745257275088614511777268538073601725287587578984328
   ///
 
@@ -214,28 +250,87 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; RFC 8032 (*) says the order of the curve should be 2^c.l where l is a large prime.
-;; The prime factorization of this n is:
-;;   2^3 * 2736030358979909402780800718157159386076813972158567259200215660948447373041
-;; so this looks suitable for EdDSA.
-;; (*) https://tools.ietf.org/html/rfc8032
-;;     Edwards-Curve Digital Signature Algorithm (EdDSA)
-;;
-;; Also, SafeCurves requires l to be at least 2^200.
-;; (integer-length 2736030358979909402780800718157159386076813972158567259200215660948447373041)
-;; => 251
-
-; This is primes::baby-jubjub-subgroup-prime,
-; but we introduce a shorter synonym for it here,
-; which conveys that it is the order divided by 8.
-
 (define baby-jubjub-order/8 ()
   :returns (order/8 rtl::primep)
+  :short "The prime that is 1/8th of the order of BabyJubjub."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    (xdoc::ahref "https://tools.ietf.org/html/rfc8032" "RFC 8032")
+    " says the order of the curve should be
+     @($2^c l$) where @($l$) is a large prime.
+     The prime factorization of @(tsee baby-jubjub-order) is")
+   (xdoc::@[]
+    "2^3 \\times
+     2736030358979909402780800718157159386076813972158567259200215660948447373041")
+   (xdoc::p
+    "so this looks suitable for the
+     Edwards-Curve Digital Signature Algorithm (EdDSA).")
+   (xdoc::p
+    "Also, SafeCurves requires @($l$) to be at least @($2^200$).
+     The length of this prime is 251.")
+   (xdoc::p
+    "This prime is @('primes::baby-jubjub-subgroup-prime'),
+     but we introduce a shorter synonym for it here,
+     which conveys that it is the BabyJubjub order divided by 8."))
   (primes::baby-jubjub-subgroup-prime)
   ///
 
+  (assert-event (equal (integer-length (baby-jubjub-order/8)) 251))
+
+  (assert-event (equal (baby-jubjub-order/8) (/ (baby-jubjub-order) 8)))
+
   (in-theory (disable (:e baby-jubjub-order/8))))
 
-(assert-event (equal (integer-length (baby-jubjub-order/8)) 251))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-event (equal (baby-jubjub-order/8) (/ (baby-jubjub-order) 8)))
+(define point-on-baby-jubjub-p ((point ecurve::pointp))
+  :returns (yes/no booleanp)
+  :short "Check if a point is on BabyJubjub."
+  (ecurve::point-on-twisted-edwards-p point (baby-jubjub-curve))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define baby-jubjub-pointp (x)
+  :returns (yes/no booleanp)
+  :short "Recognize the points on the BabyJubjub curve."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are all finite points."))
+  (and (ecurve::pointp x)
+       (point-on-baby-jubjub-p x))
+  :hooks (:fix)
+  ///
+  (defruled point-finite-when-baby-jubjub-pointp
+    (implies (baby-jubjub-pointp x)
+             (equal (ecurve::point-kind x) :finite))
+    :enable point-on-baby-jubjub-p))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define baby-jubjub-mul ((scalar integerp) (point baby-jubjub-pointp))
+  :returns (point1 baby-jubjub-pointp
+                   :hyp (baby-jubjub-pointp point)
+                   :hints (("Goal" :in-theory (enable baby-jubjub-pointp
+                                                      point-on-baby-jubjub-p))))
+  :short "Scalar multiplication on BabyJubjub."
+  (ecurve::twisted-edwards-mul scalar point (baby-jubjub-curve))
+  :guard-hints (("Goal" :in-theory (enable baby-jubjub-pointp
+                                           point-on-baby-jubjub-p)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define baby-jubjub-add ((point1 baby-jubjub-pointp)
+                         (point2 baby-jubjub-pointp))
+  :returns (point baby-jubjub-pointp
+                  :hyp (and (baby-jubjub-pointp point1)
+                            (baby-jubjub-pointp point2))
+                  :hints (("Goal" :in-theory (enable baby-jubjub-pointp
+                                                     point-on-baby-jubjub-p))))
+  :short "Group addition on BabyJubjub."
+  (ecurve::twisted-edwards-add point1 point2 (baby-jubjub-curve))
+  :guard-hints (("Goal" :in-theory (enable baby-jubjub-pointp
+                                           point-on-baby-jubjub-p))))

@@ -5,7 +5,7 @@
 ;; See the README for historical information.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; October 2016
+;; February 2021
 
 (in-package "FM9001")
 
@@ -114,6 +114,11 @@
   (implies (bvp a)
            (equal (bvp (append a b))
                   (bvp b))))
+
+(defthm bvp-rev
+  (implies (bvp x)
+           (bvp (rev x)))
+  :hints (("Goal" :in-theory (enable rev))))
 
 (defthm bvp-is-true-listp
   (implies (bvp x)

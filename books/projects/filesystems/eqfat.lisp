@@ -522,6 +522,16 @@ channel state))
     (lofat-find-file
      fat32$c (make-d-e-list contents) (cdr path))))
 
+(defthm
+  lofat-find-file-correctness-4
+  (implies
+   (lofat-directory-file-p (mv-nth 0
+                                   (lofat-find-file fat32$c d-e-list path)))
+   (d-e-list-p
+    (lofat-file->contents (mv-nth 0
+                                  (lofat-find-file fat32$c d-e-list path)))))
+  :hints (("goal" :in-theory (enable lofat-find-file))))
+
 (local
  (defthm
    lofat-find-file-correctness-1-lemma-2

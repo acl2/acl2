@@ -14,6 +14,23 @@
                               (file-table-p file-table))))
   (hifat-open path fd-table file-table))
 
+(defthm lofat-open-correctness-1
+  (and
+   (natp (mv-nth 2
+                 (lofat-open path fd-table file-table)))
+   (integerp (mv-nth 3
+                     (lofat-open path fd-table file-table))))
+  :hints (("goal" :in-theory (enable lofat-open hifat-open)))
+  :rule-classes
+  ((:type-prescription
+    :corollary
+    (natp (mv-nth 2
+                  (lofat-open path fd-table file-table))))
+   (:type-prescription
+    :corollary
+    (integerp (mv-nth 3
+                      (lofat-open path fd-table file-table))))))
+
 (defthmd
   lofat-open-refinement
   (implies
@@ -93,7 +110,7 @@
                  fat32$c fd-table file-table)
     (and (stringp buf)
          (integerp ret)
-         (integerp error-code)
+         (natp error-code)
          (implies (>= ret 0)
                   (equal (length buf) ret))))
   :hints (("goal" :in-theory (enable lofat-pread)))
@@ -133,7 +150,7 @@
                    fat32$c fd-table file-table))))
    (:type-prescription
     :corollary
-    (integerp
+    (natp
      (mv-nth 2
              (lofat-pread fd count offset fat32$c
                           fd-table file-table))))))
@@ -288,13 +305,23 @@
     (unsigned-byte-p 32 (length x)))
    (equal (lofat-file-contents-fix x) x)))
 
-(defthm
-  struct-stat-p-of-lofat-lstat
-  (struct-stat-p
-   (mv-nth 0
-           (lofat-lstat fat32$c
-                        (path-to-fat32-path (explode path)))))
-  :hints (("goal" :in-theory (enable lofat-lstat))))
+(defthm lofat-lstat-correctness-1
+  (and
+   (struct-stat-p (mv-nth 0 (lofat-lstat fat32$c path)))
+   (integerp (mv-nth 1 (lofat-lstat fat32$c path)))
+   (natp (mv-nth 2 (lofat-lstat fat32$c path))))
+  :hints (("goal" :do-not-induct t
+           :in-theory (enable lofat-lstat)))
+  :rule-classes
+  ((:rewrite
+    :corollary
+    (struct-stat-p (mv-nth 0 (lofat-lstat fat32$c path))))
+   (:type-prescription
+    :corollary
+    (integerp (mv-nth 1 (lofat-lstat fat32$c path))))
+   (:type-prescription
+    :corollary
+    (natp (mv-nth 2 (lofat-lstat fat32$c path))))))
 
 (defthm
   lofat-lstat-refinement
@@ -367,6 +394,23 @@
            (lofat-fs-p
             (mv-nth 0 (lofat-unlink fat32$c path))))
   :hints (("Goal" :in-theory (enable lofat-unlink)) ))
+
+(defthm lofat-unlink-correctness-1
+  (and
+   (integerp (mv-nth 1
+                     (lofat-unlink fat32$c path)))
+   (natp (mv-nth 2
+                 (lofat-unlink fat32$c path))))
+  :hints (("goal" :in-theory (enable lofat-unlink)))
+  :rule-classes
+  ((:type-prescription
+    :corollary
+    (integerp (mv-nth 1
+                      (lofat-unlink fat32$c path))))
+   (:type-prescription
+    :corollary
+    (natp (mv-nth 2
+                  (lofat-unlink fat32$c path))))))
 
 (defthm
   lofat-unlink-refinement-lemma-1
@@ -1521,10 +1565,23 @@
         error-code)))
 
 (defthm integerp-of-lofat-pwrite
-  (integerp (mv-nth 1 (lofat-pwrite fd buf offset fat32$c fd-table
-                                    file-table)))
+  (and
+   (integerp (mv-nth 1 (lofat-pwrite fd buf offset fat32$c fd-table
+                                     file-table)))
+   (natp (mv-nth 2
+                 (lofat-pwrite fd buf
+                               offset fat32$c fd-table file-table))))
   :hints (("Goal" :in-theory (enable lofat-pwrite)) )
-  :rule-classes :type-prescription)
+  :rule-classes
+  ((:type-prescription
+    :corollary
+    (integerp (mv-nth 1 (lofat-pwrite fd buf offset fat32$c fd-table
+                                      file-table))))
+   (:type-prescription
+    :corollary
+    (natp (mv-nth 2
+                  (lofat-pwrite fd buf
+                                offset fat32$c fd-table file-table))))))
 
 (defthm lofat-fs-p-of-lofat-pwrite
   (implies
@@ -1581,6 +1638,20 @@
   :hints (("goal" :in-theory (e/d (lofat-mkdir)
                                   (nth make-list-ac-removal)))))
 
+(defthm lofat-mkdir-correctness-1
+  (and
+   (integerp (mv-nth 1 (lofat-mkdir fat32$c path)))
+   (natp (mv-nth 2
+                 (lofat-mkdir fat32$c path))))
+  :hints (("goal" :do-not-induct t
+           :in-theory (enable lofat-mkdir)))
+  :rule-classes ((:type-prescription
+                  :corollary
+                  (integerp (mv-nth 1 (lofat-mkdir fat32$c path))))
+                 (:type-prescription
+                  :corollary
+                  (natp (mv-nth 2 (lofat-mkdir fat32$c path))))))
+
 ;; Semantics under consideration: each directory stream is a list of directory
 ;; entries, and each readdir operation removes a directory entry from the front
 ;; of the list, never to be seen again until a new directory stream should be
@@ -1614,6 +1685,29 @@
         (find-new-index (strip-cars dirstream-table))))
     (mv
      (cons (cons dirstream-table-index (lofat-file->contents file))
-      dirstream-table-index)
+      dirstream-table)
      dirstream-table-index
      0)))
+
+(defthm lofat-opendir-correctness-1
+  (and
+   (dirstream-table-p (mv-nth 0
+                              (lofat-opendir fat32$c dirstream-table path)))
+   (integerp (mv-nth 1
+                     (lofat-opendir fat32$c dirstream-table path)))
+   (integerp (mv-nth 2
+                     (lofat-opendir fat32$c dirstream-table path))))
+  :hints (("goal" :do-not-induct t
+           :in-theory (enable lofat-opendir)))
+  :rule-classes
+  ((:rewrite :corollary
+             (dirstream-table-p (mv-nth 0
+                                        (lofat-opendir fat32$c dirstream-table path))))
+   (:type-prescription
+    :corollary
+    (integerp (mv-nth 1
+                      (lofat-opendir fat32$c dirstream-table path))))
+   (:type-prescription
+    :corollary
+    (integerp (mv-nth 2
+                      (lofat-opendir fat32$c dirstream-table path))))))

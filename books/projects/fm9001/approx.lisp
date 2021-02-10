@@ -5,7 +5,7 @@
 ;; See the README for historical information.
 
 ;; Cuong Chau <ckcuong@cs.utexas.edu>
-;; October 2016
+;; February 2021
 
 (in-package "FM9001")
 
@@ -547,12 +547,6 @@
 ;; This part of the proof seemed to take close to a couple of weeks!
 ;; All the rest put together was only about 3 days.  The goal is
 ;; to prove the equivalent of (prove-primitive-monotonicity (DP-RAM-16X32)).
-
-(defthm bvp-rev
-  (implies (bvp x)
-           (bvp (rev x)))
-  :hints (("Goal" :in-theory (enable bvp rev)))
-  :rule-classes (:rewrite :type-prescription))
 
 (defthm v-approx-bvp
   (implies (bvp x)

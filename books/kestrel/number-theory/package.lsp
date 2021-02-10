@@ -8,4 +8,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defpkg "PRIMES" *acl2-exports*)
+(in-package "ACL2")
+
+(include-book "kestrel/prime-fields/portcullis" :dir :system)
+(include-book "rtl/rel11/portcullis" :dir :system)
+
+(defpkg "PRIMES"
+  (append '(assert!
+            b*
+            define
+            defret
+            defrule
+            defruled
+            defsection
+            defxdoc
+            defxdoc+
+            patbind-unless
+            patbind-when
+            repeat
+            pfield::fep
+            pfield::mul
+            pfield::add
+            pfield::div
+            pfield::sub
+            pfield::inv
+            pfield::neg
+            pfield::pow
+            ///
+            )
+          *acl2-exports*))

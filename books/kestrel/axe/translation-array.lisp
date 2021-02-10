@@ -332,6 +332,7 @@
 ;; TODO: Use this more
 ;; Returns (mv erp new-args changep).
 ;; TODO: Strengthen guard and get rid of the error check and the erp return value.
+;; We could use cons-with-hints here instead of passing around changep, but the caller looks at changep.
 (defund translate-args-with-changep (args translation-array)
   (declare (xargs :guard (and (true-listp args)
                               (array1p 'translation-array translation-array)

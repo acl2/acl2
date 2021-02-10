@@ -10,10 +10,10 @@
 
 (in-package "ZKSEMAPHORE")
 
-(include-book "xdoc/defxdoc-plus" :dir :system)
-
-; Added by Matt K. at the request of Alessandro C.:
 (include-book "baby-jubjub")
+(include-book "base-points-for-pedersen-hash")
+(include-book "pedersen-hash")
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -23,10 +23,20 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is a proposed zero-knowledge gadget for Ethereum,
+    "Semaphore is a zero-knowledge gadget for Ethereum,
      but it may have wider applicability.
      See the "
     (xdoc::ahref "https://github.com/appliedzkp/semaphore"
                  "Ethereum Semaphore repository")
-    " for more information."))
+    " for more information.")
+   (xdoc::p
+    "This library provides an ACL2 formalization of the Semaphore functionality,
+    and formal proofs that the R1CS used to implement Semaphore are equivalent
+    to the formalization.  The formalization is primarily based on the specification in the paper "
+    (xdoc::ahref "https://github.com/appliedzkp/semaphore/blob/master/spec/Semaphore%20Spec.pdf"
+                 "Community Proposal: Semaphore: Zero-Knowledge Signaling on Ethereum")
+    ", referenced here as `[Sema-Spec]' for brevity.
+    Sections are referenced by appending their designations separated by a colon,
+    e.g.,
+    `[Sema-Spec:5.3.2]' references Section 5.3.2."))
   :order-subtopics t)

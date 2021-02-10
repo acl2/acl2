@@ -20,14 +20,20 @@
 
 (defpkg "ZKSEMAPHORE" ; 'zk' stands for zero-knowledge
   (append '(///
+            assert!
             b*
+            bit-listp
             booland
             define
             define-sk
+            defret
             defrule
             defruled
             defruledl
+            defrulel
+            defsection
             defxdoc+
+            repeat
             rule
             unless
             when

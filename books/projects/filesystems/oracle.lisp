@@ -14,7 +14,10 @@
                (path fat32-filename-list-p)
                (stat struct-stat-p)
                (statfs struct-statfs-p)
-               (dirp natp)
+               (dirp integerp) ;; This is interesting. We try to mimic the
+               ;; NULL-returning behaviour of the actual opendir by making it
+               ;; return -1 at precisely those times. That means this cannot be
+               ;; assumed to be a natural number.
                (fd-table fd-table-p)
                (file-table file-table-p)
                (dirstream-table dirstream-table-p)))
@@ -25,10 +28,9 @@
   (declare (xargs :stobjs fat32$c
                   :guard (and (lofat-fs-p fat32$c)
                               (lofat-st-p st))
-                  :guard-debug t
-                  :verify-guards nil))
+                  :guard-debug t))
   (b*
-      ((st (lofat-st-fix st))
+      ((st (mbe :logic (lofat-st-fix st) :exec st))
        ((when (eq syscall-sym :pwrite))
         (b*
             (((mv fat32$c retval errno)

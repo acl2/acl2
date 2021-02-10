@@ -430,6 +430,26 @@
 (defconst-computed-erp-and-val *default-axe-prover-rule-alists*
   (make-rule-alists (list *default-axe-prover-rules*) (w state)))
 
+;; Union X into every element of Y
+(defund union-eq-with-all (x y)
+  (declare (xargs :guard (and (symbol-listp x)
+                              (symbol-list-listp y))))
+  (if (endp y)
+      nil
+    (cons (union-eq x (first y))
+          (union-eq-with-all x (rest y)))))
+
+(defthm symbol-list-listp-of-union-eq-with-all
+  (implies (and (symbol-listp x)
+                (symbol-list-listp y))
+           (symbol-list-listp (union-eq-with-all x y)))
+  :hints (("Goal" :in-theory (enable union-eq-with-all))))
+
+(defthmd not-member-equal-of-car-when-not-intersection-equal
+  (implies (and (not (intersection-equal x y))
+                (consp x))
+           (not (member-equal (car x) y))))
+
 (defun make-prover-simple-fn (suffix ;; gets added to generated names
                               evaluator-base-name
                               eval-axe-syntaxp-expr-name
@@ -556,6 +576,7 @@
        (local (include-book "kestrel/lists-light/take" :dir :system))
        (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
        (local (include-book "kestrel/lists-light/cons" :dir :system)) ; for true-listp-of-cons
+       (local (include-book "kestrel/lists-light/intersection-equal" :dir :system)) ;for intersection-equal-of-cons-arg2-iff
        (local (include-book "kestrel/alists-light/strip-cdrs" :dir :system))
        (local (include-book "kestrel/alists-light/pairlis-dollar" :dir :system))
        (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
@@ -2918,6 +2939,22 @@
          :hints (("Goal" :do-not '(generalize eliminate-destructors)
                   :in-theory (e/d (,rewrite-literals-name) (natp)))))
 
+       ;; TODO: It would be nice to prove this:
+       ;; (defthm ,(pack$ 'no-duplicatesp-equal-of-mv-nth-3-of- rewrite-literals-name)
+       ;;   (implies (and (no-duplicatesp-equal work-list)
+       ;;                 (no-duplicatesp-equal done-list)
+       ;;                 (not (intersection-equal work-list done-list)))
+       ;;            (no-duplicatesp-equal (mv-nth 3 (,rewrite-literals-name work-list
+       ;;                                                                    done-list
+       ;;                                                                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+       ;;                                                                    assumption-array assumption-array-num-valid-nodes
+       ;;                                                                    changep
+       ;;                                                                    rule-alist
+       ;;                                                                    interpreted-function-alist monitored-symbols print case-designator
+       ;;                                                                    info tries prover-depth known-booleans options))))
+       ;;   :hints (("Goal" :do-not '(generalize eliminate-destructors)
+       ;;            :in-theory (e/d (,rewrite-literals-name not-member-equal-of-car-when-not-intersection-equal) (natp intersection-equal)))))
+
        ;; This is separate to keep the caller smaller and simpler
        ;; Returns (mv erp provedp changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries).
        (defund ,rewrite-clause-name (literal-nodenums
@@ -3174,7 +3211,11 @@
                     (subst-candidates (subst-candidates literal-nodenums dag-array dag-len nil)) ;only used for printing the count, for now
                     (- (cw "~x0 subst candidates.~%" (len subst-candidates)))
                     ((mv erp changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-                     (substitute-vars literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print prover-depth 0 nil))
+                     (substitute-vars literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print prover-depth
+                                      (if (posp dag-len) ;todo: should always be true
+                                          dag-len
+                                        1)
+                                      nil))
                     ((when erp)
                      (mv erp nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
                     ((when (not (consp literal-nodenums)))
@@ -4327,6 +4368,7 @@
        (defund ,prove-implication-fn-helper-name (dag1
                                                   dag2
                                                   rule-lists
+                                                  global-rules
                                                   interpreted-function-alist
                                                   no-splitp
                                                   monitor
@@ -4349,6 +4391,9 @@
                (mv :bad-input nil state))
               ((when (not (rule-item-list-listp rule-lists)))
                (er hard? ',prove-implication-fn-helper-name "Bad rule lists: ~x0" rule-lists)
+               (mv :bad-input nil state))
+              ((when (not (rule-item-listp global-rules)))
+               (er hard? ',prove-implication-fn-helper-name "Bad global-rules: ~x0" global-rules)
                (mv :bad-input nil state))
               ((when (not (interpreted-function-alistp interpreted-function-alist)))
                (er hard? ',prove-implication-fn-helper-name "Ill-formed interpreted-function-alist: ~x0" interpreted-function-alist)
@@ -4385,6 +4430,8 @@
                (make-dag-indices 'dag-array dag-array 'dag-parent-array dag-len))
               ;; Build the rule-alists:
               (rule-lists (elaborate-rule-item-lists rule-lists state))
+              ;; Include the global-rules in each rule-list:
+              (rule-lists (union-eq-with-all (elaborate-rule-items global-rules nil state) rule-lists))
               ((mv erp rule-alists) (make-rule-alists rule-lists (w state)))
               ((when erp) (mv erp nil state))
               (case-designator "MAIN_CASE") ; the name of this case
@@ -4426,6 +4473,7 @@
        (defund ,prove-implication-fn-name (dag-or-term1 ; not yet translated
                                            dag-or-term2 ; not yet translated
                                            rule-lists
+                                           global-rules
                                            interpreted-function-alist
                                            no-splitp
                                            monitor
@@ -4434,6 +4482,7 @@
          (declare (xargs :guard (and (rule-item-list-listp rule-lists)
                                      ;; (interpreted-function-alistp interpreted-function-alist)
                                      (symbol-listp monitor)
+                                     (rule-item-listp global-rules)
                                      (ilks-plist-worldp (w state)))
                          :stobjs state
                          :mode :program ;because this translates its args if they are terms
@@ -4446,6 +4495,7 @@
            (,prove-implication-fn-helper-name dag1
                                               dag2
                                               rule-lists
+                                              global-rules
                                               interpreted-function-alist
                                               no-splitp
                                               monitor
@@ -4458,6 +4508,7 @@
                                           dag-or-term2
                                           &key
                                           (rule-lists 'nil) ;todo: improve by building some in and allowing :extra-rules and :remove-rules?
+                                          (global-rules 'nil) ;; rules to be added to every rule-list
                                           (interpreted-function-alist 'nil)
                                           (no-splitp 'nil) ; whether to prevent splitting into cases
                                           (monitor 'nil)
@@ -4468,6 +4519,7 @@
                      dag-or-term1
                      dag-or-term2
                      rule-lists
+                     global-rules
                      interpreted-function-alist
                      no-splitp
                      monitor

@@ -60,7 +60,7 @@
   :rule-classes nil
   :hints (("Goal" :cases ((equal 0 (mod x 2))))))
 
-;; two different ways of say an integer is odd
+;; two different ways to say an integer is odd
 (defthm integerp-of-+-of-1/2-and-*-of-1/2
   (implies (integerp x)
            (equal (integerp (+ 1/2 (* 1/2 x)))
