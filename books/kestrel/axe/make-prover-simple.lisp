@@ -2955,14 +2955,14 @@
        ;;   :hints (("Goal" :do-not '(generalize eliminate-destructors)
        ;;            :in-theory (e/d (,rewrite-literals-name not-member-equal-of-car-when-not-intersection-equal) (natp intersection-equal)))))
 
-       ;; This is separate to keep the caller smaller and simpler
+       ;; Rewrite each literal once.  This is separate to keep the caller smaller and simpler.
        ;; Returns (mv erp provedp changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries).
        (defund ,rewrite-clause-name (literal-nodenums
-                                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                    rule-alist rule-set-number
-                                    interpreted-function-alist monitored-symbols
-                                    case-designator print ;move print arg?
-                                    info tries prover-depth known-booleans options)
+                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                     rule-alist rule-set-number
+                                     interpreted-function-alist monitored-symbols
+                                     case-designator print ;move print arg?
+                                     info tries prover-depth known-booleans options)
          (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                                      (nat-listp literal-nodenums)
                                      (all-< literal-nodenums dag-len)
@@ -2999,6 +2999,7 @@
                    t
                    literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
               (- (and print (cw "(Rewriting with rule set ~x0 (~x1 literals):~%" rule-set-number (len literal-nodenums)))) ;the printed paren is closed below
+              (hit-count-alist-before (make-hit-count-alist (uniquify-alist-eq info) nil))
               ((mv erp provedp changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
                (,rewrite-literals-name literal-nodenums
                                        nil ;initial done-list
@@ -3009,7 +3010,10 @@
                                        rule-alist
                                        interpreted-function-alist monitored-symbols print case-designator
                                        info tries prover-depth known-booleans options))
-              ((when erp) (mv erp nil t literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))
+              ((when erp) (mv erp nil t literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
+              (hit-count-alist-after (make-hit-count-alist (uniquify-alist-eq info) nil))
+              (hit-count-alist (sort-hit-count-alist (subtract-hit-count-alists hit-count-alist-after hit-count-alist-before)))
+              (- (and (member-eq print '(t :verbose :verbose2)) (cw "(Hits: ~x0)~%" hit-count-alist))))
            (if provedp
                (prog2$ (and print (cw "  Rewriting proved case ~s0.)~%" case-designator))
                        (mv (erp-nil)
@@ -3017,13 +3021,13 @@
                            t literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
              (b* ((- (and print (cw "  Done rewriting (~x0 literals).)~%" (len literal-nodenums))))
                   ;; Maybe crunch (one advantage in doing this is to make the printed result of this step comprehensible if we are tracing):
-                  ;; TODO: Do we want to do this if changep is nil?
+                  ;; TODO: Do we want to do this if changep is nil (perhaps yes, since nodes may have been created when relieving hyps even if no dag node was changed by a successful rule)?
                   ((mv erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist literal-nodenums) ;todo: reorder these
                    (if (or (not (= prover-depth 0)) ;; can't crunch if prover-depth > 0 since that would change existing nodes:
                            (not (consp literal-nodenums)) ;;can't crunch if no nodenums (can this happen?)
                            )
                        (mv (erp-nil) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist literal-nodenums)
-                     (b* (;; (- (cw "(Crunching: ...")) ;; matching paren printed below
+                     (b* ( ;; (- (cw "(Crunching: ...")) ;; matching paren printed below
                           ((mv dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist literal-nodenums)
                            (crunch-dag-array2-with-indices 'dag-array dag-array dag-len 'dag-parent-array literal-nodenums))
                           ;; TODO: Prove that this can't happen.  Need to know that
@@ -3031,7 +3035,7 @@
                           ;; nodenums (not constants -- currently)
                           ((when (not (and (rational-listp literal-nodenums) ;todo: using nat-listp here didn't work
                                            (all-< literal-nodenums dag-len))))
-                           (er hard? ',rewrite-subst-and-elim-with-rule-alist-name "Bad nodenum after crunching.")
+                           (er hard? ',rewrite-clause-name "Bad nodenum after crunching.")
                            (mv :error-in-crunching
                                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist literal-nodenums))
                           ;; (- (cw "Done.)~%"))
@@ -3149,10 +3153,9 @@
 
        ;; can this loop? probably, if the rules loop?
        ;; Returns (mv erp provedp literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries).
-       ;; where if provedp is non-nil we proved the clause and the other return values are irrelevant fffixme is test-cases?
+       ;; where if provedp is non-nil we proved the clause and the other return values are irrelevant.
        ;; otherwise, we return the simplified clause (as the list of literal nodenums and the dag-array, etc.)
        ;; perhaps this should return info, which the parent can print
-       ;; old: this returns TEST-CASES because destructor elimination can change the vars and changes the test cases analogously.
        ;; There should be no harvestable disjuncts in the LITERAL-NODENUMS returned?
        (defund ,rewrite-subst-and-elim-with-rule-alist-name (literal-nodenums
                                                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
@@ -3244,6 +3247,7 @@
                           rule-alist rule-set-number
                           interpreted-function-alist monitored-symbols case-designator print
                           info tries prover-depth known-booleans options (+ -1 count))
+                       ;; Failed to prove this case:
                        (prog2$
                         (and (member-eq print '(:verbose2 :verbose)) ;; TODO: improve this printing.
                              ;;should this be printed by the parent, after we attack the clause miter?
@@ -3253,8 +3257,7 @@
                                          literal-nodenums
                                          (expressions-for-this-case-simple literal-nodenums dag-array dag-len))
                                      (print-dag-only-supporters-lst literal-nodenums 'dag-array dag-array)))
-                        (mv (erp-nil) nil literal-nodenums
-                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))))))))))
+                        (mv (erp-nil) nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))))))))))
 
        (defthm ,(pack$ rewrite-subst-and-elim-with-rule-alist-name '-return-type)
          (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
