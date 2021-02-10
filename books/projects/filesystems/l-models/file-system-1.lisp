@@ -195,15 +195,6 @@
   (implies (consp (assoc-equal name alist))
            (equal (car (assoc-equal name alist)) name)))
 
-(defthm l1-read-after-write-1-lemma-2
-  (implies (l1-fs-p fs)
-           (equal (stringp (l1-stat hns (l1-wrchs hns fs start text)))
-                  (stringp (l1-stat hns fs)))))
-
-(defthm l1-read-after-write-2-lemma-1
-  (implies (l1-fs-p fs)
-           (not (stringp (assoc-equal name fs)))))
-
 (defthm l1-read-after-write-2-lemma-2
   (implies (and (consp hns1)
                 (consp fs)
