@@ -547,7 +547,7 @@
 
    (xdoc::p
     "A formalization of "
-    (xdoc::seetopic "ecurve::montgomery-curves" "Montgomery curves")
+    (xdoc::seetopic "ecurve::montgomery" "Montgomery curves")
     " has been added.")
 
    (xdoc::p

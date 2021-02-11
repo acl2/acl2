@@ -23,7 +23,7 @@
   (xdoc::topstring
    (xdoc::p
     "There is a birational equivalence between "
-    (xdoc::seetopic "montgomery-curves" "Montgomery curves")
+    (xdoc::seetopic "montgomery" "Montgomery curves")
     " and "
     (xdoc::seetopic "twisted-edwards" "twisted Edwards curves")
     ", described in Section 3 of "
