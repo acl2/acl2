@@ -241,6 +241,7 @@
   :short "Keyword options accepted by @(tsee atc)."
   (list :const-name
         :output-file
+        :proofs
         :print)
   ///
   (assert-event (symbol-listp *atc-allowed-options*))
