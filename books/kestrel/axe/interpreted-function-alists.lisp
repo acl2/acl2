@@ -218,7 +218,7 @@
   :hints (("Goal" :in-theory (enable interpreted-function-alistp))))
 
 ;;;
-;;; interpreted-function-completep
+;;; interpreted-function-alist-completep
 ;;;
 
 ;; Checks that there are no missing functions in the interpreted-function-alist
