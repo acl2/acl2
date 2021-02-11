@@ -1577,7 +1577,7 @@
    (xdoc::p
     "Since this is a ground theorem,
      we expect that it should be easily provable
-     using just the executable counterpart of @(tsee transunit-check),
+     using just the executable counterpart of @(tsee check-transunit),
      which is an executable function.")
    (xdoc::p
     "We generate singleton lists of events if @(':proofs') is @('t'),
