@@ -554,19 +554,6 @@
 (include-book "kestrel/bv-lists/bits-to-bytes-little" :dir :system)
 (acl2::defopeners acl2::bits-to-bytes-little)
 
-;rename
-(defthmd acl2::bvplus-commutative-increasing-dag
-  (implies (acl2::axe-syntaxp (acl2::should-commute-args-increasing-dag 'acl2::bvplus acl2::x acl2::y acl2::dag-array))
-           (equal (acl2::bvplus size acl2::x acl2::y)
-                  (acl2::bvplus size acl2::y acl2::x))))
-
-;rename
-(defthmd acl2::bvplus-commutative-2-increasing-dag
-  (implies (acl2::axe-syntaxp (acl2::should-commute-args-increasing-dag 'acl2::bvplus acl2::x acl2::y acl2::dag-array))
-           (equal (acl2::bvplus size acl2::x (acl2::bvplus size acl2::y acl2::z))
-                  (acl2::bvplus size acl2::y (acl2::bvplus size acl2::x acl2::z)))))
-
-
 ;mostly for axe
 (DEFTHMd ACL2::EQUAL-OF-CONS-when-quotep
   (IMPLIES (SYNTAXP (QUOTEP k))

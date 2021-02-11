@@ -18,6 +18,8 @@
 
 ;; See also bv-rules-axe0.lisp.
 
+;; TODO: Rename rules end in -dag to instead end in -axe.
+
 (include-book "kestrel/bv/rules3" :dir :system) ;for SLICE-TIGHTEN-TOP
 (include-book "kestrel/bv/rules6" :dir :system) ;for BVMULT-TIGHTEN
 (include-book "bv-rules-axe0") ;drop?
@@ -514,17 +516,29 @@
   :hints (("Goal" :use (:instance bvor-commutative-2)
            :in-theory (disable bvor-commutative-2))))
 
+;;; bvplus
+
 (defthmd bvplus-commutative-dag
   (implies (axe-syntaxp (should-commute-args-dag 'bvplus x y dag-array))
+           (equal (bvplus size x y)
+                  (bvplus size y x))))
+
+(defthmd bvplus-commutative-increasing-dag
+  (implies (axe-syntaxp (should-commute-args-increasing-dag 'bvplus x y dag-array))
            (equal (bvplus size x y)
                   (bvplus size y x))))
 
 (defthmd bvplus-commutative-2-dag
   (implies (axe-syntaxp (should-commute-args-dag 'bvplus x y dag-array))
            (equal (bvplus size x (bvplus size y z))
-                  (bvplus size y (bvplus size x z))))
-  :hints (("Goal" :in-theory (enable ;bvplus
-                              ))))
+                  (bvplus size y (bvplus size x z)))))
+
+(defthmd bvplus-commutative-2-increasing-dag
+  (implies (axe-syntaxp (should-commute-args-increasing-dag 'bvplus x y dag-array))
+           (equal (bvplus size x (bvplus size y z))
+                  (bvplus size y (bvplus size x z)))))
+
+;;; bvmult
 
 (defthmd bvmult-commutative-dag
   (implies (axe-syntaxp (should-commute-args-dag 'bvmult x y dag-array))
