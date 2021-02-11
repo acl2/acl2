@@ -522,7 +522,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define montgomery-neutral ()
+(define montgomery-zero ()
   :returns (point pointp)
   :short "Neutral point of the Montgomery curve group."
   :long
@@ -532,11 +532,11 @@
   (point-infinite)
   ///
 
-  (defrule point-on-montgomery-p-of-montgomery-neutral
-    (point-on-montgomery-p (montgomery-neutral) curve)
+  (defrule point-on-montgomery-p-of-montgomery-zero
+    (point-on-montgomery-p (montgomery-zero) curve)
     :enable point-on-montgomery-p)
 
-  (in-theory (disable (:e montgomery-neutral))))
+  (in-theory (disable (:e montgomery-zero))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -639,7 +639,7 @@
      :guard (and (montgomery-curve-primep curve)
                  (point-on-montgomery-p point curve))
      :returns (mv (okp booleanp) (point1 pointp))
-     (b* (((when (zp scalar)) (mv t (montgomery-neutral)))
+     (b* (((when (zp scalar)) (mv t (montgomery-zero)))
           ((mv okp point1) (montgomery-mul-nonneg (1- scalar) point curve))
           ((when (not okp)) (mv nil (point-fix point)))
           (point2 (montgomery-add point point1 curve)))
@@ -698,7 +698,7 @@
     (and okp
          (> order 0)
          (equal order*point
-                (montgomery-neutral))
+                (montgomery-zero))
          (montgomery-point-order-leastp point order curve)))
   :hooks (:fix)
 
@@ -716,7 +716,7 @@
                             (montgomery-mul order1 point curve)))
                         (implies okp
                                  (not (equal order1*point
-                                             (montgomery-neutral)))))))
+                                             (montgomery-zero)))))))
      ///
      (fty::deffixequiv-sk montgomery-point-order-leastp
        :args ((point pointp) (order natp) (curve montgomery-curvep))))))
