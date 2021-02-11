@@ -32,6 +32,7 @@
 (include-book "substitute-vars2")
 (include-book "get-disjuncts")
 (include-book "rule-alists")
+(include-book "interpreted-function-alists") ; for interpreted-function-alist-completep
 (include-book "make-implication-dag")
 (include-book "elaborate-rule-items")
 (include-book "axe-clause-utilities")

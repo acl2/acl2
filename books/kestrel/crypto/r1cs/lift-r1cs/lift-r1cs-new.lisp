@@ -22,6 +22,7 @@
 (include-book "filter-and-combine-symbol-alists")
 (include-book "lift-r1cs-common")
 (include-book "kestrel/axe/def-simplified" :dir :system)
+(include-book "kestrel/axe/interpreted-function-alists" :dir :system) ; for make-interpreted-function-alist
 (include-book "kestrel/prime-fields/prime-fields-rules-axe" :dir :system)
 (include-book "kestrel/prime-fields/rules2" :dir :system)
 (include-book "kestrel/utilities/ensure-rules-known" :dir :system)

@@ -15,7 +15,7 @@
 ;; This version does not support embedded dags
 
 (include-book "dag-array-builders2")
-(include-book "interpreted-function-alists")
+(include-book "interpreted-function-alistp")
 (include-book "axe-trees")
 ;(include-book "def-dag-builder-theorems")
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
