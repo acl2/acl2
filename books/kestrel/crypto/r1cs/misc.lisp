@@ -55,7 +55,7 @@
                 (integerp extra)
                 (natp highsize)
                 )
-           (equal (add (acl2::bvcat highsize highval lowsize '0)
+           (equal (add (acl2::bvcat highsize highval lowsize 0)
                        ;; todo: why does the single bit here intercede?
                        (add (acl2::bvcat 1 bit 31 lowval)
                             extra
@@ -130,7 +130,7 @@
                 (integerp z)
                 (posp p)
                 )
-           (equal (EQUAL '0 (ADD x (ADD y (ADD z (NEG w p) p) p) p))
+           (equal (EQUAL 0 (ADD x (ADD y (ADD z (NEG w p) p) p) p))
                   (equal w (ADD x (ADD y z p) p))))
 ; :hints (("Goal" :in-theory (enable add neg)))
   )
@@ -252,13 +252,12 @@
                   (acl2::bvplus 32 (acl2::bvplus 32 x y) z)))
   :hints (("Goal" :in-theory (enable acl2::bvplus))))
 
-
+;move
 (defthm equal-of-0-and-add-of-neg
   (implies (and (fep x p)
                 (fep y p)
-                (posp p)
-                )
-           (equal (EQUAL '0 (ADD (NEG x p) y p))
+                (posp p))
+           (equal (equal 0 (add (neg x p) y p))
                   (equal x y))))
 
 (defthm bvcat-of-slice-tighten

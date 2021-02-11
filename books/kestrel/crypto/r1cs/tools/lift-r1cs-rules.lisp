@@ -697,14 +697,12 @@
          (bitp acl2::x)))
 
 ;; more standard hyps
-(DEFTHM PFIELD::EQUAL-OF-0-AND-ADD-OF-NEG-2
-  (IMPLIES (AND (fep x p)
+(defthm pfield::equal-of-0-and-add-of-neg-2
+  (implies (and (fep x p)
                 (fep y p)
-                (POSP p))
-           (EQUAL (EQUAL 0
-                         (ADD (NEG x p)
-                                      y p))
-                  (EQUAL x y))))
+                (posp p))
+           (equal (equal 0 (add (neg x p) y p))
+                  (equal x y))))
 
 (defthm mul-when-constants
   (implies (and (syntaxp (and (quotep x)
@@ -722,8 +720,8 @@
                 (integerp y)
                 (integerp w)
                 (posp p))
-           (equal (EQUAL (MOD (+ K Z y) P)
-                         (MOD (+ Z w) P))
+           (equal (equal (mod (+ k z y) p)
+                         (mod (+ z w) p))
                   (equal (mod (+ k y) p)
                          (mod w p))))
   :hints (("Goal" :in-theory (enable acl2::mod-sum-cases))))
