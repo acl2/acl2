@@ -24,5 +24,16 @@
             lookup-equal
             lookup-eq
 	    b*
-            keywords-to-acl2-package)
+            keywords-to-acl2-package
+            ;; some bv concepts:
+            getbit
+            bvchop
+            slice
+            bvcat
+            bitxor
+            bvxor
+            bitnot
+            bvnot
+            bvshr
+            bvshl)
           *acl2-exports*))
