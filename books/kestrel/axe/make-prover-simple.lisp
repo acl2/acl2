@@ -4394,7 +4394,12 @@
               ((when (not (interpreted-function-alistp interpreted-function-alist)))
                (er hard? ',prove-implication-fn-helper-name "Ill-formed interpreted-function-alist: ~x0" interpreted-function-alist)
                (mv :bad-input nil state))
-              ((when (not (interpreted-function-completep interpreted-function-alist ,(pack$ '* evaluator-base-name '-fns*))))
+              ;; Check whether functions may be missing when we evaluate terms:
+              ((when (not (interpreted-function-alist-completep interpreted-function-alist ,(pack$ '* evaluator-base-name '-fns*))))
+               (er hard? ',prove-implication-fn-helper-name "Incomplete interpreted-function-alist.  See warning(s) above: ~x0" interpreted-function-alist)
+               (mv :bad-input nil state))
+              ;; Check whether functions may be missing when we instantiate hyps, substitute in RHSes and lambda bodies, and merge terms into dags, all of which still use the basic evaluator:
+              ((when (not (interpreted-function-alist-completep interpreted-function-alist *axe-evaluator-basic-fns*)))
                (er hard? ',prove-implication-fn-helper-name "Incomplete interpreted-function-alist.  See warning(s) above: ~x0" interpreted-function-alist)
                (mv :bad-input nil state))
               ((when (not (symbol-listp monitor)))
