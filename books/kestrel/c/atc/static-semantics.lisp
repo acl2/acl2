@@ -302,7 +302,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ident-check ((id identp))
+(define check-ident ((id identp))
   :returns (wf? wellformed-resultp)
   :short "Check an identifier."
   :long
@@ -320,7 +320,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define iconst-check ((ic iconstp))
+(define check-iconst ((ic iconstp))
   :returns (type type-resultp)
   :short "Check an integer constant."
   :long
@@ -353,7 +353,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define const-check ((c constp))
+(define check-const ((c constp))
   :returns (type type-resultp)
   :short "Check a constant."
   :long
@@ -363,7 +363,7 @@
      The other kinds of constants are placeholders in our abstract syntax,
      anyhow."))
   (const-case c
-              :int (iconst-check c.get)
+              :int (check-iconst c.get)
               :float (error (list :unsupported-float-const (const-fix c)))
               :enum (error (list :unsupported-enum-const (const-fix c)))
               :char (error (list :unsupported-char-const (const-fix c))))
@@ -371,7 +371,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define unary-check ((op unopp) (arg-expr exprp) (arg-type typep))
+(define check-unary ((op unopp) (arg-expr exprp) (arg-type typep))
   :returns (type type-resultp)
   :short "Check the application of a unary operator to an expression."
   :long
@@ -394,7 +394,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define binary-pure-check ((op binopp)
+(define check-binary-pure ((op binopp)
                            (arg1-expr exprp) (arg1-type typep)
                            (arg2-expr exprp) (arg2-type typep))
   :guard (binop-purep op)
@@ -423,7 +423,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define expr-pure-check ((e exprp) (vartab var-tablep))
+(define check-expr-pure ((e exprp) (vartab var-tablep))
   :returns (type type-resultp)
   :short "Check a pure expression."
   :long
@@ -441,33 +441,33 @@
      :ident (b* ((type (var-table-lookup e.get vartab))
                  ((unless type) (error (list :var-not-found e.get))))
               type)
-     :const (const-check e.get)
+     :const (check-const e.get)
      :call (error (list :expr-non-pure e))
      :postinc (error (list :expr-non-pure e))
      :postdec (error (list :expr-non-pure e))
      :preinc (error (list :expr-non-pure e))
      :predec (error (list :expr-non-pure e))
-     :unary (b* ((arg-type (expr-pure-check e.arg vartab))
+     :unary (b* ((arg-type (check-expr-pure e.arg vartab))
                  ((when (errorp arg-type))
                   (error (list :unary-error arg-type))))
-              (unary-check e.op e.arg arg-type))
+              (check-unary e.op e.arg arg-type))
      :cast (error (list :unsupported-cast e.type e.arg))
      :binary (b* (((unless (binop-purep e.op))
                    (error (list :binary-non-pure e)))
-                  (arg1-type (expr-pure-check e.arg1 vartab))
+                  (arg1-type (check-expr-pure e.arg1 vartab))
                   ((when (errorp arg1-type))
                    (error (list :binary-left-error arg1-type)))
-                  (arg2-type (expr-pure-check e.arg2 vartab))
+                  (arg2-type (check-expr-pure e.arg2 vartab))
                   ((when (errorp arg2-type))
                    (error (list :binary-right-error arg2-type))))
-               (binary-pure-check e.op e.arg1 arg1-type e.arg2 arg2-type))
-     :cond (b* ((test-type (expr-pure-check e.test vartab))
+               (check-binary-pure e.op e.arg1 arg1-type e.arg2 arg2-type))
+     :cond (b* ((test-type (check-expr-pure e.test vartab))
                 ((when (errorp test-type))
                  (error (list :cond-test-error test-type)))
-                (then-type (expr-pure-check e.then vartab))
+                (then-type (check-expr-pure e.then vartab))
                 ((when (errorp then-type))
                  (error (list :cond-then-error then-type)))
-                (else-type (expr-pure-check e.else vartab))
+                (else-type (check-expr-pure e.else vartab))
                 ((when (errorp else-type))
                  (error (list :cond-else-error else-type)))
                 ((unless (and (equal test-type (type-sint))
@@ -483,20 +483,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define expr-pure-list-check ((es expr-listp) (vartab var-tablep))
+(define check-expr-pure-list ((es expr-listp) (vartab var-tablep))
   :returns (types type-list-resultp
                   :hints ('(:cases ((type-listp
-                                     (expr-pure-list-check (cdr es) vartab))))))
+                                     (check-expr-pure-list (cdr es) vartab))))))
   :short "Check a list of pure expressions."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This lifts @(tsee expr-pure-check) to lists."))
+    "This lifts @(tsee check-expr-pure) to lists."))
   (b* (((when (endp es)) nil)
-       (type (expr-pure-check (car es) vartab))
+       (type (check-expr-pure (car es) vartab))
        ((when (errorp type)) type)
        ((unless (mbt (typep type))) (error :impossible))
-       (types (expr-pure-list-check (cdr es) vartab))
+       (types (check-expr-pure-list (cdr es) vartab))
        ((when (errorp types)) types)
        ((unless (mbt (type-listp types))) (error :impossible)))
     (cons type types))
@@ -504,7 +504,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define expr-call-or-pure-check ((e exprp)
+(define check-expr-call-or-pure ((e exprp)
                                  (funtab fun-tablep)
                                  (vartab var-tablep))
   :returns (type type-resultp)
@@ -526,7 +526,7 @@
   (if (expr-case e :call)
       (b* ((e.args (expr-call->args e))
            (e.fun (expr-call->fun e))
-           (types (expr-pure-list-check e.args vartab))
+           (types (check-expr-pure-list e.args vartab))
            ((when (errorp types))
             (error (list :call-args-error e.fun e.args types)))
            (ftype (fun-table-lookup e.fun funtab))
@@ -536,12 +536,12 @@
                          :required (fun-type->inputs ftype)
                          :supplied types))))
         (fun-type->output ftype))
-    (expr-pure-check e vartab))
+    (check-expr-pure e vartab))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define expr-asg-check ((e exprp)
+(define check-expr-asg ((e exprp)
                         (funtab fun-tablep)
                         (vartab var-tablep))
   :returns (wf? wellformed-resultp)
@@ -570,7 +570,7 @@
        (var (expr-ident->get left))
        (ltype (var-table-lookup var vartab))
        ((when (not ltype)) (error (list :expr-asg-var-not-found var)))
-       (rtype (expr-call-or-pure-check right funtab vartab))
+       (rtype (check-expr-call-or-pure right funtab vartab))
        ((when (errorp rtype)) rtype)
        ((unless (equal ltype rtype))
         (error (list :asg-mistype left right
@@ -607,8 +607,8 @@
      "A possibly updated variable table.
       This is updated by block items that are declarations.
       We actually only need to return possibly updated variable tables
-      from the ACL2 function @(tsee block-item-check);
-      the ACL2 functions @(tsee stmt-check) and @(tsee block-item-list-check)
+      from the ACL2 function @(tsee check-block-item);
+      the ACL2 functions @(tsee check-stmt) and @(tsee check-block-item-list)
       could just return a set of optional types (see above).
       However, for uniformity we have all three functions
       return also a possibly updated variable table.")))
@@ -625,7 +625,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines stmt-check
+(defines check-stmt
   :short "Check a statement."
   :long
   (xdoc::topstring
@@ -690,44 +690,44 @@
      and we combine (i.e. take the union of) all the return types,
      after removing @('nil') from the types of the first block item."))
 
-  (define stmt-check ((s stmtp) (funtab fun-tablep) (vartab var-tablep))
+  (define check-stmt ((s stmtp) (funtab fun-tablep) (vartab var-tablep))
     :returns (stype stmt-type-resultp)
     (stmt-case
      s
      :labeled (error (list :unsupported-labeled s.label s.body))
      :compound (b* ((ext-vartab (var-table-add-block vartab))
-                    (stype (block-item-list-check s.items funtab ext-vartab))
+                    (stype (check-block-item-list s.items funtab ext-vartab))
                     ((when (errorp stype))
                      (error (list :stmt-compound-error stype))))
                  (change-stmt-type stype :variables vartab))
-     :expr (b* ((wf (expr-asg-check s.get funtab vartab))
+     :expr (b* ((wf (check-expr-asg s.get funtab vartab))
                 ((when (not wf)) wf))
              (make-stmt-type :return-types (set::insert nil nil)
                              :variables (var-table-fix vartab)))
      :null (error :unsupported-null-stmt)
-     :if (b* ((type (expr-pure-check s.test vartab))
+     :if (b* ((type (check-expr-pure s.test vartab))
               ((when (errorp type)) (error (list :if-test-error type)))
               ((unless (equal type (type-sint)))
                (error (list :if-test-mistype s.test s.then :noelse
                             :required (type-sint)
                             :supplied type)))
-              (stype-then (stmt-check s.then funtab vartab))
+              (stype-then (check-stmt s.then funtab vartab))
               ((when (errorp stype-then))
                (error (list :if-then-error stype-then))))
            (make-stmt-type
             :return-types (set::union (stmt-type->return-types stype-then)
                                       (set::insert nil nil))
             :variables vartab))
-     :ifelse (b* ((type (expr-pure-check s.test vartab))
+     :ifelse (b* ((type (check-expr-pure s.test vartab))
                   ((when (errorp type)) (error (list :if-test-error type)))
                   ((unless (equal type (type-sint)))
                    (error (list :if-test-mistype s.test s.then s.else
                                 :required (type-sint)
                                 :supplied type)))
-                  (stype-then (stmt-check s.then funtab vartab))
+                  (stype-then (check-stmt s.then funtab vartab))
                   ((when (errorp stype-then))
                    (error (list :if-then-error stype-then)))
-                  (stype-else (stmt-check s.else funtab vartab))
+                  (stype-else (check-stmt s.else funtab vartab))
                   ((when (errorp stype-else))
                    (error (list :if-else-error stype-else))))
                (make-stmt-type
@@ -742,23 +742,23 @@
      :continue (error :unsupported-continue)
      :break (error :unsupported-break)
      :return (b* (((unless s.value) (error (list :unsupported-return-void)))
-                  (type (expr-call-or-pure-check s.value funtab vartab))
+                  (type (check-expr-call-or-pure s.value funtab vartab))
                   ((when (errorp type)) (error (list :return-error type))))
                (make-stmt-type :return-types (set::insert type nil)
                                :variables vartab)))
     :measure (stmt-count s))
 
-  (define block-item-check ((item block-itemp)
+  (define check-block-item ((item block-itemp)
                             (funtab fun-tablep)
                             (vartab var-tablep))
     :returns (stype stmt-type-resultp)
     (block-item-case
      item
      :decl (b* (((decl decl) item.get)
-                (wf (ident-check decl.name))
+                (wf (check-ident decl.name))
                 ((when (errorp wf)) (error (list :decl-error-var wf)))
                 (type (type-name-to-type (tyname decl.type)))
-                (init-type (expr-call-or-pure-check decl.init funtab vartab))
+                (init-type (check-expr-call-or-pure decl.init funtab vartab))
                 ((when (errorp init-type))
                  (error (list :decl-error-init init-type)))
                 ((unless (equal init-type type))
@@ -769,22 +769,22 @@
                 ((when (errorp vartab)) (error (list :decl-error vartab))))
              (make-stmt-type :return-types (set::insert nil nil)
                              :variables vartab))
-     :stmt (stmt-check item.get funtab vartab))
+     :stmt (check-stmt item.get funtab vartab))
     :measure (block-item-count item))
 
-  (define block-item-list-check ((items block-item-listp)
+  (define check-block-item-list ((items block-item-listp)
                                  (funtab fun-tablep)
                                  (vartab var-tablep))
     :returns (stype stmt-type-resultp)
     (b* (((when (endp items))
           (make-stmt-type :return-types (set::insert nil nil)
                           :variables vartab))
-         (stype (block-item-check (car items) funtab vartab))
+         (stype (check-block-item (car items) funtab vartab))
          ((when (errorp stype)) (error (list :block-item-error stype)))
          ((unless (set::in nil (stmt-type->return-types stype))) stype)
          (rtypes1 (set::delete nil (stmt-type->return-types stype)))
          (vartab (stmt-type->variables stype))
-         (stype (block-item-list-check (cdr items) funtab vartab))
+         (stype (check-block-item-list (cdr items) funtab vartab))
          ((when (errorp stype)) (error (list :block-item-list-error stype)))
          (rtypes2 (stmt-type->return-types stype))
          (vartab (stmt-type->variables stype)))
@@ -794,13 +794,13 @@
 
   :verify-guards nil ; done below
   ///
-  (verify-guards stmt-check)
+  (verify-guards check-stmt)
 
-  (fty::deffixequiv-mutual stmt-check))
+  (fty::deffixequiv-mutual check-stmt))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define param-decl-check ((param param-declp) (vartab var-tablep))
+(define check-param-decl ((param param-declp) (vartab var-tablep))
   :returns (new-vartab var-table-resultp)
   :short "Check a parameter declaration."
   :long
@@ -814,7 +814,7 @@
      If all checks succeed, we return the variable table
      updated with the parameter."))
   (b* (((param-decl param) param)
-       (wf (ident-check param.name))
+       (wf (check-ident param.name))
        ((when (errorp wf)) (error (list :param-error wf))))
     (var-table-add-var param.name
                        (type-name-to-type (tyname param.type))
@@ -823,24 +823,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define param-decl-list-check ((params param-decl-listp) (vartab var-tablep))
+(define check-param-decl-list ((params param-decl-listp) (vartab var-tablep))
   :returns (new-vartab var-table-resultp)
   :short "Check a list of parameter declaration."
   :long
   (xdoc::topstring
    (xdoc::p
     "We go through each element of the list,
-     calling @(tsee param-decl-check)
+     calling @(tsee check-param-decl)
      and threading the variable table through."))
   (b* (((when (endp params)) (var-table-fix vartab))
-       (vartab (param-decl-check (car params) vartab))
+       (vartab (check-param-decl (car params) vartab))
        ((when (errorp vartab)) (error (list :param-error vartab))))
-    (param-decl-list-check (cdr params) vartab))
+    (check-param-decl-list (cdr params) vartab))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define fundef-check ((fundef fundefp) (funtab fun-tablep))
+(define check-fundef ((fundef fundefp) (funtab fun-tablep))
   :returns (new-funtab fun-table-resultp)
   :short "Check a function definition."
   :long
@@ -872,12 +872,12 @@
        (ftype (make-fun-type :inputs in-types :output out-type))
        (funtab (fun-table-add-fun fundef.name ftype funtab))
        ((when (errorp funtab)) (error (list :fundef funtab)))
-       (wf (ident-check fundef.name))
+       (wf (check-ident fundef.name))
        ((when (errorp wf)) (error (list :fundef-name-error wf)))
        (vartab (var-table-init))
-       (vartab (param-decl-list-check fundef.params vartab))
+       (vartab (check-param-decl-list fundef.params vartab))
        ((when (errorp vartab)) (error (list :fundef-param-error vartab)))
-       (stype (stmt-check fundef.body funtab vartab))
+       (stype (check-stmt fundef.body funtab vartab))
        ((when (errorp stype)) (error (list :fundef-body-error stype)))
        ((unless (equal (stmt-type->return-types stype)
                        (set::insert out-type nil)))
@@ -889,7 +889,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ext-decl-check ((ext ext-declp) (funtab fun-tablep))
+(define check-ext-decl ((ext ext-declp) (funtab fun-tablep))
   :returns (new-funtab fun-table-resultp)
   :short "Check an external declaration."
   :long
@@ -897,13 +897,13 @@
    (xdoc::p
     "For now we only allow function definitions."))
   (ext-decl-case ext
-                 :fundef (fundef-check ext.get funtab)
+                 :fundef (check-fundef ext.get funtab)
                  :decl (fun-table-fix funtab))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ext-decl-list-check ((exts ext-decl-listp) (funtab fun-tablep))
+(define check-ext-decl-list ((exts ext-decl-listp) (funtab fun-tablep))
   :returns (new-funtab fun-table-resultp)
   :short "Check a list of external declarations."
   :long
@@ -911,14 +911,14 @@
    (xdoc::p
     "We thread the function table through."))
   (b* (((when (endp exts)) (fun-table-fix funtab))
-       (funtab (ext-decl-check (car exts) funtab))
+       (funtab (check-ext-decl (car exts) funtab))
        ((when (errorp funtab)) (error (list :ext-decl-error funtab))))
-    (ext-decl-list-check (cdr exts) funtab))
+    (check-ext-decl-list (cdr exts) funtab))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define transunit-check ((tunit transunitp))
+(define check-transunit ((tunit transunitp))
   :returns (wf wellformed-resultp)
   :short "Check a translation unit."
   :long
@@ -930,7 +930,7 @@
      and discarding the final one (it served its pupose)."))
   (b* (((transunit tunit) tunit)
        (funtab (fun-table-init))
-       (funtab (ext-decl-list-check tunit.decls funtab))
+       (funtab (check-ext-decl-list tunit.decls funtab))
        ((when (errorp funtab)) (error (list :transunit-error funtab))))
     :wellformed)
   :hooks (:fix))
