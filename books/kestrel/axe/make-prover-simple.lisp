@@ -3339,7 +3339,9 @@
                                    rationalp-when-natp-for-axe)
                                   (natp)))))
 
-       ;; Returns (mv erp provedp literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries).
+       ;; Returns (mv erp provedp literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries), where if ERP
+       ;; is-non-nil, then an error occurred and the other return values are irrelevant.  Otherwise, if PROVEDP is non-nil, then we proved the clause and the
+       ;; other return values are irrelevant.  Otherwise, LITERAL-NODENUMS represent the simplified clause.
        ;; There should be no harvestable disjuncts in the LITERAL-NODENUMS returned, assuming there we none passed in.
        (defund ,rewrite-subst-and-elim-with-rule-alists-name (literal-nodenums
                                                               dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
@@ -3512,11 +3514,10 @@
        ;;                                 ;; prover-rules)
        ;;                                 state result-array-stobj))))))))
 
-       ;; returns (mv erp provedp literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
-       ;; where if provedp is non-nil, then we proved the clause and the other return values are irrelevant
-       ;; otherwise, this returns the simplified clause (as the list of literal nodenums and the dag-array, etc.)
-       ;; old: this returns TEST-CASES because destructor elimination can change the vars and must change the test cases analogously.
-;old: this may do mitering (what if there are no test cases - that could mean dont miter), but does not do splitting or call stp (should we do those things before mitering?)
+       ;; Returns (mv erp provedp literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries), where if ERP
+       ;; is-non-nil, then an error occurred and the other return values are irrelevant.  Otherwise, if PROVEDP is non-nil, then we proved the clause and the
+       ;; other return values are irrelevant.  Otherwise, LITERAL-NODENUMS represent the simplified clause.
+       ;; TODO: Get rid of tjis wrapper function.
        (defund ,prove-case-name (literal-nodenums
                                  dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                  rule-alists
@@ -3535,20 +3536,12 @@
                                      (natp prover-depth)
                                      (symbol-listp known-booleans)
                                      (simple-prover-optionsp options))))
-         (mv-let (erp provedp literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
-           (,rewrite-subst-and-elim-with-rule-alists-name literal-nodenums
-                                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                          rule-alists
-                                                          1 ; number the rule sets starting at 1
-                                                          interpreted-function-alist monitored-symbols case-designator print
-                                                          info tries prover-depth known-booleans options)
-           ;;combine these return cases?
-           (if erp
-               (mv erp nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
-             (if provedp
-                 (mv (erp-nil) t nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
-               (prog2$ nil ;(cw "We have been told not to miter.~%")
-                       (mv (erp-nil) nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))))))
+         (,rewrite-subst-and-elim-with-rule-alists-name literal-nodenums
+                                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                        rule-alists
+                                                        1 ; number the rule sets starting at 1
+                                                        interpreted-function-alist monitored-symbols case-designator print
+                                                        info tries prover-depth known-booleans options))
 
        (defthm ,(pack$ prove-case-name '-return-type)
          (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
