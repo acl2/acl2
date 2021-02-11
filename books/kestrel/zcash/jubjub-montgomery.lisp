@@ -39,15 +39,15 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define jubjub-montgomery-curve ()
-  :returns (curve ecurve::montgomery-p)
+  :returns (curve ecurve::montgomery-curvep)
   :short "The Jubjub curve in Montgomery form."
   (ecurve::twisted-edwards-to-montgomery (jubjub-curve))
   ///
 
-  (defrule montgomery-primep-of-jubjub-montgomery-curve
-    (ecurve::montgomery-primep (jubjub-montgomery-curve))
-    :enable ecurve::montgomery-primep
-    :disable ((:e ecurve::montgomery-primep)))
+  (defrule montgomery-curve-primep-of-jubjub-montgomery-curve
+    (ecurve::montgomery-curve-primep (jubjub-montgomery-curve))
+    :enable ecurve::montgomery-curve-primep
+    :disable ((:e ecurve::montgomery-curve-primep)))
 
   (in-theory (disable (:e jubjub-montgomery-curve))))
 
@@ -64,7 +64,7 @@
      under a certain condition on the Montgomery curve.
      Here we show that Jubjub, in Montgomery form,
      satisfies that condition, i.e. that @($A^2 - 4$) is not a square."))
-  (b* ((a (ecurve::montgomery->a (jubjub-montgomery-curve)))
+  (b* ((a (ecurve::montgomery-curve->a (jubjub-montgomery-curve)))
        (a^2-4 (sub (mul a a (jubjub-q)) 4 (jubjub-q))))
     (not (ecurve::pfield-squarep a^2-4 (jubjub-q))))
   :enable (ecurve::weak-euler-criterion-contrapositive jubjub-q)
@@ -76,7 +76,7 @@
   :prep-lemmas
 
   ((defruled mod-expt-fast-lemma
-     (b* ((a (ecurve::montgomery->a (jubjub-montgomery-curve)))
+     (b* ((a (ecurve::montgomery-curve->a (jubjub-montgomery-curve)))
           (a^2-4 (sub (mul a a (jubjub-q)) 4 (jubjub-q))))
        (not (equal (acl2::mod-expt-fast a^2-4
                                         (/ (1- (jubjub-q)) 2)
@@ -86,7 +86,7 @@
      :prep-books ((include-book "arithmetic-3/top" :dir :system)))
 
    (defruled mod-expt-lemma
-     (b* ((a (ecurve::montgomery->a (jubjub-montgomery-curve)))
+     (b* ((a (ecurve::montgomery-curve->a (jubjub-montgomery-curve)))
           (a^2-4 (sub (mul a a (jubjub-q)) 4 (jubjub-q))))
        (not (equal (mod (expt a^2-4
                               (/ (1- (jubjub-q)) 2))
@@ -94,8 +94,8 @@
                    1)))
      :use (mod-expt-fast-lemma
            (:instance acl2::mod-expt-fast
-            (a (sub (mul (ecurve::montgomery->a (jubjub-montgomery-curve))
-                         (ecurve::montgomery->a (jubjub-montgomery-curve))
+            (a (sub (mul (ecurve::montgomery-curve->a (jubjub-montgomery-curve))
+                         (ecurve::montgomery-curve->a (jubjub-montgomery-curve))
                          (jubjub-q))
                     4
                     (jubjub-q)))
@@ -104,7 +104,7 @@
      :disable ((:e expt)))
 
    (defruled not-zero-lemma
-     (b* ((a (ecurve::montgomery->a (jubjub-montgomery-curve)))
+     (b* ((a (ecurve::montgomery-curve->a (jubjub-montgomery-curve)))
           (a^2-4 (sub (mul a a (jubjub-q)) 4 (jubjub-q))))
        (not (equal a^2-4 0)))
      :enable ((:e jubjub-montgomery-curve) jubjub-q))))
