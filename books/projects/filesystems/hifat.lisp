@@ -1396,12 +1396,6 @@
   :hints (("goal"
            :in-theory (enable prefixp fat32-filename-list-fix))))
 
-(defthm fat32-filename-list-p-when-prefixp
-  (implies (and (prefixp x y)
-                (fat32-filename-list-p y))
-           (fat32-filename-list-p (true-list-fix x)))
-  :hints (("goal" :in-theory (enable prefixp fat32-filename-list-p))))
-
 (defthm fat32-filename-list-p-correctness-1
   (implies (fat32-filename-list-p x)
            (not (member-equal nil x))))
