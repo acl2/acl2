@@ -522,6 +522,91 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define-sk montgomery-add-closure ()
+  :returns (yes/no booleanp)
+  :short "Assumption of closure of Montgomery addition."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We plan to prove the closure of @(tsee montgomery-add),
+     but since that will take a bit of work,
+     for now we capture the closure property in this nullary predicate,
+     which we can use as hypothesis in theorems whose proof needs closure.
+     This is preferable to stating an axiom,
+     because an incorrect axiom
+     (either because it is misstated or because addition is misdefined)
+     would make the logic inconsistent.
+     In contrast, if this nullary predicate is actually false
+     (due to the same kind of mistake mentioned just above),
+     it just means that any theorem with it as hypothesis is vacuous
+     (a much less severe problem).")
+   (xdoc::p
+    "We enable the rewrite rule associated to this @(tsee defun-sk)
+     because it is essentially the closure theorem,
+     which is a good rewrite rule to have enabled,
+     with the only difference that
+     it has this nullary predicate as hypothesis."))
+  (forall (curve point1 point2)
+          (implies (and (montgomery-curvep curve)
+                        (montgomery-curve-primep curve)
+                        (pointp point1)
+                        (pointp point2)
+                        (point-on-montgomery-p point1 curve)
+                        (point-on-montgomery-p point2 curve))
+                   (point-on-montgomery-p (montgomery-add point1 point2 curve)
+                                          curve)))
+  :enabled :thm)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define-sk montgomery-add-associativity ()
+  :guard (montgomery-add-closure)
+  :returns (yes/no booleanp)
+  :short "Assumption of associativity of Montgomery addition."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We plan to prove the associativity of @(tsee montgomery-add),
+     but since that will take substantial work
+     (the proof is notoriously laborious),
+     for now we capture the associtivity property in this nullary predicate,
+     which we can use as hypothesis in theorems whose proof needs associativity.
+     This is preferable to stating an axiom,
+     because an incorrect axiom
+     (either because it is misstated or because addition is misdefined)
+     would make the logic inconsistent.
+     In contrast, if this nullary predicate is actually false
+     (due to the same kind of mistake mentioned just above),
+     it just means that any theorem with it as hypothesis is vacuous
+     (a much less severe problem).")
+   (xdoc::p
+    "We enable the rewrite rule associated to this @(tsee defun-sk)
+     because it is essentially the associativity theorem,
+     which is a good rewrite rule to have enabled,
+     with the only difference that
+     it has this nullary predicate as hypothesis.")
+   (xdoc::p
+    "Note that we need to assume the closure of addition, in the guard,
+     in order to verify the guards of this function."))
+  (forall (curve point1 point2 point3)
+          (implies (and (montgomery-curvep curve)
+                        (montgomery-curve-primep curve)
+                        (pointp point1)
+                        (pointp point2)
+                        (pointp point3)
+                        (point-on-montgomery-p point1 curve)
+                        (point-on-montgomery-p point2 curve)
+                        (point-on-montgomery-p point3 curve))
+                   (equal (montgomery-add (montgomery-add point1 point2 curve)
+                                          point3
+                                          curve)
+                          (montgomery-add point1
+                                          (montgomery-add point2 point3 curve)
+                                          curve))))
+  :enabled :thm)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define montgomery-zero ()
   :returns (point pointp)
   :short "Neutral point of the Montgomery curve group."
