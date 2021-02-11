@@ -64,7 +64,7 @@
    (xdoc::p
     "This kind of curve is specified by
      the prime @($p$) and the coefficients @($A$) and @($B$);
-     see @(see montgomery-curves).
+     see @(see montgomery).
      Thus, we formalize a curve as a triple of these numbers,
      via a fixtype product.")
    (xdoc::p
@@ -73,11 +73,11 @@
      otherwise, it may take a long time to construct a value of this fixtype
      for a practical curve.
      We just require @($p$) to be greater than 2;
-     see @(see montgomery-curves).
+     see @(see montgomery).
      We express the primality of @($p$) separately.")
    (xdoc::p
     "We require @($A$) and @($B$) to be in the prime field of @($p$).
-     We also require them to satisfy the condition @(see montgomery-curves).")
+     We also require them to satisfy the condition @(see montgomery).")
    (xdoc::p
     "To fix the three components to satisfy the requirements above,
      we pick 3 for @($p$), 0 for @($A$), and 1 for @($B$)."))
