@@ -23,7 +23,7 @@
   (xdoc::topstring
    (xdoc::p
     "There is a birational equivalence between "
-    (xdoc::seetopic "montgomery-curves" "Montgomery curves")
+    (xdoc::seetopic "montgomery" "Montgomery curves")
     " and "
     (xdoc::seetopic "twisted-edwards" "twisted Edwards curves")
     ", described in Section 3 of "
@@ -56,8 +56,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define montgomery-to-twisted-edwards ((mcurve montgomery-p))
-  :guard (montgomery-primep mcurve)
+(define montgomery-to-twisted-edwards ((mcurve montgomery-curvep))
+  :guard (montgomery-curve-primep mcurve)
   :returns (tecurve twisted-edwards-curvep)
   :short "Map a Montgomery curve to a twisted Edwards curve."
   :long
@@ -78,11 +78,11 @@
      i.e. it really is @($2 \\neq p - 2$);
      so we use a local lemma to reduce this to @($p \\neq 4$),
      and another local lemma to show that 4 is not prime."))
-  (b* (((montgomery mcurve) mcurve)
+  (b* (((montgomery-curve mcurve) mcurve)
        (a (div (add mcurve.a 2 mcurve.p) mcurve.b mcurve.p))
        (d (div (sub mcurve.a 2 mcurve.p) mcurve.b mcurve.p)))
     (make-twisted-edwards-curve :p mcurve.p :a a :d d))
-  :guard-hints (("Goal" :in-theory (enable montgomery-primep)))
+  :guard-hints (("Goal" :in-theory (enable montgomery-curve-primep)))
   :hooks (:fix)
   :prepwork
   ((local (include-book "kestrel/prime-fields/prime-fields-rules" :dir :system))
@@ -101,7 +101,7 @@
 
 (define twisted-edwards-to-montgomery ((tecurve twisted-edwards-curvep))
   :guard (twisted-edwards-curve-primep tecurve)
-  :returns (mcurve montgomery-p)
+  :returns (mcurve montgomery-curvep)
   :short "Map a twisted Edwards curve to a Montgomery curve."
   :long
   (xdoc::topstring
@@ -121,7 +121,7 @@
        (a+d (add tecurve.a tecurve.d tecurve.p))
        (ma (mul 2 (div a+d a-d tecurve.p) tecurve.p))
        (mb (div (mod 4 tecurve.p) a-d tecurve.p)))
-    (make-montgomery :p tecurve.p :a ma :b mb))
+    (make-montgomery-curve :p tecurve.p :a ma :b mb))
   :guard-hints (("Goal" :in-theory (enable twisted-edwards-curve-primep)))
   :hooks (:fix)
   :prepwork
@@ -158,12 +158,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define montgomery-point-to-twisted-edwards-point ((point pointp)
-                                                   (curve montgomery-p))
-  :guard (and (montgomery-primep curve)
+                                                   (curve montgomery-curvep))
+  :guard (and (montgomery-curve-primep curve)
               (point-on-montgomery-p point curve)
               (not (eq (point-kind point) :infinite))
               (not (equal (point-finite->x point)
-                          (neg 1 (montgomery->p curve))))
+                          (neg 1 (montgomery-curve->p curve))))
               (not (equal (point-finite->y point)
                           0)))
   :returns (point1 pointp)
@@ -180,7 +180,7 @@
      @('(montgomery-to-twisted-edwards curve)').
      It also remains to extend the mapping to other points
      (the ones for which the rational formulas do not work)."))
-  (b* ((p (montgomery->p curve))
+  (b* ((p (montgomery-curve->p curve))
        (mx (point-finite->x point))
        (my (point-finite->y point))
        (tex (div mx my p))
