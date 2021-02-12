@@ -98,3 +98,30 @@
   :hints (("Goal" :cases ((natp size))
            :in-theory (enable bvuminus bvminus ;bozo
                               bvchop-when-i-is-not-an-integer))))
+
+(defthm bvchop-of-bvuminus
+  (implies (and (<= size1 size2)
+                ;(natp size1)
+                (natp size2))
+           (equal (bvchop size1 (bvuminus size2 x))
+                  (bvuminus size1 x)))
+  :hints (("Goal" :in-theory (e/d (bvminus bvuminus ;bvchop-bvchop
+                                           ) ( bvchop-of-minus)))))
+
+(defthm bvchop-of-bvuminus-same
+  (equal (bvchop size (bvuminus size x))
+         (bvuminus size x))
+  :hints (("Goal" :in-theory (e/d (bvminus bvuminus ;bvchop-bvchop
+                                           ) ( bvchop-of-minus)))))
+
+(defthm bvuminus-of-bvchop-arg2
+  (implies (and (<= size size1)
+                (integerp size1))
+           (equal (bvuminus size (bvchop size1 x))
+                  (bvuminus size x)))
+  :hints (("Goal" :in-theory (e/d (bvuminus) ()))))
+
+(defthm bvuminus-of-bvchop-arg2-same
+  (equal (bvuminus size (bvchop size x))
+         (bvuminus size x))
+  :hints (("Goal" :in-theory (e/d (bvuminus) ()))))

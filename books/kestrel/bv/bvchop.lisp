@@ -48,6 +48,13 @@
            (equal (bvchop n x) 0))
   :hints (("Goal" :in-theory (enable bvchop))))
 
+(defthm bvchop-when-not-natp-arg1-cheap
+  (implies (not (natp n))
+           (equal (bvchop n x)
+                  0))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable bvchop))))
+
 (defthm bvchop-when-i-is-not-an-integer
   (implies (not (integerp i))
            (equal (bvchop size i)
@@ -691,3 +698,25 @@
 
 (defthm bitp-of-bvchop-of-1
   (bitp (acl2::bvchop 1 x)))
+
+(defthm bvchop-+-cancel-cross
+  (implies (and (force (integerp size))
+                (>= size 0)
+                (force (integerp i))
+                (force (integerp j))
+                (force (integerp k)))
+           (equal (equal (bvchop size (+ j i))
+                         (bvchop size (+ i k)))
+                  (equal (bvchop size j)
+                         (bvchop size k)))))
+
+(defthm bvchop-+-cancel-cross2
+  (implies (and (force (integerp size))
+                (>= size 0)
+                (force (integerp i))
+                (force (integerp j))
+                (force (integerp k)))
+           (equal (equal (bvchop size (+ i j))
+                         (bvchop size (+ k i)))
+                  (equal (bvchop size j)
+                         (bvchop size k)))))
