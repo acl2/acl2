@@ -2373,10 +2373,7 @@
 ;rename
 (defthmd bvand-open-to-logapp
   (implies (and (natp size)
-                (< 1 size)
-;                (integerp x)
-;               (integerp y)
-                )
+                (< 1 size))
            (equal (bvand size x y)
                   (bvcat 1
                          (bvand 1 (getbit (+ -1 size) x) (getbit (+ -1 size) y))
@@ -2389,10 +2386,7 @@
 (defthmd bvand-open-to-logapp-when-constant
   (implies (and (syntaxp (quotep x))
                 (natp size)
-                (< 1 size)
-                ;(integerp x)
-                ;(integerp y)
-                )
+                (< 1 size))
            (equal (bvand size x y)
                   (bvcat 1 (bvand 1 (getbit (+ -1 size) x) (getbit (+ -1 size) y))
                          (+ -1 size) (bvand (+ -1 size)  x y))))
@@ -2449,7 +2443,7 @@
                 (< 0 highsize) ;bozo
                 ;(integerp x)
                 )
-           (equal (BVXOR size x (bvcat highsize highval lowsize lowval))
+           (equal (bvxor size x (bvcat highsize highval lowsize lowval))
                   (bvcat ;drop drop the bvchop?
                    (- size lowsize)
                    (bvxor (- size lowsize) (slice (+ -1 size) lowsize x) (bvchop highsize highval)) lowsize
@@ -4566,8 +4560,7 @@
                 (NATP free)
                 (NATP HIGH))
            (EQUAL (SLICE HIGH LOW X)
-                  (SLICE (+ -1 free)
-                               LOW X)))
+                  (SLICE (+ -1 free) LOW X)))
   :HINTS (("Goal" :CASES ((EQUAL 0 LOW)
                           (<= LOW free))
            :IN-THEORY (E/D (SLICE)
