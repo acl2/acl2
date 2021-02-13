@@ -166,3 +166,15 @@
                (cdr form)
              (my-sublis-var-lst alist (cdr form)))))
   :hints (("Goal" :in-theory (enable my-sublis-var))))
+
+(defthm-flag-my-sublis-var
+  (defthm my-sublis-var-of-nil
+    (implies (pseudo-termp form)
+             (equal (my-sublis-var nil form)
+                    form))
+    :flag my-sublis-var)
+  (defthm my-sublis-var-lst-of-nil
+    (implies (pseudo-term-listp l)
+             (equal (my-sublis-var-lst nil l)
+                    l))
+    :flag my-sublis-var-lst))
