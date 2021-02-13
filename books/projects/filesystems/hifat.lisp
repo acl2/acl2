@@ -2511,6 +2511,12 @@
                                       (fat32-filename-list-prefixp x y))
                                  (fat32-filename-list-prefixp x z)))))
 
+(defthm fat32-filename-list-prefixp-when-atom-1
+  (implies (atom y)
+           (equal (fat32-filename-list-prefixp x y)
+                  (atom x)))
+  :hints (("goal" :in-theory (e/d (fat32-filename-list-prefixp)))))
+
 (defthm
   m1-read-after-write-lemma-1
   (implies (m1-regular-file-p file)
