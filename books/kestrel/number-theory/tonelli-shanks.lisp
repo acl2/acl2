@@ -21,12 +21,21 @@
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
-;(local (include-book "kestrel/arithmetic-light/even-and-odd" :dir :system))
+(local (include-book "kestrel/arithmetic-light/integerp" :dir :system))
+(local (include-book "kestrel/arithmetic-light/even-and-odd" :dir :system))
 
 (include-book "arithmetic-3/floor-mod/mod-expt-fast" :dir :system)
 (include-book "projects/quadratic-reciprocity/euclid" :dir :system) ;rtl::primep
 
 (in-theory (disable acl2::mod-expt-fast))
+
+;maybe move to library
+(local (in-theory (enable acl2::integerp-of-*-of-1/2-becomes-evenp)))
+
+;move
+(defthmd not-evenp-when-oddp
+  (implies (oddp x)
+           (not (evenp x))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -70,8 +79,7 @@
 ;; Show that q2s is correct
 
 (defthm Q*2^S-type-1
-  (implies (natp x)
-           (natp (mv-nth 1 (Q*2^S n))))
+  (natp (mv-nth 1 (Q*2^S n)))
   :rule-classes :type-prescription)
 
 (defthm q2s-is-correct
@@ -201,25 +209,6 @@
             (R (acl2::mod-expt-fast n (/ (+ Q 1) 2) p)))
         (T-S-aux M c tt R p))))
   :guard-hints (("Goal"
-                 :use ((:instance verify-guards-lemma
-                                  (q (mv-nth 0 (q*2^s (1- p))))))
-                 :in-theory (disable oddp)))
-  :prepwork
-  ;; Verifying the guards involves showing that (/ (+ Q 1) 2) is natp,
-  ;; which it is because Q is odd.
-  ;; This is proved by the following lemma, automatically via arithmetic-3
-  ;; (arithmetic-5 works too).
-  ;; Given that the conclusion of this lemma is not a "normal form"
-  ;; with the enabled rewrite rule,
-  ;; we use a :use hint in the guard hints above,
-  ;; where we instantiate q as in the function body.
-  ;; The first hyp (natp q) is auto-proved given theorems about Q*2^S.
-  ;; The second hyp (oddp q) is discharged via q2s-q-is-odd,
-  ;; but we need to disable oddp for that rule to apply.
-  ((defruled verify-guards-lemma
-     (implies (and (natp q)
-                   (oddp q))
-              (natp (/ (+ q 1) 2)))
-     :prep-books ((include-book "arithmetic-3/top" :dir :system)))))
-
-
+                 :in-theory (e/d (acl2::integerp-of-*-of-1/2-becomes-evenp
+                                  not-evenp-when-oddp)
+                                 (oddp)))))
