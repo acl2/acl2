@@ -29,13 +29,7 @@
 
 (in-theory (disable acl2::mod-expt-fast))
 
-;maybe move to library
 (local (in-theory (enable acl2::integerp-of-*-of-1/2-becomes-evenp)))
-
-;move
-(defthmd not-evenp-when-oddp
-  (implies (oddp x)
-           (not (evenp x))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -210,5 +204,5 @@
         (T-S-aux M c tt R p))))
   :guard-hints (("Goal"
                  :in-theory (e/d (acl2::integerp-of-*-of-1/2-becomes-evenp
-                                  not-evenp-when-oddp)
+                                  acl2::not-evenp-when-oddp)
                                  (oddp)))))
