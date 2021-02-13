@@ -2373,10 +2373,7 @@
 ;rename
 (defthmd bvand-open-to-logapp
   (implies (and (natp size)
-                (< 1 size)
-;                (integerp x)
-;               (integerp y)
-                )
+                (< 1 size))
            (equal (bvand size x y)
                   (bvcat 1
                          (bvand 1 (getbit (+ -1 size) x) (getbit (+ -1 size) y))
@@ -2389,10 +2386,7 @@
 (defthmd bvand-open-to-logapp-when-constant
   (implies (and (syntaxp (quotep x))
                 (natp size)
-                (< 1 size)
-                ;(integerp x)
-                ;(integerp y)
-                )
+                (< 1 size))
            (equal (bvand size x y)
                   (bvcat 1 (bvand 1 (getbit (+ -1 size) x) (getbit (+ -1 size) y))
                          (+ -1 size) (bvand (+ -1 size)  x y))))
@@ -2449,7 +2443,7 @@
                 (< 0 highsize) ;bozo
                 ;(integerp x)
                 )
-           (equal (BVXOR size x (bvcat highsize highval lowsize lowval))
+           (equal (bvxor size x (bvcat highsize highval lowsize lowval))
                   (bvcat ;drop drop the bvchop?
                    (- size lowsize)
                    (bvxor (- size lowsize) (slice (+ -1 size) lowsize x) (bvchop highsize highval)) lowsize
@@ -3247,28 +3241,6 @@
   :hints (("Goal" :use (:instance bvchop-times-logext)
            :in-theory (disable bvchop-times-logext))))
 
-(DEFTHM BVCHOP-+-CANCEL-cross
-  (IMPLIES (AND (FORCE (INTEGERP SIZE))
-                (>= SIZE 0)
-                (FORCE (INTEGERP I))
-                (FORCE (INTEGERP J))
-                (FORCE (INTEGERP K)))
-           (EQUAL (EQUAL (BVCHOP SIZE (+ J I))
-                         (BVCHOP SIZE (+ I K)))
-                  (EQUAL (BVCHOP SIZE J)
-                         (BVCHOP SIZE K)))))
-
-(DEFTHM BVCHOP-+-CANCEL-cross2
-  (IMPLIES (AND (FORCE (INTEGERP SIZE))
-                (>= SIZE 0)
-                (FORCE (INTEGERP I))
-                (FORCE (INTEGERP J))
-                (FORCE (INTEGERP K)))
-           (EQUAL (EQUAL (BVCHOP SIZE (+ I J))
-                         (BVCHOP SIZE (+ K I)))
-                  (EQUAL (BVCHOP SIZE J)
-                         (BVCHOP SIZE K)))))
-
 ;this is basically about sign-extension
 ;bbozo gen!
 (defthm high-slice-of-logext-31-7-8-hack
@@ -3376,15 +3348,6 @@
                                   (bvminus-becomes-bvplus-of-bvuminus
                                    BVCHOP-OF-MINUS ;bozo
                                    )))))
-
-(defthm bvchop-of-bvuminus
-  (implies (and (<= size1 size2)
-                (natp size1)
-                (natp size2))
-           (equal (bvchop size1 (bvuminus size2 x))
-                  (bvuminus size1 x)))
-  :hints (("Goal" :in-theory (e/d (bvminus bvuminus ;bvchop-bvchop
-                                           ) (bvminus-becomes-bvplus-of-bvuminus bvchop-of-minus)))))
 
 (defthm bvminus-1-0
   (implies (unsigned-byte-p 1 x) ;drop
@@ -4597,8 +4560,7 @@
                 (NATP free)
                 (NATP HIGH))
            (EQUAL (SLICE HIGH LOW X)
-                  (SLICE (+ -1 free)
-                               LOW X)))
+                  (SLICE (+ -1 free) LOW X)))
   :HINTS (("Goal" :CASES ((EQUAL 0 LOW)
                           (<= LOW free))
            :IN-THEORY (E/D (SLICE)
@@ -4901,36 +4863,10 @@
 
 (theory-invariant (incompatible (:rewrite bvchop-of-minus-becomes-bvuminus) (:definition bvuminus)))
 
-;move these
-(defthm bvminus-of-bvchop-arg2
-  (implies (and (<= size size1)
-                (natp size)
-                (integerp size1))
-           (equal (bvminus size (bvchop size1 x) y)
-                  (bvminus size x y)))
-  :hints (("Goal" :in-theory (enable bvminus))))
-
-(defthm bvminus-of-bvchop-arg3
-  (implies (and (<= size size1)
-                (natp size)
-                (integerp size1))
-           (equal (bvminus size y (bvchop size1 x))
-                  (bvminus size y x)))
-  :hints (("Goal" :in-theory (enable bvminus))))
-
-(defthm bvuminus-of-bvchop-arg2
-  (implies (and (<= size size1)
-                (natp size) ;drop?
-                (integerp size1))
-           (equal (bvuminus size (bvchop size1 x))
-                  (bvuminus size x)))
-  :hints (("Goal" :in-theory (e/d (bvuminus) (bvminus-becomes-bvplus-of-bvuminus)))))
-
 ;more rules for other ops?
 (defthm slice-of-myif
   (implies (and (natp high)
-                (natp low)
-                )
+                (natp low))
            (equal (slice high low (myif test x y))
                   (slice high low (bvif (+ 1 high) test x y))))
   :hints (("Goal" :in-theory (enable bvif myif))))

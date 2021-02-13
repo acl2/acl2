@@ -86,3 +86,9 @@
 (defthmd true-listp-when-symbol-alistp
   (implies (symbol-alistp x)
            (true-listp x)))
+
+(defthm symbol-alistp-of-revappend
+  (equal (symbol-alistp (revappend x y))
+         (and (symbol-alistp (true-list-fix x))
+              (symbol-alistp y)))
+  :hints (("Goal" :in-theory (enable revappend))))

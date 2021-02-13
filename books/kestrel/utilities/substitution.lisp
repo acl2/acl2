@@ -22,7 +22,7 @@
 ;well, now we have my-sublis-var-and-eval...
 ;if there are variables in form that are not bound in alist, they are left alone (for some uses it may be better to throw an error?)
 (mutual-recursion
- (defun my-sublis-var (alist form) ;todo: call this 'term'?
+ (defund my-sublis-var (alist form) ;todo: call this 'term'?
    (declare (xargs :measure (acl2-count form)
                    :guard (and (symbol-alistp alist)
                                (pseudo-termp form))))
@@ -34,7 +34,7 @@
              (ffn-symb form)
              (my-sublis-var-lst alist (fargs form))))))
 
- (defun my-sublis-var-lst (alist l)
+ (defund my-sublis-var-lst (alist l)
    (declare (xargs :measure (acl2-count l)
                    :guard (and (symbol-alistp alist)
                                (pseudo-term-listp l))))
@@ -61,7 +61,7 @@
                     term)))
   :rule-classes nil
   :hints (("Goal" :induct (my-sublis-var-induction flg nil term)
-           :in-theory (enable my-sublis-var))))
+           :in-theory (enable my-sublis-var my-sublis-var-lst))))
 
 (defthm my-sublis-var-lst-of-nil
   (implies (pseudo-term-listp l)
@@ -80,7 +80,8 @@
 
 (defthm len-of-my-sublis-var-lst
   (equal (len (my-sublis-var-lst alist l))
-         (len l)))
+         (len l))
+  :hints (("Goal" :in-theory (enable my-sublis-var-lst))))
 
 (defthm pseudo-termp-of-assoc-equal
   (implies (and (pseudo-term-listp (strip-cdrs alist))
@@ -100,7 +101,7 @@
   :hints (("Goal" :induct (my-sublis-var-induction flg nil term)
            :expand ((pseudo-termp (cons (car term)
                                         (my-sublis-var-lst alist (cdr term)))))
-           :in-theory (enable my-sublis-var))))
+           :in-theory (enable my-sublis-var my-sublis-var-lst))))
 
 (defthm pseudo-term-listp-of-my-sublis-var
   (implies (and (pseudo-term-listp terms)
@@ -137,5 +138,43 @@
                   (symbol-term-alistp alist))
              (pseudo-term-listp (my-sublis-var-lst alist l)))
     :flag my-sublis-var-lst)
-  :hints (("Goal" :expand ((PSEUDO-TERMP (CONS (CAR FORM)
+  :hints (("Goal" :in-theory (enable my-sublis-var my-sublis-var-lst)
+           :expand ((PSEUDO-TERMP (CONS (CAR FORM)
                                                (MY-SUBLIS-VAR-LST ALIST (CDR FORM))))))))
+
+(defthm car-of-my-sublis-var
+  (equal (car (my-sublis-var alist form))
+         (if (variablep form)
+             (if (assoc-eq form alist)
+                 (cadr (assoc-eq form alist))
+               nil)
+           (car form)))
+  :hints (("Goal" :in-theory (enable my-sublis-var))))
+
+(defthm consp-of-my-sublis-var
+  (implies (consp term)
+           (consp (my-sublis-var alist term)))
+  :hints (("Goal" :expand ((my-sublis-var alist term)))))
+
+(defthm cdr-of-my-sublis-var
+  (equal (cdr (my-sublis-var alist form))
+         (if (variablep form)
+             (if (assoc-eq form alist)
+                 (cddr (assoc-eq form alist))
+               nil)
+           (if (equal 'quote (car form))
+               (cdr form)
+             (my-sublis-var-lst alist (cdr form)))))
+  :hints (("Goal" :in-theory (enable my-sublis-var))))
+
+(defthm-flag-my-sublis-var
+  (defthm my-sublis-var-of-nil
+    (implies (pseudo-termp form)
+             (equal (my-sublis-var nil form)
+                    form))
+    :flag my-sublis-var)
+  (defthm my-sublis-var-lst-of-nil
+    (implies (pseudo-term-listp l)
+             (equal (my-sublis-var-lst nil l)
+                    l))
+    :flag my-sublis-var-lst))

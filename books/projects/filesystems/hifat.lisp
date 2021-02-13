@@ -1699,6 +1699,12 @@
                 (m1-file-alist-p fs))
            (not (member-equal x (strip-cars fs)))))
 
+(defthm abs-mkdir-correctness-lemma-16
+  (implies (and (m1-file-alist-p fs)
+                (consp (assoc-equal name fs)))
+           (d-e-p (cdr (cadr (assoc-equal name fs)))))
+  :hints (("goal" :in-theory (enable m1-file-alist-p assoc-equal))))
+
 (defun
     hifat-bounded-file-alist-p-helper (x ac)
   (declare (xargs :guard (and (m1-file-alist-p x) (natp ac))

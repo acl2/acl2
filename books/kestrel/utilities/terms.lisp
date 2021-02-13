@@ -508,7 +508,9 @@
     (implies (and (lambda-free-termsp l)
                   (lambda-free-termsp (strip-cdrs alist)))
              (lambda-free-termsp (my-sublis-var-lst alist l)))
-    :flag my-sublis-var-lst))
+    :flag my-sublis-var-lst)
+  :hints (("Goal" :in-theory (enable my-sublis-var
+                                     my-sublis-var-lst))))
 
 (defthm lambda-free-termsp-of-true-list-fix
   (equal (lambda-free-termsp (true-list-fix terms))
@@ -643,7 +645,9 @@
     :flag my-sublis-var-lst)
   :hints (("Goal" :expand ((FNS-IN-TERM (CONS (CAR FORM)
                                               (MY-SUBLIS-VAR-LST ALIST (CDR FORM)))))
-           :in-theory (enable fns-in-term))))
+           :in-theory (enable fns-in-term
+                              my-sublis-var
+                              my-sublis-var-lst))))
 
 (defthm-flag-expand-lambdas-in-term
   (defthm not-member-equal-of-fns-in-term-of-expand-lambdas-in-term

@@ -593,11 +593,11 @@
                                    ;PFIELD::EQUAL-OF-ADD-CANCEL-BIND-FREE ;looped
                                    )))))
 
-;todo: extra Z in rule ADD-OF-MUL-OF-POWER-OF-2
-
 ;; todo: these may allow us to first go to bvcats of bitnots before introducing xor masks:
 
 ;; try this last?  here, the y does not fit into the bvcat
+;rename?
+;drop in favor of mul-of-power-of-2-when-bitp?
 (defthm add-of-mul-of-power-of-2-other
   (implies (and (syntaxp (quotep k))
                 (acl2::power-of-2p k)
@@ -608,6 +608,18 @@
                   (add (acl2::bvcat 1 x (+ -1 (integer-length k)) 0)
                        y
                        p)))
+  :hints (("Goal" :in-theory (enable bitp acl2::bvcat
+                                     acl2::logapp
+                                     add acl2::power-of-2p
+                                     mul))))
+
+(defthm mul-of-power-of-2-when-bitp
+  (implies (and (syntaxp (quotep k))
+                (acl2::power-of-2p k)
+                (bitp x)
+                (posp p))
+           (equal (mul k x p)
+                  (mod (acl2::bvcat 1 x (+ -1 (integer-length k)) 0) p)))
   :hints (("Goal" :in-theory (enable bitp acl2::bvcat
                                      acl2::logapp
                                      add acl2::power-of-2p
@@ -698,6 +710,8 @@
                               mul
                               neg))))
 
+;;; Bringing a low value into a BVCAT, with an extra added value:
+
 (defthm add-of-add-of-bvcat-of-0-when-unsigned-byte-p-with-extra
   (implies (and (unsigned-byte-p lowsize lowval)
                 (natp lowsize)
@@ -724,30 +738,9 @@
                               mul
                               neg))))
 
-(defthm add-of-add-of-bvcat-of-0-when-unsigned-byte-p
-  (implies (and (unsigned-byte-p lowsize lowval)
-                (natp lowsize)
-                (natp highsize)
-                (posp p))
-           (equal (add lowval (acl2::bvcat highsize highval lowsize 0) p)
-                  (mod (acl2::bvcat highsize highval lowsize lowval) p)))
-  :hints (("Goal" :use (:instance add-of-add-of-bvcat-of-0-when-unsigned-byte-p-with-extra (extra 0))
-           :in-theory (disable add-of-add-of-bvcat-of-0-when-unsigned-byte-p-with-extra
-                               acl2::bvcat-equal-rewrite-alt
-                               acl2::bvcat-equal-rewrite
-                               acl2::<-of-bvcat))))
-
-;; since for size 1 we'll have a bitp hyp
-(defthm add-of-add-of-bvcat-of-0-when-unsigned-byte-p-special
-  (implies (and (bitp lowval)
-                (natp highsize)
-                (posp p))
-           (equal (add lowval (acl2::bvcat highsize highval 1 0) p)
-                  (mod (acl2::bvcat highsize highval 1 lowval) p)))
-  :hints (("Goal" :use (:instance add-of-add-of-bvcat-of-0-when-unsigned-byte-p-with-extra-special (extra 0))
-           :in-theory (disable add-of-add-of-bvcat-of-0-when-unsigned-byte-p-with-extra-special))))
 
 ;swaps lowval and the bvcat
+;rename
 (defthm add-of-add-of-bvcat-of-0-when-unsigned-byte-p-with-extra-alt
   (implies (and (unsigned-byte-p lowsize lowval)
                 (natp lowsize)
@@ -763,6 +756,7 @@
 
 ;swaps lowval and the bvcat
 ;todo: think about bitp vs unsigned-byte-p 1
+;rename
 (defthm add-of-add-of-bvcat-of-0-when-unsigned-byte-p-with-extra-special-alt
   (implies (and (bitp lowval)
                 (natp highsize))
@@ -775,8 +769,11 @@
                               mul
                               neg))))
 
+
+;;; Bringing a low value into a BVCAT:
+
 ;swaps lowval and the bvcat
-(defthm add-of-add-of-bvcat-of-0-when-unsigned-byte-p-alt
+(defthm add-of-bvcat-of-0-when-unsigned-byte-p-arg1
   (implies (and (unsigned-byte-p lowsize lowval)
                 (natp lowsize)
                 (natp highsize)
@@ -789,9 +786,22 @@
                                acl2::bvcat-equal-rewrite
                                acl2::<-of-bvcat))))
 
-;swaps lowval and the bvcat
+(defthm add-of-bvcat-of-0-when-unsigned-byte-p-arg2
+  (implies (and (unsigned-byte-p lowsize lowval)
+                (natp lowsize)
+                (natp highsize)
+                (posp p))
+           (equal (add lowval (acl2::bvcat highsize highval lowsize 0) p)
+                  (mod (acl2::bvcat highsize highval lowsize lowval) p)))
+  :hints (("Goal" :use (:instance add-of-add-of-bvcat-of-0-when-unsigned-byte-p-with-extra (extra 0))
+           :in-theory (disable add-of-add-of-bvcat-of-0-when-unsigned-byte-p-with-extra
+                               acl2::bvcat-equal-rewrite-alt
+                               acl2::bvcat-equal-rewrite
+                               acl2::<-of-bvcat))))
+
 ;; since for size 1 we'll have a bitp hyp
-(defthm add-of-add-of-bvcat-of-0-when-unsigned-byte-p-special-alt
+;; instead just rewrite (unsigned-byte-p 1 ..) to (bitp ..) ?
+(defthm add-of-bvcat-of-0-when-unsigned-byte-p-arg1-bitp
   (implies (and (bitp lowval)
                 (natp highsize)
                 (posp p))
@@ -799,6 +809,20 @@
                   (mod (acl2::bvcat highsize highval 1 lowval) p)))
   :hints (("Goal" :use (:instance add-of-add-of-bvcat-of-0-when-unsigned-byte-p-with-extra-special (extra 0))
            :in-theory (disable add-of-add-of-bvcat-of-0-when-unsigned-byte-p-with-extra-special))))
+
+;; since for size 1 we'll have a bitp hyp
+;; instead just rewrite (unsigned-byte-p 1 ..) to (bitp ..) ?
+(defthm add-of-bvcat-of-0-when-unsigned-byte-p-arg2-bitp
+  (implies (and (bitp lowval)
+                (natp highsize)
+                (posp p))
+           (equal (add lowval (acl2::bvcat highsize highval 1 0) p)
+                  (mod (acl2::bvcat highsize highval 1 lowval) p)))
+  :hints (("Goal" :use (:instance add-of-add-of-bvcat-of-0-when-unsigned-byte-p-with-extra-special (extra 0))
+           :in-theory (disable add-of-add-of-bvcat-of-0-when-unsigned-byte-p-with-extra-special))))
+
+
+
 
 (defthm add-commute-constant
   (implies (syntaxp (and (quotep k)
@@ -818,3 +842,26 @@
   (implies (fep x p)
            (equal (mod (ifix x) p)
                   x)))
+
+;; We negate the bit and add a constant on the outside to adjust
+(defthm neg-of-bvcat-of-0-when-bitp
+  (implies (and (natp lowsize)
+                (posp p))
+           (equal (neg (acl2::bvcat 1 bit lowsize 0) p)
+                  (add (- (expt 2 lowsize))
+                       (acl2::bvcat 1 (acl2::bitnot bit) lowsize 0) p)))
+  :hints (("Goal" :cases ((equal 0 (acl2::getbit 0 bit)))
+           :in-theory (enable add neg acl2::bvcat acl2::bitnot))))
+
+;; We have a bit times a negative power of 2.  We negate the bit and shift it into position.
+(defthm mul-of-negative-power-of-2-when-bitp
+  (implies (and (syntaxp (quotep k))
+                (< k 0)
+                (acl2::power-of-2p (- k))
+                (bitp bit)
+                (posp p))
+           (equal (mul k bit p)
+                  (add k ;; additive constant to likely be combined with others
+                       (acl2::bvcat 1 (acl2::bitnot bit) (+ -1 (acl2::integer-length (- k))) 0) p)))
+  :hints (("Goal" :cases ((equal 0 bit))
+           :in-theory (enable add neg acl2::bvcat acl2::bitnot))))

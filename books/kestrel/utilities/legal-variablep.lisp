@@ -228,7 +228,7 @@
   :hints (("Goal" :in-theory (enable common-lisp-symbols-from-main-lisp-package))))
 
 ;do we need this?
-(defun no-half-starred-strings (strs)
+(defund no-half-starred-strings (strs)
   (if (endp strs)
       t
     (let ((str (first strs)))
@@ -250,12 +250,13 @@
   (no-half-starred-strings (map-symbol-name (common-lisp-specials-and-constants)))
   :hints (("Goal" :in-theory (enable common-lisp-specials-and-constants))))
 
-(defthm not-member-equal-when-no-half-starred-strings
+(defthmd not-member-equal-when-no-half-starred-strings
   (implies (and (no-half-starred-strings strs)
                 (equal (char str 0) #\*)
                 (not (equal (char str (+ -1 (length str)))
                             #\*)))
-           (not (member-equal str strs))))
+           (not (member-equal str strs)))
+  :hints (("Goal" :in-theory (enable no-half-starred-strings))))
 
 (defthm pkg-imports-of-acl2
   (equal (pkg-imports "ACL2")

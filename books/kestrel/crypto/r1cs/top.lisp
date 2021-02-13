@@ -12,5 +12,4 @@
 
 (include-book "sparse/top")
 (include-book "gadgets/top")
-(include-book "lift-r1cs/lift-r1cs") ;brings in skip-proofs
-(include-book "lift-r1cs/lift-r1cs-new")
+(include-book "tools/top") ;brings in skip-proofs

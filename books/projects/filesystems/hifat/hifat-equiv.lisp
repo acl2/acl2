@@ -670,3 +670,184 @@
            :induct
            (mv (mv-nth 0 (hifat-place-file fs path file1))
                (mv-nth 0 (hifat-place-file fs path file2))))))
+
+(defund m1-file-hifat-file-alist-fix (d-e fs)
+  (m1-file d-e (hifat-file-alist-fix fs)))
+
+;; The most natural form of this theorem is prone to infinite looping, so...
+(defthm
+  m1-file-hifat-file-alist-fix-congruence-lemma-1
+  (implies (and (hifat-equiv fs1 fs2)
+                (m1-file-alist-p fs1)
+                (m1-file-alist-p fs2))
+           (equal
+            (hifat-equiv (cons (cons name (m1-file d-e fs1))
+                               y)
+                         (cons (cons name (m1-file d-e fs2))
+                               y))
+            t))
+  :hints (("goal" :in-theory (enable hifat-equiv
+                                     hifat-subsetp hifat-file-alist-fix
+                                     hifat-no-dups-p m1-file-contents-fix
+                                     m1-file-contents-p))))
+
+(defthm
+  m1-file-hifat-file-alist-fix-congruence
+  (implies
+   (hifat-equiv fs1 fs2)
+   (hifat-equiv (cons (cons name
+                            (m1-file-hifat-file-alist-fix d-e fs1))
+                      y)
+                (cons (cons name
+                            (m1-file-hifat-file-alist-fix d-e fs2))
+                      y)))
+  :rule-classes :congruence
+  :hints (("goal" :in-theory (enable m1-file-hifat-file-alist-fix))))
+
+(defthm m1-file-hifat-file-alist-fix-normalisation
+  (implies (equal (hifat-file-alist-fix fs) fs)
+           (equal (m1-file d-e fs)
+                  (m1-file-hifat-file-alist-fix d-e fs)))
+  :hints (("goal" :in-theory (enable m1-file-hifat-file-alist-fix))))
+
+(theory-invariant (incompatible (:definition m1-file-hifat-file-alist-fix)
+                                (:rewrite m1-file-hifat-file-alist-fix-normalisation)))
+
+(defthm
+  m1-file->contents-of-m1-file-hifat-file-alist-fix
+  (equal (m1-file->contents (m1-file-hifat-file-alist-fix d-e fs))
+         (hifat-file-alist-fix fs))
+  :hints
+  (("goal" :in-theory (e/d (m1-file-hifat-file-alist-fix)
+                           (m1-file-hifat-file-alist-fix-normalisation)))))
+
+(defthm
+  m1-file-p-of-m1-file-hifat-file-alist-fix
+  (m1-file-p (m1-file-hifat-file-alist-fix d-e fs))
+  :hints
+  (("goal" :in-theory (e/d (m1-file-hifat-file-alist-fix)
+                           (m1-file-hifat-file-alist-fix-normalisation)))))
+
+(defthm
+  m1-directory-file-p-of-m1-file-hifat-file-alist-fix
+  (m1-directory-file-p (m1-file-hifat-file-alist-fix d-e fs))
+  :hints
+  (("goal" :in-theory (e/d (m1-file-hifat-file-alist-fix)
+                           (m1-file-hifat-file-alist-fix-normalisation))
+    :do-not-induct t)))
+
+(defthm
+  m1-file->d-e-of-m1-file-hifat-file-alist-fix
+  (equal (m1-file->d-e (m1-file-hifat-file-alist-fix d-e fs))
+         (d-e-fix d-e))
+  :hints
+  (("goal" :in-theory (e/d (m1-file-hifat-file-alist-fix)
+                           (m1-file-hifat-file-alist-fix-normalisation)))))
+
+(defthm not-m1-regular-file-p-of-m1-file-hifat-file-alist-fix
+  (not (m1-regular-file-p (m1-file-hifat-file-alist-fix d-e fs)))
+  :hints (("goal" :in-theory (e/d))))
+
+(defthm
+  abs-mkdir-correctness-lemma-36
+  (implies (and (equal (hifat-file-alist-fix fs) fs)
+                (d-e-p d-e))
+           (equal (list (cons 'd-e d-e)
+                        (cons 'contents fs))
+                  (m1-file-hifat-file-alist-fix d-e fs)))
+  :hints
+  (("goal"
+    :in-theory (e/d (m1-file-hifat-file-alist-fix m1-file->d-e
+                                                  m1-file->contents m1-file-p)
+                    (m1-file-hifat-file-alist-fix-normalisation)))))
+
+(defthm
+  abs-pwrite-correctness-lemma-13
+  (implies (equal (hifat-file-alist-fix (m1-file->contents x))
+                  (m1-file->contents x))
+           (equal (m1-file-hifat-file-alist-fix (m1-file->d-e x)
+                                                (m1-file->contents x))
+                  (m1-file-fix x)))
+  :hints
+  (("goal" :in-theory (e/d (m1-file-hifat-file-alist-fix)
+                           (m1-file-hifat-file-alist-fix-normalisation)))))
+
+(defthm
+  abs-pwrite-correctness-lemma-11
+  (implies
+   (hifat-equiv contents1 contents2)
+   (and
+    (hifat-equiv
+     (mv-nth 0
+             (hifat-place-file fs path
+                               (m1-file-hifat-file-alist-fix d-e contents1)))
+     (mv-nth 0
+             (hifat-place-file fs path
+                               (m1-file-hifat-file-alist-fix d-e contents2))))
+    (equal
+     (mv-nth 1
+             (hifat-place-file fs path
+                               (m1-file-hifat-file-alist-fix d-e contents1)))
+     (mv-nth
+      1
+      (hifat-place-file fs path
+                        (m1-file-hifat-file-alist-fix d-e contents2))))))
+  :hints
+  (("goal"
+    :in-theory (enable hifat-place-file)
+    :induct
+    (mv
+     (mv-nth 0
+             (hifat-place-file fs path
+                               (m1-file-hifat-file-alist-fix d-e contents1)))
+     (mv-nth
+      0
+      (hifat-place-file fs path
+                        (m1-file-hifat-file-alist-fix d-e contents2))))))
+  :rule-classes
+  ((:congruence
+    :corollary
+    (implies
+     (hifat-equiv contents1 contents2)
+     (hifat-equiv
+      (mv-nth 0
+              (hifat-place-file fs path
+                                (m1-file-hifat-file-alist-fix d-e contents1)))
+      (mv-nth
+       0
+       (hifat-place-file fs path
+                         (m1-file-hifat-file-alist-fix d-e contents2))))))
+   (:congruence
+    :corollary
+    (implies
+     (hifat-equiv contents1 contents2)
+     (equal
+      (mv-nth 1
+              (hifat-place-file fs path
+                                (m1-file-hifat-file-alist-fix d-e contents1)))
+      (mv-nth
+       1
+       (hifat-place-file fs path
+                         (m1-file-hifat-file-alist-fix d-e contents2))))))))
+
+(defthm
+  hifat-to-lofat-inversion-lemma-6
+  (implies
+   (and (m1-directory-file-p (cdr head))
+        (m1-file-alist-p (cons head tail))
+        (hifat-no-dups-p (cons head tail))
+        (hifat-no-dups-p contents)
+        (hifat-equiv (m1-file->contents (cdr head))
+                     contents)
+        (m1-file-alist-p contents))
+   (hifat-equiv (cons (cons (car head)
+                            (m1-file-hifat-file-alist-fix d-e contents))
+                      tail)
+                (cons head tail)))
+  :hints
+  (("goal"
+    :in-theory
+    (e/d
+     (m1-file-hifat-file-alist-fix)
+     (hifat-equiv-of-cons-lemma-3 m1-file-hifat-file-alist-fix-normalisation))
+    :use hifat-equiv-of-cons-lemma-3)))

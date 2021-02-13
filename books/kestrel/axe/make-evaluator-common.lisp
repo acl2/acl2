@@ -15,7 +15,7 @@
 ;; The book contains utilities used by make-evaluator.lisp and
 ;; make-evaluator-simple.lisp.
 
-(include-book "interpreted-function-alists")
+(include-book "interpreted-function-alistp")
 (include-book "kestrel/alists-light/lookup" :dir :system)
 
 ;dup in books/kestrel/utilities/system/term-function-recognizers.lisp

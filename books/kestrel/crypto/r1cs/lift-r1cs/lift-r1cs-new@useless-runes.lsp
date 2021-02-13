@@ -1,1 +1,0 @@
-(R1CS::LIFT-R1CS-NEW-FN)

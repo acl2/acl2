@@ -183,7 +183,7 @@
 (define pedersen-segment-scalar ((segment bit-listp))
   :guard (integerp (/ (len segment) 3))
   :returns (i integerp :hyp (bit-listp segment))
-  :short "The function @($\\langle\\bigcdot\\rangle$) in [ZPS:5.4.1.7]."
+  :short "The function @($\\langle\\cdot\\rangle$) in [ZPS:5.4.1.7]."
   :long
   (xdoc::topstring
    (xdoc::p

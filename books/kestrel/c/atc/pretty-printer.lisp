@@ -998,6 +998,6 @@
    (b* (((mv channel state) (open-output-channel! filepath :character state))
         (state (pprinted-lines-to-channel lines channel state))
         (state (close-output-channel channel state)))
-     (value nil))))
+     (acl2::value nil))))
 
 (defttag nil)

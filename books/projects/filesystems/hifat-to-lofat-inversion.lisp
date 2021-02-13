@@ -3720,9 +3720,7 @@
     :hints
     (("goal"
       :in-theory
-      (e/d
-       (painful-debugging-lemma-9)
-       (stobj-set-indices-in-fa-table))))))
+      (disable stobj-set-indices-in-fa-table)))))
 
 (defthm
   max-entry-count-of-hifat-to-lofat-helper
@@ -7955,7 +7953,7 @@
                  pseudo-root-d-e
                  not-intersectp-list
                  hifat-to-lofat-inversion-lemma-20
-                 painful-debugging-lemma-10)
+                 painful-debugging-lemma-7)
                 ((:rewrite find-n-free-clusters-when-zp))))))
 
 (defthm
