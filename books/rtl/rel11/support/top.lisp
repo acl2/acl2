@@ -46,6 +46,8 @@
 
 (include-book "./drnd")
 
+(include-book "./injection")
+
 (include-book "./sqrt")
 
 (include-book "./div")

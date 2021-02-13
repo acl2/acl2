@@ -427,13 +427,13 @@
 		(mod (* a b) n)))
   :rule-classes ())
 
-(defthm mod-plus-mod
+(defthm mod-plus-mod-iff
     (implies (and (integerp a)
 		  (integerp b)
 		  (integerp c)
-		  (not (zp n))
-		  (= (mod a n) (mod b n)))
-	     (= (mod (+ a c) n) (mod (+ b c) n)))
+		  (not (zp n)))
+             (iff (= (mod a n) (mod b n))
+	          (= (mod (+ a c) n) (mod (+ b c) n))))
   :rule-classes ())
 
 (defthm mod-times-mod
