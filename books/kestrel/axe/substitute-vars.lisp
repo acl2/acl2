@@ -329,9 +329,9 @@
                 (booleanp changep-acc))
            (mv-let (erp changep new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
              (substitute-vars literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print prover-depth initial-dag-len changep-acc)
-             (declare (ignore changep))
              (implies (not erp)
-                      (and (nat-listp new-literal-nodenums)
+                      (and (booleanp changep)
+                           (nat-listp new-literal-nodenums)
                            (all-natp new-literal-nodenums) ;follows from the above
                            (true-listp new-literal-nodenums) ;follows from the above
                            (all-< new-literal-nodenums new-dag-len)
