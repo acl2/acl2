@@ -75,25 +75,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; The following test is temporarily commented out because
-; the newly proof generation approach does not work on this test,
-; perhaps due to some lambda expansion heuristics that is being investigated.
-
-;; (defun |notandor| (|x|)
-;;   (declare (xargs :guard (c::sintp |x|)))
-;;   (c::sint01
-;;    (and (or (and (c::sint-nonzerop (c::sint-le (c::sint-const 10)
-;;                                                |x|))
-;;                  (c::sint-nonzerop (c::sint-le |x|
-;;                                                (c::sint-const 20))))
-;;             (and (c::sint-nonzerop (c::sint-le (c::sint-const 100)
-;;                                                |x|))
-;;                  (c::sint-nonzerop (c::sint-le |x|
-;;                                                (c::sint-const 200)))))
-;;         (not (and (c::sint-nonzerop (c::sint-le (c::sint-const 4)
-;;                                                 |x|))
-;;                   (c::sint-nonzerop (c::sint-le |x|
-;;                                                 (c::sint-const 6))))))))
+(defun |notandor| (|x|)
+  (declare (xargs :guard (c::sintp |x|)))
+  (c::sint01
+   (and (or (and (c::sint-nonzerop (c::sint-le (c::sint-const 10)
+                                               |x|))
+                 (c::sint-nonzerop (c::sint-le |x|
+                                               (c::sint-const 20))))
+            (and (c::sint-nonzerop (c::sint-le (c::sint-const 100)
+                                               |x|))
+                 (c::sint-nonzerop (c::sint-le |x|
+                                               (c::sint-const 200)))))
+        (not (and (c::sint-nonzerop (c::sint-le (c::sint-const 4)
+                                                |x|))
+                  (c::sint-nonzerop (c::sint-le |x|
+                                                (c::sint-const 6))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -103,7 +99,7 @@
         |ifor|
         |condand|
         |condor|
-        ;; |notandor| ; see comment above
+        |notandor|
         :output-file "nonstrict.c")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
