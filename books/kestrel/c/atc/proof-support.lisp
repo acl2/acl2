@@ -519,7 +519,7 @@
      and where @('<scopes>') is a @(tsee cons) nest of scopes,
      never @('nil') due to the invariant on the @(tsee scope) fixtype.
      Each scope is an @(tsee omap::update) nest, possibly @('nil'):
-     note that @(tsee omap::udpate) is a constructor of non-empty omaps,
+     note that @(tsee omap::update) is a constructor of non-empty omaps,
      @('nil') being the one for empty omaps.
      In this nest,
      the keys of the map are quoted constants for C variable identifiers,
