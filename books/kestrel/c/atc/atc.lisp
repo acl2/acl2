@@ -1639,36 +1639,22 @@
      This is equated to a call of @('fn') on its formals.
      The guard of @('fn') is used as hypothesis.")
    (xdoc::p
-    "The currently generated proof hints are relatively simple:
-     we enable @(tsee run-fun) and all the functions that it calls
-     in the dynamic execution.
-     We also use the guard theorem of @('fn').
-     We also enable the opener rules; see @(see atc-proof-support).
-     We also enable all the functions that may be called by @('fn');
-     eventually, we will generate more compositional proofs.
-     Given that the translation unit is a constant,
-     this symbolically executes the C function.
-     Since the generated C code currently has no loops,
-     this strategy may be adequate,
-     but eventually we will likely need more elaborate proof hints.
-     The use of the guard theorem of @('fn') is critical
-     to ensure that the symbolic execution of the C operators
-     does not splits on the error case:
+    "The proof is a symbolic execution of the generated translation unit,
+     which is a constant: see @(see atc-proof-support).
+     The proof is carried out in the theory that consists of
+     exactly the general rules listed there,
+     plus the definition of @('fn') (clearly),
+     plus the definitions of all the functions that precede @('fn').
+     This is so that we can unfold any call of those preceding functions.
+     Furthermore, we generated a @(':use') hint
+     to augment the theorem's formula with the guard theorem of @('fn'):
+     this is critical to ensure that the symbolic execution of the C operators
+     does not splits on the error cases:
      the fact that @('fn') is guard-verified
      ensures that @(tsee sint-add) and similar functions are always called
      on values such that the exact result fit into the type,
      which is the same condition under which the dynamic semantics
      does not error on the corresponding operators.")
-   (xdoc::p
-    "We found at least a case in which ACL2's ancestor check
-     prevents a valid theorem of this kind from being proved.
-     This is solved by locally installing a simpler ancestor check
-     (see @(tsee atc-gen-everything));
-     however, the simpler ancestor check fails to prevent a loop
-     with the rule @('omap::in-when-in-tail'),
-     which we therefore disable in the generated hints.
-     Clearly, the current proofs are brittle;
-     we plan to generate much more robust and compositional proofs soon.")
    (xdoc::p
     "We generate singleton lists of events if @(':proofs') is @('t'),
      empty lists otherwise."))
@@ -1693,48 +1679,9 @@
                       ,const))
        (rhs `(value-result-ok (,fn ,@formals)))
        (hints `(("Goal"
-                 :in-theory (e/d* (run-fun
-                                   init-scope
-                                   exec-fun
-                                   exec-stmt
-                                   exec-block-item
-                                   exec-block-item-list
-                                   exec-expr-asg
-                                   exec-expr-call-or-pure
-                                   exec-expr-pure
-                                   exec-expr-pure-list
-                                   exec-binary-pure
-                                   exec-binary-strict-pure
-                                   exec-binary-logand
-                                   exec-binary-logor
-                                   exec-unary
-                                   exec-ident
-                                   exec-const
-                                   exec-iconst
-                                   top-frame
-                                   push-frame
-                                   pop-frame
-                                   read-var
-                                   read-var-aux
-                                   write-var
-                                   write-var-aux
-                                   create-var
-                                   enter-scope
-                                   scope-result-kind
-                                   scope-result-ok->get
-                                   compustate-result-kind
-                                   compustate-result-ok->get
-                                   compustate-frames-number
-                                   value-result-kind
-                                   value-result-ok->get
-                                   value-list-result-kind
-                                   value-list-result-ok->get
-                                   value-option-result-kind
-                                   value-option-result-ok->get
-                                   errorp
-                                   exec-unfold-rules
-                                   ,@prec-fns)
-                                  (omap::in-when-in-tail))
+                 :in-theory ',(append *atc-all-rules*
+                                      (list fn)
+                                      prec-fns)
                  :use (:guard-theorem ,fn))))
        ((mv local-event exported-event)
         (acl2::evmac-generate-defthm
@@ -1898,7 +1845,12 @@
    (xdoc::p
     "Just before generating the theorems of functional correctness,
      we locally install the ``trivial ancestor check'' from the library.
-     See @(tsee atc-gen-fn-thm) for the motivation."))
+     We found at least a case in which ACL2's default heuristic ancestor check
+     prevented a valid functional correctness theorem from being proved.
+     Since by construction the symbolic execution shoud always terminate,
+     it does not seem like ACL2's heuristic ancestor check
+     would ever be helpful (if this turns out to be wrong, we will re-evaluate).
+     Thus, we locally install the simpler ancestor check."))
   (b* (((er tunit) (atc-gen-transunit fn1...fnp ctx state))
        ((mv local-const-event exported-const-event)
         (atc-gen-const const tunit print-info/all))
