@@ -32,6 +32,8 @@
  rtl::primep
  (include-book "bls12-377-domain-parameters"))
 
+(include-book "edwards-bls12")
+
 (include-book "prime-field-squares")
 (include-book "prime-field-squares-euler-criterion")
 (include-book "prime-field-extra-rules")

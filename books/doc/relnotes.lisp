@@ -558,11 +558,15 @@
     " has been added.")
 
    (xdoc::p
-    "The files
-     @('[books]/kestrel/crypto/ecurve/bls12-377-domain-parameters.lisp') and
-     @('[books]/kestrel/crypto/ecurve/bls12-377-prime.lisp')
-     have been added.
-     They introduce some parameters of the BLS12-377 elliptic curve.")
+    "The file
+     @('[books]/kestrel/crypto/ecurve/bls12-377-domain-parameters.lisp')
+     has been added.
+     It introduced some parameters of the BLS12-377 elliptic curve.")
+
+   (xdoc::p
+    "A formalization of the "
+    (xdoc::seetopic "ecurve::edwards-bls12" "Edwards BLS12 elliptic curve")
+    " has been added.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
