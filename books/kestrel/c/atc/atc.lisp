@@ -1679,9 +1679,8 @@
                       ,const))
        (rhs `(value-result-ok (,fn ,@formals)))
        (hints `(("Goal"
-                 :in-theory ',(append *atc-all-rules*
-                                      (list fn)
-                                      prec-fns)
+                 :in-theory (append *atc-all-rules*
+                                    ',(cons fn prec-fns))
                  :use (:guard-theorem ,fn))))
        ((mv local-event exported-event)
         (acl2::evmac-generate-defthm
