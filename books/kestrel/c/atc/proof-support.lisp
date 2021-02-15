@@ -395,7 +395,22 @@
      and @(tsee sint-nonzerop) is used to turn those into ACL2 booleans,
      which are uses in @(tsee if)s,
      and thus we clearly want to simplify those application
-     to @('t') and @('nil'), which further simplifies the @(tsee if)s."))
+     to @('t') and @('nil'), which further simplifies the @(tsee if)s.")
+   (xdoc::p
+    "We also have two rules to simplify applications of
+     @(tsee sint-lognot) to @('(sint 0)') and @('(sint 1)').
+     Terms of this form may arise in the process of simplifying
+     C non-strict expressions involving @('&&') and @('||').")
+   (xdoc::p
+    "We also found it necessary to include two rules
+     to distribute two specific functions over @(tsee if)s.
+     It seems that, in the course of these symbolic execution proofs,
+     we will always want to distribute functions over @(tsee if)s,
+     which seems to happen most of the time.
+     Perhaps there is some heuristic that prevents that
+     from happening all the times.
+     Adding these rules makes those proofs succeed,
+     but the issue should be investigated further."))
 
   (defruled scope-result-kind-when-scopep
     (implies (scopep scope)
@@ -492,7 +507,25 @@
     (equal (sint-nonzerop (sint 1)) t))
 
   (defruled sint-nonzerop-of-0
-    (equal (sint-nonzerop (sint 0)) nil)))
+    (equal (sint-nonzerop (sint 0)) nil))
+
+  (defruled sint-lognot-of-0
+    (equal (sint-lognot (sint 0))
+           (sint 1)))
+
+  (defruled sint-lognot-of-1
+    (equal (sint-lognot (sint 1))
+           (sint 0)))
+
+  (defruled value-result-kind-of-if
+    (equal (value-result-kind (if a b c))
+           (if a (value-result-kind b) (value-result-kind c)))
+    :enable value-result-kind)
+
+  (defruled value-result-ok->get-of-if
+    (equal (value-result-ok->get (if a b c))
+           (if a (value-result-ok->get b) (value-result-ok->get c)))
+    :enable value-result-ok->get))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -554,6 +587,8 @@
     scope-result-ok->get-when-scopep
     sint-nonzerop-of-0
     sint-nonzerop-of-1
+    sint-lognot-of-0
+    sint-lognot-of-1
     value-option-result-kind-when-sintp
     value-option-result-ok->get-when-sintp
     value-list-result-kind-when-value-listp
@@ -562,6 +597,8 @@
     value-result-kind-when-sintp
     value-result-ok->get-when-sintp
     value-result-ok-when-sintp
+    value-result-kind-of-if
+    value-result-ok->get-of-if
     ;; introduced elsewhere:
     car-cons
     cdr-cons

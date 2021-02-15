@@ -1656,6 +1656,10 @@
      which is the same condition under which the dynamic semantics
      does not error on the corresponding operators.")
    (xdoc::p
+    "We also generate a hint to expand all lambdas (i.e. beta reduction).
+     We found at least one instance in which ACL2's heuristics
+     were preventing a lambda expansion that was preventing a proof.")
+   (xdoc::p
     "We generate singleton lists of events if @(':proofs') is @('t'),
      empty lists otherwise."))
   (b* (((unless proofs) (acl2::value (list nil nil)))
@@ -1681,7 +1685,8 @@
        (hints `(("Goal"
                  :in-theory (append *atc-all-rules*
                                     ',(cons fn prec-fns))
-                 :use (:guard-theorem ,fn))))
+                 :use (:guard-theorem ,fn)
+                 :expand :lambdas)))
        ((mv local-event exported-event)
         (acl2::evmac-generate-defthm
          name
