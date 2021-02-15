@@ -452,7 +452,7 @@
            (not (member-equal (car x) y))))
 
 (mutual-recursion
- (defun simple-prover-tacticp (x)
+ (defund simple-prover-tacticp (x)
    (declare (xargs :guard t
                    :ruler-extenders :all))
    (or (eq x :rewrite)       ; rewrite all literals once
@@ -464,12 +464,29 @@
        (and (consp x)
             (eq :rep (car x)) ; repeatedly apply the given tactics in sequence, until nothing changes
             (simple-prover-tactic-listp (fargs x)))))
- (defun simple-prover-tactic-listp (x)
+ (defund simple-prover-tactic-listp (x)
    (declare (xargs :guard t))
    (if (atom x)
        (null x)
      (and (simple-prover-tacticp (first x))
           (simple-prover-tactic-listp (rest x))))))
+
+(defthm simple-prover-tactic-listp-of-cdr-when-rep
+  (implies (and (equal :rep (car tactic))
+                (simple-prover-tacticp tactic))
+           (simple-prover-tactic-listp (cdr tactic)))
+  :hints (("Goal" :in-theory (enable simple-prover-tacticp))))
+
+(defthm simple-prover-tactic-listp-of-cdr-when-seq
+  (implies (and (equal :seq (car tactic))
+                (simple-prover-tacticp tactic))
+           (simple-prover-tactic-listp (cdr tactic)))
+  :hints (("Goal" :in-theory (enable simple-prover-tacticp))))
+
+(defthm simple-prover-tactic-listp-of-cdr-when-simple-prover-tactic-listp
+  (implies (simple-prover-tactic-listp tactics)
+           (simple-prover-tactic-listp (cdr tactics)))
+  :hints (("Goal" :in-theory (enable simple-prover-tactic-listp))))
 
 (defun make-prover-simple-fn (suffix ;; gets added to generated names
                               evaluator-base-name
@@ -496,7 +513,7 @@
          (apply-tactic-name (pack$ 'apply-tactic-for- suffix '-prover))
          (apply-tactics-name (pack$ 'apply-tactics-for- suffix '-prover))
          ;(rewrite-subst-and-elim-with-rule-alist-name (pack$ 'rewrite-subst-and-elim-with-rule-alist-for- suffix '-prover))
-         (apply-tactics-for-rule-alists-name (pack$ 'apply-tactics-for-rule-alists-for- suffix '-prover))
+         (apply-tactic-for-rule-alists-name (pack$ 'apply-tactics-for-rule-alists-for- suffix '-prover))
          (prove-case-name (pack$ 'prove-case-with- suffix '-prover))
          (prove-disjunction-name (pack$ 'prove-disjunction-with- suffix '-prover))
          (prove-true-case-name (pack$ 'prove-true-case-with- suffix '-prover))
@@ -3352,8 +3369,7 @@
 
        (,(pack$ 'defthm-flag- apply-tactic-name)
         (defthm ,(pack$ apply-tactic-name '-return-type)
-          (implies (and (simple-prover-tacticp tactic)
-                        (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+          (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                         (nat-listp literal-nodenums)
                         (all-< literal-nodenums dag-len)
                         (rule-alistp rule-alist)
@@ -3384,8 +3400,7 @@
                                             (<= dag-len new-dag-len))))))
           :flag ,apply-tactic-name)
         (defthm ,(pack$ apply-tactics-name '-return-type)
-          (implies (and (simple-prover-tactic-listp tactics)
-                        (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+          (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                         (nat-listp literal-nodenums)
                         (all-< literal-nodenums dag-len)
                         (rule-alistp rule-alist)
@@ -3425,12 +3440,11 @@
                                  (natp)))))
 
        (verify-guards ,apply-tactic-name :hints
-         (("Goal" :in-theory (e/d (<-of-+-of-1-strengthen-2 natp-of-+-of-1 rationalp-when-natp-for-axe) (natp))
+         (("Goal" :in-theory (e/d (simple-prover-tacticp simple-prover-tactic-listp <-of-+-of-1-strengthen-2 natp-of-+-of-1 rationalp-when-natp-for-axe) (natp))
            :do-not-induct t)))
 
        (defthm ,(pack$ apply-tactic-name '-return-type-corollary-linear)
-         (implies (and (simple-prover-tacticp tactic)
-                       (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+         (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                        (nat-listp literal-nodenums)
                        (all-< literal-nodenums dag-len)
                        (rule-alistp rule-alist)
@@ -3514,13 +3528,15 @@
        ;; is-non-nil, then an error occurred and the other return values are irrelevant.  Otherwise, if PROVEDP is non-nil, then we proved the clause and the
        ;; other return values are irrelevant.  Otherwise, LITERAL-NODENUMS represent the simplified clause.
        ;; There should be no harvestable disjuncts in the LITERAL-NODENUMS returned, assuming there we none passed in.
-       (defund ,apply-tactics-for-rule-alists-name (literal-nodenums
-                                                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                    rule-alists ;we use these one at a time
-                                                    rule-set-number
-                                                    interpreted-function-alist monitored-symbols case-designator print
-                                                    info tries prover-depth known-booleans options)
-         (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+       (defund ,apply-tactic-for-rule-alists-name (tactic
+                                                   literal-nodenums
+                                                   dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                   rule-alists ;we use these one at a time
+                                                   rule-set-number
+                                                   interpreted-function-alist monitored-symbols case-designator print
+                                                   info tries prover-depth known-booleans options)
+         (declare (xargs :guard (and (simple-prover-tacticp tactic)
+                                     (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                                      (nat-listp literal-nodenums)
                                      (all-< literal-nodenums dag-len)
                                      (all-rule-alistp rule-alists)
@@ -3547,7 +3563,7 @@
            (b* (((mv erp provedp
                      & ;;changep
                      literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
-                 (,apply-tactic-name '(:rep :rewrite :subst) ;todo: make this an option passed in
+                 (,apply-tactic-name tactic
                                      literal-nodenums
                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                      (first rule-alists) ;; try the first rule-alist
@@ -3557,14 +3573,15 @@
                 ((when erp) (mv erp nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
                 ((when provedp) (mv (erp-nil) t literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))
              ;; Continue with the rest of the rule-alists:
-             (,apply-tactics-for-rule-alists-name literal-nodenums
-                                                  dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                  (rest rule-alists)
-                                                  (+ 1 rule-set-number)
-                                                  interpreted-function-alist monitored-symbols case-designator print
-                                                  info tries prover-depth known-booleans options))))
+             (,apply-tactic-for-rule-alists-name tactic
+                                                 literal-nodenums
+                                                 dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                 (rest rule-alists)
+                                                 (+ 1 rule-set-number)
+                                                 interpreted-function-alist monitored-symbols case-designator print
+                                                 info tries prover-depth known-booleans options))))
 
-       (defthm ,(pack$ apply-tactics-for-rule-alists-name '-return-type)
+       (defthm ,(pack$ apply-tactic-for-rule-alists-name '-return-type)
          (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                        (nat-listp literal-nodenums)
                        (all-< literal-nodenums dag-len)
@@ -3578,12 +3595,12 @@
                        (natp prover-depth)
                        (simple-prover-optionsp options))
                   (mv-let (erp provedp new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries)
-                    (,apply-tactics-for-rule-alists-name literal-nodenums
-                                                                   dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                                   rule-alists ;we use these one at a time
-                                                                   rule-set-number
-                                                                   interpreted-function-alist monitored-symbols case-designator print
-                                                                   info tries prover-depth known-booleans options)
+                    (,apply-tactic-for-rule-alists-name tactic literal-nodenums
+                                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                        rule-alists ;we use these one at a time
+                                                        rule-set-number
+                                                        interpreted-function-alist monitored-symbols case-designator print
+                                                        info tries prover-depth known-booleans options)
                     (implies (not erp)
                              (and (booleanp provedp)
                                   (wf-dagp 'dag-array new-dag-array new-dag-len 'dag-parent-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
@@ -3594,22 +3611,22 @@
                                   (implies (< 0 prover-depth)
                                            (<= dag-len new-dag-len))))))
          :hints (("Goal" :induct t
-                  :in-theory (e/d (,apply-tactics-for-rule-alists-name)
+                  :in-theory (e/d (,apply-tactic-for-rule-alists-name)
                                   (natp)))))
 
-       (defthm ,(pack$ apply-tactics-for-rule-alists-name '-return-type-2)
+       (defthm ,(pack$ apply-tactic-for-rule-alists-name '-return-type-2)
          (implies (true-listp literal-nodenums)
                   (mv-let (erp provedp new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries)
-                    (,apply-tactics-for-rule-alists-name literal-nodenums
-                                                                   dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                                   rule-alists ;we use these one at a time
-                                                                   rule-set-number
-                                                                   interpreted-function-alist monitored-symbols case-designator print
-                                                                   info tries prover-depth known-booleans options)
+                    (,apply-tactic-for-rule-alists-name tactic literal-nodenums
+                                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                        rule-alists ;we use these one at a time
+                                                        rule-set-number
+                                                        interpreted-function-alist monitored-symbols case-designator print
+                                                        info tries prover-depth known-booleans options)
                     (declare (ignore erp provedp new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries))
                     (true-listp new-literal-nodenums)))
          :hints (("Goal" :induct t
-                  :in-theory (e/d (,apply-tactics-for-rule-alists-name)
+                  :in-theory (e/d (,apply-tactic-for-rule-alists-name)
                                   (natp)))))
 
        ;; ;fixme return info and tries?
@@ -3701,11 +3718,13 @@
        ;; TODO: Get rid of tjis wrapper function.
        (defund ,prove-case-name (literal-nodenums
                                  dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                 tactic
                                  rule-alists
                                  interpreted-function-alist monitored-symbols
                                  case-designator print
                                  info tries prover-depth known-booleans options)
-         (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+         (declare (xargs :guard (and (simple-prover-tacticp tactic)
+                                     (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                                      (nat-listp literal-nodenums)
                                      (all-< literal-nodenums dag-len)
                                      (all-rule-alistp rule-alists)
@@ -3717,12 +3736,12 @@
                                      (natp prover-depth)
                                      (symbol-listp known-booleans)
                                      (simple-prover-optionsp options))))
-         (,apply-tactics-for-rule-alists-name literal-nodenums
-                                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                              rule-alists
-                                              1 ; number the rule sets starting at 1
-                                              interpreted-function-alist monitored-symbols case-designator print
-                                              info tries prover-depth known-booleans options))
+         (,apply-tactic-for-rule-alists-name tactic literal-nodenums
+                                             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                             rule-alists
+                                             1 ; number the rule sets starting at 1
+                                             interpreted-function-alist monitored-symbols case-designator print
+                                             info tries prover-depth known-booleans options))
 
        (defthm ,(pack$ prove-case-name '-return-type)
          (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
@@ -3739,6 +3758,7 @@
                   (mv-let (erp provedp new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries)
                     (,prove-case-name literal-nodenums
                                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                      tactic
                                       rule-alists
                                       interpreted-function-alist monitored-symbols
                                       case-designator print
@@ -3770,6 +3790,7 @@
                   (mv-let (erp provedp new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries)
                     (,prove-case-name literal-nodenums
                                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                      tactic
                                       rule-alists
                                       interpreted-function-alist monitored-symbols
                                       case-designator print
@@ -3797,6 +3818,7 @@
                   (mv-let (erp provedp new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries)
                     (,prove-case-name literal-nodenums
                                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                      tactic
                                       rule-alists
                                       interpreted-function-alist monitored-symbols
                                       case-designator print
@@ -3824,6 +3846,7 @@
                   (mv-let (erp provedp new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries)
                     (,prove-case-name literal-nodenums
                                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                      tactic
                                       rule-alists
                                       interpreted-function-alist monitored-symbols
                                       case-designator print
@@ -3851,6 +3874,7 @@
                   (mv-let (erp provedp new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries)
                     (,prove-case-name literal-nodenums
                                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                      tactic
                                       rule-alists
                                       interpreted-function-alist monitored-symbols
                                       case-designator print
@@ -3868,6 +3892,7 @@
                   (mv-let (erp provedp new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries)
                     (,prove-case-name literal-nodenums
                                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                      tactic
                                       rule-alists
                                       interpreted-function-alist monitored-symbols
                                       case-designator print
@@ -3886,6 +3911,7 @@
         (defund ,prove-true-case-name (nodenum ;; to be assumed non-nil
                                        literal-nodenums
                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                       tactic
                                        rule-alists
                                        interpreted-function-alist
                                        monitored-symbols
@@ -3893,7 +3919,8 @@
                                        case-1-designator
                                        info tries
                                        prover-depth known-booleans options count)
-          (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+          (declare (xargs :guard (and (simple-prover-tacticp tactic)
+                                      (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                                       (natp nodenum)
                                       (< nodenum dag-len)
                                       (nat-listp literal-nodenums)
@@ -3929,6 +3956,7 @@
               ;; Attempt to prove case #1:
               (,prove-or-split-case-name literal-nodenums
                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                         tactic
                                          rule-alists interpreted-function-alist monitored-symbols
                                          print case-1-designator
                                          info tries
@@ -3941,6 +3969,7 @@
         (defund ,prove-false-case-name (nodenum ;; to be assumed false
                                         literal-nodenums
                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                        tactic
                                         rule-alists
                                         interpreted-function-alist
                                         monitored-symbols
@@ -3948,7 +3977,8 @@
                                         case-2-designator
                                         info tries
                                         prover-depth known-booleans options count)
-          (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+          (declare (xargs :guard (and (simple-prover-tacticp tactic)
+                                      (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                                       (natp nodenum)
                                       (< nodenum dag-len)
                                       (nat-listp literal-nodenums)
@@ -3982,6 +4012,7 @@
               ;; Attempt to prove case #2:
               (,prove-or-split-case-name literal-nodenums
                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                         tactic
                                          rule-alists interpreted-function-alist monitored-symbols
                                          print case-2-designator
                                          info tries
@@ -4000,6 +4031,7 @@
                                            dag-len
                                            dag-parent-array ;must be named 'dag-parent-array
                                            dag-constant-alist dag-variable-alist
+                                           tactic
                                            rule-alists
                                            interpreted-function-alist
                                            monitored-symbols
@@ -4007,7 +4039,8 @@
                                            case-designator ;the name of this case
                                            info tries
                                            prover-depth known-booleans options count)
-          (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+          (declare (xargs :guard (and (simple-prover-tacticp tactic)
+                                      (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                                       (nat-listp literal-nodenums)
                                       (all-< literal-nodenums dag-len)
                                       (all-rule-alistp rule-alists)
@@ -4030,6 +4063,7 @@
                  ((mv erp provedp literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
                   (,prove-case-name literal-nodenums
                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                    tactic
                                     rule-alists interpreted-function-alist monitored-symbols
                                     case-designator print info tries prover-depth known-booleans options))
                  ((when erp) (mv erp :failed dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
@@ -4083,6 +4117,7 @@
                           (,prove-true-case-name nodenum ;; to be assumed true
                                                  literal-nodenums
                                                  dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                 tactic
                                                  rule-alists
                                                  interpreted-function-alist
                                                  monitored-symbols
@@ -4116,6 +4151,7 @@
                               (,prove-false-case-name nodenum ;; to be assumed true
                                                       literal-nodenums
                                                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                      tactic
                                                       rule-alists
                                                       interpreted-function-alist
                                                       monitored-symbols
@@ -4163,6 +4199,7 @@
                       (,prove-true-case-name nodenum
                                              literal-nodenums
                                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                             tactic
                                              rule-alists
                                              interpreted-function-alist
                                              monitored-symbols
@@ -4195,6 +4232,7 @@
                       (,prove-false-case-name nodenum
                                               literal-nodenums
                                               dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                              tactic
                                               rule-alists
                                               interpreted-function-alist
                                               monitored-symbols
@@ -4224,6 +4262,7 @@
                     (mv-let (erp result new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries)
                       (,prove-or-split-case-name literal-nodenums
                                                  dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                 tactic
                                                  rule-alists
                                                  interpreted-function-alist
                                                  monitored-symbols
@@ -4263,6 +4302,7 @@
                       (,prove-true-case-name nodenum
                                              literal-nodenums
                                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                             tactic
                                              rule-alists
                                              interpreted-function-alist
                                              monitored-symbols
@@ -4295,6 +4335,7 @@
                       (,prove-true-case-name nodenum
                                              literal-nodenums
                                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                             tactic
                                              rule-alists
                                              interpreted-function-alist
                                              monitored-symbols
@@ -4329,6 +4370,7 @@
                   (mv-let (erp result new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries)
                     (,prove-or-split-case-name literal-nodenums
                                                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                               tactic
                                                rule-alists
                                                interpreted-function-alist
                                                monitored-symbols
@@ -4354,6 +4396,7 @@
                                         dag-len
                                         dag-parent-array ;must be named 'dag-parent-array
                                         dag-constant-alist dag-variable-alist
+                                        tactic
                                         rule-alists
                                         interpreted-function-alist
                                         monitored-symbols
@@ -4361,7 +4404,8 @@
                                         case-designator ;the name of this case
                                         info tries
                                         prover-depth known-booleans options)
-         (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+         (declare (xargs :guard (and (simple-prover-tacticp tactic)
+                                     (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                                      (true-listp literal-nodenums-or-quoteps)
                                      (all-dargp-less-than literal-nodenums-or-quoteps dag-len)
                                      (all-rule-alistp rule-alists)
@@ -4395,19 +4439,20 @@
                (and print (cw "! Proved case ~s0 (one literal had a non-nil constant disjunct!)~%" case-designator))
                (mv (erp-nil) :proved dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))
            (,prove-or-split-case-name literal-nodenums
-                                        dag-array
-                                        dag-len
-                                        dag-parent-array
-                                        dag-constant-alist dag-variable-alist
-                                        rule-alists
-                                        interpreted-function-alist
-                                        monitored-symbols
-                                        print
-                                        case-designator
-                                        info tries
-                                        prover-depth known-booleans options
-                                        (+ -1 (expt 2 59)) ;max fixnum?
-                                        )))
+                                      dag-array
+                                      dag-len
+                                      dag-parent-array
+                                      dag-constant-alist dag-variable-alist
+                                      tactic
+                                      rule-alists
+                                      interpreted-function-alist
+                                      monitored-symbols
+                                      print
+                                      case-designator
+                                      info tries
+                                      prover-depth known-booleans options
+                                      (+ -1 (expt 2 59)) ;max fixnum?
+                                      )))
 
        (defthm ,(pack$ prove-disjunction-name '-return-type)
          (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
@@ -4427,6 +4472,7 @@
                                              dag-len
                                              dag-parent-array
                                              dag-constant-alist dag-variable-alist
+                                             tactic
                                              rule-alists
                                              interpreted-function-alist
                                              monitored-symbols
@@ -4544,6 +4590,7 @@
        ;; Because this function has a guard that is simply a stobj recognizer, it has no invariant-risk.
        (defund ,prove-implication-fn-helper-name (dag1
                                                   dag2
+                                                  tactic
                                                   rule-lists
                                                   global-rules
                                                   interpreted-function-alist
@@ -4571,6 +4618,9 @@
                (mv :bad-input nil state))
               ((when (not (rule-item-listp global-rules)))
                (er hard? ',prove-implication-fn-helper-name "Bad global-rules: ~x0" global-rules)
+               (mv :bad-input nil state))
+              ((when (not (simple-prover-tacticp tactic)))
+               (er hard? ',prove-implication-fn-helper-name "Bad tactic: ~x0" tactic)
                (mv :bad-input nil state))
               ((when (not (interpreted-function-alistp interpreted-function-alist)))
                (er hard? ',prove-implication-fn-helper-name "Ill-formed interpreted-function-alist: ~x0" interpreted-function-alist)
@@ -4625,6 +4675,7 @@
                    info tries)
                (,prove-disjunction-name (list top-nodenum) ;; just one disjunct
                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                         tactic
                                         rule-alists
                                         interpreted-function-alist
                                         monitor
@@ -4654,6 +4705,7 @@
        ;; have guards that are either t or stobj recognizers.
        (defund ,prove-implication-fn-name (dag-or-term1 ; not yet translated
                                            dag-or-term2 ; not yet translated
+                                           tactic
                                            rule-lists
                                            global-rules
                                            interpreted-function-alist
@@ -4661,7 +4713,8 @@
                                            monitor
                                            print
                                            state)
-         (declare (xargs :guard (and (rule-item-list-listp rule-lists)
+         (declare (xargs :guard (and (simple-prover-tacticp tactic)
+                                     (rule-item-list-listp rule-lists)
                                      ;; (interpreted-function-alistp interpreted-function-alist)
                                      (symbol-listp monitor)
                                      (rule-item-listp global-rules)
@@ -4676,6 +4729,7 @@
            ;; This helper function is in :logic mode and is guard-verified:
            (,prove-implication-fn-helper-name dag1
                                               dag2
+                                              tactic
                                               rule-lists
                                               global-rules
                                               interpreted-function-alist
@@ -4689,6 +4743,7 @@
        (defmacro ,prove-implication-name (dag-or-term1
                                           dag-or-term2
                                           &key
+                                          (tactic ''(:rep :rewrite :subst))
                                           (rule-lists 'nil) ;todo: improve by building some in and allowing :extra-rules and :remove-rules?
                                           (global-rules 'nil) ;; rules to be added to every rule-list
                                           (interpreted-function-alist 'nil)
@@ -4700,6 +4755,7 @@
                (list ',prove-implication-fn-name
                      dag-or-term1
                      dag-or-term2
+                     tactic
                      rule-lists
                      global-rules
                      interpreted-function-alist
@@ -4710,8 +4766,9 @@
 
        ;; Returns (mv erp provedp).  Attempts to prove the clause (a disjunction
        ;; of terms) with the Axe Prover.
-       (defund ,prove-clause-name (clause name rule-alists monitored-symbols interpreted-function-alist print known-booleans options)
-         (declare (xargs :guard (and (pseudo-term-listp clause)
+       (defund ,prove-clause-name (clause tactic name rule-alists monitored-symbols interpreted-function-alist print known-booleans options)
+         (declare (xargs :guard (and (simple-prover-tacticp tactic)
+                                     (pseudo-term-listp clause)
                                      (symbolp name)
                                      (all-rule-alistp rule-alists)
                                      (true-listp rule-alists)
@@ -4728,6 +4785,7 @@
               ((mv erp result & & & & & info tries)
                (,prove-disjunction-name literal-nodenums-or-quoteps ;; fixme think about the options used here!
                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                        tactic
                                         rule-alists ;;(make-rule-alist-simple rule-alist t (table-alist 'axe-rule-priorities-table (w state)))
                                         interpreted-function-alist
                                         monitored-symbols
@@ -4761,7 +4819,8 @@
          (declare (xargs :stobjs state
                          :guard (and (pseudo-term-listp clause)
                                      (alistp hint)
-                                     ;todo: make these into checks with nice error messages:
+                                     ;;todo: make these into checks with nice error messages:
+                                     (simple-prover-tacticp (lookup-equal :tactic hint))
                                      (true-listp (lookup-equal :rule-lists hint))
                                      (booleanp (lookup-equal :no-splitp hint))
                                      (symbol-listp (lookup-equal :monitor hint))
@@ -4784,6 +4843,11 @@
               (rule-lists (if rules
                               (list rules)
                             rule-lists))
+              (tactic (lookup-eq :tactic hint))
+              ;; Use a suitable default if no tactic is given in the hint:
+              (tactic (if (not tactic)
+                          '(:rep :rewrite :subst)
+                        tactic))
               (monitored-symbols (lookup-eq :monitor hint))
               (no-splitp (lookup-eq :no-splitp hint))
               (print (lookup-eq :print hint))
@@ -4795,6 +4859,7 @@
               ;; Attempt the proof:
               ((mv erp provedp)
                (,prove-clause-name clause
+                                   tactic
                                    ',(pack$ suffix '-prover-clause-proc)
                                    rule-alists
                                    monitored-symbols
