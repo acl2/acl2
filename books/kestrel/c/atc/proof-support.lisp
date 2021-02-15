@@ -405,12 +405,9 @@
     "We also found it necessary to include two rules
      to distribute two specific functions over @(tsee if)s.
      It seems that, in the course of these symbolic execution proofs,
-     we will always want to distribute functions over @(tsee if)s,
-     which seems to happen most of the time.
-     Perhaps there is some heuristic that prevents that
-     from happening all the times.
-     Adding these rules makes those proofs succeed,
-     but the issue should be investigated further."))
+     we will always want to distribute functions over @(tsee if)s.
+     This distribution happens at the goal level,
+     but not in the rewriter by default"))
 
   (defruled scope-result-kind-when-scopep
     (implies (scopep scope)
