@@ -773,6 +773,48 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection montgomery-mul-distributivity-over-scalar-addition
+  :short "Distributivity of scalar multiplication over scalar addition."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We prove it for non-negative scalars initially.
+     We will extend that to negative scalars eventually.
+     We keep these rules disabled,
+     because distribution is not always desired."))
+
+  (defruled montogomery-mul-nonneg-of-scalar-addition
+    (implies (and (montgomery-add-closure)
+                  (montgomery-add-associativity)
+                  (montgomery-curvep curve)
+                  (montgomery-curve-primep curve)
+                  (pointp point)
+                  (point-on-montgomery-p point curve)
+                  (natp scalar1)
+                  (natp scalar2))
+             (equal (montgomery-mul-nonneg (+ scalar1 scalar2) point curve)
+                    (montgomery-add (montgomery-mul-nonneg scalar1 point curve)
+                                    (montgomery-mul-nonneg scalar2 point curve)
+                                    curve)))
+    :enable montgomery-mul-nonneg)
+
+  (defruled montgomery-mul-of-scalar-addition
+    (implies (and (montgomery-add-closure)
+                  (montgomery-add-associativity)
+                  (montgomery-curvep curve)
+                  (montgomery-curve-primep curve)
+                  (pointp point)
+                  (point-on-montgomery-p point curve)
+                  (natp scalar1)
+                  (natp scalar2))
+             (equal (montgomery-mul (+ scalar1 scalar2) point curve)
+                    (montgomery-add (montgomery-mul scalar1 point curve)
+                                    (montgomery-mul scalar2 point curve)
+                                    curve)))
+    :enable (montgomery-mul montogomery-mul-nonneg-of-scalar-addition)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define montgomery-point-orderp ((point pointp)
                                  (order natp)
                                  (curve montgomery-curvep))
