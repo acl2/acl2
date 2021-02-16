@@ -625,6 +625,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection montogomery-add-zero-identity
+  :short "Left and right identity properties of the neutral point."
+
+  (defrule montgomery-add-of-montgomery-zero-left
+    (equal (montgomery-add (montgomery-zero) point curve)
+           (point-fix point))
+    :enable (montgomery-add montgomery-zero))
+
+  (defrule montgomery-add-of-montgomery-zero-right
+    (equal (montgomery-add point (montgomery-zero) curve)
+           (point-fix point))
+    :enable (montgomery-add montgomery-zero point-kind point-fix pointp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define montgomery-neg ((point pointp) (curve montgomery-curvep))
   :guard (and (montgomery-curve-primep curve)
               (point-on-montgomery-p point curve))
