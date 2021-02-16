@@ -49,8 +49,9 @@
 ;; Step 1 of
 ;; https://en.wikipedia.org/wiki/Tonelli%E2%80%93Shanks_algorithm#The_algorithm
 
-;; Returns nats Q and S such that
-;; n = Q * 2^S and Q is odd.
+;; Factors n into the S powers of 2 and the rest Q.
+;; If n is a power of 2, Q will be 1.
+;; Otherwise Q will be the product of the odd prime factors.
 ;;
 (define Q*2^S ((n natp))
   :returns (mv (q natp) (s natp))

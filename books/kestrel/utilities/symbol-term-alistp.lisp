@@ -89,3 +89,11 @@
                   (and (symbol-listp (true-list-fix vars))
                        (pseudo-term-listp (true-list-fix terms)))))
   :hints (("Goal" :in-theory (enable symbol-term-alistp))))
+
+(defthm symbol-term-alistp-of-cons
+  (equal (symbol-term-alistp (cons pair alist))
+         (and (consp pair)
+              (symbolp (car pair))
+              (pseudo-termp (cdr pair))
+              (symbol-term-alistp alist)))
+  :hints (("Goal" :in-theory (enable symbol-term-alistp))))
